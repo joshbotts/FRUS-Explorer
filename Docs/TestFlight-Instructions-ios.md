@@ -1,50 +1,48 @@
-# What's New Since Build 50 (iOS)
+# Testing FRUS Explorer 1.0 (iOS)
 
-**Release candidate.** Version 1.0 (1861) is the build meant for the App Store; unless your reports stop it, this is 1.0.
+**Release candidate.** Version 1.0 (1776) is the app meant for the App Store; unless your reports stop it, this is 1.0.
 
-**First launch re-indexes your library once** (index version 71) and rebuilds People, in the background. The earlier search model and its match files are removed; Related Documents and Meaning fetch new ones.
+FRUS Explorer puts the State Department's *Foreign Relations of the United States* on your iPhone and iPad: download volumes, then read, search, annotate, cite and chart their documents offline. Notes, highlights, tags and collections sync through iCloud.
+
+**Tested build 50?** First launch re-indexes your library once (index version 71) and rebuilds People, in the background. The earlier search model and its match files are removed; Related Documents and Meaning fetch new ones.
+
+## Getting started
+
+- **Onboarding** offers the whole series, a subseries or one volume. As volumes download and index, a banner and a Live Activity count the whole queue, and for a first queue of several volumes the **FRUS Research Guide** opens while you wait.
+- **Browse** goes from subseries to volume, chapter and document, prose sections and the Notes on U.S. Covert Actions included; **Analysis Tools** charts terms, people, cross-references and archives.
+
+## Reading
+
+- Select text to highlight it or add a note. The **Research rail** holds **Cite**, **Sources**, **Graph**, **Related** and your notes, tags and collections.
+- **Cross-references:** a page of another volume (*Foreign Relations, 1942, vol. I, p. 841*) cites the document on that page. A page link into a volume you have not downloaded offers that volume, or opens its page in Browse naming the page.
+- **Reading Width** (Settings ▸ Reading & Search ▸ Display): **Narrow**, **Standard** or **Wide**.
 
 ## Search
 
-- **Search within these results.** After a Meaning question, **•••** ▸ **Find Words in These Matches**; after a keyword search, **•••** ▸ **Rank These Results by a Question** or **Sort** ▸ **Closest to a Question…**. A row names the held list; **Swap** swaps the two orders, **✕** puts it back.
-- **Meaning search runs EmbeddingGemma 2**, open source; if you had the earlier model, **Download Search Model** (310 MB) is offered again, nothing to accept.
-- A common word in a working corpus searches much faster.
-- A keyword snippet starts at your word, after the heading, source note and dateline.
-- A chapter's row shows the days of its documents.
+- **Keywords** or **Meaning**: Meaning ranks documents by a question with EmbeddingGemma 2, an open-source model you add with **Download Search Model** (310 MB, nothing to accept).
+- A keyword snippet starts at the rarest of your words, past the heading, source note and dateline.
+- **Facets** narrow the results; **•••** ▸ **Save as Working Corpus…** keeps them, its sheet showing what narrowed them (**Narrowed by**).
+- **Search within these results:** after a Meaning question, **•••** ▸ **Find Words in These Matches**; after keywords, **•••** ▸ **Rank These Results by a Question**. **Swap** swaps the two orders, **✕** puts the list back.
+- **Accessibility:** VoiceOver offers a result's tags as **Filter by** actions; at the largest text sizes the Meaning strip is one line, and **ⓘ** opens all of it.
 
-## Library and reading
+## Collections and Settings
 
-- **Keeping Current** (Settings ▸ Volumes & Storage): **Update** shows each volume's row as *Queued*, *Downloading…*, *Indexing…*, *Updated*, retries a failed update twice, then says why and offers **Retry**; **Check for Corrections** says why when it cannot read the list; a side-loaded copy is marked.
-- **Reading Width** (Settings ▸ Reading & Search ▸ Display): **Narrow**, **Standard** or **Wide**.
-- **Browse** opens chapters whose only own text is a heading's footnote, the Notes on U.S. Covert Actions, the Presidents' annual messages and other prose the index left out; a List of Sources keys files with no subject number.
-- **Cross-references:** a page of another volume (*Foreign Relations, 1942, vol. I, p. 841*) cites the document on that page, in the citing list, the graph and Cross-Reference Analytics, whether or not you hold that volume.
-- **People:** Jeane Kirkpatrick, Ahmad Khomeini, Richard V. Allen and some eighty more once filed under namesakes have their own entries; a sheet links to VIAF only where the Office of the Historian does, never to Wikidata.
-
-## Collections
-
-- A **smart collection** (linked to a saved search) takes nothing by hand: **Add to Collection**, its editor and the Collections lists say *Smart collection*; earlier entries are listed apart, dimmed, with **Remove These Entries**.
-
-## Also
-
-- **Accessibility:** VoiceOver offers a result's tags as **Filter by** actions; at the largest text sizes the Meaning strip is one line, **ⓘ** opens all of it.
-- **Word cloud:** an export counted as printed says another device may count differently.
-- **Live Activity:** one lasts a whole indexing queue, background included.
-- **Archival Analytics:** Subject-Numeric files read in words, across both handbooks and past 1973.
-- **Archives Visit:** a file with no subject number is one target, keeping your tier and note.
+- Collections export as PDF, Word or HTML; citations copy as BibTeX or RIS, or go to Zotero. A **smart collection** follows a saved search and takes nothing by hand.
+- **Keeping Current** (Settings ▸ Library ▸ Volumes & Storage): **Check for Corrections**, then **Update**, each volume's row showing its step.
 - **Email Feedback File** (Settings ▸ System ▸ Data & Recovery) writes a message of your Semantic Match verdicts to feedback@frusexplorer.app.
 
-**Fixes:** many, on every tab and in accessibility.
+**Fixed since build 50:** many things, on every tab and in accessibility.
 
 ## What to test
 
-1. **First launch.** Does the re-index finish and People open whole? Kirkpatrick, Khomeini, Allen: one entry each?
-2. **Search within these results**, both ways, then **Swap** and **✕**: do the row and header say so?
-3. **Meaning.** Download the model: nothing to accept? Percentages as before?
-4. **A common word** (*government*) in a working corpus: how long?
-5. **Keeping Current.** **Check for Corrections**, then **Update**: each step shown? Offline, does it say why?
-6. **Reading Width**, portrait and landscape.
-7. **Smart collections.** Link one to a saved search: earlier entries apart? **Remove These Entries** asks first?
-8. **Your build-50 reports**: fixed?
+1. **First launch.** Choose a subseries: does the banner's count match the queue, and does the Guide stay open?
+2. **Read and annotate:** highlight, note, **Cite**, **Sources**.
+3. **Search** both ways, with **Facets**, then within the results, **Swap** and **✕**: do the row and header say so?
+4. **Meaning.** Download the model: nothing to accept?
+5. **A page link** into a volume you have not downloaded.
+6. **Analytics:** chart a term, narrow the years, **View N documents ↗**: the same count in Search?
+7. **Keeping Current** and **Reading Width**, portrait and landscape.
+8. **Build-50 testers:** does the re-index finish, with People whole (Kirkpatrick, Khomeini, Allen one entry each)? Are your reports fixed?
 
 Not bugs: People counts, Meaning results and citing lists differing from build 50's.
 

@@ -1,48 +1,47 @@
-# What's New Since Build 50 (Mac)
+# Testing FRUS Explorer 1.0 (Mac)
 
-**Release candidate.** Version 1.0 (1861) is the build meant for the App Store; unless your reports stop it, this is 1.0.
+**Release candidate.** Version 1.0 (1776) is the app meant for the App Store; unless your reports stop it, this is 1.0.
 
-**First launch re-indexes your library once** (index version 71) and rebuilds People, in the background. The earlier search model and its match files are removed; Related Documents and Meaning fetch new ones.
+FRUS Explorer puts the State Department's *Foreign Relations of the United States* on your Mac: download volumes, then read, search, annotate, cite and chart their documents offline. Notes, highlights, tags and collections sync through iCloud.
+
+**Tested build 50?** First launch re-indexes your library once (index version 71) and rebuilds People, in the background. The earlier search model and its match files are removed; Related Documents and Meaning fetch new ones.
+
+## Getting started
+
+- **Onboarding** offers the whole series, a subseries or one volume. As volumes download and index, the status bar counts the whole queue, and its **Learn** button opens the **FRUS Research Guide** while you wait.
+- **The Corpus Browser** (⇧⌘B) goes from subseries to volume, chapter and document, prose sections and the Notes on U.S. Covert Actions included; the **Analytics** menu charts terms, people, cross-references and archives.
+
+## Reading
+
+- Select text to highlight it or add a note. The **Research rail** (⌘⇧R) holds **Cite**, **Sources**, **Graph**, **Related** and your notes, tags and collections.
+- **Cross-references:** a page of another volume (*Foreign Relations, 1942, vol. I, p. 841*) cites the document on that page. A page link into a volume you have not downloaded offers that volume, or opens its page in the Corpus Browser naming the page.
+- **Reading Width** (Settings ▸ Reading & Search ▸ Display): **Narrow**, **Standard** or **Wide**; a wide window adds margin, not line length.
 
 ## Search
 
-- **Search Within Results**, in the Search window's titlebar after **Save as Working Corpus…**: over a Meaning list it finds words in those matches; over a keyword list it ranks the results by a question. A row names the held list; **✕** puts it back, and after a search inside it **Swap** swaps the two orders.
-- **Meaning search runs EmbeddingGemma 2**, open source; if you had the earlier model, **Download Search Model** (310 MB) is offered again, nothing to accept.
-- A common word in a working corpus searches much faster.
-- A keyword snippet starts at your word, after the heading, source note and dateline.
-- A chapter's row shows the days of its documents.
+- **The Search window** (⌥⌘F), in **Keywords** or **Meaning**: Meaning ranks documents by a question with EmbeddingGemma 2, an open-source model you add with **Download Search Model** (310 MB, nothing to accept).
+- A keyword snippet starts at the rarest of your words, past the heading, source note and dateline.
+- **Facets** narrow the results; **Save as Working Corpus…** keeps them, its sheet showing what narrowed them (**Narrowed by**).
+- **Search Within Results**, in the window's titlebar: over a Meaning list it finds words in those matches; over a keyword list it ranks the results by a question. **✕** puts the list back, and after a search inside it **Swap** swaps the two orders.
 
-## Library and reading
+## Collections and Settings
 
-- **Keeping Current** (Settings ▸ Volumes & Storage): **Update** shows each volume's row as *Queued*, *Downloading…*, *Indexing…*, *Updated*, retries a failed update twice, then says why and offers **Retry**; **Check for Corrections** says why when it cannot read the list; a side-loaded copy is marked.
-- **Reading Width** (Settings ▸ Reading & Search ▸ Display): **Narrow**, **Standard** or **Wide**; Standard is wider; a wide window adds margin, not line length.
-- **The Corpus Browser** opens chapters whose only own text is a heading's footnote, the Notes on U.S. Covert Actions, the Presidents' annual messages and other prose the index left out; a List of Sources keys files with no subject number.
-- **Cross-references:** a page of another volume (*Foreign Relations, 1942, vol. I, p. 841*) cites the document on that page, in the citing list, the graph and Cross-Reference Analytics, whether or not you hold that volume.
-- **People:** Jeane Kirkpatrick, Ahmad Khomeini, Richard V. Allen and some eighty more once filed under namesakes have their own entries; a sheet links to VIAF only where the Office of the Historian does, never to Wikidata.
-
-## Collections
-
-- **⚙ Collection** ▸ **Link to Saved Search…** links any collection.
-- A **smart collection** (linked to a saved search) takes nothing by hand: the Collections window dims **＋ Add**, and the picker and **Manage Collections…** say *Smart collection*; earlier entries are listed apart, dimmed, with **Remove These Entries**.
-
-## Also
-
-- **Archival Analytics:** Subject-Numeric files read in words, across both handbooks and past 1973.
-- **Archives Visit:** a file with no subject number is one target, keeping your tier and note.
+- **Collections** (⇧⌘K) export as PDF, Word or HTML; citations copy as BibTeX or RIS, or go to Zotero. **⚙ Collection** ▸ **Link to Saved Search…** makes a **smart collection**, which follows the search and takes nothing by hand.
+- **Keeping Current** (Settings ▸ Library ▸ Volumes & Storage): **Check for Corrections**, then **Update**, each volume's row showing its step.
 - **Email Feedback File** (Settings ▸ System ▸ Data & Recovery) writes a message of your Semantic Match verdicts to feedback@frusexplorer.app.
 
-**Fixes:** many, in every window and in accessibility.
+**Fixed since build 50:** many things, in every window and in accessibility.
 
 ## What to test
 
-1. **First launch.** Does the re-index finish and People open whole? Kirkpatrick, Khomeini, Allen: one entry each?
-2. **Search Within Results**, over a Meaning list and a keyword list, then **Swap** and **✕**: do the row and count line say so?
-3. **Meaning.** Download the model: nothing to accept? Percentages as before?
-4. **A common word** (*government*) in a working corpus (**Advanced…**): how long?
-5. **Keeping Current.** **Check for Corrections**, then **Update**: each step shown, by the volume's title?
-6. **Reading Width**, in a narrow and a wide window.
-7. **Smart collections.** Link one to a saved search: earlier entries apart? **Remove These Entries** asks first?
-8. **Your build-50 reports** (the semantic map reopened, the Corpus Browser under a research question): fixed?
+1. **First launch.** Choose a subseries: does the status bar's count match the queue?
+2. **Read and annotate:** highlight, note, **Cite**, **Sources**.
+3. **Search** both ways, with **Facets**, then **Search Within Results**, **Swap** and **✕**: do the row and count line say so?
+4. **Meaning.** Download the model: nothing to accept?
+5. **A page link** into a volume you have not downloaded.
+6. **Analytics:** chart a term, narrow the years, **View N documents ↗**: the same count in Search?
+7. **Keeping Current**, and **Reading Width** in a narrow and a wide window.
+8. **Build-50 testers:** does the re-index finish, with People whole (Kirkpatrick, Khomeini, Allen one entry each)? Are your reports fixed?
 
 Not bugs: People counts, Meaning results and citing lists differing from build 50's.
 
