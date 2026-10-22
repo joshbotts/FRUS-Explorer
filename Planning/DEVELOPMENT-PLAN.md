@@ -7342,7 +7342,7 @@ MAC**Checked by hand, iPhone.** A simulator made for the lane, "iPhone 17 L6" (`
 **Review.** One pass on the diff against `v2` — the bump, the two notes, the audit's section, the plan's lines and this entry — each figure held to the logs (`R2-measurement/` in the session group's notes folder) and each named control to its string in source. Fixed while drafting: the notes' *As they download* (with no antecedent) and *an optional 310 MB **Download Search Model*** (a control read as a noun), and this entry's account of the check copy's seeding (A19's *seeding nothing new*; this run seeded the 27 files again). Nothing else was found. Nothing in the diff is code but the build number.
 
 **Not done, and for the owner.**
-- **Not opened.** The pull request waits for the owner's word; its draft is in the session group's notes folder (`R2-pr-draft.md`), with the scripts and logs beside it (`R2-measurement/`).
+- **Opened as #1782** on the owner's word of 2026-10-22, 19:43 ("Open R2's pull request against v2 as drafted (R2-pr-draft.md in the notes folder)."), against `v2` at `0f5c8ef5`, which had not moved since the branch was cut; not merged. Its body is the draft kept in the session group's notes folder (`R2-pr-draft.md`), with the owner's word at its head; the scripts and logs are beside it (`R2-measurement/`). Auto-merge off.
 - **The owner's steps**, in the checkout the archive is cut from:
   1. bring `v2` to this pull request's merge commit;
   2. run `./Scripts/fetch-llama-dsyms.sh` and `./Scripts/check_cloudkit_schema.py` there. The dSYM cache and the schema stamp belong to the checkout they ran in, and the archive's two phases fail without them; this worktree's do not serve another checkout;
