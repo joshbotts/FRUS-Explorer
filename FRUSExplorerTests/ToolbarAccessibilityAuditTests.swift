@@ -214,6 +214,38 @@ struct ToolbarAccessibilityAuditTests {
     }
 }
 
+// MARK: - ResearchRailToggleTintSourceTests
+
+/// The iPad Research-rail toggle asks for the accent colour where the toolbar reads it (#1761).
+///
+/// A toolbar draws its items' glyphs itself and does not read a `.foregroundStyle` set inside the item's `Label`:
+/// asked for that way, the toggle's glyph was drawn black with the rail open, in S1's `research-rail` (iOS 27.0) and
+/// the build-47 device frame. `.tint` on the button is read: measured by pixel on an iPad Pro 13-inch (M5) simulator
+/// under iOS 27.0, the glyph is accent blue with the rail open and black with it closed. That measurement cannot run
+/// here, so the source is held to the shape that was measured.
+///
+/// Version history:
+///   1.0 — 2026-10-21: #1761
+struct ResearchRailToggleTintSourceTests {
+
+    private typealias Scan = NaturalLanguageReadinessScanTests
+
+    @Test("The rail toggle tints its button, which the toolbar reads, and colours nothing inside its label")
+    func railToggleTintsItsButton() throws {
+        let source = Scan.code(try String(contentsOf: Scan.repoRoot.appending(path: "FRUSExplorer/DocumentView/DocumentView.swift"),
+                                          encoding: .utf8))
+        let start = try #require(source.range(of: "private func documentToolbar(vm: DocumentViewModel) -> some ToolbarContent"),
+                                 "documentToolbar(vm:) is no longer in DocumentView.swift")
+        let toolbar = source[try #require(Scan.braceBody(in: source, after: start.upperBound))]
+            .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        #expect(toolbar.contains("Label(Self.researchRailName, systemImage: \"doc.text.magnifyingglass\") } "
+                                 + ".tint(railToggleActive ? Color.accentColor : Color.primary)"),
+                "the toggle's button no longer takes the tint the toolbar draws: \(toolbar)")
+        #expect(!toolbar.contains(".foregroundStyle(railToggleActive"),
+                "the toggle asks for its colour inside its label again, which the toolbar does not draw")
+    }
+}
+
 // MARK: - SegmentedPickerAccessibilityAuditTests
 
 /// Source-tree gate for #1381: **every icon segment of a segmented `Picker` names itself.**

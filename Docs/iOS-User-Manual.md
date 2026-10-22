@@ -141,7 +141,7 @@ With the sidebar showing, the space under the five tabs holds shortcuts to your 
 
 ### 4.2 The Document Toolbar and the Research Rail
 
-When a document is open, its toolbar carries just **two controls**: **Find in Document** (a magnifying glass), which opens the system find bar over this document's text — **⌘F** with a keyboard attached — and the **Research-rail toggle** (a `doc.text.magnifyingglass` button). Everything you do to or about a document lives in two surfaces this toggle and your text selections summon — the toolbar itself stays out of the way of reading.
+When a document is open, its toolbar carries just **two controls**: **Find in Document** (a magnifying glass), which opens the system find bar over this document's text — **⌘F** with a keyboard attached — and the **Research-rail toggle** (a `doc.text.magnifyingglass` button), accent-tinted while the rail is open. Everything you do to or about a document lives in two surfaces this toggle and your text selections summon — the toolbar itself stays out of the way of reading.
 
 **The Research rail** is the per-document research surface. On iPad it slides in as a trailing **inspector panel beside the document**, so the text and your research tools are visible at once; on iPhone it rises as a bottom sheet you can drag between medium and large heights. It opens with a **RESEARCH** header, then a three-column **tile grid** of seven tools:
 

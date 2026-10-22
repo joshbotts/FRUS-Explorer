@@ -239,6 +239,8 @@ enum DocumentSheet: Identifiable {
 ///   3.12 — #1540: the floating selection bar is retired here. Its four colours, Excerpt, Look Up
 ///          in NARA and Note now lead the system edit menu (`.onSelectionVerb`,
 ///          `performSelectionVerb`), which UIKit could draw over the bar.
+///   3.13 — #1761: the research-rail toggle asks for its accent colour with `.tint` on the button,
+///          which a toolbar reads, where a `.foregroundStyle` inside its `Label` was never drawn
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -1459,8 +1461,13 @@ struct DocumentView: View {
                 // so cannot overflow today; the shape is normalised so that adding a
                 // second item can never silently rename this one to its SF Symbol.
                 Label(Self.researchRailName, systemImage: "doc.text.magnifyingglass")
-                    .foregroundStyle(railToggleActive ? Color.accentColor : Color.primary)
             }
+            // The tint is the button's, not the label's (#1761). A toolbar draws its items' glyphs itself, and a
+            // foreground style set inside the label does not reach that drawing: asked for with `.foregroundStyle` on
+            // the `Label`, the glyph was drawn black with the rail open (S1's `research-rail`, iOS 27.0, and the
+            // build-47 device frame). With `.tint` here, an iPad Pro 13-inch (M5) simulator under iOS 27.0 drew it
+            // in the accent blue with the rail open and black with it closed, measured by pixel.
+            .tint(railToggleActive ? Color.accentColor : Color.primary)
             .controlHelp(
                 Self.researchRailName,
                 detail: String(localized: "document.toolbar.panelMode.hint",
