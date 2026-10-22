@@ -16,9 +16,9 @@ an official product of the Office of the Historian or the U.S. Department of Sta
 
 ## Screenshots
 
-| Search (macOS) | Cross-reference graph (macOS) | Semantic map (iPad) |
+| Search (macOS) | Source Explorer (iPad) | Semantic map (iPad) |
 |---|---|---|
-| ![Search results with facets and filters](Docs/screenshots/macos/search.png) | ![Cross-reference graph](Docs/screenshots/macos/cross-reference-graph.png) | ![Semantic map](Docs/screenshots/ipad/semantic-map.png) |
+| ![Search results with facets and filters](Docs/screenshots/macos/search.png) | ![A source note resolved to its National Archives catalog record](Docs/screenshots/ipad/source-explorer.png) | ![Semantic map](Docs/screenshots/ipad/semantic-map.png) |
 
 More in [`Docs/screenshots/`](Docs/screenshots).
 

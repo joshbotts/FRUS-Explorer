@@ -316,6 +316,18 @@ commands); the drafts are in `Planning/marketing-drafts/`, with one contact shee
 | 13 | Who the record orbits. | Person Analytics around any name… | **none** | `macos/person-analytics-network` (**stale**, #1370/#1441) | — |
 | 14 | How the archive itself changed. | Which collections each era's editors drew on… | `ipad/archival-analytics` (counts predate #1514) | `macos/archival-analytics` (same) | — |
 
+**The captures as of 2026-10-21 (the plan of record's §6a, sitting S5).** The table's capture notes
+are the state of 2026-10-13. Every frame now stands on a capture of build 1861, taken in the
+build-51 sweep's sittings S1 to S4 (`Docs/screenshots/README.md`, *The sittings' ledger*), and
+`shots.json` names each file. The frames the table marks **none** have one: 07 is `ipad/cite-sheet`
+and `macos/cite-popover`, 12 on the Mac is `macos/search-meaning`, and 13 on the iPad is
+`ipad/person-analytics-network`. The iPhone has six: `ios/search-results` (01, with
+`ios/search-facets`, the facet sheet open, as its second take), `ios/document` (02, the Long
+Telegram, which is `frus1946v06/d475`), `ios/semantic-map` (03), `ios/source-explorer` (04) and
+`ios/chronology` (11), the last two for a longer iPhone set if the owner wants one. S5 ran the
+composer: the drafts are in `Planning/marketing-drafts/`, and the store sizes were written to
+`~/Desktop/store`, outside the repository.
+
 **Frame design, as drafted.** The launch screen's palette (`LaunchBackground` #F2F2F4, title black at
 0.9) with the icon's red (`FRUSTheme.provenanceFRUS`, #A61C2A) as the eyebrow, Inter Display here and
 SF Pro on the Mac; a dark variant (#0F1217, the map film's ground) for the map. Eyebrow, headline,
@@ -333,7 +345,8 @@ inch (links in the session's reply; none is Apple).
 
 **The iPhone gap is the blocking one.** Every iPad and Mac frame has at least a stand-in; the three
 universal iPhone frames have none, and the listing cannot be submitted without an iPhone set. The
-drafts render them as placeholders carrying the route to capture.
+drafts render them as placeholders carrying the route to capture. *Closed on 2026-10-21: S3 took
+the iPhone frames on an iPhone 17 Pro Max under iOS 27.0, and S5 wired them into `shots.json`.*
 
 ---
 
@@ -516,7 +529,9 @@ copy; then recording A, and the Mac preview.
 
 **After the sittings.** Run `SCALE=1 OUT_DIR=~/Desktop/store python3 tools/marketing/compose.py`
 for the store-size frames, re-run the drafts into `Planning/marketing-drafts/`, and record the build
-number of the capture run in `Docs/screenshots/README.md`'s ledger, as the X-8 rule asks.
+number of the capture run in `Docs/screenshots/README.md`'s ledger, as the X-8 rule asks. *Run on
+2026-10-21 in S5, the plan of record's embed pass: 34 frames at the presets' sizes, 14 iPad, 14 Mac
+and 6 iPhone, each stamped with build 1861; the ledger's S5 entry has the run.*
 
 ---
 

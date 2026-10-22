@@ -1,7 +1,8 @@
 # User-Manual Screenshots
 
 Screenshots embedded in the user manuals (`../iOS-User-Manual.md`, `../macOS-User-Manual.md`).
-Manuals still carry `` `[SCREENSHOT: …]` `` placeholders wherever an image has not been captured yet.
+A manual carries a `` `[SCREENSHOT: …]` `` placeholder wherever an image has not been captured yet;
+since S5 of the build-51 sweep (2026-10-21, below) neither manual carries one.
 
 > **Owner decision, 2026-08-23 (issue #1081): every committed capture is treated as stale.** The
 > 31 files on disk date from the build 26–42 era and the UI has moved under all of them. Nothing
@@ -86,52 +87,82 @@ known-hard shots the issue always listed, the Chronology hover magnifier and the
 
 ### Stale after build 48 (Mac)
 
+**Closed by S5 on 2026-10-21.** S4 retook every file below on build 1861, and S5 read each retake
+against its caption (the sittings' ledger); what each now shows follows its line. The list as it
+stood:
+
 These embedded `macos/` captures now contradict `../macOS-User-Manual.md` and need a fresh
 capture on the current build:
 
-- `crossref-analytics.png`: taken before #1445/#1480 (row labels cut at the front, the grid in an
-  inner scroll box, a "Tap a volume label" caption).
-- `chronology.png`: the old legend and chip counts (#1387, #1400).
-- `trip-packet.png`: the Mac packet now has Options and Share (#1444); the capture shows neither.
-- `collections.png`: the collection picker's count is out of date.
-- `people-list.png`, `people-detail.png` and `person-analytics-network.png`: taken before
-  #1370/#1441 (roles, lifespans, and overlapping or unmarked network labels).
-- Still a placeholder, not a capture: §7.11's `[SCREENSHOT: the Search window's zero-result state
-  with the semantic matches section beneath the query decomposition.]`
+- ~~`crossref-analytics.png`: taken before #1445/#1480 (row labels cut at the front, the grid in an
+  inner scroll box, a "Tap a volume label" caption).~~ The retake draws the 1961–1963 matrix whole,
+  every row label in full, with *Select a volume label to open it*; S5 added
+  `crossref-analytics-ranking.png` beside it (*Caption and sentence fixes*, item 5).
+- ~~`chronology.png`: the old legend and chip counts (#1387, #1400).~~ The retake reads *24
+  documents extend beyond this range (24 reach past both ends)* under the build-51 legend.
+- ~~`trip-packet.png`: the Mac packet now has Options and Share (#1444); the capture shows
+  neither.~~ The retake shows Options at the packet's head and Share and Share as PDF at its foot,
+  and its caption now says so.
+- ~~`collections.png`: the collection picker's count is out of date.~~ The picker reads *The Long
+  Telegram and Its Readers 6*, the collection's six documents.
+- ~~`people-list.png`, `people-detail.png` and `person-analytics-network.png`: taken before
+  #1370/#1441 (roles, lifespans, and overlapping or unmarked network labels).~~ The retakes show
+  build 51's roles and years, Kissinger's Career section with no VIAF or Wikidata link (its caption
+  rewritten, item 2), and Kennan's network with its partners named beside their nodes.
+- ~~Still a placeholder, not a capture: §7.11's `[SCREENSHOT: the Search window's zero-result state
+  with the semantic matches section beneath the query decomposition.]`~~ Since S5 the slot embeds
+  S4's `search-zero-result-meaning.png`.
 
 ### Not re-checked after the build-49 wave (2026-10-01)
+
+**Closed by S5 on 2026-10-21.** Every embedded file this list names was retaken on build 1861 in
+S1 or S4, which postdates every lane below, and S5 read each retake against its caption; what each
+now shows follows its line. The list as it stood:
 
 The wave's fifteen merged lanes (thirteen when this list was written; HYG and READ landed on
 2026-10-02, and the last bullet is theirs) changed what several captured surfaces draw, and **no capture was retaken
 or compared against the new build**. This list is drawn from what each lane changed, not from
 looking at the app, so treat every line but the first as a candidate:
 
-- `ipad/crossref-analytics.png` — **stale, by measurement**: its longest Most-Referenced label
+- ~~`ipad/crossref-analytics.png` — **stale, by measurement**: its longest Most-Referenced label
   runs about 525 pt on one line, and since #1473 a label is capped at 320 pt and wraps to a second
-  line (`RankingChartAxis.labelWidth`). `macos/crossref-analytics.png` is already listed above.
-- `ipad/browse-archives-provenance.png` — lane NOTE recorded it in
-  `../../Planning/Manual-Revisions-Pending.md` (#1514 moved notes between provenance categories).
-- `ipad/archival-analytics.png`, `macos/archival-analytics.png`, and the
+  line (`RankingChartAxis.labelWidth`). `macos/crossref-analytics.png` is already listed above.~~
+  S1's retake draws each long title on two lines, as iOS §15.4 says.
+- ~~`ipad/browse-archives-provenance.png` — lane NOTE recorded it in
+  `../../Planning/Manual-Revisions-Pending.md` (#1514 moved notes between provenance categories).~~
+  S1's retake shows eleven doors and *About 29%*; S5 brought the caption and §6.1g's sentence to
+  both (items 1 and 9).
+- ~~`ipad/archival-analytics.png`, `macos/archival-analytics.png`, and the
   `ipad/browse-archives*` set — their counts predate the collection authority's regenerations of
-  2026-09-25 (#1466, #1469) and 2026-10-01 (#1514, #1468).
-- `ipad/trip-packet.png`, `ipad/trip-packet-options.png` — #1514 and #1515 changed the packet's
-  crib and divided-lot lines.
-- `ipad/cross-reference-graph.png`, `macos/cross-reference-graph.png`, `macos/person-analytics-network.png`
+  2026-09-25 (#1466, #1469) and 2026-10-01 (#1514, #1468).~~ The retakes count over A18's
+  regenerated files at index version 71: *60,019 source notes in 1948–1960*, 753 collections, on
+  both platforms.
+- ~~`ipad/trip-packet.png`, `ipad/trip-packet-options.png` — #1514 and #1515 changed the packet's
+  crib and divided-lot lines.~~ Retaken in S1 on the visit of the demo recipe.
+- ~~`ipad/cross-reference-graph.png`, `macos/cross-reference-graph.png`, `macos/person-analytics-network.png`
   — #1438 gave every graph's labels a second place above their node, so a re-capture names more
-  nodes; #1481 renamed the iPad node menu's item to *View Document*.
-- `macos/collections.png` (already listed) — #1446 also caps a long name in the collection picker.
-- Any capture of Volumes & Storage, Data & Recovery, Citation Lookup's Batch mode, or a text
+  nodes; #1481 renamed the iPad node menu's item to *View Document*.~~ Retaken in S1 and S4. The
+  iPad graph at three hops now holds about seventy nodes and names only its focus (*Found by S1*,
+  14); the Mac's Timeline at one hop names each document node by its number and date.
+- ~~`macos/collections.png` (already listed) — #1446 also caps a long name in the collection
+  picker.~~ Retaken in S4.
+- ~~Any capture of Volumes & Storage, Data & Recovery, Citation Lookup's Batch mode, or a text
   selection in the iPad reader: lanes STOR, SYNC, LANG, CITE and SEL changed those screens. No
   capture named for one of them is embedded in either manual today; a future one should be taken
-  on build 49 or later.
-- Added 2026-10-02, from what lanes READ and HYG changed: a document that prints a figure now
+  on build 49 or later.~~ Still none is embedded. `ios/indexing-banner`, embedded in iOS §4.8 since
+  S5, was taken over Volumes & Storage on build 1861, and its crop shows only the banner and the tab
+  bar.
+- ~~Added 2026-10-02, from what lanes READ and HYG changed: a document that prints a figure now
   draws its image where it printed the file's name, and the **Storage used** bar gains a
   **Figures** segment once an image is on the device (#1516); the Mac main window's empty state
   names ⌥⌘F under "Select a document to begin", and its Search tooltip does too. No capture was
-  opened to see whether it shows one of these.
+  opened to see whether it shows one of these.~~ None of the build-1861 frames shows a figure, the
+  Storage used bar or the Mac's empty state.
 
-Three `[SCREENSHOT` placeholders remain: `../iOS-User-Manual.md` has two (the Search Tips sheet;
-the zero-result "Search by meaning" offer) and `../macOS-User-Manual.md` one (above).
+~~Three `[SCREENSHOT` placeholders remain: `../iOS-User-Manual.md` has two (the Search Tips sheet;
+the zero-result "Search by meaning" offer) and `../macOS-User-Manual.md` one (above).~~ None
+remains since S5: the slots embed `ios/search-tips`, `ipad/semantic-offer` with
+`ipad/semantic-zero-result-matches`, and `macos/search-zero-result-meaning`.
 
 ## The build-51 sweep — the shot list (S0, 2026-10-21)
 
@@ -279,7 +310,8 @@ it left out. Everything is made through the app's own UI.
    short, or complete) is what §6.1f describes; a corpus saved from a Meaning search would read
    *The N closest matches of a Meaning search* in grey instead (A9), which no caption wants.
 4. **The collection "The Long Telegram and Its Readers"** — the Long Telegram
-   (`frus1946v06/d474`) and the documents that answer it — with **at least two section headings
+   (`frus1946v06/d475`; S0 wrote d474, Kennan's telegram of February 12, *Found by S3*, 1) and the
+   documents that answer it — with **at least two section headings
    and one note block**, since `collections-editor`'s caption shows "section headings, a prose
    block, documents with their Configure pills"; the build-48 recipe did not say so. A note under
    the title (Collection settings) gives the Mac's document inspector something to show.
@@ -467,7 +499,12 @@ and the Mac App Preview: the sittings' ledger below.)
 P1 (iOS §7.2, line 522) is S3's; P2 (iOS §7.12, line 656) is two frames in S1, the offer before
 the encoder is downloaded and the matches after; P3 (Mac §7.11, line 509) is S4's. Their file
 names above are proposals: S5 wires them in and removes the three `[SCREENSHOT: …]` lines, which
-are the last placeholders in either manual.
+are the last placeholders in either manual. **Done in S5, 2026-10-21**, under the names the sittings
+used: iOS §7.2 embeds `ios/search-tips`, the whole 1206×2622 frame, as the iPhone captures the
+manual embedded until build 48 were; iOS §7.12 embeds `ipad/semantic-offer` and then
+`ipad/semantic-zero-result-matches`, whose Download Volume rows keep the placeholder's second
+clause; Mac §7.11 embeds `macos/search-zero-result-meaning`. Neither manual holds a `[SCREENSHOT`
+line now.
 
 ### A7's slot: none in build 51
 
@@ -500,12 +537,21 @@ The #1081 rule is that an unreferenced file is deleted, not refreshed.
   with the caption written from §4.8's first paragraph. The decision is the owner's, in S5.
   **Answered on 2026-10-21 (17:14), in S3: §4.8 takes the figure.** S3 retook the file; S5 embeds it.
 
+**Done in S5, 2026-10-21.** The three files marked delete are deleted. `ios/indexing-banner` is
+iOS §4.8's figure, after the section's first paragraph, cropped by S5 to the bottom 552 rows of S3's
+1206×2622 frame (rows 2070 to 2621): the banner opened by its chevron, *Volume 8 of 11*, and the tab
+bar with the Settings tab's dot badge, a strip as the build-47 file was (1206×570). The whole frame
+is in #1753's commit and S3's raw folder.
+
 ### The README's hero row and its mirror (S5)
 
 `README.md` line 21 embeds `macos/search`, `macos/cross-reference-graph` and `ipad/semantic-map`;
 `Docs/EditableContent/03-Repository-README.md` line 47 mirrors the row whole. Decision 34 swaps the
 graph for `ipad/source-explorer` in S5, in both files in one change (the mirror is checked against
-the README). The two files that stay are retaken in S4 and S1.
+the README). The two files that stay are retaken in S4 and S1. **Done in S5, 2026-10-21**: the
+middle column reads *Source Explorer (iPad)* over `ipad/source-explorer` in both files, the block
+is character for character the README again (9,700 characters), and `Amendment-Log.md` has the
+bullet. No test compares the two: the comparison was made by script.
 
 ### The store frames (the kit's §3 and §7)
 
@@ -520,7 +566,10 @@ the 26.5 device), and the **three iPhone frames**, which the listing cannot be s
 The kit's §9 figures for the cross-volume citations (8,637 into 5,747 from 185) are build 50's;
 A17 and A18b moved them to 38,600 into 20,273 from 513, which the composer's sublines do not quote.
 After S4, `SCALE=1 OUT_DIR=~/Desktop/store python3 tools/marketing/compose.py` for the store
-sizes, and the drafts re-run into `Planning/marketing-drafts/`.
+sizes, and the drafts re-run into `Planning/marketing-drafts/`. **Done in S5, 2026-10-21**:
+`shots.json` names a capture for all 34 frames, every one stamped *build 1861*, and the composer
+wrote them twice, the drafts into `Planning/marketing-drafts/` and the store sizes into
+`~/Desktop/store` (the sittings' ledger, S5).
 
 ### Caption and sentence fixes S5 already owes
 
@@ -550,13 +599,46 @@ sizes, and the drafts re-run into `Planning/marketing-drafts/`.
     as the Mac's frames 07 and 12, whose `route` placeholders they end. Read Mac §15.4's caption
     against *Found by S4*, 3: the rankings carry their titles now (item 5).
 
+**Done in S5, 2026-10-21**, each read against its frame:
+
+1. *The eleven kinds of file*; the frame's lens draws eleven doors.
+2. The caption names the Career section alone.
+3. The caption says which controls the frame draws dimmed while four terms are compared — the
+   chart-or-table control, the Measure picker, the fit line and Chart colors — and that the value
+   control and Export are not.
+4. The clause stays: P2b shows a Download Volume button on three matches, in the two *Paris Peace
+   Conference* volumes S1 removed with frus1948v01p2.
+5. By a second figure. The frame is the heat matrix alone, so its caption stays; S4 kept the
+   Most-Referenced Documents ranking over 1961–1963 with the sitting's notes (19:38, 960×900 points,
+   every title whole), and S5 embedded it above the matrix as `macos/crossref-analytics-ranking.png`.
+6. Both retakes match their captions.
+7. Done: *The README's hero row*, above.
+8. Both sections are closed above, each line struck with what its retake shows.
+9. Findings 1, 2, 5, 6 and 7: iOS §6.1g's *about 29%*; §6.1h's volumes listed by identifier;
+   §7.12's example question, *Why did the wartime alliance unravel?*; §7.12's row for a match in an
+   undownloaded volume (*Document d32 in …*), with the Mac §7.11 sentence for the same row; §15.7's
+   third direction, *reaches past both ends*. Finding 4 was read and left: the frame's 491 matches
+   §6.2a, *detected* is the manuals' word for these topics throughout (the Topics accordion, *By
+   Detected Topic*), and *assigned* is the owner's wording in the index's own header. Finding 8 is a
+   test file's comments, not a manual.
+10. `ios/search-tips` in §7.2; `ios/indexing-banner` in §4.8, cropped (*The four files*, above); the
+    six iPhone files in `shots.json`, with `ios/document` (d475) in place of the d474 route; and the
+    recipe's point 4 names d475.
+11. `macos/search-zero-result-meaning` in §7.11; `macos/cite-popover` and `macos/search-meaning` in
+    `shots.json`, with S1's `ipad/cite-sheet` and `ipad/person-analytics-network` as the iPad's
+    frames 07 and 13.
+
+S5's own reading of the frames changed eight sentences and captions more; its entry in the
+sittings' ledger lists them.
+
 ### Found by S0 — for the new plan of record (decision 82)
 
 Read in the manuals at `b4dcd527` against the bundled files; none is a capture, and none was seen
 in the app.
 
 Each says where it is and why it matters before submission; the owner decides what the new plan
-takes.
+takes. *After S5 (2026-10-21):* 4, 5 and 7 are answered and done (S3's figure, S1's frame, S4's
+patch); 1, 2, 3, 6 and 8 wait for the new plan.
 
 1. **Mac §6.1 (line 298) says 89,449 documents belong to no cluster; the shipped map says
    88,059** (`semantic-map-index.json`, `layout.unclusteredCount`, generated 2026-10-15 after B4),
@@ -944,14 +1026,77 @@ takes.
     `~/Library/Caches/FRUS-Explorer/s4/` (7.3 GB) until the owner says. The resume note, the patch's
     diff, the preference backup, the hand-off measurement and the 1961–1963 ranking frame are with
     the sitting's notes, outside the repository.
-- **S5 —** the date; every caption changed, the placeholders replaced, the files deleted, the hero
-  row, the composer's run.
+- **S5 — run 2026-10-21, from 20:41; no device, the embed pass.** From `v2` at **`913feb62`** (S4's
+  #1754 merged); the branch was already there, so the app's sync merged nothing. Nothing was built,
+  booted or launched for a frame: S5 read the files S1 to S4 committed and edited the manuals, this
+  ledger, the README and its mirror, `tools/marketing/shots.json`, the composer's drafts, the kit's
+  notes and the plan of record. Both manuals keep their *AI Generated* notice (decision 27).
+  - **Every capture read against its sentence.** The 74 frames the manuals embed were read at full
+    size, each beside its caption and the paragraphs around its slot: S1's 42 `ipad/` frames (its 40
+    retakes and P2's two) and S2's two, S3's two `ios/`, and S4's 28 `macos/` (its 26 retakes, P3 and
+    the 1961–1963 ranking frame). The kit's ten other files were read too, six at full size and four
+    (`ios/document`, `search-facets`, `source-explorer` and `chronology`) in the composer's contact
+    sheets. Where a frame and its text disagreed the manual changed, except where a *Found by* list
+    sends the sentence to the new plan of record (*Left*, below).
+  - **The eleven owed items:** *Done in S5*, under *Caption and sentence fixes S5 already owes*.
+  - **Eight sentences and captions more, from the frames:**
+    - iOS §3 (step 8) and §7.1 said a result's snippet has *your terms highlighted*. Every row of
+      both Search frames bolds one word, the first place a term appears past the heading, source note
+      and dateline, which is the one match `SearchService.makeContextSnippet` marks; both now say so.
+    - iOS §4.2 said the rail toggle is *accent-tinted while the rail is open*. S1's `research-rail`
+      draws it black with the rail open, as the build-47 device frame did, though `DocumentView`
+      asks for the accent colour. The clause is gone, and the drawing is *Found by S5*, 1.
+    - Both manuals' Chart colors sentences, in §15.1 and §15.7, counted the volumes that get a colour
+      before the rest fold into *Other*. The count includes the gray *Other*: Chronology and Corpus
+      Analytics keep one volume fewer than it when they fold (`ChronologyViewModel.makeChart`,
+      `AnalyticsView`), so at the default 8 the legends of `ipad/chronology`, `macos/chronology` and
+      `macos/analytics` name seven volumes and *Other volumes*. The four sentences say so.
+    - Mac §14.8's packet caption names Options, and Share and Share as PDF, which the retake shows
+      (#1444).
+  - **Files.** Deleted, as the verdicts said: `ipad/research-rail-portrait`,
+    `ipad/semantic-search-loading` and `ipad/indexing-banner-portrait`. Cropped: `ios/indexing-banner`,
+    to its bottom 552 rows (*The four files embedded nowhere*, above). Added:
+    `macos/crossref-analytics-ranking.png`, S4's frame from the sitting's notes, byte for byte
+    (SHA-256 `05ddffc2…`): build 1861 in the check copy at `f7ce0188`, macOS 27.0.1, 960×900 points,
+    taken 19:38. The iOS manual embeds 46 files and the Mac manual 28, where they embedded 42 and 26;
+    84 PNGs are on disk. Every image reference in both manuals and the README resolves to a file, no
+    `[SCREENSHOT` line is left, and the ten files nothing there names are the kit's —
+    `ios/search-results`, `search-facets`, `document`, `semantic-map`, `source-explorer` and
+    `chronology`, `ipad/cite-sheet` and `person-analytics-network`, `macos/cite-popover` and
+    `search-meaning` — each named by `shots.json`.
+  - **The README's hero row:** done, with its mirror and the amendment log's bullet.
+  - **The store frames.** `shots.json` names a capture for all 34 frames. Where it had routes it now
+    names the six iPhone frames (01 with its facet-sheet take, 02, 03, 04 and 11, the last two with
+    the iPad's copy and 04 with its NARA foot), 07 on both platforms, 12 on the Mac and 13 on the
+    iPad. Every frame's status reads *build 1861*, where eight read *stale* and the rest fell back to
+    *stand-in*. The iPhone map takes `keepFoot`, so its caveat line stays in the pixels, as the kit's
+    rule 2 asks. The composer ran under `Scripts/heavy.sh` with Google Chrome headless: the drafts at
+    21:18 and again from 21:20:46, then the store sizes to 21:23:58, and the universal set once more
+    after the facet take's status was shortened. The 34 frames, 14 at 2752×2064, 14 at 2880×1800 and
+    6 at 1320×2868, are in `~/Desktop/store` with four contact sheets (22 MB, outside the
+    repository); their half-size drafts are in `Planning/marketing-drafts/`, three of them new, and
+    nothing there was edited by hand.
+  - **Checks.** The three suites that read the manuals, the README or its mirror —
+    `CodingStandardsAuditTests`, `EditableContentKeyTests` and `ResearchGuideCoverageTests` — ran
+    named by type through `Scripts/heavy.sh` on iPhone 17 (`80CF0F18`, iOS 27.0), 21:31:47 to
+    21:35:44: *Test run with 88 tests in 3 suites passed after 42.210 seconds*, and
+    `** TEST SUCCEEDED **` (S0's two suites held 84; the third adds 4). No test reads this ledger,
+    the kit, `shots.json` or the drafts. The simulator was booted for the run and shut down after
+    it. The plan of record's S5 row changed one figure while the run was under way, so the plan
+    audit's logic was re-run in Python over the final files: one live plan, the same struck list.
+    The image references, the placeholders and the README's mirror were checked by script.
+  - **Left for the new plan of record** (decision 82), each where its sitting listed it: S0's 1, 2,
+    3, 6 and 8; S1's 3 and 8 to 19; S2's three; S3's 2 and 3; S4's 1, 2 and 4 to 10; and *Found by
+    S5*, below. Three of them are now in a frame the manuals embed: `browse-clusters` shows the
+    largest cluster at 37,899 beside iOS §6.1h's 37,865 (S0's 2), Mac §15.4's ranking frame prints *1
+    unresolvable references* (S4's 1), and its matrix labels a row *: Southeast Asia* (S4's 2).
 
 ### Found by S1 — for the new plan of record
 
 Seen or measured in the sitting, where S0's were read; decision 82 sends S0's to the new plan, and
 these go with them, for the owner to place. *S5* marks a sentence or caption the embed pass reads
-against S1's frames.
+against S1's frames. *After S5 (2026-10-21):* 1, 2, 5, 6 and 7 are done and 4 was read and left
+(*Caption and sentence fixes*, *Done in S5*, item 9); 3 and 8 to 19 wait for the new plan.
 
 **The manuals against the screen.**
 
@@ -1071,7 +1216,8 @@ notes), or seen in the frames. They go with S0's and S1's for the owner to place
 ### Found by S3 — for the new plan of record
 
 Seen or measured in the sitting, or read in the files beside it. They go with S0's, S1's and S2's
-for the owner to place (decision 82).
+for the owner to place (decision 82). *After S5 (2026-10-21):* 1 is done (`shots.json` names the
+d475 frame, and the recipe says d475); 2 and 3 wait for the new plan.
 
 1. **The kit's iPhone reader frame and the demo recipe name the Long Telegram `frus1946v06/d474`;
    the Long Telegram is `d475`.** d474 is Kennan's telegram of February 12, 1946, 3 p.m.; d475 is
@@ -1105,7 +1251,8 @@ for the owner to place (decision 82).
 ### Found by S4 — for the new plan of record
 
 Seen or measured in the check copy, or read in the code beside it. They go with S0's to S3's for
-the owner to place (decision 82).
+the owner to place (decision 82). *After S5 (2026-10-21):* 3 is done (Mac §15.4's second figure);
+1, 2 and 4 to 10 wait for the new plan.
 
 1. **One unresolvable reference reads as a plural.** Cross-Reference Analytics over 1961–1963 says
    *1 unresolvable references are excluded from this analysis*: `crossRefAnalytics.excludedBrokenCaption`
@@ -1160,6 +1307,33 @@ the owner to place (decision 82).
     retake, over the same October 14 to November 20, 1962, reads *(24 reach past both ends)*, which is
     the fixture's own breakdown. The fixtures hold, and the comment now quotes a file that no longer
     shows those words. *The tests' comments, as with S1's finding 8.*
+
+### Found by S5 — for the new plan of record
+
+Seen in the frames S1 to S4 took, and read in the code beside them; nothing was run. They go with
+S0's to S4's for the owner to place (decision 82).
+
+1. **The iPad's Research-rail toggle is not drawn in the accent colour while the rail is open.**
+   `DocumentView` asks for it (`railToggleActive ? Color.accentColor : Color.primary`), and S1's
+   `research-rail` (iOS 27.0, the rail open) and the build-47 device frame both draw the glyph
+   black. iOS §4.2 said it was tinted; S5 removed the clause. *The app.*
+2. **The Chart Colors setting counts the gray *Other* as one of its colours, and says it counts
+   volumes.** The row reads *Distinctly-colored volumes: 8* (`settings.display.chartColors.value
+   %lld`) and its footer *How many volumes appear as distinct colors in the Chronology and Corpus
+   Analytics charts before the rest fold into a single "Other" series*, but both charts keep one
+   volume fewer than the count when they fold, so the default names seven volumes beside *Other
+   volumes*. The manuals now describe what the charts draw. *The app's wording.*
+3. **The Administrations index prints *1 vols*** on George H. W. Bush's row (`AdministrationIndexView`,
+   `"\(profile.volumeCount) vols"`, no singular). *The app, cosmetic.*
+4. **On the iPhone preset the composer's stamp squeezes the disclaimer.** The stamp, *DRAFT · id ·
+   status · the capture's path*, never wraps, so on a 1320-pixel frame that has a capture the foot
+   beside it is a column a few words wide: the not-an-official-product sentence takes five lines on
+   frame 01, and the NARA sentence nine on frame 04. The iPad and Mac frames are wide enough. *The
+   kit's composer.*
+5. **The kit's frame 10 sublines say *tap into* (iPad) and *click into the documents behind the
+   spike* (Mac),** the gesture S1's finding 17 found a time chart does not have: the way to the
+   documents is the *View N documents ↗* link, after narrowing the years by the chip, the
+   Administration preset or a drag across the chart. *The kit's copy.*
 
 ## Staging notes (superseded triage — see #1081 for the tick-list)
 
