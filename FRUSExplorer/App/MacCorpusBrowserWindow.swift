@@ -124,6 +124,10 @@ enum CorpusSidebarItem: Hashable {
 ///   1.10 — A3c (#1701): the "Working on:" bar moves from a top inset on the whole split
 ///          view, drawn over the sidebar's Browse header and a pushed volume's header line,
 ///          to the head of each view in the detail column's stack (`WorkingOnBarAbove`)
+///   1.11 — 2026-10-22 (found walking #1766): a volume hand-off that changes the subseries
+///          opens the volume's page whatever the browser shows. Its push waits until the split
+///          view's own pop of the detail stack is done (`DetailStackRootPresence`); pushed from
+///          the selection observer, it showed the new subseries' list and no page
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
@@ -136,12 +140,15 @@ struct CorpusBrowserWindowView: View {
     /// Drill-down path for the detail column: volume → section → deeper section. Owned by
     /// the window so it survives detail re-renders and is shared by every pushed level.
     @State private var detailPath: [CorpusNavValue] = []
-    /// A volume push deferred until the subseries selection change lands (see
-    /// `consumePendingVolume`): the `.onChange(of: selection)` observer resets
-    /// `detailPath` after every selection change, so pushing the volume synchronously
-    /// alongside the selection would be wiped by that reset. The observer applies this
-    /// push instead of the reset when it is set.
+    /// The volume a hand-off opens in another subseries, until its page is pushed (see
+    /// `consumePendingVolume`). The push waits for the split view, which pops the detail
+    /// stack to its root after the sidebar's selection changes: a path set before AppKit shows
+    /// the new selection's root is lost (see the `.onChange(of: selection)` observer).
     @State private var pendingVolumePush: String? = nil
+    /// Which selection's root the detail stack shows, as AppKit has it: how the deferred push
+    /// knows that the split view has finished with a change of subseries
+    /// (`DetailStackRootPresence`).
+    @State private var stackRoot = DetailStackRootPresence()
 
     private var allEntries: [VolumeManifestEntry] {
         // #777: the catalogue plus anything side-loaded. This expression and its iOS twin in
@@ -298,6 +305,14 @@ struct CorpusBrowserWindowView: View {
                 // column. On the whole split view it was drawn over both columns' first rows, and
                 // outside the stack the Mac's pushed views cover it.
                 .modifier(WorkingOnBarAbove())
+                // A new reporter for each selection, in the stack's root: it enters the window when
+                // AppKit shows that selection's root, and leaves it while a view is pushed over it
+                // (`DetailStackRootPresence`).
+                .background(
+                    DetailStackRootReporter(presence: stackRoot, selection: selection)
+                        .id(selection)
+                        .accessibilityHidden(true)
+                )
                 .navigationDestination(for: CorpusNavValue.self) { value in
                     Group {
                         switch value {
@@ -365,17 +380,28 @@ struct CorpusBrowserWindowView: View {
             }
         }
         // Switching the sidebar selection returns to the detail root (avoids a stale pushed
-        // volume) — unless the change was made by `consumePendingVolume`, whose
-        // deferred volume push is applied here instead of the reset. The retype to
-        // `CorpusSidebarItem` (#1051 R-4) keeps this observer's semantics exactly: ANY
-        // selection change resets, axis rows included.
+        // volume). The retype to `CorpusSidebarItem` (#1051 R-4) keeps this observer's
+        // semantics exactly: ANY selection change resets, axis rows included.
+        //
+        // The split view resets it too, later. A change of the sidebar List's selection makes
+        // SwiftUI pop the detail column's stack to its root (`popAllForSelectionChange`, in an
+        // update after this observer has run), and the stack reads no change of its path until
+        // AppKit has put the new selection's root in the window. A path set before then is lost:
+        // popped again (SwiftUI writes `[]` back) or never read (the binding holds the volume
+        // while the stack shows the list). So a hand-off's volume (`consumePendingVolume`) is
+        // pushed once the new root is in the window (`DetailStackRootPresence`). Pushed here, as
+        // it was until 2026-10-22, it was lost every time a volume had been pushed (macOS
+        // 27.0.1, in the check copy), and in a copy of this split view with only a list showing
+        // as well. No fixed wait will do: in that copy 100 ms was still too early when the new
+        // list took 350 ms to draw.
         .onChange(of: selection) { _, _ in
-            if let volumeId = pendingVolumePush {
-                detailPath = [.volume(volumeId: volumeId)]
-                pendingVolumePush = nil
-            } else {
-                detailPath = []
+            detailPath = []
+            guard let volumeId = pendingVolumePush else { return }
+            guard let target = selection, target == subseriesSelection(ofVolume: volumeId) else {
+                pendingVolumePush = nil    // another row was chosen before the page was pushed
+                return
             }
+            stackRoot.onceShowing(target) { pushPendingVolume() }
         }
         // Consume a volume hand-off (Cross-Volume Provenance rows, UI audit gap 12):
         // `.task` covers a window freshly created by the hand-off (`.onChange` misses
@@ -396,8 +422,9 @@ struct CorpusBrowserWindowView: View {
 
     /// Applies (and clears) `AppState.pendingBrowseVolume`: selects the volume's
     /// subseries in the sidebar and pushes the volume onto the detail path. When the
-    /// subseries selection has to change, the push is deferred through
-    /// `pendingVolumePush` so the selection observer's path reset doesn't wipe it.
+    /// subseries selection has to change, the push waits in `pendingVolumePush` until the
+    /// split view has popped the detail stack for the new selection (see the selection
+    /// observer); within the selected subseries it replaces the path at once.
     private func consumePendingVolume() {
         // #338 step 4: the field is now a scene-addressed Handoff. This singleton window is the sole
         // macOS target (`.macCorpusBrowser`), so the target-check always matches here; the clear is
@@ -406,15 +433,33 @@ struct CorpusBrowserWindowView: View {
         let volumeId = handoff.payload
         guard let entry = allEntries.first(where: { $0.volumeId == volumeId }) else { return }
         appState.pendingBrowseVolume = nil
-        if selection == .subseries(entry.subseries) {
-            detailPath = [.volume(volumeId: volumeId)]
-        } else {
+        if selection != .subseries(entry.subseries) {
             pendingVolumePush = volumeId
             selection = .subseries(entry.subseries)
+        } else if pendingVolumePush != nil {
+            // An earlier hand-off's push is still waiting for the split view: it opens this one.
+            pendingVolumePush = volumeId
+        } else {
+            detailPath = [.volume(volumeId: volumeId)]
         }
         #if DEBUG
         print("[CorpusBrowserWindowView] pendingBrowseVolume consumed: \(volumeId)")
         #endif
+    }
+
+    /// Pushes the hand-off's volume once the split view has popped the detail stack for its
+    /// subseries (see the selection observer), unless another row has been chosen since.
+    private func pushPendingVolume() {
+        guard let volumeId = pendingVolumePush else { return }
+        pendingVolumePush = nil
+        guard selection == subseriesSelection(ofVolume: volumeId) else { return }
+        detailPath = [.volume(volumeId: volumeId)]
+    }
+
+    /// The sidebar row of the subseries that holds `volumeId`, or nil for a volume the browser
+    /// does not list.
+    private func subseriesSelection(ofVolume volumeId: String) -> CorpusSidebarItem? {
+        allEntries.first { $0.volumeId == volumeId }.map { .subseries($0.subseries) }
     }
 
     private func subseriesRow(_ sub: String) -> some View {
@@ -535,6 +580,102 @@ private struct WorkingOnBarAbove: ViewModifier {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+}
+
+// MARK: - DetailStackRootPresence
+
+/// Which selection's root the Corpus Browser's detail stack shows, as AppKit has it, so that a
+/// hand-off's push can wait until the split view has finished with a change of subseries.
+///
+/// After the sidebar's selection changes, the split view pops the detail stack to its root, and
+/// the stack reads no change of its path until AppKit has put the new selection's root in the
+/// window. On the Mac a `NavigationStack` keeps only its top view in the window, so with a view
+/// pushed that happens after the pop, when the root's view comes back; with only a list showing,
+/// when the new list is in place. A path set before then is lost. `DetailStackRootReporter`,
+/// re-created in the root for each selection, reports each move into and out of the window.
+///
+/// Measured on macOS 27.0.1 in a copy of this split view: every push made after the new root's
+/// view had entered the window was read (72 hand-offs), and a push 24 ms before it was not (a
+/// volume had been pushed); with only a list showing, a push 32 ms after the selection change
+/// was not read, and in another run the new root's view arrived 45 ms after it.
+///
+/// Version history:
+///   1.0 — 2026-10-22: initial implementation
+@MainActor
+private final class DetailStackRootPresence {
+    /// The selection whose root view is in the window now, if any.
+    private(set) var showing: CorpusSidebarItem?
+    /// The selection a waiting action needs on screen, and the action.
+    private var waiting: (selection: CorpusSidebarItem, action: @MainActor () -> Void)?
+
+    /// Runs `action` on a later turn of the main queue, once `selection`'s root view is in the
+    /// window: on the next turn if it is there now, otherwise after it arrives. A later call
+    /// replaces an action still waiting. Never at once, since a path set in the update that
+    /// changed the sidebar's selection is popped with it.
+    func onceShowing(_ selection: CorpusSidebarItem, _ action: @escaping @MainActor () -> Void) {
+        if showing == selection {
+            waiting = nil
+            DispatchQueue.main.async { action() }
+        } else {
+            waiting = (selection, action)
+        }
+    }
+
+    /// Records a move of `selection`'s root view into or out of the window.
+    func rootMoved(_ selection: CorpusSidebarItem?, inWindow: Bool) {
+        if inWindow {
+            showing = selection
+            guard let waiting, waiting.selection == selection else { return }
+            self.waiting = nil
+            // Not inside AppKit's view move, which runs within SwiftUI's update of the window.
+            DispatchQueue.main.async { waiting.action() }
+        } else if showing == selection {
+            showing = nil
+        }
+    }
+}
+
+// MARK: - DetailStackRootReporter
+
+/// An empty AppKit view that tells a `DetailStackRootPresence` each time it moves into or out of
+/// the window. Placed in the root of the Corpus Browser's detail stack with the selection as its
+/// identity, so that each selection's root has a reporter of its own, it moves with the root.
+///
+/// Version history:
+///   1.0 — 2026-10-22: initial implementation
+private struct DetailStackRootReporter: NSViewRepresentable {
+    /// The record its moves update.
+    let presence: DetailStackRootPresence
+    /// The selection whose root it is placed in.
+    let selection: CorpusSidebarItem?
+
+    func makeNSView(context: Context) -> ReportingView {
+        let view = ReportingView()
+        view.presence = presence
+        view.selection = selection
+        return view
+    }
+
+    func updateNSView(_ nsView: ReportingView, context: Context) {
+        nsView.presence = presence
+        nsView.selection = selection
+    }
+
+    /// The view that reports its moves; it draws nothing and takes no clicks.
+    final class ReportingView: NSView {
+        /// The record its moves update; set by the representable.
+        var presence: DetailStackRootPresence?
+        /// The selection whose root it is in; set by the representable.
+        var selection: CorpusSidebarItem?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            presence?.rootMoved(selection, inWindow: window != nil)
+        }
+
+        /// Never participates in hit testing; interaction stays with SwiftUI.
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
     }
 }
 
