@@ -151,7 +151,7 @@ National Archives and is subject to their terms of use.
 ### Settled before paste (owner, 2026-10-15)
 
 Three sentences of the block said more than the app does. Each was checked against the tree at
-`dc17d945`, and the owner chose the wording that replaced each on 2026-10-15 (`Plan-Of-Record-2026-10-14.md`
+`dc17d945`, and the owner chose the wording that replaced each on 2026-10-15 (`Completed/Plan-Of-Record-2026-10-14.md`
 §0, decisions 28 to 30). The block above carries the new sentences; what each replaced, and why:
 
 - ***"Nothing you read, search, or write is sent anywhere."*** Now: *"What you read, search and

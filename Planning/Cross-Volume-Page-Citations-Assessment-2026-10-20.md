@@ -1,5 +1,7 @@
 # Cross-volume page references as citations: an assessment, 2026-10-20
 
+**Status: COMPLETE, 2026-10-21.** A18b built §12's choice on the owner's word of 2026-10-20 (decision 80 of `Completed/Plan-Of-Record-2026-10-14.md`), merged as #1747 (`312ffcf8`): index version 71, rule C through a bundled page map, and the regenerated resolved-edge index. This file stays at the Planning root, where a finished assessment would otherwise move to `Completed/`, because `FRUSCoreKit/Citation/PageSpanResolver.swift` and `FRUSCoreKit/Search/IndexingPipeline.swift` cite it by this path. Of §10's five side findings A18b took the first and the fourth; the third is #1766, and the second and the fifth are in `Plan-Of-Record-2026-10-21.md` §3 and §5.
+
 **What this is.** A read-only assessment for the owner, asked for after A17 (#1693). The question: should a reference to a printed page of another volume (`frus1955-57v17#pg_313`) count as a citation of the document on that page? The places it would count are the reader's citing list, the cross-reference graph, Cross-Reference Analytics and the bundled `resolved-edge-index.json`.
 
 It was measured on `v2` at `b8be1631` (A16 merged). A17 was read on its branch, and has since merged as #1744 (`dcd5439a`); the `resolved-edge-index.json` it shipped is the file measured here. Nothing is built. The owner's choice is recorded in §12: plan of record decision 80.

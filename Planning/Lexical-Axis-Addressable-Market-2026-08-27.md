@@ -1,5 +1,7 @@
 # The lexical axis's addressable market, re-measured after the W-17 route arms
 
+**Status: COMPLETE, kept in place** (marked so on 2026-10-21). W-17's first session shipped the three missing route arms and then re-measured the axis's addressable market here. This file stays at the Planning root, where a finished assessment would otherwise move to `Completed/`, because `FRUSExplorer/RelatedDocuments/SimilarityModel.swift` cites it by this path.
+
 **Date:** 2026-08-27 · **Session:** W-17 session 1 · **Index:** the live dev index
 (552 volumes, 264,487 source-noted document rows)
 

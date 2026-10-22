@@ -342,7 +342,7 @@ A12, 2026-10-20). The rail's state is a persisted preference: on a simulator who
 (`9AB3A0C9`) did that day, every document opens without it, and those tests fail once their walk
 reaches the document ("The document opened without its Research rail…", "The Research rail is not
 present…"). The key is in the app container's `Library/Preferences/bottsywattsy.FRUS-Explorer.plist`,
-which `simctl spawn … defaults` does not reach; the plan of record's §6g has the finding.
+which `simctl spawn … defaults` does not reach; the finding was the 2026-10-14 plan of record's §6g, and the plan of record from 2026-10-21 carries it in §5 (P2, test infrastructure).
 
 ```bash
 xcodebuild test \

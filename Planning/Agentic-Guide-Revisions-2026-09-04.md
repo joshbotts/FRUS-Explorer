@@ -1,6 +1,6 @@
 # Agentic Analysis Guide — revisions from the commercial-diplomacy run, and a skill feasibility assessment
 
-**Status:** WRITTEN 2026-09-04 from a six-miner / six-checker review of the 2026-09-01/02
+**Status: COMPLETE, kept in place** (marked so on 2026-10-21): Part 1 is in the guide, and Part 2 stays deferred, as below. `Docs/Agentic-Analysis-Guide.md` cites this file by its path, so it stays at the Planning root, where a finished record would otherwise move to `Completed/`. Written 2026-09-04 from a six-miner / six-checker review of the 2026-09-01/02
 commercial-diplomacy run. **Part 1 IMPLEMENTED the same day in PR #1200** (guide v1.11, 2,601
 lines; `Planning/DEVELOPMENT-PLAN.md` session 2026-09-04d records how, and the two places the
 implementation departed from this text: §14.11's series-facts wire-key legend follows the shipped
@@ -857,7 +857,7 @@ docs pass delivered (check-M6 C14(d)).
 | 981 | ARCHIVAL | insert the one word `inclusive` before `date span` | M4-R4 / M5-R4 |
 | 982 | ARCHIVAL | append `and the NAIDs several lots converge on` | M4-R6 |
 | after 992 | ARCHIVAL | the pointed-at-channel line under §4.4 above | M2-R11 |
-| 998 (prose, outside the block) | routing table | "The block above is longer than any agent reliably holds" is contradicted by the record: C-2 measured 99% at 123 tool calls with "not one item decayed" (`Planning/C2-Long-Session-2026-08-31.md:39–46`). Reword to "The block above was measured to hold across a doubled session (C-2), but its blocks are not equally reachable" | check-M1 missed 8 (both checkers flag it) |
+| 998 (prose, outside the block) | routing table | "The block above is longer than any agent reliably holds" is contradicted by the record: C-2 measured 99% at 123 tool calls with "not one item decayed" (`Planning/Completed/C2-Long-Session-2026-08-31.md:43–50`). Reword to "The block above was measured to hold across a doubled session (C-2), but its blocks are not equally reachable" | check-M1 missed 8 (both checkers flag it) |
 
 Not added to the block, on the checkers' instruction: the owner-local harvest path (M4-R7/M5-R1 —
 the path goes in the per-run RESOURCES text the orchestrator appends, as all three scripts did with
@@ -1904,9 +1904,9 @@ drew it could not attribute a win to the skill. Each is set out below with the d
 ### The reasoning, with the corrections
 
 **1. Pasted prose is measured sufficient and non-decaying.** C-0: "**BLOCK 96 of 97 = 99%. CONTROL 81
-of 96 = 84%.**" (`Planning/C0-Falsifier-2026-08-31.md:41`). C-2: long session **99/100** against the
+of 96 = 84%.**" (`Planning/Completed/C0-Falsifier-2026-08-31.md:45`). C-2: long session **99/100** against the
 control's 75/100, "**Not one item decayed in the block arm**", and NAIDs resolved "8 of 8 versus 0 of
-8" (`Planning/C2-Long-Session-2026-08-31.md:39–46,67`). The commercial-diplomacy run then applied the
+8" (`Planning/Completed/C2-Long-Session-2026-08-31.md:43–50,71`). The commercial-diplomacy run then applied the
 same block to ~200 agents over three rounds and the final memo scored 29 of 29. A skill's `SKILL.md`
 body is that block plus routing; the evidence that the block works is evidence that the skill's prose
 half works.
@@ -2242,7 +2242,7 @@ Every run file this document cites, by location. Paths under `RUN` =
 
 **Repository files.** `Docs/Agentic-Analysis-Guide.md` (v1.10, 1,869 lines); `CLAUDE.md`;
 `Planning/Agentic-Loop-Development-Plan.md`; `Planning/Completed/MCP-Server-Assessment-2026-08-31.md`;
-`Planning/C0-Falsifier-2026-08-31.md`; `Planning/C2-Long-Session-2026-08-31.md`;
+`Planning/Completed/C0-Falsifier-2026-08-31.md`; `Planning/Completed/C2-Long-Session-2026-08-31.md`;
 `Planning/c2-long-session/house-rules-block-v1.10.txt`; `Planning/c2-long-session/RUBRIC.md`;
 `Planning/c0-falsifier/workflow.mjs`; `Planning/nara-record-group-catalog-runbook.md`;
 `FRUSExplorer/Export/ResearchDataExporter.swift:1369–1425`;

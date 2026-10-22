@@ -1,6 +1,6 @@
 # V-0 spike verdict — Phase 2 of the semantic runbook, measured
 
-**Status:** Phase 2 executed 2026-08-10 on the Air, over the Studio's five spike stores.
+**Status: COMPLETE, kept in place** (marked so on 2026-10-21). This is EmbeddingGemma 300m's spike; since build 51 the app ships EmbeddingGemma 2 (B4, #1673 and #1674), measured in `../semantic-vectors/`. The README and NER runbook of `tools/semantic-harvest/` cite this file by its path, so it stays where it is. Phase 2 executed 2026-08-10 on the Air, over the Studio's five spike stores.
 Every number below is measured by `tools/semantic-harvest/spike_gates.py` (deterministic:
 fixed seed 18610810, explicit sorts, sorted JSON keys; needs numpy — it is the Air-side
 analysis half). Full machine-readable results: `spike-gates.json` in this folder.

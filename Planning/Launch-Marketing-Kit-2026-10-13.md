@@ -316,7 +316,7 @@ commands); the drafts are in `Planning/marketing-drafts/`, with one contact shee
 | 13 | Who the record orbits. | Person Analytics around any name… | **none** | `macos/person-analytics-network` (**stale**, #1370/#1441) | — |
 | 14 | How the archive itself changed. | Which collections each era's editors drew on… | `ipad/archival-analytics` (counts predate #1514) | `macos/archival-analytics` (same) | — |
 
-**The captures as of 2026-10-21 (the plan of record's §6a, sitting S5).** The table's capture notes
+**The captures as of 2026-10-21 (the 2026-10-14 plan of record's §6a, sitting S5).** The table's capture notes
 are the state of 2026-10-13. Every frame now stands on a capture of build 1861, taken in the
 build-51 sweep's sittings S1 to S4 (`Docs/screenshots/README.md`, *The sittings' ledger*), and
 `shots.json` names each file. The frames the table marks **none** have one: 07 is `ipad/cite-sheet`
@@ -540,7 +540,7 @@ and 6 iPhone, each stamped with build 1861; the ledger's S5 entry has the run.*
 1. **The ten.** Keep the listing's ten as §3 names them, or trade `teachers-10` for `researchers-06`?
    Recommendation: keep; the analytics frame reads on a phone-sized thumbnail and the graph does not.
    *Answered 2026-10-15: trade. `researchers-06`, the cross-reference graph, takes the tenth slot and
-   `teachers-10` goes to the landing page (§3 is updated; `Plan-Of-Record-2026-10-14.md` decision 32).*
+   `teachers-10` goes to the landing page (§3 is updated; `Completed/Plan-Of-Record-2026-10-14.md` decision 32).*
 2. **Landscape iPad frames.** Every iPad capture is landscape and the app's two-pane layouts are its
    iPad story; if App Store Connect's 13-inch slot takes landscape, keep it. Otherwise the iPad set
    is re-shot portrait, and frames 02 and 08 lose their second pane.
@@ -552,7 +552,7 @@ and 6 iPhone, each stamped with build 1861; the ledger's S5 entry has the run.*
    `ipad/semantic-map`. Swap the graph (stale, and the least legible of the three at README width) for
    `ipad/source-explorer`, which carries the claim no competitor can make.
    *Answered 2026-10-15: swap, in the plan's §6a S5 (decision 34).*
-5. **Whether to add this file to the plan of record.** *Answered 2026-10-14: `Plan-Of-Record-2026-10-14.md` §2 names this file and folds its four sittings into the manuals' capture sessions on build 51 (its §6a and §6c).* `Plan-Of-Record-2026-10-11.md` (now in `Completed/`) §3 listed the
+5. **Whether to add this file to the plan of record.** *Answered 2026-10-14: `Completed/Plan-Of-Record-2026-10-14.md` §2 names this file and folds its four sittings into the manuals' capture sessions on build 51 (its §6a and §6c).* `Plan-Of-Record-2026-10-11.md` (now in `Completed/`) §3 listed the
    marketing items under *App Store Connect and marketing*; one bullet pointing here keeps the two in
    step. Not done in this pass, because that file's §7 line is checked against
    `Visual-Marketing-Plan.md` by `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan`

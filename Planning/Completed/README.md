@@ -3,9 +3,10 @@
 Plans, scopes, audits, and handoffs whose work is **shipped, closed, or superseded** — moved
 here 2026-08-05 so `Planning/` holds only live documents. Nothing was edited in the move; some
 files carry status lines that predate their own completion (e.g. `Collections-Authoring-Scope`
-says "no implementation started" — the shipped code says otherwise). (The 2026-10-01 move is the
-exception: each of its files whose header would mislead carries a dated note at its head saying
-what shipped and where its residue went.) Where a completed document
+says "no implementation started" — the shipped code says otherwise). (The 2026-10-01 move was the
+first exception, and the moves of 2026-10-15 and 2026-10-21 follow it: each of their files whose
+header would mislead carries a dated note at its head saying what shipped and where its residue
+went.) Where a completed document
 left residual work, that work is tracked in GitHub issues or in
 the live plan of record — the one `../Plan-Of-Record-*.md` not marked SUPERSEDED — not here.
 
@@ -187,42 +188,90 @@ the live plan of record — the one `../Plan-Of-Record-*.md` not marked SUPERSED
     design's §0 and §1. Dated records were left as written: `DEVELOPMENT-PLAN.md`, the archived
     plans of record and the stage memos.
 
-**Deliberately NOT here** (live at `Planning/` root — verified 2026-10-14, by listing the
+- **The 2026-10-21 move (7 documents, and the session log's first part)** — moved with the plan of
+  record that replaced the 2026-10-14 one, after build 51's capture sittings, from the planning
+  review of that day (`../Planning-Review-2026-10-21.md` §1) on the owner's word (the live plan's
+  decisions 97 and 98). **Residue is carried by the live plan**, in its §1 to §5.
+  - **The superseded plan of record**: `Plan-Of-Record-2026-10-14.md` (superseded 2026-10-21, a
+    week old). It is the record of decisions 1 to 83, Track A's lanes A1 to A19 and their follow-on
+    lanes (all but A7, which its decision 57 deferred), Track B's move to EmbeddingGemma 2,
+    build 51's checklist as A8 and A19 ran it, and the screenshot sweep S0 to S5. Its open items
+    (§4 to §6h) are the live plan's §1 to §5, given a tier each by the review.
+  - **Finished documents that no code, test or tool cites**: `C0-Falsifier-2026-08-31.md` and
+    `C2-Long-Session-2026-08-31.md` (the agentic loop's C-0 and C-2, run and judged; their run
+    folders stay at the Planning root, where `CodingStandardsAuditTests.brokenSqliteInvocationsAreMarked`
+    reads them), `Issue-1577-Search-Within-Results-Assessment.md` (#1577's lanes 4 to 7, built in
+    A5), `Map-Figure-Export-And-Visual-Outputs.md` (§1–§6 shipped; the marketing plan carries §7's
+    residue), `OS27-Semantic-Retrieval-Design.md` (every workstream landed or settled) and
+    `W15-Geographic-Analytics-Assessment-2026-09-01.md` (dateline places stay parked). Each has a
+    dated note under its title.
+  - **`DEVELOPMENT-PLAN-to-2026-09.md`**, the session log's entries from 2026-06-09 to 2026-09-30,
+    split from `../DEVELOPMENT-PLAN.md` (decision 97), which keeps its plan header, a pointer here
+    and every entry from 2026-10-01. A code comment that cites an entry by its date finds it in the
+    file that holds that date.
+  - **Kept at the Planning root and marked COMPLETE in their heads**, since code, tests, tools or
+    the Agentic Analysis Guide cite them: `Cross-Volume-Page-Citations-Assessment-2026-10-20`,
+    `Issue-1648-Stopping-A-Replaced-Search-2026-10-15`, `Vector-Embeddings-Semantic-Design`,
+    `Lexical-Axis-Addressable-Market-2026-08-27`, `Agentic-Guide-Revisions-2026-09-04`, the C-0b,
+    C-0c and C-0d records, `OH-Report-2026-10-01`, `semantic-spike/`'s three memos and the
+    cross-platform review package's `STATUS.md`.
+  - **Pointers to these files.** The live plan's status line and §6. For the superseded plan:
+    `Docs/screenshots/README.md`'s S0 section, `App-Intents-Siri-Assessment-2026-10-18.md`,
+    `Launch-Marketing-Kit-2026-10-13.md`, `Store-Listing-Draft.md`, and the cross-platform
+    package's `STATUS.md`, which names the live plan's §5 with the superseded plan's §6f beside it.
+    For C-0 and C-2: `Agentic-Loop-Development-Plan.md` and `Agentic-Guide-Revisions-2026-09-04.md`,
+    whose three line citations moved with the notes' lines. For the map-figure design:
+    `Visual-Marketing-Plan.md`. For the OS 27 design: `App-Intents-Siri-Assessment-2026-10-18.md`
+    and `Vector-Embeddings-Semantic-Design.md`. Dated records were left as written:
+    `DEVELOPMENT-PLAN.md`'s entries, the archived plans, and the cross-platform package's Mac and
+    iPad reviews (Markdown and HTML), which name the OS 27 design at the Planning root.
+
+**Deliberately NOT here** (live at `Planning/` root — verified 2026-10-21, by listing the
 directory):
-- **the plan of record** — the one `Plan-Of-Record-*.md` there (`Plan-Of-Record-2026-10-14`; every
-  superseded one is in this directory, `Plan-Of-Record-2026-10-11` since 2026-10-14), the log (`DEVELOPMENT-PLAN`) and the spec;
+- **the plan of record** — the one `Plan-Of-Record-*.md` there (`Plan-Of-Record-2026-10-21`; every
+  superseded one is in this directory, `Plan-Of-Record-2026-10-14` since 2026-10-21), the review it
+  was written from (`Planning-Review-2026-10-21`), the log (`DEVELOPMENT-PLAN`, its entries from
+  2026-10-01; the earlier ones are `DEVELOPMENT-PLAN-to-2026-09` here) and the spec;
 - **the manuals' review** — `Manual-Update-Build-49-Owner-Review` (the worklist for the owner's
-  review, which is not before 2026-10-21) and `Manual-Revisions-Pending` (the lanes' 137
-  proposals of the build-49 wave, which the manual update of 2026-10-07 read and the worklist
-  cites; lanes have edited the manuals themselves since that day);
-- **live plans and runbooks** — `Visual-Marketing-Plan`, `Store-Listing-Draft`, `Capture-Runbook`,
+  review, which waits past build 52, the live plan's decision 94) and `Manual-Revisions-Pending`
+  (the lanes' 137 proposals of the build-49 wave, which the manual update of 2026-10-07 read and
+  the worklist cites; lanes have edited the manuals themselves since that day);
+- **live plans and runbooks** — `Visual-Marketing-Plan`, `Store-Listing-Draft`,
+  `Launch-Marketing-Kit-2026-10-13` and `marketing-drafts/` (until submission), `Capture-Runbook`,
   `New-Volume-Release-Plan`, `nara-record-group-catalog-runbook`, `Agentic-Harness-Runbook`,
   `Generators-Runbook` and `UI-Test-Destinations-Runbook` (the two `CLAUDE.md` indexes);
-- **an open feature's assessment** — `Issue-1577-Search-Within-Results-Assessment` (lanes 4 to 7
-  are not built);
+- **the designs of work not yet run** — `App-Intents-Siri-Assessment-2026-10-18` (A7, #1723),
+  `Keyword-Snippet-Assessment-2026-10-20` (until #1760 lands; source cites it), the two
+  person-authority memos of 2026-10-17 (#1767) and `C-3-Reader-Test-Design` (C-3, after
+  submission);
 - **the report filed with the Office of the Historian** — `OH-Report-2026-10-01` and its folder
   of CSVs (HistoryAtState/frus#469, still open; `tools/oh-report/` re-checks it at a commit);
-- **design records that source cites by path or that a live plan reconciles against** —
+- **finished records that source cites by path**, each marked COMPLETE in its head —
   `Vector-Embeddings-Semantic-Design` (every phase shipped; four source files cite it),
-  `Map-Figure-Export-And-Visual-Outputs` (§1–§6 shipped; the marketing plan carries §7's residue),
-  `OS27-Semantic-Retrieval-Design` (workstream A is open), `Lexical-Axis-Addressable-Market`
-  (cited by `SimilarityModel.swift`), `Index-Bump-Brief-2026-10-11` (complete; `IndexingPipeline.swift`
-  cites it in four places);
-- **the W-19 agentic-loop program** — `Agentic-Loop-Development-Plan`, `Agentic-Guide-Revisions`,
-  the C-0…C-0d and C-2 falsifier records and their run folders (the guide cites them);
+  `Lexical-Axis-Addressable-Market` (cited by `SimilarityModel.swift`), `Index-Bump-Brief-2026-10-11`
+  (`IndexingPipeline.swift` cites it in four places), `Issue-1648-Stopping-A-Replaced-Search-2026-10-15`
+  (`IndexingPipeline.swift`) and `Cross-Volume-Page-Citations-Assessment-2026-10-20`
+  (`PageSpanResolver.swift` and `IndexingPipeline.swift`);
+- **the W-19 agentic-loop program** — `Agentic-Loop-Development-Plan` (C-1 stays gated),
+  `Agentic-Guide-Revisions` and the C-0b, C-0c and C-0d records (the guide cites them; each is
+  marked COMPLETE), `Agentic-Guide-Accessibility-Review-2026-10-14` (the guide cites it), and the
+  run folders of all five falsifier runs (`CodingStandardsAuditTests` reads C-0's and C-2's, whose
+  memos are here);
 - **deferred programs** — #234's `People-Early-Era-Program`, `M2-Semantic-Pipeline-Ride-Along` and
-  the two 2026-09 assessments, and `W15-Geographic-Analytics-Assessment` (its P10 waits on the
-  owner's toponym curation);
-- **the cross-platform review package** (`Cross-Platform-UI-Adversarial-Review/`) — its program is
-  done, and its `STATUS.md` §0 lists the residue that needs an owner yes or no before it moves here;
+  the two 2026-09 assessments (deferred indefinitely, the live plan's decision 92);
+- **the cross-platform review package** (`Cross-Platform-UI-Adversarial-Review/`) — complete since
+  2026-10-21, when the owner declined the residue its `STATUS.md` §0 listed (decision 93), and kept
+  at the root because two app files cite it;
 - **the artifact directories** that generator defaults and live plans point at
   (`cross-ref-validation/`, `corpus-structure-sweep/`, `nara-record-group-catalog/`,
-  `source-explorer-export/`, `semantic-vectors/`, `semantic-map/`, `semantic-spike/`,
-  `early-era-people/`, `reference/`, `external-citation-sample.json`).
+  `source-explorer-export/`, `semantic-vectors/`, `semantic-map/`, `semantic-spike/` (its three
+  memos marked COMPLETE), `early-era-people/`, `reference/`, `external-citation-sample.json`).
 
 Everything else this paragraph used to name is now **in this directory**:
 `Consolidated-Development-Plan-2026-08`, the lexical-similarity, cross-platform-porting and
 PreIndex assessments, `308-Subject-Integration-Design`, `BigPicture-Analytics-CorpusVsSeries`,
 `BigPicture-Pre1910-CentralFiles` + its reference data, `352-lot-resolution-runbook`, both QCA
 assessments, `Wave-R-Research-Trail-2026-08`, `Eight-Issue-Plan-2026-08`, `Dynamic-Type-Worklist`,
-`Archival-Analytics-Adversarial-Review` and the trip-packet scope.
+`Archival-Analytics-Adversarial-Review` and the trip-packet scope; and, since 2026-10-21,
+`Issue-1577-Search-Within-Results-Assessment`, `Map-Figure-Export-And-Visual-Outputs`,
+`OS27-Semantic-Retrieval-Design`, `W15-Geographic-Analytics-Assessment` and the C-0 and C-2 memos.

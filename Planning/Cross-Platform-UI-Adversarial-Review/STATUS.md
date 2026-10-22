@@ -1,5 +1,7 @@
 # Cross-Platform UI Adversarial Review — state of play
 
+**Status: COMPLETE, 2026-10-21.** On the owner's word of that day (decision 93 of `../Plan-Of-Record-2026-10-21.md`), every line of §0 that no plan or issue carried is declined: the eleven findings under *On no list at all* and the owner checks in the paragraph after them. The lines under *Already carried* are in that plan's §5, and the build-51 sweep (S0 to S5, #1749 to #1755) retook the captures and replaced the placeholders that §0's last paragraph names. The folder stays at the Planning root, where a finished program would otherwise move to `Completed/`, because `FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift` and `FRUSExplorer/CrossReference/CrossReferenceStore.swift` cite it by path.
+
 Companion to the review package in this directory. **The review is the input, not the record.**
 Several of its findings have not survived contact with the current build, and this file is where
 that is written down — otherwise the next session re-scopes from the review text and redoes work
@@ -21,7 +23,7 @@ issue. It is listed here so that it has one home, and so that the package can be
 `Planning/Completed/` once the owner has said yes or no to each. Every line was re-checked against
 the tree at `v2` `dc17d945`.
 
-**Already carried by the plan of record** (`Planning/Plan-Of-Record-2026-10-14.md` §6f (and, before it, `Planning/Completed/Plan-Of-Record-2026-10-11.md` §5c), "Designed
+**Already carried by the plan of record** (`Planning/Plan-Of-Record-2026-10-21.md` §5, *Parked* and P2's accessibility sweep; before it `Planning/Completed/Plan-Of-Record-2026-10-14.md` §6f and `Planning/Completed/Plan-Of-Record-2026-10-11.md` §5c, "Designed
 and not built, parked"; the list was first written as §4 of the plan it replaced, now
 `Planning/Completed/Plan-Of-Record-2026-09-28.md`), so nothing more is owed here:
 - **F-22** — a reader that follows the system text size (`HTMLTemplate.swift:170` still pins
