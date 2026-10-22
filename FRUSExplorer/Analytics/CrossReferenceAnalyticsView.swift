@@ -184,6 +184,8 @@ private struct HeatCell: Identifiable, Equatable {
 ///          their room at the Mac's 720–820 pt, and its exported figure gives it its own height; a
 ///          matrix row label is `HeatMatrixRowLabel`, its tag below its topic where beside it would
 ///          leave the topic too little room; the column input is `HeatMatrixColumnAxis.column`
+///   1.7 — #1761: the excluded-references caption says one reference in the singular and groups a
+///          larger count, as the export's caveat does
 /// What keys a Cross-Reference Analytics window (UI review F-11, CW-9e).
 ///
 /// ## An empty marker, deliberately — and the assessment that chose it
@@ -856,8 +858,14 @@ struct CrossReferenceAnalyticsView: View {
             // No accessibilityLabel override: the explanatory clause exists nowhere else in the
             // view, so VoiceOver must read the full visible caption.
             if excludedBrokenCount > 0 {
-                Text(String(localized: "crossRefAnalytics.excludedBrokenCaption",
-                            defaultValue: "\(excludedBrokenCount) unresolvable references are excluded from this analysis — cross-references in the printed volumes that point to a document, page, or volume not present in the corpus."))
+                // A form for one reference, whose verb agrees with it, and the count grouped, as the export's caveat
+                // is (`crossRefProvenance`): over 1961–1963 it read "1 unresolvable references are excluded" (#1761).
+                Text(CountCopy.phrase(
+                    excludedBrokenCount,
+                    one: String(localized: "crossRefAnalytics.excludedBrokenCaption.one",
+                                defaultValue: "%@ unresolvable reference is excluded from this analysis — a cross-reference in the printed volumes that points to a document, page, or volume not present in the corpus."),
+                    many: String(localized: "crossRefAnalytics.excludedBrokenCaption.many",
+                                 defaultValue: "%@ unresolvable references are excluded from this analysis — cross-references in the printed volumes that point to a document, page, or volume not present in the corpus.")))
             }
         }
         .font(.caption)

@@ -28,6 +28,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — M-1: initial implementation
+///   1.1 — #1761: the coverage sentence groups both counts, and says "document" when the corpus
+///          holds one
 struct WorkingCorpusResolution: Equatable, Sendable {
 
     /// Keys this device can actually query — the ones present in the index.
@@ -46,10 +48,18 @@ struct WorkingCorpusResolution: Equatable, Sendable {
     ///
     /// Always states both numbers, even when complete: "267 of 267" tells a reader the corpus is
     /// whole, where a bare "267 documents" leaves them to wonder whether it was clipped.
+    ///
+    /// Both counts are grouped, as the corpus's own row prints its size: the `%lld` form read
+    /// "10914 of 10914" under a cluster whose row read 10,914 (#1761). The noun follows the
+    /// corpus's size, so a corpus of one reads "1 of 1 document".
     var coverageDescription: String {
-        String(format: String(localized: "workingCorpus.coverage %lld %lld",
-                              defaultValue: "%lld of %lld documents indexed on this device"),
-               Int64(indexedCount), Int64(totalCount))
+        CountCopy.phrase(
+            totalCount,
+            one: String(localized: "workingCorpus.coverage.one %@ %@",
+                        defaultValue: "%2$@ of %1$@ document indexed on this device"),
+            many: String(localized: "workingCorpus.coverage.many %@ %@",
+                         defaultValue: "%2$@ of %1$@ documents indexed on this device"),
+            then: [indexedCount.formatted()])
     }
 }
 
