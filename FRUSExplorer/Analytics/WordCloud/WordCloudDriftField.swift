@@ -144,7 +144,9 @@ struct WordCloudDriftField: Sendable {
     /// shipped analytics Word Cloud and its placements are pinned *exactly* by
     /// `WordCloudLayoutRegressionTests`. Scaling every word's displacement from the centre by
     /// a constant cannot introduce an overlap — all gaps grow — so the packer's composition
-    /// and its non-overlap guarantee both survive untouched.
+    /// survives untouched. What the scaling cannot see is the edge and the exclusion zones, which
+    /// it carries the outermost words into; ``settle(_:packedCenters:canvas:zones:bleed:)`` is
+    /// what keeps the non-overlap once they are corrected (#1759).
     let expansion: CGSize
 
     /// How far outside the frame a word may hang, as a fraction of its own half-extent.
@@ -161,9 +163,9 @@ struct WordCloudDriftField: Sendable {
     /// **The packer alone is not enough once words move.** `WordCloudLayout.place` honours
     /// zones as a placement rejection and nothing consults them afterwards, so a particle
     /// that drifts 14 pt sideways can settle straight over the dock or identity block the
-    /// zone existed to protect. Latent rather than live today — the one drifting surface
-    /// passes no zones — but it lights up the moment any full-bleed surface drifts, which is
-    /// exactly what a search or splash backdrop would be.
+    /// zone existed to protect. The splash and onboarding pass zones. Since #1759
+    /// ``settle(_:packedCenters:canvas:zones:bleed:)`` keeps every word's whole drift out of them,
+    /// and `push` remains as the net for a field built without a canvas to settle into.
     let exclusionZones: [CGRect]
 
     /// Builds a field from a packer result.
@@ -338,7 +340,7 @@ struct WordCloudDriftField: Sendable {
     /// of three iPhones, four iPad shapes and the Mac's 560 × 540 window, sampled for five minutes:
     /// before, word boxes met in most frames of almost every layout and words were drawn over the
     /// dock; after, no two boxes meet and none reaches a zone. The iPads keep every word and 89–100%
-    /// of the drift (weighted by amplitude); the iPhones keep 99.8–100% of their words and 72–85% of
+    /// of the drift (weighted by amplitude); the iPhones keep 99.7–100% of their words and 72–85% of
     /// the drift; the Mac's window, the densest, keeps 98–100% of its words and 76–84% of the drift.
     /// A field takes up to a millisecond to build there on an M-series Mac, which is why
     /// `WordCloudBackdropView` caches it beside the packer's layout.

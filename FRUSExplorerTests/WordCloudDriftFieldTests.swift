@@ -699,6 +699,8 @@ struct WordCloudSettleTests {
     /// clock (seconds since the reference date).
     private let s2Instant: Double = 814_307_914.363
 
+    /// S2's field: the corpus's Concepts list packed and settled as the backdrop does it on the
+    /// 13-inch iPad's Add Volumes step, around ``s2DockZone``.
     @MainActor
     private func s2Field() throws -> WordCloudDriftField {
         let core = try bundledCore()
@@ -805,8 +807,11 @@ struct WordCloudSettleTests {
 
     /// One surface's canvas and zones, for the every-layout sweep below.
     struct Surface: Sendable, CustomTestStringConvertible {
+        /// The surface's name, for the test's report.
         let name: String
+        /// Its full-bleed canvas, in points.
         let canvas: CGSize
+        /// Its exclusion zones, from the functions the surface builds them with.
         let zones: @MainActor @Sendable () -> [CGRect]
         var testDescription: String { name }
     }
