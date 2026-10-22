@@ -596,7 +596,7 @@ private struct WorkingOnBarAbove: ViewModifier {
 /// re-created in the root for each selection, reports each move into and out of the window.
 ///
 /// Measured on macOS 27.0.1 in a copy of this split view: every push made after the new root's
-/// view had entered the window was read (72 hand-offs), and a push 24 ms before it was not (a
+/// view had entered the window was read (74 hand-offs), and a push 24 ms before it was not (a
 /// volume had been pushed); with only a list showing, a push 32 ms after the selection change
 /// was not read, and in another run the new root's view arrived 45 ms after it.
 ///
