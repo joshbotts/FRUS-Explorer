@@ -6834,6 +6834,6 @@ In this session the owner then asked for two more things: to amend the memo for 
   - *Test run with 116 tests in 8 suites passed after 74.246 seconds*, then `** TEST SUCCEEDED **`, with the new suite's three tests among them by name. The build's only warnings were the `GeneratedSummary` residue and the AppIntents note.
 
 **Not done, and for the owner.**
-- **The pull request is not opened.** Its body is drafted with the coordinating session's notes (`ascii-fast-path-pr-draft.md`). The branch is committed and not pushed.
+- **Opened as #1771** on the owner's word of 2026-10-22, 07:09 ("Open PR"), against `v2` at `38dc3d7c`, which had not moved since the branch was cut; not merged. Its body is the draft kept with the coordinating session's notes (`ascii-fast-path-pr-draft.md`).
 - **The Mac build and a full unit run** are owed at landing, as for any kit change.
 - **What a further speed-up would take**, should the owner want one: the window's string and `Array(body)`, which every keyword row pays, and, for a search whose telling words are short (*war*, *end*, *pig*), a stem cache, since their one-letter openings send most words to the stemmer. Only the last is the scan.
