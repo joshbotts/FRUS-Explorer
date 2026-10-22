@@ -689,6 +689,8 @@ struct CollectionGeneratedEntryRow: View {
 ///          row now shows read-only status chips and delegates opening the inspector to
 ///          the presenting editor via `onInspect` (so iPad can promote the sheet to an
 ///          `.inspector` column). `onInsertExcerpt`/`showInspector`/`appState` moved out
+///   1.5 — 2026-10-21: #1761 — at an accessibility text size the title and the volume line wrap
+///          whole, where two lines cut them
 struct EntryRow: View {
     @Binding var entry: CollectionEntry
     let availableNotes: [ResearchNote]
@@ -727,6 +729,13 @@ struct EntryRow: View {
     /// Moves the row one visible position down (UI audit A4); `nil` omits the action.
     var onMoveDown: (() -> Void)? = nil
 
+    /// The reader's text size: at an accessibility size the title and its volume line wrap whole.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// How many lines the title and the volume line take: two, or as many as they need at an accessibility size, where
+    /// two lines held a few words of a title (#1761).
+    private var lineLimit: Int? { dynamicTypeSize.isAccessibilitySize ? nil : 2 }
+
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 6) {
@@ -734,7 +743,7 @@ struct EntryRow: View {
                 // raw id remains the fallback for unindexed volumes.
                 Text(documentHeader ?? entry.documentId)
                     .font(.body)
-                    .lineLimit(2)
+                    .lineLimit(lineLimit)
                     .accessibilityLabel(
                         String(localized: "collection.entry.document.accessibility",
                                defaultValue: "Document \(documentHeader ?? entry.documentId)")
@@ -749,7 +758,7 @@ struct EntryRow: View {
                 ].compactMap(\.self).joined(separator: " · "))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(lineLimit)
 
                 // Duplicate marker (A4): the same document appears on another entry.
                 if isDuplicate {

@@ -2555,6 +2555,8 @@ struct LinkSavedSearchPicker: View {
 ///   1.1 — #1704, from #1702's visual review on the iOS 27.0 simulators: the heading is drawn in the secondary label
 ///          colour, where the hierarchical style put it a level below a form header's own; Remove These Entries' icon
 ///          is red on iPhone and iPad, where it took the accent colour; and a row's caption wraps rather than being cut
+///   1.2 — 2026-10-21: #1761 — at an accessibility text size a row's title wraps whole, where two lines held a few
+///          words of a document's title on an iPhone 17
 struct SmartCollectionEntriesFromBeforeLink: View {
 
     /// The entries, in the outline's order (`SmartCollectionRule.entriesFromBeforeLink`).
@@ -2571,6 +2573,8 @@ struct SmartCollectionEntriesFromBeforeLink: View {
 
     /// Whether the dialog that asks before the entries are removed is showing.
     @State private var isConfirmingRemoval = false
+    /// The reader's text size: at an accessibility size a row's title wraps whole.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         if headingIsRow {
@@ -2645,9 +2649,11 @@ struct SmartCollectionEntriesFromBeforeLink: View {
                 .font(.caption)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
+                // Two lines, as Contents gives a title, or as many as it needs at an accessibility size: at the largest
+                // on an iPhone 17 two lines held a few words of a document's title (#1761).
                 Text(title(for: entry))
                     .font(entry.entryKind == .excerpt ? .callout.italic() : .callout)
-                    .lineLimit(2)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                 // Wraps where one line cannot hold it: held to one, it read "d172 · frus19…" at the largest
                 // accessibility size on an iPhone, cutting the volume it names (#1704).
                 if let caption = Self.caption(for: entry, documentHeader: documentHeader(for: entry)) {
