@@ -545,11 +545,14 @@ LensChip. Confirm the splash renders on this build before recording (the plan §
 popover)** and **12 (the Search window in Meaning mode)**, which need the encoder downloaded in the
 copy; then recording A, and the Mac preview.
 
-**After the sittings.** Run `SCALE=1 OUT_DIR=~/Desktop/store python3 tools/marketing/compose.py`
-for the store-size frames, re-run the drafts into `Planning/marketing-drafts/`, and record the build
-number of the capture run in `Docs/screenshots/README.md`'s ledger, as the X-8 rule asks. *Run on
-2026-10-21 in S5, the plan of record's embed pass: 34 frames at the presets' sizes, 14 iPad, 14 Mac
-and 6 iPhone, each stamped with build 1861; the ledger's S5 entry has the run.*
+**After the sittings.** Run `SCALE=1 STAMP=0 OUT_DIR=~/Desktop/store python3 tools/marketing/compose.py`
+for the frames uploaded to App Store Connect, which carry no DRAFT stamp (`STAMP=0` refuses a shot
+with no capture; leave it out for stamped store-size frames to review), re-run the drafts into
+`Planning/marketing-drafts/`, and record the build number of the capture run in
+`Docs/screenshots/README.md`'s ledger, as the X-8 rule asks. *Run on 2026-10-21 in S5, the plan of
+record's embed pass: 34 frames at the presets' sizes, 14 iPad, 14 Mac and 6 iPhone, each stamped with
+build 1861; the ledger's S5 entry has the run.* *Since 2026-10-22 (#1763) the stamp sits in the
+frame's top margin, so a draft lays out as its store frame does, and `STAMP=0` leaves it out.*
 
 ---
 
