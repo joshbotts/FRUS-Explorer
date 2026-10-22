@@ -7121,3 +7121,81 @@ MAC**Checked by hand, iPhone.** A simulator made for the lane, "iPhone 17 L6" (`
 - **Opened as #1778** on the owner's word of 2026-10-22 ("Open L6's pull request against v2 now, as drafted."), against `v2` at `88b3b7d1`, which had not moved since the branch was cut; not merged. Its body is the draft kept with the sittings' notes (`L6-pr-draft.md`), with the owner's word at its head and a visual-review list for each platform. Auto-merge off.
 - The proposed session for the Corpus Browser's hand-off across subseries (*Found* above) was started by the owner on 2026-10-22 as a session of its own; it touches `MacCorpusBrowserWindow.swift`, which this branch changes too, so whichever lands second merges the other.
 - The lane's simulator, "iPhone 17 L6" (`6F7CED5A`), is kept, shut down, with its three volumes, and `~/Library/Caches/FRUS-Explorer/l6/` holds the builds and logs. The shared check copy's source and derived data were left at `v2` `88b3b7d1`, the A/B's base build; its fake home holds the walk's searches and history, and nothing else changed there.
+
+## Session 2026-10-22 — The Mac Corpus Browser opens a handed-off volume's page whatever it shows: the push waits until AppKit shows the new subseries' list (plan of record §5, found in L6)
+
+**What was asked.** Started by the coordinating session while L6 (#1766) waited on the owner. Walking L6 on the Mac found an older fault, recorded unfiled in the plan of record's §5 on L6's branch. A volume hand-off (`AppState.openBrowseVolume`, consumed by `consumePendingVolume()` in `MacCorpusBrowserWindow.swift`) that reached an open Corpus Browser with a volume's page pushed, and had to change the sidebar's subseries, showed the new subseries' list and no page. Every producer goes through it: a link to a whole volume (#1603), the page-link fallback L6 adds, Cross-Volume Provenance rows and subject pivots.
+- Find why the path is dropped when the stack's root and its path change together, and fix it so the hand-off opens the volume's page whatever the browser shows.
+- Walk it in the check copy for a whole-volume link and a page link across subseries, with a page pushed and with only a list.
+- Build `FRUSExplorerMac`, record the cause and the walk here, commit, and ask the owner before a pull request.
+
+**Done.** On `claude/relaxed-hypatia-b0a197`, cut from `v2` at `88b3b7d1`: `8442597f`, Mac code in `MacCorpusBrowserWindow.swift` (a `#if os(macOS)` file) and two EditableContent ranges re-pointed, then this entry, which also corrects one figure in a doc comment (72 hand-offs to 74). No kit code, no index version, no CloudKit change, no copy. The manuals are unchanged: both already say a hand-off opens the volume's page.
+- **The cause.** Changing the selection of the sidebar's `List(selection:)` makes SwiftUI's split view pop the detail column's `NavigationStack` to its root itself (`NavigationColumnState.popAllForSelectionChange`). It does so in an update action dispatched after the one in which the browser's own `.onChange(of: selection)` ran. The stack then reads no change of its path until AppKit has put the new selection's root in the window. The browser pushed the volume from that observer, in the same pass as the selection change, so:
+  - with a page pushed, SwiftUI read the new path (`NavigationColumnState.setPath`), popped it, and wrote `[]` back through the binding: the new subseries' list, no page, no Back;
+  - where the push slipped past the pop, the binding kept the volume while the stack showed the list, and nothing read the binding again.
+  - Seen in a copy of the split view (below), from the call stacks of the path binding's reads and writes. On the Mac a `NavigationStack` keeps only its top view in the window: with a page pushed, AppKit puts the root's view back only after the pop, about 400 ms after the selection change in two runs with heavy lists, and a push made before then was never read.
+- **The fix: the push waits for AppKit.**
+  - `DetailStackRootReporter`, an empty `NSViewRepresentable`, sits in the stack's root with the selection as its identity, so each selection's root has one of its own. It reports each move into or out of the window to `DetailStackRootPresence`, which knows which selection's root is on screen.
+  - `consumePendingVolume` keeps the volume in `pendingVolumePush` and changes the selection. The selection observer resets the path as before and asks the presence to push the volume once the new selection's root is in the window: on the next turn of the main queue after it arrives, or on the next turn if it is there already.
+  - Within the selected subseries the hand-off still replaces the path at once, unless an earlier hand-off's push is still waiting, in which case that push opens the newer volume. A sidebar row chosen before the push lands cancels it.
+  - The observer keeps its `{ _, _ in` signature and reads the selection from the state: `ProjectAdminServiceTests`' #1701 placement test finds the split view's modifiers by that line.
+- **The harness** (`corpus-browser-handoff/` in the session notes, not in the repository) is a SwiftUI app compiled with `swiftc`: the browser's split view in miniature, with a `.sidebar` `List(selection:)` of 107 rows, a detail `NavigationStack(path:)` whose root switches on the selection, a `.searchable` volume list, a bar above each view and `navigationDestination` inside the root.
+  - A second window hands a volume over through an `@Observable` property and `.onChange`, as a reader and `consumePendingVolume` do.
+  - Each run was a new process launched in the background, logging the path binding's writes, the views' appearances and, at the end, the browser window's title. "Heavy" added 400 rows to each list and 300 to a page.
+  - Starting states: a page pushed in another subseries, a page and a section, a page pushed from All Volumes, a list only, no selection, and a window the hand-off opens. Controls: a hand-off within the subseries, and a sidebar click.
+
+**Measured** in the harness, on macOS 27.0.1 (the M5 MacBook Air):
+
+| The push | Runs | Page lost |
+|---|---:|---:|
+| `v2`: from the selection observer, in the same pass | 14 | **14** |
+| on the next turn of the main queue | 63 | 5 |
+| on the second turn | 17 | 0 |
+| 100 ms after the selection change, heavy lists | 21 | 5 |
+| from the selection change's transaction completion | 9 | 2 |
+| when SwiftUI writes `[]` back (a page pushed) | 3 | 3 |
+| when the root's view is back in the window, else on the next turn | 86 | 3 (all from a list) |
+| **when the new selection's reporter is in the window (the fix)** | **74** | **0** |
+
+- **Also lost the page every time:** giving the stack a new identity with `.id` (3 runs), putting the sidebar's list in a stack of its own (3), wrapping the detail stack in a `VStack` or `ZStack` (6), setting the path in the same transaction as the selection (1), and setting it from the root's `.task(id:)` (1).
+- **Two turns** passed every run, but nothing ties a count of turns to AppKit's swap. A push 100 ms after the selection change still came before it when the new list took 350 ms to draw.
+- **With only a list showing**, the root's view never leaves the window, so a push on the next turn has nothing to wait on. It lost the page in 3 of 40 runs, where the new list took longer than the push to arrive (45 ms against 32 ms in two runs). A reporter re-created for each selection arrives with the new list, which is why the fix keys it to the selection.
+- **The controls**: a hand-off within the subseries opened the page in every run, before and after, and a sidebar click returned to the list.
+
+**Walked in the Mac check copy**, with its fake home's 65 volumes and full-screen control of the copy alone:
+- **Before: `v2` at `88b3b7d1`**, the copy's existing build, set aside. The link was footnote 1's *volume V* in a reader on `frus1961-63v06` d16 (Search: *presenting me with a case of beverages*).
+  - With Berlin vol. II's page pushed in 1945: the browser came forward on the 1961–63 list with no page and no Back, 3 times of 3.
+  - With only 1945's list showing: Volume V's page, 4 times of 4. The real app lost the page only from a pushed page, as L6 recorded, though the harness lost it from a list as well.
+- **After: this branch at `ccecee92`**, the commit as first made. Its amend to `8442597f` settled comments and has the observer read the selection from the state rather than from its parameter, which hold the same value.
+  - The same link from Berlin vol. II's page: Volume V's page with 1961–63 selected, and Back to the 1961–63 list, 3 times of 3. From 1945's list: 3 of 3.
+  - The same link also opened Volume V's page from a page pushed from All Volumes, from section VI of Berlin vol. II (two levels pushed), in place from 1961–63 Volume I's page, and into a browser window closed beforehand.
+  - A subject pivot (Berlin vol. II's *Reparation* chip, then `frus1862` in its list) opened that volume's page, *Volume Not Downloaded*, from Berlin vol. II's page.
+  - A sidebar click from a pushed page still returned to the list.
+- **On the committed code**, the copy built again at `63e43423` (`8442597f` with the comment's figure corrected; only this entry has changed since): the same link opened Volume V's page from Berlin vol. II's page 2 times of 2, and from 1945's list 2 of 2.
+- **A page link**, on a throwaway local tree of this fix with L6's three code commits cherry-picked (`7591cf9c`). The link was footnote 2's *vol. i, p. 857* in `frus1945Berlinv02` d1213 (Search: *ComNavGroup China sends*), into Berlin vol. I, which is not on the Mac and whose page the bundled map does not list.
+  - From 1961–63 Volume V's page: Berlin vol. I's page with L6's line *You followed a link to page 857 of this volume, which isn't downloaded.*, 3 times of 3.
+  - From the 1961–63 list: the same page and line, once.
+  - Back led to the 1945 list, and Berlin vol. I reopened from it had no line.
+- Screenshots of each case are kept in the session notes' `corpus-browser-handoff/walk/`. The installed app never ran, and no copy was left running.
+
+**Checks.**
+- The check copy's builds of `ccecee92`, `7591cf9c` and `63e43423`, through the lock: `** BUILD SUCCEEDED **`, with no diagnostic in `MacCorpusBrowserWindow.swift`. The only warnings were the `GeneratedSummary` residue, the AppIntents note and the check copy's own "will never be executed".
+- **The Mac build**, through the lock on `8442597f`: `FRUSExplorerMac`, Debug, unsigned, in its own derived data. `** BUILD SUCCEEDED **`, with the `GeneratedSummary` residue as its only warning.
+- **The unit target, scoped**, through the lock on iPhone 17 (`80CF0F18`, iOS 27.0), booted for the run and shut down after it, on `8442597f`. Nine suites, those that read this file's source or the blocks it re-points: `ProjectAdminServiceTests`, `EditableContentKeyTests`, `CodingStandardsAuditTests`, `BrowseScopeTests`, `ToolbarAccessibilityAuditTests`, `UnconstructedViewAuditTests`, `MacWindowFrontingTests`, `CompilationDocumentLoadingTests` and `AppSourceTreeTests`. *Test run with 164 tests in 9 suites passed after 51.301 seconds*, then `** TEST SUCCEEDED **`; the build's only warning was the `GeneratedSummary` residue.
+- The design's concurrency, typechecked alone under Swift 6 with complete checking: no diagnostic.
+- `swift test` and `swift build --target FRUSCoreKit` were not owed: no package input or kit file changed.
+
+**Merged with `v2`, and opened.**
+- **Brought up to `v2` at `700cb5a3`** (#1778, L6) by the merge `b3e7407f`, at the head of the queue once L6 had merged. Three files conflicted:
+  - the two ranges in `07-Search-and-Browse.md`, re-pointed from where #1766 left them: 1254–1255 → 1395–1396 and 1256–1257 → 1397–1398, both keys 141 lines down;
+  - the Amendment Log and this log, each keeping `v2`'s text and adding this branch's after it.
+  - `MacCorpusBrowserWindow.swift` merged cleanly.
+- **Checked read-only.** Every file only one side changed is byte-identical to that side. `MacCorpusBrowserWindow.swift` is byte-identical to a fresh `git merge-file`. The three conflicted files differ from `v2` only by this branch's lines: the two ranges, one log bullet and this entry.
+- **Walked on the merge** in the check copy, built at `b3e7407f`:
+  - the page link, d1213's *vol. i, p. 857*, opened Berlin vol. I's page with #1766's line from 1961–63 Volume V's page 2 times of 2, and from the 1961–63 list;
+  - *volume V* opened Volume V's page from Berlin vol. I's page and from 1945's list.
+- **The full unit run** on the merge, through the lock on iPhone 17 (`80CF0F18`, iOS 27.0), shut down after it: *Test run with 7606 tests in 900 suites passed after 390.792 seconds with 6 known issues* (`SyncDiagnosticsEntryTests`', #1606), then `** TEST EXECUTE SUCCEEDED **`, with no failed test.
+- **The Mac build** on the merge: `FRUSExplorerMac`, DirectDistribution, unsigned, in its own derived data. `** BUILD SUCCEEDED **`, with the `GeneratedSummary` residue as its only warning.
+- **Opened as #1779** on the owner's word of 2026-10-22 ("Open the pull request against v2, using the draft in the notes folder (corpus-browser-handoff/pr-draft.md)."), against `v2` at `700cb5a3`. Auto-fix is on (the app's switch) and auto-merge off; no CI checks reported. Not merged. Its body is the draft kept with this session's notes.
+- **The plan of record's §5** marks the finding fixed, in this pull request's last commit.
+- **The shared check copy** is left extracted and built at `b3e7407f`, and its fake home holds this session's walk searches. The `v2` build used for the "before" walk is set aside in this session's scratchpad, and the throwaway tree with L6's code is removed.
