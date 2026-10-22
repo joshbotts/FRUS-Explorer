@@ -6843,3 +6843,84 @@ In this session the owner then asked for two more things: to amend the memo for 
 
 **Not done, and for the owner.**
 - **What a further speed-up would take**, should the owner want one: the window's string and `Array(body)`, which every keyword row pays, and, for a search whose telling words are short (*war*, *end*, *pig*), a stem cache, since their one-letter openings send most words to the stemmer. Only the last is the scan.
+
+## Session 2026-10-22 — L3: Analytics numbers agree with their own labels — the link counts the search it opens, the Administrations drill is in the order of its counts, and Chart Colors counts colors — #1756's three items, in one branch (plan of record from 2026-10-21, §1)
+
+**What was asked.** Lane L3 of the plan of record from 2026-10-21, started by the coordinating session on the owner's "start l3". Fix #1756 in one pull request: a commit for each item, then a docs commit, and one review pass over the whole diff.
+- **Item 1.** Corpus Analytics' *View N documents ↗* and the search it opens disagree (2,803 against 2,833 for *Berlin* over 1953–1961). Find each side's rule, make the link's count and the opened search's parameters agree, find why *Spread across N of M indexed volumes* did not move when the range narrowed, and measure on a full index before and after.
+- **Item 2.** The Administrations drill is out of order by its own counts. Make the order and the printed figure agree, and recount the out-of-order adjacent pairs over the bundled index (168 of 854, to be 0).
+- **Item 3.** Chart Colors counts the gray *Other* as one of its volumes. Change the words to what the charts draw, and put any case for changing the fold to the owner first.
+- **Limits.** No index version, no CloudKit change, neither TestFlight note, no screenshots (the captures each fix changes listed for R1), the pull request only on the owner's word.
+
+**Done.** On `claude/l3-analytics-counts-3b801c`, cut from `v2` at `3aa63d6a` (L1, L2 and the snippet speed-up merged; the fast-forward the brief asked for first was a no-op). Not kit code: nothing under `FRUSCoreKit/` or a package target changed, so `swift test` was not owed and nothing the web edition compiles moved. No index version, no CloudKit change.
+- **#1756, 1: the link counts the search it opens** (`b1ed286a`).
+  - **The two rules.** The link printed the chart's own sum, `matchedDocumentCount`: each document at the year its `date_iso` begins, and an undated one at its volume's first year (`CorpusAnalyticsService.termFrequencyByYear`). The search it opened read the years as Search reads a `DateRange`: a document whose `[date_iso, date_iso_max]` overlaps them, and nothing undated. Over S1's full index, *Berlin* over 1953–1961: 2,775 documents begin in those years and 28 undated ones sit in volumes beginning then, 2,803 on the link; Search took the 2,775 and the 58 that begin before 1953 and run into it (5 in 1945, 1 in 1948, 7 in 1951, 45 in 1952), 2,833. S1's "no rule tried gives 2,803" was the volume-start fallback.
+  - **The fix.** `AnalyticsSearchHandoff` builds the one search the link opens and counts it through `SearchService.matchKeys(parameters:)`, the whole match Search's count counts. The view takes the count in a `task(id:)` keyed on the search and the chart's run, prints it through `currentHandoffMatch`, which never shows a count taken for other parameters, and reads *View documents* until it is taken. The years go to Search only when the reader narrowed them: at the default range the old hand-off dropped every undated match, so *Berlin* across the corpus opened on 16,126 documents of its 16,273. No count is taken for a term the chart refuses, an `=` word, whose link stays hidden over the empty state as before: Search's exact-word filter re-reads every matched document's text, about a minute for `=government`.
+  - **The spread line** decomposes the link's count, from the same keys. It had read the volume breakdown, which ignores the years, so it said "502 of 553" for every range; for *Berlin* over 1953–1961 it reads 99 of 553, top 3 hold 34%. It is one text now: at a phone's width its three texts side by side had wrapped the volume count into a narrow column beside the concentration, which a narrowed range shows far more often than the whole corpus did.
+  - The link's tooltip says how Search's count can part from the chart's (`analytics.handoff.help.v3`).
+- **#1756, 2: the Administrations drill** (`651ae34e`). `AdministrationAxis.drillOrder(_:)` orders a drill by `documents(of:)`, the figure each row prints, point and range together, most first, ties by the artifact's own rule (point documents, then the volume id); the artifact and its generator are unchanged, and the R-1 list never re-sorts. The caption says *most documents first* (`browser.administrations.drill.caption.v2 %@ %@ %@`), its volume count through `CountCopy` (George H. W. Bush's drill read *1 volumes*); the count scan's baseline drops the old key, 273 → 272.
+- **#1756, 3: Chart Colors** (`67849d9e`). The fold stays as it is in both charts (`ChartSeriesPalette`: with more volumes than the count, one fewer volume and a gray *Other volumes*), so the words now count colors: Settings ▸ Display reads *Colors per chart: 8* with a footer naming the gray *Other volumes*, and Chronology's and Corpus Analytics' own Chart colors menus, which said *Colored volumes*, say *Colors per chart* with help to match. No case for changing the fold came up.
+- **Docs.**
+  - The manuals: iOS §6.1c (the drill's order, and its figure's text), §7.11 and §15.1 (the link's N, and the spread line); Mac §7.10 and §15.1 (the same; its dispersion sentence also names the more-than-three-volumes gate the iOS one already named).
+  - `Docs/EditableContent/`: three blocks re-keyed in place, their words changed, and 21 ranges re-pointed; the README's two sizes and the amendment log's bullet.
+  - `Docs/screenshots/README.md`: *Found by S1* 9 and 13 and *Found by S5* 2 marked done, with the frames they change.
+  - The plan of record's §1 marks L3. This entry.
+
+**Measured** (#1756, item 1). S1's full index (553 volumes, index v71, `snapshot-A`), cloned into the scratchpad and read by a throwaway app-target test (`ZZHandoffMeasureTests`, appended to `SearchViewTests.swift` and never committed) on iPhone 17 under iOS 27.0. For each term and range: the old link (`termFrequencyByYear` summed over the years, as `matchedDocumentCount` did), the old search (the years always passed, handed to `SearchViewModel` and counted as Search counts), the new link (`AnalyticsSearchHandoff.match`) and the new search, and the spread line from each side's per-volume counts.
+
+| Term | Years | Link before | Search before | Link after | Search after | Spread before → after |
+|---|---|---:|---:|---:|---:|---|
+| Berlin | 1953–1961 | 2,803 | 2,833 | 2,833 | 2,833 | 502 → 99 of 553, top 3 hold 34% |
+| Berlin | 1861–1992 (default) | 16,271 | 16,126 | 16,273 | 16,273 | 502 → 502 |
+| Berlin | 1958–1963 | 2,454 | 2,439 | 2,439 | 2,439 | 502 → 52, top 3 hold 41% |
+| containment | 1947–1953 | 6,864 | 6,883 | 6,883 | 6,883 | 553 → 89 |
+| Cuba | 1961–1963 | 1,971 | 1,991 | 1,991 | 1,991 | 468 → 31, top 3 hold 64% |
+| Vietnam | 1964–1968 | 4,134 | 4,091 | 4,091 | 4,091 | 258 → 42, top 3 hold 28% |
+| "long telegram" | 1945–1950 | 16 | 16 | 16 | 16 | 99 → 13, top 3 hold 38% |
+| government | 1945–1952 | 33,424 | 33,211 | 33,211 | 33,211 | 553 → 112 |
+| government | 1861–1992 (default) | 196,118 | 195,126 | 196,395 | 196,395 | 553 → 553 |
+
+Eight of the nine disagreed before, and all nine agree after. The count took 54 to 170 ms (*government* across the corpus, 196,395 keys, 135 ms). A Python replay of both rules over the same file gave the same figures for *Berlin*. The table, the throwaway test and the replay are with the sittings' notes (`L3-measure/`).
+
+**Checks.**
+- **While developing**, each suite named by type through `Scripts/heavy.sh` on iPhone 17 (`80CF0F18`, iOS 27.0):
+  - item 1's five suites (`AnalyticsHandoffCountTests`, `HandoffVisibilityTests`, `WindowTargetingTests`, `CorpusDispersionTests`, `EditableContentKeyTests`), after a build from an empty folder: *Test run with 115 tests in 5 suites passed*;
+  - items 2 and 3's four (`AdministrationAxisTests`, `CodingStandardsAuditTests`, `EditableContentKeyTests`, `DiscoveryTipWiringAuditTests`): the first build failed on my test (`VolumeListSpec.caption` is optional); fixed, *Test run with 107 tests in 4 suites passed*.
+- **A mutation check**, with the three items committed and the source restored by `git checkout` afterwards: counting the hand-off without its years failed the narrowed and scoped tests (*The link would print 6 and Search, handed the same parameters, list another number*); keeping the artifact's order failed both ordering tests, the sweep reporting *168 of 854 pairs out of order* — the issue's figure, recounted through the app's own spec.
+- **The walk**, on an iPhone 17 simulator of the lane's own under iOS 27.0 (`C58DA832`), its container a clone of S1's `snapshot-A` library (553 volumes, index v71), by a throwaway XCUITest (`ZZL3WalkTests`, appended to `AnalyticsCompareFromTableTests.swift` and never committed; its diff is kept with the sittings' notes) whose screenshots were read by eye:
+  - Corpus Analytics, *Berlin*, By Year at the default range: *View 16,273 documents ↗* beside *Spread across 502 of 553 indexed volumes*, above the chart's *16,271 documents matched*.
+  - The year popover set to 1953–1961: *View 2,833 documents ↗* beside *Spread across 99 of 553 indexed volumes · top 3 hold 34%*, above *2,803 documents matched · 16,273 total in full corpus*. The link opened Search on *1,000 loaded · 2,833 total*, *Narrowed by 1953-01-01 to 1961-12-31*.
+  - Browse ▸ Administrations ▸ Harry S. Truman: *103 volumes with documents covering the Harry S. Truman administration (1945–1953), most documents first…*, the rows 1,698, 1,463, 1,242, 1,164 docs.
+  - Settings ▸ Reading & Search ▸ Display: *Colors per chart: 8* and the new footer.
+  - Getting there: the Administration preset's list scrolls past Eisenhower on a phone, so the walk typed the years; a plain tap put the field's cursor before the year (found, below); and iOS 27's animation counter held each action for a minute until the walk launched with `FRUS_UI_TEST_DISABLE_ANIMATIONS=1`.
+- **The review pass** over the whole diff found one defect, folded into item 1: the count ran for a term the chart refuses, an `=` word, and would have shown the link over the exact-word empty state while Search's filter re-read every matched document's text. The walk found the spread line's layout (item 1, above). After both: `HandoffVisibilityTests` (its scan now reads the gate), `AnalyticsHandoffCountTests`, `EditableContentKeyTests`, `CodingStandardsAuditTests` and `CorpusDispersionTests`, *Test run with 127 tests in 5 suites passed*.
+- **The full unit runs**, through the lock on iPhone 17 (`80CF0F18`, iOS 27.0), with this change's docs in the tree:
+  - before the review's fix, 08:36 to 08:43: *Test run with 7579 tests in 896 suites passed after 387.448 seconds with 6 known issues*: the 7,571 tests and 895 suites of the snippet speed-up's full run, and this lane's eight tests, three of them in a new suite;
+  - on the final code (`67849d9e`), 08:49 to 08:56: *Test run with 7579 tests in 896 suites passed after 379.978 seconds with 6 known issues*, then `** TEST SUCCEEDED **`.
+- **The Mac build**: `FRUSExplorerMac`, DirectDistribution, unsigned, through the lock on the final code, 08:56 to 09:00: `** BUILD SUCCEEDED **`, its only warnings the `GeneratedSummary` residue and the AppIntents note. No new compiler warning in any build log, and `swift test` was not owed: no package input or kit file changed. Each simulator was booted for its run and shut down after it.
+- **The Mac walk**, in the Mac check copy built through the lock at `97bf0fb2` (the code of `67849d9e`; 38 volumes, 14,802 documents) and walked at 09:35 to 09:42 on the owner's word ("The Mac is unlocked now. Have L3 do its Mac walk, then ask me about the PR."), relayed by the coordinating session. Computer use was granted for the copy's bundle id alone; the installed app never ran.
+  - Corpus Analytics, *Berlin* at the default range: *View 1,841 documents ↗* beside *Spread across 38 of 38 indexed volumes · top 3 hold 41%*, above *1,841 documents matched*.
+  - The Administration preset's *John F. Kennedy (1961–1963)*, whose list fits on the Mac's screen: *View 1,445 documents ↗* beside *Spread across 27 of 38 indexed volumes · top 3 hold 51%*, above *1,416 documents matched · 1,841 total in full corpus*. A replay of both rules over the copy's own `frus.db` gives 1,445 by Search's rule and 1,416 by the chart's.
+  - The link opened the Search window on *Berlin*, searching Documents alone, its date chip *1961-01-01 – 1963-12-31*: *1–20 of 1,445 loaded · 1,445 total*.
+  - The link's tooltip showed under the pointer in the new words, and accessibility reads the button as «View 1,445 documents» with that help (`tools/mac-check-copy/axread.swift`).
+  - Corpus Browser ▸ Administrations ▸ Harry S. Truman: *103 volumes with documents covering the Harry S. Truman administration (1945–1953), most documents first…*, the rows 1,698, 1,463, 1,242, 1,164, 1,135, 1,111 and 1,103 docs. George H. W. Bush's: *1 volume with documents covering the George H. W. Bush administration (1989–1993), most documents first…*.
+  - Settings ▸ Reading & Search ▸ Display: *Colors per chart: 8* and the new footer.
+  - Corpus Analytics' and Chronology's Chart colors menus: *Colors per chart ›*, 6 to 12 with 8 checked, each menu's help naming the gray *Other volumes* (read through accessibility; the toolbar tooltip did not show under the synthetic pointer). Both legends name seven volumes beside *Other volumes*.
+  - The copy was quit and full-screen control released.
+
+**Captures for R1** (each read in the committed file):
+- **Changed.**
+  - `ipad/browse-administrations-truman`: frus1949v06 (1,242 docs) now above frus1947v07 (1,164), and the caption's *most documents first*.
+  - `macos/analytics` and `macos/analytics-table`: *View 9,192 documents ↗ · Spread across 502 of 553 indexed volumes* for *Berlin* over 1944–1975; on S1's index they read *View 9,114 documents ↗* and 267 of 553.
+  - The kit's recording T7, whose link read 2,803 (S1's finding 17).
+- **Unchanged.** `ipad/analytics` (four terms compared, so the link is hidden), the chronology frames (the Chart colors menu closed), and no frame shows Settings ▸ Display.
+
+**Found, for the owner** (not fixed and not filed):
+- **The drill's own rows still say "1 docs".** `browser.administrations.accessory` prints a volume's count with no singular, on 42 of the 880 drill rows in the bundled index (Lincoln's frus1872p2v1 is the first). It is in the count scan's baseline; item 2 routed the caption's count, not the rows'.
+- **The year field puts its cursor before the year.** In Corpus Analytics' year popover a tap in the field lands the cursor before *1861*, so a year typed after it is prepended and clamped: the walk's first try at 1953–1961 set 1992–1992. S1 met it in recording T7. A tap at the field's trailing edge puts the cursor after the year.
+- **The chart's default range leaves out documents dated before 1861 or after 1992**, 502 and 41 across the index, and its footnote gives the full-corpus total only once the range is narrowed. *Berlin* charts 16,271 at the default range, where the link, which passes no years there, opens 16,273: the two are `frus1873p1v2` d207 (1842) and d280 (1859).
+- **Chronology's first range in the check copy found nothing.** Opened from the Window menu, it offered *12/31/1969 – 12/31/1992*, and Show reported *No Documents*, though 893 of the copy's documents overlap those dates; a range typed from 10/14/1962 then showed 5,892. Seen once and not investigated: the lane changes nothing in Chronology but the colors menu's words.
+- **Records left by earlier lanes.** The plan of record's §1 still says L1 and L2 are not yet merged (#1769 merged as `b385340c`, #1770 as `38dc3d7c`), and *Found by S1*'s header has no note for 11, 12 and 15, which L2 fixed (#1758, #1760).
+
+**Not done, and for the owner.**
+- **The pull request** waits for the owner's word, as the brief asked. Its draft is with the sittings' notes (`L3-pr-draft.md`), with a visual-review list for each platform.
