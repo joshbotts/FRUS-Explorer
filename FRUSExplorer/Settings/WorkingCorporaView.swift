@@ -30,6 +30,7 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — M-1: initial implementation
+///   1.1 — #1761: the provenance line quotes a query that is one phrase once, without its own marks
 struct WorkingCorporaView: View {
 
     @Environment(AppState.self) private var appState
@@ -91,7 +92,7 @@ struct WorkingCorporaView: View {
             Text(resolution.coverageDescription)
                 .font(.caption)
                 .foregroundStyle(resolution.isComplete ? Color.secondary : Color.orange)
-            if let provenance = provenanceLine(corpus) {
+            if let provenance = Self.provenanceLine(corpus) {
                 Text(provenance)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
@@ -122,7 +123,12 @@ struct WorkingCorporaView: View {
     /// results", or "Search results — the highest-scoring 1,000 of a larger match". It is composed
     /// at capture by `ResultSetScope.captureProvenanceDescription` and, until now, was written and
     /// never read — the truncation was recorded correctly and shown to nobody.
-    private func provenanceLine(_ corpus: WorkingCorpus) -> String? {
+    ///
+    /// Static, so a test can drive it (#1761).
+    ///
+    /// - Parameter corpus: The corpus.
+    /// - Returns: The line, or `nil` when the corpus records none of its parts.
+    static func provenanceLine(_ corpus: WorkingCorpus) -> String? {
         var parts: [String] = []
         if let source = corpus.sourceDescription, !source.isEmpty {
             parts.append(source)
@@ -133,8 +139,9 @@ struct WorkingCorporaView: View {
                                 captured.formatted(date: .abbreviated, time: .omitted)))
         }
         if let query = corpus.sourceQuery, !query.isEmpty {
+            // A query that is one phrase is quoted once, without its own marks (#1761, the rule of #1726).
             parts.append(String(format: String(localized: "corpora.fromQuery %@",
-                                               defaultValue: "from “%@”"), query))
+                                               defaultValue: "from “%@”"), PinnedResultBase.quotable(query)))
         }
         if let indexed = corpus.indexedVolumeCountAtCapture {
             parts.append(String(format: String(localized: "corpora.againstVolumes %lld",
