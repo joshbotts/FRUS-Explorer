@@ -845,7 +845,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 273
+    static let countCopyBaselineCeiling = 272
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -893,7 +893,9 @@ extension CodingStandardsAuditTests {
     /// to 278 (its caveats' entry in the version history). #1761 took it to 273: Cross-Reference
     /// Analytics' excluded-references caption ("1 unresolvable references are excluded"), the
     /// Administrations index row's two counts and its VoiceOver label ("1 vols"), and a working
-    /// corpus's coverage line, which printed its counts ungrouped.
+    /// corpus's coverage line, which printed its counts ungrouped. #1756 took it to 272: the
+    /// Administrations drill's caption, re-keyed when the drill was put in the order of its own
+    /// counts, says its volume count through `CountCopy` ("1 volumes" on George H. W. Bush's drill).
     static let countCopyBaseline: [String] = [
         #"../FRUSCoreKit/Collections/CollectionCitationLineResolver.swift | collection.addDocs.citations.topOf"#,
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
@@ -976,7 +978,6 @@ extension CodingStandardsAuditTests {
         #"Browser/AdministrationIndexView.swift | browser.administrations.accessory"#,
         #"Browser/AdministrationIndexView.swift | browser.administrations.accessory.noShare"#,
         #"Browser/AdministrationIndexView.swift | browser.administrations.coverage"#,
-        #"Browser/AdministrationIndexView.swift | browser.administrations.drill.caption"#,
         #"Browser/ArchivesBrowseView.swift | browser.archives.coverage"#,
         #"Browser/ArchivesBrowseView.swift | browser.archives.drill.caption"#,
         #"Browser/ClustersBrowseView.swift | browser.clusters.caption"#,

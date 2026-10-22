@@ -39,9 +39,9 @@ struct AdministrationAxisTests {
     }
 
     private func fixtureIndex() -> AdministrationProfilesIndex {
-        // Truman's volumes arrive in the ARTIFACT's order (largest share first); the ids
-        // are chosen so an id sort would INVERT it — only order preservation yields the
-        // expected drill order.
+        // Truman's volumes arrive with the most documents first, point and range together; the
+        // ids are chosen so an id sort would INVERT it. `specOrdersByThePrintedDocuments` holds
+        // the case where the artifact's point-document order and the printed order part (#1756).
         let truman = profile(id: "truman", number: 33, president: "Harry S. Truman", volumes: [
             AdministrationVolume(volumeId: "frus-z-big", pointDocs: 300, rangeDocs: 10),
             AdministrationVolume(volumeId: "frus-m-mid", pointDocs: 100, rangeDocs: 0),
@@ -74,13 +74,77 @@ struct AdministrationAxisTests {
 
     // MARK: Spec
 
-    @Test func specPreservesArtifactOrder_idSortWouldInvertIt() {
+    @Test func specListsTheMostDocumentsFirst_idSortWouldInvertIt() {
         let index = fixtureIndex()
         let spec = AdministrationAxis.spec(for: index.administrations[0], index: index,
                                            membership: AdministrationAxis.membershipMap(for: index))
         #expect(spec.volumeIds == ["frus-z-big", "frus-m-mid", "frus-a-small"])
         #expect(spec.axisKey == "administration:truman")
         #expect(spec.title == "Harry S. Truman")
+    }
+
+    /// #1756: the drill is in the order of the documents its rows print, point and range together,
+    /// not the artifact's point-document order. Truman's third and fourth volumes in the bundled
+    /// index, as the artifact orders them: frus1947v07 with 1,159 point and 5 range documents, then
+    /// frus1949v06 with 1,135 and 107. The drill printed 1,164 and then 1,242.
+    @Test func specOrdersByThePrintedDocuments() throws {
+        let truman = profile(id: "truman", number: 33, president: "Harry S. Truman", volumes: [
+            AdministrationVolume(volumeId: "frus1947v07", pointDocs: 1159, rangeDocs: 5),
+            AdministrationVolume(volumeId: "frus1949v06", pointDocs: 1135, rangeDocs: 107),
+        ])
+        let index = AdministrationProfilesIndex(
+            schemaVersion: 1, generated: "2026-10-22",
+            totalDocumentsPointDated: 2294, totalDocumentsRangeDated: 112,
+            totalDocumentsUndated: 0, volumesCovered: 2,
+            administrations: [truman],
+            volumeTotals: [
+                "frus1947v07": VolumeTotals(pointDocs: 1159, rangeDocs: 5, undatedDocs: 0),
+                "frus1949v06": VolumeTotals(pointDocs: 1300, rangeDocs: 160, undatedDocs: 0),
+            ])
+        let spec = AdministrationAxis.spec(for: truman, index: index,
+                                           membership: AdministrationAxis.membershipMap(for: index))
+        #expect(spec.volumeIds == ["frus1949v06", "frus1947v07"], """
+            The drill kept the artifact's point-document order, so a row printing 1,164 docs sits \
+            above one printing 1,242.
+            """)
+        // The order is the printed figure's: the first row prints the larger count.
+        let first = try #require(spec.accessories["frus1949v06"])
+        let second = try #require(spec.accessories["frus1947v07"])
+        #expect(first.hasPrefix("1242 docs") || first.hasPrefix("1,242 docs"), "\(first)")
+        #expect(second.hasPrefix("1164 docs") || second.hasPrefix("1,164 docs"), "\(second)")
+    }
+
+    /// A tie on the printed count goes to the artifact's own rule: more point documents first, then
+    /// the volume id. Named so the expected order is not the order they are listed in.
+    @Test func drillOrderBreaksTiesByPointDocumentsThenVolumeId() {
+        let ordered = AdministrationAxis.drillOrder([
+            AdministrationVolume(volumeId: "frus-b-fewer-points", pointDocs: 90, rangeDocs: 10),
+            AdministrationVolume(volumeId: "frus-z-same", pointDocs: 100, rangeDocs: 0),
+            AdministrationVolume(volumeId: "frus-a-same", pointDocs: 100, rangeDocs: 0),
+            AdministrationVolume(volumeId: "frus-c-most", pointDocs: 101, rangeDocs: 0),
+        ])
+        #expect(ordered.map(\.volumeId) == ["frus-c-most", "frus-a-same", "frus-z-same", "frus-b-fewer-points"])
+    }
+
+    /// The caption names the order the rows are in, and its count says one in the singular: George
+    /// H. W. Bush's drill read "1 volumes … largest share first" (#1756).
+    @Test func captionSaysMostDocumentsFirstAndCountsOneInTheSingular() throws {
+        let bush = profile(id: "bush", number: 41, president: "George H. W. Bush",
+                           start: "1989-01-20", end: "1993-01-20", volumes: [
+            AdministrationVolume(volumeId: "frus1989-92v01", pointDocs: 12, rangeDocs: 0),
+        ])
+        let index = AdministrationProfilesIndex(
+            schemaVersion: 1, generated: "2026-10-22",
+            totalDocumentsPointDated: 12, totalDocumentsRangeDated: 0,
+            totalDocumentsUndated: 0, volumesCovered: 1,
+            administrations: [bush],
+            volumeTotals: ["frus1989-92v01": VolumeTotals(pointDocs: 12, rangeDocs: 0, undatedDocs: 0)])
+        let caption = try #require(AdministrationAxis.spec(
+            for: bush, index: index, membership: AdministrationAxis.membershipMap(for: index)).caption)
+        #expect(caption.hasPrefix("1 volume with documents covering the George H. W. Bush administration (1989\u{2013}1993)"),
+                "\(caption)")
+        #expect(caption.contains("most documents first"))
+        #expect(!caption.contains("largest share"), "the rows' share is each volume's, which the order does not follow")
     }
 
     @Test func accessoryCountsAnyDatedDocumentAndSharesAgainstVolumeTotals() {
@@ -132,6 +196,30 @@ struct AdministrationAxisTests {
                         "\(profile.id) names \(volume.volumeId) with no volumeTotals row")
             }
         }
+    }
+
+    /// #1756, over the bundled artifact: every drill lists its volumes in the order of the documents
+    /// its rows print. Kept in the artifact's point-document order, 168 of the 854 adjacent pairs ran
+    /// the wrong way, in 16 administrations. The pairs are counted so a sweep that read nothing
+    /// cannot pass.
+    @Test func bundledDrillsAreInTheOrderOfThePrintedDocuments() throws {
+        let store = AdministrationProfilesStore()
+        let index = try #require(store.index, "bundled administration-profiles-index.json must decode")
+        let membership = AdministrationAxis.membershipMap(for: index)
+        var pairs = 0
+        var outOfOrder: [String] = []
+        for profile in index.administrations {
+            let spec = AdministrationAxis.spec(for: profile, index: index, membership: membership)
+            let byId = Dictionary(profile.volumes.map { ($0.volumeId, $0) }, uniquingKeysWith: { first, _ in first })
+            let printed = spec.volumeIds.compactMap { byId[$0].map(AdministrationAxis.documents(of:)) }
+            #expect(printed.count == profile.volumes.count, "\(profile.id) lists volumes it does not hold")
+            for (upper, lower) in zip(printed, printed.dropFirst()) {
+                pairs += 1
+                if upper < lower { outOfOrder.append("\(profile.id): \(upper) above \(lower)") }
+            }
+        }
+        #expect(pairs == 854, "the index's adjacent pairs changed; re-measure before trusting the sweep")
+        #expect(outOfOrder.isEmpty, "\(outOfOrder.count) of \(pairs) pairs out of order: \(outOfOrder.prefix(5))")
     }
 }
 

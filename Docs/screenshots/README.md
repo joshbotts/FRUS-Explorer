@@ -1099,6 +1099,11 @@ these go with them, for the owner to place. *S5* marks a sentence or caption the
 against S1's frames. *After S5 (2026-10-21):* 1, 2, 5, 6 and 7 are done and 4 was read and left
 (*Caption and sentence fixes*, *Done in S5*, item 9); 3 and 8 to 19 wait for the new plan. *After L1
 (2026-10-21):* 3, 8 and 10 are done (#1762, #1761); 10 changes `ipad/browse-clusters-detail`, for R1.
+*After L3 (2026-10-22):* 9 and 13 are done (#1756), for R1. 9 changes
+`ipad/browse-administrations-truman`. 13 changes `macos/analytics` and `macos/analytics-table`, whose
+link and spread line read *View 9,192 documents ↗ · Spread across 502 of 553 indexed volumes* for
+*Berlin* over 1944–1975 (on S1's index they would read 9,114 and 267 of 553), and the kit's recording
+T7, whose link read 2,803 (17).
 
 **The manuals against the screen.**
 
@@ -1317,6 +1322,8 @@ R1.
 Seen in the frames S1 to S4 took, and read in the code beside them; nothing was run. They go with
 S0's to S4's for the owner to place (decision 82). *After L1 (2026-10-21):* 1 and 3 are done (#1761);
 they change `ipad/research-rail`, `ipad/stage-manager` and `ipad/browse-administrations`, for R1.
+*After L3 (2026-10-22):* 2 is done (#1756): the setting and both charts' menus say *Colors per chart*,
+and no frame shows them.
 
 1. **The iPad's Research-rail toggle is not drawn in the accent colour while the rail is open.**
    `DocumentView` asks for it (`railToggleActive ? Color.accentColor : Color.primary`), and S1's

@@ -22,14 +22,17 @@ import Foundation
 /// and one of them, `frus1949v01/d102`, carries 54 of that year's 92 occurrences. A frequency count
 /// alone reads that year as a topic fading out; it is one document discussing it at length.
 ///
-/// ## Why volumes, and why the counts must come from the volume breakdown
-/// `termFrequencyByVolume` never consults dates, so this measure is immune to the volume-start-year
-/// fallback that lands undated documents in a manufactured year bucket. A "spans N years" figure
-/// computed from the year series would inherit that fabrication, which is why there isn't one.
+/// ## Why volumes, and why the counts must come from the whole being decomposed
+/// A volume count reads no year, so this measure is immune to the volume-start-year fallback that
+/// lands undated documents in a manufactured year bucket. A "spans N years" figure computed from the
+/// year series would inherit that fabrication, which is why there isn't one.
 ///
-/// The counts must also come from the *same array* whose total is being decomposed. The plotted
-/// axis's total is year-range filtered while the volume breakdown is not, so mixing them makes the
-/// parts disagree with the whole exactly when a custom range is set — the moment a researcher is
+/// The counts must also come from the *same set* whose total is printed beside them. Corpus
+/// Analytics prints the line beside its "View N documents" link, and since #1756 takes both from
+/// the keys of the one search the link opens (`AnalyticsSearchHandoff.Match`): every match, or the
+/// documents Search lists for the years the reader narrowed. Until then the counts came from the
+/// volume breakdown, which ignores the years, while the link's total followed them, so the parts
+/// disagreed with the whole exactly when a custom range was set — the moment a researcher is
 /// looking closely.
 ///
 /// ## Separate from the view so the gate is testable
@@ -38,6 +41,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — R-2 PR-C: initial implementation
+///   1.1 — #1756 (docs only): the counts come from the hand-off search's keys, not the volume breakdown
 struct CorpusDispersion: Equatable {
 
     /// How many volumes contain at least one match.

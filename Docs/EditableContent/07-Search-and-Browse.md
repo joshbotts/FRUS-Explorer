@@ -1060,7 +1060,7 @@ Every search you ran, in a Markdown table and a CSV. Each row gives the scope th
 
 *Source: `FRUSExplorer/Analytics/OccurrenceAvailability.swift, AnalyticsView.swift`*
 
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 3030–3031 | key: analytics.measure.help -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 3194–3195 | key: analytics.measure.help -->
 
 Count matching documents, or every occurrence of the word. A term mentioned fifty times in one document is one document and fifty occurrences — the two can move in opposite directions.
 
@@ -2551,20 +2551,22 @@ FRUS’s editors printed a source note under \(coverage.noteCount) documents acr
      each term, never by where a volume was published" is the coverage-not-production rule the
      administration profiles are built on; the double-counting disclosure explains why memberships
      sum past the volume count. -->
-<!-- SOURCE: FRUSExplorer/Browser/AdministrationIndexView.swift | lines: 184–185 | key: browser.administrations.coverage -->
+<!-- SOURCE: FRUSExplorer/Browser/AdministrationIndexView.swift | lines: 218–219 | key: browser.administrations.coverage -->
 
 Volumes filed by the administration their documents cover — dated to each term, never by where a volume was published. A volume spanning two administrations appears under both: memberships sum to \(membershipSum) across \(index.volumeTotals.count) volumes.
 
 <!-- END SOURCE: browser.administrations.coverage -->
 
 #### The drill-in caption
-<!-- Placeholder note: keep `\(profile.volumes.count)`, `\(profile.president)` and
-     `\(termText(start: profile.start, end: profile.end))` intact. -->
-<!-- SOURCE: FRUSExplorer/Browser/AdministrationIndexView.swift | lines: 108–109 | key: browser.administrations.drill.caption -->
+<!-- Placeholder note: keep `%1$@` (the volume count, "103 volumes" or "1 volume"), `%2$@` (the
+     president) and `%3$@` (the term's years) intact. #1756: re-keyed from
+     browser.administrations.drill.caption when the rows were put in the order of the documents
+     they print; "largest share first" sat above a share of each volume, which the order does not follow. -->
+<!-- SOURCE: FRUSExplorer/Browser/AdministrationIndexView.swift | lines: 140–141 | key: browser.administrations.drill.caption.v2 %@ %@ %@ -->
 
-\(profile.volumes.count) volumes with documents covering the \(profile.president) administration (\(termText(start: profile.start, end: profile.end))), largest share first. Membership: any dated document. A volume spanning two administrations appears under both.
+%1$@ with documents covering the %2$@ administration (%3$@), most documents first. Membership: any dated document. A volume spanning two administrations appears under both.
 
-<!-- END SOURCE: browser.administrations.drill.caption -->
+<!-- END SOURCE: browser.administrations.drill.caption.v2 %@ %@ %@ -->
 
 ### 16.4 Subjects
 

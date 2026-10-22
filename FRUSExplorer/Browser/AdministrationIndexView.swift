@@ -21,11 +21,17 @@ import SwiftUI
 ///   "published under".
 /// - **Any-overlap double counting is disclosed, not hidden**: a volume spanning two
 ///   administrations appears under both, so memberships sum well past the corpus's 553.
-/// - The drill keeps the artifact's own order (`volumes` is pre-sorted by `pointDocs`
-///   descending) — the R-1 contract: order is the axis's payload, never re-sorted.
+/// - The drill orders its volumes by the documents each row prints, point and range together,
+///   most first (`drillOrder(_:)`, #1756). The artifact sorts `volumes` by `pointDocs` alone, and
+///   kept as it came the drill read out of order by its own counts: Truman's third and fourth
+///   rows printed 1,164 and then 1,242 docs, and 168 of the index's 854 adjacent pairs ran the
+///   wrong way, under a caption that said "largest share first". The R-1 contract still holds:
+///   the order is the axis's payload, and the list never re-sorts it.
 ///
 /// Version history:
 ///   1.0 — #1051 B-2: initial implementation
+///   1.1 — #1756: the drill is in the order of the documents its rows print (`drillOrder(_:)`,
+///          `documents(of:)`), and its caption says so, with its volume count in the singular at one
 enum AdministrationAxis {
 
     /// The term span for display — `"1945–1953"`, or `"2025–present"` for the sitting
@@ -61,13 +67,35 @@ enum AdministrationAxis {
         return map
     }
 
+    /// The documents a drill row prints for a volume: any dated document, point or range (Q-2).
+    ///
+    /// - Parameter volume: One of an administration's volumes.
+    /// - Returns: Its point and range documents together.
+    static func documents(of volume: AdministrationVolume) -> Int {
+        volume.pointDocs + volume.rangeDocs
+    }
+
+    /// The drill's order (#1756): the documents each row prints (``documents(of:)``), most first;
+    /// then the artifact's own rule, point documents first and the volume id, so a tie has one order.
+    ///
+    /// - Parameter volumes: An administration's volumes, in any order.
+    /// - Returns: The same volumes in the order the drill lists them.
+    static func drillOrder(_ volumes: [AdministrationVolume]) -> [AdministrationVolume] {
+        volumes.sorted { lhs, rhs in
+            let lhsDocs = documents(of: lhs), rhsDocs = documents(of: rhs)
+            if lhsDocs != rhsDocs { return lhsDocs > rhsDocs }
+            if lhs.pointDocs != rhs.pointDocs { return lhs.pointDocs > rhs.pointDocs }
+            return lhs.volumeId < rhs.volumeId
+        }
+    }
+
     /// Builds the R-1 drill spec for one administration.
     ///
     /// - Parameters:
     ///   - profile: The administration.
     ///   - index: The whole index (for `volumeTotals` denominators and dual membership).
     ///   - membership: The precomputed `membershipMap(for:)`.
-    /// - Returns: The spec: ids in the artifact's order, the coverage caption, a
+    /// - Returns: The spec: ids in ``drillOrder(_:)``, the coverage caption, a
     ///   "N docs · N.N%" accessory per volume, and an "Also under …" note where a volume
     ///   spans administrations.
     static func spec(
@@ -78,7 +106,7 @@ enum AdministrationAxis {
         var accessories: [String: String] = [:]
         var notes: [String: String] = [:]
         for volume in profile.volumes {
-            let docs = volume.pointDocs + volume.rangeDocs
+            let docs = documents(of: volume)
             if let totals = index.volumeTotals[volume.volumeId] {
                 let denominator = totals.pointDocs + totals.rangeDocs + totals.undatedDocs
                 if denominator > 0 {
@@ -104,13 +132,19 @@ enum AdministrationAxis {
                     defaultValue: "Also under \(names)")
             }
         }
+        // "Most documents first", where it said "largest share first" beside rows whose share is
+        // of each volume, which the order does not follow (#1756). Its count goes through
+        // `CountCopy`: George H. W. Bush's drill read "1 volumes".
         let caption = String(
-            localized: "browser.administrations.drill.caption",
-            defaultValue: "\(profile.volumes.count) volumes with documents covering the \(profile.president) administration (\(termText(start: profile.start, end: profile.end))), largest share first. Membership: any dated document. A volume spanning two administrations appears under both.")
+            format: String(
+                localized: "browser.administrations.drill.caption.v2 %@ %@ %@",
+                defaultValue: "%1$@ with documents covering the %2$@ administration (%3$@), most documents first. Membership: any dated document. A volume spanning two administrations appears under both."),
+            CountCopy.volumes(profile.volumes.count), profile.president,
+            termText(start: profile.start, end: profile.end))
         return VolumeListSpec(
             axisKey: "administration:\(profile.id)",
             title: profile.president,
-            volumeIds: profile.volumes.map(\.volumeId),
+            volumeIds: drillOrder(profile.volumes).map(\.volumeId),
             caption: caption,
             accessories: accessories,
             notes: notes

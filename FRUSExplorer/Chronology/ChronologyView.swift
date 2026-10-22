@@ -1089,15 +1089,17 @@ struct ChronologyView: View {
                         Text(verbatim: "\(n)").tag(n)
                     }
                 } label: {
-                    Text(String(localized: "chronology.colors.count", defaultValue: "Colored volumes"))
+                    // #1756: colors, not volumes — the gray "Other volumes" is one of them once
+                    // the volumes outnumber them (`makeChart(from:maxSeries:)`).
+                    Text(String(localized: "chronology.colors.count.v2", defaultValue: "Colors per chart"))
                 }
             } label: {
                 Label(String(localized: "chronology.colors.menu", defaultValue: "Chart colors"),
                       systemImage: "paintpalette")
             }
             .disabled(!vm.hasLoaded || vm.chartBuckets.isEmpty)
-            .help(String(localized: "chronology.colors.help",
-                         defaultValue: "How many volumes appear as distinct colors before the rest fold into “Other”"))
+            .help(String(localized: "chronology.colors.help.v2",
+                         defaultValue: "How many colors the chart uses; with more volumes, the last is a gray “Other volumes”"))
         }
         ToolbarItem(placement: .primaryAction) {
             Button {
