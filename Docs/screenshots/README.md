@@ -1103,7 +1103,10 @@ against S1's frames. *After S5 (2026-10-21):* 1, 2, 5, 6 and 7 are done and 4 wa
 `ipad/browse-administrations-truman`. 13 changes `macos/analytics` and `macos/analytics-table`, whose
 link and spread line read *View 9,192 documents ↗ · Spread across 502 of 553 indexed volumes* for
 *Berlin* over 1944–1975 (on S1's index they would read 9,114 and 267 of 553), and the kit's recording
-T7, whose link read 2,803 (17).
+T7, whose link read 2,803 (17). *After L7 (2026-10-22):* 16 and 17 are done (#1763): the kit's recording T
+gives the routes T5 to T7 took (**Export…** ▸ the PDF card ▸ **Export PDF** and the title page; Research ▸
+**FRUS Research Guide** and the year chip's popover; the **Administration** preset and **View N
+documents ↗**), with a note under its table. A retake of T7 reads 2,833 on the link (L3).
 
 **The manuals against the screen.**
 
@@ -1288,6 +1291,9 @@ and the fix after, each on an empty fake home of its own, the window recorded at
 and read by S4's script: before, the dock alone in the window's first seven frames (0.117 s) and an
 empty backdrop for 1.100 s at the hand-off; after, the window's first frame is the splash, and the
 cloud runs unbroken through the hand-off. The splash's Concepts cloud no longer overprints words.
+*After L7 (2026-10-22):* 9 is done (#1763): `tools/mac-check-copy/README.md` gives both notes, with
+S4's two helpers beside `axread.swift` (`prefs-restore.swift`, `apprec.swift`), and the kit's §4 names
+the ScreenCaptureKit recording where it named QuickTime.
 
 1. **One unresolvable reference reads as a plural.** Cross-Reference Analytics over 1961–1963 says
    *1 unresolvable references are excluded from this analysis*: `crossRefAnalytics.excludedBrokenCaption`
@@ -1349,7 +1355,11 @@ Seen in the frames S1 to S4 took, and read in the code beside them; nothing was 
 S0's to S4's for the owner to place (decision 82). *After L1 (2026-10-21):* 1 and 3 are done (#1761);
 they change `ipad/research-rail`, `ipad/stage-manager` and `ipad/browse-administrations`, for R1.
 *After L3 (2026-10-22):* 2 is done (#1756): the setting and both charts' menus say *Colors per chart*,
-and no frame shows them.
+and no frame shows them. *After L7 (2026-10-22):* 4 and 5 are done (#1763). The composer draws its stamp
+over the frame's top margin, so the foot keeps its width (on the iPhone, frame 01's disclaimer and frame
+04's NARA sentence take two lines each), and `STAMP=0` leaves the stamp out for App Store Connect. Frame
+10's sublines say *narrow the years to the spike and open its documents in Search*, and both manuals'
+§18.6 no longer say *tap into* or *click into* either.
 
 1. **The iPad's Research-rail toggle is not drawn in the accent colour while the rail is open.**
    `DocumentView` asks for it (`railToggleActive ? Color.accentColor : Color.primary`), and S1's

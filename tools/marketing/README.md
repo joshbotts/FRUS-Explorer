@@ -5,9 +5,9 @@ Visual-marketing plan §7 **step 15**, drafted 2026-10-13 in `Planning/Launch-Ma
 reproducible: a spec of every store frame and a script that renders it.
 
 ```bash
-python3 tools/marketing/compose.py                                   # drafts, half size → Planning/marketing-drafts/
-SCALE=1 OUT_DIR=~/Desktop/store python3 tools/marketing/compose.py   # store-size frames for App Store Connect
-ONLY=teachers python3 tools/marketing/compose.py                     # one audience; ONLY=<shot id> or ONLY=<preset> also work
+python3 tools/marketing/compose.py                                           # drafts, half size → Planning/marketing-drafts/
+SCALE=1 STAMP=0 OUT_DIR=~/Desktop/store python3 tools/marketing/compose.py   # the frames for App Store Connect: store size, no stamp
+ONLY=teachers python3 tools/marketing/compose.py                             # one audience; ONLY=<shot id> or ONLY=<preset> also work
 ```
 
 | | |
@@ -21,6 +21,14 @@ row are in flow, so nothing is placed by a guessed pixel offset; a capture bleed
 its shot says `keepFoot`, which fits it whole so a line the app draws at the bottom of its screen
 (the map's caveat) stays in the pixels. A shot with no `capture` renders as a placeholder carrying
 its `route`, so the set can be reviewed before every capture exists.
+
+**The stamp.** By default every frame is stamped for review, *DRAFT · id · status · the capture's path*,
+in its top margin. The stamp is the one thing out of flow, so a draft lays out exactly as its store frame
+does, and the disclosure row keeps its width on every preset. `STAMP=0` leaves the stamp out, for the
+frames uploaded to App Store Connect, and refuses to run while a shot it would render has no capture, since
+an unstamped placeholder would pass for a finished frame. Until 2026-10-22 the stamp shared the
+disclosure row and never wrapped, so on the iPhone preset the disclaimer beside it took five lines on
+frame 01 and the NARA sentence nine on frame 04 (#1763); each takes two now.
 
 **Google Chrome's new headless mode counts its toolbar in `--window-size`** (measured here: a
 1,800-px window gave the page 1,714 and the foot of every frame went unpainted, with no error). The

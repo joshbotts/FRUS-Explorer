@@ -22,17 +22,25 @@ A frame whose capture does not exist yet (every iPhone frame, on 2026-10-13) ren
 placeholder carrying the route to capture, so the set can be reviewed whole before the captures exist.
 
     python3 tools/marketing/compose.py                  # drafts at half size into Planning/marketing-drafts/
-    SCALE=1 OUT_DIR=~/Desktop/store python3 tools/marketing/compose.py   # store-size frames
+    SCALE=1 STAMP=0 OUT_DIR=~/Desktop/store python3 tools/marketing/compose.py   # the frames for App Store Connect
     ONLY=researchers python3 tools/marketing/compose.py # one audience, or ONLY=<shot id>
 
 Environment:
   SCALE      1 writes the store size the preset names; 0.5 (the default) writes a review draft at half
              the pixels, which is what the committed drafts are
+  STAMP      1 (the default) stamps each frame for review: DRAFT, the shot's id, its status and its
+             capture's path, in the frame's top margin; 0 leaves the stamp out, for the frames uploaded
+             to App Store Connect, and refuses a shot that has no capture
   OUT_DIR    where the frames and the contact sheets go       (default Planning/marketing-drafts)
   ONLY       an audience name or a shot id, to render a subset (default: everything)
   CHROME     the browser binary; found by itself in the usual places otherwise (Playwright's
              /opt/pw-browsers on a cloud container; Google Chrome or Chromium in /Applications on a Mac)
   SHOTS      another spec file                                 (default tools/marketing/shots.json)
+
+The stamp is drawn over the frame's top margin, out of the layout's flow, so a stamped draft lays out
+exactly as the store frame does. It used to share the foot's row and never wrapped, so on the iPhone
+preset the foot beside it was a column a few words wide: five lines for the disclaimer on frame 01,
+nine for the NARA sentence on frame 04 (#1763).
 
 Rules the layout keeps, because each is one of the plan's disclosure obligations (§5):
   - A capture is placed whole, never cropped on the left, right or top, so a disclosure the app draws
@@ -45,7 +53,8 @@ Rules the layout keeps, because each is one of the plan's disclosure obligations
     the caption never contradicts it.
 
 Stdlib only, on purpose: a Mac that archives the app has Chrome or Chromium and nothing else this
-needs. The output is a draft for the owner's design pass, not a submission.
+needs. The default output is a stamped draft for the owner's design pass; STAMP=0 at SCALE=1 writes
+the frames that are uploaded.
 """
 
 import glob
@@ -63,6 +72,7 @@ REPO = Path(__file__).resolve().parents[2]
 SPEC = Path(os.environ.get("SHOTS", REPO / "tools" / "marketing" / "shots.json"))
 OUT = Path(os.environ.get("OUT_DIR", REPO / "Planning" / "marketing-drafts")).expanduser()
 SCALE = float(os.environ.get("SCALE", "0.5"))
+STAMP = os.environ.get("STAMP", "1")
 ONLY = os.environ.get("ONLY")
 
 CHROME_CANDIDATES = [
@@ -109,10 +119,13 @@ def png_size(path):
 PRESET_RANK = {"ipad-13-landscape": 0, "ipad-13-portrait": 1, "mac": 2, "iphone-6.9": 3}
 
 
-def frame_html(shot, preset, spec):
+def frame_html(shot, preset, spec, stamped=True):
     """One frame as a page: a caption band, the capture (bleeding at the foot unless `keepFoot`), and
     the disclosure line. Everything is in flow, so a long subline pushes the capture down rather than
-    sliding under it, and the foot keeps its own row rather than printing over the capture."""
+    sliding under it, and the foot keeps its own row rather than printing over the capture.
+
+    `stamped` draws the review stamp over the top margin (`padTop`), the one thing out of flow, so a
+    stamped and an unstamped frame lay out alike and the foot has its row to itself."""
     w, h = preset["width"], preset["height"]
     t = PALETTE[shot.get("theme", "light")]
     typo = preset["type"]
@@ -130,14 +143,21 @@ def frame_html(shot, preset, spec):
                 f'<div class="ph-route">{route}</div></div>')
         status = "placeholder"
     foot = html.escape(shot.get("foot", ""))
-    stamp = html.escape(f'DRAFT · {shot["id"]} · {status} · {capture or "no capture"}')
+    stamp = ""
+    if stamped:
+        label = html.escape(f'DRAFT · {shot["id"]} · {status} · {capture or "no capture"}')
+        stamp = f'<div class="stampband"><div class="stamp">{label}</div></div>'
     return f"""<!doctype html>
 <html><head><meta charset="utf-8"><style>
   html,body{{margin:0;width:{w}px;height:{h}px;overflow:hidden;background:{t['bg']};
     font-family:"Inter Display","Inter",-apple-system,"SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
     -webkit-font-smoothing:antialiased}}
-  .page{{display:flex;flex-direction:column;width:{w}px;height:{h}px;box-sizing:border-box;overflow:hidden;
+  .page{{position:relative;display:flex;flex-direction:column;width:{w}px;height:{h}px;box-sizing:border-box;overflow:hidden;
     padding:{typo['padTop']}px {margin}px 0 {margin}px}}
+  .stampband{{position:absolute;top:0;left:{margin}px;right:{margin}px;height:{typo['padTop']}px;
+    display:flex;align-items:center;justify-content:flex-end}}
+  .stamp{{font-size:{typo['foot']*0.7:.0f}px;line-height:1.2;color:{t['sub']};opacity:0.7;text-align:right;overflow-wrap:anywhere;
+    font-family:"DejaVu Sans Mono","SF Mono",Menlo,monospace}}
   .band{{flex:0 0 auto;padding-bottom:{typo['gap']}px}}
   .eyebrow{{font-size:{typo['eyebrow']}px;font-weight:600;letter-spacing:0.14em;color:{t['accent']};margin-bottom:{typo['eyebrow']*0.9:.0f}px}}
   .headline{{font-size:{typo['headline']}px;line-height:1.08;font-weight:600;letter-spacing:-0.02em;color:{t['ink']};
@@ -153,19 +173,16 @@ def frame_html(shot, preset, spec):
     display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:{margin}px}}
   .ph-label{{font-size:{typo['eyebrow']*1.4:.0f}px;font-weight:700;letter-spacing:0.14em;color:{t['accent']}}}
   .ph-route{{font-size:{typo['subline']}px;line-height:1.4;color:{t['sub']};margin-top:{typo['subline']}px;max-width:90%}}
-  .footrow{{flex:0 0 auto;display:flex;justify-content:space-between;align-items:flex-end;gap:{margin/2:.0f}px;
-    padding:{typo['gap']*0.6:.0f}px 0 {typo['footBottom']}px 0}}
+  .footrow{{flex:0 0 auto;padding:{typo['gap']*0.6:.0f}px 0 {typo['footBottom']}px 0}}
   .foot{{font-size:{typo['foot']}px;color:{t['sub']};line-height:1.3;max-width:78%}}
-  .stamp{{font-size:{typo['foot']*0.7:.0f}px;color:{t['sub']};opacity:0.7;white-space:nowrap;
-    font-family:"DejaVu Sans Mono","SF Mono",Menlo,monospace}}
-</style></head><body><div class="page">
+</style></head><body><div class="page">{stamp}
   <div class="band">
     <div class="eyebrow">{html.escape(audience)}</div>
     <div class="headline">{html.escape(shot['headline'])}</div>
     <div class="subline">{html.escape(shot.get('subline', ''))}</div>
   </div>
   <div class="stage">{body}</div>
-  <div class="footrow"><div class="foot">{foot}</div><div class="stamp">{stamp}</div></div>
+  <div class="footrow"><div class="foot">{foot}</div></div>
 </div></body></html>"""
 
 
@@ -303,21 +320,31 @@ def render(chrome, html_text, out_png, width, height, scale):
 
 
 def main():
+    if STAMP not in ("0", "1"):
+        sys.exit(f"STAMP={STAMP}: use 1 (the default, a stamped review draft) or 0 (no stamp, for App Store Connect)")
+    stamped = STAMP == "1"
     chrome = find_chrome()
     spec = json.loads(SPEC.read_text(encoding="utf-8"))
-    OUT.mkdir(parents=True, exist_ok=True)
     shots = spec["shots"]
     if ONLY:
         shots = [s for s in shots if s["audience"] == ONLY or s["id"] == ONLY or s.get("preset") == ONLY]
         if not shots:
             sys.exit(f"ONLY={ONLY} matches no audience, preset or shot id")
+    if not stamped:
+        # An unstamped placeholder would pass for a finished frame, so a frame without its stamp must
+        # stand on a capture. Checked before anything is written.
+        missing = [f"{s['id']} ({s['preset']})" for s in shots
+                   if not (s.get("capture") and (REPO / s["capture"]).exists())]
+        if missing:
+            sys.exit("STAMP=0 writes the frames for App Store Connect, and these have no capture: " + ", ".join(missing))
+    OUT.mkdir(parents=True, exist_ok=True)
     written = []
     for shot in shots:
         preset = spec["presets"][shot["preset"]]
         w, h = preset["width"], preset["height"]
         suffix = "" if SCALE == 1 else f"@{SCALE:g}x"
         out_png = OUT / f"{shot['audience']}-{shot['order']:02d}-{shot['id']}-{shot['preset']}{suffix}.png"
-        render(chrome, frame_html(shot, preset, spec), out_png, w, h, SCALE)
+        render(chrome, frame_html(shot, preset, spec, stamped), out_png, w, h, SCALE)
         ow, oh = png_size(out_png)
         print(f"{out_png.relative_to(REPO) if out_png.is_relative_to(REPO) else out_png}  {ow}×{oh}")
         written.append((shot, out_png))

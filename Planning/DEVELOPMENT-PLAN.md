@@ -7199,3 +7199,66 @@ MAC**Checked by hand, iPhone.** A simulator made for the lane, "iPhone 17 L6" (`
 - **Opened as #1779** on the owner's word of 2026-10-22 ("Open the pull request against v2, using the draft in the notes folder (corpus-browser-handoff/pr-draft.md)."), against `v2` at `700cb5a3`. Auto-fix is on (the app's switch) and auto-merge off; no CI checks reported. Not merged. Its body is the draft kept with this session's notes.
 - **The plan of record's §5** marks the finding fixed, in this pull request's last commit.
 - **The shared check copy** is left extracted and built at `b3e7407f`, and its fake home holds this session's walk searches. The `v2` build used for the "before" walk is set aside in this session's scratchpad, and the throwaway tree with L6's code is removed.
+
+## Session 2026-10-22 — L7: the launch kit follows the app's own routes, the composer's stamp leaves the foot its width and can be left out, and the check copy's README says how to put preferences back and record — #1763's five items, in one branch (plan of record from 2026-10-21, §1)
+
+**What was asked.** Lane L7 of the plan of record from 2026-10-21, the last before the retakes, started by the coordinating session on the owner's "start l7". Fix #1763 in one pull request: a commit for each item or tight group, then a docs commit, and one review pass over the whole diff. Tools and copy, not app code; R1 needs the composer to render the store frames without a DRAFT stamp.
+- **Items 1 and 2.** Recording T's 46–58, 58–70 and 70–80 s beats named routes and controls the app lacks: the collection's introduction, the Guide from Settings ▸ About, a year range to drag, a bar to tap. Rewrite them to the app's routes, which S1 took (S1's findings 16 and 17).
+- **Item 3.** Frame 10's sublines said *tap into* (iPad) and *click into the documents behind the spike* (Mac). Rewrite them in `shots.json` and the kit (S5's finding 5).
+- **Item 4.** The composer's stamp never wrapped, so on the iPhone preset the foot beside it was a narrow column. Keep the foot's width on every preset; give the composer a way to render the App Store Connect frames with no stamp, the drafts staying stamped by default; document it; render the committed drafts again if they change (S5's finding 4).
+- **Item 5.** Two notes for the check copy's README, `defaults import` changing nothing and recordings picking up the Claude app's windows, and the kit's §4, which named QuickTime (S4's finding 9).
+- **Limits.** No screenshots or recordings (R1 retakes and recomposes; list what changes for it), neither TestFlight note, the pull request only on the owner's word.
+
+**Done.** On `claude/l7-launch-kit-591be1`, cut from `v2` at `8cb9d92e` (L1 to L6 and #1779 merged; the fast-forward the brief asked for first was a no-op). Tools and copy only: no app or test code, no kit code, no index version, no CloudKit change, no string key.
+- **#1763, 1 and 2: recording T** (`5d8a420a`). Each new beat is a route S1 recorded (T5 to T7), read in the code on `v2`:
+  - 46–58 s: **Export…** ▸ the **PDF** card ▸ **Export PDF**, and the title page, which prints the title, the collection note and the contents (`PDFCollectionExporter.drawCoverPage`). An introduction would follow the contents; the demo collection has none.
+  - 58–70 s: Research ▸ **FRUS Research Guide** ▸ **Next** to *Production & Timeliness* (page 8 of 11), the start year set to 1945 in the year chip's popover (`AnalyticsYearRangeBar`: two year fields with steppers, and **Done** on iOS), and *Publication lag over time* redrawn from 1945. The old beat's Settings route exists as Settings ▸ System ▸ About ▸ FRUS Research Guide; the Research tab's is the one S1 recorded and the manual names first.
+  - 70–80 s: **% of documents**, then **Administration** ▸ *Dwight D. Eisenhower (1953–1961)* (`AdministrationPresetMenu`) and **View N documents ↗**, which since L3 (#1756) prints Search's count of what it opens: 2,833 for *Berlin* over those years on S1's index, where T7's take read 2,803. A time chart has no bar to tap: its years are narrowed by the chip, the preset or `chartXSelection(range:)` (#306), and only By Subseries and By Volume bars open Search (`categoryTapOverlay`).
+  - A note under the table says why each beat changed.
+- **#1763, 3: frame 10** (`5d8a420a`). Both sublines read *Chart a term by year, switch to share of documents, then narrow the years to the spike and open its documents in Search. The chart exports as a figure or a CSV with its method stated.* It holds on both platforms, whichever control narrows the years. Two changes beyond the issue's text, in the same commit:
+  - *Every chart exports* became *The chart exports*: two charts export nothing (both manuals' §15.8), and the kit's §5 and the store draft had already dropped "every chart";
+  - both manuals' §18.6, where the kit's line came from, said *tap into* / *click into the documents behind the spike*, and now say *narrow the years to the spike, and open its documents with **View N documents ↗***.
+- **#1763, 4: the composer's stamp** (`448d3891`). The stamp is drawn over the frame's top margin (`padTop`), right-aligned, the one thing out of the layout's flow, so the foot has its row to itself and keeps its 78% of the width. `STAMP=0` leaves the stamp out; the default stays stamped. `STAMP=0` refuses a shot with no capture before anything is written, since an unstamped placeholder would pass for a finished frame, and any value but 0 or 1 is refused. The 38 committed drafts are rendered again (`python3 tools/marketing/compose.py`, Google Chrome): every PNG changes, and none changes size. `tools/marketing/README.md` and the kit's *After the sittings* give `SCALE=1 STAMP=0`.
+- **#1763, 5: the check copy's README** (`03ee4671`). A section, *Preferences and recordings, measured on 2026-10-21*, with S4's two helpers committed beside `axread.swift`, so a later sitting need not write them again (L5's Mac measurements used both, from the notes folder):
+  - `prefs-restore.swift` sets each key through CFPreferences, removes the keys the export lacks, then reads the domain back through `defaults export` in another process and exits 1 on any difference. The read-back goes through a file: to standard output `defaults export` writes XML, which keeps a date only to the second, and a binary export's fractional date read back as differing (found testing it).
+  - `apprec.swift` records the display through ScreenCaptureKit with the Claude app's windows left out; its code is S4's, less an unused constant.
+  - The kit's §4 names it where it named QuickTime's screen recording, which takes in the Claude app's panel as `screencapture -v` did.
+- **Docs** (this commit): the screenshots ledger's *Found by S1* 16 and 17, *Found by S4* 9 and *Found by S5* 4 and 5 marked done; the plan of record's §1 marks L7, and its R1 names `SCALE=1 STAMP=0`; the review pass's fixes (below); this entry. `Docs/EditableContent/` is unchanged: no app string moved.
+
+**Measured: the foot.** A throwaway harness, in the session's scratchpad and not the repository, built each of `shots.json`'s 34 frames with the composer's own `frame_html`, laid it out in Google Chrome at the preset's size and read the boxes back, at `v2` and on this branch.
+
+| Frame | Preset | Foot before (width, lines) | Foot after | Stage height |
+|---|---|---|---|---|
+| 01 search | iPhone | 352 px, **5** | 892 px, **2** | 1,860 → 1,962 |
+| 01 search-facets | iPhone | 287 px, **6** | 892 px, **2** | 1,827 → 1,962 |
+| 04 source-explorer | iPhone | 244 px, **9** | 892 px, **2** | 1,804 → 2,041 |
+| 01 search | iPad | 1,609 px, 2 | 1,959 px, 1 | 1,267 → 1,303 |
+| 04 source-explorer | iPad | 1,489 px, 2 | 1,959 px, 1 | 1,384 → 1,420 |
+| 04 source-explorer | Mac | 1,702 px, 2 | 2,059 px, 1 | 1,188 → 1,222 |
+| 05 archives-visit | iPad, Mac | 1,244 and 1,155 px, 1 | 1,959 and 2,059 px, 1 | unchanged |
+| 01 search | Mac | 1,576 px, 1 | 2,059 px, 1 | unchanged |
+
+- **All 34 frames lay out identically stamped and unstamped**: the foot, the caption band and the stage measure the same, so a draft shows its store frame's layout.
+- The stamp sits on one line in the top margin, clear of the eyebrow: 44–68 px against the eyebrow's 112 on the iPad, 37–59 against 96 on the Mac, 69–91 against 160 on the iPhone.
+- A frame with no foot gains the stamp's old line in the stage (21 to 24 px).
+
+**Checks.**
+- **The scoped unit run**, the suites that read a changed file: `CodingStandardsAuditTests` (the plan of record's struck-step list, the README's build line, the check copy's store switch), `ToolbarAccessibilityAuditTests` and `ResearchGuideCoverageTests` (both manuals). A `build-for-testing` through the lock on iPhone 17 (`80CF0F18`, iOS 27.0), 17:01 to 17:04, whose only warnings were the `GeneratedSummary` residue and the AppIntents note; then `test-without-building` with the three suites named by type and `-collect-test-diagnostics never`, with every file a test reads in its final form (only this entry and one ledger sentence changed after), 17:04 to 17:05: *Test run with 69 tests in 3 suites passed after 46.324 seconds*, then `** TEST EXECUTE SUCCEEDED **`. The simulator was shut down after it.
+- **The composer**: the drafts' run printed each frame's size, which the composer checks (34 frames, 4 contact sheets); `STAMP=2`, and `STAMP=0` over a spec whose shot had lost its capture, each exited 1 and wrote nothing; a `STAMP=0` render of frame 04 on the three presets carried no stamp, viewed.
+- **`prefs-restore.swift`**, on a scratch domain (`bottsywattsy.FRUS-Explorer.maccheck.l7-selftest`, removed after, its plist with it): nine keys of eight types (string, Boolean, integer, real, array, dictionary, data, date) set and read back identical; two values changed and one key removed; a key written behind it with `defaults write`, removed; a binary export's fractional date, which read back as differing until the read-back went through a file; bad arguments refused (exit 64 and 66). The copy's own domain was not touched.
+- **Both helpers compile** under Swift 6.4 (`swiftc -O`) with no warning. `apprec.swift` was not run: this lane records nothing.
+- **The review pass** over the whole diff found four things. Three are fixed in this commit: the kit's note under recording T called the Research tab "the manual's route", where the manual gives two (it now names the Settings route); the check copy's README said S4 "set 15 others", where the 15 keys replaced the 96 for the sitting; and the ledger's S5 note said the manuals' §18.6 used frame 10's words, where they say *open its documents with **View N documents ↗***. The fourth, item 5's commit message giving the scratch test as seven types and one changed value where it was eight and two, was re-cut (`fa6b5074` became `03ee4671`, its tree unchanged).
+- **Not owed**: the full unit run and the Mac build (no app or test code changed), and `swift test` and `swift build --target FRUSCoreKit` (no package input or kit file).
+
+**What L7 changes for R1.**
+- **No capture**: nothing under `Docs/screenshots/` but the ledger's notes.
+- **Every composed frame**: the stamp moves to the top margin and the foot widens to its 78% (on the iPhone frames with a foot, two lines where it took five, six and nine), and a frame without a foot gains the stamp's line in the stage. Frame 10's two sublines are new (`teachers-10`, iPad and Mac). R1's store run is `SCALE=1 STAMP=0 OUT_DIR=… python3 tools/marketing/compose.py`.
+- **Recording T** (kept outside the repository): the last three beats are T5 to T7 as S1 took them; their captions are unchanged. A retake of T7 shows *View 2,833 documents ↗*.
+- **The App Preview's Mac pass**: to be recorded with `apprec.swift`, as S4 recorded it.
+
+**Found, for the owner** (not fixed and not filed):
+- **Whether a time chart's years can be dragged on iPhone and iPad is not established.** #306 wires `chartXSelection(range:)` with no gesture of its own, and Apple gives that modifier's default range gesture as a two-finger one on iOS and a drag on the Mac (WWDC23, *Explore pie charts and interactivity in Swift Charts*). S1's tap on a bar did nothing; the iOS manual's §15.1 names no gesture, and the Mac manual's says a drag narrows the years. The kit and both §18.6 now name none.
+- **The L6 entry in this log repeats its iPhone walk where its Mac walk should be**: the paragraph after *Checked by hand, iPhone.* appears twice, the second time headed *MAC*. The Mac walk is in #1778's body.
+
+**Not done, and for the owner.**
+- **Opened as #1780** on the owner's word of 2026-10-22 ("Open L7's pull request against v2 now, as drafted."), against `v2` at `8cb9d92e`, which had not moved since the branch was cut; not merged. Its body is the draft kept with the sittings' notes (`L7-pr-draft.md`), with the owner's word at its head. Auto-fix on (the owner's switch), auto-merge off; no CI checks reported.
