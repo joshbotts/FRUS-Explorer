@@ -251,6 +251,8 @@ sitting knows what to look for; the rows below carry the detail.
   One thing to settle on the day: the copy has no iCloud entitlement, so its status chip reads
   **Local Only**; build 48 patched the chip to read **iCloud Sync** and never committed the patch.
   Either patch it again under a launch argument or crop the status bar, and say which here.
+  **S4 patched it** (the owner's word of 2026-10-21, 19:01), in the copy's extracted source only,
+  and built the copy from `v2`'s head, since the tag waits for submission: the sittings' ledger.
   Windows are captured one at a time with `screencapture -o -l <window id>` at 1440×900 points
   (2880×1800 pixels, the kit's Mac preset) wherever the capture is also a store frame.
 - **The corpus.** Fastest is the simulator notes' recipe: `cp -c` the 553 manifest volumes into
@@ -457,6 +459,9 @@ below.)
 | P3 | `search-zero-result-meaning` (new) | §7.11, l. 509 | The Search window's zero-result state with the semantic matches section beneath the query decomposition | The copy has the encoder (A19's walk) | A question that returns no keyword result |
 | — | `cite-popover` (new), `search-meaning` (new) | the kit's frames 07 and 12 | The Cite popover; the Search window in Meaning mode | — | The kit's §7, sitting 4 |
 
+(S4 took all 26, P3 and the kit's frames 07 and 12 in the check copy on 2026-10-21, with recording A
+and the Mac App Preview: the sittings' ledger below.)
+
 ### The three placeholders
 
 P1 (iOS §7.2, line 522) is S3's; P2 (iOS §7.12, line 656) is two frames in S1, the offer before
@@ -540,6 +545,10 @@ sizes, and the drafts re-run into `Planning/marketing-drafts/`.
     was a 1206×570 strip of the bottom, so S5 chooses the crop. The kit's six iPhone files go into
     `tools/marketing/shots.json`. Its iPhone `reader` route names d474, which is not the Long Telegram
     (*Found by S3*, 1).
+11. S4's files: `macos/search-zero-result-meaning` replaces Mac §7.11's placeholder, the last in
+    either manual; `macos/cite-popover` and `macos/search-meaning` go into `tools/marketing/shots.json`
+    as the Mac's frames 07 and 12, whose `route` placeholders they end. Read Mac §15.4's caption
+    against *Found by S4*, 3: the rankings carry their titles now (item 5).
 
 ### Found by S0 — for the new plan of record (decision 82)
 
@@ -580,7 +589,8 @@ takes.
 7. **The Mac check copy's status chip reads Local Only** without the never-committed patch: S4
    patches or crops, and the ledger says which. *Why it matters:* a Mac capture with *Local Only*
    in the status bar would contradict Mac §4.4's healthy chip; cosmetic to the sitting, nothing
-   for App Review.
+   for App Review. *Answered on 2026-10-21 in S4: patched under a launch argument, never
+   committed.*
 8. **Both manuals carry an *AI Generated* notice under their titles**, kept until the owner's
    review of both as they stand (`Planning/Manual-Revisions-Pending.md`'s note of 2026-10-07;
    `Planning/Manual-Update-Build-49-Owner-Review.md` lists what the review needs). *Why it
@@ -806,8 +816,134 @@ takes.
     the cloned library. The 17 Pro shut down after the owner closed the session's simulator pane,
     which had re-booted it. Nothing is booted or running. The build, the raw frames and the bursts
     (1.0 GB) are under `~/Library/Caches/FRUS-Explorer/s3/`.
-- **S4 —** build, the check copy's ref and bundle id, the fake home's library; the chip's
-  treatment; which files, each window's size in points.
+- **S4 — run 2026-10-21, 18:55 to 20:25; the session captured, on the owner's word of 19:01.**
+  Version 1.0, build **1861**, the isolated check copy (`tools/mac-check-copy/`): `setup.sh --ref
+  HEAD --prefix frus1961-63v09` at `v2` **`f7ce0188`** (S3's #1753 merged; nothing outside `Docs/` and
+  `Planning/` has changed since `b4dcd527`, so its code is S1's to S3's), then `build.sh --no-launch`
+  under `Scripts/heavy.sh`, 19:03:01 to 19:06:02, `** BUILD SUCCEEDED **` with the copy's nine expected
+  warning lines. The tag S0 named waits for submission (decision 83), so the copy was built from
+  `v2`'s head. It went into the shared scratch `~/Library/Caches/frus-mac-check`, reusing its `dd/`:
+  bundle id `bottsywattsy.FRUS-Explorer.maccheck`, the `AppStore` configuration, ad-hoc signed, the
+  local-only store under `FRUS_MAC_CHECK`, `com.apple.security.get-task-allow` its one entitlement.
+  The product was copied to `~/Library/Caches/FRUS-Explorer/s4/app/` and launched from there with
+  `open -n --env CFFIXED_USER_HOME=…`. The owner's answers of 19:01: the session captures with
+  `screencapture`, as build 48's did; the chip is patched; recording A and the Mac App Preview are
+  recorded too. **Every file predates the `build-51` tag (decision 83): a screen that a fix after
+  `f7ce0188` changes is retaken.** macOS 27.0.1 (26A434), the M5 MacBook Air's display at 1710×1107
+  points.
+  - **The status chip: patched, never committed.** One local-only patch, made in the copy's extracted
+    source after `setup.sh` and before the build, so the worktree and `v2` never held it: under
+    `-FRUSScreenshotHealthySyncChip YES` the status bar draws the idle *iCloud Sync* chip of Mac §4.4
+    (`SupportingViews.swift`, `cloudKitStatusChip`). Build 48's other patch, the local store, has been
+    the copy's compile-time switch since #1512. After the sitting the patch was taken out of the
+    shared scratch and the shared copy rebuilt without it (20:21:27 to 20:24:39, under the lock); the
+    patched product stays with S4's files. The diff is kept with the sitting's notes.
+  - **The fake home** is S4's own, `~/Library/Caches/FRUS-Explorer/s4/home`, not the shared copy's,
+    which holds A19's 38-volume library and was not touched. It is an APFS clone (19:03:38) of S1's
+    container snapshot `snapshot-A`: `Library/Application Support/FRUSExplorer/` whole and the store.
+    That holds the 553 volumes of the local corpus at `6170e4b32` with their 96 figure folders,
+    `frus.db` at index version 71 with rollup 12, 553 vector shards, and the encoder, EmbeddingGemma 2
+    with its pin marker, which S1 downloaded through the app. The store is `default.store`, its
+    write-ahead log folded in on the clone, renamed `FRUSExplorerLocal.store`. `snapshot-A` was only
+    read. The copy opened the library without re-indexing: 553 volume structures, 321,749 document
+    rows. **The preferences** escape a fake home, so the shared copy's 96 keys were exported first,
+    the domain held the iPad's 15 for the sitting (the active project and the version-71 stamps), and
+    the 96 were put back afterwards, identical key for key. `defaults import` reported success and
+    changed nothing; CFPreferences, key by key, did it.
+  - **Capture:** each window with `screencapture -o -x -l <window id>` while the copy was in front, so
+    its chrome is active and no shadow is drawn. Window sizes were set with System Events: 1440×900
+    points (2880×1800 pixels, the kit's Mac preset) for twelve of the kit's fourteen Mac frames, and
+    build 48's sizes for the rest, `analytics` (frame 10, 1440×640) and `person-analytics-network`
+    (frame 13, 1120×760) among them, since a taller window adds only empty canvas to either. The copy
+    was driven with computer use, its bundle id alone, under full-screen control. Where a text field
+    held the caret, a burst was taken and a caret-off frame kept: the frames differed only in the
+    caret's column of four pixels. No frame holds the menu bar, so there is no clock to erase.
+  - **The 29 files in `macos/`**, 26 retaken and 3 new, each read against its row before it was kept.
+    The window's size is in points, and the demo data is S1's plus what is named:
+    - `toolbar` (1440×52): the top 104 rows of `research-strip`, the size of build 48's strip.
+    - `research-strip` (1440×900, 19:09): the Long Telegram (`frus1946v06/d475`) with the Research
+      panel: S1's note, *Containment*, the collection, and a yellow highlight on *so strange to our
+      form of thought*, made in the copy so that `research` has a strip.
+    - `document` (1440×900, 19:18): `frus1948v02/d399`, the panel closed.
+    - `browser` (1440×880, 19:13): frus1946v06's page under the *Working on:* bar.
+      `browse-all-volumes` (1440×880, 19:13): Published order.
+    - `people-list` (900×823, 19:14): at the *Adams, Alvin* pair, the rows of S1's iPad frame.
+    - `people-detail` (620×532, 19:15): the People window with Kissinger's sheet scrolled to Career,
+      *Secretary of State, 1973-09-22 – 1977-01-20*, from the register. Build 48's composition, with no
+      VIAF or Wikidata link (A4d), so its caption is S5's to rewrite (item 2).
+    - `topic-index` (900×820, 19:17): *Topic area: Cold War — 6 topics*, Berlin crisis's sheet open.
+    - `search` (1440×900, 19:19): *Berlin blockade*, 900 results, Facets open on Subjects.
+      `search-tips` (1440×900, 19:19): the Tips panel under the results, Facets closed, as build 48's.
+    - `saved-searches` (1440×900, 19:20): S1's *Berlin blockade* and build 48's other two, saved in
+      the copy under their names: *NSC 68 drafting* (`"NSC 68"`) and *Cuban missile crisis -
+      quarantine* (*Cuba quarantine*).
+    - `research` (1340×880, 19:23). `collections` (1440×900, 19:24): *The Long Telegram and Its
+      Readers*, Document 475 in the inspector.
+    - `source-explorer` (1440×900, 19:25): `frus1952-54v02p1/d41` ▸ Sources, its NARA record and 623
+      archival neighbors.
+    - `trip-packet` (1440×900, 19:26): Export packet with Lot 63 D 351 heading the sheet, both claim
+      lists, Options at its head, and Share and Share as PDF at its foot (#1444).
+    - `cross-reference-graph` (1440×900, 19:27): `frus1952-54v02p1/d16`, Timeline, the list open.
+    - `analytics` and `analytics-table` (1440×640, 19:30): *Berlin*, 1944–1975, *View 9,192
+      documents*.
+    - `word-cloud` (1280×900, 19:32): *Soviet Union 1945-1950*, Distinctive, Concepts, *54 terms from
+      4,666 documents*, the eligibility line, and no *Counted as printed* line.
+    - `person-analytics-trends` (1280×1072, 19:33): 1940–1992, Kissinger, Rusk and Dulles picked and
+      Acheson added, build 48's set. `person-analytics-network` (1120×760, 19:34): Kennan, with
+      Acheson selected, *56 shared documents*.
+    - `crossref-analytics` (960×900, 19:37): the heat matrix for 1961–1963, its heading, caption,
+      fifteen rows and legend in frame, every row label whole (#1445, #1480).
+    - `archival-analytics` (1440×900, 19:39): *60,019 source notes*, 753 collections, *Central Files
+      Hidden*: S1's counts. `semantic-map` (1440×900, 19:39).
+    - `chronology` (1440×900, 19:41): 10/14/1962 to 11/20/1962, build 48's range and recording A's: 668
+      documents, *670 documents span more than a year*, *24 documents extend beyond this range (24
+      reach past both ends)*.
+    - `series-production` (1440×900, 20:19), on the empty fake home below: Help ▸ FRUS Research Guide
+      ▸ Production & Timeliness, scrolled as build 48's take is, so the scope chip heads both charts.
+    - **P3**, `search-zero-result-meaning` (1440×900, 19:22): S1's P2 question, *Why did the wartime
+      alliance unravel?*, in Keywords. The MATCH strip, *No Results*, *553 volumes on this device*, and
+      *Semantic matches (experimental)* beneath it, from 59% down.
+    - **The kit's frame 07**, `cite-popover` (1440×900, 19:11): the Long Telegram ▸ Cite, with the
+      Copy as… menu open on Copy BibTeX, Copy RIS and Save as .bib…, as S1's iPad `cite-sheet`.
+      Nothing was copied. The popover without its menu is kept outside the repository.
+    - **The kit's frame 12**, `search-meaning` (1440×900, 19:22): Meaning, the kit's question, *1–20
+      of 100 closest matches*, 66% at the top. It is the question's second run, whose list read as
+      the first's.
+  - **The empty fake home** for `series-production` and pass A was
+    `~/Library/Caches/FRUS-Explorer/s4/home-empty`, made empty, with the preference domain cut to the
+    main window's saved frame, so each launch was the copy's first. Onboarding was skipped with nothing
+    downloaded (*0 volumes indexed*).
+  - **Recording A and the Mac App Preview**, on the owner's word of 19:01, are kept outside the
+    repository in `~/Library/Caches/FRUS-Explorer/s4/recordings/` (314 MB), H.264 at 60 frames a
+    second. A small ScreenCaptureKit recorder, kept with the sitting's notes, captured the display
+    without the Claude app's windows; a `screencapture -v` test showed the app's panel over the copy.
+    - **Recording A**, one clip a beat of the kit's §2.3 table, at 3420×1924 (1710×962 points,
+      16:9): `A1-chronology` (25 s: 1961–1963 narrowed to 10/14 to 11/20/1962, Show, the day list),
+      `A2-search-in-range` (23 s: Search in this range, *quarantine*, 174 results under the range's
+      date chip), `A3-meaning` (28 s: Meaning, the chip removed, the kit's question, 100 closest
+      matches), `A4-person-network` (27 s: Network, Kennan, Acheson, Explore connections),
+      `A5-corpus-analytics` (19 s: *Cuba* added to *Berlin*, the chart turning to % of documents)
+      and `A6-briefing-packet` (19 s: the collection under the Briefing packet preset, d474's
+      headnote card with its *AI-generated summary · Apple Intelligence (on-device)* line).
+    - **The preview's pass B**, the same size: `B1-search` (16 s), `B2-reader` (17 s: the first
+      result opened, a yellow highlight made), `B3a-map-whole` (7 s), `B3b-map-transit` (13 s: a
+      cluster's *See on the semantic map*, the camera's transit into *edc nato*), `B4-sources`
+      (12 s: d41 ▸ Sources) and `B5-packet` (16 s).
+    - **Pass A**, cut to the 1200×800-point onboarding window (2400×1600) so that the desktop around
+      it is out, each from the window's first frame: `A0-first-launch` (30 s, the copy's first launch
+      on the empty home) and `A1-take` (78 s: the splash, Welcome, Get Started, Add Volumes on Entire
+      Corpus, A Subseries ▸ *1969-76*, A Single Volume ▸ frus1861, each cloud in turn).
+    - A 3420×1924 frame scales to 1920×1080, the Mac App Preview's size, with no crop.
+  - **Made in S4's home only, for the recordings:** d474's and d476's summaries (the on-device model,
+    the Standard Summary prompt; d475's was refused, *Found by S4*, 5), the collection's Briefing
+    packet template, the two saved searches, the two highlights (d475's, and B2's on
+    `frus1961-63v10-12mSupp/d341`), and the recordings' searches.
+  - **Left:** the copy quit at 20:20, and nothing is running. The shared check copy holds A19's home
+    untouched, a clean build at `f7ce0188` and its own preferences. S4's app was unregistered from
+    Launch Services and is kept with its homes, the raw frames and the recordings under
+    `~/Library/Caches/FRUS-Explorer/s4/` (7.3 GB) until the owner says. The resume note, the patch's
+    diff, the preference backup, the hand-off measurement and the 1961–1963 ranking frame are with
+    the sitting's notes, outside the repository.
 - **S5 —** the date; every caption changed, the placeholders replaced, the files deleted, the hero
   row, the composer's run.
 
@@ -965,6 +1101,65 @@ for the owner to place (decision 82).
    *Volume 4 of 6* on screen shows Volumes & Storage and no sheet. The flag that keeps it from opening
    twice is set at that first appearance, so no later queue could show it. Seen once, not measured.
    *The app, or the sentence.*
+
+### Found by S4 — for the new plan of record
+
+Seen or measured in the check copy, or read in the code beside it. They go with S0's to S3's for
+the owner to place (decision 82).
+
+1. **One unresolvable reference reads as a plural.** Cross-Reference Analytics over 1961–1963 says
+   *1 unresolvable references are excluded from this analysis*: `crossRefAnalytics.excludedBrokenCaption`
+   in `CrossReferenceAnalyticsView.swift` has no singular. *The app, cosmetic.*
+2. **frus1961-63v23's label begins with a colon**: *: Southeast Asia · 1961-63 v23*, a row of the
+   heat matrix in `crossref-analytics`. Its title prints a colon after the volume number (*Volume
+   XXIII: Southeast Asia*), and `ChronologyViewModel.volumeTopic(from:)` removes the number and then
+   trims spaces, commas, full stops and semicolons, not a colon. A Python mirror of the rule, run over
+   the bundled manifest, finds no other volume whose topic starts with punctuation. Every surface that
+   distils a volume's title draws the same topic. *The app.*
+3. **Mac §15.4's rankings carry their titles now** (S0's row 64). Over 1961–1963, Most-Referenced
+   Documents opens on *281. Telegram From the Department of State to the Embassy in Vietnam* (21).
+   Over the whole corpus it opens on No. 1383, *Protocol of the Proceedings of the Berlin Conference*
+   (219), as on S1's iPad. #1372's fallback labels are gone, so the caption can widen beyond the heat
+   matrix (S5's item 5). The ranking's frame is kept with the sitting's notes. *S5.*
+4. **A new search keeps the old list's scroll position.** The pass-B take of *Berlin blockade* opened
+   on its sixth row, *139. Memorandum From the Acting Chairman …*, because the results list had been
+   scrolled before. Two searches had been run in between, without a scroll. Seen once, not measured.
+   *The app.*
+5. **The on-device model refused the Long Telegram.** Summarize this Document on d475, with the
+   Standard Summary prompt, ended in *The model's safety guardrails were triggered*; d474 and d476
+   summarized in under 20 seconds each. So the series' best-known document cannot carry an AI headnote,
+   which recording A's last beat would have shown; the clip uses d474's. Seen once. *The model, or the
+   prompt.*
+6. **The collection's live preview missed a new summary.** After d474's summary was made in the
+   reader, the Collections window's preview still read *No stored summary for this document — generate
+   one in the document view to fill this headnote*, while the inspector beside it listed the summary.
+   Closing and reopening the window drew the headnote. Seen once. *The app.*
+7. **Search's date chip has a small ✕.** *Clear Date filter* measures 8×8 points by accessibility,
+   and a click 2 points outside that frame did nothing. Its help text reads *Edit this filter in
+   Advanced filters*, which is the chip's own. *The app, cosmetic.*
+8. **The Mac's first launch shows S2's hand-off, shorter.** Every frame of the two pass-A clips was
+   measured at 60 frames a second for ink outside the identity block and for the dock's Get Started
+   button. The script is kept with the sitting's notes.
+   - In `A0-first-launch` the Welcome dock is drawn in the window's first two frames (33 ms) before
+     the splash covers it. The splash's cloud shows from 0.28 s to 1.75 s. The dock then stands over
+     an empty backdrop for 0.18 s before onboarding's cloud arrives, at 1.95 s.
+   - In `A1-take` no frame shows the dock before the splash, and the splash's cloud crosses into
+     onboarding's at 1.70 s with no empty frame.
+   - On the iPad, S2 measured 0.46 s and 0.79 s empty, and a quarter of a second of dock. *The app;
+     the Mac's figures for S2's findings 1 and 2.*
+9. **For `tools/mac-check-copy/README.md`, not the app.**
+   - Putting back the copy's 96 preference keys with `defaults import` reported success and changed
+     nothing, twice, though the 15-key import at the start of the sitting had taken. CFPreferences,
+     key by key, put them back.
+   - A screen recording made while computer use drives the copy picks up the Claude app's windows:
+     a `screencapture -v` test showed its panel over the copy. A ScreenCaptureKit recording that
+     leaves the Claude app out does not. The kit's §4 names QuickTime's screen recording, which
+     records the whole screen in the same way.
+10. **`ChronologyQueryTests`' `macCapture` comment quotes the build-48 frame.** It says
+    `macos/chronology.png` reads *24 documents extend beyond this range (24 before · 24 after)*. The
+    retake, over the same October 14 to November 20, 1962, reads *(24 reach past both ends)*, which is
+    the fixture's own breakdown. The fixtures hold, and the comment now quotes a file that no longer
+    shows those words. *The tests' comments, as with S1's finding 8.*
 
 ## Staging notes (superseded triage — see #1081 for the tick-list)
 
