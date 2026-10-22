@@ -6757,7 +6757,7 @@ In this session the owner then asked for two more things: to amend the memo for 
 - The plan of record's L1 bullet in §1 still says L1 is not yet merged. It merged as `b385340c`.
 
 **Not done, and for the owner.**
-- **The pull request** is not opened. The six commits are on `claude/l2-search-fixes-df74f5`, not pushed. Its body is the draft kept with the sittings' notes (`L2-pr-draft.md`), with a visual-review list for each platform. Opening it waits for the owner's word, as the brief asked.
+- **Opened as #1770** on the owner's word of 2026-10-22, 05:56 ("open pr"), against `v2` at `b385340c`, which had not moved since the branch was cut; not merged. Its body is the draft kept with the sittings' notes (`L2-pr-draft.md`), with a visual-review list for each platform.
 - **The Mac walk** (#1758, item 2) waits for an unlocked screen. The check copy is built at `3dfe2741` in `~/Library/Caches/frus-mac-check` and was not launched. To walk it:
   - Launch the copy as its README says.
   - Search *Berlin*, scroll well down the list, then search *Cuba*. The new list should open at its first row, and so should the next page.
