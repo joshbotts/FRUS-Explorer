@@ -120,7 +120,7 @@ Read the results you have as a timeline, as your search term in context, or as t
 
 <!-- END SOURCE: search.mode.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1220–1221 | key: search.facets.on.help.v3 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1222–1223 | key: search.facets.on.help.v3 -->
 
 Break the whole match down by year, volume, person, document type, archival provenance and subject — before any narrowing you apply
 
@@ -136,7 +136,7 @@ Show every occurrence of your term on its own line, aligned — for the document
 
 <!-- END SOURCE: search.kwic.show.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1854–1856 | key: search.cap.tooltip -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1873–1875 | key: search.cap.tooltip -->
 
 *Interpolated with the loaded and total counts.*
 
@@ -144,7 +144,7 @@ Showing %lld of %lld matches. Narrow your search with a date range, volume filte
 
 <!-- END SOURCE: search.cap.tooltip -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1859–1861 | key: search.cap.tooltip.unknownTotal -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1878–1880 | key: search.cap.tooltip.unknownTotal -->
 
 *Interpolated with the loaded count.*
 
@@ -1012,7 +1012,7 @@ Every search you ran, in a Markdown table and a CSV. Each row gives the scope th
 
 *Source: `FRUSExplorer/Analytics/OccurrenceAvailability.swift, AnalyticsView.swift`*
 
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 3023–3024 | key: analytics.measure.help -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 3030–3031 | key: analytics.measure.help -->
 
 Count matching documents, or every occurrence of the word. A term mentioned fifty times in one document is one document and fifty occurrences — the two can move in opposite directions.
 
@@ -1952,14 +1952,14 @@ Search Tips…
 <!-- END SOURCE: menu.find.searchTips -->
 
 ##### Tips button (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 830–830 | key: search.tips.button -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 832–832 | key: search.tips.button -->
 
 Tips
 
 <!-- END SOURCE: search.tips.button -->
 
 ##### Tips button help (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 837–838 | key: search.tips.help.v2 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 839–840 | key: search.tips.help.v2 -->
 
 *The tooltip. Replaces `search.tips.help`, which promised a stemming tip the panel never had and named neither groups, NEAR nor exact words.*
 
@@ -1968,7 +1968,7 @@ Show or hide the search tips: phrases, OR and NOT, exclusions, groups, prefixes,
 <!-- END SOURCE: search.tips.help.v2 -->
 
 ##### Panel heading (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2607–2607 | key: search.tips.header -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2626–2626 | key: search.tips.header -->
 
 *Shown in capitals above the rows.*
 
@@ -2503,7 +2503,7 @@ FRUS’s editors printed a source note under \(coverage.noteCount) documents acr
      each term, never by where a volume was published" is the coverage-not-production rule the
      administration profiles are built on; the double-counting disclosure explains why memberships
      sum past the volume count. -->
-<!-- SOURCE: FRUSExplorer/Browser/AdministrationIndexView.swift | lines: 182–183 | key: browser.administrations.coverage -->
+<!-- SOURCE: FRUSExplorer/Browser/AdministrationIndexView.swift | lines: 184–185 | key: browser.administrations.coverage -->
 
 Volumes filed by the administration their documents cover — dated to each term, never by where a volume was published. A volume spanning two administrations appears under both: memberships sum to \(membershipSum) across \(index.volumeTotals.count) volumes.
 
@@ -2623,14 +2623,14 @@ The person filter was cleared — \(before.label ?? "that person") is no longer 
 <!-- END SOURCE: search.person.filterDropped -->
 
 #### Tooltip — How to read these results. The concordance covers %@; the…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1115–1116 | key: search.reading.help %@ | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1117–1118 | key: search.reading.help %@ | shared: macOS only -->
 
 How to read these results. The concordance covers %@; the others cover the whole retained set.
 
 <!-- END SOURCE: search.reading.help %@ -->
 
 #### Tooltip — Open advanced filters — date range, volume scope, document…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1596–1597 | key: search.filter.advanced.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1615–1616 | key: search.filter.advanced.help | shared: macOS only -->
 
 Open advanced filters — date range, volume scope, document type, person, search scope. Changes apply immediately.
 
@@ -2875,14 +2875,14 @@ Saved “\(savedCorpusName)” with the first \(savedCapture.documentKeys.count)
 <!-- END SOURCE: browser.clusters.saved.truncated -->
 
 #### Empty state — A working corpus is a fixed set of documents captured from…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusBrowseView.swift | CorporaIndexView.body | lines: 229–230 | key: browser.corpora.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusBrowseView.swift | CorporaIndexView.body | lines: 231–232 | key: browser.corpora.empty.detail -->
 
 A working corpus is a fixed set of documents captured from a result set — use “Save as Working Corpus” on Search results or the semantic map’s lasso.
 
 <!-- END SOURCE: browser.corpora.empty.detail -->
 
 #### Footer — A corpus is captured from a result set — in Search results…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusBrowseView.swift | CorporaIndexView.body | lines: 239–240 | key: browser.corpora.footer -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusBrowseView.swift | CorporaIndexView.body | lines: 241–242 | key: browser.corpora.footer -->
 
 A corpus is captured from a result set — in Search results or with the semantic map’s lasso — and syncs via iCloud. There is nothing to create here.
 

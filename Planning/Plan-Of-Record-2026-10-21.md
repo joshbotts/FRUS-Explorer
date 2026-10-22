@@ -84,6 +84,7 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
 | R3 | The submission, 1.0 (1861) (decision 87) | — |
 
 - **L1 goes first**: it is cheap, and its fixes show on captured screens. L2 to L6 follow in any order the owner prefers. L7 is tools and copy; it can come any time before R1, since the composer's stamp shapes the store frames.
+  - **L1 built on 2026-10-21** from `v2` at `1fdf4308`, on `claude/l1-copy-fixes-27e098`; not yet opened, since the pull request waits for the owner's word. A commit for each item or group of #1761, one for #1762, then a docs commit; not kit code, no index version, no CloudKit change. **#1761**: one unresolvable reference reads in the singular; an Administrations row says *1 vol*; a working corpus's coverage line groups its counts; frus1961-63v23's label loses its leading colon; the iPad rail toggle is tinted while the rail is open (a toolbar reads the button's `.tint`, never a `.foregroundStyle` inside its label; measured by pixel on iPad simulators under iOS 27.0 and 26.5), and iOS §4.2 says so again; the Mac date chip's ✕ measures 23×20 points with its own help, and a click off the glyph clears it (the check copy); the three quote-doubling siblings quote by `PinnedResultBase.quotable(_:)`, the appendix's plain-text line left as decision 86 says; and at the largest text size the Collections row and the two document rows wrap where they were cut. **#1762**: 88,059 (Mac §6.1), 37,899 and the shipped label (iOS §6.1h) and 3,977 (iOS §14.6, Mac §14.5), each read from its bundled file, and `ChronologyQueryTests`' two comments. #1762's lasting fix, manuals that stop hard-coding figures that move or a check that reads them from the bundled files, is put to the owner; nothing is built for it. The captures L1 changes, for R1: `ipad/research-rail`, `ipad/stage-manager`, `ipad/browse-administrations`, `ipad/browse-clusters-detail`, `macos/crossref-analytics-ranking` and `macos/crossref-analytics` (this session's log entry says what each shows).
 - **Each lane's issue body is its brief.** Each issue names its files, its measurements and what a fix could do.
   - #1757 changes what the banner counts during the first downloads, so its lane measures a 27-volume queue before and after, as S3 did.
   - #1759 is measured frame by frame, as S2 and S4 measured it: their scripts are kept with the sittings' notes.
@@ -191,13 +192,16 @@ The repository holds drafts for each.
   - `FilterChip` and `CrossProjectNoteIndicator`, the two views nothing constructs;
   - 14 Swift files outside every target with no license header;
   - nine Swift files citing #1210, #1211 or #1257 where the work merged as #1250, #1251 and #1256;
-  - the HYG and READ leftovers, and the lanes' own leftovers (`Completed/Plan-Of-Record-2026-10-14.md` §6f, which points on to the 2026-09-28 plan's §0a, §4 and §4a).
+  - the HYG and READ leftovers, and the lanes' own leftovers (`Completed/Plan-Of-Record-2026-10-14.md` §6f, which points on to the 2026-09-28 plan's §0a, §4 and §4a);
+  - `Docs/Agentic-Analysis-Guide.md` §14.11 still gives 3,985 archival collections, and the map's figures from before B4's layout (172 clusters, 92,268 unclustered, where the shipped map has 140 and 88,059) (found in L1).
 - **Marketing**, from the Visual Marketing Plan: step 5 (the publication-lag plate), step 13 (Plate B) and step 16 (after launch).
 - **Accessibility, worth a sweep of its own:**
   - `AXChartDescriptor` for four chart families;
   - Differentiate Without Color on the map;
   - about 37 text sites with a fixed size;
-  - a reader that follows the system text size.
+  - a reader that follows the system text size;
+  - the iPad rail toggle's `.isSelected` trait, which XCUI does not read with the rail open or closed (found in L1);
+  - at the largest text size on an iPhone, Collection settings' row breaks its title inside a word and cuts its caption, and the Local Only banner's button reads *De-tails* (found in L1).
 
 ### Parked — designed or proposed, not scheduled
 

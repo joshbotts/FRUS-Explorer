@@ -529,14 +529,14 @@ Share or export this document
 <!-- END SOURCE: researchRail.tile.share.help -->
 
 #### Share (iOS) — the menu's VoiceOver name
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2243–2243 | key: document.toolbar.share | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2250–2250 | key: document.toolbar.share | shared: iOS only -->
 
 Share
 
 <!-- END SOURCE: document.toolbar.share -->
 
 #### Share (iOS) — the menu's VoiceOver hint
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2243–2244 | key: document.toolbar.share.help | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2251–2252 | key: document.toolbar.share.help | shared: iOS only -->
 
 Send this document to your Zotero library, export a Zotero file, or share its citation
 
@@ -749,7 +749,7 @@ Summary %lld of %lld
 <!-- END SOURCE: summary.history.position.a11y %lld %lld -->
 
 #### Regenerate — spoken
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2548–2549 | key: summary.block.regenerate.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2556–2557 | key: summary.block.regenerate.a11y | shared: iOS only -->
 
 Regenerate this summary
 
@@ -1836,7 +1836,7 @@ Document distribution over the selected dates, stacked by volume. Counts are lis
 
 *#1422: the header of the section the chip below opens. It read “Spans this period”, but a row is listed because its dates overlap your range, so it can begin or end inside it; what every row here does is span more than a year, which is the rule that sorts it here. It now lives beside the chip’s sentences in `ChronologyViewModel.swift`, so the two are worded together.*
 
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | ChronologyViewModel.spanningSectionHeader | lines: 615–615 | key: chronology.spanning.header -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | ChronologyViewModel.spanningSectionHeader | lines: 617–617 | key: chronology.spanning.header -->
 
 Spans more than a year
 
@@ -2146,14 +2146,14 @@ View cross-volume reference counts for this volume — click for details and to 
 <!-- END SOURCE: volumeGraph.node.help -->
 
 #### Empty state — This document is in \(…), which is not on this device.…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 767–768 | key: document.volumeMissing.detail | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 769–770 | key: document.volumeMissing.detail | shared: iOS only -->
 
 This document is in \(entry.volumeId), which is not on this device. Download the volume from the Browse tab to read it.
 
 <!-- END SOURCE: document.volumeMissing.detail -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (iOS)
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 830–831 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 832–833 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.
 
@@ -2162,7 +2162,7 @@ The linked document is in “%@”, which isn’t downloaded yet. Download it to
 *The iPhone and iPad alert has a View Connections button beside Download Volume, which the last clause names.*
 
 #### VoiceOver hint — Read mode also enables edge-tap navigation to the previous…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1465–1466 | key: document.toolbar.panelMode.hint | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1473–1474 | key: document.toolbar.panelMode.hint | shared: iOS only -->
 
 Read mode also enables edge-tap navigation to the previous and next document in this volume
 
@@ -2755,7 +2755,7 @@ No stored summary for this document — generate one in the document view to fil
 <!-- END SOURCE: collection.headnote.missing -->
 
 #### Showing collections from every project, including ones…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 388–389 | key: collections.filterBanner.showingAll | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 390–391 | key: collections.filterBanner.showingAll | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Showing collections from every project, including ones outside “\(activeProjectDisplayName)”.
@@ -2763,7 +2763,7 @@ Showing collections from every project, including ones outside “\(activeProjec
 <!-- END SOURCE: collections.filterBanner.showingAll -->
 
 #### Showing collections for “\(…)” — \(…) other collection\(…)…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 401–402 | key: collections.filterBanner.filtered.withHidden | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 403–404 | key: collections.filterBanner.filtered.withHidden | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Showing collections for “\(activeProjectDisplayName)” — \(hidden) other collection\(hidden == 1 ? "" : "s") hidden.

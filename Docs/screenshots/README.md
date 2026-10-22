@@ -638,7 +638,8 @@ in the app.
 
 Each says where it is and why it matters before submission; the owner decides what the new plan
 takes. *After S5 (2026-10-21):* 4, 5 and 7 are answered and done (S3's figure, S1's frame, S4's
-patch); 1, 2, 3, 6 and 8 wait for the new plan.
+patch); 1, 2, 3, 6 and 8 wait for the new plan. *After L1 (2026-10-21):* 1, 2 and 3 are corrected
+in both manuals from the bundled files (#1762).
 
 1. **Mac §6.1 (line 298) says 89,449 documents belong to no cluster; the shipped map says
    88,059** (`semantic-map-index.json`, `layout.unclusteredCount`, generated 2026-10-15 after B4),
@@ -1096,7 +1097,8 @@ patch); 1, 2, 3, 6 and 8 wait for the new plan.
 Seen or measured in the sitting, where S0's were read; decision 82 sends S0's to the new plan, and
 these go with them, for the owner to place. *S5* marks a sentence or caption the embed pass reads
 against S1's frames. *After S5 (2026-10-21):* 1, 2, 5, 6 and 7 are done and 4 was read and left
-(*Caption and sentence fixes*, *Done in S5*, item 9); 3 and 8 to 19 wait for the new plan.
+(*Caption and sentence fixes*, *Done in S5*, item 9); 3 and 8 to 19 wait for the new plan. *After L1
+(2026-10-21):* 3, 8 and 10 are done (#1762, #1761); 10 changes `ipad/browse-clusters-detail`, for R1.
 
 **The manuals against the screen.**
 
@@ -1252,7 +1254,9 @@ d475 frame, and the recipe says d475); 2 and 3 wait for the new plan.
 
 Seen or measured in the check copy, or read in the code beside it. They go with S0's to S3's for
 the owner to place (decision 82). *After S5 (2026-10-21):* 3 is done (Mac §15.4's second figure);
-1, 2 and 4 to 10 wait for the new plan.
+1, 2 and 4 to 10 wait for the new plan. *After L1 (2026-10-21):* 1, 2, 7 and 10 are done (#1761,
+#1762); 1 and 2 change `macos/crossref-analytics-ranking` and `macos/crossref-analytics`, for
+R1.
 
 1. **One unresolvable reference reads as a plural.** Cross-Reference Analytics over 1961–1963 says
    *1 unresolvable references are excluded from this analysis*: `crossRefAnalytics.excludedBrokenCaption`
@@ -1311,7 +1315,8 @@ the owner to place (decision 82). *After S5 (2026-10-21):* 3 is done (Mac §15.4
 ### Found by S5 — for the new plan of record
 
 Seen in the frames S1 to S4 took, and read in the code beside them; nothing was run. They go with
-S0's to S4's for the owner to place (decision 82).
+S0's to S4's for the owner to place (decision 82). *After L1 (2026-10-21):* 1 and 3 are done (#1761);
+they change `ipad/research-rail`, `ipad/stage-manager` and `ipad/browse-administrations`, for R1.
 
 1. **The iPad's Research-rail toggle is not drawn in the accent colour while the rail is open.**
    `DocumentView` asks for it (`railToggleActive ? Color.accentColor : Color.primary`), and S1's
