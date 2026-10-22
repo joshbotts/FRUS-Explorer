@@ -554,7 +554,9 @@ with no capture; leave it out for stamped store-size frames to review), re-run t
 `Docs/screenshots/README.md`'s ledger, as the X-8 rule asks. *Run on 2026-10-21 in S5, the plan of
 record's embed pass: 34 frames at the presets' sizes, 14 iPad, 14 Mac and 6 iPhone, each stamped with
 build 1861; the ledger's S5 entry has the run.* *Since 2026-10-22 (#1763) the stamp sits in the
-frame's top margin, so a draft lays out as its store frame does, and `STAMP=0` leaves it out.*
+frame's top margin, so a draft lays out as its store frame does, and `STAMP=0` leaves it out.* *Run
+again on 2026-10-22 in R1, the retake sitting, with `STAMP=0`: the 34 frames in `~/Desktop/store`,
+none stamped, and the drafts rendered again; the ledger's R1 entry has the run.*
 
 ---
 
