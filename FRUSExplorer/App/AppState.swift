@@ -184,6 +184,8 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///          (`refreshIndexingLiveActivityQueue()`); the FRUS Research Guide's first-queue sheet is
 ///          claimed by one window (`claimIndexingGuide(for:keyboardIsVisible:)`) and counts as shown
 ///          only once it is on screen (`indexingGuideDidAppear()`)
+///   4.24 — #1766: `followedPageLink`, the page a page link was to when it opened its volume's page
+///          in Browse, which `openBrowseVolume(_:from:)` clears
 
 // MARK: - CloudKitSyncState
 
@@ -1902,6 +1904,16 @@ final class AppState {
     /// Scene-addressed (#338 step 4): iOS producers target the producing window's `\.sceneID`; macOS
     /// producers target `.macCorpusBrowser` (the singleton corpus-browser window).
     var pendingBrowseVolume: Handoff<String>? = nil
+
+    /// The page a link was to when it opened its volume's page in Browse because the volume is not on
+    /// the device and the bundled page map does not list that page (#1766, `PageLink.volume`).
+    ///
+    /// Every ``openBrowseVolume(_:from:)`` clears it, and a reader sets it just after its own call,
+    /// so only a page link's hand-off carries a page. The volume's page in Browse — `VolumeView` on
+    /// iPhone and iPad, the Corpus Browser's volume page on the Mac — names the page in its
+    /// not-downloaded state while this names its volume, and clears it when it goes away, so a later
+    /// visit to the volume by another way names no page.
+    var followedPageLink: FollowedPageLink? = nil
 
     /// The document currently targeted by the Cross-Reference Graph window.
     ///
@@ -3654,8 +3666,10 @@ extension AppState {
     /// Opens a volume in the browser as a scene-addressed hand-off (#338 step 4), the volume-grain
     /// sibling of ``openBrowseDocument(_:from:)``: iPad addresses the producing window's `\.sceneID`
     /// (only its `BrowserView` appends), macOS the singleton corpus-browser window (`.macCorpusBrowser`).
-    /// Pass the producer view's `@Environment(\.sceneID)`.
+    /// Pass the producer view's `@Environment(\.sceneID)`. It clears ``followedPageLink``, which a page
+    /// link sets again after calling it (#1766).
     func openBrowseVolume(_ volumeId: String, from sceneID: SceneID?) {
+        followedPageLink = nil
         #if os(macOS)
         pendingBrowseVolume = Handoff(target: .macCorpusBrowser, payload: volumeId)
         #else

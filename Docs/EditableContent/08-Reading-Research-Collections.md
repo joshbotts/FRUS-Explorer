@@ -529,14 +529,14 @@ Share or export this document
 <!-- END SOURCE: researchRail.tile.share.help -->
 
 #### Share (iOS) — the menu's VoiceOver name
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2250–2250 | key: document.toolbar.share | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2266–2266 | key: document.toolbar.share | shared: iOS only -->
 
 Share
 
 <!-- END SOURCE: document.toolbar.share -->
 
 #### Share (iOS) — the menu's VoiceOver hint
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2251–2252 | key: document.toolbar.share.help | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2267–2268 | key: document.toolbar.share.help | shared: iOS only -->
 
 Send this document to your Zotero library, export a Zotero file, or share its citation
 
@@ -749,7 +749,7 @@ Summary %lld of %lld
 <!-- END SOURCE: summary.history.position.a11y %lld %lld -->
 
 #### Regenerate — spoken
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2556–2557 | key: summary.block.regenerate.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2572–2573 | key: summary.block.regenerate.a11y | shared: iOS only -->
 
 Regenerate this summary
 
@@ -1311,14 +1311,14 @@ Editorial notes: %@. Editorial-note documents carry a span of dates rather than 
 ### The document reader's person and term popovers
 
 #### This volume was indexed before the app recorded definitio…
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 340–341 | key: glossNotFound.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 343–344 | key: glossNotFound.detail.v2 -->
 
 This volume was indexed before the app recorded definitions. To add them, re-index the volume in Settings → Volumes & Storage.
 
 <!-- END SOURCE: glossNotFound.detail.v2 -->
 
 #### This volume was indexed before the app recorded details a…
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 330–331 | key: personNotFound.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 333–334 | key: personNotFound.detail.v2 -->
 
 This volume was indexed before the app recorded details about people. To add them, re-index the volume in Settings → Volumes & Storage.
 
@@ -1756,7 +1756,7 @@ Artifact: drawn from the bundled source-provenance aggregate generated %@. Every
 
 ### 18.10 Reading — the document, its rail, Related, Chronology, cross-references and citations
 
-*Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, and the notice for a link that only works inside a document.*
+*Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, the notice for a link that only works inside a document, and the line a volume's page in Browse shows when a page link opened it.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
 <!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3185–3186 | key: deepLink.inAppOnly %@ -->
@@ -1766,7 +1766,7 @@ This is a “%@” link from inside a FRUS document. It works while reading that
 <!-- END SOURCE: deepLink.inAppOnly %@ -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (macOS)
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 366–367 | key: document.crossref.download.message.mac %@ | shared: macOS (a key of its own since #1483; the iPhone and iPad text is document.crossref.download.message %@, later in §18.10) -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 369–370 | key: document.crossref.download.message.mac %@ | shared: macOS (a key of its own since #1483; the iPhone and iPad text is document.crossref.download.message %@, later in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document.
 
@@ -2146,14 +2146,14 @@ View cross-volume reference counts for this volume — click for details and to 
 <!-- END SOURCE: volumeGraph.node.help -->
 
 #### Empty state — This document is in \(…), which is not on this device.…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 769–770 | key: document.volumeMissing.detail | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 772–773 | key: document.volumeMissing.detail | shared: iOS only -->
 
 This document is in \(entry.volumeId), which is not on this device. Download the volume from the Browse tab to read it.
 
 <!-- END SOURCE: document.volumeMissing.detail -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (iOS)
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 832–833 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 835–836 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.
 
@@ -2161,8 +2161,17 @@ The linked document is in “%@”, which isn’t downloaded yet. Download it to
 
 *The iPhone and iPad alert has a View Connections button beside Download Volume, which the last clause names.*
 
+#### Browse — You followed a link to page %lld of this volume, which isn’t downloaded.
+<!-- SOURCE: FRUSExplorer/TEI/FRUSURLSchemeHandler.swift | FollowedPageLink.notice | lines: 530–531 | key: browser.volume.followedPage %lld | shared: iOS and macOS (one text, under the not-downloaded heading of a volume's page in Browse on iPhone and iPad and in the Corpus Browser on the Mac) -->
+
+You followed a link to page %lld of this volume, which isn’t downloaded.
+
+<!-- END SOURCE: browser.volume.followedPage %lld -->
+
+*Shown when a link to a printed page of a volume that is not on the device opened the volume's page instead of a document (#1766): the app's map of the series does not list that page — mostly the first page of a compilation cited with "ff.", or one end of a range of pages running across several documents. Where the map lists the page, the link offers the download as a link to a document does, with the alert above. On iPhone and iPad the section this line sits in leads the volume's page on such a visit. `%lld` is the page number as the volume prints it.*
+
 #### VoiceOver hint — Read mode also enables edge-tap navigation to the previous…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1473–1474 | key: document.toolbar.panelMode.hint | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1489–1490 | key: document.toolbar.panelMode.hint | shared: iOS only -->
 
 Read mode also enables edge-tap navigation to the previous and next document in this volume
 

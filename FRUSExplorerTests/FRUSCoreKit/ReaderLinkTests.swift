@@ -26,6 +26,8 @@ import Testing
 ///   1.0 — Session 2026-10-06 (FRUS Explorer Light, S9b): initial implementation
 ///   1.1 — Session 2026-10-09: #1603 — a whole-volume link in the table and the round trip, and, in
 ///          Xcode, where the app sends one (`WholeVolumeLink`)
+///   1.2 — Session 2026-10-22 (L6): #1766 — in Xcode, where the app sends a page link (`PageLink`):
+///          into a volume not on the device, the document the bundled page map names, or the volume
 @Suite("FRUSCoreKit — the reader's links read back")
 struct ReaderLinkTests {
 
@@ -288,6 +290,99 @@ extension ReaderLinkTests {
                 == .web(try #require(URL(string: "https://history.state.gov/historicaldocuments/frus1958-60v11mSupp"))))
         // An id that is not one path component names no page.
         #expect(WholeVolumeLink.destination(for: "frus1961-63v05/../x", inCatalogue: false) == nil)
+    }
+
+    // MARK: - Where a page link goes (#1766)
+
+    /// A page map built as the bundled one is, for two pages of the Paris Peace Conference's volume
+    /// II as `cited-page-map.json` lists them: p. 628, where d512 alone begins, and p. 294, where
+    /// d209 (No. 209, November 14, 1918) and d210 (No. 210, November 16) begin, with the facts the
+    /// tie-break reads for the two.
+    private static func parisPageMap() throws -> CitedPageMap {
+        try CitedPageMap(schemaVersion: 1, generated: "2026-10-22", indexVersion: 71,
+                         volumes: ["frus1919Parisv02"],
+                         documents: [["d209", "d210", "d512"]],
+                         pages: [[[294, CitedPageMap.claimCode(.begins), 0, 1],
+                                  [628, CitedPageMap.claimCode(.begins), 2]]],
+                         facts: [[.init(document: 0, printedNumber: "209", day: "1918-11-14"),
+                                  .init(document: 1, printedNumber: "210", day: "1918-11-16")]])
+    }
+
+    @Test("A page link opens the document its page names, from the page index for a volume on the device and from the bundled map where that names nothing, and otherwise its volume, naming the page (#1766)")
+    func aPageLinkGoesToItsDocumentOrItsVolume() throws {
+        let map = try Self.parisPageMap()
+        let paris = "frus1919Parisv02"
+        func destination(_ page: Int, in volumeId: String = paris, citing: PageCitationHint? = nil,
+                         onDevice: Bool = false, deviceDocument: String? = nil,
+                         map: CitedPageMap?) -> PageLink? {
+            PageLink.destination(page: page, volumeId: volumeId, citing: citing, onDevice: onDevice,
+                                 deviceDocument: deviceDocument, map: map)
+        }
+        // A volume on the device answers from its page index, as every page link did before #1766,
+        // whatever the map lists.
+        #expect(destination(628, onDevice: true, deviceDocument: "d512", map: map)
+                == .document(volumeId: paris, documentId: "d512"))
+        #expect(destination(294, citing: Self.hint(["210"]), onDevice: true, deviceDocument: "d209", map: map)
+                == .document(volumeId: paris, documentId: "d209"))
+        // Where its index names nothing — downloaded, not yet indexed — the map answers, and a page
+        // neither names opens nothing, as before.
+        #expect(destination(628, onDevice: true, deviceDocument: nil, map: map)
+                == .document(volumeId: paris, documentId: "d512"))
+        #expect(destination(130, onDevice: true, deviceDocument: nil, map: map) == nil)
+        #expect(destination(628, onDevice: true, deviceDocument: nil, map: nil) == nil)
+
+        // A volume not on the device answers from the map where it lists the page.
+        #expect(destination(628, map: map) == .document(volumeId: paris, documentId: "d512"))
+        // Of several on the page, the one the footnote names by its number or its day, else the
+        // first: what a tap opens on a device holding the volume, and what the index stores.
+        #expect(destination(294, citing: Self.hint(["210"]), map: map)
+                == .document(volumeId: paris, documentId: "d210"))
+        #expect(destination(294, citing: Self.hint([], [(11, 16, 1918)]), map: map)
+                == .document(volumeId: paris, documentId: "d210"))
+        #expect(destination(294, citing: Self.hint([], [(11, 14, nil)]), map: map)
+                == .document(volumeId: paris, documentId: "d209"))
+        #expect(destination(294, map: map) == .document(volumeId: paris, documentId: "d209"))
+        // What the page index would say is never read for a volume not on the device.
+        #expect(destination(628, deviceDocument: "d999", map: map) == .document(volumeId: paris, documentId: "d512"))
+
+        // Anything else opens the volume and names the page: a page the map does not list (the
+        // first page of a compilation cited with "ff.", say), a volume it lists no page of, and any
+        // page when the bundled map cannot be read.
+        #expect(destination(130, map: map) == .volume(volumeId: paris, page: 130))
+        #expect(destination(628, in: "frus1919Parisv03", map: map) == .volume(volumeId: "frus1919Parisv03", page: 628))
+        #expect(destination(628, map: nil) == .volume(volumeId: paris, page: 628))
+    }
+
+    @Test("The table's page link reaches the document its footnote's day names through the bundled map, when its volume is not on the device (#1766)")
+    func theTablesPageLinkReachesItsDocumentThroughTheMap() throws {
+        // The table's own cross-volume page href, read and resolved as the readers read it.
+        let url = try #require(URL(string: "frusexplorer://doc/frus1961-63v14%23pg_387/frus1961-63v14?day=8-17-1888"))
+        guard case .crossReference(let target, let volume, let citing) = FRUSURLScheme.readerLink(from: url),
+              case .page(let volumeId?, let page) = FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: volume) else {
+            Issue.record("\(url.absoluteString) is not read as a page of another volume")
+            return
+        }
+        // Two documents begin on the page; the footnote's day is the second's.
+        let map = try CitedPageMap(schemaVersion: 1, generated: "2026-10-22", indexVersion: 71,
+                                   volumes: [volumeId], documents: [["d10", "d11"]],
+                                   pages: [[[page, CitedPageMap.claimCode(.begins), 0, 1]]],
+                                   facts: [[.init(document: 0, printedNumber: "10", day: "1888-08-16"),
+                                            .init(document: 1, printedNumber: "11", day: "1888-08-17")]])
+        #expect(PageLink.destination(page: page, volumeId: volumeId, citing: citing, onDevice: false,
+                                     deviceDocument: nil, map: map)
+                == .document(volumeId: "frus1961-63v14", documentId: "d11"))
+        // Without the map the link opens the volume, naming the page.
+        #expect(PageLink.destination(page: page, volumeId: volumeId, citing: citing, onDevice: false,
+                                     deviceDocument: nil, map: nil)
+                == .volume(volumeId: "frus1961-63v14", page: 387))
+    }
+
+    @Test("The volume's page names the page a page link was to as the volume prints it, with no grouping (#1766)")
+    func theFollowedPageIsNamedAsPrinted() {
+        // Four-digit pages are common in the older volumes (`frus1952-54v05p2`, p. 1345); a grouping
+        // separator would print a page number the volume does not.
+        #expect(FollowedPageLink(volumeId: "frus1952-54v05p2", page: 1345).notice.contains("page 1345 "))
+        #expect(FollowedPageLink(volumeId: "frus1919Parisv02", page: 130).notice.contains("page 130 "))
     }
 }
 #endif

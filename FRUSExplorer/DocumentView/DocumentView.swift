@@ -241,6 +241,9 @@ enum DocumentSheet: Identifiable {
 ///          `performSelectionVerb`), which UIKit could draw over the bar.
 ///   3.13 — #1761: the research-rail toggle asks for its accent colour with `.tint` on the button,
 ///          which a toolbar reads, where a `.foregroundStyle` inside its `Label` was never drawn
+///   3.14 — #1766: a page link goes where `PageLink` sends it, as the Mac's does: into a volume not
+///          on the device, the document the bundled page map names (offering the download), or the
+///          volume's page in Browse naming the page, where it did nothing
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -1321,7 +1324,11 @@ struct DocumentView: View {
     /// The Browse hand-off is the one `navigateToCrossRef` falls back to for a document, so it has
     /// that fallback's limit: from a reader inside a sheet, or in a window of its own on iPad, the
     /// volume opens in the main window's Browse tab, beneath the sheet or beside that window.
-    private func openCrossRefVolume(_ volumeId: String) {
+    ///
+    /// `followedPage` is the page a page link was to when it falls back to its volume (#1766,
+    /// `PageLink.volume`), which the volume's page in Browse names; a link to the whole volume
+    /// passes none, and clears any a page link left.
+    private func openCrossRefVolume(_ volumeId: String, followedPage: Int? = nil) {
         let inCatalogue = appState.manifestStore.entry(forVolumeId: volumeId) != nil
         switch WholeVolumeLink.destination(for: volumeId, inCatalogue: inCatalogue) {
         case .browse(let volumeId):
@@ -1329,6 +1336,10 @@ struct DocumentView: View {
             appState.openTab(.browse, from: sceneID)
             #endif
             appState.openBrowseVolume(volumeId, from: sceneID)
+            // After the hand-off, which clears it.
+            if let followedPage {
+                appState.followedPageLink = FollowedPageLink(volumeId: volumeId, page: followedPage)
+            }
         case .web(let url):
             // The system opener, for the reason `.external` gives above.
             UIApplication.shared.open(url)
@@ -1395,23 +1406,28 @@ struct DocumentView: View {
 
     /// Opens the document a page reference names (#1503): of several the page names, the one its
     /// footnote names by number or day, else the first (#1509) — the document the index stored the
-    /// reference's edge against.
+    /// reference's edge against. Where it goes is `PageLink`'s (#1766), which the Mac's reader asks
+    /// too: a volume on the device answers from its page index, as before, and from the bundled page
+    /// map where that names nothing; a volume that is not answers from the map, and the document
+    /// opens as a link to it does, offering the download; a page of it the map does not list opens
+    /// the volume's page in Browse, which names it.
     private func resolvePageReference(page: Int, volumeId: String, citing: PageCitationHint?) {
-        guard let store = appState.pageRangeStore else {
-            #if DEBUG
-            print("[DocumentView] Page ref: PageRangeStore unavailable")
-            #endif
-            return
-        }
+        // When the app cannot yet tell what is on the device, the page index answers, as before #1766.
+        let onDevice = appState.downloadManager?.isVolumeDownloaded(volumeId) ?? true
+        let store = appState.pageRangeStore
         Task {
-            let documentId = (try? await store.document(forPage: page, inVolume: volumeId,
-                                                         citing: citing)) ?? nil
+            let destination = await PageLink.destination(page: page, volumeId: volumeId, citing: citing,
+                                                         onDevice: onDevice, store: store,
+                                                         map: { CitedPageMapStore.shared })
             await MainActor.run {
-                if let documentId {
+                switch destination {
+                case .document(let volumeId, let documentId)?:
                     navigateToCrossRef(documentId: documentId, volumeId: volumeId)
-                } else {
+                case .volume(let volumeId, let page)?:
+                    openCrossRefVolume(volumeId, followedPage: page)
+                case nil:
                     #if DEBUG
-                    print("[DocumentView] Page ref: p. \(page) of \(volumeId) not in page index")
+                    print("[DocumentView] Page ref: p. \(page) of \(volumeId) names no document in the page index")
                     #endif
                 }
             }
