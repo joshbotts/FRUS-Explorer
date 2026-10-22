@@ -1,6 +1,6 @@
 # Phase-3 full-harvest assessment — the store is valid; corpus-scale gates measured
 
-**Status:** executed 2026-08-12 on the Studio, over the completed full-corpus harvest
+**Status: COMPLETE, kept in place** (marked so on 2026-10-21). This is EmbeddingGemma 300m's full harvest; since build 51 the app ships EmbeddingGemma 2 (B4, #1673 and #1674), whose store `../semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md` assesses. Source in the app, in `SemanticVectorsKit` and in the vectors generator cites this file by its path, so it stays where it is. Executed 2026-08-12 on the Studio, over the completed full-corpus harvest
 (`~/frus-semantic-raw`, run 2026-08-10). This is the Phase-5 handoff step of
 `tools/semantic-harvest/README.md` — store validation plus the corpus-scale re-run of the
 V-0 gates — and the go/no-go assessment for continuing the plan.

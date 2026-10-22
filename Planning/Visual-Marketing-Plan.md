@@ -1,14 +1,20 @@
 # Visual marketing plan — animations in the app, and assets outside it
 
 **Status:** proposed, 2026-08-30. Written against the tree at `30b105e` (build 44 on TestFlight).
-Reconciles against `Planning/Map-Figure-Export-And-Visual-Outputs.md` §7–§9 and
+Reconciles against `Planning/Completed/Map-Figure-Export-And-Visual-Outputs.md` §7–§9 and
 `Planning/Completed/Plan-Of-Record-2026-08-28.md` rather than being invented beside them.
 
-**Status at 2026-10-01: live.** §7's steps 0–4, 6–9, 11 and 14 are done (struck there); steps 5,
-10, 12, 13, 15 and 16 and GATE A's owner half are open. **§4.3, §5 and §7's figures were
+**Status at 2026-10-21: live.** §7's steps 0–4, 6–11, 14 and 15 are done (struck there); steps 5,
+12, 13 and 16 are open. The build-51 screenshot sweep (S0 to S5, #1749 to #1755) did steps 10 and
+15. Of GATE A only the owner's entry of the privacy label in App Store Connect is left: its EULA
+half is moot since decision 17 (2026-10-15), and the label is decided, Data Not Collected
+(`Plan-Of-Record-2026-10-21.md` §2). *Until 2026-10-21 this line read: steps 0–4, 6–9, 11 and 14
+done; 5, 10, 12, 13, 15 and 16 and GATE A's owner half open.* **§4.3, §5 and §7's figures were
 re-measured on 2026-10-01** against the bundle at `v2` `dc17d945`, and the map's again on 2026-10-10
 after its relayout: the manifest holds 553 volumes
 and the map 314,616 documents in 172 regions, where this plan was written at 552, 314,483 and 179.
+Those are EmbeddingGemma 300m's map: since B4 (2026-10-15) the shipped map is EmbeddingGemma 2's, in
+140 regions (`Store-Listing-Draft.md` §5).
 Figures in §1–§3 and §8–§10 are left as measured on the dates those sections carry.
 
 **Method.** Eight verified probes over the shipped code, three independent plan drafts scored by
@@ -44,7 +50,7 @@ rather than procedural**. That is the stronger design. All four documented traps
 | ~~4~~ | **FIXED 2026-08-31 (step 2).** ~~The plate is washed toward white and its brightest dots clamp.~~ `sourceAlphaBlendFactor = .sourceAlpha` (`SemanticMapRenderer.swift:377`), not `.one`. Readback alpha lands ~0.79–0.84 while RGB holds a full over-composite against the dark clear colour — and the image is *declared* premultiplied, so compositing over `AnalyticsFigureCanvas`'s forced white clamps bright dots to pure white rather than lightening uniformly. | Print defect (S) |
 | ~~5~~ | **FIXED 2026-08-31.** Colour space in step 2; the methods half now. ~~The plate cannot state what was in frame.~~ The export builds uniforms from its own 1144:900 ratio, so the exported field of view differs from a wide Mac window's, and the label layer re-runs its spacing rule against the export rectangle — the figure can name regions the reader never saw named. The caveat list states no camera centre, no half-extent, no aspect. Readback is untagged `CGColorSpaceCreateDeviceRGB` (`:730`, `:744`). | Methods gap (S–M) |
 
-**Gap 4 is my error to own.** `Map-Figure-Export-And-Visual-Outputs.md:143-144` asserts *"blending is
+**Gap 4 is my error to own.** `Completed/Map-Figure-Export-And-Visual-Outputs.md:146-147` asserts *"blending is
 source-over on both RGB and alpha … so the texture is opaque."* Source-over on alpha requires `.one`.
 The shipped code uses `.sourceAlpha`, which is what the pipeline always did — I mis-read it when
 writing the design, and the implementation correctly followed the code rather than my sentence. No
@@ -556,11 +562,14 @@ first sitting:
 
 **Gates first.** A gate makes downstream output *unpublishable*, not merely unfinished.
 
-- **GATE A — owner-only, start now.** Fill the four EULA placeholders (gates App Store submission of
-  any encoder-carrying build; **TestFlight is explicitly not gated**). Decide the privacy nutrition
+- **GATE A — owner-only, start now.** ~~Fill the four EULA placeholders (gates App Store submission of
+  any encoder-carrying build; **TestFlight is explicitly not gated**).~~ **MOOT since 2026-10-15**:
+  build 51 ships EmbeddingGemma 2 under Apache 2.0, so no custom EULA is entered (decision 17 of
+  `Completed/Plan-Of-Record-2026-10-14.md`; `Completed/App-Store-Custom-EULA.md`). Decide the privacy nutrition
   label — ~~**no `PrivacyInfo.xcprivacy` exists anywhere in the repo**~~ the manifest exists since
   PR #1191 (`FRUSExplorer/Resources/PrivacyInfo.xcprivacy`, declaring no collected data types), so
-  what remains is the App Store Connect label itself. Neither is visual; both are
+  what remains is the App Store Connect label itself. **Decided 2026-10-15: Data Not Collected**
+  (decision 35); the owner enters it at submission (`Plan-Of-Record-2026-10-21.md` §2). Neither is visual; both are
   hard blockers that surface the week you planned to submit.
 - ~~**GATE B — start the full 552-volume download and index now.**~~ **ALREADY SATISFIED, verified
   2026-08-31.** The author's own Mac carries **552 volumes / 316,839 documents** — the whole manifest,
@@ -753,8 +762,12 @@ ahead of the capture sessions. Old numbers in brackets.)*
    screenshot: capturing before seeding is capturing a beat that cannot be reproduced. **M-4 does
    not move with it** — it is `M in risk`, enables a renderer, and needs an on-device composition
    review, none of which should gate a capture program.
-10. *(was 7)* **Run the capture sessions.** The shot list stages ~41 rows ≈ **44–48 files**, not the
-    31 stale committed PNGs that circulated as a work estimate. Shoot store frames as a separate pass.
+10. ~~*(was 7)* **Run the capture sessions.** The shot list stages ~41 rows ≈ **44–48 files**, not the
+    31 stale committed PNGs that circulated as a work estimate. Shoot store frames as a separate pass.~~
+    **DONE 2026-10-21**, the build-51 screenshot sweep: S0's shot list (#1749, #1750) and the sittings
+    S1 to S5 (#1751 to #1755) retook the manuals' captures on build 1861 and shot the store frames in
+    passes of their own. `Docs/screenshots/README.md` has each sitting's entry. The screens that the
+    submission's fixes change are retaken in R1 of `Plan-Of-Record-2026-10-21.md` §1.
 11. ~~*(was 8)* **Finish the film (M, mostly assembly).**~~ **SHIPPED 2026-09-06** —
     `tools/map-film/` (`build_film.sh`, `make_subtitles.py`, `render_caption.swift`, README).
     Output `map-film.mp4`: **1440×1080, 46.08 s, 1.94 MB**, two soft subtitle tracks. No re-render.
@@ -800,8 +813,12 @@ ahead of the capture sessions. Old numbers in brackets.)*
     documents against EACH OTHER, not against the tree, so they went stale together and the gate
     stayed green. Struck here on 2026-09-20 after reading `LaunchSplashView`, whose `drift: true`
     cites this very row.
-15. *(was 13)* **Compose hero and captioned frames outside the repo.** No device-frame tooling, no
-    fastlane, no metadata directory. Design-tool work, not engineering.
+15. ~~*(was 13)* **Compose hero and captioned frames outside the repo.** No device-frame tooling, no
+    fastlane, no metadata directory. Design-tool work, not engineering.~~ **DONE 2026-10-21** in S5
+    (#1755): `tools/marketing/compose.py` composed the kit's store frames from the sittings'
+    captures, 34 frames at the presets' sizes, each stamped with build 1861
+    (`Launch-Marketing-Kit-2026-10-13.md`, *After the sittings*). The frames for App Store Connect
+    are composed again without the DRAFT stamp in R1 of `Plan-Of-Record-2026-10-21.md` §1.
 16. *(was 14)* **Post-launch, follow the design's own §9 order.**
 
 **Why the motion moved ahead of the capture** *(2026-08-31)*. Old steps 7 and 9 capture the very

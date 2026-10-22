@@ -257,8 +257,8 @@ exactly the authority of §12's prose. Only implementations bind.
 
 | # | Session | Size | Gate |
 |---|---|---|---|
-| ~~C-0~~ | ~~**Run the falsifier**~~ — **RUN AND JUDGED 2026-08-31**, PR #1152. Verdict: the falsifier substantially FIRES. Full record: `Planning/C0-Falsifier-2026-08-31.md`, evidence at `Planning/c0-falsifier/` | S | — |
-| ~~C-2~~ | ~~**The long-session re-run**~~ — **RUN AND JUDGED 2026-08-31**, PR #1153. **The block does not decay.** Record: `Planning/C2-Long-Session-2026-08-31.md` | S | — |
+| ~~C-0~~ | ~~**Run the falsifier**~~ — **RUN AND JUDGED 2026-08-31**, PR #1152. Verdict: the falsifier substantially FIRES. Full record: `Planning/Completed/C0-Falsifier-2026-08-31.md`, evidence at `Planning/c0-falsifier/` | S | — |
+| ~~C-2~~ | ~~**The long-session re-run**~~ — **RUN AND JUDGED 2026-08-31**, PR #1153. **The block does not decay.** Record: `Planning/Completed/C2-Long-Session-2026-08-31.md` | S | — |
 | ~~C-1~~ | ~~The read-only CLI~~ — **CLOSED, NOT NEEDED**, on C-2's pre-registered reading | M | — |
 | ~~C-0b~~ | ~~**Re-run the falsifier on the revised block**~~ — **RUN AND JUDGED 2026-09-06**, PR #1231 (#1208). **BLOCK 116/116 = 100%, CONTROL 90/116 = 77.6%** on the block at its current **143 lines**, two fresh questions. Archival discriminator reproduced: BLOCK 4/4 runs and 21 distinct NAIDs, CONTROL 0/4. Record: `Planning/C0b-Falsifier-2026-09-06.md`, evidence at `Planning/c0b-falsifier/` | S | — |
 | ~~C-0c~~ | ~~**Re-run it on the v1.20 block**~~ — **RUN AND JUDGED 2026-09-06**, PR #1238. **BLOCK 120/126 = 95.2%, CONTROL 98/126 = 77.8%** on the block at **181 lines**, two fresh questions. The rewritten log rule scored 0 of 4 in both arms. Archival discriminator: BLOCK 4/4 runs, **CONTROL 2 of 4**. Record: `Planning/C0c-Falsifier-2026-09-06.md`, evidence at `Planning/c0c-falsifier/` | S | — |

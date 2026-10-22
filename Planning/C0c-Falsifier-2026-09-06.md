@@ -1,5 +1,7 @@
 # C-0c: the v1.20 house-rules block, re-measured at 181 lines
 
+**Status: COMPLETE, kept in place** (marked so on 2026-10-21). Run and scored on 2026-09-06. `Docs/Agentic-Analysis-Guide.md` cites this file by its path, so it stays at the Planning root with its run folder, `c0c-falsifier/`, where a finished record would otherwise move to `Completed/`.
+
 Run 2026-09-06. Design frozen before launch; rubric frozen before launch; **three readings
 pre-registered before launch**; scorers blind to arm.
 

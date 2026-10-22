@@ -166,7 +166,7 @@ remains since S5: the slots embed `ios/search-tips`, `ipad/semantic-offer` with
 
 ## The build-51 sweep — the shot list (S0, 2026-10-21)
 
-The plan of record's §6a (`../../Planning/Plan-Of-Record-2026-10-14.md`) retakes every embedded
+The 2026-10-14 plan of record's §6a (`../../Planning/Completed/Plan-Of-Record-2026-10-14.md`) retakes every embedded
 capture on build 51 in five sittings after the tag, S1 to S5, with S6 optional on the owner's
 devices. This section is S0, the sitting that takes no picture: the list the others shoot from.
 It was made on 2026-10-21 at `v2` `b4dcd527` (A19 merged, index version 71, version 1.0 build

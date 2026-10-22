@@ -1,6 +1,6 @@
 # Keyword search snippets: an assessment, 2026-10-20
 
-**What this is.** The plan of record's §6g finding from A10 (#1684): a keyword result's snippet repeats the document's own heading, source note and dateline, and the row's two default lines rarely reach the word that matched. Measured on `v2` at `8927db62` (A10 merged). Nothing is built. The options go to the owner (§4), and the owner's choice is recorded in §5.
+**What this is.** The 2026-10-14 plan of record's §6g finding from A10 (#1684; `Completed/Plan-Of-Record-2026-10-14.md`): a keyword result's snippet repeats the document's own heading, source note and dateline, and the row's two default lines rarely reach the word that matched. Measured on `v2` at `8927db62` (A10 merged). Nothing is built. The options go to the owner (§4), and the owner's choice is recorded in §5.
 
 **How it was measured.**
 - **The index.** A full library at the current index version, 69: 553 volumes and 318,104 documents. It came from the "iPhone 17e A8 timing" simulator (`89404205`, indexed 2026-10-18), cloned (APFS) into a scratch folder and opened read-only and immutable. The simulator was not booted or touched.

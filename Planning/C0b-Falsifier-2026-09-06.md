@@ -1,5 +1,7 @@
 # C-0b: the revised house-rules block, re-measured (#1208)
 
+**Status: COMPLETE, kept in place** (marked so on 2026-10-21). Run and scored on 2026-09-06. `Docs/Agentic-Analysis-Guide.md` cites this file by its path, so it stays at the Planning root with its run folder, `c0b-falsifier/`, where a finished record would otherwise move to `Completed/`.
+
 Run 2026-09-06. Design frozen before launch; rubric frozen before launch; scorers blind to arm.
 
 ## 1. What was measured, and what had moved since C-0

@@ -1,5 +1,8 @@
 # W-15: geographic analytics and historical toponymy — assessment
 
+> **Moved to `Completed/` on 2026-10-21** (`../Plan-Of-Record-2026-10-21.md`, decision 98). Assessed. Dateline places stay parked in the 2026-10-21 plan's §5, blocked on
+> the owner's toponym curation.
+
 **Status:** ASSESSED, 2026-09-01. Session C-2 of `Completed/Plan-Of-Record-2026-08-28.md` §4, covering
 `BigPicture-Analytics-CorpusVsSeries.md`'s postponed priorities **8, 10, 11 and 12** together, with
 era-correct place names reconciling to stable places as the owner's stated first-class requirement.

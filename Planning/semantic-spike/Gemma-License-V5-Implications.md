@@ -1,6 +1,6 @@
 # The Gemma licence, mapped onto V-5 — what shipping the query encoder signs the app up for
 
-**Status:** research memo, 2026-08-10, supporting the owner's licence read (the second of the
+**Status: COMPLETE, kept in place** (marked so on 2026-10-21). Build 51 ships EmbeddingGemma 2 under Apache 2.0 (decision 17 of `../Completed/Plan-Of-Record-2026-10-14.md`), so the Gemma Terms mapped here bind only what builds 42 to 50 distribute, EmbeddingGemma 300m on `encoder-1`, which `../Completed/Gemma-Compliance-Runbook.md` covers. It stays beside the spike's verdict, which cites it. A research memo, 2026-08-10, supporting the owner's licence read (the second of the
 two acts that close V-0). Sources fetched today: the Gemma Terms of Use at
 ai.google.dev/gemma/terms (page last modified 2026-04-01; EmbeddingGemma is in its Appendix),
 the Gemma Prohibited Use Policy (last modified 2024-02-21), both Hugging Face repos, Google's

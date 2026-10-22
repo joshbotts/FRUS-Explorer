@@ -1,6 +1,6 @@
 # App Intents and Siri, stage 1: an assessment on the shipped SDK, 2026-10-18
 
-**What this is.** Plan-of-record item A6 (`Planning/Plan-Of-Record-2026-10-14.md` §1, decision 23, §5), based on `v2` at `d28093f9`. It settles the question `Planning/OS27-Semantic-Retrieval-Design.md` §3.3 left open: whether `IndexedEntity` adds to the app's Spotlight donation or replaces it. It also re-checks the declaration facts that design read on 2026-10-01, sizes A7's sketch, and says where A7 goes under decision 23.
+**What this is.** Plan-of-record item A6 (`Planning/Completed/Plan-Of-Record-2026-10-14.md` §1, decision 23, §5), based on `v2` at `d28093f9`. It settles the question `Planning/Completed/OS27-Semantic-Retrieval-Design.md` §3.3 left open: whether `IndexedEntity` adds to the app's Spotlight donation or replaces it. It also re-checks the declaration facts that design read on 2026-10-01, sizes A7's sketch, and says where A7 goes under decision 23.
 
 **How.**
 - **The SDK.** Read on Xcode 27.1 (27A9275): the iOS 27.1 and macOS 27.0 SDKs' `AppIntents` and `CoreSpotlight` interfaces, their headers, the documentation compiled into `AppIntents.swiftdoc`, and the toolchain's App Schema database (`AppIntentSchemas.sqlite`).

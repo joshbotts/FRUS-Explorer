@@ -1,5 +1,10 @@
 # OS 27 — Semantic Retrieval: Siri Distribution, Natural-Language Search, Similarity Axis
 
+> **Moved to `Completed/` on 2026-10-21** (`../Plan-Of-Record-2026-10-21.md`, decision 98). Every workstream has landed or been settled: A0 is A6's assessment
+> (`../App-Intents-Siri-Assessment-2026-10-18.md`), A1 is A7 (#1723, a candidate for build 52), B0 shipped in build 44,
+> B1 (`CSUserQuery`) was declined, and C shipped through the vectors program. C3, project-lead centroid retrieval, is
+> parked in the 2026-10-21 plan's §5. The status line below is the sketch's own, of 2026-08-01.
+
 **Status:** design sketch, unreviewed. Written against **beta** documentation and third-party WWDC26 write-ups — every OS-27 API claim below is marked **[V]** verified against Apple's own material or **[U]** unverified/second-hand. No claim here has been exercised against the Xcode 27 beta SDK. Read §8 before scheduling.
 **Where the three workstreams stand, 2026-10-01** (the sketch below is unchanged):
 - **B0 shipped** — a bounded `textContent` is donated to Spotlight (`IndexingPipeline.swift:2642`, the first 3,200 characters; build 44).
