@@ -119,3 +119,105 @@ struct IndexingBatchPositionTests {
         #expect(state.indexingQueuePosition?.current == 12)
     }
 }
+
+// MARK: - IndexingBatchCountTests
+
+/// The queue's count of its volumes, `IndexingBatch.count(_:)` and `uncount(_:)` (#1757).
+///
+/// ## What broke
+/// The total was the download queue's length plus one, taken when the first volume began
+/// indexing, and raised afterwards only by the backlog on disk. Measured on an iPhone 17 simulator
+/// (iOS 27.0), a 27-volume subseries still being queued opened at "Volume 1 of 20" and read
+/// "20 of 20" with seven volumes to come, and the volume that opened a queue, still listed as
+/// downloading, was counted twice ("Volume 1 of 12" for eleven). The rule now counts each volume
+/// once, by id, whichever list it is met in. These drive the rule with values;
+/// `IndexingQueueCountTests` drives the app's own progress path.
+///
+/// Version history:
+///   1.0 — #1757: initial implementation
+@Suite("Indexing — the queue counts each of its volumes once (#1757)")
+struct IndexingBatchCountTests {
+
+    /// A queue with nothing counted unless given.
+    private static func batch(total: Int = 0, completed: Int = 0, volumeIds: [String] = []) -> IndexingBatch {
+        IndexingBatch(total: total, completed: completed,
+                      latest: .init(volumeId: "v", stage: .reading, completedDocuments: 0,
+                                    totalDocuments: 0, docsPerSecond: 0),
+                      volumeIds: volumeIds)
+    }
+
+    @Test("Each volume the queue meets adds one, in the order met, and one met again adds nothing")
+    func countsEachVolumeOnce() {
+        var batch = Self.batch()
+        let first = batch.count(["a", "b", "a"])
+        #expect(first)
+        #expect(batch.total == 2)
+        #expect(batch.volumeIds == ["a", "b"])
+        // Met again in another list (still downloading, then on disk), it is the same volume.
+        let again = batch.count(["b", "a"])
+        #expect(!again)
+        #expect(batch.total == 2)
+        let third = batch.count(["c"])
+        #expect(third)
+        #expect(batch.total == 3)
+        #expect(batch.volumeIds == ["a", "b", "c"])
+    }
+
+    @Test("An empty id names no volume and is never counted")
+    func anEmptyIdIsNoVolume() {
+        var batch = Self.batch()
+        let counted = batch.count(["", ""])
+        #expect(!counted)
+        #expect(batch.total == 0)
+        #expect(batch.volumeIds.isEmpty)
+    }
+
+    @Test("A volume met for the first time adds one to whatever the total already holds")
+    func aNewVolumeAddsToTheTotal() {
+        // A volume that finished without being counted first raised the total through the
+        // `.complete` floor and never joined `volumeIds`; a new volume still adds one.
+        var batch = Self.batch(total: 3, completed: 3, volumeIds: ["a", "b"])
+        let counted = batch.count(["c"])
+        #expect(counted)
+        #expect(batch.total == 4)
+    }
+
+    @Test("A download cancelled or failed for good takes its volume out of the count, until it is queued again")
+    func aCancelledVolumeLeavesTheCount() {
+        var batch = Self.batch()
+        batch.count(["a", "b", "c"])
+        let dropped = batch.uncount("b")
+        #expect(dropped)
+        #expect(batch.total == 2)
+        #expect(batch.volumeIds == ["a", "c"])
+        let requeued = batch.count(["b"])
+        #expect(requeued, "queued again, it is counted again")
+        #expect(batch.total == 3)
+    }
+
+    @Test("A volume the queue never counted, or whose pass already finished in it, stays as it is")
+    func uncountLeavesTheRest() {
+        var batch = Self.batch()
+        batch.count(["a", "b"])
+        let droppedUnknown = batch.uncount("z")
+        #expect(!droppedUnknown)
+        #expect(batch.total == 2)
+        batch.completed = 1
+        batch.completedVolumeIds = ["a"]
+        let droppedFinished = batch.uncount("a")
+        #expect(!droppedFinished, "its pass is among the finished, whatever a later download of it does")
+        #expect(batch.total == 2)
+        #expect(batch.volumeIds == ["a", "b"])
+    }
+
+    @Test("The total never falls below the volumes already finished")
+    func theTotalKeepsTheFinished() {
+        // Two passes finished, one of a volume the queue never counted; the counted one is cancelled.
+        var batch = Self.batch(total: 2, completed: 2, volumeIds: ["a"])
+        let moved = batch.uncount("a")
+        #expect(!moved)
+        #expect(batch.total == 2)
+        #expect(batch.volumeIds.isEmpty)
+    }
+}
+

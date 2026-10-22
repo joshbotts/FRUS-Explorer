@@ -287,6 +287,8 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          stand-in for the encoder (DEBUG-only; inert without `FRUS_UI_TEST_SEED_MEANING`).
 ///   4.30 — #1704: `bootDownloadManager()` seeds `UITestSavedSearchSeeder`'s saved search, and on request a
 ///          collection linked to it, beside the scopes (DEBUG-only; inert without `FRUS_UI_TEST_SEED_SAVED_SEARCH`).
+///   4.31 — #1757: the download manager's `onTransferFinished` also tells the indexing queue how each
+///          transfer ended (`AppState.indexingQueueTransferDidFinish(_:outcome:)`).
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -2818,9 +2820,11 @@ struct FRUSExplorerApp: App {
                     await appState.semanticShardStore?.removeShard(for: volumeId)
                 }
             },
-            // #1660: how each transfer ended, for Keeping Current's rows.
+            // #1660: how each transfer ended, for Keeping Current's rows. #1757: and for the indexing
+            // queue's count, which takes in a volume that landed and lets go of one that never will.
             onTransferFinished: { @MainActor [appState] volumeId, outcome in
                 appState.keepingCurrent.transferDidFinish(volumeId, outcome: outcome)
+                appState.indexingQueueTransferDidFinish(volumeId, outcome: outcome)
             }
         )
         // With no index there is no re-index after a download, so an update reads Updated when

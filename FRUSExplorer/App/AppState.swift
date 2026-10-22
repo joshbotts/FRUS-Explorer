@@ -178,6 +178,10 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///   4.22 — 2026-10-20: `connectIndexingProgress` is documented as the progress stream's one reader,
 ///          to be called once for a pipeline (it had been called safe to call again), and
 ///          `currentIndexingProgress` as the source Browse's Index Now reads. Comment only
+///   4.23 — #1757: the indexing queue counts every volume it holds, its downloads included
+///          (`downloadQueue`'s `didSet`, `indexingQueueTransferDidFinish(_:outcome:)`,
+///          `IndexingBatch.count(_:)`), and its Live Activity shows a new count at once
+///          (`refreshIndexingLiveActivityQueue()`)
 
 // MARK: - CloudKitSyncState
 
@@ -1136,7 +1140,13 @@ final class AppState {
     ///
     /// Updated by `DownloadManager` via its `onStateChanged` callback. Views observe
     /// this to show download indicators without calling into the actor directly.
-    var downloadQueue: [String] = []
+    ///
+    /// An indexing queue in flight counts each volume listed here among its own (#1757): a
+    /// subseries is still being queued when its first volume begins indexing, and every volume
+    /// queued after that is part of the wait the banner reports.
+    var downloadQueue: [String] = [] {
+        didSet { countInIndexingBatch(downloadQueue) }
+    }
 
     // MARK: - Person Rollup Signal
 
@@ -2095,6 +2105,49 @@ final class AppState {
     /// is empty.
     var indexingBatch: IndexingBatch?
 
+    /// Volumes whose download has landed and whose pass has not yet finished (#1757).
+    ///
+    /// The queue counts them from here because neither of its other lists holds them for certain.
+    /// Such a volume has left the download queue, and the backlog leaves out every volume with
+    /// rows in the index, which a pass under way has begun to write and a re-download or an update
+    /// keeps from before. Four transfers run at once by default, so several volumes can land and
+    /// leave the download queue before the first progress update opens a queue: measured on an
+    /// iPhone 17 simulator, six volumes of a 27-volume download were indexing before the first
+    /// finished. A volume leaves this set when its pass ends, and the set empties with the queue.
+    @ObservationIgnored
+    private var landedVolumeIdsAwaitingIndex: Set<String> = []
+
+    /// Counts each of `volumeIds` among the queue's volumes, when a queue is in flight (#1757),
+    /// and shows a new total on the queue's Live Activity at once.
+    private func countInIndexingBatch(_ volumeIds: some Sequence<String>) {
+        guard var batch = indexingBatch else { return }
+        guard batch.count(volumeIds) else { return }
+        indexingBatch = batch
+        #if os(iOS)
+        refreshIndexingLiveActivityQueue()
+        #endif
+    }
+
+    /// A download has ended (#1757). One that landed is counted among the queue's volumes until
+    /// its pass finishes, since `onVolumeDownloaded` indexes every download that lands; one
+    /// cancelled or failed for good leaves the queue, so the banner's total does not wait for a
+    /// volume that will never come. `DownloadManager`'s `onTransferFinished` calls this, once for
+    /// each transfer.
+    func indexingQueueTransferDidFinish(_ volumeId: String, outcome: DownloadTransferOutcome) {
+        switch outcome {
+        case .succeeded:
+            landedVolumeIdsAwaitingIndex.insert(volumeId)
+            countInIndexingBatch([volumeId])
+        case .cancelled, .failed:
+            guard var batch = indexingBatch else { return }
+            guard batch.uncount(volumeId) else { return }
+            indexingBatch = batch
+            #if os(iOS)
+            refreshIndexingLiveActivityQueue()
+            #endif
+        }
+    }
+
     /// Bumped after any review write to `document_revisions` or to a highlight's
     /// `renderingVersion` (R-5 P3), so the three P2 readers — the document twins' `revision`,
     /// `ResearchView`'s unreviewed set, the storage hubs' section — reload without a re-index.
@@ -2173,13 +2226,14 @@ final class AppState {
         return (current: min(batch.completed + 1, batch.total), total: batch.total)
     }
 
-    /// Re-reads the real backlog and either raises the queue's total or ends the queue.
+    /// Re-reads the real backlog and either counts what it holds or ends the queue.
     ///
-    /// `downloadQueue.count + 1` only describes a queue whose downloads are still in
-    /// flight. When the downloads finished first — a subseries on a fast connection — the
-    /// provisional total is 1 while dozens of volumes wait, which is what hid the queue
-    /// banner (#541). `unindexedDownloadedVolumeIds()` is the authoritative answer, and is
-    /// what the background indexing pass already uses to decide its own work.
+    /// The download queue only describes a queue whose downloads are still in flight. When the
+    /// downloads finished first — a subseries on a fast connection — there is nothing left in it
+    /// while dozens of volumes wait on disk, which is what hid the queue banner (#541).
+    /// `unindexedDownloadedVolumeIds()` is the authoritative answer for those, and is what the
+    /// background indexing pass already uses to decide its own work. Each volume it lists is
+    /// counted once, as every other list the queue reads is (`IndexingBatch.count(_:)`, #1757).
     ///
     /// - Parameter mayEnd: `true` after a volume completes, when an empty backlog means
     ///   the whole queue is done. `false` at queue start, where an empty result could only
@@ -2187,6 +2241,9 @@ final class AppState {
     ///
     /// Runs off the main actor (`IndexingPipeline` is an actor) and only ever raises the
     /// total, so a slow query cannot retract a count the banner is already showing.
+    /// A total it raises reaches the queue's Live Activity at once
+    /// (`refreshIndexingLiveActivityQueue()`): with no next volume under way, nothing else would
+    /// carry it there.
     private func syncIndexingBatchWithBacklog(mayEnd: Bool) {
         guard let pipeline = indexingPipeline else {
             // Nothing can answer "is there more?", so ending on the volume that just
@@ -2196,7 +2253,7 @@ final class AppState {
         }
         Task { @MainActor [weak self] in
             let found = try? await pipeline.unindexedDownloadedVolumeIds()
-            guard let self, var batch = self.indexingBatch else { return }
+            guard let self, let batch = self.indexingBatch else { return }
             guard let found else {
                 // A transient failure: the next volume asks again. With no next volume, nothing
                 // else would end the queue, and since #1695 its Live Activity ends with it, so the
@@ -2230,13 +2287,12 @@ final class AppState {
                 self.armIndexingBatchWatchdog(generation: batch.generation,
                                               seconds: Self.indexingBatchSettleSeconds)
             } else {
-                batch.total = max(batch.total, batch.completed + backlog.count)
-                // Union, never replace: the backlog shrinks as volumes are indexed, and
-                // the cloud's scope must describe the queue the user started, not what is
-                // left of it.
-                let known = Set(batch.volumeIds)
-                batch.volumeIds += backlog.filter { !known.contains($0) }.sorted()
-                self.indexingBatch = batch
+                // Counted, never replaced: the backlog shrinks as volumes are indexed, and the
+                // cloud's scope must describe the queue the user started, not what is left of it.
+                // A volume the queue has already met — still listed as downloading when its file
+                // landed, or the one indexing now — is not counted again (#1757). The backlog is
+                // sorted, so volumes met here join in a stable order.
+                self.countInIndexingBatch(backlog)
                 if mayEnd {
                     self.armIndexingBatchWatchdog(generation: batch.generation,
                                                   seconds: Self.indexingBatchStallTimeout)
@@ -2250,6 +2306,8 @@ final class AppState {
     private func endIndexingBatch() {
         indexingBatchWatchdog?.cancel()
         indexingBatchWatchdog = nil
+        // A volume still listed here never reported its pass: nothing will, in this queue (#1757).
+        landedVolumeIdsAwaitingIndex.removeAll()
         #if os(iOS)
         // The one activity the queue had ends with it (#1695, plan of record decision 63).
         endIndexingLiveActivity()
@@ -2517,8 +2575,10 @@ final class AppState {
                     // again" loop CitationLookupView and Add Documents advertise needs no
                     // notice (#1522; a notice sent here, and only here, left a download
                     // waiting for its pass offered for download).
+                    self.landedVolumeIdsAwaitingIndex.remove(update.volumeId)
                     if var batch = self.indexingBatch {
                         batch.completed += 1
+                        batch.completedVolumeIds.insert(update.volumeId)
                         batch.total = max(batch.total, batch.completed)
                         batch.generation += 1
                         self.indexingBatch = batch
@@ -2574,6 +2634,7 @@ final class AppState {
                     // where nothing in this queue will index it, so the queue leaves it out of what
                     // it waits for, goes on to the next volume if there is one, and ends if not.
                     self.currentIndexingProgress = nil
+                    self.landedVolumeIdsAwaitingIndex.remove(update.volumeId)
                     if var batch = self.indexingBatch {
                         batch.failedVolumeIds.insert(update.volumeId)
                         batch.generation += 1
@@ -2602,15 +2663,15 @@ final class AppState {
                         batch.failedVolumeIds.remove(update.volumeId)
                         self.indexingBatch = batch
                     } else {
-                        // A new queue. The provisional total is correct for a
-                        // download-led queue and an undercount when the downloads already
-                        // finished; the backlog query below replaces it either way.
-                        self.indexingBatch = IndexingBatch(
-                            total: max(1, self.downloadQueue.count + 1),
-                            completed: 0,
-                            latest: update,
-                            volumeIds: self.downloadQueue + [update.volumeId]
-                        )
+                        // A new queue, counting what is queued to download, what has landed
+                        // and waits for its pass, and the volume that opened it, each once
+                        // (#1757): until then this was the download queue's length plus one,
+                        // which counted the opening volume twice while it was still listed
+                        // there. The backlog query below counts what waits on disk.
+                        var batch = IndexingBatch(total: 0, completed: 0, latest: update, volumeIds: [])
+                        batch.count(self.downloadQueue + self.landedVolumeIdsAwaitingIndex.sorted()
+                                    + [update.volumeId])
+                        self.indexingBatch = batch
                         self.completedIndexingBatchVolumeCount = nil
                         self.indexingQueueAverageDocsPerSecond = 0
                         self.indexingQueueAverageDocumentCount = 600
@@ -2669,23 +2730,47 @@ final class AppState {
         // The `.complete` of a whole-library pass names no volume: there is nothing new to show,
         // and the queue's end follows within seconds.
         if finished && update.volumeId.isEmpty { return }
+        lastIndexingLiveActivityUpdate = update
+        // A finished volume is shown on the activity the queue holds, and starts none: a queue
+        // that holds none by then is one whose request the system refused.
+        showLiveActivity(indexingLiveActivityState(for: update), startingOne: !finished)
+    }
+
+    /// What the indexing queue's Live Activity shows for `update`, with the queue's count as it
+    /// stands now.
+    private func indexingLiveActivityState(for update: IndexingProgressUpdate) -> IndexingActivityAttributes.ContentState {
         // A finished volume counts among the queue's volumes done; one under way is the next.
-        let queue = finished
+        let queue = update.stage == .complete
             ? indexingBatch.flatMap { $0.total >= 2 ? (current: $0.completed, total: $0.total) : nil }
             : indexingQueuePosition
-        let state = LiveActivityLifecycle.indexingState(
+        return LiveActivityLifecycle.indexingState(
             for: update,
             catalogueTitle: manifestStore.entry(forVolumeId: update.volumeId)?.title,
             queue: queue
         )
-        // A finished volume is shown on the activity the queue holds, and starts none: a queue
-        // that holds none by then is one whose request the system refused.
-        showLiveActivity(state, startingOne: !finished)
+    }
+
+    /// The update the indexing queue's Live Activity last showed, kept so that a new count can be
+    /// shown on it again (`refreshIndexingLiveActivityQueue()`, #1757). Cleared with the activity.
+    @ObservationIgnored
+    private var lastIndexingLiveActivityUpdate: IndexingProgressUpdate?
+
+    /// Shows the queue's count on its Live Activity again, after the count changed with no progress
+    /// update to carry it (#1757): a download queued, landed, cancelled or failed while the queue
+    /// waits between two volumes, or the backlog read after a volume finished.
+    ///
+    /// Until then the activity took a new count only with the next volume's first update, and a
+    /// queue waiting on a slow download sends none for minutes, so the banner and the activity
+    /// could name different totals. It sends only to an activity the queue holds, and starts none.
+    private func refreshIndexingLiveActivityQueue() {
+        guard heldLiveActivityIDs[.indexing] != nil, let update = lastIndexingLiveActivityUpdate else { return }
+        showLiveActivity(indexingLiveActivityState(for: update), startingOne: false)
     }
 
     /// Ends the indexing queue's Live Activity, which lingers `LiveActivityLifecycle.lingerAfterEnd`
     /// seconds so the queue's last state is seen before it goes.
     private func endIndexingLiveActivity() {
+        lastIndexingLiveActivityUpdate = nil
         endLiveActivity(.indexing)
     }
 

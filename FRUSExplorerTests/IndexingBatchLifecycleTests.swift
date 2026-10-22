@@ -795,3 +795,185 @@ struct IndexNowProgressReaderTests {
             """)
     }
 }
+
+// MARK: - IndexingQueueCountTests
+
+/// The queue counts every volume it holds, its downloads included (#1757), driven through
+/// `AppState`'s own progress path with a real pipeline.
+///
+/// ## What broke
+/// The total was the download queue's length plus one, taken when the first volume began
+/// indexing, and raised afterwards only by the backlog on disk, which a volume reaches only once
+/// it has landed. Measured on an iPhone 17 simulator (iOS 27.0) on 2026-10-22, a 27-volume
+/// subseries still being queued opened at "Volume 1 of 20" and read "20 of 20" with seven volumes
+/// to come; the volume that opened a queue, still listed as downloading, was counted twice
+/// ("Volume 1 of 12" for eleven); and the Live Activity took a new total only with the next
+/// volume's first update.
+///
+/// A volume named here and not written to disk stands for a download still to come. The queue
+/// learns of it as the app's download manager reports it: through `downloadQueue`, which its
+/// `onStateChanged` sets, and `indexingQueueTransferDidFinish(_:outcome:)`, which its
+/// `onTransferFinished` calls.
+///
+/// Version history:
+///   1.0 — #1757: initial implementation
+@Suite("Indexing — the queue counts what is still to download (#1757)")
+@MainActor
+struct IndexingQueueCountTests {
+
+    /// Writes a volume of three small documents into `directory`.
+    private static func writeVolume(_ volumeId: String, in directory: URL) throws {
+        let documents = (1...3).map {
+            "<div type=\"document\" xml:id=\"d\($0)\"><head>Document \($0)</head><p>Body \($0).</p></div>"
+        }.joined()
+        try """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>Test</title></titleStmt>
+          <publicationStmt><p>Test</p></publicationStmt>
+          <sourceDesc><p>Test</p></sourceDesc></fileDesc></teiHeader>
+          <text><body><div type="volume" xml:id="\(volumeId)">
+          <div type="chapter" xml:id="ch1">\(documents)</div>
+          </div></body></text>
+        </TEI>
+        """.write(to: directory.appendingPathComponent("\(volumeId).xml"), atomically: true, encoding: .utf8)
+    }
+
+    /// `onDisk` written to a volumes folder, an `AppState` subscribed to their pipeline as the
+    /// app's boot subscribes it, and the stand-in in place of the system's Live Activities.
+    private func withLibrary(
+        _ onDisk: [String],
+        _ body: (IndexingPipeline, AppState, RecordingLiveActivityHost) async throws -> Void
+    ) async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-queue-count-\(UUID().uuidString)")
+        let volumes = directory.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        for volumeId in onDisk { try Self.writeVolume(volumeId, in: volumes) }
+        let databaseURL = directory.appendingPathComponent("test.db")
+        let pipeline = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: databaseURL),
+                                            databaseURL: databaseURL, volumesDirectory: volumes)
+        let appState = AppState()
+        let host = RecordingLiveActivityHost()
+        appState.liveActivityHost = host
+        // The queue asks the pipeline what waits on disk.
+        appState.indexingPipeline = pipeline
+        appState.connectIndexingProgress(pipeline: pipeline)
+        try await body(pipeline, appState, host)
+    }
+
+    /// Whether `predicate` holds within `timeout`: the progress stream and the backlog query are
+    /// asynchronous, so the queue's state is read as it comes to be.
+    private func eventually(within timeout: Duration = .seconds(10), _ predicate: () -> Bool) async throws -> Bool {
+        let deadline = ContinuousClock.now + timeout
+        while ContinuousClock.now < deadline {
+            if predicate() { return true }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        return predicate()
+    }
+
+    @Test("A queue counts the downloads still to come, those queued after it began included, and a landing moves nothing")
+    func countsTheDownloadsToCome() async throws {
+        try await withLibrary(["frus1969-76v01"]) { pipeline, appState, _ in
+            // Two more of the subseries are still downloading as the first begins to index.
+            appState.downloadQueue = ["frus1969-76v02", "frus1969-76v03"]
+            try await pipeline.indexVolume("frus1969-76v01")
+            #expect(try await eventually { appState.indexingBatch?.completed == 1 }, "the queue never saw its first volume finish")
+            #expect(appState.indexingBatch?.total == 3)
+
+            // The download sheet was still queuing: a fourth joins the queue after it began.
+            appState.downloadQueue = ["frus1969-76v02", "frus1969-76v03", "frus1969-76v04"]
+            #expect(appState.indexingBatch?.total == 4, "a volume queued after the queue began went uncounted")
+
+            // The second lands: it leaves the download queue for the disk, and the total holds.
+            appState.downloadQueue = ["frus1969-76v03", "frus1969-76v04"]
+            appState.indexingQueueTransferDidFinish("frus1969-76v02", outcome: .succeeded)
+            let position = appState.indexingQueuePosition
+            #expect(position?.current == 2)
+            #expect(position?.total == 4)
+            #expect(appState.indexingBatch?.volumeIds
+                    == ["frus1969-76v02", "frus1969-76v03", "frus1969-76v01", "frus1969-76v04"])
+        }
+    }
+
+    @Test("The volume that opens a queue is counted once while it is still listed as downloading")
+    func theOpeningVolumeCountsOnce() async throws {
+        try await withLibrary(["frus1969-76v01"]) { pipeline, appState, _ in
+            // Its own download's state change has not arrived yet when its first update does.
+            appState.downloadQueue = ["frus1969-76v01", "frus1969-76v02"]
+            try await pipeline.indexVolume("frus1969-76v01")
+            #expect(try await eventually { appState.indexingBatch?.completed == 1 }, "the queue never saw its first volume finish")
+            #expect(appState.indexingBatch?.total == 2, "counted twice, it read Volume 1 of 3")
+        }
+    }
+
+    @Test("A download cancelled or failed for good leaves the count, and a volume already indexed stays in it")
+    func aCancelledDownloadLeavesTheCount() async throws {
+        try await withLibrary(["frus1969-76v01"]) { pipeline, appState, _ in
+            appState.downloadQueue = ["frus1969-76v02", "frus1969-76v03", "frus1969-76v04"]
+            try await pipeline.indexVolume("frus1969-76v01")
+            #expect(try await eventually { appState.indexingBatch?.completed == 1 }, "the queue never saw its first volume finish")
+            #expect(appState.indexingBatch?.total == 4)
+
+            // Cancelled in Volumes & Storage's Active Downloads.
+            appState.downloadQueue = ["frus1969-76v02", "frus1969-76v03"]
+            appState.indexingQueueTransferDidFinish("frus1969-76v04", outcome: .cancelled)
+            #expect(appState.indexingBatch?.total == 3)
+            // Failed with its retries spent.
+            appState.downloadQueue = ["frus1969-76v02"]
+            appState.indexingQueueTransferDidFinish(
+                "frus1969-76v03",
+                outcome: .failed(DownloadFailure(urlErrorCode: .timedOut, description: "The request timed out.")))
+            #expect(appState.indexingBatch?.total == 2)
+            // A download of the volume already indexed in this queue, cancelled: its pass stands.
+            appState.indexingQueueTransferDidFinish("frus1969-76v01", outcome: .cancelled)
+            #expect(appState.indexingBatch?.total == 2)
+            let position = appState.indexingQueuePosition
+            #expect(position?.current == 2)
+            #expect(position?.total == 2)
+        }
+    }
+
+    @Test("A download that landed before the queue began is counted when it begins")
+    func aLandedDownloadIsCounted() async throws {
+        try await withLibrary(["frus1969-76v01"]) { pipeline, appState, _ in
+            // frus1969-76v09 landed a moment before: it has left the download queue, and in this
+            // fixture it is not on disk, so only its landing names it, as for a re-downloaded volume
+            // whose index rows keep it out of the backlog while its pass begins.
+            appState.indexingQueueTransferDidFinish("frus1969-76v09", outcome: .succeeded)
+            try await pipeline.indexVolume("frus1969-76v01")
+            #expect(try await eventually { appState.indexingBatch?.completed == 1 }, "the queue never saw its first volume finish")
+            #expect(appState.indexingBatch?.total == 2)
+            #expect(appState.indexingBatch?.volumeIds == ["frus1969-76v09", "frus1969-76v01"])
+        }
+    }
+
+    @Test("The queue's Live Activity takes a new total at once, while the queue waits between two volumes")
+    func theLiveActivityKeepsInStep() async throws {
+        try await withLibrary(["frus1969-76v01"]) { pipeline, appState, host in
+            appState.downloadQueue = ["frus1969-76v02"]
+            try await pipeline.indexVolume("frus1969-76v01")
+            // The first volume shown finished, as the first of two.
+            #expect(try await eventually {
+                host.shown.last.map { $0.queueCurrent == 1 && $0.queueTotal == 2 && $0.progressFraction == 1 } ?? false
+            }, "the activity never showed the first volume finished")
+            let sent = host.updates.count
+
+            // Two more queued while nothing indexes: no progress update comes until one lands.
+            appState.downloadQueue = ["frus1969-76v02", "frus1969-76v03", "frus1969-76v04"]
+            #expect(host.updates.count > sent, "the new total did not reach the activity")
+            let shown = try #require(host.shown.last)
+            #expect(shown.queueTotal == 4)
+            #expect(shown.queueCurrent == 1)
+            #expect(shown.progressFraction == 1, "it still shows the volume that finished")
+            #expect(host.requests.count == 1, "a new total starts no second activity")
+
+            // A cancellation takes one out, on the activity as on the banner.
+            appState.indexingQueueTransferDidFinish("frus1969-76v04", outcome: .cancelled)
+            #expect(host.shown.last?.queueTotal == 3)
+            #expect(appState.indexingQueuePosition?.total == 3)
+        }
+    }
+}
