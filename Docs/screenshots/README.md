@@ -569,7 +569,9 @@ After S4, `SCALE=1 OUT_DIR=~/Desktop/store python3 tools/marketing/compose.py` f
 sizes, and the drafts re-run into `Planning/marketing-drafts/`. **Done in S5, 2026-10-21**:
 `shots.json` names a capture for all 34 frames, every one stamped *build 1861*, and the composer
 wrote them twice, the drafts into `Planning/marketing-drafts/` and the store sizes into
-`~/Desktop/store` (the sittings' ledger, S5).
+`~/Desktop/store` (the sittings' ledger, S5). **Composed again in R1, 2026-10-22**, with
+`SCALE=1 STAMP=0` (#1763): the 34 frames for App Store Connect are in `~/Desktop/store`, none
+stamped, and the drafts are rendered again (the sittings' ledger, R1).
 
 ### Caption and sentence fixes S5 already owes
 
@@ -1091,6 +1093,133 @@ in both manuals from the bundled files (#1762).
     S5*, below. Three of them are now in a frame the manuals embed: `browse-clusters` shows the
     largest cluster at 37,899 beside iOS §6.1h's 37,865 (S0's 2), Mac §15.4's ranking frame prints *1
     unresolvable references* (S4's 1), and its matrix labels a row *: Southeast Asia* (S4's 2).
+- **R1 — run 2026-10-22, 17:10 to 18:26; the retake sitting of the plan of record from 2026-10-21
+  (decision 88), started by the coordinating session on the owner's "start r1"; the session
+  captured, and drove the Mac on the owner's word of 17:58.** Version 1.0, build **1861**, the
+  `AppStore` configuration built for the simulator as S1's to S3's (`-target FRUSExplorer -sdk
+  iphonesimulator ARCHS=arm64 -jobs 4`), from `v2` at **`7bbf36cb`** (L1 to L7, #1771 and #1779
+  merged), built 17:19:45 to 17:22:53 under `Scripts/heavy.sh` with build 48's local-only banner
+  patch, never committed and reverted in the worktree once the build was made. No lane changed the
+  index version, so nothing re-indexed. **Every file predates the `build-51` tag (decision 99): a
+  screen that a fix after `7bbf36cb` changes is retaken.**
+  - **21 files: the brief's 17, and four the lanes' lists missed**, each found by reading the
+    committed frames against the lanes' diffs: `ipad/cite-sheet` (the kit's frame 07), whose rail
+    is open behind the Cite sheet with its toggle, which L1 tints; and `ipad/semantic-offer`,
+    `ipad/semantic-zero-result-matches` and `macos/search-zero-result-meaning`, whose MATCH strip
+    printed S1's question as ending `"unravel?"`, which parser 6.8 (L2) prints `"unravel"`. Read and
+    left: the chronology frames (no frus1961-63v23 row in either legend), the Meaning frames (no
+    MATCH strip), `ios/document` (the rail closed), and the Mac's reader frames (L1's tint is the
+    iPad `DocumentView`'s). Each retake was diffed by pixel against the frame it replaces: it
+    differs where its lane said, in the status bar, and where its line below says.
+  - **The iPad under iOS 27.0, S1's `3D2607D9`**: the build installed (the data container moved on
+    install), S1's container snapshot `snapshot-A` restored into it, the device rebooted and turned to
+    landscape on its home screen by S2's rotator (`testLandscapeHome`); the demo status bar; Windowed
+    Apps; every launch with `-hasCompletedOnboarding 1 -FRUSScreenshotHideSyncBanner YES`.
+    - `research-rail` (17:25): the rail toggle's ink is the accent blue, (0, 135, 254) over 676
+      pixels, where S1's frame drew it black; the note's age reads *1 day, 3 hr*.
+    - `cite-sheet` (17:25): the toggle behind the dimmed sheet reads grey 150 where S1's read 73, and
+      the note's age as in `research-rail`; the Copy as… menu open on Copy BibTeX and Copy RIS, as
+      S1's. Nothing was copied.
+    - `browse-administrations` (17:26): George H. W. Bush's row reads *1 vol*.
+    - `browse-administrations-truman` (17:27): *most documents first*, the rows 1,698, 1,463, 1,242,
+      1,164, 1,135, 1,111 and 1,103 docs, frus1949v06 above frus1947v07.
+    - `browse-clusters-detail` (17:28): *10,914 of 10,914 documents indexed on this device*.
+    - `search-results` (17:28): *Berlin blockade*, every row marking *Blockaded* or *Blockade*.
+    - `semantic-offer` (17:30): the model removed first through Settings ▸ Volumes & Storage ▸
+      Remove Search Model; the strip ends `"unravel"`.
+    - `semantic-zero-result-matches` (17:32): S1's `snapshot-B-removed` restored (the three volumes
+      removed, the model present); Download Volume on S1's three rows, and only the `?` (138 pixels)
+      differs from S1's frame. Then `snapshot-A` was put back, and the device shut down at 17:32.
+  - **The iPad under iOS 26.5, `5ED7E25B`**: `stage-manager` (18:25), in Stage Manager, then Windowed
+    Apps again; backboardd lived throughout, as it did for S1. The build was installed over S1's
+    container, whose preferences carry the two flags. S1's composition, the Related window in front,
+    was taken first (17:41) and set aside: the document window behind it draws its toolbar inactive,
+    so its toggle is grey and L1's tint does not show. The retake puts the document window in front,
+    its toggle's ink (42, 155, 255), the Related window beside it with its list scrolled as S1's, so
+    iOS 26.5's *Shared words compared as printed* line (#1608, S1's finding 19) is out of view, and
+    the main window behind on Browse ▸ Subseries. The document window sits at the screen's left
+    edge, where S1's sat 29 points in.
+  - **The iPad erased, S2's `A913C7F8`**: `onboarding-volumes` (17:44), the app uninstalled and
+    installed so the launch was its first, with `-FRUSScreenshotHideSyncBanner YES` alone; Get
+    Started ▸ Add Volumes, Corpus, the Concepts view; frame 5 of a 24-frame burst, the nearest to
+    S2's composition. *objective* sits above *power*, and *conflict* and *hostility* are apart at the
+    left edge, as L5's measurement placed them. The app was quit on that step; nothing downloaded.
+  - **The iPhones, S3's two**, each with `snapshot-A`'s `Library` cloned in as S3 did (without
+    `SplashBoard` and `Saved Application State`), the build installed and the device rebooted:
+    `ios/search-results` (17:48) and `ios/search-facets` (17:49) on the 17 Pro Max `7449CA80`, and
+    `ios/search-tips` (17:50) on the 17 Pro `3025E8FF`. Each differs from S3's frame only in its
+    snippet lines, which now mark *blockade*.
+  - **The time and date erased**, by S1's script and S3's iPhone script unchanged (SHA-256
+    `58d052de…` and `1a8a3122…`): every changed pixel lies inside the box, alpha untouched. In
+    `stage-manager` the box sits on the wallpaper, whose grain the script measured at 0.45, under the
+    0.5 at which it adds grain, so the fill carries none: at eight times the contrast the box reads as
+    a smoother patch, and at the frame's own contrast it does not show. In the Windowed Apps frames
+    *FRUS Explorer* starts at column 345, where S1's started at 349, since the erased *Thu Oct 22*
+    was narrower than *Wed Oct 21*.
+  - **The Mac, in the check copy**: `setup.sh --ref HEAD --prefix frus1961-63v09` at `7bbf36cb` into
+    the shared scratch, then `build.sh --no-launch` under the lock, 17:53:19 to 17:56:29, `** BUILD
+    SUCCEEDED **` with the copy's nine expected warning lines. No chip patch: none of the eight frames
+    shows the main window's status bar. The product was copied to R1's folder, launched from there
+    with `open -n --env CFFIXED_USER_HOME=…`, and unregistered from Launch Services afterwards. **The
+    fake home** is R1's own, an APFS clone of S4's (S4's demo data and its three saved searches); the
+    copy opened it without re-indexing (553 volume structures, 321,749 rows). **The preferences**: the
+    domain's 111 keys exported, the iPad's 15 set for the sitting, and the 111 put back afterwards
+    with `prefs-restore.swift`, which read them back identical. Computer use drove the copy under
+    full-screen control, its bundle id alone; each window was taken with `screencapture -o -x -l
+    <window id>` at S4's size, and where a field held the caret, from a burst by S4's `caretfree.py`.
+    - `search`, `search-tips` and `saved-searches` (18:00): *Berlin blockade*, every row marking the
+      blockade word, in the list and behind the saved-searches sheet, whose list sits 4 points lower
+      than S4's.
+    - `search-zero-result-meaning` (18:01): only the `?` (123 pixels) differs from S4's frame.
+    - `analytics` and `analytics-table` (18:02): *View 9,114 documents ↗ · Spread across 267 of 553
+      indexed volumes* over the chart's *9,192 documents matched*, the difference Mac §15.1 explains;
+      only that line differs from S4's frames.
+    - `crossref-analytics-ranking` (18:03): *1 unresolvable reference is excluded from this analysis
+      — a cross-reference in the printed volumes that points to a document, page, or volume not
+      present in the corpus.*; only that line differs.
+    - `crossref-analytics` (18:05): *Southeast Asia · 1961-63 v23*. A wheel step scrolled 20 pixels,
+      so the scroll bar's value was set through accessibility to S4's offset: the frame differs from
+      S4's in the colon's 19 pixels alone.
+  - **The store frames**: `SCALE=1 STAMP=0 OUT_DIR=~/Desktop/store python3
+    tools/marketing/compose.py` under the lock, 18:05:53 to 18:08:21. **The 34 frames for App Store
+    Connect are in `~/Desktop/store`**, 14 at 2752×2064, 14 at 2880×1800 and 6 at 1320×2868, with
+    four contact sheets, and none is stamped (checked by script over each frame's top margin). S5's
+    set, which they replace, is kept at `~/Library/Caches/FRUS-Explorer/r1/store-S5-2026-10-21/`.
+    The drafts, by the default run, to 18:09:24: ten files in `Planning/marketing-drafts/` changed,
+    frame 01 on all four presets, 02 and 07 on the iPad, 10 on the Mac and three contact sheets, each
+    the size it was; the other 28 rendered byte for byte as committed. Frames 01, 02, 07 and 10
+    (Mac) recompose from new captures; frame 10 carries L7's sublines in the store set for the first
+    time. Each was read against its headline and subline in `shots.json`, the changed frames at full
+    size and the rest in the contact sheets.
+  - **The manuals**: every retake read against its caption and the sentences around its slot. None
+    changes a sentence or a caption, so neither manual changed; both keep the *AI Generated* notice
+    (decision 94).
+  - **Recordings A, R and T and the App Previews were not taken again** (decision 89). What the
+    lanes changed for them: pass B's search beat, *Berlin blockade*, now marks *blockade* (L2), and R's
+    first, `"long telegram"`, may open its snippets on another word, as 4,487 of the 7,962 phrase rows
+    L2 measured did; T7's link reads 2,833 where its take read 2,803 (L3); pass A's first seconds now
+    show the splash from the first frame and no empty backdrop at the hand-off, on the iPad and the
+    Mac (L5).
+  - **Left**: every simulator shut down, the rotator's runner uninstalled from each iPad. `3D2607D9`
+    holds `snapshot-A` again, so the R and T recordings' edits S1 left in it are gone from the
+    device; the iPhones hold `snapshot-A`'s library, so S3's highlight on d475 is gone from the Pro
+    Max; both are in the containers R1 cloned before it changed anything. `5ED7E25B` keeps its Stage
+    Manager windows in its scene state; `A913C7F8` holds the app on its Add Volumes step. The shared
+    check copy is extracted and built at `7bbf36cb`, its home untouched, its preferences as they
+    were. R1's builds, raw and erased frames, bursts, the Mac's app and home, the preference exports,
+    the pre-R1 container clones and S5's store set are under `~/Library/Caches/FRUS-Explorer/r1/`
+    (about 4 GB on the disk, most of it APFS clones) until the owner says.
+
+### Found by R1 — for the owner
+
+Seen in the sitting; not fixed and not filed. They go to the plan of record's §5 (decision 82's
+rule).
+
+1. **Under iOS 26.5 in Stage Manager, a document popped out with Open in New Window draws its rail's
+   area black until the window is moved.** Both times the Long Telegram was popped out on
+   `5ED7E25B`, the new window drew its text and left the Research rail's column black; moving the
+   window by its top bar drew the rail. Seen twice, not measured; whether iOS 27 or a device does
+   it is not established. *The app or the simulator.*
 
 ### Found by S1 — for the new plan of record
 
@@ -1106,7 +1235,9 @@ link and spread line read *View 9,192 documents ↗ · Spread across 502 of 553 
 T7, whose link read 2,803 (17). *After L7 (2026-10-22):* 16 and 17 are done (#1763): the kit's recording T
 gives the routes T5 to T7 took (**Export…** ▸ the PDF card ▸ **Export PDF** and the title page; Research ▸
 **FRUS Research Guide** and the year chip's popover; the **Administration** preset and **View N
-documents ↗**), with a note under its table. A retake of T7 reads 2,833 on the link (L3).
+documents ↗**), with a note under its table. A retake of T7 reads 2,833 on the link (L3). *After R1
+(2026-10-22):* the frames 9, 10 and 13 changed are retaken (`ipad/browse-administrations-truman`,
+`ipad/browse-clusters-detail`, `macos/analytics` and `analytics-table`); recording T is not (decision 89).
 
 **The manuals against the screen.**
 
@@ -1214,7 +1345,7 @@ launch screen, the splash with its seeded Concepts cloud fading in, and that clo
 the Welcome dock on the same lens, with no empty frame to cut before. In the Concepts layout of
 `onboarding-volumes`, reproduced at S2's instant, *objective* and *power*, and *conflict* and
 *hostility*, are apart, and no two words meet at any instant on any bundled layout of the splash
-or onboarding. R1 retakes `ipad/onboarding-volumes`.
+or onboarding. R1 retook `ipad/onboarding-volumes` on 2026-10-22 (the sittings' ledger).
 
 1. **The splash empties before onboarding's cloud arrives.** The fresh-install splash shows its
    Concepts cloud and fades out, and the identity block and the Welcome dock then stand over an
@@ -1293,7 +1424,8 @@ empty backdrop for 1.100 s at the hand-off; after, the window's first frame is t
 cloud runs unbroken through the hand-off. The splash's Concepts cloud no longer overprints words.
 *After L7 (2026-10-22):* 9 is done (#1763): `tools/mac-check-copy/README.md` gives both notes, with
 S4's two helpers beside `axread.swift` (`prefs-restore.swift`, `apprec.swift`), and the kit's §4 names
-the ScreenCaptureKit recording where it named QuickTime.
+the ScreenCaptureKit recording where it named QuickTime. *After R1 (2026-10-22):* the two frames 1 and 2
+changed are retaken (the sittings' ledger).
 
 1. **One unresolvable reference reads as a plural.** Cross-Reference Analytics over 1961–1963 says
    *1 unresolvable references are excluded from this analysis*: `crossRefAnalytics.excludedBrokenCaption`
@@ -1359,7 +1491,9 @@ and no frame shows them. *After L7 (2026-10-22):* 4 and 5 are done (#1763). The 
 over the frame's top margin, so the foot keeps its width (on the iPhone, frame 01's disclaimer and frame
 04's NARA sentence take two lines each), and `STAMP=0` leaves the stamp out for App Store Connect. Frame
 10's sublines say *narrow the years to the spike and open its documents in Search*, and both manuals'
-§18.6 no longer say *tap into* or *click into* either.
+§18.6 no longer say *tap into* or *click into* either. *After R1 (2026-10-22):* the three frames 1 and 3
+changed are retaken, with `ipad/cite-sheet`, whose toggle 1 changes too, and the store frames are
+composed again with `STAMP=0` (the sittings' ledger).
 
 1. **The iPad's Research-rail toggle is not drawn in the accent colour while the rail is open.**
    `DocumentView` asks for it (`railToggleActive ? Color.accentColor : Color.primary`), and S1's
