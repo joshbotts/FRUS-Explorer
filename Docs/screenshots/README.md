@@ -1224,7 +1224,16 @@ notes), or seen in the frames. They go with S0's and S1's for the owner to place
 
 Seen or measured in the sitting, or read in the files beside it. They go with S0's, S1's and S2's
 for the owner to place (decision 82). *After S5 (2026-10-21):* 1 is done (`shots.json` names the
-d475 frame, and the recipe says d475); 2 and 3 wait for the new plan.
+d475 frame, and the recipe says d475); 2 and 3 wait for the new plan. *After L4 (2026-10-22):* 2 and 3
+are fixed, in one branch for #1757. Measured again on an iPhone 17 simulator under iOS 27.0 holding
+S1's library, by S3's method (a subseries' files moved out, then Download from GitHub ▸ Subseries, in
+bursts of `simctl io` frames): on build 1861's code 1961-63's 27 opened at *Volume 1 of 20*, *1 of
+25* or *1 of 28* and read *20 of 20* with seven to come, and 1951's 11 at *1 of 12*; with the fix the
+27 read *of 27* in every frame and the 11 *of 11*. On build 1861's code the Guide opened in both first
+queues measured and closed by itself as each queue ended, since it hung on the banner the queue's end
+removes; with the fix it stays open until it is closed. What removed it in S3's run 1 is not
+established. No committed frame changes: `ios/indexing-banner` is an 11-volume queue, whose count
+was right before and after.
 
 1. **The kit's iPhone reader frame and the demo recipe name the Long Telegram `frus1946v06/d474`;
    the Long Telegram is `d475`.** d474 is Kennan's telegram of February 12, 1946, 3 p.m.; d475 is

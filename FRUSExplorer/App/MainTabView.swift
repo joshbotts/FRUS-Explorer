@@ -106,6 +106,9 @@ import SwiftData
 ///          in that room (`TabShellBannerModifier`), so lists, a pushed screen's bottom bar and the
 ///          reader all end above it. `\.tabShellBottomOverlay` (1.16) is gone: nothing needs to be
 ///          told the banner's height any more.
+///   1.19 — #1757: the shell presents the FRUS Research Guide the indexing banners open
+///          (`IndexingGuideSheetModifier`), so the queue's end no longer closes it; the banners
+///          ask for it through `showsIndexingGuide`.
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -163,6 +166,11 @@ struct MainTabView: View {
     /// Whether the on-screen keyboard is up — the banner inset yields to it (#1070; see
     /// the observers on the `TabView` for the measured occlusion this prevents).
     @State private var keyboardIsVisible = false
+
+    /// Whether this window shows the FRUS Research Guide for the indexing banners (#1757): opened
+    /// by itself for the session's first queue of two or more volumes, or by a banner's
+    /// **Learn about FRUS while you wait →**. See `IndexingGuideSheetModifier`.
+    @State private var showsIndexingGuide = false
 
     var body: some View {
         @Bindable var appState = appState
@@ -370,6 +378,10 @@ struct MainTabView: View {
         // project was created in (F-20 / W-2d) — an iPad Stage-Manager setup shows the alert in
         // that one window, not all of them; `.anyWindow` covers a scene-less producer.
         .secondProjectNudge()
+        // #1757: the FRUS Research Guide the indexing banners open hangs here, on the shell, so the
+        // queue's end, which takes the banner away, no longer takes the Guide with it.
+        .indexingGuideSheet(isPresented: $showsIndexingGuide, scene: SceneID(sceneIDToken),
+                            keyboardIsVisible: keyboardIsVisible)
     }
 
     /// The scoped Archival Analytics sheet.
@@ -501,7 +513,8 @@ struct MainTabView: View {
                     volumeTitles: appState.indexingQueueVolumeTitles,
                     metadata: appState.lastDiscoveredMetadata,
                     averageDocsPerSecond: appState.indexingQueueAverageDocsPerSecond,
-                    averageDocumentCount: appState.indexingQueueAverageDocumentCount
+                    averageDocumentCount: appState.indexingQueueAverageDocumentCount,
+                    onLearnAboutFRUS: { showsIndexingGuide = true }
                 )
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             } else {
@@ -512,7 +525,8 @@ struct MainTabView: View {
                     onPersonSearch: { name in
                         appState.openSearch(SearchParameters(keywords: name), from: SceneID(sceneIDToken))
                         appState.openTab(.search, from: SceneID(sceneIDToken))
-                    }
+                    },
+                    onLearnAboutFRUS: { showsIndexingGuide = true }
                 )
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -810,6 +824,90 @@ struct TabShellBannerReserve: UIViewRepresentable {
             }
             return nil
         }
+    }
+}
+
+// MARK: - The FRUS Research Guide while volumes index (#1757)
+
+extension View {
+    /// Presents the FRUS Research Guide the indexing banners open, from the tab shell (#1757).
+    ///
+    /// Applied once by `MainTabView`; see ``IndexingGuideSheetModifier``.
+    func indexingGuideSheet(isPresented: Binding<Bool>, scene: SceneID, keyboardIsVisible: Bool) -> some View {
+        modifier(IndexingGuideSheetModifier(isPresented: isPresented, scene: scene,
+                                            keyboardIsVisible: keyboardIsVisible))
+    }
+}
+
+/// The FRUS Research Guide the indexing banners open, presented from the tab shell rather than
+/// from a banner (#1757).
+///
+/// ## What #1757 found
+/// Each banner hung the Guide's sheet on itself, and the queue banner opened it 0.6 s after it
+/// first appeared, setting the session's once-only flag as it asked. A sheet goes with the view it
+/// hangs on, and the queue's end gives the banner's place to the summary card. Measured on
+/// 2026-10-22 on an iPhone 17 simulator (iOS 27.0) with the build before this change: a 27-volume
+/// queue started from Settings ▸ Volumes & Storage, the launch's first, opened the Guide 1.3 s
+/// after its banner first showed, and the Guide closed by itself 13 s later, as the queue ended
+/// (its last volume finished 2.3 s before), with nothing touched. The flag was spent all the same,
+/// so no later queue in that launch could open it. Each tab also drew a banner of its own, so the
+/// Guide hung on whichever tab's banner had appeared.
+///
+/// ## What this does
+/// The sheet hangs here, on the tab shell, which outlives every banner, so the Guide stays until
+/// the reader closes it. It opens 0.6 s after a queue of two or more volumes begins, the delay the
+/// banner kept, when ``AppState/claimIndexingGuide(for:keyboardIsVisible:)`` gives this window the
+/// request, and the session's flag is set when the sheet appears
+/// (``AppState/indexingGuideDidAppear()``). A queue that ends before the Guide could appear
+/// withdraws the request and lets go of the claim, so the next queue asks again. A banner's
+/// **Learn about FRUS while you wait →** opens the same sheet through `isPresented`.
+///
+/// Version history:
+///   1.0 — #1757: initial implementation, from `IndexingQueueBannerView`'s auto-open and both
+///          banners' sheets
+struct IndexingGuideSheetModifier: ViewModifier {
+
+    @Environment(AppState.self) private var appState
+
+    /// Whether the Guide is presented; the banners' links set it too.
+    @Binding var isPresented: Bool
+    /// The window this shell belongs to, which claims the request.
+    let scene: SceneID
+    /// Whether the on-screen keyboard is up: the Guide waits for it to go, as the banner does.
+    let keyboardIsVisible: Bool
+
+    /// Whether this window should count down to opening the Guide: a queue of two or more volumes
+    /// is in flight, the Guide has not been on screen this session, and the keyboard is down.
+    private var isDue: Bool {
+        appState.indexingQueuePosition != nil && !appState.hasShownIndexingEducationThisSession
+            && !keyboardIsVisible
+    }
+
+    func body(content: Content) -> some View {
+        content
+            // Restarted whenever `isDue` changes, which cancels a countdown the keyboard or the
+            // queue's end interrupted.
+            .task(id: isDue) {
+                guard isDue else { return }
+                try? await Task.sleep(for: .seconds(0.6))
+                guard !Task.isCancelled,
+                      appState.claimIndexingGuide(for: scene, keyboardIsVisible: keyboardIsVisible) else { return }
+                isPresented = true
+            }
+            // A request still waiting behind another screen goes with its queue, and with its window.
+            .onChange(of: appState.indexingQueuePosition == nil) { _, queueEnded in
+                if queueEnded, appState.releaseIndexingGuideClaim(for: scene) { isPresented = false }
+            }
+            .onDisappear {
+                if appState.releaseIndexingGuideClaim(for: scene) { isPresented = false }
+            }
+            .sheet(isPresented: $isPresented) {
+                // Re-injected, as every sheet the shell presents is: a sheet does not reliably
+                // inherit `AppState`, and the Guide's pages read the manifest through it.
+                WhileIndexingSheet()
+                    .environment(appState)
+                    .onAppear { appState.indexingGuideDidAppear() }
+            }
     }
 }
 

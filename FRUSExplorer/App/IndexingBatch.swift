@@ -32,6 +32,18 @@ import Foundation
 /// backlog on disk is empty. `AppState.indexingQueuePosition` and every banner surface
 /// read it instead of the per-volume signal.
 ///
+/// ## What it counts (#1757)
+/// Every volume the queue holds, by id, once each: those waiting to download or under way
+/// (`AppState.downloadQueue`), those whose download has landed and whose pass has not finished,
+/// those waiting on disk (the backlog), and the volume whose progress opened the queue
+/// (`count(_:)`). A volume moves between those lists as its download lands and its pass begins,
+/// and can sit in two at once, so they are counted by id rather than added up. Until #1757 the
+/// total was the download queue's length plus one, taken when the first volume began indexing
+/// and raised afterwards only by the backlog, so a subseries still being queued read short:
+/// measured on an iPhone 17 simulator, a queue of 27 opened at *Volume 1 of 20* and read
+/// *20 of 20* with seven volumes still to come, and the volume that opened a queue, still listed
+/// as downloading, was counted twice (*Volume 1 of 12* for eleven).
+///
 /// ## What ends it
 /// The backlog — `IndexingPipeline.unindexedDownloadedVolumeIds()` — is the authority,
 /// re-read after every volume, less the volumes whose pass failed in this queue
@@ -44,12 +56,16 @@ import Foundation
 ///         (`indexingBatchTotalAtStart` / `indexingBatchCompletedCount`) that could not
 ///         outlive a single volume
 ///   1.1 — #1695: `failedVolumeIds`
+///   1.2 — #1757: `count(_:)` and `uncount(_:)`, `completedVolumeIds`; the total counts the whole
+///         queue, its downloads included
 struct IndexingBatch: Equatable, Sendable {
 
     /// Volumes expected in this queue.
     ///
-    /// Only ever revised upward, so the denominator in "Volume 3 of 12" never jumps
-    /// backwards while the user is reading it.
+    /// Raised by one for each volume the queue meets (`count(_:)`), and lowered only when a
+    /// download it counted is cancelled or fails for good (`uncount(_:)`). A volume moving from the
+    /// download queue to the disk moves nothing, so the denominator in "Volume 3 of 12" never
+    /// jumps backwards on a timing while the user is reading it.
     var total: Int
 
     /// Volumes finished so far.
@@ -62,8 +78,8 @@ struct IndexingBatch: Equatable, Sendable {
     /// actively parsing, instead of blanking and re-entering.
     var latest: IndexingProgressUpdate
 
-    /// Every volume this queue covers, captured when it is created and unioned with the
-    /// backlog as it is discovered.
+    /// Every volume this queue covers, in the order the queue met them (`count(_:)`), each once.
+    /// A volume whose download is cancelled or fails for good leaves it (`uncount(_:)`).
     ///
     /// The word-cloud strip's scope is derived from this rather than from
     /// `AppState.downloadQueue`, which drains as downloads finish and then falls back to
@@ -86,4 +102,41 @@ struct IndexingBatch: Equatable, Sendable {
     /// will. The queue's end leaves it out, so the banner and the Live Activity end a couple
     /// of seconds after the last volume that can be indexed, not after the stall timeout.
     var failedVolumeIds: Set<String> = []
+
+    /// The volumes whose pass finished in this queue (#1757). `uncount(_:)` leaves them counted:
+    /// their pass is among `completed`, whatever becomes of a later download of the same volume.
+    var completedVolumeIds: Set<String> = []
+
+    /// Counts among the queue's volumes each of `volumeIds` it has not counted yet (#1757): the
+    /// volume joins ``volumeIds`` and the total rises by one for it. An empty id, which names no
+    /// volume (the merge that ends a whole-library pass reports one), is never counted.
+    ///
+    /// - Returns: Whether the total moved.
+    @discardableResult
+    mutating func count(_ volumeIds: some Sequence<String>) -> Bool {
+        var known = Set(self.volumeIds)
+        let before = total
+        for volumeId in volumeIds where !volumeId.isEmpty {
+            guard known.insert(volumeId).inserted else { continue }
+            self.volumeIds.append(volumeId)
+            total += 1
+        }
+        return total != before
+    }
+
+    /// Stops counting `volumeId`, whose download was cancelled or failed for good (#1757): it
+    /// leaves ``volumeIds`` and the total falls by one, but never below the volumes already
+    /// finished. A volume this queue never counted, or whose pass already finished in it
+    /// (``completedVolumeIds``), is left as it is.
+    ///
+    /// - Returns: Whether the total moved.
+    @discardableResult
+    mutating func uncount(_ volumeId: String) -> Bool {
+        guard !completedVolumeIds.contains(volumeId),
+              let index = volumeIds.firstIndex(of: volumeId) else { return false }
+        volumeIds.remove(at: index)
+        let before = total
+        total = max(total - 1, completed)
+        return total != before
+    }
 }

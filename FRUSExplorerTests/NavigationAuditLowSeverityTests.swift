@@ -167,29 +167,39 @@ struct NavigationAuditLowSeverityTests {
 
     // MARK: - L-46: a session flag that is one
 
+    /// Since #1757 the Guide's auto-open lives on the tab shell (`IndexingGuideSheetModifier`, in
+    /// `MainTabView.swift`) and asks `AppState`, where it lived in `IndexingQueueBannerView`; the
+    /// rule is the same, so this follows the code there. What the claim decides is driven, with
+    /// values, by `IndexingGuideClaimTests`.
     @Test("The indexing-education flag is session-scoped, not persisted")
     func educationFlagIsSessionScoped() throws {
-        let bannerSource = try Self.source("App/IndexingQueueBannerView.swift")
-        let banner = Self.codeLines(bannerSource)
-
-        // ANY persistence API, not just @AppStorage: a raw UserDefaults read of the same key
-        // reinstates the defect while dodging an @AppStorage-only check (measured — M6 survived).
-        let persisted = banner.filter {
-            ($0.text.contains("@AppStorage") || $0.text.contains("UserDefaults"))
-                && $0.text.contains("IndexingEducation")
+        // Every file that has opened the Guide, or opens it now.
+        let files = ["App/IndexingQueueBannerView.swift", "App/IndexingBannerView.swift",
+                     "App/MainTabView.swift", "App/AppState.swift"]
+        for file in files {
+            let code = Self.codeLines(try Self.source(file))
+            // ANY persistence API, not just @AppStorage: a raw UserDefaults read of the same key
+            // reinstates the defect while dodging an @AppStorage-only check (measured — M6 survived).
+            let persisted = code.filter {
+                ($0.text.contains("@AppStorage") || $0.text.contains("UserDefaults"))
+                    && $0.text.contains("IndexingEducation")
+            }
+            #expect(persisted.isEmpty, """
+                The education flag is persisted again in \(file) (#757 / L-46): \
+                \(persisted.map(\.text).joined(separator: " | ")). Anything that survives a launch \
+                turns the designed once-per-session introduction into once per INSTALL — never shown \
+                again on a later tranche of downloads.
+                """)
         }
-        #expect(persisted.isEmpty, """
-            The education flag is persisted again (#757 / L-46): \
-            \(persisted.map(\.text).joined(separator: " | ")). Anything that survives a launch \
-            turns the designed once-per-session introduction into once per INSTALL — never shown \
-            again on a later tranche of downloads.
-            """)
 
-        // And the GUARD specifically must consult the session flag — not merely some line in the
-        // file mentioning it, which the assignment below would satisfy on its own.
-        #expect(banner.contains {
-            $0.text.contains("guard") && $0.text.contains("hasShownIndexingEducationThisSession")
-        }, "the auto-open guard must read the AppState session flag (#757 / L-46)")
+        // And the auto-open must ask the session — `AppState`'s claim, whose guard reads the
+        // session flag — before it opens anything, and spend the flag where the sheet appears.
+        let shell = Self.codeLines(try Self.source("App/MainTabView.swift"))
+        #expect(shell.contains {
+            $0.text.contains("appState.claimIndexingGuide(for: scene, keyboardIsVisible: keyboardIsVisible)")
+        }, "the auto-open must ask AppState's claim, which reads the session flag (#757 / L-46, #1757)")
+        #expect(shell.contains { $0.text == ".onAppear { appState.indexingGuideDidAppear() }" },
+                "the flag is spent where the Guide appears (#1757)")
 
         let appState = try Self.source("App/AppState.swift")
         #expect(appState.contains("var hasShownIndexingEducationThisSession = false"),

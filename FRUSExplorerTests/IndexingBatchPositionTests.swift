@@ -119,3 +119,220 @@ struct IndexingBatchPositionTests {
         #expect(state.indexingQueuePosition?.current == 12)
     }
 }
+
+// MARK: - IndexingBatchCountTests
+
+/// The queue's count of its volumes, `IndexingBatch.count(_:)` and `uncount(_:)` (#1757).
+///
+/// ## What broke
+/// The total was the download queue's length plus one, taken when the first volume began
+/// indexing, and raised afterwards only by the backlog on disk. Measured on an iPhone 17 simulator
+/// (iOS 27.0), a 27-volume subseries still being queued opened at "Volume 1 of 20" and read
+/// "20 of 20" with seven volumes to come, and the volume that opened a queue, still listed as
+/// downloading, was counted twice ("Volume 1 of 12" for eleven). The rule now counts each volume
+/// once, by id, whichever list it is met in. These drive the rule with values;
+/// `IndexingQueueCountTests` drives the app's own progress path.
+///
+/// Version history:
+///   1.0 — #1757: initial implementation
+@Suite("Indexing — the queue counts each of its volumes once (#1757)")
+struct IndexingBatchCountTests {
+
+    /// A queue with nothing counted unless given.
+    private static func batch(total: Int = 0, completed: Int = 0, volumeIds: [String] = []) -> IndexingBatch {
+        IndexingBatch(total: total, completed: completed,
+                      latest: .init(volumeId: "v", stage: .reading, completedDocuments: 0,
+                                    totalDocuments: 0, docsPerSecond: 0),
+                      volumeIds: volumeIds)
+    }
+
+    @Test("Each volume the queue meets adds one, in the order met, and one met again adds nothing")
+    func countsEachVolumeOnce() {
+        var batch = Self.batch()
+        let first = batch.count(["a", "b", "a"])
+        #expect(first)
+        #expect(batch.total == 2)
+        #expect(batch.volumeIds == ["a", "b"])
+        // Met again in another list (still downloading, then on disk), it is the same volume.
+        let again = batch.count(["b", "a"])
+        #expect(!again)
+        #expect(batch.total == 2)
+        let third = batch.count(["c"])
+        #expect(third)
+        #expect(batch.total == 3)
+        #expect(batch.volumeIds == ["a", "b", "c"])
+    }
+
+    @Test("An empty id names no volume and is never counted")
+    func anEmptyIdIsNoVolume() {
+        var batch = Self.batch()
+        let counted = batch.count(["", ""])
+        #expect(!counted)
+        #expect(batch.total == 0)
+        #expect(batch.volumeIds.isEmpty)
+    }
+
+    @Test("A volume met for the first time adds one to whatever the total already holds")
+    func aNewVolumeAddsToTheTotal() {
+        // A volume that finished without being counted first raised the total through the
+        // `.complete` floor and never joined `volumeIds`; a new volume still adds one.
+        var batch = Self.batch(total: 3, completed: 3, volumeIds: ["a", "b"])
+        let counted = batch.count(["c"])
+        #expect(counted)
+        #expect(batch.total == 4)
+    }
+
+    @Test("A download cancelled or failed for good takes its volume out of the count, until it is queued again")
+    func aCancelledVolumeLeavesTheCount() {
+        var batch = Self.batch()
+        batch.count(["a", "b", "c"])
+        let dropped = batch.uncount("b")
+        #expect(dropped)
+        #expect(batch.total == 2)
+        #expect(batch.volumeIds == ["a", "c"])
+        let requeued = batch.count(["b"])
+        #expect(requeued, "queued again, it is counted again")
+        #expect(batch.total == 3)
+    }
+
+    @Test("A volume the queue never counted, or whose pass already finished in it, stays as it is")
+    func uncountLeavesTheRest() {
+        var batch = Self.batch()
+        batch.count(["a", "b"])
+        let droppedUnknown = batch.uncount("z")
+        #expect(!droppedUnknown)
+        #expect(batch.total == 2)
+        batch.completed = 1
+        batch.completedVolumeIds = ["a"]
+        let droppedFinished = batch.uncount("a")
+        #expect(!droppedFinished, "its pass is among the finished, whatever a later download of it does")
+        #expect(batch.total == 2)
+        #expect(batch.volumeIds == ["a", "b"])
+    }
+
+    @Test("The total never falls below the volumes already finished")
+    func theTotalKeepsTheFinished() {
+        // Two passes finished, one of a volume the queue never counted; the counted one is cancelled.
+        var batch = Self.batch(total: 2, completed: 2, volumeIds: ["a"])
+        let moved = batch.uncount("a")
+        #expect(!moved)
+        #expect(batch.total == 2)
+        #expect(batch.volumeIds.isEmpty)
+    }
+}
+
+// MARK: - IndexingGuideClaimTests
+
+/// Which window opens the FRUS Research Guide for the session's first queue, and when the
+/// session's introduction counts as spent (#1757).
+///
+/// ## What broke
+/// The queue banner set the session's flag as it asked for the Guide, and hung the Guide on
+/// itself, so the queue's end took the Guide down while the flag stayed spent: measured on an
+/// iPhone 17 simulator (iOS 27.0), the launch's first 27-volume queue opened the Guide and it closed
+/// by itself 13 s later, as the queue ended. The tab shell presents it now
+/// (`IndexingGuideSheetModifier`), asks `AppState` for the request, and spends the flag when the
+/// sheet appears. The claim and the flag are driven here with values; the presentation was looked
+/// at on a simulator (the session entry of 2026-10-22 in `Planning/DEVELOPMENT-PLAN.md`).
+///
+/// Version history:
+///   1.0 — #1757: initial implementation
+@Suite("The FRUS Research Guide's first-queue sheet is claimed by one window and spent when it shows (#1757)")
+@MainActor
+struct IndexingGuideClaimTests {
+
+    private static let windowA = SceneID("window-a")
+    private static let windowB = SceneID("window-b")
+
+    /// An `AppState` holding a queue of `total` volumes, or none.
+    private static func appState(queueOf total: Int?) -> AppState {
+        let state = AppState()
+        if let total {
+            state.indexingBatch = IndexingBatch(
+                total: total, completed: 0,
+                latest: .init(volumeId: "frus1969-76v01", stage: .reading, completedDocuments: 0,
+                              totalDocuments: 0, docsPerSecond: 0),
+                volumeIds: ["frus1969-76v01"])
+        }
+        return state
+    }
+
+    @Test("A window may ask only while a queue of two or more is in flight, the Guide unseen and the keyboard down")
+    func whenAWindowMayAsk() {
+        #expect(!Self.appState(queueOf: nil).claimIndexingGuide(for: Self.windowA, keyboardIsVisible: false),
+                "no queue")
+        #expect(!Self.appState(queueOf: 1).claimIndexingGuide(for: Self.windowA, keyboardIsVisible: false),
+                "a single volume shows the compact banner and no Guide")
+        #expect(!Self.appState(queueOf: 2).claimIndexingGuide(for: Self.windowA, keyboardIsVisible: true),
+                "the Guide waits out a typing session, as the banner does")
+        let seen = Self.appState(queueOf: 2)
+        seen.hasShownIndexingEducationThisSession = true
+        #expect(!seen.claimIndexingGuide(for: Self.windowA, keyboardIsVisible: false), "already seen this session")
+
+        let state = Self.appState(queueOf: 2)
+        #expect(state.claimIndexingGuide(for: Self.windowA, keyboardIsVisible: false))
+        #expect(state.indexingGuideRequester == Self.windowA)
+    }
+
+    @Test("One window holds the request; another is refused until the first lets go")
+    func oneWindowAtATime() {
+        let state = Self.appState(queueOf: 27)
+        #expect(state.claimIndexingGuide(for: Self.windowA, keyboardIsVisible: false))
+        #expect(!state.claimIndexingGuide(for: Self.windowB, keyboardIsVisible: false),
+                "two iPad windows open one Guide between them")
+        #expect(state.claimIndexingGuide(for: Self.windowA, keyboardIsVisible: false),
+                "the holder may ask again, as its countdown restarts")
+        #expect(!state.releaseIndexingGuideClaim(for: Self.windowB), "a window that holds nothing withdraws nothing")
+        #expect(state.indexingGuideRequester == Self.windowA)
+        #expect(state.releaseIndexingGuideClaim(for: Self.windowA), "the holder withdraws its request")
+        #expect(state.claimIndexingGuide(for: Self.windowB, keyboardIsVisible: false),
+                "and the next queue may ask from any window")
+    }
+
+    @Test("Asking spends nothing; the Guide on screen spends the session's introduction")
+    func theFlagIsSpentWhenTheGuideShows() {
+        let state = Self.appState(queueOf: 27)
+        #expect(state.claimIndexingGuide(for: Self.windowA, keyboardIsVisible: false))
+        #expect(!state.hasShownIndexingEducationThisSession,
+                "a request that never reaches the screen leaves the next queue free to ask")
+        // The request went unanswered and its queue ended: the claim goes, the session's
+        // introduction stays.
+        #expect(state.releaseIndexingGuideClaim(for: Self.windowA))
+        #expect(state.claimIndexingGuide(for: Self.windowA, keyboardIsVisible: false))
+
+        state.indexingGuideDidAppear()
+        #expect(state.hasShownIndexingEducationThisSession)
+        #expect(state.indexingGuideRequester == nil)
+        #expect(!state.claimIndexingGuide(for: Self.windowB, keyboardIsVisible: false), "once a session")
+        #expect(!state.releaseIndexingGuideClaim(for: Self.windowA),
+                "a Guide on screen is not withdrawn when its queue ends")
+    }
+
+    // MARK: Where the Guide hangs
+
+    private static let appRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+        .deletingLastPathComponent().appendingPathComponent("FRUSExplorer/App")
+
+    /// `file`'s lines that are code, not comment.
+    private static func code(_ file: String) throws -> [String] {
+        try String(contentsOf: appRoot.appendingPathComponent(file), encoding: .utf8)
+            .split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.hasPrefix("//") }
+    }
+
+    @Test("The Guide hangs on the tab shell, which the queue's end leaves in place, and on no banner")
+    func theGuideHangsOnTheShell() throws {
+        // A sheet goes with the view it hangs on, and the queue's end removes the banners.
+        for banner in ["IndexingQueueBannerView.swift", "IndexingBannerView.swift"] {
+            let lines = try Self.code(banner)
+            #expect(!lines.contains { $0.contains(".sheet(") || $0.contains("WhileIndexingSheet(") },
+                    "\(banner) presents a sheet again")
+            #expect(lines.contains { $0.contains("onLearnAboutFRUS()") }, "\(banner)'s link no longer asks the shell")
+        }
+        let shell = try Self.code("MainTabView.swift")
+        #expect(shell.contains { $0.hasPrefix(".indexingGuideSheet(isPresented: $showsIndexingGuide") })
+        #expect(shell.filter { $0 == "WhileIndexingSheet()" }.count == 1, "the shell presents the Guide once")
+        #expect(shell.filter { $0.contains("onLearnAboutFRUS: { showsIndexingGuide = true }") }.count == 2,
+                "both banners' links open the shell's sheet")
+    }
+}
