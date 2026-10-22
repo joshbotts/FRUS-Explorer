@@ -13,6 +13,8 @@ apparatus back to the part it reads. Its copy is in §1, §3 and §5 and its rul
 brought three stale figures up to the shipped artifacts: the map's regions in rule 1 and §9, and the
 provenance lens's plurality in §6 and §9.
 
+**Revised 2026-10-22: the history.state.gov comparison.** §1's proof-point table and §2.1's objection answer said the site searches one volume at a time, with no facets and no proximity. Its Search Tips (history.state.gov/search/tips) say otherwise: one query covers the whole digitized series, with phrase, Boolean, wildcard and proximity operators and date and volume filters. Both passages now credit that and name what the app adds instead: offline search, counted facets, working corpora, source-note resolution, Zotero.
+
 **What this session could and could not do.** This was written on a Linux container with no simulator
 and no Mac, so **no capture was taken**. Every composed frame in `Planning/marketing-drafts/` stands
 on a capture already in `Docs/screenshots/` (builds 47 and 48, 2026-09-13 to 2026-09-23), and
@@ -56,7 +58,7 @@ corpus needs.*)
 
 | Claim | The screen that proves it | Why it is the claim |
 |---|---|---|
-| **Offline, whole-series search with facets.** 553 volumes; phrases, proximity and exact words; facets by year, volume, person, document type, provenance and subject. | Search with the Facets inspector open (`macos/search.png`) | history.state.gov searches one volume at a time and shows no facets. This is the daily-use difference. |
+| **Offline, whole-series search with facets.** 553 volumes; phrases, proximity and exact words; facets by year, volume, person, document type, provenance and subject. | Search with the Facets inspector open (`macos/search.png`) | history.state.gov searches the whole digitized series at once too, with phrase, Boolean, wildcard and proximity operators and date and volume filters (its Search Tips, read 2026-10-22). What it has no equivalent of: offline search, facets that count the whole match by person, document type, provenance and subject, and a result set frozen as a working corpus. That is the daily-use difference. |
 | **The editors' apparatus, put to work.** Headings, source notes, cross-references and the people the editors tagged, read from the volumes and made live: a source note resolves to record group, entry and lot; a cross-reference becomes an edge in a graph; a name becomes a person you can follow across the series. | The reader with the Research rail; Source Explorer (`ipad/source-explorer.png`) | A bulk release of documents has none of this. Nothing else turns a FRUS footnote into a pull slip. |
 | **The series as a whole.** A map of 314,616 documents by the language they share; term frequency, person networks, chronology, archival sourcing, all exportable with their method. | The semantic map (`ipad/semantic-map.png`); Corpus Analytics (`macos/analytics.png`) | The first time anyone has been able to look at the published record from above. |
 
@@ -178,10 +180,12 @@ apparatus intact, keep the receipts, cite it, and know where the originals are b
 **Headline alternates.** *Every source note, resolved.* · *The archive, before you get there.* ·
 *Search the whole series. Keep the receipts.*
 
-**The objection, and the answer.** *"I can search history.state.gov for free."* One volume at a time,
-no facets, no proximity, no working corpus, no source-note resolution, and nothing travels to your
-Zotero library. The app is free too (owner to confirm the price before this line ships); the
-difference is the workbench.
+**The objection, and the answer.** *"I can search history.state.gov for free."* It does search the whole
+digitized series at once, with phrases, Booleans, wildcards, proximity (`"Cuba submarine"~10`) and date and
+volume filters, so never say "one volume at a time" or "no proximity" (its Search Tips, read 2026-10-22;
+until then this answer said both). What it has no equivalent of: offline search, facets with counts, a
+working corpus, source-note resolution, and a route to Zotero. The app is free too (owner to confirm the
+price before this line ships); the difference is the workbench, not the search.
 
 **Recording R (75 s), on the full-corpus iPad or Mac, Early Cold War active.**
 
