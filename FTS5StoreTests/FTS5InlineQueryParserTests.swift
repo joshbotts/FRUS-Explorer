@@ -214,6 +214,51 @@ struct FTS5InlineQueryParserTests {
         #expect(FTS5InlineQueryParser.parse("don't") == "\"don't\"")
     }
 
+    // MARK: - Terms as the tokenizer reads them (#1760)
+
+    /// A question typed as keywords quoted `"happen?"`, which the search reads as `happen`: the Query Inspector's
+    /// MATCH line showed a mark the index never sees.
+    @Test("A term is quoted without the marks at either end that the tokenizer drops")
+    func endMarksAreNotQuoted() {
+        #expect(FTS5InlineQueryParser.parse("Why did the Marshall Plan happen?")
+                == "\"why\" AND \"did\" AND \"the\" AND \"marshall\" AND \"plan\" AND \"happen\"")
+        #expect(FTS5InlineQueryParser.parse("détente… Berlin, 'Aqaba'") == "\"détente\" AND \"berlin\" AND \"aqaba\"")
+        // A phrase's words, and a prefix.
+        #expect(FTS5InlineQueryParser.parse("\"cold, war?\"") == "\"cold war\"")
+        #expect(FTS5InlineQueryParser.parse("negoti.*") == "\"negoti\"*")
+        // A mark inside a word stays: the tokenizer reads the word as a phrase of its parts.
+        #expect(FTS5InlineQueryParser.parse("co-operate? U.S.S.R.") == "\"co-operate\" AND \"u.s.s.r\"")
+        // Which words run is decided as before, on the word as typed: a number with a mark runs nothing.
+        #expect(FTS5InlineQueryParser.parse("cold 1945.") == "\"cold\"")
+        // A phrase of nothing but marks is rendered as typed, as it was.
+        #expect(FTS5InlineQueryParser.parse("cold \"?!\"") == "\"cold\" AND \"?!\"")
+    }
+
+    @Test("The tokenizer's reading of a term's ends, letter by letter")
+    func trimmingTheTokenizersSeparators() {
+        #expect(FTS5InlineQueryParser.trimmingTokenizerSeparators("happen?") == "happen")
+        #expect(FTS5InlineQueryParser.trimmingTokenizerSeparators("(Berlin),") == "Berlin")
+        #expect(FTS5InlineQueryParser.trimmingTokenizerSeparators("¿qué?") == "qué")
+        #expect(FTS5InlineQueryParser.trimmingTokenizerSeparators("1945.") == "1945")
+        #expect(FTS5InlineQueryParser.trimmingTokenizerSeparators("don't") == "don't")
+        // Nothing left: the term as it was.
+        #expect(FTS5InlineQueryParser.trimmingTokenizerSeparators("?!") == "?!")
+        // A letter carrying a combining mark is a letter, at either end.
+        #expect(FTS5InlineQueryParser.trimmingTokenizerSeparators("e\u{301}te\u{301}.") == "e\u{301}te\u{301}")
+    }
+
+    /// The rendering changed and the search did not: the tokenizer drops the marks inside quotation marks as it does
+    /// outside them, so each spelling matches the rows the trimmed one matches.
+    @Test("A term quoted with its marks and without them matches the same rows")
+    func endMarksMatchTheSameRows() throws {
+        let corpus = ["Why did it happen? The plan was Marshall's.", "Nothing happened here.", "It may happen again."]
+        for (marked, read) in [("\"happen?\"", "\"happen\""), ("\"(plan),\"", "\"plan\""), ("\"happen?\"*", "\"happen\"*"),
+                               ("\"why, did\"", "\"why did\"")] {
+            #expect(try execute(marked, corpus: corpus) == execute(read, corpus: corpus), "\(marked) and \(read)")
+        }
+        #expect(try runMatch("happen?", corpus: corpus) == 3, "every row holds a word with happen's stem")
+    }
+
     @Test("Injected FTS5 structural punctuation is sanitized out of bare words")
     func sanitizesInjection() {
         // Braces are structural FTS5 syntax; the sanitizer maps them to spaces, so
@@ -602,11 +647,12 @@ struct FTS5InlineQueryParserTests {
     @Test("A comma inside a phrase is not mistaken for the distance separator")
     func commaInsidePhraseIsNotTheDistance() {
         // The naive "split on the last comma" reading finds the one inside the quotes,
-        // reads `war" europe` as the distance, and rejects a perfectly good query.
+        // reads `war" europe` as the distance, and rejects a perfectly good query. The
+        // phrase is quoted as the tokenizer reads it, without the comma (parser 6.8, #1760).
         #expect(FTS5InlineQueryParser.parse("NEAR(\"cold, war\" europe)")
-                == "NEAR(\"cold, war\" \"europe\", 10)")
+                == "NEAR(\"cold war\" \"europe\", 10)")
         #expect(FTS5InlineQueryParser.parse("NEAR(\"cold, war\" europe, 5)")
-                == "NEAR(\"cold, war\" \"europe\", 5)")
+                == "NEAR(\"cold war\" \"europe\", 5)")
     }
 
     @Test("A conflicting distance in both alias and comma position is refused")
@@ -1119,25 +1165,27 @@ extension FTS5InlineQueryParserTests {
         #expect(try runMatch("NEAR(\(open)military guarantee\(close) europe, 3)", corpus: Self.quotationCorpus) == 1)
         #expect(try runMatch("NEAR(\(open)military guarantee\(close) europe, 2)", corpus: Self.quotationCorpus) == 0)
 
+        // The phrase is quoted as the tokenizer reads it, without the comma (parser 6.8, #1760).
         #expect(FTS5InlineQueryParser.parse("NEAR(\(open)cold, war\(close) europe, 5)")
-                == "NEAR(\"cold, war\" \"europe\", 5)")
+                == "NEAR(\"cold war\" \"europe\", 5)")
         // With no distance the comma inside the marks must not be taken for one: at 55464a46 it was, the distance
         // `war” europe` failed to parse, and the NEAR degraded to a boolean group.
-        #expect(FTS5InlineQueryParser.parse("NEAR(\"cold, war\" europe)") == "NEAR(\"cold, war\" \"europe\", 10)")
+        #expect(FTS5InlineQueryParser.parse("NEAR(\"cold, war\" europe)") == "NEAR(\"cold war\" \"europe\", 10)")
         #expect(FTS5InlineQueryParser.parse("NEAR(\(open)cold, war\(close) europe)")
-                == "NEAR(\"cold, war\" \"europe\", 10)")
+                == "NEAR(\"cold war\" \"europe\", 10)")
         #expect(FTS5InlineQueryParser.parse("NEAR(\u{00AB}cold, war\u{00BB} europe)")
-                == "NEAR(\"cold, war\" \"europe\", 10)")
+                == "NEAR(\"cold war\" \"europe\", 10)")
     }
 
-    @Test("Double primes and single marks are not quotation marks: 12″, don’t, Kennedy’s, ‹cold› and ‘cold’ are unchanged")
+    @Test("Double primes and single marks are not quotation marks: 12″, don’t, Kennedy’s, ‹cold› and ‘cold’ stay words")
     func primesAndSingleMarksAreNotFolded() throws {
         // A double prime is a unit mark. `12″` sanitises to nothing, where `12"` keeps the number, and inside a NEAR it
         // opens no phrase, so the distance survives.
         #expect(FTS5InlineQueryParser.parse("12\u{2033} guns") == "\"guns\"")
         #expect(FTS5InlineQueryParser.parse("12\" guns") == "\"12\" AND \"guns\"")
         #expect(FTS5InlineQueryParser.parse("NEAR(12\u{2033} guns, 5)") == "NEAR(\"guns\", 5)")
-        #expect(FTS5InlineQueryParser.parse("\u{2033}cold war\u{2033}") == "\"\u{2033}cold\" AND \"war\u{2033}\"")
+        // Two words, each quoted as the tokenizer reads it, without the prime (parser 6.8, #1760).
+        #expect(FTS5InlineQueryParser.parse("\u{2033}cold war\u{2033}") == "\"cold\" AND \"war\"")
 
         // An apostrophe in either spelling is one word the tokenizer splits alike.
         #expect(FTS5InlineQueryParser.parse("don\u{2019}t") == "\"don\u{2019}t\"")
@@ -1145,10 +1193,11 @@ extension FTS5InlineQueryParserTests {
         #expect(FTS5InlineQueryParser.parse("Kennedy\u{2019}s policy") == "\"kennedy\u{2019}s\" AND \"policy\"")
         #expect(try runMatch("Kennedy\u{2019}s policy", corpus: Self.quotationCorpus) == 1)
 
+        // One word, not a phrase, quoted as the tokenizer reads it, without the marks around it (parser 6.8, #1760).
         for typed in ["\u{2039}cold\u{203A}", "\u{2018}cold\u{2019}", "\u{201A}cold\u{201B}", "'cold'"] {
             let parsed = FTS5InlineQueryParser.parseDetailed(typed)
             #expect(parsed.operands.map(\.kind) == [.word], "\(typed)")
-            #expect(parsed.expression == "\"\(typed)\"", "\(typed)")
+            #expect(parsed.expression == "\"cold\"", "\(typed)")
         }
     }
 
@@ -1258,8 +1307,9 @@ extension FTS5InlineQueryParserTests {
                     if straightText.contains("=\""), straight.operands.contains(where: { $0.isExact && $0.kind == .word }) {
                         exactUnwrapped += 1
                     }
+                    // The alphabet's one NEAR holds the comma, which its phrase is quoted without since parser 6.8 (#1760).
                     if straight.operands.contains(where: {
-                        $0.kind == .proximity && $0.rendered.contains("\"military, guarantee\"") && $0.rendered.hasSuffix(", 30)")
+                        $0.kind == .proximity && $0.rendered.contains("\"military guarantee\"") && $0.rendered.hasSuffix(", 30)")
                     }) { nearPhrases += 1 }
                     if slotCount % 2 == 1, straight.operands.contains(where: { $0.kind == .phrase }) { unterminated += 1 }
                     if straight.expression == nil { refused += 1 }

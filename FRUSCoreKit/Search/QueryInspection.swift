@@ -236,6 +236,8 @@ public struct RenderedExpression: Sendable, Equatable {
 ///   1.4 — #1297 round 4 (docs only): `operand` says marks on one word are compared as the filter reads the word (parser
 ///         6.6), and no longer says round 1's word rule differs from the parser on `=cold war -=cold`, which it never did
 ///   1.5 — FRUS Explorer Light: moved into the kit, with its reads public, for the web edition's Query Inspector
+///   1.6 — #1760: `isStemBroadening` compares the stem with the word as the tokenizer reads it, so `happen?` is not
+///         flagged as searched more broadly than typed
 public struct InspectedOperand: Sendable, Equatable {
 
     /// The parsed operand this describes, exactly as the parser reported it.
@@ -309,7 +311,9 @@ public struct InspectedOperand: Sendable, Equatable {
     /// reports the fact and the count and lets the researcher judge.
     public var isStemBroadening: Bool {
         guard let stem, operand.kind == .word else { return false }
-        return stem != operand.text.lowercased()
+        // Compared with the word as the tokenizer reads it (#1760): `happen?` is searched as `happen`,
+        // which is no broader than what was typed, and was flagged as if it were.
+        return stem != FTS5InlineQueryParser.trimmingTokenizerSeparators(operand.text).lowercased()
     }
 }
 

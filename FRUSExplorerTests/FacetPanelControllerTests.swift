@@ -29,6 +29,7 @@ import Foundation
 ///   1.1 — FRUS Explorer Light: `load` takes no pipeline, since the search service computes the
 ///          section, so the fixture returns none; the narrowing map's tests moved to the kit's
 ///          `FacetNarrowingTests`, beside the narrowing
+///   1.2 — #1758: `clearingDiscardsEverything`, the panel cleared when its search leaves the screen
 @Suite("Facet panel controller")
 @MainActor
 struct FacetPanelControllerTests {
@@ -152,6 +153,29 @@ struct FacetPanelControllerTests {
         controller.invalidate(signature: "q2")
         #expect(controller.facets == nil)
         #expect(controller.loadedSections.isEmpty)
+    }
+
+    /// #1758: the field emptied, with no search in its place. Nothing narrowed, so a pre-count
+    /// recorded for a narrowing that never landed does not survive either.
+    @Test("A search taken off the screen discards every computed section and any pending pre-count")
+    func clearingDiscardsEverything() async throws {
+        let (dir, service) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let controller = FacetPanelController()
+        controller.invalidate(signature: "q1")
+        await controller.load(.volumes, parameters: SearchParameters(keywords: "containment"),
+                              service: service)
+        controller.recordNarrowing(from: 5)
+        #expect(controller.facets != nil)
+
+        controller.clear()
+        #expect(controller.facets == nil)
+        #expect(controller.loadedSections.isEmpty)
+        #expect(controller.narrowedFrom == nil, "nothing was narrowed")
+        // The next search is a new one, whose signature takes the panel over as usual.
+        controller.invalidate(signature: "q1")
+        #expect(controller.narrowedFrom == nil, "the cleared pre-count does not come back with the next search")
     }
 
     // MARK: - #850 · an open section that lost its data
@@ -313,6 +337,9 @@ struct FacetPanelControllerTests {
 /// Version history:
 ///   1.0 — R-1c: initial implementation
 ///   1.1 — #1686: a Volumes selection outlasts a change of project, as the Mac's facet choice now does
+///   1.2 — #1758: a search taken off the screen takes the facet panel's narrowings with it, each while it is as the
+///          panel made it, and a chip's ✕ with nothing left to search runs nothing
+///   1.3 — #1758: the scope's narrowing, which a working corpus records, is the filters the rows were found under
 @Suite("iOS facet narrowing")
 @MainActor
 struct IOSFacetNarrowingTests {
@@ -482,6 +509,132 @@ struct IOSFacetNarrowingTests {
         vm.applyFacetNarrowing(.year("1948"))
         vm.clearNarrowing("not-a-dimension")
         #expect(vm.dateRangeEnabled)
+    }
+
+    // MARK: - The search's end (#1758)
+
+    /// S1's sitting on an iPad Pro: *"long telegram"* narrowed by the Years facet to 1945, then the
+    /// field's ✕. The *Narrowed by 1945* chip stayed over the prompt, and taking it away ran a search
+    /// with nothing to search.
+    @Test("A search taken off the screen takes the facet panel's narrowings with it, and leaves the sheet's")
+    func endingTheSearchTakesTheFacetsNarrowings() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        vm.applyFacetSelection(.years, keys: ["1945"])
+        vm.applyFacetNarrowing(.documentType(.documentsOnly))
+        // Set as the filter sheet sets it.
+        vm.selectedVolumeIds = ["frus1945v05"]
+        #expect(Set(vm.activeNarrowings.map(\.id)) == ["years", "type", "volume"])
+
+        vm.endSearchOnScreen()
+        #expect(vm.facetYearKeys == nil, "the 1945 chip outlived the search it narrowed")
+        #expect(vm.documentTypeFilter == .all)
+        #expect(vm.selectedVolumeIds == ["frus1945v05"], "a filter set in the sheet stays between searches")
+        #expect(vm.activeNarrowings.map(\.id) == ["volume"])
+    }
+
+    @Test("A field the reader changed in the sheet since the facet panel set it is the reader's, and stays")
+    func aFieldChangedSinceStays() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        vm.applyFacetNarrowing(.year("1948"))
+        vm.applyFacetNarrowing(.volume("frus1948v03"))
+        // The sheet moves the date range's end; the volume is left as the panel set it.
+        vm.dateRangeEnd = try #require(Calendar(identifier: .gregorian)
+            .date(from: DateComponents(timeZone: TimeZone(identifier: "UTC"), year: 1950, month: 6, day: 30)))
+        vm.endSearchOnScreen()
+        #expect(vm.dateRangeEnabled, "the reader's own range was taken away with the search")
+        #expect(vm.selectedVolumeIds.isEmpty)
+    }
+
+    @Test("A chip taken away and then set again in the sheet is the reader's")
+    func aChipSetAgainInTheSheetStays() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        vm.applyFacetNarrowing(.volume("frus1948v03"))
+        vm.clearNarrowing("volume")
+        vm.selectedVolumeIds = ["frus1948v03"]
+        vm.endSearchOnScreen()
+        #expect(vm.selectedVolumeIds == ["frus1948v03"])
+    }
+
+    @Test("Clear Filters and a restored search forget the facet panel's narrowings")
+    func clearAndRestoreForgetTheRecord() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        vm.applyFacetNarrowing(.volume("frus1948v03"))
+        vm.clearFilters()
+        vm.selectedVolumeIds = ["frus1948v03"]
+        vm.endSearchOnScreen()
+        #expect(vm.selectedVolumeIds == ["frus1948v03"], "Clear Filters left the panel's record behind")
+
+        vm.applyFacetSelection(.years, keys: ["1945"])
+        vm.applyParameters(SearchParameters(keywords: "telegram", yearKeys: ["1945"]))
+        vm.endSearchOnScreen()
+        #expect(vm.facetYearKeys == ["1945"], "a restored search's years are its own")
+    }
+
+    @Test("A search taken off the screen empties it back to the prompt")
+    func endingTheSearchEmptiesTheScreen() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        vm.keywords = "containment"
+        _ = await vm.search()
+        #expect(vm.hasSearched)
+        vm.searchError = "stale"
+        vm.endSearchOnScreen()
+        #expect(!vm.hasSearched)
+        #expect(vm.results.isEmpty)
+        #expect(vm.searchError == nil)
+        #expect(vm.userTagCountScope == nil)
+    }
+
+    /// With the chip's narrowing gone and nothing else to search, `SearchView.removeNarrowing(_:)`
+    /// runs no search: run, it failed with "Enter a keyword, phrase, or prefix to search."
+    @Test("With no words and only a year left, there is nothing to run")
+    func nothingToRunWithAYearAlone() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        vm.applyFacetSelection(.years, keys: ["1945"])
+        #expect(!vm.hasRunnableQuery(in: .keywords))
+        vm.applyFacetNarrowing(.person(77, label: "Acheson, Dean"))
+        #expect(vm.hasRunnableQuery(in: .keywords), "a person runs on its own")
+        vm.clearNarrowing("person")
+        #expect(!vm.hasRunnableQuery(in: .keywords))
+    }
+
+    // MARK: - What a capture records (#1758)
+
+    /// A working corpus records what narrowed the rows it holds, read from the filters they were
+    /// found under: a filter set in the sheet since, which waits for the next search, is not theirs.
+    @Test("The scope's narrowing is the filters the rows were found under, not the sheet's since")
+    func narrowingIsTheRowsOwn() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        #expect(vm.resultSetScope.narrowing.isEmpty, "no rows, nothing narrowed")
+        // Every field searched and every type, whatever the test host's search defaults say.
+        vm.includeDocumentText = true
+        vm.includeSummaries = true
+        vm.includeNotes = true
+        vm.includeFrontMatter = true
+        vm.documentTypeFilter = .all
+        vm.keywords = "long telegram"
+        vm.applyFacetSelection(.years, keys: ["1945"])
+        _ = await vm.search()
+        #expect(vm.resultSetScope.narrowing == ["years 1945"])
+        #expect(vm.resultSetScope.captureProvenanceDescription == "Search results (years 1945)")
+
+        vm.documentTypeFilter = .editorialNotesOnly
+        #expect(vm.resultSetScope.narrowing == ["years 1945"], "a filter not yet run is not the rows'")
+        _ = await vm.search()
+        #expect(vm.resultSetScope.narrowing == ["years 1945", "editorial notes only"])
     }
 
     // MARK: - The honest total

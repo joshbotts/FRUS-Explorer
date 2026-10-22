@@ -245,6 +245,8 @@ struct SearchRunLedger: Equatable, Sendable {
 ///   1.5 — #1577 lane 6: a ranking of a whole match (`WholeMatchRanking`): its header ("Closest 1,000 of 35,275
 ///         results", "… of the 4,012 results that pass your filters", "None of the 24 results could be ranked"), its
 ///         cut, and its capture's warning and record, each counted from the rows the ranking ranked
+///   1.6 — #1758: ``narrowing``, what narrowed the list beyond its words, which the capture sheet shows and
+///         ``captureProvenanceDescription`` records ("Search results (years 1945)")
 struct ResultSetScope: Equatable, Sendable {
 
     // MARK: - The sets
@@ -327,6 +329,15 @@ struct ResultSetScope: Equatable, Sendable {
     /// which the ranking leaves out and so a capture of it does too. Counted beside ``hiddenByChecklist``
     /// by the capture's warning and its record, and by nothing else: the header counts the ranking's own.
     var layerBaseHiddenByChecklist = 0
+
+    // MARK: - What narrowed it (#1758)
+
+    /// What narrowed the list beyond its words, as phrases a working corpus saved from it records:
+    /// ``narrowing(ofRowsSignedBy:)`` of the filters the rows were found under. Empty when nothing did.
+    ///
+    /// A corpus saved from *"long telegram"* narrowed by Facets to 1945 recorded the query alone, so
+    /// neither the sheet nor the corpus said how its five documents had been chosen (#1758).
+    var narrowing: [String] = []
 
     /// Whether these results are a Meaning search's: ranked by MEANING, not matched by keyword.
     ///
@@ -801,6 +812,13 @@ struct ResultSetScope: Equatable, Sendable {
             // A keyword list: a corpus stores a set and not an order.
             description = String(localized: "corpus.save.source.search", defaultValue: "Search results")
         }
+        if !narrowing.isEmpty {
+            // What narrowed the list, beside what it is (#1758): after a Meaning search's count, so
+            // that the record still begins as `isMeaningCaptureProvenance(_:)` reads it.
+            description = String(format: String(localized: "corpus.save.source.narrowed %@ %@",
+                                                 defaultValue: "%1$@ (%2$@)"),
+                                  description, narrowing.joined(separator: "; "))
+        }
         if didHitFetchLimit, case .rankedByMeaning(let unranked, let wholeMatch?) = route {
             // The closest of a whole match, which is not the highest-scoring slice of it (#1577 lane 6), counted as
             // the warning counts them.
@@ -837,6 +855,63 @@ struct ResultSetScope: Equatable, Sendable {
                              defaultValue: "; %@ reviewed documents excluded"))
         }
         return description
+    }
+
+    /// What narrowed a list beyond its words, from the scope signature of the filters its rows were
+    /// found under (`SearchScopeSignature.signature(for:)`), as ``narrowing`` holds it (#1758).
+    ///
+    /// In the method appendix's words for a search's scope (`SearchScopeSignature.describe(_:)`), so a
+    /// corpus and the trail's row for the search it came from describe one scope alike: "years 1945",
+    /// "dated 1945-01-01..1945-12-31", "documents only", "filtered to one person". The fields searched are
+    /// said only when they are not every field, since every field narrows nothing. And two phrases are
+    /// the capture's own: a set of volumes or of documents (an applied working corpus, a project's
+    /// History) is "within 12 volumes" or "within a set of 312 documents", where the appendix's bare
+    /// "12 volumes" and "312 documents" would read, after "Search results", as counts of the corpus
+    /// itself, and its "1 volumes" has no singular. Like the appendix it names no person and no volume,
+    /// which the signature keeps as digests.
+    ///
+    /// - Parameter signature: The rows' filter signature, or `nil` when no rows have arrived.
+    /// - Returns: The phrases, in the appendix's order with the sets last, or none when nothing narrowed
+    ///   the list or the signature does not decode.
+    static func narrowing(ofRowsSignedBy signature: String?) -> [String] {
+        guard let signature else { return [] }
+        var parts: [String: String] = [:]
+        for part in signature.split(separator: ";") {
+            guard let split = part.firstIndex(of: "=") else { return [] }
+            parts[String(part[..<split])] = String(part[part.index(after: split)...])
+        }
+        /// A set the signature counts (`count/digest`), which this says in its own words.
+        func counted(_ key: String) -> Int? {
+            guard let component = parts[key], let slash = component.firstIndex(of: "/") else { return nil }
+            return Int(component[..<slash])
+        }
+        let volumes = counted("vols")
+        let documents = counted("docs")
+        // The appendix's phrases with those two left out ("none" is no set).
+        let others = signature.split(separator: ";").map { part -> String in
+            if part.hasPrefix("vols="), volumes != nil { return "vols=none" }
+            if part.hasPrefix("docs="), documents != nil { return "docs=none" }
+            return String(part)
+        }.joined(separator: ";")
+        guard var phrases = SearchScopeSignature.describe(others), !phrases.isEmpty else { return [] }
+        if ["text", "summ", "notes", "front"].allSatisfy({ parts[$0] == "1" }) {
+            phrases.removeFirst()
+        }
+        if let volumes {
+            phrases.append(CountCopy.phrase(
+                volumes,
+                one: String(localized: "corpus.save.narrowing.volumes.one", defaultValue: "within %@ volume"),
+                many: String(localized: "corpus.save.narrowing.volumes %@", defaultValue: "within %@ volumes")))
+        }
+        if let documents {
+            phrases.append(CountCopy.phrase(
+                documents,
+                one: String(localized: "corpus.save.narrowing.documents.one",
+                            defaultValue: "within a set of %@ document"),
+                many: String(localized: "corpus.save.narrowing.documents %@",
+                             defaultValue: "within a set of %@ documents")))
+        }
+        return phrases
     }
 
     /// A Meaning search's provenance sentence, with `%@` where the count of its closest matches goes.

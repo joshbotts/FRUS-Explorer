@@ -58,6 +58,8 @@ import Foundation
 ///         runs over those, with a body of the stemmer's suffix rewrites; the cost guard also times a
 ///         keyword row whose word is only in its heading, which now scans its whole prose; and the
 ///         scan's second gate, a stem's opening, has its invariant written down as the first gate's is
+///   1.3 — #1760: the scan in tiers, the rarest of a query's words first, is held to the naive scan of the best
+///         tier the body holds (`tieredParityWithNaiveImplementation`)
 @Suite("Search — snippet cost")
 struct SearchSnippetCostTests {
 
@@ -237,6 +239,54 @@ struct SearchSnippetCostTests {
         }
         #expect(comparisons > 300, "the parity sweep must actually be broad")
         #expect(matched > 100, "the sweep must cut windows as well as refuse them: \(matched)")
+    }
+
+    /// The reference for a scan in tiers (#1760): every word stemmed, and the first word of the best tier the body
+    /// holds from `start`, in the window `naiveSnippet` cuts.
+    private static func naiveTieredSnippet(body: String, tiers: [[String]], from start: Int = 0,
+                                           before: Int, after: Int) -> String? {
+        guard let best = tiers.first(where: { tier in
+            !tier.isEmpty && naiveSnippet(body: body, stemmedTerms: tier, from: start, before: before, after: after) != nil
+        }) else { return nil }
+        return naiveSnippet(body: body, stemmedTerms: best, from: start, before: before, after: after)
+    }
+
+    /// The tiers swept: the multi-stem queries above in each order, and a common word last, as a question ranks it.
+    private static let tieredQueries: [[[String]]] = [
+        [["blockad"], ["berlin"]], [["berlin"], ["blockad"]], [["assist"], ["econom"], ["the"]],
+        [["zzzznotpresent"], ["treati"], ["the"]], [["hope", "file"], ["commun"], ["the"]],
+        [["possibl"], ["formal", "valenc"], ["a"]], [["run"], ["negoti"], ["the"], ["a"]],
+    ]
+
+    @Test("The scan in tiers is byte-identical to the naive scan of the best tier the body holds")
+    func tieredParityWithNaiveImplementation() {
+        var comparisons = 0
+        var movedFromFirstOfAny = 0
+        for body in Self.bodies {
+            for start in Set([0, 5, body.count / 2]) {
+                for tiers in Self.tieredQueries {
+                    for (before, after) in [(SearchService.keywordLead, SearchService.keywordTrail), (20, 200)] {
+                        let fast = SearchService.makeContextSnippet(
+                            body: body, stemTiers: tiers, from: start, before: before, after: after)
+                        let slow = Self.naiveTieredSnippet(
+                            body: body, tiers: tiers, from: start, before: before, after: after)
+                        #expect(fast == slow, """
+                            mismatch for tiers \(tiers) from \(start), \(before) before and \(after) after:
+                              fast: \(fast ?? "nil")
+                              slow: \(slow ?? "nil")
+                            """)
+                        comparisons += 1
+                        // Anti-vacuity: the tiers moved the window off the first word of any stem.
+                        if fast != Self.naiveSnippet(body: body, stemmedTerms: tiers.flatMap { $0 }, from: start,
+                                                     before: before, after: after) {
+                            movedFromFirstOfAny += 1
+                        }
+                    }
+                }
+            }
+        }
+        #expect(comparisons > 150, "the tiered sweep must actually be broad")
+        #expect(movedFromFirstOfAny > 10, "the tiers must move some windows: \(movedFromFirstOfAny)")
     }
 
     @Test("An empty stemmed term does not disable matching for the others")

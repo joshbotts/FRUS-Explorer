@@ -37,6 +37,8 @@ import FTS5Store
 ///
 /// Version history:
 ///   1.0 — A10b: initial implementation
+///   1.1 — #1760: the window starts at the prose's first word of the rarest term it holds, ranked by the index
+///          (`SearchService.keywordAnchorTiers(_:)`), and a question's terms are read as the tokenizer reads them
 @Suite("A keyword result's snippet")
 struct KeywordSnippetTests {
 
@@ -192,5 +194,132 @@ struct KeywordSnippetTests {
             "The talks went on.",
             "Minutes · Washington, October 22, 1962",
         ])
+    }
+
+    // MARK: - The word the window starts at (#1760)
+
+    /// A question typed as keywords, *Why did the Marshall Plan happen?*: every word is the query's, and
+    /// A10b's window started at the prose's first word of any, *the*, in nearly every row.
+    private enum Question {
+        static let header = "Memorandum by the Secretary of State"
+        static let prose = "Under the program the Secretary explained why the plan was needed and what would happen "
+            + "if Congress refused. Marshall said that the plan would succeed."
+        /// The query's stems as `SearchService.keywordAnchorTiers(_:)` gives them over an index of FRUS:
+        /// rarest first, and none of *why*, *did* and *the*, which say nothing on their own.
+        static let tiers = [["marshal"], ["happen"], ["plan"]]
+    }
+
+    private static func question(_ tiers: [[String]], prose: String = Question.prose) -> String? {
+        SearchService.keywordSnippet(body: Question.header + " " + prose, header: Question.header, dateline: nil,
+                                     sourceNote: nil, stemTiers: tiers)
+    }
+
+    @Test("The window starts at the prose's first word of the rarest term it holds, not the first word of any")
+    func theWindowStartsAtTheRarestTerm() throws {
+        let ranked = try #require(Self.question(Question.tiers))
+        #expect(ranked.hasPrefix("… would happen if Congress refused. <b>Marshall</b> said that the plan"), "\(ranked)")
+        // A10b's rule, every stem of the question in one tier: the first word of any, which is "the".
+        let unranked = try #require(Self.question([["why", "did", "the", "marshal", "plan", "happen"]]))
+        #expect(unranked.hasPrefix("Under <b>the</b> program"), "\(unranked)")
+    }
+
+    @Test("A rarer term the prose does not hold gives way to the next, and a tier's words are taken in the prose's order")
+    func aMissingTermGivesWay() throws {
+        // "zanzibar" is held by no word here: the next tier's first word is the window's.
+        #expect(try #require(Self.question([["zanzibar"], ["plan"], ["the"]]))
+                    .hasPrefix("… the Secretary explained why the <b>plan</b>"))
+        // Two words held by as many documents: the first in the prose.
+        #expect(try #require(Self.question([["happen", "plan"], ["the"]]))
+                    .hasPrefix("… the Secretary explained why the <b>plan</b>"))
+        // A rarer word held only in the heading, which the row draws, gives way to the prose's next.
+        let headingOnly = try #require(Self.question([["secretari"], ["plan"]], prose: "The plan was ready."))
+        #expect(headingOnly == "The <b>plan</b> was ready.")
+        // And a prose holding none of the query's telling words opens unmarked, as a row whose words are
+        // only in its own fields does: the function words set aside are no anchor of their own.
+        #expect(Self.question([["secretari"], ["plan"]], prose: "The program was ready.") == "The program was ready.")
+    }
+
+    @Test("The tiered scan matches the first word of the best tier wherever it lies")
+    func theTieredScanReachesTheEnd() {
+        let body = String(repeating: "the plan and the program ", count: 400) + "Marshall at last."
+        let snippet = SearchService.makeContextSnippet(body: body, stemTiers: [["marshal"], ["plan"], ["the"]],
+                                                       before: 8, after: 10)
+        #expect(snippet == "… program <b>Marshall</b> at last.")
+        // With no word of the best tier, the first word of the next.
+        #expect(SearchService.makeContextSnippet(body: "the plan", stemTiers: [["marshal"], ["plan"], ["the"]])
+                == "the <b>plan</b>")
+        #expect(SearchService.makeContextSnippet(body: "the plan", stemTiers: [["marshal"], []]) == nil)
+    }
+
+    /// Ranked over a real index: three documents, each holding *the*, two *plan* and one *Marshall*.
+    @Test("The search service ranks a query's stems by how many of the index's documents hold each")
+    func theServiceRanksByDocumentFrequency() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSKeywordAnchor-\(UUID().uuidString)", isDirectory: true)
+        let volumes = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let paragraphs = [
+            "Under the program the Secretary explained the plan. Marshall said that it would succeed.",
+            "The plan was debated in the Cabinet.",
+            "The Embassy reported the conversation.",
+        ]
+        var xml = "<?xml version=\"1.0\"?>\n<TEI><text><body>\n"
+        for (index, paragraph) in paragraphs.enumerated() {
+            xml += "<div type=\"document\" xml:id=\"d\(index + 1)\"><head>\(index + 1). Item</head><p>\(paragraph)</p></div>\n"
+        }
+        xml += "</body></text></TEI>"
+        try Data(xml.utf8).write(to: volumes.appendingPathComponent("vol1.xml"))
+        let dbURL = dir.appendingPathComponent("t.sqlite")
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volumes,
+                                            concurrencyLimit: 1)
+        try await pipeline.indexVolume("vol1")
+        let service = SearchService(fts5Store: fts5, pipeline: pipeline)
+
+        // Rarest first, and "the" set aside, which says nothing on its own.
+        #expect(await service.keywordAnchorTiers(Self.stems("the", "Marshall", "plan")) == [["marshal"], ["plan"]])
+        #expect(await service.keywordAnchorTiers(Self.stems("plan", "Marshall")) == [["marshal"], ["plan"]])
+        // A word no document holds is held as rare as any.
+        #expect(await service.keywordAnchorTiers(Self.stems("plan", "xylograph")) == [["xylograph"], ["plan"]])
+        // A query of function words alone is ranked as they are: no document here holds "of".
+        #expect(await service.keywordAnchorTiers(Self.stems("the", "of")) == [["of"], ["the"]])
+        // One word, or one telling word beside function words, is one tier, and asks the index nothing.
+        #expect(await service.keywordAnchorTiers(Self.stems("plan")) == [["plan"]])
+        #expect(await service.keywordAnchorTiers(Self.stems("why", "did", "the", "Marshall")) == [["marshal"]])
+        #expect(await service.keywordAnchorTiers([]).isEmpty)
+
+        // The row's snippet, through the search the reader typed.
+        let results = try await service.search(parameters: SearchParameters(keywords: "Why did the Marshall Plan happen?"),
+                                               limit: 10)
+        #expect(results.isEmpty, "no document holds every word of the question")
+        let found = try await service.search(parameters: SearchParameters(keywords: "the Marshall plan?"), limit: 10)
+        let snippet = try #require(found.first?.snippet)
+        #expect(snippet.contains("<b>Marshall</b>"), "\(snippet)")
+    }
+
+    // MARK: - Terms as the tokenizer reads them (#1760)
+
+    @Test("A question's terms are read as the tokenizer reads them, without the marks at either end")
+    func termsAreReadAsTheTokenizerReadsThem() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSKeywordTerms-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("t.sqlite")
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(fts5Store: fts5, databaseURL: dbURL, volumesDirectory: dir,
+                                            concurrencyLimit: 1)
+        let service = SearchService(fts5Store: fts5, pipeline: pipeline)
+
+        let question = SearchParameters(keywords: "Why did the Marshall Plan happen?")
+        #expect(await service.positiveTerms(from: question) == ["Why", "did", "the", "Marshall", "Plan", "happen"])
+        #expect(await service.positiveTerms(from: SearchParameters(keywords: "\"cold war,\" (Berlin) détente…"))
+                == ["cold", "war", "Berlin", "détente"])
+        // An `=` word keeps its mark, which its stem has never matched (its match is the literal word).
+        #expect(await service.positiveTerms(from: SearchParameters(keywords: "=containment")) == ["=containment"])
+        // The expression the Query Inspector shows quotes `happen`, which the search reads, not `happen?`.
+        let expression = try #require(try await service.matchExpressions(for: question).corpus)
+        #expect(expression == "\"why\" AND \"did\" AND \"the\" AND \"marshall\" AND \"plan\" AND \"happen\"")
     }
 }

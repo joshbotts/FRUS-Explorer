@@ -110,6 +110,10 @@ import Observation
 ///   2.12 — #1577 lane 7: `swapLayer(meaningAvailable:recording:)` swaps a held list and the search inside it, by
 ///          running the other order's two searches through `search()`, each recorded, with the trail's anchor set aside;
 ///          `layerSwap` is the swap the row offers, and `swapUnderWay` the list the row names while the first search runs
+///   2.13 — #1758: `endSearchOnScreen()` takes the search off the screen, as an emptied field does, and the narrowings
+///          the facet panel made go with it (`clearFacetNarrowings()`), each while it is still as the panel made it
+///   2.14 — #1758: `resultSetScope` carries what narrowed the rows beyond their words (`ResultSetScope.narrowing`), read
+///          from the filters they were found under, which a working corpus records
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -1867,7 +1871,9 @@ final class SearchViewModel {
                        documentsOnPage: pagedResults.count,
                        pageCount: totalPages,
                        appliedCorpusTruncation: appliedWorkingCorpusTruncation,
-                       route: executedRoute)
+                       route: executedRoute,
+                       // #1758: the filters the rows were found under, not the sheet's, which wait for a search.
+                       narrowing: ResultSetScope.narrowing(ofRowsSignedBy: filterSignatureOfTheRows))
             // #1577 lane 4: what a layer's sentences owe, by the rule the Mac's window says them by (lane 5).
             .describingLayer(over: pinnedBase, filtersNarrowed: lastLayerFiltersNarrowed, sortOrder: sortOrder)
     }
@@ -1952,6 +1958,7 @@ final class SearchViewModel {
     }
 
     func clearFilters() {
+        facetNarrowings = [:]
         phrase = ""
         prefixWildcard = ""
         booleanMode = .and
@@ -1990,6 +1997,30 @@ final class SearchViewModel {
     func replaceSearchesUnderWay() {
         replaceRunsUnderWay()
         isSearching = false
+    }
+
+    /// Takes the search off the screen, which goes back to its prompt: the reader emptied the field, or
+    /// took away the last thing there was to search (#1758). `SearchView` closes the facet panel with it.
+    ///
+    /// The narrowings the facet panel made go with the search they narrowed
+    /// (``clearFacetNarrowings()``). Left in force, a *Narrowed by* chip stood over the prompt, and
+    /// taking it away ran a search with nothing to search, which failed with "Enter a keyword, phrase,
+    /// or prefix to search." A filter set in the sheet stays, as it stays between searches.
+    func endSearchOnScreen() {
+        // #1648: a search for words still under way cannot put its rows back.
+        replaceSearchesUnderWay()
+        results    = []
+        hasSearched = false
+        searchError = nil
+        // #1310: the tag counts describe a result set that is now empty. This clear does not bump
+        // `executedSearchVersion`, so the panel's task does not re-run — but a nil scope shows no
+        // counts rather than the last query's.
+        userTagCountScope = nil
+        // #1577 lane 1: the Meaning strip describes the run that produced the rows, and the rows have
+        // gone. Left in place, the last run's disclosure kept the strip naming that run's set (or the
+        // whole series) over a prompt that names the set the next search will rank inside.
+        semanticDisclosure = nil
+        clearFacetNarrowings()
     }
 
     /// Starts a run, which replaces the runs under way and stops the keyword fetch of the one that has
@@ -2384,8 +2415,66 @@ final class SearchViewModel {
             subjectBucket = bucket
             subjectBucketKey = DocumentSubjectStore.shared?.bucketVocabulary.key(at: bucket)
         }
+        recordFacetNarrowing(Self.chipId(of: narrowing))
         // No version bump: unlike macOS, this view model has no `parametersVersion` and iOS
         // re-runs the search explicitly. The caller owns that — see `SearchView`.
+    }
+
+    /// The *Narrowed by* chip a single-tap narrowing shows as (``activeNarrowings``).
+    private static func chipId(of narrowing: FacetNarrowing) -> String {
+        switch narrowing {
+        case .year: "date"
+        case .volume: "volume"
+        case .person: "person"
+        case .documentType: "type"
+        case .subject: "subject"
+        }
+    }
+
+    /// The narrowings the facet panel made, by chip id, each with the value it set (#1758).
+    ///
+    /// A facet narrows the search on screen, so its narrowing belongs to that search:
+    /// ``clearFacetNarrowings()`` takes it away with the search. Each is kept with the value the panel
+    /// set, so that a field the reader has changed in the sheet since is the reader's, and stays.
+    @ObservationIgnored private var facetNarrowings: [String: String] = [:]
+
+    /// Records the chip `id` as the facet panel's, with the value it stands for now; a chip the
+    /// narrowing cleared is no longer recorded.
+    private func recordFacetNarrowing(_ id: String) {
+        facetNarrowings[id] = narrowingValue(id)
+    }
+
+    /// What the chip `id` stands for now, to compare with what the facet panel set: `nil` when it is
+    /// not in force. Only the chips a facet can set have one.
+    private func narrowingValue(_ id: String) -> String? {
+        switch id {
+        case "date":
+            return dateRangeEnabled ? "\(Self.isoDate(dateRangeStart))/\(Self.isoDate(dateRangeEnd))" : nil
+        case "years":
+            return facetYearKeys.map { $0.sorted().joined(separator: ",") }
+        case "volume":
+            return selectedVolumeIds.isEmpty ? nil : selectedVolumeIds.sorted().joined(separator: ",")
+        case "person":
+            return personRollupId.map(String.init)
+        case "type":
+            return documentTypeFilter == .all ? nil : documentTypeFilter.rawValue
+        case "subject":
+            return subjectBucketKey ?? subjectBucket.map(String.init)
+        default:
+            return nil
+        }
+    }
+
+    /// Takes away each narrowing the facet panel made that is still as the panel made it (#1758).
+    ///
+    /// Called when the search they narrowed leaves the screen (``endSearchOnScreen()``). A chip the
+    /// reader has since taken away, or a field changed in the sheet since, is not the panel's any more.
+    func clearFacetNarrowings() {
+        let made = facetNarrowings
+        facetNarrowings = [:]
+        for (id, value) in made where narrowingValue(id) == value {
+            clearNarrowing(id)
+        }
     }
 
     /// Applies a staged facet selection (#775), routed through the one shared applier.
@@ -2400,11 +2489,13 @@ final class SearchViewModel {
         switch section {
         case .years:
             facetYearKeys = parameters.yearKeys
+            recordFacetNarrowing("years")
         case .volumes:
             // A subseries selection is a different way of naming volumes and would widen the gate
             // back out — the same reason the single-tap path clears it.
             selectedVolumeIds = parameters.volumeIds ?? []
             selectedSubseriesIds = []
+            recordFacetNarrowing("volume")
         case .people, .documentType, .provenance, .subjects:
             break
         }
@@ -2554,6 +2645,7 @@ final class SearchViewModel {
 
     /// Clears one active narrowing by its identifier.
     func clearNarrowing(_ id: String) {
+        facetNarrowings[id] = nil
         switch id {
         case "date": dateRangeEnabled = false
         case "years": facetYearKeys = nil
@@ -2622,6 +2714,8 @@ final class SearchViewModel {
         // Every hand-off and saved-search recall leaves a held base (#1577 lane 4, rule 3): the base it
         // would otherwise run inside is no part of what it hands over.
         leaveBaseForHandoff()
+        // The snapshot's filters are its own, whichever screen made them (#1758).
+        facetNarrowings = [:]
         keywords          = params.keywords ?? ""
         phrase            = params.phrase ?? ""
         prefixWildcard    = params.prefixWildcard ?? ""

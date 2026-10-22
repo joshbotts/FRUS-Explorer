@@ -6650,3 +6650,119 @@ In this session the owner then asked for two more things: to amend the memo for 
 - `Docs/Agentic-Analysis-Guide.md` §14.11's `collection-authority.json` row still says 3,985 collections, and its map figures (172 clusters, 92,268 unclustered) predate B4's layout (140 and 88,059).
 
 **Not done, and for the owner.** **Opened as #1769** on the owner's word of 2026-10-22, 00:13 ("Open L1's pull request against v2 as drafted."), against `v2` at `1fdf4308`, which had not moved since the branch was cut; not merged. Its body is the draft kept with the sittings' notes (`L1-pr-draft.md`), with a visual-review list for each platform. **#1762's lasting fix is the owner's call**, as the brief asked: either reword the manuals so they stop hard-coding figures that move with each regeneration (the no-cluster count, the largest cluster and its label, the 140 groups, the archival collections), or add a test that reads those figures from the bundled files and fails when a manual disagrees. The plain correction is in, and nothing is built for either. The Mac check copy was quit and keeps its home, which holds the search model.
+
+## Session 2026-10-22 — L2: Search keeps no stale state, and a question typed in Keywords mode marks the word that tells — #1758's three items and #1760's two, in one branch (plan of record from 2026-10-21, §1)
+
+**What was asked.** Lane L2 of the plan of record from 2026-10-21, started by the coordinating session. Fix #1758 and #1760 in one pull request, with a commit for each item or tight group, then a docs commit, and one review pass over the whole diff.
+- **#1758.** On iPad, clearing the query leaves Facets on the old match. On the Mac, a new search opens at the old list's scroll position. A working corpus saved from a narrowed search records only its query.
+- **#1760.** A question typed in Keywords mode highlights only *the*. The MATCH strip quotes punctuation the tokenizer drops.
+- **How each is checked.** The iPad fix on an iPad simulator, and the Mac fix in the Mac check copy. #1760's snippets measured on real documents before and after, as A10b did.
+- **Limits.** The corpus's narrowing comes from what `WorkingCorpus` already stores, with no CloudKit change without the owner's word. No index version, and neither TestFlight note.
+- **Kit code.** `swift build --target FRUSCoreKit` and `swift test` as well as the unit target, and a *For the web edition* line.
+- **Records.** The assessment marked COMPLETE in place. No screenshots, but the captures each fix changes listed for R1. The pull request only on the owner's word.
+
+**Done.** On `claude/l2-search-fixes-df74f5`, cut from `v2` at `b385340c` (L1 merged as #1769). Kit code in FRUSCoreKit and FTS5Store. No index version, no CloudKit change.
+- **#1758, 1: Facets follows a cleared query** (`8caa7565`).
+  - Emptying the field ends the search on screen (`SearchView.endSearch()`, `SearchViewModel.endSearchOnScreen()`). The facet panel closes and is cleared (`FacetPanelController.clear()`).
+  - The narrowings the panel made go with the search they narrowed, each only while it is still as the panel set it (`clearFacetNarrowings()`). A filter set in the Filters sheet stays, and so does a field changed there since.
+  - A *Narrowed by* chip's ✕ runs the search again only when something is left to search.
+  - The binoculars menu's Facets is a toggle, so the menu closes the panel it opened.
+  - Walked on an iPad Pro 13-inch (M5) simulator under iOS 27.0 that holds S1's full index (Checks, below).
+- **#1758, 2: the Mac list opens at its top** (`91967fd3`). The results List is re-identified on `executedSearchVersion` and `currentPage`, as iPhone and iPad re-identify theirs on a page. Walked in the Mac check copy at 06:00, on the owner's word, once the screen was unlocked (Checks, below). It had stayed locked through the night: `ioreg` read `CGSSessionScreenIsLocked` at 01:06, 02:10, 02:18 and 02:48.
+- **#1758, 3: a working corpus records what narrowed it** (`c648ff08`).
+  - It is stored in `sourceDescription`, so the schema is unchanged.
+  - The phrases are `ResultSetScope.narrowing(ofRowsSignedBy:)`, read from the filters the rows were found under (`filterSignatureOfTheRows`, both view models), in the method appendix's words.
+  - A set of volumes or documents is said as what the search ran within, with a singular. The fields are said only when they are not every field.
+  - The record reads *Search results (years 1945)*, and the save sheet shows **Narrowed by**. Six new keys.
+- **#1760, 2: the MATCH strip quotes terms as the tokenizer reads them** (`e8d8a645`).
+  - Parser 6.8 drops the characters at either end of a word, a phrase's word or a prefix that `porter unicode61` reads as breaks (`trimmingTokenizerSeparators(_:)`, public).
+  - A mark inside a word stays. Which words run is decided as before.
+  - No expression that runs matches other rows. One refusal follows: `=cold. -=Cold OR -=Cold` is refused as matching nothing, where `"cold." NOT "cold"` ran and matched nothing. The #1297 spelling sweep's `refusedOnlyRespelled` goes from 16 to 0 in each scope.
+  - The Query Inspector stops flagging `happen?` as broadened.
+  - The pinned renders that moved were brought along, each with its reason (decision 9): two suites of the parser's own tests, two #1297 suites, and the #1298 sweep's NEAR counter. The commit lists them.
+- **#1760, 1: the snippet starts at the rarest word** (`3dfe2741`).
+  - The query's stems are ranked by how many documents hold each (`keywordAnchorTiers(_:)`). The counts come from `frus_documents_vocab` on the pipeline's own connection (`documentFrequencies(ofIndexTerms:)`), because `FTS5Store`'s connection is held by the `optimize()` that follows indexing.
+  - Function words (`functionWordStems`) are set aside while the query has another word.
+  - The scan is still one pass, in tiers.
+  - `positiveTerms` reads each term as the tokenizer does.
+- **Docs.**
+  - The manuals: iOS quick start, §7.1, §7.3, §7.4, §7.5 and §7.9; Mac §7.1, §7.3 and §7.9.
+  - `Docs/EditableContent/`: six blocks added, so `07` holds 377, and 30 ranges re-pointed to start on their keys. The README row and the amendment log's bullet.
+  - The OpenAPI snippet description.
+  - The assessment marked COMPLETE in place.
+  - The plan's §1 and §6.
+  - This entry.
+
+**Measured** (#1760). Measured over a full index: S1's iPad's, index version 71, cloned into the scratchpad. The base is `v2` at `b385340c`, in a detached worktree. Both sides ran the shipped `SearchService` on the first 1,000 rows of 33 searches: twelve questions, ten topical phrases and eleven single words.
+- **Base rule.** The base's snippets equal a reference copy of A10b's rule in every row. The branch's equal a reference copy of the new rule in every row.
+- **Questions.** The bold word was a function word in 46 to 100% of each question's first 100 rows, and is in none. The bold is the rarest of the query's words that the prose holds in 93 to 100% of rows, where it was in 0 to 23%. 4,123 of 4,520 rows moved.
+- **Topical phrases.** 4,487 of 7,962 rows moved. *Bay of Pigs* went from *of* (201 of 205) to *Pigs*.
+- **Single words.** None of 11,000 rows moved.
+- **Rows with no telling word in the prose.** A row whose prose holds none of the telling words opens on its prose unmarked. That is 6 of the first 100 for *Bay of Pigs*, and 4 for *What was the Long Telegram?*.
+- **Cost**, timed in a release build of the same `SearchService` on this Mac, as the median of five passes after a warm-up. The scan now runs on to the rarest word, where it stopped at the first *the*, so the snippet pass for a question costs more:
+  - *Why did the Marshall Plan happen?* (351 rows): 0.16 to 0.48 s.
+  - *How did the Vietnam war end?* (1,000 rows): 0.24 to 0.57 s.
+  - At the Mac's 7,500-row ceiling, *What was the Long Telegram?*: 1.19 to 2.77 s, beside 1.09 s of SQL.
+  - A topical phrase rises less: *Berlin blockade*, 900 rows, 0.35 to 0.54 s.
+  - A single word does not rise: *Berlin*, 7,500 rows, 1.12 to 1.09 s.
+  - No row's scan is longer than the whole-prose scan A10b already makes for a row whose words are only in its own fields, which `SearchSnippetCostTests` bounds against the naive scan.
+  - The tables are with the sittings' notes (`L2-measure/`).
+
+**Checks.**
+- `swift build --target FRUSCoreKit`, through the lock: exit 0.
+- **`swift test`, first run.** 16 issues in FTS5StoreTests, every one a pinned render that moved with the quoting, or the #1297 count. Each pin was brought along with its reason. The two affected targets were then rerun: FTS5StoreTests passed, *212 tests in 13 suites*, and FRUSCoreKitTests passed, *1141 tests in 150 suites*.
+- **While developing, on iPhone 17 under iOS 27.0** (`80CF0F18`), each suite named by type through the lock:
+  - An incremental `build-for-testing` printed only the `GeneratedSummary` residue and the AppIntents note.
+  - 39 suites that exercise search, facets, snippets, the Query Inspector and the corpus capture ran *513 tests in 39 suites* with 2 issues, both mine:
+    - The audit's license scan read the throwaway timing target I had added to `Package.swift`, which was then removed.
+    - `EditableContentKeyTests` found 19 ranges my edits had moved. My range checker had read only the blocks whose `lines:` follows the path, 9 of 1,166.
+  - The ranges were re-pointed, along with two that held their key without starting on it, and eight single-line ranges written as `1865` where the form is `1865–1865`.
+  - Re-run: CodingStandardsAuditTests passed, and EditableContentKeyTests passed, *21 tests in 1 suite*.
+- **The iPad walk** (#1758, item 1) was a throwaway XCUITest, `ZZL2WalkTests`. It was appended to `FRUSExplorerUITests.swift` and never committed; its diff is with the sittings' notes (`L2-measure/`).
+  - The device was the iPad Pro 13-inch (M5) clone `C91D9145` under iOS 27.0, in landscape, holding S1's full index. Its screenshots were read by eye.
+  - *"long telegram"*, then Facets ▸ Years ▸ 1945 ▸ Apply, read *5 results*, the chip *1945* and *Describing all 5 matches*.
+  - The field's ✕ left the prompt with no chip, no panel and no error. The same search then listed all 136.
+  - With the panel open, the binoculars menu showed Facets checked (`isSelected` true), and choosing it closed the panel.
+  - A filter set in the Filters sheet (*Limit by date*) stayed over the prompt after the ✕, as the sheet's filters stay between searches. Its chip's ✕, with nothing left to search, ran nothing: the prompt, no chip, and no *Search Error*. Before the fix that ✕ failed with "Enter a keyword, phrase, or prefix to search." (S1's sitting).
+  - The walk's first runs failed on its own selectors, not on the app: the Search tab not yet selected, a Filters control below the sheet's fold, and a tap on a toggle's label.
+- **The Mac check copy**, extracted at `3dfe2741` (`setup.sh --ref 3dfe2741`, 27 volumes of 1961–63; it was first built from the item commits before the fixes were folded in) and built through the lock: `** BUILD SUCCEEDED **`, its warnings the `GeneratedSummary` residue, the AppIntents note and the copy's expected *code after 'return'*.
+- **The Mac walk** (#1758, item 2) ran at 05:59 to 06:00, on the owner's word ("Walk the Mac check copy now for #1758 item 2 and add the result to the PR."). Computer use was granted for the copy's bundle id alone, and the walk used its Search window (940 × 680, 20 rows a page).
+  - *Berlin* listed 1,841 results, page 1 of 93, and opened on its first row, *108. Telegram From the Department of State to the Mission at Berlin*.
+  - Scrolled down to *258. Memorandum of Conversation*, then *Cuba* (2,096 results, page 1 of 105) opened on its first row, *487. Draft instruction to USUN…*. Scrolling up moved nothing.
+  - Page 1 scrolled down to *322. Summary Record…*, then › opened page 2 (*21–40 of 2,096*) on its first row, *7. Telegram From the Department of State to the Embassy in Cuba*. Scrolling up moved nothing.
+  - The base was not re-walked. S4 found *Berlin blockade* opening on its sixth row after an earlier list was scrolled.
+  - A question typed as keywords, *Why did Khrushchev put missiles in Cuba?*, showed the MATCH strip ending `"cuba"`. Its 34 rows marked *missiles*, the rarest of its words in the copy's 36 volumes, and none marked a function word. On the full index the same question marked *Khrushchev*.
+  - The copy was quit. Only it had run, never the installed app.
+- **The first full unit run**, through the lock on iPhone 17 (`80CF0F18`, iOS 27.0), with the five code commits and this change's docs in the working tree, ran 02:22 to 02:29. It read *Test run with 7568 tests in 894 suites failed after 399.190 seconds with 12 issues (including 6 known issues)*: four tests, none of them a behaviour of this lane gone wrong.
+  - Two scans in `SemanticSetRecordAndCopyTests` read the emptied field's clear inline in `SearchView`, where item 1 moved it into `SearchViewModel.endSearchOnScreen()`. They now follow it there, holding the same statements in the same order.
+  - `SearchResultRouteTests` reads the readings' door, `.disabled(vm.results.isEmpty || !vm.offersReadings)`, on the reading picker. Item 1 had written it through a helper, so it is written on the picker in those words again.
+  - In the same suite, a subject browse's capture now records its subject: *Search results (subject Chemical and Bacteriological Warfare)*, where it read *Search results*. A browse has no words for the corpus to record, so this is item 3 doing what it should. The pin takes the new text, with its reason.
+  - The fixes are folded into items 1 and 3. The four suites then passed: *147 tests in 4 suites*.
+- **The second full unit run**, through the lock on iPhone 17 (`80CF0F18`, iOS 27.0), with the fixes in and the docs in the working tree, ran 02:37 to 02:44: *Test run with 7568 tests in 894 suites passed after 401.096 seconds with 6 known issues*, then `** TEST SUCCEEDED **`. The fixes were then folded into items 1 and 3 by a non-interactive autosquash, and the branch's tree is byte-identical to the one that ran.
+- **`swift test`**, through the lock, 02:29 to 02:31: exit 0, 38 `Test run with` lines, one for each test target, 3,027 tests, none failed.
+- **The Mac build**, `FRUSExplorerMac`, DirectDistribution, unsigned, through the lock, 02:31 to 02:35: `** BUILD SUCCEEDED **`. Its only warnings were the `GeneratedSummary` residue and the AppIntents note. An incremental build after the fixes, 02:44 to 02:45, also read `** BUILD SUCCEEDED **`, with nothing to compile.
+- No new compiler warning in any build log. Each simulator was booted for its run and shut down after it.
+
+**Captures for R1.**
+- **Changed: every frame of *Berlin blockade*'s keyword rows.** Each now marks *blockade*, the rarer of its two words, where it marked *Berlin*: 10 of the first 12 rows and 19 of the first 25, measured on the full index. The frames are:
+  - `ios/search-results` (the kit's frame 01) and `ios/search-facets`, whose rows show under the sheet;
+  - `ios/search-tips`, whose rows show dimmed under the half-height sheet;
+  - `ipad/search-results`;
+  - `macos/search` and `macos/search-tips`.
+  - `macos/saved-searches` only where its rows show.
+  - The kit's frame 01 is recomposed from them.
+- **Unchanged.**
+  - The MATCH strip in those frames, `"berlin" AND "blockade"`, which has no mark to drop.
+  - `ipad/browse-working-corpora`, whose corpora keep the descriptions they were saved with; recipe 3's searches were not narrowed.
+  - No frame shows the facet panel over a cleared field, or the Save as Working Corpus sheet, or a Mac list scrolled before a search.
+
+**Found, for the owner** (not fixed and not filed).
+- A number typed with a mark, such as `1945.`, still searches nothing, and nothing says so. The parser decides which words run on the word as typed, and a digits-only word with a mark is dropped. Parser 6.8 keeps that, so results do not move.
+- An `=` word never anchors a snippet. Its match is the literal word, which a stem cannot say, so its row opens where its other words do, or on its prose unmarked.
+- The scan reads a hyphenated word whole. *long-range* does not anchor *long*, though the index reads it as *long* and *range*, so such a row anchors on its next tier. This predates the lane: A10b's scan was the same.
+- A phrase can match across a document's heading and its form marker, since `body_text` begins with both. *"long telegram"* lists 136 documents on S1's index, and 13 of them match only because a heading ending *…to Minister Long* is followed by *[Telegram]* (`frus1916` d1256 is the first row). None of those 13 has *long telegram* in its text as written. Neither do three more of the 136. Their snippets open on the prose unmarked, or mark the other word.
+- The plan of record's L1 bullet in §1 still says L1 is not yet merged. It merged as `b385340c`.
+
+**Not done, and for the owner.**
+- **Opened as #1770** on the owner's word of 2026-10-22, 05:56 ("open pr"), against `v2` at `b385340c`, which had not moved since the branch was cut; not merged. Its body is the draft kept with the sittings' notes (`L2-pr-draft.md`), with a visual-review list for each platform.
+- **The snippet pass's cost** (#1760): a question's pass costs about three times A10b's in a release build. Whether to speed up the scan before 1.0 is the owner's call. The plan's §5 lists it, with the other findings above.

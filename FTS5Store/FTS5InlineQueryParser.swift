@@ -536,6 +536,16 @@
 ///          dump is identical
 ///          (`c7a85599c8fa133cf418711ea09f5a0821e2d97a68f9394ea759ab0403bf1c9d`), while two typographic queries alone
 ///          dump differently. The #1297 suites' printed counts do not move.
+///   6.8 — #1760: each word, phrase word and prefix is quoted as the tokenizer reads it, without the characters at either
+///          end that `porter unicode61` reads as breaks (`trimmingTokenizerSeparators(_:)`), so a question typed as
+///          keywords renders `"happen"` where it rendered `"happen?"`, and the Query Inspector's MATCH line shows what is
+///          searched. No expression that runs matches other rows: the tokenizer drops those characters inside quotation
+///          marks as it does outside them, and which words run is decided as before, on the word as typed (`1945.` still
+///          runs nothing). One refusal follows: an operand's identity is its render (`OperandIdentity`), so the
+///          approximation of `=cold. -=Cold OR -=Cold` is `"cold" NOT "cold"`, which is refused as matching nothing by
+///          construction, where `"cold." NOT "cold"` ran and matched nothing (16 sequences a scope of
+///          `Issue1297StructuredPartsTests`' spelling sweep). A mark inside a word is kept, and a phrase of nothing but
+///          marks is rendered as typed
 public enum FTS5InlineQueryParser {
 
     // MARK: - Public Interface
@@ -1982,6 +1992,38 @@ public enum FTS5InlineQueryParser {
         return String(text.map { typographicDoubleQuotationMarks.contains($0) ? "\"" : $0 })
     }
 
+    /// `term` as the index's tokenizer reads its ends: without the characters at either end that the tokenizer drops,
+    /// or `term` itself when that leaves nothing (#1760).
+    ///
+    /// `porter unicode61` keeps letters, numbers and private-use characters (its default `categories`, `L* N* Co`) and
+    /// reads every other character as a break between words. So a question typed as keywords, *Why did the Marshall
+    /// Plan happen?*, searches the word `happen`, and the expression quoted `"happen?"` where the search reads `happen`.
+    /// The query the database runs is the same either way, since the tokenizer drops the mark inside quotation marks as
+    /// it does outside them; the rendered expression now quotes what it searches. A mark inside a word is kept
+    /// (`don't`, `co-operate`): the tokenizer reads it as a break, so the quoted term is the phrase of its parts, and the
+    /// mark is what shows that.
+    ///
+    /// A character is judged by its first scalar, so a letter carrying a combining mark is a letter.
+    public static func trimmingTokenizerSeparators(_ term: String) -> String {
+        var characters = Substring(term)
+        while let first = characters.first, !isTokenCharacter(first) { characters = characters.dropFirst() }
+        while let last = characters.last, !isTokenCharacter(last) { characters = characters.dropLast() }
+        return characters.isEmpty ? term : String(characters)
+    }
+
+    /// Whether the tokenizer keeps `character` in a word: a letter, a number or a private-use character, the
+    /// `unicode61` tokenizer's default token categories.
+    private static func isTokenCharacter(_ character: Character) -> Bool {
+        guard let scalar = character.unicodeScalars.first else { return false }
+        switch scalar.properties.generalCategory {
+        case .uppercaseLetter, .lowercaseLetter, .titlecaseLetter, .modifierLetter, .otherLetter,
+             .decimalNumber, .letterNumber, .otherNumber, .privateUse:
+            return true
+        default:
+            return false
+        }
+    }
+
     // MARK: - Tokenization
 
     /// Splits `raw` on whitespace, treating `"..."` spans (including unterminated ones,
@@ -2207,8 +2249,9 @@ public enum FTS5InlineQueryParser {
             let sanitized = sanitizeBareToken(prefix)
             guard !sanitized.isEmpty else { return nil }
             // Quoted-string-plus-star is FTS5's prefix-query form for non-bareword
-            // text; matches `FTS5Query`'s prefix-wildcard handling.
-            let core = columnPrefix + "\"\(sanitized)\"*"
+            // text; matches `FTS5Query`'s prefix-wildcard handling. Quoted as the tokenizer
+            // reads it (#1760).
+            let core = columnPrefix + "\"\(trimmingTokenizerSeparators(sanitized))\"*"
             return operand.negated ? "NOT \(core)" : core
         }
     }
@@ -2262,7 +2305,9 @@ public enum FTS5InlineQueryParser {
         let lower = sanitized.lowercased()
         let alpha = lower.filter { $0.isLetter }
         if !alpha.isEmpty {
-            return lower
+            // Quoted as the tokenizer reads it: `happen?` searches `happen`, and says so (#1760).
+            // Which words run is decided above, on the word as typed, as it always was.
+            return trimmingTokenizerSeparators(lower)
         }
         let alnum = lower.filter { $0.isLetter || $0.isNumber }
         return (!lower.isEmpty && alnum == lower) ? lower : nil
@@ -2282,7 +2327,10 @@ public enum FTS5InlineQueryParser {
         let words = sanitized
             .split(whereSeparator: \.isWhitespace)
             .map { String($0).lowercased() }
-        let joined = words.joined(separator: " ")
+        // Each word quoted as the tokenizer reads it (#1760), and a word that is only marks, which the
+        // tokenizer reads as nothing, left out; a phrase of nothing but marks is kept as it was typed.
+        let read = words.map(trimmingTokenizerSeparators).filter { $0.contains(where: isTokenCharacter) }
+        let joined = (read.isEmpty ? words : read).joined(separator: " ")
         return joined.isEmpty ? nil : joined
     }
 }

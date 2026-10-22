@@ -116,6 +116,12 @@ import FTS5Store
 ///          those fields shows its opening prose. SNIPPETS MOVE for every keyword search
 ///   2.16 — A18 (index version 70): a result carries `dateISOMax` and `datePrecision` from its row, so a
 ///          row with no dateline — a section's, dated by the documents it holds — can draw its day or span
+///   2.17 — #1760: a keyword row's window starts at the prose's first word of the rarest of the query's words
+///          that the prose holds, rarest across the index, with the function words set aside while the query has
+///          another word (`keywordAnchorTiers(_:)`, `functionWordStems`), where it started at the first word of any,
+///          which for a question typed as keywords was *the*; and the highlighter reads each term as the tokenizer
+///          does, so `happen?` is `happen`. `results(from:parameters:)` is `async`. SNIPPETS MOVE for a search of more
+///          than one word, and only for those
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -183,7 +189,7 @@ public actor SearchService {
             limit: limit,
             offset: offset
         )
-        return try results(from: rows, parameters: parameters)
+        return try await results(from: rows, parameters: parameters)
     }
 
     /// Test hook: called by `results(from:parameters:)` before each row's snippet, after the row's
@@ -203,10 +209,13 @@ public actor SearchService {
     /// common word's 1.15 s, measured over a full index) and runs on this actor, so a search a later
     /// one replaced would otherwise hold up every call into the service, the replacing search's
     /// included, until its last snippet.
-    func results(from rows: [IndexedSearchRow], parameters: SearchParameters) throws -> [SearchResult] {
-        // Stem each positive term once; reused across all rows for highlighting.
+    func results(from rows: [IndexedSearchRow], parameters: SearchParameters) async throws -> [SearchResult] {
+        // Stem each positive term once, and rank the stems once, rarest first; reused across all
+        // rows for highlighting (#1760).
         let queryTerms = positiveTerms(from: parameters)
         let stemmedQueryTerms = queryTerms.map { PorterStemmer.stem($0.lowercased()) }
+        var anchorTiers: [[String]] = []
+        if !rows.isEmpty { anchorTiers = await keywordAnchorTiers(stemmedQueryTerms) }
 
         var results: [SearchResult] = []
         results.reserveCapacity(rows.count)
@@ -221,7 +230,7 @@ public actor SearchService {
                 header: row.header,
                 dateline: row.dateline,
                 sourceNote: row.sourceNote,
-                stemmedTerms: stemmedQueryTerms
+                stemTiers: anchorTiers
             ) ?? headerFallbackSnippet(header: row.header, dateline: row.dateline)
 
             results.append(SearchResult(
@@ -865,6 +874,11 @@ public actor SearchService {
                 if token.hasPrefix("\"") { token = String(token.dropFirst()) }
                 if token.hasSuffix("\"") { token = String(token.dropLast()) }
                 if token.hasSuffix("*"), token.count > 1 { token = String(token.dropLast()) }
+                // As the tokenizer reads it (#1760): a question typed as keywords ends `happen?`,
+                // which the search reads as `happen`, and whose stem kept the mark and anchored on
+                // nothing. An `=` word keeps its mark, which anchors on nothing as before: its match
+                // is the literal word, which a stem cannot say.
+                if !token.hasPrefix("=") { token = FTS5InlineQueryParser.trimmingTokenizerSeparators(token) }
                 guard !token.isEmpty else { continue }
                 terms.append(token)
             }
@@ -872,11 +886,11 @@ public actor SearchService {
         if let phrase = parameters.phrase, !phrase.isEmpty {
             terms.append(contentsOf: phrase
                 .split(whereSeparator: \.isWhitespace)
-                .map(String.init)
+                .map { FTS5InlineQueryParser.trimmingTokenizerSeparators(String($0)) }
                 .filter { !$0.isEmpty })
         }
         if let prefix = parameters.prefixWildcard, !prefix.isEmpty {
-            terms.append(prefix)
+            terms.append(FTS5InlineQueryParser.trimmingTokenizerSeparators(prefix))
         }
         // De-duplicate case-insensitively while preserving order.
         var seen = Set<String>()
@@ -907,6 +921,69 @@ public actor SearchService {
     /// an iPad Pro in landscape; the visible length is clamped at render time.
     nonisolated static let keywordTrail = 2_000
 
+    /// Words that say nothing about a document on their own: articles, auxiliaries, pronouns,
+    /// prepositions and conjunctions, and the question words a question typed as keywords opens with
+    /// (#1760). As Porter stems, as a query's words are compared.
+    ///
+    /// A keyword row's window does not start at one of them while the query has another word
+    /// (``keywordAnchorTiers(_:)``). *May* is not among them, since it is a month in this corpus as
+    /// often as a verb.
+    nonisolated static let functionWordStems: Set<String> = Set("""
+        a about above after again against all also am an and any are as at be because been before being below \
+        between both but by can could did do does doing done down during each either few for from further had has \
+        have having he her here hers herself him himself his how i if in into is it its itself me more most my \
+        myself neither no nor not of off on once only or other our ours out over own same she should so some such \
+        than that the their theirs them themselves then there these they this those through to too under until up \
+        upon us very was we were what when where whether which while who whom whose why will with within without \
+        would yet you your yours
+        """.split(whereSeparator: \.isWhitespace).map { PorterStemmer.stem(String($0)) })
+
+    /// The query's stems in the order a keyword row's window prefers them (#1760): the rarest across
+    /// the index first, by how many of its documents hold each (`IndexingPipeline.documentFrequencies
+    /// (ofIndexTerms:)`), stems held by as many documents together, in the order typed; and none of
+    /// ``functionWordStems`` while the query has another word.
+    ///
+    /// A question typed as keywords, *Why did the Marshall Plan happen?*, matches documents holding
+    /// every one of its words, and A10b's window started at the first of them in the prose, which was
+    /// *the* in nearly every row, so *the* was the word each row drew in bold. Ranked, the window
+    /// starts at *Marshall*: on build 1861's full index, 13,067 documents hold it, and 318,650 hold *the*.
+    /// Rarity alone ranks *why* (21,021) above *plan* (67,090), so a row whose prose lacks *Marshall*
+    /// and *happen* would start at *why*; the function words are therefore set aside, and a row whose
+    /// prose holds none of the other words starts as a row whose words are only in its own fields does.
+    ///
+    /// A stem the vocabulary does not hold is held as rare as any: a word no document holds cannot
+    /// anchor a window, and the few Swift stems SQLite's stemmer spells otherwise are words, not marks.
+    /// Where the vocabulary cannot be read, every stem is one tier, A10b's rule.
+    ///
+    /// - Parameter stems: The query's positive terms, reduced to their Porter stems.
+    /// - Returns: The tiers, most telling first; one tier for a query of one stem.
+    func keywordAnchorTiers(_ stems: [String]) async -> [[String]] {
+        var unique: [String] = []
+        for stem in stems where !stem.isEmpty && !unique.contains(stem) { unique.append(stem) }
+        let telling = unique.filter { !Self.functionWordStems.contains($0) }
+        let anchoring = telling.isEmpty ? unique : telling
+        guard anchoring.count > 1 else { return anchoring.isEmpty ? [] : [anchoring] }
+        guard let frequencies = try? await pipeline.documentFrequencies(ofIndexTerms: anchoring)
+        else { return [anchoring] }
+        var tiers: [[String]] = []
+        var tierFrequency: Int?
+        // `sorted` is not stable, so the order typed is compared too.
+        let ranked = anchoring.enumerated().sorted { a, b in
+            let (fa, fb) = (frequencies[a.element] ?? 0, frequencies[b.element] ?? 0)
+            return fa != fb ? fa < fb : a.offset < b.offset
+        }
+        for (_, stem) in ranked {
+            let frequency = frequencies[stem] ?? 0
+            if frequency == tierFrequency, !tiers.isEmpty {
+                tiers[tiers.count - 1].append(stem)
+            } else {
+                tiers.append([stem])
+                tierFrequency = frequency
+            }
+        }
+        return tiers
+    }
+
     /// A keyword row's snippet (A10b, plan of record decision 74): the window around the first word
     /// of the document's own prose that the query matches, after its own heading, source note and
     /// dateline. A search row draws the heading and the dateline, and the source note's classification
@@ -915,9 +992,12 @@ public actor SearchService {
     /// - **The prose** starts where `ProseSnippet.proseStart(in:header:dateline:sourceNote:)` puts
     ///   it, the strip a Meaning row's snippet is cut by. A body that is only its boilerplate is read
     ///   whole, as the Meaning snippet's fallback reads it.
-    /// - **The window** is ``makeContextSnippet(body:stemmedTerms:from:before:after:)``'s:
-    ///   ``keywordLead`` characters before the prose's first match, back to a space, and
-    ///   ``keywordTrail`` after it.
+    /// - **The word** is the prose's first word of the most telling tier it holds (#1760): the rarest
+    ///   of the query's words across the index, leaving aside *the*, *of*, *why* and their kind while
+    ///   the query has another word (``keywordAnchorTiers(_:)``), where A10b took the first word of any,
+    ///   so that a question typed as keywords no longer marks *the*.
+    /// - **The window** is ``makeContextSnippet(body:stemTiers:from:before:after:)``'s:
+    ///   ``keywordLead`` characters before that word, back to a space, and ``keywordTrail`` after it.
     /// - **A row whose only match is in those fields** gets the opening prose, ``keywordTrail``
     ///   characters of it with no word marked, as a Meaning row does. A word in the heading or the
     ///   dateline is drawn there; one only in the source note, or in the line the strip takes with the
@@ -933,18 +1013,18 @@ public actor SearchService {
     ///   - header: The document's header, as the row shows it.
     ///   - dateline: The row's dateline, when present.
     ///   - sourceNote: The document's stored source note, when present.
-    ///   - stemmedTerms: Query terms already reduced to their Porter stems.
+    ///   - stemTiers: Query terms already reduced to their Porter stems, in tiers, the most telling first.
     /// - Returns: The snippet, with the match between `<b>` and `</b>` when it is in the prose.
     nonisolated static func keywordSnippet(
         body: String,
         header: String,
         dateline: String?,
         sourceNote: String?,
-        stemmedTerms: [String]
+        stemTiers: [[String]]
     ) -> String? {
-        guard !body.isEmpty, !stemmedTerms.isEmpty else { return nil }
+        guard !body.isEmpty, stemTiers.contains(where: { !$0.isEmpty }) else { return nil }
         let characters = Array(body)
-        let terms = KeywordStems(stemmedTerms)
+        let terms = KeywordStems(tiers: stemTiers)
         let proseStart = ProseSnippet.proseStart(
             in: characters, header: header, dateline: dateline, sourceNote: sourceNote) ?? 0
         if let match = terms.firstMatch(in: characters, from: proseStart, to: characters.count) {
@@ -957,26 +1037,55 @@ public actor SearchService {
         return String(characters[proseStart..<end]) + (end < characters.count ? " …" : "")
     }
 
+    /// ``keywordSnippet(body:header:dateline:sourceNote:stemTiers:)`` with every stem in one tier: the
+    /// window at the prose's first word that any of them matches, A10b's rule.
+    nonisolated static func keywordSnippet(
+        body: String,
+        header: String,
+        dateline: String?,
+        sourceNote: String?,
+        stemmedTerms: [String]
+    ) -> String? {
+        keywordSnippet(body: body, header: header, dateline: dateline, sourceNote: sourceNote,
+                       stemTiers: [stemmedTerms])
+    }
+
     /// Builds a `<b>…</b>`-marked context snippet from a document body string.
     ///
     /// The body is scanned word-by-word from `start`; the first word whose Porter stem matches
-    /// any entry in `stemmedTerms` is wrapped in `<b>…</b>`, with about `before` characters ahead of
-    /// it and `after` behind it. Ahead, the window goes back to a space, so that it opens on a whole
-    /// word ("Bonn’s", not its "s"), and never before `start`; behind, it goes on to the end of the
-    /// word it reaches. "… " opens a window that starts after `start`, and " …" ends one that stops
-    /// before the body does.
+    /// an entry of the best tier of `stemTiers` the body holds is wrapped in `<b>…</b>`, with about
+    /// `before` characters ahead of it and `after` behind it (#1760: with one tier, the first word of
+    /// any stem). Ahead, the window goes back to a space, so that it opens on a whole word ("Bonn’s",
+    /// not its "s"), and never before `start`; behind, it goes on to the end of the word it reaches.
+    /// "… " opens a window that starts after `start`, and " …" ends one that stops before the body does.
     ///
     /// Returns `nil` if no word in `body` from `start` on matches any stemmed term.
     ///
     /// - Parameters:
     ///   - body: The unstemmed, plain-text document body to search.
-    ///   - stemmedTerms: Query terms already reduced to their Porter stems.
+    ///   - stemTiers: Query terms already reduced to their Porter stems, in tiers, the most telling first.
     ///   - start: Where the scan and the window may begin, in characters: a keyword row passes where
-    ///     its prose starts (``keywordSnippet(body:header:dateline:sourceNote:stemmedTerms:)``).
+    ///     its prose starts (``keywordSnippet(body:header:dateline:sourceNote:stemTiers:)``).
     ///   - before: About how many characters to keep ahead of the match.
     ///   - after: About how many characters to keep behind it. A keyword row keeps ``keywordTrail``,
     ///     so the result string can fill up to the 10-line maximum the UI's adjustable `.lineLimit`
     ///     may request (#189-C); the visible length is clamped at render time.
+    nonisolated static func makeContextSnippet(
+        body: String,
+        stemTiers: [[String]],
+        from start: Int = 0,
+        before: Int = keywordLead,
+        after: Int = keywordTrail
+    ) -> String? {
+        guard !body.isEmpty, stemTiers.contains(where: { !$0.isEmpty }) else { return nil }
+        let characters = Array(body)
+        guard let match = KeywordStems(tiers: stemTiers).firstMatch(in: characters, from: start, to: characters.count)
+        else { return nil }
+        return window(in: characters, around: match, from: start, before: before, after: after)
+    }
+
+    /// ``makeContextSnippet(body:stemTiers:from:before:after:)`` with every stem in one tier: the window
+    /// at the first word that any of `stemmedTerms` matches.
     nonisolated static func makeContextSnippet(
         body: String,
         stemmedTerms: [String],
@@ -984,14 +1093,10 @@ public actor SearchService {
         before: Int = keywordLead,
         after: Int = keywordTrail
     ) -> String? {
-        guard !body.isEmpty, !stemmedTerms.isEmpty else { return nil }
-        let characters = Array(body)
-        guard let match = KeywordStems(stemmedTerms).firstMatch(in: characters, from: start, to: characters.count)
-        else { return nil }
-        return window(in: characters, around: match, from: start, before: before, after: after)
+        makeContextSnippet(body: body, stemTiers: [stemmedTerms], from: start, before: before, after: after)
     }
 
-    /// The window ``makeContextSnippet(body:stemmedTerms:from:before:after:)`` describes, around a
+    /// The window ``makeContextSnippet(body:stemTiers:from:before:after:)`` describes, around a
     /// match already found.
     nonisolated private static func window(
         in characters: [Character],
@@ -1018,46 +1123,37 @@ public actor SearchService {
     /// A query's stems, and the scan that finds the first body word stemming to one of them.
     private struct KeywordStems {
 
-        /// The query terms' Porter stems.
-        let stems: Set<String>
+        /// Each stem's tier, 0 the most telling (#1760): the scan takes the first word of the best tier a
+        /// range holds. With one tier, as `init(_:)` makes, that is the range's first word of any stem.
+        let tiers: [String: Int]
 
-        /// The stems' first characters, for the scan's first gate.
-        let firstLetters: Set<Character>
+        /// The scan's gates over every stem.
+        let gates: Gates
 
-        /// Each stem's opening, for the scan's second gate: the stem less its last two characters, and
-        /// never less than its first.
-        let openings: [[Character]]
-
-        /// Reads `stemmedTerms`, query terms already reduced to their Porter stems.
+        /// Reads `stemmedTerms`, query terms already reduced to their Porter stems, as one tier.
         init(_ stemmedTerms: [String]) {
-            stems = Set(stemmedTerms)
-            // A sound, near-free rejection test, applied before any allocation.
-            //
-            // The Porter stemmer only strips or rewrites SUFFIXES — no rule alters a word's
-            // first character — so a word whose first letter is not among the query stems' first
-            // letters cannot possibly stem to one. Testing that costs a lowercase and a set
-            // probe; the alternative was three String allocations and a full stem, per word, for
-            // every word in the body.
-            //
-            // This is what made a failed match expensive. On a corpus search the body scan runs
-            // to completion — measured on the real 316,839-document index, macOS's 7,500-row
-            // fetch spent 41 s stemming ~6 million words and then discarded every result to fall
-            // back to the header. Roughly 24 words in 25 now stop at a character comparison.
-            firstLetters = Set(stemmedTerms.compactMap(\.first))
-            // The second gate, which A10b needs (decision 74): a row whose word is only in its heading or
-            // source note now scans its whole prose before it falls back, where the scan used to stop at
-            // the heading's match. The stemmer rewrites a word's end only, and no further back than a
-            // stem's last two characters (every replacement keeps all but the last one or two characters
-            // of what it replaces), so a word can stem to a stem only if it opens with all of the stem but
-            // those two. Measured over a full index, at the Mac's 7,500 rows: "Presidential Materials"
-            // went from 8.4 s to 3.6 s in a debug build, with not one snippet changed in nine searches.
-            // `SearchSnippetCostTests.stemmingKeepsTheWordsOpening` holds the stemmer to it.
-            openings = Set(stemmedTerms).filter { !$0.isEmpty }.map { Array($0.prefix(max(1, $0.count - 2))) }
+            self.init(tiers: [stemmedTerms])
         }
 
-        /// The first word in `characters[start..<end]` whose Porter stem hits the query set: its
-        /// range, or `nil` when none does.
+        /// Reads `ordered`, the query's stems in tiers, the most telling first. A stem listed in two
+        /// tiers is in the first.
+        init(tiers ordered: [[String]]) {
+            var tiers: [String: Int] = [:]
+            for (tier, stems) in ordered.enumerated() {
+                for stem in stems where tiers[stem] == nil { tiers[stem] = tier }
+            }
+            self.tiers = tiers
+            gates = Gates(tiers.keys)
+        }
+
+        /// The first word in `characters[start..<end]` whose Porter stem is in the best tier the range
+        /// holds: its range, or `nil` when no word's stem is the query's.
+        ///
+        /// One pass. At the first word of the first tier it stops; at a word of a later tier it goes on,
+        /// for the rarer tiers alone, whose gates turn away the rest of the words, the common ones first.
         func firstMatch(in characters: [Character], from start: Int, to end: Int) -> Range<Int>? {
+            var best: (tier: Int, range: Range<Int>)?
+            var gates = self.gates
             var i = start
             while i < end {
                 // Skip non-letters.
@@ -1070,23 +1166,69 @@ public actor SearchService {
                     i += 1
                 }
                 let wordEnd = i
-
-                // The cheap gate. `lowercased()` on a single Character allocates nothing for the
-                // ASCII case and the set probe is O(1).
-                guard let head = characters[wordStart].lowercased().first,
-                      firstLetters.contains(head) else { continue }
-                // The second gate, for a word the stemmer reads as it is written (an apostrophe or a hyphen
-                // is taken out first, which moves its letters).
-                if !sawPunctuation, !opensLikeAStem(characters, from: wordStart, to: wordEnd) { continue }
+                guard gates.admit(characters, from: wordStart, to: wordEnd, sawPunctuation: sawPunctuation)
+                else { continue }
 
                 let word = String(characters[wordStart..<wordEnd])
                 // Only strip when the scan actually consumed an apostrophe or hyphen, which is
                 // rare — `filter` allocates a second String every time it is called.
                 let alpha = sawPunctuation ? word.filter { $0.isLetter } : word
                 let stem = alpha.isEmpty ? word.lowercased() : PorterStemmer.stem(alpha.lowercased())
-                if stems.contains(stem) { return wordStart..<wordEnd }
+                guard let tier = tiers[stem], tier < (best?.tier ?? .max) else { continue }
+                if tier == 0 { return wordStart..<wordEnd }
+                best = (tier, wordStart..<wordEnd)
+                gates = Gates(tiers.filter { $0.value < tier }.keys)
             }
-            return nil
+            return best?.range
+        }
+    }
+
+    /// The scan's two gates over a set of stems, which turn a word away before it is stemmed when it
+    /// cannot stem to any of them.
+    private struct Gates {
+
+        /// The stems' first characters, for the scan's first gate.
+        let firstLetters: Set<Character>
+
+        /// Each stem's opening, for the scan's second gate: the stem less its last two characters, and
+        /// never less than its first.
+        let openings: [[Character]]
+
+        /// The gates over `stems`, query terms already reduced to their Porter stems.
+        init<Stems: Sequence>(_ stems: Stems) where Stems.Element == String {
+            let stems = Set(stems)
+            // A sound, near-free rejection test, applied before any allocation.
+            //
+            // The Porter stemmer only strips or rewrites SUFFIXES — no rule alters a word's
+            // first character — so a word whose first letter is not among the query stems' first
+            // letters cannot possibly stem to one. Testing that costs a lowercase and a set
+            // probe; the alternative was three String allocations and a full stem, per word, for
+            // every word in the body.
+            //
+            // This is what made a failed match expensive. On a corpus search the body scan runs
+            // to completion — measured on the real 316,839-document index, macOS's 7,500-row
+            // fetch spent 41 s stemming ~6 million words and then discarded every result to fall
+            // back to the header. Roughly 24 words in 25 now stop at a character comparison.
+            firstLetters = Set(stems.compactMap(\.first))
+            // The second gate, which A10b needs (decision 74): a row whose word is only in its heading or
+            // source note now scans its whole prose before it falls back, where the scan used to stop at
+            // the heading's match. The stemmer rewrites a word's end only, and no further back than a
+            // stem's last two characters (every replacement keeps all but the last one or two characters
+            // of what it replaces), so a word can stem to a stem only if it opens with all of the stem but
+            // those two. Measured over a full index, at the Mac's 7,500 rows: "Presidential Materials"
+            // went from 8.4 s to 3.6 s in a debug build, with not one snippet changed in nine searches.
+            // `SearchSnippetCostTests.stemmingKeepsTheWordsOpening` holds the stemmer to it.
+            openings = stems.filter { !$0.isEmpty }.map { Array($0.prefix(max(1, $0.count - 2))) }
+        }
+
+        /// Whether the word in `characters[start..<end]` passes both gates, and so is stemmed.
+        func admit(_ characters: [Character], from start: Int, to end: Int, sawPunctuation: Bool) -> Bool {
+            // The cheap gate. `lowercased()` on a single Character allocates nothing for the
+            // ASCII case and the set probe is O(1).
+            guard let head = characters[start].lowercased().first, firstLetters.contains(head) else { return false }
+            // The second gate, for a word the stemmer reads as it is written (an apostrophe or a hyphen
+            // is taken out first, which moves its letters).
+            return sawPunctuation || opensLikeAStem(characters, from: start, to: end)
         }
 
         /// Whether the word in `characters[start..<end]` opens as one of the stems' ``openings`` does,

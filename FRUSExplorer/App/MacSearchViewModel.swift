@@ -128,6 +128,8 @@ import SwiftData
 ///   1.17 — #1686: a facet's narrowing is the view model's (`applyFacetNarrowing(_:)`, `applyFacetSelection(_:keys:)`),
 ///          which remembers a Volumes facet's choice; a change of project keeps it while the gate still holds it
 ///          (`applyProjectScope()`, `FacetVolumeChoice`), and the volume filter's ✕ forgets it
+///   1.18 — #1758: `resultSetScope` carries what narrowed the rows beyond their words (`ResultSetScope.narrowing`), read
+///          from the filters they were found under, which a working corpus records
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -478,7 +480,9 @@ final class MacSearchViewModel {
                        documentsOnPage: pagedResults.count,
                        pageCount: totalPages,
                        appliedCorpusTruncation: filterVM?.appliedWorkingCorpusTruncation,
-                       route: executedRoute)
+                       route: executedRoute,
+                       // #1758: the filters the rows were found under.
+                       narrowing: ResultSetScope.narrowing(ofRowsSignedBy: filterSignatureOfTheRows))
             .describingLayer(over: pinnedBase, filtersNarrowed: lastLayerFiltersNarrowed, sortOrder: sortOrder)
     }
 

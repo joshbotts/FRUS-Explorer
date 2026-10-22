@@ -1,5 +1,7 @@
 # Keyword search snippets: an assessment, 2026-10-20
 
+**Status: COMPLETE, 2026-10-22; decided 2026-10-20.** The owner's word of 2026-10-20 (§5; decision 74 of `Completed/Plan-Of-Record-2026-10-14.md`): option 1, built as A10b and merged as #1736 (`6dcd82b4`). Its follow-on from the build-51 capture sittings, #1760, was fixed by lane L2 of `Plan-Of-Record-2026-10-21.md`: a question typed in Keywords mode marked *the* in every row, since the window started at the prose's first word of any of the query's words, and it now starts at the rarest of them that the prose holds, rarest across the reader's index, with words such as *the*, *of* and *why* set aside while the query has others; and the Query Inspector quoted `"happen?"`, which it now quotes as the tokenizer reads it, `"happen"`. This file stays at the Planning root, where a finished assessment would otherwise move to `Completed/`, because `FRUSCoreKit/Search/SearchService.swift`, `FRUSCoreKit/Search/ProseSnippet.swift`, `KeywordSnippetTests` and `ProseSnippetTests` cite it by this path. The assessment below is as it was written before the decision.
+
 **What this is.** The 2026-10-14 plan of record's §6g finding from A10 (#1684; `Completed/Plan-Of-Record-2026-10-14.md`): a keyword result's snippet repeats the document's own heading, source note and dateline, and the row's two default lines rarely reach the word that matched. Measured on `v2` at `8927db62` (A10 merged). Nothing is built. The options go to the owner (§4), and the owner's choice is recorded in §5.
 
 **How it was measured.**
