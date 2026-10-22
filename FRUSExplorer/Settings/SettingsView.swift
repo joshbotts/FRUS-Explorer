@@ -1833,18 +1833,21 @@ struct DisplaySettingsView: View {
                 Text(readingWidthFooter)
             }
 
+            // #1756: the setting counts a chart's colors, the gray "Other volumes" among them once the
+            // volumes outnumber them (`ChartSeriesPalette`). It said volumes, so its default of 8 read
+            // as eight volumes beside the seven the charts name.
             Section {
                 Stepper(value: $chartSeriesCount, in: ChartSeriesPalette.range) {
-                    Text(String(format: String(localized: "settings.display.chartColors.value %lld",
-                                               defaultValue: "Distinctly-colored volumes: %lld"),
+                    Text(String(format: String(localized: "settings.display.chartColors.value.v2 %lld",
+                                               defaultValue: "Colors per chart: %lld"),
                                 Int64(chartSeriesCount)))
                 }
             } header: {
                 Text(String(localized: "settings.display.chartColors.header",
                             defaultValue: "Chart Colors"))
             } footer: {
-                Text(String(localized: "settings.display.chartColors.footer",
-                            defaultValue: "How many volumes appear as distinct colors in the Chronology and Corpus Analytics charts before the rest fold into a single “Other” series. Each chart can override this per view."))
+                Text(String(localized: "settings.display.chartColors.footer.v2",
+                            defaultValue: "How many colors the Chronology and Corpus Analytics charts use for their volumes. When more volumes contribute than there are colors, the last color is a gray “Other volumes” holding the rest, so a chart names one volume fewer than its colors. Each chart can override this per view."))
             }
 
             Section {

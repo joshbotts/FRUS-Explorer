@@ -3252,15 +3252,15 @@ struct AnalyticsView: View {
                             Text(verbatim: "\(n)").tag(n)
                         }
                     } label: {
-                        Text(String(localized: "analytics.colors.count", defaultValue: "Colored volumes"))
+                        Text(String(localized: "analytics.colors.count.v2", defaultValue: "Colors per chart"))
                     }
                 } label: {
                     Label(String(localized: "analytics.colors.menu", defaultValue: "Chart colors"),
                           systemImage: "paintpalette")
                 }
                 .disabled(committedTerm.isEmpty || !chartAxis.isDateBased || viewMode != .chart || isComparing)
-                .help(String(localized: "analytics.colors.help",
-                             defaultValue: "How many source volumes appear as distinct colors before the rest fold into “Other”"))
+                .help(String(localized: "analytics.colors.help.v2",
+                             defaultValue: "How many colors the bars use; with more volumes, the last is a gray “Other volumes”"))
             }
         }
 
@@ -3445,7 +3445,7 @@ struct AnalyticsView: View {
                     Text(verbatim: "\(n)").tag(n)
                 }
             } label: {
-                Text(String(localized: "analytics.colors.count", defaultValue: "Colored volumes"))
+                Text(String(localized: "analytics.colors.count.v2", defaultValue: "Colors per chart"))
             }
         }
     }

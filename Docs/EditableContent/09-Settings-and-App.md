@@ -734,7 +734,7 @@ How long a document’s lines may grow: about 77 characters at Narrow, 100 at St
 
 #### Reading mode — footer (iPad and Mac)
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1919–1920 | key: settings.display.reading.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1922–1923 | key: settings.display.reading.footer -->
 
 “Remember Last” reopens documents in the mode you used last, Read or Research. Research mode shows the Research rail in a side panel beside the document. Read mode hides the rail so you can just read. The rail toggle inside a document always wins for that document.
 
@@ -744,7 +744,7 @@ How long a document’s lines may grow: about 77 characters at Narrow, 100 at St
 
 #### Reading mode — footer (iPhone)
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1916–1917 | key: settings.display.reading.footer.iphone -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1919–1920 | key: settings.display.reading.footer.iphone -->
 
 The Research rail opens as a bottom sheet from the toolbar’s Research button. It never opens on its own, so it cannot cover a document you only meant to read. Edge-Tap Page Turn moves you between documents while the rail is closed.
 
@@ -1386,43 +1386,46 @@ All notes tagged ‘\(sourceTag.name)’ will be re-tagged with the selected tag
 
 <!-- END SOURCE: settings.tags.merge.explanation -->
 
-#### Footer — How many volumes appear as distinct colors in the…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1846–1847 | key: settings.display.chartColors.footer -->
+#### Footer — How many colors the Chronology and Corpus Analytics charts…
+<!-- #1756: re-keyed from settings.display.chartColors.footer. The count is of colors, the gray
+     "Other volumes" among them, so the default of 8 names seven volumes; the row above it reads
+     "Colors per chart: %lld" (settings.display.chartColors.value.v2), where it said volumes. -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1849–1850 | key: settings.display.chartColors.footer.v2 -->
 
-How many volumes appear as distinct colors in the Chronology and Corpus Analytics charts before the rest fold into a single “Other” series. Each chart can override this per view.
+How many colors the Chronology and Corpus Analytics charts use for their volumes. When more volumes contribute than there are colors, the last color is a gray “Other volumes” holding the rest, so a chart names one volume fewer than its colors. Each chart can override this per view.
 
-<!-- END SOURCE: settings.display.chartColors.footer -->
+<!-- END SOURCE: settings.display.chartColors.footer.v2 -->
 
 #### Footer — Used for Copy Citation, Share Citation, and the citation…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1872–1873 | key: settings.display.citationStyle.footer.mac | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1875–1876 | key: settings.display.citationStyle.footer.mac | shared: macOS only -->
 
 Used for Copy Citation, Share Citation, and the citation popover’s default. The popover can still switch styles per-presentation for comparison.
 
 <!-- END SOURCE: settings.display.citationStyle.footer.mac -->
 
 #### VoiceOver hint — When on, tapping near the left or right edge of a document…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1907–1908 | key: settings.display.edgeTapNavigation.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1910–1911 | key: settings.display.edgeTapNavigation.a11y | shared: iOS only -->
 
 When on, tapping near the left or right edge of a document opens the previous or next one — available whenever the Research rail is closed
 
 <!-- END SOURCE: settings.display.edgeTapNavigation.a11y -->
 
 #### Footer — These defaults can be overridden per-session in the Search…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2000–2001 | key: settings.search.scope.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2003–2004 | key: settings.search.scope.footer -->
 
 These defaults can be overridden per-session in the Search filter panel. At least one scope stays on — searching nothing has no result to show.
 
 <!-- END SOURCE: settings.search.scope.footer -->
 
 #### Footer — Documents you have reclassified between “document” and…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2068–2069 | key: settings.search.classificationCorrections.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2071–2072 | key: settings.search.classificationCorrections.footer -->
 
 Documents you have reclassified between “document” and “editorial note”. This filter, badges, counts, and exports follow your corrections.
 
 <!-- END SOURCE: settings.search.classificationCorrections.footer -->
 
 #### Footer — How many lines of matched context each search result shows.…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2083–2084 | key: settings.search.snippet.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2086–2087 | key: settings.search.snippet.footer -->
 
 How many lines of matched context each search result shows. Individual search screens can override this default.
 
