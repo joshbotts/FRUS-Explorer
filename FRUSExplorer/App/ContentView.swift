@@ -200,6 +200,12 @@ struct ContentViewWithSplash: View {
                 // Nothing to wait for, so hold briefly and flow into onboarding's own
                 // cloud. ONCE PER INSTALL — not a per-launch floor, which the plan rules
                 // out as a permanent tax on a tool people open repeatedly.
+                //
+                // The flow is real since #1759: onboarding's backdrop fades its cloud in when the
+                // vectors land, under the splash, on the splash's own lens, so the fade-out below
+                // crosses one cloud into the other. It used to wait for its next lens change to
+                // notice the vectors, and the splash left an empty backdrop, for 0.18 to 1.21 s
+                // in the launches measured.
                 try? await Task.sleep(for: .seconds(1.6))
                 splashReason = nil
             }

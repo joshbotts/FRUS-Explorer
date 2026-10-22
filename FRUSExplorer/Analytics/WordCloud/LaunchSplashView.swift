@@ -27,9 +27,10 @@ import SwiftUI
 /// ## Dismissal differs by reason, deliberately
 /// - `.cloudKitImport` dismisses when the import settles — a real wait, of real duration.
 /// - `.freshInstall` has nothing to wait for, so it holds briefly and flows into
-///   onboarding's own cloud. That hold is **once per install**, not a per-launch floor: the
-///   plan explicitly rules out a fixed display floor on every cold launch as "a permanent
-///   tax on a tool people open repeatedly", and this is not that.
+///   onboarding's own cloud: onboarding's backdrop fades its words in under this one, on the same
+///   seeded lens, so the fade-out crosses one cloud into the other. That hold is **once per
+///   install**, not a per-launch floor: the plan explicitly rules out a fixed display floor on
+///   every cold launch as "a permanent tax on a tool people open repeatedly", and this is not that.
 ///
 /// Version history:
 ///   1.0 — O-3: initial implementation
@@ -37,6 +38,8 @@ import SwiftUI
 ///         reachable BEFORE they have (see `CloudSurfaceArbiter.resolve`, which used to gate every
 ///         branch on them and so made this view unreachable entirely), which is the composition the
 ///         launch screen hands over: identity only, then the cloud.
+///   1.7 — #1759: the arrival fade is `WordCloudBackdropView`'s own, so onboarding's cloud, beneath,
+///         fades in with this one
 ///   1.6 — #1759: a fresh install's splash is drawn from the first frame
 ///   1.5 — `LaunchIdentityMetrics`: the block's sizes are per idiom, and the iPad tile is 176 pt.
 ///   1.4 — `identityZones`: the tile's square and the text strip are protected separately, so
@@ -51,10 +54,6 @@ struct LaunchSplashView: View {
     /// Why this splash is showing. Governs how long it stays.
     let reason: CloudSurface.SplashReason
 
-    /// Read for `areCloudVectorsReady` only — the observable mirror of the vector store, which is
-    /// static state Observation cannot see. Safe to declare here because this view has exactly one
-    /// host, `ContentViewWithSplash`, which puts `AppState` in the environment.
-    @Environment(AppState.self) private var appState
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
@@ -96,18 +95,12 @@ struct LaunchSplashView: View {
                     lensSet: WordCloudBackdropView.firstImpressionLenses
                 )
                 .ignoresSafeArea()
-                // OPACITY, not a conditional, and animated on arrival.
-                //
-                // The splash can now be raised before the vectors are resident, so the first frames
-                // of it are the identity block alone — which is exactly the launch screen's
-                // composition, and the handover this view's own doc says it exists to make
-                // invisible. What must not happen is the field appearing between one frame and the
-                // next. The backdrop already draws nothing without vectors, so holding it at zero
-                // costs a view that renders nothing anyway, and `areCloudVectorsReady` is what
-                // makes the arrival observable at all.
-                .opacity(appState.areCloudVectorsReady ? 1 : 0)
-                .animation(.easeIn(duration: FRUSTheme.cloudArrivalDuration),
-                           value: appState.areCloudVectorsReady)
+                // The splash is raised before the vectors are resident, so its first frames are the
+                // identity block alone — exactly the launch screen's composition, and the handover
+                // this view's own doc says it exists to make invisible. The field then fades in when
+                // they arrive, never between one frame and the next: the backdrop watches for them
+                // itself since #1759 (`WordCloudBackdropView.vectorsArrived`), as this view did on
+                // its own behalf before, so onboarding's cloud beneath it arrives the same way.
 
                 // Under Reduce Transparency the identity block gets an opaque card, so it
                 // never has to be read against moving words.

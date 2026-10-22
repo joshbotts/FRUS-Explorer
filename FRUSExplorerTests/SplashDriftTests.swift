@@ -39,6 +39,7 @@ import SwiftUI
 ///   1.2 — #1412 review, round 1: ``geometryFixturesNameTheirIdiom()`` reads every Swift file in
 ///         the unit-test target, where it read a list of three; the iPad fixture is the 1,210 pt
 ///         canvas of the iPad Pro 11-inch (M5), as `LaunchArtworkTests`' is
+///   1.3 — #1759: onboarding's backdrop is seeded as the splash's is
 @Suite("Launch splash — drift and exclusion")
 struct SplashDriftTests {
 
@@ -612,6 +613,37 @@ struct SplashDriftTests {
         // The zone must be handed across in the canvas's coordinate space, not the overlay's.
         #expect(call.contains("safeAreaInsets:"),
                 "the exclusion zone lost its safe-area offset:\n\(call)")
+    }
+
+    /// **The splash fades into onboarding's cloud, so the two must name one lens (#1759).** Both are
+    /// mounted in a fresh install's first frame and record the same phase origin, so equal seeds
+    /// keep them on the same lens through the hand-off. Unseeded, onboarding followed the wall clock
+    /// and crossed into the other lens half the time, as the splash faded off.
+    ///
+    /// Each call is read on its own, comments stripped, as the test above reads the splash's.
+    @Test("Onboarding's backdrop is seeded as the splash's is")
+    func onboardingSharesTheSplashSeed() throws {
+        func seed(in relative: String) throws -> String {
+            let url = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent()
+                .appendingPathComponent(relative)
+            let source = try String(contentsOf: url, encoding: .utf8)
+            let start = try #require(source.range(of: "WordCloudBackdropView("),
+                                     "\(relative) no longer builds a WordCloudBackdropView")
+            let rest = source[start.upperBound...]
+            let end = try #require(rest.range(of: "\n                )"),
+                                   "could not find the end of \(relative)'s backdrop call")
+            let call = String(rest[..<end.lowerBound])
+                .split(separator: "\n", omittingEmptySubsequences: false)
+                .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+                .joined(separator: "\n")
+            let argument = try #require(call.range(of: #"lensSeed: \d+"#, options: .regularExpression),
+                                        "\(relative)'s backdrop is unseeded:\n\(call)")
+            return String(call[argument])
+        }
+        let splash = try seed(in: "FRUSExplorer/Analytics/WordCloud/LaunchSplashView.swift")
+        let onboarding = try seed(in: "FRUSExplorer/Onboarding/OnboardingView.swift")
+        #expect(splash == onboarding, "the splash has \(splash) and onboarding \(onboarding)")
     }
 
     // MARK: - Helpers

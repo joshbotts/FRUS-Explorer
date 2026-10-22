@@ -48,6 +48,8 @@ import SwiftUI
 ///          presentation decision beside `lensSeed`'s WHERE-it-starts; and `staggerDelay` holds a
 ///          stagger BUDGET, so the per-word figures authored for twenty-five words (#532) stop
 ///          doubling the transition at the fifty a full-bleed surface has asked for since #551
+///   1.4 — #1759: the view watches the vectors arrive and fades its cloud in, which the splash used
+///          to do for itself and onboarding not at all (`vectorsArrived`)
 struct WordCloudBackdropView: View {
 
     /// Which scope's vocabulary to show.
@@ -141,6 +143,9 @@ struct WordCloudBackdropView: View {
     static let ambientLenses: [WordCloudLens] = [.concepts, .topics, .sentiment]
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The app's state, when the host has it in the environment — read for ``vectorsArrived`` only,
+    /// and optional so a host without it (a preview, a test) still renders.
+    @Environment(AppState.self) private var appState: AppState?
     @State private var lensIndex = 0
     /// The first cadence phase this surface saw, so a seeded surface can advance relative to it.
     @State private var phaseOrigin: Int?
@@ -187,7 +192,22 @@ struct WordCloudBackdropView: View {
         lenses[((lensIndex % lenses.count) + lenses.count) % lenses.count]
     }
 
+    /// Whether the bundled vectors are resident, read through `AppState`'s observable mirror.
+    ///
+    /// **This view draws nothing until they land, and used to have no way to learn that they had.**
+    /// `BundledCloudVectors` is static state Observation cannot see, so a backdrop mounted before
+    /// the vectors — onboarding's, which is on screen from the first frame of a fresh install — was
+    /// rebuilt only when something else re-ran its body: its own next lens change, up to 4.2 s
+    /// later. Its cloud then appeared in a single frame, and until it did the splash had already
+    /// faded off an empty backdrop (S2 and S4, #1759). Reading the mirror here makes the arrival a
+    /// dependency of every host at once; the static flag stands in where there is no `AppState`.
+    private var vectorsArrived: Bool {
+        appState?.areCloudVectorsReady ?? BundledCloudVectors.isCoreReady
+    }
+
     var body: some View {
+        // Read before anything else, so the vectors' arrival re-runs this body (see the property).
+        let arrived = vectorsArrived
         GeometryReader { proxy in
             // The static path's resolve is only needed for the words it draws and for the
             // chip's provenance. In drift mode without a chip it is pure duplicate work.
@@ -239,6 +259,12 @@ struct WordCloudBackdropView: View {
             // drift work, and this is where it is measured.
             .frameTimeProbe()
         }
+        // OPACITY, not a conditional, and animated on arrival: the field must never appear between
+        // one frame and the next. Held at zero it costs a view that draws nothing anyway. A host
+        // that mounts this only once the vectors are resident (the indexing strip, a pending
+        // search) sees `arrived` true from the start, and nothing animates.
+        .opacity(arrived ? 1 : 0)
+        .animation(.easeIn(duration: FRUSTheme.cloudArrivalDuration), value: arrived)
     }
 
     // MARK: - Cadence
