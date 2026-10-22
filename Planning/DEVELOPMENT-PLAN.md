@@ -7299,6 +7299,6 @@ MAC**Checked by hand, iPhone.** A simulator made for the lane, "iPhone 17 L6" (`
 - **Under iOS 26.5 in Stage Manager, a document popped out with Open in New Window draws its Research rail's column black until the window is moved.** Seen both times the Long Telegram was popped out on the 26.5 iPad simulator; not measured, and not established on iOS 27 or a device.
 
 **Not done, and for the owner.**
-- **The pull request**, on the owner's word; its body is drafted in the notes folder (`R1-pr-draft.md`), with a visual-review list for each platform.
+- **Opened as #1781** on the owner's word of 2026-10-22, 18:38 ("Open R1's pull request against v2 now, as drafted (R1-pr-draft.md in the notes folder)."), against `v2` at `7bbf36cb`, which had not moved since the branch was cut; not merged. Its body is the draft kept with the sittings' notes (`R1-pr-draft.md`), with the owner's word at its head and a visual-review list for each platform. Auto-merge off.
 - **The upload** (§2): the 34 frames in `~/Desktop/store` are the ones for App Store Connect.
 - **R1's cache**, `~/Library/Caches/FRUS-Explorer/r1/` (about 4 GB on the disk, most of it APFS clones): the builds, the raw and erased frames, the bursts, the Mac's app and home, the preference exports, the five devices' containers as R1 found them, and S5's store set, until the owner says. The devices keep the state the ledger's entry gives.
