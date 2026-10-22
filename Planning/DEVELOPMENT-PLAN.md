@@ -6668,7 +6668,7 @@ In this session the owner then asked for two more things: to amend the memo for 
   - A *Narrowed by* chip's ✕ runs the search again only when something is left to search.
   - The binoculars menu's Facets is a toggle, so the menu closes the panel it opened.
   - Walked on an iPad Pro 13-inch (M5) simulator under iOS 27.0 that holds S1's full index (Checks, below).
-- **#1758, 2: the Mac list opens at its top** (`91967fd3`). The results List is re-identified on `executedSearchVersion` and `currentPage`, as iPhone and iPad re-identify theirs on a page. Built in the Mac check copy, but not walked: the screen stayed locked through the session (`ioreg` read `CGSSessionScreenIsLocked` at 01:06, 02:10, 02:18 and 02:48), and only the owner can unlock it.
+- **#1758, 2: the Mac list opens at its top** (`91967fd3`). The results List is re-identified on `executedSearchVersion` and `currentPage`, as iPhone and iPad re-identify theirs on a page. Walked in the Mac check copy at 06:00, on the owner's word, once the screen was unlocked (Checks, below). It had stayed locked through the night: `ioreg` read `CGSSessionScreenIsLocked` at 01:06, 02:10, 02:18 and 02:48.
 - **#1758, 3: a working corpus records what narrowed it** (`c648ff08`).
   - It is stored in `sourceDescription`, so the schema is unchanged.
   - The phrases are `ResultSetScope.narrowing(ofRowsSignedBy:)`, read from the filters the rows were found under (`filterSignatureOfTheRows`, both view models), in the method appendix's words.
@@ -6725,7 +6725,14 @@ In this session the owner then asked for two more things: to amend the memo for 
   - With the panel open, the binoculars menu showed Facets checked (`isSelected` true), and choosing it closed the panel.
   - A filter set in the Filters sheet (*Limit by date*) stayed over the prompt after the ✕, as the sheet's filters stay between searches. Its chip's ✕, with nothing left to search, ran nothing: the prompt, no chip, and no *Search Error*. Before the fix that ✕ failed with "Enter a keyword, phrase, or prefix to search." (S1's sitting).
   - The walk's first runs failed on its own selectors, not on the app: the Search tab not yet selected, a Filters control below the sheet's fold, and a tap on a toggle's label.
-- **The Mac check copy**, extracted at `3dfe2741` (`setup.sh --ref 3dfe2741`, 27 volumes of 1961–63; it was first built from the item commits before the fixes were folded in) and built through the lock: `** BUILD SUCCEEDED **`, its warnings the `GeneratedSummary` residue, the AppIntents note and the copy's expected *code after 'return'*. It was not launched, and the walk is the owner's (below).
+- **The Mac check copy**, extracted at `3dfe2741` (`setup.sh --ref 3dfe2741`, 27 volumes of 1961–63; it was first built from the item commits before the fixes were folded in) and built through the lock: `** BUILD SUCCEEDED **`, its warnings the `GeneratedSummary` residue, the AppIntents note and the copy's expected *code after 'return'*.
+- **The Mac walk** (#1758, item 2) ran at 05:59 to 06:00, on the owner's word ("Walk the Mac check copy now for #1758 item 2 and add the result to the PR."). Computer use was granted for the copy's bundle id alone, and the walk used its Search window (940 × 680, 20 rows a page).
+  - *Berlin* listed 1,841 results, page 1 of 93, and opened on its first row, *108. Telegram From the Department of State to the Mission at Berlin*.
+  - Scrolled down to *258. Memorandum of Conversation*, then *Cuba* (2,096 results, page 1 of 105) opened on its first row, *487. Draft instruction to USUN…*. Scrolling up moved nothing.
+  - Page 1 scrolled down to *322. Summary Record…*, then › opened page 2 (*21–40 of 2,096*) on its first row, *7. Telegram From the Department of State to the Embassy in Cuba*. Scrolling up moved nothing.
+  - The base was not re-walked. S4 found *Berlin blockade* opening on its sixth row after an earlier list was scrolled.
+  - A question typed as keywords, *Why did Khrushchev put missiles in Cuba?*, showed the MATCH strip ending `"cuba"`. Its 34 rows marked *missiles*, the rarest of its words in the copy's 36 volumes, and none marked a function word. On the full index the same question marked *Khrushchev*.
+  - The copy was quit. Only it had run, never the installed app.
 - **The first full unit run**, through the lock on iPhone 17 (`80CF0F18`, iOS 27.0), with the five code commits and this change's docs in the working tree, ran 02:22 to 02:29. It read *Test run with 7568 tests in 894 suites failed after 399.190 seconds with 12 issues (including 6 known issues)*: four tests, none of them a behaviour of this lane gone wrong.
   - Two scans in `SemanticSetRecordAndCopyTests` read the emptied field's clear inline in `SearchView`, where item 1 moved it into `SearchViewModel.endSearchOnScreen()`. They now follow it there, holding the same statements in the same order.
   - `SearchResultRouteTests` reads the readings' door, `.disabled(vm.results.isEmpty || !vm.offersReadings)`, on the reading picker. Item 1 had written it through a helper, so it is written on the picker in those words again.
@@ -6758,7 +6765,4 @@ In this session the owner then asked for two more things: to amend the memo for 
 
 **Not done, and for the owner.**
 - **Opened as #1770** on the owner's word of 2026-10-22, 05:56 ("open pr"), against `v2` at `b385340c`, which had not moved since the branch was cut; not merged. Its body is the draft kept with the sittings' notes (`L2-pr-draft.md`), with a visual-review list for each platform.
-- **The Mac walk** (#1758, item 2) waits for an unlocked screen. The check copy is built at `3dfe2741` in `~/Library/Caches/frus-mac-check` and was not launched. To walk it:
-  - Launch the copy as its README says.
-  - Search *Berlin*, scroll well down the list, then search *Cuba*. The new list should open at its first row, and so should the next page.
 - **The snippet pass's cost** (#1760): a question's pass costs about three times A10b's in a release build. Whether to speed up the scan before 1.0 is the owner's call. The plan's §5 lists it, with the other findings above.
