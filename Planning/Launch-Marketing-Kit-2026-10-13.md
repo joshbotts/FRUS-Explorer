@@ -383,9 +383,11 @@ only on an erased device, and one queued download replaces them for good.
 | 29–30 | — | Wordmark and the one-line disclaimer | *Not an official product of the Office of the Historian or the U.S. Department of State.* |
 
 Cut at the device's native size for each class; no voice-over (English only, and the caption track
-says it). The recording is `xcrun simctl io <udid> recordVideo` on the iPad; on the Mac, QuickTime's
-screen recording of the isolated check copy (the README's launch-argument patches keep the sync chip
-healthy). A 30 s cap is Apple's; keep 2 s of slack.
+says it). The recording is `xcrun simctl io <udid> recordVideo` on the iPad; on the Mac, a
+ScreenCaptureKit recording of the isolated check copy that leaves the Claude app's windows out
+(`tools/mac-check-copy/apprec.swift`, as S4 recorded; the README's launch-argument patches keep the sync
+chip healthy). Not QuickTime's screen recording or `screencapture -v`: while computer use drives the
+copy, either takes in the Claude app's panel over it (#1763). A 30 s cap is Apple's; keep 2 s of slack.
 
 ---
 

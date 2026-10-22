@@ -132,6 +132,44 @@ Found while walking #1576 lane 4's list in the copy.
   above found the opposite on the Collections toolbar, so a tooltip that does not appear is no
   proof that it is missing, and one that does appear can be read.
 
+## Preferences and recordings, measured on 2026-10-21
+
+Found in the build-51 sitting S4, which took the Mac's captures and recordings in the copy
+(`Docs/screenshots/README.md`, *Found by S4*, item 9; #1763).
+
+- **Put the copy's preferences back with `prefs-restore.swift`, not `defaults import`.** The
+  copy's preferences live in the real `~/Library/Preferences` (see *Limits* above), so a sitting
+  that changes them exports the domain first and puts the export back at the end. S4 exported the
+  domain's 96 keys and set 15 others for the sitting with `defaults import`, which took. At the
+  end, `defaults import` of the export exited 0 and changed nothing, twice. Setting the keys one
+  by one through CFPreferences put all 96 back, identical to the export. `prefs-restore.swift`
+  does that, removes the keys the export lacks, then reads the domain back through `defaults
+  export` and names any key that differs. Run it with the copy quit:
+  ```bash
+  MCS=${MAC_CHECK_SCRATCH:-$HOME/Library/Caches/frus-mac-check}
+  defaults export bottsywattsy.FRUS-Explorer.maccheck "$MCS/prefs-before.plist"   # before the sitting
+  swiftc -O -o "$MCS/prefs-restore" tools/mac-check-copy/prefs-restore.swift
+  "$MCS/prefs-restore" "$MCS/prefs-before.plist"                                  # after it
+  ```
+  It exits 1 when a key reads back different. Read an export back from a file, as it does:
+  `defaults export` writes a binary property list to a file, and XML to standard output (`-`),
+  which keeps a date only to the second.
+- **Record the copy with `apprec.swift`, not `screencapture -v` or QuickTime.** While computer
+  use drives the copy, the Claude app draws its own windows on the screen, and a recording of the
+  screen takes them in: a `screencapture -v` test showed the Claude app's panel over the copy.
+  QuickTime's screen recording takes in whatever is on the screen in the same way. `apprec.swift`
+  records a part of the display through ScreenCaptureKit, leaving out the Claude app's windows
+  (bundle id `com.anthropic.claudefordesktop`), so the copy is recorded and the panel is not. S4
+  made recording A and the Mac App Preview's pass B with it, at 60 frames a second:
+  ```bash
+  MCS=${MAC_CHECK_SCRATCH:-$HOME/Library/Caches/frus-mac-check}
+  swiftc -O -o "$MCS/apprec" tools/mac-check-copy/apprec.swift
+  "$MCS/apprec" 20 "$MCS/take.mov" 100,80,1440,900   # seconds, the file, x,y,w,h in display points
+  ```
+  The rectangle is in points from the screen's top left; `get {position, size} of window 1`,
+  asked of the copy's process through System Events as above, gives a window's. Like
+  `screencapture`, it needs the Screen Recording permission.
+
 ## Cleanup
 
 Once the checks are done:
