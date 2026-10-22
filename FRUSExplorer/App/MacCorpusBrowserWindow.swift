@@ -901,6 +901,8 @@ private struct BoundedSubjectsBlock: View {
 ///          re-keyed on the volume id (`.task(id:)`) — `consumePendingVolume` replaces
 ///          the path element in place, and the identity-stable view otherwise kept the
 ///          previous volume's structure under the new volume's header
+///   1.8 — 2026-10-22: #1766 — the not-downloaded view names the page a page link was to when
+///          the link opened this page (`AppState.followedPageLink`, `FollowedPageLink.notice`)
 private struct CorpusVolumeDetailView: View {
     let volume: VolumeManifestEntry
     /// The window's detail-column path; opening a section pushes onto it.
@@ -957,6 +959,15 @@ private struct CorpusVolumeDetailView: View {
             .task(id: volume.volumeId) {
                 liveProgress = nil
                 await determinePhase()
+            }
+            // #1766: the page a link was to is named on the visit that link made, and not on a later
+            // one. `consumePendingVolume` can replace this view's volume in place, so a change of
+            // volume is a departure too.
+            .onChange(of: volume.volumeId) { previous, _ in
+                if appState.followedPageLink?.volumeId == previous { appState.followedPageLink = nil }
+            }
+            .onDisappear {
+                if appState.followedPageLink?.volumeId == volume.volumeId { appState.followedPageLink = nil }
             }
         // Download completion: queue no longer contains volumeId AND file now exists → auto-index begins
         .onChange(of: appState.downloadQueue) { _, queue in
@@ -1107,6 +1118,14 @@ private struct CorpusVolumeDetailView: View {
                 .foregroundStyle(.secondary)
             Text("Volume Not Downloaded")
                 .font(.headline)
+            // #1766: a page link brought the reader here, since no document on that page could be
+            // named without the volume.
+            if let followed = appState.followedPageLink, followed.volumeId == volume.volumeId {
+                Text(followed.notice)
+                    .font(.callout)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 320)
+            }
             if volume.sizeBytes > 0 {
                 Text("Approx. \(formattedMB(volume.sizeBytes))")
                     .font(.callout)
