@@ -79,6 +79,9 @@ import WebKit
 ///          position between them name a document the volume prints without a number "Unnumbered
 ///          (d710a-1)", through `CitableDocumentNumber.headerLabel` / `.captionLabel`, where they
 ///          printed its bracketed `@n`
+///   2.6 — 2026-10-22: #1766 — a page link goes where `PageLink` sends it, as the iOS twin's does:
+///          into a volume not on this Mac, the document the bundled page map names (offering the
+///          download), or the volume's page in the Corpus Browser naming the page, where it did nothing
 @MainActor
 struct MacDocumentView: View {
 
@@ -1195,11 +1198,19 @@ struct MacDocumentView: View {
     /// page in the Corpus Browser window, brought to the front, or history.state.gov's page for a
     /// volume outside the catalogue. The browser's page offers the download when the volume is
     /// not on this Mac. The iOS twin makes the same call.
-    private func openCrossRefVolume(_ volumeId: String) {
+    ///
+    /// `followedPage` is the page a page link was to when it falls back to its volume (#1766,
+    /// `PageLink.volume`), which the browser's page names; a link to the whole volume passes none,
+    /// and clears any a page link left.
+    private func openCrossRefVolume(_ volumeId: String, followedPage: Int? = nil) {
         let inCatalogue = appState.manifestStore.entry(forVolumeId: volumeId) != nil
         switch WholeVolumeLink.destination(for: volumeId, inCatalogue: inCatalogue) {
         case .browse(let volumeId):
             appState.openBrowseVolume(volumeId, from: nil)
+            // After the hand-off, which clears it.
+            if let followedPage {
+                appState.followedPageLink = FollowedPageLink(volumeId: volumeId, page: followedPage)
+            }
             openWindow.fronting(id: "frus.corpusBrowser")
         case .web(let url):
             openURL(url)
@@ -1246,23 +1257,28 @@ struct MacDocumentView: View {
 
     /// Opens the document a page reference names (#1503): of several the page names, the one its
     /// footnote names by number or day, else the first (#1509) — the document the index stored the
-    /// reference's edge against.
+    /// reference's edge against. Where it goes is `PageLink`'s (#1766), which the iOS twin asks
+    /// too: a volume on this Mac answers from its page index, as before, and from the bundled page
+    /// map where that names nothing; a volume that is not answers from the map, and the document
+    /// opens as a link to it does, offering the download; a page of it the map does not list opens
+    /// the volume's page in the Corpus Browser, which names it.
     private func resolvePageReference(page: Int, volumeId: String, citing: PageCitationHint?) {
-        guard let store = appState.pageRangeStore else {
-            #if DEBUG
-            print("[MacDocumentView] Page ref: PageRangeStore unavailable")
-            #endif
-            return
-        }
+        // When the app cannot yet tell what is on this Mac, the page index answers, as before #1766.
+        let onDevice = appState.downloadManager?.isVolumeDownloaded(volumeId) ?? true
+        let store = appState.pageRangeStore
         Task {
-            let documentId = (try? await store.document(forPage: page, inVolume: volumeId,
-                                                         citing: citing)) ?? nil
+            let destination = await PageLink.destination(page: page, volumeId: volumeId, citing: citing,
+                                                         onDevice: onDevice, store: store,
+                                                         map: { CitedPageMapStore.shared })
             await MainActor.run {
-                if let documentId {
+                switch destination {
+                case .document(let volumeId, let documentId)?:
                     navigateToCrossRef(documentId: documentId, volumeId: volumeId)
-                } else {
+                case .volume(let volumeId, let page)?:
+                    openCrossRefVolume(volumeId, followedPage: page)
+                case nil:
                     #if DEBUG
-                    print("[MacDocumentView] Page ref: p. \(page) of \(volumeId) not in page index")
+                    print("[MacDocumentView] Page ref: p. \(page) of \(volumeId) names no document in the page index")
                     #endif
                 }
             }

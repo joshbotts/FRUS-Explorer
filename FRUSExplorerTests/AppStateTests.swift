@@ -358,6 +358,19 @@ struct NavigationStateTests {
         #expect(state.pendingBrowseVolume == nil)
     }
 
+    /// #1766: only a page link's own hand-off carries the page it was to. A reader sets it after
+    /// calling `openBrowseVolume`, which clears it, so any other way to a volume's page in Browse
+    /// (a whole-volume link, a provenance row, a subject pivot) names no page.
+    @Test("A hand-off to a volume's page in Browse clears the page a page link was to (#1766)")
+    func openBrowseVolumeClearsTheFollowedPage() {
+        let state = AppState()
+        #expect(state.followedPageLink == nil)
+        state.followedPageLink = FollowedPageLink(volumeId: "frus1919Parisv02", page: 130)
+        state.openBrowseVolume("frus1919Parisv02", from: nil)
+        #expect(state.followedPageLink == nil)
+        #expect(state.pendingBrowseVolume?.payload == "frus1919Parisv02")
+    }
+
     @Test("AppState.pendingNARALookup initialises to nil")
     func pendingNARALookupInitiallyNil() {
         let state = AppState()
