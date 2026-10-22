@@ -6766,3 +6766,74 @@ In this session the owner then asked for two more things: to amend the memo for 
 **Not done, and for the owner.**
 - **Opened as #1770** on the owner's word of 2026-10-22, 05:56 ("open pr"), against `v2` at `b385340c`, which had not moved since the branch was cut; not merged. Its body is the draft kept with the sittings' notes (`L2-pr-draft.md`), with a visual-review list for each platform.
 - **The snippet pass's cost** (#1760): a question's pass costs about three times A10b's in a release build. Whether to speed up the scan before 1.0 is the owner's call. The plan's §5 lists it, with the other findings above.
+
+## Session 2026-10-22 — The keyword scan reads ASCII from a table: 90% of what #1760 added to a question's snippet pass won back, the 33 searches' pass below A10b's in all, and not one snippet moved (plan of record §5, found in L2)
+
+**What was asked.** Started by the coordinating session once L2 had merged (#1770, `38dc3d7c`). Make the keyword snippet scan faster without changing a single snippet. Try an ASCII fast path in `Gates.admit` and the word loop first, and a scan over `body.utf8` only if that was not enough.
+- **Proof.** Every snippet byte-identical over the 33 searches L2 measured. `SearchSnippetCostTests` and `KeywordSnippetTests` unchanged and green.
+- **Cost.** The release cost re-timed before and after, as L2's entry timed it.
+- **Kit code.** `swift build --target FRUSCoreKit`, `swift test` and the unit target scoped to the snippet suites, and a *For the web edition* line.
+- **Records.** The branch committed; the pull request only on the owner's word.
+
+**Done.** On `claude/reverent-wiles-972304`, cut from `v2` at `38dc3d7c`. Kit code in FRUSCoreKit, and a new kit suite. No index version, no CloudKit change, no copy, and no snippet moved.
+- **Where the time went.** `sample` over a release build looping *What was the Long Telegram?* at the Mac's 7,500 rows, 2.86 s a pass:
+  - the word scan was 67% of the snippet pass;
+  - `Character.isLetter` was 85% of the scan. It reads its first scalar's Unicode property through `_swift_stdlib_getBinaryProperties`, a search of the runtime's tables that no build inlines, and the scan asked it of every character, twice of most;
+  - the rest: the window's string 12.5%, `Array(body)` 11% (it walks the graphemes twice, once to count them), `ProseSnippet.proseStart` 5%.
+- **The word loop** (`WordCharacter`). One ASCII character, as nearly every character of a FRUS body is, is read from a 128-entry table. Any other character is read as `Character` read it (`init(asking:)`).
+  - The table is built by asking `Character` the scan's own question of each ASCII character, so the two cannot disagree.
+  - A character counts as ASCII only when its UTF-8 is one byte. An *e* with a combining accent, an apostrophe with a mark, the Kelvin sign and CR LF go the old way.
+- **The first gate** reads a word that opens with one ASCII character from a table of the stems' first letters, by that character lowercased as `lowercased()` would. A stem's first letter of several bytes is compared with every ASCII character, since one can equal it (the Kelvin sign is K).
+- **The second gate** compares bytes. The stems' openings are kept as each character's `asciiValue`, as the gate compared them.
+- **The UTF-8 scan was not built.** Profiled on the branch, the slowest question left, *How did the Vietnam war end?* at 1,000 rows (0.37 s a pass), spends 37.5% of its pass in the scan.
+  - 86% of that scan is the Porter stemmer: the stems *war* and *end* leave the second gate a one-letter opening, so every word that opens with *w* or *e* is stemmed until a rarer tier is found.
+  - The scan's own reading of characters, all a UTF-8 scan could save, is about 3% of the pass. The window and the strip would still need `[Character]`.
+- **What is left, for every keyword search.** `Array(body)` is 31% of that pass, the window's string 16%, `proseStart` 9% and deallocation 7%. On *What was the Long Telegram?* at 7,500 rows they are 28%, 33%, 13% and 6%. None of them is the scan, and none was touched.
+- **Tests.** `KeywordScanCharacterTests` is new: three tests, run by Xcode and by `swift test`. Each pins what v2's scan made of a character the table could misread:
+  - an apostrophe or a hyphen with a combining mark ends a word, where a bare one goes on with it;
+  - an ASCII letter with a combining mark is one letter of its word;
+  - a word that opens with a letter outside ASCII is gated on that letter lowercased (the Kelvin sign is k).
+  - No test that reaches the scan held a combining mark before it: `SearchSnippetCostTests`' and `KeywordSnippetTests`' bodies are one scalar a character.
+  - `xcodegen generate`, then the schemes restored. The project diff is the new file's four lines.
+
+**Measured.** Over L2's index clone (S1's iPad, index version 71), APFS-cloned into this session's scratchpad. Release builds through throwaway executable targets in scratch copies, never in the worktree: A10b at `b385340c` with L2's own harness, `v2` at `38dc3d7c`, and the branch. Each was timed alone under the lock, as the median of five passes after a warm-up, on the M5 MacBook Air. The same-session A10b reproduced L2's within 2%.
+
+| Search | Rows | A10b | v2 | Branch | Rows (Mac ceiling) | A10b | v2 | Branch | SQL there |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Why did the Marshall Plan happen? | 351 | 0.16 s | 0.47 s | 0.16 s | 351 | 0.16 s | 0.47 s | 0.16 s | 0.03 s |
+| How did the Vietnam war end? | 1,000 | 0.24 s | 0.56 s | 0.35 s | 1,320 | 0.34 s | 1.04 s | 0.56 s | 0.04 s |
+| What was the Long Telegram? | 1,000 | 0.14 s | 0.24 s | 0.12 s | 7,500 | 1.17 s | 2.69 s | 1.08 s | 0.14 s |
+| Berlin blockade | 900 | 0.35 s | 0.52 s | 0.17 s | 900 | 0.35 s | 0.52 s | 0.17 s | 0.01 s |
+| human rights | 1,000 | 0.16 s | 0.17 s | 0.13 s | 7,116 | 2.94 s | 4.42 s | 1.44 s | 0.12 s |
+| Berlin | 1,000 | 0.13 s | 0.13 s | 0.11 s | 7,500 | 1.09 s | 1.08 s | 0.66 s | 0.07 s |
+| disarmament | 1,000 | 0.14 s | 0.14 s | 0.10 s | 7,366 | 2.73 s | 2.71 s | 1.05 s | 0.08 s |
+| **The 12 questions** | | 1.16 s | 3.39 s | 1.39 s | | 2.28 s | 6.33 s | 2.55 s | |
+| **The 10 topical phrases** | | 1.90 s | 3.02 s | 1.40 s | | 8.18 s | 12.07 s | 4.58 s | |
+| **The 11 single words** | | 1.58 s | 1.57 s | 1.27 s | | 18.52 s | 18.40 s | 9.30 s | |
+| **All 33** | | 4.64 s | 7.97 s | 4.05 s | | 28.98 s | 36.80 s | 16.43 s | |
+
+- **The questions.** 90% of what #1760 added is won back at 1,000 rows, and 93% at the ceiling. The largest excess left is *How did the Vietnam war end?*: 0.10 s over A10b at 1,000 rows, the stemmer above. Every other question is at most 0.03 s over A10b, and two cost less.
+- **Every single word, and every topical phrase but two,** now costs less than under A10b: the phrases 26% less in all at 1,000 rows and 44% less at the ceiling, the single words 20% and 50%. The two are the phrases with a function word, where A10b's scan stopped at *of* and *in*: *Bay of Pigs*, 0.10 s over at its 205 rows, whose stems *pig* and *bay* leave one-letter openings as *war* and *end* do, and *Soviet troops in Cuba*, 0.01 s over.
+- **Not one snippet moved.**
+  - **The shipped service, before and after.** Every snippet it makes for 65 searches, compared byte for byte: L2's 33 and 32 more with characters outside ASCII, apostrophes, hyphens and function words, at 1,000 and 7,500 rows. That is 242,420 snippets, 202,474 of them marked, with one SHA-256 over the whole dump on both sides, for the first build and again for the committed code.
+  - **Generated text.** v2's scan, verbatim, against the branch's, in one process, over text built from the characters a table could misread: 2.4 million comparisons over six seeds, 0 mismatches. The control, v2 against its own copy, read 0 too. Each mutant below drew mismatches, so the comparison can fail.
+  - **The full index.** Every row of 315 searches, in tiers and in one tier: 585,924 snippets, 0 mismatches. That is the 65 at 7,500 rows, and 250 searches made of the rows' own words at 1,000 rows (hyphenated words, curly apostrophes, *Señor*, *Ministério*).
+- **The new suite against mutants**, in a scratch copy with `swift test --filter`. The control passed 15 tests in 2 suites.
+  - Reading a character's first byte alone failed the first test.
+  - Reading every character outside the table as no letter failed the second and third.
+  - Refusing every word that opens outside ASCII failed the third.
+  - `KeywordSnippetTests` passed every mutant.
+
+**Checks.**
+- `swift build --target FRUSCoreKit`, through the lock: exit 0, no warning.
+- `swift test`, through the lock: exit 0, 38 `Test run with` lines, one for each test target, 3,030 tests (L2's 3,027 and this suite's three). Its warnings are all in generator targets this change does not touch.
+- **The unit target, scoped**, through the lock on iPhone 17 (`80CF0F18`, iOS 27.0), booted for the run and shut down after it. Eight suites:
+  - the snippet family: `SearchSnippetCostTests`, `KeywordSnippetTests`, `KeywordScanCharacterTests` and `ProseSnippetTests`;
+  - `SearchCancellationTests`, which drives the snippet pass;
+  - the audits that read the new file: `CodingStandardsAuditTests`, `FRUSCoreKitBoundaryTests` and `AppSourceTreeTests`.
+  - *Test run with 116 tests in 8 suites passed after 74.246 seconds*, then `** TEST SUCCEEDED **`, with the new suite's three tests among them by name. The build's only warnings were the `GeneratedSummary` residue and the AppIntents note.
+
+**Not done, and for the owner.**
+- **The pull request is not opened.** Its body is drafted with the coordinating session's notes (`ascii-fast-path-pr-draft.md`). The branch is committed and not pushed.
+- **The Mac build and a full unit run** are owed at landing, as for any kit change.
+- **What a further speed-up would take**, should the owner want one: the window's string and `Array(body)`, which every keyword row pays, and, for a search whose telling words are short (*war*, *end*, *pig*), a stem cache, since their one-letter openings send most words to the stemmer. Only the last is the scan.
