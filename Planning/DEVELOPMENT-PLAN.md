@@ -6923,4 +6923,4 @@ Eight of the nine disagreed before, and all nine agree after. The count took 54 
 - **Records left by earlier lanes.** The plan of record's §1 still says L1 and L2 are not yet merged (#1769 merged as `b385340c`, #1770 as `38dc3d7c`), and *Found by S1*'s header has no note for 11, 12 and 15, which L2 fixed (#1758, #1760).
 
 **Not done, and for the owner.**
-- **The pull request** waits for the owner's word, as the brief asked. Its draft is with the sittings' notes (`L3-pr-draft.md`), with a visual-review list for each platform.
+- **Opened as #1773** on the owner's word of 2026-10-22, 09:48 ("Open PR for L3", relayed by the coordinating session), against `v2` at `3aa63d6a`, which had not moved since the branch was cut; not merged. Its body is the draft kept with the sittings' notes (`L3-pr-draft.md`), with a visual-review list for each platform. Auto-fix on, auto-merge off.
