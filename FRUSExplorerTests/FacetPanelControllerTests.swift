@@ -339,6 +339,7 @@ struct FacetPanelControllerTests {
 ///   1.1 — #1686: a Volumes selection outlasts a change of project, as the Mac's facet choice now does
 ///   1.2 — #1758: a search taken off the screen takes the facet panel's narrowings with it, each while it is as the
 ///          panel made it, and a chip's ✕ with nothing left to search runs nothing
+///   1.3 — #1758: the scope's narrowing, which a working corpus records, is the filters the rows were found under
 @Suite("iOS facet narrowing")
 @MainActor
 struct IOSFacetNarrowingTests {
@@ -606,6 +607,34 @@ struct IOSFacetNarrowingTests {
         #expect(vm.hasRunnableQuery(in: .keywords), "a person runs on its own")
         vm.clearNarrowing("person")
         #expect(!vm.hasRunnableQuery(in: .keywords))
+    }
+
+    // MARK: - What a capture records (#1758)
+
+    /// A working corpus records what narrowed the rows it holds, read from the filters they were
+    /// found under: a filter set in the sheet since, which waits for the next search, is not theirs.
+    @Test("The scope's narrowing is the filters the rows were found under, not the sheet's since")
+    func narrowingIsTheRowsOwn() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        #expect(vm.resultSetScope.narrowing.isEmpty, "no rows, nothing narrowed")
+        // Every field searched and every type, whatever the test host's search defaults say.
+        vm.includeDocumentText = true
+        vm.includeSummaries = true
+        vm.includeNotes = true
+        vm.includeFrontMatter = true
+        vm.documentTypeFilter = .all
+        vm.keywords = "long telegram"
+        vm.applyFacetSelection(.years, keys: ["1945"])
+        _ = await vm.search()
+        #expect(vm.resultSetScope.narrowing == ["years 1945"])
+        #expect(vm.resultSetScope.captureProvenanceDescription == "Search results (years 1945)")
+
+        vm.documentTypeFilter = .editorialNotesOnly
+        #expect(vm.resultSetScope.narrowing == ["years 1945"], "a filter not yet run is not the rows'")
+        _ = await vm.search()
+        #expect(vm.resultSetScope.narrowing == ["years 1945", "editorial notes only"])
     }
 
     // MARK: - The honest total

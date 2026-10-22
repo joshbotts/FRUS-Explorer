@@ -112,6 +112,8 @@ import Observation
 ///          `layerSwap` is the swap the row offers, and `swapUnderWay` the list the row names while the first search runs
 ///   2.13 — #1758: `endSearchOnScreen()` takes the search off the screen, as an emptied field does, and the narrowings
 ///          the facet panel made go with it (`clearFacetNarrowings()`), each while it is still as the panel made it
+///   2.14 — #1758: `resultSetScope` carries what narrowed the rows beyond their words (`ResultSetScope.narrowing`), read
+///          from the filters they were found under, which a working corpus records
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -1869,7 +1871,9 @@ final class SearchViewModel {
                        documentsOnPage: pagedResults.count,
                        pageCount: totalPages,
                        appliedCorpusTruncation: appliedWorkingCorpusTruncation,
-                       route: executedRoute)
+                       route: executedRoute,
+                       // #1758: the filters the rows were found under, not the sheet's, which wait for a search.
+                       narrowing: ResultSetScope.narrowing(ofRowsSignedBy: filterSignatureOfTheRows))
             // #1577 lane 4: what a layer's sentences owe, by the rule the Mac's window says them by (lane 5).
             .describingLayer(over: pinnedBase, filtersNarrowed: lastLayerFiltersNarrowed, sortOrder: sortOrder)
     }

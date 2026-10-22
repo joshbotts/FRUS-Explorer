@@ -887,3 +887,88 @@ struct ResultSetScopeRouteTests {
                 == "Measured over every result this search loaded, not the page on screen — those are the highest-scoring matches, not a sample of all of them.")
     }
 }
+
+// MARK: - What narrowed the list (#1758)
+
+/// What a working corpus records of the filters its rows were found under, beside its query
+/// (`ResultSetScope.narrowing`, `ResultSetScope.narrowing(ofRowsSignedBy:)`).
+///
+/// S1's capture on an iPad Pro: *"long telegram"* narrowed by Facets to 1945, five documents, recorded as
+/// *From "long telegram"* and nothing else, so neither the sheet nor the corpus said how the five were chosen.
+///
+/// Version history:
+///   1.0 — #1758: initial implementation
+@Suite("Result set scope: what narrowed the list")
+struct ResultSetScopeNarrowingTests {
+
+    /// The phrases for the rows of a search run with `parameters`.
+    private func narrowing(_ parameters: SearchParameters) -> [String] {
+        ResultSetScope.narrowing(ofRowsSignedBy: SearchScopeSignature.signature(for: parameters))
+    }
+
+    @Test("A search narrowed by nothing but its words records no narrowing")
+    func nothingNarrowed() {
+        #expect(narrowing(SearchParameters(keywords: "long telegram")).isEmpty)
+        #expect(ResultSetScope.narrowing(ofRowsSignedBy: nil).isEmpty, "no rows have arrived")
+        #expect(ResultSetScope.narrowing(ofRowsSignedBy: "not a signature").isEmpty, "a key that does not decode")
+    }
+
+    @Test("A facet's narrowing is said in the method appendix's words")
+    func facetsInTheAppendixWords() {
+        #expect(narrowing(SearchParameters(keywords: "long telegram", yearKeys: ["1945"])) == ["years 1945"])
+        #expect(narrowing(SearchParameters(keywords: "x", yearKeys: ["1946", "1945"])) == ["years 1945, 1946"])
+        #expect(narrowing(SearchParameters(keywords: "x", dateRange: DateRange(earliest: "1945-01-01",
+                                                                               latest: "1945-12-31")))
+                == ["dated 1945-01-01..1945-12-31"])
+        #expect(narrowing(SearchParameters(keywords: "x", yearKeys: ["1945"], documentTypeFilter: .documentsOnly))
+                == ["years 1945", "documents only"])
+        #expect(narrowing(SearchParameters(keywords: "x", personRollupId: 77, personLabel: "Acheson, Dean"))
+                == ["filtered to one person"])
+    }
+
+    /// The appendix's "12 volumes" and "312 documents" would read, after "Search results", as counts of the
+    /// corpus itself; and its "1 volumes" has no singular.
+    @Test("A set of volumes or documents is said as what the search ran within, with its singular")
+    func setsAreSaidAsWhatTheSearchRanWithin() {
+        #expect(narrowing(SearchParameters(keywords: "x", volumeIds: ["frus1945v05"])) == ["within 1 volume"])
+        let volumes = (1...12).map { "frus1945v\($0)" }
+        #expect(narrowing(SearchParameters(keywords: "x", volumeIds: volumes)) == ["within 12 volumes"])
+        let documents = (1...312).map { "frus1945v05/d\($0)" }
+        #expect(narrowing(SearchParameters(keywords: "x", documentIds: documents)) == ["within a set of 312 documents"])
+        #expect(narrowing(SearchParameters(keywords: "x", documentIds: ["frus1945v05/d1"]))
+                == ["within a set of 1 document"])
+        #expect(narrowing(SearchParameters(keywords: "x", yearKeys: ["1945"], volumeIds: ["frus1945v05"]))
+                == ["years 1945", "within 1 volume"], "the sets come last")
+        #expect(narrowing(SearchParameters(keywords: "x", documentIds: [])) == ["no documents selected"])
+    }
+
+    @Test("The fields searched are said only when they are not every field")
+    func fieldsOnlyWhenNarrowed() throws {
+        let phrases = narrowing(SearchParameters(keywords: "x", includeSummaries: false, includeNotes: false))
+        let first = try #require(phrases.first)
+        #expect(first.hasPrefix("searched document text"), "\(phrases)")
+        #expect(!first.contains("summaries"))
+    }
+
+    @Test("A capture's record says what narrowed it, after what it is and before how it was cut")
+    func theRecordSaysWhatNarrowedIt() {
+        let five = ResultSetScope(loaded: 5, shown: 5, fetchLimit: 1_000, totalMatchCount: 5,
+                                  documentsOnPage: 5, pageCount: 1, narrowing: ["years 1945"])
+        #expect(five.captureProvenanceDescription == "Search results (years 1945)")
+
+        let cut = ResultSetScope(loaded: 7_500, shown: 7_500, fetchLimit: 7_500, totalMatchCount: 195_519,
+                                 documentsOnPage: 20, pageCount: 375, narrowing: ["years 1945", "documents only"])
+        #expect(cut.captureProvenanceDescription
+                == "Search results (years 1945; documents only) — the highest-scoring 7,500 of 195,519 matches")
+
+        let meaning = ResultSetScope(loaded: 37, shown: 37, fetchLimit: 100, totalMatchCount: nil,
+                                     documentsOnPage: 25, pageCount: 2, route: .meaning, narrowing: ["years 1945"])
+        #expect(meaning.captureProvenanceDescription == "Meaning search — the 37 closest matches (years 1945)")
+        #expect(ResultSetScope.isMeaningCaptureProvenance(meaning.captureProvenanceDescription),
+                "the corpus lists still know a Meaning capture by how its record begins")
+
+        let unnarrowed = ResultSetScope(loaded: 5, shown: 5, fetchLimit: 1_000, totalMatchCount: 5,
+                                        documentsOnPage: 5, pageCount: 1)
+        #expect(unnarrowed.captureProvenanceDescription == "Search results")
+    }
+}

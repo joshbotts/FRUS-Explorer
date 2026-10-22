@@ -24,7 +24,8 @@ import SwiftUI
 ///
 /// ## What it captures, and what it does not
 /// The **whole retained result set**, not the page — a corpus is the answer to a query, and a page
-/// is an accident of pagination. It records the query text and the device's indexed-volume count
+/// is an accident of pagination. It records the query text, what narrowed the search beyond it
+/// (`ResultSetScope.narrowing`, inside `sourceDescription`), and the device's indexed-volume count
 /// alongside, because a corpus captured against 40 volumes and one captured against 553 are
 /// different evidence and nothing else would say so.
 ///
@@ -35,6 +36,8 @@ import SwiftUI
 ///   1.0 — M-1: initial implementation
 ///   1.1 — #1598: the stored truncation flag is `ResultSetScope.isCapturePartial`, so a Meaning capture is not
 ///         recorded as every matching document
+///   1.2 — #1758: a Narrowed by row, and the record's description, say what narrowed the search beyond its
+///         words, where both said only the query, so a corpus did not say how its documents were chosen
 struct SaveWorkingCorpusSheet: View {
 
     /// The results to capture, in the order the search returned them.
@@ -105,6 +108,15 @@ struct SaveWorkingCorpusSheet: View {
                     if !queryText.isEmpty {
                         LabeledContent(String(localized: "corpus.save.query", defaultValue: "From")) {
                             Text(queryText).lineLimit(2).multilineTextAlignment(.trailing)
+                        }
+                    }
+                    // How the documents were chosen beyond the words, which the corpus records with them
+                    // (#1758): "years 1945" for a search narrowed by Facets to 1945.
+                    if !scope.narrowing.isEmpty {
+                        LabeledContent(String(localized: "corpus.save.narrowedBy", defaultValue: "Narrowed by")) {
+                            Text(scope.narrowing.joined(separator: "; "))
+                                .multilineTextAlignment(.trailing)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                     LabeledContent(String(localized: "corpus.save.indexed",

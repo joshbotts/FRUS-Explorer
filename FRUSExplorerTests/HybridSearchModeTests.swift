@@ -701,7 +701,9 @@ struct SearchResultRouteTests {
         #expect(browse.overCapGuidance == nil, "nothing more would load, so there is no advice to narrow")
         #expect(browse.timelineBiasCaption == nil)
         #expect(browse.captureTruncationWarning == nil)
-        #expect(browse.captureProvenanceDescription == "Search results")
+        // Whole, so no clause says the capture stopped short. Since #1758 the record says what the browse was, since a
+        // browse has no words for the corpus to record: its subject, from the filters the rows were found under.
+        #expect(browse.captureProvenanceDescription == "Search results (subject Chemical and Bacteriological Warfare)")
         #expect(!browse.isCapturePartial, "a working corpus saved from it is every matching document")
 
         // The control: the same documents through a keyword search stop at 1,000 and say so.
