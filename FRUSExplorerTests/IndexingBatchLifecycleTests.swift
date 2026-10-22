@@ -806,9 +806,9 @@ struct IndexNowProgressReaderTests {
 /// indexing, and raised afterwards only by the backlog on disk, which a volume reaches only once
 /// it has landed. Measured on an iPhone 17 simulator (iOS 27.0) on 2026-10-22, a 27-volume
 /// subseries still being queued opened at "Volume 1 of 20" and read "20 of 20" with seven volumes
-/// to come; the volume that opened a queue, still listed as downloading, was counted twice
-/// ("Volume 1 of 12" for eleven); and the Live Activity took a new total only with the next
-/// volume's first update.
+/// to come, and the volume that opened a queue, still listed as downloading, was counted twice
+/// ("Volume 1 of 12" for eleven). The Live Activity, as read in the code, took a new total only
+/// with the next volume's first update.
 ///
 /// A volume named here and not written to disk stands for a download still to come. The queue
 /// learns of it as the app's download manager reports it: through `downloadQueue`, which its
