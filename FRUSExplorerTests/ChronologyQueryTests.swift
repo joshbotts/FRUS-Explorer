@@ -158,12 +158,15 @@ struct ChronologyOverflowLoad: Sendable, CustomTestStringConvertible {
         parts: [2, 1, 3],
         breakdown: "(2 begin before · 1 ends after · 3 reach past both ends)")
 
-    /// The shape of the iOS manual's Chronology capture (`Docs/screenshots/ipad/chronology.png`),
-    /// Sep 1 – Nov 30, 1962, which read "26 documents extend beyond this range (26 before · 24
-    /// after)". This device does not hold those volumes, so the rows are built to the capture's
-    /// own numbers: 26 in total and 26 before leaves none that ends after only, so 24 enclose the
-    /// range and 2 only begin before it. A three-year editorial note, which `partition` sets aside
-    /// for the spanning chip, and three documents inside the range complete the load.
+    /// The shape of the iOS manual's Chronology capture as build 47 took it
+    /// (`Docs/screenshots/ipad/chronology.png` until build 51's retake), Sep 1 – Nov 30, 1962,
+    /// which read "26 documents extend beyond this range (26 before · 24 after)". This device does
+    /// not hold those volumes, so the rows are built to the capture's own numbers: 26 in total and
+    /// 26 before leaves none that ends after only, so 24 enclose the range and 2 only begin before
+    /// it. A three-year editorial note, which `partition` sets aside for the spanning chip, and
+    /// three documents inside the range complete the load. The file now holds S1's retake on build
+    /// 1861 (2026-10-21), over the same months: "25 documents extend beyond this range (1 begins
+    /// before · 24 reach past both ends)".
     static let iPadCapture = ChronologyOverflowLoad(
         name: "the iOS manual's capture, Sep 1 – Nov 30, 1962 (2 / 0 / 24)",
         startISO: "1962-09-01", endISO: "1962-11-30",
@@ -178,10 +181,12 @@ struct ChronologyOverflowLoad: Sendable, CustomTestStringConvertible {
         parts: [2, 0, 24],
         breakdown: "(2 begin before · 24 reach past both ends)")
 
-    /// The shape of the macOS manual's Chronology capture (`Docs/screenshots/macos/chronology.png`,
-    /// the build-48 capture #1355 committed), Oct 14 – Nov 20, 1962, which read "24 documents
-    /// extend beyond this range (24 before · 24 after)": 24 before and 24 after out of 24 means
-    /// every one of them encloses the range.
+    /// The shape of the macOS manual's Chronology capture as build 48 took it
+    /// (`Docs/screenshots/macos/chronology.png`, the capture #1355 committed, until build 51's
+    /// retake), Oct 14 – Nov 20, 1962, which read "24 documents extend beyond this range (24 before
+    /// · 24 after)": 24 before and 24 after out of 24 means every one of them encloses the range.
+    /// The file now holds S4's retake on build 1861 (2026-10-21), over the same range: "24 documents
+    /// extend beyond this range (24 reach past both ends)", this load's own breakdown.
     static let macCapture = ChronologyOverflowLoad(
         name: "the macOS manual's capture, Oct 14 – Nov 20, 1962 (0 / 0 / 24)",
         startISO: "1962-10-14", endISO: "1962-11-20",
@@ -488,8 +493,9 @@ struct ChronologyOverflowChipTests {
 
     @Test("The captured shape — 2 begin before, 24 enclose — reads as 26 split into 2 and 24")
     func capturedShapeAddsUp() {
-        // The iOS manual's Chronology capture (`Docs/screenshots/ipad/chronology.png`, Sep 1 –
-        // Nov 30, 1962) printed "26 documents extend beyond this range (26 before · 24 after)".
+        // The iOS manual's Chronology capture as build 47 took it (`Docs/screenshots/ipad/chronology.png`
+        // before its retake, Sep 1 – Nov 30, 1962) printed "26 documents extend beyond this range (26
+        // before · 24 after)".
         let leadingOnly = (0..<2).map { F.row("l\($0)", iso: "1962-05-20", isoMax: "1962-07-10") }
         let enclosing = (0..<24).map { F.row("e\($0)", iso: "1962-01-01", isoMax: "1962-12-31") }
         let c = counts(leadingOnly + enclosing)
