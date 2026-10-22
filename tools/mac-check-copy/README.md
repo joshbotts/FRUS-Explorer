@@ -140,11 +140,11 @@ Found in the build-51 sitting S4, which took the Mac's captures and recordings i
 - **Put the copy's preferences back with `prefs-restore.swift`, not `defaults import`.** The
   copy's preferences live in the real `~/Library/Preferences` (see *Limits* above), so a sitting
   that changes them exports the domain first and puts the export back at the end. S4 exported the
-  domain's 96 keys and set 15 others for the sitting with `defaults import`, which took. At the
-  end, `defaults import` of the export exited 0 and changed nothing, twice. Setting the keys one
-  by one through CFPreferences put all 96 back, identical to the export. `prefs-restore.swift`
-  does that, removes the keys the export lacks, then reads the domain back through `defaults
-  export` and names any key that differs. Run it with the copy quit:
+  domain's 96 keys and replaced them for the sitting with 15 of its own by `defaults import`, which
+  took. At the end, `defaults import` of the export exited 0 and changed nothing, twice. Setting
+  the keys one by one through CFPreferences put all 96 back, identical to the export.
+  `prefs-restore.swift` does that, removes the keys the export lacks, then reads the domain back
+  through `defaults export` and names any key that differs. Run it with the copy quit:
   ```bash
   MCS=${MAC_CHECK_SCRATCH:-$HOME/Library/Caches/frus-mac-check}
   defaults export bottsywattsy.FRUS-Explorer.maccheck "$MCS/prefs-before.plist"   # before the sitting

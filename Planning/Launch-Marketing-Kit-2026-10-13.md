@@ -252,8 +252,8 @@ Research Guide are the methods reading; the manual says so (§16).
 
 The last three beats are the routes S1 recorded on 2026-10-21 (rewritten 2026-10-22, #1763). The collection
 has no introduction, so its PDF opens on the title page. The Guide opens from its row in the Research tab, the
-manual's route, and its dashboards' year range is a chip whose popover holds two year fields with steppers, so
-there is nothing to drag. A time chart has no bar to tap: its years are narrowed by the year chip, the
+first of the manual's two routes (the other is Settings ▸ System ▸ About ▸ FRUS Research Guide), and its
+dashboards' year range is a chip whose popover holds two year fields with steppers, so there is nothing to drag. A time chart has no bar to tap: its years are narrowed by the year chip, the
 **Administration** preset or, on the Mac, a drag across the chart (#306), and **View N documents ↗** opens the
 documents behind them. Only By Subseries and By Volume bars open Search.
 
