@@ -28,7 +28,15 @@ import SwiftUI
 /// ```
 ///
 /// The disclosure chevron toggles an expanded list of up to 6 pending volume titles,
-/// each prefixed with a clock icon to indicate queued status.
+/// each prefixed with a clock icon to indicate queued status, and ends in
+/// **Learn about FRUS while you wait →**, which asks the tab shell for the FRUS Research
+/// Guide (`onLearnAboutFRUS`).
+///
+/// ## The Guide is not opened here (#1757)
+/// This banner used to hang the Guide's sheet on itself and open it 0.6 s after it first
+/// appeared. A sheet goes with the view it hangs on, so the queue's end, which removes this
+/// banner, closed the Guide in the reader's hands. The tab shell presents it now:
+/// `IndexingGuideSheetModifier` in `MainTabView.swift`.
 ///
 /// ## ETA computation
 /// Current-volume ETA: remaining docs ÷ `docsPerSecond`.
@@ -51,6 +59,9 @@ import SwiftUI
 ///          `WhileIndexingSheet` presentation so the mid-onboarding series-production
 ///          dashboard reads real manifest data via the project's explicit
 ///          environment-re-injection convention, not ambient inheritance.
+///   1.4 — #1757: the Guide's sheet and its auto-open move to the tab shell
+///          (`IndexingGuideSheetModifier`); the link calls `onLearnAboutFRUS`. The total this
+///          banner prints counts the whole queue, its downloads included (`IndexingBatch`).
 struct IndexingQueueBannerView: View {
 
     /// Current volume's indexing progress.
@@ -65,31 +76,13 @@ struct IndexingQueueBannerView: View {
     var averageDocsPerSecond: Double = 0
     /// Rolling average document count from completed volumes; falls back to 600.
     var averageDocumentCount: Int = 600
+    /// Opens the FRUS Research Guide, which the tab shell presents (#1757).
+    var onLearnAboutFRUS: () -> Void = {}
 
-    /// Shared app state, re-injected into the onboarding sheet below so the
-    /// mid-onboarding dashboard reads real manifest data rather than relying on
-    /// ambient `@Observable` environment inheritance (matches the explicit
-    /// re-injection convention used at `MainTabView`'s `pendingWordCloud` sheet).
+    /// Shared app state: the queue's volumes, for the word-cloud strip's scope.
     @Environment(AppState.self) private var appState
 
     @State private var isExpanded = false
-    @State private var showWhileIndexing = false
-    /// Persisted flag so the educational sheet auto-opens only once, even if SwiftUI
-    /// recreates this view during long indexing runs. Use `@AppStorage` rather than
-    /// `@State` — `@State` resets to `false` on every view re-creation, causing the
-    /// sheet to re-trigger after each progress update.
-    /// Whether the education sheet has auto-opened in THIS app session (#757 / audit L-46).
-    ///
-    /// Was `@AppStorage("frus.hasShownIndexingEducation")`. That move (version history 1.1) was
-    /// aimed at re-triggering on view recreation *within* a session — but `@AppStorage` persists
-    /// across launches and nothing ever reset the key, so the designed auto-introduction became
-    /// **once per install**: a researcher who indexed a batch a year ago never saw it again when
-    /// downloading a new tranche. The property name and the `onAppear` comment both said
-    /// "session"; only the storage scope disagreed.
-    ///
-    /// `AppState` is the session: it is created once per launch and outlives every view recreation,
-    /// which is exactly the lifetime the original intent asks for.
-    @Environment(AppState.self) private var educationSessionState
 
     var body: some View {
         VStack(spacing: 0) {
@@ -114,19 +107,6 @@ struct IndexingQueueBannerView: View {
             )
         }
         .animation(.easeInOut(duration: 0.2), value: isExpanded)
-        .sheet(isPresented: $showWhileIndexing) {
-            WhileIndexingSheet()
-                .environment(appState)
-        }
-        .onAppear {
-            // Auto-open the educational sheet the first time this banner appears
-            // in the current app session.
-            guard !educationSessionState.hasShownIndexingEducationThisSession else { return }
-            educationSessionState.hasShownIndexingEducationThisSession = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                showWhileIndexing = true
-            }
-        }
     }
 
     // MARK: - Rows
@@ -215,10 +195,10 @@ struct IndexingQueueBannerView: View {
                         .lineLimit(1)
                 }
             }
-            // "Learn while you wait" — opens the educational flow.
+            // "Learn while you wait" — opens the educational flow, from the tab shell.
             // Re-openable even after the first auto-show.
             Button {
-                showWhileIndexing = true
+                onLearnAboutFRUS()
             } label: {
                 Label(
                     String(localized: "indexing.learnWhileWaiting",

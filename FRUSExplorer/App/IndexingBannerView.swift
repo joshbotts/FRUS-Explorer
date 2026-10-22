@@ -42,6 +42,8 @@ import SwiftUI
 ///          `onPersonSearch` callback for scoped person search from the card
 ///   1.3 — Dynamic Type pass 2026-07-04: fixed-point caption fonts replaced with
 ///          scalable `FRUSTheme.captionFont` / `captionSmallFont` (icons track too).
+///   1.4 — #1757: the education flow is presented by the tab shell (`IndexingGuideSheetModifier`),
+///          which outlives this banner; the link calls `onLearnAboutFRUS`.
 struct IndexingBannerView: View {
 
     let update: IndexingProgressUpdate
@@ -50,13 +52,13 @@ struct IndexingBannerView: View {
     var volume: VolumeManifestEntry? = nil
     /// Called when the user taps a person chip in the context card.
     var onPersonSearch: ((String) -> Void)? = nil
+    /// Opens the education flow, which the tab shell presents (#1757). Added in O-3b as this
+    /// banner's own sheet — it previously had no route to the flow, so a single-volume index could
+    /// not reach it — and moved to the shell so the queue's end no longer closes it.
+    var onLearnAboutFRUS: () -> Void = {}
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(AppState.self) private var appState
-
-    /// Presents the education flow. Added in O-3b — this banner previously had no route
-    /// to it, so a single-volume index could not reach it.
-    @State private var showWhileIndexing = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -142,7 +144,7 @@ struct IndexingBannerView: View {
             // This link previously existed ONLY in the multi-volume queue banner, so a
             // single-volume download could not reach `IndexingEducationView` at all. The
             // wait is the same length either way; the route should be too.
-            Button { showWhileIndexing = true } label: {
+            Button { onLearnAboutFRUS() } label: {
                 Label(
                     String(localized: "indexing.learnWhileWaiting",
                            defaultValue: "Learn about FRUS while you wait →"),
@@ -173,7 +175,6 @@ struct IndexingBannerView: View {
             ),
             isActive: CloudSurfaceArbiter.resolve(appState: appState) == .indexingBackdrop
         )
-        .sheet(isPresented: $showWhileIndexing) { WhileIndexingSheet() }
     }
 
     private var etaString: String? {

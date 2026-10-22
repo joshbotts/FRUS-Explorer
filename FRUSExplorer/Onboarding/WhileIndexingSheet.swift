@@ -21,7 +21,10 @@ import SwiftUI
 /// (the project picker and `CollectionEditorView`), so nothing is lost by dropping the
 /// up-front configuration.
 ///
-/// Presented from `IndexingQueueBannerView` (iOS only). The macOS status bar's
+/// Presented from the tab shell (`IndexingGuideSheetModifier`, in `MainTabView.swift`) for both
+/// indexing banners, iOS only: by itself for the session's first queue of two or more volumes,
+/// and by either banner's **Learn about FRUS while you wait →**. Until #1757 each banner presented
+/// it, and the queue's end, which removes the banner, closed it. The macOS status bar's
 /// auto-presented copy was removed by the 2026-07-04 UI audit (B7) — its "Learn"
 /// button now opens the standalone `frus.researchGuide` window instead, so nothing
 /// modal interrupts first-run exploration on macOS.
@@ -42,6 +45,7 @@ import SwiftUI
 ///   3.1 — Session 2026-08-07: backdrop removed. See "Why the cloud is not here" below —
 ///         O-3's own rule ("backdrop to the content, never a rival to it") is what it
 ///         failed in practice, on the one surface whose entire purpose is reading.
+///   3.2 — #1757: presented from the tab shell rather than from the banners. View unchanged.
 ///
 /// ## Why the cloud is not here
 /// Version 3.0 put the animated word cloud behind this sheet on the reasoning that this is

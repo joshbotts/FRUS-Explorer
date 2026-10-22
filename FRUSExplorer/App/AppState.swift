@@ -181,7 +181,9 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///   4.23 — #1757: the indexing queue counts every volume it holds, its downloads included
 ///          (`downloadQueue`'s `didSet`, `indexingQueueTransferDidFinish(_:outcome:)`,
 ///          `IndexingBatch.count(_:)`), and its Live Activity shows a new count at once
-///          (`refreshIndexingLiveActivityQueue()`)
+///          (`refreshIndexingLiveActivityQueue()`); the FRUS Research Guide's first-queue sheet is
+///          claimed by one window (`claimIndexingGuide(for:keyboardIsVisible:)`) and counts as shown
+///          only once it is on screen (`indexingGuideDidAppear()`)
 
 // MARK: - CloudKitSyncState
 
@@ -1553,13 +1555,62 @@ final class AppState {
     /// refocus-on-reinvoke shape as `DocumentFindBar`'s `focusToken`.
     var searchQueryFocusToken = 0
 
-    /// Whether the indexing-education sheet has auto-opened in this app session (#757 / audit L-46).
+    /// Whether the FRUS Research Guide's indexing sheet has been on screen in this app session
+    /// (#757 / audit L-46, #1757).
     ///
     /// Lives here because `AppState` **is** the session — created once per launch, outliving every
     /// view recreation. The flag was `@AppStorage`, which made the designed once-per-session
     /// introduction a once-per-**install** one: a researcher who indexed a batch months ago never
     /// saw it again on their next tranche, because nothing ever reset the key.
+    ///
+    /// Set when the sheet appears (`indexingGuideDidAppear()`), not when it is asked for: until
+    /// #1757 the queue banner set it as it asked, so a request that showed nothing still spent the
+    /// session's one introduction.
     var hasShownIndexingEducationThisSession = false
+
+    /// The window that has asked to open the FRUS Research Guide for this session's first queue of
+    /// two or more volumes, until the Guide is on screen (#1757).
+    ///
+    /// Every main window's tab shell sees the queue at once, so without a claim two iPad windows
+    /// would each open a Guide. The flag above was that claim until #1757, set as the first banner
+    /// asked; a claim can be let go (`releaseIndexingGuideClaim(for:)`), so a request that never
+    /// reached the screen leaves the next queue free to ask.
+    @ObservationIgnored
+    private(set) var indexingGuideRequester: SceneID?
+
+    /// Whether the window `scene` may open the FRUS Research Guide for the queue now in flight, and
+    /// if so, claims the request for it (#1757).
+    ///
+    /// Yes when a queue of two or more volumes is in flight (`indexingQueuePosition`), the Guide has
+    /// not been on screen this session, the keyboard is down (the banner yields to it, #1070, and
+    /// the Guide waits with it rather than take the screen from a reader typing), and no other
+    /// window holds the request. The tab shell asks 0.6 s after the queue's banner first shows.
+    func claimIndexingGuide(for scene: SceneID, keyboardIsVisible: Bool) -> Bool {
+        guard indexingQueuePosition != nil, !hasShownIndexingEducationThisSession,
+              !keyboardIsVisible, indexingGuideRequester == nil || indexingGuideRequester == scene
+        else { return false }
+        indexingGuideRequester = scene
+        return true
+    }
+
+    /// The FRUS Research Guide's indexing sheet is on screen: the session's introduction is spent
+    /// (#1757). Called from the sheet's own `onAppear`, whichever way it was opened.
+    func indexingGuideDidAppear() {
+        hasShownIndexingEducationThisSession = true
+        indexingGuideRequester = nil
+    }
+
+    /// Lets go of the window `scene`'s claim on the FRUS Research Guide, when its queue has ended
+    /// with the Guide never on screen or its window has closed (#1757).
+    ///
+    /// - Returns: Whether `scene` held the claim. The window then withdraws its request, so a sheet
+    ///   still waiting behind another screen does not open over a queue that has ended.
+    @discardableResult
+    func releaseIndexingGuideClaim(for scene: SceneID) -> Bool {
+        guard indexingGuideRequester == scene else { return false }
+        indexingGuideRequester = nil
+        return true
+    }
 
     /// Whether the async boot has finished wiring the index stack (#753).
     ///
