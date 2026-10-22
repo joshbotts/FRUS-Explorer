@@ -2088,12 +2088,15 @@ struct CitationLookupIndexedTests {
     #if !SWIFT_PACKAGE // FRUSURLSchemeHandler is the app's (WebKit)
     /// The reader's page link, driven the way a tap is: the citing document parsed, converted and
     /// serialized as the reader renders it, its page link's href dispatched through
-    /// `FRUSURLSchemeHandler`, and what the handler hands back asked of the store the reader's
-    /// `resolvePageReference` asks. It must open the document the index stored the edge against.
-    @Test("The reader's page link opens the document the stored edge names, for every cue (#1509)")
+    /// `FRUSURLSchemeHandler`, and what the handler hands back asked of `PageLink`, which the
+    /// readers' `resolvePageReference` asks (#1766). It must open the document the index stored the
+    /// edge against, from the store with the volume on the device, and from a page map built from
+    /// the same index, as `ResolvedEdgeIndexGenerator` builds the bundled one, with it not.
+    @Test("The reader's page link opens the document the stored edge names, for every cue, with its volume on the device or not (#1509, #1766)")
     func readersPageLinkOpensTheStoredDocument() async throws {
         try await withIndex(tieBreakVolume) { _, index in
             let url = index.volumesDirectory.appendingPathComponent("frus1888p1.xml")
+            let map = try await pageMap(of: "frus1888p1", pages: [683, 700], from: index.pages)
             var checked = 0
             for (citing, expected) in tieBreakExpectations.sorted(by: { $0.key < $1.key }) {
                 let ast = try #require(try await FRUSDocumentParser().parseDocument(documentId: citing, volumeURL: url))
@@ -2115,29 +2118,73 @@ struct CitationLookupIndexedTests {
                 guard case .page(_, let page) = FRUSURLSchemeHandler.resolveCrossRefTarget(tap.0, volumeId: tap.1) else {
                     Issue.record("\(citing): \(tap.0) is not a page link"); continue
                 }
-                let opened = try await index.pages.document(forPage: page, inVolume: "frus1888p1", citing: tap.2)
+                let onDevice = await PageLink.destination(page: page, volumeId: "frus1888p1", citing: tap.2,
+                                                          onDevice: true, store: index.pages, map: { nil })
+                let fromMap = await PageLink.destination(page: page, volumeId: "frus1888p1", citing: tap.2,
+                                                         onDevice: false, store: nil, map: { map })
                 let stored = try crossReferenceTargets(from: citing, in: "frus1888p1", databaseURL: index.databaseURL)
-                #expect(opened == expected, "\(citing): the link opened \(opened ?? "nothing")")
-                #expect(stored == [opened ?? ""], "\(citing): the link and the stored edge disagree")
+                let opened: PageLink = .document(volumeId: "frus1888p1", documentId: expected)
+                #expect(onDevice == opened, "\(citing): the link opened \(String(describing: onDevice))")
+                #expect(fromMap == opened, "\(citing): through the map the link opened \(String(describing: fromMap))")
+                #expect(stored == [expected], "\(citing): the link and the stored edge disagree: \(stored)")
                 checked += 1
             }
             #expect(checked == tieBreakExpectations.count)
+            // A page the map does not list opens the volume, naming the page; with the volume on the
+            // device, a page that names no document opens nothing, as before #1766.
+            #expect(await PageLink.destination(page: 800, volumeId: "frus1888p1", citing: nil, onDevice: false,
+                                               store: nil, map: { map }) == .volume(volumeId: "frus1888p1", page: 800))
+            #expect(await PageLink.destination(page: 5, volumeId: "frus1888p1", citing: nil, onDevice: true,
+                                               store: index.pages, map: { map }) == nil)
+            // On the device with no page index to answer — a volume downloaded and not yet indexed
+            // reads the same — the map answers as for a volume not on the device.
+            #expect(await PageLink.destination(page: 683, volumeId: "frus1888p1", citing: nil, onDevice: true,
+                                               store: nil, map: { map }) == .document(volumeId: "frus1888p1", documentId: "d496"))
         }
+    }
+
+    /// `pages` of `volumeId` as the bundled page map lists them (#1766): each page's documents and
+    /// claim as `store` answers them, and the printed number and day of every document on a page
+    /// that names several, read through the reader's own query — what `ResolvedEdgeIndexGenerator`
+    /// reads from its full index for `cited-page-map.json`.
+    private func pageMap(of volumeId: String, pages: [Int], from store: PageRangeStore) async throws -> CitedPageMap {
+        var listed: [(page: Int, claimants: PageSpanResolver.PageClaimants)] = []
+        for page in pages {
+            listed.append((page, try #require(try await store.documents(forPage: page, inVolume: volumeId),
+                                              "p. \(page) names no document")))
+        }
+        let vocabulary = Set(listed.flatMap { $0.claimants.documents.map(\.documentId) }).sorted()
+        func position(_ id: String) throws -> Int { try #require(vocabulary.firstIndex(of: id)) }
+        let rows = try listed.map { entry in
+            try [entry.page, CitedPageMap.claimCode(entry.claimants.claim)]
+                + entry.claimants.documents.map { try position($0.documentId) }
+        }
+        let known = await store.citedDocumentFacts(inVolume: volumeId)
+        let several = Set(listed.filter { $0.claimants.isAmbiguous }.flatMap { $0.claimants.documents.map(\.documentId) })
+        let facts = try several.sorted().compactMap { id -> CitedPageMap.Fact? in
+            guard let fact = known[id] else { return nil }
+            let day = fact.day.map { String(format: "%04d-%02d-%02d", $0.year ?? 0, $0.month, $0.day) } ?? ""
+            return CitedPageMap.Fact(document: try position(id), printedNumber: fact.printedNumber ?? "", day: day)
+        }
+        return try CitedPageMap(schemaVersion: 1, generated: "2026-10-22", indexVersion: 71, volumes: [volumeId],
+                                documents: [vocabulary], pages: [rows], facts: [facts])
     }
     #endif
 
     #if !SWIFT_PACKAGE // reads the app's source
-    /// Each reader view hands a page link's footnote hint on at every step from the web view to the
-    /// store (#1509 review round 1). `readersPageLinkOpensTheStoredDocument` drives the converter,
-    /// the serializer, the scheme handler and the store, but not the views' own closures, which no
-    /// unit test can host, and a view that dropped the hint at any of its three steps would still
-    /// build while its page links opened the first document on the page. Neither view's
-    /// `handleCrossRefTap` nor `resolvePageReference` defaults its `citing`, so a call that leaves
-    /// the argument out does not build; this reads each step's own call, by its balanced
-    /// parentheses, for the forms that would: a closure that ignores or replaces the hint, a default
-    /// put back, and a store call without it (`PageRangeStore.document(forPage:inVolume:citing:)`
-    /// keeps its default for callers outside a footnote).
-    @Test("Both reader views pass a page link's footnote hint from the web view to the store (#1509 review round 1)",
+    /// Each reader view hands a page link's footnote hint on at every step from the web view to
+    /// `PageLink` (#1509 review round 1, #1766). `readersPageLinkOpensTheStoredDocument` drives the
+    /// converter, the serializer, the scheme handler and `PageLink`, which asks the store or the
+    /// bundled page map with the hint, but not the views' own closures, which no unit test can host,
+    /// and a view that dropped the hint at any of its three steps would still build while its page
+    /// links opened the first document on the page. Neither view's `handleCrossRefTap` nor
+    /// `resolvePageReference` defaults its `citing`, so a call that leaves the argument out does not
+    /// build; this reads each step's own call, by its balanced parentheses, for the forms that would:
+    /// a closure that ignores or replaces the hint, a default put back, and a `PageLink` call without
+    /// it. Until #1766 the third step was the view's own store call
+    /// (`PageRangeStore.document(forPage:inVolume:citing:)`, which keeps its default for callers
+    /// outside a footnote); both views now ask `PageLink.destination`, the one rule they share.
+    @Test("Both reader views pass a page link's footnote hint from the web view to PageLink (#1509 review round 1, #1766)",
           arguments: ["DocumentView/DocumentView.swift", "App/MacDocumentView.swift"])
     func readerViewsPassTheHintThrough(_ path: String) throws {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
@@ -2182,13 +2229,16 @@ struct CitationLookupIndexedTests {
         #expect(resolved.count == 1 && resolved.allSatisfy { $0.contains("citing: citing") },
                 "\(path): the page case does not hand the hint on: \(resolved)")
 
-        // 3. `resolvePageReference` takes it with no default and asks the store with it.
+        // 3. `resolvePageReference` takes it with no default and asks `PageLink` with it, which asks
+        //    the store and the map with it (`readersPageLinkOpensTheStoredDocument`). No other call
+        //    in it asks the store.
         let resolver = try declaration(of: "resolvePageReference")
         #expect(resolver.parameters.contains("citing: PageCitationHint?") && !resolver.parameters.contains("="),
                 "\(path): resolvePageReference(\(resolver.parameters))")
-        let asked = try calls(of: "store.document", in: resolver.body)
+        let asked = try calls(of: "PageLink.destination", in: resolver.body)
         #expect(asked.count == 1 && asked.allSatisfy { $0.contains("citing: citing") },
-                "\(path): the store is not asked with the hint: \(asked)")
+                "\(path): PageLink is not asked with the hint: \(asked)")
+        #expect(!resolver.body.contains("document(forPage:"), "\(path): resolvePageReference asks the store itself")
     }
     #endif
 

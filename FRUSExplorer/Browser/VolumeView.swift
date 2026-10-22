@@ -15,7 +15,8 @@ import SwiftUI
 /// Volume structure is loaded lazily via `BrowserViewModel.loadVolumeStructure(for:)` on
 /// appear. If the volume is not downloaded, a "Download Required" placeholder is shown
 /// instead, with a Download button that tracks the transfer live via
-/// `AppState.downloadQueue` and loads the structure in place when it completes.
+/// `AppState.downloadQueue` and loads the structure in place when it completes. When a page link
+/// opened the page (#1766), the placeholder comes first and names the page the link was to.
 /// Tag chips call `vm.activateTagFilter(slug:forSubseries:)` which pops navigation
 /// back to the Subseries level with the filter applied.
 ///
@@ -61,6 +62,9 @@ import SwiftUI
 ///   2.8 — 2026-09-30: #1483 — the header's "Partially Published" has a key of its own,
 ///          `browser.volume.partial.label`, as Planned's does; the row's "Partial" keeps
 ///          `browser.volume.partial`
+///   2.9 — 2026-10-22: #1766 — when a page link opened this page, the "Download Required"
+///          placeholder comes first and names the page the link was to (`AppState.followedPageLink`,
+///          `FollowedPageLink.notice`)
 struct VolumeView: View {
 
     let vm: BrowserViewModel
@@ -75,8 +79,21 @@ struct VolumeView: View {
     /// download re-offers the button.
     @State private var downloadRequested = false
 
+    /// Whether a page link opened this page because the volume is not on the device (#1766): its
+    /// not-downloaded section then comes first. On an iPhone the volume's details, tags and topics
+    /// fill the screen above it, so in its usual place the reader arrived to no word of why there
+    /// was no page to show (measured on an iPhone 17 under iOS 27.0: Paris Peace Conference vol. II's
+    /// section began below the fold). Once the volume is downloaded the page is laid out as usual.
+    private var followedHere: Bool {
+        appState.followedPageLink?.volumeId == volume.volumeId && !vm.isDownloaded(volume.volumeId)
+    }
+
     var body: some View {
         List {
+            if followedHere {
+                volumeStructureSection
+            }
+
             // Volume metadata header
             Section {
                 VolumeMetadataView(
@@ -105,7 +122,9 @@ struct VolumeView: View {
             }
 
             // Structure / section list
-            volumeStructureSection
+            if !followedHere {
+                volumeStructureSection
+            }
         }
         #if os(iOS)
         .listStyle(.insetGrouped)
@@ -140,6 +159,14 @@ struct VolumeView: View {
                   !newQueue.contains(volume.volumeId) else { return }
             downloadRequested = false
             Task { await vm.loadVolumeStructure(for: volume) }
+        }
+        // #1766: the page a link was to is named on the visit that link made, and not on a later one.
+        // On iPad this view can take another volume in place (#1301), which is a departure too.
+        .onChange(of: volume.volumeId) { previous, _ in
+            if appState.followedPageLink?.volumeId == previous { appState.followedPageLink = nil }
+        }
+        .onDisappear {
+            if appState.followedPageLink?.volumeId == volume.volumeId { appState.followedPageLink = nil }
         }
         .toolbar {
             #if os(iOS)
@@ -216,6 +243,12 @@ struct VolumeView: View {
                         systemImage: "arrow.down.circle"
                     )
                     .font(.headline)
+                    // #1766: a page link brought the reader here, since no document on that page
+                    // could be named without the volume.
+                    if let followed = appState.followedPageLink, followed.volumeId == volume.volumeId {
+                        Text(followed.notice)
+                            .font(.callout)
+                    }
                     Text(String(localized: "browser.volume.downloadRequired.detail",
                                 defaultValue: "Download this volume to browse its contents."))
                         .font(.callout)
