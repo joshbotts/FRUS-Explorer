@@ -6976,4 +6976,4 @@ After every run the container held 553 files; after A3, 553 indexed volumes and 
 - **The hub's figures lag a queue.** Volumes & Storage read *530 of 553 downloaded · all indexed* after A1's queue had brought all 553 back.
 
 **Not done, and for the owner.**
-- Not pushed and not opened. The pull request's body is drafted with the sittings' notes (`L4-pr-draft.md`), with a visual-review list for each platform.
+- **Opened as #1774** on the owner's word of 2026-10-22 ("Open L4's pull request against v2 now, as drafted."), against `v2` at `d6272c28`, which had not moved since the branch was cut; not merged. Its body is the draft kept with the sittings' notes (`L4-pr-draft.md`), with a visual-review list for each platform. Auto-fix on (the owner's switch), auto-merge off; no CI checks reported.
