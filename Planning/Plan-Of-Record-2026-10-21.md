@@ -53,6 +53,13 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
 97. **`DEVELOPMENT-PLAN.md` is split at 2026-10-01.** Its entries before that date are in `Completed/DEVELOPMENT-PLAN-to-2026-09.md`, with the one that stood in its header (the N wave, 2026-08-06/07). The live file keeps the plan's header, a pointer and the entries from 2026-10-01. No test or tool reads the log; code and test comments cite its entries by date or by name.
 98. **This plan lands as one docs change** with the old plan superseded, the review's document moves and in-place marks, the Visual Marketing Plan's §7, and decision 97's split.
 
+**The owner's correction of 2026-10-22**, given while L5 was started and carried into the plan by L5's pull request:
+
+99. **`build-51` tags the TestFlight build, 1.0 (1776), and `version-1.0` tags the submission, 1.0 (1861).** The owner's words of 2026-10-22: "include a plan of record correction: we will tag the 1.0/1776 test flight release as "build 51" in github, not 1.0/1861. 1.0/1861 will be tagged as "version 1.0""
+    - The owner tags the commit uploaded to TestFlight as 1.0 (1776) `build-51` after the upload (R2), and the commit submitted as 1.0 (1861) `version-1.0` (R3).
+    - A git tag name cannot contain a space, so "version 1.0" is spelled `version-1.0`, as "build 51" is `build-51`.
+    - This refines decision 87, which set the two build numbers and named no tag. Until this correction R3 put `build-51` on the submission.
+
 **Rules carried from the earlier plans and `CLAUDE.md`.** Each is the owner's.
 - **The queue is serial.** The next pull request is pushed when the owner has merged the one before. Auto-merge is never enabled.
 - **One fresh session per pull request**, started from this plan and the issue numbers, and ended at the merge.
@@ -111,8 +118,8 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
     A re-index census is owed only if a lane changes the index version, and none is planned.
   - Bump to 1.0 (1776) by `CLAUDE.md`'s procedure (`project.yml`, `project.pbxproj`, the README line and its mirror), and rewrite both TestFlight notes for 1776.
   - Before the archive: `./Scripts/fetch-llama-dsyms.sh` and `./Scripts/check_cloudkit_schema.py`.
-  - The owner archives, uploads to TestFlight, and makes the device pass on an iPhone, an iPad and the Mac. A defect found goes to a lane, and the next TestFlight upload takes a number between 1776 and 1861 (decision 87).
-- **R3, the submission.** Restore 1.0 (1861) by the same procedure. The owner archives, uploads, tags `build-51` on that commit, and submits to App Review with §2's answers.
+  - The owner archives, uploads to TestFlight, tags the 1776 commit `build-51` after the upload (decision 99), and makes the device pass on an iPhone, an iPad and the Mac. A defect found goes to a lane, and the next TestFlight upload takes a number between 1776 and 1861 (decision 87).
+- **R3, the submission.** Restore 1.0 (1861) by the same procedure. The owner archives, uploads, tags `version-1.0` on that commit (decision 99), and submits to App Review with §2's answers.
 
 ---
 
@@ -128,7 +135,7 @@ The repository holds drafts for each.
   - the App Review notes: the query encoder is an optional 310 MB download of an Apache-licensed model from a public GitHub release, with no agreement step (decision 18), and the app is not an official product of the Office of the Historian;
   - the age rating, export compliance, and a Mac build signed for the App Store.
 - **`check_repository_links.py --stamp`**, which writes the owner's confirmation date.
-- **The archive, the uploads and the tag** (R2 and R3).
+- **The archive, the uploads and the tags** (R2 and R3): `build-51` on 1.0 (1776) and `version-1.0` on 1.0 (1861) (decision 99).
 
 ---
 
