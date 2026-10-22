@@ -1725,3 +1725,175 @@ struct FilterVolumeListReloadTests {
         #expect(early.searchParameters.volumeIds == late.searchParameters.volumeIds)
     }
 }
+
+// MARK: - AnalyticsHandoffCountTests
+
+/// Corpus Analytics' "View N documents ↗" prints the count of the search it opens (#1756).
+///
+/// The link printed the chart's own sum: the documents its bars place in the chosen years, each at
+/// the year it begins and an undated one at its volume's first year. The search it opened read the
+/// years by Search's rule, a document whose dates overlap them and nothing undated, so *Berlin*
+/// over Eisenhower's years read 2,803 on the link and 2,833 in Search on a full index. The fixture
+/// holds one document of each kind that parts the two rules: one that begins before the years and
+/// runs into them, one that runs across all of them from before, and one undated in a volume that
+/// begins inside them.
+///
+/// These run the real count (`AnalyticsSearchHandoff.match`, Search's own `matchKeys`) and hand the
+/// same parameters to the real iPhone and iPad view model, then count what that view model would
+/// run: the number on the link is the number in Search. `HandoffVisibilityTests` pins that the
+/// view prints this count and opens these parameters.
+///
+/// Version history:
+///   1.0 — #1756: initial implementation
+@Suite("Corpus Analytics hand-off count")
+@MainActor
+struct AnalyticsHandoffCountTests {
+
+    /// A volume beginning in 1953: one document inside 1953–1954, one beginning in December 1952
+    /// and ending in January 1953, one undated, one after the years, and one that never says
+    /// Berlin.
+    private let volume1953 = """
+        <TEI xmlns:frus="http://history.state.gov/frus/ns/1.0"><text><body>
+          <div type="document" xml:id="d1" n="1"
+               frus:doc-dateTime-min="1953-06-01" frus:doc-dateTime-max="1953-06-01">
+            <head>Inside the years</head>
+            <p>The status of Berlin was discussed.</p>
+          </div>
+          <div type="document" xml:id="d2" n="2"
+               frus:doc-dateTime-min="1952-12-20" frus:doc-dateTime-max="1953-01-10">
+            <head>Beginning before the years and running into them</head>
+            <p>The status of Berlin was discussed.</p>
+          </div>
+          <div type="document" xml:id="d3" n="3">
+            <head>Undated</head>
+            <p>The status of Berlin was discussed.</p>
+          </div>
+          <div type="document" xml:id="d4" n="4"
+               frus:doc-dateTime-min="1955-02-01" frus:doc-dateTime-max="1955-02-01">
+            <head>After the years</head>
+            <p>The status of Berlin was discussed.</p>
+          </div>
+          <div type="document" xml:id="d5" n="5"
+               frus:doc-dateTime-min="1953-03-01" frus:doc-dateTime-max="1953-03-01">
+            <head>Another city</head>
+            <p>The status of Bonn was discussed.</p>
+          </div>
+        </body></text></TEI>
+        """
+
+    /// A volume beginning in 1950: one document running from 1951 through 1953, and one before the
+    /// years.
+    private let volume1950 = """
+        <TEI xmlns:frus="http://history.state.gov/frus/ns/1.0"><text><body>
+          <div type="document" xml:id="d1" n="1"
+               frus:doc-dateTime-min="1951-01-01" frus:doc-dateTime-max="1953-12-31">
+            <head>Running across the years from before them</head>
+            <p>The status of Berlin was discussed.</p>
+          </div>
+          <div type="document" xml:id="d2" n="2"
+               frus:doc-dateTime-min="1950-05-05" frus:doc-dateTime-max="1950-05-05">
+            <head>Before the years</head>
+            <p>The status of Berlin was discussed.</p>
+          </div>
+        </body></text></TEI>
+        """
+
+    private struct Fixture {
+        let dir: URL
+        let search: SearchService
+        let analytics: CorpusAnalyticsService
+    }
+
+    private func makeFixture() async throws -> Fixture {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSAnalyticsHandoff-\(UUID().uuidString)", isDirectory: true)
+        let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        try Data(volume1953.utf8).write(to: volumes.appendingPathComponent("frus1953-54v91.xml"))
+        try Data(volume1950.utf8).write(to: volumes.appendingPathComponent("frus1950-52v92.xml"))
+        let dbURL = dir.appendingPathComponent("handoff.sqlite")
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(fts5Store: store, databaseURL: dbURL,
+                                            volumesDirectory: volumes, concurrencyLimit: 1)
+        try await pipeline.indexVolume("frus1953-54v91")
+        try await pipeline.indexVolume("frus1950-52v92")
+        return Fixture(dir: dir, search: SearchService(fts5Store: store, pipeline: pipeline),
+                       analytics: CorpusAnalyticsService(fts5Store: store, pipeline: pipeline))
+    }
+
+    /// What iPhone and iPad's Search counts once it is handed `parameters`: the view model applies
+    /// them, as `SearchView` does, and its total is `searchCount` of the parameters it then runs.
+    private func searchTotal(handedOff parameters: SearchParameters, in fixture: Fixture) async throws -> Int {
+        let vm = SearchViewModel(searchService: fixture.search)
+        #expect(vm.applyHandoff(parameters), "the hand-off names a search, so Search runs it")
+        return try await fixture.search.searchCount(parameters: vm.searchParameters)
+    }
+
+    @Test("With the years narrowed, the link counts what Search lists, not what the chart plots")
+    func narrowedYearsCountAsSearchDoes() async throws {
+        let fixture = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+
+        let parameters = AnalyticsSearchHandoff.parameters(
+            term: "Berlin", axis: .byYear, startYear: 1953, endYear: 1954,
+            yearsNarrowed: true, scopeVolumeIds: nil)
+        #expect(parameters.dateRange == DateRange(earliest: "1953-01-01", latest: "1954-12-31"))
+        #expect(parameters.includeSummaries == false && parameters.includeNotes == false)
+
+        let match = try await AnalyticsSearchHandoff.match(for: parameters, in: fixture.search)
+        // Inside the years, beginning before them, and running across them from 1951; not the
+        // undated one, not the one after, not the one before.
+        #expect(match.count == 3)
+        #expect(match.volumeCounts == [2, 1])
+        #expect(match.parameters == parameters)
+        #expect(try await searchTotal(handedOff: parameters, in: fixture) == match.count, """
+            The link would print \(match.count) and Search, handed the same parameters, list another \
+            number.
+            """)
+
+        // The chart's own sum over the same years, which the link printed until #1756: the document
+        // inside them and the undated one, placed at its volume's first year. If this ever equals
+        // Search's count the fixture no longer parts the two rules and proves nothing.
+        let chart = try await fixture.analytics.termFrequencyByYear(term: "Berlin")
+        let plotted = chart.filter { (1953...1954).contains($0.year) }.reduce(0) { $0 + $1.count }
+        #expect(plotted == 2)
+        #expect(plotted != match.count)
+    }
+
+    @Test("At the default years the link opens every match, undated ones included")
+    func defaultYearsPassNoDateRange() async throws {
+        let fixture = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+
+        let parameters = AnalyticsSearchHandoff.parameters(
+            term: "Berlin", axis: .byYear, startYear: 1861, endYear: 1992,
+            yearsNarrowed: false, scopeVolumeIds: nil)
+        #expect(parameters.dateRange == nil, """
+            A range the reader did not narrow went to Search, which drops every undated match under a \
+            date range.
+            """)
+        let match = try await AnalyticsSearchHandoff.match(for: parameters, in: fixture.search)
+        #expect(match.count == 6)
+        #expect(match.volumeCounts == [4, 2])
+        #expect(try await searchTotal(handedOff: parameters, in: fixture) == match.count)
+    }
+
+    @Test("A categorical axis passes no years, and a volume scope narrows the count as it narrows Search")
+    func categoricalAxisAndScope() async throws {
+        let fixture = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+
+        let byVolume = AnalyticsSearchHandoff.parameters(
+            term: "Berlin", axis: .byVolume, startYear: 1953, endYear: 1954,
+            yearsNarrowed: true, scopeVolumeIds: nil)
+        #expect(byVolume.dateRange == nil, "By Volume ignores the year range, so its link must too")
+
+        let scoped = AnalyticsSearchHandoff.parameters(
+            term: "Berlin", axis: .byYear, startYear: 1953, endYear: 1954,
+            yearsNarrowed: true, scopeVolumeIds: ["frus1950-52v92"])
+        let match = try await AnalyticsSearchHandoff.match(for: scoped, in: fixture.search)
+        #expect(match.count == 1)
+        #expect(match.volumeCounts == [1])
+        #expect(try await searchTotal(handedOff: scoped, in: fixture) == match.count)
+    }
+}

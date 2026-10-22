@@ -154,10 +154,14 @@ struct HandoffVisibilityTests {
     /// `SearchParameters` in a dozen places and a file-wide `contains` would pass on any one of
     /// them. The receiving half — that `applyParameters` applies what it is sent — is a runtime
     /// test in `SearchViewTests`, on both platforms.
+    ///
+    /// Since #1756 the link's parameters are built by `AnalyticsSearchHandoff.parameters`, which the
+    /// link both counts and opens (``analyticsLinkCountsTheSearchItOpens()``), so that is the body
+    /// read for it; a tapped bar still builds its own.
     @Test("Both Corpus Analytics hand-offs open Search over document text only")
     func analyticsHandoffsNarrowTheScope() throws {
         let source = try Self.source("Analytics/AnalyticsView.swift")
-        for member in ["private func openMatchingDocumentsInSearch(",
+        for member in ["static func parameters(term:",
                        "private func openScopedDocumentsInSearch("] {
             let body = try Self.memberBody(member, in: source)
             #expect(body.contains("includeSummaries: false"), """
@@ -168,6 +172,44 @@ struct HandoffVisibilityTests {
                 \(member) opens Search at its default scope, which reads the reader's own notes.
                 """)
         }
+    }
+
+    /// #1756: the link prints the count of the search it opens, and the dispersion beside it
+    /// decomposes that count. The link used to print the chart's own sum (2,803 for *Berlin* over
+    /// Eisenhower's years) and open a search that read the same years by Search's rule (2,833).
+    ///
+    /// The structural half, read from source: the hand-off opens ``handoffSearchParameters``, the
+    /// count is requested for the same property, and the link's words and the dispersion read the
+    /// count taken for it. The runtime half — that the count is the one Search shows for what it
+    /// was handed — is `AnalyticsHandoffCountTests` in `SearchViewTests`.
+    @Test("The Corpus Analytics link counts the search it opens")
+    func analyticsLinkCountsTheSearchItOpens() throws {
+        let source = try Self.source("Analytics/AnalyticsView.swift")
+        let open = try Self.memberBody("private func openMatchingDocumentsInSearch(", in: source)
+        #expect(open.contains("let parameters = handoffSearchParameters")
+                && open.contains("appState.openSearch(parameters, from: target)"), """
+            The hand-off no longer opens `handoffSearchParameters`, so the search it opens is not the \
+            one whose count the link prints.
+            """)
+        let built = try Self.memberBody("private var handoffSearchParameters:", in: source)
+        #expect(built.contains("AnalyticsSearchHandoff.parameters("))
+        let key = try Self.memberBody("private var handoffCountKey:", in: source)
+        #expect(key.contains("handoffSearchParameters"), """
+            The count is requested for something other than the search the link opens.
+            """)
+        #expect(key.contains("unsupportedExactTerms.isEmpty"), """
+            The count runs for a term the chart refuses. Its link was hidden over the exact-word empty \
+            state, and Search's exact-word filter re-reads every matched document's text.
+            """)
+        let title = try Self.memberBody("private var handoffLinkTitle:", in: source)
+        #expect(title.contains("currentHandoffMatch") && title.contains("CountCopy.documents(match.count)"), """
+            The link's number is not Search's count of the documents it opens.
+            """)
+        let dispersion = try Self.memberBody("private var volumeDispersion:", in: source)
+        #expect(dispersion.contains("currentHandoffMatch") && dispersion.contains("match.volumeCounts"), """
+            The dispersion line no longer decomposes the link's count, so beside a narrowed count it \
+            describes other documents.
+            """)
     }
 
     /// The macOS receiving half, read from source rather than run.

@@ -177,6 +177,91 @@ struct SavedAnalyticsQuery: Codable, Identifiable, Equatable {
     }
 }
 
+// MARK: - AnalyticsSearchHandoff
+
+/// The search Corpus Analytics' "View N documents ↗" link opens, and the count the link shows
+/// (#1756).
+///
+/// ## One value, both counted and opened
+/// The link used to print the chart's own sum: the documents its bars place in the chosen years,
+/// each at the year it begins, with an undated document at its volume's first year. The search it
+/// opened read the same years by Search's rule — a document whose dates overlap them, and nothing
+/// undated — so the two parted wherever a document's dates crossed the range's edge or a volume
+/// held undated matches. Over a full index (553 volumes, index v71), *Berlin* over Eisenhower's
+/// years read **2,803** on the link, 2,775 documents beginning in 1953–1961 and 28 undated ones in
+/// volumes beginning then, and **2,833** in Search: the 2,775 and the 58 that begin before 1953
+/// and run into it.
+///
+/// So the link now prints Search's own count of the very parameters it opens, taken through
+/// ``SearchService/matchKeys(parameters:)``, the whole match the result count counts, and the
+/// dispersion line beside it is computed from the same keys, so it describes the documents the
+/// link opens. The chart's footnote still sums its bars, which can differ from the link by the
+/// documents the two rules place differently; the link's tooltip and the manuals say why.
+///
+/// ## Years only when the reader narrowed them
+/// The years go to Search only on a date-based axis whose range the reader moved off its default.
+/// At the default range the reader has narrowed nothing, and a date range would have dropped
+/// every undated match from the search: *Berlin* across the whole corpus counted 16,126 documents
+/// that way, of its 16,273.
+///
+/// A working corpus applied in Search still narrows the search it opens, under Search's banner
+/// (#1646): the link counts the parameters it hands over, which never carry one.
+enum AnalyticsSearchHandoff {
+
+    /// The search the link opens.
+    ///
+    /// - Parameters:
+    ///   - term: The committed term, Search's keywords.
+    ///   - axis: The chart's axis; only a date-based axis passes years.
+    ///   - startYear: The first year of the chart's range.
+    ///   - endYear: The last year of the chart's range.
+    ///   - yearsNarrowed: Whether the reader moved the range off its default.
+    ///   - scopeVolumeIds: The chart's volume scope, or `nil` for the whole corpus.
+    /// - Returns: The parameters, over document text only.
+    static func parameters(term: String, axis: AnalyticsChartAxis, startYear: Int, endYear: Int,
+                           yearsNarrowed: Bool, scopeVolumeIds: [String]?) -> SearchParameters {
+        let range: DateRange? = axis.isDateBased && yearsNarrowed
+            ? DateRange(earliest: String(format: "%04d-01-01", startYear),
+                        latest: String(format: "%04d-12-31", endYear))
+            : nil
+        // #1306: notes and summaries OFF. This link is the one place the app invites a reader to
+        // compare a chart's count against Search's, and Search's default scope unions
+        // `user_content` — the reader's own summaries and notes — while Analytics runs a bare
+        // `frus_documents MATCH`. The scope narrows for this search and stays narrowed, exactly as
+        // the date range and the volume scope on the same lines already do.
+        return SearchParameters(keywords: term, dateRange: range, volumeIds: scopeVolumeIds,
+                                includeSummaries: false, includeNotes: false)
+    }
+
+    /// Search's count of one hand-off search.
+    struct Match: Equatable {
+        /// The search counted.
+        let parameters: SearchParameters
+        /// How many documents it lists.
+        let count: Int
+        /// How many of them each volume holds, largest first: the dispersion line's input.
+        let volumeCounts: [Int]
+    }
+
+    /// Counts `parameters` as Search counts them.
+    ///
+    /// - Parameters:
+    ///   - parameters: The search the link opens.
+    ///   - service: The app's search service.
+    /// - Returns: The count, and the count in each volume.
+    /// - Throws: What ``SearchService/matchKeys(parameters:)`` throws: `CancellationError` when the
+    ///   task is cancelled, and `FTS5Error.emptyQuery` for a search Search would refuse.
+    static func match(for parameters: SearchParameters, in service: SearchService) async throws -> Match {
+        let keys = try await service.matchKeys(parameters: parameters)
+        var perVolume: [Substring: Int] = [:]
+        for key in keys {
+            perVolume[key.prefix { $0 != "/" }, default: 0] += 1
+        }
+        return Match(parameters: parameters, count: keys.count,
+                     volumeCounts: perVolume.values.sorted(by: >))
+    }
+}
+
 // MARK: - AnalyticsView
 
 /// Corpus frequency analytics view with Swift Charts.
@@ -247,6 +332,9 @@ struct SavedAnalyticsQuery: Codable, Identifiable, Equatable {
 ///          with its Values control live
 ///   1.13 — 2026-10-21: #1761 — the chart headings and the empty state quote a term that is one
 ///          phrase once, without its own marks (`quotedTerm`, `chartHeadingTerms`)
+///   1.14 — 2026-10-22: #1756 — "View N documents ↗" prints Search's count of the search it opens
+///          (`AnalyticsSearchHandoff`, `handoffMatch`), which passes the years only when the reader
+///          narrowed them, and the dispersion line beside it describes those documents
 struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -302,6 +390,11 @@ struct AnalyticsView: View {
     @State private var volumeDataByTerm: [String: [VolumeFrequency]] = [:]
     /// Monotonic token that discards a stale `reloadData` run when the term set changes mid-fetch (D1).
     @State private var fetchToken: Int = 0
+
+    /// Search's count of the documents the hand-off link opens, with the parameters it was taken
+    /// for (#1756). Read through ``currentHandoffMatch``, never directly, so a count taken for other
+    /// years is never shown beside these.
+    @State private var handoffMatch: AnalyticsSearchHandoff.Match?
 
     /// Saved and recent analytics queries (D1 Phase 3). Held per window in `@State`, loaded from and
     /// written back to `UserDefaults` as JSON (see `loadQueries()` / `persistQueries()`).
@@ -1056,7 +1149,7 @@ struct AnalyticsView: View {
                         // (data arrays momentarily empty) or a genuine zero-match term (Win 3) — and
                         // while comparing (owner decision C): a per-term overlay has no single
                         // "these documents" population to drill into.
-                        if !isComparing && !committedTerm.isEmpty && matchedDocumentCount > 0 {
+                        if !isComparing && !committedTerm.isEmpty && handoffHasDocuments {
                             searchHandoffBar
                             Divider()
                         }
@@ -1155,6 +1248,12 @@ struct AnalyticsView: View {
             guard let params = appState.consumeHandoff(\.pendingAnalytics, for: .macAnalytics) else { return }
             applyAnalyticsParameters(params)
         }
+        // The hand-off link's count (#1756): taken again whenever the search it would open changes —
+        // the term, the axis, the years, the scope — and whenever the chart runs again, so a re-run
+        // after indexing recounts. `task(id:)` cancels the count it replaces.
+        .task(id: handoffCountKey) {
+            await countHandoffMatch(for: handoffCountKey)
+        }
     }
 
     // MARK: - Cross-View Handoff (Search ↔ Analytics)
@@ -1186,37 +1285,22 @@ struct AnalyticsView: View {
         runSearch()
     }
 
-    /// Builds the `Analytics → Search` handoff parameters and switches to Search.
+    /// Opens the `Analytics → Search` hand-off: ``handoffSearchParameters``, the search whose count
+    /// the link prints, and switches to Search.
     ///
-    /// Carries `committedTerm` over as `keywords` and — when the active axis is
-    /// date-based — the current year-range bounds as a `DateRange` (January 1st
-    /// of the start year through December 31st of the end year), so the search
-    /// results the user lands on are the same documents the chart visualised.
-    /// Mirrors the `pendingSearch` handoff used throughout the app (see
-    /// `PersonIndexView`, `IndexingSummaryCard`, `MacDocumentView`).
+    /// Carries `committedTerm` over as `keywords`, the active volume scope — so a Word Cloud →
+    /// Analytics → Search chain lands on the documents the scoped chart drew from — and, on a
+    /// date-based axis whose range the reader narrowed, the years as a `DateRange` (January 1st of
+    /// the start year through December 31st of the end year). Search reads those years by its own
+    /// rule, a document whose dates overlap them, which is why the link counts by Search and not by
+    /// the chart (#1756, ``AnalyticsSearchHandoff``). Mirrors the `pendingSearch` handoff used
+    /// throughout the app (see `PersonIndexView`, `IndexingSummaryCard`, `MacDocumentView`).
     private func openMatchingDocumentsInSearch() {
-        let range: DateRange? = chartAxis.isDateBased
-            ? DateRange(
-                earliest: String(format: "%04d-01-01", yearRangeStart),
-                latest: String(format: "%04d-12-31", yearRangeEnd)
-              )
-            : nil
-        // Carry the active volume scope through to Search so a Word Cloud → Analytics
-        // → Search chain lands on the same documents the (scoped) chart visualised.
-        //
-        // #1306: notes and summaries OFF. This link is the one place the app invites a reader to
-        // compare a chart's count against Search's, and Search's default scope unions
-        // `user_content` — the reader's own summaries and notes — while Analytics runs a bare
-        // `frus_documents MATCH`. Left at the defaults the app arranged the comparison and then
-        // broke it. The scope narrows for this search and stays narrowed, exactly as the date
-        // range and the volume scope on the same two lines already do.
+        let parameters = handoffSearchParameters
         let target = closeWindow.handOffTarget(from: sceneID)
-        appState.openSearch(SearchParameters(
-            keywords: committedTerm, dateRange: range, volumeIds: scopeVolumeIds,
-            includeSummaries: false, includeNotes: false
-        ), from: target)
+        appState.openSearch(parameters, from: target)
         #if DEBUG
-        print("[AnalyticsView] Handoff to Search — term: \"\(committedTerm)\", dateRange: \(String(describing: range)), scopeVolumes: \(scopeVolumeIds?.count ?? 0)")
+        print("[AnalyticsView] Handoff to Search — term: \"\(committedTerm)\", dateRange: \(String(describing: parameters.dateRange)), scopeVolumes: \(scopeVolumeIds?.count ?? 0)")
         #endif
         navigateToSearch(frontingHandOffTo: target)
     }
@@ -1302,26 +1386,98 @@ struct AnalyticsView: View {
 
     // MARK: - Search Handoff Bar
 
-    /// Direction-A handoff affordance: "Analytics → Search".
+    /// The search the "View N documents ↗" link opens now (#1756): the committed term, the volume
+    /// scope and, on a date-based axis whose range the reader narrowed, those years.
+    private var handoffSearchParameters: SearchParameters {
+        AnalyticsSearchHandoff.parameters(term: committedTerm, axis: chartAxis,
+                                          startYear: yearRangeStart, endYear: yearRangeEnd,
+                                          yearsNarrowed: yearRangeIsCustom, scopeVolumeIds: scopeVolumeIds)
+    }
+
+    /// ``handoffMatch`` when it was taken for the search the link would open now, and otherwise
+    /// `nil`: the link then reads without a number until Search has counted, rather than print a
+    /// count for years no longer chosen.
+    private var currentHandoffMatch: AnalyticsSearchHandoff.Match? {
+        guard let match = handoffMatch, match.parameters == handoffSearchParameters else { return nil }
+        return match
+    }
+
+    /// What the hand-off link's count is taken for (#1756).
+    private struct HandoffCountKey: Equatable {
+        /// The search the link would open, or `nil` while nothing is committed, while terms are
+        /// compared, or for a term the chart refuses: the link is hidden then.
+        let parameters: SearchParameters?
+        /// The chart's run, so a run again after indexing counts again.
+        let fetchToken: Int
+        /// Whether the app has a search service yet: the count runs once it has.
+        let hasSearchService: Bool
+    }
+
+    /// The hand-off count's key as the view stands.
     ///
-    /// Shown beneath the search/year-range bars whenever a term has been
-    /// committed. Lets the researcher jump straight from "how is this term
-    /// distributed across the corpus?" to "show me the matching documents" —
-    /// carrying the term and (for date-based axes) the current year-range filter
-    /// along as `pendingSearch` so Search lands pre-filled and ready to run.
-    /// The number of documents matched by the current term/scope/range on the active axis — the sum
-    /// of the plotted series, mirroring each chart section's own footnote math. Surfaced in the
-    /// "View N documents" hand-off link so the affordance carries the count (design Win 3).
+    /// No search is counted for a term the chart refuses, an `=` word (``unsupportedExactTerms``):
+    /// the link stays hidden over that empty state, as it was, and Search's exact-word filter
+    /// re-reads every matched document's text, about a minute for `=government` over a full index
+    /// (`IndexingPipeline.documentKeysMatching`).
+    private var handoffCountKey: HandoffCountKey {
+        let counted = !isComparing && !committedTerm.isEmpty && unsupportedExactTerms.isEmpty
+        return HandoffCountKey(parameters: counted ? handoffSearchParameters : nil,
+                               fetchToken: fetchToken, hasSearchService: appState.searchService != nil)
+    }
+
+    /// Takes Search's count of the search the link opens, into ``handoffMatch``.
+    ///
+    /// A count not taken leaves the last one in place, which ``currentHandoffMatch`` does not show
+    /// for other parameters, so the link reads without a number: that happens when a newer request
+    /// cancels this one, and for a term Search refuses, which the chart refuses as well.
+    ///
+    /// - Parameter key: The request.
+    private func countHandoffMatch(for key: HandoffCountKey) async {
+        guard let parameters = key.parameters, let service = appState.searchService else { return }
+        do {
+            let match = try await AnalyticsSearchHandoff.match(for: parameters, in: service)
+            guard !Task.isCancelled else { return }
+            handoffMatch = match
+        } catch {
+            #if DEBUG
+            print("[AnalyticsView] Hand-off count not taken — \(error)")
+            #endif
+        }
+    }
+
+    /// Whether the hand-off bar has documents to offer: Search's count once it is taken, and until
+    /// then the chart's own, so the bar appears with the chart rather than after the count.
+    private var handoffHasDocuments: Bool {
+        if let match = currentHandoffMatch { return match.count > 0 }
+        return matchedDocumentCount > 0
+    }
+
+    /// The link's words: Search's count of the documents it opens, once taken, and the link without
+    /// a number until then (#1756).
+    private var handoffLinkTitle: String {
+        guard let match = currentHandoffMatch else {
+            return String(localized: "analytics.handoff.viewDocuments.counting",
+                          defaultValue: "View documents")
+        }
+        // #1374: "View 9162 documents" through a `%lld`.
+        return String(format: String(localized: "analytics.handoff.viewDocuments %@",
+                                     defaultValue: "View %@"),
+                      CountCopy.documents(match.count))
+    }
+
+    /// The number of documents the chart plots for the current term/scope/range on the active axis
+    /// — the sum of the plotted series, mirroring each chart section's own footnote math.
+    ///
+    /// It decides whether the hand-off bar shows only until Search has counted
+    /// (``handoffHasDocuments``). It is not the link's number (#1756): the chart places a document
+    /// at the year it begins and an undated one at its volume's first year, and Search, which the
+    /// link opens, takes a document whose dates overlap the years and nothing undated.
     private var matchedDocumentCount: Int {
-        // DOCUMENTS, whatever the chart is plotting. This drives "View N documents ↗", which hands
-        // off to Search — and Search returns documents. Reading it off the active axis series was a
-        // real defect found by running the app: in Occurrences mode the button read "View 57,433
-        // documents" for a term with 39,405 matching documents, so the one number the researcher
-        // could check against another surface was the one that disagreed with it. Exactly the class
-        // of mislabel PR-A removed, reintroduced one PR later by a shared accessor.
-        //
-        // The date axes therefore bypass `filteredYearData`/`filteredDecadeData`, which follow the
-        // measure. The other four axes never carry occurrences and are already document counts.
+        // DOCUMENTS, whatever the chart is plotting: the date axes bypass `filteredYearData` and
+        // `filteredDecadeData`, which follow the measure. When this was the link's number, reading it
+        // off the active axis series made the button read "View 57,433 documents" in Occurrences mode
+        // for a term with 39,405 matching documents. The other four axes never carry occurrences and
+        // are already document counts.
         switch chartAxis {
         case .byYear:
             return (yearDataByTerm[committedTerm] ?? [])
@@ -1339,19 +1495,15 @@ struct AnalyticsView: View {
     }
 
     /// The single document hand-off affordance (design Win 3): one "View N documents ↗" link
-    /// carrying the matched count, replacing the redundant two-part bar ("See the documents behind
-    /// this chart" + a separate "View in Search" button). The `openMatchingDocumentsInSearch()`
-    /// `pendingSearch` hand-off is unchanged — only the entry point is consolidated.
+    /// carrying Search's count of the documents it opens (#1756), replacing the redundant two-part
+    /// bar ("See the documents behind this chart" + a separate "View in Search" button).
     private var searchHandoffBar: some View {
         HStack(spacing: 8) {
             Button {
                 openMatchingDocumentsInSearch()
             } label: {
                 HStack(spacing: 4) {
-                    // #1374: "View 9162 documents" through a `%lld`.
-                    Text(String(format: String(localized: "analytics.handoff.viewDocuments %@",
-                                               defaultValue: "View %@"),
-                                CountCopy.documents(matchedDocumentCount)))
+                    Text(handoffLinkTitle)
                         .font(.caption.weight(.medium))
                     Image(systemName: "arrow.up.forward")
                         .font(.caption2)
@@ -1359,16 +1511,13 @@ struct AnalyticsView: View {
             }
             .buttonStyle(.borderless)
             .help(String(
-                localized: "analytics.handoff.help.v2",
-                defaultValue: "Switch to Search pre-filled with this term — and this year range, if a date-based view is active — to see the matching documents. Search opens over document text only, the way the chart counts, with your own notes and summaries left out."
+                localized: "analytics.handoff.help.v3",
+                defaultValue: "Switch to Search with this term — and, if you narrowed the years of a date-based view, those years — to see the matching documents. The count is Search’s: it takes in a document whose dates overlap the years, even one the chart places before them, and leaves out an undated one, which the chart places in its volume’s first year. Search opens over document text only, with your own notes and summaries left out."
             ))
 
-            // Dispersion belongs here, beside the query's own document count, and NOT under a
-            // chart's totals footnote. It is computed from the volume breakdown, which is
-            // date-independent and un-range-filtered, so sitting it beneath a By-Month or By-Day
-            // total would invite the reader to take it as a decomposition of that total — and those
-            // axes drop year-only and undated documents, so the two do not share a denominator. Here
-            // it reads as a property of the term, which is what it is.
+            // Dispersion belongs here, beside the link's count, and NOT under a chart's totals
+            // footnote: it decomposes the link's count, from the same keys (#1756), so beneath a
+            // chart's total it would read as a decomposition of a number it does not share.
             dispersionFootnote
 
             Spacer(minLength: 0)
@@ -2574,34 +2723,39 @@ struct AnalyticsView: View {
 
     // MARK: - Dispersion (R-2 PR-C)
 
-    /// How widely the current term's matches are spread across volumes, and whether they concentrate.
+    /// How widely the documents the hand-off link opens are spread across volumes, and whether they
+    /// concentrate.
     ///
     /// ## Why this is worth a line
     /// "182 documents" describes two completely different findings: a term spread across 150 volumes
     /// is a corpus-wide vocabulary, and one concentrated in three is a specific episode. The charts
     /// show *when* matches occur and never *how narrowly*.
     ///
-    /// ## Why it is computed from the VOLUME data and not the plotted axis
+    /// ## Why it is computed from the link's own count
     /// Three constraints, each of which would produce a wrong number if ignored:
     ///
-    /// 1. **N comes from `volumeData`, the same array whose sum is being decomposed** — never
-    ///    `matchedDocumentCount`, which is per-axis and year-range filtered while `volumeData` is
-    ///    not. Mixing them makes the parts disagree with the whole exactly when a custom range is
-    ///    set, which is precisely when a researcher is looking closely.
-    /// 2. **It is date-independent.** `termFrequencyByVolume` never touches dates, so this is immune
-    ///    to the volume-start-year fallback that makes undated documents land in a manufactured year
-    ///    bucket. A "spans N years" figure from `yearData` would inherit that fabrication, which is
-    ///    why there isn't one.
+    /// 1. **The per-volume counts come from the same keys as the link's count**
+    ///    (``currentHandoffMatch``), so the parts always sum to the whole printed beside them. Until
+    ///    #1756 they came from the volume breakdown, which ignores the years, while the link's count
+    ///    followed them: narrowed to Eisenhower's years, *Berlin*'s line went on reading "Spread
+    ///    across 502 of 553 indexed volumes", the whole corpus's spread, beside a count of 2,803. The
+    ///    2,833 documents the link now opens lie in 99 volumes, the top three holding 34% of them.
+    /// 2. **No year is manufactured.** With the years narrowed the keys are Search's, which takes a
+    ///    document by its own dates and leaves an undated one out, never placing it at its volume's
+    ///    first year as the year charts do; with them at their default, the keys are every match.
+    ///    A "spans N years" figure from `yearData` would inherit that fabrication, which is why there
+    ///    isn't one.
     /// 3. **The denominator is volumes indexed on this device**, not the manifest's 553. A share of
     ///    the published series would be a claim about data the device does not have.
     ///
-    /// Returns `nil` while comparing (the sentence would need a subject) or with no volume data.
+    /// Returns `nil` while comparing (the sentence would need a subject) and until Search has counted
+    /// the link's documents.
     ///
     /// The arithmetic lives in ``CorpusDispersion`` rather than here so it can be tested at its
     /// boundaries — a share gate buried in a view body is a rule nothing can check.
     private var volumeDispersion: CorpusDispersion? {
-        guard !isComparing, !committedTerm.isEmpty else { return nil }
-        return CorpusDispersion.make(volumeCounts: volumeData.map(\.count),
+        guard !isComparing, !committedTerm.isEmpty, let match = currentHandoffMatch else { return nil }
+        return CorpusDispersion.make(volumeCounts: match.volumeCounts,
                                      indexedVolumeCount: appState.indexedVolumeIds.count)
     }
 
@@ -2612,22 +2766,32 @@ struct AnalyticsView: View {
     /// across 552 volumes, a common term's top three hold ~1.7%, and announcing that as a
     /// concentration would
     /// train the reader to ignore the line. Above the gate it is the finding.
+    ///
+    /// One text, so beside the link at a phone's width the line wraps as a sentence. It was three
+    /// texts side by side, which wrapped the first into a narrow column with the concentration
+    /// pinned beside it; the clause was rare while the line read the whole corpus, and common once
+    /// it followed a narrowed range (#1756).
     @ViewBuilder
     private var dispersionFootnote: some View {
         if let d = volumeDispersion {
-            HStack(spacing: 4) {
-                Text(String(localized: "analytics.dispersion.volumes",
-                            defaultValue: "Spread across \(d.volumes) of \(d.indexedVolumeCount) indexed volumes"))
-                if d.showsConcentration {
-                    Text(verbatim: "·")
-                    Text(String(localized: "analytics.dispersion.concentration",
-                                defaultValue: "top 3 hold \(d.topThreePercent)%"))
-                }
-            }
-            .font(.caption)
-            .foregroundStyle(.tertiary)
-            .accessibilityElement(children: .combine)
+            Text(Self.dispersionLine(d))
+                .font(.caption)
+                .foregroundStyle(.tertiary)
         }
+    }
+
+    /// The dispersion footnote's words: the volume count, and the concentration after a `·` when it
+    /// is shown.
+    ///
+    /// - Parameter d: The dispersion to describe.
+    /// - Returns: The line.
+    private static func dispersionLine(_ d: CorpusDispersion) -> String {
+        let volumes = String(localized: "analytics.dispersion.volumes",
+                             defaultValue: "Spread across \(d.volumes) of \(d.indexedVolumeCount) indexed volumes")
+        guard d.showsConcentration else { return volumes }
+        let concentration = String(localized: "analytics.dispersion.concentration",
+                                   defaultValue: "top 3 hold \(d.topThreePercent)%")
+        return volumes + " · " + concentration
     }
 
     // MARK: - Footnote Helpers
