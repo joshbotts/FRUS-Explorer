@@ -50,6 +50,8 @@ import SwiftUI
 ///          doubling the transition at the fifty a full-bleed surface has asked for since #551
 ///   1.4 — #1759: the view watches the vectors arrive and fades its cloud in, which the splash used
 ///          to do for itself and onboarding not at all (`vectorsArrived`)
+///   1.5 — #1759: the drift field is cached beside its layout, now that it settles its words clear
+///          of one another (`WordCloudDriftField.settle`)
 struct WordCloudBackdropView: View {
 
     /// Which scope's vocabulary to show.
@@ -150,6 +152,8 @@ struct WordCloudBackdropView: View {
     /// The first cadence phase this surface saw, so a seeded surface can advance relative to it.
     @State private var phaseOrigin: Int?
     @State private var layouts: [LayoutKey: [PlacedWord]] = [:]
+    /// The settled drift fields, under the same keys as ``layouts`` — see ``driftField(for:placed:box:)``.
+    @State private var fields: [LayoutKey: WordCloudDriftField] = [:]
 
     private var lenses: [WordCloudLens] { lensSet }
 
@@ -404,10 +408,7 @@ struct WordCloudBackdropView: View {
             // screen to find. A lens with no vectors at all is still skipped, because then
             // there is nothing to name either.
             let placed = layout(for: candidate, terms: source.terms, box: box)
-            let field = WordCloudDriftField(placed: placed, rankCeiling: Self.rankCeiling,
-                                            exclusionZones: exclusionZones,
-                                            canvas: box,
-                                            fill: Self.fillFactor(for: box, composition: composition))
+            let field = driftField(for: candidate, placed: placed, box: box)
             var colors: [String: Color] = [:]
             var sizes: [String: CGFloat] = [:]
             for word in placed {
@@ -439,21 +440,59 @@ struct WordCloudBackdropView: View {
                             lens: candidate, scopeKey: scopeKey, composition: composition,
                             exclusion: Self.exclusionSignature(exclusionZones))
         if let cached = layouts[key] { return cached }
-        let placed = WordCloudLayout.place(
+        let placed = Self.packedWords(terms: terms, box: box, composition: composition,
+                                      exclusionZones: exclusionZones)
+        Task { @MainActor in
+            if layouts.count >= Self.layoutCacheLimit { layouts.removeAll() }
+            layouts[key] = placed
+        }
+        return placed
+    }
+
+    /// The packer's result for one lens's terms at one box, with every argument this view passes —
+    /// the one place they are spelled, so a test that packs a surface packs it as the surface does.
+    static func packedWords(terms: [TermCount], box: CGSize, composition: Composition,
+                            exclusionZones: [CGRect]) -> [PlacedWord] {
+        WordCloudLayout.place(
             terms: terms,
             in: box,
-            maxWords: Self.wordCount(for: box, composition: composition),
+            maxWords: wordCount(for: box, composition: composition),
             minFontSize: 12,
             maxFontSize: min(42, max(28, box.width / 12)),
             exclusionZones: exclusionZones,
             yCompression: FRUSTheme.cloudYCompression,
             sizeExponent: FRUSTheme.cloudSizeExponent
         )
+    }
+
+    /// The drift field for a packed layout at one box, with every argument this view passes.
+    static func settledField(placed: [PlacedWord], box: CGSize, composition: Composition,
+                             exclusionZones: [CGRect]) -> WordCloudDriftField {
+        WordCloudDriftField(placed: placed, rankCeiling: rankCeiling,
+                            exclusionZones: exclusionZones, canvas: box,
+                            fill: fillFactor(for: box, composition: composition))
+    }
+
+    /// The drift field for one lens's layout, through a cache under the layout's own key.
+    ///
+    /// Building a field settles every word clear of the edge, the zones and its neighbours
+    /// (`WordCloudDriftField.settle`, #1759), which takes up to a millisecond on the densest
+    /// canvas — the Mac's onboarding window — against a tenth of that for the packer. Built in every
+    /// `body` pass, as the field was before it settled anything, that would be spent at every lens
+    /// change; cached, it is spent once for each layout the packer is run for.
+    private func driftField(for candidate: WordCloudLens, placed: [PlacedWord],
+                            box: CGSize) -> WordCloudDriftField {
+        let key = LayoutKey(width: Int(box.width), height: Int(box.height),
+                            lens: candidate, scopeKey: scopeKey, composition: composition,
+                            exclusion: Self.exclusionSignature(exclusionZones))
+        if let cached = fields[key] { return cached }
+        let field = Self.settledField(placed: placed, box: box, composition: composition,
+                                      exclusionZones: exclusionZones)
         Task { @MainActor in
-            if layouts.count >= Self.layoutCacheLimit { layouts.removeAll() }
-            layouts[key] = placed
+            if fields.count >= Self.layoutCacheLimit { fields.removeAll() }
+            fields[key] = field
         }
-        return placed
+        return field
     }
 
     /// The rank ceiling the depth model normalises by, so depth means the same thing on
@@ -512,13 +551,13 @@ struct WordCloudBackdropView: View {
     ///
     /// 8 pt is fine enough that the cloud never looks mis-fitted inside its box and coarse
     /// enough that a height animation crosses only a few buckets.
-    private static func quantised(_ size: CGSize) -> CGSize {
+    static func quantised(_ size: CGSize) -> CGSize {
         let grid: CGFloat = 8
         return CGSize(width: max(grid, (size.width / grid).rounded(.down) * grid),
                       height: max(grid, (size.height / grid).rounded(.down) * grid))
     }
 
-    /// Layouts kept before the cache is dropped wholesale.
+    /// Layouts, and the drift fields built from them, kept before either cache is dropped wholesale.
     private static let layoutCacheLimit = 32
 
     private var scopeKey: String {

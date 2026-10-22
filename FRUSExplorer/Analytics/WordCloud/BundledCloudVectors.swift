@@ -168,7 +168,10 @@ enum BundledCloudVectors {
     ///
     /// Counts are the generator's **raw** counts, so `WordCloudLayout` sizes words on the
     /// same scale it uses for a live cloud and no separate normalisation step is needed.
-    private static func list(in file: CloudVectorsFile?, scope: String, lens: WordCloudLens) -> [TermCount]? {
+    ///
+    /// Internal rather than private so a test can read a file it decoded itself through the same
+    /// de-indexing, without touching the shared state `injectForTesting` resets.
+    static func list(in file: CloudVectorsFile?, scope: String, lens: WordCloudLens) -> [TermCount]? {
         guard let file, let stored = file.scopes[scope]?.lists[lens.rawValue], !stored.entries.isEmpty
         else { return nil }
         return stored.entries.compactMap { entry in

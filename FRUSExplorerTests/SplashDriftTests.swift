@@ -40,6 +40,7 @@ import SwiftUI
 ///         the unit-test target, where it read a list of three; the iPad fixture is the 1,210 pt
 ///         canvas of the iPad Pro 11-inch (M5), as `LaunchArtworkTests`' is
 ///   1.3 — #1759: onboarding's backdrop is seeded as the splash's is
+///   1.4 — #1759: the identity-block sweep checks the unsettled probes and the settled field apart
 @Suite("Launch splash — drift and exclusion")
 struct SplashDriftTests {
 
@@ -198,6 +199,14 @@ struct SplashDriftTests {
     /// `expansion`, `fillFactor` or the tuning that quietly stops carrying words into the zone
     /// fails here instead of going green.
     ///
+    /// **Since #1759 the field settles its words before they drift**, giving each a home whose whole
+    /// drift misses every zone (`WordCloudDriftField.settle`), so the probes this test aims at the
+    /// block are moved off their aim and the push never has to act. The two halves are therefore
+    /// checked apart: the probes as the field would draw them UNSETTLED — particles built at their
+    /// expanded homes — still drift into the block (`entered > 0`) and the push still keeps them out;
+    /// and the settled field never reaches the block at all, with no zones handed to `state(of:)`,
+    /// so with no push to rescue it.
+    ///
     /// **Per idiom, on that idiom's own canvas (#1412).** It used to take the zones at the test
     /// host's metrics over the phone canvas, so on an iPad host the 176 pt tile's zones sat on a
     /// 393 pt canvas: the probes no longer fitted inside the anchors' reach, and a word settled on
@@ -252,12 +261,21 @@ struct SplashDriftTests {
         let field = WordCloudDriftField(placed: placed,
                                         rankCeiling: WordCloudBackdropView.rankCeiling,
                                         exclusionZones: zones, canvas: size, fill: fill)
+        #expect(field.bleed > 0, "fill > 1 must produce a bleed for the push path to matter")
+        // The probes as the field would draw them unsettled: at their expanded homes, at depth 0.
+        let unsettled = probes.map { probe in
+            WordCloudDriftField.Particle(
+                term: probe.term, home: WordCloudDriftField.expand(probe.center, canvas: size, by: factor),
+                baseFontSize: probe.fontSize, rotationDegrees: 0, depth: 0,
+                halfSize: WordCloudDriftField.estimatedHalfSize(term: probe.term, fontSize: probe.fontSize,
+                                                                rotated: false),
+                phase: WordCloudDriftField.phase(for: probe.term))
+        }
         // The inversion landed: every probe's home is outside its zone by less than the drift.
-        for particle in field.particles where particle.depth == 0 {
+        for particle in unsettled {
             #expect(!zones.contains { $0.contains(particle.home) },
                     "\(particle.term)'s home is inside a zone")
         }
-        #expect(field.bleed > 0, "fill > 1 must produce a bleed for the push path to matter")
 
         func box(_ state: WordCloudDriftField.State,
                  _ particle: WordCloudDriftField.Particle) -> CGRect {
@@ -268,7 +286,7 @@ struct SplashDriftTests {
         }
 
         var entered = 0
-        for particle in field.particles {
+        for particle in unsettled {
             for step in 0..<1_200 {
                 let t = Double(step) / 20
                 // No zones = the position before any push, since `push` returns early on `[]`.
@@ -287,6 +305,19 @@ struct SplashDriftTests {
         }
         #expect(entered > 0,
                 "the sweep never carried a word into the zone, so it proves nothing about the push")
+
+        // The settled field: every word, the probes included, with no zones handed over — so no
+        // push — never reaches the block.
+        #expect(field.particles.count == placed.count, "the settle must keep every word here")
+        for particle in field.particles {
+            for step in 0..<1_200 {
+                let free = WordCloudDriftField.state(of: particle, at: Double(step) / 20, in: size,
+                                                     avoiding: [], bleed: field.bleed)
+                let hit = zones.contains { box(free, particle).intersects($0) }
+                #expect(!hit, "settled \(particle.term) reaches the identity block at step \(step)")
+                if hit { return }
+            }
+        }
     }
 
     /// The splash is a full-bleed surface by the same rule every other host uses — it is far
