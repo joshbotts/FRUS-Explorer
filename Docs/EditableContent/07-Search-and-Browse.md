@@ -114,13 +114,13 @@ Each of your terms matches something on its own — it is the combination that a
 
 *Source: `FRUSExplorer/Search/SearchView.swift, SearchSheet.swift`*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1272–1273 | key: search.mode.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1293–1294 | key: search.mode.help.v2 -->
 
 Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, document type, archival provenance and subject.
 
 <!-- END SOURCE: search.mode.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1222–1223 | key: search.facets.on.help.v3 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1224–1225 | key: search.facets.on.help.v3 -->
 
 Break the whole match down by year, volume, person, document type, archival provenance and subject — before any narrowing you apply
 
@@ -136,7 +136,7 @@ Show every occurrence of your term on its own line, aligned — for the document
 
 <!-- END SOURCE: search.kwic.show.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1873–1875 | key: search.cap.tooltip -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1875–1877 | key: search.cap.tooltip -->
 
 *Interpolated with the loaded and total counts.*
 
@@ -144,7 +144,7 @@ Showing %lld of %lld matches. Narrow your search with a date range, volume filte
 
 <!-- END SOURCE: search.cap.tooltip -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1878–1880 | key: search.cap.tooltip.unknownTotal -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1880–1882 | key: search.cap.tooltip.unknownTotal -->
 
 *Interpolated with the loaded count.*
 
@@ -667,13 +667,13 @@ Run a search, then choose “Save as Working Corpus” to fix those results as a
 
 <!-- END SOURCE: corpora.empty.detail -->
 
-<!-- SOURCE: FRUSExplorer/Search/SaveWorkingCorpusSheet.swift | lines: 131–132 | key: corpus.save.footer -->
+<!-- SOURCE: FRUSExplorer/Search/SaveWorkingCorpusSheet.swift | lines: 143–144 | key: corpus.save.footer -->
 
 The set is fixed at capture. Re-running the query later may find different documents; this corpus will not change, which is what makes counts taken inside it reproducible.
 
 <!-- END SOURCE: corpus.save.footer -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 728–729 | key: corpus.save.truncated.total %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 739–740 | key: corpus.save.truncated.total %@ %@ -->
 
 *Interpolated with the captured and total counts. Since #1577 lane 6 it is also the warning over a ranking of a whole match that could rank none of it, whose rows are then the held list's own, the highest-scoring of the documents it ranked inside; the total is then theirs.*
 
@@ -681,7 +681,7 @@ These %1$@ documents are the highest-scoring of %2$@ matching documents. Counts 
 
 <!-- END SOURCE: corpus.save.truncated.total %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 715–716 | key: corpus.save.truncated.unknown %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 726–727 | key: corpus.save.truncated.unknown %@ -->
 
 *Interpolated with the captured count.*
 
@@ -713,7 +713,7 @@ These %1$@ documents are the %2$@ closest to your question of %3$@ matching docu
 
 <!-- END SOURCE: corpus.save.rankedWholeMatch.unranked %@ %@ %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 757–758 | key: corpus.save.checklistHiding %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 768–769 | key: corpus.save.checklistHiding %@ -->
 
 *Interpolated with the hidden count.*
 
@@ -729,7 +729,7 @@ Checklist mode is hiding %@ reviewed document. It will not be in this corpus.
 
 <!-- END SOURCE: corpus.save.checklistHiding.one -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 678–679 | key: corpus.save.meaning -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 689–690 | key: corpus.save.meaning -->
 
 *The Save Working Corpus sheet's warning for a list saved from a Meaning search (#1598).*
 
@@ -745,7 +745,7 @@ This document is the closest match a Meaning search found, not every document on
 
 <!-- END SOURCE: corpus.save.meaning.one -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 844–845 | key: corpus.save.source.meaning %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 919–920 | key: corpus.save.source.meaning %@ -->
 
 *Stored on a working corpus saved from a Meaning search, and shown wherever the corpus is listed. Interpolated with the number of rows the search returned.*
 
@@ -753,7 +753,7 @@ Meaning search — the %@ closest matches
 
 <!-- END SOURCE: corpus.save.source.meaning %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 774–775 | key: corpus.save.source.meaning.one -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 785–786 | key: corpus.save.source.meaning.one -->
 
 *The same, when the search returned one row.*
 
@@ -832,6 +832,54 @@ Search results, ranked by a question
 ; %@ reviewed document excluded
 
 <!-- END SOURCE: corpus.save.source.checklist.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.captureProvenanceDescription | key: corpus.save.source.narrowed %@ %@ -->
+
+*What a working corpus records when its search was narrowed beyond its words (#1758): %1$@ is the source above ("Search results", or a Meaning search's closest matches), %2$@ what narrowed it, its phrases joined by semicolons, as "years 1945". The truncation and checklist clauses follow it. The corpus records its words apart, in its own query field.*
+
+%1$@ (%2$@)
+
+<!-- END SOURCE: corpus.save.source.narrowed %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SaveWorkingCorpusSheet.swift | SaveWorkingCorpusSheet.body | key: corpus.save.narrowedBy -->
+
+*The Save Working Corpus sheet's row under From when the search was narrowed beyond its words (#1758): its value is the phrases above, as "years 1945". The phrases are the method appendix's own words for a search's scope (`SearchScopeSignature.describe`), with the two below, each with its singular.*
+
+Narrowed by
+
+<!-- END SOURCE: corpus.save.narrowedBy -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.narrowing(ofRowsSignedBy:) | key: corpus.save.narrowing.volumes %@ -->
+
+*A narrowing phrase for a search limited to a set of volumes (#1758), where the appendix says "12 volumes", which after "Search results" would read as a count of the corpus. Interpolated with the number of volumes.*
+
+within %@ volumes
+
+<!-- END SOURCE: corpus.save.narrowing.volumes %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.narrowing(ofRowsSignedBy:) | key: corpus.save.narrowing.volumes.one -->
+
+*The same for one volume.*
+
+within %@ volume
+
+<!-- END SOURCE: corpus.save.narrowing.volumes.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.narrowing(ofRowsSignedBy:) | key: corpus.save.narrowing.documents %@ -->
+
+*A narrowing phrase for a search run inside a set of documents (#1758): an applied working corpus, a project's History, or both. Interpolated with the number of documents.*
+
+within a set of %@ documents
+
+<!-- END SOURCE: corpus.save.narrowing.documents %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.narrowing(ofRowsSignedBy:) | key: corpus.save.narrowing.documents.one -->
+
+*The same for a set of one document.*
+
+within a set of %@ document
+
+<!-- END SOURCE: corpus.save.narrowing.documents.one -->
 
 <!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | lines: 88–89 | key: search.checklist.loggingOff -->
 
@@ -1652,7 +1700,7 @@ Document text, summaries and research notes are all turned off, so there is noth
 
 #### A search with every Search in chip turned off (macOS)
 
-<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchError.errorDescription | lines: 2330–2331 | key: search.error.emptyScope | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchError.errorDescription | lines: 2334–2335 | key: search.error.emptyScope | shared: macOS only -->
 
 *Shown in the Search window, under the title Search Error, when Documents, Notes and Summaries are all turned off.*
 
@@ -1662,7 +1710,7 @@ Enable at least one of Documents, Notes, or Summaries to search.
 
 #### An empty search (iOS)
 
-<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 1411–1412 | key: search.error.empty | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 1415–1416 | key: search.error.empty | shared: iOS only -->
 
 *Shown under the title Search Error when a search runs with nothing typed and no filter that searches on its own.*
 
@@ -1672,7 +1720,7 @@ Enter a keyword, phrase, or prefix to search.
 
 #### The title above every search error
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1839–1839 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1865–1865 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *The heading over each message above, on both platforms. The key is declared twice with the same text — in `SearchView.swift` on iOS and in `SearchSheet.swift`'s `searchErrorView` on the Mac, which adopted it in #1299 — so keep the two the same.*
 
@@ -1685,28 +1733,28 @@ Search Error
 *The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
 
 ##### Sheet title (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2936–2936 | key: search.tips.title -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2962–2962 | key: search.tips.title -->
 
 Search Tips
 
 <!-- END SOURCE: search.tips.title -->
 
 ##### Sheet section: the syntax rows (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2925–2925 | key: search.tips.section.syntax -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2951–2951 | key: search.tips.section.syntax -->
 
 Typing a search
 
 <!-- END SOURCE: search.tips.section.syntax -->
 
 ##### Sheet section: the notes (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2932–2932 | key: search.tips.section.filters -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2958–2958 | key: search.tips.section.filters -->
 
 Filters and scope
 
 <!-- END SOURCE: search.tips.section.filters -->
 
 ##### More menu item (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1407–1407 | key: search.tips.open -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1434–1434 | key: search.tips.open -->
 
 *After Look up an abbreviation, and never between the two save items. The menu is labelled More search actions.*
 
@@ -1715,7 +1763,7 @@ Search Tips
 <!-- END SOURCE: search.tips.open -->
 
 ##### More menu hint (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1433–1434 | key: search.moreActions.help.v4 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1460–1461 | key: search.moreActions.help.v4 -->
 
 *The VoiceOver hint and Large Content Viewer detail for the More menu. It lists the menu's contents, so it is re-keyed whenever an item joins: `.v2` named the abbreviation lookup and the tips, `.v3` added Select Results (#1576), and `.v4` adds Search Within These Results (#1577 lane 4).*
 
@@ -1934,7 +1982,7 @@ Leave selection and clear the checkboxes
 <!-- END SOURCE: search.selection.toggle.off.help -->
 
 ##### Link to the sheet (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2909–2909 | key: search.tips.link -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2935–2935 | key: search.tips.link -->
 
 *One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
 
@@ -1952,14 +2000,14 @@ Search Tips…
 <!-- END SOURCE: menu.find.searchTips -->
 
 ##### Tips button (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 832–832 | key: search.tips.button -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 834–834 | key: search.tips.button -->
 
 Tips
 
 <!-- END SOURCE: search.tips.button -->
 
 ##### Tips button help (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 839–840 | key: search.tips.help.v2 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 841–842 | key: search.tips.help.v2 -->
 
 *The tooltip. Replaces `search.tips.help`, which promised a stemming tip the panel never had and named neither groups, NEAR nor exact words.*
 
@@ -1968,7 +2016,7 @@ Show or hide the search tips: phrases, OR and NOT, exclusions, groups, prefixes,
 <!-- END SOURCE: search.tips.help.v2 -->
 
 ##### Panel heading (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2626–2626 | key: search.tips.header -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2633–2633 | key: search.tips.header -->
 
 *Shown in capitals above the rows.*
 
@@ -2441,7 +2489,7 @@ Filter by \(tagName)
 
 <!-- SOURCE: FRUSExplorer/Search/SearchResultAccessibility.swift | SearchResultAccessibility.moreContent(for:) | key: search.result.a11y.matchedText -->
 
-*What VoiceOver's More Content calls a keyword search result's snippet: the words from just before the word the search matched, about 300 characters, cut at a space. It is not read when a reader lands on the row: the stored snippet runs to about 2,000 characters, where the row draws two lines of it. Since A10b the snippet starts about 30 characters before the word, so More Content takes those and the rest after it.*
+*What VoiceOver's More Content calls a keyword search result's snippet: the words from just before the word the search matched, about 300 characters, cut at a space. It is not read when a reader lands on the row: the stored snippet runs to about 2,000 characters, where the row draws two lines of it. Since A10b the snippet starts about 30 characters before the word, so More Content takes those and the rest after it. Since #1760 the word is the rarest of the search's words that the text holds, across the reader's index, with words such as “the”, “of” and “why” set aside while the search has others, so a question typed as keywords no longer starts at “the”.*
 
 Matched text
 
@@ -2615,7 +2663,7 @@ Retry
 *The Search screen's explanatory text outside the Search Tips (§7.13) and the result-set copy §7 already carries: the filter and project-scope footers, the Meaning-mode prompts and notices, the facet panel's coverage lines, the collocation refusals, and the notice when a saved corpus had to be truncated.*
 
 #### The person filter was cleared — \(…) is no longer in the…
-<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchViewModel.refreshPersonRollupBinding | lines: 1349–1350 | key: search.person.filterDropped | same text also in: FRUSExplorer/Search/SearchViewModel.swift -->
+<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchViewModel.refreshPersonRollupBinding | lines: 1353–1354 | key: search.person.filterDropped | same text also in: FRUSExplorer/Search/SearchViewModel.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 The person filter was cleared — \(before.label ?? "that person") is no longer in the indexed corpus.
@@ -2623,42 +2671,42 @@ The person filter was cleared — \(before.label ?? "that person") is no longer 
 <!-- END SOURCE: search.person.filterDropped -->
 
 #### Tooltip — How to read these results. The concordance covers %@; the…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1117–1118 | key: search.reading.help %@ | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1119–1120 | key: search.reading.help %@ | shared: macOS only -->
 
 How to read these results. The concordance covers %@; the others cover the whole retained set.
 
 <!-- END SOURCE: search.reading.help %@ -->
 
 #### Tooltip — Open advanced filters — date range, volume scope, document…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1615–1616 | key: search.filter.advanced.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1617–1618 | key: search.filter.advanced.help | shared: macOS only -->
 
 Open advanced filters — date range, volume scope, document type, person, search scope. Changes apply immediately.
 
 <!-- END SOURCE: search.filter.advanced.help -->
 
 #### This breakdown stopped at \(…) of \(…) values.
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.sectionBody | lines: 839–840 | key: facets.bound -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.sectionBody | lines: 850–851 | key: facets.bound -->
 
 This breakdown stopped at \(bound.shown.formatted()) of \(bound.total.formatted()) values.
 
 <!-- END SOURCE: facets.bound -->
 
 #### Subjects detected for \(…) of \(…) matches.
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | lines: 1096–1097 | key: facets.subjects.coverage -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | lines: 1107–1108 | key: facets.subjects.coverage -->
 
 Subjects detected for \(facets.subjectCoverage.formatted()) of \(facets.matchCount.formatted()) matches.
 
 <!-- END SOURCE: facets.subjects.coverage -->
 
 #### Detected topics from the Office of the Historian, matched…
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | lines: 1104–1105 | key: facets.subjects.provenance -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | lines: 1115–1116 | key: facets.subjects.provenance -->
 
 Detected topics from the Office of the Historian, matched by name — not the volumes’ own markup.
 
 <!-- END SOURCE: facets.subjects.provenance -->
 
 #### Ranks the collections behind all %lld volumes these matches…
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.archivalProfileButton | lines: 1194–1195 | key: facets.provenance.openProfile.detail %lld -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.archivalProfileButton | lines: 1205–1206 | key: facets.provenance.openProfile.detail %lld -->
 
 Ranks the collections behind all %lld volumes these matches sit in — whole volumes, not the matches themselves.
 

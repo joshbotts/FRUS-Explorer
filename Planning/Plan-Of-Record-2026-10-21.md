@@ -85,6 +85,7 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
 
 - **L1 goes first**: it is cheap, and its fixes show on captured screens. L2 to L6 follow in any order the owner prefers. L7 is tools and copy; it can come any time before R1, since the composer's stamp shapes the store frames.
   - **L1 built on 2026-10-21** from `v2` at `1fdf4308`, on `claude/l1-copy-fixes-27e098`, and **opened as #1769** on the owner's word of 2026-10-22; not yet merged. A commit for each item or group of #1761, one for #1762, then a docs commit; not kit code, no index version, no CloudKit change. **#1761**: one unresolvable reference reads in the singular; an Administrations row says *1 vol*; a working corpus's coverage line groups its counts; frus1961-63v23's label loses its leading colon; the iPad rail toggle is tinted while the rail is open (a toolbar reads the button's `.tint`, never a `.foregroundStyle` inside its label; measured by pixel on iPad simulators under iOS 27.0 and 26.5), and iOS §4.2 says so again; the Mac date chip's ✕ measures 23×20 points with its own help, and a click off the glyph clears it (the check copy); the three quote-doubling siblings quote by `PinnedResultBase.quotable(_:)`, the appendix's plain-text line left as decision 86 says; and at the largest text size the Collections row and the two document rows wrap where they were cut. **#1762**: 88,059 (Mac §6.1), 37,899 and the shipped label (iOS §6.1h) and 3,977 (iOS §14.6, Mac §14.5), each read from its bundled file, and `ChronologyQueryTests`' two comments. #1762's lasting fix, manuals that stop hard-coding figures that move or a check that reads them from the bundled files, is put to the owner; nothing is built for it. The captures L1 changes, for R1: `ipad/research-rail`, `ipad/stage-manager`, `ipad/browse-administrations`, `ipad/browse-clusters-detail`, `macos/crossref-analytics-ranking` and `macos/crossref-analytics` (this session's log entry says what each shows).
+  - **L2 built on 2026-10-22** from `v2` at `b385340c`, on `claude/l2-search-fixes-df74f5`; not yet opened. A commit for each item, then a docs commit; kit code (FRUSCoreKit, FTS5Store), no index version, no CloudKit change. **#1758**: on iPhone and iPad, emptying the Search field closes Facets and takes away the narrowings it made, a *Narrowed by* chip with nothing left to search runs nothing, and the binoculars menu's Facets is a toggle that closes the panel it opened (walked on an iPad Pro 13-inch (M5) simulator under iOS 27.0 holding S1's full index); the Mac's results list opens at its top for a new search and for another page (built in the Mac check copy at `3dfe2741`; walking it waits for the owner, as the screen stayed locked); a working corpus records what narrowed its search, in the `sourceDescription` it already stores, and its save sheet shows **Narrowed by**. **#1760**: a keyword row's snippet starts at the rarest of the query's words that its prose holds, rarest across the index, with function words set aside while the query has another, so a question typed in Keywords mode marks *Marshall*, not *the* (over a full index, the first 100 rows of twelve questions marked a function word in 46 to 100% of rows and now in none; no single word's snippet moves); the snippet pass costs more where its scan runs on to that word, which this session's log entry measures in a release build; and the MATCH strip quotes each term as the tokenizer reads it, `"happen"` for `"happen?"` (parser 6.8, which also refuses `=cold. -=Cold OR -=Cold` as matching nothing). The captures L2 changes, for R1: every frame of *Berlin blockade*'s keyword rows, which now mark *blockade*: `ios/search-results`, `ios/search-facets`, `ios/search-tips`, `ipad/search-results`, `macos/search` and `macos/search-tips`, and the kit's frame 01 (this session's log entry says what each shows).
 - **Each lane's issue body is its brief.** Each issue names its files, its measurements and what a fix could do.
   - #1757 changes what the banner counts during the first downloads, so its lane measures a 27-volume queue before and after, as S3 did.
   - #1759 is measured frame by frame, as S2 and S4 measured it: their scripts are kept with the sittings' notes.
@@ -178,7 +179,10 @@ The repository holds drafts for each.
   - `ProjectLeadsService` ranks with no year;
   - `datesByDocumentKey(_:)` scans every `document_dates` row (17 ms against 0.03 ms by the key);
   - the archival chip is cut on the iPhone 17;
-  - Sync Diagnostics' Clear Log draws its trash icon in the accent colour.
+  - Sync Diagnostics' Clear Log draws its trash icon in the accent colour;
+  - a phrase can match across a document's heading and its form marker, since `body_text` begins with both: 13 of *"long telegram"*'s 136 rows match only as *…to Minister Long* followed by *[Telegram]* (found in L2);
+  - since #1760 a question's keyword snippets cost about three times A10b's in a release build, where the scan runs on to the rarest word; a faster scan (an ASCII fast path in the gates, or a UTF-8 scan) would win it back (found in L2);
+  - a number typed with a mark (`1945.`) searches nothing, and nothing says so; a hyphenated word (*long-range*) never anchors a snippet on its parts; an `=` word never anchors one (found in L2).
 - **The 2026-09-27 audit, unfiled:**
   - Facets is disabled in Meaning mode on iPhone and iPad, where the Mac offers it;
   - the reach scan and the leads count second-edition reprints;
@@ -250,6 +254,7 @@ The review's §1 has each disposition with its reason. This change applies them.
 - **Marked complete in place**, because code, tests, tools or the Agentic Analysis Guide cite them:
   - `Cross-Volume-Page-Citations-Assessment-2026-10-20.md`;
   - `Issue-1648-Stopping-A-Replaced-Search-2026-10-15.md`;
+  - `Keyword-Snippet-Assessment-2026-10-20.md`, once #1760 was fixed (L2);
   - `Vector-Embeddings-Semantic-Design.md`;
   - `Lexical-Axis-Addressable-Market-2026-08-27.md`;
   - `Agentic-Guide-Revisions-2026-09-04.md`, and the C-0b, C-0c and C-0d memos;
@@ -264,7 +269,6 @@ The review's §1 has each disposition with its reason. This change applies them.
   - the Visual Marketing Plan, the launch kit, the listing draft and `marketing-drafts/`, until submission;
   - the two manual-review documents, until the review;
   - the A7, C-3 and person-authority designs, until their work runs;
-  - `Keyword-Snippet-Assessment-2026-10-20.md`, until #1760 lands;
   - #234's documents (decision 92);
   - the generator output folders;
   - this plan's review, `Planning-Review-2026-10-21.md`.
