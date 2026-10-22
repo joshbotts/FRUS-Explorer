@@ -160,6 +160,8 @@ import SwiftUI
 ///          (`SearchResult.drawnDate`), as the iPhone's and iPad's rows do
 ///   1.30 — #1761: a filter chip's ✕ takes the chip's trailing end at its full height, where only its
 ///          8-point glyph took a click, and keeps its own help; the editor's help moves onto the editor
+///   1.31 — #1758: the results list opens at its top for a new search's rows and for another page, re-identified
+///          on `executedSearchVersion` and `currentPage`
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -2476,6 +2478,11 @@ struct MacSearchWindowView: View {
             SemanticBeyondLibrarySection(hits: searchVM.beyondLibraryHits)
         }
         .listStyle(.plain)
+        // A new list opens at its top (#1758): re-identified when a search's rows arrive and when the
+        // page changes, as iPhone and iPad re-identify theirs on a page. The window keeps the last
+        // search's rows on screen while the next runs, so the list was never rebuilt, and *Berlin
+        // blockade* opened on its sixth row because the list had been scrolled two searches before.
+        .id([searchVM.executedSearchVersion, searchVM.currentPage])
         // ↩ opens the selected result (A7) — same navigation as a row click. Fires
         // only while focus is inside the List, so the search field's own Return
         // (`.onSubmit` → submitSearch) is untouched; `.ignored` hands anything
