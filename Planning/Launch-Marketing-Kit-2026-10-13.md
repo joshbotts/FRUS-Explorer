@@ -13,7 +13,13 @@ apparatus back to the part it reads. Its copy is in §1, §3 and §5 and its rul
 brought three stale figures up to the shipped artifacts: the map's regions in rule 1 and §9, and the
 provenance lens's plurality in §6 and §9.
 
-**Revised 2026-10-22: the history.state.gov comparison.** §1's proof-point table and §2.1's objection answer said the site searches one volume at a time, with no facets and no proximity. Its Search Tips (history.state.gov/search/tips) say otherwise: one query covers the whole digitized series, with phrase, Boolean, wildcard and proximity operators and date and volume filters. Both passages now credit that and name what the app adds instead: offline search, counted facets, working corpora, source-note resolution, Zotero.
+**Revised 2026-10-22: no comparison with history.state.gov.** §1's proof-point table and §2.1's objection answer
+compared the app's search with the site's, and got the site wrong (they said it searches one volume at a time,
+with no facets and no proximity; its Search Tips, history.state.gov/search/tips, describe one query over the whole
+digitized series with phrase, Boolean, wildcard and proximity operators and date and volume filters). The owner's
+decision is to make no comparison at all: the site is the Office's own edition of the series, the place every
+document in the app links back to, and the app is described by what it builds on, the Office's editorial work and
+its open TEI editions, and by what it adds. The rule is now §6's last row.
 
 **What this session could and could not do.** This was written on a Linux container with no simulator
 and no Mac, so **no capture was taken**. Every composed frame in `Planning/marketing-drafts/` stands
@@ -58,7 +64,7 @@ corpus needs.*)
 
 | Claim | The screen that proves it | Why it is the claim |
 |---|---|---|
-| **Offline, whole-series search with facets.** 553 volumes; phrases, proximity and exact words; facets by year, volume, person, document type, provenance and subject. | Search with the Facets inspector open (`macos/search.png`) | history.state.gov searches the whole digitized series at once too, with phrase, Boolean, wildcard and proximity operators and date and volume filters (its Search Tips, read 2026-10-22). What it has no equivalent of: offline search, facets that count the whole match by person, document type, provenance and subject, and a result set frozen as a working corpus. That is the daily-use difference. |
+| **Offline, whole-series search with facets.** 553 volumes; phrases, proximity and exact words; facets by year, volume, person, document type, provenance and subject. | Search with the Facets inspector open (`macos/search.png`) | The Office of the Historian publishes each digitized volume as open TEI, with the editors' dates, people, document types and source notes encoded. The app indexes that encoding whole, on the device, and adds facets that count the whole match by person, document type, provenance and subject, and a result set frozen as a working corpus. Say what the app builds on and adds; never measure it against history.state.gov. |
 | **The editors' apparatus, put to work.** Headings, source notes, cross-references and the people the editors tagged, read from the volumes and made live: a source note resolves to record group, entry and lot; a cross-reference becomes an edge in a graph; a name becomes a person you can follow across the series. | The reader with the Research rail; Source Explorer (`ipad/source-explorer.png`) | A bulk release of documents has none of this. Nothing else turns a FRUS footnote into a pull slip. |
 | **The series as a whole.** A map of 314,616 documents by the language they share; term frequency, person networks, chronology, archival sourcing, all exportable with their method. | The semantic map (`ipad/semantic-map.png`); Corpus Analytics (`macos/analytics.png`) | The first time anyone has been able to look at the published record from above. |
 
@@ -180,12 +186,12 @@ apparatus intact, keep the receipts, cite it, and know where the originals are b
 **Headline alternates.** *Every source note, resolved.* · *The archive, before you get there.* ·
 *Search the whole series. Keep the receipts.*
 
-**The objection, and the answer.** *"I can search history.state.gov for free."* It does search the whole
-digitized series at once, with phrases, Booleans, wildcards, proximity (`"Cuba submarine"~10`) and date and
-volume filters, so never say "one volume at a time" or "no proximity" (its Search Tips, read 2026-10-22;
-until then this answer said both). What it has no equivalent of: offline search, facets with counts, a
-working corpus, source-note resolution, and a route to Zotero. The app is free too (owner to confirm the
-price before this line ships); the difference is the workbench, not the search.
+**The objection, and the answer.** *"I can search history.state.gov for free."* Yes: it is the Office's own
+edition of the series and its search, and every document and citation in the app links back to its page there.
+The app is a research workbench built on the same TEI editions, offline, with facets that count the whole match,
+a result set frozen as a working corpus, the editors' source notes resolved to the shelf, and a route to Zotero.
+It is free as well (owner to confirm the price before this line ships). Answer with what the app builds on and
+adds, never with what the site lacks (§6).
 
 **Recording R (75 s), on the full-corpus iPad or Mac, Early Cold War active.**
 
@@ -504,6 +510,7 @@ Free; the series is public domain.*)
 | the provenance lens | the plurality caption as the app prints it: 86 of 499, which `SemanticMapSurfaceTests.provenanceCaptionFiguresAreMeasured` recomputes from the bundled index | no frame uses the provenance lens, deliberately |
 | the Office of the Historian, by name | the not-an-official-product sentence, in the same asset | §1a rule 4; every §5 piece that names the Office |
 | a feature built on the editors' apparatus | the part it reads (source note, cross-reference, the people they tagged) and its layer: FRUS text, joined or computed | §1a's feature lines; frames 02, 04 and 06 |
+| history.state.gov, by name | the Office's own edition of the series, which every document in the app links back to; never a comparison, a list of what the site lacks, or a claim about how its search works (owner's decision, 2026-10-22) | §1's table, §2.1's answer |
 
 ---
 
