@@ -29,6 +29,8 @@ import CSQLite
 ///   1.0 — Q-3b: initial implementation
 ///   1.1 — Session 2026-10-04: imports `CSQLite` where `SQLite3` cannot be imported (Linux), so these
 ///          tests compile there; Apple platforms still import `SQLite3`
+///   1.2 — FRUS Explorer Light S13b: `ExactWordByteReadingTests`, which hold the matcher's reading of a
+///          text as bytes to the whole text folded and split
 @Suite("Exact-word matching")
 struct ExactWordMatcherTests {
 
@@ -178,5 +180,169 @@ struct ExactWordMatcherTests {
         #expect(ExactWordMatcher.contains(word: "INDUSTRIAL", in: "industrial output"))
         #expect(ExactWordMatcher.contains(word: "industrial", in: "INDUSTRIAL OUTPUT"))
         #expect(ExactWordMatcher.tokens(in: "INDIA") == ["india"])
+    }
+}
+
+// MARK: - ExactWordByteReadingTests
+
+/// The matcher reads a text as UTF-8 bytes, and folds only where a scalar it cannot read alone asks it to
+/// (`ExactWordMatcher.contains(_:inUTF8:)`). These hold every answer it gives to the answer by definition,
+/// `containsByFolding(word:in:)`, which folds and splits the whole text: the scalars it classes, each beside a
+/// word, inside one and alone; the ones it sends to the fold; random texts from both; and bytes that are not
+/// UTF-8. A difference names the word and the text.
+@Suite("Exact-word matching read as bytes")
+struct ExactWordByteReadingTests {
+    /// Words whose index words are ASCII, some of which a non-ASCII scalar folds into, and two that are not ASCII.
+    static let words = ["soviet", "Soviet", "e", "ss", "fi", "k", "a", "i", "1948", "a1", "x2y", "naïve", "Argüello",
+                        "gomułka", "café"]
+
+    /// Scalars outside the classed ranges, each sent to the fold: a combining mark, ZWJ and ZWNJ, a variation
+    /// selector, a soft hyphen, Arabic and Malayalam marks that join the next character, a spacing mark, Hangul
+    /// jamo, CJK, emoji with a modifier, regional indicators, ligatures, the replacement character, a private
+    /// scalar, astral letters and digits, and fullwidth letters.
+    static let others: [String] = [
+        "\u{0301}", "\u{0308}", "\u{200D}", "\u{200C}", "\u{FE0F}", "\u{00AD}", "\u{0600}", "\u{0D4E}", "\u{093E}",
+        "\u{1100}", "\u{1161}", "\u{AC00}", "日", "😀", "👍🏽", "🇺🇸", "\u{1F1FA}", "ﬁ", "ﬀ", "ﬃ", "\u{FFFD}",
+        "\u{E000}", "𝐀", "𝟏", "Ａ", "ａ", "\u{2028}", "\u{3000}", "\u{0085}", "\u{0670}", "ـ", "\u{1E9E}", "\u{FB06}",
+    ]
+
+    /// The texts each scalar is read in: beside a word, inside one, alone, twice, beside another scalar, and
+    /// after CR LF.
+    static func contexts(_ c: String) -> [String] {
+        ["soviet\(c)", "\(c)soviet", "sov\(c)iet", "the \(c) soviet", "soviet \(c)x", c, c + c, "a\(c)", "\(c)b",
+         "Soviet’s \(c)é", "\(c)ss", "s\(c)s", "f\(c)i", "\(c)1948", "1948\(c)", "x \(c)e y", "e\(c)", "\(c)k\(c)",
+         "naïve\(c)", "\(c)cafe", "\r\n\(c)\r\nsoviet", "—\(c)—", "\(c)\u{0301}soviet", "soviet\u{0301}\(c)"]
+    }
+
+    func differences(_ texts: [String], words: [String] = Self.words) -> [String] {
+        var found: [String] = []
+        for text in texts {
+            for word in words {
+                let read = ExactWordMatcher.contains(word: word, in: text)
+                let folded = ExactWordMatcher.containsByFolding(word: word, in: text)
+                if read != folded { found.append("\(word.debugDescription) in \(text.debugDescription): \(read), not \(folded)") }
+            }
+        }
+        return found
+    }
+
+    @Test("Every classed scalar is read as the fold reads it, in every context")
+    func everyClassedScalar() throws {
+        var texts: [String] = []
+        for range in ExactWordMatcher.classifiedScalars {
+            for value in range {
+                guard let scalar = Unicode.Scalar(value) else { continue }
+                texts += Self.contexts(String(scalar))
+            }
+        }
+        let found = differences(texts)
+        #expect(found.isEmpty, "\(found.count) differences, the first \(found.prefix(20).joined(separator: " | "))")
+    }
+
+    @Test("A scalar the matcher does not class is read by the fold, in every context")
+    func everyOtherScalar() {
+        for other in Self.others {
+            for scalar in other.unicodeScalars where scalar.value >= 0x80 {
+                #expect(ExactWordMatcher.scalarClass(of: scalar.value) == nil, "\(other.debugDescription) is classed")
+            }
+        }
+        let found = differences(Self.others.flatMap(Self.contexts))
+        #expect(found.isEmpty, "\(found.count) differences, the first \(found.prefix(20).joined(separator: " | "))")
+    }
+
+    /// The classes the documentation gives as examples, which every platform's fold gives.
+    @Test("The scalars the documentation names have the classes it gives them")
+    func documentedClasses() {
+        #expect(ExactWordMatcher.scalarClass(of: 0x2019) == .separator)                      // ’
+        #expect(ExactWordMatcher.scalarClass(of: 0x2014) == .separator)                      // —
+        #expect(ExactWordMatcher.scalarClass(of: 0x00A7) == .separator)                      // §
+        #expect(ExactWordMatcher.scalarClass(of: 0x00E9) == .asciiLetters(Array("e".utf8)))  // é
+        #expect(ExactWordMatcher.scalarClass(of: 0x02BC) == .otherLetter)                    // ʼ
+        #expect(ExactWordMatcher.scalarClass(of: 0x00BD) == .otherLetter)                    // ½
+        #expect(ExactWordMatcher.scalarClass(of: 0x0436) == .otherLetter)                    // ж
+        #expect(ExactWordMatcher.scalarClass(of: 0x0301) == nil)                             // a combining mark
+        #expect(ExactWordMatcher.scalarClass(of: 0x200D) == nil)                             // ZWJ
+    }
+
+    /// The facts the regions rest on: the fold lowercases `A`–`Z` and leaves every other ASCII character as it is,
+    /// a letter or digit joins the letters beside it and any other ASCII character divides them.
+    @Test("The fold changes no ASCII character but A–Z, and every other ASCII byte divides tokens")
+    func asciiBytes() {
+        for value in UInt8(0)..<0x80 {
+            let character = String(UnicodeScalar(value))
+            let isLetterOrDigit = (0x30...0x39).contains(value) || (0x41...0x5A).contains(value) || (0x61...0x7A).contains(value)
+            let lowered = (0x41...0x5A).contains(value) ? String(UnicodeScalar(value | 0x20)) : character
+            #expect(ExactWordMatcher.normalize("x\(character)y") == "x\(lowered)y", "the fold of \(value)")
+            #expect(ExactWordMatcher.tokens(in: "x\(character)y") == (isLetterOrDigit ? ["x\(lowered)y"] : ["x", "y"]),
+                    "the tokens beside \(value)")
+        }
+    }
+
+    /// A small generator with a seed, so a failure can be read again.
+    struct SplitMix64: RandomNumberGenerator {
+        var state: UInt64
+        mutating func next() -> UInt64 {
+            state &+= 0x9E37_79B9_7F4A_7C15
+            var z = state
+            z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
+            z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
+            return z ^ (z >> 31)
+        }
+    }
+
+    /// Pieces of text from all of the above: words and parts of words, ASCII separators, classed scalars and
+    /// others, CR LF and NUL.
+    static let pieces: [String] = ["soviet", "Soviet", "SOV", "iet", "e", "s", "f", "i", "k", "1948", "a", "1", "naïve",
+                                   "cafe", "café", "x", " ", ".", "-", "'", "\r", "\n", "\r\n", "\u{0}", "’", "“", "”",
+                                   "—", "–", "§", "é", "É", "à", "ñ", "ß", "ʼ", "½", "ж", "Ω", "ł", "\u{00A0}", "\u{212A}",
+                                   "\u{0130}", "ς", "ﬁ"] + others
+
+    @Test("Random texts are read as the fold reads them")
+    func randomTexts() {
+        var generator = SplitMix64(state: 0x5EED_1776)
+        var texts: [String] = []
+        for _ in 0..<6_000 {
+            let count = Int.random(in: 1...10, using: &generator)
+            texts.append((0..<count).map { _ in Self.pieces.randomElement(using: &generator)! }.joined())
+        }
+        let found = differences(texts)
+        #expect(found.isEmpty, "\(found.count) differences, the first \(found.prefix(20).joined(separator: " | "))")
+    }
+
+    /// Bytes that are not UTF-8 are read as `String(decoding:as:)` repairs them, as `String(cString:)` did in the SQL
+    /// function: a lone continuation byte, a truncated sequence, an overlong form, a surrogate, four-byte forms, and
+    /// bytes no sequence uses, among words and separators.
+    @Test("Bytes that are not well-formed UTF-8 are read as their repair is")
+    func illFormedBytes() throws {
+        let fragments: [[UInt8]] = [Array("soviet".utf8), Array(" ".utf8), Array("e".utf8), Array("ss".utf8), Array(".".utf8),
+                                    [0x80], [0xBF], [0xC3], [0xE2, 0x80], [0xC0, 0x80], [0xE0, 0x80, 0x80], [0xED, 0xA0, 0x80],
+                                    [0xF0, 0x9F, 0x98, 0x80], [0xF4, 0x90, 0x80, 0x80], [0xF8], [0xFF], [0xC3, 0xA9],
+                                    [0xE2, 0x80, 0x99], [0xCC, 0x81]]
+        var generator = SplitMix64(state: 0x0BAD_B17E)
+        var found: [String] = []
+        for _ in 0..<4_000 {
+            let count = Int.random(in: 1...8, using: &generator)
+            let bytes = (0..<count).flatMap { _ in fragments.randomElement(using: &generator)! }
+            let text = String(decoding: bytes, as: UTF8.self)
+            for word in Self.words {
+                let prepared = try #require(ExactWordMatcher.Word(word))
+                let read = bytes.withUnsafeBufferPointer { ExactWordMatcher.contains(prepared, inUTF8: $0) }
+                let folded = ExactWordMatcher.containsByFolding(word: word, in: text)
+                if read != folded { found.append("\(word) in \(bytes): \(read), not \(folded)") }
+            }
+        }
+        #expect(found.isEmpty, "\(found.count) differences, the first \(found.prefix(20).joined(separator: " | "))")
+    }
+
+    @Test("A word that is not one token is no word, and an empty text holds none")
+    func noWord() {
+        #expect(ExactWordMatcher.Word("co-operate") == nil)
+        #expect(ExactWordMatcher.Word("") == nil)
+        let word = ExactWordMatcher.Word("soviet")
+        #expect(word != nil)
+        if let word {
+            #expect(!([] as [UInt8]).withUnsafeBufferPointer { ExactWordMatcher.contains(word, inUTF8: $0) })
+            #expect(Array("Soviet".utf8).withUnsafeBufferPointer { ExactWordMatcher.contains(word, inUTF8: $0) })
+        }
     }
 }
