@@ -28,6 +28,10 @@ import Testing
 ///          Xcode, where the app sends one (`WholeVolumeLink`)
 ///   1.2 — Session 2026-10-22 (L6): #1766 — in Xcode, where the app sends a page link (`PageLink`):
 ///          into a volume not on the device, the document the bundled page map names, or the volume
+///   1.3 — Session 2026-10-23 (FRUS Explorer Light, S12c): where a whole-volume link and a page link
+///          go are kit tests, run by `swift test` too, since `WholeVolumeLink` and `PageLink` moved
+///          into the kit; they read a link's target with the kit's `FRUSURLScheme`, which the
+///          handler's `resolveCrossRefTarget` forwards to
 @Suite("FRUSCoreKit — the reader's links read back")
 struct ReaderLinkTests {
 
@@ -188,7 +192,7 @@ struct ReaderLinkTests {
     }
 }
 
-#if !SWIFT_PACKAGE // FRUSURLSchemeHandler is the app's
+#if !SWIFT_PACKAGE // FRUSURLSchemeHandler and FollowedPageLink are the app's
 extension ReaderLinkTests {
 
     /// A call the handler made: the callback and its arguments, an entry by its ref.
@@ -273,12 +277,28 @@ extension ReaderLinkTests {
         #expect(answered == 6, "\(answered) lookups found their entry")
     }
 
+    @Test("The volume's page names the page a page link was to as the volume prints it, with no grouping (#1766)")
+    func theFollowedPageIsNamedAsPrinted() {
+        // Four-digit pages are common in the older volumes (`frus1952-54v05p2`, p. 1345); a grouping
+        // separator would print a page number the volume does not.
+        #expect(FollowedPageLink(volumeId: "frus1952-54v05p2", page: 1345).notice.contains("page 1345 "))
+        #expect(FollowedPageLink(volumeId: "frus1919Parisv02", page: 130).notice.contains("page 130 "))
+    }
+}
+#endif
+
+// MARK: - Where a whole-volume link and a page link go (#1603, #1766)
+
+// `WholeVolumeLink` and `PageLink` are the kit's since FRUS Explorer Light's S12c, so `swift test`
+// runs these too.
+extension ReaderLinkTests {
+
     @Test("A whole-volume link opens Browse for a catalogue volume and history.state.gov for any other (#1603)")
     func aWholeVolumeLinkGoesToBrowseOrTheWeb() throws {
         // The table's own whole-volume href, read and resolved as the readers do.
         let url = try #require(URL(string: "frusexplorer://doc/frus1961-63v05"))
         guard case .crossReference(let target, let hint, _) = FRUSURLScheme.readerLink(from: url),
-              case .volume(let volumeId) = FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: hint) else {
+              case .volume(let volumeId) = FRUSURLScheme.resolveCrossRefTarget(target, volumeId: hint) else {
             Issue.record("\(url.absoluteString) is not read as a whole volume")
             return
         }
@@ -358,7 +378,7 @@ extension ReaderLinkTests {
         // The table's own cross-volume page href, read and resolved as the readers read it.
         let url = try #require(URL(string: "frusexplorer://doc/frus1961-63v14%23pg_387/frus1961-63v14?day=8-17-1888"))
         guard case .crossReference(let target, let volume, let citing) = FRUSURLScheme.readerLink(from: url),
-              case .page(let volumeId?, let page) = FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: volume) else {
+              case .page(let volumeId?, let page) = FRUSURLScheme.resolveCrossRefTarget(target, volumeId: volume) else {
             Issue.record("\(url.absoluteString) is not read as a page of another volume")
             return
         }
@@ -376,13 +396,4 @@ extension ReaderLinkTests {
                                      deviceDocument: nil, map: nil)
                 == .volume(volumeId: "frus1961-63v14", page: 387))
     }
-
-    @Test("The volume's page names the page a page link was to as the volume prints it, with no grouping (#1766)")
-    func theFollowedPageIsNamedAsPrinted() {
-        // Four-digit pages are common in the older volumes (`frus1952-54v05p2`, p. 1345); a grouping
-        // separator would print a page number the volume does not.
-        #expect(FollowedPageLink(volumeId: "frus1952-54v05p2", page: 1345).notice.contains("page 1345 "))
-        #expect(FollowedPageLink(volumeId: "frus1919Parisv02", page: 130).notice.contains("page 130 "))
-    }
 }
-#endif
