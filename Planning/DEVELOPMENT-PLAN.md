@@ -7374,3 +7374,29 @@ MAC**Checked by hand, iPhone.** A simulator made for the lane, "iPhone 17 L6" (`
 - The iOS notes held one more: ⓘ (U+24D8 CIRCLED LATIN SMALL LETTER I), on line 26, the Meaning strip's info button. On the owner's word ("Replace ⓘ with "its info button" in the iOS notes too") it now reads "its info button", and the iOS notes hold no character that an accepted iOS upload lacked.
 
 **Opened as #1783** on the owner's word of 2026-10-22 ("then push and open the pull request"), against `v2` at `8cb1c868`.
+
+## Session 2026-10-23 — Where a link to a whole volume or a printed page goes is FRUSCoreKit's, so FRUS Explorer Light can follow one as both readers do
+
+FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) serves the Mac's exported index read-only, and its reader reads the page's links with the kit's own parse (#1579). Since #1778 a link to a printed page of a volume not on the device opens the document the bundled page map names, through `PageLink`, which was app code beside `WholeVolumeLink` in `FRUSURLSchemeHandler.swift`. Its server holds only the volumes an export holds, so its session S12c asked for that rule in the kit, to send a page link where both readers do.
+
+**Changed**
+- **`WholeVolumeLink` and `PageLink` are kit code,** moved verbatim from `FRUSExplorer/TEI/FRUSURLSchemeHandler.swift` to the end of `FRUSCoreKit/TEI/FRUSURLScheme.swift`, beside `CrossRefDestination`, whose `.volume` and `.page` cases they decide. Each is public and Sendable, with its `destination` functions public. Nothing else in them changes, and both readers call them by the same names: Xcode compiles the kit into the app's module.
+- **`FollowedPageLink` stays in the app,** since its notice is a localized string.
+- **Tests:** `ReaderLinkTests`' three tests of where a whole-volume link and a page link go leave its app-only block and read the link's target with the kit's `FRUSURLScheme.resolveCrossRefTarget`, which the handler's forwards to, so `swift test` runs them too. `FRUSCoreKitTests` goes from 1,144 tests in 150 suites at `f0479037` to 1,147 in 150. Xcode's unit target runs the same tests as before.
+- **Docs:** `CLAUDE.md`'s `TEI/` row and the FRUSCoreKit entry; version-history lines; in `Docs/EditableContent/08-Reading-Research-Collections.md`, `browser.volume.followedPage %lld`'s block re-pointed, 530–531 → 410–411, with the amendment log's line. No block's text changes.
+
+**Apple platforms: nothing changes, and how that was checked.** Each heavy job through `Scripts/heavy.sh`, one at a time, with Xcode 27.1 (27A9275), clean and unsigned, at the code commit `a6ae92d2`, beside `v2` @ `f0479037` built and run the same way from a worktree. The records commit changes only `CLAUDE.md` and this entry, which no test reads.
+- **`FRUSExplorerMac`**, Debug: "** BUILD SUCCEEDED **" both, with the same five warning lines, the two known residues.
+- **The symbol diff:** none. Both debug dylibs hold the same 249,388 symbols (`nm -j`, sorted and unique), 245,175 of them defined (`nm -U -j`): in one module, moving a declaration between files and making it public keep its name.
+- **iOS 27.0,** iPhone 17 (`3C216D17`):
+  - a clean `build-for-testing` of `FRUSExplorer`, "** TEST BUILD SUCCEEDED **" both, with the same 7 warning lines;
+  - the full unit target (`test-without-building -collect-test-diagnostics never -only-testing FRUSExplorerTests`, `TEST_RUNNER_FRUS_TEI_MIRROR` set, the app removed first): "✘ Test run with 7606 tests in 900 suites failed after 691.144 seconds with 8 issues.", and on `v2` "✘ Test run with 7606 tests in 900 suites failed after 659.420 seconds with 8 issues.";
+  - the 8 on both are the Keychain tests an unsigned build fails with -34018: KeychainStoreTests 5, SettingsTests 2, SourceExplorerTests 1. Both runs skip the same 17 tests and 2 suites.
+- **`swift build --target FRUSCoreKit`:** "Build complete!".
+- **`swift test`, whole, on the macOS host:** exit 0; 38 runs and 3,033 tests in 361 suites, all passed, none skipped, against 3,030 on `v2`. `FRUSCoreKitTests`: "✔ Test run with 1147 tests in 150 suites passed".
+
+**Linux** (Docker Desktop, `swift:6.4-noble` on arm64): FRUS Explorer Light's package at its `main` (`a385517`), with this branch copied over its submodule and its own targets built clean. `scripts/swift test` printed "✔ Test run with 1147 tests in 150 suites passed" for FRUSCoreKitTests, with the one named skip (FTS5StoreTests' backup attribute), and every other target passed but the parity suites. Their 13 issues are all golden-file staleness: the files' source digest covers the kit's folders, `096499b657e5` at the pin and `cd37102d321b` here, and FRUS Explorer Light's pin move remakes them. Every comparison in those suites otherwise passed.
+
+**Owed by the owner:** Mac check 7 (FRUS Explorer Light's plan) for this pull request, from a clone at a real path; then the merge. FRUS Explorer Light's pin move follows, and its server then lands a page link as both readers do.
+
+**Not done:** each reader's `resolvePageReference` stays app code, since it reads `appState` and presents the alert; FRUS Explorer Light words its own notices. Nothing filed. Not run: the UI suites, iOS 26.x, a device and a signed run; the Mac app was built and not run.

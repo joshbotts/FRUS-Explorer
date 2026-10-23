@@ -2162,7 +2162,7 @@ The linked document is in “%@”, which isn’t downloaded yet. Download it to
 *The iPhone and iPad alert has a View Connections button beside Download Volume, which the last clause names.*
 
 #### Browse — You followed a link to page %lld of this volume, which isn’t downloaded.
-<!-- SOURCE: FRUSExplorer/TEI/FRUSURLSchemeHandler.swift | FollowedPageLink.notice | lines: 530–531 | key: browser.volume.followedPage %lld | shared: iOS and macOS (one text, under the not-downloaded heading of a volume's page in Browse on iPhone and iPad and in the Corpus Browser on the Mac) -->
+<!-- SOURCE: FRUSExplorer/TEI/FRUSURLSchemeHandler.swift | FollowedPageLink.notice | lines: 410–411 | key: browser.volume.followedPage %lld | shared: iOS and macOS (one text, under the not-downloaded heading of a volume's page in Browse on iPhone and iPad and in the Corpus Browser on the Mac) -->
 
 You followed a link to page %lld of this volume, which isn’t downloaded.
 
