@@ -110,7 +110,7 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
   - any frame showing a coverage line or a fixed label.
 
   Then run the kit's `tools/marketing/compose.py` again at the store sizes with no stamp (`SCALE=1 STAMP=0`, which L7 added for #1763's item 4): the frames for App Store Connect carry no DRAFT stamp. As in S5's embed pass, each new frame is read against its sentence.
-  - **R1 run on 2026-10-22** from `v2` at `7bbf36cb` (every lane merged), on `claude/r1-retakes-42d073`, and **opened as #1781** on the owner's word of 2026-10-22; not yet merged. Build 1861 on S1's to S3's simulators and in the Mac check copy, by each sitting's conventions, the iPad and iPhone frames with their time and date erased by S1's and S3's scripts unchanged. **21 captures retaken**: the 17 the lanes listed, and four their lists missed, `ipad/cite-sheet` (the rail toggle L1 tints, behind the Cite sheet) and the three zero-result frames, whose MATCH strip parser 6.8 (L2) prints `"unravel"` where it printed `"unravel?"`. Each was diffed against the frame it replaces and differs only where its lane said, and in the status bar; `stage-manager` now has the document window in front, since L1's tint shows only on the active window. **The 34 store frames are composed with no stamp in `~/Desktop/store`** (14 iPad, 14 Mac, 6 iPhone, and four contact sheets), and the drafts are rendered again (ten files changed). No manual sentence changes. The ledger's R1 entry has the devices, the times and the one finding (§5). Recordings A, R and T and the App Previews were not taken again (decision 89); the entry says what the lanes changed for them.
+  - **R1 run on 2026-10-22** from `v2` at `7bbf36cb` (every lane merged), on `claude/r1-retakes-42d073`, and **opened as #1781** on the owner's word of 2026-10-22; **merged as `0f5c8ef5`**. Build 1861 on S1's to S3's simulators and in the Mac check copy, by each sitting's conventions, the iPad and iPhone frames with their time and date erased by S1's and S3's scripts unchanged. **21 captures retaken**: the 17 the lanes listed, and four their lists missed, `ipad/cite-sheet` (the rail toggle L1 tints, behind the Cite sheet) and the three zero-result frames, whose MATCH strip parser 6.8 (L2) prints `"unravel"` where it printed `"unravel?"`. Each was diffed against the frame it replaces and differs only where its lane said, and in the status bar; `stage-manager` now has the document window in front, since L1's tint shows only on the active window. **The 34 store frames are composed with no stamp in `~/Desktop/store`** (14 iPad, 14 Mac, 6 iPhone, and four contact sheets), and the drafts are rendered again (ten files changed). No manual sentence changes. The ledger's R1 entry has the devices, the times and the one finding (§5). Recordings A, R and T and the App Previews were not taken again (decision 89); the entry says what the lanes changed for them.
 - **R2, the TestFlight pass.**
   - Run the release checklist again, as A19 ran it (`Completed/Plan-Of-Record-2026-10-14.md` §2, *Run 2026-10-21*):
     - the clean `build-for-testing`, read for warnings: the two known residues and nothing else;
@@ -123,6 +123,27 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
   - Bump to 1.0 (1776) by `CLAUDE.md`'s procedure (`project.yml`, `project.pbxproj`, the README line and its mirror), and rewrite both TestFlight notes for 1776.
   - Before the archive: `./Scripts/fetch-llama-dsyms.sh` and `./Scripts/check_cloudkit_schema.py`.
   - The owner archives, uploads to TestFlight, tags the 1776 commit `build-51` after the upload (decision 99), and makes the device pass on an iPhone, an iPad and the Mac. A defect found goes to a lane, and the next TestFlight upload takes a number between 1776 and 1861 (decision 87).
+  - **R2 run on 2026-10-22** from `v2` at `0f5c8ef5` (R1 merged), on `claude/r2-testflight-1776-5d0908`, and **opened as #1782** on the owner's word of 2026-10-22; not yet merged. **The tree reads 1.0 (1776)** from `c96cad13`, the final code: `CURRENT_PROJECT_VERSION` in `project.yml`'s three targets and `project.pbxproj`'s nine occurrences, the README's line and its mirror, and an amendment-log bullet. **Both TestFlight notes are rewritten for first-time testers**, describing the app as it is, with the release-candidate flag at the head and the build-50 re-index named; every fix is in the one line (iOS 3,893 and Mac 3,882 characters). **The checklist at the final code, each figure A19's or explained:**
+    - the clean `build-for-testing` from an empty folder: 177 s, the two known residues and nothing else;
+    - the full unit target on iPhone 17 under iOS 27.0: 7,606 tests in 900 suites with #1606's six known issues (A19's 7,540 in 891, with the lanes' tests since);
+    - `swift test`: 3,030 tests in 361 suites, 38 runs, none failed (#1771's figure);
+    - the Mac build: 605 compile lines, the two residues;
+    - the window-fronting audit: 80 / 2 / 34 / 0, 20 scenes, 23 `openAuxWindow` sites, with no opener line changed since A19;
+    - the link check in report mode: 20 OK, 3 owner-asserted, 0 dead; 3 OK;
+    - the dSYM fetch: all five UUIDs verified, A19's;
+    - `check_cloudkit_schema.py`: PASS, 268 of 272 identifiers required, Production 310, with `CloudKitSchemaInventory.swift` and every `@Model` file unchanged since A19;
+    - index v71 and rollup v12 unchanged, so no re-index census;
+    - the Mac check copy at 1.0 (1776): About reads *Version 1.0 (1776)*; a page link the map names opens the *Volume Not Downloaded* alert, and one it does not list opens the volume's page in the Corpus Browser naming the page, from a page pushed in another subseries too (L6, #1779); **View 1,445 documents ↗** over Kennedy's years opens Search on 1,445 (L3); the working corpus's sheet shows **Narrowed by**, and a new search opens at its first row (L2).
+
+    The session entry has every figure.
+  - **The owner's steps for R2**, in the checkout the archive is cut from, since the dSYM cache and the schema stamp belong to the checkout they ran in:
+    1. bring `v2` to R2's merge commit;
+    2. run `./Scripts/fetch-llama-dsyms.sh` and `./Scripts/check_cloudkit_schema.py` there;
+    3. archive and upload the iOS app (`FRUSExplorer`) and `FRUSExplorerMac`, both schemes archiving in the AppStore configuration, with `Docs/TestFlight-Instructions-ios.md` and `-mac.md` as each build's What to Test;
+    4. tag that commit `build-51` and push the tag (decision 99);
+    5. make the device pass on an iPhone, an iPad and the Mac.
+
+    A defect the pass finds goes to a lane, and the next upload takes a number between 1776 and 1861 (decision 87). Otherwise R3 follows.
 - **R3, the submission.** Restore 1.0 (1861) by the same procedure. The owner archives, uploads, tags `version-1.0` on that commit (decision 99), and submits to App Review with §2's answers.
 
 ---
