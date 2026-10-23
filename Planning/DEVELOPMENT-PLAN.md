@@ -7353,3 +7353,24 @@ MAC**Checked by hand, iPhone.** A simulator made for the lane, "iPhone 17 L6" (`
 - **Still the owner's:** `check_repository_links.py --stamp`, and §2's submission steps (the site made public, the listing, the screenshots from `~/Desktop/store`, App Review's questions).
 - **Not seen on a device:** every check here ran on the simulator and the Mac; the device pass is the owner's.
 - **The simulators:** iPhone 17 `80CF0F18` was shut down after its run. The pinned iPhone 17e (`4E79C806`) was neither booted nor changed: its `frus.db` reads 2,867,122,176 bytes, Oct 8 07:29:06, as A8 and A19 recorded.
+
+## Session 2026-10-22 — The TestFlight notes lose ⚙ and ✕, the two characters no accepted Mac upload had, after App Store Connect refused 1.0 (1776)'s Mac notes for an invalid character
+
+**What was asked.** The owner's words: "app store connect says the mac testflight instructions contain an invalid character but does not explain which character or characters is invalid. please review previous versions to identify any new characters introduced in the current version." Then: "Yes: replace ⚙ and ✕ with words in both TestFlight notes in the repository, as one docs pull request, and tell me before opening it."
+
+**Found.** The Mac notes at `v2` `8cb1c868` (R2, #1782) were compared with every version at the tags `build-42` to `build-50`, each of which App Store Connect accepted.
+- Two characters were in no accepted version: ⚙ (U+2699 GEAR, once, line 29) and ✕ (U+2715 MULTIPLICATION X, twice, lines 25 and 39).
+- Every other non-ASCII character (… ↗ ⇧ ⌘ ⌥ ▸) was in an accepted version. Nothing lay outside the Basic Multilingual Plane, and there was no invisible character.
+- ✕ is in the iOS notes too, twice. ⚙ can be drawn as an emoji, but so can ↗, which build 49's Mac notes carried, so the history does not settle which of the two App Store Connect refuses.
+
+**Done.** On `claude/testflight-notes-symbols`, cut from `v2` at `8cb1c868`.
+- **Mac notes:** ✕ now reads "the close button on the row it adds" and "the row's close button"; **⚙ Collection** reads "**Collection** (the gear button)". 3,945 characters.
+- **iOS notes:** ✕ now reads "the close button on its row" and "the row's close button". 3,936 characters.
+- The app names that button *Stop searching within these results* (`SearchSheet.swift`, `SearchLayerViews.swift`). The Mac manual calls **⚙ Collection** the collection-settings popover. The manuals keep both symbols, since they never pass through App Store Connect.
+
+**Checks.**
+- No test reads either notes file (the tests were grepped for the paths and for "TestFlight").
+- Each file's non-ASCII characters were compared again with its own accepted versions, and both are within 4,000 characters by Python's `len()`. The Mac notes now hold no character that an accepted Mac upload lacked.
+- The iOS notes held one more: ⓘ (U+24D8 CIRCLED LATIN SMALL LETTER I), on line 26, the Meaning strip's info button. On the owner's word ("Replace ⓘ with "its info button" in the iOS notes too") it now reads "its info button", and the iOS notes hold no character that an accepted iOS upload lacked.
+
+**Opened** on the owner's word of 2026-10-22 ("then push and open the pull request"), against `v2` at `8cb1c868`.

@@ -22,8 +22,8 @@ FRUS Explorer puts the State Department's *Foreign Relations of the United State
 - **Keywords** or **Meaning**: Meaning ranks documents by a question with EmbeddingGemma 2, an open-source model you add with **Download Search Model** (310 MB, nothing to accept).
 - A keyword snippet starts at the rarest of your words, past the heading, source note and dateline.
 - **Facets** narrow the results; **•••** ▸ **Save as Working Corpus…** keeps them, its sheet showing what narrowed them (**Narrowed by**).
-- **Search within these results:** after a Meaning question, **•••** ▸ **Find Words in These Matches**; after keywords, **•••** ▸ **Rank These Results by a Question**. **Swap** swaps the two orders, **✕** puts the list back.
-- **Accessibility:** VoiceOver offers a result's tags as **Filter by** actions; at the largest text sizes the Meaning strip is one line, and **ⓘ** opens all of it.
+- **Search within these results:** after a Meaning question, **•••** ▸ **Find Words in These Matches**; after keywords, **•••** ▸ **Rank These Results by a Question**. **Swap** swaps the two orders, and the close button on its row puts the list back.
+- **Accessibility:** VoiceOver offers a result's tags as **Filter by** actions; at the largest text sizes the Meaning strip is one line, and its info button opens all of it.
 
 ## Collections and Settings
 
@@ -37,7 +37,7 @@ FRUS Explorer puts the State Department's *Foreign Relations of the United State
 
 1. **First launch.** Choose a subseries: does the banner's count match the queue, and does the Guide stay open?
 2. **Read and annotate:** highlight, note, **Cite**, **Sources**.
-3. **Search** both ways, with **Facets**, then within the results, **Swap** and **✕**: do the row and header say so?
+3. **Search** both ways, with **Facets**, then within the results, **Swap** and the row's close button: do the row and header say so?
 4. **Meaning.** Download the model: nothing to accept?
 5. **A page link** into a volume you have not downloaded.
 6. **Analytics:** chart a term, narrow the years, **View N documents ↗**: the same count in Search?
