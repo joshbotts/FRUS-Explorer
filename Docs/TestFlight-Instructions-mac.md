@@ -22,11 +22,11 @@ FRUS Explorer puts the State Department's *Foreign Relations of the United State
 - **The Search window** (⌥⌘F), in **Keywords** or **Meaning**: Meaning ranks documents by a question with EmbeddingGemma 2, an open-source model you add with **Download Search Model** (310 MB, nothing to accept).
 - A keyword snippet starts at the rarest of your words, past the heading, source note and dateline.
 - **Facets** narrow the results; **Save as Working Corpus…** keeps them, its sheet showing what narrowed them (**Narrowed by**).
-- **Search Within Results**, in the window's titlebar: over a Meaning list it finds words in those matches; over a keyword list it ranks the results by a question. **✕** puts the list back, and after a search inside it **Swap** swaps the two orders.
+- **Search Within Results**, in the window's titlebar: over a Meaning list it finds words in those matches; over a keyword list it ranks the results by a question. The close button on the row it adds puts the list back, and after a search inside it **Swap** swaps the two orders.
 
 ## Collections and Settings
 
-- **Collections** (⇧⌘K) export as PDF, Word or HTML; citations copy as BibTeX or RIS, or go to Zotero. **⚙ Collection** ▸ **Link to Saved Search…** makes a **smart collection**, which follows the search and takes nothing by hand.
+- **Collections** (⇧⌘K) export as PDF, Word or HTML; citations copy as BibTeX or RIS, or go to Zotero. **Collection** (the gear button) ▸ **Link to Saved Search…** makes a **smart collection**, which follows the search and takes nothing by hand.
 - **Keeping Current** (Settings ▸ Library ▸ Volumes & Storage): **Check for Corrections**, then **Update**, each volume's row showing its step.
 - **Email Feedback File** (Settings ▸ System ▸ Data & Recovery) writes a message of your Semantic Match verdicts to feedback@frusexplorer.app.
 
@@ -36,7 +36,7 @@ FRUS Explorer puts the State Department's *Foreign Relations of the United State
 
 1. **First launch.** Choose a subseries: does the status bar's count match the queue?
 2. **Read and annotate:** highlight, note, **Cite**, **Sources**.
-3. **Search** both ways, with **Facets**, then **Search Within Results**, **Swap** and **✕**: do the row and count line say so?
+3. **Search** both ways, with **Facets**, then **Search Within Results**, **Swap** and the row's close button: do the row and count line say so?
 4. **Meaning.** Download the model: nothing to accept?
 5. **A page link** into a volume you have not downloaded.
 6. **Analytics:** chart a term, narrow the years, **View N documents ↗**: the same count in Search?
