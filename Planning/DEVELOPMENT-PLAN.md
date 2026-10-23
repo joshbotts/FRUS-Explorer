@@ -7373,4 +7373,4 @@ MAC**Checked by hand, iPhone.** A simulator made for the lane, "iPhone 17 L6" (`
 - Each file's non-ASCII characters were compared again with its own accepted versions, and both are within 4,000 characters by Python's `len()`. The Mac notes now hold no character that an accepted Mac upload lacked.
 - The iOS notes held one more: ⓘ (U+24D8 CIRCLED LATIN SMALL LETTER I), on line 26, the Meaning strip's info button. On the owner's word ("Replace ⓘ with "its info button" in the iOS notes too") it now reads "its info button", and the iOS notes hold no character that an accepted iOS upload lacked.
 
-**Opened** on the owner's word of 2026-10-22 ("then push and open the pull request"), against `v2` at `8cb1c868`.
+**Opened as #1783** on the owner's word of 2026-10-22 ("then push and open the pull request"), against `v2` at `8cb1c868`.
