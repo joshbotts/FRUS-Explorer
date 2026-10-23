@@ -480,6 +480,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         (`IndexingResources.citedPages`, `CitedPageMap`) and the printed form `collectDocumentRefs`
 ///         classifies from the reference's siblings (`PageReferenceForm`, carried as `CrossReferenceRow.pageForm`);
 ///         a page written with its own volume's prefix is the same-volume pass's (see the v71 note)
+///  4.46 — 2026-10-23 (FRUS Explorer Light S13b): `frus_exact_word` reads each text as SQLite holds it, as
+///         UTF-8 bytes, through `ExactWordMatcher.contains(_:inUTF8:)`, and folds its word once a statement,
+///         kept with it by `sqlite3_set_auxdata` (`ExactWordArgument`). The same answers: over the full index,
+///         `=Soviet`'s count and its page each fell from 23–28 s to 0.2–0.3 s on Linux and on a Mac. No index
+///         version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -5043,6 +5048,45 @@ public actor IndexingPipeline {
         return lines.joined(separator: " | ")
     }
 
+    /// What `frus_exact_word` answers on this connection for each of `rows`, in one statement and in their order:
+    /// with `wordBound`, every row's word is the statement's one bound value, which the function keeps with the
+    /// statement, so each row's must be the first's; without, each row carries its own. Texts are bound with their
+    /// whole length, so one may hold a NUL, as no stored text does.
+    func exactWordFunctionForTesting(_ rows: [(text: String?, word: String?)], wordBound: Bool) throws -> [Int32] {
+        precondition(!rows.isEmpty && (!wordBound || rows.allSatisfy { $0.word == rows[0].word }))
+        let values = rows.indices.map { wordBound ? "(\($0), ?)" : "(\($0), ?, ?)" }.joined(separator: ", ")
+        let sql = wordBound
+            ? "WITH r(i, t) AS (VALUES \(values)) SELECT frus_exact_word(t, :word) FROM r ORDER BY i"
+            : "WITH r(i, t, w) AS (VALUES \(values)) SELECT frus_exact_word(t, w) FROM r ORDER BY i"
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        var parameter: Int32 = 1
+        func bind(_ value: String?) {
+            defer { parameter += 1 }
+            guard let value else {
+                sqlite3_bind_null(stmt, parameter)
+                return
+            }
+            let bytes = Array(value.utf8)
+            guard !bytes.isEmpty else {
+                sqlite3_bind_text(stmt, parameter, "", 0, SQLITE_TRANSIENT_IP)
+                return
+            }
+            bytes.withUnsafeBytes { raw in
+                _ = sqlite3_bind_text(stmt, parameter, raw.baseAddress?.assumingMemoryBound(to: CChar.self),
+                                      Int32(raw.count), SQLITE_TRANSIENT_IP)
+            }
+        }
+        for row in rows {
+            bind(row.text)
+            if !wordBound { bind(row.word) }
+        }
+        if wordBound { bind(rows[0].word) }
+        var answers: [Int32] = []
+        while try auxStep(stmt) { answers.append(sqlite3_column_int(stmt, 0)) }
+        return answers
+    }
+
     /// Registers `frus_exact_word(text, word)` on `handle`, returning 1 when `text`
     /// contains `word` as a whole token on `unicode61`'s boundaries (Q-3b).
     ///
@@ -5057,6 +5101,16 @@ public actor IndexingPipeline {
     /// The function only ever runs on rows FTS5 has already matched, so its input is the
     /// stemmed candidate set rather than the corpus. It is declared `SQLITE_DETERMINISTIC`
     /// so SQLite may cache and reorder it, and it short-circuits on empty text.
+    ///
+    /// The candidate set of a common stem is most of the corpus, so the function reads each
+    /// text where SQLite holds it, as UTF-8 bytes up to the first NUL, as `String(cString:)`
+    /// read it, and copies none (`ExactWordMatcher.contains(_:inUTF8:)`). The word is a
+    /// statement's bound value, the same for every row it reads: it is folded once, into an
+    /// `ExactWordMatcher.Word` that SQLite keeps with the statement (`sqlite3_set_auxdata`)
+    /// while that argument stays the same, and folded again for a row where it does not.
+    /// Over FRUS Explorer 1.0's full index, `=Soviet`'s count and its page, each a pass over
+    /// the 58,679 rows its stem matches, took 23 to 28 seconds each on Linux and on a Mac, and
+    /// take 0.2 to 0.3 seconds, with the same answers.
     ///
     /// A failure to register is not fatal here — it surfaces as a clear "no such
     /// function" error on the first exact query rather than a silently wrong answer,
@@ -5077,12 +5131,37 @@ public actor IndexingPipeline {
                     sqlite3_result_int(context, 0)
                     return
                 }
-                let text = String(cString: textPtr)
-                let word = String(cString: wordPtr)
-                sqlite3_result_int(context, ExactWordMatcher.contains(word: word, in: text) ? 1 : 0)
+                let word: ExactWordMatcher.Word?
+                if let kept = sqlite3_get_auxdata(context, 1) {
+                    word = Unmanaged<ExactWordArgument>.fromOpaque(kept).takeUnretainedValue().word
+                } else {
+                    let argument = ExactWordArgument(ExactWordMatcher.Word(String(cString: wordPtr)))
+                    // SQLite releases it when it lets it go, which may be at once; `argument` holds it here.
+                    sqlite3_set_auxdata(context, 1, Unmanaged.passRetained(argument).toOpaque()) { kept in
+                        if let kept { Unmanaged<ExactWordArgument>.fromOpaque(kept).release() }
+                    }
+                    word = argument.word
+                }
+                guard let word else {
+                    sqlite3_result_int(context, 0)
+                    return
+                }
+                let text = UnsafeBufferPointer(
+                    start: textPtr, count: strlen(UnsafeRawPointer(textPtr).assumingMemoryBound(to: CChar.self)))
+                sqlite3_result_int(context, ExactWordMatcher.contains(word, inUTF8: text) ? 1 : 0)
             },
             nil, nil, nil
         )
+    }
+
+    /// The word `frus_exact_word` looks for, made ready once and kept with a statement by SQLite: nil when the word is
+    /// not exactly one token, which no text contains.
+    private final class ExactWordArgument {
+        let word: ExactWordMatcher.Word?
+
+        init(_ word: ExactWordMatcher.Word?) {
+            self.word = word
+        }
     }
 
     /// Runs `statement`, which prepares and steps one search statement on `auxDb`, so that it stops

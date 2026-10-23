@@ -37,6 +37,8 @@ import FTS5Store
 ///
 /// Version history:
 ///   1.0 — Q-3b: initial implementation
+///   1.1 — FRUS Explorer Light S13b: the SQL function's own answers, which read a text's bytes and keep a
+///          statement's word, held to the matcher's
 @Suite("Exact-word search")
 struct ExactWordSearchTests {
 
@@ -311,5 +313,61 @@ struct ExactWordSearchTests {
         let results = try await service.search(parameters: params, limit: 1000)
         #expect(count == results.count)
         #expect(count > 0)
+    }
+
+    // MARK: - The SQL function
+
+    /// Texts for `frus_exact_word` itself: the fixture's, a header, none, an empty one, and texts that hold the word
+    /// only once folded, only beside a scalar the matcher sends to the fold, or not at all.
+    private static let functionTexts: [String?] = [
+        "The doctrine of containment shaped the response. Containment endured.",
+        "We must contain the threat; containing it is the immediate priority.",
+        "4. Containment and the Alliance", nil, "", "CONTAINMENT—", "contain\u{00AD}ment", "Containment’s cost",
+        "containments", "naïve containment", "«containment»", "contain\u{0301}ment", "\u{0600} containment",
+    ]
+
+    @Test("frus_exact_word answers as the matcher for every row, its word kept with the statement")
+    func functionAnswersAsTheMatcher() async throws {
+        let (dir, _, pipeline) = try await makeFixtureWithPipeline()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        for word in ["containment", "Containment", "contain", "naive", "co-operate", "", nil] as [String?] {
+            let answers = try await pipeline.exactWordFunctionForTesting(
+                Self.functionTexts.map { (text: $0, word: word) }, wordBound: true)
+            let expected: [Int32] = Self.functionTexts.map { text in
+                guard let text, let word else { return 0 }
+                return ExactWordMatcher.contains(word: word, in: text) ? 1 : 0
+            }
+            #expect(answers == expected, "the word \(word.debugDescription)")
+        }
+    }
+
+    /// The function keeps a word with the statement only while the argument stays the same, so a row with a word of
+    /// its own is read for that word and never for one an earlier row gave.
+    @Test("A row's own word is read for that row, never for an earlier row's")
+    func functionReadsEachRowsWord() async throws {
+        let (dir, _, pipeline) = try await makeFixtureWithPipeline()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let words: [String?] = ["containment", "contain", "co-operate", nil, "CONTAINING", "threat"]
+        let rows = Self.functionTexts.flatMap { text in words.map { (text: text, word: $0) } }
+        let answers = try await pipeline.exactWordFunctionForTesting(rows, wordBound: false)
+        let expected: [Int32] = rows.map { row in
+            guard let text = row.text, let word = row.word else { return 0 }
+            return ExactWordMatcher.contains(word: word, in: text) ? 1 : 0
+        }
+        #expect(answers == expected)
+    }
+
+    @Test("A text is read to its first NUL, as String(cString:) read it")
+    func functionReadsToTheFirstNUL() async throws {
+        let (dir, _, pipeline) = try await makeFixtureWithPipeline()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let answers = try await pipeline.exactWordFunctionForTesting(
+            [(text: "the policy\u{0} of containment", word: "containment"),
+             (text: "containment\u{0} policy", word: "containment")],
+            wordBound: true)
+        #expect(answers == [0, 1])
     }
 }

@@ -81,6 +81,8 @@ public enum ReaderLink: Equatable, Sendable {
 ///          moved here verbatim, so a host outside the app reads each link as the app does
 ///   1.3 — Session 2026-10-09: #1603 — `CrossRefDestination.volume`, a reference to a whole volume,
 ///          which `resolveCrossRefTarget` read as a document of that name in the volume being read
+///   1.4 — Session 2026-10-23 (FRUS Explorer Light, S12c): `WholeVolumeLink` and `PageLink` moved into
+///          this file from the app's `FRUSURLSchemeHandler.swift`, unchanged but public and `Sendable`
 public enum FRUSURLScheme {
 
     /// What `url` names when it is a link in the reader's page, or `nil` when it is not one: a
@@ -248,7 +250,7 @@ public enum FRUSURLScheme {
 /// Version history:
 ///   1.0 — Session 2026-10-09: #1603
 ///   1.1 — Session 2026-10-23 (FRUS Explorer Light, S12c): moved here from the app's
-///          `FRUSURLSchemeHandler.swift`, unchanged and public
+///          `FRUSURLSchemeHandler.swift`, unchanged but public and `Sendable`
 public enum WholeVolumeLink: Equatable, Sendable {
     /// The volume's page in Browse. The catalogue holds the volume; the page offers the download
     /// when the volume is not on the device.
@@ -311,7 +313,7 @@ public enum WholeVolumeLink: Equatable, Sendable {
 /// Version history:
 ///   1.0 — Session 2026-10-22 (L6): #1766
 ///   1.1 — Session 2026-10-23 (FRUS Explorer Light, S12c): moved here from the app's
-///          `FRUSURLSchemeHandler.swift`, unchanged and public, so FRUS Explorer Light sends a page
+///          `FRUSURLSchemeHandler.swift`, unchanged but public and `Sendable`, so FRUS Explorer Light sends a page
 ///          link where both readers do, with the volumes its index holds as the device's
 public enum PageLink: Equatable, Sendable {
     /// The document the page names. The reader opens it as a link to that document: a volume not on

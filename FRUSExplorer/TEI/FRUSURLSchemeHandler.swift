@@ -66,9 +66,9 @@ import WebKit
 ///   1.9 — Session 2026-10-22 (L6): #1766 — `PageLink`, where both readers send a link to a printed
 ///          page: the device's page index, else the bundled page map, else, for a volume not on the
 ///          device, the volume's page in Browse (`FollowedPageLink`)
-///   1.10 — Session 2026-10-23 (FRUS Explorer Light, S12c): `WholeVolumeLink` and `PageLink` moved,
-///          unchanged, into FRUSCoreKit's `FRUSURLScheme.swift`, so the web edition sends a page link
-///          where both readers do; `FollowedPageLink`, whose notice is a localized string, stays here
+///   1.10 — Session 2026-10-23 (FRUS Explorer Light, S12c): `WholeVolumeLink` and `PageLink` moved into
+///          FRUSCoreKit's `FRUSURLScheme.swift`, unchanged but public and `Sendable`, so the web edition sends
+///          a page link where both readers do; `FollowedPageLink`, whose notice is a localized string, stays here
 final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Sendable {
 
     // MARK: - Callbacks
