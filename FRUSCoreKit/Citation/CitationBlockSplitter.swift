@@ -31,21 +31,29 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #263 (F-10)
-enum CitationBlockSplitter {
+///   1.1 — Session 2026-10-24 (FRUS Explorer Light, S15a): public, with `Entry`'s memberwise
+///          initialiser spelled out, for the web edition's Batch mode
+public enum CitationBlockSplitter {
 
     /// A citation lifted out of a pasted block.
-    struct Entry: Identifiable, Sendable, Equatable {
+    public struct Entry: Identifiable, Sendable, Equatable {
         /// 1-based position in the paste, so the table's order matches what the user pasted even
         /// after rows resolve out of order.
-        let index: Int
+        public let index: Int
         /// The footnote number as printed, when the block carried one. Display only — a footnote
         /// number is not a document number, and conflating them is the mistake this feature is
         /// most likely to invite.
-        let marker: String?
+        public let marker: String?
         /// The citation text, with any leading marker removed, ready for `CitationParser`.
-        let text: String
+        public let text: String
 
-        var id: Int { index }
+        public var id: Int { index }
+
+        public init(index: Int, marker: String?, text: String) {
+            self.index = index
+            self.marker = marker
+            self.text = text
+        }
     }
 
     /// A leading footnote marker: `1.` / `12)` / `[3]` / `3 ` at the start of a citation.
@@ -57,7 +65,7 @@ enum CitationBlockSplitter {
     private static let markerRegex = try? NSRegularExpression(pattern: markerPattern)
 
     /// Whether `line` opens a new footnote.
-    static func leadingMarker(_ line: String) -> String? {
+    public static func leadingMarker(_ line: String) -> String? {
         guard let markerRegex else { return nil }
         let range = NSRange(line.startIndex..., in: line)
         guard let match = markerRegex.firstMatch(in: line, range: range) else { return nil }
@@ -68,7 +76,7 @@ enum CitationBlockSplitter {
     }
 
     /// Removes a leading footnote marker from `line`, if it has one.
-    static func stripMarker(_ line: String) -> String {
+    public static func stripMarker(_ line: String) -> String {
         guard let markerRegex else { return line }
         let range = NSRange(line.startIndex..., in: line)
         guard let match = markerRegex.firstMatch(in: line, range: range),
@@ -90,7 +98,7 @@ enum CitationBlockSplitter {
     ///    no marker there is no signal to tell a wrap from a new entry, and two rows that each
     ///    fail is more legible than one silently glued pair.
     /// 3. **Blank lines always end a citation**, under either rule.
-    static func split(_ block: String) -> [Entry] {
+    public static func split(_ block: String) -> [Entry] {
         let lines = block.components(separatedBy: .newlines)
         let hasMarkers = lines.contains { leadingMarker($0) != nil }
 
@@ -148,7 +156,8 @@ enum CitationBlockSplitter {
 ///          (`CitationMatch.isBestGuess`) — a volume row whose volume fails a cited field, and the
 ///          row a subseries no volume has gets, among them, which 1.4 counted as ambiguous beside
 ///          their own "Best guess — …" label
-enum BatchCitationOutcome: Sendable, Equatable {
+///   1.6 — Session 2026-10-24 (FRUS Explorer Light, S15a): public, for the web edition's Batch mode
+public enum BatchCitationOutcome: Sendable, Equatable {
     /// Exactly one candidate, and it is a document the engine vouches for — found by its number
     /// or its page in a volume that carries every field the citation names. The row a reader can
     /// act on without thinking.
@@ -197,7 +206,7 @@ enum BatchCitationOutcome: Sendable, Equatable {
     /// downloaded — was summarised as "1 ambiguous · 0 best guesses".
     ///
     /// - Parameter matches: The engine's ranked candidates.
-    static func classify(matches: [CitationMatch]) -> BatchCitationOutcome {
+    public static func classify(matches: [CitationMatch]) -> BatchCitationOutcome {
         switch matches.count {
         case 0: return .missing
         case 1:
@@ -235,7 +244,7 @@ enum BatchCitationOutcome: Sendable, Equatable {
     /// the ambiguous ones (#1506): its one answer reads like a resolution and comes from a volume
     /// the citation does not name, or from the wrong page, so it is the row likeliest to be
     /// accepted unchecked, where an ambiguous row visibly asks for a choice.
-    var triageOrder: Int {
+    public var triageOrder: Int {
         switch self {
         case .failed: return 0
         case .missing: return 1
@@ -259,8 +268,8 @@ enum BatchCitationOutcome: Sendable, Equatable {
     ///   - outcomes: One outcome per row, in any order.
     ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
     /// - Returns: The summary, its parts joined by middle dots.
-    static func summary(of outcomes: [BatchCitationOutcome],
-                        locale: Locale = .autoupdatingCurrent) -> String {
+    public static func summary(of outcomes: [BatchCitationOutcome],
+                               locale: Locale = .autoupdatingCurrent) -> String {
         var resolved = 0, ambiguous = 0, bestGuesses = 0, unresolved = 0
         for outcome in outcomes {
             switch outcome {
@@ -296,24 +305,32 @@ enum BatchCitationOutcome: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #263 (F-10)
-struct BatchCitationRow: Identifiable, Sendable {
-    let entry: CitationBlockSplitter.Entry
-    var outcome: BatchCitationOutcome
+///   1.1 — Session 2026-10-24 (FRUS Explorer Light, S15a): public, with its memberwise initialiser
+///          spelled out, for the web edition's Batch mode
+public struct BatchCitationRow: Identifiable, Sendable {
+    public let entry: CitationBlockSplitter.Entry
+    public var outcome: BatchCitationOutcome
     /// The engine's candidates, kept so a resolved row opens directly and an ambiguous one can
     /// list its options without a second lookup.
-    var matches: [CitationMatch]
+    public var matches: [CitationMatch]
 
-    var id: Int { entry.index }
+    public var id: Int { entry.index }
+
+    public init(entry: CitationBlockSplitter.Entry, outcome: BatchCitationOutcome, matches: [CitationMatch]) {
+        self.entry = entry
+        self.outcome = outcome
+        self.matches = matches
+    }
 
     /// The best candidate, for the one-tap open on a resolved row.
-    var primaryMatch: CitationMatch? { matches.first }
+    public var primaryMatch: CitationMatch? { matches.first }
 
     /// The caption a row with ONE candidate the engine does not vouch for shows in place of a
     /// count: that candidate's own label — "Best guess — this volume does not match the cited
     /// part 2", "Volume identified — download to find the specific document" — rather than "1
     /// possible documents" (#1474 review round 1); a best guess counted as such since #1506 shows
     /// it too. `nil` for every other outcome.
-    var loneCandidateLabel: String? {
+    public var loneCandidateLabel: String? {
         guard outcome == .ambiguous(count: 1) || outcome == .bestGuess else { return nil }
         return primaryMatch?.confidenceLabel
     }
@@ -332,7 +349,8 @@ struct BatchCitationRow: Identifiable, Sendable {
 /// Version history:
 ///   1.0 — Session 2026-08-10: #263 (F-10)
 ///   1.1 — #1474: hands the engine the parse whole, so a footnote's part and link reach it
-enum BatchCitationRunner {
+///   1.2 — Session 2026-10-24 (FRUS Explorer Light, S15a): public, for the web edition's Batch mode
+public enum BatchCitationRunner {
 
     /// Looks up every citation in `entries`.
     ///
@@ -344,7 +362,7 @@ enum BatchCitationRunner {
     ///
     /// A row that throws becomes `.failed` rather than aborting the batch: one malformed footnote
     /// in a chapter must not cost the reader the other forty.
-    static func run(
+    public static func run(
         entries: [CitationBlockSplitter.Entry],
         engine: CitationMatchingEngine,
         parser: CitationParser,

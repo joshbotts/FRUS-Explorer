@@ -7513,3 +7513,38 @@ FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) is to draw highlights in
 **Owed by the owner:** Mac check 9 (FRUS Explorer Light's plan) for this pull request and #1787, from a clone at a real path; then the merge. FRUS Explorer Light's pin move follows (its S15b).
 
 **Not done:** the copies in `FRUSExplorer/Resources/` are unchanged: nothing loads them, `frus-highlights.js` lacks the tap handler and `frus-offset-engine.js` differs from its constant in comments and spacing, and only `frus-selection.js` is held to its constant. `HighlightReview.status(of:currentVersion:)`, which reads a `DocumentHighlight`, stays in the app. Not run: the UI suites, iOS 26.x, a device and a signed run; the Mac app was built and not run.
+
+## Session 2026-10-24 — Citation Lookup's Batch and Structured Entry types are public in FRUSCoreKit, so FRUS Explorer Light's Citation Lookup runs them as the app does
+
+FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) is to offer Citation Lookup's Paste, Batch and Structured Entry through the kit's matcher, splitter and form (its phase 2, row S19a). #1574 moved their types into FRUSCoreKit and left them internal. Its session S15a asked for them public in this pull request, and for the reader's annotation scripts in the kit in a second, #1788, which merged first, as `9ae72e7e`. Access changes nothing for the app, which compiles the kit into its own module.
+
+**Changed**
+- **Public:** `CitationLookupFields`, its fields, `derived(fromPaste:parser:)`, `refreshed(forPaste:mode:parser:)`, `isActionable(mode:pasteText:parser:)` and `input(mode:pasteText:parser:)`; `CitationBlockSplitter` with `Entry`, `leadingMarker(_:)`, `stripMarker(_:)` and `split(_:)`; `BatchCitationOutcome` with `classify(matches:)`, `triageOrder` and `summary(of:locale:)`; `BatchCitationRow`, its fields, `primaryMatch` and `loneCandidateLabel`; `BatchCitationRunner.run(entries:engine:parser:onRow:)`; and `ConfidenceLabels`, every label and note but `cited(_:)`, which takes the engine's internal `CitationMatchingEngine.CitedField`.
+- **Spelled out,** since a public struct's synthesized initialisers stay internal: `CitationLookupFields`' memberwise initialiser, with every argument defaulted as its property is, so `CitationLookupFields()` is still the empty form; `CitationBlockSplitter.Entry.init(index:marker:text:)`; `BatchCitationRow.init(entry:outcome:matches:)`.
+- No body, default or label changes.
+
+**Tests:** none change; access is invisible to the kit's suites, which `@testable` import it, and the splitter's, the outcome's, the fields' and the engine's suites pass as before. What is public was checked from outside the kit on Linux, where a scratch file in FRUS Explorer Light's server target, importing the kit without `@testable`, uses every name this makes public.
+
+**Docs:** `CLAUDE.md`'s FRUSCoreKit entry; a version-history line on each type, and on `ConfidenceLabels` a version history and a note on what is public, which moves the ten blocks in `08-Reading-Research-Collections.md` that cite `CitationMatchingEngine.swift` 8 lines down, each re-pointed to start on its key and keep its length, with the amendment log's line.
+
+**Apple platforms, and how that was checked.** Each heavy job through `Scripts/heavy.sh`, one at a time, with Xcode 27.1 (27A9275), clean and unsigned, beside `v2` @ `02521d01` built and run the same way from a worktree. This entry was added after the runs, and no test reads it.
+- **`FRUSExplorerMac`**, Debug: "** BUILD SUCCEEDED **" both, with the same five warning lines.
+- **The symbol diff,** with the numbers the compiler gives local thunks and the file-private discriminators dropped: 249,757 names on `v2` and 249,754 here, none added and 3 removed: `CitationLookupFields.init()`, which the spelled-out initialiser replaces, and the generators of its two `nil` defaults. Access changes no mangled name.
+- **iOS 27.0,** iPhone 17 (`3C216D17`):
+  - a clean `build-for-testing` of `FRUSExplorer`, "** TEST BUILD SUCCEEDED **" both, with the same 7 warning lines;
+  - the full unit target (`test-without-building -collect-test-diagnostics never -only-testing FRUSExplorerTests`, `TEST_RUNNER_FRUS_TEI_MIRROR` set, the app removed first): "✘ Test run with 7623 tests in 903 suites failed after 649.551 seconds with 8 issues.", and on `v2` "✘ Test run with 7623 tests in 903 suites failed after 597.226 seconds with 8 issues.";
+  - the 8 on both are the Keychain tests an unsigned build fails with -34018: KeychainStoreTests 5, SettingsTests 2, SourceExplorerTests 1. Both runs skip the same 17 tests and 2 suites. `FRUSOffsetEngineTests` and `SelectionScriptParityTests` passed, with the splitter's, the outcome's and the fields' suites and `FRUSCoreKitBoundaryTests`.
+- **`swift build --target FRUSCoreKit`:** "Build complete!".
+- **`swift test`, whole, on the macOS host:** exit 0; 38 runs and 3,054 tests in 365 suites, all passed, none skipped, as on `v2`. `FRUSCoreKitTests`: "✔ Test run with 1161 tests in 153 suites passed".
+
+**Linux** (Docker Desktop, `swift:6.4-noble` on arm64): FRUS Explorer Light's package at its `main` (`c028783`), with this branch copied over its submodule and its own targets built clean, with no build warning. `FRUSCoreKitTests` "✔ Test run with 1161 tests in 153 suites passed", with the one named skip (FTS5StoreTests' backup attribute). Every other target passed but the parity suites, whose 13 issues are golden-file staleness alone (the source digest covers the kit's folders). A scratch file in its server target, importing FRUSCoreKit without `@testable` and never committed, used every name this makes public, and the target built.
+
+**At the merge of `v2` at `9ae72e7e` (#1788),** which met this branch only in the records (`CLAUDE.md`'s FRUSCoreKit entry and the ends of this plan and of the amendment log, where this pull request's text now follows #1788's), every check ran again at the merge commit, against `v2` as run for #1788, whose head's tree is `9ae72e7e`'s:
+- `FRUSExplorerMac` built with the same five warning lines; the symbol diff, 249,770 names on `v2` and 249,767 here, removes the same 3 and adds none;
+- a clean iOS `build-for-testing`, with the same 7 warning lines, and the full unit target: "✘ Test run with 7636 tests in 906 suites failed after 580.215 seconds with 8 issues.", against `v2`'s "✘ Test run with 7636 tests in 906 suites failed after 586.500 seconds with 8 issues.", the same 8 Keychain tests and the same 17 tests and 2 suites skipped, with `FRUSOffsetEngineTests` and `SelectionScriptParityTests` passing;
+- `swift test`: exit 0, 38 runs and 3,084 tests in 369 suites, none skipped, and `FRUSCoreKitTests` "✔ Test run with 1191 tests in 157 suites passed", as on `v2`;
+- Linux, over FRUS Explorer Light's `main` at `043a891`: the same as before, `FRUSCoreKitTests` at 1,191, and the scratch file used every name either pull request makes public.
+
+**Owed by the owner:** Mac check 9 (FRUS Explorer Light's plan) for this pull request, from a clone at a real path; then the merge. FRUS Explorer Light's pin move follows (its S15b).
+
+**Not done:** `ConfidenceLabels.cited(_:)` and `CitationMatchingEngine.CitedField` stay internal: the engine quotes a cited field with them inside its own labels, which `CitationMatch.confidenceLabel` carries. Not run: the UI suites, iOS 26.x, a device and a signed run; the Mac app was built and not run.
