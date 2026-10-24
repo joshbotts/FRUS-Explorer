@@ -46,6 +46,8 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — Wave R-7: initial implementation
+///   1.1 — FRUS Explorer Light: the reserved `annotationId`'s sweep passes a value read from a
+///          record's own `annotationId`, which carries a value and cannot mint the first one
 struct CloudKitSchemaInventoryTests {
 
     // MARK: - Fixtures
@@ -340,8 +342,8 @@ struct CloudKitSchemaInventoryTests {
     /// The inventory's own comment says no test can catch a missing writer, because the identifier
     /// is a real member either way. That is true of the *absence* — but the moment someone ADDS a
     /// writer, this fires and says what to do. `AnnotationReview.annotationId` is `UUID? = nil`, and
-    /// today no call site outside the model passes it at all; both writers record a `document`-grain
-    /// row. Minting the first non-nil value is a Production deploy, so it must be exercised on a
+    /// today no call site outside the model writes it at all; both writers record a `document`-grain
+    /// row, and the research data export only reads it. Minting the first non-nil value is a Production deploy, so it must be exercised on a
     /// Development build and promoted before shipping.
     @Test("No writer mints the reserved annotationId without moving it to awaiting-deploy")
     func theReservedFieldStillHasNoWriter() throws {
@@ -362,6 +364,12 @@ struct CloudKitSchemaInventoryTests {
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
                 if trimmed.hasPrefix("//") || trimmed.hasPrefix("///") { continue }
                 if trimmed.contains("annotationId: nil") { continue }
+                // A value read from a record's own `annotationId` is carried, not minted: the research
+                // data export copies it into its record (format version 7), and a non-nil value there
+                // was minted by a writer this sweep finds.
+                if trimmed.range(of: #"annotationId: \w+\.annotationId\b"#, options: .regularExpression) != nil {
+                    continue
+                }
                 offenders.append("\(url.lastPathComponent): \(trimmed)")
             }
         }

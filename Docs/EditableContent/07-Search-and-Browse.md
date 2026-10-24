@@ -1048,7 +1048,7 @@ Text from Foreign Relations of the United States, Office of the Historian, U.S. 
 
 <!-- END SOURCE: appendix.attribution -->
 
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | lines: 161–162 | key: settings.export.appendix.footer -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | lines: 180–181 | key: settings.export.appendix.footer -->
 
 Every search you ran, in a Markdown table and a CSV. Each row gives the scope the search ran under and how many volumes were indexed at the time. Counts that hit the app’s row ceiling appear as “at least N”, so a partial result is never printed as a total.
 

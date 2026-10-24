@@ -29,6 +29,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Archive Visits Phase 2: initial implementation
+///   1.1 — FRUS Explorer Light: the export test accepts a format version past 6, which carries plans too
 @Suite("Archive Visit plan (Phase 2)")
 struct ArchiveVisitPlanTests {
 
@@ -355,7 +356,8 @@ struct ArchiveVisitPlanTests {
 
         let envelope = try ResearchDataExporter.makeEnvelope(
             modelContext: context, includeGeneratedSummaries: false)
-        #expect(envelope.formatVersion == 6)
+        // The version that first carried plans, or a later one, which carries them too.
+        #expect(envelope.formatVersion >= 6)
         let exported = try #require(envelope.archiveVisits.first)
         #expect(exported.name == "Berlin blockade")
         #expect(exported.tiers == [tier])

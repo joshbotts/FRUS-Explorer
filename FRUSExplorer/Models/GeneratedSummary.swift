@@ -53,6 +53,8 @@ import SwiftData
 ///          property, no CloudKit change
 ///   1.5 — R-5 P3b-2: `sourceContentHash` — the revision hash of the text a summary describes.
 ///          A NEW mirrored field: it boards the ninth Production promotion.
+///   1.6 — FRUS Explorer Light: `SummaryAuthorship` moved to FRUSCoreKit, unchanged but `public`; no
+///          stored property changed
 @Model final class GeneratedSummary: @unchecked Sendable {
 
     // MARK: - Identity
@@ -218,20 +220,8 @@ import SwiftData
     }
 }
 
-// MARK: - SummaryAuthorship
-
-/// The provenance of a `GeneratedSummary`'s text (Composer redesign). Lets exports attribute a
-/// user-written or -edited headnote honestly rather than labeling it "AI-generated". Stored as its
-/// raw string for SwiftData / CloudKit; `.aiGenerated` is the default so existing summaries are
-/// unaffected.
-enum SummaryAuthorship: String, Codable, Sendable, CaseIterable {
-    /// Produced by the on-device summarizer (Apple Intelligence) — the default for every summary.
-    case aiGenerated
-    /// AI-seeded, then edited by the user.
-    case aiEdited
-    /// Written by the user from scratch.
-    case userWritten
-}
+// `SummaryAuthorship` moved to FRUSCoreKit (`FRUSCoreKit/Models/SummaryTypes.swift`) under its
+// name, since the research data export, now kit code, names it.
 
 // MARK: - Headnote-draft cleanup
 

@@ -31,6 +31,8 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — provenance-leak fix: initial implementation
+///   1.1 — FRUS Explorer Light: the DTO is read from FRUSCoreKit, where the envelope moved; the
+///          mapping site is still the app's exporter
 @Suite("Summary provenance survives export")
 struct SummaryProvenanceExportTests {
 
@@ -111,13 +113,15 @@ struct SummaryProvenanceExportTests {
     }
 
     /// A source audit, because the leak was an omission at a mapping site that compiles fine.
+    /// The DTO is FRUSCoreKit's and the mapping site the app's, so each is read from its own file.
     @Test("The DTO and the mapping site both carry the field")
     func bothHalvesArePresent() throws {
-        let source = try Self.exporterSource()
-        let dtoRange = try #require(source.range(of: "struct GeneratedSummaryExport"))
-        let dtoBody = source[dtoRange.upperBound...].prefix(2_400)
+        let dtoSource = try Self.envelopeSource()
+        let dtoRange = try #require(dtoSource.range(of: "struct GeneratedSummaryExport"))
+        let dtoBody = dtoSource[dtoRange.upperBound...].prefix(2_400)
         #expect(dtoBody.contains("var authorship: SummaryAuthorship?"),
                 "the DTO lost the field")
+        let source = try Self.exporterSource()
         let mapRange = try #require(source.range(of: "GeneratedSummaryExport("))
         // A generous window: the mapping site carries ten fields plus the comment explaining
         // why the legacy nil is coerced rather than passed through.
@@ -126,12 +130,19 @@ struct SummaryProvenanceExportTests {
     }
 
     private static func exporterSource() throws -> String {
+        try source("FRUSExplorer/Export/ResearchDataExporter.swift")
+    }
+
+    /// The envelope and its records, which FRUS Explorer Light moved into FRUSCoreKit.
+    private static func envelopeSource() throws -> String {
+        try source("FRUSCoreKit/Export/ResearchDataEnvelope.swift")
+    }
+
+    private static func source(_ path: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
-        let text = try String(
-            contentsOf: root.appending(path: "FRUSExplorer/Export/ResearchDataExporter.swift"),
-            encoding: .utf8)
-        #expect(text.count > 1_000, "ResearchDataExporter.swift is implausibly small — did it move?")
+        let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
+        #expect(text.count > 1_000, "\(path) is implausibly small — did it move?")
         return text
     }
 }
