@@ -15,6 +15,11 @@ import SQLite3
 // MARK: - ResearchDataExporterTests
 
 /// Tests for `ResearchDataExporter` (Session 154 Task 2 — Research Data Export).
+///
+/// Version history:
+///   1.0 — Session 154: initial implementation
+///   1.1 — FRUS Explorer Light: format version 7 — an export of every model type, decoded again,
+///          the eight new keys, and the **Contents** counts of the eight new types
 @MainActor
 struct ResearchDataExporterTests {
 
@@ -33,6 +38,18 @@ struct ResearchDataExporterTests {
             ReadingHistoryEntry.self,
             SearchHistoryEntry.self,
             ExportHistoryEntry.self,
+            // Format version 6's archive visits, and the eight types version 7 added.
+            ArchiveVisitPlan.self,
+            ArchiveVisitDocument.self,
+            ArchiveVisitTarget.self,
+            SavedSearch.self,
+            WorkingCorpus.self,
+            CustomVolumeScope.self,
+            DocumentClassificationOverride.self,
+            PersonClusterOverride.self,
+            AnnotationReview.self,
+            ProjectLeadEntry.self,
+            SyncedPreferences.self,
         ])
         // `cloudKitDatabase: .none` — the test host is entitled, and an in-memory container
         // without it spins up real sync and crashes.
@@ -267,8 +284,226 @@ struct ResearchDataExporterTests {
             "readingHistory", "searchHistory", "exportHistory",
             // Archive Visits Phase 2 (format version 6).
             "archiveVisits",
+            // The eight model types version 6 left out (format version 7), written even when empty.
+            "savedSearches", "workingCorpora", "customVolumeScopes", "classificationOverrides",
+            "personClusterOverrides", "annotationReviews", "projectLeads", "syncedPreferences",
         ]
         #expect(Set(json.keys) == expectedKeys)
+    }
+
+    // MARK: - Format version 7: every type
+
+    /// Seeds, beside `seedFixtures(in:)`, a record of each type version 7 added and a value in
+    /// every field it added to the types 6 carried: a formatted note, a composed collection with
+    /// an entry of each kind and every override, a project's focus, a headnote draft, and an
+    /// archive visit plan, so an export from this store holds every type the app keeps.
+    private func seedEveryType(in context: ModelContext) throws -> (project: Project, tag: UserTag) {
+        let fixtures = seedFixtures(in: context)
+        let project = try #require(try context.fetch(FetchDescriptor<Project>()).first)
+        let tag = try #require(try context.fetch(FetchDescriptor<UserTag>()).first)
+        let prompt = try #require(try context.fetch(FetchDescriptor<SummarizationPrompt>())
+            .first { !$0.isStandard })
+
+        fixtures.note.richText = Data(#"{\rtf1\ansi Key {\b turning} point.}"#.utf8)
+        project.defaultUserTagIds = [tag.id]
+        project.leadAxisWeights = "subject=0.5;person=0.3;crossref=0.2"
+
+        let draft = GeneratedSummary(documentId: "d1", volumeId: "frus1969-76v01", promptId: prompt.id,
+                                     responseText: "The turning point, in brief.",
+                                     authorship: .userWritten, isHeadnoteDraft: true)
+        context.insert(draft)
+
+        let collection = try #require(try context.fetch(FetchDescriptor<Collection>()).first)
+        collection.subtitle = "The Paris talks"
+        collection.authorLine = "A. Researcher"
+        collection.introductionText = "Why these documents."
+        collection.introductionRichText = Data(#"{\rtf1\ansi Why {\i these} documents.}"#.utf8)
+        collection.includeColophon = true
+        collection.includeMethodAppendix = true
+        collection.defaultBodyDepth = "summaryOnly"
+        collection.effectiveIncludeSourceNote = true
+        collection.tocStyle = "headerAndDateline"
+        collection.applyHighlights = true
+        collection.includeWordCloud = true
+        collection.defaultIncludeHeadnote = true
+        collection.summaryPromptId = prompt.id
+        let document = try #require(collection.documentEntries?.first)
+        document.sortOrder = 1
+        document.titleOverride = "The turning point"
+        document.bodyDepthOverride = "index"
+        document.applyHighlightsOverride = false
+        document.includeNotesOverride = false
+        document.includeSourceNoteOverride = true
+        document.includeFootnotesOverride = false
+        document.summaryPromptIdOverride = prompt.id
+        document.selectedHighlightIds = [fixtures.highlight.id]
+        document.includeRelatedDocuments = true
+        document.includeHeadnote = true
+        document.headnoteSummaryId = draft.id
+        func entry(_ kind: CollectionEntryKind, at order: Int, documentId: String = "") -> CollectionEntry {
+            let entry = CollectionEntry(collectionId: collection.id, documentId: documentId,
+                                        volumeId: documentId.isEmpty ? "" : "frus1969-76v01",
+                                        sortOrder: order)
+            entry.entryKind = kind
+            entry.collection = collection
+            context.insert(entry)
+            return entry
+        }
+        let heading = entry(.heading, at: 0)
+        heading.text = "Chapter 3"
+        heading.level = 2
+        let prose = entry(.prose, at: 2)
+        prose.text = "What follows."
+        prose.richText = Data(#"{\rtf1\ansi What {\ul follows}.}"#.utf8)
+        let excerpt = entry(.excerpt, at: 3, documentId: "d1")
+        excerpt.text = "a key turning point"
+        excerpt.excerptStart = 10
+        excerpt.excerptEnd = 29
+        excerpt.excerptRenderingVersion = "abc123"
+        excerpt.excerptColorTag = "yellow"
+        entry(.generated, at: 4).generatedBlockType = "chronology"
+
+        let search = SavedSearch(name: "Arms control", parameters: SearchParameters(
+            keywords: "arms control", excludedTerms: ["salt"], volumeIds: ["frus1969-76v01"],
+            includeSummaries: false, documentTypeFilter: .documentsOnly))
+        search.recordRun(matchCount: 412, indexedVolumeCount: 553)
+        context.insert(search)
+        context.insert(WorkingCorpus(name: "Détente telegrams",
+                                     documentKeys: ["frus1969-76v01/d2", "frus1969-76v01/d1"],
+                                     sourceQuery: "détente", indexedVolumeCountAtCapture: 553,
+                                     wasTruncatedAtCapture: false, totalMatchCountAtCapture: 2))
+        context.insert(CustomVolumeScope(name: "Nixon years",
+                                         volumeIds: ["frus1969-76v12", "frus1969-76v01"]))
+        context.insert(DocumentClassificationOverride(volumeId: "frus1969-76v01", documentId: "d3",
+                                                      isEditorialNote: true, parsedIsEditorialNote: false))
+        context.insert(PersonClusterOverride(kind: .merge, volumeIdA: "frus1969-76v01", refA: "p_KH1",
+                                             volumeIdB: "frus1969-76v12", refB: "p_KHA1"))
+        context.insert(AnnotationReview(kind: .document, annotationId: nil, volumeId: "frus1969-76v01",
+                                        documentId: "d1", contentHash: "9f86d081884c7d65",
+                                        changeKind: "text"))
+        context.insert(ProjectLeadEntry(projectId: project.id, volumeId: "frus1969-76v01", documentId: "d9",
+                                        aggregateScore: 1.75, contributingSeedKeys: ["frus1969-76v01/d1"],
+                                        header: "9. Memorandum", documentNumber: "9", dismissed: true))
+        let preferences = SyncedPreferences()
+        preferences.citationStyleRaw = "chicago"
+        preferences.wcGlobalStopwordsJSON = #"["telegram"]"#
+        context.insert(preferences)
+        context.insert(ArchiveVisitPlan(name: "Berlin blockade"))
+        try context.save()
+        return (project, tag)
+    }
+
+    @Test("An export of every type decodes again, with every field version 7 added")
+    func exportOfEveryTypeDecodesAgain() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (project, tag) = try seedEveryType(in: context)
+
+        let envelope = try ResearchDataExporter.makeEnvelope(modelContext: context, includeGeneratedSummaries: true)
+        let data = try ResearchDataExporter.exportJSONData(envelope)
+        let kitData = try envelope.jsonData()
+        #expect(data == kitData, "the app's export and FRUSCoreKit's encoder disagree")
+        let decoded = try ResearchDataEnvelope.makeDecoder().decode(ResearchDataEnvelope.self, from: data)
+
+        #expect(decoded.formatVersion == 7)
+        // One record of each type the store holds, the new eight with the fifteen 6 carried.
+        #expect(decoded.notes.count == 1 && decoded.tags.count == 1 && decoded.tagAssignments.count == 1)
+        #expect(decoded.highlights.count == 1 && decoded.collections.count == 1 && decoded.prompts.count == 1)
+        #expect(decoded.projects.count == 1 && decoded.summaries.count == 2)
+        #expect(decoded.readingHistory.count == 2 && decoded.searchHistory.count == 2
+                    && decoded.exportHistory.count == 1 && decoded.archiveVisits.count == 1)
+        #expect(decoded.savedSearches.count == 1 && decoded.workingCorpora.count == 1
+                    && decoded.customVolumeScopes.count == 1 && decoded.classificationOverrides.count == 1
+                    && decoded.personClusterOverrides.count == 1 && decoded.annotationReviews.count == 1
+                    && decoded.projectLeads.count == 1 && decoded.syncedPreferences.count == 1)
+
+        // What 6 dropped from the types it carried.
+        #expect(decoded.notes.first?.richText == Data(#"{\rtf1\ansi Key {\b turning} point.}"#.utf8))
+        #expect(decoded.projects.first?.defaultUserTagIds == [tag.id])
+        #expect(decoded.projects.first?.leadAxisWeights == "subject=0.5;person=0.3;crossref=0.2")
+        #expect(Set(decoded.summaries.compactMap(\.isHeadnoteDraft)) == [false, true])
+        let collection = try #require(decoded.collections.first)
+        #expect(collection.subtitle == "The Paris talks" && collection.authorLine == "A. Researcher")
+        #expect(collection.introductionText == "Why these documents." && collection.introductionRichText != nil)
+        #expect(collection.includeColophon == true && collection.includeProjectProvenance == false
+                    && collection.includeMethodAppendix == true)
+        #expect(collection.defaultBodyDepth == "summaryOnly" && collection.tocStyle == "headerAndDateline")
+        // Set through the effective setter, as the composition sheet sets them: both flags and the
+        // legacy style travel.
+        #expect(collection.includeFootnotes == true && collection.includeSourceNote == true
+                    && collection.footnoteStyle == "all")
+        #expect(collection.applyHighlights == true && collection.includeNotes == true
+                    && collection.includeWordCloud == true && collection.defaultIncludeHeadnote == true)
+        #expect(collection.summaryPromptId != nil)
+        #expect(collection.entries.map(\.kind) == ["heading", "document", "prose", "excerpt", "generated"],
+                "entries are sorted by their order, each with its kind")
+        let entries = collection.entries
+        #expect(entries[0].text == "Chapter 3" && entries[0].level == 2 && entries[0].documentId == "")
+        #expect(entries[1].titleOverride == "The turning point" && entries[1].bodyDepthOverride == "index")
+        #expect(entries[1].applyHighlightsOverride == false && entries[1].includeNotesOverride == false)
+        #expect(entries[1].includeSourceNoteOverride == true && entries[1].includeFootnotesOverride == false)
+        #expect(entries[1].summaryPromptIdOverride != nil && entries[1].selectedHighlightIds?.count == 1)
+        #expect(entries[1].includeRelatedDocuments == true && entries[1].includeHeadnote == true)
+        #expect(entries[1].headnoteSummaryId == decoded.summaries.first(where: { $0.isHeadnoteDraft == true })?.id)
+        #expect(entries[2].text == "What follows." && entries[2].richText != nil)
+        #expect(entries[3].text == "a key turning point" && entries[3].documentId == "d1")
+        #expect(entries[3].excerptStart == 10 && entries[3].excerptEnd == 29
+                    && entries[3].excerptRenderingVersion == "abc123" && entries[3].excerptColorTag == "yellow")
+        #expect(entries[4].generatedBlockType == "chronology")
+        #expect(entries.allSatisfy { $0.selectedHighlightIds != nil && $0.level != nil },
+                "a file at version 7 always carries an entry's level and highlight choice")
+
+        // The eight types 6 left out, each as the store holds it.
+        let search = try #require(decoded.savedSearches.first)
+        #expect(search.name == "Arms control")
+        #expect(search.parameters.keywords == "arms control" && search.parameters.excludedTerms == ["salt"])
+        #expect(search.parameters.volumeIds == ["frus1969-76v01"] && !search.parameters.includeSummaries)
+        #expect(search.parameters.documentTypeFilter == .documentsOnly)
+        #expect(search.matchCountAtLastRun == 412 && search.indexedVolumeCountAtLastRun == 553
+                    && search.lastRunAt != nil)
+        #expect(decoded.workingCorpora.first?.documentKeys == ["frus1969-76v01/d1", "frus1969-76v01/d2"])
+        #expect(decoded.workingCorpora.first?.wasTruncatedAtCapture == false)
+        #expect(decoded.customVolumeScopes.first?.volumeIds == ["frus1969-76v01", "frus1969-76v12"])
+        #expect(decoded.classificationOverrides.first?.isEditorialNote == true)
+        #expect(decoded.personClusterOverrides.first?.kind == "merge")
+        #expect(decoded.personClusterOverrides.first?.refB == "p_KHA1")
+        #expect(decoded.annotationReviews.first?.annotationType == "document")
+        #expect(decoded.annotationReviews.first?.contentHash == "9f86d081884c7d65")
+        #expect(decoded.projectLeads.first?.projectId == project.id)
+        #expect(decoded.projectLeads.first?.aggregateScore == 1.75 && decoded.projectLeads.first?.dismissed == true)
+        #expect(decoded.syncedPreferences.first?.citationStyleRaw == "chicago")
+        #expect(decoded.syncedPreferences.first?.wcGlobalStopwordsJSON == #"["telegram"]"#)
+
+        // The file is lossless: decoding what the decoded envelope encodes changes nothing.
+        let again = try ResearchDataEnvelope.makeDecoder()
+            .decode(ResearchDataEnvelope.self, from: try ResearchDataExporter.exportJSONData(decoded))
+        #expect(again == decoded)
+    }
+
+    @Test("A lead whose score is not a finite number exports as 0, and the export does not fail")
+    func nonFiniteLeadScoreExports() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        context.insert(ProjectLeadEntry(projectId: UUID(), volumeId: "v", documentId: "d",
+                                        aggregateScore: .nan, contributingSeedKeys: []))
+        try context.save()
+        let envelope = try ResearchDataExporter.makeEnvelope(modelContext: context, includeGeneratedSummaries: false)
+        #expect(envelope.projectLeads.first?.aggregateScore == 0)
+        #expect(throws: Never.self) { try ResearchDataExporter.exportJSONData(envelope) }
+    }
+
+    @Test("inventoryCounts counts each type version 7 added, and zero on an empty store")
+    func inventoryCountsReportEachType() throws {
+        let empty = try makeContainer()
+        #expect(ResearchDataExporter.inventoryCounts(modelContext: empty.mainContext)
+                    == ResearchDataExporter.InventoryCounts())
+
+        let container = try makeContainer()
+        _ = try seedEveryType(in: container.mainContext)
+        #expect(ResearchDataExporter.inventoryCounts(modelContext: container.mainContext)
+                    == ResearchDataExporter.InventoryCounts(
+                        savedSearches: 1, workingCorpora: 1, volumeScopes: 1, classificationCorrections: 1,
+                        personCorrections: 1, reviewedChanges: 1, suggestedLeads: 1, syncedSettings: 1))
     }
 
     // MARK: - Wave R-5: the research trail

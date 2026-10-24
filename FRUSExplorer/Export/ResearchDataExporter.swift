@@ -35,6 +35,9 @@ import SQLite3
 ///   1.3 — FRUS Explorer Light: the envelope, its records, the format version, the encoder's
 ///          settings and the Markdown note file moved to FRUSCoreKit, unchanged; the version and
 ///          `exportJSONData(_:)` forward to it, and a note's file is rendered there
+///   1.4 — FRUS Explorer Light: format version 7 — `makeEnvelope` writes the eight model types 6
+///          left out and the fields 6 dropped from the types it carried; `inventoryCounts`
+///          counts the eight for **Contents**
 @MainActor
 enum ResearchDataExporter {
 
@@ -85,6 +88,26 @@ enum ResearchDataExporter {
             FetchDescriptor<ArchiveVisitPlan>(sortBy: [SortDescriptor(\.name),
                                                        SortDescriptor(\.createdAt)]))
 
+        // Format version 7: the eight model types 6 left out, each oldest first by when it was
+        // made, like the fetches above. Synced preferences oldest first too, which puts the record
+        // the app reads (the earliest-created, `SettingsSyncCoordinator`) first.
+        let savedSearches = try modelContext.fetch(
+            FetchDescriptor<SavedSearch>(sortBy: [SortDescriptor(\.createdAt)]))
+        let workingCorpora = try modelContext.fetch(
+            FetchDescriptor<WorkingCorpus>(sortBy: [SortDescriptor(\.createdAt)]))
+        let customVolumeScopes = try modelContext.fetch(
+            FetchDescriptor<CustomVolumeScope>(sortBy: [SortDescriptor(\.createdAt)]))
+        let classificationOverrides = try modelContext.fetch(
+            FetchDescriptor<DocumentClassificationOverride>(sortBy: [SortDescriptor(\.createdAt)]))
+        let personClusterOverrides = try modelContext.fetch(
+            FetchDescriptor<PersonClusterOverride>(sortBy: [SortDescriptor(\.createdAt)]))
+        let annotationReviews = try modelContext.fetch(
+            FetchDescriptor<AnnotationReview>(sortBy: [SortDescriptor(\.reviewedAt)]))
+        let projectLeads = try modelContext.fetch(
+            FetchDescriptor<ProjectLeadEntry>(sortBy: [SortDescriptor(\.firstSurfacedAt)]))
+        let syncedPreferences = try modelContext.fetch(
+            FetchDescriptor<SyncedPreferences>(sortBy: [SortDescriptor(\.createdAt)]))
+
         let highlightsByNoteId = Dictionary(grouping: highlights, by: \.noteId)
 
         // The active project's header pointer (#377 Phase 4) — resolved against the already-fetched
@@ -107,7 +130,8 @@ enum ResearchDataExporter {
                     selectedSummaryIds: note.selectedSummaryIds,
                     linkedHighlightIds: (highlightsByNoteId[note.id] ?? []).map(\.id),
                     createdAt: note.createdAt,
-                    lastModified: note.lastModified
+                    lastModified: note.lastModified,
+                    richText: note.richText
                 )
             },
             tags: tags.map { tag in
@@ -159,11 +183,52 @@ enum ResearchDataExporter {
                                 researchNoteId: entry.researchNoteId,
                                 selectedNoteIds: entry.selectedNoteIds,
                                 createdAt: entry.createdAt,
-                                lastModified: entry.lastModified
+                                lastModified: entry.lastModified,
+                                // Format version 7: the whole entry. `kind` as stored, so a kind a
+                                // newer build wrote travels as written rather than as `.unrecognized`.
+                                kind: entry.kind,
+                                level: entry.level,
+                                text: entry.text,
+                                richText: entry.richText,
+                                excerptStart: entry.excerptStart,
+                                excerptEnd: entry.excerptEnd,
+                                excerptRenderingVersion: entry.excerptRenderingVersion,
+                                excerptColorTag: entry.excerptColorTag,
+                                generatedBlockType: entry.generatedBlockType,
+                                titleOverride: entry.titleOverride,
+                                bodyDepthOverride: entry.bodyDepthOverride,
+                                applyHighlightsOverride: entry.applyHighlightsOverride,
+                                includeNotesOverride: entry.includeNotesOverride,
+                                includeSourceNoteOverride: entry.includeSourceNoteOverride,
+                                includeFootnotesOverride: entry.includeFootnotesOverride,
+                                summaryPromptIdOverride: entry.summaryPromptIdOverride,
+                                selectedHighlightIds: entry.selectedHighlightIds,
+                                includeRelatedDocuments: entry.includeRelatedDocuments,
+                                includeHeadnote: entry.includeHeadnote,
+                                headnoteSummaryId: entry.headnoteSummaryId
                             )
                         },
                     createdAt: collection.createdAt,
-                    lastModified: collection.lastModified
+                    lastModified: collection.lastModified,
+                    // Format version 7: the front matter, the composition and the settings, each
+                    // as stored, the two footnote flags `nil` where the collection has not set them.
+                    subtitle: collection.subtitle,
+                    authorLine: collection.authorLine,
+                    introductionText: collection.introductionText,
+                    introductionRichText: collection.introductionRichText,
+                    includeColophon: collection.includeColophon,
+                    includeProjectProvenance: collection.includeProjectProvenance,
+                    includeMethodAppendix: collection.includeMethodAppendix,
+                    defaultBodyDepth: collection.defaultBodyDepth,
+                    footnoteStyle: collection.footnoteStyle,
+                    includeFootnotes: collection.includeFootnotes,
+                    includeSourceNote: collection.includeSourceNote,
+                    tocStyle: collection.tocStyle,
+                    applyHighlights: collection.applyHighlights,
+                    includeNotes: collection.includeNotes,
+                    includeWordCloud: collection.includeWordCloud,
+                    defaultIncludeHeadnote: collection.defaultIncludeHeadnote,
+                    summaryPromptId: collection.summaryPromptId
                 )
             },
             prompts: prompts.filter { !$0.isStandard }.map { prompt in
@@ -187,7 +252,9 @@ enum ResearchDataExporter {
                     defaultSubjectTagIds: project.defaultSubjectTagIds,
                     defaultCountryTagIds: project.defaultCountryTagIds,
                     createdAt: project.createdAt,
-                    lastModified: project.lastModified
+                    lastModified: project.lastModified,
+                    defaultUserTagIds: project.defaultUserTagIds,
+                    leadAxisWeights: project.leadAxisWeights
                 )
             },
             summaries: summaries.map { summary in
@@ -206,7 +273,8 @@ enum ResearchDataExporter {
                     // else in the app, and exporting `null` would tell a reader the provenance was
                     // unknown when the app treats it as known. Never write an ambiguity the reader
                     // has to resolve with a rule they do not have.
-                    authorship: summary.authorship ?? .aiGenerated
+                    authorship: summary.authorship ?? .aiGenerated,
+                    isHeadnoteDraft: summary.isHeadnoteDraft
                 )
             },
             readingHistory: readingHistory.map { visit in
@@ -283,7 +351,121 @@ enum ResearchDataExporter {
                     createdAt: plan.createdAt,
                     lastModified: plan.lastModified
                 )
+            },
+            savedSearches: savedSearches.map(savedSearchExport),
+            workingCorpora: workingCorpora.map { corpus in
+                WorkingCorpusExport(
+                    id: corpus.id,
+                    name: corpus.name,
+                    documentKeys: corpus.documentKeys,
+                    capturedAt: corpus.capturedAt,
+                    sourceQuery: corpus.sourceQuery,
+                    sourceDescription: corpus.sourceDescription,
+                    indexedVolumeCountAtCapture: corpus.indexedVolumeCountAtCapture,
+                    wasTruncatedAtCapture: corpus.wasTruncatedAtCapture,
+                    totalMatchCountAtCapture: corpus.totalMatchCountAtCapture,
+                    createdAt: corpus.createdAt,
+                    lastModified: corpus.lastModified
+                )
+            },
+            customVolumeScopes: customVolumeScopes.map { scope in
+                CustomVolumeScopeExport(
+                    id: scope.id,
+                    name: scope.name,
+                    volumeIds: scope.volumeIds,
+                    createdAt: scope.createdAt,
+                    lastModified: scope.lastModified
+                )
+            },
+            classificationOverrides: classificationOverrides.map { override in
+                DocumentClassificationOverrideExport(
+                    id: override.id,
+                    volumeId: override.volumeId,
+                    documentId: override.documentId,
+                    isEditorialNote: override.isEditorialNote,
+                    parsedIsEditorialNote: override.parsedIsEditorialNote,
+                    createdAt: override.createdAt
+                )
+            },
+            personClusterOverrides: personClusterOverrides.map { override in
+                PersonClusterOverrideExport(
+                    id: override.id,
+                    kind: override.kind,
+                    volumeIdA: override.volumeIdA,
+                    refA: override.refA,
+                    volumeIdB: override.volumeIdB,
+                    refB: override.refB,
+                    createdAt: override.createdAt
+                )
+            },
+            annotationReviews: annotationReviews.map { review in
+                AnnotationReviewExport(
+                    id: review.id,
+                    annotationType: review.annotationType,
+                    annotationId: review.annotationId,
+                    volumeId: review.volumeId,
+                    documentId: review.documentId,
+                    contentHash: review.contentHash,
+                    changeKind: review.changeKind,
+                    reviewedAt: review.reviewedAt
+                )
+            },
+            projectLeads: projectLeads.map(projectLeadExport),
+            syncedPreferences: syncedPreferences.map { preferences in
+                SyncedPreferencesExport(
+                    createdAt: preferences.createdAt,
+                    updatedAt: preferences.updatedAt,
+                    wcMinLength: preferences.wcMinLength,
+                    wcMinCount: preferences.wcMinCount,
+                    wcFoldPlurals: preferences.wcFoldPlurals,
+                    wcFilterMarkings: preferences.wcFilterMarkings,
+                    wcExcludeBoilerplate: preferences.wcExcludeBoilerplate,
+                    wcGlobalStopwordsJSON: preferences.wcGlobalStopwordsJSON,
+                    wcLensStopwordsJSON: preferences.wcLensStopwordsJSON,
+                    citationStyleRaw: preferences.citationStyleRaw,
+                    defaultDocumentModeRaw: preferences.defaultDocumentModeRaw,
+                    researchLoggingEnabled: preferences.researchLoggingEnabled,
+                    listOrderJSON: preferences.listOrderJSON
+                )
             }
+        )
+    }
+
+    /// A saved search's record (format version 7): the search as the app runs it,
+    /// `SavedSearch.searchParameters`, and the run watermark's three values.
+    private static func savedSearchExport(_ search: SavedSearch) -> SavedSearchExport {
+        let freshness = search.freshness
+        return SavedSearchExport(
+            id: search.id,
+            name: search.name,
+            parameters: search.searchParameters,
+            lastRunAt: freshness?.lastRunAt,
+            matchCountAtLastRun: freshness?.matchCountAtLastRun,
+            indexedVolumeCountAtLastRun: freshness?.indexedVolumeCountAtLastRun,
+            createdAt: search.createdAt,
+            lastModified: search.lastModified
+        )
+    }
+
+    /// A Suggested Next lead's record (format version 7).
+    ///
+    /// A score that is not a finite number is written as 0: `JSONEncoder` refuses NaN and the
+    /// infinities, so one such score would fail the whole export, and the score is recomputed
+    /// whenever Suggested Next refreshes, where the dismissal and the dates are the researcher's.
+    private static func projectLeadExport(_ lead: ProjectLeadEntry) -> ProjectLeadEntryExport {
+        ProjectLeadEntryExport(
+            id: lead.id,
+            projectId: lead.projectId,
+            volumeId: lead.volumeId,
+            documentId: lead.documentId,
+            aggregateScore: lead.aggregateScore.isFinite ? lead.aggregateScore : 0,
+            contributingSeedKeys: lead.contributingSeedKeys,
+            header: lead.header,
+            documentNumber: lead.documentNumber,
+            isEditorialNote: lead.isEditorialNote,
+            firstSurfacedAt: lead.firstSurfacedAt,
+            lastComputedAt: lead.lastComputedAt,
+            dismissed: lead.dismissed
         )
     }
 
@@ -303,6 +485,43 @@ enum ResearchDataExporter {
             (try? modelContext.fetchCount(FetchDescriptor<SearchHistoryEntry>())) ?? 0,
             (try? modelContext.fetchCount(FetchDescriptor<ExportHistoryEntry>())) ?? 0
         )
+    }
+
+    /// How many records each of the eight types format version 7 added holds, for the **Contents**
+    /// inventory.
+    ///
+    /// `fetchCount`s, like ``trailCounts(modelContext:)``, and taken in the same pass that writes the
+    /// file, so the numbers on screen and the file on offer describe one read. The review ledger and
+    /// the Suggested Next leads grow with use, and the inventory only needs the numbers.
+    ///
+    /// - Parameter modelContext: The SwiftData context to read from.
+    /// - Returns: The counts, zero for a type the store cannot count.
+    static func inventoryCounts(modelContext: ModelContext) -> InventoryCounts {
+        func count<Model: PersistentModel>(_ type: Model.Type) -> Int {
+            (try? modelContext.fetchCount(FetchDescriptor<Model>())) ?? 0
+        }
+        return InventoryCounts(
+            savedSearches: count(SavedSearch.self),
+            workingCorpora: count(WorkingCorpus.self),
+            volumeScopes: count(CustomVolumeScope.self),
+            classificationCorrections: count(DocumentClassificationOverride.self),
+            personCorrections: count(PersonClusterOverride.self),
+            reviewedChanges: count(AnnotationReview.self),
+            suggestedLeads: count(ProjectLeadEntry.self),
+            syncedSettings: count(SyncedPreferences.self))
+    }
+
+    /// The counts ``inventoryCounts(modelContext:)`` returns, one for each of the **Contents** rows
+    /// format version 7 added.
+    struct InventoryCounts: Equatable {
+        var savedSearches = 0
+        var workingCorpora = 0
+        var volumeScopes = 0
+        var classificationCorrections = 0
+        var personCorrections = 0
+        var reviewedChanges = 0
+        var suggestedLeads = 0
+        var syncedSettings = 0
     }
 
     /// Builds the query-log method appendix from the stored trail (M-2).

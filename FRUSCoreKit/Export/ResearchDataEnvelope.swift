@@ -59,6 +59,14 @@ import Foundation
 ///          state including orphans** (a stored row whose key no longer derives is still the
 ///          user's work). Never the derived packet, which is a rendering and not data. Defaults
 ///          to empty in the tolerant decoder, so version-5-and-earlier files still decode
+///   7.0 — FRUS Explorer Light (in FRUSCoreKit): the eight model types version 6 left out —
+///          `savedSearches`, `workingCorpora`, `customVolumeScopes`, `classificationOverrides`,
+///          `personClusterOverrides`, `annotationReviews`, `projectLeads` and
+///          `syncedPreferences` — each defaulting to empty in the tolerant decoder; and what 6
+///          dropped from the types it carried: a note's rich text, a collection's front matter,
+///          composition and settings, each entry's kind, level, text, rich text, excerpt anchors,
+///          block type and overrides, a project's focus tags and lead weights, and a summary's
+///          headnote flag, each optional on its record, so version-6-and-earlier files still decode
 public struct ResearchDataEnvelope: Codable, Equatable, Sendable {
 
     /// Schema version of this export. See `ResearchDataEnvelope.currentFormatVersion`.
@@ -109,6 +117,34 @@ public struct ResearchDataEnvelope: Codable, Equatable, Sendable {
     /// included. Empty on files written before the feature existed.
     public var archiveVisits: [ArchiveVisitPlanExport] = []
 
+    // MARK: - The rest of the researcher's data (format version 7)
+
+    /// Every saved search, with the search it runs and its last run. Empty on a version-6 file,
+    /// which could not carry them, as for every array below.
+    public var savedSearches: [SavedSearchExport] = []
+
+    /// Every working corpus, its documents and how it was captured.
+    public var workingCorpora: [WorkingCorpusExport] = []
+
+    /// Every custom volume scope (Settings ▸ Volume Scopes).
+    public var customVolumeScopes: [CustomVolumeScopeExport] = []
+
+    /// Every correction of whether a document is an editorial note.
+    public var classificationOverrides: [DocumentClassificationOverrideExport] = []
+
+    /// Every person correction, a merge of two records or a split of one.
+    public var personClusterOverrides: [PersonClusterOverrideExport] = []
+
+    /// Every changed passage the researcher has reviewed, the ledger the Review Changes sheet keeps.
+    public var annotationReviews: [AnnotationReviewExport] = []
+
+    /// Every project's Suggested Next leads, with their dismissals.
+    public var projectLeads: [ProjectLeadEntryExport] = []
+
+    /// The settings that sync across the researcher's devices. One record, the earliest-created
+    /// first, as the app reads it; more only while iCloud has not yet merged a second device's.
+    public var syncedPreferences: [SyncedPreferencesExport] = []
+
     /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
     public init(
         formatVersion: Int,
@@ -126,7 +162,15 @@ public struct ResearchDataEnvelope: Codable, Equatable, Sendable {
         readingHistory: [ReadingHistoryEntryExport] = [],
         searchHistory: [SearchHistoryEntryExport] = [],
         exportHistory: [ExportHistoryEntryExport] = [],
-        archiveVisits: [ArchiveVisitPlanExport] = []
+        archiveVisits: [ArchiveVisitPlanExport] = [],
+        savedSearches: [SavedSearchExport] = [],
+        workingCorpora: [WorkingCorpusExport] = [],
+        customVolumeScopes: [CustomVolumeScopeExport] = [],
+        classificationOverrides: [DocumentClassificationOverrideExport] = [],
+        personClusterOverrides: [PersonClusterOverrideExport] = [],
+        annotationReviews: [AnnotationReviewExport] = [],
+        projectLeads: [ProjectLeadEntryExport] = [],
+        syncedPreferences: [SyncedPreferencesExport] = []
     ) {
         self.formatVersion = formatVersion
         self.exportedAt = exportedAt
@@ -144,6 +188,14 @@ public struct ResearchDataEnvelope: Codable, Equatable, Sendable {
         self.searchHistory = searchHistory
         self.exportHistory = exportHistory
         self.archiveVisits = archiveVisits
+        self.savedSearches = savedSearches
+        self.workingCorpora = workingCorpora
+        self.customVolumeScopes = customVolumeScopes
+        self.classificationOverrides = classificationOverrides
+        self.personClusterOverrides = personClusterOverrides
+        self.annotationReviews = annotationReviews
+        self.projectLeads = projectLeads
+        self.syncedPreferences = syncedPreferences
     }
 }
 
@@ -163,6 +215,8 @@ extension ResearchDataEnvelope {
         case notes, tags, tagAssignments, highlights, collections, prompts, projects, summaries
         case readingHistory, searchHistory, exportHistory
         case archiveVisits
+        case savedSearches, workingCorpora, customVolumeScopes, classificationOverrides
+        case personClusterOverrides, annotationReviews, projectLeads, syncedPreferences
     }
 
     /// Decodes an envelope, tolerating files written before the trail existed.
@@ -177,7 +231,8 @@ extension ResearchDataEnvelope {
     /// semantically "none recorded" should not have to be `nil` to say so, hence `decodeIfPresent
     /// … ?? []` instead.
     ///
-    /// Only the three trail arrays and the archive-visits array (format 6) are tolerant.
+    /// Only the three trail arrays, the archive-visits array (format 6) and the eight arrays of
+    /// format 7 are tolerant.
     /// Everything else stays required, so a truncated or corrupt file still fails loudly rather
     /// than decoding into a plausible-looking empty backup.
     ///
@@ -216,6 +271,27 @@ extension ResearchDataEnvelope {
         archiveVisits =
             try container.decodeIfPresent([ArchiveVisitPlanExport].self,
                                           forKey: .archiveVisits) ?? []
+        savedSearches =
+            try container.decodeIfPresent([SavedSearchExport].self, forKey: .savedSearches) ?? []
+        workingCorpora =
+            try container.decodeIfPresent([WorkingCorpusExport].self, forKey: .workingCorpora) ?? []
+        customVolumeScopes =
+            try container.decodeIfPresent([CustomVolumeScopeExport].self,
+                                          forKey: .customVolumeScopes) ?? []
+        classificationOverrides =
+            try container.decodeIfPresent([DocumentClassificationOverrideExport].self,
+                                          forKey: .classificationOverrides) ?? []
+        personClusterOverrides =
+            try container.decodeIfPresent([PersonClusterOverrideExport].self,
+                                          forKey: .personClusterOverrides) ?? []
+        annotationReviews =
+            try container.decodeIfPresent([AnnotationReviewExport].self,
+                                          forKey: .annotationReviews) ?? []
+        projectLeads =
+            try container.decodeIfPresent([ProjectLeadEntryExport].self, forKey: .projectLeads) ?? []
+        syncedPreferences =
+            try container.decodeIfPresent([SyncedPreferencesExport].self,
+                                          forKey: .syncedPreferences) ?? []
     }
 }
 
@@ -237,6 +313,11 @@ public struct ResearchNoteExport: Codable, Equatable, Sendable {
     public var createdAt: Date?
     public var lastModified: Date?
 
+    /// The note's formatting (format version 7): RTF, as the app keeps it beside `bodyText`, which
+    /// stays the note's plain text. Base64 in the file. `nil` when the note has no formatting, and
+    /// in a file written before version 7.
+    public var richText: Data?
+
     /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
     public init(
         id: UUID,
@@ -248,7 +329,8 @@ public struct ResearchNoteExport: Codable, Equatable, Sendable {
         selectedSummaryIds: [UUID],
         linkedHighlightIds: [UUID],
         createdAt: Date? = nil,
-        lastModified: Date? = nil
+        lastModified: Date? = nil,
+        richText: Data? = nil
     ) {
         self.id = id
         self.documentId = documentId
@@ -260,6 +342,7 @@ public struct ResearchNoteExport: Codable, Equatable, Sendable {
         self.linkedHighlightIds = linkedHighlightIds
         self.createdAt = createdAt
         self.lastModified = lastModified
+        self.richText = richText
     }
 }
 
@@ -351,6 +434,15 @@ public struct DocumentHighlightExport: Codable, Equatable, Sendable {
 // MARK: - CollectionEntryExport
 
 /// Export DTO mirroring `CollectionEntry`.
+///
+/// Through format version 6 it carried only an entry's document, order and notes, so a heading, a
+/// prose block or an apparatus block (whose `documentId` is `""`) was written as an entry with no
+/// document, and an excerpt as the document it quotes. Version 7 carries the whole entry: its
+/// kind, level and text, its rich text, an excerpt's anchors, an apparatus block's type, and every
+/// override. Each of those is optional here so a version-6 file still decodes; a file at version 7
+/// always carries `kind`, `level` and `selectedHighlightIds`, and the others when the entry has
+/// them, so `nil` means what it means on the model ("inherit", "none") and, in an earlier file,
+/// that the file predates the field.
 public struct CollectionEntryExport: Codable, Equatable, Sendable {
     public var id: UUID
     public var documentId: String
@@ -361,6 +453,48 @@ public struct CollectionEntryExport: Codable, Equatable, Sendable {
     public var createdAt: Date?
     public var lastModified: Date?
 
+    // MARK: - The entry itself (format version 7)
+
+    /// `CollectionEntry.kind`, the `CollectionEntryKind` raw value as stored (`document`,
+    /// `heading`, `prose`, `excerpt`, `generated`, or a newer build's value).
+    public var kind: String?
+    /// A heading's nesting depth, as stored (1 on every other kind).
+    public var level: Int?
+    /// A heading's title, a prose block's plain text, or an excerpt's frozen passage.
+    public var text: String?
+    /// A prose block's rich text, as the app stores it: RTF, or the JSON-encoded
+    /// `AttributedString` of a Phase 3b build that has not been migrated. Base64 in the file.
+    public var richText: Data?
+    /// An excerpt's UTF-16 start offset in its document's flat text.
+    public var excerptStart: Int?
+    /// An excerpt's UTF-16 end offset, exclusive.
+    public var excerptEnd: Int?
+    /// The document's rendering version when the excerpt was taken.
+    public var excerptRenderingVersion: String?
+    /// The colour of the highlight an excerpt was taken from.
+    public var excerptColorTag: String?
+    /// An apparatus block's `CollectionGeneratedBlockType` raw value.
+    public var generatedBlockType: String?
+
+    // MARK: - Overrides (format version 7)
+
+    /// A document entry's title, replacing the derived one in the table of contents and heading.
+    public var titleOverride: String?
+    /// A `CollectionBodyDepth` raw value overriding the collection's default.
+    public var bodyDepthOverride: String?
+    public var applyHighlightsOverride: Bool?
+    public var includeNotesOverride: Bool?
+    public var includeSourceNoteOverride: Bool?
+    public var includeFootnotesOverride: Bool?
+    public var summaryPromptIdOverride: UUID?
+    /// The highlights to include; empty means all of them.
+    public var selectedHighlightIds: [UUID]?
+    public var includeRelatedDocuments: Bool?
+    /// The entry's headnote setting: `nil` inherits the collection's default.
+    public var includeHeadnote: Bool?
+    /// The summary the headnote renders.
+    public var headnoteSummaryId: UUID?
+
     /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
     public init(
         id: UUID,
@@ -370,7 +504,27 @@ public struct CollectionEntryExport: Codable, Equatable, Sendable {
         researchNoteId: UUID? = nil,
         selectedNoteIds: [UUID],
         createdAt: Date? = nil,
-        lastModified: Date? = nil
+        lastModified: Date? = nil,
+        kind: String? = nil,
+        level: Int? = nil,
+        text: String? = nil,
+        richText: Data? = nil,
+        excerptStart: Int? = nil,
+        excerptEnd: Int? = nil,
+        excerptRenderingVersion: String? = nil,
+        excerptColorTag: String? = nil,
+        generatedBlockType: String? = nil,
+        titleOverride: String? = nil,
+        bodyDepthOverride: String? = nil,
+        applyHighlightsOverride: Bool? = nil,
+        includeNotesOverride: Bool? = nil,
+        includeSourceNoteOverride: Bool? = nil,
+        includeFootnotesOverride: Bool? = nil,
+        summaryPromptIdOverride: UUID? = nil,
+        selectedHighlightIds: [UUID]? = nil,
+        includeRelatedDocuments: Bool? = nil,
+        includeHeadnote: Bool? = nil,
+        headnoteSummaryId: UUID? = nil
     ) {
         self.id = id
         self.documentId = documentId
@@ -380,12 +534,39 @@ public struct CollectionEntryExport: Codable, Equatable, Sendable {
         self.selectedNoteIds = selectedNoteIds
         self.createdAt = createdAt
         self.lastModified = lastModified
+        self.kind = kind
+        self.level = level
+        self.text = text
+        self.richText = richText
+        self.excerptStart = excerptStart
+        self.excerptEnd = excerptEnd
+        self.excerptRenderingVersion = excerptRenderingVersion
+        self.excerptColorTag = excerptColorTag
+        self.generatedBlockType = generatedBlockType
+        self.titleOverride = titleOverride
+        self.bodyDepthOverride = bodyDepthOverride
+        self.applyHighlightsOverride = applyHighlightsOverride
+        self.includeNotesOverride = includeNotesOverride
+        self.includeSourceNoteOverride = includeSourceNoteOverride
+        self.includeFootnotesOverride = includeFootnotesOverride
+        self.summaryPromptIdOverride = summaryPromptIdOverride
+        self.selectedHighlightIds = selectedHighlightIds
+        self.includeRelatedDocuments = includeRelatedDocuments
+        self.includeHeadnote = includeHeadnote
+        self.headnoteSummaryId = headnoteSummaryId
     }
 }
 
 // MARK: - CollectionExport
 
 /// Export DTO mirroring `Collection`, including its ordered `CollectionEntry` items.
+///
+/// Through format version 6 it carried a collection's name, note, projects, saved search and
+/// entries. Version 7 adds its front matter, its composition and its export settings, each
+/// optional here so a version-6 file still decodes. A file at version 7 always carries the ones
+/// the model stores with a default, and the optional ones when they are set: `includeFootnotes`
+/// and `includeSourceNote` are `nil` on a collection that has not set them, which the app reads
+/// from `footnoteStyle`, as on the model.
 public struct CollectionExport: Codable, Equatable, Sendable {
     public var id: UUID
     public var name: String
@@ -399,6 +580,36 @@ public struct CollectionExport: Codable, Equatable, Sendable {
     public var createdAt: Date?
     public var lastModified: Date?
 
+    // MARK: - Front matter (format version 7)
+
+    public var subtitle: String?
+    public var authorLine: String?
+    /// The introduction's plain text.
+    public var introductionText: String?
+    /// The introduction's rich text, RTF as the app stores it. Base64 in the file.
+    public var introductionRichText: Data?
+    public var includeColophon: Bool?
+    public var includeProjectProvenance: Bool?
+    public var includeMethodAppendix: Bool?
+
+    // MARK: - Composition (format version 7)
+
+    /// A `CollectionBodyDepth` raw value.
+    public var defaultBodyDepth: String?
+    /// The legacy `CollectionFootnoteStyle` raw value, which `includeFootnotes` and
+    /// `includeSourceNote` supersede where they are set.
+    public var footnoteStyle: String?
+    public var includeFootnotes: Bool?
+    public var includeSourceNote: Bool?
+    /// A `CollectionToCStyle` raw value.
+    public var tocStyle: String?
+    public var applyHighlights: Bool?
+    public var includeNotes: Bool?
+    public var includeWordCloud: Bool?
+    public var defaultIncludeHeadnote: Bool?
+    /// The prompt whose summaries a summary-only body uses.
+    public var summaryPromptId: UUID?
+
     /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
     public init(
         id: UUID,
@@ -408,7 +619,24 @@ public struct CollectionExport: Codable, Equatable, Sendable {
         savedSearchId: UUID? = nil,
         entries: [CollectionEntryExport],
         createdAt: Date? = nil,
-        lastModified: Date? = nil
+        lastModified: Date? = nil,
+        subtitle: String? = nil,
+        authorLine: String? = nil,
+        introductionText: String? = nil,
+        introductionRichText: Data? = nil,
+        includeColophon: Bool? = nil,
+        includeProjectProvenance: Bool? = nil,
+        includeMethodAppendix: Bool? = nil,
+        defaultBodyDepth: String? = nil,
+        footnoteStyle: String? = nil,
+        includeFootnotes: Bool? = nil,
+        includeSourceNote: Bool? = nil,
+        tocStyle: String? = nil,
+        applyHighlights: Bool? = nil,
+        includeNotes: Bool? = nil,
+        includeWordCloud: Bool? = nil,
+        defaultIncludeHeadnote: Bool? = nil,
+        summaryPromptId: UUID? = nil
     ) {
         self.id = id
         self.name = name
@@ -418,6 +646,23 @@ public struct CollectionExport: Codable, Equatable, Sendable {
         self.entries = entries
         self.createdAt = createdAt
         self.lastModified = lastModified
+        self.subtitle = subtitle
+        self.authorLine = authorLine
+        self.introductionText = introductionText
+        self.introductionRichText = introductionRichText
+        self.includeColophon = includeColophon
+        self.includeProjectProvenance = includeProjectProvenance
+        self.includeMethodAppendix = includeMethodAppendix
+        self.defaultBodyDepth = defaultBodyDepth
+        self.footnoteStyle = footnoteStyle
+        self.includeFootnotes = includeFootnotes
+        self.includeSourceNote = includeSourceNote
+        self.tocStyle = tocStyle
+        self.applyHighlights = applyHighlights
+        self.includeNotes = includeNotes
+        self.includeWordCloud = includeWordCloud
+        self.defaultIncludeHeadnote = defaultIncludeHeadnote
+        self.summaryPromptId = summaryPromptId
     }
 }
 
@@ -468,6 +713,15 @@ public struct ProjectExport: Codable, Equatable, Sendable {
     public var createdAt: Date?
     public var lastModified: Date?
 
+    // MARK: - Project Focus (format version 7)
+
+    /// The project's focus tags, the user tags Project Focus pre-selects. Optional only so a
+    /// version-6 file still decodes; a file at version 7 always carries it.
+    public var defaultUserTagIds: [UUID]?
+    /// Suggested Next's axis weights for the project, as the app stores them, or `nil` when the
+    /// project uses the defaults.
+    public var leadAxisWeights: String?
+
     /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
     public init(
         id: UUID,
@@ -478,7 +732,9 @@ public struct ProjectExport: Codable, Equatable, Sendable {
         defaultSubjectTagIds: [String],
         defaultCountryTagIds: [String],
         createdAt: Date? = nil,
-        lastModified: Date? = nil
+        lastModified: Date? = nil,
+        defaultUserTagIds: [UUID]? = nil,
+        leadAxisWeights: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -489,6 +745,8 @@ public struct ProjectExport: Codable, Equatable, Sendable {
         self.defaultCountryTagIds = defaultCountryTagIds
         self.createdAt = createdAt
         self.lastModified = lastModified
+        self.defaultUserTagIds = defaultUserTagIds
+        self.leadAxisWeights = leadAxisWeights
     }
 }
 
@@ -528,6 +786,11 @@ public struct GeneratedSummaryExport: Codable, Equatable, Sendable {
     /// exported file never has to be decoded through a rule the reader cannot see.
     public var authorship: SummaryAuthorship?
 
+    /// Whether the summary is a collection entry's headnote draft (format version 7), which the
+    /// app keeps out of the document's own summaries. Optional only so a version-6 file still
+    /// decodes; a file at version 7 always carries it.
+    public var isHeadnoteDraft: Bool?
+
     /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
     public init(
         id: UUID,
@@ -540,7 +803,8 @@ public struct GeneratedSummaryExport: Codable, Equatable, Sendable {
         projectId: UUID? = nil,
         createdAt: Date? = nil,
         lastModified: Date? = nil,
-        authorship: SummaryAuthorship? = nil
+        authorship: SummaryAuthorship? = nil,
+        isHeadnoteDraft: Bool? = nil
     ) {
         self.id = id
         self.documentId = documentId
@@ -553,6 +817,7 @@ public struct GeneratedSummaryExport: Codable, Equatable, Sendable {
         self.createdAt = createdAt
         self.lastModified = lastModified
         self.authorship = authorship
+        self.isHeadnoteDraft = isHeadnoteDraft
     }
 }
 
@@ -818,6 +1083,308 @@ public struct ExportHistoryEntryExport: Codable, Equatable, Sendable {
     }
 }
 
+// MARK: - SavedSearchExport
+
+/// Export DTO mirroring `SavedSearch` (format version 7).
+///
+/// The search is exported as the kit's `SearchParameters`, the value `SavedSearch.searchParameters`
+/// gives the app when it runs the search: the stored snapshot, or for a record older than the
+/// snapshot, the search rebuilt from its scalar columns. Those columns are written from the
+/// parameters, so they are not exported beside them, and nor is the stored `sortOrder`, which is
+/// always "relevance" and nothing reads. The run watermark is exported as its three values rather
+/// than as the stored blob, so a reader needs no knowledge of the blob's shape.
+public struct SavedSearchExport: Codable, Equatable, Sendable {
+    public var id: UUID
+    public var name: String
+    /// The search, as the app runs it.
+    public var parameters: SearchParameters
+    /// When the search was last run, or `nil` if it never was.
+    public var lastRunAt: Date?
+    /// What that run matched, the baseline of "+N since last run".
+    public var matchCountAtLastRun: Int?
+    /// How many volumes were indexed on the device that ran it.
+    public var indexedVolumeCountAtLastRun: Int?
+    public var createdAt: Date?
+    public var lastModified: Date?
+
+    /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
+    public init(
+        id: UUID,
+        name: String,
+        parameters: SearchParameters,
+        lastRunAt: Date? = nil,
+        matchCountAtLastRun: Int? = nil,
+        indexedVolumeCountAtLastRun: Int? = nil,
+        createdAt: Date? = nil,
+        lastModified: Date? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.parameters = parameters
+        self.lastRunAt = lastRunAt
+        self.matchCountAtLastRun = matchCountAtLastRun
+        self.indexedVolumeCountAtLastRun = indexedVolumeCountAtLastRun
+        self.createdAt = createdAt
+        self.lastModified = lastModified
+    }
+}
+
+// MARK: - WorkingCorpusExport
+
+/// Export DTO mirroring `WorkingCorpus` — a saved set of documents, with how it was captured
+/// (format version 7).
+public struct WorkingCorpusExport: Codable, Equatable, Sendable {
+    public var id: UUID
+    public var name: String
+    /// The members, as `volumeId/documentId` keys, sorted and unique as the model keeps them.
+    public var documentKeys: [String]
+    public var capturedAt: Date?
+    public var sourceQuery: String?
+    public var sourceDescription: String?
+    public var indexedVolumeCountAtCapture: Int?
+    /// Whether the capture was cut short at the search's ceiling: `nil` when it was not recorded.
+    public var wasTruncatedAtCapture: Bool?
+    public var totalMatchCountAtCapture: Int?
+    public var createdAt: Date?
+    public var lastModified: Date?
+
+    /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
+    public init(
+        id: UUID,
+        name: String,
+        documentKeys: [String],
+        capturedAt: Date? = nil,
+        sourceQuery: String? = nil,
+        sourceDescription: String? = nil,
+        indexedVolumeCountAtCapture: Int? = nil,
+        wasTruncatedAtCapture: Bool? = nil,
+        totalMatchCountAtCapture: Int? = nil,
+        createdAt: Date? = nil,
+        lastModified: Date? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.documentKeys = documentKeys
+        self.capturedAt = capturedAt
+        self.sourceQuery = sourceQuery
+        self.sourceDescription = sourceDescription
+        self.indexedVolumeCountAtCapture = indexedVolumeCountAtCapture
+        self.wasTruncatedAtCapture = wasTruncatedAtCapture
+        self.totalMatchCountAtCapture = totalMatchCountAtCapture
+        self.createdAt = createdAt
+        self.lastModified = lastModified
+    }
+}
+
+// MARK: - CustomVolumeScopeExport
+
+/// Export DTO mirroring `CustomVolumeScope` — a named set of volumes (format version 7).
+public struct CustomVolumeScopeExport: Codable, Equatable, Sendable {
+    public var id: UUID
+    public var name: String
+    public var volumeIds: [String]
+    public var createdAt: Date?
+    public var lastModified: Date?
+
+    /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
+    public init(id: UUID, name: String, volumeIds: [String], createdAt: Date? = nil,
+                lastModified: Date? = nil) {
+        self.id = id
+        self.name = name
+        self.volumeIds = volumeIds
+        self.createdAt = createdAt
+        self.lastModified = lastModified
+    }
+}
+
+// MARK: - DocumentClassificationOverrideExport
+
+/// Export DTO mirroring `DocumentClassificationOverride` — the researcher's correction of whether
+/// a document is an editorial note, with what the parser said (format version 7).
+public struct DocumentClassificationOverrideExport: Codable, Equatable, Sendable {
+    public var id: UUID
+    public var volumeId: String
+    public var documentId: String
+    /// What the researcher says the document is.
+    public var isEditorialNote: Bool
+    /// What the parser said when the correction was made.
+    public var parsedIsEditorialNote: Bool
+    public var createdAt: Date?
+
+    /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
+    public init(id: UUID, volumeId: String, documentId: String, isEditorialNote: Bool,
+                parsedIsEditorialNote: Bool, createdAt: Date? = nil) {
+        self.id = id
+        self.volumeId = volumeId
+        self.documentId = documentId
+        self.isEditorialNote = isEditorialNote
+        self.parsedIsEditorialNote = parsedIsEditorialNote
+        self.createdAt = createdAt
+    }
+}
+
+// MARK: - PersonClusterOverrideExport
+
+/// Export DTO mirroring `PersonClusterOverride` — a person correction (format version 7).
+public struct PersonClusterOverrideExport: Codable, Equatable, Sendable {
+    public var id: UUID
+    /// `PersonClusterOverrideKind`'s raw value as stored: `merge` or `split`, or a newer build's.
+    public var kind: String
+    public var volumeIdA: String
+    public var refA: String
+    /// The second record of a merge; `nil` for a split.
+    public var volumeIdB: String?
+    public var refB: String?
+    public var createdAt: Date?
+
+    /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
+    public init(id: UUID, kind: String, volumeIdA: String, refA: String, volumeIdB: String? = nil,
+                refB: String? = nil, createdAt: Date? = nil) {
+        self.id = id
+        self.kind = kind
+        self.volumeIdA = volumeIdA
+        self.refA = refA
+        self.volumeIdB = volumeIdB
+        self.refB = refB
+        self.createdAt = createdAt
+    }
+}
+
+// MARK: - AnnotationReviewExport
+
+/// Export DTO mirroring `AnnotationReview` — one changed passage the researcher has reviewed
+/// (format version 7). Its `id` is derived from its other fields, as the model's is.
+public struct AnnotationReviewExport: Codable, Equatable, Sendable {
+    public var id: UUID
+    /// `AnnotationReviewKind`'s raw value as stored.
+    public var annotationType: String
+    /// The note, tag or collection entry reviewed, or `nil` for a review of the whole document,
+    /// the only kind the app writes today.
+    public var annotationId: UUID?
+    public var volumeId: String
+    public var documentId: String
+    /// The revision of the text the review answered.
+    public var contentHash: String
+    public var changeKind: String?
+    public var reviewedAt: Date?
+
+    /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
+    public init(id: UUID, annotationType: String, annotationId: UUID? = nil, volumeId: String,
+                documentId: String, contentHash: String, changeKind: String? = nil,
+                reviewedAt: Date? = nil) {
+        self.id = id
+        self.annotationType = annotationType
+        self.annotationId = annotationId
+        self.volumeId = volumeId
+        self.documentId = documentId
+        self.contentHash = contentHash
+        self.changeKind = changeKind
+        self.reviewedAt = reviewedAt
+    }
+}
+
+// MARK: - ProjectLeadEntryExport
+
+/// Export DTO mirroring `ProjectLeadEntry` — one of a project's Suggested Next leads, with whether
+/// the researcher dismissed it (format version 7).
+public struct ProjectLeadEntryExport: Codable, Equatable, Sendable {
+    public var id: UUID
+    public var projectId: UUID
+    public var volumeId: String
+    public var documentId: String
+    /// The lead's score when last computed. Always a finite number in the file: the app writes 0
+    /// for a stored score that is not one, which JSON cannot carry.
+    public var aggregateScore: Double
+    /// The project documents the lead was found from.
+    public var contributingSeedKeys: [String]
+    public var header: String
+    public var documentNumber: String?
+    public var isEditorialNote: Bool
+    public var firstSurfacedAt: Date
+    public var lastComputedAt: Date
+    public var dismissed: Bool
+
+    /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
+    public init(
+        id: UUID,
+        projectId: UUID,
+        volumeId: String,
+        documentId: String,
+        aggregateScore: Double,
+        contributingSeedKeys: [String],
+        header: String,
+        documentNumber: String? = nil,
+        isEditorialNote: Bool,
+        firstSurfacedAt: Date,
+        lastComputedAt: Date,
+        dismissed: Bool
+    ) {
+        self.id = id
+        self.projectId = projectId
+        self.volumeId = volumeId
+        self.documentId = documentId
+        self.aggregateScore = aggregateScore
+        self.contributingSeedKeys = contributingSeedKeys
+        self.header = header
+        self.documentNumber = documentNumber
+        self.isEditorialNote = isEditorialNote
+        self.firstSurfacedAt = firstSurfacedAt
+        self.lastComputedAt = lastComputedAt
+        self.dismissed = dismissed
+    }
+}
+
+// MARK: - SyncedPreferencesExport
+
+/// Export DTO mirroring `SyncedPreferences` — the settings that sync across the researcher's
+/// devices (format version 7). The three JSON lists are exported as the strings the app stores.
+public struct SyncedPreferencesExport: Codable, Equatable, Sendable {
+    public var createdAt: Date
+    public var updatedAt: Date
+    public var wcMinLength: Int
+    public var wcMinCount: Int
+    public var wcFoldPlurals: Bool
+    public var wcFilterMarkings: Bool
+    public var wcExcludeBoilerplate: Bool
+    public var wcGlobalStopwordsJSON: String
+    public var wcLensStopwordsJSON: String
+    public var citationStyleRaw: String
+    public var defaultDocumentModeRaw: String
+    public var researchLoggingEnabled: Bool
+    public var listOrderJSON: String
+
+    /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
+    public init(
+        createdAt: Date,
+        updatedAt: Date,
+        wcMinLength: Int,
+        wcMinCount: Int,
+        wcFoldPlurals: Bool,
+        wcFilterMarkings: Bool,
+        wcExcludeBoilerplate: Bool,
+        wcGlobalStopwordsJSON: String,
+        wcLensStopwordsJSON: String,
+        citationStyleRaw: String,
+        defaultDocumentModeRaw: String,
+        researchLoggingEnabled: Bool,
+        listOrderJSON: String
+    ) {
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.wcMinLength = wcMinLength
+        self.wcMinCount = wcMinCount
+        self.wcFoldPlurals = wcFoldPlurals
+        self.wcFilterMarkings = wcFilterMarkings
+        self.wcExcludeBoilerplate = wcExcludeBoilerplate
+        self.wcGlobalStopwordsJSON = wcGlobalStopwordsJSON
+        self.wcLensStopwordsJSON = wcLensStopwordsJSON
+        self.citationStyleRaw = citationStyleRaw
+        self.defaultDocumentModeRaw = defaultDocumentModeRaw
+        self.researchLoggingEnabled = researchLoggingEnabled
+        self.listOrderJSON = listOrderJSON
+    }
+}
+
 // MARK: - ResearchDataEnvelope + format version and encoding
 
 extension ResearchDataEnvelope {
@@ -836,11 +1403,15 @@ extension ResearchDataEnvelope {
     /// more, and a sharper one: summary `authorship` is never `nil` in a file this build writes, so
     /// the version is the *only* thing that distinguishes an unattributed old export from a new
     /// one. The bump to 6 carries Archive Visits: an empty v6 `archiveVisits` array means the
-    /// user had no plans, while a v5 file means the format could not carry them.)
+    /// user had no plans, while a v5 file means the format could not carry them. The bump to 7
+    /// carries the eight model types 6 left out and the fields 6 dropped from the types it carried,
+    /// by the same argument: an empty v7 `savedSearches` means none were saved, and a `nil`
+    /// `richText` on a v7 note means it has no formatting, where on a v6 note it means the format
+    /// could not carry it.)
     ///
     /// Declared here, beside the envelope, since FRUS Explorer Light moved the envelope into
     /// FRUSCoreKit; the app's `ResearchDataExporter.currentFormatVersion` is this value.
-    public static let currentFormatVersion = 6
+    public static let currentFormatVersion = 7
 
     /// The encoder an export is written with: pretty-printed, key-sorted JSON with ISO-8601 dates.
     ///

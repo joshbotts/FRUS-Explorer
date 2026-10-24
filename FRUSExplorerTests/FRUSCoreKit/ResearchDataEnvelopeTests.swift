@@ -29,13 +29,15 @@ import CSQLite
 // MARK: - ResearchDataEnvelopeTests
 
 /// The research data export's file as FRUSCoreKit holds it: every earlier version's file still
-/// decodes, the encoder writes what it always wrote, and a truncated file still fails.
+/// decodes, a version-7 file of every type decodes whole, the encoder writes what it always wrote,
+/// and a truncated file still fails.
 ///
 /// `ResearchDataExporterTests` (the app's) builds envelopes from a SwiftData store; these need no
 /// store, so they run under `swift test` on every platform the kit builds on.
 ///
 /// Version history:
 ///   1.0 — FRUS Explorer Light: initial implementation, with the envelope moved into the kit
+///   1.1 — FRUS Explorer Light: format version 7
 @Suite("Research data envelope")
 struct ResearchDataEnvelopeTests {
 
@@ -82,6 +84,129 @@ struct ResearchDataEnvelopeTests {
             // Version 6 writes a heading or a prose block as an entry with no document.
             #expect(envelope.collections.first?.entries.first?.documentId == "")
         }
+
+        // Nothing version 7 added is invented for an earlier file: its types are empty and its
+        // fields absent, which a reader tells from "none" by the file's version.
+        #expect(envelope.savedSearches.isEmpty && envelope.workingCorpora.isEmpty
+                    && envelope.customVolumeScopes.isEmpty && envelope.classificationOverrides.isEmpty
+                    && envelope.personClusterOverrides.isEmpty && envelope.annotationReviews.isEmpty
+                    && envelope.projectLeads.isEmpty && envelope.syncedPreferences.isEmpty)
+        #expect(envelope.notes.first?.richText == nil)
+        #expect(envelope.projects.first?.defaultUserTagIds == nil)
+        #expect(envelope.summaries.first?.isHeadnoteDraft == nil)
+        #expect(envelope.collections.first?.defaultBodyDepth == nil)
+        #expect(envelope.collections.first?.entries.allSatisfy { $0.kind == nil && $0.level == nil } == true)
+    }
+
+    @Test("The format is at version 7")
+    func currentVersion() {
+        #expect(ResearchDataEnvelope.currentFormatVersion == 7)
+    }
+
+    /// The file a library holding every type exports at version 7, read back whole: each of the
+    /// eight types 6 left out, and each field 6 dropped from the types it carried.
+    @Test("A version-7 file of every type decodes, with every field version 7 added")
+    func version7Decodes() throws {
+        let envelope = try decode(ResearchDataFixtures.version7)
+        let id = ResearchDataFixtures.id
+        #expect(envelope.formatVersion == 7)
+
+        // A note's rich text, as stored: RTF, base64 in the file.
+        let rtf = try #require(envelope.notes.first?.richText)
+        #expect(String(decoding: rtf, as: UTF8.self) == #"{\rtf1\ansi Key {\b turning} point in the negotiations.}"#)
+        #expect(envelope.notes.first?.bodyText == "Key turning point in the negotiations.",
+                "the plain text stays beside the rich text")
+
+        // A project's focus tags and lead weights; a summary's headnote flag.
+        #expect(envelope.projects.first?.defaultUserTagIds == [id(2)])
+        #expect(envelope.projects.first?.leadAxisWeights == "subject=0.5;person=0.3;crossref=0.2")
+        #expect(envelope.summaries.map(\.isHeadnoteDraft) == [false, true])
+        #expect(envelope.summaries.last?.authorship == .userWritten)
+
+        // A collection's front matter, composition and settings.
+        let collection = try #require(envelope.collections.first)
+        #expect(collection.subtitle == "The Paris talks")
+        #expect(collection.authorLine == "A. Researcher")
+        #expect(collection.introductionText == "Why these documents.")
+        #expect(collection.introductionRichText != nil)
+        #expect(collection.includeColophon == true && collection.includeProjectProvenance == false
+                    && collection.includeMethodAppendix == false)
+        #expect(collection.defaultBodyDepth == "full" && collection.footnoteStyle == "all"
+                    && collection.tocStyle == "citation")
+        #expect(collection.includeFootnotes == true && collection.includeSourceNote == true)
+        #expect(collection.applyHighlights == true && collection.includeNotes == true
+                    && collection.includeWordCloud == false && collection.defaultIncludeHeadnote == false)
+        #expect(collection.summaryPromptId == id(9))
+
+        // Each entry's kind, level, text, rich text, excerpt anchors, block type and overrides,
+        // in order: the heading version 6 wrote as an entry with no document, then the document.
+        #expect(collection.entries.map(\.kind) == ["heading", "document", "prose", "excerpt", "generated"])
+        #expect(collection.entries.map(\.sortOrder) == [0, 1, 2, 3, 4])
+        let heading = collection.entries[0], document = collection.entries[1]
+        let prose = collection.entries[2], excerpt = collection.entries[3], block = collection.entries[4]
+        #expect(heading.id == id(8) && heading.level == 1 && heading.text == "Chapter 3")
+        #expect(document.titleOverride == "The turning point")
+        #expect(document.bodyDepthOverride == "summaryOnly")
+        #expect(document.applyHighlightsOverride == true && document.includeNotesOverride == false)
+        #expect(document.includeSourceNoteOverride == true && document.includeFootnotesOverride == false)
+        #expect(document.summaryPromptIdOverride == id(9))
+        #expect(document.selectedHighlightIds == [id(4)])
+        #expect(document.includeRelatedDocuments == true)
+        #expect(document.includeHeadnote == true && document.headnoteSummaryId == id(21))
+        #expect(prose.text == "What follows." && prose.richText != nil)
+        #expect(excerpt.documentId == "d1" && excerpt.text == "a key turning point")
+        #expect(excerpt.excerptStart == 10 && excerpt.excerptEnd == 29)
+        #expect(excerpt.excerptRenderingVersion == "0123456789abcdef" && excerpt.excerptColorTag == "yellow")
+        #expect(block.generatedBlockType == "chronology" && block.documentId == "")
+
+        // The eight types version 6 left out.
+        let search = try #require(envelope.savedSearches.first)
+        #expect(search.id == id(22) && search.name == "Arms control, Nixon years")
+        #expect(search.parameters == SearchParameters(
+            keywords: "arms control", booleanMode: .and, excludedTerms: ["salt"],
+            dateRange: DateRange(earliest: "1969-01-20", latest: "1974-08-09"),
+            subjectTagIds: ["subject-arms-control"], userTagIds: [id(2).uuidString.lowercased()],
+            volumeIds: ["frus1969-76v01"], includeSummaries: false,
+            documentTypeFilter: .documentsOnly, includeFrontMatter: false))
+        #expect(search.matchCountAtLastRun == 412 && search.indexedVolumeCountAtLastRun == 553)
+        #expect(search.lastRunAt != nil)
+        let corpus = try #require(envelope.workingCorpora.first)
+        #expect(corpus.documentKeys == ["frus1969-76v01/d1", "frus1969-76v01/d2"])
+        #expect(corpus.sourceQuery == "détente" && corpus.wasTruncatedAtCapture == false
+                    && corpus.totalMatchCountAtCapture == 2 && corpus.indexedVolumeCountAtCapture == 553)
+        #expect(envelope.customVolumeScopes.map(\.volumeIds) == [["frus1969-76v01", "frus1969-76v12"]])
+        let classification = try #require(envelope.classificationOverrides.first)
+        #expect(classification.documentId == "d3" && classification.isEditorialNote
+                    && !classification.parsedIsEditorialNote)
+        let person = try #require(envelope.personClusterOverrides.first)
+        #expect(person.kind == "merge" && person.refA == "p_KH1" && person.refB == "p_KHA1")
+        let review = try #require(envelope.annotationReviews.first)
+        #expect(review.annotationType == "document" && review.annotationId == nil
+                    && review.contentHash == "9f86d081884c7d65" && review.changeKind == "text")
+        let lead = try #require(envelope.projectLeads.first)
+        #expect(lead.projectId == id(1) && lead.aggregateScore == 1.75 && lead.dismissed)
+        #expect(lead.contributingSeedKeys == ["frus1969-76v01/d1"] && lead.documentNumber == "9")
+        let preferences = try #require(envelope.syncedPreferences.first)
+        #expect(preferences.wcMinCount == 2 && !preferences.wcExcludeBoilerplate)
+        #expect(preferences.wcGlobalStopwordsJSON == #"["telegram"]"#)
+        #expect(preferences.citationStyleRaw == "chicago" && preferences.defaultDocumentModeRaw == "research")
+    }
+
+    /// The app's own file, read by the kit: Mac check 10 exports a library holding every type and
+    /// names the file in `FRUS_RESEARCH_EXPORT` (`TEST_RUNNER_FRUS_RESEARCH_EXPORT` under Xcode),
+    /// and the file must decode, at a version this decoder knows, and encode back to itself. With
+    /// no file named there is nothing to read, and the test checks nothing.
+    @Test("An export named by FRUS_RESEARCH_EXPORT decodes, and encodes back to itself")
+    func namedExportDecodes() throws {
+        guard let path = ProcessInfo.processInfo.environment["FRUS_RESEARCH_EXPORT"], !path.isEmpty else {
+            return
+        }
+        let envelope = try ResearchDataEnvelope.makeDecoder()
+            .decode(ResearchDataEnvelope.self, from: Data(contentsOf: URL(fileURLWithPath: path)))
+        #expect((1...ResearchDataEnvelope.currentFormatVersion).contains(envelope.formatVersion))
+        let again = try ResearchDataEnvelope.makeDecoder()
+            .decode(ResearchDataEnvelope.self, from: try envelope.jsonData())
+        #expect(again == envelope)
     }
 
     @Test("A file that lacks a required key fails, rather than decoding as an empty backup")
@@ -107,15 +232,19 @@ struct ResearchDataEnvelopeTests {
             .filter { $0.hasPrefix("  \"") }
             .map { String($0.dropFirst(3).prefix { $0 != "\"" }) }
         #expect(topLevel == topLevel.sorted(), "the keys are not sorted")
-        #expect(topLevel.count == 16, "\(topLevel)")
+        // The fourteen arrays and two numbers every file at version 7 writes, with the header's
+        // two names, which this file has.
+        #expect(topLevel.count == 24, "\(topLevel)")
     }
 
-    @Test("An envelope encodes and decodes back to itself")
-    func roundTrip() throws {
-        let envelope = try decode(ResearchDataFixtures.version6)
-        let again = try ResearchDataEnvelope.makeDecoder()
-            .decode(ResearchDataEnvelope.self, from: try envelope.jsonData())
+    @Test("An envelope of every type encodes and decodes back to itself, to the byte",
+          arguments: [6, 7])
+    func roundTrip(version: Int) throws {
+        let envelope = try decode(version == 7 ? ResearchDataFixtures.version7 : ResearchDataFixtures.version6)
+        let data = try envelope.jsonData()
+        let again = try ResearchDataEnvelope.makeDecoder().decode(ResearchDataEnvelope.self, from: data)
         #expect(again == envelope)
+        #expect(try again.jsonData() == data, "a second encoding differs from the first")
     }
 }
 
