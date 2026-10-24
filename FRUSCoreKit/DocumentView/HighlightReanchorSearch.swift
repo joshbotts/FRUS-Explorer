@@ -21,6 +21,9 @@ import Foundation
 ///   1.0 — R-5 P3b-3: initial implementation, as an extension of the app's `HighlightReview`
 ///   1.1 — Session 2026-10-24 (FRUS Explorer Light, S15a): moved here, public and otherwise
 ///          unchanged, for the web edition; `Match` gains its memberwise initialiser, spelled out
+///   1.2 — Session 2026-10-24 (FRUS Explorer Light, S15c's follow-up): the search's test of a span
+///          against a stored passage, in either form, is public as `extracts(passage:start:end:in:)`,
+///          for the web edition's check of a Mac's highlights; the search is unchanged
 public enum HighlightReanchor {
 
     /// One relocation candidate: a canonical UTF-16 span of the flat text whose re-extraction
@@ -285,7 +288,27 @@ public enum HighlightReanchor {
         return [s, e]
     }
 
-    /// Whether the span reproduces the passage in either accepted form.
+    /// Whether the span `start..<end` of the text reproduces a stored passage in either of the two
+    /// forms a highlight stores: `flatTextExcerpt(blocks:start:end:)`'s output, or, for one made
+    /// before 2026-07-03, the raw UTF-16 slice of the flat text (see `locate`'s "Why two accepted
+    /// forms"). It is the test the search puts to each candidate span, by exact string equality,
+    /// behind the same guard: a span that is empty, inverted or outside the text reproduces nothing.
+    /// The uniqueness floor and the refusal of a shape the extractor never emits are the search's,
+    /// not this test's: a short passage, or one with a whitespace-only fragment, is tested as any.
+    ///
+    /// - Parameters:
+    ///   - passage: the highlight's stored `selectedText`.
+    ///   - start: UTF-16 offset into `buildFlatText(from:)`, the highlight coordinate space.
+    ///   - end: exclusive end, same space.
+    ///   - blocks: `buildFlatTextBlocks(from:)` for the document.
+    public static func extracts(passage: String, start: Int, end: Int, in blocks: [String]) -> Bool {
+        let flat = Array(blocks.joined().utf16)
+        guard start >= 0, end > start, end <= flat.count else { return false }
+        return extracts(passage, start: start, end: end, flat: flat, blocks: blocks)
+    }
+
+    /// Whether the span reproduces the passage in either accepted form, against the flat text the
+    /// caller holds as UTF-16, for a span `canonicalSpan` has bounded.
     private static func extracts(_ passage: String, start: Int, end: Int,
                                  flat: [UInt16], blocks: [String]) -> Bool {
         if flatTextExcerpt(blocks: blocks, start: start, end: end) == passage { return true }
