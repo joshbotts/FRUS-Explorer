@@ -34,6 +34,9 @@ import Crypto
 /// Version history:
 ///   1.0 — Session 2026-10-24 (FRUS Explorer Light, S15a): initial implementation, with the scripts'
 ///          move into the kit
+///   1.1 — Session 2026-10-24 (FRUS Explorer Light, S15c's follow-up): `kHighlightsJS`'s pin
+///          re-taken, and `rangeEndsAfterALineBreak`, when `buildRanges` came to end a range that
+///          ends on a `<br>` after the element
 @Suite("The reader's annotation scripts, as both hosts load them")
 struct ReaderAnnotationScriptTests {
 
@@ -42,11 +45,15 @@ struct ReaderAnnotationScriptTests {
     /// changed no byte. A web host serves these bytes as files and the app injects them, so a change
     /// to a script is a change to both readers: re-take the pin from the failure message, and say
     /// why here.
+    ///
+    /// `kHighlightsJS`'s was re-taken on 2026-10-24, from 3,045 bytes to 3,344, when `buildRanges`
+    /// came to end a range that ends on a `<br>` after the element, where `setEnd(br, 1)` threw and
+    /// the reader drew none of the document's highlights (`rangeEndsAfterALineBreak`).
     static let pins: [(name: String, script: String, sha256: String, bytes: Int)] = [
         ("kOffsetEngineJS", kOffsetEngineJS,
          "a5899b4968614a86cc50b8faf3e5d1ddcf7a9f93f1c21f6b87a861fc23f0ef3b", 805),
         ("kHighlightsJS", kHighlightsJS,
-         "568565f46f47d34b0c3ae5bd5c76f64c926b827c6f047afa2313a06222270ed5", 3_045),
+         "4c25b9dbe8d8a118578942e8733c4b6a680c09109db273f6090d15bc9e2cd569", 3_344),
         ("kSelectionJS", kSelectionJS,
          "0b99ea2a17a4f24f84465f5967acd4a14a968bbb753d5accc3aeb42e42477012", 8_549),
     ]
@@ -55,7 +62,7 @@ struct ReaderAnnotationScriptTests {
         SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 
-    @Test("Each script is the bytes the app injected before the move")
+    @Test("Each script is the bytes both readers load, as pinned")
     func scriptsArePinned() {
         for pin in Self.pins {
             let digest = Self.sha256(pin.script)
@@ -103,6 +110,21 @@ struct ReaderAnnotationScriptTests {
             "h => !h.isStale && tapOffset >= h.startOffset && tapOffset < h.endOffset"),
                 "a tap never lands on a stale highlight")
         #expect(!kOffsetEngineJS.contains("FRUSHighlights"), "the engine does not need the renderer")
+    }
+
+    /// The offset engine maps a `<br>` as one character with no text of its own, `{node: BR,
+    /// localOffset: 0}`, and a `<br>` has no children, so a range cannot end at offset 1 inside it.
+    /// A drag that ends at the start of the line after a `<br>` makes such a highlight, and
+    /// `setEnd(br, 1)` threw `IndexSizeError` after `render()` had cleared the page's highlights, so
+    /// the reader drew none of them. `HighlightLineBreakRenderTests` draws one in WebKit, in Xcode.
+    @Test("The renderer ends a range that ends on a line break after the <br>, the engine's entry with no text")
+    func rangeEndsAfterALineBreak() {
+        #expect(kOffsetEngineJS.contains(
+            "    if (node.tagName === 'BR') {\n      charToNode.push({ node: node, localOffset: 0 });"))
+        #expect(kHighlightsJS.contains("  if (endEntry.node.tagName === 'BR') range.setEndAfter(endEntry.node);\n"
+                                       + "  else range.setEnd(endEntry.node, endEntry.localOffset + 1);"))
+        #expect(kHighlightsJS.components(separatedBy: "range.setEnd(").count == 2,
+                "the renderer ends a range at an offset in one place, the guarded line")
     }
 
     @Test("The selection bridge reports offsets in the engine's map, and -1 for a footnote")

@@ -26,6 +26,9 @@ import Foundation
 //          `FRUSWebViewConfiguration.swift`, unchanged but public; `kOffsetEngineJS` and
 //          `kHighlightsJS` were private, and `kSelectionJS` internal so its parity test could
 //          read it
+//   1.1 — Session 2026-10-24 (FRUS Explorer Light, S15c's follow-up): `kHighlightsJS`'s
+//          `buildRanges` ends a range that ends on a `<br>` after the element, where
+//          `setEnd(br, 1)` threw and the reader drew none of the document's highlights
 
 /// Flat-text offset engine, embedded as a Swift string constant so the script
 /// is available in both the app bundle and the unit-test host without any
@@ -64,10 +67,12 @@ window.FRUSOffsets = (() => {
 """
 
 /// CSS Custom Highlight API renderer, embedded as a Swift string constant.
-/// Canonical source: `FRUSExplorer/Resources/frus-highlights.js`
-/// Keep this constant in sync with that file when making edits.
 /// Must be injected AFTER `kOffsetEngineJS` because `buildRanges()` reads
 /// `window.FRUSOffsets.charToNode`.
+///
+/// `FRUSExplorer/Resources/frus-highlights.js`, named here as its canonical source until
+/// 2026-10-24, is an older copy that nothing loads: it has neither the tap handler nor the end
+/// after a `<br>`. Both readers run this constant.
 public let kHighlightsJS = """
 function buildRanges(start, end) {
   if (!window.FRUSOffsets) return [];
@@ -76,7 +81,11 @@ function buildRanges(start, end) {
   const range = new Range();
   range.setStart(map[start].node, map[start].localOffset);
   const endEntry = map[end - 1];
-  range.setEnd(endEntry.node, endEntry.localOffset + 1);
+  // A <br> is one character of the flat text and has no children, so a range that ends on one
+  // ends after the element: setEnd(br, 1) throws IndexSizeError, and render() has already cleared
+  // the page's highlights.
+  if (endEntry.node.tagName === 'BR') range.setEndAfter(endEntry.node);
+  else range.setEnd(endEntry.node, endEntry.localOffset + 1);
   return [range];
 }
 
