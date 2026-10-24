@@ -555,21 +555,21 @@ VoiceOver reads. The colour names themselves (*Yellow*, *Green*, *Blue*, *Pink*)
 footnote offers only Look Up in NARA and Note.
 
 #### A highlight colour — what VoiceOver reads
-<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 55–56 | key: selectionBar.highlightColor.a11y | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 32–33 | key: selectionBar.highlightColor.a11y | shared: iOS+macOS (single edit point) -->
 
 Highlight \(color.displayName)
 
 <!-- END SOURCE: selectionBar.highlightColor.a11y -->
 
 #### Excerpt
-<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 58–58 | key: selectionBar.excerpt | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 35–35 | key: selectionBar.excerpt | shared: iOS+macOS (single edit point) -->
 
 Excerpt
 
 <!-- END SOURCE: selectionBar.excerpt -->
 
 #### Look Up in NARA
-<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 60–60 | key: selectionBar.lookUpInNARA | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 37–37 | key: selectionBar.lookUpInNARA | shared: iOS+macOS (single edit point) -->
 
 Look Up in NARA
 
@@ -578,7 +578,7 @@ Look Up in NARA
 *New in #1540. It replaces “Look Up” (`selectionBar.lookUp`), because the iPhone and iPad edit menu has a Look Up of its own, the dictionary, and the two sat in one menu. It hands the selected text to the NARA Catalog lookup.*
 
 #### Note
-<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 62–62 | key: selectionBar.note | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 39–39 | key: selectionBar.note | shared: iOS+macOS (single edit point) -->
 
 Note
 

@@ -10,41 +10,18 @@ import SwiftUI
 
 // MARK: - SelectionVerb
 
-/// One of the reader's actions on a text selection: a highlight in one of the four colours, Excerpt,
-/// Look Up in NARA, or Note (#1540).
-///
-/// Two surfaces offer these, one per platform. On the Mac it is the ``FloatingSelectionBar``. On
-/// iPhone and iPad it is the system edit menu, which leads with them (`SelectionEditMenu`): the bar
-/// was retired there because UIKit can draw its menu where the bar was, covering it. Each verb's name
-/// is written once, here, so the two surfaces cannot call one action by two names.
+/// What the app draws for each of the reader's actions on a text selection (#1540). The verbs, their
+/// order and which of them a footnote selection offers are FRUSCoreKit's `SelectionVerb`
+/// (`FRUSCoreKit/DocumentView/SelectionVerb.swift`); each verb's name is written once, here, so the
+/// Mac bar and the iPhone and iPad menu cannot call one action by two names.
 ///
 /// Version history:
 ///   1.0 — #1540: initial implementation; "Look Up" becomes "Look Up in NARA" on both platforms,
 ///          since the system menu has a Look Up of its own (the dictionary)
-enum SelectionVerb: Hashable, Sendable {
-    /// Highlights the selection in `color`.
-    case highlight(DocumentHighlight.Color)
-    /// Freezes the selection into a collection excerpt.
-    case excerpt
-    /// Hands the selected text to the NARA Catalog lookup.
-    case lookUpInNARA
-    /// Opens the note composer (a document-level note).
-    case note
-
-    /// Every verb in the order both surfaces offer them: the four colours, then Excerpt, Look Up in
-    /// NARA and Note.
-    static var allInOrder: [SelectionVerb] {
-        DocumentHighlight.Color.allCases.map(SelectionVerb.highlight) + [.excerpt, .lookUpInNARA, .note]
-    }
-
-    /// Whether the verb needs a selection inside the document body, which has text offsets. A
-    /// footnote selection has none, so it offers only Look Up in NARA and Note.
-    var needsDocumentOffsets: Bool {
-        switch self {
-        case .highlight, .excerpt: true
-        case .lookUpInNARA, .note: false
-        }
-    }
+///   1.1 — Session 2026-10-24 (FRUS Explorer Light, S15a): the enum, `allInOrder` and
+///          `needsDocumentOffsets` moved to FRUSCoreKit, public, for the web edition's selection
+///          bar; `title` and `systemImage` stay here
+extension SelectionVerb {
 
     /// The verb's name: its label on the Mac bar, its title in the iPhone and iPad menu, and what
     /// VoiceOver reads on both. A colour is drawn as a dot, so for one this is only what VoiceOver
