@@ -35,6 +35,9 @@ import SwiftData
 ///          and the kit's `flatTextExcerpt(blocks:start:end:)` by those names. The move, the review
 ///          sheet's gate and its sentences stay Xcode's, and `appNamesAreTheKits` holds the app's
 ///          `HighlightReview` names to the kit's search
+///   1.2 — Session 2026-10-24 (FRUS Explorer Light, S15c's follow-up): the test of one span against
+///          a stored passage, `HighlightReanchor.extracts(passage:start:end:in:)`, now public: both
+///          forms, what it refuses, and that it accepts what the search returns
 @Suite("Highlight re-anchor — the exact, seam-aware search")
 struct HighlightReanchorTests {
 
@@ -373,6 +376,83 @@ struct HighlightReanchorTests {
         #expect(m.start == 0)
         #expect(m.end == first.utf16.count + second.utf16.count, "no separator exists in the flat text")
         #expect(flatTextExcerpt(blocks: blocks, start: m.start, end: m.end) == passage)
+    }
+
+    // MARK: - The test of one span, public
+
+    /// A highlight stores `flatTextExcerpt`'s output, which joins each block's part with a blank line,
+    /// so across a seam the passage is not the text between its offsets, and `extracts` reads it as
+    /// the excerpt: at the stored offsets, and not one unit either side.
+    @Test("A span reproduces a passage stored as the excerpt, across a seam, and not one unit off")
+    func extractsTheExcerptForm() {
+        let blocks = ["Ends with this sentence.", "Starts the next block."]
+        let passage = "this sentence.\n\nStarts"
+        let start = ("Ends with " as NSString).length
+        let end = blocks[0].utf16.count + ("Starts" as NSString).length
+        #expect(flatTextExcerpt(blocks: blocks, start: start, end: end) == passage)
+        #expect(HighlightReanchor.extracts(passage: passage, start: start, end: end, in: blocks))
+        #expect(!HighlightReanchor.extracts(passage: passage, start: start + 1, end: end, in: blocks))
+        #expect(!HighlightReanchor.extracts(passage: passage, start: start, end: end - 1, in: blocks))
+        #expect(!HighlightReanchor.extracts(passage: passage, start: start - 1, end: end, in: blocks))
+        #expect(!HighlightReanchor.extracts(passage: passage, start: start, end: end + 1, in: blocks))
+        // A whitespace-only block between is dropped from the excerpt, and its characters are in the span.
+        let spaced = [blocks[0], "\n", blocks[1]]
+        #expect(HighlightReanchor.extracts(passage: passage, start: start, end: end + 1, in: spaced))
+    }
+
+    /// A highlight made before 2026-07-03 stores the raw slice, with no blank line at a seam and a
+    /// whitespace-only block kept. Short passages are tested too: the floor is the search's.
+    @Test("A span reproduces a passage stored as the raw slice, as highlights before July 2026 are")
+    func extractsTheRawSliceForm() {
+        let blocks = ["Ends with this sentence.", "\n", "Starts the next block."]
+        let start = ("Ends with " as NSString).length
+        let end = blocks[0].utf16.count + 1 + ("Starts" as NSString).length
+        #expect(HighlightReanchor.extracts(passage: "this sentence.\nStarts", start: start, end: end, in: blocks))
+        #expect(HighlightReanchor.extracts(passage: "this sentence.\n\nStarts", start: start, end: end, in: blocks),
+                "and the same span as the excerpt")
+        #expect(HighlightReanchor.extracts(passage: "this", start: start, end: start + 4, in: blocks))
+        #expect(!HighlightReanchor.extracts(passage: "This", start: start, end: start + 4, in: blocks),
+                "exact equality, never folded")
+    }
+
+    /// No span outside the text is read, so offsets a highlight could not have do not trap.
+    @Test("A span that is empty, inverted or outside the text reproduces nothing")
+    func extractsRefusesSpansOutsideTheText() {
+        let blocks = ["A short block.", "Another one."]
+        let count = blocks.joined().utf16.count
+        let whole = blocks.joined(separator: "\n\n")
+        #expect(HighlightReanchor.extracts(passage: whole, start: 0, end: count, in: blocks))
+        #expect(!HighlightReanchor.extracts(passage: whole, start: 0, end: count + 1, in: blocks),
+                "the excerpt clamps a span past the end; this test does not accept one")
+        #expect(!HighlightReanchor.extracts(passage: "A", start: -1, end: 1, in: blocks))
+        #expect(!HighlightReanchor.extracts(passage: "", start: 3, end: 3, in: blocks))
+        #expect(!HighlightReanchor.extracts(passage: "", start: 4, end: 3, in: blocks))
+        #expect(!HighlightReanchor.extracts(passage: "", start: 0, end: 0, in: []))
+    }
+
+    /// The public test is the one the search applies to each candidate, so every span the search
+    /// returns reproduces its passage by it, in either form.
+    @Test("Every span the search returns reproduces its passage by the public test")
+    func extractsAcceptsWhatTheSearchFinds() {
+        let a = "Block one has plenty of words to clear the floor."
+        let b = "Block two also has plenty of words in it here."
+        let cases: [(passage: String, blocks: [String])] = [
+            (long, ["Opening. " + long + " Closing."]),
+            (a + "\n\n" + b, [a, "\n", b, "   "]),
+            ("with this sentence of adequate length here.Starts the next block",
+             ["Ends with this sentence of adequate length here.", "Starts the next block of text."]),
+            ("CHAPMAN COLEMAN,\n\nSecond Secretary of Legation, at the Legation.",
+             ["Preamble text here. CHAPMAN COLEMAN,\n\nSecond Secretary of Legation, at the Legation.", other]),
+        ]
+        for c in cases {
+            let result = HighlightReanchor.locate(passage: c.passage, storedStart: 0, storedEnd: 1, in: c.blocks)
+            let match: HighlightReanchor.Match
+            switch result {
+            case .here(let m), .moved(let m), .foundFar(let m): match = m
+            default: Issue.record("expected a match for \"\(c.passage)\", got \(result)"); continue
+            }
+            #expect(HighlightReanchor.extracts(passage: c.passage, start: match.start, end: match.end, in: c.blocks))
+        }
     }
 
     #if !SWIFT_PACKAGE // HighlightReview is the app's

@@ -2413,3 +2413,169 @@ struct HighlightTextRenderTests {
         }
     }
 }
+
+// MARK: - HighlightLineBreakRenderTests
+
+/// The reader draws a highlight that ends on a line break, and the document's others with it.
+///
+/// The offset engine maps a `<br>` as one character of the flat text, `{node: BR, localOffset: 0}`.
+/// `buildRanges` in `kHighlightsJS` ended every range with `setEnd(node, localOffset + 1)`, which for
+/// a `<br>`, a node with no children, throws `IndexSizeError`. `FRUSHighlights.render` had already
+/// cleared the page's highlights, and `renderHighlights(on:)` drops the error (`try?`), so the
+/// reader drew none of the document's highlights. A drag that ends at the start of the line after a
+/// `<br>` makes such a highlight: the selection bridge maps that end to the offset after the break.
+///
+/// Each test makes its highlights as the reader does, from the bridge's own payload where a drag
+/// makes them, and draws them through the coordinator's `renderHighlights(on:)`, the call the reader
+/// makes after each load; the page is then asked what the CSS Custom Highlight API holds.
+///
+/// Version history:
+///   1.0 — Session 2026-10-24 (FRUS Explorer Light, S15c's follow-up): initial implementation, with
+///          `buildRanges`' end after a `<br>`
+@Suite("A highlight that ends on a line break is drawn, with the document's others, in a web view")
+@MainActor
+struct HighlightLineBreakRenderTests {
+
+    /// A paragraph broken by `<lb/>`, as an address block or a signature is, and a second paragraph.
+    private static let fixture = """
+    <div type="document" xml:id="d1">
+      <p>CHAPMAN COLEMAN,<lb/>Second Secretary of Legation, at the Legation.</p>
+      <p>A second paragraph, highlighted on its own.</p>
+    </div>
+    """
+
+    /// The rendering version the highlights are made at and the page is drawn at, so none is stale.
+    private static let version = "0123456789abcdef"
+
+    /// What the page reports for one drawn range.
+    private struct Drawn: Decodable, Equatable {
+        /// The range's text, which a `<br>` adds nothing to.
+        let text: String
+        /// Whether the range ends just after a `<br>`.
+        let endsAfterBreak: Bool
+    }
+
+    /// Every range the CSS Custom Highlight API holds, by highlight name, in the order drawn.
+    private static let drawnScript = """
+    (() => {
+      const out = {};
+      for (const [name, highlight] of CSS.highlights) {
+        out[name] = [...highlight].map(r => {
+          const last = r.endContainer.nodeType === Node.ELEMENT_NODE ? r.endContainer.childNodes[r.endOffset - 1] : null;
+          return { text: r.toString(), endsAfterBreak: !!last && last.tagName === 'BR' };
+        });
+      }
+      return JSON.stringify(out);
+    })()
+    """
+
+    /// Loads the fixture and returns the harness plus the Swift flat text its offsets index.
+    private func loaded() async throws -> (OffsetEngineTestHarness, String) {
+        let model = try await ListShapeFixtures.renderModel(Self.fixture)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+        let renderer = try await harness.evaluateString(
+            "typeof window.FRUSHighlights === 'object' && typeof window.FRUSOffsets === 'object' ? 'ok' : 'missing'")
+        #expect(renderer == "ok", "the reader's scripts were not injected")
+        return (harness, buildFlatText(from: model))
+    }
+
+    /// The UTF-16 offset of `needle` in `flat`.
+    private func offset(of needle: String, in flat: String) throws -> Int {
+        let range = try #require(flat.range(of: needle), "\"\(needle)\" is not in the flat text")
+        return flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+    }
+
+    /// A JS expression: the first text node of the document's body holding `needle`.
+    private func textNode(_ needle: String) -> String {
+        """
+        (() => {
+          const walker = document.createTreeWalker(document.querySelector('.frus-document'), NodeFilter.SHOW_TEXT);
+          let t = walker.nextNode();
+          while (t && !t.nodeValue.includes('\(needle)')) t = walker.nextNode();
+          return t;
+        })()
+        """
+    }
+
+    /// Selects from `startOffset` in the text node `start` to `endOffset` in `end`, as a drag
+    /// leaves them, and returns the payload the selection bridge posts.
+    private func select(_ harness: OffsetEngineTestHarness,
+                        from start: String, _ startOffset: Int,
+                        to end: String, _ endOffset: Int) async throws -> SelectionPayload? {
+        try await harness.selectionPayload {
+            let result = try await harness.evaluateString("""
+                (() => {
+                  const a = \(start);
+                  const b = \(end);
+                  if (!a || !b) return 'an endpoint text node is not on the page';
+                  getSelection().removeAllRanges();
+                  getSelection().setBaseAndExtent(a, \(startOffset), b, \(endOffset));
+                  return 'ok';
+                })()
+                """)
+            #expect(result == "ok", "\(result ?? "the script returned nothing")")
+        }
+    }
+
+    /// A highlight over `start..<end` in `color`, at the page's version.
+    private func highlight(_ start: Int, _ end: Int, _ color: HighlightColor) -> DocumentHighlight {
+        DocumentHighlight(volumeId: "v1", documentId: "d1", startOffset: start, endOffset: end,
+                          colorTag: color.rawValue, renderingVersion: Self.version)
+    }
+
+    /// Draws `highlights` as the reader does after a load, and returns what the page holds.
+    private func draw(_ highlights: [DocumentHighlight],
+                      in harness: OffsetEngineTestHarness) async throws -> [String: [Drawn]] {
+        harness.coordinator.currentRenderingVersion = Self.version
+        harness.coordinator.pendingHighlights = highlights
+        await harness.coordinator.renderHighlights(on: harness.webView)
+        let raw = try #require(try await harness.evaluateString(Self.drawnScript), "the page returned nothing")
+        return try JSONDecoder().decode([String: [Drawn]].self, from: Data(raw.utf8))
+    }
+
+    @Test("A drag to the start of the line after a line break makes a highlight the reader draws, with the others")
+    func dragToTheNextLine() async throws {
+        let (harness, flat) = try await loaded()
+        let payload = try await select(harness, from: textNode("CHAPMAN"), 0, to: textNode("Second Secretary"), 0)
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets,
+                "start \(selection.start), end \(selection.end) for \"\(selection.text)\": took the footnote branch")
+        let lineBreak = try offset(of: ",\nSecond", in: flat) + 1
+        #expect(selection.start == (try offset(of: "CHAPMAN", in: flat)))
+        #expect(selection.end == lineBreak + 1, "the drag's end maps to the offset after the line break")
+
+        // The step the renderer took before its fix, which WebKit refuses.
+        let refused = try await harness.evaluateString("""
+            (() => {
+              const br = document.querySelector('.frus-document br');
+              try { new Range().setEnd(br, 1); return 'set'; } catch (e) { return e.name; }
+            })()
+            """)
+        #expect(refused == "IndexSizeError")
+
+        let second = try offset(of: "A second paragraph", in: flat)
+        let drawn = try await draw([highlight(selection.start, selection.end, .yellow),
+                                    highlight(second, second + 18, .green)], in: harness)
+        #expect(drawn["frus-yellow"] == [Drawn(text: "CHAPMAN COLEMAN,", endsAfterBreak: true)],
+                "the highlight ending on the line break: \(drawn)")
+        #expect(drawn["frus-green"] == [Drawn(text: "A second paragraph", endsAfterBreak: false)],
+                "the document's other highlight: \(drawn)")
+        #expect(drawn.count == 2)
+    }
+
+    /// The start side never threw, since `setStart(br, 0)` is a boundary point of a node with no
+    /// children; these pin that it still draws beside the fixed end.
+    @Test("A highlight of the line break alone, and one starting on it, are drawn too")
+    func breakAloneAndStartingOnIt() async throws {
+        let (harness, flat) = try await loaded()
+        let lineBreak = try offset(of: ",\nSecond", in: flat) + 1
+        let drawn = try await draw([highlight(lineBreak, lineBreak + 1, .blue),
+                                    highlight(lineBreak, lineBreak + 7, .pink),
+                                    highlight(0, lineBreak + 1, .yellow)], in: harness)
+        #expect(drawn["frus-blue"] == [Drawn(text: "", endsAfterBreak: true)], "\(drawn)")
+        #expect(drawn["frus-pink"] == [Drawn(text: "Second", endsAfterBreak: false)], "\(drawn)")
+        #expect(drawn["frus-yellow"] == [Drawn(text: "CHAPMAN COLEMAN,", endsAfterBreak: true)], "\(drawn)")
+        #expect(drawn.count == 3)
+    }
+}
