@@ -1316,7 +1316,9 @@ struct ProseFormattedSpan: Sendable {
     /// `true` when the run carries a non-zero underline style.
     let underline: Bool
     /// Uppercase `RRGGBB` (no leading `#`), or `nil` for (near-)black default text so
-    /// ordinary prose isn't tagged with a redundant colour.
+    /// ordinary prose isn't tagged with a redundant colour. The colour as the light
+    /// appearance draws it, whatever appearance the export runs under, so typed text is
+    /// `nil` in dark mode too (see `CollectionProse`).
     let colorHex: String?
     /// The run's `.link` URL as a string, or `nil` for unlinked text. HTML renders it as
     /// an `<a href>`, DOCX as a real `<w:hyperlink>` relationship, PDF as underlined text
@@ -1338,6 +1340,26 @@ struct ProseFormattedSpan: Sendable {
 /// directly, with bold/italic recovered from `inlinePresentationIntent`. Only data that is
 /// neither format yields `[]` — and `ProseRichText.exportRTF(from:)` never emits such a
 /// payload, falling back to the entry's plain `text` instead.
+///
+/// **Colours are read as the light appearance draws them.** Text typed in the editor carries
+/// the text view's dynamic colour, `NSColor.textColor` on the Mac and `UIColor.label` on iOS,
+/// which RTF stores by name (`\cname textColor`, `\cname labelColor`). The Mac reads either
+/// name back as that dynamic colour; iOS reads `labelColor` so, and `textColor`, a name UIKit
+/// does not know, as the black its colour table holds. Resolved under the current appearance,
+/// which outside drawing is whatever the thread was last left with, typed text was white
+/// whenever that was dark: `color:#FFFFFF` in HTML, `w:color FFFFFF` in Word, white text in a
+/// PDF, and white on the live preview's page, which is always light. Resolved for the light
+/// appearance it is black, which `hex(r:g:b:)` reads as no colour. A system colour takes its
+/// light shade at standard contrast, which iOS's Increase Contrast draws in a shade of its own;
+/// a fixed colour is unchanged.
+///
+/// Version history:
+///   1.0 — 2026-07-01: the shared decoder, as PDF and DOCX began rendering headings and prose
+///   1.1 — 2026-07-02: a legacy Phase 3b JSON payload decodes instead of being dropped
+///   1.2 — 2026-07-03: `linkURL`, from the editor's Link control
+///   1.3 — Session 2026-10-24 (FRUS Explorer Light, S15d's follow-up): a colour is read as the
+///          light appearance draws it, whatever appearance the export or the live preview runs
+///          under, so typed text is no longer white in either when that appearance is dark
 enum CollectionProse {
     /// Decodes `rtf` into paragraphs of formatted spans, resolving paragraph breaks *before*
     /// spans are emitted so callers never straddle a paragraph boundary with a single run.
@@ -1428,16 +1450,28 @@ enum CollectionProse {
     // MARK: - Colour helpers
 
     #if canImport(AppKit)
-    /// `RRGGBB` for a colour, or `nil` for (near-)black default text.
+    /// `RRGGBB` for a colour as the light appearance draws it, or `nil` for (near-)black
+    /// default text. `usingColorSpace(_:)` resolves a catalog colour under the current
+    /// drawing appearance, so it is resolved under Aqua here, whatever appearance the export
+    /// runs under (see the type doc). The call puts back the appearance it found, as a view's
+    /// drawing does.
     private static func hexColor(_ color: NSColor) -> String? {
-        guard let c = color.usingColorSpace(.sRGB) else { return nil }
+        var light: NSColor?
+        NSAppearance(named: .aqua)?.performAsCurrentDrawingAppearance {
+            light = color.usingColorSpace(.sRGB)
+        }
+        guard let c = light ?? color.usingColorSpace(.sRGB) else { return nil }
         return hex(r: c.redComponent, g: c.greenComponent, b: c.blueComponent)
     }
     #elseif canImport(UIKit)
-    /// `RRGGBB` for a colour, or `nil` for (near-)black default text.
+    /// `RRGGBB` for a colour as the light appearance draws it, or `nil` for (near-)black
+    /// default text. `getRed(_:green:blue:alpha:)` resolves a dynamic colour with the current
+    /// trait collection, so it is resolved for the light style here, whatever appearance the
+    /// export runs under (see the type doc).
     private static func hexColor(_ color: UIColor) -> String? {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        color.getRed(&r, green: &g, blue: &b, alpha: &a)
+        color.resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
+            .getRed(&r, green: &g, blue: &b, alpha: &a)
         return hex(r: r, g: g, b: b)
     }
     #endif

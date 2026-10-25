@@ -12701,3 +12701,160 @@ private final class RestingCapEditorHost {
     }
 }
 #endif
+
+// MARK: - CollectionProseAppearanceTests
+
+/// Text typed in a prose block carries the editor's dynamic text colour, and `CollectionProse` read a colour under the
+/// current appearance, so a collection exported while that was dark tagged typed prose white: `color:#FFFFFF` in HTML,
+/// `w:color FFFFFF` in Word, white text in a PDF, and white on the live preview's always-light page. These read each
+/// editor's own RTF while the current appearance is dark, as it is for an export whenever the thread it runs on was
+/// last left with a dark one.
+///
+/// The Mac's `NSTextView` writes typed text's `NSColor.textColor` as `\cname textColor` over black, under either
+/// appearance. iOS's `UITextView` writes its `UIColor.label` as `\cname labelColor` over the colour the appearance it
+/// was written under draws, white in dark mode. UIKit reads `labelColor` back as the dynamic colour, and `textColor`,
+/// a name it does not know, as its colour table's black: in this target, which runs on iOS, iOS's own typed text is
+/// the case that fails on the code before the fix.
+///
+/// Version history:
+///   1.0 — Session 2026-10-24 (FRUS Explorer Light, S15d's follow-up): initial implementation
+@Suite("Collection prose reads a colour as the light appearance draws it, whatever the appearance at export")
+struct CollectionProseAppearanceTests {
+
+    /// Text typed in the Mac's editor, byte for byte as AppKit writes it under either appearance: the editor's
+    /// `NSTextView` (13-point system font) gives typed text `NSColor.textColor`, by name.
+    static let typedOnMac = #"""
+        {\rtf1\ansi\ansicpg1252\cocoartf2907
+        \cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 HelveticaNeue;}
+        {\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+        {\*\expandedcolortbl;;\cssrgb\c0\c0\c0\cname textColor;}
+        \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+        \f0\fs26 \cf2 Typed on a Mac.}
+        """#
+
+    /// Text typed in iOS's editor in dark mode, byte for byte as the editor stores it (its fonts at the 13-point
+    /// storage size): the `UITextView` gives typed text `UIColor.label`, by name, over the white dark mode draws.
+    static let typedOnIOSInDark = #"""
+        {\rtf1\ansi\ansicpg1252\cocoartf2907
+        \cocoatextscaling1\cocoaplatform1{\fonttbl\f0\fnil\fcharset0 .SFUI-Regular;}
+        {\colortbl;\red255\green255\blue255;\red255\green255\blue255;}
+        {\*\expandedcolortbl;;\csgray\c100000\cname labelColor;}
+        \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+        \f0\fs26 \cf2 Typed on an iPhone in dark mode.}
+        """#
+
+    /// A fixed sRGB colour, as the Mac writes one.
+    static let fixedRed = #"""
+        {\rtf1\ansi\ansicpg1252\cocoartf2907
+        \cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+        {\colortbl;\red255\green255\blue255;\red190\green0\blue21;}
+        {\*\expandedcolortbl;;\cssrgb\c80000\c10000\c10000;}
+        \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+        \f0\fs24 \cf2 A fixed red.}
+        """#
+
+    /// A system colour, which RTF also stores by name, as the Mac writes `NSColor.systemRed`.
+    static let systemRed = #"""
+        {\rtf1\ansi\ansicpg1252\cocoartf2907
+        \cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+        {\colortbl;\red255\green255\blue255;\red252\green33\blue37;}
+        {\*\expandedcolortbl;;\cssrgb\c100000\c23137\c18824\cname systemRedColor;}
+        \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+        \f0\fs24 \cf2 The system red.}
+        """#
+
+    /// Runs `body` while the current appearance is dark, or light: what a dynamic colour resolves with.
+    static func under<T>(dark: Bool, _ body: () -> T) throws -> T {
+        var result: T?
+        #if canImport(UIKit)
+        UITraitCollection(userInterfaceStyle: dark ? .dark : .light).performAsCurrent { result = body() }
+        #elseif canImport(AppKit)
+        NSAppearance(named: dark ? .darkAqua : .aqua)?.performAsCurrentDrawingAppearance { result = body() }
+        #endif
+        return try #require(result)
+    }
+
+    /// The sRGB components of a run's colour under the current appearance, read as the code before the fix read them.
+    static func components(_ color: Any) -> [CGFloat] {
+        #if canImport(UIKit)
+        guard let color = color as? UIColor else { return [] }
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        color.getRed(&r, green: &g, blue: &b, alpha: &a)
+        return [r, g, b]
+        #elseif canImport(AppKit)
+        guard let color = (color as? NSColor)?.usingColorSpace(.sRGB) else { return [] }
+        return [color.redComponent, color.greenComponent, color.blueComponent]
+        #endif
+    }
+
+    /// The foreground colour of `rtf`'s first character, as the platform's RTF reader gives it.
+    static func storedColour(_ rtf: String) throws -> Any {
+        try #require(ProseRichText.decodedRTF(Data(rtf.utf8))?.attribute(.foregroundColor, at: 0, effectiveRange: nil))
+    }
+
+    /// The first span's `colorHex` of `rtf`, read while the current appearance is dark or light.
+    static func exportedHex(_ rtf: String, dark: Bool) throws -> String? {
+        try under(dark: dark) { CollectionProse.paragraphs(fromRTF: Data(rtf.utf8)) }.first?.first?.colorHex
+    }
+
+    @Test("Typed prose from either editor has no colour when the export runs under the dark appearance")
+    func typedProseHasNoColourUnderDark() throws {
+        // The premise, so the check below cannot pass, or fail, for want of it: this platform's own editor writes a
+        // dynamic colour, which the dark appearance draws white and the light one black.
+        #if canImport(UIKit)
+        let own = try Self.storedColour(Self.typedOnIOSInDark)
+        #elseif canImport(AppKit)
+        let own = try Self.storedColour(Self.typedOnMac)
+        #endif
+        let drawnDark = try Self.under(dark: true) { Self.components(own) }
+        let drawnLight = try Self.under(dark: false) { Self.components(own) }
+        #expect(drawnDark.count == 3 && drawnDark.allSatisfy { $0 > 0.99 }, "the dark appearance draws it \(drawnDark)")
+        #expect(drawnLight.count == 3 && drawnLight.allSatisfy { $0 < 0.01 }, "the light appearance draws it \(drawnLight)")
+
+        for (editor, rtf) in [("a Mac", Self.typedOnMac), ("an iPhone", Self.typedOnIOSInDark)] {
+            let paragraphs = try Self.under(dark: true) { CollectionProse.paragraphs(fromRTF: Data(rtf.utf8)) }
+            try #require(paragraphs.count == 1, "text typed on \(editor)")
+            #expect(paragraphs[0].map(\.colorHex) == [nil], "text typed on \(editor) carries no colour into an export")
+        }
+    }
+
+    @Test("A chosen colour exports as the light appearance draws it, under either appearance")
+    func chosenColourIsTheLightAppearances() throws {
+        // A fixed colour is its own value under either appearance. (Each value is read before its check, so a
+        // failure prints it: Swift Testing does not expand an expression that throws.)
+        let fixedDark = try Self.exportedHex(Self.fixedRed, dark: true)
+        let fixedLight = try Self.exportedHex(Self.fixedRed, dark: false)
+        #expect(fixedDark == "CC1919")
+        #expect(fixedLight == "CC1919")
+
+        // A system colour is its light shade under either. The premise: the two appearances draw it differently.
+        let system = try Self.storedColour(Self.systemRed)
+        let darkShade = try Self.under(dark: true) { Self.components(system) }
+        let lightShade = try Self.under(dark: false) { Self.components(system) }
+        try #require(lightShade.count == 3)
+        #expect(darkShade != lightShade, "the appearances draw the system colour alike: \(darkShade)")
+        // As CollectionProse formats a colour.
+        let lightHex = String(format: "%02X%02X%02X", Int(lightShade[0] * 255), Int(lightShade[1] * 255),
+                              Int(lightShade[2] * 255))
+        let systemDark = try Self.exportedHex(Self.systemRed, dark: true)
+        let systemLight = try Self.exportedHex(Self.systemRed, dark: false)
+        #expect(systemDark == lightHex)
+        #expect(systemLight == lightHex)
+    }
+
+    @Test("The HTML export prints typed prose with no colour when it runs under the dark appearance")
+    func htmlExportPrintsTypedProseWithNoColour() throws {
+        let metadata = CollectionExportMetadata(name: "Typed Prose", note: nil)
+        let items: [CollectionExportItem] = [.prose(Data(Self.typedOnMac.utf8)), .prose(Data(Self.typedOnIOSInDark.utf8))]
+        let html = try Self.under(dark: true) {
+            CollectionItemHTMLRenderer(options: CollectionExportOptions()).pageHTML(metadata: metadata, items: items)
+        }
+        // Before the fix the iPhone's paragraph read <p><span style="color:#FFFFFF">…</span></p>.
+        #expect(html.contains("<p>Typed on a Mac.</p>"))
+        #expect(html.contains("<p>Typed on an iPhone in dark mode.</p>"))
+    }
+}
