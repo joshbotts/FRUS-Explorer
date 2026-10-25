@@ -127,6 +127,11 @@ import FTS5Store
 ///          (`WordCharacter`), the first gate reads it from a table of the stems' first letters, and the second
 ///          compares its byte; any other character is read as before. The scan had been most of the snippet pass,
 ///          and since #1760 it runs on to the rarest word. NO SNIPPET MOVES
+///   2.19 — FRUS Explorer Light S17a: `userSource`, where every search, count, key set, facet match and tag
+///          count of this service reads its user half (`SearchUserSource`), which `makeFilters(from:)` puts in
+///          the filters it builds, and `semanticResultRows(forKeys:)` passes on; `.index`, the app's, unless the
+///          host passes another. `userTagCounts(parameters:tagIds:documentKeys:)`, the filter sheet's two
+///          routes to the tag counts, public. NO RESULT MOVES on the index
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -140,6 +145,12 @@ public actor SearchService {
     /// SQL by `IndexingPipeline.searchDocuments` (an `EXISTS` against
     /// `person_mentions`); this store is no longer consulted during search.
     private let personMentionStore: PersonMentionStore?
+
+    /// Where this service's searches read their user half: the notes and summaries the words match, the
+    /// tags a filter, a row and a tag count read, and the user's texts the exact-word filter reads (S17a).
+    /// `.index` in the app. A host that keeps each user's half in a store attached to `pipeline` makes a
+    /// service for a user with `.attachedStore(userId:)`; the pipeline is shared, the service is cheap.
+    public nonisolated let userSource: SearchUserSource
 
     // MARK: - Pagination defaults
 
@@ -157,14 +168,18 @@ public actor SearchService {
     ///     auxiliary tables.
     ///   - personMentionStore: Unused by search since the SQL-side filter redesign;
     ///     accepted for initialiser compatibility.
+    ///   - userSource: Where the user half is read (`SearchUserSource`): the index's own, as the app
+    ///     reads it, by default.
     public init(
         fts5Store: FTS5Store,
         pipeline: IndexingPipeline,
-        personMentionStore: PersonMentionStore? = nil
+        personMentionStore: PersonMentionStore? = nil,
+        userSource: SearchUserSource = .index
     ) {
         self.fts5Store = fts5Store
         self.pipeline = pipeline
         self.personMentionStore = personMentionStore
+        self.userSource = userSource
     }
 
     // MARK: - Public API
@@ -276,14 +291,15 @@ public actor SearchService {
     }
 
     /// Display rows for the Meaning mode's hits (V-5 hybrid page) — the pipeline's keyed batch,
-    /// through this actor so the two search routes share one entry surface.
+    /// through this actor so the two search routes share one entry surface. A row's tags are read
+    /// from `userSource`.
     ///
     /// - Parameter keys: The semantic hits to resolve.
     /// - Returns: `"volumeId/documentId"` → row; unindexed keys are absent.
     public func semanticResultRows(
         forKeys keys: [(volumeId: String, documentId: String)]
     ) async throws -> [String: IndexedSearchRow] {
-        try await pipeline.semanticResultRows(forKeys: keys)
+        try await pipeline.semanticResultRows(forKeys: keys, userSource: userSource)
     }
 
     /// The full key set the current FILTERS admit, for the Meaning mode's intersection.
@@ -597,7 +613,8 @@ public actor SearchService {
             userTagIds: parameters.userTagIds,
             documentTypeFilter: parameters.documentTypeFilter,
             exactTerms: Self.exactTerms(from: parameters),
-            exactColumns: Self.exactColumns(for: parameters)
+            exactColumns: Self.exactColumns(for: parameters),
+            userSource: userSource
         )
     }
 
@@ -842,6 +859,38 @@ public actor SearchService {
         return try await pipeline.resultSetFacets(
             corpusMatch: expressions.corpus, userContentMatch: expressions.userContent,
             filters: filters, request: request, documentKeys: documentKeys)
+    }
+
+    /// How many documents of a search's results carry each of `tagIds`, as the filter sheet's My Tags
+    /// toggles count them (`IndexingPipeline.userTagCounts`), with the tags read from `userSource` (S17a).
+    ///
+    /// The filter sheet's two routes, as `SearchViewModel.loadUserTagCounts` takes them: a keyword search
+    /// counts over its whole match, through the expressions and filters the search runs; a meaning
+    /// search over `documentKeys`, the results it ranked, already filtered, with no expression built.
+    ///
+    /// - Parameters:
+    ///   - parameters: The search that ran.
+    ///   - tagIds: The tags to count, each a `UserTag.id.uuidString`; a tag no document of the results
+    ///     carries is absent from the answer.
+    ///   - documentKeys: The results to count over when no keyword match produced them; `nil` for a
+    ///     keyword search.
+    /// - Returns: Counts keyed by the tag ids as given.
+    /// - Throws: `FTS5Error.emptyQuery` when a keyword search has neither text to match nor a filter to
+    ///   run alone, as ``matchExpressions(for:)`` does.
+    public func userTagCounts(
+        parameters: SearchParameters,
+        tagIds: [String],
+        documentKeys: [(volumeId: String, documentId: String)]? = nil
+    ) async throws -> [String: Int] {
+        guard let documentKeys else {
+            let expressions = try makeMatchExpressions(from: parameters)
+            return try await pipeline.userTagCounts(
+                corpusMatch: expressions.corpus, userContentMatch: expressions.userContent,
+                filters: makeFilters(from: parameters), tagIds: tagIds)
+        }
+        return try await pipeline.userTagCounts(
+            corpusMatch: nil, userContentMatch: nil, filters: SearchSQLFilters(userSource: userSource),
+            tagIds: tagIds, documentKeys: documentKeys)
     }
 
     /// The query's positive terms, for highlighting and the concordance. Internal rather than
