@@ -89,8 +89,20 @@ public struct ReaderHighlight: Encodable, Sendable {
 ///   1.0 — Session 153: initial implementation
 ///   1.1 — FRUSCoreKit, part 1: moved from `CollectionExporter.swift`; `color` is the kit's
 ///          `HighlightColor`, which `DocumentHighlight.Color` names
-struct ExportHighlight: Sendable {
-    let startOffset: Int
-    let endOffset:   Int
-    let color:       HighlightColor
+///   1.2 — 2026-10-25 (FRUS Explorer Light, S18a): public, with its initialiser spelled out, since
+///          the export payloads that carry it are
+public struct ExportHighlight: Sendable {
+    /// Where the highlight starts in the document's flat text, in UTF-16 code units.
+    public let startOffset: Int
+    /// Where it ends, exclusive.
+    public let endOffset:   Int
+    /// Its colour.
+    public let color:       HighlightColor
+
+    /// Creates a highlight snapshot.
+    public init(startOffset: Int, endOffset: Int, color: HighlightColor) {
+        self.startOffset = startOffset
+        self.endOffset = endOffset
+        self.color = color
+    }
 }

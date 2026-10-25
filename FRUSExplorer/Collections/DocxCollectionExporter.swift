@@ -183,6 +183,9 @@ import Foundation
 ///          mark in a table cell stays in the cell's line. In a footnote an image prints as its placeholder, since
 ///          `word/footnotes.xml` has no relationships part to name it by (no image in the corpus sits in a note).
 ///          The fold-in: the space between two inline elements prints, outside the highlight tracker.
+///   1.24 — 2026-10-25 (FRUS Explorer Light, S18a): a prose item carries the spans the resolver decoded, which
+///          `proseDocxXML` prints as it printed `CollectionProse`'s; the cover's "Exported" date and the colophon's are
+///          `CollectionExportMetadata.exportDate`, `nil` being now, in the device's calendar, as before
 final class DocxCollectionExporter: CollectionExporter {
 
     /// Where figure images come from (#1516). The app's store; a test sets its own.
@@ -562,9 +565,10 @@ final class DocxCollectionExporter: CollectionExporter {
         // Cover: export metadata
         let docCount = documents.count
         let volCount = Set(documents.map { $0.volumeId }).count
-        let df = DateFormatter(); df.dateStyle = .long; df.timeStyle = .none
+        let exportDate = collection.exportDate ?? CollectionExportDate()
+        let df = exportDate.formatter
         let info = "\(docCount) document\(docCount == 1 ? "" : "s") from "
-            + "\(volCount) volume\(volCount == 1 ? "" : "s") · Exported \(df.string(from: Date()))"
+            + "\(volCount) volume\(volCount == 1 ? "" : "s") · Exported \(df.string(from: exportDate.date))"
         body += styledPara(info, styleId: "Normal")
 
         // Contents heading + Word TOC field code (updates on first open in Word). The
@@ -603,8 +607,8 @@ final class DocxCollectionExporter: CollectionExporter {
                 let styles = ["SectionHeading", "SectionHeading2", "SectionHeading3"]
                 let l = min(max(level, 1), CollectionOutline.maxLevel)
                 body += markdownItalicRuns(text, styleId: styles[l - 1], bold: true)
-            case .prose(let rtf):
-                body += proseDocxXML(rtf, ctx: ctx)
+            case .prose(let paragraphs):
+                body += proseDocxXML(paragraphs, ctx: ctx)
             case .excerpt(let excerpt):
                 body += excerptDocxXML(excerpt)
             case .generated(let block):
@@ -623,7 +627,8 @@ final class DocxCollectionExporter: CollectionExporter {
 
         // Trailing colophon paragraph (Authoring Phase 4) — opt-in only.
         if collection.includeColophon {
-            body += styledPara(escaped(CollectionColophon.text(for: items)), styleId: "Colophon")
+            body += styledPara(escaped(CollectionColophon.text(for: items, dated: collection.exportDate)),
+                               styleId: "Colophon")
             // PV-1: the sources block travels with the colophon, in all three rich formats.
             for line in CollectionColophon.sourceLines(for: items, embedsWordCloud: wordCloudXML != nil) {
                 body += styledPara(escaped(line), styleId: "Colophon")
@@ -747,16 +752,15 @@ final class DocxCollectionExporter: CollectionExporter {
         return body
     }
 
-    /// Renders a rich-text prose block (RTF, or a legacy Phase 3b JSON blob the shared
-    /// decoder recovers rather than dropping) to Word paragraph XML. Bold/italic/
-    /// underline/colour spans (decoded once by `CollectionProse`) map to `<w:r>` run
+    /// Renders a rich-text prose block (the spans the resolver decoded from its RTF, or from a
+    /// legacy Phase 3b JSON blob the shared decoder recovers rather than dropping) to Word
+    /// paragraph XML. Bold/italic/underline/colour spans map to `<w:r>` run
     /// properties; a span carrying a link URL is wrapped in a real `<w:hyperlink r:id>`
     /// whose external relationship is allocated by `ctx` (Session 2026-07-03 — the same
     /// Phase 6 plumbing generated-block rows use); blank lines split paragraphs; single
     /// newlines within a paragraph become `<w:br/>`. Empty (whitespace-only) paragraphs
     /// are dropped.
-    private func proseDocxXML(_ rtf: Data, ctx: DocxRenderContext) -> String {
-        let paragraphs = CollectionProse.paragraphs(fromRTF: rtf)
+    private func proseDocxXML(_ paragraphs: [[ProseFormattedSpan]], ctx: DocxRenderContext) -> String {
         guard !paragraphs.isEmpty else { return "" }
         var xml = ""
         for paragraph in paragraphs {

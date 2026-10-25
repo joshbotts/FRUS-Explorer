@@ -1547,7 +1547,8 @@ extension CodingStandardsAuditTests {
         }
         // A scan that found none would be reading nothing. Since #1464's code half (lane EXPORT) every
         // list row prints through `CollectionEditorNaming.listName`, so four defaults remain, each where
-        // a collection is NAMED rather than listed: the title rule and Duplicate's base name
+        // a collection is NAMED rather than listed: the title rule (FRUSCoreKit's
+        // `CollectionEditorNaming.swift` since FRUS Explorer Light's S18a) and Duplicate's base name
         // (`Models/Collection.swift`), the name a kept new collection is saved under
         // (`CollectionEditorView.swift`) and the Mac name field's placeholder
         // (`MacCollectionManagerView.swift`). `CollectionListNameTests` pins those four sites by file.

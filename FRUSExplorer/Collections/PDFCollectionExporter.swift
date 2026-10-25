@@ -140,6 +140,9 @@ import ImageIO
 ///          one-character run whose delegate reserves its size (`figureImageAttrKey`), drawn by
 ///          `drawFrameWithHighlights` once the text is. The fold-in: the space between two inline
 ///          elements prints. All with the highlight tracker parked, since none of it is flat text.
+///   1.25 — 2026-10-25 (FRUS Explorer Light, S18a): a prose item carries the spans the resolver decoded, which
+///          `proseAttributedString` sets as it set `CollectionProse`'s; the colophon is dated by
+///          `CollectionExportMetadata.exportDate`, `nil` being now, as before. The payloads it renders are FRUSCoreKit's
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -303,8 +306,8 @@ final class PDFCollectionExporter: CollectionExporter {
         }
 
         // Flows a rich-text prose block into the structural flow, paginating if needed.
-        func drawProseFlow(_ rtf: Data) {
-            let attr = proseAttributedString(rtf)
+        func drawProseFlow(_ paragraphs: [[ProseFormattedSpan]]) {
+            let attr = proseAttributedString(paragraphs)
             guard attr.length > 0 else { return }
             if !flowOpen { beginFlow() }
             if flowY < H - M - 1 { flowY -= 8 }   // gap above prose unless at page top
@@ -463,8 +466,8 @@ final class PDFCollectionExporter: CollectionExporter {
                 drawDocumentSection(ctx: ctx, doc: doc, options: options, pageNumber: &pageNumber)
             case .heading(let text, let level):
                 drawHeadingFlow(text, level: level)
-            case .prose(let rtf):
-                drawProseFlow(rtf)
+            case .prose(let paragraphs):
+                drawProseFlow(paragraphs)
             case .excerpt(let excerpt):
                 drawExcerptFlow(excerpt)
             case .generated(let block):
@@ -504,7 +507,7 @@ final class PDFCollectionExporter: CollectionExporter {
             // PV-1: the sources block travels with the colophon, in all three rich formats. It
             // is set with the colophon line as one flow so a long block wraps rather than
             // overprinting the page number beneath it.
-            let colophonText = ([CollectionColophon.text(for: items)]
+            let colophonText = ([CollectionColophon.text(for: items, dated: collection.exportDate)]
                                 + CollectionColophon.sourceLines(for: items, embedsWordCloud: wordCloud != nil))
                 .joined(separator: "\n")
             let attr = noteAttributedString(colophonText, fontSize: 9, gray: 0.45)
@@ -1561,9 +1564,9 @@ final class PDFCollectionExporter: CollectionExporter {
         return result
     }
 
-    /// Builds an `NSAttributedString` for a rich-text prose block (RTF, or a legacy Phase 3b
-    /// JSON blob the shared decoder recovers rather than dropping). Bold/italic/
-    /// underline/colour spans (decoded once by the shared `CollectionProse`) map to font-face,
+    /// Builds an `NSAttributedString` for a rich-text prose block (the spans the resolver decoded
+    /// from its RTF, or from a legacy Phase 3b JSON blob the shared decoder recovers rather than
+    /// dropping). Bold/italic/underline/colour spans map to font-face,
     /// underline, and foreground-colour attributes; paragraphs are separated by a blank line.
     /// A linked span renders underlined with the URL appended as small gray text in
     /// parentheses — the v1.14 no-annotation tradeoff (bare CoreText frame drawing has no
@@ -1573,8 +1576,8 @@ final class PDFCollectionExporter: CollectionExporter {
     /// so the parenthetical is emitted once per *run* of consecutive spans sharing the
     /// same `linkURL` — after the run's last span — never once per span (v1.18); the
     /// self-describing-link suppression compares the URL against the whole run's text.
-    private func proseAttributedString(_ rtf: Data, fontSize: CGFloat = 11) -> NSAttributedString {
-        let paragraphs = CollectionProse.paragraphs(fromRTF: rtf)
+    private func proseAttributedString(_ paragraphs: [[ProseFormattedSpan]],
+                                       fontSize: CGFloat = 11) -> NSAttributedString {
         let result = NSMutableAttributedString()
         for (index, paragraph) in paragraphs.enumerated() {
             if index > 0 {

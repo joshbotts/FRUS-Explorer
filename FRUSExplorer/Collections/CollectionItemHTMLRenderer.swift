@@ -100,6 +100,9 @@ import SwiftUI
 ///          backgrounds they are drawn on: the contents panel's page numbers and the
 ///          AI-attribution caption (#888 to #6e6e6e), the colophon and the "See also" label
 ///          (#777 to #757575), and the preview's citation-only card note (#a06a00 to #986500)
+///   1.14 — 2026-10-25 (FRUS Explorer Light, S18a): a prose item carries the spans the resolver
+///          decoded, which `proseHTML` renders as it rendered `CollectionProse`'s; the colophon is
+///          dated by `CollectionExportMetadata.exportDate`, `nil` being now, as before
 struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -625,7 +628,7 @@ struct CollectionItemHTMLRenderer {
         // enable it keep their pre-Phase-4 bytes.
         if metadata.includeColophon {
             body += "<footer class=\"colophon\">\n"
-            body += "  <p>\(escaped(CollectionColophon.text(for: items)))</p>\n"
+            body += "  <p>\(escaped(CollectionColophon.text(for: items, dated: metadata.exportDate)))</p>\n"
             // PV-1: the sources block travels with the colophon, in all three rich formats.
             for line in CollectionColophon.sourceLines(for: items, embedsWordCloud: wordCloudPNGBase64 != nil) {
                 body += "  <p>\(escaped(line))</p>\n"
@@ -1153,15 +1156,14 @@ struct CollectionItemHTMLRenderer {
 
     // MARK: - Helpers
 
-    /// Renders a rich-text prose block — supplied as **RTF** (or a legacy Phase 3b JSON blob,
-    /// which the shared decoder recovers rather than dropping) — to an HTML fragment:
-    /// bold/italic/underline/colour runs map to `<strong>`/`<em>`/`<u>`/`<span style=color>`,
-    /// a `.link` run to an outermost `<a href>` (Session 2026-07-03: the editor's Link
-    /// control), blank lines to `<p>` boundaries, single newlines to `<br>`. Formatting is
-    /// decoded once by the shared `CollectionProse.paragraphs(fromRTF:)`, which resolves
-    /// paragraph breaks *before* spans are emitted so open/close tags never straddle a `<p>`.
-    private func proseHTML(_ rtf: Data) -> String {
-        let paragraphs = CollectionProse.paragraphs(fromRTF: rtf)
+    /// Renders a rich-text prose block — the paragraphs of formatted spans the resolver decoded
+    /// from its RTF (or a legacy Phase 3b JSON blob, which the shared decoder recovers rather
+    /// than dropping) — to an HTML fragment: bold/italic/underline/colour runs map to
+    /// `<strong>`/`<em>`/`<u>`/`<span style=color>`, a `.link` run to an outermost `<a href>`
+    /// (Session 2026-07-03: the editor's Link control), blank lines to `<p>` boundaries, single
+    /// newlines to `<br>`. Paragraph breaks are resolved *before* spans are emitted
+    /// (`CollectionProse`), so open/close tags never straddle a `<p>`.
+    private func proseHTML(_ paragraphs: [[ProseFormattedSpan]]) -> String {
         guard !paragraphs.isEmpty else { return "" }
 
         var out = "<div class=\"prose-block\">\n"

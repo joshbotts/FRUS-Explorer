@@ -257,7 +257,7 @@ struct CollectionTests {
         let d1 = CollectionExportDocument(documentId: "d1", volumeId: "v1", sortOrder: 0, title: "t1", bodyText: "")
         let d2 = CollectionExportDocument(documentId: "d2", volumeId: "v1", sortOrder: 1, title: "t2", bodyText: "")
         let items: [CollectionExportItem] = [.heading("Section", level: 1), .document(d1),
-                                             .prose(Data()), .document(d2)]
+                                             .prose(CollectionProse.paragraphs(fromRTF: Data())), .document(d2)]
         let docs = items.documents
         #expect(docs.count == 2)
         #expect(docs.map(\.documentId) == ["d1", "d2"])
@@ -459,7 +459,7 @@ struct CollectionTests {
     func proseLinkExportsAcrossFormats() async throws {
         let rtf = try makeLinkedProseRTF()
         let metadata = CollectionExportMetadata(name: "Link Contract", note: nil)
-        let items: [CollectionExportItem] = [.prose(rtf)]
+        let items: [CollectionExportItem] = [.prose(CollectionProse.paragraphs(fromRTF: rtf))]
 
         // HTML (export + live preview share this renderer): a real anchor around the
         // linked text only.
@@ -513,7 +513,8 @@ struct CollectionTests {
         #expect(spans.filter { $0.linkURL == "https://history.state.gov/frus" }.count == 2)
 
         let metadata = CollectionExportMetadata(name: "Link Once", note: nil)
-        let pdfURL = try await PDFCollectionExporter().export(metadata: metadata, items: [.prose(rtf)])
+        let pdfURL = try await PDFCollectionExporter().export(
+            metadata: metadata, items: [.prose(CollectionProse.paragraphs(fromRTF: rtf))])
         let pdfDocument = try #require(PDFDocument(data: try Data(contentsOf: pdfURL)))
         let pdfText = (0..<pdfDocument.pageCount)
             .compactMap { pdfDocument.page(at: $0)?.string }
@@ -988,7 +989,8 @@ struct CollectionTests {
         let doc = CollectionExportDocument(
             documentId: "d1", volumeId: "v1", sortOrder: 2,
             title: "A Memorandum", bodyText: "Body text here.")
-        let items: [CollectionExportItem] = [.heading("Chapter One", level: 1), .prose(rtf), .document(doc)]
+        let items: [CollectionExportItem] = [.heading("Chapter One", level: 1),
+                                             .prose(CollectionProse.paragraphs(fromRTF: rtf)), .document(doc)]
 
         let url = try await DocxCollectionExporter().export(
             metadata: CollectionExportMetadata(name: "Structured", note: nil), items: items)
@@ -1019,7 +1021,7 @@ struct CollectionTests {
         let d2 = CollectionExportDocument(documentId: "d2", volumeId: "v1", sortOrder: 3,
                                           title: "Second Memo", bodyText: "Beta.")
         let items: [CollectionExportItem] = [
-            .heading("Part I", level: 1), .prose(rtf), .document(d1),
+            .heading("Part I", level: 1), .prose(CollectionProse.paragraphs(fromRTF: rtf)), .document(d1),
             .heading("Part II", level: 1), .document(d2),
         ]
 
@@ -1034,13 +1036,15 @@ struct CollectionTests {
 
     @Test("LegacyProseExport: a Phase 3b JSON prose payload still appears in HTML, DOCX, and PDF exports")
     func exportsRecoverLegacyProse() async throws {
-        // A raw legacy blob reaching an exporter directly (e.g. synced from a Phase 3b
+        // A raw legacy blob reaching the decoder (e.g. synced from a Phase 3b
         // device, or carried by a pre-fix .fruscollection file) must render its text —
-        // before the fix, all three exporters silently omitted the block.
+        // before the fix, all three exporters silently omitted the block. The resolver
+        // decodes it when it builds the item, as here.
         let blob = try JSONEncoder().encode(AttributedString("Irreplaceable editorial commentary."))
         let doc = CollectionExportDocument(documentId: "d1", volumeId: "v1", sortOrder: 1,
                                            title: "A Memo", bodyText: "Body.")
-        let items: [CollectionExportItem] = [.heading("Part I", level: 1), .prose(blob), .document(doc)]
+        let items: [CollectionExportItem] = [.heading("Part I", level: 1),
+                                             .prose(CollectionProse.paragraphs(fromRTF: blob)), .document(doc)]
         let metadata = CollectionExportMetadata(name: "Legacy Prose", note: nil)
 
         let htmlURL = try await HTMLCollectionExporter().export(metadata: metadata, items: items)
@@ -1480,12 +1484,9 @@ struct CollectionTests {
             #expect(l2 == 1)
         } else { Issue.record("items[4] should be a heading") }
 
-        // Prose round-trips through the RTF pipeline.
-        if case .prose(let rtf) = items[2] {
-            let ns = try NSAttributedString(data: rtf,
-                                            options: [.documentType: NSAttributedString.DocumentType.rtf],
-                                            documentAttributes: nil)
-            #expect(ns.string == "Editorial context.")
+        // Prose round-trips through the RTF pipeline: the item carries the spans decoded from it.
+        if case .prose(let paragraphs) = items[2] {
+            #expect(paragraphs.map { $0.map(\.text).joined() } == ["Editorial context."])
         } else {
             Issue.record("items[2] should be prose")
         }
@@ -1874,7 +1875,7 @@ struct CollectionTests {
 
         let items: [CollectionExportItem] = [
             .heading("Contract Part I", level: 1),
-            .prose(rtf),
+            .prose(CollectionProse.paragraphs(fromRTF: rtf)),
             .document(doc),
             .excerpt(excerpt),                           // Phase 5: frozen quotation
             .heading("Contract Nested Sub", level: 2),   // Phase 4: leveled headings
@@ -2162,7 +2163,7 @@ struct CollectionTests {
         // The resolver emits the introduction as the leading .prose item (metadata carries
         // the title page + colophon opt-in) — mirror that shape here.
         let framedItems: [CollectionExportItem] = [
-            .prose(introRTF), .heading("Part I", level: 1), .document(doc)]
+            .prose(CollectionProse.paragraphs(fromRTF: introRTF)), .heading("Part I", level: 1), .document(doc)]
         let plainItems: [CollectionExportItem] = [
             .heading("Part I", level: 1), .document(doc)]
         let framed = CollectionExportMetadata(
@@ -2244,13 +2245,13 @@ struct CollectionTests {
             collection: coll, entries: [heading], allNotes: [], purpose: .preview)
         #expect(bare.map(kindLabel) == ["heading"])
 
-        // Plain-text introduction → a leading .prose item carrying it as RTF.
+        // Plain-text introduction → a leading .prose item carrying it, decoded from its RTF.
         coll.introductionText = "Why these documents matter."
         let framed = try await resolver.resolve(
             collection: coll, entries: [heading], allNotes: [], purpose: .preview)
         #expect(framed.map(kindLabel) == ["prose", "heading"])
-        if case .prose(let rtf) = framed[0] {
-            #expect(ProseRichText.decodedRTF(rtf)?.string == "Why these documents matter.")
+        if case .prose(let paragraphs) = framed[0] {
+            #expect(paragraphs.map { $0.map(\.text).joined() } == ["Why these documents matter."])
         } else {
             Issue.record("framed[0] should be the introduction prose item")
         }
@@ -2264,8 +2265,8 @@ struct CollectionTests {
         coll.introductionRichText = richRTF
         let rich = try await resolver.resolve(
             collection: coll, entries: [heading], allNotes: [], purpose: .preview)
-        if case .prose(let rtf) = rich[0] {
-            #expect(ProseRichText.decodedRTF(rtf)?.string == "Rich introduction.")
+        if case .prose(let paragraphs) = rich[0] {
+            #expect(paragraphs.map { $0.map(\.text).joined() } == ["Rich introduction."])
         } else {
             Issue.record("rich[0] should be the introduction prose item")
         }
@@ -10778,8 +10779,9 @@ struct CollectionListNameTests {
     }
 
     /// The spelling has one owner: a `defaultValue` of "Untitled Collection" survives only where a collection is
-    /// NAMED rather than listed — the title rule itself and Duplicate's base name (`Models/Collection.swift`), the
-    /// name a kept new collection is saved under (`CollectionEditorView.swift`), and the Mac name field's placeholder
+    /// NAMED rather than listed — the title rule itself (FRUSCoreKit's `CollectionEditorNaming.swift` since FRUS
+    /// Explorer Light's S18a) and Duplicate's base name (`Models/Collection.swift`), the name a kept new collection is
+    /// saved under (`CollectionEditorView.swift`), and the Mac name field's placeholder
     /// (`MacCollectionManagerView.swift`) — and the lower-case spelling nowhere.
     @Test("Untitled Collection is spelled only where a collection is named, and never in lower case")
     func theFallbackIsSpelledOnlyWhereACollectionIsNamed() throws {
@@ -10787,10 +10789,14 @@ struct CollectionListNameTests {
         var sites: [String] = []
         var lowerCase: [String] = []
         var read = 0
-        // `FRUSExplorer/` and `FRUSCoreKit/`; a site under the first is named from inside it.
+        // `FRUSExplorer/` and `FRUSCoreKit/`; a site under the first is named from inside it, one under the second
+        // from the repository's root.
         for url in AppSourceTree.swiftFiles(in: repoRoot) {
             read += 1
-            let relative = url.path.components(separatedBy: "/FRUSExplorer/").last ?? url.path
+            let inApp = url.path.components(separatedBy: "/FRUSExplorer/")
+            let relative = inApp.count > 1
+                ? inApp.last ?? url.path
+                : "FRUSCoreKit/" + (url.path.components(separatedBy: "/FRUSCoreKit/").last ?? url.path)
             for (number, line) in try String(contentsOf: url, encoding: .utf8)
                 .components(separatedBy: "\n").enumerated() {
                 if line.contains("defaultValue: \"Untitled Collection\"") { sites.append(relative) }
@@ -10800,7 +10806,8 @@ struct CollectionListNameTests {
         #expect(read > 400, "read \(read) Swift files: the scan is broken, not the tree clean")
         #expect(sites.sorted() == ["Collections/CollectionEditorView.swift",
                                    "Collections/MacCollectionManagerView.swift",
-                                   "Models/Collection.swift", "Models/Collection.swift"],
+                                   "FRUSCoreKit/Collections/CollectionEditorNaming.swift",
+                                   "Models/Collection.swift"],
                 "a row spells its own Untitled Collection fallback instead of calling listName: \(sites.sorted())")
         #expect(lowerCase.isEmpty, "the lower-case spelling is back: \(lowerCase)")
     }
@@ -12849,9 +12856,11 @@ struct CollectionProseAppearanceTests {
     @Test("The HTML export prints typed prose with no colour when it runs under the dark appearance")
     func htmlExportPrintsTypedProseWithNoColour() throws {
         let metadata = CollectionExportMetadata(name: "Typed Prose", note: nil)
-        let items: [CollectionExportItem] = [.prose(Data(Self.typedOnMac.utf8)), .prose(Data(Self.typedOnIOSInDark.utf8))]
+        // The resolver decodes a block when it builds the item, so the items are built under the dark appearance too.
         let html = try Self.under(dark: true) {
-            CollectionItemHTMLRenderer(options: CollectionExportOptions()).pageHTML(metadata: metadata, items: items)
+            let items: [CollectionExportItem] = [.prose(CollectionProse.paragraphs(fromRTF: Data(Self.typedOnMac.utf8))),
+                                                 .prose(CollectionProse.paragraphs(fromRTF: Data(Self.typedOnIOSInDark.utf8)))]
+            return CollectionItemHTMLRenderer(options: CollectionExportOptions()).pageHTML(metadata: metadata, items: items)
         }
         // Before the fix the iPhone's paragraph read <p><span style="color:#FFFFFF">…</span></p>.
         #expect(html.contains("<p>Typed on a Mac.</p>"))
@@ -12908,7 +12917,8 @@ struct CollectionProseOutsideSRGBTests {
     func exportsPrintSixDigits() async throws {
         // A name of its own: the tests run in parallel, and each export writes a file named after its collection.
         let metadata = CollectionExportMetadata(name: "Outside sRGB \(UUID().uuidString)", note: nil)
-        let items: [CollectionExportItem] = [.prose(Data(Self.displayP3Red.utf8))]
+        // The resolver decodes a block when it builds the item, so the item carries the spans it decodes to.
+        let items: [CollectionExportItem] = [.prose(CollectionProse.paragraphs(fromRTF: Data(Self.displayP3Red.utf8)))]
         let html = CollectionItemHTMLRenderer(options: CollectionExportOptions()).pageHTML(metadata: metadata, items: items)
         #expect(html.contains("<p><span style=\"color:#FF0000\">Reddish</span></p>"))
         let docx = try await DocxCollectionExporter().export(metadata: metadata, items: items)
