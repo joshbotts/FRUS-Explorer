@@ -34,6 +34,8 @@ import SwiftData
 ///   1.0 — S-5b: initial implementation
 ///   1.1 — #1275: a second consumer — the Research tab's notes destination. The Settings pane
 ///          this type is named for is retired; the snapshot outlived it.
+///   1.2 — #1791: one row per note however many copies of it are stored, and ``note(id:in:)``
+///          returns the copy last modified
 struct NotesPaneSnapshot: Equatable, Sendable {
 
     /// One note, with everything the row needs already resolved.
@@ -124,9 +126,10 @@ struct NotesPaneSnapshot: Equatable, Sendable {
     /// - Parameter context: The SwiftData context to read.
     @MainActor
     static func fetch(from context: ModelContext) -> NotesPaneSnapshot {
-        let notes = (try? context.fetch(
+        // One row per note, not per stored copy of one, so no two rows share an id (#1791).
+        let notes = ResearchNote.oneCopyEach((try? context.fetch(
             FetchDescriptor<ResearchNote>(
-                sortBy: [SortDescriptor(\.lastModified, order: .reverse)]))) ?? []
+                sortBy: [SortDescriptor(\.lastModified, order: .reverse)]))) ?? [])
         let projects = (try? context.fetch(
             FetchDescriptor<Project>(sortBy: [SortDescriptor(\.name)]))) ?? []
         let tags = (try? context.fetch(
@@ -161,7 +164,8 @@ struct NotesPaneSnapshot: Equatable, Sendable {
     ///
     /// Rows are plain values, so opening the editor needs the live model back. Scalar `==` on a
     /// UUID is safe in a `#Predicate` — the trap documented above is `contains` on a
-    /// transformable array column, not equality on a stored scalar.
+    /// transformable array column, not equality on a stored scalar. A note stored as several
+    /// copies under one id returns the copy last modified (``ResearchNote/copies(of:in:)``, #1791).
     ///
     /// - Parameters:
     ///   - id: The note's id.
@@ -169,9 +173,7 @@ struct NotesPaneSnapshot: Equatable, Sendable {
     /// - Returns: The note, or `nil` if it has since been deleted.
     @MainActor
     static func note(id: UUID, in context: ModelContext) -> ResearchNote? {
-        var descriptor = FetchDescriptor<ResearchNote>(predicate: #Predicate { $0.id == id })
-        descriptor.fetchLimit = 1
-        return (try? context.fetch(descriptor))?.first
+        ResearchNote.copies(of: id, in: context).first
     }
 
     // MARK: - Filtering

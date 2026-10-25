@@ -35,6 +35,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — S-3a: initial implementation
+///   1.1 — #1791: a note stored as several copies under one id is counted once
 struct ResearchItemCounts: Equatable, Sendable {
 
     /// What a single project row reports.
@@ -74,7 +75,8 @@ struct ResearchItemCounts: Equatable, Sendable {
     /// - Parameter context: The SwiftData context to read.
     @MainActor
     static func fetch(from context: ModelContext) -> ResearchItemCounts {
-        let notes = (try? context.fetch(FetchDescriptor<ResearchNote>())) ?? []
+        // One copy of each note, so a note stored twice is counted once (#1791).
+        let notes = ResearchNote.oneCopyEach((try? context.fetch(FetchDescriptor<ResearchNote>())) ?? [])
         let collections = (try? context.fetch(FetchDescriptor<Collection>())) ?? []
         let assignments = (try? context.fetch(FetchDescriptor<DocumentTagAssignment>())) ?? []
         return tally(noteProjectIds: notes.map(\.projectIds),

@@ -2388,6 +2388,8 @@ struct WordCloudWindowContent: View {
 ///   1.1 — #258 Phase 5: "My Volume Scopes" section — the FTS-grain Menu idiom
 ///          (enabled with the honest indexed count, disabled when no member is
 ///          indexed; a zero-indexed scope could only ever render an empty cloud)
+///   1.2 — #1791: the saved-search section offers each saved search once, however many copies of
+///          it are stored
 private struct WordCloudScopeBar: View {
 
     /// The scene this bar renders in, so the hand-off addresses the presenting window (#338) —
@@ -2402,7 +2404,7 @@ private struct WordCloudScopeBar: View {
     @Environment(AppState.self) private var appState
     @Query(sort: \Collection.name) private var collections: [Collection]
     @Query(sort: \UserTag.name) private var tags: [UserTag]
-    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var savedSearches: [SavedSearch]
+    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var savedSearchCopies: [SavedSearch]
     @Query(sort: \CustomVolumeScope.name) private var customScopes: [CustomVolumeScope]
 
     /// The known volume manifest entries (diffed if available, else bundled).
@@ -2644,5 +2646,13 @@ private struct WordCloudScopeBar: View {
             return WordCloudScope.dateRangeTitle(startISO: startISO, endISO: endISO)
         }
     }
+}
+
+// MARK: - One copy of each saved search (#1791)
+
+extension WordCloudScopeBar {
+    /// The saved searches, one copy of each however many are stored under its id
+    /// (`DuplicateCopies`), newest first, so the menu offers each once.
+    private var savedSearches: [SavedSearch] { SavedSearch.oneCopyEach(savedSearchCopies) }
 }
 #endif

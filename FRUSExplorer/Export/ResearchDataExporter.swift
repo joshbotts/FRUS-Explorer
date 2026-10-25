@@ -38,6 +38,9 @@ import SQLite3
 ///   1.4 — FRUS Explorer Light: format version 7 — `makeEnvelope` writes the eight model types 6
 ///          left out and the fields 6 dropped from the types it carried; `inventoryCounts`
 ///          counts the eight for **Contents**
+///   1.5 — #1791: `makeEnvelope` writes each record once, however many copies of it are stored, a
+///          collection and an archive visit plan with every copy's children; the Markdown export
+///          and the method appendix likewise; `trailCounts` and `inventoryCounts` count distinct ids
 @MainActor
 enum ResearchDataExporter {
 
@@ -59,15 +62,34 @@ enum ResearchDataExporter {
         includeGeneratedSummaries: Bool,
         activeProjectId: UUID? = nil
     ) throws -> ResearchDataEnvelope {
-        let notes = try modelContext.fetch(FetchDescriptor<ResearchNote>())
-        let tags = try modelContext.fetch(FetchDescriptor<UserTag>())
-        let tagAssignments = try modelContext.fetch(FetchDescriptor<DocumentTagAssignment>())
-        let highlights = try modelContext.fetch(FetchDescriptor<DocumentHighlight>())
-        let collections = try modelContext.fetch(FetchDescriptor<Collection>())
-        let prompts = try modelContext.fetch(FetchDescriptor<SummarizationPrompt>())
-        let projects = try modelContext.fetch(FetchDescriptor<Project>())
+        // Each record once (#1791). A record can be stored as several copies under one id, which
+        // `DuplicateCopies` explains and every list reads once, so the file writes one of each: the
+        // one last modified, for a type that records it, and otherwise the first in the fetch's
+        // order. A collection and an archive visit plan carry the children of every copy, one of
+        // each, as `DuplicateRecordCleanup` leaves them when it collapses the copies. Synced
+        // preferences have no id and are written whole, as before.
+        let notes = ResearchNote.oneCopyEach(try modelContext.fetch(FetchDescriptor<ResearchNote>()))
+        let tags = DuplicateCopies.oneEach(try modelContext.fetch(FetchDescriptor<UserTag>()),
+                                           id: \.id, lastModified: \.lastModified)
+        let tagAssignments = DuplicateCopies.oneEach(
+            try modelContext.fetch(FetchDescriptor<DocumentTagAssignment>()), id: \.id)
+        let highlights = DuplicateCopies.oneEach(
+            try modelContext.fetch(FetchDescriptor<DocumentHighlight>()), id: \.id)
+        let collectionCopies = try modelContext.fetch(FetchDescriptor<Collection>())
+        let collections = DuplicateCopies.oneEach(collectionCopies, id: \.id,
+                                                  lastModified: \.lastModified)
+        let entriesByCollection = Dictionary(grouping: collectionCopies, by: \.id).mapValues { copies in
+            DuplicateCopies.oneEach(copies.flatMap { $0.documentEntries ?? [] }, id: \.id,
+                                    lastModified: \.lastModified)
+        }
+        let prompts = DuplicateCopies.oneEach(
+            try modelContext.fetch(FetchDescriptor<SummarizationPrompt>()), id: \.id,
+            lastModified: \.lastModified)
+        let projects = DuplicateCopies.oneEach(try modelContext.fetch(FetchDescriptor<Project>()),
+                                               id: \.id, lastModified: \.lastModified)
         let summaries = includeGeneratedSummaries
-            ? try modelContext.fetch(FetchDescriptor<GeneratedSummary>())
+            ? DuplicateCopies.oneEach(try modelContext.fetch(FetchDescriptor<GeneratedSummary>()),
+                                      id: \.id, lastModified: \.lastModified)
             : []
 
         // The research trail (Wave R-5). Unconditional — see `ResearchDataEnvelope`'s note on D5.
@@ -75,36 +97,52 @@ enum ResearchDataExporter {
         // in time, and sorting in the descriptor also makes the file deterministic, which raw
         // fetch order (which CloudKit can reorder between runs) is not. Rows with a `nil`
         // timestamp — possible only via the optional-for-CloudKit columns — sort to the front.
-        let readingHistory = try modelContext.fetch(
-            FetchDescriptor<ReadingHistoryEntry>(sortBy: [SortDescriptor(\.accessedAt)]))
-        let searchHistory = try modelContext.fetch(
-            FetchDescriptor<SearchHistoryEntry>(sortBy: [SortDescriptor(\.executedAt)]))
-        let exportHistory = try modelContext.fetch(
-            FetchDescriptor<ExportHistoryEntry>(sortBy: [SortDescriptor(\.exportedAt)]))
+        // A trail row's copies record one event, so the first copy stands for it.
+        let readingHistory = DuplicateCopies.oneEach(try modelContext.fetch(
+            FetchDescriptor<ReadingHistoryEntry>(sortBy: [SortDescriptor(\.accessedAt)])), id: \.id)
+        let searchHistory = DuplicateCopies.oneEach(try modelContext.fetch(
+            FetchDescriptor<SearchHistoryEntry>(sortBy: [SortDescriptor(\.executedAt)])), id: \.id)
+        let exportHistory = DuplicateCopies.oneEach(try modelContext.fetch(
+            FetchDescriptor<ExportHistoryEntry>(sortBy: [SortDescriptor(\.exportedAt)])), id: \.id)
 
         // Archive visits (format version 6). Sorted by name-then-id so the file is
         // deterministic, like the trail fetches above.
-        let archiveVisits = try modelContext.fetch(
+        let archiveVisitCopies = try modelContext.fetch(
             FetchDescriptor<ArchiveVisitPlan>(sortBy: [SortDescriptor(\.name),
                                                        SortDescriptor(\.createdAt)]))
+        let archiveVisits = DuplicateCopies.oneEach(archiveVisitCopies, id: \.id,
+                                                    lastModified: \.lastModified)
+        let archiveVisitCopiesById = Dictionary(grouping: archiveVisitCopies, by: \.id)
+        let documentsByVisit = archiveVisitCopiesById.mapValues { copies in
+            DuplicateCopies.oneEach(copies.flatMap { $0.documents ?? [] }, id: \.id,
+                                    lastModified: \.lastModified)
+        }
+        let targetsByVisit = archiveVisitCopiesById.mapValues { copies in
+            DuplicateCopies.oneEach(copies.flatMap { $0.targets ?? [] }, id: \.id,
+                                    lastModified: \.lastModified)
+        }
 
         // Format version 7: the eight model types 6 left out, each oldest first by when it was
         // made, like the fetches above. Synced preferences oldest first too, which puts the record
         // the app reads (the earliest-created, `SettingsSyncCoordinator`) first.
-        let savedSearches = try modelContext.fetch(
-            FetchDescriptor<SavedSearch>(sortBy: [SortDescriptor(\.createdAt)]))
-        let workingCorpora = try modelContext.fetch(
-            FetchDescriptor<WorkingCorpus>(sortBy: [SortDescriptor(\.createdAt)]))
-        let customVolumeScopes = try modelContext.fetch(
-            FetchDescriptor<CustomVolumeScope>(sortBy: [SortDescriptor(\.createdAt)]))
-        let classificationOverrides = try modelContext.fetch(
-            FetchDescriptor<DocumentClassificationOverride>(sortBy: [SortDescriptor(\.createdAt)]))
-        let personClusterOverrides = try modelContext.fetch(
-            FetchDescriptor<PersonClusterOverride>(sortBy: [SortDescriptor(\.createdAt)]))
-        let annotationReviews = try modelContext.fetch(
-            FetchDescriptor<AnnotationReview>(sortBy: [SortDescriptor(\.reviewedAt)]))
-        let projectLeads = try modelContext.fetch(
-            FetchDescriptor<ProjectLeadEntry>(sortBy: [SortDescriptor(\.firstSurfacedAt)]))
+        let savedSearches = SavedSearch.oneCopyEach(try modelContext.fetch(
+            FetchDescriptor<SavedSearch>(sortBy: [SortDescriptor(\.createdAt)])))
+        let workingCorpora = DuplicateCopies.oneEach(try modelContext.fetch(
+            FetchDescriptor<WorkingCorpus>(sortBy: [SortDescriptor(\.createdAt)])), id: \.id,
+            lastModified: \.lastModified)
+        let customVolumeScopes = DuplicateCopies.oneEach(try modelContext.fetch(
+            FetchDescriptor<CustomVolumeScope>(sortBy: [SortDescriptor(\.createdAt)])), id: \.id,
+            lastModified: \.lastModified)
+        let classificationOverrides = DuplicateCopies.oneEach(try modelContext.fetch(
+            FetchDescriptor<DocumentClassificationOverride>(sortBy: [SortDescriptor(\.createdAt)])),
+            id: \.id)
+        let personClusterOverrides = DuplicateCopies.oneEach(try modelContext.fetch(
+            FetchDescriptor<PersonClusterOverride>(sortBy: [SortDescriptor(\.createdAt)])), id: \.id)
+        let annotationReviews = DuplicateCopies.oneEach(try modelContext.fetch(
+            FetchDescriptor<AnnotationReview>(sortBy: [SortDescriptor(\.reviewedAt)])), id: \.id)
+        let projectLeads = DuplicateCopies.oneEach(try modelContext.fetch(
+            FetchDescriptor<ProjectLeadEntry>(sortBy: [SortDescriptor(\.firstSurfacedAt)])), id: \.id,
+            lastModified: { $0.lastComputedAt })
         let syncedPreferences = try modelContext.fetch(
             FetchDescriptor<SyncedPreferences>(sortBy: [SortDescriptor(\.createdAt)]))
 
@@ -172,7 +210,7 @@ enum ResearchDataExporter {
                     note: collection.note,
                     projectIds: collection.projectIds,
                     savedSearchId: collection.savedSearchId,
-                    entries: (collection.documentEntries ?? [])
+                    entries: (entriesByCollection[collection.id] ?? [])
                         .sorted { $0.sortOrder < $1.sortOrder }
                         .map { entry in
                             CollectionEntryExport(
@@ -321,7 +359,7 @@ enum ResearchDataExporter {
                     projectIds: plan.projectIds,
                     tiers: plan.tiers,
                     deliverables: plan.deliverables,
-                    documents: (plan.documents ?? [])
+                    documents: (documentsByVisit[plan.id] ?? [])
                         .sorted { $0.documentKey < $1.documentKey }
                         .map { document in
                             ArchiveVisitDocumentExport(
@@ -335,7 +373,7 @@ enum ResearchDataExporter {
                         },
                     // EVERY stored row, orphans included: whether a key still derives from the
                     // seeds is a render-time question this export deliberately does not ask.
-                    targets: (plan.targets ?? [])
+                    targets: (targetsByVisit[plan.id] ?? [])
                         .sorted { $0.targetKey < $1.targetKey }
                         .map { target in
                             ArchiveVisitTargetExport(
@@ -469,46 +507,66 @@ enum ResearchDataExporter {
         )
     }
 
-    /// How many rows each trail table holds, for the **Contents** inventory.
+    /// How many rows each trail table holds, for the **Contents** inventory: the distinct ids, which
+    /// are the rows the JSON export writes (#1791).
     ///
-    /// Three `fetchCount`s, deliberately not three `@Query` properties. The trail grows without
-    /// bound by design (contract D5 — nothing prunes it), and a `@Query` would load every row of
-    /// it into the Data & Recovery pane and re-run on each iCloud sync. That is the exact fault
-    /// the History window was fixed for; the inventory only ever needed the numbers.
+    /// Three fetches of the ids alone, deliberately not three `@Query` properties. The trail grows
+    /// without bound by design (contract D5 — nothing prunes it), and a `@Query` would load every row
+    /// of it into the Data & Recovery pane and re-run on each iCloud sync. That is the exact fault
+    /// the History window was fixed for; the inventory only ever needed the numbers. Not
+    /// `fetchCount`, which counts every stored copy of a row (`DuplicateCopies`).
     ///
     /// - Parameter modelContext: The SwiftData context to read from.
     /// - Returns: The per-table counts, in the order the inventory lists them.
     static func trailCounts(modelContext: ModelContext)
         -> (visits: Int, searches: Int, exports: Int) {
         (
-            (try? modelContext.fetchCount(FetchDescriptor<ReadingHistoryEntry>())) ?? 0,
-            (try? modelContext.fetchCount(FetchDescriptor<SearchHistoryEntry>())) ?? 0,
-            (try? modelContext.fetchCount(FetchDescriptor<ExportHistoryEntry>())) ?? 0
+            distinctCount(ReadingHistoryEntry.self, id: \.id, in: modelContext),
+            distinctCount(SearchHistoryEntry.self, id: \.id, in: modelContext),
+            distinctCount(ExportHistoryEntry.self, id: \.id, in: modelContext)
         )
     }
 
     /// How many records each of the eight types format version 7 added holds, for the **Contents**
-    /// inventory.
+    /// inventory: the distinct ids, which are the records the JSON export writes (#1791).
     ///
-    /// `fetchCount`s, like ``trailCounts(modelContext:)``, and taken in the same pass that writes the
-    /// file, so the numbers on screen and the file on offer describe one read. The review ledger and
-    /// the Suggested Next leads grow with use, and the inventory only needs the numbers.
+    /// Fetches of the ids alone, like ``trailCounts(modelContext:)``, and taken in the same pass that
+    /// writes the file, so the numbers on screen and the file on offer describe one read. The review
+    /// ledger and the Suggested Next leads grow with use, and the inventory only needs the numbers.
+    /// Synced preferences have no id; their count is every record, as the file writes them.
     ///
     /// - Parameter modelContext: The SwiftData context to read from.
     /// - Returns: The counts, zero for a type the store cannot count.
     static func inventoryCounts(modelContext: ModelContext) -> InventoryCounts {
-        func count<Model: PersistentModel>(_ type: Model.Type) -> Int {
-            (try? modelContext.fetchCount(FetchDescriptor<Model>())) ?? 0
+        func count<Model: PersistentModel>(_ type: Model.Type, id: KeyPath<Model, UUID>) -> Int {
+            distinctCount(type, id: id, in: modelContext)
         }
         return InventoryCounts(
-            savedSearches: count(SavedSearch.self),
-            workingCorpora: count(WorkingCorpus.self),
-            volumeScopes: count(CustomVolumeScope.self),
-            classificationCorrections: count(DocumentClassificationOverride.self),
-            personCorrections: count(PersonClusterOverride.self),
-            reviewedChanges: count(AnnotationReview.self),
-            suggestedLeads: count(ProjectLeadEntry.self),
-            syncedSettings: count(SyncedPreferences.self))
+            savedSearches: count(SavedSearch.self, id: \.id),
+            workingCorpora: count(WorkingCorpus.self, id: \.id),
+            volumeScopes: count(CustomVolumeScope.self, id: \.id),
+            classificationCorrections: count(DocumentClassificationOverride.self, id: \.id),
+            personCorrections: count(PersonClusterOverride.self, id: \.id),
+            reviewedChanges: count(AnnotationReview.self, id: \.id),
+            suggestedLeads: count(ProjectLeadEntry.self, id: \.id),
+            syncedSettings: (try? modelContext.fetchCount(FetchDescriptor<SyncedPreferences>())) ?? 0)
+    }
+
+    /// How many distinct ids `type` holds, reading the ids alone: the records the JSON export writes,
+    /// where `fetchCount` would count every stored copy (#1791).
+    ///
+    /// - Parameters:
+    ///   - type: The model type to count.
+    ///   - id: Its identity.
+    ///   - modelContext: The SwiftData context to read from.
+    /// - Returns: The count, zero when the store cannot be read.
+    private static func distinctCount<Model: PersistentModel>(
+        _ type: Model.Type, id: KeyPath<Model, UUID>, in modelContext: ModelContext
+    ) -> Int {
+        var descriptor = FetchDescriptor<Model>()
+        descriptor.propertiesToFetch = [id]
+        guard let records = try? modelContext.fetch(descriptor) else { return 0 }
+        return DuplicateCopies.count(records) { $0[keyPath: id] }
     }
 
     /// The counts ``inventoryCounts(modelContext:)`` returns, one for each of the **Contents** rows
@@ -539,7 +597,9 @@ enum ResearchDataExporter {
     static func methodAppendix(modelContext: ModelContext,
                                activeProjectId: UUID?,
                                generatedAt: Date = Date()) -> QueryMethodAppendix {
-        let searches = (try? modelContext.fetch(FetchDescriptor<SearchHistoryEntry>())) ?? []
+        // One row per recorded search, not per stored copy of one (#1791).
+        let searches = DuplicateCopies.oneEach(
+            (try? modelContext.fetch(FetchDescriptor<SearchHistoryEntry>())) ?? [], id: \.id)
         let corpora = (try? modelContext.fetch(FetchDescriptor<WorkingCorpus>())) ?? []
         let project = activeProjectId.flatMap { id in
             (try? modelContext.fetch(FetchDescriptor<Project>()))?.first { $0.id == id }
@@ -657,7 +717,8 @@ enum ResearchDataExporter {
                                       uniquingKeysWith: { first, _ in first })
         var results: [ResearchNoteMarkdownExport] = []
         results.reserveCapacity(notes.count)
-        for note in notes {
+        // One file per note, not per stored copy of one (#1791).
+        for note in ResearchNote.oneCopyEach(notes) {
             let citation = await citation(forVolumeId: note.volumeId, documentId: note.documentId, appState: appState)
             results.append(markdownExport(for: note, citation: citation, tagNamesById: tagNamesById))
         }

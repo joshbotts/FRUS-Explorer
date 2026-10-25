@@ -7615,6 +7615,44 @@ FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) keeps a note's rich text
 
 **Not done:** a Display P3 colour reaches `hex(r:g:b:)` out of range on iOS and prints as malformed hex: `116FFFFFFC7FFFFFFDA` for P3 red in the iOS 27.0 simulator, where the Mac clamps the same bytes to `FF0000`. This change leaves it as it was, and the pull request files it for a change of its own. Not run: the UI suites, iOS 26.x, a device and a signed run. Neither app was run, so no export was made by hand, and when an iPhone's export runs under a dark trait collection was not observed.
 
+## Session 2026-10-25 — Notes, saved searches and the research trail stored as several copies under one id are listed, counted and exported once, and an edit or a delete reaches every copy (#1791)
+
+The session began as an assessment of the seven pull requests FRUS Explorer Light's sessions merged from 23 to 25 October (#1784 to #1790) and of #1791, which its import's S16c filed. The assessment found the seven sound, and found #1791's diagnosis right and its proposed fix unsafe; the owner chose the fix that deletes nothing.
+
+**The assessment, for the record**
+- Each pull request's squash merge has the tree of its branch head, and each head was based on the commit it merged onto, so each one's own runs were of what landed. `swift build --target FRUSCoreKit` and `swift test` on `v2` @ `9fa4375d`: exit 0, 38 runs, 3,089 tests in 369 suites, the counts #1790 gave.
+- The moves (#1784, #1787, #1788) are verbatim but for `public`, `Sendable`, re-indented continuation lines, spelled-out initialisers whose defaults match the stored ones, and the test seam #1788 removed; the reader's three scripts are byte-identical at #1788's merge, and #1789 changed only `kHighlightsJS`.
+- Their left-over items, which none of them filed, went to a session of their own: `hex(r:g:b:)`'s missing clamp, which can write a `w:val` Word refuses; `render()` clearing the page before a highlight that throws; the unloaded `Resources/frus-*.js` copies; a stale comment; and the reserved-`annotationId` sweep's exemption, which skips any `x.annotationId`.
+
+**What #1791 found, measured.** A read-only copy of this Mac's installed-app store (copied, read and deleted; counts and dates only): copies under one id in exactly five types, `ResearchNote`, `ReadingHistoryEntry`, `SearchHistoryEntry`, `ExportHistoryEntry` and `SavedSearch`, each an exact copy in every field and its own CloudKit record. The mirror's decoded records date them: none made after 2026-07-28. The trail's 28 July pairs are R-2a's migration on two devices; the rest come from re-uploads on 2, 3, 18 and 27 June and 5 July. The Debug store holds the same copies. No type the cleanup covers has one, and the store has no recovered-tag placeholder or orphaned assignment.
+
+**Why not the cleanup.** Its keeper ties on every field of an exact copy, so it keeps whichever copy the device's own fetch returns first, at launch, before imports: a device that updates later can delete the copy another kept, and then no copy is left. A tag can be rebuilt (`OrphanedTagRepair`); a note cannot, and contract D5 forbids silently deleting the trail, which R-2a's migration doc already gives as the reason its residue is not collapsed.
+
+**Changed**
+- `DuplicateCopies` (in `DuplicateRecordCleanup.swift`): one copy of each id, the one last modified, else the first in the caller's order; and a distinct-id count. `ResearchNote` and `SavedSearch` gain `oneCopyEach(_:)`, `copies(of:in:)` and `deleteEveryCopy(of:in:)`, and `SavedSearch` `rename(_:to:in:)`.
+- `makeEnvelope` writes each record of every type once, a collection and an archive visit plan with every copy's children; the Markdown, Zotero and method-appendix exports likewise. No format change.
+- **Contents** counts distinct ids, so each count is the length of the array the file writes.
+- Notes show once in All Notes, the Research rail, the change-review sheet, the Research tab's per-document grouping, Project Home, both collection editors, the collection inspector, the cross-project note indicator and the per-project and per-tag counts; saved searches in Saved Searches, the iPad sidebar, both collection editors, Word Cloud's scope menu and Background Summaries. The indexed note text reads one copy.
+- The note editor writes a save to every copy, and a rename reaches every copy of a saved search; All Notes, the editor and Saved Searches delete every copy.
+- Unchanged: the History pane, which lists each copy (R-2a) and whose totals so read higher than **Contents**' on a library with trail copies; the cleanup's ten types and keeper.
+
+**Tests:** `DuplicateCopiesTests`, nine tests, at the end of `ResearchDataExporterTests.swift`.
+
+**Apple platforms, and how that was checked.** Each heavy job through `Scripts/heavy.sh`, one at a time, with Xcode 27.1 (27A9275), signed, on the branch at its code commit. `v2` was not rebuilt beside it: #1790's runs are of `v2` @ `9fa4375d`'s tree.
+- **iOS 27.0,** iPhone 17 (`80CF0F18`):
+  - `build-for-testing` of `FRUSExplorer` from an empty build folder: the app compiled with the two known residue warnings, and the test target first failed on one `#expect` the type checker could not finish in time, which the tests now split into typed bindings; then "** TEST BUILD SUCCEEDED **", with 7 warning lines, `v2`'s count;
+  - the new suite with the nine suites nearest the change (the exporter's, the notes snapshot's, `EditableContentKeyTests`, `CodingStandardsAuditTests`, `FRUSCoreKitBoundaryTests`, `UnconstructedViewAuditTests`, `AppSourceTreeTests`, `CloudKitSchemaInventoryTests`, `ResearchLoggingGateTests`): "✔ Test run with 179 tests in 10 suites passed";
+  - the full unit target (`test-without-building -collect-test-diagnostics never -only-testing FRUSExplorerTests`, `TEST_RUNNER_FRUS_TEI_MIRROR` set, the app removed first): "Test run with 7655 tests in 909 suites passed after 416.634 seconds with 6 known issues."; the result bundle: 7,637 passed, 0 failed, 17 skipped, 1 expected failure. `v2` has 7,646 tests in 908 suites, so the nine added are this suite's. A signed build, so the Keychain tests an unsigned build fails passed.
+- **The new tests fail without the fix:** in a second worktree at the code commit, `DuplicateCopies` kept every copy and counted every copy, and `copies(of:in:)` found none. "✘ Test run with 9 tests in 1 suite failed after 0.533 seconds with 33 issues.", every test of the suite among them.
+- **`FRUSExplorerMac`**, Debug, unsigned: "** BUILD SUCCEEDED **", with 5 warning lines, the two known residues, as `v2` has. The iOS build does not compile the Mac target's `#if os(macOS)` branches, so this is the build that compiled the Mac collection manager's, Word Cloud's scope bar's and the note composer's edits.
+- **Not run:** `swift test`, since no package target changes (on `v2` @ `9fa4375d`, at the session's start: exit 0, 38 runs, 3,089 tests); the UI suites; iOS 26.x; a device. Neither app was run, so no list was looked at on a screen.
+
+**Docs:** version-history lines on the changed types; 44 ranged blocks in `07-Search-and-Browse.md`, `08-Reading-Research-Collections.md` and `09-Settings-and-App.md` re-pointed by their keys' own shifts, with the amendment log's line. No string is added or changed, so no block's text changes, and the manuals say nothing these changes make wrong.
+
+**Owed by the owner:** the visual review in the pull request, on a **Debug** build, whose own store holds the same copies; then the merge.
+
+**Not done:** the History pane still lists each copy of a trail row, and its totals count stored rows; whether it should read one copy, as the lists here do, is a decision this change leaves to the owner. The cleanup's ten types keep a keeper that ties on exact copies.
+
 ## Session 2026-10-25 — One highlight the reader cannot draw no longer hides the document's others, and a colour outside sRGB exports from iOS as six hex digits: the left-overs of #1786 and #1788–#1790
 
 #1784–#1790, FRUS Explorer Light's pull requests of 2026-10-23 and 24, landed on `v2` and were assessed sound. Three of them filed items under "Filed rather than fixed here" that were never opened as issues, and the assessment found one weak test exemption in #1786. This pull request fixes the four, on `v2` @ `9fa4375d`.
