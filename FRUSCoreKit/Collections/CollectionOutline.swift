@@ -47,23 +47,15 @@ import Foundation
 ///          with no text, each named heading under one lifted a level
 ///   1.4 — #1619, decision 22: `contentsRows(in:collapsedHeadingIds:savedSearchId:)` — a smart collection's Contents
 ///          lists only the entries it keeps; its entries from before its link are listed apart
-enum CollectionOutline {
+///   1.5 — 2026-10-25 (FRUS Explorer Light, S18a): the value core — `maxLevel`, `StructuralRef` and every rule over it,
+///          the depths, export levels, section ranges, move order, collapse and cascades — is FRUSCoreKit's and public,
+///          unchanged, so a host outside the app nests a collection three deep by the same rules; what reads or writes a
+///          `CollectionEntry` stays in the app (`CollectionOutline+App.swift`)
+public enum CollectionOutline {
 
     /// The maximum heading nesting depth (locked decision A6: cap at 3, enforced in the
     /// UI and by read-time clamping only — the model never migrates).
-    static let maxLevel = 3
-
-    // MARK: - OutlineItem
-
-    /// One linearized entry with its resolved depth.
-    struct OutlineItem {
-        /// The underlying entry, unmodified.
-        let entry: CollectionEntry
-        /// The resolved depth: for a `.heading` entry, its clamped/orphan-corrected level
-        /// (`1...maxLevel`); for any other kind, the resolved level of the owning heading
-        /// (`0` when the entry precedes every heading).
-        let depth: Int
-    }
+    public static let maxLevel = 3
 
     // MARK: - StructuralRef
 
@@ -71,43 +63,24 @@ enum CollectionOutline {
     /// resolver's value-snapshot pipeline (`EntryRef`) can run the exact same algorithms
     /// as the model-backed API without touching `@Model` instances. All heavier helpers
     /// delegate to the `StructuralRef`-based cores below — the algorithm exists once.
-    struct StructuralRef {
+    public struct StructuralRef: Sendable {
         /// Whether the entry is a `.heading` (only headings carry structure).
-        let isHeading: Bool
+        public let isHeading: Bool
         /// The stored heading level (unclamped; ignored for non-headings).
-        let level: Int
+        public let level: Int
         /// The entry's `bodyDepthOverride` raw value, if any (a heading's acts as its
         /// section's default; a document's is its own override, resolved elsewhere).
-        let bodyDepthOverride: String?
+        public let bodyDepthOverride: String?
 
         /// Creates a structural reference.
-        init(isHeading: Bool, level: Int, bodyDepthOverride: String?) {
+        public init(isHeading: Bool, level: Int, bodyDepthOverride: String?) {
             self.isHeading = isHeading
             self.level = level
             self.bodyDepthOverride = bodyDepthOverride
         }
-
-        /// Snapshots the structural facts of a model entry.
-        init(_ entry: CollectionEntry) {
-            self.init(isHeading: entry.entryKind == .heading,
-                      level: entry.level,
-                      bodyDepthOverride: entry.bodyDepthOverride)
-        }
     }
 
-    // MARK: - Linearize
-
-    /// Linearizes entries into outline items — **the** `[CollectionEntry] → [OutlineItem]`
-    /// function. Entries are sorted by `sortOrder`, then each is assigned its resolved
-    /// depth per the type-doc rules. Never mutates the entries.
-    ///
-    /// - Parameter entries: The collection's entries, in any order.
-    /// - Returns: Outline items in collection order, each carrying its resolved depth.
-    static func linearize(_ entries: [CollectionEntry]) -> [OutlineItem] {
-        let sorted = entries.sorted { $0.sortOrder < $1.sortOrder }
-        let depths = resolvedDepths(sorted.map(StructuralRef.init))
-        return zip(sorted, depths).map { OutlineItem(entry: $0, depth: $1) }
-    }
+    // MARK: - Depths
 
     /// The `StructuralRef` core of `linearize`: resolves each position's depth (heading →
     /// clamped/orphan-corrected level; non-heading → owning heading's resolved level, 0
@@ -115,7 +88,7 @@ enum CollectionOutline {
     ///
     /// - Parameter refs: Structural facts in collection order.
     /// - Returns: One resolved depth per input position.
-    static func resolvedDepths(_ refs: [StructuralRef]) -> [Int] {
+    public static func resolvedDepths(_ refs: [StructuralRef]) -> [Int] {
         var depths: [Int] = []
         depths.reserveCapacity(refs.count)
         // The resolved level of the most recent heading (0 before any heading exists).
@@ -154,7 +127,7 @@ enum CollectionOutline {
     ///   - untitled: For each position, whether it is a heading the export drops; ignored for any other entry.
     /// - Returns: One level per position: `nil` for a dropped heading, the lifted level for every other heading, and
     ///   for any other entry its owning heading's lifted level (`0` when no kept heading owns it).
-    static func exportLevels(_ refs: [StructuralRef], untitled: [Bool]) -> [Int?] {
+    public static func exportLevels(_ refs: [StructuralRef], untitled: [Bool]) -> [Int?] {
         let depths = resolvedDepths(refs)
         // The headings open above the current position, outermost first: each one's resolved level and whether the
         // export drops it.
@@ -178,45 +151,7 @@ enum CollectionOutline {
         return levels
     }
 
-    // MARK: - Normalize
-
-    /// Writes resolved levels back onto `.heading` entries — the pass the editor runs
-    /// after any mutation (indent/outdent, move, delete) so persisted levels always
-    /// satisfy the invariants (`1...maxLevel`, no orphan jumps). Only headings whose
-    /// stored level differs from the resolved one are written, so an already-normal
-    /// collection is untouched (no spurious `lastModified` bumps / CloudKit uploads).
-    ///
-    /// Levels are only ever mutated here and by `indentSection`/`outdentSection` (which
-    /// write shifted levels and immediately delegate back to this pass); every read path
-    /// clamps transiently instead, so a level synced from a future build degrades
-    /// without being destroyed.
-    ///
-    /// - Parameter entries: The collection's entries, in any order.
-    static func normalize(_ entries: [CollectionEntry]) {
-        for item in linearize(entries) where item.entry.entryKind == .heading {
-            if item.entry.level != item.depth {
-                item.entry.level = item.depth
-            }
-        }
-    }
-
     // MARK: - Section ranges
-
-    /// The contiguous index range the heading at `headingIndex` owns: the heading itself
-    /// plus every following item until (excluding) the next heading of the same or a
-    /// shallower resolved level. This is the unit the editor moves, deletes, collapses,
-    /// and re-levels as a whole ("move section as a unit", Phase 4 step 3).
-    ///
-    /// - Parameters:
-    ///   - headingIndex: Index of a `.heading` item in `items`.
-    ///   - items: A linearized outline (from `linearize`).
-    /// - Returns: The section's range within `items`. When `headingIndex` is not a
-    ///   heading, returns the degenerate single-item range `headingIndex..<headingIndex+1`.
-    static func sectionRange(of headingIndex: Int, in items: [OutlineItem]) -> Range<Int> {
-        sectionRangeCore(of: headingIndex,
-                         isHeading: items.map { $0.entry.entryKind == .heading },
-                         depths: items.map(\.depth))
-    }
 
     /// The `StructuralRef` core of `sectionRange(of:in:)` — the same ownership rule for
     /// callers holding raw structural facts (the move engine, `visibleIndices`). Depths
@@ -226,7 +161,7 @@ enum CollectionOutline {
     ///   - headingIndex: Index of a heading ref in `refs`.
     ///   - refs: Structural facts in collection order.
     /// - Returns: The section's range (degenerate single-item range for non-headings).
-    static func sectionRange(of headingIndex: Int, refs: [StructuralRef]) -> Range<Int> {
+    public static func sectionRange(of headingIndex: Int, refs: [StructuralRef]) -> Range<Int> {
         sectionRangeCore(of: headingIndex,
                          isHeading: refs.map(\.isHeading),
                          depths: resolvedDepths(refs))
@@ -235,7 +170,7 @@ enum CollectionOutline {
     /// The single section-ownership walk both `sectionRange` overloads delegate to:
     /// the heading plus everything until (excluding) the next heading at the same or a
     /// shallower resolved depth.
-    private static func sectionRangeCore(of headingIndex: Int,
+    static func sectionRangeCore(of headingIndex: Int,
                                          isHeading: [Bool],
                                          depths: [Int]) -> Range<Int> {
         guard depths.indices.contains(headingIndex), isHeading[headingIndex] else {
@@ -268,7 +203,7 @@ enum CollectionOutline {
     ///   - toOffset: Insertion offset (`0...refs.count`) in pre-removal coordinates.
     /// - Returns: The new ordering as indices into the input, or `nil` when the move is
     ///   invalid or changes nothing.
-    static func movedOrder(_ refs: [StructuralRef], fromIndex: Int, toOffset: Int) -> [Int]? {
+    public static func movedOrder(_ refs: [StructuralRef], fromIndex: Int, toOffset: Int) -> [Int]? {
         guard refs.indices.contains(fromIndex), (0...refs.count).contains(toOffset) else {
             return nil
         }
@@ -286,65 +221,6 @@ enum CollectionOutline {
         return order
     }
 
-    /// The model-backed move engine both editors call from their `onMove` handlers:
-    /// applies `movedOrder` to the collection's entries and returns the reordered array.
-    /// The caller reindexes `sortOrder` (0..n), runs `normalize`, and saves — this
-    /// function itself never mutates the entries.
-    ///
-    /// - Parameters:
-    ///   - entries: The collection's entries, in any order.
-    ///   - fromIndex: Index of the dragged row, in collection (sorted) order.
-    ///   - toOffset: Insertion offset in pre-removal collection coordinates.
-    /// - Returns: The reordered entries, or `nil` when the move is invalid/a no-op.
-    static func applyingMove(_ entries: [CollectionEntry],
-                             fromIndex: Int, toOffset: Int) -> [CollectionEntry]? {
-        let sorted = entries.sorted { $0.sortOrder < $1.sortOrder }
-        guard let order = movedOrder(sorted.map(StructuralRef.init),
-                                     fromIndex: fromIndex, toOffset: toOffset) else { return nil }
-        return order.map { sorted[$0] }
-    }
-
-    // MARK: - Indent / outdent mutations
-
-    /// Indents the section at `headingIndex` one level: the heading *and* every
-    /// descendant heading in its `sectionRange` shift +1 (clamped to `maxLevel`, so a
-    /// descendant already at the cap merges up — A6 degradation, never corruption),
-    /// then the whole list is normalized. No-op when `canIndent` is false.
-    ///
-    /// - Parameters:
-    ///   - headingIndex: Index of the heading in the collection's sorted order.
-    ///   - entries: The collection's entries, in any order.
-    static func indentSection(at headingIndex: Int, in entries: [CollectionEntry]) {
-        let items = linearize(entries)
-        guard canIndent(headingIndex, in: items) else { return }
-        shiftSection(at: headingIndex, by: +1, items: items)
-        normalize(entries)
-    }
-
-    /// Outdents the section at `headingIndex` one level: the heading and its descendant
-    /// headings shift −1 (clamped to level 1), then the list is normalized (following
-    /// entries re-clamp as needed). No-op when `canOutdent` is false.
-    ///
-    /// - Parameters:
-    ///   - headingIndex: Index of the heading in the collection's sorted order.
-    ///   - entries: The collection's entries, in any order.
-    static func outdentSection(at headingIndex: Int, in entries: [CollectionEntry]) {
-        let items = linearize(entries)
-        guard canOutdent(headingIndex, in: items) else { return }
-        shiftSection(at: headingIndex, by: -1, items: items)
-        normalize(entries)
-    }
-
-    /// Shifts every heading inside the section at `headingIndex` (the heading itself
-    /// included) by `delta`, clamping to `1...maxLevel`. Shifting from *resolved* depths
-    /// keeps the section's internal shape even when stored levels were malformed.
-    private static func shiftSection(at headingIndex: Int, by delta: Int, items: [OutlineItem]) {
-        let range = sectionRange(of: headingIndex, in: items)
-        for i in range where items[i].entry.entryKind == .heading {
-            items[i].entry.level = min(max(items[i].depth + delta, 1), maxLevel)
-        }
-    }
-
     // MARK: - Collapse derivation
 
     /// The visible positions of an outline given the set of collapsed heading positions
@@ -356,8 +232,8 @@ enum CollectionOutline {
     ///   - refs: Structural facts in collection order.
     ///   - collapsedHeadingIndices: Positions of collapsed headings.
     /// - Returns: Indices into `refs` of the rows the editor shows, in order.
-    static func visibleIndices(_ refs: [StructuralRef],
-                               collapsedHeadingIndices: Set<Int>) -> [Int] {
+    public static func visibleIndices(_ refs: [StructuralRef],
+                                      collapsedHeadingIndices: Set<Int>) -> [Int] {
         var hidden = Set<Int>()
         for index in collapsedHeadingIndices
         where refs.indices.contains(index) && refs[index].isHeading {
@@ -365,117 +241,6 @@ enum CollectionOutline {
             hidden.formUnion((range.lowerBound + 1) ..< range.upperBound)
         }
         return refs.indices.filter { !hidden.contains($0) }
-    }
-
-    /// The model-backed convenience over `visibleIndices(_:collapsedHeadingIndices:)`
-    /// for the editors, which key their collapse state by entry id (stable across moves).
-    ///
-    /// - Parameters:
-    ///   - items: A linearized outline (from `linearize`).
-    ///   - collapsedHeadingIds: Ids of the headings the user has collapsed.
-    /// - Returns: Indices into `items` of the rows to show, in order.
-    static func visibleIndices(in items: [OutlineItem],
-                               collapsedHeadingIds: Set<UUID>) -> [Int] {
-        let collapsed = Set(items.indices.filter {
-            items[$0].entry.entryKind == .heading
-                && collapsedHeadingIds.contains(items[$0].entry.id)
-        })
-        return visibleIndices(items.map { StructuralRef($0.entry) },
-                              collapsedHeadingIndices: collapsed)
-    }
-
-    /// One visible editor row: the entry's position in the full outline, its resolved
-    /// depth, and a stable identity for `ForEach` (the entry id, so row identity — and
-    /// the collapse state keyed on it — survives moves and reindexing).
-    struct VisibleRow: Identifiable {
-        /// Index into the full linearized outline (== the sorted entries array).
-        let index: Int
-        /// The row's resolved outline depth (see `OutlineItem.depth`).
-        let depth: Int
-        /// The underlying entry's id.
-        let id: UUID
-    }
-
-    /// The rows both editors list: `visibleIndices` joined with each row's depth and
-    /// identity.
-    ///
-    /// - Parameters:
-    ///   - items: A linearized outline (from `linearize`).
-    ///   - collapsedHeadingIds: Ids of the headings the user has collapsed.
-    /// - Returns: The visible rows, in order.
-    static func visibleRows(in items: [OutlineItem],
-                            collapsedHeadingIds: Set<UUID>) -> [VisibleRow] {
-        visibleIndices(in: items, collapsedHeadingIds: collapsedHeadingIds).map {
-            VisibleRow(index: $0, depth: items[$0].depth, id: items[$0].entry.id)
-        }
-    }
-
-    /// The rows a collection's Contents lists in both editors (#1619; decision 22 of the 2026-10-14 plan of record).
-    ///
-    /// For a collection with no saved search, every visible row, as ``visibleRows(in:collapsedHeadingIds:)`` gives
-    /// them. For a smart collection, only the entries it keeps — its generated apparatus, and an entry of a kind this
-    /// build does not know — each flush and none hidden by a collapsed heading: every heading in a smart collection is an
-    /// entry from before its link (`SmartCollectionRule.leavesOut`), which the editors list apart, under their own
-    /// heading, so no row they keep sits in a section on screen.
-    ///
-    /// Each row's `index` is still its place in `items`, so a move, a delete and a binding reach the entry they did.
-    ///
-    /// - Parameters:
-    ///   - items: A linearized outline (from `linearize`).
-    ///   - collapsedHeadingIds: Ids of the headings the user has collapsed.
-    ///   - savedSearchId: The collection's saved-search link, `nil` when it has none.
-    /// - Returns: The rows, in order.
-    static func contentsRows(in items: [OutlineItem], collapsedHeadingIds: Set<UUID>,
-                             savedSearchId: UUID?) -> [VisibleRow] {
-        guard savedSearchId != nil else {
-            return visibleRows(in: items, collapsedHeadingIds: collapsedHeadingIds)
-        }
-        return items.indices.compactMap { index in
-            let entry = items[index].entry
-            return SmartCollectionRule.leavesOut(entry.entryKind, savedSearchId: savedSearchId)
-                ? nil : VisibleRow(index: index, depth: 0, id: entry.id)
-        }
-    }
-
-    // MARK: - Indent / outdent predicates
-
-    /// Whether the heading at `headingIndex` may indent one level (level + 1). True only
-    /// when the result stays within `maxLevel` *and* creates no orphan jump — i.e. the
-    /// nearest preceding heading's resolved level is at least the heading's current level
-    /// (the first heading can never indent). The editor re-normalizes the heading's
-    /// section after applying, so descendants re-clamp as needed.
-    ///
-    /// - Parameters:
-    ///   - headingIndex: Index of a `.heading` item in `items`.
-    ///   - items: A linearized outline (from `linearize`).
-    /// - Returns: `true` when indenting is a valid outline mutation; `false` for
-    ///   non-heading indices.
-    static func canIndent(_ headingIndex: Int, in items: [OutlineItem]) -> Bool {
-        guard items.indices.contains(headingIndex),
-              items[headingIndex].entry.entryKind == .heading else { return false }
-        let level = items[headingIndex].depth
-        guard level < maxLevel else { return false }
-        // Nearest preceding heading's resolved level must be >= level, so that
-        // level + 1 <= predecessor + 1 (no orphan jump).
-        for i in stride(from: headingIndex - 1, through: 0, by: -1)
-        where items[i].entry.entryKind == .heading {
-            return items[i].depth >= level
-        }
-        return false   // first heading: indenting would orphan it above level 1
-    }
-
-    /// Whether the heading at `headingIndex` may outdent one level (level − 1): any
-    /// heading deeper than level 1 can. `false` for non-heading indices. The editor
-    /// re-normalizes after applying (an outdented heading may promote what followed it).
-    ///
-    /// - Parameters:
-    ///   - headingIndex: Index of a `.heading` item in `items`.
-    ///   - items: A linearized outline (from `linearize`).
-    /// - Returns: `true` when outdenting is a valid outline mutation.
-    static func canOutdent(_ headingIndex: Int, in items: [OutlineItem]) -> Bool {
-        guard items.indices.contains(headingIndex),
-              items[headingIndex].entry.entryKind == .heading else { return false }
-        return items[headingIndex].depth > 1
     }
 
     // MARK: - Ancestor body-depth cascade
@@ -501,7 +266,7 @@ enum CollectionOutline {
     ///   are resolved defensively via `resolvedDepths`).
     /// - Returns: One effective section override (raw `CollectionBodyDepth` value or
     ///   `nil`) per input position.
-    static func sectionBodyDepthOverrides(_ refs: [StructuralRef]) -> [String?] {
+    public static func sectionBodyDepthOverrides(_ refs: [StructuralRef]) -> [String?] {
         sectionOverrideValues(refs, headingValues: refs.map {
             $0.isHeading ? $0.bodyDepthOverride : nil
         })
@@ -526,7 +291,7 @@ enum CollectionOutline {
     ///   - headingValues: One optional value per position — the heading's own override
     ///     at heading positions, `nil` elsewhere. Must be `refs.count` long.
     /// - Returns: One effective section value (or `nil`) per input position.
-    static func sectionOverrideValues<Value>(
+    public static func sectionOverrideValues<Value>(
         _ refs: [StructuralRef],
         headingValues: [Value?]
     ) -> [Value?] {
@@ -547,20 +312,5 @@ enum CollectionOutline {
             overrides.append(stack.last(where: { $0.value != nil })?.value)
         }
         return overrides
-    }
-
-    /// The effective section body-depth override for the single entry at `index` in a
-    /// linearized outline — the model-backed convenience over
-    /// `sectionBodyDepthOverrides(_:)` for callers holding `[OutlineItem]` (e.g. the
-    /// editor's inspector showing a document's inherited depth).
-    ///
-    /// - Parameters:
-    ///   - index: Position within `items`.
-    ///   - items: A linearized outline (from `linearize`).
-    /// - Returns: The ancestor-cascaded override raw value, or `nil` (collection default).
-    static func sectionBodyDepthOverride(at index: Int, in items: [OutlineItem]) -> String? {
-        guard items.indices.contains(index) else { return nil }
-        let refs = items.map { StructuralRef($0.entry) }
-        return sectionBodyDepthOverrides(refs)[index]
     }
 }
