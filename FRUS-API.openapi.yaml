@@ -701,7 +701,7 @@ paths:
 
         **Offset stability:** Each `<button data-skip="1">` footnote marker and
         `<aside popover data-skip="1">` footnote body carry the `data-skip`
-        attribute defined in Session 143 (`frus-offset-engine.js`). The flat-text
+        attribute defined in Session 143 (the reader's offset engine, `kOffsetEngineJS`). The flat-text
         character offsets stored in `DocumentHighlight.startOffset`/`endOffset`
         are stable across server re-renders as long as the TEI source and
         `ASTToRenderNodeConverter.version` constant are unchanged.

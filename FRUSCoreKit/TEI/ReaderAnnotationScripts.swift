@@ -29,13 +29,23 @@ import Foundation
 //   1.1 — Session 2026-10-24 (FRUS Explorer Light, S15c's follow-up): `kHighlightsJS`'s
 //          `buildRanges` ends a range that ends on a `<br>` after the element, where
 //          `setEnd(br, 1)` threw and the reader drew none of the document's highlights
+//   1.2 — Session 2026-10-25: `kHighlightsJS`'s `buildRanges` builds no range from a negative
+//          start, and `render` skips a highlight whose range throws, where one such highlight
+//          left the reader drawing none of the document's; the app's unloaded copies of the
+//          engine and the renderer in `FRUSExplorer/Resources/` were removed
 
 /// Flat-text offset engine, embedded as a Swift string constant so the script
 /// is available in both the app bundle and the unit-test host without any
 /// `Bundle.main` lookup.
 ///
-/// Canonical source: `FRUSExplorer/Resources/frus-offset-engine.js`
-/// Keep this constant in sync with that file when making edits.
+/// It walks `.frus-document` depth first, as `buildFlatText(from:)` does, and sets
+/// `window.FRUSOffsets` to `{ flatText, charToNode }`, or to `null` when the page has no
+/// `.frus-document`. A text node adds its text and one `charToNode` entry, `{ node, localOffset }`,
+/// for each UTF-16 code unit, so an entry's index is the offset a highlight stores; a `data-skip`
+/// subtree adds nothing; a `<br>` adds a newline and one entry, `{ node: br, localOffset: 0 }`.
+///
+/// Both readers run this constant. `FRUSExplorer/Resources/frus-offset-engine.js`, named here as
+/// its canonical source until 2026-10-25, was a copy that nothing loaded, and was removed then.
 public let kOffsetEngineJS = """
 window.FRUSOffsets = (() => {
   'use strict';
@@ -70,14 +80,18 @@ window.FRUSOffsets = (() => {
 /// Must be injected AFTER `kOffsetEngineJS` because `buildRanges()` reads
 /// `window.FRUSOffsets.charToNode`.
 ///
-/// `FRUSExplorer/Resources/frus-highlights.js`, named here as its canonical source until
-/// 2026-10-24, is an older copy that nothing loads: it has neither the tap handler nor the end
-/// after a `<br>`. Both readers run this constant.
+/// `FRUSHighlights.render(highlights)` clears the page's highlights and draws each
+/// `ReaderHighlight` under `frus-<colour>`, or `frus-stale`. A highlight whose range cannot be
+/// built, from offsets outside the map or a range that throws, is skipped alone.
+///
+/// Both readers run this constant. `FRUSExplorer/Resources/frus-highlights.js`, named here as its
+/// canonical source until 2026-10-24, was an older copy that nothing loaded, and was removed on
+/// 2026-10-25.
 public let kHighlightsJS = """
 function buildRanges(start, end) {
   if (!window.FRUSOffsets) return [];
   const map = window.FRUSOffsets.charToNode;
-  if (start >= map.length || end > map.length || start >= end) return [];
+  if (start < 0 || start >= map.length || end > map.length || start >= end) return [];
   const range = new Range();
   range.setStart(map[start].node, map[start].localOffset);
   const endEntry = map[end - 1];
@@ -101,7 +115,10 @@ window.FRUSHighlights = {
     if (!highlights || !highlights.length) return;
     const groups = {};
     for (const h of highlights) {
-      const ranges = buildRanges(h.startOffset, h.endOffset);
+      // The page's highlights are cleared above, so a highlight whose range throws is skipped
+      // alone: a throw here would leave none of them drawn.
+      let ranges;
+      try { ranges = buildRanges(h.startOffset, h.endOffset); } catch (_) { continue; }
       if (!ranges.length) continue;
       const key = h.isStale ? 'frus-stale' : ('frus-' + h.color);
       if (!groups[key]) groups[key] = [];

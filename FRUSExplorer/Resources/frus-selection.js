@@ -2,9 +2,9 @@
  * frus-selection.js
  * FRUS Explorer WebKit text-selection → flat-text offset bridge.
  *
- * Injected as a WKUserScript (.atDocumentEnd) after frus-offset-engine.js.
+ * Injected as a WKUserScript (.atDocumentEnd) after the offset engine, kOffsetEngineJS.
  * The Swift source of truth is the embedded constant kSelectionJS in
- * FRUSWebViewConfiguration.swift — keep the two in sync when editing.
+ * FRUSCoreKit/TEI/ReaderAnnotationScripts.swift — keep the two in sync when editing.
  * `SelectionScriptParityTests` asserts the body below (everything after this
  * JSDoc header) is byte-identical to that constant, so they cannot drift.
  *
@@ -36,7 +36,7 @@
  *
  * ## Reverse mapping
  * rangeEndpointToOffset() is the inverse of the forward-mapping used by
- * frus-highlights.js buildRanges(). It performs a linear scan of
+ * kHighlightsJS's buildRanges(). It performs a linear scan of
  * FRUSOffsets.charToNode to find the character index for a given
  * {textNode, localOffset} pair. O(n) in document length; imperceptible for
  * typical FRUS documents (< 50,000 chars) and typical selections.

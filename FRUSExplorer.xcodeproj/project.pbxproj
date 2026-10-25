@@ -570,7 +570,6 @@
 		5BD12479CDB971249929A177 /* administrations.json in Resources */ = {isa = PBXBuildFile; fileRef = A5EDA1DF0837B607E33D0E37 /* administrations.json */; };
 		5BFC3C6762D54C63B9A529CC /* SessionLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8EF6D3CD276F57B49D03422 /* SessionLogView.swift */; };
 		5C03B606E67ABF5965BD2B2E /* ExternalCitationAuthorityJoin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60CE8E047C2EFD6359F27957 /* ExternalCitationAuthorityJoin.swift */; };
-		5C2433FBC73CBDB81E77B226 /* frus-offset-engine.js in Resources */ = {isa = PBXBuildFile; fileRef = 048277CFCB4CE54315008DB9 /* frus-offset-engine.js */; };
 		5C3E642D06CCE5421896C4BA /* SearchResultAccessibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3761AD096B1C803B5DA7105F /* SearchResultAccessibilityTests.swift */; };
 		5C6C2B5570252E48B32DA3BA /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55BC6B54C26290940931C4E /* MainWindowView.swift */; };
 		5C8CD6B84599C407BA566403 /* SourceExplorerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA119D060DCD034BE99B6B3 /* SourceExplorerView.swift */; };
@@ -707,7 +706,6 @@
 		6EAADFF3D761D1F290C927AE /* DecimalFileSegment.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBE06796298214A04B38EE31 /* DecimalFileSegment.swift */; };
 		6EB74FDD302231804FCF8A63 /* ProvenanceStatement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76AA96BECB5DD038CDE23EA5 /* ProvenanceStatement.swift */; };
 		6EBCA39D43A269FF41981881 /* KeynessCloudTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ABF8381A244009C01C9C91A /* KeynessCloudTests.swift */; };
-		6EBEF52FF2480C0D43466D10 /* frus-offset-engine.js in Resources */ = {isa = PBXBuildFile; fileRef = 048277CFCB4CE54315008DB9 /* frus-offset-engine.js */; };
 		6ED403BEDB2550678EA03142 /* ResearchTrailSessions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25D360ABD583099B7E4754CD /* ResearchTrailSessions.swift */; };
 		6EE9F191B26D325DB67B7E6B /* ChronologyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 255C8558D0849EFA683BF589 /* ChronologyModels.swift */; };
 		6EEDCB0C26D980FEBF9C6DAC /* ResearchTrailSessionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 199841D2F1E815EB120B47EF /* ResearchTrailSessionsTests.swift */; };
@@ -1302,7 +1300,6 @@
 		C6025D99E929A0E53B13E8D7 /* DocumentChangeBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A269778DDB3330968439A3E /* DocumentChangeBanner.swift */; };
 		C6232E0FD58F2FA14B2588B7 /* ArchivesClassAxis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 167E82AECCC69740D7D9D1AA /* ArchivesClassAxis.swift */; };
 		C6996397BCE6032367ED085F /* BackgroundSummarizationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D9B404596114A62C4B89698 /* BackgroundSummarizationSettingsView.swift */; };
-		C6CE3386656EC85C8513C72E /* frus-highlights.js in Resources */ = {isa = PBXBuildFile; fileRef = B20D6C9B01A86FECCB5F0C69 /* frus-highlights.js */; };
 		C6CFC093567FF75D3F7C5F25 /* IndexingSeams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E7D0CE93C237890F8B0D87 /* IndexingSeams.swift */; };
 		C6D06F8557FC127EBE3A2CC3 /* IndexHealthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63BEBE77ECB0D5CB1DC46A17 /* IndexHealthView.swift */; };
 		C722BFA9333EF9703C8D8615 /* ReferenceListPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110B126810387F00795E8E63 /* ReferenceListPanel.swift */; };
@@ -1501,7 +1498,6 @@
 		E3F856DF02689CB52541EE2D /* ResponseFormatCodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C69E9AFFBFB5AAA0F89AC6BC /* ResponseFormatCodingTests.swift */; };
 		E40408EF9A9254DA41DC64BD /* SearchTimingLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CC5A4697055BCA9C9F9E094 /* SearchTimingLog.swift */; };
 		E42571DC4B131E713C2AA127 /* PublishedCitationGrammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4B884F6CEB54DE14ABD1201 /* PublishedCitationGrammar.swift */; };
-		E44167532316A537E2B69962 /* frus-highlights.js in Resources */ = {isa = PBXBuildFile; fileRef = B20D6C9B01A86FECCB5F0C69 /* frus-highlights.js */; };
 		E47495FFB5764E0A3C84F536 /* SearchFilterTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA38BC1F0B8ADE0413E86C4B /* SearchFilterTokens.swift */; };
 		E4823DDE1943B7602D94E67C /* ResearchSessionsSummaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0A2D961A685D79513317A5 /* ResearchSessionsSummaryTests.swift */; };
 		E4A1BB1612A1B1AECACB1514 /* ProjectHomeSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25D78015DC7F88A213BE499F /* ProjectHomeSummary.swift */; };
@@ -1782,7 +1778,6 @@
 		03AA8C70B285D0CEA17DD184 /* query-parity-fixture.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "query-parity-fixture.json"; sourceTree = "<group>"; };
 		03B9D5B9AB0438AC7F132C29 /* FRUSASTNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSASTNode.swift; sourceTree = "<group>"; };
 		0434D78F159F3F09140BEF00 /* ScopeChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScopeChip.swift; sourceTree = "<group>"; };
-		048277CFCB4CE54315008DB9 /* frus-offset-engine.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "frus-offset-engine.js"; sourceTree = "<group>"; };
 		04CBD7BA4B700A300FF55CAB /* ProvenanceFlowIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProvenanceFlowIndexTests.swift; sourceTree = "<group>"; };
 		053A379F4D45CFF6C1E82509 /* FootnoteLanding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FootnoteLanding.swift; sourceTree = "<group>"; };
 		053AE008EFA5B76A0F156D42 /* ProjectLeadsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectLeadsService.swift; sourceTree = "<group>"; };
@@ -2505,7 +2500,6 @@
 		B16CD969BCF6F9E6B4C4720D /* CollectionEntryData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionEntryData.swift; sourceTree = "<group>"; };
 		B17F0EC71699B2BA9AC633BC /* ArchiveVisitListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveVisitListView.swift; sourceTree = "<group>"; };
 		B1D4101100CE5F1F5C3C9024 /* FrontMatterPersonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrontMatterPersonsView.swift; sourceTree = "<group>"; };
-		B20D6C9B01A86FECCB5F0C69 /* frus-highlights.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "frus-highlights.js"; sourceTree = "<group>"; };
 		B23AC0820031FA7B96F63EE6 /* ZoteroCollectionExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoteroCollectionExporter.swift; sourceTree = "<group>"; };
 		B24B4B3BB09F35E08E37ADCB /* POCOMIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = POCOMIndexTests.swift; sourceTree = "<group>"; };
 		B24E3BF8C642E03BE4EDCD64 /* ResearchDataExporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchDataExporterTests.swift; sourceTree = "<group>"; };
@@ -4004,8 +3998,6 @@
 				F301841228E95CD6C8E11AA0 /* digitized-ranges-index.json */,
 				7FAA47940545CAF4910249E5 /* document-subject-index.json */,
 				23C97E3B5ED764D021145571 /* external-citation-index.json */,
-				B20D6C9B01A86FECCB5F0C69 /* frus-highlights.js */,
-				048277CFCB4CE54315008DB9 /* frus-offset-engine.js */,
 				39BF8068D53FC3128464360F /* frus-print.css */,
 				536A71597B7315E933F81136 /* frus-selection.js */,
 				367369BC0084422206E4C87F /* keyness-baseline-printed.json */,
@@ -4639,8 +4631,6 @@
 				CDF76A75B8F62CD9E9BAB9A7 /* digitized-ranges-index.json in Resources */,
 				73445DF7717EF5EC2742FEE3 /* document-subject-index.json in Resources */,
 				4EE66888C6C02ACE06F3F1DF /* external-citation-index.json in Resources */,
-				E44167532316A537E2B69962 /* frus-highlights.js in Resources */,
-				5C2433FBC73CBDB81E77B226 /* frus-offset-engine.js in Resources */,
 				209063A7FB3FD9DAC85D85DD /* frus-print.css in Resources */,
 				CD059A377FC164AB840C4FCD /* frus-selection.js in Resources */,
 				D6DFC821F6BCCE3A022DA7B6 /* keyness-baseline-printed.json in Resources */,
@@ -4693,8 +4683,6 @@
 				66E17FDEFA92BB6B5559F7FD /* digitized-ranges-index.json in Resources */,
 				7239F9BAB7D7B85423D1E5BE /* document-subject-index.json in Resources */,
 				E868467F0FB81EC2B77FFE3A /* external-citation-index.json in Resources */,
-				C6CE3386656EC85C8513C72E /* frus-highlights.js in Resources */,
-				6EBEF52FF2480C0D43466D10 /* frus-offset-engine.js in Resources */,
 				8D7866F2C8D6154A6D91AD5C /* frus-print.css in Resources */,
 				52216BC98666B29A0A741B38 /* frus-selection.js in Resources */,
 				B3745F49704F46F3B92FCC2C /* keyness-baseline-printed.json in Resources */,

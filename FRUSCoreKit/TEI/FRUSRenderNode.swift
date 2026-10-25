@@ -617,7 +617,7 @@ public extension FRUSDocumentRenderModel {
 /// labels and other non-item children (#1371) and a `.tableBlock`'s caption (#1495) — a list
 /// contributes its items and a table its cells. This matches the character
 /// positions stored in `DocumentHighlight.startOffset`/`endOffset`, and exactly
-/// mirrors the `window.FRUSOffsets.flatText` produced by `frus-offset-engine.js`.
+/// mirrors the `window.FRUSOffsets.flatText` produced by the offset engine, `kOffsetEngineJS`.
 ///
 /// Used by `FRUSOffsetEngineTests` (equivalence tests), `DocumentView`, and
 /// `MacDocumentView` when creating highlights from WebKit selections.
@@ -747,7 +747,7 @@ public func flatTextExcerpt(from model: FRUSDocumentRenderModel, start: Int, end
 ///
 /// The model-taking overload rebuilds the partition on every call, which is fine for the
 /// one-shot uses (freezing a selection, an excerpt capture) and quadratic for a search
-/// that must re-extract at many candidate spans. `HighlightReview.locate` is that search,
+/// that must re-extract at many candidate spans. `HighlightReanchor.locate` is that search,
 /// and it is the reason this overload exists: the partition is built once per document.
 ///
 /// The partition must be `buildFlatTextBlocks(from:)`'s output for the same model, whose
