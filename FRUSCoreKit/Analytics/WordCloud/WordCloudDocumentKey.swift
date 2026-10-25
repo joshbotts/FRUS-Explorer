@@ -16,17 +16,19 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
-struct WordCloudDocumentKey: Hashable, Sendable {
+///   1.1 — 2026-10-25 (FRUS Explorer Light, S18a): public, since `IndexingPipeline.documentBodyTextsByKey(forKeys:)`,
+///          which takes it, is
+public struct WordCloudDocumentKey: Hashable, Sendable {
     /// FRUS volume identifier (e.g. `"frus1969-76v01"`).
-    let volumeId: String
+    public let volumeId: String
     /// Document identifier within the volume (e.g. `"d42"`).
-    let documentId: String
+    public let documentId: String
 
     /// Creates a document key.
     /// - Parameters:
     ///   - volumeId: The FRUS volume identifier.
     ///   - documentId: The document identifier within the volume.
-    init(volumeId: String, documentId: String) {
+    public init(volumeId: String, documentId: String) {
         self.volumeId = volumeId
         self.documentId = documentId
     }

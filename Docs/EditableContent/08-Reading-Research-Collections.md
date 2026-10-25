@@ -850,42 +850,42 @@ the only category saying something is wrong with the work; the rest are stated a
 check rather than as problems with the quotations.
 
 #### Export check — one quotation not found
-<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 297–298 | key: excerpt.verify.failures.one | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Export/ExcerptVerifier.swift | lines: 307–308 | key: excerpt.verify.failures.one | shared: iOS+macOS (single edit point) -->
 
 One quotation was not found in the document it cites.
 
 <!-- END SOURCE: excerpt.verify.failures.one -->
 
 #### Export check — several not found
-<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 299–300 | key: excerpt.verify.failures.many %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Export/ExcerptVerifier.swift | lines: 309–310 | key: excerpt.verify.failures.many %lld | shared: iOS+macOS (single edit point) -->
 
 %lld quotations were not found in the documents they cite.
 
 <!-- END SOURCE: excerpt.verify.failures.many %lld -->
 
 #### Export check — one document removed by an update
-<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 304–305 | key: excerpt.verify.vanished.one | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Export/ExcerptVerifier.swift | lines: 314–315 | key: excerpt.verify.vanished.one | shared: iOS+macOS (single edit point) -->
 
 One quotation cites a document that is no longer in its volume.
 
 <!-- END SOURCE: excerpt.verify.vanished.one -->
 
 #### Export check — several documents removed by an update
-<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 306–307 | key: excerpt.verify.vanished.many %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Export/ExcerptVerifier.swift | lines: 316–317 | key: excerpt.verify.vanished.many %lld | shared: iOS+macOS (single edit point) -->
 
 %lld quotations cite documents that are no longer in their volumes.
 
 <!-- END SOURCE: excerpt.verify.vanished.many %lld -->
 
 #### Export check — volumes not downloaded
-<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 310–311 | key: excerpt.verify.unindexed %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Export/ExcerptVerifier.swift | lines: 320–321 | key: excerpt.verify.unindexed %lld | shared: iOS+macOS (single edit point) -->
 
 %lld could not be checked — their volumes are not downloaded.
 
 <!-- END SOURCE: excerpt.verify.unindexed %lld -->
 
 #### Export check — too short to check
-<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 314–315 | key: excerpt.verify.inconclusive %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Export/ExcerptVerifier.swift | lines: 324–325 | key: excerpt.verify.inconclusive %lld | shared: iOS+macOS (single edit point) -->
 
 %lld were too short to check.
 

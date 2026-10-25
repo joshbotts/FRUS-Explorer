@@ -901,6 +901,8 @@ extension CodingStandardsAuditTests {
     /// counts, says its volume count through `CountCopy` ("1 volumes" on George H. W. Bush's drill).
     static let countCopyBaseline: [String] = [
         #"../FRUSCoreKit/Collections/CollectionCitationLineResolver.swift | collection.addDocs.citations.topOf"#,
+        #"../FRUSCoreKit/Export/ExcerptVerifier.swift | excerpt.verify.failures.many %lld"#,
+        #"../FRUSCoreKit/Export/ExcerptVerifier.swift | excerpt.verify.vanished.many %lld"#,
         #"../FRUSCoreKit/Export/QueryMethodAppendix.swift | appendix.caveat.floor.many %lld"#,
         #"../FRUSCoreKit/Export/QueryMethodAppendix.swift | appendix.caveat.semantic.many %lld"#,
         #"../FRUSCoreKit/Export/QueryMethodAppendix.swift | appendix.caveat.unrecorded.many %lld"#,
@@ -1052,8 +1054,6 @@ extension CodingStandardsAuditTests {
         #"DocumentView/DocumentView.swift | \(notes.count) notes from other projects"#,
         #"DocumentView/DocumentView.swift | \(notes.count) research notes from other projects"#,
         #"DocumentView/DocumentView.swift | document.share.zotero.result %lld %lld"#,
-        #"Export/ExcerptVerifier.swift | excerpt.verify.failures.many %lld"#,
-        #"Export/ExcerptVerifier.swift | excerpt.verify.vanished.many %lld"#,
         #"Export/ResearchDataExportView.swift | settings.export.includeSummaries.footer"#,
         #"History/HistoryView.swift | history.exports.documentCount"#,
         #"History/HistoryView.swift | history.searches.resultCount"#,
