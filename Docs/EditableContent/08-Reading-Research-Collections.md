@@ -2756,7 +2756,7 @@ Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") f
 <!-- END SOURCE: export.colophon.line -->
 
 #### No stored summary for this document — generate one in the…
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteHTML | lines: 465–466 | key: collection.headnote.missing | same text also in: FRUSExplorer/Collections/DocxCollectionExporter.swift, FRUSExplorer/Collections/PDFCollectionExporter.swift -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteHTML | lines: 465–466 | key: collection.headnote.missing | same text also in: FRUSCoreKit/Collections/DocxCollectionExporter.swift, FRUSExplorer/Collections/PDFCollectionExporter.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 No stored summary for this document — generate one in the document view to fill this headnote.

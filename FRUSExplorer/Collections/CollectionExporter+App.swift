@@ -121,8 +121,8 @@ extension CollectionExportOptions {
 ///          is handed
 ///   1.8 — 2026-10-25 (FRUS Explorer Light, S18a): in `CollectionExporter+App.swift`, since the payloads
 ///          and options it builds are FRUSCoreKit's and it makes the app's exporters; `makeExporter()`
-///          hands the HTML exporter, now the kit's, the app's figure store and word-cloud drawing, which
-///          it read for itself
+///          hands the HTML and Word exporters, now the kit's, the app's figure store and word-cloud
+///          drawing, which each read for itself
 enum ExportFormat: String, CaseIterable, Identifiable {
     case pdf
     case html
@@ -237,7 +237,8 @@ enum ExportFormat: String, CaseIterable, Identifiable {
         case .pdf:            return PDFCollectionExporter()
         case .html:           return HTMLCollectionExporter(figureImages: FigureImageStore.shared,
                                                             wordCloud: CollectionWordCloud.drawnByTheApp)
-        case .docx:           return DocxCollectionExporter()
+        case .docx:           return DocxCollectionExporter(figureImages: FigureImageStore.shared,
+                                                            wordCloud: CollectionWordCloud.drawnByTheApp)
         case .zoteroJSON:     return ZoteroCollectionExporter()
         case .bibtex:         return BibTeXCollectionExporter()
         case .fruscollection: return nil

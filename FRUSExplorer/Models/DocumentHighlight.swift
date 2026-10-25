@@ -62,6 +62,8 @@ import SwiftUI
 ///   1.2 — Session 2026-10-24 (FRUS Explorer Light, S15a): `HighlightDTO` is a typealias of
 ///          FRUSCoreKit's `ReaderHighlight`, which holds its stale rule; `init(_:currentVersion:)`
 ///          stays here
+///   1.3 — 2026-10-25 (FRUS Explorer Light, S18a): `Color.ooxmlHighlightName`, the Word export's name
+///          for a colour, is FRUSCoreKit's, on `HighlightColor`, with the Word exporter
 @Model final class DocumentHighlight {
 
     // MARK: - Identity
@@ -215,16 +217,6 @@ extension DocumentHighlight.Color {
         }
     }
 
-    /// Closest match in the fixed OOXML `<w:highlight w:val="...">` palette, used
-    /// for DOCX export (`DocxCollectionExporter`). OOXML has no blue or pink/magenta
-    /// shades close to this app's palette; `cyan` and `magenta` are the nearest
-    /// available named colours.
-    var ooxmlHighlightName: String {
-        switch self {
-        case .yellow: return "yellow"
-        case .green:  return "green"
-        case .blue:   return "cyan"
-        case .pink:   return "magenta"
-        }
-    }
+    // `ooxmlHighlightName`, the Word export's name for the colour, is FRUSCoreKit's
+    // (`HighlightColor`, FRUS Explorer Light's S18a), since the Word exporter is.
 }

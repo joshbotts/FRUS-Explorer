@@ -5518,7 +5518,8 @@ struct CollectionExportParityTests {
                 || pdfData.range(of: Data("/Subtype/Image".utf8)) != nil,
                 "PDF cloud missing")
 
-        let docxURL = try await DocxCollectionExporter().export(
+        let docxExporter = try #require(ExportFormat.docx.makeExporter())
+        let docxURL = try await docxExporter.export(
             metadata: Self.metadata, documents: docs, options: Self.options)
         let docx = try Data(contentsOf: docxURL)
         #expect(docx.range(of: Data("word/media/".utf8)) != nil, """

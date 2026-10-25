@@ -453,9 +453,9 @@ public struct CollectionExportOptions: Sendable {
     /// Summaries are generated on demand if none exist for this prompt.
     public var summaryPromptId: UUID? = nil
     /// When `true`, a word-cloud overview page/section of the collection's most
-    /// frequent terms is included. The PDF, HTML and Word exporters draw it; the HTML exporter,
-    /// FRUSCoreKit's, with the drawing it is handed (`HTMLCollectionExporter.wordCloud`), which
-    /// `ExportFormat.makeExporter()` passes.
+    /// frequent terms is included. The PDF, HTML and Word exporters draw it; the HTML and Word
+    /// exporters, FRUSCoreKit's, with the drawing they are handed (`wordCloud`), which
+    /// `ExportFormat.makeExporter()` passes, and none when they are handed none.
     public var includeWordCloud: Bool = false
     /// The collection-level default a document entry's `includeHeadnote == nil` (Default) resolves
     /// to (Composer redesign). `false` by default, so collections that never set a headnote default
