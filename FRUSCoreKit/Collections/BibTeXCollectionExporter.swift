@@ -39,16 +39,22 @@ import Foundation
 ///   1.0 — Collections rework Phase 4 (D7): initial implementation
 ///   1.1 — #1463: the file is named through `CollectionExportNaming`, so an unnamed collection
 ///          writes `Untitled Collection.bib` rather than a hidden `.bib`
-final class BibTeXCollectionExporter: CollectionExporter {
+///   1.2 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, over the kit's
+///          `BibtexExporter`; `bibTeX(for:options:)` gives the text `export` writes
+public final class BibTeXCollectionExporter: CollectionExporter {
 
-    // MARK: - CollectionExporter
+    /// Creates an exporter.
+    public init() {}
 
-    @MainActor
-    func export(
-        metadata: CollectionExportMetadata,
-        items: [CollectionExportItem],
-        options: CollectionExportOptions
-    ) async throws -> URL {
+    /// The `.bib` file's text for `items`: one record per document that carries a Zotero item, in
+    /// collection order, blank-line separated, with a closing newline when there is any — what
+    /// `export` writes, for a host that keeps the text rather than a file.
+    ///
+    /// - Parameters:
+    ///   - items: The ordered, pre-resolved items; only `.document` items apply.
+    ///   - options: The export's options; `includeNotes == false` strips `annote`.
+    /// - Returns: The BibTeX text.
+    public func bibTeX(for items: [CollectionExportItem], options: CollectionExportOptions) -> String {
         let documents = items.documents.sorted { $0.sortOrder < $1.sortOrder }
         let exporter = BibtexExporter()
 
@@ -58,8 +64,18 @@ final class BibTeXCollectionExporter: CollectionExporter {
             return exporter.export(zoteroItem: item, volumeId: doc.volumeId, documentId: doc.documentId)
         }
 
-        let bib = records.joined(separator: "\n\n") + (records.isEmpty ? "" : "\n")
-        let data = Data(bib.utf8)
+        return records.joined(separator: "\n\n") + (records.isEmpty ? "" : "\n")
+    }
+
+    // MARK: - CollectionExporter
+
+    @MainActor
+    public func export(
+        metadata: CollectionExportMetadata,
+        items: [CollectionExportItem],
+        options: CollectionExportOptions
+    ) async throws -> URL {
+        let data = Data(bibTeX(for: items, options: options).utf8)
 
         let url = CollectionExportNaming.temporaryFileURL(savedName: metadata.name, suffix: ".bib")
         do {
