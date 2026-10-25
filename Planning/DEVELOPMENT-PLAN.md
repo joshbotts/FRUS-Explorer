@@ -7685,6 +7685,8 @@ The session began as an assessment of the seven pull requests FRUS Explorer Ligh
 - **`swift build --target FRUSCoreKit`:** "Build complete!" both.
 - **`swift test`, whole, on the macOS host:** exit 0 both; 38 runs and 3,090 tests in 369 suites, all passed, against 3,089 on `v2`. `FRUSCoreKitTests`: "✔ Test run with 1197 tests in 157 suites passed", against 1196.
 
+**At the merge with `v2` @ `2b153f81` (#1792),** which landed while this was open: the conflict was at the ends of this file and `Amendment-Log.md`, and both entries are kept. On the merge (`0c74ea61`), run as above: the iOS unit target "━ Test run with 7661 tests in 911 suites passed after 442.557 seconds with 6 known issues.", `v2`'s 7,646 with #1792's 9 and these 6, 0 failed and 17 skipped; `swift test` exit 0, 3,090 tests; `FRUSExplorerMac`, clean, "** BUILD SUCCEEDED **" with the five warning lines. #1792 keeps the exporter's `annotationId: review.annotationId,` (now line 443) and adds no other `annotationId:` line, so it is still the sweep's one exempt line.
+
 **Owed by the owner:** the Mac check for this pull request, from a clone at a real path; then the merge. FRUS Explorer Light's next pin move takes the new `kHighlightsJS`.
 
 **Not done:** the comment inside the pinned `kSelectionJS`, and its twin in `frus-selection.js`, still says `buildRanges in frus-highlights.js`, the name FRUS Explorer Light serves the renderer under; re-taking a second pin for a comment was left alone. Not run: the UI suites, a device and the Mac app; no export was made by hand.
