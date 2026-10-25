@@ -1592,13 +1592,17 @@ private final class FigureGraphicScanner: NSObject, XMLParserDelegate {
 /// else, and `FRUSURLSchemeHandler` answers its image requests on WebKit's call; neither has an
 /// `AppState` to ask, and a view in a window opened without one in its environment must not
 /// declare that it needs one. The exporters are built by a factory that is handed a format and
-/// nothing else (`CollectionExportFormat.makeExporter()`). Each of them takes a store as a
-/// parameter defaulting to this one, so a test passes its own.
+/// nothing else (`CollectionExportFormat.makeExporter()`). The PDF exporter takes a store as a
+/// parameter defaulting to this one, so a test passes its own; the HTML exporter, which is
+/// FRUSCoreKit's, takes any `FigureImageSource`, none by default, and the factory and the live
+/// preview hand it this one.
 ///
 /// Version history:
 ///   1.0 — #1516: initial implementation
 ///   1.1 — #1516 review, round 1: `isUnitTestHost(_:)`; `fetchAbsent` stops when its task is cancelled
-final class FigureImageStore: @unchecked Sendable {
+///   1.2 — 2026-10-25 (FRUS Explorer Light, S18a): a `FigureImageSource`, FRUSCoreKit's, which the collection
+///          exporters it serves take their images from now that they are the kit's
+final class FigureImageStore: @unchecked Sendable, FigureImageSource {
 
     /// The process-wide store.
     static let shared = FigureImageStore()

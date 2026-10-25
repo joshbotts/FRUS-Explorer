@@ -94,6 +94,8 @@ import WebKit
 ///   1.6 — #1463: the page's metadata comes from the export sheet's builder,
 ///          `CollectionExportMetadata.forExport`, in place of a copy with its own
 ///          "Untitled Collection" fallback — so the preview and the exported file carry one title
+///   1.7 — 2026-10-25 (FRUS Explorer Light, S18a): the renderer is FRUSCoreKit's, and the preview hands it the
+///          app's figure store, which was its default
 struct CollectionPreviewView: View {
 
     // MARK: - Inputs
@@ -451,6 +453,7 @@ struct CollectionPreviewView: View {
             }
 
             var renderer = CollectionItemHTMLRenderer(options: previewOptions())
+            renderer.figureImages = FigureImageStore.shared
             renderer.citationOnlyVolumeIds = missing
             renderer.showsSummaryPlaceholders = true
             // The export sheet's own builder (#1463), so the preview's title is the exported file's.

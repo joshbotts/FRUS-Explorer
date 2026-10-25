@@ -7,7 +7,6 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
-import SwiftUI
 
 // MARK: - HTMLCollectionExporter
 
@@ -60,24 +59,43 @@ import SwiftUI
 ///   1.10 — #1463: the file is named through `CollectionExportNaming`, so an unnamed collection
 ///          writes `Untitled Collection.html` rather than a hidden `.html`
 ///   1.11 — #1516: a figure's image is embedded in the page (`figureImages`, handed to the renderer)
-final class HTMLCollectionExporter: CollectionExporter {
+///   1.12 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public. The host passes in
+///          where figures come from and how the word cloud is drawn (`wordCloud`), which the exporter
+///          took from the app's `FigureImageStore.shared` and `WordCloudExporter`: the app's
+///          `ExportFormat.makeExporter()` passes both, and an exporter given none draws no cloud
+public final class HTMLCollectionExporter: CollectionExporter {
 
-    /// Where figure images come from (#1516). The app's store; a test sets its own.
-    var figureImages: FigureImageStore = .shared
+    /// Where figure images come from (#1516): the app's store, which `ExportFormat.makeExporter()`
+    /// passes, a test's own, or none, which prints each figure's placeholder.
+    public var figureImages: any FigureImageSource
+
+    /// How the collection's word cloud is drawn when the options ask for one: the app draws it with
+    /// its tokenizer and renderer (`CollectionWordCloud.drawnByTheApp`); `nil` draws none.
+    public var wordCloud: CollectionWordCloudDrawing?
+
+    /// Creates an exporter.
+    ///
+    /// - Parameters:
+    ///   - figureImages: Where figure images come from; none by default.
+    ///   - wordCloud: How the word cloud is drawn; none by default.
+    public init(figureImages: any FigureImageSource = NoFigureImages(),
+                wordCloud: CollectionWordCloudDrawing? = nil) {
+        self.figureImages = figureImages
+        self.wordCloud = wordCloud
+    }
 
     // MARK: - CollectionExporter
 
     @MainActor
-    func export(
+    public func export(
         metadata: CollectionExportMetadata,
         items: [CollectionExportItem],
         options: CollectionExportOptions
     ) async throws -> URL {
         var cloudBase64: String?
-        if options.includeWordCloud {
-            cloudBase64 = await WordCloudExporter.collectionCloudImage(
-                texts: items.documents.map(\.bodyText), title: metadata.name
-            )?.pngBase64
+        if options.includeWordCloud, let wordCloud {
+            cloudBase64 = await wordCloud(items.documents.map(\.bodyText), metadata.name)?
+                .png.base64EncodedString()
         }
         var renderer = CollectionItemHTMLRenderer(options: options)
         renderer.figureImages = figureImages

@@ -5505,7 +5505,10 @@ struct CollectionExportParityTests {
     @Test("includeWordCloud produces an image in every format")
     func wordCloudReachesEveryFormat() async throws {
         let docs = Self.fixtureDocuments()
-        let html = try String(contentsOf: try await HTMLCollectionExporter().export(
+        // The HTML and Word exporters are FRUSCoreKit's, and draw the cloud the app hands them: made here as
+        // `ExportFormat.makeExporter()` makes them.
+        let htmlExporter = try #require(ExportFormat.html.makeExporter())
+        let html = try String(contentsOf: try await htmlExporter.export(
             metadata: Self.metadata, documents: docs, options: Self.options), encoding: .utf8)
         #expect(html.contains("data:image/png;base64,"), "HTML cloud missing")
 

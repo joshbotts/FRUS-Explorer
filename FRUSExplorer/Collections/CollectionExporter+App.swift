@@ -119,8 +119,10 @@ extension CollectionExportOptions {
 ///   1.7 — 2026-10-09: #1585 — `drawsWordCloud` and `exportOptions(for:)`: the format says
 ///          whether it draws the word cloud, Word included, and builds the options its exporter
 ///          is handed
-///   1.8 — 2026-10-25 (FRUS Explorer Light, S18a): unchanged, in `CollectionExporter+App.swift`, since
-///          the payloads and options it builds are FRUSCoreKit's and it makes the app's exporters
+///   1.8 — 2026-10-25 (FRUS Explorer Light, S18a): in `CollectionExporter+App.swift`, since the payloads
+///          and options it builds are FRUSCoreKit's and it makes the app's exporters; `makeExporter()`
+///          hands the HTML exporter, now the kit's, the app's figure store and word-cloud drawing, which
+///          it read for itself
 enum ExportFormat: String, CaseIterable, Identifiable {
     case pdf
     case html
@@ -233,12 +235,34 @@ enum ExportFormat: String, CaseIterable, Identifiable {
     func makeExporter() -> (any CollectionExporter)? {
         switch self {
         case .pdf:            return PDFCollectionExporter()
-        case .html:           return HTMLCollectionExporter()
+        case .html:           return HTMLCollectionExporter(figureImages: FigureImageStore.shared,
+                                                            wordCloud: CollectionWordCloud.drawnByTheApp)
         case .docx:           return DocxCollectionExporter()
         case .zoteroJSON:     return ZoteroCollectionExporter()
         case .bibtex:         return BibTeXCollectionExporter()
         case .fruscollection: return nil
         }
+    }
+}
+
+// MARK: - CollectionWordCloud
+
+extension CollectionWordCloud {
+
+    /// The collection's word cloud as the app draws it: `WordCloudExporter.collectionCloudImage`, the
+    /// image the PDF export draws too, as its PNG and its size in pixels. The HTML and Word exporters,
+    /// which are FRUSCoreKit's, are handed this by `ExportFormat.makeExporter()`.
+    ///
+    /// - Parameters:
+    ///   - texts: The documents' body texts.
+    ///   - title: The collection's name, the caption drawn under the cloud.
+    /// - Returns: The image, or `nil` when the texts give no term to draw.
+    @MainActor
+    static func drawnByTheApp(texts: [String], title: String) async -> CollectionWordCloud? {
+        guard let rendered = await WordCloudExporter.collectionCloudImage(texts: texts, title: title),
+              let png = Data(base64Encoded: rendered.pngBase64) else { return nil }
+        return CollectionWordCloud(png: png, pixelWidth: rendered.cgImage.width,
+                                   pixelHeight: rendered.cgImage.height)
     }
 }
 

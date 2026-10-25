@@ -137,6 +137,8 @@ import SourceNoteKit
 ///          `@ana` as two lists after the footnotes section (`listsNamedReferences`), outside
 ///          `.frus-document` and so outside the offset space. Off by default: an export's output
 ///          is unchanged
+///   1.14 — 2026-10-25 (FRUS Explorer Light, S18a): `serialize(_:includeFootnotes:highlights:)`, the
+///          collection HTML export's call, is public, with the renderer that makes it
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// Where a figure's image comes from (#1516).
@@ -308,7 +310,7 @@ public struct FRUSRenderNodeHTMLSerializer {
     ///   - highlights: Flat-text character ranges to annotate with `<mark>` elements.
     ///     The serialiser injects highlight markup by post-processing the rendered HTML
     ///     using the same flat-text coordinate space as the JS offset engine.
-    func serialize(
+    public func serialize(
         _ model: FRUSDocumentRenderModel,
         includeFootnotes: Bool,
         highlights: [ExportHighlight]

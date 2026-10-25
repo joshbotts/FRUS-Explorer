@@ -158,7 +158,7 @@ struct ProvenanceStatementTests {
             .deletingLastPathComponent().deletingLastPathComponent()
         for (file, cloud) in [("FRUSExplorer/Collections/PDFCollectionExporter.swift", "wordCloud"),
                               ("FRUSExplorer/Collections/DocxCollectionExporter.swift", "wordCloudXML"),
-                              ("FRUSExplorer/Collections/CollectionItemHTMLRenderer.swift", "wordCloudPNGBase64")] {
+                              ("FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift", "wordCloudPNGBase64")] {
             let source = try String(contentsOf: root.appendingPathComponent(file), encoding: .utf8)
             #expect(source.contains("CollectionColophon.sourceLines(for: items, embedsWordCloud: \(cloud) != nil)"),
                     Comment(rawValue: "\(file) must emit the shared sources block, not its own, and say whether it drew a cloud"))

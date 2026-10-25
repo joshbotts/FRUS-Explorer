@@ -453,7 +453,9 @@ public struct CollectionExportOptions: Sendable {
     /// Summaries are generated on demand if none exist for this prompt.
     public var summaryPromptId: UUID? = nil
     /// When `true`, a word-cloud overview page/section of the collection's most
-    /// frequent terms is included. The PDF, HTML and Word exporters draw it.
+    /// frequent terms is included. The PDF, HTML and Word exporters draw it; the HTML exporter,
+    /// FRUSCoreKit's, with the drawing it is handed (`HTMLCollectionExporter.wordCloud`), which
+    /// `ExportFormat.makeExporter()` passes.
     public var includeWordCloud: Bool = false
     /// The collection-level default a document entry's `includeHeadnote == nil` (Default) resolves
     /// to (Composer redesign). `false` by default, so collections that never set a headnote default
@@ -1539,6 +1541,37 @@ public enum ExportFileName {
         return cut
     }
 }
+
+// MARK: - CollectionWordCloud
+
+/// A collection's word-cloud overview as an export embeds it: a PNG and its size in pixels
+/// (#960, #1585). The HTML export embeds the PNG as a `data:` URL; the Word export stores it as
+/// `word/media/wordcloud.png` and sizes its drawing by the pixels.
+///
+/// Version history:
+///   1.0 — 2026-10-25 (FRUS Explorer Light, S18a): the image the HTML and Word exporters took from
+///          the app's `WordCloudExporter.collectionCloudImage`, handed to them as data now that they
+///          are FRUSCoreKit's
+public struct CollectionWordCloud: Sendable {
+    /// The image, as PNG.
+    public let png: Data
+    /// Its width in pixels.
+    public let pixelWidth: Int
+    /// Its height in pixels.
+    public let pixelHeight: Int
+
+    /// Creates a word-cloud image.
+    public init(png: Data, pixelWidth: Int, pixelHeight: Int) {
+        self.png = png
+        self.pixelWidth = pixelWidth
+        self.pixelHeight = pixelHeight
+    }
+}
+
+/// Draws the word cloud of a collection's documents — their body texts, in order — titled with
+/// the collection's name, or returns `nil` when there is nothing to count. The app draws it with its
+/// own tokenizer and SwiftUI renderer (`CollectionWordCloud.drawnByTheApp`, in the app).
+public typealias CollectionWordCloudDrawing = @MainActor (_ texts: [String], _ title: String) async -> CollectionWordCloud?
 
 // MARK: - ExportError
 
