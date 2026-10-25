@@ -48,6 +48,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — CW-11 (UI review F-3): saved searches + projects in the sidebar footer
+///   1.1 — #1791: one shortcut per saved search, however many copies of it are stored
 struct SidebarShortcuts: View {
 
     /// Routes a chosen saved search into the Search tab, and reads the active project.
@@ -58,7 +59,7 @@ struct SidebarShortcuts: View {
     @Environment(\.modelContext) private var modelContext
 
     /// Most recently used first — the same order the Saved Searches surface presents.
-    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var savedSearches: [SavedSearch]
+    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var savedSearchCopies: [SavedSearch]
 
     /// The user's projects, newest first.
     @Query(sort: \Project.createdAt, order: .reverse) private var projects: [Project]
@@ -208,5 +209,13 @@ struct SidebarShortcuts: View {
         appState.openSearch(saved.searchParameters, from: sceneID)
         appState.openTab(.search, from: sceneID)
     }
+}
+
+// MARK: - One copy of each saved search (#1791)
+
+extension SidebarShortcuts {
+    /// The saved searches, one copy of each however many are stored under its id
+    /// (`DuplicateCopies`), newest first, so no two shortcuts share an id.
+    private var savedSearches: [SavedSearch] { SavedSearch.oneCopyEach(savedSearchCopies) }
 }
 #endif

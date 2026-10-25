@@ -17,6 +17,7 @@ import SwiftData
 /// Version history:
 ///   1.0 — FRUS Explorer Light: moved out of `ZoteroJSONExporter.swift` unchanged, when that moved
 ///          into the kit
+///   1.1 — #1791: a note stored as several copies under one id is one Zotero note
 extension ZoteroJSONExporter {
 
     // MARK: - Tags & Notes
@@ -25,7 +26,8 @@ extension ZoteroJSONExporter {
     ///
     /// `tags` combines `DocumentTagAssignment`s made directly on the document
     /// with tags applied to any of the document's `ResearchNote`s. `notes`
-    /// carries the body text of every `ResearchNote` for the document.
+    /// carries the body text of every `ResearchNote` for the document, one copy of
+    /// each however many are stored under its id (#1791).
     @MainActor
     public static func fetchTagsAndNotes(
         documentId: String,
@@ -42,9 +44,9 @@ extension ZoteroJSONExporter {
             predicate: #Predicate { $0.volumeId == volumeId && $0.documentId == documentId }
         ))) ?? []
 
-        let notes = (try? context.fetch(FetchDescriptor<ResearchNote>(
+        let notes = ResearchNote.oneCopyEach((try? context.fetch(FetchDescriptor<ResearchNote>(
             predicate: #Predicate { $0.volumeId == volumeId && $0.documentId == documentId }
-        ))) ?? []
+        ))) ?? [])
 
         var tagNames = Set<String>()
         for assignment in assignments {

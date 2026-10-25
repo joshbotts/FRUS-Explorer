@@ -33,6 +33,8 @@ import SwiftData
 /// Version history:
 ///   1.0 — Session 04: initial implementation
 ///   1.1 — #1275: `richText`, the formatted body, with `bodyText` kept as its plain projection
+///   1.2 — #1791: `oneCopyEach(_:)`, `copies(of:in:)` and `deleteEveryCopy(of:in:)`, for copies
+///          stored under one id, and the indexed note text reads one copy of each
 @Model final class ResearchNote {
 
     // MARK: - Identity
@@ -145,7 +147,9 @@ import SwiftData
     /// row-skipping UPDATE stays a no-op instead of churning the FTS5 index.
     ///
     /// Notes with a blank id pair are skipped: they can index nothing. Empty bodies are dropped
-    /// before joining, so a blank note cannot pad the text with separators.
+    /// before joining, so a blank note cannot pad the text with separators. A note stored as
+    /// several copies under one id is read once (``oneCopyEach(_:)``, #1791), so its words are
+    /// counted once.
     ///
     /// - Parameter notes: Every note to consider, in any order.
     /// - Returns: One row per document that has at least one non-empty note, keyed for the caller.
@@ -153,7 +157,7 @@ import SwiftData
         _ notes: [ResearchNote]
     ) -> [(volumeId: String, documentId: String, text: String)] {
         var byDocument: [String: [ResearchNote]] = [:]
-        for note in notes where !note.volumeId.isEmpty && !note.documentId.isEmpty {
+        for note in oneCopyEach(notes) where !note.volumeId.isEmpty && !note.documentId.isEmpty {
             byDocument["\(note.volumeId)/\(note.documentId)", default: []].append(note)
         }
         return byDocument.keys.sorted().compactMap { key in
@@ -386,5 +390,54 @@ import SwiftData
         #if DEBUG
         print("[SwiftData] ResearchNote created: \(id) for \(volumeId)/\(documentId)")
         #endif
+    }
+}
+
+// MARK: - Copies under one id (#1791)
+
+extension ResearchNote {
+
+    /// `notes` with one copy of each note, the one last modified, in the order the notes first
+    /// appear. What a list, a count or an export of notes reads (`DuplicateCopies` says why the
+    /// copies are kept rather than collapsed).
+    ///
+    /// - Parameter notes: The notes, copies included.
+    /// - Returns: One note per id.
+    static func oneCopyEach(_ notes: [ResearchNote]) -> [ResearchNote] {
+        DuplicateCopies.oneEach(notes, id: \.id, lastModified: \.lastModified)
+    }
+
+    /// Every stored copy of the note `id`, the one last modified first, and copies modified at the
+    /// same moment in the order the store returns them. Almost always one.
+    ///
+    /// An edit is written to each, so the copies keep one text, and a delete removes each, so a
+    /// deleted note does not come back from a copy. The first is the copy the editor opens.
+    ///
+    /// - Parameters:
+    ///   - id: The note's id.
+    ///   - context: The context to read.
+    /// - Returns: The copies; none when the note is gone or the store cannot be read.
+    static func copies(of id: UUID, in context: ModelContext) -> [ResearchNote] {
+        let descriptor = FetchDescriptor<ResearchNote>(predicate: #Predicate { $0.id == id })
+        let found = (try? context.fetch(descriptor)) ?? []
+        return found.enumerated().sorted { lhs, rhs in
+            let l = lhs.element.lastModified ?? .distantPast
+            let r = rhs.element.lastModified ?? .distantPast
+            return l != r ? l > r : lhs.offset < rhs.offset
+        }.map(\.element)
+    }
+
+    /// Deletes `note` and every other copy stored under its id, so it does not come back from one
+    /// that remains. The caller saves.
+    ///
+    /// - Parameters:
+    ///   - note: The note to delete.
+    ///   - context: The context `note` belongs to.
+    static func deleteEveryCopy(of note: ResearchNote, in context: ModelContext) {
+        for copy in copies(of: note.id, in: context)
+        where copy.persistentModelID != note.persistentModelID {
+            context.delete(copy)
+        }
+        context.delete(note)
     }
 }

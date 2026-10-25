@@ -84,6 +84,7 @@ struct ProjectCorpusCoverage: Identifiable, Equatable, Sendable {
 ///         in the Archives Visits window rather than a sheet the Mac drew as a strip holding only Done
 ///   1.2 — #1457 review, round 1: a read a newer one replaced is dropped rather than landing after
 ///         it, and Plan a Visit creates no plan from a fresh read that comes back empty
+///   1.3 — #1791: the summary's notes are one copy of each, however many are stored
 struct ProjectHomeView: View {
 
     /// The project this dashboard shows.
@@ -193,8 +194,9 @@ struct ProjectHomeView: View {
     private var project: Project? { projects.first { $0.id == projectId } }
 
     private var summary: ProjectHomeSummary {
+        // One copy of each note, so a note stored twice is counted and listed once (#1791).
         ProjectHomeSummary(
-            notes:       allNotes.filter { $0.projectIds.contains(projectId) },
+            notes:       ResearchNote.oneCopyEach(allNotes.filter { $0.projectIds.contains(projectId) }),
             collections: allCollections.filter { $0.projectIds.contains(projectId) },
             visits:      allVisits.filter { $0.projectId == projectId },
             searches:    allSearches.filter { $0.projectId == projectId }

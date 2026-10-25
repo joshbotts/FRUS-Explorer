@@ -39,6 +39,7 @@ import SwiftData
 /// Version history:
 ///   1.0 — S-5b: the Notes pane's one door
 ///   1.1 — #1275: moved out of `NotesSettingsView` into Research; gained ``Presentation``
+///   1.2 — #1791: a delete removes every stored copy of the note
 struct AllNotesScreen: View {
 
     /// Where this screen is being shown, which decides only its chrome.
@@ -308,14 +309,16 @@ struct AllNotesScreen: View {
     // MARK: - Mutations
 
     private func delete(_ row: NotesPaneSnapshot.Row) {
-        guard let note = NotesPaneSnapshot.note(id: row.id, in: modelContext) else {
+        // Every stored copy of the note (#1791): deleting one would leave the note on the list,
+        // shown from a copy that remains.
+        guard let note = ResearchNote.copies(of: row.id, in: modelContext).first else {
             // Already gone — the snapshot is stale, so re-read instead of silently doing nothing.
             refresh()
             return
         }
         let volumeId = note.volumeId
         let documentId = note.documentId
-        modelContext.delete(note)
+        ResearchNote.deleteEveryCopy(of: note, in: modelContext)
         // Flush, so the cross-context @Query consumers (the Research window, Project Home)
         // see the removal promptly — the same reason ResearchNoteEditorView saves after delete.
         try? modelContext.save()
