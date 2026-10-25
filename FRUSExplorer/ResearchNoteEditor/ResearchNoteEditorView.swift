@@ -472,6 +472,7 @@ struct NoteComposerRequest: Codable, Equatable, Hashable, Sendable {
 ///   1.0 — Session 2026-07-04 (macOS UI audit C1): initial implementation
 ///   1.1 — #363: value-based window (`let request` in place of the
 ///         `pendingNoteComposer` `.task`/`.onChange` consume).
+///   1.2 — #1791: a note stored as several copies opens the copy last modified
 struct NoteComposerWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -493,15 +494,13 @@ struct NoteComposerWindowView: View {
         )
     }
 
-    /// Resolves an existing note id from the hand-off to its SwiftData model.
+    /// Resolves an existing note id from the hand-off to its SwiftData model: the copy last
+    /// modified, for a note stored as several (``ResearchNote/copies(of:in:)``, #1791).
     /// Returns `nil` (create-new mode) when the id is absent or the note was
     /// deleted between hand-off and consumption.
     private func fetchNote(_ noteId: UUID?) -> ResearchNote? {
         guard let noteId else { return nil }
-        let descriptor = FetchDescriptor<ResearchNote>(
-            predicate: #Predicate { $0.id == noteId }
-        )
-        return try? modelContext.fetch(descriptor).first
+        return ResearchNote.copies(of: noteId, in: modelContext).first
     }
 }
 #endif

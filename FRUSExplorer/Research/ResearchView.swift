@@ -182,6 +182,7 @@ struct ResearchDocumentEntry: Identifiable {
 ///   1.8 — #1362: the iPad two-pane marks the open category in the list beside it (a row background
 ///          and the `.isSelected` trait, both from `selectedItem`), and every category row carries
 ///          `ResearchSidebarItem.rowAccessibilityIdentifier` on all three layouts.
+///   1.9 — #1791: a document's notes are grouped one copy of each, however many are stored
 struct ResearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -1424,10 +1425,11 @@ struct ResearchView: View {
             matchingKeys = []
         }
 
-        // Seed the grouped notes dictionary.
+        // Seed the grouped notes dictionary, with one copy of each note however many are stored
+        // under its id (#1791), so a document does not list or count a note twice.
         var grouped: [String: [ResearchNote]] = [:]
         for key in matchingKeys { grouped[key] = [] }
-        for note in allNotes {
+        for note in ResearchNote.oneCopyEach(allNotes) {
             let key = "\(note.volumeId)/\(note.documentId)"
             if matchingKeys.contains(key) {
                 grouped[key, default: []].append(note)

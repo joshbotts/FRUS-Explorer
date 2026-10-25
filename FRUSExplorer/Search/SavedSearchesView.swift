@@ -33,6 +33,8 @@ import SwiftData
 ///         seconds; fanning out one per row at once would contend the index).
 ///   1.2 — #1380: the Mac body's empty state says "Click the bookmark button", under a key of its
 ///         own; the iOS body's is unchanged
+///   1.3 — #1791: one row per saved search however many copies of it are stored; a rename is
+///         written to every copy, and a delete removes every copy
 struct SavedSearchesView: View {
 
     // MARK: - Input
@@ -54,7 +56,7 @@ struct SavedSearchesView: View {
 
     // MARK: - Data
 
-    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var savedSearches: [SavedSearch]
+    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var savedSearchCopies: [SavedSearch]
 
     // MARK: - State
 
@@ -92,7 +94,7 @@ struct SavedSearchesView: View {
             )
             Button(String(localized: "savedSearches.rename.save",
                           defaultValue: "Save")) {
-                renaming?.name = renameText
+                if let renaming { SavedSearch.rename(renaming, to: renameText, in: modelContext) }
                 renaming = nil
             }
             Button(String(localized: "savedSearches.rename.cancel",
@@ -222,12 +224,13 @@ struct SavedSearchesView: View {
                     Button(String(localized: "savedSearches.row.delete",
                                   defaultValue: "Delete"),
                            role: .destructive) {
-                        modelContext.delete(search)
+                        SavedSearch.deleteEveryCopy(of: search, in: modelContext)
                     }
                 }
             }
             .onDelete { offsets in
-                for i in offsets { modelContext.delete(savedSearches[i]) }
+                let shown = savedSearches
+                for i in offsets { SavedSearch.deleteEveryCopy(of: shown[i], in: modelContext) }
             }
         }
         #if os(iOS)
@@ -315,4 +318,13 @@ struct SavedSearchNewBadge: View {
             .background(Capsule().fill(Color.accentColor.opacity(0.18)))
             .foregroundStyle(Color.accentColor)
     }
+}
+
+// MARK: - One copy of each saved search (#1791)
+
+extension SavedSearchesView {
+    /// The saved searches, one copy of each however many are stored under its id
+    /// (`DuplicateCopies`), newest first. The list, its freshness pass and its deletes read this, so
+    /// no two rows share an id.
+    private var savedSearches: [SavedSearch] { SavedSearch.oneCopyEach(savedSearchCopies) }
 }

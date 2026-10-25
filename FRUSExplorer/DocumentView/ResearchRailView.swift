@@ -135,7 +135,7 @@ struct ResearchRailView: View {
 
     // MARK: Data (re-declared from `entry`)
 
-    @Query private var documentNotes: [ResearchNote]
+    @Query private var documentNoteCopies: [ResearchNote]
     @Query private var documentTagAssignments: [DocumentTagAssignment]
     @Query(sort: \UserTag.name) private var allUserTags: [UserTag]
     /// The document's `.document`-kind collection entries — which collections it belongs to (D5:
@@ -179,7 +179,7 @@ struct ResearchRailView: View {
         self.onClassificationChanged = onClassificationChanged
         let vId = entry.volumeId
         let dId = entry.documentId
-        _documentNotes = Query(
+        _documentNoteCopies = Query(
             filter: #Predicate<ResearchNote> { $0.volumeId == vId && $0.documentId == dId },
             sort: \.lastModified, order: .reverse)
         _documentTagAssignments = Query(
@@ -1228,4 +1228,13 @@ private struct ClassificationInfoSection: View {
             }
         }
     }
+}
+
+// MARK: - One copy of each note (#1791)
+
+extension ResearchRailView {
+    /// The document's notes, one copy of each however many are stored under its id
+    /// (`DuplicateCopies`), newest first as the query sorts them. The Notes accordion's rows and
+    /// badge read this, so a note stored twice is listed and counted once.
+    private var documentNotes: [ResearchNote] { ResearchNote.oneCopyEach(documentNoteCopies) }
 }

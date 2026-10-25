@@ -169,6 +169,8 @@ import UIKit
 ///   2026-10-20 — #1687, decision 70 of the 2026-10-14 plan of record: Link to Saved Search… and its picker are views
 ///          of their own (`SmartCollectionLinkButton`, `LinkSavedSearchPicker`), which the Mac Collections window's ⚙
 ///          popover mounts too; on the Mac the dimmed button's line names the Search window, not the Search tab
+///   2026-10-25 — #1791: the editor reads one copy of each note and saved search, however many are stored under one
+///          id, so an entry's notes, the exports and Link to Saved Search… list each once
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -185,9 +187,9 @@ struct CollectionEditorView: View {
 
     // MARK: - SwiftData queries
 
-    @Query(sort: \ResearchNote.lastModified, order: .reverse) private var allNotes: [ResearchNote]
+    @Query(sort: \ResearchNote.lastModified, order: .reverse) private var allNoteCopies: [ResearchNote]
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
-    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var allSavedSearches: [SavedSearch]
+    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var allSavedSearchCopies: [SavedSearch]
     @Query(sort: \Project.name) private var allProjects: [Project]
 
     // MARK: - State
@@ -2791,4 +2793,16 @@ enum CollectionEditorCommit {
         collection.savedSearchId = id
         return true
     }
+}
+
+// MARK: - One copy of each note and saved search (#1791)
+
+extension CollectionEditorView {
+    /// Every note, one copy of each however many are stored under its id (`DuplicateCopies`),
+    /// newest first: what the entries' note rows, the note pickers and the exports read.
+    private var allNotes: [ResearchNote] { ResearchNote.oneCopyEach(allNoteCopies) }
+
+    /// Every saved search, one copy of each, newest first: what Link to Saved Search… offers and
+    /// what names a smart collection's search.
+    private var allSavedSearches: [SavedSearch] { SavedSearch.oneCopyEach(allSavedSearchCopies) }
 }

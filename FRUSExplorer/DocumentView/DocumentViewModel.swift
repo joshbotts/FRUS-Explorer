@@ -70,6 +70,7 @@ import SwiftData
 ///   1.11 — FRUS Explorer Light: `loadPublicationYear(from:)` reads the header with the kit's
 ///          `TEIPublicationYear`, the scan this type and the Mac's `DocumentExportSupport` each kept a
 ///          copy of
+///   1.12 — #1791: the cross-project notes are one copy of each, however many are stored
 @Observable
 @MainActor
 public final class DocumentViewModel {
@@ -632,7 +633,8 @@ public final class DocumentViewModel {
                 note.documentId == docId && note.volumeId == volId
             }
         )
-        let all = (try? context.fetch(descriptor)) ?? []
+        // One copy of each note, so a note stored twice is counted and listed once (#1791).
+        let all = ResearchNote.oneCopyEach((try? context.fetch(descriptor)) ?? [])
         if let pid = activeProjectId {
             let foreign = all.filter { !$0.projectIds.contains(pid) }
             crossProjectNoteCount = foreign.count

@@ -35,8 +35,8 @@ import AppKit
 /// Every other row here is backed by a `@Query`, which is fine for notes and collections and
 /// wrong for the trail: it grows without bound by design (Wave R contract D5 — nothing prunes
 /// it), so a `@Query` would hold every recorded visit in memory on a Settings screen and re-run
-/// on each iCloud sync. `ResearchDataExporter.trailCounts(modelContext:)` is three `fetchCount`s,
-/// taken in the same pass that builds the file, so the numbers on screen and the file being
+/// on each iCloud sync. `ResearchDataExporter.trailCounts(modelContext:)` counts the three tables'
+/// distinct ids, taken in the same pass that builds the file, so the numbers on screen and the file being
 /// offered describe the same read.
 ///
 /// The accepted cost is that these three rows are a **snapshot** rather than live: the `@Query`
@@ -56,6 +56,7 @@ import AppKit
 ///          half of Wave R decision D5 that the JSON export alone never delivered
 ///   1.4 — FRUS Explorer Light: the inventory counts the eight types the JSON export carries from
 ///          format version 7, and the JSON footer names them under a new key
+///   1.5 — #1791: every **Contents** count is of distinct ids, the records the export writes
 struct DataExportSections: View {
 
     @Environment(AppState.self) private var appState
@@ -68,7 +69,7 @@ struct DataExportSections: View {
     @Query private var collections: [Collection]
     @Query private var prompts: [SummarizationPrompt]
     @Query private var projects: [Project]
-    @Query private var summaries: [GeneratedSummary]
+    @Query private var summaryCopies: [GeneratedSummary]
     @Query private var archiveVisits: [ArchiveVisitPlan]
 
     /// Row counts for the three research-trail tables — see the type's note on why these are not
@@ -94,19 +95,19 @@ struct DataExportSections: View {
     @State private var databaseExportProblem: String?
 
     private var userPromptCount: Int {
-        prompts.filter { !$0.isStandard }.count
+        DuplicateCopies.count(prompts.filter { !$0.isStandard }, id: \.id)
     }
 
     var body: some View {
         Group {
             Section(String(localized: "settings.export.section.contents", defaultValue: "Contents")) {
-                LabeledContent(String(localized: "settings.export.notes", defaultValue: "Research Notes"), value: "\(notes.count)")
-                LabeledContent(String(localized: "settings.export.tags", defaultValue: "Tags & Assignments"), value: "\(tags.count + tagAssignments.count)")
-                LabeledContent(String(localized: "settings.export.highlights", defaultValue: "Highlights"), value: "\(highlights.count)")
-                LabeledContent(String(localized: "settings.export.collections", defaultValue: "Collections"), value: "\(collections.count)")
+                LabeledContent(String(localized: "settings.export.notes", defaultValue: "Research Notes"), value: "\(DuplicateCopies.count(notes, id: \.id))")
+                LabeledContent(String(localized: "settings.export.tags", defaultValue: "Tags & Assignments"), value: "\(DuplicateCopies.count(tags, id: \.id) + DuplicateCopies.count(tagAssignments, id: \.id))")
+                LabeledContent(String(localized: "settings.export.highlights", defaultValue: "Highlights"), value: "\(DuplicateCopies.count(highlights, id: \.id))")
+                LabeledContent(String(localized: "settings.export.collections", defaultValue: "Collections"), value: "\(DuplicateCopies.count(collections, id: \.id))")
                 LabeledContent(String(localized: "settings.export.prompts", defaultValue: "Custom Prompts"), value: "\(userPromptCount)")
-                LabeledContent(String(localized: "settings.export.projects", defaultValue: "Projects"), value: "\(projects.count)")
-                LabeledContent(String(localized: "settings.export.archiveVisits", defaultValue: "Archives Visits"), value: "\(archiveVisits.count)")
+                LabeledContent(String(localized: "settings.export.projects", defaultValue: "Projects"), value: "\(DuplicateCopies.count(projects, id: \.id))")
+                LabeledContent(String(localized: "settings.export.archiveVisits", defaultValue: "Archives Visits"), value: "\(DuplicateCopies.count(archiveVisits, id: \.id))")
                 // Format version 7. Each row takes its words from the screen or setting that keeps
                 // those records, and is counted like the trail rows below, from the read that
                 // writes the file.
@@ -448,4 +449,13 @@ struct DataExportSections: View {
         print("[DataExportSections] Markdown export prepared: \(urls.count) file(s)")
         #endif
     }
+}
+
+// MARK: - One copy of each summary (#1791)
+
+extension DataExportSections {
+    /// The generated summaries, one copy of each however many are stored under its id
+    /// (`DuplicateCopies`): the count the summaries switch's footer gives is the count the file
+    /// writes.
+    private var summaries: [GeneratedSummary] { DuplicateCopies.oneEach(summaryCopies, id: \.id) }
 }

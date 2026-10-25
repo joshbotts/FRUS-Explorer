@@ -26,6 +26,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 14: initial implementation
+///   1.1 — #1791: a save is written to every stored copy of the note, and a delete removes every
+///          copy
 @Observable
 @MainActor
 final class ResearchNoteEditorViewModel {
@@ -113,15 +115,23 @@ final class ResearchNoteEditorViewModel {
 
     /// Saves the editor state: updates the existing note or inserts a new one.
     ///
+    /// An existing note's edit is written to every copy stored under its id
+    /// (``ResearchNote/copies(of:in:)``, #1791), so the copies keep one text and the copy a list
+    /// shows is the edited one whichever that is.
+    ///
     /// - Returns: The `id` of the saved note — used by callers to log a `noteSave` event.
     @discardableResult
     func save(context: ModelContext) -> UUID? {
         if let note = noteToEdit {
-            note.bodyText = bodyText
-            note.richText = richText
-            note.projectIds = projectIds
-            note.userTagIds = userTagIds
-            note.selectedSummaryIds = selectedSummaryIds
+            let otherCopies = ResearchNote.copies(of: note.id, in: context)
+                .filter { $0.persistentModelID != note.persistentModelID }
+            for copy in [note] + otherCopies {
+                copy.bodyText = bodyText
+                copy.richText = richText
+                copy.projectIds = projectIds
+                copy.userTagIds = userTagIds
+                copy.selectedSummaryIds = selectedSummaryIds
+            }
             #if DEBUG
             print("[ResearchNoteEditor] Saved note for \(volumeId)/\(documentId)")
             #endif
@@ -144,10 +154,11 @@ final class ResearchNoteEditorViewModel {
         }
     }
 
-    /// Deletes the note being edited from the SwiftData context. No-op for new notes.
+    /// Deletes the note being edited from the SwiftData context, with every copy stored under its
+    /// id (#1791), so it does not come back from one that remains. No-op for new notes.
     func delete(context: ModelContext) {
         guard let note = noteToEdit else { return }
-        context.delete(note)
+        ResearchNote.deleteEveryCopy(of: note, in: context)
         #if DEBUG
         print("[ResearchNoteEditor] Deleted note \(note.id)")
         #endif

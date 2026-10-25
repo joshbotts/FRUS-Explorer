@@ -60,8 +60,15 @@ extension AnnotationReview: DeduplicableRecord {}
 /// Deletion is the right call for genuine duplicates (byte-identical copies of one
 /// logical record). The remaining edge case — two devices independently creating
 /// the *same* item offline — is rare for these app-created records; this pass keeps
-/// the earliest-created record (tie-broken deterministically) so the choice is
-/// stable across devices and CloudKit converges.
+/// the earliest-created record so the choice is stable across devices and CloudKit
+/// converges. The tie-break on `id` decides nothing inside a group, whose copies all
+/// share it, so copies that also share `createdAt` are kept in the device's own fetch
+/// order, which two devices need not share.
+///
+/// ## What it leaves alone
+/// `ResearchNote`, `SavedSearch` and the three research-trail types keep copies under one
+/// `id` too, and this pass does not collapse them: for those, every reader takes one copy
+/// of each id instead (``DuplicateCopies``, which says why).
 ///
 /// Version history:
 ///   1.0 — iOS testing fixes: CloudKit duplicate collapse
@@ -71,6 +78,8 @@ extension AnnotationReview: DeduplicableRecord {}
 ///          records is a destructive, CloudKit-propagating event worth a durable trace.
 ///   1.2 — decision 62 (A15): `isKept(_:over:)`, the keeper order, shared with the Archives Visit
 ///          overlay's choice of which stored row a target shows.
+///   1.3 — #1791: `DuplicateCopies`, the read side, for the five types this pass leaves alone;
+///          the caveat no longer says the `id` tie-break decides between copies
 @MainActor
 enum DuplicateRecordCleanup {
 
@@ -218,5 +227,81 @@ enum DuplicateRecordCleanup {
         let r = other.createdAt ?? .distantFuture
         if l != r { return l < r }
         return record.id.uuidString < other.id.uuidString
+    }
+}
+
+// MARK: - DuplicateCopies
+
+/// One copy of each id, for whatever shows, counts or exports records (#1791). Nothing here
+/// deletes.
+///
+/// ## Why five types are read this way rather than collapsed
+/// `ResearchNote`, `SavedSearch` and the three research-trail types (`ReadingHistoryEntry`,
+/// `SearchHistoryEntry`, `ExportHistoryEntry`) keep copies under one `id`, and
+/// ``DuplicateRecordCleanup`` leaves them in the store on purpose. Its keeper is the earliest
+/// `createdAt`, then the lower `id`. Every copy in a group shares the `id`, and exact copies share
+/// the `createdAt`, so the copy it keeps is whichever the device's own fetch returns first. It runs
+/// at launch, before any import arrives, so a device that updates later can keep a different copy
+/// and delete the one the first device kept, and after sync no copy is left. A tag can be rebuilt
+/// from its assignments (`OrphanedTagRepair`); a note cannot, and contract D5 forbids anything from
+/// silently deleting the trail (`HistoryRowID`).
+///
+/// Measured on 2026-10-25 in the owner's library: copies in exactly these five types, each an exact
+/// copy in every field and its own CloudKit record, and none made after 2026-07-28. The trail's came
+/// from R-2a's migration running on two devices, and the rest from re-uploads in June and July.
+///
+/// So the copies stay, and what reads these types takes one copy of each id: the lists and their
+/// counts, Data & Recovery's **Contents**, the JSON, Markdown and Zotero exports and the indexed note
+/// text. An edit to a note or a saved search is written to every copy, so the copies keep one text,
+/// and a delete removes every copy (`ResearchNote.copies(of:in:)`, `SavedSearch.copies(of:in:)`).
+/// The History pane already shows each copy of a trail row with an identity of its own and deletes
+/// every copy (`HistoryRowID`, `HistoryTrailAdmin`), and is unchanged.
+///
+/// ## Which copy
+/// The one last modified, for a type that records it; among copies modified at the same moment,
+/// which exact copies are, the first in the caller's order. It stands where its id first appears.
+///
+/// Version history:
+///   1.0 — #1791: initial implementation
+enum DuplicateCopies {
+
+    /// `records` with one copy of each id, in the order their ids first appear.
+    ///
+    /// - Parameters:
+    ///   - records: The records, copies included, in the caller's order.
+    ///   - id: A record's identity.
+    ///   - lastModified: When a record was last changed, for a type that records it: a later date
+    ///     is kept over an earlier one, and a missing date counts as the earliest. Without it, the
+    ///     first copy is kept.
+    /// - Returns: One record per id.
+    static func oneEach<Record>(_ records: [Record], id: (Record) -> UUID,
+                               lastModified: ((Record) -> Date?)? = nil) -> [Record] {
+        var position: [UUID: Int] = [:]
+        position.reserveCapacity(records.count)
+        var kept: [Record] = []
+        kept.reserveCapacity(records.count)
+        for record in records {
+            let key = id(record)
+            guard let index = position[key] else {
+                position[key] = kept.count
+                kept.append(record)
+                continue
+            }
+            if let lastModified,
+               (lastModified(record) ?? .distantPast) > (lastModified(kept[index]) ?? .distantPast) {
+                kept[index] = record
+            }
+        }
+        return kept
+    }
+
+    /// How many distinct ids `records` holds: what `oneEach(_:id:lastModified:)` would return.
+    ///
+    /// - Parameters:
+    ///   - records: The records, copies included.
+    ///   - id: A record's identity.
+    /// - Returns: The number of distinct ids.
+    static func count<Record>(_ records: [Record], id: (Record) -> UUID) -> Int {
+        Set(records.map(id)).count
     }
 }
