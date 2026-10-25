@@ -1360,6 +1360,8 @@ struct ProseFormattedSpan: Sendable {
 ///   1.3 — Session 2026-10-24 (FRUS Explorer Light, S15d's follow-up): a colour is read as the
 ///          light appearance draws it, whatever appearance the export or the live preview runs
 ///          under, so typed text is no longer white in either when that appearance is dark
+///   1.4 — Session 2026-10-25: a colour outside sRGB is clamped to it before it is formatted, so
+///          iOS writes six hex digits for it, as the Mac does
 enum CollectionProse {
     /// Decodes `rtf` into paragraphs of formatted spans, resolving paragraph breaks *before*
     /// spans are emitted so callers never straddle a paragraph boundary with a single run.
@@ -1478,9 +1480,16 @@ enum CollectionProse {
 
     /// Formats an RGB triple as uppercase `RRGGBB`, returning `nil` for (near-)black so
     /// ordinary prose isn't tagged with a redundant colour.
+    ///
+    /// Each component is clamped to 0…1 first. UIKit reads a colour outside sRGB, such as a
+    /// Display P3 red, back from RTF as extended sRGB (1.093, −0.227, −0.150), and `%02X` wrote
+    /// that as `116FFFFFFC7FFFFFFDA`: no colour in HTML, and a `w:val` Word may call damaged. The
+    /// Mac's `usingColorSpace(.sRGB)` already clamps, so both write `FF0000`. A component is
+    /// still truncated, not rounded, so no colour inside sRGB changes its hex.
     private static func hex(r: CGFloat, g: CGFloat, b: CGFloat) -> String? {
         if r < 0.08, g < 0.08, b < 0.08 { return nil }   // (near-)black default text
-        return String(format: "%02X%02X%02X", Int(r * 255), Int(g * 255), Int(b * 255))
+        func byte(_ x: CGFloat) -> Int { Int(min(max(x, 0), 1) * 255) }
+        return String(format: "%02X%02X%02X", byte(r), byte(g), byte(b))
     }
 }
 

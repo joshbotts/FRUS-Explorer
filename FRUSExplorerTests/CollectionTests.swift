@@ -12858,3 +12858,64 @@ struct CollectionProseAppearanceTests {
         #expect(html.contains("<p>Typed on an iPhone in dark mode.</p>"))
     }
 }
+
+// MARK: - CollectionProseOutsideSRGBTests
+
+/// A prose colour outside sRGB exports as six hex digits, its nearest sRGB colour, on iOS as on the Mac.
+///
+/// UIKit writes a Display P3 colour into a prose block's RTF in extended sRGB, with components above 1 and below 0, and
+/// reads it back so. `CollectionProse` formatted each component with `%02X` and did not clamp it, so a Display P3 red
+/// exported as `116FFFFFFC7FFFFFFDA`: a `color:#…` no browser draws, and a Word `w:val` that is not six hex digits
+/// (`ST_HexColor`), so Word may call the file damaged. The PDF exporter, which reads six digits or none, drew the text in
+/// the default colour. The Mac's `usingColorSpace(.sRGB)` clamps, and writes `FF0000` for the same bytes.
+///
+/// Version history:
+///   1.0 — Session 2026-10-25: initial implementation, with the clamp in `CollectionProse.hex(r:g:b:)`
+@Suite("A prose colour outside sRGB exports as six hex digits, as the Mac writes it")
+struct CollectionProseOutsideSRGBTests {
+
+    /// The word "Reddish" in a Display P3 red, byte for byte as iOS's editor stored it: typed into a note block, selected,
+    /// and given `FF0000` in the colour picker's Sliders hex field, which the picker labels "Display P3 Hex Color #".
+    /// Measured on iPhone 17, iOS 27.0, and the same on iPhone Air, iOS 26.5, but for `\cocoartf2870`. The editor's
+    /// `applyColor` received extended sRGB (1.093079, −0.226852, −0.150085), which RTF keeps as `\cssrgb`.
+    static let displayP3Red = #"""
+        {\rtf1\ansi\ansicpg1252\cocoartf2907
+        \cocoatextscaling1\cocoaplatform1{\fonttbl\f0\fnil\fcharset0 .SFUI-Regular;}
+        {\colortbl;\red255\green255\blue255;\red255\green0\blue0;}
+        {\*\expandedcolortbl;;\cssrgb\c109308\c-22685\c-15009;}
+        \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+        \f0\fs26 \cf2 Reddish}
+        """#
+
+    @Test("A Display P3 red exports as FF0000 under either appearance")
+    func displayP3RedIsClamped() throws {
+        #if canImport(UIKit)
+        // The premise, so the checks below cannot pass for want of it: UIKit reads the colour outside 0…1.
+        let stored = try CollectionProseAppearanceTests.storedColour(Self.displayP3Red)
+        let read = try CollectionProseAppearanceTests.under(dark: false) { CollectionProseAppearanceTests.components(stored) }
+        #expect(read.count == 3 && read[0] > 1 && read[1] < 0 && read[2] < 0, "UIKit reads the red as \(read)")
+        #endif
+        // Before the fix both were 116FFFFFFC7FFFFFFDA on iOS.
+        let dark = try CollectionProseAppearanceTests.exportedHex(Self.displayP3Red, dark: true)
+        let light = try CollectionProseAppearanceTests.exportedHex(Self.displayP3Red, dark: false)
+        #expect(dark == "FF0000")
+        #expect(light == "FF0000")
+    }
+
+    @Test("HTML and Word print the Display P3 red as FF0000")
+    @MainActor
+    func exportsPrintSixDigits() async throws {
+        // A name of its own: the tests run in parallel, and each export writes a file named after its collection.
+        let metadata = CollectionExportMetadata(name: "Outside sRGB \(UUID().uuidString)", note: nil)
+        let items: [CollectionExportItem] = [.prose(Data(Self.displayP3Red.utf8))]
+        let html = CollectionItemHTMLRenderer(options: CollectionExportOptions()).pageHTML(metadata: metadata, items: items)
+        #expect(html.contains("<p><span style=\"color:#FF0000\">Reddish</span></p>"))
+        let docx = try await DocxCollectionExporter().export(metadata: metadata, items: items)
+        defer { try? FileManager.default.removeItem(at: docx) }
+        // The package is written stored, so word/document.xml reads in its bytes.
+        let package = String(decoding: try Data(contentsOf: docx), as: UTF8.self)
+        #expect(package.contains(
+            "<w:rPr><w:color w:val=\"FF0000\"/></w:rPr><w:t xml:space=\"preserve\">Reddish</w:t>"))
+    }
+}

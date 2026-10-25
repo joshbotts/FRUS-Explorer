@@ -154,7 +154,7 @@ extension DocumentHighlight {
 extension DocumentHighlight {
 
     /// Serialisable snapshot of a single highlight, injected into `WKWebView` as JSON
-    /// so the CSS Custom Highlight API renderer (`frus-highlights.js`) can paint
+    /// so the CSS Custom Highlight API renderer (`kHighlightsJS`) can paint
     /// highlight ranges using the `FRUSOffsets.charToNode` map: FRUSCoreKit's `ReaderHighlight`,
     /// with its stale rule, under the name the app calls it by.
     typealias HighlightDTO = ReaderHighlight

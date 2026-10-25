@@ -37,6 +37,9 @@ import Crypto
 ///   1.1 — Session 2026-10-24 (FRUS Explorer Light, S15c's follow-up): `kHighlightsJS`'s pin
 ///          re-taken, and `rangeEndsAfterALineBreak`, when `buildRanges` came to end a range that
 ///          ends on a `<br>` after the element
+///   1.2 — Session 2026-10-25: `kHighlightsJS`'s pin re-taken, and
+///          `aHighlightThatCannotBeBuiltIsSkippedAlone`, when `buildRanges` came to build no range
+///          from a negative start and `render` to skip a highlight whose range throws
 @Suite("The reader's annotation scripts, as both hosts load them")
 struct ReaderAnnotationScriptTests {
 
@@ -48,12 +51,15 @@ struct ReaderAnnotationScriptTests {
     ///
     /// `kHighlightsJS`'s was re-taken on 2026-10-24, from 3,045 bytes to 3,344, when `buildRanges`
     /// came to end a range that ends on a `<br>` after the element, where `setEnd(br, 1)` threw and
-    /// the reader drew none of the document's highlights (`rangeEndsAfterALineBreak`).
+    /// the reader drew none of the document's highlights (`rangeEndsAfterALineBreak`). It was
+    /// re-taken again on 2026-10-25, to 3,557 bytes, when `buildRanges` came to build no range from
+    /// a negative start and `render` to skip a highlight whose range throws, where one such
+    /// highlight left the reader drawing none of the document's (`aHighlightThatCannotBeBuiltIsSkippedAlone`).
     static let pins: [(name: String, script: String, sha256: String, bytes: Int)] = [
         ("kOffsetEngineJS", kOffsetEngineJS,
          "a5899b4968614a86cc50b8faf3e5d1ddcf7a9f93f1c21f6b87a861fc23f0ef3b", 805),
         ("kHighlightsJS", kHighlightsJS,
-         "4c25b9dbe8d8a118578942e8733c4b6a680c09109db273f6090d15bc9e2cd569", 3_344),
+         "21c2f36e9b9652904cee90177897387e0cd6c7e4dc5ad35bb429dc7915e083de", 3_557),
         ("kSelectionJS", kSelectionJS,
          "0b99ea2a17a4f24f84465f5967acd4a14a968bbb753d5accc3aeb42e42477012", 8_549),
     ]
@@ -125,6 +131,23 @@ struct ReaderAnnotationScriptTests {
                                        + "  else range.setEnd(endEntry.node, endEntry.localOffset + 1);"))
         #expect(kHighlightsJS.components(separatedBy: "range.setEnd(").count == 2,
                 "the renderer ends a range at an offset in one place, the guarded line")
+    }
+
+    /// `render()` clears the page's highlights before it builds any, and the app's `renderHighlights(on:)` drops a
+    /// thrown error (`try?`), so a throw from one highlight's range left the reader drawing none of the document's.
+    /// A highlight stored with a `startOffset` below 0 threw one: `map[-1]` is undefined, and reading its node is a
+    /// `TypeError`. `buildRanges` now builds no range from a negative start, as from any other offset outside the
+    /// map, and `render` skips a highlight whose range throws for any other reason. `HighlightSkipRenderTests` draws
+    /// such highlights in WebKit, in Xcode.
+    @Test("The renderer builds no range from a negative start, and skips a highlight whose range throws")
+    func aHighlightThatCannotBeBuiltIsSkippedAlone() {
+        #expect(kHighlightsJS.contains(
+            "  if (start < 0 || start >= map.length || end > map.length || start >= end) return [];\n"))
+        #expect(kHighlightsJS.contains(
+            "      try { ranges = buildRanges(h.startOffset, h.endOffset); } catch (_) { continue; }\n"
+            + "      if (!ranges.length) continue;"))
+        #expect(kHighlightsJS.components(separatedBy: "buildRanges(").count == 3,
+                "the renderer builds a highlight's range in one place, inside the try")
     }
 
     @Test("The selection bridge reports offsets in the engine's map, and -1 for a footnote")

@@ -27,7 +27,7 @@ public enum HighlightColor: String, CaseIterable, Sendable {
 // MARK: - ReaderHighlight
 
 /// Serialisable snapshot of a single highlight, injected into `WKWebView` as JSON
-/// so the CSS Custom Highlight API renderer (`frus-highlights.js`) can paint
+/// so the CSS Custom Highlight API renderer (`kHighlightsJS`) can paint
 /// highlight ranges using the `FRUSOffsets.charToNode` map.
 ///
 /// `isStale` is computed at call time from the `renderingVersion` mismatch so the
