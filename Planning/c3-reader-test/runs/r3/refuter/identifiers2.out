@@ -1,0 +1,41 @@
+legend: {"keys": {"ar": {"field": "accessRestrictions", "into": "restrictions", "kind": "indexList"}, "as": {"field": "accessStatus", "into": "statuses", "kind": "index"}, "c": {"field": "creator", "into": "headings", "kind": "index"}, "cy0": {"field": "coverageStartYear", "kind": "year"}, "cy1": {"field": "coverageEndYear", "kind": "year"}, "fa": {"field": "findingAids", "into": "findingAidTypes", "kind": "indexList"}, "p": {"field": "predecessors", "into": "headings", "kind": "indexList"}, "ru": {"field": "referenceUnit", "into": "referenceUnits", "kind": "index"}, "ur": {"field": "useRestrictions", "into": "useRestrictions", "kind": "indexList"}, "us": {"field": "useStatus", "into": "statuses", "kind": "index"}, "x": {"field": "extent", "kind": "string"}, "y0": {"field": "inclusiveStartYear", "kind": "year"}, "y1": {"field": "inclusiveEndYear", "kind": "year"}}, "note": "Each `byNaId` row uses one-letter keys. `kind: index`/`indexList` values are offsets into the TOP-LEVEL array named by `into` — note that `as` and `us` share `statuses`, while `ar` uses `restrictions` and `ur` uses `useRestrictions`; the names do not tell you that. `y0`/`y1` are NARA's INCLUSIVE dates and `cy0`/`cy1` its COVERAGE dates, which it publishes for some series only. NEITHER PAIR CONTAINS THE OTHER: naId 604801 is inclusive 1963-1973 and coverage 1947-1964, and across 1,155 RG 59 series carrying both, coverage starts earlier in 880, the same year in 274 and LATER in 1. So a date screen must take the UNIO
+  as=3 -> statuses: 'Restricted - Possibly'
+  us=1 -> useRestrictions: 'Other'
+  ru=0 -> referenceUnits: 'National Archives at College Park - Textual Reference'
+  c=128 -> headings: 'Department of State. Bureau of Inter-American Affairs. Office of Central American and Panamanian Affairs.'
+  restrictions arr sample: ['FOIA (b)(1) National Security', 'FOIA (b)(3) Statute', 'FOIA (b)(6) Personal Information', 'FOIA (b)(4) Trade Secrets and Commercial or Financial Information', 'FOIA (b)(7e) Law Enforcement']
+  findingAidTypes sample: ['Folder List', 'Index', 'Container List']
+
+Central File id: 1 record(s)
+   id= txt:department of state|central file | name= Central Files | naId= None | RG= 59 | repo= Department of State | entry= None | dates= None | access= None
+
+Central Files 1964-66: 1 record(s)
+   id= txt:department of state|central files 1964-66 | name= Central Files 1964–66 | naId= None | RG= 59 | repo= Department of State | entry= None | dates= None | access= None
+
+CFPF ids: 2 record(s)
+   id= lot:12D215 | name= Lot 12D215: Executive Secretariat, A Bureau, Department of State Central Foreign | naId= None | RG= 59 | repo= Department of State | entry= None | dates= None | access= None
+   id= txt:department of state|central foreign policy file | name= Central Foreign Policy File | naId= None | RG= 59 | repo= Department of State | entry= None | dates= None | access= None
+
+Johnson NSF: 1 record(s)
+   id= txt:johnson library|national security file | name= National Security File | naId= None | RG= None | repo= Johnson Library | entry= None | dates= None | access= None
+
+Nixon NSC Files: 1 record(s)
+   id= txt:nixon|nsc file | name= NSC Files | naId= None | RG= None | repo= Nixon | entry= None | dates= None | access= None
+
+Whitman File records (name contains whitman): 6 record(s)
+   id= txt:eisenhower library|ann whitman file | name= Ann Whitman File | naId= None | RG= None | repo= Eisenhower Library | entry= None | dates= None | access= None
+   id= txt:eisenhower library|anne whitman file | name= Anne Whitman File | naId= None | RG= None | repo= Eisenhower Library | entry= None | dates= None | access= None
+   id= txt:eisenhower library|papers of dwight d. eisenhower as president | name= Papers of Dwight D. Eisenhower as President, 1953–1961, maintained by his person | naId= None | RG= None | repo= Eisenhower Library | entry= None | dates= None | access= None
+   id= txt:eisenhower library|papers of dwight d. eisenhower as president of the united state | name= Papers of Dwight D. Eisenhower as President of the United States, 1953–1961, mai | naId= None | RG= None | repo= Eisenhower Library | entry= None | dates= None | access= None
+   id= txt:eisenhower library|whitman file | name= Whitman File | naId= None | RG= None | repo= Eisenhower Library | entry= None | dates= None | access= None
+   id= txt:|whitman file | name= Whitman File | naId= None | RG= None | repo= None | entry= None | dates= None | access= None
+
+lot 63D127: 1 record(s)
+   id= lot:63D127 | name= OAP Files: Lot 63 D 127 | naId= 2363840 | RG= 59 | repo= Department of State | entry= None | dates= None | access= None
+
+all keys ever used on authority records: ['aliases', 'catalogURL', 'children', 'id', 'lotFileNorm', 'naId', 'name', 'recordGroup', 'repository', 'volumeIds']
+records with naId: 1014 of 3977
+
+lot-claimants mentions 63D127: False | 63 D 127: False
+
+volume-sources-index top keys: ['generated', 'lots', 'majorCollections', 'recordGroups', 'schemaVersion']

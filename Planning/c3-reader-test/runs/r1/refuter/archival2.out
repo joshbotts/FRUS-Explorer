@@ -1,0 +1,93 @@
+series-facts legend: {"keys": {"ar": {"field": "accessRestrictions", "into": "restrictions", "kind": "indexList"}, "as": {"field": "accessStatus", "into": "statuses", "kind": "index"}, "c": {"field": "creator", "into": "headings", "kind": "index"}, "cy0": {"field": "coverageStartYear", "kind": "year"}, "cy1": {"field": "coverageEndYear", "kind": "year"}, "fa": {"field": "findingAids", "into": "findingAidTypes", "kind": "indexList"}, "p": {"field": "predecessors", "into": "headings", "kind": "indexList"}, "ru": {"field": "referenceUnit", "into": "referenceUnits", "kind": "index"}, "ur": {"field": "useRestrictions", "into": "useRestrictions", "kind": "indexList"}, "us": {"field": "useStatus", "into": "statuses", "kind": "index"}, "x": {"field": "extent", "kind": "string"}, "y0": {"field": "inclusiveStartYear", "kind": "year"}, "y1": {"field": "inclusiveEndYear", "kind": "year"}}, "note": "Each `byNaId` row uses one-letter keys. `kind: index`/`indexList` values are offsets into the TOP-LEVEL array named by `into` — note that `as` and `us` share `statuses`, while `ar` uses `restrictions` and `ur` uses `useRestrictions`; the names do not tell you that. `y0`/`y1` are NARA's INCLUSIVE dates and `cy0`/`cy1` it
+statuses: ['Restricted - Fully', 'Unrestricted', 'Restricted - Partly', 'Restricted - Possibly', 'Undetermined']
+restrictions: ['FOIA (b)(1) National Security', 'FOIA (b)(3) Statute', 'FOIA (b)(6) Personal Information', 'FOIA (b)(4) Trade Secrets and Commercial or Financial Information', 'FOIA (b)(7e) Law Enforcement', 'FOIA (b)(7) Law Enforcement', 'FOIA (b)(9) Geological or Geophysical Information and Data', 'FOIA (b)(2) Internal Personnel Rules and Practices']
+useRestrictions: ['Copyright', 'Other']
+headings sample: ["Board of Foreign Scholarships.", "Department of Defense. Office of the Deputy Secretary of Defense.", "Department of State.", "Department of State. Agency for International Development. Bureau for Vietnam.", "Department of State. Bureau of Administration. Management Staff.", "Department of State. Bureau of Administration. Office of Personnel. Personnel Operations Division.", "Department of State. Bureau of Administration. Office of the Deputy Assistant Secretary for Operations. Office of Special Services. Division of Language Services.", "Department of State. Bureau of African Affairs.", "De
+byNaId rows: 698
+example 102260314 {"ar": [0], "as": 0, "c": 376, "ru": 0, "us": 1, "x": "11 linear feet, 8 linear inches", "y0": 1962, "y1": 1985}
+byNaId[1151288] = {"as": 1, "c": 326, "ru": 0, "us": 1, "x": "1 linear foot, 9 linear inches", "y0": 1947, "y1": 1949}
+byNaId[1136548] = {"as": 1, "c": 341, "ru": 0, "us": 1, "x": "5 linear feet, 3 linear inches", "y0": 1947, "y1": 1962}
+byNaId[2198167] = {"ar": [0], "as": 2, "c": 341, "ru": 0, "ur": [0], "us": 3, "x": "48 linear feet, 7 linear inches", "y0": 1948, "y1": 1961}
+byNaId[2838991] = null
+byNaId[2838992] = {"ar": [0], "as": 2, "c": 341, "ru": 0, "ur": [0], "us": 3, "x": "3 linear feet, 1 linear inch", "y0": 1948, "y1": 1961}
+byNaId[2108779] = {"as": 1, "c": 149, "ru": 0, "us": 1, "x": "7 linear feet", "y0": 1957, "y1": 1959}
+byNaId[2363840] = {"as": 3, "c": 128, "ru": 0, "us": 1, "x": "3 linear feet, 6 linear inches", "y0": 1955, "y1": 1963}
+byNaId[1750062] = {"ar": [0], "as": 2, "c": 127, "p": [128], "ru": 0, "ur": [0], "us": 3, "x": "3 linear feet, 1 linear inch", "y0": 1958, "y1": 1975}
+byNaId[26309336] = {"ar": [0], "as": 2, "c": 123, "cy0": 1963, "cy1": 1978, "p": [129], "ru": 0, "us": 1, "x": "5 linear feet, 3 linear inches", "y0": 1964, "y1": 1978}
+byNaId[1164] = null
+byNaId[193236] = null
+byNaId[567979] = null
+byNaId[567985] = null
+byNaId[572235] = null
+byNaId[572247] = null
+byNaId[12024796] = null
+byNaId[1191] = null
+byNaId[6207697] = null
+byNaId[593313] = null
+byNaId[603720] = null
+byNaId[654171] = null
+   1151288 c=326 -> None
+   2198167 c=341 -> None
+   2838992 c=341 -> None
+   2108779 c=149 -> None
+   2363840 c=128 -> None
+   1750062 c=127 -> None
+   26309336 c=123 -> None
+
+lot-claimants note: NARA series that claim a FRUS lot number, for the lots where more than one does. NARA divides lot files across series and consolidates several into one, so a lot with several claimants has several correct answers; Source Explorer shows them as candidates rather than picking. Built offline from the record-group harvest with the app's own LotResolutionAcceptance rule.
+lot 62D1: 3 claimants: [('2198167', 'Alphabetical Files', '1948–1961', ['A1 1583A', 'A1 1583B']), ('2838991', 'Numerical Files', '1947–1961', ['A1 1583C', 'A1 1583D']), ('2838992', 'Records Relating to Activities with the National Security Council', '1948–1961', ['A1 1583E', 'A1 1583F'])]
+lot 64D563: 12 claimants: [('1136548', 'Chronological Files', '1947–1962', ['A1 558-D']), ('1151288', 'Numbered Staff Studies', '1947–1949', ['A1 558-A']), ('1151314', 'Subject Files', '1947–1962', ['A1 558-B']), ('1151315', 'Country Files', '1947–1962', ['A1 558-CA']), ('1151881', 'Record Copies Files', '1947–1962', ['A1 558-E']), ('1154560', 'Member Chronological Files', '1947–1962', ['A1 558-F']), ('1154562', 'Working Papers', '1947–1961', ['A1 558-G']), ('1154583', 'Meeting Minutes', '1947–1962', ['A1 558-H']), ('7432703', 'Area Files', '1947–1962', ['A1 558-CB']), ('7433609', 'Notes of Meetings', '1947–1953', ['A1 558-I']), ('7433611', 'Records Relating to Meetings with the Department of Defense and the Joint Chiefs of Staff', '1947–1962', ['A1 558-J']), ('7433905', 'Speeches and Articles', '1947–1962', ['A1 558-L'])]
+
+subject-numeric schedules: [('1963', ['abbreviations', 'areas', 'categories', 'endYear', 'id', 'organizationSubjects', 'source', 'startYear']), ('1964-1973', ['abbreviations', 'areas', 'categories', 'endYear', 'id', 'organizationSubjects', 'source', 'startYear'])]
+  POL\s*16\b: 0 hits
+  POL\s*26\b: 0 hits
+  POL\s*23-9\b: 0 hits
+  INDEPENDENCE: 1 hits
+     ... ive Branch.", "15-2": "Legislature", "15-3": "Judiciary", "15-4": "Administration of Government", "15-5": "Constitution", "15-6": "National Symbols. Anthem.", "15-7": "Church-State Relations", "16": "INDEPENDENCE. RECOGNITION.", "17": "DIPLOMATIC & CONSULAR REPRESENTATION", "17-1": "Acceptability & Accreditation", "17-2": "Immunities. Privileges.", "17-3": "Diplomatic & ...
+  REBELLION: 1 hits
+     ... 1": "Plans", "23-2": "Forces", "24": "SUBVERSION. ESPIONAGE. SABOTAGE.", "25": "DEMONSTRATIONS. PROTESTS. RIOTS.", "25-1": "Anti-Gove rnment", "25-2": "Pro-Government", "25-3": "Anti-Foreign", "26": "REBELLION. COUPS. INSURGENCY.", "26-1": "Counter-Insurgency", "27": "MILITARY OPERATIONS", "27-1": "Invasion", "27-10": "Chemical & Germ Warfare", "27-11": "Guerrilla Wa ...
+  Rebellion\. Coups: 1 hits
+     ... -3": "Forces. Organizations.", "23-4": "Espionage", "23-5": "Laws & Regulations", "23-6": "Agents", "23-7": "Infiltration. Subversion. Sabotage.", "23-8": "Demonstrations. Riots. Protests.", "23-9": "Rebellion. Coups.", "24": "SANCTIONS", "27": "MILITARY OPERATIONS", "27-1": "Invasion", "27-10": "Chemical & Germ Warfare", "27-11": "Guerrilla Warfare", "27-12": "War Crimes & ...
+
+collection-authority collections: 3977 keys: ['aliases', 'id', 'lotFileNorm', 'name', 'repository', 'volumeIds']
+collections naming the central/decimal file: 67
+    {'id': 'lot:62D181', 'name': 'Conference Files: Lot 62 D 181', 'recordGroup': '59', 'repository': 'Department of State'}
+    {'id': 'lot:62F69', 'name': 'Cited as Lot 62 F 69. Classified and unclassified central files of the Embassy in the Republic of Korea for 1956–1958.', 'recordGroup': '59', 'repository': 'Department of State'}
+    {'id': 'lot:65D473', 'name': 'SCI Files: Lot 65 D 473', 'naId': '2679376', 'recordGroup': '59', 'repository': 'Department of State'}
+    {'id': 'lot:72D415', 'name': 'Geneva Talks Files: Lot 72 D 415', 'naId': '16839115', 'recordGroup': '59', 'repository': 'Department of State'}
+    {'id': 'txt:carter library|white house central file', 'name': 'White House Central Files', 'repository': 'Carter Library'}
+    {'id': 'txt:department of state|central decimal file 1910-1929', 'name': 'Central Decimal File 1910–1929', 'recordGroup': '59', 'repository': 'Department of State'}
+    {'id': 'txt:department of state|central file', 'name': 'Central Files', 'recordGroup': '59', 'repository': 'Department of State'}
+    {'id': 'txt:department of state|central files 1950-1954', 'name': 'Central Files 1950–1954', 'recordGroup': '59', 'repository': 'Department of State'}
+    {'id': 'txt:department of state|central files 1964-66', 'name': 'Central Files 1964–66', 'recordGroup': '59', 'repository': 'Department of State'}
+    {'id': 'txt:department of state|central files 1964-67', 'name': 'Central Files 1964–67', 'recordGroup': '59', 'repository': 'Department of State'}
+    {'id': 'txt:department of state|central files 1967-1969', 'name': 'Central Files 1967–1969', 'recordGroup': '59', 'repository': 'Department of State'}
+    {'id': 'txt:department of state|central files 1967-69', 'name': 'Central Files 1967–69', 'recordGroup': '59', 'repository': 'Department of State'}
+collections naming subject-numeric/central files 1963-73: 13 [('Central Files', None), ('Central Files 1964–66', None), ('Central Files 1964–67', None), ('Central Files 1967–1969', None), ('Central Files 1967–69', None), ('Central Files 1970–1973', None), ('Central Files 1970–73', None), ('Decimal and Subject-Numeric Indexed Central Files', None)]
+volume-sources recordGroups: {"107": {"catalogURL": "https://catalog.archives.gov/id/436", "matchType": "api", "naId": "436", "recordGroup": "107", "title": "Records of the Office of the Secretary of War"}, "16": {"catalogURL": "https://catalog.archives.gov/id/345", "matchType": "api", "naId": "345", "recordGroup": "16", "title": "Records of the Office of the Secretary of Agriculture"}, "170": {"catalogURL": "https://catalog.archives.gov/id/499", "matchType": "api", "naId": "499", "recordGroup": "170", "title": "Records of the Drug Enforcement Administration"}, "185": {"catalogURL": "https://catalog.archives.gov/id/514", 
+volume-sources majorCollections naming central file: [('Central Files. See National Archives and Records Administration below.', 48, None), ('Central Files. See Record Group 59 under National Archives and Records Administration below.', 5, None), ('Central Files', 4, None), ('Lot Files. Documents from the central files have been supplemented by lot files of the Department, which are decentralized files created by operating areas. A list of the lot files used in or consulted for this volume follows:', 4, None), ('Subject-Numeric Indexed Central Files', 4, None), ('Central Files. See Record Group 59 under National Archives and Records Administration below', 3, None)]
+
+catalog source: apiV2 generated 2026-08-06
+Kennedy Library JFK-4 naId 1164 'Papers of John F. Kennedy: Presidential Papers: National Security Files' statedSeriesCount 17 series listed 17 keys ['identifier', 'naId', 'series', 'statedSeriesCount', 'title']
+    series keys: ['inclusiveDates', 'naId', 'title'] | inclusiveDates: ['1961–1963', '1961–1963', '1961–1963', '1961–1963', '1961–1963', '1961–1963', '1961–1963', '1961–1963', '1961–1963', '1961–1963', '1961–1963', '1961–1963']
+Johnson Library LBJ-NSF naId 567979 'National Security Files' statedSeriesCount 48 series listed 48 keys ['identifier', 'naId', 'series', 'statedSeriesCount', 'title']
+    series keys: ['inclusiveDates', 'naId', 'title'] | inclusiveDates: ['1963–1969', '1963–1969', '1963–1969', '1963–1969', '1963–1969', '1963–1969', '1963–1969', '1963–1969', '1963–1969', '1963–1969', '1968–1969', '1965–1968']
+Nixon RN-NSF naId 572235 'National Security Files (Nixon Administration)' statedSeriesCount 4 series listed 4 keys ['identifier', 'naId', 'series', 'statedSeriesCount', 'title']
+    series keys: ['inclusiveDates', 'naId', 'title'] | inclusiveDates: ['1969–1974', '1969–1974', '1969–1974', '1969–1975']
+Reagan Library RR-0313 naId 12024796 'Records of the National Security Council, Latin American Affairs Directorate (Reagan Administration)' statedSeriesCount 11 series listed 11 keys ['identifier', 'naId', 'series', 'statedSeriesCount', 'title']
+    series keys: ['inclusiveDates', 'naId', 'title'] | inclusiveDates: ['1983–1989', '1984–1988', '1984–1986', '1987–1988', '1983–1985', '1987–1988', '1987–1988', '1984–1988', '1984–1988', '1984–1988', '1984–1988']
+       12025085 General Office Files 1983–1989
+       56020916 Jacqueline Tillman's Administrative Files 1984–1988
+       56918737 Nick Klissas's Office Files 1984–1986
+       56918790 Ludlow Flower's Country Files 1987–1988
+       56918791 Constantine C. Menges' Office Files 1983–1985
+       75822187 Robert Pastorino's Office Files 1987–1988
+       177989799 Ludlow Flower's Panama: Cables Files 1987–1988
+       178331403 Jacqueline Tillman's Notes Files 1984–1988
+       178331404 Jacqueline Tillman's Chronological Files 1984–1988
+       178331405 Jacqueline Tillman's Audiovisual Files 1984–1988
+       178331406 Jacqueline Tillman's Subject Files 1984–1988
+all catalog keys: ['identifier', 'naId', 'series', 'series.inclusiveDates', 'series.naId', 'series.title', 'statedSeriesCount', 'title']
+
+distinct lot numbers cited by candidates' footnotes: 38
+resolved in central-files-index.json: 32 | unresolved: ['61D386', '62D230', '64D559', '64D560', '69D371', '69D665'] | resolved whose series-facts heading names Inter-American Affairs: 0

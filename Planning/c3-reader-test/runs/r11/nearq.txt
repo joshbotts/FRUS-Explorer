@@ -1,0 +1,1 @@
+body_text:(NEAR(recogni* junta, 6) OR NEAR(recogni* regime, 6) OR NEAR(recogni* "new government", 6) OR NEAR(recogni* "provisional government", 6) OR NEAR(recogni* "de facto", 6) OR NEAR(recogni* "military government", 6))

@@ -1,0 +1,55 @@
+scope_final.tsv distinct pairs 940 volumes 87 Ed2 volumes []
+scope rows in document_cache / apparatus among them: [(940, 0, 0)]
+chap_docs rows 2374 after false-chapter removal 2338 distinct 2338
+chap non-apparatus: [(2337,)]
+Path A (chap AND recogni*, non-apparatus): 592 volumes 36
+  equals scopeA.tsv: True 592
+NEAR hits non-apparatus corpus-wide: 1772
+latam_docs.tsv pairs 59654 modvols 20
+Path B: 346 equals scopeB.tsv: False 346
+A|B|C: 940 volumes 87 equals scope_final: True C overlaps A/B: set()
+C1 phrase search: [('frus1913', 'd7'), ('frus1913', 'd260'), ('frus1950v02', 'd330')]
+C2 phrase search: [('frus1948v09', 'd74'), ('frus1948v09', 'd89'), ('frus1948v09', 'd119'), ('frus1949v02', 'd454'), ('frus1949v04', 'd423'), ('frus1950v03', 'd679')]
+scope date span: [('1863-09-21', '1980-10-01', 940, 0)]
+  min/max pairs: [('frus1865p3', 'd695', '1863-09-21'), ('frus1868p2', 'd632', '1867-08-17')] [('frus1977-80v24', 'd115', '1980-10-01'), ('frus1977-80v15', 'd294', '1979-07-20')]
+  1860s scope 4 of 11268 = 0.35/1000
+  1870s scope 3 of 5821 = 0.52/1000
+  1880s scope 10 of 6484 = 1.54/1000
+  1890s scope 17 of 9845 = 1.73/1000
+  1900s scope 15 of 10261 = 1.46/1000
+  1910s scope 144 of 30842 = 4.67/1000
+  1920s scope 122 of 20374 = 5.99/1000
+  1930s scope 240 of 40073 = 5.99/1000
+  1940s scope 249 of 75872 = 3.28/1000
+  1950s scope 39 of 42801 = 0.91/1000
+  1960s scope 76 of 27654 = 2.75/1000
+  1970s scope 20 of 22258 = 0.90/1000
+  1980s scope 1 of 6038 = 0.17/1000
+1980s corpus dated non-apparatus (Ed2 excluded): 6038 ; with Ed2: [(6038,)]
+CAME-FROM rows for scope: [(894,)]
+  citation_era: [('decimal', 803), ('structured', 53), ('subject_numeric', 15), ('lot_file', 13), ('cfpf', 5), ('named_series', 4), ('published', 1)]
+  record_group: [('59', 837), (None, 55), ('330', 2)]
+  decimal-era docs date span: [('1907-07-04', '1963-01-24', 803)]
+  RG59 docs date span: [('1907-07-04', '1980-10-01', 837)]
+  decimal AND RG59: [(803,)]
+  repository Department of State: [(825,)]
+  decimal rows with class: 771
+  dated 1910-1949: 726 outside: 45
+  8xx.01 Government: 287  8xx.00 Political affairs: 341  class 7: 69  parsed total: 723
+  top keys: [('816.01', 108), ('812.00', 90), ('824.00', 66), ('824.01', 45), ('835.01', 35), ('818.00', 34), ('822.01', 23), ('814.01', 21), ('835.00', 20), ('823.00', 19)]
+  top keys, all dates: [('816.01', 108), ('812.00', 90), ('824.00', 66), ('824.01', 45), ('835.01', 35), ('818.00', 34), ('822.01', 23), ('814.01', 21), ('835.00', 20), ('823.00', 19)]
+POINTED-AT inherited=0 rows / docs: [(90, 66)]
+  anchors: [('centralFileClass', 75), ('lotFile', 11), ('presidentialLibrary', 4)]
+  incl. inherited rows/docs: [(91, 66)]
+  earliest external_citations document date corpus-wide: [('1910-12-06',)]  earliest with inherited=0: [('1910-12-06',)]
+  earliest scope pointed-at: [('1915-10-22',)]
+Estrada doctrine FTS rows: [(28,)]  non-apparatus: [(28,)]  in Ed2 volumes: [(0,)]
+  earliest: [('frus1931v02', 'd228', '1931-12-16', 0), ('frus1932v05', 'd546', '1932-09-02', 0), ('frus1933v05', 'd370', '1933-09-09', 0)]
+  Estrada AND recogni* dated 1929-01-01..1931-06-30 non-apparatus: [('frus1929v03', 'd657', '1929-02-21'), ('frus1932v05', 'd775', '1931-06-20')]
+  same, apparatus allowed (log's form, is_front_matter=0 only): [(2,)]
+NEAR(recogni* states governments,4) >=1969 non-apparatus: [('frus1969-76ve04/d319', '1972-07-05'), ('frus1969-76ve11p1/d434', '1973-06-25'), ('frus1969-76ve11p2/d123', '1975-10-18'), ('frus1977-80v22/d282', '1978-06-27'), ('frus1977-80v22/d285', '1978-10-01'), ('frus1977-80v23/d312', '1979-02-22'), ('frus1977-80v23/d329', '1979-10-27'), ('frus1977-80v22/d290', '1980-07-30')]
+  recogni*               chapters 592 of 2337 (0.253)  corpus 16951 of 312169 (0.054)
+  "by force"             chapters 35 of 2337 (0.015)  corpus 4263 of 312169 (0.014)
+  "Department of State"  chapters 497 of 2337 (0.213)  corpus 94049 of 312169 (0.301)
+controls: positive>0 in 87 of 87 min (22, 'frus1952-54Guat') negative [(0,)]
+87 volumes: ['frus1865p3', 'frus1868p2', 'frus1875v02', 'frus1878', 'frus1881', 'frus1883', 'frus1886', 'frus1887', 'frus1889', 'frus1890', 'frus1891', 'frus1892', 'frus1894', 'frus1895p1', 'frus1899', 'frus1900', 'frus1903', 'frus1904', 'frus1907p2', 'frus1910', 'frus1911', 'frus1912', 'frus1913', 'frus1914', 'frus1914-20v02', 'frus1915', 'frus1916', 'frus1917', 'frus1917Supp01v01', 'frus1918', 'frus1919v01', 'frus1919v02', 'frus1920v01', 'frus1920v02', 'frus1920v03', 'frus1921v01', 'frus1921v02', 'frus1922v02', 'frus1923v01', 'frus1923v02', 'frus1924v01', 'frus1924v02', 'frus1925v02', 'frus1926v02', 'frus1928v02', 'frus1929v01', 'frus1930v01', 'frus1930v03', 'frus1931v02', 'frus1932v05', 'frus1933v05', 'frus1934v04', 'frus1934v05', 'frus1935v04', 'frus1936v05', 'frus1937v05', 'frus1939v05', 'frus1940v05', 'frus1943v05', 'frus1944v07', 'frus1945v09', 'frus1946v11', 'frus1947v08', 'frus1948v09', 'frus1949v02', 'frus1950v02', 'frus1951v02', 'frus1952-54Guat', 'frus1952-54v04', 'frus1955-57v06', 'frus1955-57v07', 'frus1958-60v05', 'frus1958-60v05mSupp', 'frus1958-60v06', 'frus1961-63v10', 'frus1961-63v10-12mSupp', 'frus1961-63v12', 'frus1961-63v15', 'frus1964-68v31', 'frus1964-68v32', 'frus1969-76v21', 'frus1969-76ve10', 'frus1969-76ve11p1', 'frus1969-76ve11p2', 'frus1977-80v15', 'frus1977-80v23', 'frus1977-80v24']

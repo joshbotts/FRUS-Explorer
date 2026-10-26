@@ -1,0 +1,70 @@
+OVERVIEW QUOTED STRINGS: 29
+ 1. @569 pair=('frus1900', 'd530') len=120 :: to base the recognition of a foreign government solely on its de facto ability to hold the reins of administra
+ 2. @1043 pair=('frus1913', 'd7') len=155 :: Cooperation is possible only when supported at every turn by the orderly processes of just government based up
+ 3. @1453 pair=('frus1921v02', 'd344') len=189 :: when it appears that there is a government in Mexico willing to bind itself to the discharge of primary intern
+ 4. @4306 pair=None len=25 :: Subject and Country Files
+ 5. @4507 pair=None len=20 :: Restricted, possibly
+ 6. @5296 pair=None len=21 :: policy of recognition
+ 7. @5321 pair=None len=18 :: recognition policy
+ 8. @5346 pair=None len=23 :: question of recognition
+ 9. @5484 pair=None len=19 :: Department of State
+10. @7099 pair=None len=22 :: came to power by force
+11. @7509 pair=None len=11 :: recognition
+12. @8598 pair=('frus1911', 'd353') len=65 :: communicate satisfactory assurances to this end to the Department
+13. @8982 pair=('frus1917', 'd379') len=141 :: no Government except such as may be elected legally and established according to the Constitution shall be con
+14. @9833 pair=('frus1920v03', 'd199') len=195 :: Recognition cannot be accomplished by inference merely but by the full and formal entrance into international 
+15. @10398 pair=('frus1921v02', 'd349') len=79 :: In entering into this treaty with you recognition would be effected, ipso facto
+16. @11342 pair=('frus1926v02', 'd476') len=113 :: has adopted the principles of that Treaty as its policy in the future recognition of Central American Governme
+17. @11905 pair=('frus1930v01', 'd375') len=172 :: the evidence has satisfied me that these provisional governments are de facto in control of their respective c
+18. @12418 pair=('frus1931v02', 'd208') len=133 :: if the Vice President was a leader in the coup d’état or revolution, under the terms of the treaty of 1923 he 
+19. @12925 pair=('frus1933v05', 'd508') len=189 :: We have maintained that the criteria of Cuban recognition are: (1) popular support, and (2) ability to maintai
+20. @13444 pair=('frus1933v05', 'd430') len=167 :: if we recognize a government now which does not possess at least a considerable measure of popular support we 
+21. @13938 pair=('frus1934v05', 'd75') len=15 :: a great mistake
+22. @14864 pair=('frus1944v07', 'd403') len=185 :: All of the nineteen republics participating in the consultations and exchange of information regarding the Bol
+23. @15335 pair=('frus1948v09', 'd7') len=171 :: Recognition of a government by the United States should imply neither approval nor disapproval of the policies
+24. @15971 pair=('frus1961-63v12', 'd423') len=215 :: Some civilianizing of Cabinet, provided civilian members were known for dedication to constitutional processes
+25. @16421 pair=('frus1964-68v31', 'd152') len=201 :: Barrientos and his principal advisers have privately pledged that communist influence will be reduced and even
+26. @16971 pair=('frus1969-76ve08', 'd6') len=92 :: the Department’s policy is to minimize to the greatest extent possible recognition questions
+27. @17477 pair=None len=57 :: Recognition of the Leguia government by the United States
+28. @17750 pair=None len=11 :: recognition
+29. @18912 pair=None len=76 :: Recognizing governments that came to power by force in Latin America: run r3
+
+COLLECTION EXCERPTS: 37
+OK     frus1900/d530 off=906 len=120 :: to base the recognition of a foreign government solely on its de facto ability t
+OK     frus1911/d353 off=624 len=139 :: take no steps looking to the recognition of a new government until he can commun
+OK     frus1913/d7 off=687 len=156 :: Cooperation is possible only when supported at every turn by the orderly process
+OK     frus1913/d894 off=1793 len=122 :: A distinction may be drawn between de facto relations with a de facto government
+OK     frus1917/d379 off=786 len=141 :: no Government except such as may be elected legally and established according to
+OK     frus1917/d407 off=622 len=191 :: by the express direction of the President of the United States you are instructe
+OK     frus1919v01/d869 off=434 len=209 :: any person elected to the position of president of Costa Rica in free, open elec
+OK     frus1920v03/d199 off=916 len=196 :: Recognition cannot be accomplished by inference merely but by the full and forma
+OK     frus1921v02/d344 off=3021 len=189 :: when it appears that there is a government in Mexico willing to bind itself to t
+OK     frus1921v02/d349 off=5422 len=80 :: In entering into this treaty with you recognition would be effected, ipso facto.
+OK     frus1923v02/d481 off=2155 len=208 :: it was deemed important, in order to avoid a serious crisis, that there should b
+OK     frus1926v02/d476 off=1664 len=131 :: The United States has adopted the principles of that Treaty as its policy in the
+OK     frus1930v01/d375 off=987 len=172 :: the evidence has satisfied me that these provisional governments are de facto in
+OK     frus1930v01/d476 off=724 len=118 :: In the cases of Argentina, Bolivia, and Peru we recognized upon the frank basis 
+OK     frus1931v02/d208 off=1618 len=133 :: if the Vice President was a leader in the coup d’état or revolution, under the t
+OK     frus1932v05/d478 off=332 len=245 :: whether the de facto Government can satisfy the usual requirements of internatio
+OK     frus1934v05/d218 off=381 len=99 :: existing non-recognition policy had good effect in keeping down revolutions and 
+OK     frus1933v05/d430 off=3637 len=167 :: if we recognize a government now which does not possess at least a considerable 
+OK     frus1933v05/d508 off=200 len=190 :: We have maintained that the criteria of Cuban recognition are: (1) popular suppo
+OK     frus1934v05/d75 off=1843 len=171 :: recognition of the present regime in Cuba would be a great mistake; that the sen
+OK     frus1943v05/d142 off=492 len=130 :: For the immediate present the Department proposes to withhold action authorizing
+OK     frus1943v05/d34 off=614 len=248 :: they do not proceed to the recognition of a new government instituted by force, 
+OK     frus1944v07/d403 off=296 len=186 :: All of the nineteen republics participating in the consultations and exchange of
+OK     frus1945v09/d1170 off=348 len=121 :: that it enjoys general support without active opposition and (3) that it intends
+OK     frus1948v09/d7 off=10051 len=172 :: Recognition of a government by the United States should imply neither approval n
+OK     frus1949v02/d446 off=875 len=156 :: This purpose, as I understand it, is to separate the fact of recognition or non-
+OK     frus1949v02/d448 off=713 len=85 :: the present government apparently intends to live up to its international commit
+OK     frus1955-57v06/d354 off=962 len=233 :: does not wish to find itself recognizing a new de facto regime every few weeks a
+OK     frus1958-60v05mSupp/es_d33 off=2389 len=133 :: withholding of recognition, at least until the situation clarifies, in fact plac
+OK     frus1958-60v05mSupp/es_d40 off=1456 len=196 :: he has reported that Osorio seems to be the key figure behind the present Govern
+OK     frus1961-63v12/d421 off=5114 len=118 :: It is of great importance to have the junta reaffirm, publicly and with emphasis
+OK     frus1961-63v12/d423 off=2010 len=216 :: Some civilianizing of Cabinet, provided civilian members were known for dedicati
+OK     frus1964-68v31/d152 off=1886 len=202 :: Barrientos and his principal advisers have privately pledged that communist infl
+OK     frus1964-68v31/d141 off=1852 len=229 :: We also indicated informally to the Argentine authorities that public statements
+OK     frus1964-68v31/d518 off=755 len=53 :: It has met all the traditional tests for recognition.
+OK     frus1969-76ve08/d6 off=1471 len=92 :: the Department’s policy is to minimize to the greatest extent possible recogniti
+OK     frus1969-76v21/d358 off=1454 len=148 :: it instructs our Ambassador to tell the Junta that we will be responding affirma
+excerpt failures: 0

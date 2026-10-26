@@ -1,0 +1,48 @@
+manifest entries: 553 keys: ['dateRange', 'editors', 'filename', 'publicationDate', 'sizeBytes', 'status', 'subseries', 'tags', 'title', 'volumeId']
+frus1895p1: title='Papers Relating to the Foreign Relations of the United\n                    States, With the Annual Message of the President, Transmitted to Congress\n                    December 2, 1895, Part I' | subseries='1895' | volume=None | status=published
+frus1913: title='Papers Relating to the Foreign Relations of the United\n                    States, With the Address of the President to Congress December 2, 1913' | subseries='1913' | volume=None | status=published
+frus1930v01: title='Papers Relating to the Foreign Relations of the United\n                    States, 1930, Volume I' | subseries='1930' | volume=None | status=published
+frus1936v05: title='Foreign Relations of the United States, Diplomatic Papers,\n                    1936, The American Republics, Volume V' | subseries='1936' | volume=None | status=published
+frus1948v09: title='Foreign Relations of the United States, 1948, The Western\n                    Hemisphere, Volume IX' | subseries='1948' | volume=None | status=published
+frus1949v02: title='Foreign Relations of the United States, 1949, The United\n                    Nations; The Western Hemisphere, Volume II' | subseries='1949' | volume=None | status=published
+frus1917: title='Papers Relating to the Foreign Relations of the United\n                    States, With the Address of the President to Congress December 4, 1917' | subseries='1917' | volume=None | status=published
+frus1932v05: title='Foreign Relations of the United States, Diplomatic Papers,\n                    1932, The American Republics, Volume V' | subseries='1932' | volume=None | status=published
+frus1920v03: title='Papers Relating to the Foreign Relations of the United\n                    States, 1920, Volume III' | subseries='1920' | volume=None | status=published
+frus1921v02: title='Papers Relating to the Foreign Relations of the United\n                    States, 1921, Volume II' | subseries='1921' | volume=None | status=published
+frus1943v05: title='Foreign Relations of the United States, Diplomatic Papers,\n                    1943, The American Republics, Volume V' | subseries='1943' | volume=None | status=published
+frus1944v07: title='Foreign Relations of the United States, Diplomatic Papers,\n                    1944, The American Republics, Volume VII' | subseries='1944' | volume=None | status=published
+frus1958-60v06: title='Foreign Relations of the United States, 1958–1960, Cuba,\n                    Volume VI' | subseries='1958-60' | volume=None | status=published
+frus1961-63v12: title='Foreign Relations of the United States, 1961–1963, Volume\n                    XII, American Republics' | subseries='1961-63' | volume=None | status=published
+frus1969-76v21: title='Foreign Relations of the United States, 1969–1976, Volume\n                    XXI, Chile, 1969–1973' | subseries='1969-76' | volume=None | status=published
+
+1981-88 volumes in manifest:
+  frus1981-88v01: Foreign Relations of the United States, 1981–1988, Volume I,
+                    Foundations of Foreign Policy
+  frus1981-88v03: Foreign Relations of the United States, 1981–1988, Volume
+                    III, Soviet Union, January 1981–January 1983
+  frus1981-88v04: Foreign Relations of the United States, 1981–1988, Volume IV,
+                    Soviet Union, January 1983–March 1985
+  frus1981-88v05: Foreign Relations of the United States, 1981–1988, Volume V,
+                    Soviet Union, March 1985–October 1986
+  frus1981-88v06: Foreign Relations of the United States, 1981–1988, Volume VI,
+                    Soviet Union, October 1986–January 1989
+  frus1981-88v10: Foreign Relations of the United States, 1981–1988, Volume X,
+                    Eastern Europe
+  frus1981-88v11: Foreign Relations of the United States, 1981–1988, Volume XI,
+                    START I
+  frus1981-88v13: Foreign Relations of the United States, 1981–1988, Volume
+                    XIII, Conflict in the South Atlantic, 1981–1984
+  frus1981-88v16: Foreign Relations of the United States, 1981–1988, Volume
+                    XVI, South America
+  frus1981-88v24: Foreign Relations of the United States, 1981–1988, Volume
+                    XXIV, North Africa
+  frus1981-88v38: Foreign Relations of the United States, 1981–1988, Volume
+                    XXXVIII, International Economic Development; International Debt; Foreign
+                    Assistance
+  frus1981-88v41: Foreign Relations of the United States, 1981–1988, Volume
+                    XLI, Global Issues II
+  frus1981-88v44p1: Foreign Relations of the United States, 1981–1988, Volume
+                    XLIV, Part 1, National Security Policy, 1985–1988
+index: distinct frus1981% volumes: 13
+manifest volume count: 553 | index volume count: 553
+Ed2 volumes in index: ['frus1951-54IranEd2', 'frus1969-76ve15p2Ed2', 'frus1977-80v09Ed2']

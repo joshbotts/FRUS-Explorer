@@ -1,0 +1,14 @@
+#!/bin/bash
+# q [sqlite3 options] "SQL" -- append the statement to queries.log as one re-runnable line, then run it read-only on the index copy
+DB=/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db
+LOG=/Users/jbotts/frus-analysis/c3/runs/r1/queries.log
+n=$#
+if [ "$n" -lt 1 ]; then echo "usage: q [opts] SQL" >&2; exit 2; fi
+SQL="${!n}"
+OPTS=("${@:1:$((n-1))}")
+optstr=""
+for o in "${OPTS[@]}"; do optstr+="$o "; done
+one=$(printf '%s' "$SQL" | tr '\n\t' '  ' | sed -E 's/  +/ /g')
+esc=$(printf '%s' "$one" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\$/\\$/g' -e 's/`/\\`/g')
+printf 'sqlite3 -readonly %s%s "%s"\n' "$optstr" "$DB" "$esc" >> "$LOG"
+exec sqlite3 -readonly "${OPTS[@]}" "$DB" "$SQL"

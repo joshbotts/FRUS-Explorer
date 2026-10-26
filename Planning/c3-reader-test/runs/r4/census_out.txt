@@ -1,0 +1,9 @@
+Estrada doctrine | FTS hits 28 | STRICT 27 of 28 | TOLERANT 27 of 28 | frus1931v02/d228 frus1932v05/d546 frus1933v04/d56 frus1933v05/d370 frus1934v05/d232 frus1936v02/d523 frus1936v05/d755 frus1943v05/d334 frus1943v05/d484 frus1944v07/d1099 frus1944v07/d1142 frus1944v07/d440
+Betancourt doctrine | FTS hits 3 | STRICT 3 of 3 | TOLERANT 3 of 3 | frus1964-68v31/d32 frus1964-68v31/d531 frus1969-76ve11p2/d370
+Stimson doctrine | FTS hits 10 | STRICT 10 of 10 | TOLERANT 10 of 10 | frus1931-41v02/d407 frus1933v04/d56 frus1934v03/d579 frus1934v03/d62 frus1934v03/d8 frus1935v03/d97 frus1936v03/d165 frus1936v03/d234 frus1944v05/d608 frus1952-54v16/d621
+Resolution XXXV | FTS hits 9 | STRICT 8 of 9 | TOLERANT 9 of 9 | frus1948v09/d384 frus1948v09/d89 frus1949v02/d446 frus1949v02/d489 frus1949v09/d125 frus1952-54v04/d4 frus1955-57v06/d353 frus1955-57v06/d356 frus1955-57v07/d463
+Resolution XXII | FTS hits 23 | STRICT 22 of 23 | TOLERANT 23 of 23 | frus1944v07/d1 frus1944v07/d1018 frus1944v07/d1020 frus1944v07/d1023 frus1944v07/d1067 frus1944v07/d1101 frus1944v07/d1103 frus1944v07/d1126 frus1944v07/d1138 frus1944v07/d12 frus1944v07/d13 frus1944v07/d14
+Montevideo formula | FTS hits 1 | STRICT 1 of 1 | TOLERANT 1 of 1 | frus1944v07/d1023
+Tobar doctrine | FTS hits 85 | STRICT 1 of 85 | TOLERANT 1 of 85 | frus1932v05/d546
+Rodriguez Larreta | FTS hits 30 | STRICT 19 of 30 | TOLERANT 25 of 30 | frus1868p2/d407 frus1868p2/d414 frus1868p2/d440 frus1868p2/d449 frus1904/d928 frus1905/d78 frus1905/d80 frus1905/d84 frus1905/d91 frus1905/d92 frus1907p2/d503 frus1907p2/d508p
+Larreta proposal|note|doctrine | FTS hits 30 | STRICT 1 of 30 | TOLERANT 2 of 30 | frus1945v09/d157 frus1946v11/d658

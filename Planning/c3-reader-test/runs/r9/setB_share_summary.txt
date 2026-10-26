@@ -1,0 +1,1 @@
+Set B literal share: STRICT 194 of 221; TOLERANT 216 of 221

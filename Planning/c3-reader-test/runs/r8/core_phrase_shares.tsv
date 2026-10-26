@@ -1,0 +1,10 @@
+family	fts_query	fts_hits_in_core	sample	strict_hits	tolerant_hits	core_size
+international obligations	"international obligations"	129	129	127	129	3541
+de facto	"de facto"	220	220	219	220	3541
+free elections	"free elections" OR "free election"	54	54	54	54	3541
+constitutional government	"constitutional government"	137	137	98	125	3541
+recognition	recognition	959	40	40	40	3541
+consult	consult*	254	254	248	254	3541
+withhold recognition	NEAR(withhold recognition, 4) OR NEAR(withheld recognition, 4) OR NEAR(withholding recognition, 4)	43	43	31	38	3541
+Department of State (control)	"department of state"	590	40	40	40	3541
+ZZZ_IMPOSSIBLE_ZZZ (control)	ZZZ_IMPOSSIBLE_ZZZ	0	0	0	0	0

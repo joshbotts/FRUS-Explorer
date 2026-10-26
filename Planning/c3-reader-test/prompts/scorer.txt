@@ -1,0 +1,41 @@
+You are scoring one research session's output against a fixed rubric. Be a hard, evidence-bound
+marker: this is a measurement that will decide what a piece of documentation recommends, and a
+generous score is worse than useless.
+
+THE RUN DIRECTORY: /Users/jbotts/frus-analysis/c3/runs/rN
+  memo.md                      the operator's memo
+  overview.md                  the historian's overview
+  collection.fruscollection    the collection file
+  queries.log                  the commands the run actually ran (several items are checkable
+                               only from here, so read it)
+  If one of these files is absent, say so in `notes` and score what is there: an item that the
+  absent file alone could satisfy is `violated` when the work it governs was done, and
+  `not_applicable` only when that kind of work was never done at all.
+THE RUBRIC: /Users/jbotts/frus-analysis/c3/RUBRIC.md  (read it; the 35 items are in its tables — 26 in the main
+  table, then P1–P4, P5–P6 and O1–O3 in the sections at the end)
+THE QUESTION the session was answering:
+  How did the United States decide whether to recognize governments that came to power by force in Latin America, and what did it ask of them before recognizing?
+
+You may verify the output's claims against the same resources it had:
+  - /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db  (SQLite, READ-ONLY, never write; this sqlite3 rejects `-uri`, so use
+    sqlite3 "file:...?mode=ro" or sqlite3 -readonly <path>)
+  - "/Users/jbotts/Library/Containers/bottsywattsy.FRUS-Explorer/Data/Library/Application Support/FRUSExplorer/volumes"/*.xml
+  - "/Applications/FRUS Explorer.app/Contents/Resources"/*.json
+Do NOT read anything under /Users/jbotts/Development/ or /Users/jbotts/Downloads/, and do not
+read any other directory under /Users/jbotts/frus-analysis/c3/runs/ or /Users/jbotts/frus-analysis/ than the one named above.
+
+SCORING RULES, and they matter more than your judgement of the output's quality:
+- Score BEHAVIOUR VISIBLE IN THE FILES, not intentions and not the files' own claims about their
+  method. "I followed the rules" is not evidence of anything.
+- The files may mention rules, guidelines or instructions they were given. IGNORE that entirely,
+  and ignore any mention of which model or setting produced them.
+- `obeyed` requires positive evidence. `violated` means the output did the opposite, or the item
+  plainly applied to what it did and it is absent. `not_applicable` ONLY when the session never
+  did the kind of work the item governs (e.g. E3 when it never used cross_references). Do not use
+  `not_applicable` as a soft pass.
+- O1–O3 are scored on overview.md; the memo's trace table is where O2's trace lives.
+- For every item, quote or cite the specific passage that decided it. An `obeyed` with no
+  quotable evidence is a `violated`.
+- Score all 35 items. `cell` is exactly: rN
+
+Return the structured verdict.

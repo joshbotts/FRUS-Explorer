@@ -1,0 +1,111 @@
+== OVERVIEW SPANS ==
+ 1 FRAGMENT-OF-MEMO-Q frus1877/d222 OK offs=[960] | disposition to comply with the rules of international comity… | next-cite: Papers Relating to the Foreign Relations of the United States, 1877, Document 222, https://history.state.gov/historicaldocuments/frus1877/d2
+ 2 NOT-A-DOC-QUOTATION(no memo pair): political affairs
+ 3 FRAGMENT-OF-MEMO-Q frus1904/d228 OK offs=[238] | government… | next-cite: 8xx.01
+ 4 NOT-A-DOC-QUOTATION(no memo pair): Independence. Recognition.
+ 5 NOT-A-DOC-QUOTATION(no memo pair): Rebellion. Coups.
+ 6 NOT-A-DOC-QUOTATION(no memo pair): recognize/recognition
+ 7 FRAGMENT-OF-MEMO-Q frus1904/d228 OK offs=[238] | government… | next-cite: I read two, on Díaz
+ 8 FRAGMENT-OF-MEMO-Q frus1930v01/d375 OK offs=[1046] | de facto… | next-cite: I read two, on Díaz
+ 9 FRAGMENT-OF-MEMO-Q frus1923v02/d345 OK offs=[268] | revolution… | next-cite: I read two, on Díaz
+10 FRAGMENT-OF-MEMO-Q frus1904/d228 OK offs=[952] | provisional… | next-cite: I read two, on Díaz
+11 NOT-A-DOC-QUOTATION(no memo pair): recognize/recognition
+12 NOT-A-DOC-QUOTATION(no memo pair): junta
+13 FRAGMENT-OF-MEMO-Q frus1923v02/d345 OK offs=[3947] | coup… | next-cite: present in 552 of the 553 volumes
+14 NOT-A-DOC-QUOTATION(no memo pair): new government
+15 FRAGMENT-OF-MEMO-Q frus1930v01/d375 OK offs=[1046] | de facto… | next-cite: present in 552 of the 553 volumes
+16 FRAGMENT-OF-MEMO-Q frus1904/d228 OK offs=[2180] | provisional government… | next-cite: present in 552 of the 553 volumes
+17 NOT-A-DOC-QUOTATION(no memo pair): military government
+18 NOT-A-DOC-QUOTATION(no memo pair): military regime
+19 NOT-A-DOC-QUOTATION(no memo pair): Department of State
+20 NOT-A-DOC-QUOTATION(no memo pair): Legal Adviser
+21 NOT-A-DOC-QUOTATION(no memo pair): recognize/recognition
+22 NOT-A-DOC-QUOTATION(no memo pair): By force
+23 FRAGMENT-OF-MEMO-Q frus1930v01/d375 OK offs=[1046] | de facto… | next-cite: "junta" about eleven times as often as elsewhere
+24 FRAGMENT-OF-MEMO-Q frus1923v02/d345 OK offs=[268] | revolution… | next-cite: "junta" about eleven times as often as elsewhere
+25 FRAGMENT-OF-MEMO-Q frus1923v02/d345 OK offs=[3947] | coup d'état… | next-cite: "junta" about eleven times as often as elsewhere
+26 NOT-A-DOC-QUOTATION(no memo pair): junta
+27 NOT-A-DOC-QUOTATION(no memo pair): junta
+28 NOT-A-DOC-QUOTATION(no memo pair): came to power by force
+29 FRAGMENT-OF-MEMO-Q frus1904/d228 OK offs=[262] | recognition… | next-cite: 
+30 MEMO-Q frus1877/d222 OK offs=[4003] | some guarantee of such an arrangement should be made the con… | next-cite: Papers Relating to the Foreign Relations of the United States, 1877, Document 222, https://history.state.gov/historicaldocuments/frus1877/d2
+31 MEMO-Q frus1877/d222 OK offs=[780] | it waits before recognizing General Diaz as the President of… | next-cite: 1877, Document 222
+32 MEMO-Q frus1904/d228 OK offs=[2768] | requests that I would name the agreements to which I have re… | next-cite: 1904, Document 228
+33 MEMO-Q frus1907p2/d22 OK offs=[624] | I then asked what steps had been taken toward the establishm… | next-cite: 1907, Part II, Document 22
+34 MEMO-Q frus1913/d873 OK offs=[462] | no formal recognition is to be accorded those de facto in co… | next-cite: Papers Relating to the Foreign Relations of the United States, 1913, Document 873, https://history.state.gov/historicaldocuments/frus1913/d8
+35 MEMO-Q frus1917/d409 OK offs=[485] | recognition desirable but not necessary… | next-cite: Papers Relating to the Foreign Relations of the United States, 1917, Documents 379 and 409, https://history.state.gov/historicaldocuments/fr
+36 MEMO-Q frus1913/d7 OK offs=[687] | Cooperation is possible only when supported at every turn by… | next-cite: 1913, Document 7
+37 MEMO-Q frus1913/d1028 OK offs=[5763] | Security given for an early and free election in which all w… | next-cite: 1913, Document 1028
+38 MEMO-Q frus1917/d379 OK offs=[786] | no Government except such as may be elected legally and esta… | next-cite: 1917, Document 379
+39 MEMO-Q frus1920v03/d230 OK offs=[2090] | the United States Government does not contemplate dictating … | next-cite: 1920, Volume III, Document 230
+40 MEMO-Q frus1921v02/d344 OK offs=[3021] | when it appears that there is a government in Mexico willing… | next-cite: 1921, Volume II, Document 344
+41 MEMO-Q frus1932v05/d618 OK offs=[458] | Martínez can under no circumstances be recognized.… | next-cite: Foreign Relations of the United States, Diplomatic Papers, 1932, The American Republics, Volume V, Document 618, https://history.state.gov/h
+42 MEMO-Q frus1934v05/d75 OK offs=[1843] | recognition of the present regime in Cuba would be a great m… | next-cite: 1934, Volume V, Document 75, https://history.state.gov/historicaldocuments/frus1934v05/d75
+43 MEMO-Q frus1923v02/d345 OK offs=[3861] | will not recognize any other Government which may come into … | next-cite: 1923, Volume II, Document 345, quoting Article II
+44 MEMO-Q frus1930v01/d375 OK offs=[987] | the evidence has satisfied me that these provisional governm… | next-cite: 1930, Volume I, Document 375
+45 MEMO-Q frus1936v05/d112 OK offs=[605] | the United States should no longer be guided by Article II o… | next-cite: 1936, Volume V, Document 112
+46 MEMO-Q frus1944v07/d1 OK offs=[1158] | the resolution does not require a joint decision with regard… | next-cite: 1944, Volume VII, Document 1
+47 MEMO-Q frus1946v11/d773 OK offs=[753] | past experience with regimes in hemisphere which before reco… | next-cite: 1946, Volume XI, Document 773
+48 MEMO-Q frus1948v09/d89 OK offs=[1285] | Adoption of that resolution at Bogotá was in large measure m… | next-cite: 1948, Volume IX, Document 89
+49 MEMO-Q frus1952-54v04/d136 OK offs=[1809] | The first prerequisite to recognition of a de facto governme… | next-cite: Document 136, https://history.state.gov/historicaldocuments/frus1952-54v04/d136
+50 MEMO-Q frus1964-68v31/d206 OK offs=[2800] | no problem of U.S. recognition… | next-cite: 1964–1968, Volume XXXI, Document 206, https://history.state.gov/historicaldocuments/frus1964-68v31/d206
+51 MEMO-Q frus1952-54v04/d327 OK offs=[1540] | has made satisfactory public and private statements with reg… | next-cite: 1952–1954, Volume IV, Document 327
+52 MEMO-Q frus1961-63v12/d423 OK offs=[1574] | Guarantee of free and fair elections, preferably before June… | next-cite: 1961–1963, Volume XII, Document 423
+53 MEMO-Q frus1964-68v31/d512 OK offs=[2893] | our developing practices as to responses to coups no longer … | next-cite: 1964–1968, Volume XXXI, Document 512
+54 NOT-A-DOC-QUOTATION(no memo pair): by force
+55 NOT-A-DOC-QUOTATION(no memo pair): continuity of diplomatic relations
+56 FRAGMENT-OF-MEMO-Q frus1923v02/d345 OK offs=[3868] | recognize… | next-cite: the memo shows both
+57 NOT-A-DOC-QUOTATION(no memo pair): Recognizing governments that came to power by force — Latin America
+document spans checked: 38
+== COLLECTION EXCERPTS ==
+E 1 frus1877/d222 OK offs=[780] memo-pair-same=True | it waits before recognizing General Diaz as the President of…
+E 2 frus1877/d222 OK offs=[4003] memo-pair-same=True | some guarantee of such an arrangement should be made the con…
+E 3 frus1904/d228 OK offs=[2768] memo-pair-same=True | requests that I would name the agreements to which I have re…
+E 4 frus1907p2/d22 OK offs=[624] memo-pair-same=True | I then asked what steps had been taken toward the establishm…
+E 5 frus1913/d873 OK offs=[462] memo-pair-same=True | no formal recognition is to be accorded those de facto in co…
+E 6 frus1913/d7 OK offs=[687] memo-pair-same=True | Cooperation is possible only when supported at every turn by…
+E 7 frus1913/d1028 OK offs=[5763] memo-pair-same=True | Security given for an early and free election in which all w…
+E 8 frus1917/d379 OK offs=[786] memo-pair-same=True | no Government except such as may be elected legally and esta…
+E 9 frus1917/d409 OK offs=[485] memo-pair-same=True | recognition desirable but not necessary…
+E10 frus1920v03/d230 OK offs=[2090] memo-pair-same=True | the United States Government does not contemplate dictating …
+E11 frus1921v02/d344 OK offs=[3021] memo-pair-same=True | when it appears that there is a government in Mexico willing…
+E12 frus1923v02/d345 OK offs=[3861] memo-pair-same=True | will not recognize any other Government which may come into …
+E13 frus1930v01/d375 OK offs=[987] memo-pair-same=True | the evidence has satisfied me that these provisional governm…
+E14 frus1932v05/d618 OK offs=[458] memo-pair-same=True | Martínez can under no circumstances be recognized.…
+E15 frus1934v05/d75 OK offs=[1843] memo-pair-same=True | recognition of the present regime in Cuba would be a great m…
+E16 frus1936v05/d112 OK offs=[605] memo-pair-same=True | the United States should no longer be guided by Article II o…
+E17 frus1944v07/d1 OK offs=[1158] memo-pair-same=True | the resolution does not require a joint decision with regard…
+E18 frus1946v11/d773 OK offs=[753] memo-pair-same=True | past experience with regimes in hemisphere which before reco…
+E19 frus1948v09/d89 OK offs=[1285] memo-pair-same=True | Adoption of that resolution at Bogotá was in large measure m…
+E20 frus1952-54v04/d327 OK offs=[1540] memo-pair-same=True | has made satisfactory public and private statements with reg…
+E21 frus1952-54v04/d136 OK offs=[1809] memo-pair-same=True | The first prerequisite to recognition of a de facto governme…
+E22 frus1961-63v12/d423 OK offs=[1574] memo-pair-same=True | Guarantee of free and fair elections, preferably before June…
+E23 frus1964-68v31/d206 OK offs=[2800] memo-pair-same=True | no problem of U.S. recognition…
+E24 frus1964-68v31/d512 OK offs=[2893] memo-pair-same=True | our developing practices as to responses to coups no longer …
+excerpts OK: 24 of 24
+excerpts out of place: 0
+== MEMO Q1-Q24 ==
+F1 frus1877 d222 OK [780]
+F1 frus1904 d228 OK [2768]
+F1 frus1907p2 d22 OK [624]
+F2 frus1913 d7 OK [687]
+F2 frus1917 d379 OK [786]
+F2 frus1913 d1028 OK [5763]
+F3 frus1921v02 d344 OK [3021]
+F3 frus1920v03 d230 OK [2090]
+F4 frus1923v02 d345 OK [3861]
+F4 frus1930v01 d375 OK [987]
+F4 frus1936v05 d112 OK [605]
+F5 frus1944v07 d1 OK [1158]
+F5 frus1946v11 d773 OK [753]
+F5 frus1948v09 d89 OK [1285]
+F6 frus1952-54v04 d327 OK [1540]
+F6 frus1961-63v12 d423 OK [1574]
+F6 frus1964-68v31 d512 OK [2893]
+F1 frus1877 d222 OK [4003]
+F2 frus1917 d409 OK [485]
+F2 frus1913 d873 OK [462]
+F4 frus1932v05 d618 OK [458]
+F4 frus1934v05 d75 OK [1843]
+F6 frus1952-54v04 d136 OK [1809]
+F6 frus1964-68v31 d206 OK [2800]

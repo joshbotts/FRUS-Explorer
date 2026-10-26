@@ -1,0 +1,8 @@
+
+-- on-topic = the 41 manifest-title-selected volumes
+CREATE TEMP TABLE ot(v TEXT);
+INSERT INTO ot VALUES ('frus1902app2'),('frus1932v05'),('frus1933v04'),('frus1933v05'),('frus1934v04'),('frus1934v05'),('frus1935v04'),('frus1936v05'),('frus1937v05'),('frus1938v05'),('frus1939v05'),('frus1940v05'),('frus1941v06'),('frus1941v07'),('frus1942v05'),('frus1942v06'),('frus1943v05'),('frus1943v06'),('frus1944v07'),('frus1945v09'),('frus1949v02'),('frus1950v02'),('frus1951v02'),('frus1952-54v04'),('frus1955-57v06'),('frus1955-57v07'),('frus1958-60v05mSupp'),('frus1958-60v06'),('frus1961-63v10'),('frus1961-63v10-12mSupp'),('frus1961-63v11'),('frus1961-63v12'),('frus1964-68v31'),('frus1964-68v32'),('frus1969-76ve10'),('frus1969-76ve11p1'),('frus1969-76ve11p2'),('frus1977-80v15'),('frus1977-80v23'),('frus1977-80v24'),('frus1981-88v16');
+SELECT 'ontopic denominator', count(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 AND volume_id IN (SELECT v FROM ot);
+SELECT 'ontopic recogni*', count(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH 'body_text:recogni*' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id IN (SELECT v FROM ot);
+SELECT 'ontopic dept of state', count(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH 'body_text:"department of state"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id IN (SELECT v FROM ot);
+SELECT 'volume without dept of state', volume_id FROM (SELECT DISTINCT volume_id FROM document_cache) WHERE volume_id NOT IN (SELECT d.volume_id FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH 'body_text:"department of state"');

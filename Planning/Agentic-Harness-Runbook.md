@@ -183,8 +183,25 @@ carries one; neither does C-0's or C-2's.
 | C-0b falsifier **[VERIFIED]** | 16 agents (8 passes + 8 blind scorers) | 3.17 M | 35.2 min | 701 tool calls, 0 errors. `Planning/C0b-Falsifier-2026-09-06.md` |
 | Chief-of-mission field run **[VERIFIED]** | 53 agents over 2 rounds (17 readers, 34 refuters, 2 synthesis) | 12.81 M | 4 h 02 m | 3,549 tool calls, **0 errored** (round 2 also 0 empty). 630 documents read whole (14 in round 1, 616 in round 2). `~/frus-analysis/chief-of-mission/logs/measurement*.md` |
 
+| C-3 reader test **[VERIFIED]** | 53 agents in 13 workflow runs: 1 canary, 3 calibration instruments, 12 cells (9 + 3 replicates) each with a scorer, a refuter and a judge on Fable at `max` | 14.57 M output (thinking included); 56.5 M cache write; 1.33 B cache read | 11 h 06 m elapsed, 13:54 to 01:00, one cell at a time; 15 h 02 m summed over the agents, since a cell's three instruments ran in parallel | 2,848 tool calls, 0 errored, 0 empty. 30 points of the Max plan's weekly meter (44% → 74%), 52 of its Fable window; the instruments were about 1 point a cell and 36 of the 52 Fable points. `Planning/c3-reader-test/usage.md`, one row per step |
+
 The refuter share is the number to plan around: an adversarial pass is not a rounding error on the
-budget, it is half of it.
+budget, it is half of it. In C-3 the three instruments together cost about as much as a cheap
+cell and more than the cheapest (`Planning/C-3-Results-2026-10-26.md` §4 item 4).
+
+**[VERIFIED, C-3, 2026-10-25] Four harness facts the C-3 run added.** (1) The desktop app's usage
+card is readable from a session through `get_usage` and gives the same figures as `/usage`
+(5-hour, weekly all-models, weekly per-model, whole points), so a budget rule can be read by the
+orchestrator before and after every cell without the owner at the keyboard; the weekly meter
+prints whole points, so a one-point cell reads +1 or +2 run to run. (2) A `.backup` copy keeps WAL
+mode, and `sqlite3 -readonly` or `?mode=ro` on it fails with "unable to open database file (14)"
+until a `-shm` exists; `PRAGMA journal_mode=DELETE` on the copy, once, makes every read-only open
+work. (3) The Workflow tool takes `scriptPath` only from the session's scratchpad or the working
+tree, so a generated script kept elsewhere is copied into the scratchpad to run and the original
+is the record. (4) A per-agent tally (model, tokens by kind, tool calls, wall clock) comes from the
+run's `agent-*.jsonl` and `.meta.json` files, not the journal, which holds only the results:
+`Planning/c3-reader-test/tally.py`. `model` and `effort` pins took in every one of 53 agents
+(`.meta.json` names the model), with no sign of the §4 hang.
 
 ## 8. Authoring the script
 

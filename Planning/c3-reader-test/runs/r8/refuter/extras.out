@@ -1,0 +1,63 @@
+distinct chapter paths in core_scope.tsv: 82 | distinct range labels (range|chapter): 8 | distinct ranges: 8
+frus1913/14/15 slots: {'frus1913': (343, 343), 'frus1914': (353, 353), 'frus1915': (236, 235)} editorial notes by volume: {'frus1915': 1, 'frus1947v08': 1, 'frus1948v09': 2, 'frus1961-63v12': 3, 'frus1964-68v31': 1}
+memo's per-volume list vs non-apparatus: [('frus1914', 353, 353), ('frus1913', 343, 343), ('frus1915', 236, 235), ('frus1933v05', 224, 224), ('frus1944v07', 187, 187), ('frus1932v05', 163, 163), ('frus1931v02', 131, 131), ('frus1911', 119, 119), ('frus1930v03', 109, 109), ('frus1937v05', 103, 103), ('frus1945v09', 102, 102), ('frus1950v02', 3, 3)]
+Ed2 volumes in index: [('frus1951-54IranEd2', 377, 358), ('frus1969-76ve15p2Ed2', 387, 382), ('frus1977-80v09Ed2', 418, 387)]
+non-apparatus corpus incl Ed2: 312169 | excl Ed2: 311042
+corpus-wide "department of state": incl Ed2 (94049, 552) | excl Ed2 (93636, 549)
+corpus-wide recognition: incl Ed2 (15991, 553) | excl Ed2 (15920, 550)
+corpus-wide "international obligations": incl Ed2 (1301, 372) | excl Ed2 (1297, 370)
+corpus-wide "de facto": incl Ed2 (3497, 497) | excl Ed2 (3478, 494)
+volume with no non-apparatus 'department of state' hit: [('frus1919Parisv05',)]
+
+cited pairs: 28
+  frus1913/d1028 number='1028' date=1913-08-27 ed=0 fm=0 in_collection=True
+  frus1913/d1029 number='1029' date=1913-08-16 ed=0 fm=0 in_collection=True
+  frus1913/d7 number='7' date=1913-03-12 ed=0 fm=0 in_collection=True
+  frus1917/d379 number='379' date=1917-02-09 ed=0 fm=0 in_collection=True
+  frus1920v01/d391 number='391' date=1920-09-27 ed=0 fm=0 in_collection=True
+  frus1921v01/d238 number='238' date=1921-01-31 ed=0 fm=0 in_collection=True
+  frus1923v02/d345 number='345' date=1923-06-30 ed=0 fm=0 in_collection=True
+  frus1930v01/d375 number='375' date=1930-09-17 ed=0 fm=0 in_collection=True
+  frus1932v05/d639 number='639' date=1932-02-27 ed=0 fm=0 in_collection=True
+  frus1934v05/d199 number='199' date=1934-01-08 ed=0 fm=0 in_collection=True
+  frus1936v05/d112 number='112' date=1936-04-30 ed=0 fm=0 in_collection=True
+  frus1943v05/d334 number='334' date=1943-06-06 ed=0 fm=0 in_collection=True
+  frus1943v05/d486 number='486' date=1943-12-22 ed=0 fm=0 in_collection=True
+  frus1944v07/d231 number='231' date=1944-05-18 ed=0 fm=0 in_collection=True
+  frus1945v09/d1170 number='1170' date=1945-10-25 ed=0 fm=0 in_collection=True
+  frus1946v11/d312 number='312' date=1946-07-26 ed=0 fm=0 in_collection=True
+  frus1947v08/d742 number='742' date=1947-08-21 ed=0 fm=0 in_collection=True
+  frus1948v09/d115 number='115' date=1948-12-10 ed=0 fm=0 in_collection=True
+  frus1948v09/d89 number='89' date=1948-11-08 ed=0 fm=0 in_collection=True
+  frus1949v02/d448 number='448' date=1949-12-08 ed=0 fm=0 in_collection=True
+  frus1950v02/d478 number='478' date=1950-06-01 ed=0 fm=0 in_collection=True
+  frus1958-60v05mSupp/es_d43 number='ES–43' date=1960-12-01 ed=0 fm=0 in_collection=True
+  frus1961-63v12/d359 number='359' date=1963-10-04 ed=0 fm=0 in_collection=True
+  frus1961-63v12/d421 number='421' date=1962-07-27 ed=0 fm=0 in_collection=True
+  frus1964-68v31/d132 number='132' date=1966-06-28 ed=0 fm=0 in_collection=True
+  frus1964-68v31/d512 number='512' date=1968-10-06 ed=0 fm=0 in_collection=True
+  frus1969-76v21/d349 number='349' date=1973-09-12 ed=0 fm=0 in_collection=True
+  frus1977-80v24/d137 number='137' date=1978-08-03 ed=0 fm=0 in_collection=True
+cited pairs not in collection: []
+reading_log rows: 52 length mismatches: []
+Q-table dates checked
+numericalFile keys: ['microfilm', 'rolls', 'seriesNaId']
+{'microfilm': 'M862', 'seriesNaId': '654171'}
+654171 appears in central-files-index.json: True
+schedule 1910-1949 source: RG 59 Department of State Classification of Correspondence, August 1910 – December 1949 (National Archives and Records Administration) | sources: {'countries': 'Department of State 1910–1963 Central Decimal File Country Numbers (National Archives and Records Administration)', 'schedule': 'RG 59 Department of State Classification of Correspondence, August 1910 – December 1949 (National Archives and Records Administration)'}
+ subjects .00/.01: {'00': None, '01': None} {'6': {'00': 'Import trade of country'}, '8': {'00': 'Political affairs', '001': 'Chief executive. Sovereign', '0011': 'Family', '002': 'Cabinet. Ministry', '003': 'Vice President', '00B': 'Bolshevism. Communism. Communistic activities', '00D': 'Japanese activities', '00F': 'Fascism. Fascist activit
+
+chapters_post1950_AR.tsv head:
+frus1952-54v04	Bolivia > Political and economic relations of the United States and Bolivia	6	d136,d137,d144,d151,d153,d163
+frus1952-54v04	Chile > Political and economic relations of the United States and Chile	3	d234,d235,d248
+frus1952-54v04	Colombia > Political, economic, and military relations of the United States and Colombia	2	d278,d282
+frus1952-54v04	Costa Rica > Political, economic, and military relations of the United States and Costa Rica	1	d306
+frus1952-54v04	Cuba > Political, economic, and military relations of the United States and Cuba	3	d326,d327,d336
+frus1952-54v04	Ecuador > Political, economic, and military relations of the United States and Ecuador	2	d376,d392
+frus1952-54v04	El Salvador > Political and military relations of the United States and El Salvador	1	d406
+frus1952-54v04	Guatemala > Relations of the United States and Guatemala, with special reference to the concern of the United States over COmmunist activity in Guatemala	7	d410,d471,d490,d498,d502,d508,d512
+frus1952-54v04	Honduras > Political and economic relations of the United States and Honduras	1	d566
+frus1952-54v04	Multilateral Relations > Meeting of ministers of finance or economy of the American republics as the fourth extraordinary Meeting of the Inter-American Economic and Social Council (Rio Economic Conference), held at Quitandinha, Brazil, November 22–December 2, 1954	1	d87
+frus1952-54v04	Multilateral Relations > United States general policy with respect to Latin America	3	d3,d4,d5
+frus1952-54v04	Multilateral Relations > United States policy regarding political developments in the Central American area	1	d107
+

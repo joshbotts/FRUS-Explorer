@@ -1,0 +1,1 @@
+NEAR(recogn* junta, 12) OR NEAR(recogn* coup, 12) OR NEAR(recogn* "new government", 12) OR NEAR(recogn* "military government", 12) OR NEAR(recogn* "de facto", 12) OR NEAR(recogn* "revolutionary government", 12) OR NEAR(recogn* "provisional government", 12) OR NEAR(recogn* "new regime", 12) OR NEAR(recogn* "military regime", 12) OR NEAR(recogn* "constitutional government", 12)

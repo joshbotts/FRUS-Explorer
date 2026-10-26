@@ -1,0 +1,67 @@
+scope volumes 25 all in index: True
+NOTE CITATIONS BY CATEGORY (pointed-at, scope volumes):
+  centralDecimalFile 17683
+  presidentialLibrary 666
+  lotFile 345
+  subjectNumericFile 303
+  namedFileSeries 181
+  previouslyPublished 93
+  intelligence 91
+  naraCollection 85
+  centralForeignPolicyFile 83
+  unrecognized 39
+  foreignArchive 1
+total notes in scope volumes (volumeNoteCounts sum): 19570
+TOP COLLECTIONS:
+  721 txt:department of state|central file | Central Files |RG 59 |NAID None | Department of State
+  204 txt:johnson library|national security file | National Security File |RG None |NAID None | Johnson Library
+  152 txt:nixon|nsc file | NSC Files |RG None |NAID None | Nixon
+  95 txt:kennedy library|national security file | National Security Files |RG None |NAID None | Kennedy Library
+  93 txt:department of state|central files 1964-66 | Central Files 1964–66 |RG 59 |NAID None | Department of State
+  93 txt:department of state|central files 1967-69 | Central Files 1967–69 |RG 59 |NAID None | Department of State
+  78 txt:department of state|central files 1970-73 | Central Files 1970–73 |RG 59 |NAID None | Department of State
+  66 txt:|national security council | National Security Council |RG None |NAID None | None
+  61 txt:|io file | IO Files |RG None |NAID None | None
+  45 txt:eisenhower library|whitman file | Whitman File |RG None |NAID None | Eisenhower Library
+  31 lot:81D121 | Lot 81D121, Chile–ITT–CIA 1963–1977 |RG 59 |NAID 26309351 | Department of State
+  31 txt:ford library|national security advisor | National Security Adviser |RG None |NAID None | Ford Library
+  28 txt:library of congress|manuscript division | Manuscript Division |RG None |NAID None | Library of Congress
+  20 lot:60D553 | Rubottom Files: Lot 60 D 553 |RG 59 |NAID 2108779 | Department of State
+  20 lot:60D665 | OAS Files, Lot 60 D 665 |RG 59 |NAID 2660902 | Department of State
+  18 txt:johnson library|recordings and transcript | Recordings and Transcripts |RG None |NAID None | Johnson Library
+  15 lot:59D573 | Lot 59 D 573 |RG 59 |NAID 2108779 | Department of State
+  12 txt:kennedy library|presidential office file | President’s Office Files |RG None |NAID None | Kennedy Library
+  10 lot:57D295 | Holland Files, Lot 57 D 295 |RG 59 |NAID 2108778 | Department of State
+  10 lot:64D559 | Conference Files: Lot 64 D 559 |RG 59 |NAID None | Department of State
+  9 txt:central intelligence agency|oddi registry | ODDI Registry. |RG None |NAID None | Central Intelligence Agency
+  9 txt:ford library|national security advisor file | National Security Adviser Files |RG None |NAID None | Ford Library
+  9 txt:|ica director's file | ICA Director’s File, FRC 61 A 32 |RG None |NAID None | None
+  8 lot:66D149 | Presidential Memoranda of Conversation: Lot 66 D 149 |RG 59 |NAID 610077 | Department of State
+  8 lot:72D316 | S/S - NSC Files: Lot 72 D 316 |RG 59 |NAID 603185 | Department of State
+TOP DECIMAL/CLASS KEYS:
+  841 812.00
+  485 837.00
+  361 817.00
+  344 893.51
+  306 724.3415
+  243 818.00
+  241 861.00
+  211 838.51
+  181 893.00
+  177 815.00
+  173 816.01
+  167 500.A15a3
+  149 839.51
+  146 723.2515
+  142 811.20
+  135 835.00
+  132 882.51
+  126 817.51
+  122 462.00-R
+  120 711.5914
+  120 838.00
+  115 839.00
+  104 767.68119
+  100 810.20
+  100 816.00
+distinct collections reached 190

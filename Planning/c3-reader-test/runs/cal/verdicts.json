@@ -1,0 +1,322 @@
+{
+  "judge:cal": {
+    "cell": "cal",
+    "items": [
+      {
+        "id": "J1",
+        "verdict": "no",
+        "evidence": "The overview opens with '# Starter kit — \"U.S. consideration of direct talks with Cuba, post-1961\"' and 'An agentic-loop setup for the FRUS Explorer index, following `Docs/Agentic-Analysis-Guide.md`. Every count below was measured against the local corpus at `~/Library/Containers/bottsywattsy.FRUS-Explorer/…/Volumes/`', then §0 'The scoping fact to settle before the agent runs: FRUS's Cuba record ends in January 1981.' There is no three-part bottom line anywhere: nothing on what FRUS answers directly, where it points for the rest, or what the request cannot get. The file also addresses a different question from the one commissioned (recognition of governments that came to power by force): the words recognize, recognition, coup, de facto and junta never occur in it."
+      },
+      {
+        "id": "J2",
+        "verdict": "no",
+        "evidence": "Line 255: 'against a corpus baseline of 28.3%' — a bare percentage with no named set. Lines 291–292: 'only 1.1% of total weight — the lot route is 98.9% resolved'. Line 312: 'measured at 56% precision on one route'. Lines 87 and 199: 'recall@10 of 0.851' with no base. The raw scan figures ('Attwood 74', '`normaliz*` 224', '`Castro` 1,877') are occurrence tallies across 'the nine volumes', not counts of a named document set in words; '4,213 of 4,368 documents (96.5%)' at line 254 is the one figure that carries its base."
+      },
+      {
+        "id": "J3",
+        "verdict": "no",
+        "evidence": "The overview cites no individual document at all. The volumes it rests on are named only by bare identifier — '`frus1961-63v10`', '`frus1969-76ve11p1`', '`frus1961-63v10-12mSupp`' in the table at lines 22–32 and the SEED SCOPE block at lines 183–185 — with no printed-edition title and no history.state.gov link anywhere in the file (zero occurrences). Its own output rule tells the reader the opposite of the item: 'cited `volume_id/document_id`' (line 148) and 'Every cell carries volume_id/document_id' (line 221). The collection file (collection.fruscollection), where excerpts and notes would carry the printed citations, is absent from /Users/jbotts/frus-analysis/c3/runs/cal/, so the historian receives no citation they can follow to the printed edition."
+      },
+      {
+        "id": "J4",
+        "verdict": "no",
+        "evidence": "The only negative stated is §0: 'FRUS's Cuba record ends in January 1981. The 1981–1988 subseries has 12 volumes in the bundled manifest — Soviet Union ×4, Eastern Europe, START … — and none on Cuba, the Caribbean, or the American Republics.' That is a reading of volume titles asserted as fact, with no search terms, no searched volumes and no control that would make a zero a measurement. §4's 'You cannot retrieve an absence' is a method statement, and the addendum's 'zero record groups resolved, zero NAIDs' describes the run's own omission, not what FRUS lacks. Nothing states what the recognition question cannot get from FRUS, because the file never takes that question up."
+      },
+      {
+        "id": "J5",
+        "verdict": "no",
+        "evidence": "File paths: line 3 '`Docs/Agentic-Analysis-Guide.md`' and line 5 '`~/Library/Containers/bottsywattsy.FRUS-Explorer/…/Volumes/`'. SQL: line 120 'one extra `volume_id NOT IN (...)` clause'. Table and column names: line 101 '`document_dates`', line 127 '`document_cache.user_tag_ids`', lines 135–136 '`date_iso`, `document_sources.repository` / `lot_file_norm`, and `person_mentions`', line 223 '(external_citations)'. Volume-id strings throughout, e.g. line 27 '`frus1961-63v10-12mSupp`' and the SEED SCOPE list at lines 184–185. Bundled file names at lines 131 ('`semantic-vectors-binary.bin`'), 229 ('`frus.db` 3.2 GB'), 234 and 300–309 ('external-citation-index.json', 'central-files-index.json' and seven more)."
+      }
+    ],
+    "yes": 0,
+    "ranking": [
+      "cal"
+    ],
+    "rankingReason": "cal is the only overview judged so far, so it ranks alone, and at the bottom of any future list: it is an agent operator's starter kit for a different question (direct talks with Cuba, 1961–1981) that never mentions recognition, coups or de facto governments, states no bottom line, cites no document, gives bare percentages, and carries SQL, schema names, volume ids and file paths throughout; its collection file is missing from the run folder, so the historian receives nothing they could use."
+  },
+  "score:cal": {
+    "cell": "cal",
+    "items": [
+      {
+        "id": "C1",
+        "block": "COVERAGE",
+        "verdict": "violated",
+        "evidence": "Lines 4–6: 'Every count below was measured … by raw text scan of the TEI (not the index)'; lines 232–233: 'The counts above came from the TEI, which is safe to read live; the index is not.' The only coverage figure (line 228, '552 of 552 volumes downloaded') comes from the filesystem/manifest, and no query of any kind is shown anywhere in the file."
+      },
+      {
+        "id": "C2",
+        "block": "COVERAGE",
+        "verdict": "obeyed",
+        "evidence": "Lines 228–230: 'Local library measured 2026-08-31: **552 of 552 volumes downloaded**, 552 semantic shards present, `frus.db` 3.2 GB — so the usual \"conditional on my library\" caveat is nearly moot here, but record it anyway.' The volume count is named and the conditionality recorded; line 36 repeats 'all 552'."
+      },
+      {
+        "id": "I1",
+        "block": "IDENTITY",
+        "verdict": "violated",
+        "evidence": "A grep for volume_id/dNNN pairs and for bare dNNN ids returns 0 in 316 lines: no individual document is cited anywhere, while claims about the record are made without one ('a 1963 channel carried into 1964', line 53; 'The record supports …', line 157). Lines 148 and 221 ('cited `volume_id/document_id`', 'Every cell carries volume_id/document_id') are instructions to a future agent, not behaviour. collection.fruscollection, the other place ids would live, is absent."
+      },
+      {
+        "id": "I2",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "'rowid' appears nowhere in the file; the identity the memo names is the pair: line 130 'Pull the seed set's `(volume_id, document_id)` pairs from `user_tag_ids`', line 221 'Every cell carries volume_id/document_id.'"
+      },
+      {
+        "id": "I3",
+        "block": "IDENTITY",
+        "verdict": "not_applicable",
+        "evidence": "No join is visible or implied: the file has no SQL, and its one cross-table-looking figure, '4,213 of 4,368 documents' (line 254), is two single-table counts (document_sources rows over the nine volumes = 4,213 and non-front-matter document_cache rows = 4,368, both verified). Line 135 'Join into SQL for `date_iso`, `document_sources.repository` / `lot_file_norm`' is an instruction for a later agent. queries.log, which alone could show a join, is absent."
+      },
+      {
+        "id": "E1",
+        "block": "EXCLUSIONS",
+        "verdict": "violated",
+        "evidence": "'front matter' and 'editorial' appear nowhere. The §1 per-volume counts equal the non-front-matter rows exactly (443/746/390/434/441/690/473/379/372 = 4,368, verified) while keeping the 155 editorial notes (4,213 without them — the addendum's own figure at line 254), and the term counts are 'raw text scan of the TEI' (line 5), which excludes nothing. Neither exclusion, nor its absence, is stated."
+      },
+      {
+        "id": "E2",
+        "block": "EXCLUSIONS",
+        "verdict": "obeyed",
+        "evidence": "Neither column is named or quoted anywhere; the stated reading surface, 'raw text scan of the TEI (not the index)' (line 5), carries no summary_text or note_text, and no user-written content appears in the file."
+      },
+      {
+        "id": "E3",
+        "block": "EXCLUSIONS",
+        "verdict": "not_applicable",
+        "evidence": "cross_references and is_broken are never named (grep); no cross-reference work was done."
+      },
+      {
+        "id": "T1",
+        "block": "TRAPS",
+        "verdict": "not_applicable",
+        "evidence": "No FTS lookup was run: 'by raw text scan of the TEI (not the index), so treat them as *scan* counts, not FTS document frequencies' (lines 5–6), so no lookup in this memo passed through the stemmer. The one stemming remark, line 152 '`back channel` (2) vs `backchannel` (23). Two tokens; porter stemming does not join them', is correct but is advice to a future agent, not a handled lookup."
+      },
+      {
+        "id": "T2",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "citation_era appears nowhere; the periodisation used is volume coverage and administration: line 50 'Vaky 525 spans all four administrations (227 in ve10, 199 in v24)', lines 53–55 'a 1963 channel carried into 1964, a mid-1970s channel, a Carter-era channel'."
+      },
+      {
+        "id": "T3",
+        "block": "TRAPS",
+        "verdict": "violated",
+        "evidence": "Lines 254–255: '**203 archival units across both channels, 86 with a NAID.**' — one count spanning document_sources (came-from) and external_citations (pointed-at); lines 291–292's '19 of 105 lot files' and 'All 98 named clusters' sum to the same 203 union."
+      },
+      {
+        "id": "R1",
+        "block": "REPORTING",
+        "verdict": "violated",
+        "evidence": "No SQL statement anywhere: a grep for SELECT/FROM/WHERE/JOIN/GROUP BY finds prose only. The sole fragment is line 120, 'it costs one extra `volume_id NOT IN (...)` clause'. Every reported number (scan counts, 4,213/4,368, 2,823, 676, 203) stands without its query."
+      },
+      {
+        "id": "R2",
+        "block": "REPORTING",
+        "verdict": "violated",
+        "evidence": "Bare percentages: line 255 'against a corpus baseline of 28.3%'; lines 291–292 'only 1.1% of total weight — the lot route is 98.9% resolved'; line 312 'measured at 56% precision on one route'. N of M is used elsewhere ('4,213 of 4,368', line 254; '6 of 9', line 273; '19 of 105', line 291), but the four above have no denominator anywhere."
+      },
+      {
+        "id": "R3",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "Lines 12–15: 'The 1981–1988 subseries has 12 volumes in the bundled manifest — Soviet Union ×4, Eastern Europe, START, South Atlantic, North Africa, Foundations, Global Issues II, International Economic Development, National Security Policy — and **none on Cuba, the Caribbean, or the American Republics.**' The empty on-topic result is stated and the 12 rows the lookup did return are listed. (Manifest check: those were the subseries' 12 volumes at the memo's date; it now holds 13, with frus1981-88v16 South America.)"
+      },
+      {
+        "id": "R4",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "Lines 228–230: '552 of 552 volumes downloaded … so the usual \"conditional on my library\" caveat is nearly moot here'; line 273 flags the partial artifact behind the 676 figure, 'Measured now, over the 6 of 9 volumes present in it'; lines 314–315: 'The offline stack barely reaches before 1940 (11 of 695 bundled series). Say so rather than reporting an empty pre-war roadmap as an archival absence.'"
+      },
+      {
+        "id": "S1",
+        "block": "SCOPING",
+        "verdict": "violated",
+        "evidence": "No control of either sign anywhere: the scan tables at lines 43–50, 58–65 and 94–96 are raw counts ('Attwood 74', '`dialogue` 385', '`Approve` 2,129') with nothing run beside them to show what an on-topic or off-topic probe returns."
+      },
+      {
+        "id": "S2",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "Lines 4–6: 'Every count below was measured against the local corpus … by raw text scan of the TEI (not the index), so treat them as *scan* counts, not FTS document frequencies.' Verified: grep -o over the volume XML reproduces 61 (Attwood, v11), 58 (Lechuga, v11), 188/106 (Angola, ve11p1/v23) and 23/2 (backchannel / back channel across the nine) exactly."
+      },
+      {
+        "id": "S3",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "Line 152: '`back channel` (2) vs `backchannel` (23)' — two spellings with the split reported — and wildcard variants at lines 58–60 and 64 ('`normaliz*` 224', '`bilateral talk*` 17', '`secret talk*` 7', '`hijack*` 232'), though those wildcard totals report no split among their forms."
+      },
+      {
+        "id": "S4",
+        "block": "SCOPING",
+        "verdict": "violated",
+        "evidence": "Periodisation is by volume: lines 43–50 ('Attwood 74 — 61 in 1961-63v11 · 4 mSupp · 4 in 1964-68v32 · 5 in 1977-80v23') are read at lines 53–55 as 'a 1963 channel carried into 1964, a mid-1970s channel, a Carter-era channel', and §1's eras are volume coverage years. document_dates appears only as an instruction for later (line 101, 'reading forward 90 days in `document_dates`')."
+      },
+      {
+        "id": "S5",
+        "block": "SCOPING",
+        "verdict": "violated",
+        "evidence": "'Ed2' and 'second edition' appear nowhere. The library holds frus1951-54IranEd2, frus1969-76ve15p2Ed2 and frus1977-80v09Ed2; the memo's corpus-wide figures — the 552-volume semantic layer (line 36) and 'a corpus baseline of 28.3%' (line 255) — are exposed to the fold, and it neither handled it nor said it did not apply."
+      },
+      {
+        "id": "A1",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "Lines 252–267, 'What the nine Cuba volumes actually rest on': Kennedy Library National Security Files 396, Nixon NSC Files 370, Carter Library National Security Affairs 327, 'RG 59 Central Files — 101 of 1,164 classes' 310, Johnson Library NSF 165, 'S/S Files: Lot 65 D 438' 50, 'Ball Files: Lot 74 D 272' 46, 'RG 330 … OASD (C) A Files: FRC 71 A 2896' 47 — the came-from channel, for the memo's own Cuba scope rather than the assigned question."
+      },
+      {
+        "id": "A2",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "Lines 271–283: '`external-citation-index.json` records where the footnotes point *outside* the printed record … **676 footnote pointers into 61 archival units, 15 of which the source notes never name**', with the table 272 Carter NSA / 84 Kennedy NSF / 71 Johnson NSF / 30 Lot 81D113 / 15 Lot 65 D 438 / 14 Johnson Recordings. Reproduced exactly from the bundled artifact over the six volumes it holds."
+      },
+      {
+        "id": "A3",
+        "block": "ARCHIVAL",
+        "verdict": "violated",
+        "evidence": "Lines 254–255 '**203 archival units across both channels, 86 with a NAID**' and lines 291–292 '19 of 105 lot files carry no NAID … All 98 named clusters' are archival counts with no channel label that span both channels (105 + 98 = 203), against the memo's own rule at line 250, 'Report both channels, always labelled, never summed.'"
+      },
+      {
+        "id": "A4",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "Lines 271–274: '`external-citation-index.json` … Measured now, over the 6 of 9 volumes present in it: **676 footnote pointers into 61 archival units**'. Verified in the bundled file: exactly 6 of the 9 volumes are listed (mSupp, ve10 and ve11p1 absent) and the six carry 676 pointers into 61 targets."
+      },
+      {
+        "id": "A5",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "Line 265: '**S/S Files: Lot 65 D 438**, NAID 27022950 — Executive Secretariat, Restricted-Partly'; line 263: 'RG 59 Central Files'; line 267: 'RG 330 | OASD (C) A Files: FRC 71 A 2896'; line 281: '**D Files: Lot 81D113**, Entry P-14, NAID 1487627 — Deputy Secretary'."
+      },
+      {
+        "id": "A6",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "Three cited lots carry NAIDs (lines 265, 266, 281): 65 D 438 → 27022950, 74 D 272 → 614703, 81D113 → 1487627. Each matches central-files-index.json (lotNumber 65D438 / naId 27022950 'Records Relating to the Cuban Missile Crisis', entry A1 3053; 74D272 / 614703 'Records of Under Secretary of State George W. Ball', A1 5175; 81D113 / 1487627 'Records of Deputy Secretary Warren Christopher', entry P 14, as the memo's 'Entry P-14'). A NAID never appears in a source note, so these are resolutions, not quotations."
+      },
+      {
+        "id": "P1",
+        "block": "SCOPING",
+        "verdict": "violated",
+        "evidence": "§3, lines 69–70: 'The question says \"direct talks.\" The corpus contains at least four things that could satisfy that' — a claim about the supplied term as a probe with no literal count, no share and no control; '`bilateral talk*` 17, `secret talk*` 7' (line 60) are raw counts with no on-topic denominator. For the assigned question's own terms (recognize/recognition) nothing was measured at all."
+      },
+      {
+        "id": "P2",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "The change-claims at lines 53–55 ('a 1963 channel carried into 1964 … a rupture term (Angola) that peaks exactly where two of the channels end') rest on splits measured on both sides at lines 43–50: 'Attwood 74 — 61 in 1961-63v11 · 4 mSupp · 4 in 1964-68v32 · 5 in 1977-80v23', 'Eagleburger 44 — 43 in 1969-76ve11p1', 'Angola 305 — 188 in ve11p1 · 106 in v23' — bracketing at volume granularity."
+      },
+      {
+        "id": "P3",
+        "block": "REPORTING",
+        "verdict": "not_applicable",
+        "evidence": "No passage of any document is quoted. The quoted strings are the asker's question (line 84, '\"if talks were not held when U.S. government was interested, why didn't they happen?\"'), the memo's own theses ('\"the U.S. explored accommodation\"', lines 157–158) and its phrasing templates (lines 107–108, 205–206)."
+      },
+      {
+        "id": "P4",
+        "block": "REPORTING",
+        "verdict": "violated",
+        "evidence": "Only match/scan counts are reported (lines 43–50, 58–65, 94–96, 113–115); no count of documents read appears anywhere. Line 124, 'Read 20–40 documents from the four clusters and tag them', is an instruction to a future curator, not a report."
+      },
+      {
+        "id": "P5",
+        "block": "SCOPING",
+        "verdict": "violated",
+        "evidence": "Line 255 'against a corpus baseline of 28.3%', lines 291–292 'only 1.1% of total weight — the lot route is 98.9% resolved' and line 312 '56% precision' carry neither numerator nor denominator at the point of use; only '4,213 of 4,368 documents (96.5%)' (line 254) does, and '2,823 (67.0%)' leans on the 4,213 earlier in that sentence."
+      },
+      {
+        "id": "P6",
+        "block": "REPORTING",
+        "verdict": "violated",
+        "evidence": "No SQL; the scan counts' method is 'raw text scan of the TEI' (line 5) with no script named and no output file; the archival figures ('2,823 (67.0%)', '28.3%', '203 … 86 with a NAID', the weights table) name no query, script or file — 2,823 matches none of the document_sources columns over the nine volumes (3,996 repository / 1,940 record_group / 369 lot / 3,484 series_name). queries.log, where the commands would be, is absent."
+      },
+      {
+        "id": "O1",
+        "block": "READER",
+        "verdict": "violated",
+        "evidence": "overview.md is byte-identical to memo.md (sha256 e6d5e649…). It names tables (`document_sources`, `external_citations`, `person_mentions`, `document_dates`, `document_cache`), columns ('`document_cache.user_tag_ids`', line 127; '`date_iso`, `document_sources.repository` / `lot_file_norm`', line 135), a SQL fragment ('`volume_id NOT IN (...)` clause', line 120) and paths/files ('`~/Library/Containers/bottsywattsy.FRUS-Explorer/…/Volumes/`', line 5; '`semantic-vectors-binary.bin`', line 131; '`external-citation-index.json`', line 271)."
+      },
+      {
+        "id": "O2",
+        "block": "READER",
+        "verdict": "violated",
+        "evidence": "Numbers that are not counts of a named set in words: '`normaliz*` 224' (line 58), 'recall@10 of 0.851' (line 87), '`frus.db` 3.2 GB' (line 229), '11.83 MB of the 24.79 MB the app ships' (lines 245–246), '28.3%' (line 255), '56% precision' (line 312). The memo has no trace table, and the overview is the memo, so nothing traces to a separate memo line."
+      },
+      {
+        "id": "O3",
+        "block": "READER",
+        "verdict": "violated",
+        "evidence": "Lines 1–3 open: '# Starter kit — \"U.S. consideration of direct talks with Cuba, post-1961\" / An agentic-loop setup for the FRUS Explorer index, following `Docs/Agentic-Analysis-Guide.md`.' No answered / pointed-at / not-answerable bottom line; no document is cited in the whole file; and the question named is not the one assigned."
+      }
+    ],
+    "obeyed": 14,
+    "violated": 17,
+    "notApplicable": 4,
+    "notes": "Four defects precede the item scores. (1) overview.md is byte-identical to memo.md (sha256 e6d5e649…, 18,335 bytes, 316 lines), so O1–O3 are scored on the memo's text. (2) collection.fruscollection and queries.log are absent: I3 is not_applicable (no join visible or implied by any reported number) and R1/P6 are violated on the memo itself. (3) The document is not an answer to the assigned question. It is titled 'Starter kit — \"U.S. consideration of direct talks with Cuba, post-1961\"', self-dated 2026-08-31 ('measured … on 2026-08-31'; 'ADDENDUM … Added 2026-08-31'), and nothing in it concerns recognition of governments that came to power by force in Latin America. It reads as a pre-existing planning kit copied into the run directory, not this session's research output. (4) It cites no individual document (0 volume_id/document_id pairs in 316 lines), shows no SQL, reports no reading count and runs no control. The ARCHIVAL items and the scan-method items are scored on the behaviour visible for the memo's own Cuba scope, as the scoring rules direct; the adjudicator may wish to re-weigh them against the assigned question, on which none of that work bears. Verification against the resources: the raw-TEI counts reproduce exactly by grep -o over the volume XML (Attwood 61, Lechuga 58, Angola 188/106, backchannel 23 / 'back channel' 2); document_sources rows over the nine volumes = 4,213 and non-front-matter document_cache rows = 4,368 (editorial notes included), as the memo's figures; external-citation-index.json lists exactly 6 of the 9 volumes with 676 pointers into 61 targets and the memo's top rows (272/84/71/30/15/14); the three NAIDs match central-files-index.json. Not reproducible and unsourced: '2,823 (67.0%)' and the '28.3%' baseline (no document_sources column definition gives them). Drift since the memo's date: the library and manifest now hold 553 volumes (memo: 552) and the 1981–88 subseries 13 volumes including frus1981-88v16 South America (memo: 12, 'none on … the American Republics'), so that negative, true when written, is stale now. Compliance 14 of 31 scored items (45.2%); A6 obeyed."
+  },
+  "refute:cal": {
+    "cell": "cal",
+    "scope": {
+      "volumes": 9,
+      "volumeIds": "frus1961-63v10, frus1961-63v11, frus1961-63v12, frus1961-63v10-12mSupp, frus1964-68v32, frus1969-76ve10, frus1969-76ve11p1, frus1977-80v23, frus1977-80v24 (the memo's 'seed scope', 4,368 documents; it also names frus1961-63v21 and frus1964-68v18/20/23/24 only as volumes where Attwood appears in another career)",
+      "dateSpan": "The memo states the answerable window as 1961 – January 1981 (§0, §8) and the nine volumes' coverage as 1960–1981 in its §1 table. Index check: document_dates for the nine runs 1960-11-18 (mSupp) to 1981-01-17 (v24), two rows aside whose date_iso is a 2015/2016 declassification-style value.",
+      "source": "memo.md §1 table and §8 house rules. memo.md and overview.md are byte-identical (md5 a0df1da49100c06ce93efb3845fd2d6a); there is no queries.log and no collection.fruscollection in the run directory, so nothing could be derived from a log. NOTE: the document is a 'Starter kit — U.S. consideration of direct talks with Cuba, post-1961' dated 2026-08-31 with an addendum; it does not address the cell's question (U.S. recognition of governments that came to power by force in Latin America) at any point."
+    },
+    "headline": [
+      {
+        "claim": "The 1981–1988 subseries has 12 volumes in the bundled manifest … and none on Cuba, the Caribbean, or the American Republics (§0)",
+        "memoLine": "memo.md §0 (identical to the overview; no trace table, no SQL)",
+        "reproduced": false,
+        "note": "No memo query exists. Independent check of /Applications/FRUS Explorer.app/Contents/Resources/manifest.json: 13 volumeIds start with frus1981-88 (v01, v03, v04, v05, v06, v10, v11, v13, v16, v24, v38, v41, v44p1), and frus1981-88v16 is 'South America' (tags ecuador, paraguay, uruguay, venezuela; 91 documents in document_cache). So 12 is wrong (13) and 'none on the American Republics' is wrong. The index agrees: SELECT COUNT(DISTINCT volume_id) FROM document_cache WHERE volume_id LIKE 'frus1981-88%' = 13."
+      },
+      {
+        "claim": "The core corpus — 4,368 documents in nine volumes (§1)",
+        "memoLine": "memo.md §1 heading and §8 'SEED SCOPE (nine volumes, 4,368 documents)'; no query given",
+        "reproduced": false,
+        "note": "Not reproducible through a memo query (none exists). Independent recount: SELECT COUNT(*) FROM document_cache WHERE volume_id IN (the nine) AND is_front_matter=0 = 4,368 (4,396 counting the 28 front-matter rows). The figure matches the memo's own stated procedure (document count per volume)."
+      },
+      {
+        "claim": "Per-volume document counts: v10 443, v11 390, v12 434, mSupp 746, v32 441, ve10 690, ve11p1 473, v23 379, v24 372 (§1 table)",
+        "memoLine": "memo.md §1 table; no query given",
+        "reproduced": false,
+        "note": "No memo query. Independent recount of non-front-matter rows per volume in document_cache: 443, 390, 434, 746, 441, 690, 473, 379, 372 — all nine match exactly. Publication years in the table (1997, 1996, 1996, 2021, 2005, 2009, 2015, 2016, 2018) also match manifest.json's publicationDate for each."
+      },
+      {
+        "claim": "the semantic layer … covers all 552 [volumes] regardless of where you thought to look (§1); §9: 552 of 552 volumes downloaded, 552 semantic shards present",
+        "memoLine": "memo.md §1 and §9; no query given",
+        "reproduced": false,
+        "note": "Against the resources the session had, the corpus is 553, not 552: manifest.json lists 553 volumes; document_cache and volume_structures hold 553 volume_ids; semantic-vectors-index.json 'volumes' = 553; semantic-shards-manifest.json 'shards' = 553; 553 .xml files and 553 shard files on disk. The memo's figure dates from 2026-08-31 and was not re-measured."
+      },
+      {
+        "claim": "4,213 of 4,368 documents (96.5%) carry a source note (Addendum, 'What the nine Cuba volumes actually rest on')",
+        "memoLine": "memo.md Addendum paragraph; 'Measured now', no query given",
+        "reproduced": false,
+        "note": "No memo query. Independent recount: among the 4,368 non-front-matter rows of the nine, 4,213 have a non-empty source_note = 96.5%; document_sources also holds exactly 4,213 rows for the nine. The figure matches. The SAME sentence's next figures do not: '2,823 (67.0%) resolve to a named archival collection — against a corpus baseline of 28.3%' recounts from collection-usage-index.json (generated 2026-10-20) as 2,841 (67.4% of 4,213) and a baseline of 76,140/264,598 = 28.8%."
+      }
+    ],
+    "numbersReproduced": 0,
+    "numbersTotal": 5,
+    "quotationsTotal": 20,
+    "quotationsVerified": 0,
+    "fabrications": 0,
+    "fabricationDetails": "No quotation in overview.md is attributed to any document, so the segment-strict check has no (volume_id, document_id) to run against and no quotation can be scored as a fabrication; none was scored as verified either. The 20 quoted passages (extracted by regex over the file, then re-read by eye where the regex paired the wrong quote marks) are: outside the code fences — (1) the kit's own title \"U.S. consideration of direct talks with Cuba, post-1961\"; (2) \"direct talks.\" (the question's words); (3) the one block quote, \"if talks were not held when U.S. government was interested, why didn't they happen?\" (a sub-clause of the research question, not a document); (4) \"no such document exists\"; (5) \"the record shows the option was declined here, on these stated grounds\"; (6) \"talks did not happen because X.\"; (7) \"the U.S. explored accommodation\"; (8) \"the U.S. pursued removal\"; (9) \"conditional on my library\"; (10) \"why didn't talks happen\"; inside the paste-in house-rules block — (11) \"outside this corpus\"; (12) \"DIRECT TALKS\"; (13) the FILL IN example rule \"authorized bilateral political contact … EXCLUDING U.S.-Soviet talks about Cuba\"; (14) \"why talks did not happen\"; (15) \"the record shows the option was declined here, on these stated grounds\"; (16) \"talks did not happen because X\"; (17) \"back channel\"; (18) \"backchannel\"; (19) \"FRUS does not print this\"; (20) \"and here is the series that does\". All are the author's own phrasing or search tokens; (17) and (18) do occur in the nine volumes' TEI, 2 and 23 times, as the memo says. The italicised sub-series title 'Backchannel Messages' is not a quotation and was checked as an archival identifier (confirmed). The collection holds no excerpts because there is no collection file.",
+    "miscitations": 0,
+    "miscitationDetails": "None possible: the overview credits no quotation to any document, and it contains no document citation of any kind — no volume_id/document_id pair, no 'Document N', no printed edition citation (regex for d\\d+ tokens found nothing; only volume ids are named). There is no trace table to map, and nothing to resolve through manifest.json.",
+    "identifiersChecked": 16,
+    "identifiersConfirmed": 16,
+    "identifierDetails": "The overview has no bottom line; the identifiers are in the Addendum's two tables and 'Reach limits' paragraph. Each was checked against the bundled artifacts, and every identifier resolves as named, though several of the WEIGHTS beside them have moved since 2026-08-31 (artifacts regenerated 2026-10-20). (1) NAID 27022950 — collection-authority.json lot:65D438 'S/S Files: Lot 65 D 438' naId 27022950, recordGroup 59; central-files-index.json lotNumber 65D438 → naId 27022950, RG 59, entry A1 3053, 'Records Relating to the Cuban Missile Crisis'; series-facts-index.json: creator 'Department of State. Executive Secretariat.', accessStatus 'Restricted - Partly' — the memo's 'Executive Secretariat, Restricted-Partly' is right. (2) NAID 614703 — authority lot:74D272 'Ball Files: Lot 74 D 272'; central-files-index → 614703, RG 59, A1 5175, 'Records of Under Secretary of State George W. Ball'; series-facts: accessStatus Unrestricted, findingAids ['Folder List'] — 'unrestricted, folder list available' is right. (3) NAID 1487627 — authority lot:81D113 'D Files: Lot 81D113 (Entry P–14)'; central-files-index → 1487627, RG 59, hmsMlrEntryNumbers ['P 14'], 'Records of Deputy Secretary Warren Christopher'; series-facts creator 'Office of the Deputy Secretary of State' — 'Entry P-14 … Deputy Secretary' is right. (4) Lot 65 D 438, (5) Lot 74 D 272, (6) Lot 81D113 — as above; came-from weights 50 and 46 reproduce from collection-usage-index.json, pointed-at refs 15, 7 and 30 from external-citation-index.json. (7) Entry P-14 — confirmed (central-files-index and the authority's own name). (8) RG 59 — authority 'Central Files' recordGroup 59; volume-sources-index.json RG 59 = NAID 388 'General Records of the Department of State'; 101 of its children (decimal classes) are cited by the nine (memo 101 ✓) but the parent now has 1,120 children, not 1,164, and its came-from weight is 333, not 310. (9) RG 330 — authority 'OASD (C) A Files: FRC 71 A 2896' recordGroup 330, weight 47 ✓; volume-sources-index RG 330 = NAID 643 'Records of the Office of the Secretary of Defense'. (10) FRC 71 A 2896 — confirmed as above. (11) Kennedy Library, National Security Files — authority txt:kennedy library|national security file, weight 396 ✓, 18 of 41 sub-series cited by the nine ✓, pointed-at 84 ✓; document_sources raw_text shows Countries (198) and Meetings and Memoranda (108) first ✓; presidential-library-catalog JFK-4 NAID 1164. (12) Nixon NSC Files — authority txt:nixon|nsc file, 40 children ✓ but 16 cited (memo 15) and weight 375 (memo 370); library catalog RN-NSF NAID 572235 'National Security Files (Nixon Administration)'. (13) 'Backchannel Messages' sub-series — confirmed as a child of Nixon NSC Files with volumeIds frus1969-76ve10, ve15p2, ve15p2Ed2. (14) Carter Library, National Security Affairs (Brzezinski and Staff Material) — authority txt:carter library|national security affair, weight 327 ✓, children 'Brzezinski Material' and 'Staff Material' cited by v23/v24 ✓, pointed-at 272 ✓; library catalog JC-NSA NAID 560131 with Brzezinski's series. (15) Johnson Library, National Security File — weight 165 ✓, 29 of 100 sub-series ✓, pointed-at 71 ✓; library catalog LBJ-NSF NAID 567979. (16) Johnson Library, Recordings and Transcripts — pointed-at 14 ✓; library catalog LBJ-LBJ NAID 1150. Also checked from the same paragraphs: '676 footnote pointers into 61 archival units' over '6 of 9 volumes' — exact (676, 61, and the six volumes v10, v11, v12, v32, v23, v24 are the ones in external-citation-index.json's volume list); '15 of which the source notes never name' — 16 by my join; '203 archival units across both channels, 86 with a NAID' — 196 and 79 now; '19 of 105 lot files carry no NAID, but only 1.1% of total weight' — 18 of 97, and the 1.1% holds (37 of 3,517); 'All 98 named clusters carry no NAID' — 99 txt-type units, none with a NAID ✓; '11 of 695 bundled series' before 1940 — 11 series start before 1940 ✓ but series-facts holds 698.",
+    "collection": {
+      "opens": false,
+      "checkerOutput": "$ python3 -I /Users/jbotts/frus-analysis/c3/check_collection.py /Users/jbotts/frus-analysis/c3/runs/cal/collection.fruscollection /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db\nTraceback (most recent call last):\n  File \"/Users/jbotts/frus-analysis/c3/check_collection.py\", line 3, in <module>\n    c, problems = json.load(open(path)), []\nFileNotFoundError: [Errno 2] No such file or directory: '/Users/jbotts/frus-analysis/c3/runs/cal/collection.fruscollection'\n\n(ls of the path: No such file or directory; find /Users/jbotts/frus-analysis/c3/runs/cal -maxdepth 2 -name '*.fruscollection' -o -name '*.log' returned nothing. The run directory holds only memo.md and overview.md.)",
+      "documents": 0,
+      "headings": 0,
+      "prose": 0,
+      "excerpts": 0,
+      "generated": 0,
+      "documentsWithNotes": 0,
+      "citedInOverview": 0,
+      "citedAndPresent": 0,
+      "citedMissing": "None missing because none cited: the overview cites no (volume_id, document_id) pair and no printed document citation; it names only volume ids (the nine, plus frus1961-63v21 and frus1964-68v18/20/23/24). There is no collection file at all, so the deliverable the task describes does not exist for this cell."
+    },
+    "notes": "HEADLINE FINDINGS. (a) The run's output does not answer the cell's question: memo.md and overview.md are the same file (cmp: identical; md5 a0df1da49100c06ce93efb3845fd2d6a, 18,335 bytes each), a 'Starter kit — U.S. consideration of direct talks with Cuba, post-1961' dated 2026-08-31 with an 'ADDENDUM — the archival roadmap'. Recognition of governments, coups, de facto governments, Latin American recognition policy — none appears. (b) There is no trace table, no SQL, no queries.log and no collection.fruscollection, so by the task's rule no number is reproduced through the session's trace, nothing was checked by the app's checker, and no quotation is attributable. (c) Recounted independently from the resources the session had, the document's figures split cleanly: everything measured from the TEI or the document table reproduces to the digit, and everything taken from the bundled archival artifacts or the corpus size is stale, because the artifacts were regenerated (collection-usage-index and collection-authority 2026-10-20; external-citation-index 2026-10-20 but unchanged for these volumes; series-facts 2026-09-10) and the corpus grew from 552 to 553 volumes. Two claims are simply wrong against the manifest the session had: '12 volumes in the 1981–1988 subseries' (13) and 'none on … the American Republics' (frus1981-88v16, South America).\n\nWHAT I RAN (scratch files under /Users/jbotts/frus-analysis/c3/runs/cal/refuter/). Index opened read-only throughout (sqlite3 -readonly; Python not used on the db). 1. manifest_check.py / pub.py over manifest.json: 553 volumes; 13 frus1981-88* ids; the nine's titles, dateRange and publicationDate (all nine years match the §1 table). 2. counts.sql: per-volume document_cache counts (non-front-matter 443/390/434/746/441/690/473/379/372 = 4,368; with front matter 4,396); source_note present on 4,213 = 96.5%; document_sources 4,213 rows for the nine (3,996 with repository, 3,484 with series_name, 369 with a lot, 832 with a decimal class over 287 distinct classes); citation_era split structured 2,274 / cfpf 607 / subject_numeric 422 / decimal 392 / lot_file 301 / named_series 164 / unrecognized 48; corpus baseline rows 320,646 documents, 264,655 document_sources; external_citations 878 rows for the nine in 6 volumes (v10 55, v11 145, v12 178, v32 108, v23 124, v24 268) over 74 distinct repository|collection|lot keys — the memo's 676/61 is the artifact's count, not the table's. 3. ecx.py / ecx2.py decode external-citation-index.json (targets[i] = {k: targetIds index, n: counts, v: volume indices}; coverage.volumesWithReferences 441): nine volumes → 676 refs into 61 targets; top six 272 Carter NSA, 84 Kennedy NSF, 71 Johnson NSF, 30 lot:81D113 (naId 1487627), 15 lot:65D438 (27022950), 14 Johnson Recordings and Transcripts — the memo's table exactly; 16 targets not among the nine's came-from collections (memo 15). 4. usage.py / children.py / subseries.py over collection-usage-index.json + collection-authority.json: volumeNoteCounts for the nine sum to 4,213; notes in a collection 2,841 over 180 collections = 67.4% of 4,213 (memo 2,823, 67.0%); baseline 76,140/264,598 = 28.8% (memo 28.3%); weights Kennedy NSF 396 ✓, Nixon NSC Files 375 (370), Central Files 333 (310) plus Central Files 1970–73 162 / 1964–66 97 / 1967–69 63, Carter NSA 327 ✓, Johnson NSF 165 ✓, lot:65D438 50 ✓, OASD (C) A Files FRC 71 A 2896 (RG 330) 47 ✓, lot:74D272 46 ✓; sub-series cited by the nine: Kennedy 18 of 41 ✓, Nixon 16 of 40 (15), Johnson 29 of 100 ✓, Central Files 101 of 1,120 (101 of 1,164), Carter: Brzezinski Material + Staff Material ✓; units across both channels 196 (203), with NAID 79 (86); lots across both channels 97, 18 without NAID (105, 19), their weight 37 of 3,517 = 1.1% ✓; 99 txt-type (named) units, none with a NAID (98). 5. series-facts-index.json (698 series; memo 695): 27022950 Executive Secretariat / Restricted - Partly ✓; 614703 Unrestricted / Folder List ✓; 1487627 Office of the Deputy Secretary ✓; 11 series start before 1940 ✓. 6. cfx.py over central-files-index.json lotFiles (1,070): 65D438→27022950 A1 3053, 74D272→614703 A1 5175, 81D113→1487627 P 14, all RG 59; none of the three in lot-claimants or curated-lot-resolutions (not required). 7. libcat.py over presidential-library-catalog.json: Kennedy NSF JFK-4 NAID 1164; Johnson NSF LBJ-NSF 567979; Johnson Recordings and Transcripts LBJ-LBJ 1150; Nixon 'National Security Files (Nixon Administration)' RN-NSF 572235; Carter 'Records of the Office of the National Security Advisor' JC-NSA 560131; volume-sources-index RG 59 = NAID 388, RG 330 = NAID 643. 8. teiscan.py / teiscan2.py, case-insensitive scans of the nine volumes' raw TEI XML (the rule under which every figure lands): Attwood 74 (61 v11 · 4 mSupp · 4 v32 · 5 v23) ✓, Lechuga 83 ✓ (9/58/16), Lisa Howard 21 ✓, Eagleburger 44 ✓ (43 ve11p1), Interests Section 77 ✓ (72 v23 under the memo's split vs 70+5 here on tag-stripped text; 77 total either way), Tarnoff 92 ✓ (53/39), Angola 305 ✓ (188/106), Vaky 525 ✓ (227 ve10, 199 v24 vs 197 on tag-stripped text), normaliz 224, dialogue 385, accommodation 168, rapprochement 75, emissary 78, intermediary 31, feeler 17, modus vivendi 25, precondition 34 (15 in v23) ✓, quid pro quo 32, bilateral talk 17, secret talk 7, Swiss 94, Czech 106, Mexican Government 124, hijack 232, Guantanamo 441 (447 with the accented form), Disapprove 93, Options Paper 18, Decision Memorandum 43, Action Memorandum 103, Recommendation 1,537, Approve 2,129, NSSM 258, NSDM 234, PRM/NSC 8, Presidential Directive 20, back channel 2, backchannel 23 — all ✓; mSupp: Lechuga 16, rapprochement 29, Castro 1,877, Memorandum of Conversation 232 — all ✓; Attwood in frus1961-63v21 (27), frus1964-68v18 (2), v20 (8), v23 (28), v24 (2) ✓. 9. span.sql: date span and 13 frus1981-88 volumes (v16 South America 91 documents); Kennedy NSF raw_text heads Countries 198, Meetings and Memoranda 108 ✓. 10. sizes.py: 38 bundled JSON files, 29.09 MB (memo 24.79 MB); 17 archival-resolution candidates 12.92 MB (memo 15 artifacts, 11.83 MB — the set is not enumerated, so not resolvable); 553 shards, 553 volumes, db copy 3.74 GB (memo 3.2 GB). 11. Quotation extraction by regex over overview.md plus a read-through: 20 quoted passages, none attributed to a document; one block quote (the question). 12. The checker, as pasted above: FileNotFoundError.\n\nTALLY OF THE RECOUNTS. Of the five headline numbers, three match on independent recount (4,368; the nine per-volume counts; 4,213 of 4,368 = 96.5%) and two do not (12 volumes/none on the American Republics → 13 incl. South America; 552 → 553); none has a memo query, so numbersReproduced is 0 under the task's rule and would be 3 under the recount. Across the Addendum: exact — 676 pointers, 61 units, 6 of 9 volumes, the six-row refs table, 396/327/165/50/46/47, Kennedy 18, Johnson 29 of 100, Central Files 101 classes, 1.1%, 11 pre-1940 series, all three NAIDs with their creators and access statuses; moved — 2,823→2,841, 67.0→67.4%, 28.3→28.8%, 370→375, 310→333, 15 of 40→16 of 40, 1,164→1,120, 203→196, 86→79, 105→97, 19→18, 15 never named→16, 98→99, 695→698. Every one of the §2/§4/§5/§7 term counts reproduces. ABSENT FILES: queries.log and collection.fruscollection — said so and did what the two present files allow. I did not read anything under /Users/jbotts/Development/, /Users/jbotts/Downloads/, or any other run or sibling directory; I listed the c3 directory once to locate the named resources and opened none of its other files."
+  }
+}

@@ -1,0 +1,3 @@
+pruned: /Users/jbotts/Development/FRUS-Explorer/.claude/worktrees/c3-cloud-sessions-95c770/Planning/c3-reader-test/runs/r8/core_scope.tsv (1.2M)
+pruned: /Users/jbotts/Development/FRUS-Explorer/.claude/worktrees/c3-cloud-sessions-95c770/Planning/c3-reader-test/runs/r11/latam_docs.tsv (2.5M)
+pruned: /Users/jbotts/Development/FRUS-Explorer/.claude/worktrees/c3-cloud-sessions-95c770/Planning/c3-reader-test/runs/r11/refuter/latam_docs.tsv (2.5M)

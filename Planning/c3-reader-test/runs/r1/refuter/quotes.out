@@ -1,0 +1,160 @@
+memo section 17 rows: 45
+memo Q labels: ['Q01', 'Q02', 'Q03', 'Q05', 'Q06', 'Q07', 'Q08', 'Q09', 'Q10', 'Q11', 'Q12', 'Q13', 'Q14', 'Q15', 'Q16', 'Q17', 'Q18', 'Q19', 'Q20']
+
+block quotes in overview: 19
+inline “…” passages in overview prose: 12
+   line 9: “Wilson Doctrine”
+   line 9: “Mann Doctrine”
+   line 9: “Tobar Doctrine”
+   line 9: “Betancourt Doctrine”
+   line 9: “Estrada Doctrine”
+   line 16: “by force”
+   line 19: “asked”
+   line 164: “clearing agreement”
+   line 164: “clear agreement”
+   line 164: “recognition”
+   line 164: “non-recognition”
+   line 164: “nonrecognition”
+
+=== OVERVIEW BLOCK QUOTES ===
+
+[OK] overview line 30 -> frus1900/d530 (memo ['Q01']; memo table ('frus1900', 'd530'); document_number=530 printed Document 530; title shortened)
+   lead: The rule of 1900, as the Acting Secretary of State put it to the minister in Bogotá:
+   text (449 chars): “the rule of the United States is to defer recognition of another executive in its place until it shall appear...
+   check: 1 segment(s) found in order; offsets [1228]; accent-insensitive variant: True
+
+[OK] overview line 36 -> frus1948v09/d7 (memo ['Q02']; memo table ('frus1948v09', 'd7'); document_number=7 printed Document 7; title exact)
+   lead: The three factors of 1948:
+   text (297 chars): “(a) de facto control of the territory and the administrative machinery of State, including the maintenance of...
+   check: 1 segment(s) found in order; offsets [9624]; accent-insensitive variant: True
+
+[OK] overview line 42 -> frus1948v09/d7 (memo ['Q03']; memo table ('frus1948v09', 'd7'); document_number=7 printed Document 7; title exact)
+   lead: And the advice in the same paper:
+   text (164 chars): “Recognition should not be withheld as a political weapon or to express moral censure except in extreme cases ...
+   check: 1 segment(s) found in order; offsets [10199]; accent-insensitive variant: True
+
+[OK] overview line 48 -> frus1949v02/d489 (memo ['Q05']; memo table ('frus1949v02', 'd489'); document_number=489 printed Document 489; title exact)
+   lead: Truman’s letter of 3 February 1949:
+   text (174 chars): “This Government, furthermore, is of the opinion that nonrecognition is seldom, if ever, effective in bringing...
+   check: 1 segment(s) found in order; offsets [2801]; accent-insensitive variant: True
+
+[OK] overview line 58 -> frus1913/d7 (memo ['Q06']; memo table ('frus1913', 'd7'); document_number=7 printed Document 7; title shortened)
+   lead: Wilson’s statement, as telegraphed to the missions on 12 March 1913:
+   text (171 chars): “just government rests always upon the consent of the governed, and that there can be no freedom without order...
+   check: 1 segment(s) found in order; offsets [892]; accent-insensitive variant: True
+
+[OK] overview line 64 -> frus1931v02/d232 (memo ['Q07']; memo table ('frus1931v02', 'd232'); document_number=232 printed Document 232; title exact)
+   lead: The instruction of 20 December 1931 on General Martínez:
+   text (327 chars): “The Department has stated on various occasions that the policy of the Government of the United States in its ...
+   check: 1 segment(s) found in order; offsets [802]; accent-insensitive variant: True
+
+[OK] overview line 70 -> frus1936v05/d109 (memo ['Q08']; memo table ('frus1936v05', 'd109'); document_number=109 printed Document 109; title exact)
+   lead: The Department’s own account of the change, 21 April 1936:
+   text (243 chars): “Under our new policy, if General Somoza headed a régime which effectively governed the country and fulfilled ...
+   check: 1 segment(s) found in order; offsets [1312]; accent-insensitive variant: True
+
+[OK] overview line 80 -> frus1877/d222 (memo ['Q09']; memo table ('frus1877', 'd222'); document_number=222 printed Document 222; title shortened)
+   lead: The instruction of 16 May 1877 on Díaz:
+   text (333 chars): “In the present case it waits before recognizing General Diaz as the President of Mexico until it shall be ass...
+   check: 1 segment(s) found in order; offsets [764]; accent-insensitive variant: True
+
+[OK] overview line 86 -> frus1921v02/d344 (memo ['Q20']; memo table ('frus1921v02', 'd344'); document_number=344 printed Document 344; title exact)
+   lead: Hughes’s public statement of 8 June 1921, telegraphed to the chargé in Mexico:
+   text (202 chars): “In short, when it appears that there is a government in Mexico willing to bind itself to the discharge of pri...
+   check: 1 segment(s) found in order; offsets [3014]; accent-insensitive variant: True
+
+[OK] overview line 92 -> frus1932v05/d518 (memo ['Q10']; memo table ('frus1932v05', 'd518'); document_number=518 printed Document 518; title exact)
+   lead: Stimson’s instruction on Chile, 16 July 1932:
+   text (647 chars): “You are correct in your understanding that the policy of this Government is not to associate recognition with...
+   check: 1 segment(s) found in order; offsets [577]; accent-insensitive variant: True
+
+[OK] overview line 102 -> frus1934v05/d85 (memo ['Q19']; memo table ('frus1934v05', 'd85'); document_number=85 printed Document 85; title exact)
+   lead: Quoting the President on Cuba, 14 January 1934:
+   text (191 chars): “This Government will recognize a Cuban provisional Government which is substantially supported by the Cuban p...
+   check: 1 segment(s) found in order; offsets [504]; accent-insensitive variant: True
+
+[OK] overview line 108 -> frus1961-63v12/d359 (memo ['Q11']; memo table ('frus1961-63v12', 'd359'); document_number=359 printed Document 359; title exact)
+   lead: The instruction on the Dominican Republic, 4 October 1963:
+   text (483 chars): “to secure their agreement prior to our recognition or resumption of aid on following main points: 1. Free pol...
+   check: 1 segment(s) found in order; offsets [2049]; accent-insensitive variant: True
+
+[OK] overview line 118 -> frus1944v07/d388 (memo ['Q12']; memo table ('frus1944v07', 'd388'); document_number=388 printed Document 388; title exact)
+   lead: Hull’s circular of 10 January 1944 on Bolivia:
+   text (251 chars): “You should indicate to the Minister of Foreign Affairs that the available evidence indicating foreign involve...
+   check: 1 segment(s) found in order; offsets [3791]; accent-insensitive variant: True
+
+[OK] overview line 124 -> frus1944v07/d1090 (memo ['Q13']; memo table ('frus1944v07', 'd1090'); document_number=1090 printed Document 1090; title exact)
+   lead: The Acting Secretary of State to El Salvador, 27 October 1944:
+   text (261 chars): “Recognition of the new Administration in El Salvador will depend in part on its willingness and ability to fu...
+   check: 1 segment(s) found in order; offsets [195]; accent-insensitive variant: True
+
+[OK] overview line 130 -> frus1948v09/d115 (memo ['Q14']; memo table ('frus1948v09', 'd115'); document_number=115 printed Document 115; title exact)
+   lead: Kennan on Venezuela, 10 December 1948:
+   text (174 chars): “(d) In the light of the above, it seems evident to us that non-recognition is not a suitable weapon for influ...
+   check: 1 segment(s) found in order; offsets [3843]; accent-insensitive variant: True
+
+[OK] overview line 140 -> frus1955-57v06/d354 (memo ['Q15']; memo table ('frus1955-57v06', 'd354'); document_number=354 printed Document 354; title exact)
+   lead: Haiti, July 1957, after seven months in which the United States had stood aside from succe
+   text (145 chars): “While fully appreciating significance of fair and free elections Department would prefer recognition independ...
+   check: 1 segment(s) found in order; offsets [1695]; accent-insensitive variant: True
+
+[OK] overview line 146 -> frus1955-57v06/d354 (memo ['Q16']; memo table ('frus1955-57v06', 'd354'); document_number=354 printed Document 354; title exact)
+   lead: In the same telegram:
+   text (236 chars): “does not wish to find itself recognizing a new de facto regime every few weeks and would like reasonable assu...
+   check: 1 segment(s) found in order; offsets [962]; accent-insensitive variant: True
+
+[OK] overview line 152 -> frus1964-68v31/d518 (memo ['Q17']; memo table ('frus1964-68v31', 'd518'); document_number=518 printed Document 518; title exact)
+   lead: Peru, 19 October 1968, as the President’s adviser put it to him:
+   text (147 chars): “The Military Government is in full control, and no significant opposition has materialized. It has met all th...
+   check: 1 segment(s) found in order; offsets [678]; accent-insensitive variant: True
+
+[OK] overview line 158 -> frus1969-76v21/d361 (memo ['Q18']; memo table ('frus1969-76v21', 'd361'); document_number=361 printed Document 361; title exact)
+   lead: Chile, 20 September 1973, at the Washington Special Actions Group chaired by Kissinger, a 
+   text (71 chars): “Right now would be a good time. They have satisfied the requirements.”...
+   check: 1 segment(s) found in order; offsets [2861]; accent-insensitive variant: True
+
+block quotes: 19; passed check and citation: 19; fabrications: 0; mis-citations: 0
+
+=== COLLECTION EXCERPTS: 19 ===
+[OK] frus1900/d530 (447 chars) 1 segment(s) found in order; offsets [1228]; accent-insensitive True; = overview block at line 30 same pair True; document entry present True
+   the rule of the United States is to defer recognition of another executive in its place until it sha...
+[OK] frus1948v09/d7 (295 chars) 1 segment(s) found in order; offsets [9624]; accent-insensitive True; = overview block at line 36 same pair True; document entry present True
+   (a) de facto control of the territory and the administrative machinery of State, including the maint...
+[OK] frus1948v09/d7 (162 chars) 1 segment(s) found in order; offsets [10199]; accent-insensitive True; = overview block at line 42 same pair True; document entry present True
+   Recognition should not be withheld as a political weapon or to express moral censure except in extre...
+[OK] frus1949v02/d489 (172 chars) 1 segment(s) found in order; offsets [2801]; accent-insensitive True; = overview block at line 48 same pair True; document entry present True
+   This Government, furthermore, is of the opinion that nonrecognition is seldom, if ever, effective in...
+[OK] frus1913/d7 (169 chars) 1 segment(s) found in order; offsets [892]; accent-insensitive True; = overview block at line 58 same pair True; document entry present True
+   just government rests always upon the consent of the governed, and that there can be no freedom with...
+[OK] frus1931v02/d232 (325 chars) 1 segment(s) found in order; offsets [802]; accent-insensitive True; = overview block at line 64 same pair True; document entry present True
+   The Department has stated on various occasions that the policy of the Government of the United State...
+[OK] frus1936v05/d109 (241 chars) 1 segment(s) found in order; offsets [1312]; accent-insensitive True; = overview block at line 70 same pair True; document entry present True
+   Under our new policy, if General Somoza headed a régime which effectively governed the country and f...
+[OK] frus1877/d222 (331 chars) 1 segment(s) found in order; offsets [764]; accent-insensitive True; = overview block at line 80 same pair True; document entry present True
+   In the present case it waits before recognizing General Diaz as the President of Mexico until it sha...
+[OK] frus1921v02/d344 (200 chars) 1 segment(s) found in order; offsets [3014]; accent-insensitive True; = overview block at line 86 same pair True; document entry present True
+   In short, when it appears that there is a government in Mexico willing to bind itself to the dischar...
+[OK] frus1932v05/d518 (645 chars) 1 segment(s) found in order; offsets [577]; accent-insensitive True; = overview block at line 92 same pair True; document entry present True
+   You are correct in your understanding that the policy of this Government is not to associate recogni...
+[OK] frus1934v05/d85 (189 chars) 1 segment(s) found in order; offsets [504]; accent-insensitive True; = overview block at line 102 same pair True; document entry present True
+   This Government will recognize a Cuban provisional Government which is substantially supported by th...
+[OK] frus1961-63v12/d359 (481 chars) 1 segment(s) found in order; offsets [2049]; accent-insensitive True; = overview block at line 108 same pair True; document entry present True
+   to secure their agreement prior to our recognition or resumption of aid on following main points: 1....
+[OK] frus1944v07/d388 (249 chars) 1 segment(s) found in order; offsets [3791]; accent-insensitive True; = overview block at line 118 same pair True; document entry present True
+   You should indicate to the Minister of Foreign Affairs that the available evidence indicating foreig...
+[OK] frus1944v07/d1090 (259 chars) 1 segment(s) found in order; offsets [195]; accent-insensitive True; = overview block at line 124 same pair True; document entry present True
+   Recognition of the new Administration in El Salvador will depend in part on its willingness and abil...
+[OK] frus1948v09/d115 (172 chars) 1 segment(s) found in order; offsets [3843]; accent-insensitive True; = overview block at line 130 same pair True; document entry present True
+   (d) In the light of the above, it seems evident to us that non-recognition is not a suitable weapon ...
+[OK] frus1955-57v06/d354 (143 chars) 1 segment(s) found in order; offsets [1695]; accent-insensitive True; = overview block at line 140 same pair True; document entry present True
+   While fully appreciating significance of fair and free elections Department would prefer recognition...
+[OK] frus1955-57v06/d354 (234 chars) 1 segment(s) found in order; offsets [962]; accent-insensitive True; = overview block at line 146 same pair True; document entry present True
+   does not wish to find itself recognizing a new de facto regime every few weeks and would like reason...
+[OK] frus1964-68v31/d518 (145 chars) 1 segment(s) found in order; offsets [678]; accent-insensitive True; = overview block at line 152 same pair True; document entry present True
+   The Military Government is in full control, and no significant opposition has materialized. It has m...
+[OK] frus1969-76v21/d361 (69 chars) 1 segment(s) found in order; offsets [2861]; accent-insensitive True; = overview block at line 158 same pair True; document entry present True
+   Right now would be a good time. They have satisfied the requirements....
+
+excerpts: 19; passed: 19; failed: 0
+
+memo Q set == overview block set: True | overview block set == excerpt set: True

@@ -1,0 +1,4 @@
+SELECT volume_id, document_id FROM frus_documents
+WHERE frus_documents MATCH 'NEAR(recogn* "de facto", 15) OR NEAR(recogn* junta, 15) OR NEAR(recogn* coup, 15) OR NEAR(recogn* "provisional government", 15) OR NEAR(recogn* "revolutionary government", 15) OR NEAR(recogn* "new government", 15) OR NEAR(recogn* "new regime", 15) OR NEAR(recogn* "military government", 15) OR NEAR(recogn* "revolutionary regime", 15) OR NEAR(recogn* "military regime", 15) OR NEAR(recogn* "provisional president", 15) OR NEAR(recogn* "revolutionary junta", 15) OR NEAR(recogn* "military junta", 15) OR NEAR(recogn* "de jure", 15) OR NEAR(recogn* "constitutional government", 15) OR NEAR(recogn* overthrow, 15) OR NEAR(recogn* overthrown, 15) OR NEAR(recogn* revolution, 15) OR NEAR(recogn* "golpe", 15) OR NEAR(recogn* "unconstitutional", 15)'
+  AND is_editorial_note = 0
+ORDER BY volume_id, document_id;

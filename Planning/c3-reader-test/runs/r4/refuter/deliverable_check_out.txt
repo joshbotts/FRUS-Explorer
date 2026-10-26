@@ -1,0 +1,14 @@
+entries by kind: {'heading': 6, 'prose': 6, 'document': 19, 'excerpt': 19, 'generated': 1} total 51
+documents: 19 | with notes: 19 | notes per doc: Counter({1: 19})
+duplicate document pairs: []
+Ed2 volumes: []
+headings: ['The standing tests: control, obligations, acquiescence', 'Constitutional legitimacy and the Central American treaties, 1913-1936', 'Recognition as a bargain: Mexico, 1920-1923', 'Wartime: consultation and the Axis test, 1943-1944', 'After Bogota: continuity, and what was still asked, 1948-1973', 'Threads not followed']
+generated: [{'kind': 'generated', 'generatedBlockType': 'archivalSources'}]
+
+overview URL citations: 25 distinct pairs: 19
+cited and in collection: 19
+cited, NOT in collection: []
+in collection, not cited: []
+edition citations with URL: 25 | Document N != dN: []
+excerpts == quotes.json strings for same pair: 19 of 19
+each excerpt directly follows its own document entry: True

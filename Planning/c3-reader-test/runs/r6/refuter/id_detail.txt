@@ -1,0 +1,108 @@
+series-facts legend: {"keys": {"ar": {"field": "accessRestrictions", "into": "restrictions", "kind": "indexList"}, "as": {"field": "accessStatus", "into": "statuses", "kind": "index"}, "c": {"field": "creator", "into": "headings", "kind": "index"}, "cy0": {"field": "coverageStartYear", "kind": "year"}, "cy1": {"field": "coverageEndYear", "kind": "year"}, "fa": {"field": "findingAids", "into": "findingAidTypes", "kind": "indexList"}, "p": {"field": "predecessors", "into": "headings", "kind": "indexList"}, "ru": {"field": "referenceUnit", "into": "referenceUnits", "kind": "index"}, "ur": {"field": "useRestrictions", "into": "useRestrictions", "kind": "indexList"}, "us": {"field": "useStatus", "into": "statuses", "kind": "index"}, "x": {"field": "extent", "kind": "string"}, "y0": {"field": "inclusiveStartYear", "kind": "year"}, "y1": {"field": "inclusiveEndYear", "kind": "year"}}, "note": "Each `byNaId` row uses one-letter keys. `kind: index`/`indexList` values are offsets into the TOP-LEVEL array named by `into` — note that `as` and `us` share `statuses`, while `ar` uses `restrictions` and `ur` uses `useRestrictions`; the names do not tell you that. `y0`/`y1` are NARA's INCLUSIVE dates and `cy0`/`cy1` its COVERAGE dates, which it publishes for some series only. NEITHER PAIR CONTAINS THE OTHER: naId 604801 is inclusive 1963-1973 and coverage 1947-1964, and across 1,155 RG 59 series carrying both, coverage starts earlier in 880, the same year in 274 and LATER in 1. So a date screen must take the UNIO
+restrictions vocab: ['FOIA (b)(1) National Security', 'FOIA (b)(3) Statute', 'FOIA (b)(6) Personal Information', 'FOIA (b)(4) Trade Secrets and Commercial or Financial Information', 'FOIA (b)(7e) Law Enforcement', 'FOIA (b)(7) Law Enforcement', 'FOIA (b)(9) Geological or Geophysical Information and Data', 'FOIA (b)(2) Internal Personnel Rules and Practices']
+byNaId 302021 : null
+byNaId 2838992 : {"ar": [0], "as": 2, "c": 341, "ru": 0, "ur": [0], "us": 3, "x": "3 linear feet, 1 linear inch", "y0": 1948, "y1": 1961}
+byNaId 2839191 : {"ar": [0], "as": 2, "c": 248, "cy0": 1952, "cy1": 1961, "fa": [1], "ru": 0, "ur": [0], "us": 3, "x": "4 linear feet, 5 linear inches", "y0": 1953, "y1": 1961}
+byNaId 2521274 : {"as": 3, "c": 248, "ru": 0, "us": 1, "x": "4 linear feet, 5 linear inches", "y0": 1952, "y1": 1961}
+byNaId 602231 : {"as": 1, "c": 248, "ru": 0, "us": 1, "x": "13 linear feet, 2 linear inches", "y0": 1953, "y1": 1964}
+byNaId 610077 : {"as": 1, "c": 248, "ru": 0, "us": 1, "x": "1 linear foot, 4 linear inches", "y0": 1956, "y1": 1964}
+byNaId 1074073 : {"ar": [0], "as": 2, "c": 122, "fa": [0], "ru": 0, "ur": [0], "us": 3, "x": "20 linear feet", "y0": 1962, "y1": 1975}
+byNaId 2602882 : {"ar": [0], "as": 2, "c": 127, "cy0": 1957, "cy1": 1974, "p": [128], "ru": 0, "ur": [0], "us": 3, "x": "4 linear feet, 5 linear inches", "y0": 1957, "y1": 1974}
+byNaId 2108779 : {"as": 1, "c": 149, "ru": 0, "us": 1, "x": "7 linear feet", "y0": 1957, "y1": 1959}
+byNaId 631706 : null
+byNaId 26309336 : {"ar": [0], "as": 2, "c": 123, "cy0": 1963, "cy1": 1978, "p": [129], "ru": 0, "us": 1, "x": "5 linear feet, 3 linear inches", "y0": 1964, "y1": 1978}
+byNaId 12014843 : {"ar": [0, 2], "as": 2, "c": 303, "ru": 0, "us": 1, "x": "4 linear feet", "y0": 1961, "y1": 1971}
+byNaId 17408805 : {"ar": [0, 1, 2], "as": 2, "c": 303, "ru": 0, "ur": [0], "us": 3, "x": "7 linear feet", "y0": 1968, "y1": 1979}
+byNaId 654171 : null
+
+-- lotFiles entries --
+62D1 -> {"hmsMlrEntryNumbers": ["A1 1583E", "A1 1583F"], "levelOfDescription": "series", "lotNumber": "62D1", "matchType": "control", "naId": "2838992", "recordGroup": "59", "title": "Records Relating to Activities with the National Security Council"}
+62D430 -> {"hmsMlrEntryNumbers": ["A1 1586C"], "levelOfDescription": "series", "lotNumber": "62D430", "matchType": "control", "naId": "2839191", "recordGroup": "59", "title": "Subject and Special Files"}
+63D75 -> {"hmsMlrEntryNumbers": ["A1 1609"], "levelOfDescription": "series", "lotNumber": "63D75", "matchType": "control", "naId": "2521274", "recordGroup": "59", "title": "Records Related to the Secretary's Staff Meetings"}
+64D199 -> {"hmsMlrEntryNumbers": ["A1 1566"], "levelOfDescription": "series", "lotNumber": "64D199", "matchType": "control", "naId": "602231", "recordGroup": "59", "title": "The Secretary's and the Under Secretary's Memorandums of Conversation"}
+66D149 -> {"hmsMlrEntryNumbers": ["A1 5158"], "levelOfDescription": "series", "lotNumber": "66D149", "matchType": "control", "naId": "610077", "recordGroup": "59", "title": "Presidential Memorandums of Conversation"}
+66D65 -> {"hmsMlrEntryNumbers": ["A1 5763"], "levelOfDescription": "series", "lotNumber": "66D65", "matchType": "control", "naId": "1074073", "recordGroup": "59", "title": "Subject and Country Files"}
+67D46 -> {"hmsMlrEntryNumbers": ["A1 5732"], "levelOfDescription": "series", "lotNumber": "67D46", "matchType": "control", "naId": "2602882", "recordGroup": "59", "title": "Records Relating to Honduras"}
+59D573 -> {"hmsMlrEntryNumbers": ["A1 1135"], "levelOfDescription": "series", "lotNumber": "59D573", "matchType": "control", "naId": "2108779", "recordGroup": "59", "title": "Subject Files"}
+61D279 -> {"hmsMlrEntryNumbers": ["A1 1135"], "levelOfDescription": "series", "lotNumber": "61D279", "matchType": "control", "naId": "2108779", "recordGroup": "59", "title": "Subject Files"}
+70D247 -> {"hmsMlrEntryNumbers": ["A1 5741", "UD-16D 21", "UD-16D 31", "UD-16D 61"], "levelOfDescription": "series", "lotNumber": "70D247", "matchType": "control", "naId": "26309336", "recordGroup": "59", "title": "Subject Files Relating to Ecuador"}
+72D192 -> {"hmsMlrEntryNumbers": ["A1 5376", "A1 5376A"], "levelOfDescription": "series", "lotNumber": "72D192", "matchType": "control", "naId": "631695", "recordGroup": "59", "title": "Speeches and Statements"}
+70D442 -> NOT IN lotFiles
+
+-- lot-claimants --
+{"claimants": [{"dateRange": "1948–1961", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1583A", "A1 1583B"], "naId": "2198167", "recordGroup": "59", "title": "Alphabetical Files"}, {"dateRange": "1947–1961", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1583C", "A1 1583D"], "naId": "2838991", "recordGroup": "59", "title": "Numerical Files"}, {"dateRange": "1948–1961", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1583E", "A1 1583F"], "naId": "2838992", "recordGroup": "59", "title": "Records Relating to Activities with the National Security Council"}], "lotNumber": "62D1"}
+{"claimants": [{"dateRange": "1953–1961", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1586A"], "naId": "2386675", "recordGroup": "59", "title": "Administrative and Chronological Files"}, {"dateRange": "1953–1961", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1586B"], "naId": "2839190", "recordGroup": "59", "title": "Regional and Country Operations Files"}, {"dateRange": "1953–1961", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1586C"], "naId": "2839191", "recordGroup": "59", "title": "Subject and Special Files"}, {"dateRange": "1958–1961", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1586D"], "naId": "2842737", "recordGroup": "59", "title": "Indexes Relating to the Receipt and Distribution of Records from the White House to the Operations Coordination Board (OCB)"}], "lotNumber": "62D430"}
+{"claimants": [{"dateRange": "1961–1969", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 5376", "A1 5376A"], "naId": "631695", "recordGroup": "59", "title": "Speeches and Statements"}, {"dateRange": "1961–1969", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 5377"], "naId": "631704", "recordGroup": "59", "title": "White House Correspondence Files"}, {"dateRange": "1961–1968", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 5378"], "naId": "631705", "recordGroup": "59", "title": "General Correspondence of Dean Rusk"}, {"dateRange": "1961–1969", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 5379"], "naId": "631706", "recordGroup": "59", "title": "Transcripts of Telephone Calls"}, {"dateRange": "1961–1968", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 5380"], "naId": "631707", "recordGroup": "59", "title": "Subject Files"}, {"dateRange": "1961"
+lot-claimants lot keys sample: ['claimants', 'lotNumber']
+
+-- subject-numeric labels --
+coverage: {"glossableYears": [{"endYear": 1963, "scheduleId": "1963", "startYear": 1963}, {"endYear": 1973, "scheduleId": "1964-1973", "startYear": 1964}], "keyOutsideGlossableYears": "no-gloss", "measured": [{"areaDocuments": 8830, "areaKeys": 1796, "corpusDocuments": 8065, "corpusKeys": 1644, "namedAreaDocuments": 8290, "namedAreaKeys": 1633, "namedDocuments": 7190, "namedKeys": 1458, "scheduleId": "1963"}, {"areaDocuments": 8830, "areaKeys": 1796, "corpusDocuments": 8065, "corpusKeys": 1644, "namedAreaDocuments": 8290, "namedAreaKeys": 1633, "namedDocuments": 7235, "namedKeys": 1298, "scheduleId": "1
+schedule keys: ['abbreviations', 'areas', 'categories', 'endYear', 'id', 'organizationSubjects', 'source', 'startYear', 'subjects'] years: None
+   POL 16 = INDEPENDENCE. RECOGNITION.
+   POL 15 = GOVERNMENT
+   POL keys starting 16/23: ['16', '23', '23-1', '23-2']
+schedule keys: ['abbreviations', 'areas', 'categories', 'endYear', 'id', 'organizationSubjects', 'source', 'startYear', 'subjects'] years: None
+   POL 23-9 = Rebellion. Coups.
+   POL 15 = GOVERNMENT
+   POL keys starting 16/23: ['23', '23-1', '23-10', '23-11', '23-2', '23-3', '23-4', '23-5', '23-6', '23-7', '23-8', '23-9']
+
+-- decimal-class-labels --
+coverage: {"decimalFileOpensIn": 1910, "glossableYears": [{"endYear": 1949, "scheduleId": "1910-1949", "startYear": 1910}, {"endYear": 1959, "scheduleId": "1950-1959", "startYear": 1950}, {"endYear": 1963, "scheduleId": "1960-1963", "startYear": 1960}], "keyOutsideGlossableYears": "no-gloss", "notShipped": [], "note": "A key is glossable only when the document's own date falls inside one of `glossableYears`. Outside them this file has NO gloss — do not compose one from a schedule that does not govern the 
+schedule: {'classes': '<dict9>', 'countries': '<dict287>', 'countryAlternates': '<dict101>', 'countryArrangedClasses': '<list3>', 'endYear': 1949, 'id': '1910-1949', 'relationsClasses': '<list1>', 'source': 'RG 59 Department of State Classification of Correspondence, August 1910 – December 1949 (National Archives and Records Administration)', 'sources': '<dict2>', 'startYear': 1910, 'subjects': '<dict2>'}
+   country 12 = Mexico
+   country 17 = Nicaragua
+   country 24 = Bolivia
+   country 16 = El Salvador
+   country 38 = Haiti
+   country 18 = Costa Rica
+   country 14 = Guatemala
+   country 39 = Dominican Republic
+   country 35 = Argentine Republic/ Argentina
+   country 23 = Peru
+   country 34 = Paraguay
+   country 37 = Cuba
+   class 7/8: Political Relations of States. Bi-lateral Treaties | Internal Affairs of States
+   subject keys sample: ['6', '8']
+schedule: {'classes': '<dict10>', 'countries': '<dict252>', 'countryAlternates': '<dict96>', 'countryArrangedClasses': '<list7>', 'endYear': 1959, 'id': '1950-1959', 'relationsClasses': '<list1>', 'source': 'Records Codification Manual, Department of State (adopted 1 January 1950) (National Archives and Records Administration)', 'sources': '<dict2>', 'startYear': 1950, 'subjects': '<dict0>'}
+   country 12 = Mexico
+   country 17 = Nicaragua
+   country 24 = Bolivia
+   country 16 = El Salvador
+   country 38 = Haiti
+   country 18 = Costa Rica
+   country 14 = Guatemala
+   country 39 = Dominican Republic
+   country 35 = Argentine Republic/ Argentina
+   country 23 = Peru
+   country 34 = Paraguay
+   country 37 = Cuba
+   class 7/8: Internal Political and National Defense Affairs | Internal Economic, Industrial and Social Affairs
+   subject keys sample: []
+schedule: {'classes': '<dict10>', 'countries': '<dict263>', 'countryAlternates': '<dict89>', 'countryArrangedClasses': '<list7>', 'endYear': 1963, 'id': '1960-1963', 'relationsClasses': '<list1>', 'source': 'Records Classification Handbook, Department of State (1960–1963) (National Archives and Records Administration)', 'sources': '<dict2>', 'startYear': 1960, 'subjects': '<dict0>'}
+   country 12 = Mexico
+   country 17 = Nicaragua
+   country 24 = Bolivia
+   country 16 = El Salvador
+   country 38 = Haiti
+   country 18 = Costa Rica
+   country 14 = Guatemala
+   country 39 = Dominican Republic
+   country 35 = Argentine Republic/ Argentina
+   country 23 = Peru
+   country 34 = Paraguay
+   country 37 = Cuba
+   class 7/8: Internal Political and National Defense Affairs | Internal Economic, Industrial, and Social Affairs
+   subject keys sample: []
+
+-- digitized ranges --
+seriesNaIds: ['2555709', '302021'] note: Numeric decimal-file ranges only. The digitised file units this omits are name-filed (Visa Division reports of births, class 131), which no decimal citation can match.
+range class prefixes: [('763', 443), ('133', 135), ('131', 46)]
+sample range: {"decimalClass": "131", "high": 423, "low": 1, "naId": "4694155", "objectCount": 802, "objectFilename": "32179_644066_0006-00002.tif", "objectUrl": "https://catalog.archives.gov/medialz/partnerships/32179/0001/DD00436/32179_644066_0006/32179_644066_0006-00002.tif", "title": "131./1-423"}
+ranges in 71x-73x/81x-83x: 0 of 624
+
+-- presidential-library-catalog --
+library keys: ['citedAs', 'collections', 'prefix'] | collection keys: ['identifier', 'naId', 'series', 'statedSeriesCount', 'title'] | series keys: ['inclusiveDates', 'naId', 'title']
+all collection/series keys: ['identifier', 'inclusiveDates', 'naId', 'series', 'statedSeriesCount', 'title']
+Johnson lib name: None | Nixon: None | Carter: None
+numericalFile keys: ['microfilm', 'rolls', 'seriesNaId'] roll 620: {"caseEnd": 7357, "caseStart": 7357, "catalogURL": "https://catalog.archives.gov/id/19794147", "naId": "19794147", "title": "Numerical File: 7357-7357/215"}
+countrySeries 0 roll sample: {"catalogURL": "https://catalog.archives.gov/id/189346553", "endISO": "1887-05-31", "fileUnitNaId": "177380755", "fileUnitTitle": "Despatches from U.S. Ministers to Peru, 1826-1906", "geoKeys": ["peru"], "naId": "189346553", "startISO": "1318-11-01", "title": "Nov. 1, 11186-May 31, 1887"}

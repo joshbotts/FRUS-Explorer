@@ -1,0 +1,27 @@
+{
+ "decimal_coverage": {
+  "decimalFileOpensIn": 1910,
+  "glossableYears": [
+   {
+    "endYear": 1949,
+    "scheduleId": "1910-1949",
+    "startYear": 1910
+   },
+   {
+    "endYear": 1959,
+    "scheduleId": "1950-1959",
+    "startYear": 1950
+   },
+   {
+    "endYear": 1963,
+    "scheduleId": "1960-1963",
+    "startYear": 1960
+   }
+  ],
+  "keyOutsideGlossableYears": "no-gloss",
+  "notShipped": [],
+  "note": "A key is glossable only when the document's own date falls inside one of `glossableYears`. Outside them this file has NO gloss \u2014 do not compose one from a schedule that does not govern the key's era. The classification was renumbered in 1950, so composing across that year returns a plausible WRONG reading rather than a miss: `411` reads as Claims under the 1910\u20131949 schedule where the editors gloss `411.48` as Poland, and `48` reads as British Africa \u2014 and `48` is live in TWO of this schedule's vocabularies at once (country `British Africa`, class-8 subject `Calamities. Disasters`), so a hand-composed reading has more than one way to be wrong. For years listed in `notShipped`, gloss from `volume_sources` instead. This governs GLOSSING only: whether a key is well-formed is a separate, deliberately era-blind test, so a post-1950 key composing against these vocabularies is expected and is not a licence to gloss it. If you are gating a whole VOLUME's coverage span rather than a document's date, clamp the span's lower bound to `decimalFileOpensIn` before testing containment \u2014 a volume covering 1861\u20131947 holds no pre-1910 decimal keys to mislabel, and literal containment would silence it.",
+  "renumberedAt": 1950
+ },
+ "series_facts_central": []
+}

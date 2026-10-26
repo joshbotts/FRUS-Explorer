@@ -1,0 +1,11 @@
+CONTROL SQL (positive): SELECT count(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH '"department of state"' AND d.is_front_matter=0 AND d.is_editorial_note=0
+  volumes (of 553) with >=1 non-apparatus doc matching 'department of state': 552
+CONTROL SQL (negative): SELECT count(*) FROM frus_documents WHERE frus_documents MATCH '"ZZZ_IMPOSSIBLE_ZZZ"'
+  rows matching ZZZ_IMPOSSIBLE_ZZZ: 0
+FAMILY: Estrada Doctrine | SQL: SELECT d.volume_id,d.document_id,d.header,d.dateline,d.source_note,d.body_text FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH '"Estrada doctrine"' AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY d.volume_id,d.document_id
+   TOLERANT MISS: frus1945v09/d55
+  index hits (stem-level, non-apparatus): 28 documents in 18 volumes; literal-regex census of ALL 28: STRICT 27 of 28; TOLERANT 27 of 28
+FAMILY: Tobar doctrine | SQL: SELECT d.volume_id,d.document_id,d.header,d.dateline,d.source_note,d.body_text FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH '"Tobar doctrine"' AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY d.volume_id,d.document_id
+  index hits (stem-level, non-apparatus): 1 documents in 1 volumes; literal-regex census of ALL 1: STRICT 1 of 1; TOLERANT 1 of 1
+FAMILY: non-recognition | SQL: SELECT d.volume_id,d.document_id,d.header,d.dateline,d.source_note,d.body_text FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH 'nonrecognition OR "non-recognition"' AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY d.volume_id,d.document_id
+  index hits (stem-level, non-apparatus): 701 documents in 219 volumes; literal-regex census of ALL 701: STRICT 698 of 701; TOLERANT 701 of 701

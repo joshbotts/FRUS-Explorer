@@ -1,0 +1,21 @@
+CAME-FROM decimal classes (docs, year span, gloss under the schedule governing BOTH ends)
+ 812.00 | 199 docs | 1910-1922 | 1910-1949 [Internal Affairs of States] Mexico: Political affairs
+ 816.01 | 120 docs | 1931-1948 | 1910-1949 [Internal Affairs of States] El Salvador: Government
+ 824.00 | 69 docs | 1920-1946 | 1910-1949 [Internal Affairs of States] Bolivia: Political affairs
+ 824.01 | 48 docs | 1930-1946 | 1910-1949 [Internal Affairs of States] Bolivia: Government
+ 818.00 | 46 docs | 1911-1920 | 1910-1949 [Internal Affairs of States] Costa Rica: Political affairs
+ 838.00 | 31 docs | 1911-1946 | 1910-1949 [Internal Affairs of States] Haiti: Political affairs
+ 823.00 | 28 docs | 1913-1930 | 1910-1949 [Internal Affairs of States] Peru: Political affairs
+ 814.01 | 24 docs | 1931-1944 | 1910-1949 [Internal Affairs of States] Guatemala: Government
+ 822.01 | 23 docs | 1928-1947 | 1910-1949 [Internal Affairs of States] Ecuador: Government
+ 835.00 | 20 docs | 1930-1945 | 1910-1949 [Internal Affairs of States] Argentine Republic/ Argentina: Political affairs
+ 817.00 | 19 docs | 1911-1948 | 1910-1949 [Internal Affairs of States] Nicaragua: Political affairs
+ 816.00 | 19 docs | 1931-1948 | 1910-1949 [Internal Affairs of States] El Salvador: Political affairs
+ 814.00 | 18 docs | 1920-1944 | 1910-1949 [Internal Affairs of States] Guatemala: Political affairs
+ 835.01 | 18 docs | 1930-1945 | 1910-1949 [Internal Affairs of States] Argentine Republic/ Argentina: Government
+ 837.00 | 17 docs | 1912-1940 | 1910-1949 [Internal Affairs of States] Cuba: Political affairs
+ 839.00 | 16 docs | 1913-1923 | 1910-1949 [Internal Affairs of States] Dominican Republic: Political affairs
+ 711.1211 | 16 docs | 1921-1923 | 1910-1949 [Political Relations of States. Bi-lateral Treaties]: United States - Mexico / sub 11
+ 831.01 | 14 docs | 1945-1949 | 1910-1949 [Internal Affairs of States] Venezuela: Government
+ 724.34119 | 13 docs | 1937-1937 | 1910-1949 [Political Relations of States. Bi-lateral Treaties]: Bolivia - Paraguay / sub 119
+ 823.01 | 11 docs | 1930-1948 | 1910-1949 [Internal Affairs of States] Peru: Government

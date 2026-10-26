@@ -1,0 +1,30 @@
+== 18 overview document quotations: memo-trace pair vs overview URL pair, then the check against the memo's pair ==
+ 1. memo=frus1900/d530 urlpair_same=True OK off=906 :: to base the recognition of a foreign government solely on its de facto
+ 2. memo=frus1913/d7 urlpair_same=True OK off=687 :: Cooperation is possible only when supported at every turn by the order
+ 3. memo=frus1921v02/d344 urlpair_same=True OK off=3021 :: when it appears that there is a government in Mexico willing to bind i
+12. memo=frus1911/d353 urlpair_same=True OK off=684 :: communicate satisfactory assurances to this end to the Department
+13. memo=frus1917/d379 urlpair_same=True OK off=786 :: no Government except such as may be elected legally and established ac
+14. memo=frus1920v03/d199 urlpair_same=True OK off=916 :: Recognition cannot be accomplished by inference merely but by the full
+15. memo=frus1921v02/d349 urlpair_same=True OK off=5422 :: In entering into this treaty with you recognition would be effected, i
+16. memo=frus1926v02/d476 urlpair_same=True OK off=1679 :: has adopted the principles of that Treaty as its policy in the future 
+17. memo=frus1930v01/d375 urlpair_same=True OK off=987 :: the evidence has satisfied me that these provisional governments are d
+18. memo=frus1931v02/d208 urlpair_same=True OK off=1618 :: if the Vice President was a leader in the coup d’état or revolution, u
+19. memo=frus1933v05/d508 urlpair_same=True OK off=200 :: We have maintained that the criteria of Cuban recognition are: (1) pop
+20. memo=frus1933v05/d430 urlpair_same=True OK off=3637 :: if we recognize a government now which does not possess at least a con
+21. memo=frus1934v05/d75 urlpair_same=True OK off=1885 :: a great mistake
+22. memo=frus1944v07/d403 urlpair_same=True OK off=296 :: All of the nineteen republics participating in the consultations and e
+23. memo=frus1948v09/d7 urlpair_same=True OK off=10051 :: Recognition of a government by the United States should imply neither 
+24. memo=frus1961-63v12/d423 urlpair_same=True OK off=2010 :: Some civilianizing of Cabinet, provided civilian members were known fo
+25. memo=frus1964-68v31/d152 urlpair_same=True OK off=1886 :: Barrientos and his principal advisers have privately pledged that comm
+26. memo=frus1969-76ve08/d6 urlpair_same=True OK off=1471 :: the Department’s policy is to minimize to the greatest extent possible
+failures: 0
+
+== heading label check ==
+frus1920v03/ch23 header: 'Recognition of the Leguia government by the United States'
+check: ('OK', 0)
+
+== search-phrase strings: how many of the 38 cited rows hold each (informational) ==
+'policy of recognition': 1 of 38 cited rows, e.g. ['frus1948v09/d7']
+'recognition policy': 5 of 38 cited rows, e.g. ['frus1934v05/d218', 'frus1948v09/d7', 'frus1949v02/d446', 'frus1949v02/d448']
+'question of recognition': 3 of 38 cited rows, e.g. ['frus1921v02/d344', 'frus1923v02/d481', 'frus1969-76ve08/d6']
+'Department of State': 17 of 38 cited rows, e.g. ['frus1900/d530', 'frus1911/d353', 'frus1913/d7', 'frus1913/d894']

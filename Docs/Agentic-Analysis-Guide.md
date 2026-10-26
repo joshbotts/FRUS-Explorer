@@ -40,7 +40,7 @@ runs the agents.
 
 1. [What you are working with](#1-what-you-are-working-with)
 2. [Getting a copy of the database](#2-getting-a-copy-of-the-database)
-3. [Connecting an agent to it](#3-connecting-an-agent-to-it)
+3. [Connecting an agent to it](#3-connecting-an-agent-to-it) — and [3a. Choosing a model and an effort](#3a-choosing-a-model-and-an-effort)
 4. [Schema reference](#4-schema-reference)
 5. [Resolving the coded columns](#5-resolving-the-coded-columns)
 6. [Query patterns that work](#6-query-patterns-that-work)
@@ -249,6 +249,29 @@ window. Whole-corpus scans in one call are the ones a session limit kills — ch
 A captured length belongs to one index build: index format version 59 removed 2,974,820 spaces
 from 313,949 bodies (#1421), so a length recorded against an earlier copy of the database does not
 match a later one. Compare a capture with `length(body_text)` from the same copy, never across two.
+
+### 3a. Choosing a model and an effort
+
+Measured once, on 2026-10-25, on one question (*How did the United States decide whether to
+recognize governments that came to power by force in Latin America, and what did it ask of them
+before recognizing?*), with this guide at v1.33 and index version 71: nine cells of model × effort,
+each one agent given the same prompt and the §12 block, each scored on 35 rubric items, refuted
+(every headline number re-derived, every quotation re-retrieved) and judged on five reader items
+by instruments on Claude Fable 5.1 at `max`, three cells run twice (`Planning/C-3-Results-2026-10-26.md`).
+
+| For | Use | Compliance (items obeyed) | Refuter errors | Reader items | Wall clock | Output tokens | Usage (Max plan, weekly, instruments included) |
+|---|---|---|---|---|---|---|---|
+| The fastest result, and the best value | Claude Opus 5.5 at `medium` | 34 of 34, in both runs | 0 of 5 numbers, 0 of 81 quotations | 5 of 5, both runs | 18 and 19 minutes | about 170,000 a run | 1 to 2 points a run |
+| The highest quality | Claude Sonnet 5.5 at `high` | 34 of 34, in both runs | 0 of 5, 0 of 81 | 5 of 5, both runs; first on the judge's ranking | 31 and 32 minutes | 420,000 to 540,000 | 2 points a run |
+
+Three cells tied at the top on quality, Sonnet at `high`, Sonnet at `max` and Opus at `medium`,
+and the reader judge's ranking broke the tie; Sonnet at `max` took 89 minutes and twice the usage
+for the same score. The fastest cell of all, Sonnet at `medium` at 13 minutes, fell below the
+compliance floor (31 of 34, and 4 of 5 reader items) and is not recommended at any price. The
+Fable 5.1 column cost the most at every effort and never reached full compliance (31, 33 and 32
+of 34), so on this question it is not the choice for any of the three. These are one question's
+figures: a second question is the first thing a later run adds, and until then read the table as
+where to start, not as a ranking of the models.
 
 ---
 
@@ -3046,6 +3069,16 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.34 — 2026-10-26: **§3a, *Choosing a model and an effort*** — C-3's table
+  (`Planning/C-3-Results-2026-10-26.md`, run 2026-10-25 on one question, nine model × effort
+  cells and three replicates, instruments on Fable 5.1 at `max`): Opus 5.5 at `medium` for the
+  fastest result and the best value, Sonnet 5.5 at `high` for the highest quality, Sonnet at
+  `medium` below the compliance floor at any price, and the Fable column never at full compliance.
+  The READER-FACING OUTPUT section v1.29 added to §12 was the other thing C-3 measured: the
+  three-part bottom line (O3) held in 12 of 12 runs, no SQL or id pair in the overview (O1) in 11
+  of 12, and the trace of every overview number to a memo line (O2) in 8 of 12; the block as a
+  whole scored 396 of 408 items. Whether the section is called adopted is the owner's decision.
+  The §15.1 block is unchanged.
 - 1.33 — 2026-10-21: **index version 71** (A18b, plan of record decision 80). `cross_references`'
   row says that a reference to a printed page of another volume names the document on that page
   under rule C, resolved from the bundled `cited-page-map.json` whether or not the cited volume

@@ -1,0 +1,28 @@
+statuses: ['Restricted - Fully', 'Unrestricted', 'Restricted - Partly', 'Restricted - Possibly', 'Undetermined']
+referenceUnits: ['National Archives at College Park - Textual Reference', 'National Archives at College Park - Motion Pictures']
+useRestrictions: ['Copyright', 'Other']
+heading 341 = Department of State. Policy Planning Council.
+heading 248 = Department of State. Executive Secretariat.
+heading 122 = Department of State. Bureau of Inter-American Affairs.
+heading 127 = Department of State. Bureau of Inter-American Affairs. Office of Central American Affairs.
+heading 149 = Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs.
+heading 123 = Department of State. Bureau of Inter-American Affairs. Office of Andean Affairs.
+heading 303 = Department of State. Office of the Legal Adviser. Office of the Assistant Legal Adviser for Inter-American Affairs.
+heading 128 = Department of State. Bureau of Inter-American Affairs. Office of Central American and Panamanian Affairs.
+heading 129 = Department of State. Bureau of Inter-American Affairs. Office of Country Director for Ecuador and Peru.
+62D1           2838992   1948–1961 access='Restricted - Partly' restr=['FOIA (b)(1) National Security'] creator='Department of State. Policy Planning Council.'
+62D430         2839191   1953–1961 access='Restricted - Partly' restr=['FOIA (b)(1) National Security'] creator='Department of State. Executive Secretariat.'
+63D75          2521274   1952–1961 access='Restricted - Possibly' restr=[] creator='Department of State. Executive Secretariat.'
+64D199         602231    1953–1964 access='Unrestricted' restr=[] creator='Department of State. Executive Secretariat.'
+66D149         610077    1956–1964 access='Unrestricted' restr=[] creator='Department of State. Executive Secretariat.'
+66D65          1074073   1962–1975 access='Restricted - Partly' restr=['FOIA (b)(1) National Security'] creator='Department of State. Bureau of Inter-American Affairs.'
+67D46          2602882   1957–1974 access='Restricted - Partly' restr=['FOIA (b)(1) National Security'] creator='Department of State. Bureau of Inter-American Affairs. Office of Central American Affairs.'
+59D573/61D279  2108779   1957–1959 access='Unrestricted' restr=[] creator='Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs.'
+70D247         26309336  1964–1978 access='Restricted - Partly' restr=['FOIA (b)(1) National Security'] creator='Department of State. Bureau of Inter-American Affairs. Office of Andean Affairs.'
+75D163         12014843  1961–1971 access='Restricted - Partly' restr=['FOIA (b)(1) National Security', 'FOIA (b)(6) Personal Information'] creator='Department of State. Office of the Legal Adviser. Office of the Assistant Legal Adviser for Inter-American Affairs.'
+81D324         17408805  1968–1979 access='Restricted - Partly' restr=['FOIA (b)(1) National Security', 'FOIA (b)(3) Statute', 'FOIA (b)(6) Personal Information'] creator='Department of State. Office of the Legal Adviser. Office of the Assistant Legal Adviser for Inter-American Affairs.'
+72D192 claimants: 6 [('Speeches and Statements', ['A1 5376', 'A1 5376A'], '631695', '1961–1969'), ('White House Correspondence Files', ['A1 5377'], '631704', '1961–1969'), ('General Correspondence of Dean Rusk', ['A1 5378'], '631705', '1961–1968'), ('Transcripts of Telephone Calls', ['A1 5379'], '631706', '1961–1969'), ('Subject Files', ['A1 5380'], '631707', '1961–1968'), ('Chronological Files', ['A1 5381'], '631709', '1961')]
+schedule id 1963 1963 1963 source: Records Classification Handbook (Department of State, March 1963) | POL 16: INDEPENDENCE. RECOGNITION. | POL 23-9: None
+schedule id 1964-1973 1964 1973 source: Records Classification Handbook (Department of State, 1965) | POL 16: None | POL 23-9: Rebellion. Coups.
+decimal coverage renumberedAt: 1950 opensIn: 1910
+1910-1949 subjects keys: ['6', '8'] | 8/00: Political affairs | 8/01: Government

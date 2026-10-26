@@ -1,6 +1,14 @@
 # C-3 — the reader-facing revisions under the block, and model × effort on one question
 
-**Status:** DESIGN, written 2026-10-14 before any run, to be frozen before the first cell launches.
+**Status:** RUN as designed on 2026-10-25/26, on the owner's Mac, on the owner's word of 2026-10-25
+("start C-3 now with build 1776"), before the submission decision 91 had put first. The results are
+**`C-3-Results-2026-10-26.md`** and the record is `c3-reader-test/`. Two things differed from the text
+below, both recorded there:
+the rubric file it names holds 26 main items, not 24, and all 32 of its items were carried with
+O1–O3 (35); and the stop line moved from 69% to 75% on the owner's word while the ninth cell ran,
+which bought three replicates. The design text below is unchanged since it was frozen.
+
+**Status before the run:** DESIGN, written 2026-10-14 before any run, to be frozen before the first cell launches.
 The owner's four inputs arrived the same day: the question without its dates (§1), the Max 20x
 plan (the budget rule), the guide edits landing before the run (so the block section is pasted
 from the guide, not generated from the review), and the instruments on Fable at max (§2).

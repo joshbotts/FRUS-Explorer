@@ -1,0 +1,6 @@
+d217 mentions 'Herter': False | 'Dulles': True | 'Acting': False
+   ... ad been accorded at 5 p.m. that day. (Department of State, Central Files, 737.00/1–759) John Foster Dulles Printed from a copy that bears this typed signature.
+
+d74 context: ations among the American States is desirable. 2. That the right of maintaining, suspending or renewing diplomatic relations with another government shall not be exercised as a means of individually obtaining unjustified advantages under international law. 3. That the establishment or maintenance of
+
+series-facts-index: 698 series; inclusiveStartYear<1940: 11; inclusiveEndYear<1940: 1; no y0: 0

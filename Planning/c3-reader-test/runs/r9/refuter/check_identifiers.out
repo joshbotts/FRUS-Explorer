@@ -1,0 +1,62 @@
+lotFiles rows: 1070 byNaId rows: 698
+
+LOT 81D64: claim entry UD-14D 61, NAID 27499857, 1978–1981, 9 linear feet, fully restricted
+  lotFiles: {"lotNumber": "81D64", "naId": "27499857", "hmsMlrEntryNumbers": ["UD-14D 61"], "recordGroup": "59", "title": "Assistant Secretary\u2019s Files", "matchType": "control", "levelOfDescription": "series"}
+  series-facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Fully", "creator": "Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "9 linear feet, 2 linear inches", "inclusiveStartYear": 1978, "inclusiveEndYear": 1981}
+  entry ok: True | naid ok: True | RG 59: True | years: 1978 1981 | extent: 9 linear feet, 2 linear inches | access: Restricted - Fully ['FOIA (b)(1) National Security'] | ref unit: National Archives at College Park - Textual Reference | creator: Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs.
+
+LOT 53D26: claim entry A1 1130, NAID 2108774, 1949–1953, 6 linear feet, unrestricted
+  lotFiles: {"lotNumber": "53D26", "naId": "2108774", "hmsMlrEntryNumbers": ["A1 1130"], "recordGroup": "59", "title": "Subject Files", "matchType": "control", "levelOfDescription": "series"}
+  series-facts: {"accessStatus": "Unrestricted", "creator": "Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs.", "referenceUnit": "National Archives at College Park - Textual Reference", "useStatus": "Unrestricted", "extent": "6 linear feet, 2 linear inches", "inclusiveStartYear": 1949, "inclusiveEndYear": 1953}
+  entry ok: True | naid ok: True | RG 59: True | years: 1949 1953 | extent: 6 linear feet, 2 linear inches | access: Unrestricted None | ref unit: National Archives at College Park - Textual Reference | creator: Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs.
+
+LOT 59D573: claim entry A1 1135, NAID 2108779, 1957–1959, 7 linear feet, unrestricted
+  lotFiles: {"lotNumber": "59D573", "naId": "2108779", "hmsMlrEntryNumbers": ["A1 1135"], "recordGroup": "59", "title": "Subject Files", "matchType": "control", "levelOfDescription": "series"}
+  series-facts: {"accessStatus": "Unrestricted", "creator": "Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs.", "referenceUnit": "National Archives at College Park - Textual Reference", "useStatus": "Unrestricted", "extent": "7 linear feet", "inclusiveStartYear": 1957, "inclusiveEndYear": 1959}
+  entry ok: True | naid ok: True | RG 59: True | years: 1957 1959 | extent: 7 linear feet | access: Unrestricted None | ref unit: National Archives at College Park - Textual Reference | creator: Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs.
+
+LOT 81D121: claim entry UD-UP 313, NAID 26309351, 1964–1970, 2 linear feet, fully restricted
+  lotFiles: {"lotNumber": "81D121", "naId": "26309351", "hmsMlrEntryNumbers": ["UD-UP 313"], "recordGroup": "59", "title": "Records Relating to Chile Policy", "matchType": "control", "levelOfDescription": "series"}
+  series-facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Fully", "creator": "Department of State. Office of the Legal Adviser. Office of the Deputy Legal Adviser for Administration.", "coverageStartYear": 1963, "coverageEndYear": 1970, "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "2 linear feet, 1 linear inch", "inclusiveStartYear": 1964, "inclusiveEndYear": 1970}
+  entry ok: True | naid ok: True | RG 59: True | years: 1964 1970 | extent: 2 linear feet, 1 linear inch | access: Restricted - Fully ['FOIA (b)(1) National Security'] | ref unit: National Archives at College Park - Textual Reference | creator: Department of State. Office of the Legal Adviser. Office of the Deputy Legal Adviser for Administration.
+
+LOT 81D113: claim entry P 14, NAID 1487627, 1975–1981, 14 linear feet, partly restricted
+  lotFiles: {"lotNumber": "81D113", "naId": "1487627", "hmsMlrEntryNumbers": ["P 14"], "recordGroup": "59", "title": "Records of Deputy Secretary Warren Christopher", "matchType": "control", "levelOfDescription": "series"}
+  series-facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Office of the Deputy Secretary of State.", "coverageStartYear": 1975, "coverageEndYear": 1981, "findingAids": ["Folder List"], "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "14 linear feet", "inclusiveStartYear": 1975, "inclusiveEndYear": 1981}
+  entry ok: True | naid ok: True | RG 59: True | years: 1975 1981 | extent: 14 linear feet | access: Restricted - Partly ['FOIA (b)(1) National Security'] | ref unit: National Archives at College Park - Textual Reference | creator: Department of State. Office of the Deputy Secretary of State.
+
+COUNTRY SERIES (file units):
+  177380741 (Despatches from U.S. Ministers to Mexico, 1823–1906): 179 roll rows; sample: [('diplomaticDespatches', 'fileUnitNaId', 'Despatches from U.S. Ministers to Mexico, 1823-1906', 'Volume 1; March 15, 1823-June 27, 1826', ['mexico'], '1823-03-15', '1826-06-27', 'https://catalog.archives.gov/id/189098908'), ('diplomaticDespatches', 'fileUnitNaId', 'Despatches from U.S. Ministers to Mexico, 1823-1906', '(Register) March 15, 1823-December 22,1906', ['mexico'], '1823-03-15', '1906-12-22', 'https://catalog.archives.gov/id/189098328')]
+    fileUnitTitles: {'Despatches from U.S. Ministers to Mexico, 1823-1906'}
+  149324017 (Diplomatic Instructions, Mexico, vol. 19, 1873–1879): 1 roll rows; sample: [('diplomaticInstructions', 'naId', None, 'Volume 19: Mexico: May 7, 1873 - June 19, 1879', ['mexico'], '1873-05-07', '1879-06-19', 'https://catalog.archives.gov/id/149324017')]
+    fileUnitTitles: {None}
+  177380736 (Despatches from U.S. Ministers to Venezuela, 1835–1906): 60 roll rows; sample: [('diplomaticDespatches', 'fileUnitNaId', 'Despatches from U.S. Ministers to Venezuela, 1835-1906', 'July 1. 1835-Dec. 3, 1840', ['venezuela'], '1840-07-01', '1840-12-03', 'https://catalog.archives.gov/id/188942579'), ('diplomaticDespatches', 'fileUnitNaId', 'Despatches from U.S. Ministers to Venezuela, 1835-1906', 'Mar. 18, 1841-Aug. 23, 1845', ['venezuela'], '1841-03-18', '1845-08-23', 'https://catalog.archives.gov/id/188943049')]
+    fileUnitTitles: {'Despatches from U.S. Ministers to Venezuela, 1835-1906'}
+  177380753 (Despatches from U.S. Ministers to Ecuador, 1848–1906): 19 roll rows; sample: [('diplomaticDespatches', 'fileUnitNaId', 'Despatches from U.S. Ministers to Ecuador, 1848-1906', 'Apr, 6, 1846-Aug. 8, 1850', ['ecuador'], '1846-01-01', '1850-08-08', 'https://catalog.archives.gov/id/189305464'), ('diplomaticDespatches', 'fileUnitNaId', 'Despatches from U.S. Ministers to Ecuador, 1848-1906', 'Aug. 29, 1850--Nov, 30, 1853', ['ecuador'], '1850-08-29', '1853-01-01', 'https://catalog.archives.gov/id/189305807')]
+    fileUnitTitles: {'Despatches from U.S. Ministers to Ecuador, 1848-1906'}
+  216919721 (Notes to Foreign Missions, Mexico 1873–1884 (memo only)): 1 roll rows; sample: [('notesToForeignMissions', 'naId', None, 'Mexico: July 21, 1873 - April 30, 1884', ['mexico'], '1873-07-21', '1884-04-30', 'https://catalog.archives.gov/id/216919721')]
+    fileUnitTitles: {None}
+
+CENTRAL DECIMAL FILE in series-facts? rows whose decoded creator/title mention it:
+   0 []
+  302021 in byNaId: False
+  lotFiles titles mentioning "Central Decimal": [('60D171', '2561240', 'Decimal Files'), ('60D648', '2561240', 'Decimal Files')]
+
+SUBJECT-NUMERIC POL 16:
+  schedule ['abbreviations', 'areas', 'categories', 'endYear', 'id'] POL.16 = INDEPENDENCE. RECOGNITION.
+  schedule ['abbreviations', 'areas', 'categories', 'endYear', 'id'] POL.16 = (POL keys sample ['1-1', '1-2', '1-3', '10', '11'])
+
+DECIMAL CLASS LABELS:
+  schedule None | keys ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+    class 8: Internal Affairs of States | class 7: Political Relations of States. Bi-lateral Treaties
+    subjects 8 .00: Political affairs | .01: Government | sample keys ['00', '001', '0011', '002', '003', '00B']
+    countries 12,17,24,16,38,23: {'12': 'Mexico', '17': 'Nicaragua', '24': 'Bolivia', '16': 'El Salvador', '38': 'Haiti', '23': 'Peru'}
+  schedule None | keys ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+    class 8: Internal Economic, Industrial and Social Affairs | class 7: Internal Political and National Defense Affairs
+    subjects keys sample: []
+    countries 12,17,24,16,38,23: {'12': 'Mexico', '17': 'Nicaragua', '24': 'Bolivia', '16': 'El Salvador', '38': 'Haiti', '23': 'Peru'}
+  schedule None | keys ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+    class 8: Internal Economic, Industrial, and Social Affairs | class 7: Internal Political and National Defense Affairs
+    subjects keys sample: []
+    countries 12,17,24,16,38,23: {'12': 'Mexico', '17': 'Nicaragua', '24': 'Bolivia', '16': 'El Salvador', '38': 'Haiti', '23': 'Peru'}
+coverage: {"decimalFileOpensIn": 1910, "glossableYears": [{"endYear": 1949, "scheduleId": "1910-1949", "startYear": 1910}, {"endYear": 1959, "scheduleId": "1950-1959", "startYear": 1950}, {"endYear": 1963, "scheduleId": "1960-1963", "startYear": 1960}], "keyOutsideGlossableYears": "no-gloss", "notShipped": [], "note": "A key is glossable only when the document's own date falls inside one of `glossableYears`

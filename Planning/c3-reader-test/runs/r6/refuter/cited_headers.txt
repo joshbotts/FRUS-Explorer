@@ -1,0 +1,71 @@
+VOL frus1877 | Papers Relating to the Foreign Relations of the United                     States, Transmitted to Congress, With the Annual Message of the President,           
+VOL frus1878 | Papers Relating to the Foreign Relations of the United                     States, Transmitted to Congress, With the Annual Message of the President,           
+VOL frus1904 | Papers Relating to the Foreign Relations of the United                     States, With the Annual Message of the President Transmitted to Congress             
+VOL frus1907p2 | Papers Relating to the Foreign Relations of the United                     States, With the Annual Message of the President Transmitted to Congress             
+VOL frus1911 | Papers Relating to the Foreign Relations of the United                     States, With the Annual Message of the President Transmitted to Congress             
+VOL frus1913 | Papers Relating to the Foreign Relations of the United                     States, With the Address of the President to Congress December 2, 1913
+VOL frus1917 | Papers Relating to the Foreign Relations of the United                     States, With the Address of the President to Congress December 4, 1917
+VOL frus1920v03 | Papers Relating to the Foreign Relations of the United                     States, 1920, Volume III
+VOL frus1921v02 | Papers Relating to the Foreign Relations of the United                     States, 1921, Volume II
+VOL frus1922v02 | Papers Relating to the Foreign Relations of the United                     States, 1922, Volume II
+VOL frus1923v02 | Papers Relating to the Foreign Relations of the United                     States, 1923, Volume II
+VOL frus1930v01 | Papers Relating to the Foreign Relations of the United                     States, 1930, Volume I
+VOL frus1932v05 | Foreign Relations of the United States, Diplomatic Papers,                     1932, The American Republics, Volume V
+VOL frus1934v05 | Foreign Relations of the United States, Diplomatic Papers,                     1934, The American Republics, Volume V
+VOL frus1935v04 | Foreign Relations of the United States, Diplomatic Papers,                     1935, The American Republics, Volume IV
+VOL frus1936v05 | Foreign Relations of the United States, Diplomatic Papers,                     1936, The American Republics, Volume V
+VOL frus1944v07 | Foreign Relations of the United States, Diplomatic Papers,                     1944, The American Republics, Volume VII
+VOL frus1945v09 | Foreign Relations of the United States, Diplomatic Papers,                     1945, The American Republics, Volume IX
+VOL frus1946v11 | Foreign Relations of the United States, 1946, The American                     Republics, Volume XI
+VOL frus1948v09 | Foreign Relations of the United States, 1948, The Western                     Hemisphere, Volume IX
+VOL frus1949v02 | Foreign Relations of the United States, 1949, The United                     Nations; The Western Hemisphere, Volume II
+VOL frus1950v02 | Foreign Relations of the United States, 1950, The United                     Nations; The Western Hemisphere, Volume II
+VOL frus1952-54v04 | Foreign Relations of the United States, 1952–1954, The                     American Republics, Volume IV
+VOL frus1955-57v06 | Foreign Relations of the United States, 1955–1957, American                     Republics: Multilateral; Mexico; Caribbean, Volume VI
+VOL frus1961-63v12 | Foreign Relations of the United States, 1961–1963, Volume                     XII, American Republics
+VOL frus1964-68v31 | Foreign Relations of the United States, 1964–1968, Volume                     XXXI, South and Central America; Mexico
+VOL frus1969-76v21 | Foreign Relations of the United States, 1969–1976, Volume                     XXI, Chile, 1969–1973
+
+frus1877/d222 n=222 1877-05-16 FM=0 EN=0 | No. 222. Mr. Seward to Mr. Foster. | Department of State, Washington, May 16, 1877.
+frus1878/d344 n=344 1878-03-23 FM=0 EN=0 | No. 339. Mr. Evarts to Mr. Foster. | Department of State, Washington, March 23, 1878.
+frus1904/d228 n=228 1903-12-15 FM=0 EN=0 | Mr. Powell to Mr. Hay. | American Legation, Santo Domingo City, D. R., December 15, 1
+frus1907p2/d22 n=22 1907-08-08 FM=0 EN=0 | The Acting Secretary of State to the Mexican Ambassador. | Department of State, Washington, August 8, 1907.
+frus1911/d933 n=933 1911-01-20 FM=0 EN=0 | The Secretary of State to the American Minister. | Department of State, Washington, January 20, 1911.
+frus1913/d873 n=873 1913-02-25 FM=0 EN=0 | The Secretary of State to the American Ambassador. | Department of State, Washington, February 25, 1913—1 p.m.
+frus1913/d7 n=7 1913-03-12 FM=0 EN=0 | [Untitled] | Department of State, Washington, March 12, 1913—1 p.m.
+frus1913/d1028 n=1028 1913-08-27 FM=0 EN=0 | The Secretary of State to the American Chargé d’Affaires. | Department of State, Washington, August 27, 1913—10 p.m.
+frus1917/d379 n=379 1917-02-09 FM=0 EN=0 | The Secretary of State to Minister Hale | Department of State, Washington, February 9, 1917, 3 p.m.
+frus1917/d409 n=409 1917-06-15 FM=0 EN=0 | [Untitled] | American Legation, San José, June 15, 1917, noon.
+frus1920v03/d230 n=230 1920-09-23 FM=0 EN=0 | Memorandum by the Under Secretary of State (Davis) | [Washington,] September 23, 1920.
+frus1921v02/d344 n=344 1921-06-08 FM=0 EN=0 | The Secretary of State to the Chargé in Mexico (Summerlin) | Washington, June 8, 1921.
+frus1922v02/d569 n=569 1922-01-25 FM=0 EN=0 | The Secretary of State to the Chargé in Mexico (Summerlin) | Washington, January 25, 1922—6 p.m.
+frus1923v02/d345 n=345 1923-06-30 FM=0 EN=0 | The Secretary of State to the Minister in Honduras (Morales) | Washington, June 30, 1923—3 p.m.
+frus1930v01/d375 n=375 1930-09-17 FM=0 EN=0 | Press Release Issued by the Department of State on September 17, 1930 | September 17, 1930
+frus1932v05/d618 n=618 1932-01-13 FM=0 EN=0 | The Secretary of State to the Chargé in El Salvador (McCafferty) | Washington, January 13, 1932—7 p.m.
+frus1934v05/d75 n=75 1934-01-08 FM=0 EN=0 | The Acting Secretary of State to the Personal Representative of the President (Caffery) | Washington, January 8, 1934—4 p.m.
+frus1934v05/d199 n=199 1934-01-08 FM=0 EN=0 | The Assistant Secretary of State (Welles) to President Roosevelt | Washington, January 8, 1934.
+frus1935v04/d823 n=823 1935-04-05 FM=0 EN=0 | The Secretary of State to the Minister in Nicaragua (Lane) | Washington, April 5, 1935.
+frus1936v05/d112 n=112 1936-04-30 FM=0 EN=0 | The Secretary of State to the Minister in Honduras (Keena) | Washington, April 30, 1936.
+frus1944v07/d1 n=1 1944-01-01 FM=0 EN=0 | The Secretary of State to the Ambassador in Colombia (Lane) | Washington, January 1, 1944—7 p.m.
+frus1944v07/d386 n=386 1944-01-06 FM=0 EN=0 | The Secretary of State to the Diplomatic Representatives in the American Republics | Washington, January 6, 1944—10 p.m.
+frus1944v07/d1018 n=1018 1944-06-03 FM=0 EN=0 | The Acting Secretary of State to the Diplomatic Representatives in the American Republics Except Argentina, Bolivia, Ecu | Washington, June 3, 1944—9 p.m.
+frus1944v07/d1020 n=1020 1944-06-05 FM=0 EN=0 | The Acting Secretary of State to the Diplomatic Representatives in the American Republics Except Argentina, Bolivia, and | Washington, June 5, 1944—7 p.m.
+frus1945v09/d875 n=875 1945-01-22 FM=0 EN=0 | The Secretary of State to the Diplomatic Representatives in the American Republics | Washington, January 22, 1945—11 p.m.
+frus1945v09/d1172 n=1172 1945-10-27 FM=0 EN=0 | The Secretary of State to Diplomatic Representatives in the American Republics | Washington, October 27, 1945—8 a.m.
+frus1946v11/d773 n=773 1946-03-01 FM=0 EN=0 | The Secretary of State to Diplomatic Representatives in the American Republics | Washington, March 1, 1946—8 a.m.
+frus1948v09/d75 n=75 1948-01-12 FM=0 EN=0 | The Secretary of State to American Diplomatic Representatives in the American Republics | Washington, January 12, 1948—9 a. m.
+frus1948v09/d384 n=384 1948-05-03 FM=0 EN=0 | The Secretary of State to the Embassy in Costa Rica | Washington, May 3, 1948—6 p. m.
+frus1948v09/d89 n=89 1948-11-08 FM=0 EN=0 | Memorandum by the Director of the Office of American Republic Affairs (Daniels) to the Acting Secretary of State | [Washington,] November 8, 1948.
+frus1949v02/d446 n=446 1949-12-06 FM=0 EN=0 | Memorandum by the Assistant Chief of the Division of Special Inter-American Affairs (Jamison) to the Acting Officer in C | [Washington,] December 6, 1949.
+frus1950v02/d476 n=476 1950-05-17 FM=0 EN=0 | Memorandum by the Director of the Office of Middle American Affairs (Mann) to the Assistant Secretary of State for Inter | [Washington,] May 17, 1950.
+frus1952-54v04/d327 n=327 1952-03-24 FM=0 EN=0 | Memorandum by the Secretary of State to the President | [Washington,] March 24, 1952.
+frus1952-54v04/d136 n=136 1952-05-22 FM=0 EN=0 | Memorandum by the Secretary of State to the President | Washington, May 22, 1952.
+frus1955-57v06/d353 n=353 1957-07-09 FM=0 EN=0 | 353. Memorandum From the Acting Director of the Office of Inter-American Regional Political Affairs (Dreier) to the Assi | Washington, July 9, 1957.
+frus1961-63v12/d417 n=417 1962-06-07 FM=0 EN=0 | 417. Telegram From the Department of State to the Embassy in Peru | Washington, June 7, 1962, 8:16 p.m.
+frus1961-63v12/d423 n=423 1962-07-30 FM=0 EN=0 | 423. Telegram From the Department of State to the Embassy in Peru | Washington, July 30, 1962, 9:17 p.m.
+frus1961-63v12/d363 n=363 1963-12-13 FM=0 EN=0 | 363. Telegram From the Department of State to the Embassy in Venezuela | Washington, December 13, 1963, 8:15 p.m.
+frus1964-68v31/d206 n=206 1964-04-02 FM=0 EN=0 | 206. Summary Record of the 525th Meeting of the National Security Council | Washington, April 2, 1964, noon.
+frus1964-68v31/d132 n=132 1966-06-28 FM=0 EN=0 | 132. Telegram From the Department of State to the Embassy in Argentina | Washington, June 28, 1966, 9:44 a.m.
+frus1964-68v31/d512 n=512 1968-10-06 FM=0 EN=0 | 512. Telegram From the Department of State to the Embassy in Peru | Washington, October 6, 1968, 2001Z.
+frus1969-76v21/d360 n=360 1973-09-18 FM=0 EN=0 | 360. Telegram From the Embassy in Chile to the Department of State | Santiago, September 18, 1973, 2120Z.
+frus1969-76v21/d361 n=361 1973-09-20 FM=0 EN=0 | 361. Minutes of a Meeting of the Washington Special Actions Group | Washington, September 20, 1973, 3:05–3:49 p.m.

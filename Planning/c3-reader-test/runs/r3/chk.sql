@@ -1,0 +1,10 @@
+
+.mode list
+CREATE TEMP TABLE p(v TEXT,d TEXT);
+INSERT INTO p VALUES ('frus1913','d7'),('frus1913','d894'),('frus1917','d379'),('frus1917','d407'),('frus1919v01','d869'),('frus1920v03','d199'),('frus1921v02','d344'),('frus1921v02','d349'),('frus1923v02','d481'),('frus1926v02','d476'),('frus1930v01','d375'),('frus1930v01','d476'),('frus1931v02','d208'),('frus1932v05','d478'),('frus1934v05','d218'),('frus1933v05','d430'),('frus1933v05','d508'),('frus1934v05','d75'),('frus1943v05','d33'),('frus1943v05','d34'),('frus1943v05','d142'),('frus1944v07','d403'),('frus1945v09','d1170'),('frus1948v09','d7'),('frus1949v02','d446'),('frus1949v02','d448'),('frus1955-57v06','d354'),('frus1958-60v05mSupp','es_d33'),('frus1958-60v05mSupp','es_d40'),('frus1961-63v12','d421'),('frus1961-63v12','d423'),('frus1964-68v31','d141'),('frus1964-68v31','d152'),('frus1964-68v31','d518'),('frus1969-76v21','d358'),('frus1969-76ve08','d6');
+SELECT 'pairs', count(*), 'found in document_cache', (SELECT count(*) FROM p JOIN document_cache c ON c.volume_id=p.v AND c.document_id=p.d), 'nonapparatus', (SELECT count(*) FROM p JOIN document_cache c ON c.volume_id=p.v AND c.document_id=p.d WHERE c.is_front_matter=0 AND c.is_editorial_note=0), 'volumes', (SELECT count(DISTINCT v) FROM p) FROM p;
+SELECT 'ED2 in set', count(*) FROM p WHERE v LIKE '%Ed2';
+SELECT 'came-from (document_sources) rows for set', count(*) FROM p JOIN document_sources s ON s.volume_id=p.v AND s.document_id=p.d;
+SELECT p.v||'/'||p.d, s.citation_era, s.repository, s.record_group, s.lot_file, s.series_name, substr(s.raw_text,1,100) FROM p JOIN document_sources s ON s.volume_id=p.v AND s.document_id=p.d ORDER BY 1;
+SELECT 'pointed-at rows for set', count(*), count(DISTINCT e.volume_id||e.document_id) FROM p JOIN external_citations e ON e.volume_id=p.v AND e.document_id=p.d;
+SELECT p.v||'/'||p.d, e.anchor, e.repository, e.collection, e.lot_file, substr(e.raw_text,1,90) FROM p JOIN external_citations e ON e.volume_id=p.v AND e.document_id=p.d ORDER BY 1;

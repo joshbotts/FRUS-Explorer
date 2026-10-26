@@ -1,0 +1,11 @@
+CAME-FROM: scope docs with a document_sources row: 894 of 940
+citation_era [('decimal', 803), ('structured', 53), ('subject_numeric', 15), ('lot_file', 13), ('cfpf', 5), ('named_series', 4), ('published', 1)]
+repository [('Department of State', 825), ('Central Intelligence Agency', 15), ('National Archives', 14), ('Eisenhower Library', 8), ('Kennedy Library', 7), ('Johnson Library', 7), ('Nixon Presidential Materials', 6), ('Carter Library', 6), (None, 5), ('Ford Library', 1)]
+record_group [('59', 837), (None, 55), ('330', 2)]
+lot [(None, 881), ('62D1', 2), ('NO', 1), ('53D26', 1), ('63D351', 1), ('63D75', 1), ('62D430', 1), ('66D95', 1), ('64D16', 1), ('60D513', 1), ('66D149', 1), ('70D442', 1)]
+series [(None, 27), ('National Security File', 7), ('Whitman File', 6), ('Central Files 1964–66', 6), ('NSC Files', 6), ('National Security Files', 5), ('Central Files 1967–69', 5), ('National Security Affairs', 5), ('832.01/29', 4), ('701.3212/60', 3), ('816.01/366', 3), ('824.00/3076', 3)]
+decimal class first3 [('816', 125), ('824', 114), ('812', 96), ('835', 57), ('818', 35), ('', 32), ('814', 31), ('822', 31), ('838', 27), ('834', 23)]
+POINTED-AT: rows 90 in docs 66 of 940
+anchor [('centralFileClass', 75), ('lotFile', 11), ('presidentialLibrary', 4)]
+repo/collection [(('Department of State', None), 86), (('Eisenhower Library', 'Dulles Papers'), 1), (('Kennedy Library', 'President’s Office Files'), 1), (('Johnson Library', 'Papers of George W. Ball'), 1), (('Johnson Library', 'Tom Johnson Meeting Notes'), 1)]
+lots [('63D127', 2), ('53D26', 1), ('57D284', 1), ('59D573', 1), ('61D279', 1), ('62D418', 1), ('66D95', 1), ('64D16', 1), ('63D75', 1), ('72D192', 1)]

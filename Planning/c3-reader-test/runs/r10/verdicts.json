@@ -1,0 +1,333 @@
+{
+  "run:r10": "DONE /Users/jbotts/frus-analysis/c3/runs/r10",
+  "judge:r10": {
+    "cell": "r10",
+    "items": [
+      {
+        "id": "J1",
+        "verdict": "yes",
+        "evidence": "The file opens with the question as title, then \"## The bottom line\" holding, in order, \"**1. What FRUS answers directly.**\" (the century-long test and the overlays Washington added, with the set behind it), \"**2. Where FRUS points for the rest.**\" (the came-from and footnote channels, kept apart) and \"**3. What this request cannot get from FRUS.**\" (five bullets). A \"**Scope.**\" paragraph and \"## Decisions this needs from you\" follow, and \"## Findings\" begins only after them, at the first numbered finding \"### 1. One working test ran through the whole record\"."
+      },
+      {
+        "id": "J2",
+        "verdict": "yes",
+        "evidence": "No percent sign or bare ratio appears anywhere. Every figure names its set: \"about 2,100 documents in 115 of the series' 553 volumes ... about 1,300 that the editors filed under 56 chapters titled for a recognition question (1895–1950) and about 1,100 in Latin American chapters whose own wording speaks of recognizing a government (1862–1980), the two overlapping by some 300\"; \"more than nine in ten of the set's documents that carry a source note cite the Department's central files\"; \"In the recognition documents of 1930–1942 about one in four invoke the treaty rule, against about one in twenty before 1930 and almost none after 1942\"; \"Communism is mentioned in about half of the recognition documents of 1949–1960 and two in five after 1961, but in a reading sample of fifteen such mentions only five bore on the recognition decision itself\"; \"an evenly spaced sample of 40: all 40 contain the wording literally ... 35 of the 40 are about recognizing a government installed by force\". The loosest figure, \"the control phrase Department of State occurred in about 94,000 documents\", is still a count of documents in the stated corpus-wide search, not a bare percentage."
+      },
+      {
+        "id": "J3",
+        "verdict": "yes",
+        "evidence": "Forty-three distinct documents are cited, each with year, volume or part, document number and a history.state.gov link; the series name leads each citation chain and every block-quote attribution, e.g. \"— Foreign Relations of the United States, 1900, Document 530, https://history.state.gov/historicaldocuments/frus1900/d530\" and \"1958–1960, Volume V, Microfiche Supplement, Document ES–43, https://history.state.gov/historicaldocuments/frus1958-60v05mSupp/es_d43\". Later members of a chain use the short form \"1930, Volume I, Document 375, https://history.state.gov/historicaldocuments/frus1930v01/d375\", which is still the printed edition plus link. A check found zero parenthetical \"Document N\" citations without a link in the same parentheses, no frus id pair outside a URL, and no document cited by title alone; all 43 are in the collection."
+      },
+      {
+        "id": "J4",
+        "verdict": "yes",
+        "evidence": "The zero is given as a search with terms, corpus and controls: \"The name Guani doctrine, for the 1943 consultation rule, occurs in no document; in the same search the control phrase Department of State occurred in about 94,000 documents and a nonsense control string in none.\" The public statements are a search with terms and corpus whose hits were read: \"I searched all 553 volumes for Acheson's address of 19 September 1949, Assistant Secretary Mann's Notre Dame speech of June 1964 and Senate Resolution 205 of 1969: on reading every hit, six documents of 1949–1950 refer to the Acheson address, one to the Mann speech and two to the resolution, and none prints the text\". The 1980s names the volume and its count: \"The only indexed 1981–1988 Latin American volume (South America) holds 88 documents on four countries, and none uses the language of recognizing a government\". One bullet, \"The Latin American side ... appear only as U.S. diplomats reported them\", is an assertion rather than a search, and the controls are stated only on the Guani search; the section as a whole is nonetheless stated as searches run, not asserted."
+      },
+      {
+        "id": "J5",
+        "verdict": "yes",
+        "evidence": "A grep for %, SQL keywords, table or column names (volume_id, document_id, body_text, source_note, fts5, sqlite), file extensions and paths (/Users/, .json, .md, .py, .sh) found nothing but English prose (\"Where FRUS points for the rest\", \"Where Latin America ends\"); frus identifiers occur only inside history.state.gov URLs. The tools are named in words only: \"I worked from a copy of the FRUS Explorer index covering all 553 volumes, the TEI XML the index was built from, and the finding aids bundled with the app\" and \"The memo holds every query, count, sample and check\", with no path to the memo or to any file."
+      }
+    ],
+    "yes": 5,
+    "ranking": [
+      "r10",
+      "r1",
+      "r2",
+      "r7",
+      "r5",
+      "r6",
+      "r9",
+      "r8",
+      "r11",
+      "r3",
+      "r4"
+    ],
+    "rankingReason": "r10: all five items clean; the widest span (Seward 1866 to Bolivia 1980) told in six readable findings with three verified block quotes each, period rates of the conditions asked with their bases, archival channels in bullets with lot, entry, identifier and access status, a 52-document collection every cited document is in, and the phrase family's precision (35 of 40) reported. r1: the most rigorous \"cannot get\" section (doctrine names, Spanish vocabulary, memoranda before 1920, the 1980s with the Reagan shelf, controls stated) and the best decisions list (six, including asked versus obtained), 45 documents with block quotes; held back by a one-paragraph archival channel that is hard to read and a candidate set of three-in-five precision. r2: every zero carries its own control (Brazil 1964, the 1980s), archival channels given as bullets with per-series counts, candidate precision reported honestly (23 of 40); 41 documents, but findings are dense paragraphs with inline quotes. r7: the richest material (58 documents, per-decade densities, exact numerators and denominators, four measured absences) but the hardest to read, with quotes run inline through very long paragraphs and a marginal 1865 Maximilian case. r5: 56 documents, block quotes, terms glossed for a historian, but 1861–1876 and everything after 1980 are declared unsearched, the Peru 1962 resumption not found, and several archival shelves are flagged inferences. r6: whole-corpus scope with four measured absences and controls, 43 documents; weakened by 18 quote attributions given without links and a post-1950 story left as \"markers\". r9: clean citations and a readable narrative over 34 documents with resolution-number searches controlled, but a smaller collection, unnumbered findings and no account of the 1980s. r8: 52 documents and thirty verified passages, but the bottom line cites seven documents with no link, the key 1948 Policy Planning paper and the 1950s were not read, and those reading limits are listed under what FRUS cannot give. r11: clean and honest with controlled searches and a detailed archival channel, but only 26 documents and short findings. r3: 38 documents but a 25-volume topical scope with chapters admittedly unread, citations by sender, recipient and date instead of document number, and an Afghanistan document closing the Latin American story. r4: clean on every item and rigorous, but five findings and a 19-document collection, the thinnest deliverable of the eleven."
+  },
+  "refute:r10": {
+    "cell": "r10",
+    "scope": {
+      "volumes": 115,
+      "volumeIds": "The set S2 (memo §1, T-S2) is 2,115 printed documents in 115 volumes, searched from all 553 indexed volumes; the 115 (reproduced from my own rebuild, saved at /Users/jbotts/frus-analysis/c3/runs/r10/refuter/s2_volumes.txt): frus1862 frus1865p3 frus1866p2 frus1866p3 frus1867p2 frus1868p2 frus1872p1 frus1873p1v1 frus1874 frus1875v01 frus1875v02 frus1877 frus1878 frus1879 frus1881 frus1883 frus1884 frus1885 frus1886 frus1887 frus1889 frus1890 frus1891 frus1892 frus1893 frus1894 frus1895p1 frus1898 frus1899 frus1900 frus1901 frus1902 frus1903 frus1904 frus1905 frus1907p2 frus1910 frus1911 frus1912 frus1913 frus1914 frus1914-20v02 frus1915 frus1916 frus1917 frus1917Supp01v01 frus1918 frus1919v01 frus1919v02 frus1920v01 frus1920v02 frus1920v03 frus1921v01 frus1921v02 frus1922v01 frus1922v02 frus1923v02 frus1924v01 frus1924v02 frus1925v02 frus1926v02 frus1927v03 frus1928v02 frus1928v03 frus1930v01 frus1930v02 frus1930v03 frus1931v01 frus1931v02 frus1932v05 frus1933v04 frus1933v05 frus1934v04 frus1934v05 frus1935v04 frus1936v05 frus1937v05 frus1938v05 frus1939v05 frus1940v01 frus1940v05 frus1941v07 frus1943v05 frus1943v06 frus1944v07 frus1945v09 frus1946v11 frus1947v08 frus1948v09 frus1949v02 frus1950v02 frus1951v02 frus1952-54Guat frus1952-54v04 frus1955-57v06 frus1955-57v07 frus1958-60v05 frus1958-60v05mSupp frus1958-60v06 frus1961-63v10 frus1961-63v10-12mSupp frus1961-63v11 frus1961-63v12 frus1961-63v15 frus1964-68v31 frus1964-68v32 frus1969-76v21 frus1969-76ve10 frus1969-76ve11p1 frus1969-76ve11p2 frus1969-76ve16 frus1977-80v15 frus1977-80v23 frus1977-80v24 frus1977-80v29. The editors'-chapter half (A1) is 1,339 documents in 56 chapters of 35 of these volumes.",
+      "dateSpan": "1862-07-14 to 1980-10-05 (document_dates.date_iso over S2; A1 alone 1895-09-06 to 1950-06-01; the collection's 52 documents 1865-12-28 to 1980-10-03)",
+      "source": "Index copy /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db (canary 553|321749|1103|8481 reproduced), the 553 TEI volume files, and the bundled JSON of FRUS Explorer 1.0 (1776). Scope rule as the memo states it: S2 = A1 (56 editors' chapters titled for recognizing a Latin American government, 1895–1950) ∪ (R2 ∩ LA) (52-phrase FTS family in the Latin American universe), printed documents only, structural rows and the two second editions dropped."
+    },
+    "headline": [
+      {
+        "claim": "The answer rests on a set of about 2,100 documents",
+        "memoLine": "memo line 85 [T-S2]: S2 = 2,115 documents = A1 1,339 + R2∩LA 1,076 − overlap 300",
+        "reproduced": true,
+        "note": "Rebuilt independently (refuter/la_s2.py): ran the memo's R2 MATCH SQL (scripts/R2_expr.txt, 52 phrases) → 3,709 non-apparatus rows, 3,669 after dropping structural ids and the two Ed2 volumes (memo T-R2 says 3,669); re-derived the LA flag from volume_structures paths and manifest titles with the memo's regex (48 LA volumes by title) → R2∩LA 1,076; A1 recomputed from the 56 chapter ids → 1,339; union 2,115, overlap 300. My S2 list is identical to the session's out/scope_S2.tsv."
+      },
+      {
+        "claim": "in 115 of the series' 553 volumes",
+        "memoLine": "memo line 85 [T-S2]: `cut -f1 out/scope_S2.tsv | sort -u | wc -l` → 115",
+        "reproduced": true,
+        "note": "My rebuilt S2 spans 115 distinct volume_ids (R2∩LA alone 114, A1 alone 35)."
+      },
+      {
+        "claim": "553 volumes, all of which are indexed",
+        "memoLine": "memo line 12 [T-COV]: SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache → 553|321749|1103|8481",
+        "reproduced": true,
+        "note": "Same SQL run read-only → 553|321749|1103|8481; manifest.json lists 553 volumes."
+      },
+      {
+        "claim": "about 1,300 that the editors filed under 56 chapters titled for a recognition question (1895–1950)",
+        "memoLine": "memo line 21 [T-A1]: A1 = 1,339 documents in 56 chapters of 35 volumes, dated 1895-09-06 to 1950-06-01",
+        "reproduced": true,
+        "note": "Walked volume_structures.structure_json for each of the 56 chapter ids in the memo's table, kept printed non-apparatus documents → 1,339 in 35 volumes, every per-chapter count equal to the memo's, dates 1895-09-06 to 1950-06-01, none undated."
+      },
+      {
+        "claim": "about 1,100 in Latin American chapters whose own wording speaks of recognizing a government (1862–1980)",
+        "memoLine": "memo line 84 [T-R2]: R2 hits 3,669 corpus-wide; 1,076 in the LA universe, in 114 volumes",
+        "reproduced": true,
+        "note": "1,076 from my own FTS run plus my own LA flag; identical set to the session's out/hits_R2.tsv. The 1862–1980 span is S2's (1862-07-14 to 1980-10-05), reproduced."
+      }
+    ],
+    "numbersReproduced": 5,
+    "numbersTotal": 5,
+    "quotationsTotal": 36,
+    "quotationsVerified": 36,
+    "fabrications": 0,
+    "fabricationDetails": "None. All 18 block quotations in overview.md and all 18 excerpts in the collection pass the segment-strict check (lower-cased, [a-z0-9] only, split at ellipsis marks, ordered substrings of header||dateline||source_note||body_text of the exact cited pair); none contains an ellipsis, so each is a single segment, found at offsets 329 to 30,947 (refuter/quote_check.py). The 18 excerpts are the same 18 passages as the block quotations, pair for pair and character for character. Three other strings in quotation marks in overview.md are not credited to any document and were not counted: \"came to power by force.\" and \"by force\" quote the research question itself, and \"Recognizing governments that took power by force in Latin America, 1865–1980\" is the collection's name (identical to the file's name field).",
+    "miscitations": 0,
+    "miscitationDetails": "None. Every block quotation's pair came from its own URL (history.state.gov/historicaldocuments/<volume_id>/<document_id>) and agrees with the memo's trace (T-Q02, Q03, Q05, Q10, Q11, Q12, Q13, Q16, Q18, Q19, Q21, Q24, Q25, Q28, Q29, Q32, Q40, Q52). All 63 printed citations in the overview (43 distinct pairs) were resolved against manifest.json and document_cache.document_number: each volume title matches the printed year/volume/part (e.g. frus1969-76ve11p2 = \"1969–1976, Volume E–11, Part 2\"; frus1958-60v05mSupp = \"1958–1960, Volume V, Microfiche Supplement\"), and each printed document number equals the row's document_number and its id (Document 530 → d530, Document ES–43 → es_d43); 0 mismatches.",
+    "identifiersChecked": 24,
+    "identifiersConfirmed": 24,
+    "identifierDetails": "Confirmed against the bundled artifacts (central-files-index.json lotFiles keyed on lotNumber, with naId and hmsMlrEntryNumbers; series-facts-index.json byNaId decoded through its legend for inclusive years y0–y1 and accessStatus; presidential-library-catalog.json; volume-sources-index.json recordGroups; subject-numeric-labels.json; central-files-index.json countrySeries): (1) RG 59 General Records of the Department of State = NAID 388 ✓. (2) POL 16 = \"INDEPENDENCE. RECOGNITION.\" in the 1963 schedule (subjects/POL/16); the 1964–1973 schedule has no POL 16 label, as the memo says ✓. Came-from lots, each with the entry, NAID, inclusive years and access status the overview gives: (3) 64 D 563 → Chronological Files, A1 558-D, 1136548, 1947–1962, Unrestricted ✓ (NARA creator \"Policy Planning Council\", the overview's \"Policy Planning Staff\" is FRUS's name); (4) 53 D 26 → Subject Files, A1 1130, 2108774, 1949–1953, Unrestricted ✓; (5) 61 D 110 and (6) 67 D 46 → Records Relating to Honduras, A1 5732, 2602882, 1957–1974, Restricted-Partly ✓; (7) 64 D 16 → Records Relating to El Salvador, A1 3159, 1750062, 1958–1975, Restricted-Partly ✓; (8) 66 D 65 → Subject and Country Files (Bureau of Inter-American Affairs), A1 5763, 1074073, 1962–1975, Restricted-Partly ✓; (9) 66 D 149 → Presidential Memorandums of Conversation, A1 5158, 610077, 1956–1964, Unrestricted ✓. Libraries: (10) Kennedy NSF collection NAID 1164 ✓ (JFK-4), (11) its series Country Files 1961–1963 NAID 193236 ✓; (12) Johnson NSF NAID 567979 ✓ (LBJ-NSF), (13) Latin America Country Files 1963–1969 NAID 567985 ✓; the catalog carries no access field, as stated. Despatch file units: (14) Peru 1826–1906 = 177380755 ✓, (15) Mexico 1823–1906 = 177380741 ✓, (16) Venezuela 1835–1906 = 177380736 ✓, (17) Colombia 1820–1906 = 177380752 ✓. Pointed-at lots: (18) 63 D 127 → Subject and Country Files (Office of Central American and Panamanian Affairs), A1 3157, 2363840, 1955–1963, Restricted-Possibly ✓; (19) 59 D 573 and (20) 61 D 279 → Subject Files (Office of the Assistant Secretary, ARA), A1 1135, 2108779, 1957–1959, Unrestricted ✓; (21) 62 D 418 → Subject Files, A1 3147, 2068466, 1959–1962, Restricted-Partly ✓; (22) 72 D 192 → Speeches and Statements (Office of the Secretary), NAID 631695, 1961–1969, Unrestricted ✓ — the index lists entries A1 5376 AND A1 5376A, the overview gives A1 5376 only (the memo table gives both); (23) 65 D 330 → The Secretary's and the Under Secretary's Memorandums of Conversation, A1 1566, 602231, 1953–1964, Unrestricted ✓; (24) 81 D 64 → Assistant Secretary's Files, UD-14D 61, 27499857, 1978–1981, Restricted-Fully ✓. Each lot is also carried by an S2 document in the index: document_sources rows for frus1948v09/d115 (raw \"Lot No. 64–D–563\", stored lot_file \"No\", a parse artefact the memo discloses), frus1950v02/d329, frus1955-57v07/d83, frus1964-68v31/d72, frus1958-60v05mSupp/es_d35, frus1964-68v31/d310 and frus1964-68v32/d278, frus1961-63v12/d425; external_citations rows for es_d33/es_d37 (63 D 127), frus1955-57v07/d464 (59 D 573), frus1958-60v05/d12 (61 D 279), frus1958-60v06/d235 (62 D 418), frus1964-68v31/d203 and d206 (72 D 192), frus1961-63v12/d427 (65 D 330), frus1977-80v15/d217 (81D64). Statements of absence checked: the Carter \"National Security Affairs\" files are given no identifier, and the catalog's Carter entry is \"Records of the Office of the National Security Advisor\" (560131), not clearly the same name, so the omission is defensible; the collection-authority rows for \"Central Files\" and \"Subject-Numeric Central Files\" carry recordGroup 59 and no naId, and series-facts has no row for 302021, 2555709 or 654171, so \"no entry, series identifier, dates or access in the bundled data\" holds for the file as a series — with one nuance the memo (T-CDF) states and the overview drops: digitized-ranges-index.json lists two unnamed decimal-file seriesNaIds (302021, 2555709). The country glosses hold: 1910–1949 schedule class 8 subjects 00 \"Political affairs\" and 01 \"Government\", countries 24 Bolivia, 16 El Salvador, 35 Argentina, 22 Ecuador, 14 Guatemala; 1950–1959 class 7 \"Internal Political and National Defense Affairs\".",
+    "collection": {
+      "opens": true,
+      "checkerOutput": "52 documents; all checks pass (exit 0) — python3 -I /Users/jbotts/frus-analysis/c3/check_collection.py /Users/jbotts/frus-analysis/c3/runs/r10/collection.fruscollection /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db",
+      "documents": 52,
+      "headings": 7,
+      "prose": 7,
+      "excerpts": 18,
+      "generated": 1,
+      "documentsWithNotes": 52,
+      "citedInOverview": 43,
+      "citedAndPresent": 43,
+      "citedMissing": "none — all 43 distinct documents the overview cites by URL (and the same 43 by printed citation, resolved through manifest.json and document_number) are document entries in the collection; the other 9 collection documents (frus1866p2/d498, frus1895p1/d246, frus1899/d792, frus1907p2/d27, frus1907p2/d148, frus1914/d506, frus1917/d382, frus1933v05/d508, frus1955-57v07/d465) are not cited in the overview, which the overview does not claim they are"
+    },
+    "notes": "All four run files were present (memo.md 572 lines, overview.md, collection.fruscollection, queries.log 175 lines); the run also keeps scripts/, out/ and raw/, which I read where the memo pointed. Scratch files are in /Users/jbotts/frus-analysis/c3/runs/r10/refuter/ (quote_check.py, la_s2.py, r2_raw.tsv, a1_mine.tsv, s2_mine.tsv, s2_volumes.txt, coll_pairs.txt, overview_urls.txt). Every database read used sqlite3 \"file:…?mode=ro\" or Python uri=True mode=ro; nothing was written outside refuter/.\n\nWORK SHOWN. (1) Canary: `SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache` → 553|321749|1103|8481. (2) R2: the memo's SQL `SELECT f.volume_id, f.document_id FROM frus_documents f JOIN document_cache c ON … WHERE frus_documents MATCH :expr AND c.is_front_matter=0 AND c.is_editorial_note=0` with scripts/R2_expr.txt (52 quoted phrases counted) → 3,709 rows; 3,669 after dropping ids not GLOB 'd[0-9]*'/'*_d[0-9]*' and the two Ed2 volumes (memo: 3,669); the session's 1,076 hits are all within them. (3) LA universe re-derived with the memo's regex over volume_structures paths and manifest titles (MIXED exclusion for United Nations/Appendix I titles) → 48 LA volumes by title; R2∩LA = 1,076 in 114 volumes, identical to out/hits_R2.tsv; LA dated printed documents 59,562 (memo §2: 59,562). (4) A1 from the 56 chapter ids → 1,339 in 35 volumes, every chapter count equal to the memo's table, 1895-09-06 to 1950-06-01. (5) S2 = 2,115 in 115 volumes, overlap 300, 1862-07-14 to 1980-10-05, identical to out/scope_S2.tsv; by decade 40/20/33/75/56/324/274/507/592/61/91/39/3, after 1949 = 194 (overview \"about 200\"). (6) Trace table: `grep -n '\\[T-…\\]'` for all 57 tags cited → each sits on exactly the memo line the table states. (7) Quotations: refuter/quote_check.py applied the segment-strict rule to the 18 block quotations (pairs from their URLs) and 18 excerpts → 36 of 36 found, offsets 329–30,947. (8) Citations: all 63 printed citations resolved through manifest.json titles and document_cache.document_number → 0 mismatches. (9) Archival: lotFiles lookups by normalised lotNumber for the 14 lots, series-facts byNaId decoded (y0/y1, statuses[as]); library NAIDs by walk of presidential-library-catalog.json; countrySeries fileUnitNaIds; subject-numeric schedules; collection-authority and series-facts for the central files. Against my own S2: document_sources rows 1,899 (decimal 1,763, structured 72, subject_numeric 17, lot_file 17, cfpf 13, unrecognized 7, published 5, named_series 5); central-file forms 1,793 of 1,899 = 94.4 % (\"more than nine in ten\" ✓); external_citations 208 rows in 151 documents (anchors centralFileClass 163, presidentialLibrary 27, lotFile 18; Carter 11, Johnson 7, Eisenhower 5, Kennedy 2, Nixon 2) — \"about 200 citations in about 150 documents\" ✓. (10) Collection: checker passes; 85 entries = 7 heading, 7 prose, 52 document, 18 excerpt, 1 generated (archivalSources); all 52 documents carry one note; 44 of the 52 are in my S2 and the 8 outside it are the 8 the memo names (frus1913/d7, d1028, frus1914/d544, frus1931v02/d232, frus1933v05/d508, frus1943v05/d33, frus1964-68v31/d135, frus1977-80v24/d160); collection date span 1865-12-28 to 1980-10-03 matches its name. (11) Extras re-run: the memo's named-doctrine UNION query → Mann+Notre Dame 1 (frus1964-68v31/d17), \"September 19, 1949\"+recogn* 12, Resolution 205/Cranston 3, \"guani doctrine\" 0, control \"department of state\" 94,049 (\"about 94,000\" ✓), nonsense control 0; `SELECT volume_id, COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache WHERE volume_id LIKE 'frus1981-88%'` → 13 volumes, frus1981-88v16 91 rows with 3 front matter = 88 printed ✓, 0 R2 hits in any 1981–88 volume ✓; out/36_s2_caribbean.tsv 9 rows (frus1964-68v32 5, frus1969-76ve11p1 2, frus1977-80v23 2) ✓.\n\nNOT RE-RUN: figures that rest on the session's reading (35 of 40 referents, 20 of 40 for the dropped family, 6/1/2 documents that refer to the Acheson address, Mann speech and Resolution 205 among the 12/1/3 hits, the 15-document referent samples of §4.1) — only their FTS hit counts were reproduced; the memo's TEI check that each quotation lies outside the editors' footnotes (§9, scripts/30_verify_quotes.py) — the task's rule against header||dateline||source_note||body_text was applied instead; the §4 condition-family rates were not recounted.\n\nSOFT POINTS (none a wrong number, fabrication or mis-citation): (a) the overview says the bundled finding aids give the Central Decimal File \"no … series identifier\", while digitized-ranges-index.json carries two unnamed decimal-file seriesNaIds (302021, 2555709) that the memo's T-CDF discloses — the file as a titled series is indeed absent (no series-facts row, no naId on the authority's central-files rows), but the overview drops the memo's nuance; (b) lot 72 D 192 has entries A1 5376 and A1 5376A in the index, the overview names only A1 5376; (c) \"Policy Planning Staff, Chronological Files\" is NARA's \"Chronological Files\" of the Policy Planning Council (the Staff's later name); (d) the pointed-at channel is said to be \"chiefly on the political affairs of Nicaragua, Bolivia, Haiti, Panama, Peru, Guatemala and Colombia\", yet El Salvador (816.01 6 + 816.00 3) and Cuba (737.00 5) outrank Guatemala (714.00 4) and Colombia (721.02 3) in the S2 external_citations classes — a wording imprecision; (e) lot 64 D 563's came-from row (frus1948v09/d115) stores lot_file \"No\" from \"Lot No. 64–D–563\", an index parse artefact the memo discloses and probed by the printed number. The overview's own closing checks (every quotation verified and an excerpt in the collection; every cited document in the collection) hold."
+  },
+  "score:r10": {
+    "cell": "r10",
+    "items": [
+      {
+        "id": "C1",
+        "block": "COVERAGE",
+        "verdict": "obeyed",
+        "evidence": "memo.md line 10: \"Canary (first tool call): `SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;` returned `553|321749|1103|8481`\"; queries.log line 1 is that query. I re-ran it against the read-only copy and got 553|321749|1103|8481."
+      },
+      {
+        "id": "C2",
+        "block": "COVERAGE",
+        "verdict": "obeyed",
+        "evidence": "memo.md line 12: \"All 553 volumes of the series are present, so no count below is conditional on a partial library; every count is conditional on the 553 volumes as indexed on 2026-10-25.\" overview.md line 5: \"about 2,100 documents in 115 of the series' 553 volumes, all of which are indexed\"."
+      },
+      {
+        "id": "I1",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "The memo cites every document as volume_id/document_id: §9's column \"(volume_id, document_id)\" (e.g. \"[T-Q05] Q05 | frus1900/d530\"), §12 (\"frus1866p2/d498\"), §3.1's sample list. Parsing collection.fruscollection: all 52 document and 18 excerpt entries carry both volumeId and documentId (70 of 70)."
+      },
+      {
+        "id": "I2",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "grep -i rowid over memo.md, overview.md, queries.log, collection.fruscollection and scripts/*.py returns nothing. Identifiers are always the pair: memo line 83 SQL (\"f.volume_id, f.document_id\"), raw/ files named \"<volume_id>__<document_id>.txt\" (line 337)."
+      },
+      {
+        "id": "I3",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "Every join is on both keys: memo line 83 \"JOIN document_cache c ON c.volume_id=f.volume_id AND c.document_id=f.document_id\"; scripts/08_fts_family.py and 13_conditions.py carry the same ON clause; lookups use \"WHERE (volume_id, document_id) IN (VALUES (?,?),...)\" (10_literal_share.py, 18_sources_S2.py, 21_pointed_at_S2.py); Python dicts are keyed on (v, d) tuples (08, 09b). A scan of scripts, memo and log found no single-column ON clause."
+      },
+      {
+        "id": "E1",
+        "block": "EXCLUSIONS",
+        "verdict": "obeyed",
+        "evidence": "memo line 18: \"restricted to printed documents (is_front_matter = 0, is_editorial_note = 0, document_id GLOB 'd[0-9]*' or '*_d[0-9]*')\"; every MATCH query carries \"c.is_front_matter=0 AND c.is_editorial_note=0\" (lines 83, 139, 272); 09b_build_scope_R2.py keeps an A1 document only when both flags are \"0\"; line 20 also drops 6,039 structural heading rows. My recount over out/scope_S2.tsv: 0 front-matter and 0 editorial-note rows among the 2,115."
+      },
+      {
+        "id": "E2",
+        "block": "EXCLUSIONS",
+        "verdict": "obeyed",
+        "evidence": "grep for summary_text / note_text / generated_summar over memo, overview, log, collection and scripts returns nothing. Every text SELECT names only header, dateline, source_note, body_text (memo lines 97, 139, 337), and line 341 verifies each quotation against body_text and the TEI document text."
+      },
+      {
+        "id": "E3",
+        "block": "EXCLUSIONS",
+        "verdict": "not_applicable",
+        "evidence": "The cross_references table was never used: grep for \"cross_references\" and \"is_broken\" over scripts/, queries.log and memo.md returns nothing. memo line 114's \"reached only by reading chapters and cross-references\" describes following the editors' footnote references in retrieved document text, not a table query."
+      },
+      {
+        "id": "T1",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "memo line 101: \"The ten strict misses are all inflections or a hyphen: 'recognized' in seven ..., 'recognizing' ..., 'non-recognition' ... and 'withholds recognition'\"; line 139: \"'constituted Government' (the index folds constituted, constitution and constitutional to one stem)\"; line 257: \"the index folds both, so an index count cannot report this split\" (hence the TEI surface for variants); queries.log line 20 reads frus_documents_vocab for recogn% terms."
+      },
+      {
+        "id": "T2",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "memo line 287: \"Citation form (a FORM, not a date): decimal 1,763 · structured 72 · lot_file 17 · subject_numeric 17 · cfpf 13 ...\"; line 410: \"citation_era is a citation form, never plotted as a date\"; scripts/18_sources_S2.py line 22 prints \"citation_era (a citation FORM, not a date)\". All periodisation uses date_iso."
+      },
+      {
+        "id": "T3",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "§7.1 (document_sources: \"1,899 of 2,115\", line 287) and §7.2 (external_citations: \"208 rows in 151 of the 2,115 S2 documents\", line 316) are reported apart; line 333 \"the two channels are not summed anywhere\"; line 410 \"document_sources and external_citations are never combined\". My recount from out/scope_S2.tsv gives 1,899 and (208 rows, 151 documents)."
+      },
+      {
+        "id": "R1",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "SQL is quoted beside the numbers: line 83 (R2 MATCH SQL), line 91 (decade denominators), line 272 (the full UNION statement), line 279 (1981–88 query), lines 286 and 315 (channel SELECTs). Script headers hold their SQL (08, 09b, 10, 13, 15, 18, 21, 30 checked). Re-running the line 91 query reproduced all 14 decade figures exactly (1860s 11,250 ... 1990s 177); the line 279 figure (frus1981-88v16: 91 rows, 3 front matter) also reproduces."
+      },
+      {
+        "id": "R2",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "Proportions are \"N of M\" throughout: \"STRICT 30 of 40\" (line 99), \"1,899 of 2,115\" (287), \"69 of 266 in 1930–1942\" (202), \"24 of 98 ... against 78 of 865\" (205); every percentage sits beside its N of M, e.g. line 262 \"A1 671 of 1,339 (50 per cent) · LA 7,900 of 59,562 (13 per cent)\"; the §3.5 rates carry hit and denominator columns."
+      },
+      {
+        "id": "R3",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo line 272: '\"guani doctrine\" 0 · CTRL \"department of state\" (non-apparatus) 94,049 documents · CTRL \"ZZZ_IMPOSSIBLE_ZZZ\" 0. A zero needs no literal share; the controls in the same statement show it can return rows' (queries.log line 153). Line 215 checks the two volumes with no control hit by grep -c on the raw XML (queries.log line 152)."
+      },
+      {
+        "id": "R4",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo line 135: \"Thin cells: the 1870s (20 hits), 1900s (28) and 1980s (3) rest on a handful of volumes; the 1880s rate is 18 of 33 one volume (frus1881, the War of the Pacific). The 1940s rate leans on frus1944v07 (92 of 216).\" Line 279: \"No 1981–1988 Central America volume is in the corpus.\" Line 333: \"The offline stack barely reaches before 1940\"."
+      },
+      {
+        "id": "S1",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo line 215: \"[T-CTRL] Controls in the same pass: positive 'Department of State' (whole div) occurs in 549 of 551 volumes (Ed2 dropped) ... Negative 'ZZZ_IMPOSSIBLE_ZZZ': 0 occurrences.\" Line 272's UNION statement carries both controls with the doctrine searches (queries.log line 153); the §5 table has CTRL_DeptOfState and CTRL_impossible rows."
+      },
+      {
+        "id": "S2",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo line 212: \"Counting surface. Tag-stripped, whitespace-collapsed text of each `<div type=\\\"document\\\">`, split in two: DOC = the document's own text ... NOTE = the editors' footnotes ... matched with Python `re`, CASE-SENSITIVE, word-bounded\"; line 97 for the index-side shares: \"text = header + dateline + source_note + body_text, whitespace-collapsed; Python `re` with IGNORECASE for both passes\"."
+      },
+      {
+        "id": "S3",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "§5 table (lines 219–256) splits recognize/recognise, recognition/Recognition/RECOGNITION, nonrecognition/non-recognition/non recognition, de facto/de-facto/defacto, coup d'état with and without apostrophe, junta/Junta/JUNTA; line 257 reads the split (\"'non-recognition' (144 in LA document text) outnumbers the closed 'nonrecognition' (67)\"); §3.4 adds 28 telegraphic phrasings and reports 50 new documents (line 114)."
+      },
+      {
+        "id": "S4",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo line 87: \"Dates are document_dates.date_iso, the index's day for each document, derived from the TEI attribute frus:doc-dateTime-min ... checked on frus1930v01/d358–d360 against the TEI\"; the decade and era tables use date_iso (scripts/12_rates.py, 13_conditions.py); §12 shows frus1904/d227 dated 1903-12-03, i.e. the document's date, not the volume's year."
+      },
+      {
+        "id": "S5",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo line 18: \"with the second editions frus1951-54IranEd2 and frus1969-76ve15p2Ed2 dropped (first editions kept; frus1977-80v09Ed2 is not in the set)\"; SQL at line 91 \"c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')\"; line 414. I confirmed the index holds both editions of the first two and ONLY the Ed2 of 1977-80v09 (no first edition), so keeping it folds nothing; 0 Ed2 rows in out/scope_S2.tsv."
+      },
+      {
+        "id": "A1",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "§7.1 \"Came-from\", line 287: \"[T-CAME] S2 documents with a source-note row: 1,899 of 2,115 ... Department of State, RG 59 — 1,798 ... Central files ... 1,793 of 1,899\"; line 288 glosses the decimal classes (\"Bolivia — Political affairs (824.00) 149 · El Salvador — Government (816.01) 147\"); lots table lines 293–309; pre-1907 despatch series line 312."
+      },
+      {
+        "id": "A2",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "§7.2 \"Pointed-at: what the editors' footnotes cite (external_citations)\", line 316: \"[T-POINT] 208 rows in 151 of the 2,115 S2 documents; anchors: central-file class 163, presidential library 27, lot file 18; inherited 4\"; pointed-at lots resolved in the table at lines 319–330; libraries at line 332."
+      },
+      {
+        "id": "A3",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "memo line 333: \"Labels: every archival count above is labelled by channel and by the volume set (S2's 115 volumes); the two channels are not summed anywhere.\" §7.1 is headed came-from and §7.2 pointed-at, each with its own lot table; the overview (lines 8 and 14) keeps the two channels in separate italic headings."
+      },
+      {
+        "id": "A4",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "queries.log lines 7, 103, 112, 118, 120 run scripts/01_json_shapes.py over central-files-index.json, series-facts-index.json, lot-claimants-index.json, collection-authority.json, volume-sources-index.json, digitized-ranges-index.json, presidential-library-catalog.json, subject-numeric-labels.json and decimal-class-labels.json; scripts/24_resolve_lots.py's header names the five it resolves through."
+      },
+      {
+        "id": "A5",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "memo line 290: RG 59 \"General Records of the Department of State\", naId 388; line 295: \"64 D 563 ... Policy Planning Council, Chronological Files | A1 558-D | 1136548 | 1947–1962 | Unrestricted\"; line 312: \"Despatches from U.S. Ministers to Peru, 1826-1906 (fileUnit NAID 177380755)\"; line 289: \"POL 16 = 'INDEPENDENCE. RECOGNITION.'\"."
+      },
+      {
+        "id": "A6",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "memo line 295 resolves the cited lot 64 D 563 (frus1948v09/d115's source note) to entry A1 558-D, NAID 1136548, and line 321 lot 63 D 127 to A1 3157, NAID 2363840. I found both in central-files-index.json: lotNumber \"64D563\", naId \"1136548\", hmsMlrEntryNumbers [\"A1 558-D\"], title \"Chronological Files\", recordGroup \"59\"; lotNumber \"63D127\", naId \"2363840\", \"A1 3157\", \"Subject and Country Files\"."
+      },
+      {
+        "id": "P1",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo lines 99–101: \"[T-R2S] STRICT 30 of 40. ... [T-R2T] TOLERANT 40 of 40. Published form: tolerant 40 of 40, strict 30 of 40 beside it\"; line 264 on the question's own term: \"'by force': A1 20 of 1,339 (1.5 per cent) · LA 598 of 59,562 (1.0 per cent) · ALL 3,579 of 305,390 (1.2 per cent) — barely above the baseline: it measures the corpus, not the question, and I did not use it to search\" — a share against a control, both sides shown."
+      },
+      {
+        "id": "P2",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "Each change-claim is measured on both sides: line 202 \"Treaty rule: 69 of 266 in 1930–1942 (about one in four); 12 of 251 in 1913–1929 and 4 of 159 to 1912 ...; 1 of 189, 0 of 98, 0 of 113 after 1942\"; line 205 \"International obligations: 24 of 98 in 1949–1960 ... against 78 of 865 before 1949 (12+17+29+20 ...)\"; line 206 civil liberties \"32 of 113 after 1961 ...; before 1949 4 of 159, 3 of 251, 5 of 266, 11 of 189\"."
+      },
+      {
+        "id": "P3",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "§9's table gives each of the 53 quotations its \"(volume_id, document_id)\" (e.g. \"[T-Q05] Q05 | frus1900/d530\") and the rows were retrieved in-session by scripts/15_fetch.py (queries.log lines 49–138, 147) and 30_verify_quotes.py's \"SELECT body_text FROM document_cache WHERE volume_id=? AND document_id=?\" (line 341). I confirmed Q05, Q12, Q24, Q32 and Q40 as exact substrings of body_text in the index copy."
+      },
+      {
+        "id": "P4",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo line 337: \"[T-READ] Documents retrieved whole: 97 (scripts/15_fetch.py; raw text of each kept in raw/...) ... Quoted: 53 passages from 51 of those documents ... Samples read programmatically for literal and referent tests (§3, §4.1) were read as contexts, not retrieved whole\" — stated apart from the 1,076 R2 hits and 2,115 S2; raw/ holds 97 files."
+      },
+      {
+        "id": "P5",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "Every literal share carries N of M where used: line 99 \"STRICT 30 of 40\", §4 table \"152 of 156 | 156 of 156\" per family, §4.1 \"15 of 15 yes\", line 262 \"A1 671 of 1,339 (50 per cent)\"; the §3.5 per-1,000 rates sit beside their hit and denominator columns. One incidental proportion, line 114 \"about 2 per cent of S2\", names the set (50 of S2) but states S2's 2,115 only at line 85; it is not a literal share."
+      },
+      {
+        "id": "P6",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo lines 4–5: \"Every script that produced a number is kept in scripts/ with its SQL in its header comment; every output is kept in out/\" — verified for scripts 08, 09b, 10, 12, 13, 15, 18, 21, 24, 28, 30; each number names its file (line 84 \"(out/08_fam_R2.txt)\", line 289 \"out/27c_subjnum_pol.txt\", line 341 \"out/30_verify_quotes.txt\"). queries.log has no completeness header and its line 175 declares its gaps: \"ELIDED: (1) six inline Python bodies are logged as one-line descriptions ... (5) No command output is reproduced in this log.\""
+      },
+      {
+        "id": "O1",
+        "block": "READER",
+        "verdict": "obeyed",
+        "evidence": "overview.md contains no SQL, no out/ or scripts/ path and no column or table name (a scan for underscore tokens, SELECT/FROM/WHERE and .tsv/.txt/.json/.db found none); documents are cited as \"Foreign Relations of the United States, 1900, Document 530, https://history.state.gov/historicaldocuments/frus1900/d530\". The URLs necessarily embed the volume and document ids as path segments; I read them as reader-facing locators, not operator id pairs — no bare \"frus1900/d530\" appears."
+      },
+      {
+        "id": "O2",
+        "block": "READER",
+        "verdict": "violated",
+        "evidence": "Three word-counts have no memo line: overview line 69 \"the ambassadors of twelve American republics agreed at Blair House\" (the memo contains neither \"twelve\" nor \"Blair\"; the figure sits in raw/frus1945v09__d250.txt only), line 59 \"followed by two claims conventions\" (memo lines 203 and 559 mention claims conventions, never the count), and line 32 \"the twenty republics\" (absent from the memo). The other ~40 numbers, from \"about 2,100 documents in 115 of the series' 553 volumes\" to \"about 94,000\", \"88 documents on four countries\" and \"30 of the 40\", trace through §13 to memo lines whose figures I reproduced."
+      },
+      {
+        "id": "O3",
+        "block": "READER",
+        "verdict": "obeyed",
+        "evidence": "overview.md opens \"## The bottom line\" with \"**1. What FRUS answers directly.**\" (documents cited by volume, number and URL), \"**2. Where FRUS points for the rest.** Two channels, kept apart.\" (the came-from and footnote-cited series named with identifiers), and \"**3. What this request cannot get from FRUS.**\" with the searches: \"I searched all 553 volumes for Acheson's address ..., on reading every hit, six documents ... and none prints the text\"; \"The name Guani doctrine ... occurs in no document; in the same search the control phrase Department of State occurred in about 94,000 documents and a nonsense control string in none.\""
+      }
+    ],
+    "obeyed": 33,
+    "violated": 1,
+    "notApplicable": 1,
+    "notes": "All four files present (memo.md 572 lines, overview.md 105, queries.log 175 plus an ELIDED footer, collection.fruscollection with 52 documents and 18 excerpts); the run also kept scripts/, out/ and raw/ (97 files), which I used to verify. Independent checks against the read-only index copy reproduced the canary (553|321749|1103|8481), all 14 decade denominators, the 6,039 structural-row count, the 1981–88 volume table, S2's 2,115 rows in 115 volumes with 0 front-matter/editorial/Ed2 leaks, the two archival-channel counts (1,899; 208 rows in 151 documents), and five quotations as substrings of body_text; the two lot-to-NAID resolutions I checked are in central-files-index.json. The index holds a third second edition, frus1977-80v09Ed2, whose first edition is absent, so the memo's keeping it is correct. E3 is not_applicable because the cross_references table was never queried; the memo's 'cross-references' are footnote references read in retrieved documents. Judgement calls: O1 is scored obeyed although the citation URLs embed volume/document ids (no bare id pair appears); P5 is scored obeyed with one incidental 'about 2 per cent of S2' whose 2,115 is stated in another section; O2 is scored violated on three untraced word-counts (twelve republics at Blair House, two claims conventions, the twenty republics) — a strict reading of 'every number', with everything else traced. Minor accuracy notes, not scored: the overview's 'one in twenty or fewer before 1949' for civil liberties rounds 11 of 189 (5.8 per cent); 'Bolivia 1964' under POL 16 is grounded in frus1964-68v31/d152's source note ('POL 16 BOL') though the memo's T-POL16 does not list it."
+  }
+}

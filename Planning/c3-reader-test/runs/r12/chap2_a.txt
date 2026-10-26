@@ -1,0 +1,82 @@
+frus1894 | Nicaragua > Political situation in Nicaragua | 1
+frus1895p1 | Ecuador > Shelter as distinguished from asylum | 2
+frus1895p1 | Ecuador > Recognition of de facto government | 4
+frus1895p2 | Mexico > Assumption of Mexican citizenship to evade extradition | 13
+frus1896 | Ecuador > Asylum | 3
+frus1896 | Greater Republic of Central America > Recognition of the political union of Honduras, Nicaragua, and Salvador | 5
+frus1896 | Haiti > Asylum to a political refugee | 2
+frus1896 | Spain > List of claims against Spain growing out of the insurrection in Cuba filed in the Department of State prior to January 22, 1897 | 1
+frus1898 | Bolivia > Asylum in legations | 1
+frus1898 | Spain > Political situation in Cuba | 38
+frus1898 | Uruguay > Political situation | 1
+frus1899 | Bolivia > Revolution | 7
+frus1899 | Dominican Republic > Assassination of President Heureaux and revolution in Dominican Republic | 16
+frus1899 | Dominican Republic > Refusal of asylum to a Dominican | 2
+frus1899 | Ecuador > Asylum to Government officials of Ecuador | 5
+frus1899 | Haiti > “Asylum” in legation at Port au Prince | 21
+frus1899 | Nicaragua, Salvador, and Costa Rica > Revolution, and demand of Nicaraguan Government for second payment of customs duties collected by insurgents while in temporary possession of Bluefields | 50
+frus1899 | Venezuela > Revolution in Venezuela and recognition of de facto government | 46
+frus1900 | Colombia > Recognition of new Government of Colombia | 9
+frus1900 | Dominican Republic > Recognition of new Government | 4
+frus1901 | Argentine RepublicCorrespondence > Political disturbances—state of seige declared in Buenos Ayres on account of public disorder caused by opposition to bill consolidating public debt | 4
+frus1901 | Venezuela > Claims of foreigners against Venezuela growing out of the Castro revolution | 3
+frus1902 | Dominican Republic > Protection denied Porto Ricans engaged in insurrection against Dominican Government. | 2
+frus1902 | Ecuador > Passports and citizenship—explanatory of Department’s attitude in regard to, and defining limits within which naturalization certificates are recognized. | 2
+frus1902 | Haiti > Revolution in Haiti. | 86
+frus1902 | Haiti > Question of “right of asylum” in United States legations. | 2
+frus1902 | Venezuela > Blockade by decree—the United States Government recognizes a blockade only when it is effective. | 8
+frus1903 | Front Matter > CorrespondenceCircular: Recognition of the Republic of Panama | 1
+frus1903 | Colombia > Revolution on the Isthmus of Panama and establishment of independent Republic | 51
+frus1903 | Colombia > Message from the President of the United States transmitting additional correspondence relative to the revolution on the Isthmus of Panama | 3
+frus1903 | Colombia > Action of municipalities of Panama approving ratification of canal treaty by the junta of the Provisional Government | 2
+frus1903 | Dominican Republic > Revolution in Santo Domingo, and recognition of new Government | 4
+frus1903 | Guatemala and Honduras > Revolution in Honduras, and recognition of new Government | 5
+frus1904 | Brazil > Provisional agreement between Brazil and Peru terminating boundary dispute, and convention for the arbitration of Alto Juruá and Alto Purús claims | 1
+frus1904 | Dominican Republic > Recognition of the provisional government of the Dominican Republic | 7
+frus1904 | Dominican Republic > Termination of the revolution in the Dominican Republic | 1
+frus1904 | Uruguay and Paraguay > Revolution in Uruguay | 7
+frus1904 | Uruguay and Paraguay > Revolution in Paraguay | 3
+frus1905 | Argentine Republic > Revolutionary movement in the Argentine Republic | 5
+frus1905 | Colombia > Revolutionary conspiracy | 5
+frus1905 | Dominican Republic > Revolutionary disturbances in Santo Domingo | 17
+frus1905 | Haiti > Asylum granted to Government officials of Haiti by the American legation | 4
+frus1905 | Venezuela > Sequestration of the property of the New York and Bermudez Company and suit against the company for complicity in the “Matos revolution” | 61
+frus1906p1 | Cuba > Insurrection and intervention of United States in Cuba | 47
+frus1906p1 | Dominican Republic > Revolutionary disturbances in Santo Domingo | 6
+frus1906p1 | Ecuador > Revolution | 3
+frus1906p2 | Japan. > Recognition of the Cuban consul-general. | 4
+frus1906p2 | Mexico. > Recognition of United States meat-inspection labels. | 5
+frus1907p1 | Argentine Republic > Revolutionary disturbances | 6
+frus1907p1 | Cuba > Provision for the settlement of claims growing out of the late Cuban insurrection | 1
+frus1907p1 | Dominican Republic > Political affairs in the Dominican Republic | 1
+frus1907p2 | Guatemala and Honduras > Recognition of the provisional Government of Honduras by the United States and Mexico | 11
+frus1907p2 | Mexico > Recognition of United States meat-inspection labels | 3
+frus1907p2 | Venezuela > Recognition of Mr. Simon Planas Suarez, a native Venezuelan, as Nicaraguan minister to Venezuela | 2
+frus1908 | Colombia > Convention between Colombia and Spain regarding the reciprocal recognition of judgments | 1
+frus1908 | Haiti > Revolution in Haiti | 46
+frus1908 | Uruguay and Paraguay > Revolution in Paraguay | 4
+frus1909 | Extradition of Juan de Dios Rodriguez from Mexico > Arrest of Fugitive After Expiration of 40 days’ Provisional Detention Period. | 12
+frus1909 | Nicaragua > Revolution in Nicaragua and severing of diplomatic relations between the United States and Nicaragua | 16
+frus1909 | Panama > Attitude of the United States toward revolutionists in Panama | 3
+frus1910 | Cuba > Attitude of the United States concerning political disturbances in Cuba | 1
+frus1910 | Nicaragua > Revolution in Nicaragua | 57
+frus1911 | Chile: > Asylum Sought at the American Consulate at Iquique by the Peruvian Consul General; Temporary Refuge Granted | 0
+frus1911 | Cuba: > Proposal of France, Germany, and Great Britain to arbitrate certain insurrectionary claims arising prior to 1898 | 13
+frus1911 | Dominican Republic: > Revolutionary movements | 11
+frus1911 | Dominican Republic: > Assassination of the President, Don Ramon Caceres, and Assumption of the Office by Don Eladio Victoria as Provisional President | 5
+frus1911 | Ecuador: > Revolution; overthrow of President Alfaro; inauguration of President Estrada | 1
+frus1911 | Haiti: > Revolution in Haiti—Recognition by the United States of the Leconte Government—Temporary refuge offered President Simon | 37
+frus1911 | Honduras: > Revolution; friendly mediation of the United States—Resignation of President Dávila; Congressional election of Provisional President Bertrand; national election of President Bonilla—Status of the ship Hornet—Prosecutio | 41
+frus1911 | Mexico: > Political affairs—Revolution. Organization of revolutionary government of Francisco I. Madero. Suspension of constitutional guaranties. Message of President Diaz. Armistice and treaty of peace. Resignation of President D | 339
+frus1911 | Nicaragua: > Political affairs: Recognition of Provisional President Estrada by the United States; proclamation of a constitution by the constitutional assembly; its rejection by presidential decree; dissolution of the assembly an | 41
+frus1912 | Cuba: > Proposal of France, Germany, and Great Britain to arbitrate with Cuba certain insurrectionary claims of their nationals arising prior to 1898 | 12
+frus1912 | Dominican Republic: > Political affairs: border warfare with Haiti; maintenance of the status quo; insurrection; resignation of President Victoria; election of President Adolfo Nouel; good offices of the United States. | 64
+frus1912 | Ecuador: > Political affairs: insurrection; closure of ports; measures to protect American interests; request for asylum at American Legation and Consulate; attitude of the United States; succession of Provisional Presidents Freil | 31
+frus1912 | Haiti: > Death of President Leconte and recognition by the United States of President Auguste | 4
+frus1912 | Mexico: > Political affairs.—Revolution: Measures taken by the United States to prevent breach of neutrality laws and to protect American life and property in Mexico. | 316
+frus1912 | Mexico: > Taxation of foreigners by insurrectionary forces exercising de facto authority | 9
+frus1912 | Mexico: > The rights of asylum and of temporary refuge | 4
+frus1912 | Mexico: > Claims of American citizens against Mexico for damages arising from revolutionary disturbances. | 74
+frus1912 | Nicaragua: > Political Affairs; revolutionary plots; the Mena insurrection; breach of the Dawson Agreements and of the Washington Conventions; measures taken by the United States for protecting life and property of foreigners; arr | 63
+frus1912 | Paraguay: > Political affairs: insurrection of February–March, 1911; coup d’état of July, 1911; various insurrections November 1911 to May 1912; presidential successions of Gondra, Jara, Rojas, Peña, Navero, and Schaerer; recognit | 25
+frus1912 | Salvador: > Political disturbances; attitude of the United States | 17

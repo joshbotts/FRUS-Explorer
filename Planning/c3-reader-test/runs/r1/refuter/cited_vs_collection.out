@@ -1,0 +1,25 @@
+URL citations: 53 distinct pairs: 45
+parenthetical citations without URL: [('FRUS 1948, The Western Hemisphere, Volume IX, Document 7', '7')]
+  'Document 7 ' without URL near: n the Civil War and under Wilson (FRUS 1948, The Western Hemisphere, Volume IX, Document 7). For Central America the rule was writ
+  resolved through manifest: FRUS 1948, The Western Hemisphere, Volume IX, Document 7 -> ['frus1948v09'] document d7
+    document_cache document_number: ('7',)
+
+ALL distinct cited pairs in the overview: 45
+pairs whose document_number differs from the id or that are missing: []
+printed citations whose title or number disagree with manifest/URL: 0
+printed citations checked: 53
+
+collection documents: 45
+cited in overview, present in collection: 45
+cited in overview, MISSING from collection: []
+in collection but not cited in the overview: []
+memo section 17 pairs: 62 == overview set: False == collection set: False
+heading '1. The stated test: control, consent and the abili': 5 docs; date order: True
+heading '2. When the test was tightened: constitutional leg': 8 docs; date order: True
+heading '3. What was asked in return, first part: assurance': 9 docs; date order: True
+heading '4. What was asked in return, second part: popular ': 5 docs; date order: True
+heading '5. From 1943, the other American republics were as': 9 docs; date order: True
+heading '6. After 1948: recognition as the default, withhol': 9 docs; date order: True
+last entries: [('prose', 'Threads I could not follow. The editors gave chapters to cases I read only in part or not at all: Argentina in 1943–45 ('), ('generated', 'archivalSources')]
+introductionText: 1. What FRUS answers directly. The series, Foreign Relations of the United States (FRUS), answers both halves of the question, and mostly in the Department of State’s own instructions. From 1877 to 1949 the Department described its test for a government that had taken power by force in nearly the sa
+name: Recognition of governments that came to power by force in Latin America — agent run, 25 October 2026 | authorLine: Agent run, 25 October 2026

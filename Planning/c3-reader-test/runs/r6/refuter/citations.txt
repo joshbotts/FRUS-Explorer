@@ -1,0 +1,112 @@
+URL citations: 46 distinct pairs: 43
+  frus1877/d222  <- Papers Relating to the Foreign Relations of the United
+                    States, Transmi
+  frus1904/d228  <- Papers Relating to the Foreign Relations of the United
+                    States, With th
+  frus1913/d7  <- Papers Relating to the Foreign Relations of the United
+                    States, With th
+  frus1936v05/d112  <- Foreign Relations of the United States, Diplomatic Papers,
+                    1936, The A
+  frus1878/d344  <- Papers Relating to the Foreign Relations of the United
+                    States, Transmi
+  frus1907p2/d22  <- Papers Relating to the Foreign Relations of the United
+                    States, With th
+  frus1911/d933  <- Papers Relating to the Foreign Relations of the United
+                    States, With th
+  frus1913/d873  <- Papers Relating to the Foreign Relations of the United
+                    States, With th
+  frus1913/d1028  <- Papers Relating to the Foreign Relations of the United
+                    States, With th
+  frus1917/d379  <- Papers Relating to the Foreign Relations of the United
+                    States, With th
+  frus1917/d409  <- Papers Relating to the Foreign Relations of the United
+                    States, With th
+  frus1920v03/d230  <- Papers Relating to the Foreign Relations of the United
+                    States, 1920, V
+  frus1921v02/d344  <- Papers Relating to the Foreign Relations of the United
+                    States, 1921, V
+  frus1922v02/d569  <- Papers Relating to the Foreign Relations of the United
+                    States, 1922, V
+  frus1923v02/d345  <- Papers Relating to the Foreign Relations of the United
+                    States, 1923, V
+  frus1930v01/d375  <- Papers Relating to the Foreign Relations of the United
+                    States, 1930, V
+  frus1932v05/d618  <- Foreign Relations of the United States, Diplomatic Papers,
+                    1932, The A
+  frus1934v05/d199  <- Foreign Relations of the United States, Diplomatic Papers,
+                    1934, The A
+  frus1935v04/d823  <- Foreign Relations of the United States, Diplomatic Papers,
+                    1935, The A
+  frus1934v05/d75  <- Foreign Relations of the United States, Diplomatic Papers,
+                    1934, The A
+  frus1944v07/d1  <- Foreign Relations of the United States, Diplomatic Papers,
+                    1944, The A
+  frus1944v07/d386  <- Foreign Relations of the United States, Diplomatic Papers,
+                    1944, The A
+  frus1944v07/d1018  <- Foreign Relations of the United States, Diplomatic Papers,
+                    1944, The A
+  frus1944v07/d1020  <- Foreign Relations of the United States, Diplomatic Papers,
+                    1944, The A
+  frus1945v09/d875  <- Foreign Relations of the United States, Diplomatic Papers,
+                    1945, The A
+  frus1945v09/d1172  <- Foreign Relations of the United States, Diplomatic Papers,
+                    1945, The A
+  frus1946v11/d773  <- Foreign Relations of the United States, 1946, The American
+                    Republics, 
+  frus1948v09/d75  <- Foreign Relations of the United States, 1948, The Western
+                    Hemisphere, 
+  frus1948v09/d384  <- Foreign Relations of the United States, 1948, The Western
+                    Hemisphere, 
+  frus1948v09/d89  <- Foreign Relations of the United States, 1948, The Western
+                    Hemisphere, 
+  frus1949v02/d446  <- Foreign Relations of the United States, 1949, The United
+                    Nations; The 
+  frus1950v02/d476  <- Foreign Relations of the United States, 1950, The United
+                    Nations; The 
+  frus1952-54v04/d327  <- Foreign Relations of the United States, 1952–1954, The
+                    American Republ
+  frus1952-54v04/d136  <- Foreign Relations of the United States, 1952–1954, The
+                    American Republ
+  frus1955-57v06/d353  <- Foreign Relations of the United States, 1955–1957, American
+                    Republics:
+  frus1961-63v12/d417  <- Foreign Relations of the United States, 1961–1963, Volume
+                    XII, America
+  frus1961-63v12/d423  <- Foreign Relations of the United States, 1961–1963, Volume
+                    XII, America
+  frus1961-63v12/d363  <- Foreign Relations of the United States, 1961–1963, Volume
+                    XII, America
+  frus1964-68v31/d206  <- Foreign Relations of the United States, 1964–1968, Volume
+                    XXXI, South 
+  frus1964-68v31/d132  <- Foreign Relations of the United States, 1964–1968, Volume
+                    XXXI, South 
+  frus1964-68v31/d512  <- Foreign Relations of the United States, 1964–1968, Volume
+                    XXXI, South 
+  frus1969-76v21/d360  <- Foreign Relations of the United States, 1969–1976, Volume
+                    XXI, Chile, 
+  frus1969-76v21/d361  <- Foreign Relations of the United States, 1969–1976, Volume
+                    XXI, Chile, 
+short-form parentheticals found: 16
+   ('1877', '', '222')
+   ('1904', '', '228')
+   ('1913', '', '7')
+   ('1913', '', '1028')
+   ('1917', '', '379')
+   ('1920', 'III', '230')
+   ('1921', 'II', '344')
+   ('1936', 'V', '112')
+   ('1930', 'I', '375')
+   ('1936', 'V', '112')
+   ('1944', 'VII', '1')
+   ('1946', 'XI', '773')
+   ('1948', 'IX', '89')
+   ('1952–1954', 'IV', '327')
+   ('1961–1963', 'XII', '423')
+   ('1964–1968', 'XXXI', '512')
+collection docs: 43 distinct: 43
+overview URL pairs not in collection: []
+collection docs not cited by URL in overview: []
+docs with notes: 43
+docs with empty/absent notes: []
+cited.tsv pairs: 43 == URL pairs: True
+generated entries: [{"kind": "generated", "generatedBlockType": "archivalSources"}]
+composition: {'defaultBodyDepth': 'full', 'footnoteStyle': 'all', 'includeSourceNote': True, 'tocStyle': 'citation', 'applyHighlights': False, 'includeNotes': True, 'includeWordCloud': False}

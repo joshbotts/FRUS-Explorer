@@ -1,0 +1,90 @@
+frus1930v01 | Argentina: > Revolution in Argentina | 21
+frus1930v01 | Bolivia: > Revolution in Bolivia | 20
+frus1930v01 | Brazil: > Revolution in Brazil | 51
+frus1930v02 | Cuba: > Political unrest in Cuba | 45
+frus1930v02 | Dominican Republic: > Revolution in the Dominican Republic | 40
+frus1930v03 | Guatemala: > Revolution in Guatemala | 41
+frus1930v03 | Haiti: > Assumption by the Minister in Haiti of functions previously exercised by the American High Commissioner | 1
+frus1930v03 | Peru: > Revolution in Peru | 68
+frus1931v01 | Chile: > Revolution in Chile | 43
+frus1931v01 | Chile: > Provisional commercial agreement between the United States and Chile effected by exchange of notes, signed September 28, 1931 | 12
+frus1931v02 | Cuba: > Political unrest in Cuba | 37
+frus1931v02 | Ecuador: > Political unrest in Ecuador | 13
+frus1931v02 | El Salvador: > Revolution in El Salvador | 61
+frus1931v02 | Guatemala: > Recognition of constitutional government in Guatemala | 24
+frus1931v02 | Honduras: > Insurrection in Honduras | 60
+frus1931v02 | Panama: > Revolution in Panama | 17
+frus1931v02 | Peru: > Revolution in Peru | 29
+frus1932v05 | General: > Efforts of Costa Rica to effect the denunciation of the General Treaty of Peace and Amity, signed February 7, 1923 | 25
+frus1932v05 | Brazil: > Insurrection in Brazil | 68
+frus1932v05 | Chile: > Revolutions in Chile | 95
+frus1932v05 | Costa Rica: > Insurrection in Costa Rica | 21
+frus1932v05 | Cuba: > Political unrest in Cuba | 23
+frus1932v05 | El Salvador: > Refusal of the United States to recognize the Martínez regime in El Salvador | 68
+frus1932v05 | Honduras: > Insurrection in Honduras | 23
+frus1932v05 | Peru: > Insurrection in Peru | 21
+frus1933v04 | General: > Assumption by the American Embassy in Peru of Colombian interests in Peru; sacking of the Colombian Legation | 20
+frus1933v05 | Cuba: > Revolution in Cuba—Efforts of the United States to aid in restoring political peace: | 306
+frus1933v05 | Revolution in Cuba—Efforts of the United States to aid in restoring political peace: > I. Increasing opposition to President Machado and overthrow of his government | 92
+frus1933v05 | El Salvador: > Refusal of the United States to recognize the Martínez regime in El Salvador | 10
+frus1934v05 | Cuba: > Recognition of the Provisional Government of Cuba | 31
+frus1934v05 | El Salvador: > Recognition of the Martínez Government of El Salvador by Guatemala, Honduras, and Nicaragua, and by the United States | 62
+frus1934v05 | Nicaragua: > Political unrest in Nicaragua; policy of the United States not to interfere in Nicaraguan internal affairs | 40
+frus1935v04 | Ecuador: > Revolution in Ecuador | 18
+frus1935v04 | Nicaragua: > Political unrest in Nicaragua; policy of the United States not to interfere in Nicaraguan internal affairs | 39
+frus1936v05 | General: > Decision of the Department of State that the United States should no longer be guided by article II of the General Treaty of Peace and Amity of 1923 in extending or denying recognition to governments in Central America | 8
+frus1936v05 | Bolivia: > Revolution in Bolivia | 26
+frus1936v05 | Brazil: > Representations to the Brazilian Government regarding the proposed German-Brazilian provisional commercial agreement | 30
+frus1936v05 | Brazil: > Representations to the Brazilian Government regarding the proposed Italian-Brazilian provisional commercial agreement | 10
+frus1936v05 | Chile: > Negotiations for a new modus vivendi to replace the provisional commercial agreement of May 28, 1931 | 10
+frus1936v05 | Ecuador: > Provisional commercial agreement between the United States and Ecuador, signed June 12, 1936 | 12
+frus1936v05 | Mexico: > Refusal of the Department of State to recognize right of an American citizen to divest his government of its right to extend to him its protection abroad | 2
+frus1936v05 | Nicaragua: > Revolution in Nicaragua | 51
+frus1936v05 | Panama: > General treaty of friendship and cooperation between the United States and Panama and exchanges of notes, signed March 2, 1936 | 0
+frus1936v05 | Paraguay: > Revolution in Paraguay | 46
+frus1937v05 | Bolivia: > Revolution in Bolivia; recognition of the Busch Government | 33
+frus1937v05 | Brazil: > Abrogation of Brazilian constitution and promulgation of a new one continuing President Vargas in office; continuance of diplomatic relations without formal act of recognition | 8
+frus1937v05 | Chile: > Negotiations respecting a provisional commercial agreement between the United States and Chile | 40
+frus1937v05 | Ecuador: > Forced resignation of President Paez of Ecuador; recognition of the Enriquez Government | 20
+frus1937v05 | Panama: > Agreement between the United States and Panama providing for the mutual recognition of ship measurement certificates, signed August 17, 1937 | 0
+frus1937v05 | Paraguay: > Revolution in Paraguay; recognition of the Paiva Government | 50
+frus1938v05 | Chile: > Provisional commercial agreement between the United States and Chile, signed January 6 and February 1, 1938 | 12
+frus1938v05 | Venezuela: > Negotiations respecting a trade agreement between the United States and Venezuela; and provisional commercial agreement, signed May 12, 1938 | 18
+frus1939v05 | Chile: > Provisional commercial agreement between the United States and Chile, signed February 20 and 24, 1939 | 3
+frus1939v05 | Panama: > Exchange of notes between the Secretary of State and the Panamanian Minister, February 1, 1939, clarifying certain provisions of the General Treaty of Friendship and Cooperation, signed March 2, 1936 | 0
+frus1939v05 | Venezuela: > Agreement between the United States and Venezuela continuing in force the provisional commercial agreement of May 12, 1938 | 5
+frus1940v05 | General: > Establishment of the Emergency Committee for the Provisional Administration of European Colonies and Possessions in the Americas under the Act of Habana | 4
+frus1940v05 | Chile: > Ratification by Chile of the provisional commercial agreement of 1938 between the United States and Chile, bringing it into force January 5, 1940 | 0
+frus1940v05 | Cuba: > Refusal of the United States to indicate whether it would or would not recognize a future government of Cuba | 7
+frus1940v05 | Nicaragua: > Policy of the United States of non-intervention in the internal affairs of Nicaragua | 1
+frus1940v05 | Panama: > Policy of the United States of non-intervention in the internal affairs of Panama | 2
+frus1940v05 | Panama: > Concern of the United States regarding omission from draft of new Panamanian constitution of expressed recognition of jurisdictional limitations arising from treaties with the United States | 5
+frus1943v05 | Argentina: > Discussions leading to the recognition of the Government of General Pedro P. Ramirez | 17
+frus1943v05 | Bolivia: > Non-recognition by the United States of the revolutionary regime established in Bolivia by the Movimiento Nacionalista Revolucionario | 9
+frus1944v07 | Argentina: > Withholding of recognition from the regime of Edelmiro Farrell by the United States | 36
+frus1944v07 | Bolivia: > Recognition by the United States and other American Republics of the revolutionary junta in Bolivia | 61
+frus1944v07 | Ecuador: > Recognition by the United States and the other American Republics of the new government of Ecuador | 23
+frus1944v07 | El Salvador: > Revolutions in El Salvador; policies of the United States and other American Republics regarding the right of asylum and recognition | 39
+frus1944v07 | Guatemala: > Revolution in Guatemala and recognition of a new regime by the United States and other American Republics | 28
+frus1945v04 | France: > Provisional arrangement between the United States and France relating to air services between their respective territories | 0
+frus1945v05 | Poland > Efforts by the United States to assure the fulfillment by the Polish Provisional Government of the Yalta and Potsdam Agreements regarding Poland; discussion of questions relating to economic assistance for Poland | 45
+frus1945v09 | Argentina: > Problems arising in connection with the recognition of the Farrell government followed by the deterioration of relations with that government | 65
+frus1945v09 | El Salvador: > Recognition by the United States and other American Republics of the government of Osmín Aguirre y Salinas | 9
+frus1945v09 | Venezuela: > Consultation concerning and recognition of the Venezuelan revolutionary junta | 28
+frus1946v05 | France: > Concern of the United States with political and economic developments relating to France; economic and financial agreements with the Provisional Government of the French Republic | 56
+frus1946v11 | General: > Preliminary discussions concerning the Ninth International Conference of American States to meet in Bogota | 10
+frus1946v11 | Bolivia: > Concern of the United States with respect to the violence accompanying the Bolivian revolution and the problem of recognition | 53
+frus1946v11 | Haiti: > United States recognition of the new Haitian Government | 8
+frus1946v11 | Honduras: > The question of military cooperation with the Honduran regime as affected by the United States attitude toward dictatorship | 10
+frus1946v11 | Mexico: > United States policy of non-intervention in the Mexican Presidential campaign | 7
+frus1946v11 | Nicaragua: > Reaffirmation of United States policy of nonintervention in the internal affairs of Nicaragua | 7
+frus1946v11 | Venezuela: > Interest of the United States in the Venezuelan political situation | 11
+frus1947v08 | General: > Preliminary discussions concerning the Ninth International Conference of American States to meet in Bogota | 0
+frus1947v08 | Argentina: > United States interest in the political situation in Argentina: efforts to extirpate Nazi influences | 34
+frus1947v08 | Costa Rica: > United States policy of nonintervention in the internal affairs of Costa Rica | 10
+frus1947v08 | Dominican Republic: > United States policy of nonintervention in Dominican political affairs | 26
+frus1947v08 | Ecuador: > The question of recognizing the Mancheno, the Suarez, and the Arosemena regimes in Ecuador | 14
+frus1947v08 | Nicaragua: > Political upheaval in Nicaragua: United States policies of nonintervention and nonrecognition | 40
+frus1947v08 | Paraguay: > The position of the United States toward the insurrection in Paraguay | 37
+frus1947v08 | Venezuela: > The position of the United States with respect to revolutionary activity in Venezuela | 13
+frus1948v09 | Multilateral Relations: > Continuance by the United States of diplomatic relations with new governments on the basis of the Bogota Resolution and consultation with other American Republics | 51

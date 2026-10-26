@@ -1,0 +1,10 @@
+#!/bin/zsh
+# usage: py OUTFILE script.py [args...]  -- logs the command line, runs it with stdout+stderr to OUTFILE
+R=/Users/jbotts/frus-analysis/c3/runs/r10
+export SQLITE_TMPDIR=$R/tmp
+out="$1"; shift
+print -r -- "python3 -B -u $* > $out 2>&1" >> $R/queries.log
+python3 -B -u "$@" > "$out" 2>&1
+rc=$?
+echo "[exit $rc] -> $out"
+exit $rc

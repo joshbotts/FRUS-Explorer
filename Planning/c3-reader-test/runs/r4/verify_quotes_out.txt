@@ -1,0 +1,20 @@
+frus1895p1/d244 len=1080 fm=0 en=0 collapsed_match=True raw_match=True
+frus1913/d894 len=4128 fm=0 en=0 collapsed_match=True raw_match=True
+frus1930v01/d375 len=6044 fm=0 en=0 collapsed_match=True raw_match=True
+frus1949v02/d439 len=5354 fm=0 en=0 collapsed_match=True raw_match=True
+frus1913/d7 len=3106 fm=0 en=0 collapsed_match=True raw_match=True
+frus1917/d378 len=1156 fm=0 en=0 collapsed_match=True raw_match=True
+frus1917/d414 len=15927 fm=0 en=0 collapsed_match=True raw_match=True
+frus1932v05/d623 len=2625 fm=0 en=0 collapsed_match=True raw_match=True
+frus1936v05/d112 len=38701 fm=0 en=0 collapsed_match=True raw_match=True
+frus1920v03/d225 len=5255 fm=0 en=0 collapsed_match=True raw_match=True
+frus1921v02/d344 len=4351 fm=0 en=0 collapsed_match=True raw_match=True
+frus1943v05/d335 len=2386 fm=0 en=0 collapsed_match=True raw_match=True
+frus1944v07/d1023 len=3444 fm=0 en=0 collapsed_match=True raw_match=True
+frus1944v07/d432 len=2808 fm=0 en=0 collapsed_match=True raw_match=True
+frus1948v09/d74 len=1615 fm=0 en=0 collapsed_match=True raw_match=True
+frus1948v09/d89 len=3777 fm=0 en=0 collapsed_match=True raw_match=True
+frus1958-60v06/d217 len=2691 fm=0 en=0 collapsed_match=True raw_match=True
+frus1961-63v12/d421 len=9453 fm=0 en=0 collapsed_match=True raw_match=True
+frus1969-76v21/d348 len=16567 fm=0 en=0 collapsed_match=True raw_match=True
+VERIFIED 19 of 19

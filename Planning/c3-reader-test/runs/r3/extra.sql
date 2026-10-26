@@ -1,0 +1,2 @@
+SELECT '1900-1912 volumes: nonapparatus documents', count(*), count(DISTINCT volume_id) FROM document_cache WHERE volume_id IN ('frus1900','frus1901','frus1902','frus1903','frus1904','frus1905','frus1906p1','frus1906p2','frus1907p1','frus1907p2','frus1908','frus1909','frus1910','frus1911','frus1912') AND is_front_matter=0 AND is_editorial_note=0;
+SELECT 'document_sources rows for volume frus1900/d530', count(*) FROM document_sources WHERE volume_id='frus1900' AND document_id='d530';

@@ -1,0 +1,7 @@
+#!/bin/bash
+# lg COMMAND ARGS... -- append the command line to queries.log, then run it
+LOG=/Users/jbotts/frus-analysis/c3/runs/r1/queries.log
+line=""
+for a in "$@"; do line+="$(printf '%q' "$a") "; done
+printf '%s\n' "${line% }" >> "$LOG"
+exec "$@"

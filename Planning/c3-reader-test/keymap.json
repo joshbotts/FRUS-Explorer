@@ -1,0 +1,71 @@
+{
+  "S-med": {
+    "label": "r3",
+    "model": "claude-sonnet-5-5",
+    "effort": "medium"
+  },
+  "S-high": {
+    "label": "r5",
+    "model": "claude-sonnet-5-5",
+    "effort": "high"
+  },
+  "S-max": {
+    "label": "r1",
+    "model": "claude-sonnet-5-5",
+    "effort": "max"
+  },
+  "O-med": {
+    "label": "r4",
+    "model": "claude-opus-5-5",
+    "effort": "medium"
+  },
+  "O-high": {
+    "label": "r6",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "O-max": {
+    "label": "r2",
+    "model": "claude-opus-5-5",
+    "effort": "max"
+  },
+  "F-med": {
+    "label": "r8",
+    "model": "claude-fable-5-1",
+    "effort": "medium"
+  },
+  "F-high": {
+    "label": "r9",
+    "model": "claude-fable-5-1",
+    "effort": "high"
+  },
+  "F-max": {
+    "label": "r7",
+    "model": "claude-fable-5-1",
+    "effort": "max"
+  },
+  "cal": {
+    "label": "cal",
+    "model": null,
+    "effort": null,
+    "note": "calibration: the 2026-08-31 Cuba starter kit scored as if it were a cell"
+  },
+  "O-med (2)": {
+    "label": "r11",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "note": "replication of O-med, design \u00a73 step 5"
+  },
+  "O-max (2)": {
+    "label": "r10",
+    "model": "claude-opus-5-5",
+    "effort": "max",
+    "note": "replication of O-max"
+  },
+  "S-high (2)": {
+    "label": "r12",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "note": "replication of S-high"
+  }
+}
