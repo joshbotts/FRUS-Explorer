@@ -1215,19 +1215,27 @@ public actor CitationMatchingEngine {
 ///
 /// Centralizing these here ensures they can be tested in isolation and
 /// that no inline literal strings escape to the view layer.
-enum ConfidenceLabels {
+///
+/// Public, every label and note but `cited(_:)`, which quotes the engine's internal
+/// `CitationMatchingEngine.CitedField` for the engine's own labels.
+///
+/// Version history:
+///   1.0 — Session 30: initial implementation; later labels record their issue beside them
+///   1.1 — Session 2026-10-24 (FRUS Explorer Light, S15a): public, for the web edition's Citation
+///          Lookup
+public enum ConfidenceLabels {
 
-    static let exactMatch = String(
+    public static let exactMatch = String(
         localized: "citation.match.exact",
         defaultValue: "Exact match"
     )
 
-    static let superimposedDocumentNumber = String(
+    public static let superimposedDocumentNumber = String(
         localized: "citation.match.superimposed",
         defaultValue: "Match — document number assigned digitally"
     )
 
-    static let manifestOnly = String(
+    public static let manifestOnly = String(
         localized: "citation.match.manifestOnly",
         defaultValue: "Volume identified — download to find the specific document"
     )
@@ -1237,7 +1245,7 @@ enum ConfidenceLabels {
     /// the range is the pages it is printed on from the page it begins on, not its own page
     /// breaks). A document printed on the one page takes the one-page form — which only a document
     /// placed by its own single break can be, the index recording no page it begins on.
-    static func pageRange(page: Int, first: Int, last: Int) -> String {
+    public static func pageRange(page: Int, first: Int, last: Int) -> String {
         guard first < last else {
             return String(localized: "citation.match.pageRangeOnePage",
                           defaultValue: "Matched by page number — this document is printed on page \(page)")
@@ -1251,7 +1259,7 @@ enum ConfidenceLabels {
     /// The label on the one document that begins on a cited page (#1503), e.g. "this document
     /// begins on page 49 (pages 49–50)", or, printed on that page alone, "begins on page 47 and
     /// ends on it".
-    static func pageBegins(page: Int, first: Int, last: Int) -> String {
+    public static func pageBegins(page: Int, first: Int, last: Int) -> String {
         guard first < last else {
             return String(localized: "citation.match.pageBeginsOnePage",
                           defaultValue: "Matched by page number — this document begins on page \(page) and ends on it")
@@ -1264,7 +1272,7 @@ enum ConfidenceLabels {
     /// several `begin` on it, or — none beginning there — several are printed on it, as in a
     /// volume numbering its pages per document. `documents` is how many, counting any the lookup
     /// does not list (`CitationMatchingEngine.sharedPageListLimit`).
-    static func sharedPage(page: Int, documents: Int, begin: Bool) -> String {
+    public static func sharedPage(page: Int, documents: Int, begin: Bool) -> String {
         // "N documents", grouped (#1374): a volume numbering its pages per document can print one
         // page number in hundreds.
         let counted = CountCopy.documents(documents)
@@ -1276,7 +1284,7 @@ enum ConfidenceLabels {
     }
 
     /// The note under each of those documents (#1503).
-    static let sharedPageNote = String(
+    public static let sharedPageNote = String(
         localized: "citation.match.sharedPageNote",
         defaultValue: "A page alone cannot say which of the documents printed on it the citation means. Add the document number to the citation, or compare these documents with the citation."
     )
@@ -1285,19 +1293,19 @@ enum ConfidenceLabels {
     /// every document (#1503 review round 1), where every answer is a possible match: "one of 12
     /// documents printed on page 2", as for any page several documents are printed on, or — when
     /// one document alone has a page of that number — "page 57 is printed only in this document".
-    static func perDocumentPage(page: Int, documents: Int) -> String {
+    public static func perDocumentPage(page: Int, documents: Int) -> String {
         guard documents == 1 else { return sharedPage(page: page, documents: documents, begin: false) }
         return String(localized: "citation.match.perDocumentPageOne",
                       defaultValue: "Possible match — page \(page) is printed only in this document")
     }
 
     /// The note under each of those documents (#1503 review round 1).
-    static let perDocumentPageNote = String(
+    public static let perDocumentPageNote = String(
         localized: "citation.match.perDocumentPageNote",
         defaultValue: "This volume numbers its pages afresh in every document, so a page number alone does not say which document the citation means. Add the document number to the citation."
     )
 
-    static func bestGuess(_ explanation: String) -> String {
+    public static func bestGuess(_ explanation: String) -> String {
         String(
             localized: "citation.match.bestGuess",
             defaultValue: "Best guess — \(explanation)"
@@ -1325,14 +1333,14 @@ enum ConfidenceLabels {
     /// It states what is true of the result rather than why the lookup reached it: usually no
     /// volume carried the field and the lookup looked beyond it, but a long title fragment can
     /// also move it out of a cited subseries that other volumes do carry.
-    static func unmetFields(_ cited: [String]) -> String {
+    public static func unmetFields(_ cited: [String]) -> String {
         let fields = cited.formatted(.list(type: .and))
         return String(localized: "citation.match.unmetFields",
                       defaultValue: "this volume does not match the cited \(fields)")
     }
 
     /// The note under such a best guess (#1474).
-    static let unmetFieldsNote = String(
+    public static let unmetFieldsNote = String(
         localized: "citation.match.unmetFieldsNote",
         defaultValue: "This result comes from a volume the citation does not name, so it may not be the document cited. Check the citation before relying on it."
     )
@@ -1345,7 +1353,7 @@ enum ConfidenceLabels {
     /// it gives after the series' name with no other number between (`FRUS, 1964–1968`), or by a
     /// range the parser reads otherwise (`1964–68`, #1507); a single year it gives otherwise is the
     /// date a note opens with, is not checked, and never draws this note (#1474 review round 5).
-    static let linkProseNote = String(
+    public static let linkProseNote = String(
         localized: "citation.match.linkProseNote",
         defaultValue: "The link names this volume, but the citation’s text names a different one, and this document was found by the text’s document number or page — so it may not be the document cited. Check the citation before relying on it."
     )
@@ -1361,7 +1369,7 @@ enum ConfidenceLabels {
     /// it: a document with no page break of its own, between two breaks one page apart, or — since
     /// round 3's page-1 floor — a document whose only arabic page break of its own is page 1, whose
     /// range is `1...1` and whose label reads "(1)".
-    static func pageOutside(page: Int, first: Int, last: Int) -> String {
+    public static func pageOutside(page: Int, first: Int, last: Int) -> String {
         guard first < last else {
             return String(localized: "citation.match.pageOutsideOnePage",
                           defaultValue: "page \(page) is not the page this document is printed on (\(first))")
@@ -1371,7 +1379,7 @@ enum ConfidenceLabels {
     }
 
     /// The note under such a best guess (#1474 review round 1).
-    static let pageOutsideNote = String(
+    public static let pageOutsideNote = String(
         localized: "citation.match.pageOutsideNote",
         defaultValue: "The citation’s page is not one this document is printed on, so its document number or its page may be wrong. Check the citation before relying on it."
     )
@@ -1379,7 +1387,7 @@ enum ConfidenceLabels {
     /// The label on the one row a history.state.gov link yields when its volume is downloaded
     /// but no document it names — by id, number or page — is found in it (#1474 review round 1):
     /// a link to the volume itself, to a chapter, or to an id the index does not hold.
-    static let linkVolumeOnly = String(
+    public static let linkVolumeOnly = String(
         localized: "citation.match.linkVolumeOnly",
         defaultValue: "Volume identified — no document the citation names was found in it"
     )
@@ -1394,7 +1402,7 @@ enum ConfidenceLabels {
     /// the volume's count was to get its nearest document in this row's place; the count was never
     /// filled, and both are gone.) It says "not yet indexed", not "being indexed": a volume whose
     /// pass was cut short waits for the reader to index it again.
-    static let notYetIndexed = String(
+    public static let notYetIndexed = String(
         localized: "citation.match.notYetIndexed",
         defaultValue: "Volume identified — downloaded but not yet indexed; look it up again once it is"
     )

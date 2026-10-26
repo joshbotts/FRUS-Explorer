@@ -78,6 +78,7 @@ import SwiftData
 ///          previously it showed the source-note header, which `exportHeading` never uses
 ///   1.9 — #1406: that citation is `exportCitation(documentId:volumeId:manifestEntry:pipeline:)`,
 ///          naming the volume's printed number (`CitableDocumentNumber`), as the export now does
+///   1.10 — #1791: the per-note include rows are one copy of each note, however many are stored
 struct CollectionEntryInspector: View {
 
     /// One highlight row offered for excerpt insertion (Authoring Phase 5).
@@ -1302,8 +1303,9 @@ struct CollectionEntryInspector: View {
         noteTexts = docNotes
 
         // Per-note include rows (D5): the document's own research notes, ordered newest
-        // first (matching the editors' `notes(for:)` ordering by `lastModified`).
-        let docNoteRecords = ((try? modelContext.fetch(FetchDescriptor<ResearchNote>(
+        // first (matching the editors' `notes(for:)` ordering by `lastModified`), one copy of
+        // each however many are stored under its id, so no two rows offer one note (#1791).
+        let docNoteRecords = ResearchNote.oneCopyEach((try? modelContext.fetch(FetchDescriptor<ResearchNote>(
             predicate: #Predicate { $0.volumeId == vid && $0.documentId == did }))) ?? [])
             .sorted { ($0.lastModified ?? .distantPast) > ($1.lastModified ?? .distantPast) }
         noteChoices = docNoteRecords.map { note in

@@ -143,28 +143,28 @@ This document is no longer in the volume.
 ### Research — Changed by an update (R-5 P2)
 
 #### Sidebar row
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 749–750 | key: research.sidebar.updated -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 750–751 | key: research.sidebar.updated -->
 
 Changed by an update
 
 <!-- END SOURCE: research.sidebar.updated -->
 
 #### Row line — text changed
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1675–1676 | key: research.row.changed.body -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1677–1678 | key: research.row.changed.body -->
 
 Text changed in an update — highlight positions may have moved
 
 <!-- END SOURCE: research.row.changed.body -->
 
 #### Row line — apparatus changed
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1678–1679 | key: research.row.changed.apparatus -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1680–1681 | key: research.row.changed.apparatus -->
 
 Footnotes, source note, or heading changed in an update — the text did not
 
 <!-- END SOURCE: research.row.changed.apparatus -->
 
 #### Row line — gone
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1665–1665 | key: research.row.changed.vanished -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1667–1667 | key: research.row.changed.vanished -->
 
 No longer in the volume
 
@@ -184,7 +184,7 @@ Review…
 <!-- END SOURCE: document.changed.review -->
 
 #### Research row action
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1157–1157 | key: research.action.reviewChanges -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1158–1158 | key: research.action.reviewChanges -->
 
 Review Changes…
 
@@ -555,21 +555,21 @@ VoiceOver reads. The colour names themselves (*Yellow*, *Green*, *Blue*, *Pink*)
 footnote offers only Look Up in NARA and Note.
 
 #### A highlight colour — what VoiceOver reads
-<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 55–56 | key: selectionBar.highlightColor.a11y | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 32–33 | key: selectionBar.highlightColor.a11y | shared: iOS+macOS (single edit point) -->
 
 Highlight \(color.displayName)
 
 <!-- END SOURCE: selectionBar.highlightColor.a11y -->
 
 #### Excerpt
-<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 58–58 | key: selectionBar.excerpt | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 35–35 | key: selectionBar.excerpt | shared: iOS+macOS (single edit point) -->
 
 Excerpt
 
 <!-- END SOURCE: selectionBar.excerpt -->
 
 #### Look Up in NARA
-<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 60–60 | key: selectionBar.lookUpInNARA | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 37–37 | key: selectionBar.lookUpInNARA | shared: iOS+macOS (single edit point) -->
 
 Look Up in NARA
 
@@ -578,7 +578,7 @@ Look Up in NARA
 *New in #1540. It replaces “Look Up” (`selectionBar.lookUp`), because the iPhone and iPad edit menu has a Look Up of its own, the dictionary, and the two sat in one menu. It hands the selected text to the NARA Catalog lookup.*
 
 #### Note
-<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 62–62 | key: selectionBar.note | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 39–39 | key: selectionBar.note | shared: iOS+macOS (single edit point) -->
 
 Note
 
@@ -1944,7 +1944,7 @@ No FRUS documents matched the provided citation. Check the subseries and volume,
      a footnote that opens with its date and gives its volume's years without naming the series —
      "Memorandum, May 5, 1962, 1961–1963, vol. V, doc. 84" — was read as the subseries 1962 and drew
      this note under Volume V, though the citation names Volume V; it now reads 1961–1963. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFieldsNote | lines: 1336–1337 | key: citation.match.unmetFieldsNote -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFieldsNote | lines: 1344–1345 | key: citation.match.unmetFieldsNote -->
 
 This result comes from a volume the citation does not name, so it may not be the document cited. Check the citation before relying on it.
 
@@ -1974,7 +1974,7 @@ This result comes from a volume the citation does not name, so it may not be the
      https://…/frus1961-63v05" draws this note. A single year read that way is a date and is not:
      "FRUS, vol. V, doc. 84, Memorandum, May 5, 1962" and "Senate Committee on Foreign Relations,
      May 5, 1962, vol. V, doc. 84" beside the Volume V link drew it until then, and no longer do. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkProseNote | lines: 1349–1350 | key: citation.match.linkProseNote -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkProseNote | lines: 1357–1358 | key: citation.match.linkProseNote -->
 
 The link names this volume, but the citation’s text names a different one, and this document was found by the text’s document number or page — so it may not be the document cited. Check the citation before relying on it.
 
@@ -1988,7 +1988,7 @@ The link names this volume, but the citation’s text names a different one, and
      "part 2", joined as a list: "volume XX and part 2". It may be followed by "and page 50 is
      outside the pages this document may be printed on …" (the next two blocks). Keep it
      lower-case: it continues the label. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFields | lines: 1330–1331 | key: citation.match.unmetFields -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFields | lines: 1338–1339 | key: citation.match.unmetFields -->
 
 this volume does not match the cited \(fields)
 
@@ -2009,7 +2009,7 @@ this volume does not match the cited \(fields)
      for a short document with none, over the pages between the breaks on either side of it. When
      the range is one page, the next block is shown instead. Keep it lower-case: it continues the
      label, and may follow the previous block after "and". -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1369–1370 | key: citation.match.pageOutside -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1377–1378 | key: citation.match.pageOutside -->
 
 page \(page) is outside the pages this document may be printed on (\(first)–\(last))
 
@@ -2023,7 +2023,7 @@ page \(page) is outside the pages this document may be printed on (\(first)–\(
      page-1 floor it is also the form for a document the index records no start for whose only
      arabic page break of its own is page 1, which reads "(1)" (corrected in review round 4, which
      found this note naming only the first case). Keep it lower-case: it continues the label. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1366–1367 | key: citation.match.pageOutsideOnePage -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1374–1375 | key: citation.match.pageOutsideOnePage -->
 
 page \(page) is not the page this document is printed on (\(first))
 
@@ -2033,7 +2033,7 @@ page \(page) is not the page this document is printed on (\(first))
 <!-- The note under that best guess (#1474 review round 1). The document on the cited page, when
      there is one, is listed after it as a second result — since #1503 the document that begins on
      that page, or every one of them when several do, each carrying the next block's note. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutsideNote | lines: 1375–1376 | key: citation.match.pageOutsideNote -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutsideNote | lines: 1383–1384 | key: citation.match.pageOutsideNote -->
 
 The citation’s page is not one this document is printed on, so its document number or its page may be wrong. Check the citation before relying on it.
 
@@ -2048,7 +2048,7 @@ The citation’s page is not one this document is printed on, so its document nu
      Batch counts the note as ambiguous, and a collection's Add Documents never adds it as
      resolved. In the E-volumes that number their pages afresh in every document the next block is
      shown instead (#1503 review round 1). -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.sharedPageNote | lines: 1280–1281 | key: citation.match.sharedPageNote -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.sharedPageNote | lines: 1288–1289 | key: citation.match.sharedPageNote -->
 
 A page alone cannot say which of the documents printed on it the citation means. Add the document number to the citation, or compare these documents with the citation.
 
@@ -2061,7 +2061,7 @@ A page alone cannot say which of the documents printed on it the citation means.
      a page of that number is listed, up to ten, each labelled "Possible match — one of 12
      documents printed on page 2", or, when one document alone has such a page, "Possible match —
      page 57 is printed only in this document"; even that one is not treated as a match. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.perDocumentPageNote | lines: 1296–1297 | key: citation.match.perDocumentPageNote -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.perDocumentPageNote | lines: 1304–1305 | key: citation.match.perDocumentPageNote -->
 
 This volume numbers its pages afresh in every document, so a page number alone does not say which document the citation means. Add the document number to the citation.
 
@@ -2077,7 +2077,7 @@ This volume numbers its pages afresh in every document, so a page number alone d
      block's label instead — except for a link to the whole volume with no document or page beside
      it, which names nothing an index could find and shows this label either way (#1522 review
      round 1). -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkVolumeOnly | lines: 1383–1384 | key: citation.match.linkVolumeOnly -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkVolumeOnly | lines: 1391–1392 | key: citation.match.linkVolumeOnly -->
 
 Volume identified — no document the citation names was found in it
 
@@ -2104,7 +2104,7 @@ Volume identified — no document the citation names was found in it
      reason (review round 1 corrected this note, which said it gave this line). The result shows the
      volume's title and has no button. It says "not yet indexed" rather than "being indexed"
      because a volume whose indexing was cut short is not being indexed until it is indexed again. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.notYetIndexed | lines: 1398–1399 | key: citation.match.notYetIndexed -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.notYetIndexed | lines: 1406–1407 | key: citation.match.notYetIndexed -->
 
 Volume identified — downloaded but not yet indexed; look it up again once it is
 
@@ -2162,7 +2162,7 @@ The linked document is in “%@”, which isn’t downloaded yet. Download it to
 *The iPhone and iPad alert has a View Connections button beside Download Volume, which the last clause names.*
 
 #### Browse — You followed a link to page %lld of this volume, which isn’t downloaded.
-<!-- SOURCE: FRUSExplorer/TEI/FRUSURLSchemeHandler.swift | FollowedPageLink.notice | lines: 530–531 | key: browser.volume.followedPage %lld | shared: iOS and macOS (one text, under the not-downloaded heading of a volume's page in Browse on iPhone and iPad and in the Corpus Browser on the Mac) -->
+<!-- SOURCE: FRUSExplorer/TEI/FRUSURLSchemeHandler.swift | FollowedPageLink.notice | lines: 410–411 | key: browser.volume.followedPage %lld | shared: iOS and macOS (one text, under the not-downloaded heading of a volume's page in Browse on iPhone and iPad and in the Corpus Browser on the Mac) -->
 
 You followed a link to page %lld of this volume, which isn’t downloaded.
 
@@ -2178,7 +2178,7 @@ Read mode also enables edge-tap navigation to the previous and next document in 
 <!-- END SOURCE: document.toolbar.panelMode.hint -->
 
 #### This volume was side-loaded, not downloaded from the…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentViewModel.swift | DocumentViewModel.citationProvenanceNote | lines: 261–262 | key: citation.sideloaded.note -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentViewModel.swift | DocumentViewModel.citationProvenanceNote | lines: 262–263 | key: citation.sideloaded.note -->
 
 This volume was side-loaded, not downloaded from the published catalogue. The app cannot confirm it is published, so no history.state.gov link is included — check the citation before using it.
 
@@ -2288,28 +2288,28 @@ Subjects that recur across the volumes you’ve already collected, annotated, or
 <!-- END SOURCE: project.focus.suggested.detail -->
 
 #### %lld documents in volumes you have not downloaded read as…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.reachCaption | lines: 793–797 | key: project.reach.caption %lld %lld -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.reachCaption | lines: 795–799 | key: project.reach.caption %lld %lld -->
 
 %lld documents in volumes you have not downloaded read as close to one of this project's %lld documents as that document's nearest neighbours already on this device.
 
 <!-- END SOURCE: project.reach.caption %lld %lld -->
 
 #### As you add documents to this project’s collections, related…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.leadsSection | lines: 832–833 | key: project.home.leads.placeholder -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.leadsSection | lines: 834–835 | key: project.home.leads.placeholder -->
 
 As you add documents to this project’s collections, related documents you haven’t gathered yet will surface here.
 
 <!-- END SOURCE: project.home.leads.placeholder -->
 
 #### No activity in this project yet. Read documents, take…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.recentSection | lines: 1112–1113 | key: project.home.recent.empty -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.recentSection | lines: 1114–1115 | key: project.home.recent.empty -->
 
 No activity in this project yet. Read documents, take notes, or build a collection while this project is active and it will appear here.
 
 <!-- END SOURCE: project.home.recent.empty -->
 
 #### Footer — A collection can belong to more than one project. Attaching…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectCollectionsEditor.body | lines: 1362–1363 | key: project.collections.manage.footer -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectCollectionsEditor.body | lines: 1364–1365 | key: project.collections.manage.footer -->
 
 A collection can belong to more than one project. Attaching it here doesn’t remove it from any others.
 
@@ -2331,14 +2331,14 @@ Untitled Collection
 <!-- END SOURCE: collection.untitled.name -->
 
 #### Empty state — Tag documents while you research, then choose which tags…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectFocusTagsEditor.body | lines: 1525–1526 | key: project.focusTags.empty.detail -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectFocusTagsEditor.body | lines: 1527–1528 | key: project.focusTags.empty.detail -->
 
 Tag documents while you research, then choose which tags focus this project’s suggestions here.
 
 <!-- END SOURCE: project.focusTags.empty.detail -->
 
 #### %lld documents · reached from %lld of yours
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectReachVolumeRow.body | lines: 1631–1632 | key: project.reach.volumeDetail %lld %lld -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectReachVolumeRow.body | lines: 1633–1634 | key: project.reach.volumeDetail %lld %lld -->
 
 %lld documents · reached from %lld of yours
 
@@ -2359,21 +2359,21 @@ Your research activity will appear here as you open documents, run searches, and
 <!-- END SOURCE: sessionLog.empty.detail.trail -->
 
 #### Research notes, tags, highlights, and collections you add…
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 873–874 | key: research.empty.noDocs.allNotes -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 874–875 | key: research.empty.noDocs.allNotes -->
 
 Research notes, tags, highlights, and collections you add from the document view will appear here.
 
 <!-- END SOURCE: research.empty.noDocs.allNotes -->
 
 #### Notes you write on a document will appear here. A document…
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 876–877 | key: research.empty.noDocs.hasNotes -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 877–878 | key: research.empty.noDocs.hasNotes -->
 
 Notes you write on a document will appear here. A document you have only tagged, highlighted, or collected appears under All Research Documents instead.
 
 <!-- END SOURCE: research.empty.noDocs.hasNotes -->
 
 #### No document you have annotated has changed since it was…
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 888–889 | key: research.empty.noDocs.updated -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 889–890 | key: research.empty.noDocs.updated -->
 
 No document you have annotated has changed since it was indexed on this device.
 
@@ -2421,7 +2421,7 @@ Choose a summarization prompt in the collection’s Composition section to expor
 <!-- END SOURCE: export.summaryNoPrompt -->
 
 #### Footer — Rendered on the exported title page; the introduction opens…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1095–1096 | key: collection.frontmatter.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1097–1098 | key: collection.frontmatter.footer -->
 
 Rendered on the exported title page; the introduction opens the body, after the table of contents and before the first document. Leave blank to keep the plain document layout.
 
@@ -2512,7 +2512,7 @@ Empty note block
 <!-- END SOURCE: collection.smart.earlier.emptyNote -->
 
 #### Saved search not found
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2341–2341 | key: collection.editor.smart.missing -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2343–2343 | key: collection.editor.smart.missing -->
 
 *Where a smart collection's Smart Collection section names its saved search, when no saved search has the linked one's id any more (#1619 review): in Collection settings on iPhone and iPad, and in the Mac Collections window's ⚙ Collection popover. Unlink sits beside it either way.*
 
@@ -2521,7 +2521,7 @@ Saved search not found
 <!-- END SOURCE: collection.editor.smart.missing -->
 
 #### The linked saved search could not be found. It may have…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2352–2353 | key: collection.editor.smart.missing.explanation -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2354–2355 | key: collection.editor.smart.missing.explanation -->
 
 *The line under it, in place of the line that says what the link does. A smart collection takes nothing by hand, so the line says how to take it back (#1619 review).*
 
@@ -2530,7 +2530,7 @@ The linked saved search could not be found. It may have been deleted. Unlink it 
 <!-- END SOURCE: collection.editor.smart.missing.explanation -->
 
 #### Link to Saved Search…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2383–2384 | key: collection.editor.smart.link -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2385–2386 | key: collection.editor.smart.link -->
 
 *A Smart Collection section's button for a collection that is not linked: in Collection settings on iPhone and iPad, which on the Mac is also the New Collection sheet's, and since #1687 in the Mac Collections window's ⚙ Collection popover, which until then could unlink a collection and not link one. It opens the list of saved searches, newest first; in the Collections window it first closes the popover, and the list opens over the window. It is dimmed until a search is saved, over the next block's line (on the Mac, the one after it).*
 
@@ -2539,7 +2539,7 @@ Link to Saved Search…
 <!-- END SOURCE: collection.editor.smart.link -->
 
 #### Save a search from the Search tab to enable smart collections.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2397–2398 | key: collection.editor.smart.noSearches -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2399–2400 | key: collection.editor.smart.noSearches -->
 
 *Under the dimmed Link to Saved Search… on iPhone and iPad, while no search is saved.*
 
@@ -2548,7 +2548,7 @@ Save a search from the Search tab to enable smart collections.
 <!-- END SOURCE: collection.editor.smart.noSearches -->
 
 #### Save a search from the Search window to enable smart collections.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2392–2393 | key: collection.editor.smart.noSearches.mac -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2394–2395 | key: collection.editor.smart.noSearches.mac -->
 
 *The same line on the Mac (#1687): in the Collections window's ⚙ Collection popover, and in the New Collection sheet, where it had named the Search tab, which the Mac does not have.*
 
@@ -2557,7 +2557,7 @@ Save a search from the Search window to enable smart collections.
 <!-- END SOURCE: collection.editor.smart.noSearches.mac -->
 
 #### Couldn’t Add to Archives Visit
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.body | lines: 356–356 | key: archiveVisit.collection.error.title | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.body | lines: 358–358 | key: archiveVisit.collection.error.title | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 *The title of the alert Add to Archives Visit… shows when a smart collection's search cannot run (#1619), on iPhone, iPad and Mac. Its message is the export's own: "Search is not ready yet. Try again in a moment." before the index has opened, or "The linked saved search could not be found. It may have been deleted."*
@@ -2643,70 +2643,70 @@ The tags could not be read or saved, so no document was tagged. %@
 <!-- END SOURCE: tags.picker.addFailed.save %@ -->
 
 #### VoiceOver label — Add documents, a section heading, a note block, highlighted…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1367–1368 | key: collection.add.menu | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1369–1370 | key: collection.add.menu | shared: iOS only -->
 
 Add documents, a section heading, a note block, highlighted passages, or an apparatus block
 
 <!-- END SOURCE: collection.add.menu -->
 
 #### Footer — Search the index, browse volumes, paste citations or…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1754–1755 | key: collection.editor.addDocuments.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1756–1757 | key: collection.editor.addDocuments.footer -->
 
 Search the index, browse volumes, paste citations or history.state.gov links, or gather a tag. New documents are added to the end of the list.
 
 <!-- END SOURCE: collection.editor.addDocuments.footer -->
 
 #### Field prompt — Overrides the document title in the table of contents and…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.identitySection | lines: 374–375 | key: collection.inspector.titleOverride.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.identitySection | lines: 375–376 | key: collection.inspector.titleOverride.caption -->
 
 Overrides the document title in the table of contents and the export heading. Leave blank to use the derived title.
 
 <!-- END SOURCE: collection.inspector.titleOverride.caption -->
 
 #### Checked notes are included when research notes apply to…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 445–446 | key: collection.inspector.note.selectionCaption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 446–447 | key: collection.inspector.note.selectionCaption -->
 
 Checked notes are included when research notes apply to this document. Unselecting every note turns notes off for it.
 
 <!-- END SOURCE: collection.inspector.note.selectionCaption -->
 
 #### Checked passages are included when highlights apply to this…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 530–531 | key: collection.inspector.highlight.selectionCaption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 531–532 | key: collection.inspector.highlight.selectionCaption -->
 
 Checked passages are included when highlights apply to this document. Unselecting every passage turns highlights off for it.
 
 <!-- END SOURCE: collection.inspector.highlight.selectionCaption -->
 
 #### Adds a “See also” line listing cross-referenced documents…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overrideControls | lines: 714–715 | key: collection.inspector.override.related.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overrideControls | lines: 715–716 | key: collection.inspector.override.related.caption -->
 
 Adds a “See also” line listing cross-referenced documents that are also in this collection. Off unless turned on here or on the section.
 
 <!-- END SOURCE: collection.inspector.override.related.caption -->
 
 #### Default follows the section’s setting when its heading sets…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overridesSection | lines: 766–767 | key: collection.inspector.overrides.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overridesSection | lines: 767–768 | key: collection.inspector.overrides.caption -->
 
 Default follows the section’s setting when its heading sets one, else the collection’s composition.
 
 <!-- END SOURCE: collection.inspector.overrides.caption -->
 
 #### Documents in this section use these settings unless they…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.sectionDefaultsSection | lines: 779–780 | key: collection.inspector.sectionDefaults.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.sectionDefaultsSection | lines: 780–781 | key: collection.inspector.sectionDefaults.caption -->
 
 Documents in this section use these settings unless they set their own. Default falls through to the collection’s composition.
 
 <!-- END SOURCE: collection.inspector.sectionDefaults.caption -->
 
 #### Reorder or delete excerpts in the collection list. Insert…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.excerptsSection | lines: 895–896 | key: collection.inspector.excerpts.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.excerptsSection | lines: 896–897 | key: collection.inspector.excerpts.caption -->
 
 Reorder or delete excerpts in the collection list. Insert new ones from the highlight rows above.
 
 <!-- END SOURCE: collection.inspector.excerpts.caption -->
 
 #### No headnote yet. Edit to write a key takeaway, or generate…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.headnoteCard | lines: 992–993 | key: collection.inspector.headnote.empty -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.headnoteCard | lines: 993–994 | key: collection.inspector.headnote.empty -->
 
 No headnote yet. Edit to write a key takeaway, or generate a document summary to seed one.
 
@@ -2729,7 +2729,7 @@ Connect a Zotero account to send with your tags & research notes. Without one th
 #### Send to Zotero Library — the Zotero collection made for a collection with no name
 <!-- #1497, your decision D16 (2026-09-28): new in lane EXPORT. Only the Zotero send uses it; a file
      export of the same collection keeps "Untitled Collection". -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1603–1604 | key: export.zotero.collection.untitled %@ -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1646–1647 | key: export.zotero.collection.untitled %@ -->
 
 FRUS Explorer Collection - %@
 
@@ -2780,21 +2780,21 @@ Showing collections for “\(activeProjectDisplayName)” — \(hidden) other co
 <!-- END SOURCE: collections.filterBanner.filtered.withHidden -->
 
 #### No content yet. Use the Add menu in the toolbar to add…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1180–1181 | key: collection.documents.empty | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1182–1183 | key: collection.documents.empty | shared: macOS only -->
 
 No content yet. Use the Add menu in the toolbar to add documents, headings, notes, and apparatus.
 
 <!-- END SOURCE: collection.documents.empty -->
 
 #### Tooltip — Export this collection as a PDF, HTML page, or Word…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1615–1616 | key: collection.toolbar.export.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1617–1618 | key: collection.toolbar.export.help | shared: macOS only -->
 
 Export this collection as a PDF, HTML page, or Word document — includes document text and any attached research notes
 
 <!-- END SOURCE: collection.toolbar.export.help -->
 
 #### Tooltip — Show this document’s notes, highlights, tags, and…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 1913–1914 | key: collection.entry.inspect.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 1915–1916 | key: collection.entry.inspect.help | shared: macOS only -->
 
 Show this document’s notes, highlights, tags, and provenance in the inspector panel — click again to close it
 

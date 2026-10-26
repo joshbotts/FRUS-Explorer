@@ -64,7 +64,7 @@ struct DocumentChangeReviewSheet: View {
     #endif
 
     @Query private var highlights: [DocumentHighlight]
-    @Query private var notes: [ResearchNote]
+    @Query private var noteCopies: [ResearchNote]
     @Query private var tagAssignments: [DocumentTagAssignment]
     @Query private var entries: [CollectionEntry]
     @Query private var summaries: [GeneratedSummary]
@@ -124,7 +124,7 @@ struct DocumentChangeReviewSheet: View {
         _highlights = Query(filter: #Predicate<DocumentHighlight> {
             $0.volumeId == volumeId && $0.documentId == documentId
         }, sort: [SortDescriptor(\DocumentHighlight.startOffset)])
-        _notes = Query(filter: #Predicate<ResearchNote> {
+        _noteCopies = Query(filter: #Predicate<ResearchNote> {
             $0.volumeId == volumeId && $0.documentId == documentId
         })
         _tagAssignments = Query(filter: #Predicate<DocumentTagAssignment> {
@@ -1094,4 +1094,13 @@ struct DocumentChangeReviewSheet: View {
 struct NoteEditorRequest: Identifiable {
     let note: ResearchNote
     var id: UUID { note.id }
+}
+
+// MARK: - One copy of each note (#1791)
+
+extension DocumentChangeReviewSheet {
+    /// The document's notes, one copy of each however many are stored under its id
+    /// (`DuplicateCopies`, #1791): the Notes section's rows and the count among the other
+    /// annotations read this, so a note stored twice is listed and counted once.
+    private var notes: [ResearchNote] { ResearchNote.oneCopyEach(noteCopies) }
 }

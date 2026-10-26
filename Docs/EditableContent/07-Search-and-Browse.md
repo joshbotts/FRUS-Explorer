@@ -1048,7 +1048,7 @@ Text from Foreign Relations of the United States, Office of the Historian, U.S. 
 
 <!-- END SOURCE: appendix.attribution -->
 
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | lines: 161–162 | key: settings.export.appendix.footer -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | lines: 181–182 | key: settings.export.appendix.footer -->
 
 Every search you ran, in a Markdown table and a CSV. Each row gives the scope the search ran under and how many volumes were indexed at the time. Counts that hit the app’s row ceiling appear as “at least N”, so a partial result is never printed as a total.
 
@@ -2032,14 +2032,14 @@ shared the iOS key and its wording. Both are shorter than §18's prose rule, and
 the Mac's is new and an editor should see the pair.*
 
 #### Empty state (iPhone and iPad)
-<!-- SOURCE: FRUSExplorer/Search/SavedSearchesView.swift | SavedSearchesView.iOSBody | lines: 166–167 | key: savedSearches.empty.detail | shared: iOS only (the macOS wording is the next block) -->
+<!-- SOURCE: FRUSExplorer/Search/SavedSearchesView.swift | SavedSearchesView.iOSBody | lines: 168–169 | key: savedSearches.empty.detail | shared: iOS only (the macOS wording is the next block) -->
 
 Tap the bookmark button in Search to save a search for quick access later.
 
 <!-- END SOURCE: savedSearches.empty.detail -->
 
 #### Empty state (macOS)
-<!-- SOURCE: FRUSExplorer/Search/SavedSearchesView.swift | SavedSearchesView.macBody | lines: 129–130 | key: savedSearches.empty.detail.mac | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Search/SavedSearchesView.swift | SavedSearchesView.macBody | lines: 131–132 | key: savedSearches.empty.detail.mac | shared: macOS only -->
 
 Click the bookmark button in Search to save a search for quick access later.
 

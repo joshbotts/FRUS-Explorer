@@ -15,6 +15,13 @@ import SQLite3
 // MARK: - ResearchDataExporterTests
 
 /// Tests for `ResearchDataExporter` (Session 154 Task 2 — Research Data Export).
+///
+/// Version history:
+///   1.0 — Session 154: initial implementation
+///   1.1 — FRUS Explorer Light: format version 7 — an export of every model type, decoded again,
+///          the eight new keys, and the **Contents** counts of the eight new types
+///   1.2 — #1791: `DuplicateCopiesTests`, copies stored under one id read once and edited and
+///          deleted together
 @MainActor
 struct ResearchDataExporterTests {
 
@@ -33,6 +40,18 @@ struct ResearchDataExporterTests {
             ReadingHistoryEntry.self,
             SearchHistoryEntry.self,
             ExportHistoryEntry.self,
+            // Format version 6's archive visits, and the eight types version 7 added.
+            ArchiveVisitPlan.self,
+            ArchiveVisitDocument.self,
+            ArchiveVisitTarget.self,
+            SavedSearch.self,
+            WorkingCorpus.self,
+            CustomVolumeScope.self,
+            DocumentClassificationOverride.self,
+            PersonClusterOverride.self,
+            AnnotationReview.self,
+            ProjectLeadEntry.self,
+            SyncedPreferences.self,
         ])
         // `cloudKitDatabase: .none` — the test host is entitled, and an in-memory container
         // without it spins up real sync and crashes.
@@ -267,8 +286,226 @@ struct ResearchDataExporterTests {
             "readingHistory", "searchHistory", "exportHistory",
             // Archive Visits Phase 2 (format version 6).
             "archiveVisits",
+            // The eight model types version 6 left out (format version 7), written even when empty.
+            "savedSearches", "workingCorpora", "customVolumeScopes", "classificationOverrides",
+            "personClusterOverrides", "annotationReviews", "projectLeads", "syncedPreferences",
         ]
         #expect(Set(json.keys) == expectedKeys)
+    }
+
+    // MARK: - Format version 7: every type
+
+    /// Seeds, beside `seedFixtures(in:)`, a record of each type version 7 added and a value in
+    /// every field it added to the types 6 carried: a formatted note, a composed collection with
+    /// an entry of each kind and every override, a project's focus, a headnote draft, and an
+    /// archive visit plan, so an export from this store holds every type the app keeps.
+    private func seedEveryType(in context: ModelContext) throws -> (project: Project, tag: UserTag) {
+        let fixtures = seedFixtures(in: context)
+        let project = try #require(try context.fetch(FetchDescriptor<Project>()).first)
+        let tag = try #require(try context.fetch(FetchDescriptor<UserTag>()).first)
+        let prompt = try #require(try context.fetch(FetchDescriptor<SummarizationPrompt>())
+            .first { !$0.isStandard })
+
+        fixtures.note.richText = Data(#"{\rtf1\ansi Key {\b turning} point.}"#.utf8)
+        project.defaultUserTagIds = [tag.id]
+        project.leadAxisWeights = "subject=0.5;person=0.3;crossref=0.2"
+
+        let draft = GeneratedSummary(documentId: "d1", volumeId: "frus1969-76v01", promptId: prompt.id,
+                                     responseText: "The turning point, in brief.",
+                                     authorship: .userWritten, isHeadnoteDraft: true)
+        context.insert(draft)
+
+        let collection = try #require(try context.fetch(FetchDescriptor<Collection>()).first)
+        collection.subtitle = "The Paris talks"
+        collection.authorLine = "A. Researcher"
+        collection.introductionText = "Why these documents."
+        collection.introductionRichText = Data(#"{\rtf1\ansi Why {\i these} documents.}"#.utf8)
+        collection.includeColophon = true
+        collection.includeMethodAppendix = true
+        collection.defaultBodyDepth = "summaryOnly"
+        collection.effectiveIncludeSourceNote = true
+        collection.tocStyle = "headerAndDateline"
+        collection.applyHighlights = true
+        collection.includeWordCloud = true
+        collection.defaultIncludeHeadnote = true
+        collection.summaryPromptId = prompt.id
+        let document = try #require(collection.documentEntries?.first)
+        document.sortOrder = 1
+        document.titleOverride = "The turning point"
+        document.bodyDepthOverride = "index"
+        document.applyHighlightsOverride = false
+        document.includeNotesOverride = false
+        document.includeSourceNoteOverride = true
+        document.includeFootnotesOverride = false
+        document.summaryPromptIdOverride = prompt.id
+        document.selectedHighlightIds = [fixtures.highlight.id]
+        document.includeRelatedDocuments = true
+        document.includeHeadnote = true
+        document.headnoteSummaryId = draft.id
+        func entry(_ kind: CollectionEntryKind, at order: Int, documentId: String = "") -> CollectionEntry {
+            let entry = CollectionEntry(collectionId: collection.id, documentId: documentId,
+                                        volumeId: documentId.isEmpty ? "" : "frus1969-76v01",
+                                        sortOrder: order)
+            entry.entryKind = kind
+            entry.collection = collection
+            context.insert(entry)
+            return entry
+        }
+        let heading = entry(.heading, at: 0)
+        heading.text = "Chapter 3"
+        heading.level = 2
+        let prose = entry(.prose, at: 2)
+        prose.text = "What follows."
+        prose.richText = Data(#"{\rtf1\ansi What {\ul follows}.}"#.utf8)
+        let excerpt = entry(.excerpt, at: 3, documentId: "d1")
+        excerpt.text = "a key turning point"
+        excerpt.excerptStart = 10
+        excerpt.excerptEnd = 29
+        excerpt.excerptRenderingVersion = "abc123"
+        excerpt.excerptColorTag = "yellow"
+        entry(.generated, at: 4).generatedBlockType = "chronology"
+
+        let search = SavedSearch(name: "Arms control", parameters: SearchParameters(
+            keywords: "arms control", excludedTerms: ["salt"], volumeIds: ["frus1969-76v01"],
+            includeSummaries: false, documentTypeFilter: .documentsOnly))
+        search.recordRun(matchCount: 412, indexedVolumeCount: 553)
+        context.insert(search)
+        context.insert(WorkingCorpus(name: "Détente telegrams",
+                                     documentKeys: ["frus1969-76v01/d2", "frus1969-76v01/d1"],
+                                     sourceQuery: "détente", indexedVolumeCountAtCapture: 553,
+                                     wasTruncatedAtCapture: false, totalMatchCountAtCapture: 2))
+        context.insert(CustomVolumeScope(name: "Nixon years",
+                                         volumeIds: ["frus1969-76v12", "frus1969-76v01"]))
+        context.insert(DocumentClassificationOverride(volumeId: "frus1969-76v01", documentId: "d3",
+                                                      isEditorialNote: true, parsedIsEditorialNote: false))
+        context.insert(PersonClusterOverride(kind: .merge, volumeIdA: "frus1969-76v01", refA: "p_KH1",
+                                             volumeIdB: "frus1969-76v12", refB: "p_KHA1"))
+        context.insert(AnnotationReview(kind: .document, annotationId: nil, volumeId: "frus1969-76v01",
+                                        documentId: "d1", contentHash: "9f86d081884c7d65",
+                                        changeKind: "text"))
+        context.insert(ProjectLeadEntry(projectId: project.id, volumeId: "frus1969-76v01", documentId: "d9",
+                                        aggregateScore: 1.75, contributingSeedKeys: ["frus1969-76v01/d1"],
+                                        header: "9. Memorandum", documentNumber: "9", dismissed: true))
+        let preferences = SyncedPreferences()
+        preferences.citationStyleRaw = "chicago"
+        preferences.wcGlobalStopwordsJSON = #"["telegram"]"#
+        context.insert(preferences)
+        context.insert(ArchiveVisitPlan(name: "Berlin blockade"))
+        try context.save()
+        return (project, tag)
+    }
+
+    @Test("An export of every type decodes again, with every field version 7 added")
+    func exportOfEveryTypeDecodesAgain() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (project, tag) = try seedEveryType(in: context)
+
+        let envelope = try ResearchDataExporter.makeEnvelope(modelContext: context, includeGeneratedSummaries: true)
+        let data = try ResearchDataExporter.exportJSONData(envelope)
+        let kitData = try envelope.jsonData()
+        #expect(data == kitData, "the app's export and FRUSCoreKit's encoder disagree")
+        let decoded = try ResearchDataEnvelope.makeDecoder().decode(ResearchDataEnvelope.self, from: data)
+
+        #expect(decoded.formatVersion == 7)
+        // One record of each type the store holds, the new eight with the fifteen 6 carried.
+        #expect(decoded.notes.count == 1 && decoded.tags.count == 1 && decoded.tagAssignments.count == 1)
+        #expect(decoded.highlights.count == 1 && decoded.collections.count == 1 && decoded.prompts.count == 1)
+        #expect(decoded.projects.count == 1 && decoded.summaries.count == 2)
+        #expect(decoded.readingHistory.count == 2 && decoded.searchHistory.count == 2
+                    && decoded.exportHistory.count == 1 && decoded.archiveVisits.count == 1)
+        #expect(decoded.savedSearches.count == 1 && decoded.workingCorpora.count == 1
+                    && decoded.customVolumeScopes.count == 1 && decoded.classificationOverrides.count == 1
+                    && decoded.personClusterOverrides.count == 1 && decoded.annotationReviews.count == 1
+                    && decoded.projectLeads.count == 1 && decoded.syncedPreferences.count == 1)
+
+        // What 6 dropped from the types it carried.
+        #expect(decoded.notes.first?.richText == Data(#"{\rtf1\ansi Key {\b turning} point.}"#.utf8))
+        #expect(decoded.projects.first?.defaultUserTagIds == [tag.id])
+        #expect(decoded.projects.first?.leadAxisWeights == "subject=0.5;person=0.3;crossref=0.2")
+        #expect(Set(decoded.summaries.compactMap(\.isHeadnoteDraft)) == [false, true])
+        let collection = try #require(decoded.collections.first)
+        #expect(collection.subtitle == "The Paris talks" && collection.authorLine == "A. Researcher")
+        #expect(collection.introductionText == "Why these documents." && collection.introductionRichText != nil)
+        #expect(collection.includeColophon == true && collection.includeProjectProvenance == false
+                    && collection.includeMethodAppendix == true)
+        #expect(collection.defaultBodyDepth == "summaryOnly" && collection.tocStyle == "headerAndDateline")
+        // Set through the effective setter, as the composition sheet sets them: both flags and the
+        // legacy style travel.
+        #expect(collection.includeFootnotes == true && collection.includeSourceNote == true
+                    && collection.footnoteStyle == "all")
+        #expect(collection.applyHighlights == true && collection.includeNotes == true
+                    && collection.includeWordCloud == true && collection.defaultIncludeHeadnote == true)
+        #expect(collection.summaryPromptId != nil)
+        #expect(collection.entries.map(\.kind) == ["heading", "document", "prose", "excerpt", "generated"],
+                "entries are sorted by their order, each with its kind")
+        let entries = collection.entries
+        #expect(entries[0].text == "Chapter 3" && entries[0].level == 2 && entries[0].documentId == "")
+        #expect(entries[1].titleOverride == "The turning point" && entries[1].bodyDepthOverride == "index")
+        #expect(entries[1].applyHighlightsOverride == false && entries[1].includeNotesOverride == false)
+        #expect(entries[1].includeSourceNoteOverride == true && entries[1].includeFootnotesOverride == false)
+        #expect(entries[1].summaryPromptIdOverride != nil && entries[1].selectedHighlightIds?.count == 1)
+        #expect(entries[1].includeRelatedDocuments == true && entries[1].includeHeadnote == true)
+        #expect(entries[1].headnoteSummaryId == decoded.summaries.first(where: { $0.isHeadnoteDraft == true })?.id)
+        #expect(entries[2].text == "What follows." && entries[2].richText != nil)
+        #expect(entries[3].text == "a key turning point" && entries[3].documentId == "d1")
+        #expect(entries[3].excerptStart == 10 && entries[3].excerptEnd == 29
+                    && entries[3].excerptRenderingVersion == "abc123" && entries[3].excerptColorTag == "yellow")
+        #expect(entries[4].generatedBlockType == "chronology")
+        #expect(entries.allSatisfy { $0.selectedHighlightIds != nil && $0.level != nil },
+                "a file at version 7 always carries an entry's level and highlight choice")
+
+        // The eight types 6 left out, each as the store holds it.
+        let search = try #require(decoded.savedSearches.first)
+        #expect(search.name == "Arms control")
+        #expect(search.parameters.keywords == "arms control" && search.parameters.excludedTerms == ["salt"])
+        #expect(search.parameters.volumeIds == ["frus1969-76v01"] && !search.parameters.includeSummaries)
+        #expect(search.parameters.documentTypeFilter == .documentsOnly)
+        #expect(search.matchCountAtLastRun == 412 && search.indexedVolumeCountAtLastRun == 553
+                    && search.lastRunAt != nil)
+        #expect(decoded.workingCorpora.first?.documentKeys == ["frus1969-76v01/d1", "frus1969-76v01/d2"])
+        #expect(decoded.workingCorpora.first?.wasTruncatedAtCapture == false)
+        #expect(decoded.customVolumeScopes.first?.volumeIds == ["frus1969-76v01", "frus1969-76v12"])
+        #expect(decoded.classificationOverrides.first?.isEditorialNote == true)
+        #expect(decoded.personClusterOverrides.first?.kind == "merge")
+        #expect(decoded.personClusterOverrides.first?.refB == "p_KHA1")
+        #expect(decoded.annotationReviews.first?.annotationType == "document")
+        #expect(decoded.annotationReviews.first?.contentHash == "9f86d081884c7d65")
+        #expect(decoded.projectLeads.first?.projectId == project.id)
+        #expect(decoded.projectLeads.first?.aggregateScore == 1.75 && decoded.projectLeads.first?.dismissed == true)
+        #expect(decoded.syncedPreferences.first?.citationStyleRaw == "chicago")
+        #expect(decoded.syncedPreferences.first?.wcGlobalStopwordsJSON == #"["telegram"]"#)
+
+        // The file is lossless: decoding what the decoded envelope encodes changes nothing.
+        let again = try ResearchDataEnvelope.makeDecoder()
+            .decode(ResearchDataEnvelope.self, from: try ResearchDataExporter.exportJSONData(decoded))
+        #expect(again == decoded)
+    }
+
+    @Test("A lead whose score is not a finite number exports as 0, and the export does not fail")
+    func nonFiniteLeadScoreExports() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        context.insert(ProjectLeadEntry(projectId: UUID(), volumeId: "v", documentId: "d",
+                                        aggregateScore: .nan, contributingSeedKeys: []))
+        try context.save()
+        let envelope = try ResearchDataExporter.makeEnvelope(modelContext: context, includeGeneratedSummaries: false)
+        #expect(envelope.projectLeads.first?.aggregateScore == 0)
+        #expect(throws: Never.self) { try ResearchDataExporter.exportJSONData(envelope) }
+    }
+
+    @Test("inventoryCounts counts each type version 7 added, and zero on an empty store")
+    func inventoryCountsReportEachType() throws {
+        let empty = try makeContainer()
+        #expect(ResearchDataExporter.inventoryCounts(modelContext: empty.mainContext)
+                    == ResearchDataExporter.InventoryCounts())
+
+        let container = try makeContainer()
+        _ = try seedEveryType(in: container.mainContext)
+        #expect(ResearchDataExporter.inventoryCounts(modelContext: container.mainContext)
+                    == ResearchDataExporter.InventoryCounts(
+                        savedSearches: 1, workingCorpora: 1, volumeScopes: 1, classificationCorrections: 1,
+                        personCorrections: 1, reviewedChanges: 1, suggestedLeads: 1, syncedSettings: 1))
     }
 
     // MARK: - Wave R-5: the research trail
@@ -1097,5 +1334,344 @@ struct ResearchStateRecordTests {
         #expect(record.subjectVocabularyDigests.isEmpty)
         #expect(record.currentIndexVersion == IndexingPipeline.currentDateIndexVersion)
         #expect(!record.recordedAt.isEmpty)
+    }
+}
+
+// MARK: - Copies stored under one id (#1791)
+
+/// What reads notes, saved searches and the research trail reads one copy of each id, and what edits
+/// or deletes one reaches every copy (#1791, `DuplicateCopies`).
+///
+/// The copies are made as the issue found them: two records of one type under one `id`, equal in
+/// every field, as a CloudKit re-upload or R-2a's two-device migration left them; and, for the rule
+/// that picks the copy shown, a pair whose later copy was edited.
+///
+/// Version history:
+///   1.0 — #1791: initial implementation
+@MainActor
+@Suite("Copies stored under one id are read once and edited and deleted together (#1791)")
+struct DuplicateCopiesTests {
+
+    private func makeContainer() throws -> ModelContainer {
+        let schema = Schema([
+            Project.self, ResearchNote.self, Collection.self, CollectionEntry.self, UserTag.self,
+            DocumentTagAssignment.self, DocumentHighlight.self, GeneratedSummary.self,
+            SummarizationPrompt.self, ReadingHistoryEntry.self, SearchHistoryEntry.self,
+            ExportHistoryEntry.self, ArchiveVisitPlan.self, ArchiveVisitDocument.self,
+            ArchiveVisitTarget.self, SavedSearch.self, WorkingCorpus.self, CustomVolumeScope.self,
+            DocumentClassificationOverride.self, PersonClusterOverride.self, AnnotationReview.self,
+            ProjectLeadEntry.self, SyncedPreferences.self,
+        ])
+        // `cloudKitDatabase: .none` — the test host is entitled, and an in-memory container
+        // without it spins up real sync and crashes.
+        let config = ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+        return try ModelContainer(for: schema, configurations: config)
+    }
+
+    /// A fixed instant `offset` seconds after a stable epoch.
+    private static func t(_ offset: TimeInterval) -> Date {
+        Date(timeIntervalSince1970: 1_700_000_000).addingTimeInterval(offset)
+    }
+
+    /// A note made and last changed at `t(0)`.
+    private func note(_ body: String, document: String = "d1", in context: ModelContext,
+                      projectIds: [UUID] = [], userTagIds: [UUID] = []) -> ResearchNote {
+        let note = ResearchNote(documentId: document, volumeId: "frus1969-76v01", bodyText: body,
+                                projectIds: projectIds, userTagIds: userTagIds)
+        note.createdAt = Self.t(0)
+        note.lastModified = Self.t(0)
+        context.insert(note)
+        return note
+    }
+
+    /// A second record of `note`, equal in every field: what the store holds after a re-upload.
+    @discardableResult
+    private func copy(of note: ResearchNote, in context: ModelContext) -> ResearchNote {
+        let copy = ResearchNote(documentId: note.documentId, volumeId: note.volumeId,
+                                bodyText: note.bodyText, projectIds: note.projectIds,
+                                userTagIds: note.userTagIds, selectedSummaryIds: note.selectedSummaryIds)
+        copy.id = note.id
+        copy.richText = note.richText
+        copy.createdAt = note.createdAt
+        copy.lastModified = note.lastModified     // last: every other setter stamps it
+        context.insert(copy)
+        return copy
+    }
+
+    /// A saved search stored twice, both copies made and changed at `t(0)`.
+    private func savedSearchStoredTwice(in context: ModelContext) -> (SavedSearch, SavedSearch) {
+        let parameters = SearchParameters(keywords: "arms control")
+        let saved = SavedSearch(name: "Arms control", parameters: parameters)
+        let copy = SavedSearch(name: "Arms control", parameters: parameters)
+        copy.id = saved.id
+        for record in [saved, copy] {
+            record.createdAt = Self.t(0)
+            record.lastModified = Self.t(0)
+            context.insert(record)
+        }
+        return (saved, copy)
+    }
+
+    // MARK: - The rule
+
+    private struct Record: Equatable {
+        let id: UUID
+        let modified: Date?
+        let tag: String
+    }
+
+    @Test("One copy of each id is kept, the one last modified, where the id first appears")
+    func oneEachKeepsTheCopyLastModified() {
+        let a = UUID(), b = UUID(), c = UUID()
+        let records = [
+            Record(id: a, modified: Self.t(10), tag: "a, older"),
+            Record(id: b, modified: nil, tag: "b, undated"),
+            Record(id: a, modified: Self.t(20), tag: "a, newer"),
+            Record(id: c, modified: Self.t(5), tag: "c, first"),
+            Record(id: c, modified: Self.t(5), tag: "c, same moment"),
+            Record(id: b, modified: Self.t(1), tag: "b, dated"),
+        ]
+        let byDate: [String] = DuplicateCopies.oneEach(records, id: { $0.id },
+                                                       lastModified: { $0.modified }).map { $0.tag }
+        #expect(byDate == ["a, newer", "b, dated", "c, first"])
+        // Without dates, the first copy of each id.
+        let firstCopies: [String] = DuplicateCopies.oneEach(records, id: { $0.id }).map { $0.tag }
+        #expect(firstCopies == ["a, older", "b, undated", "c, first"])
+        let distinct = DuplicateCopies.count(records, id: { $0.id })
+        #expect(distinct == 3)
+        let none: [Record] = DuplicateCopies.oneEach([Record](), id: { $0.id })
+        #expect(none.isEmpty)
+    }
+
+    // MARK: - The exports and the counts
+
+    @Test("The JSON export writes each record once, the copy last modified, and a collection's and a plan's children from every copy")
+    func theExportWritesEachRecordOnce() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let exact = note("Both copies say this.", in: context)
+        copy(of: exact, in: context)
+        let edited = note("The text before the edit.", document: "d2", in: context)
+        let newer = copy(of: edited, in: context)
+        newer.bodyText = "The text after the edit."
+        newer.lastModified = Self.t(60)
+
+        let visit = ReadingHistoryEntry(documentId: "d1", volumeId: "frus1969-76v01")
+        visit.accessedAt = Self.t(5)
+        let visitCopy = ReadingHistoryEntry(documentId: "d1", volumeId: "frus1969-76v01")
+        visitCopy.id = visit.id
+        visitCopy.accessedAt = Self.t(5)
+        context.insert(visit)
+        context.insert(visitCopy)
+        let searchId = UUID(), exportId = UUID()
+        for _ in 0..<2 {
+            context.insert(SearchHistoryEntry(id: searchId, queryText: "détente", resultCount: 7,
+                                              executedAt: Self.t(6)))
+            context.insert(ExportHistoryEntry(id: exportId, format: "pdf", documentCount: 3,
+                                              collectionName: "Paris talks", exportedAt: Self.t(7)))
+        }
+        let (saved, _) = savedSearchStoredTwice(in: context)
+
+        // A collection stored twice, each copy holding an entry of its own, as an import can leave
+        // it before `DuplicateRecordCleanup` re-parents them.
+        let collection = Collection(name: "Paris talks", projectIds: [])
+        let collectionCopy = Collection(name: "Paris talks", projectIds: [])
+        collectionCopy.id = collection.id
+        context.insert(collection)
+        context.insert(collectionCopy)
+        for (order, (document, parent)) in [("d1", collection), ("d2", collectionCopy)].enumerated() {
+            let entry = CollectionEntry(collectionId: collection.id, documentId: document,
+                                        volumeId: "frus1969-76v01", sortOrder: order)
+            entry.collection = parent
+            context.insert(entry)
+        }
+        // And an archive visit plan, the same way.
+        let plan = ArchiveVisitPlan(name: "Berlin blockade")
+        let planCopy = ArchiveVisitPlan(name: "Berlin blockade")
+        planCopy.id = plan.id
+        context.insert(plan)
+        context.insert(planCopy)
+        for (key, parent) in [("frus1969-76v01/d1", plan), ("frus1969-76v01/d2", planCopy)] {
+            let document = ArchiveVisitDocument(planId: plan.id, documentKey: key)
+            document.plan = parent
+            context.insert(document)
+        }
+        try context.save()
+
+        let envelope = try ResearchDataExporter.makeEnvelope(modelContext: context,
+                                                             includeGeneratedSummaries: false)
+        #expect(envelope.notes.count == 2)
+        let noteIds: Set<UUID> = Set(envelope.notes.map { $0.id })
+        #expect(noteIds == Set([exact.id, edited.id]))
+        let editedText = envelope.notes.first { $0.id == edited.id }?.bodyText
+        #expect(editedText == "The text after the edit.")
+        #expect(envelope.readingHistory.map(\.id) == [visit.id])
+        #expect(envelope.searchHistory.map(\.id) == [searchId])
+        #expect(envelope.exportHistory.map(\.id) == [exportId])
+        #expect(envelope.savedSearches.map(\.id) == [saved.id])
+        #expect(envelope.collections.map(\.id) == [collection.id])
+        let entryDocuments: [String] = envelope.collections.first?.entries.map { $0.documentId } ?? []
+        #expect(entryDocuments == ["d1", "d2"])
+        #expect(envelope.archiveVisits.map(\.id) == [plan.id])
+        let planDocuments: [String] = envelope.archiveVisits.first?.documents.map { $0.documentKey } ?? []
+        #expect(planDocuments == ["frus1969-76v01/d1", "frus1969-76v01/d2"])
+
+        // The file says the same once decoded.
+        let decoded = try ResearchDataEnvelope.makeDecoder().decode(
+            ResearchDataEnvelope.self, from: try ResearchDataExporter.exportJSONData(envelope))
+        let decodedNoteIds: Set<UUID> = Set(decoded.notes.map { $0.id })
+        #expect(decodedNoteIds == Set([exact.id, edited.id]))
+        #expect(decoded.readingHistory.count == 1)
+    }
+
+    @Test("Contents counts each record once: the trail and the eight version-7 types")
+    func contentsCountsDistinctIds() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let searchId = UUID(), exportId = UUID()
+        let visit = ReadingHistoryEntry(documentId: "d1", volumeId: "frus1969-76v01")
+        let visitCopy = ReadingHistoryEntry(documentId: "d1", volumeId: "frus1969-76v01")
+        visitCopy.id = visit.id
+        context.insert(visit)
+        context.insert(visitCopy)
+        context.insert(ReadingHistoryEntry(documentId: "d2", volumeId: "frus1969-76v01"))
+        for _ in 0..<3 {
+            context.insert(SearchHistoryEntry(id: searchId, queryText: "détente"))
+            context.insert(ExportHistoryEntry(id: exportId, format: "pdf"))
+        }
+        _ = savedSearchStoredTwice(in: context)
+        try context.save()
+
+        let trail = ResearchDataExporter.trailCounts(modelContext: context)
+        #expect(trail.visits == 2)
+        #expect(trail.searches == 1)
+        #expect(trail.exports == 1)
+        #expect(ResearchDataExporter.inventoryCounts(modelContext: context).savedSearches == 1)
+        // And they are the lengths of the arrays the file writes.
+        let envelope = try ResearchDataExporter.makeEnvelope(modelContext: context,
+                                                             includeGeneratedSummaries: false)
+        #expect(envelope.readingHistory.count == 2)
+        #expect(envelope.savedSearches.count == 1)
+    }
+
+    @Test("The Zotero, Markdown and method-appendix exports, and the project and tag counts, read one copy of each")
+    func theOtherReadersReadOneCopy() async throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let project = Project(name: "Berlin")
+        let tag = UserTag(name: "Primary Source")
+        context.insert(project)
+        context.insert(tag)
+        let stored = note("Only once.", in: context, projectIds: [project.id], userTagIds: [tag.id])
+        copy(of: stored, in: context)
+        let searchId = UUID()
+        for _ in 0..<2 {
+            context.insert(SearchHistoryEntry(id: searchId, queryText: "airlift", executedAt: Self.t(3)))
+        }
+        try context.save()
+
+        let zotero = ZoteroJSONExporter.fetchTagsAndNotes(documentId: "d1", volumeId: "frus1969-76v01",
+                                                          context: context)
+        #expect(zotero.notes == ["Only once."])
+        let counts = ResearchItemCounts.fetch(from: context)
+        #expect(counts.projects[project.id]?.notes == 1)
+        #expect(counts.tags[tag.id]?.notes == 1)
+        #expect(ResearchDataExporter.methodAppendix(modelContext: context, activeProjectId: nil).rows.count == 1)
+        let files = await ResearchDataExporter.markdownExports(
+            notes: try context.fetch(FetchDescriptor<ResearchNote>()), tags: [tag], appState: AppState())
+        #expect(files.map(\.id) == [stored.id])
+    }
+
+    @Test("The indexed note text holds a note stored twice once")
+    func theIndexedTextReadsOneCopy() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let first = note("First note.", in: context)
+        copy(of: first, in: context)
+        let second = note("Second note.", in: context)
+        second.createdAt = Self.t(10)
+        try context.save()
+
+        let rows = ResearchNote.indexedTextPerDocument(try context.fetch(FetchDescriptor<ResearchNote>()))
+        #expect(rows.map(\.text) == ["First note.\n\nSecond note."])
+    }
+
+    // MARK: - The lists, the editor and the deletes
+
+    @Test("All Notes lists a note stored twice once, and opens the copy last modified")
+    func allNotesListsEachNoteOnce() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let stored = note("The text before the edit.", in: context)
+        let newer = copy(of: stored, in: context)
+        newer.bodyText = "The text after the edit."
+        newer.lastModified = Self.t(60)
+        try context.save()
+
+        let snapshot = NotesPaneSnapshot.fetch(from: context)
+        #expect(snapshot.rows.map(\.id) == [stored.id])
+        #expect(snapshot.rows.first?.bodyText == "The text after the edit.")
+        #expect(NotesPaneSnapshot.note(id: stored.id, in: context)?.bodyText == "The text after the edit.")
+        let copyTexts: [String] = ResearchNote.copies(of: stored.id, in: context).map { $0.bodyText }
+        #expect(copyTexts == ["The text after the edit.", "The text before the edit."])
+    }
+
+    @Test("The note editor writes an edit to every copy, and deletes every copy")
+    func theNoteEditorReachesEveryCopy() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let stored = note("Before.", in: context)
+        let other = copy(of: stored, in: context)
+        try context.save()
+
+        let editor = ResearchNoteEditorViewModel(documentId: "d1", volumeId: "frus1969-76v01",
+                                                 activeProjectId: nil, noteToEdit: stored)
+        editor.bodyText = "After."
+        editor.save(context: context)
+        try context.save()
+        #expect(stored.bodyText == "After.")
+        #expect(other.bodyText == "After.")
+
+        editor.delete(context: context)
+        try context.save()
+        let left = try context.fetch(FetchDescriptor<ResearchNote>())
+        #expect(left.isEmpty)
+    }
+
+    @Test("A saved search stored twice is listed once, renamed in every copy and deleted with every copy")
+    func savedSearchCopiesMoveTogether() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (saved, _) = savedSearchStoredTwice(in: context)
+        try context.save()
+
+        let listed: [UUID] = SavedSearch.oneCopyEach(try context.fetch(FetchDescriptor<SavedSearch>())).map { $0.id }
+        #expect(listed == [saved.id])
+        SavedSearch.rename(saved, to: "Arms control, 1969–1972", in: context)
+        try context.save()
+        let names: [String] = try context.fetch(FetchDescriptor<SavedSearch>()).map { $0.name }
+        #expect(names == ["Arms control, 1969–1972", "Arms control, 1969–1972"])
+
+        SavedSearch.deleteEveryCopy(of: saved, in: context)
+        try context.save()
+        let remaining = try context.fetch(FetchDescriptor<SavedSearch>())
+        #expect(remaining.isEmpty)
+    }
+
+    @Test("Deleting a note removes every copy stored under its id")
+    func deletingANoteRemovesEveryCopy() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let stored = note("Gone.", in: context)
+        copy(of: stored, in: context)
+        copy(of: stored, in: context)
+        let kept = note("Kept.", document: "d2", in: context)
+        try context.save()
+
+        ResearchNote.deleteEveryCopy(of: stored, in: context)
+        try context.save()
+        let left: [UUID] = try context.fetch(FetchDescriptor<ResearchNote>()).map { $0.id }
+        #expect(left == [kept.id])
     }
 }

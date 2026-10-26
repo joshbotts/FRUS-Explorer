@@ -18,7 +18,7 @@ import WebKit
 ///
 /// Each test builds a `FRUSDocumentRenderModel`, obtains the Swift flat text via
 /// `buildFlatText(from:)`, serializes the model to HTML, loads it into a real
-/// `WKWebView` (with the `frus-offset-engine.js` user script injected), evaluates
+/// `WKWebView` (with the offset engine, `kOffsetEngineJS`, injected as a user script), evaluates
 /// `window.FRUSOffsets.flatText`, and asserts the two strings are identical.
 ///
 /// If any test fails, the `data-skip` attributes emitted by
@@ -1046,7 +1046,7 @@ final class OffsetEngineTestHarness: NSObject, WKNavigationDelegate {
     /// the equivalence assertion. A separate test (`userScriptInjectionSetsGlobal`)
     /// specifically verifies that the injected script sets `window.FRUSOffsets`.
     func evalFlatText() async throws -> String {
-        // Mirror of frus-offset-engine.js, executed after didFinish guarantees
+        // Mirror of kOffsetEngineJS, executed after didFinish guarantees
         // the DOM is ready. Uses chars.join('') instead of string concatenation
         // to avoid O(n²) string growth for large documents.
         let js = """
@@ -1712,7 +1712,7 @@ struct SelectionBarRetirementTests {
 /// `(textNode, textNode.length)` — where a drag that ends a paragraph, or ends just before a
 /// footnote marker or a name, puts its end — had no entry, and the whole selection took the
 /// footnote branch: on iPhone and iPad the edit menu left out the colours and Excerpt, and the
-/// Mac's bar drew them dimmed. `buildRanges` in `frus-highlights.js` ends a highlight's range at
+/// Mac's bar drew them dimmed. `buildRanges` in `kHighlightsJS` ends a highlight's range at
 /// exactly that endpoint, so the reverse mapping now accepts what the forward one produces.
 ///
 /// The endpoints are placed directly, as `ListLabelSelectionTests`' scope tests place theirs, and
@@ -2411,5 +2411,292 @@ struct HighlightTextRenderTests {
                         "\(appearance): an unnamed highlight reports \(element.unnamed), not the element's \(element.own)")
             }
         }
+    }
+}
+
+// MARK: - HighlightLineBreakRenderTests
+
+/// The reader draws a highlight that ends on a line break, and the document's others with it.
+///
+/// The offset engine maps a `<br>` as one character of the flat text, `{node: BR, localOffset: 0}`.
+/// `buildRanges` in `kHighlightsJS` ended every range with `setEnd(node, localOffset + 1)`, which for
+/// a `<br>`, a node with no children, throws `IndexSizeError`. `FRUSHighlights.render` had already
+/// cleared the page's highlights, and `renderHighlights(on:)` drops the error (`try?`), so the
+/// reader drew none of the document's highlights. A drag that ends at the start of the line after a
+/// `<br>` makes such a highlight: the selection bridge maps that end to the offset after the break.
+///
+/// Each test makes its highlights as the reader does, from the bridge's own payload where a drag
+/// makes them, and draws them through the coordinator's `renderHighlights(on:)`, the call the reader
+/// makes after each load; the page is then asked what the CSS Custom Highlight API holds.
+///
+/// Version history:
+///   1.0 — Session 2026-10-24 (FRUS Explorer Light, S15c's follow-up): initial implementation, with
+///          `buildRanges`' end after a `<br>`
+@Suite("A highlight that ends on a line break is drawn, with the document's others, in a web view")
+@MainActor
+struct HighlightLineBreakRenderTests {
+
+    /// A paragraph broken by `<lb/>`, as an address block or a signature is, and a second paragraph.
+    private static let fixture = """
+    <div type="document" xml:id="d1">
+      <p>CHAPMAN COLEMAN,<lb/>Second Secretary of Legation, at the Legation.</p>
+      <p>A second paragraph, highlighted on its own.</p>
+    </div>
+    """
+
+    /// The rendering version the highlights are made at and the page is drawn at, so none is stale.
+    private static let version = "0123456789abcdef"
+
+    /// What the page reports for one drawn range.
+    private struct Drawn: Decodable, Equatable {
+        /// The range's text, which a `<br>` adds nothing to.
+        let text: String
+        /// Whether the range ends just after a `<br>`.
+        let endsAfterBreak: Bool
+    }
+
+    /// Every range the CSS Custom Highlight API holds, by highlight name, in the order drawn.
+    private static let drawnScript = """
+    (() => {
+      const out = {};
+      for (const [name, highlight] of CSS.highlights) {
+        out[name] = [...highlight].map(r => {
+          const last = r.endContainer.nodeType === Node.ELEMENT_NODE ? r.endContainer.childNodes[r.endOffset - 1] : null;
+          return { text: r.toString(), endsAfterBreak: !!last && last.tagName === 'BR' };
+        });
+      }
+      return JSON.stringify(out);
+    })()
+    """
+
+    /// Loads the fixture and returns the harness plus the Swift flat text its offsets index.
+    private func loaded() async throws -> (OffsetEngineTestHarness, String) {
+        let model = try await ListShapeFixtures.renderModel(Self.fixture)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+        let renderer = try await harness.evaluateString(
+            "typeof window.FRUSHighlights === 'object' && typeof window.FRUSOffsets === 'object' ? 'ok' : 'missing'")
+        #expect(renderer == "ok", "the reader's scripts were not injected")
+        return (harness, buildFlatText(from: model))
+    }
+
+    /// The UTF-16 offset of `needle` in `flat`.
+    private func offset(of needle: String, in flat: String) throws -> Int {
+        let range = try #require(flat.range(of: needle), "\"\(needle)\" is not in the flat text")
+        return flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+    }
+
+    /// A JS expression: the first text node of the document's body holding `needle`.
+    private func textNode(_ needle: String) -> String {
+        """
+        (() => {
+          const walker = document.createTreeWalker(document.querySelector('.frus-document'), NodeFilter.SHOW_TEXT);
+          let t = walker.nextNode();
+          while (t && !t.nodeValue.includes('\(needle)')) t = walker.nextNode();
+          return t;
+        })()
+        """
+    }
+
+    /// Selects from `startOffset` in the text node `start` to `endOffset` in `end`, as a drag
+    /// leaves them, and returns the payload the selection bridge posts.
+    private func select(_ harness: OffsetEngineTestHarness,
+                        from start: String, _ startOffset: Int,
+                        to end: String, _ endOffset: Int) async throws -> SelectionPayload? {
+        try await harness.selectionPayload {
+            let result = try await harness.evaluateString("""
+                (() => {
+                  const a = \(start);
+                  const b = \(end);
+                  if (!a || !b) return 'an endpoint text node is not on the page';
+                  getSelection().removeAllRanges();
+                  getSelection().setBaseAndExtent(a, \(startOffset), b, \(endOffset));
+                  return 'ok';
+                })()
+                """)
+            #expect(result == "ok", "\(result ?? "the script returned nothing")")
+        }
+    }
+
+    /// A highlight over `start..<end` in `color`, at the page's version.
+    private func highlight(_ start: Int, _ end: Int, _ color: HighlightColor) -> DocumentHighlight {
+        DocumentHighlight(volumeId: "v1", documentId: "d1", startOffset: start, endOffset: end,
+                          colorTag: color.rawValue, renderingVersion: Self.version)
+    }
+
+    /// Draws `highlights` as the reader does after a load, and returns what the page holds.
+    private func draw(_ highlights: [DocumentHighlight],
+                      in harness: OffsetEngineTestHarness) async throws -> [String: [Drawn]] {
+        harness.coordinator.currentRenderingVersion = Self.version
+        harness.coordinator.pendingHighlights = highlights
+        await harness.coordinator.renderHighlights(on: harness.webView)
+        let raw = try #require(try await harness.evaluateString(Self.drawnScript), "the page returned nothing")
+        return try JSONDecoder().decode([String: [Drawn]].self, from: Data(raw.utf8))
+    }
+
+    @Test("A drag to the start of the line after a line break makes a highlight the reader draws, with the others")
+    func dragToTheNextLine() async throws {
+        let (harness, flat) = try await loaded()
+        let payload = try await select(harness, from: textNode("CHAPMAN"), 0, to: textNode("Second Secretary"), 0)
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets,
+                "start \(selection.start), end \(selection.end) for \"\(selection.text)\": took the footnote branch")
+        let lineBreak = try offset(of: ",\nSecond", in: flat) + 1
+        #expect(selection.start == (try offset(of: "CHAPMAN", in: flat)))
+        #expect(selection.end == lineBreak + 1, "the drag's end maps to the offset after the line break")
+
+        // The step the renderer took before its fix, which WebKit refuses.
+        let refused = try await harness.evaluateString("""
+            (() => {
+              const br = document.querySelector('.frus-document br');
+              try { new Range().setEnd(br, 1); return 'set'; } catch (e) { return e.name; }
+            })()
+            """)
+        #expect(refused == "IndexSizeError")
+
+        let second = try offset(of: "A second paragraph", in: flat)
+        let drawn = try await draw([highlight(selection.start, selection.end, .yellow),
+                                    highlight(second, second + 18, .green)], in: harness)
+        #expect(drawn["frus-yellow"] == [Drawn(text: "CHAPMAN COLEMAN,", endsAfterBreak: true)],
+                "the highlight ending on the line break: \(drawn)")
+        #expect(drawn["frus-green"] == [Drawn(text: "A second paragraph", endsAfterBreak: false)],
+                "the document's other highlight: \(drawn)")
+        #expect(drawn.count == 2)
+    }
+
+    /// The start side never threw, since `setStart(br, 0)` is a boundary point of a node with no
+    /// children; these pin that it still draws beside the fixed end.
+    @Test("A highlight of the line break alone, and one starting on it, are drawn too")
+    func breakAloneAndStartingOnIt() async throws {
+        let (harness, flat) = try await loaded()
+        let lineBreak = try offset(of: ",\nSecond", in: flat) + 1
+        let drawn = try await draw([highlight(lineBreak, lineBreak + 1, .blue),
+                                    highlight(lineBreak, lineBreak + 7, .pink),
+                                    highlight(0, lineBreak + 1, .yellow)], in: harness)
+        #expect(drawn["frus-blue"] == [Drawn(text: "", endsAfterBreak: true)], "\(drawn)")
+        #expect(drawn["frus-pink"] == [Drawn(text: "Second", endsAfterBreak: false)], "\(drawn)")
+        #expect(drawn["frus-yellow"] == [Drawn(text: "CHAPMAN COLEMAN,", endsAfterBreak: true)], "\(drawn)")
+        #expect(drawn.count == 3)
+    }
+}
+
+// MARK: - HighlightSkipRenderTests
+
+/// The reader draws a document's highlights when one of them cannot be drawn.
+///
+/// `FRUSHighlights.render` clears the page's highlights, then builds each one's range. A throw from `buildRanges` ended
+/// the call there, and `renderHighlights(on:)` drops the error (`try?`), so one highlight the page could not hold left
+/// the reader drawing none of the document's. A highlight stored with a `startOffset` below 0 was one: `map[-1]` is
+/// undefined, and reading its node threw a `TypeError`. Neither reader makes one, since a selection with no offsets
+/// cannot be highlighted and FRUS Explorer Light refuses offsets outside the text, so each test stores its own.
+///
+/// The fix has two parts, and each has a test the other part cannot pass: `buildRanges` builds no range from a
+/// negative start, as from any other offset outside the map (FRUS Explorer Light's host calls it itself), and `render`
+/// skips a highlight whose range throws for a reason no check of the offsets can see, here a text node shortened after
+/// the offset engine mapped it. The highlights are drawn through `renderHighlights(on:)`, the call the reader makes
+/// after each load, and the page is then asked what the CSS Custom Highlight API holds.
+///
+/// Version history:
+///   1.0 — Session 2026-10-25: initial implementation, with `buildRanges`' guard for a negative start and `render`'s
+///          skip of a highlight whose range throws
+@Suite("One highlight the page cannot draw leaves the document's others drawn, in a web view")
+@MainActor
+struct HighlightSkipRenderTests {
+
+    /// Two paragraphs, as `HighlightLineBreakRenderTests` draws them.
+    private static let fixture = """
+    <div type="document" xml:id="d1">
+      <p>CHAPMAN COLEMAN,<lb/>Second Secretary of Legation, at the Legation.</p>
+      <p>A second paragraph, highlighted on its own.</p>
+    </div>
+    """
+
+    /// The rendering version the highlights are made at and the page is drawn at, so none is stale.
+    private static let version = "0123456789abcdef"
+
+    /// The text of every range the CSS Custom Highlight API holds, by highlight name.
+    private static let drawnScript = """
+    (() => {
+      const out = {};
+      for (const [name, highlight] of CSS.highlights) out[name] = [...highlight].map(r => r.toString());
+      return JSON.stringify(out);
+    })()
+    """
+
+    /// Loads the fixture and returns the harness plus the Swift flat text its offsets index.
+    private func loaded() async throws -> (OffsetEngineTestHarness, String) {
+        let model = try await ListShapeFixtures.renderModel(Self.fixture)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+        let renderer = try await harness.evaluateString(
+            "typeof window.FRUSHighlights === 'object' && typeof window.FRUSOffsets === 'object' ? 'ok' : 'missing'")
+        #expect(renderer == "ok", "the reader's scripts were not injected")
+        return (harness, buildFlatText(from: model))
+    }
+
+    /// The UTF-16 offset of `needle` in `flat`.
+    private func offset(of needle: String, in flat: String) throws -> Int {
+        let range = try #require(flat.range(of: needle), "\"\(needle)\" is not in the flat text")
+        return flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+    }
+
+    /// A highlight over `start..<end` in `color`, at the page's version.
+    private func highlight(_ start: Int, _ end: Int, _ color: HighlightColor) -> DocumentHighlight {
+        DocumentHighlight(volumeId: "v1", documentId: "d1", startOffset: start, endOffset: end,
+                          colorTag: color.rawValue, renderingVersion: Self.version)
+    }
+
+    /// Draws `highlights` as the reader does after a load, and returns what the page holds.
+    private func draw(_ highlights: [DocumentHighlight],
+                      in harness: OffsetEngineTestHarness) async throws -> [String: [String]] {
+        harness.coordinator.currentRenderingVersion = Self.version
+        harness.coordinator.pendingHighlights = highlights
+        await harness.coordinator.renderHighlights(on: harness.webView)
+        let raw = try #require(try await harness.evaluateString(Self.drawnScript), "the page returned nothing")
+        return try JSONDecoder().decode([String: [String]].self, from: Data(raw.utf8))
+    }
+
+    /// How many ranges `buildRanges` builds over `start..<end`, or the name of what it throws.
+    private func builtRanges(_ start: Int, _ end: Int, in harness: OffsetEngineTestHarness) async throws -> String? {
+        try await harness.evaluateString(
+            "(() => { try { return String(buildRanges(\(start), \(end)).length); } catch (e) { return e.name; } })()")
+    }
+
+    @Test("A highlight with a negative start is not drawn, and the document's others are")
+    func negativeStartIsSkipped() async throws {
+        let (harness, flat) = try await loaded()
+        let second = try offset(of: "A second paragraph", in: flat)
+        let drawn = try await draw([highlight(-1, 7, .yellow), highlight(second, second + 18, .green)], in: harness)
+        // Before the fix the page held no highlight at all: the yellow one's TypeError ended render().
+        #expect(drawn == ["frus-green": ["A second paragraph"]], "\(drawn)")
+    }
+
+    @Test("buildRanges builds no range from a negative start, as from any offset outside the map")
+    func buildRangesRefusesANegativeStart() async throws {
+        let (harness, _) = try await loaded()
+        let inside = try await builtRanges(0, 7, in: harness)
+        let negative = try await builtRanges(-1, 7, in: harness)
+        #expect(inside == "1", "the control: offsets inside the map build one range")
+        #expect(negative == "0", "before the fix this threw a TypeError")
+    }
+
+    @Test("A highlight whose range throws is not drawn, and the document's others are")
+    func throwingRangeIsSkipped() async throws {
+        let (harness, flat) = try await loaded()
+        // The first text node is cut to four characters after the offset engine mapped all sixteen, so a range that
+        // starts at the ninth throws in setStart. Its offsets are inside the map, so no check of them can see it.
+        let premise = try await harness.evaluateString("""
+            (() => {
+              const node = window.FRUSOffsets.charToNode[0].node;
+              if (node.nodeValue !== 'CHAPMAN COLEMAN,') return 'the first mapped node holds ' + node.nodeValue;
+              node.nodeValue = 'CHAP';
+              try { new Range().setStart(node, 8); return 'set'; } catch (e) { return e.name; }
+            })()
+            """)
+        #expect(premise == "IndexSizeError")
+        let second = try offset(of: "A second paragraph", in: flat)
+        let drawn = try await draw([highlight(8, 12, .blue), highlight(0, 4, .pink),
+                                    highlight(second, second + 18, .green)], in: harness)
+        #expect(drawn == ["frus-pink": ["CHAP"], "frus-green": ["A second paragraph"]], "\(drawn)")
     }
 }

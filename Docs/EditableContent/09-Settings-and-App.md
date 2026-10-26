@@ -519,11 +519,13 @@ Every cross-reference in the printed FRUS volumes that points to a document, pag
 
 <!-- Archives Visits Phase 2, NEW key (`…json.footer.trail` listed seven things; the file now also carries archive visit plans). -->
 
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections JSON section footer | key: settings.export.json.footer.visits | shared: iOS+macOS (single edit point — hosted by Data & Recovery on both) -->
+<!-- FRUS Explorer Light's S16a, format version 7, NEW key (`…json.footer.visits` listed seven kinds of record; the file now also carries saved searches, working corpora, volume scopes, the two kinds of correction, reviewed changes, Suggested Next leads and synced settings). -->
 
-One JSON file with your notes, tags, highlights, collections, custom prompts, projects, and archive visit plans. It also holds your research trail: every document you opened, every search you ran and how many results it returned, and every collection you exported.
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections JSON section footer | key: settings.export.json.footer.searches | shared: iOS+macOS (single edit point — hosted by Data & Recovery on both) -->
 
-<!-- END SOURCE: settings.export.json.footer.visits -->
+One JSON file with your notes, tags, highlights, collections, custom prompts, projects, archive visit plans, saved searches, working corpora, volume scopes, corrections, reviewed changes, Suggested Next leads, and synced settings. It also holds your research trail: every document you opened, every search you ran and how many results it returned, and every collection you exported.
+
+<!-- END SOURCE: settings.export.json.footer.searches -->
 
 #### Erase Everything — warning
 
@@ -680,7 +682,7 @@ Copies what the language check has found since the app opened, with the app’s 
 ### Background Summarization
 
 #### Continue-in-background footer
-<!-- SOURCE: FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift | BackgroundSummarizationSettingsView.backgroundContinuationSection footer | lines: 101–102 | key: bg.summarizer.continue.hint.v2 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift | BackgroundSummarizationSettingsView.backgroundContinuationSection footer | lines: 103–104 | key: bg.summarizer.continue.hint.v2 | shared: iOS+macOS (single edit point) -->
 
 When on, the app keeps summarizing a few documents at a time while you are not using the device, even after you close the app. Uses the on-device model and some battery.
 
@@ -1034,7 +1036,7 @@ Research window (⌘⌥R), Collections (⇧⌘K), Archives Visits, and Complete 
 <!-- END SOURCE: mainwindow.tools.myResearch.help.v3 -->
 
 #### Open Document
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1144–1145 | key: research.action.openDocument.v2 -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1145–1146 | key: research.action.openDocument.v2 -->
 
 Open Document
 
@@ -1064,28 +1066,28 @@ Digitized Scans
 *Footers, empty states and confirmations across Settings that §6 does not carry — Tags, Projects, Volume Scopes, Search, Display, Summarization, Connections (NARA and Zotero), Data & Recovery, the storage hubs, vector and model storage, index health and the research data export. Settings is assembled from more than one view file, so several strings are declared twice; the SOURCE line names every file that carries one.*
 
 #### Footer — Adds all \(…) generated summaries to the JSON export. Off…
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 120–121 | key: settings.export.includeSummaries.footer -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 139–140 | key: settings.export.includeSummaries.footer -->
 
 Adds all \(summaries.count) generated summaries to the JSON export. Off by default since AI output can be large.
 
 <!-- END SOURCE: settings.export.includeSummaries.footer -->
 
 #### Footer — One Markdown file per research note, with a citation and…
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 152–153 | key: settings.export.markdown.footer -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 172–173 | key: settings.export.markdown.footer -->
 
 One Markdown file per research note, with a citation and link back to the source document. Compatible with Obsidian and similar note-taking tools.
 
 <!-- END SOURCE: settings.export.markdown.footer -->
 
 #### Footer — A complete copy of the search index, for analysis with your…
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.databaseExportSection | lines: 227–228 | key: settings.export.database.footer | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.databaseExportSection | lines: 247–248 | key: settings.export.database.footer | shared: macOS only -->
 
 A complete copy of the search index, for analysis with your own tools. With the switch off, your notes, summaries and tag names are removed from the copy and the freed space reclaimed, so the words are gone rather than merely unlinked. The copy is verified before it is handed over. It is roughly the size of the index on disk.
 
 <!-- END SOURCE: settings.export.database.footer -->
 
 #### Exported \(…), but the copy did not verify: \(…)
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.exportIndexDatabase | lines: 267–268 | key: settings.export.database.integrity | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.exportIndexDatabase | lines: 287–288 | key: settings.export.database.integrity | shared: macOS only -->
 
 Exported \(size), but the copy did not verify: \(report.integrityProblems.joined(separator: "; "))
 

@@ -46,6 +46,10 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — Wave R-7: initial implementation
+///   1.1 — FRUS Explorer Light: the reserved `annotationId`'s sweep passes a value read from a
+///          record's own `annotationId`, which carries a value and cannot mint the first one
+///   1.2 — Session 2026-10-25: that pass is the research data export's one line, by file and text,
+///          since an importer's line would read a record's `annotationId` too, and would write it
 struct CloudKitSchemaInventoryTests {
 
     // MARK: - Fixtures
@@ -340,8 +344,8 @@ struct CloudKitSchemaInventoryTests {
     /// The inventory's own comment says no test can catch a missing writer, because the identifier
     /// is a real member either way. That is true of the *absence* — but the moment someone ADDS a
     /// writer, this fires and says what to do. `AnnotationReview.annotationId` is `UUID? = nil`, and
-    /// today no call site outside the model passes it at all; both writers record a `document`-grain
-    /// row. Minting the first non-nil value is a Production deploy, so it must be exercised on a
+    /// today no call site outside the model writes it at all; both writers record a `document`-grain
+    /// row, and the research data export only reads it. Minting the first non-nil value is a Production deploy, so it must be exercised on a
     /// Development build and promoted before shipping.
     @Test("No writer mints the reserved annotationId without moving it to awaiting-deploy")
     func theReservedFieldStillHasNoWriter() throws {
@@ -352,6 +356,7 @@ struct CloudKitSchemaInventoryTests {
             .appendingPathComponent("FRUSExplorer")
         var offenders: [String] = []
         var scanned = 0
+        var exported = 0
         let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
         while let url = files?.nextObject() as? URL {
             guard url.pathExtension == "swift",
@@ -362,11 +367,22 @@ struct CloudKitSchemaInventoryTests {
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
                 if trimmed.hasPrefix("//") || trimmed.hasPrefix("///") { continue }
                 if trimmed.contains("annotationId: nil") { continue }
+                // The research data export copies a review's own `annotationId` into its record (format
+                // version 7): carried out of the store, not minted into it. That one line is exempt, by
+                // file and text. An importer would spell its line the same way, `annotationId:
+                // record.annotationId`, and write the field, so no other line is.
+                if url.lastPathComponent == "ResearchDataExporter.swift",
+                   trimmed == "annotationId: review.annotationId," {
+                    exported += 1
+                    continue
+                }
                 offenders.append("\(url.lastPathComponent): \(trimmed)")
             }
         }
         // Without this the sweep could pass over an empty enumeration.
         #expect(scanned > 100, "scanned only \(scanned) source files")
+        // The exemption names one line; if the export no longer has it, the exemption goes too.
+        #expect(exported == 1, "the research data export's copy of annotationId was found \(exported) times, not once")
         #expect(offenders.isEmpty, """
         A writer now mints CD_AnnotationReview.CD_annotationId:
         \(offenders.joined(separator: "\n"))

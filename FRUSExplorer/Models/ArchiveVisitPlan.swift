@@ -59,6 +59,8 @@ import SwiftData
 ///         and copies its research question into `inquiryText`; no stored property changed
 ///   1.2 — #1366 review: `owningProject(among:)`, the resolution the editor's Re-seed from Project
 ///         item is gated on; `projectIds` documents what a project merge and delete do to it
+///   1.3 — FRUS Explorer Light: `ArchiveVisitTier` and `ArchiveVisitDeliverables`, the values the plan
+///         stores, moved to FRUSCoreKit, unchanged but `public`; no stored property changed
 @Model final class ArchiveVisitPlan {
 
     // MARK: - Identity
@@ -502,67 +504,6 @@ import SwiftData
     }
 }
 
-// MARK: - ArchiveVisitTier
-
-/// One user-defined priority tier of a plan (§2): an id targets assign to, an optional label,
-/// and a position. Any number per plan; the implicit Unprioritized group is not a tier and
-/// always sorts last.
-///
-/// A `Codable` value in ``ArchiveVisitPlan/tiersData``, not a `@Model`: a tier is read and
-/// written as part of the plan's whole ordered list, and its only cross-record reference is
-/// `ArchiveVisitTarget.tierId` — which survives a tier's deletion as a dangling id that reads
-/// as Unprioritized.
-///
-/// `Hashable` so ``ArchiveVisitDerivation/InputSignature`` can carry a plan's tiers whole (#1456):
-/// the derivation copies them into the overlay as they are, so any field added here is one the
-/// signature must also see, and hashing the value itself is what makes that automatic.
-struct ArchiveVisitTier: Codable, Hashable, Sendable, Identifiable {
-    /// Stable identity — what `ArchiveVisitTarget.tierId` references. Survives relabeling.
-    var id: UUID = UUID()
-    /// Optional display label ("If time allows"). `nil` renders as a positional name.
-    var label: String?
-    /// Sort position among the plan's tiers, ascending.
-    var order: Int = 0
-}
-
-// MARK: - ArchiveVisitDeliverables
-
-/// The per-plan deliverable toggles (§3b): the three core deliverables, on by default, and the
-/// citation-guidance appendix, off by default (owner decision — an opt-in appendix).
-///
-/// ## The decoder is hand-written, and that is load-bearing
-/// Swift's synthesized `Decodable` ignores a property's default value, so a future toggle added
-/// to this struct would make every already-stored blob undecodable — silently resetting every
-/// plan's toggles to the defaults through the accessor's `try?`. `decodeIfPresent ?? default`
-/// per field is what makes the blob actually evolvable, which is the reason it is a blob.
-struct ArchiveVisitDeliverables: Codable, Equatable, Sendable {
-    /// Deliverable (a): the repository visit-planning links.
-    var includeLinks = true
-    /// Deliverable (b): the target list.
-    var includeTargets = true
-    /// Deliverable (c): the per-repository inquiry drafts.
-    var includeInquiry = true
-    /// The NARA citation-guidance appendix (§3a: opt-in, default off).
-    var includeCitationCrib = false
-
-    init(includeLinks: Bool = true, includeTargets: Bool = true,
-         includeInquiry: Bool = true, includeCitationCrib: Bool = false) {
-        self.includeLinks = includeLinks
-        self.includeTargets = includeTargets
-        self.includeInquiry = includeInquiry
-        self.includeCitationCrib = includeCitationCrib
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case includeLinks, includeTargets, includeInquiry, includeCitationCrib
-    }
-
-    init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        includeLinks = try container.decodeIfPresent(Bool.self, forKey: .includeLinks) ?? true
-        includeTargets = try container.decodeIfPresent(Bool.self, forKey: .includeTargets) ?? true
-        includeInquiry = try container.decodeIfPresent(Bool.self, forKey: .includeInquiry) ?? true
-        includeCitationCrib =
-            try container.decodeIfPresent(Bool.self, forKey: .includeCitationCrib) ?? false
-    }
-}
+// `ArchiveVisitTier` and `ArchiveVisitDeliverables` moved to FRUSCoreKit
+// (`FRUSCoreKit/Models/ArchiveVisitValues.swift`) under their names, since the research data
+// export, now kit code, names them.

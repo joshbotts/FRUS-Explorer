@@ -148,8 +148,9 @@ the *current* `collection-usage-index.json` — so run it after that index, neve
 ### Tier 4 — static; never (4 data files, plus the JS/CSS/text payloads)
 
 `administrations.json`, `tei-rendering-config.json`, `word-cloud-lexicons.json`,
-`word-cloud-stopwords.json` — plus `frus-highlights.js`, `frus-offset-engine.js`,
-`frus-selection.js` and `frus-print.css`, which are not data at all (`gemma-terms-of-use.txt` was one until B4 removed it on 2026-10-15). **Do not edit
+`word-cloud-stopwords.json` — plus `frus-selection.js` and `frus-print.css`, which are not data
+at all (`gemma-terms-of-use.txt` was one until B4 removed it on 2026-10-15, and `frus-highlights.js`
+and `frus-offset-engine.js`, which nothing loaded, until 2026-10-25). **Do not edit
 `word-cloud-stopwords.json` or `word-cloud-lexicons.json` during a volume release**: their
 SHA-256s are pinned by `BundledKeynessBaseline`, and an edit makes every keyness read report
 `.configurationMismatch` until `CloudVectorsGenerator` runs again.

@@ -66,6 +66,9 @@ import WebKit
 ///   1.9 — Session 2026-10-22 (L6): #1766 — `PageLink`, where both readers send a link to a printed
 ///          page: the device's page index, else the bundled page map, else, for a volume not on the
 ///          device, the volume's page in Browse (`FollowedPageLink`)
+///   1.10 — Session 2026-10-23 (FRUS Explorer Light, S12c): `WholeVolumeLink` and `PageLink` moved into
+///          FRUSCoreKit's `FRUSURLScheme.swift`, unchanged but public and `Sendable`, so the web edition sends
+///          a page link where both readers do; `FollowedPageLink`, whose notice is a localized string, stays here
 final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Sendable {
 
     // MARK: - Callbacks
@@ -385,129 +388,6 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
             case .label(let children), .other(let children): return children
             }
         }
-    }
-}
-
-// MARK: - WholeVolumeLink
-
-/// Where a cross-reference to a whole volume goes (#1603): `CrossRefDestination.volume`, decided
-/// once for the reader on iPhone and iPad (`DocumentView`) and the reader on the Mac
-/// (`MacDocumentView`), so the two cannot come to disagree.
-///
-/// Version history:
-///   1.0 — Session 2026-10-09: #1603
-enum WholeVolumeLink: Equatable {
-    /// The volume's page in Browse. The catalogue holds the volume; the page offers the download
-    /// when the volume is not on the device.
-    case browse(volumeId: String)
-    /// The volume's page on history.state.gov. The catalogue does not hold it: a microfiche
-    /// supplement, or a volume not yet published.
-    case web(URL)
-
-    /// Where a link to `volumeId` goes, or `nil` when the id can name neither.
-    ///
-    /// - Parameters:
-    ///   - volumeId: The volume the reference names, as its target gives it.
-    ///   - inCatalogue: Whether the app's catalogue holds that volume.
-    static func destination(for volumeId: String, inCatalogue: Bool) -> WholeVolumeLink? {
-        if inCatalogue { return .browse(volumeId: volumeId) }
-        return FRUSCanonicalURL.volumeURL(volumeId: volumeId).map { .web($0) }
-    }
-}
-
-// MARK: - PageLink
-
-/// Where a link to a printed page goes (#1766): `CrossRefDestination.page`, decided once for the
-/// reader on iPhone and iPad (`DocumentView`) and the reader on the Mac (`MacDocumentView`), as
-/// ``WholeVolumeLink`` is for a link to a whole volume, so the two cannot come to disagree.
-///
-/// - **A volume on the device** answers from its own page index
-///   (`PageRangeStore.document(forPage:inVolume:citing:)`), as every page link did before #1766: the
-///   document the page names, and of several the one the link's footnote names (#1509).
-/// - **A volume not on the device** answers from the bundled page map (`CitedPageMap`, A18b) where
-///   the map lists the page. An entry is what that page index answers over a full index of the
-///   build's corpus, and the facts beside it are what the tie-break reads, so the tap names the
-///   document a device holding the volume would open. The reader opens it as it opens a link to a
-///   document of a volume not on the device: it offers the download.
-/// - **A volume on the device whose page index names nothing** answers from the map too. That is a
-///   volume downloaded and not yet indexed — the one the alert's Download Volume has just fetched,
-///   whose document links already open — or a copy that prints the page where the build's corpus
-///   does not. A page neither names opens nothing, as it did before #1766.
-/// - **A page the map does not list, of a volume not on the device** — the first page of a
-///   compilation cited with "ff.", an end of a range across documents, a page that names no
-///   document, a page of a volume outside the catalogue, or any page when the bundled map cannot be
-///   read — opens the volume, as a link to the whole volume does (``WholeVolumeLink``): its page in
-///   Browse, which says that the volume is not downloaded and names the page the link was to, or
-///   history.state.gov's page for a volume outside the catalogue.
-///
-/// A tap reads the link as one page. The link carries no printed form, so rule C's "ff." and ranges
-/// across documents, which the index leaves on the volume
-/// (`PageSpanResolver.citedDocument(inVolume:page:form:citing:map:)`), are read here as the page they
-/// name, as the page index has always read them for a volume on the device. The map lists such a
-/// page only when another reference cites it in a form rule C resolves.
-///
-/// **Measured** at corpus `6170e4b32` (L6, 2026-10-22), over the 48,577 live references to a page of
-/// another volume in the rows a full index holds (and 27 the index marks broken, which the reader
-/// draws as dead links): with the volume not on the device, the map names a document for 33,329
-/// (68.6%) — 27,437 single pages, 2,088 and 1,670 ends of ranges, 2,134 "ff." — and 15,248 open the
-/// volume: 8,499 "ff.", 6,522 ends of ranges across documents, and 227 single pages naming nothing.
-/// For all 29,391 rows rule C resolves, the tap names the document the index stores; for all
-/// 33,329, it names the document a device holding the volume opens (a full index of the same files,
-/// at version 71). None of the 48,577 is into a volume outside the catalogue.
-///
-/// Version history:
-///   1.0 — Session 2026-10-22 (L6): #1766
-enum PageLink: Equatable {
-    /// The document the page names. The reader opens it as a link to that document: a volume not on
-    /// the device offers its download.
-    case document(volumeId: String, documentId: String)
-    /// The volume, as a link to the whole volume opens it, for a page of it the reader cannot name a
-    /// document on without the volume. `page` is the page the link was to, which Browse names.
-    case volume(volumeId: String, page: Int)
-
-    /// Where a link to `page` of `volumeId` goes, or `nil` when it goes nowhere: a page of a volume
-    /// on the device that names no document in its page index or in the map.
-    ///
-    /// - Parameters:
-    ///   - page: The arabic page number the link names.
-    ///   - volumeId: The volume the page is in.
-    ///   - citing: What the link's footnote names (`PageCitationHint`), or `nil` for a link outside
-    ///     every footnote.
-    ///   - onDevice: Whether the volume is on the device.
-    ///   - deviceDocument: What the device's page index answers for the page with `citing`, read
-    ///     only when `onDevice` is true.
-    ///   - map: The bundled page map, or `nil` when it cannot be read.
-    static func destination(page: Int, volumeId: String, citing: PageCitationHint?, onDevice: Bool,
-                            deviceDocument: String?, map: CitedPageMap?) -> PageLink? {
-        if onDevice, let deviceDocument {
-            return .document(volumeId: volumeId, documentId: deviceDocument)
-        }
-        // As one page: the documents the map lists on it, and the footnote's tie-break among several.
-        if let map, let documentId = PageSpanResolver.citedDocument(inVolume: volumeId, page: page, form: .single,
-                                                                    citing: citing, map: map) {
-            return .document(volumeId: volumeId, documentId: documentId)
-        }
-        return onDevice ? nil : .volume(volumeId: volumeId, page: page)
-    }
-
-    /// ``destination(page:volumeId:citing:onDevice:deviceDocument:map:)``, asking `store` for a
-    /// volume on the device and reading `map` wherever that names nothing. Both are read off the
-    /// main actor: the map's first read decodes the bundled file.
-    ///
-    /// - Parameters:
-    ///   - store: The device's page index, or `nil` when it is not open; a volume on the device then
-    ///     answers from the map alone.
-    ///   - map: Reads the bundled page map (`CitedPageMapStore.shared` in the readers); not read when
-    ///     the page index names a document.
-    static func destination(page: Int, volumeId: String, citing: PageCitationHint?, onDevice: Bool,
-                            store: PageRangeStore?,
-                            map: @Sendable () -> CitedPageMap?) async -> PageLink? {
-        let deviceDocument = onDevice
-            ? (try? await store?.document(forPage: page, inVolume: volumeId, citing: citing)) ?? nil
-            : nil
-        if let deviceDocument { return .document(volumeId: volumeId, documentId: deviceDocument) }
-        return destination(page: page, volumeId: volumeId, citing: citing, onDevice: onDevice,
-                           deviceDocument: nil, map: map())
     }
 }
 

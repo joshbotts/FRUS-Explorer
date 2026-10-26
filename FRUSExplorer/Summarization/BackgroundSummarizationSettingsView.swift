@@ -31,6 +31,8 @@ import SwiftData
 ///          returning a bare false; the reason renders as the control section's footer. Fixes a
 ///          Start that stayed enabled and did nothing after its selected prompt was deleted.
 ///          `ScopeType` moves to `BatchRunReadiness.swift` so the pure model can name it.
+///   1.3 — #1791: the saved-search picker offers each saved search once, however many copies of
+///          it are stored
 struct BackgroundSummarizationSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -39,7 +41,7 @@ struct BackgroundSummarizationSettingsView: View {
     @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
     @Query(sort: \UserTag.name) private var allUserTags: [UserTag]
     @Query private var allTagAssignments: [DocumentTagAssignment]
-    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var allSavedSearches: [SavedSearch]
+    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var allSavedSearchCopies: [SavedSearch]
     @Query(sort: \CustomVolumeScope.name) private var allCustomScopes: [CustomVolumeScope]
 
     // MARK: - Scope State
@@ -696,4 +698,12 @@ struct BackgroundSummarizationSettingsView: View {
         }
     }
 
+}
+
+// MARK: - One copy of each saved search (#1791)
+
+extension BackgroundSummarizationSettingsView {
+    /// The saved searches, one copy of each however many are stored under its id
+    /// (`DuplicateCopies`), newest first, so the picker offers each once.
+    private var allSavedSearches: [SavedSearch] { SavedSearch.oneCopyEach(allSavedSearchCopies) }
 }

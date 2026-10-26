@@ -139,6 +139,8 @@ import UniformTypeIdentifiers
 ///          offers Link to Saved Search… for a collection that is not linked (`SmartCollectionLinkButton`), which closes
 ///          the popover and opens the editor's picker on the pane (`LinkSavedSearchPicker`); on the Mac a collection
 ///          could be linked only while Add to Collection's New Collection created it
+///   1.26 — 2026-10-25: #1791 — the window reads one copy of each note and saved search, however many are stored
+///          under one id, so an entry's notes, the exports and Link to Saved Search… list each once
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -146,7 +148,7 @@ struct MacCollectionManagerView: View {
     @Environment(\.openWindow) private var openWindow
 
     @Query(sort: \Collection.lastModified, order: .reverse) private var allCollections: [Collection]
-    @Query(sort: \ResearchNote.lastModified, order: .reverse) private var allNotes: [ResearchNote]
+    @Query(sort: \ResearchNote.lastModified, order: .reverse) private var allNoteCopies: [ResearchNote]
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
     @Query(sort: \Project.name) private var allProjects: [Project]
 
@@ -683,7 +685,7 @@ private struct CollectionDetailPane: View {
     @Query(sort: \Project.name) private var allProjects: [Project]
     /// Saved searches, for the name of the one a smart collection is linked to, in the ⚙ popover's Smart Collection
     /// rows (#1619 review).
-    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var allSavedSearches: [SavedSearch]
+    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var allSavedSearchCopies: [SavedSearch]
 
     @State private var name: String
     @State private var note: String
@@ -1967,6 +1969,20 @@ private struct MacEntryRow: View {
     private var documentLabel: String {
         CitableDocumentNumber.rowLabel(printed: printedNumber, documentId: entry.documentId)
     }
+}
+
+// MARK: - One copy of each note and saved search (#1791)
+
+extension MacCollectionManagerView {
+    /// Every note, one copy of each however many are stored under its id (`DuplicateCopies`),
+    /// newest first: what the detail pane's entries, note pickers and exports read.
+    private var allNotes: [ResearchNote] { ResearchNote.oneCopyEach(allNoteCopies) }
+}
+
+extension CollectionDetailPane {
+    /// Every saved search, one copy of each, newest first: what Link to Saved Search… offers and
+    /// what names a smart collection's search.
+    private var allSavedSearches: [SavedSearch] { SavedSearch.oneCopyEach(allSavedSearchCopies) }
 }
 
 #endif

@@ -315,7 +315,7 @@ public struct FRUSRenderNodeHTMLSerializer {
     ) -> String {
         // IMPORTANT: no whitespace is added between elements. Any inter-element
         // newline or space creates a DOM text node that the JS flat-text DFS
-        // (frus-offset-engine.js) would count as a character, breaking the
+        // (kOffsetEngineJS) would count as a character, breaking the
         // Swift–JS offset equivalence. All formatting whitespace is deliberately
         // omitted to keep the DOM clean.
         var html = "<div class=\"frus-document\">"
@@ -398,7 +398,7 @@ public struct FRUSRenderNodeHTMLSerializer {
     ///
     /// The algorithm walks the HTML character by character, tracking a `flatPos`
     /// counter that mirrors the JS offset engine's flat-text coordinate space
-    /// (`frus-offset-engine.js`) exactly — the same space `ExportHighlight` offsets
+    /// (`kOffsetEngineJS`) exactly — the same space `ExportHighlight` offsets
     /// (verbatim `DocumentHighlight.startOffset`/`endOffset`) live in; at each
     /// highlight boundary the algorithm inserts `<mark>` or `</mark>` tags.
     ///
@@ -710,7 +710,7 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// ## Whitespace policy
     /// No formatting whitespace (newlines, indentation) is inserted between or
     /// around elements. Every inter-element `\n` or space would create a DOM text
-    /// node that `frus-offset-engine.js` counts as a character, breaking the
+    /// node that `kOffsetEngineJS` counts as a character, breaking the
     /// Swift–JS offset equivalence. All HTML is deliberately compact.
     ///
     /// The only `\n` characters in the output are those explicitly contributed by

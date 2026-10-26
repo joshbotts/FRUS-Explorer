@@ -1089,7 +1089,7 @@ struct FootnoteListIndentRenderTests {
 // MARK: - HighlightInjectionTests (Session 7 #240B follow-up)
 
 /// Verifies that `injectHighlights` places `<mark>` elements using the same
-/// flat-text coordinate space as `frus-offset-engine.js` — i.e. it excludes every
+/// flat-text coordinate space as the offset engine, `kOffsetEngineJS` — i.e. it excludes every
 /// `data-skip="1"` subtree (footnote-marker labels, figure captions, page-break
 /// spans, the broken cross-reference dagger) and counts `<br>` as one character.
 ///

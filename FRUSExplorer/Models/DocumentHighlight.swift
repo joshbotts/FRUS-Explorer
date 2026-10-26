@@ -59,6 +59,9 @@ import SwiftUI
 ///   1.0 — Session 102: initial implementation
 ///   1.1 — FRUSCoreKit, part 1: `Color` is a typealias of FRUSCoreKit's `HighlightColor`, which the
 ///          serializer paints; the stored `colorTag` does not change
+///   1.2 — Session 2026-10-24 (FRUS Explorer Light, S15a): `HighlightDTO` is a typealias of
+///          FRUSCoreKit's `ReaderHighlight`, which holds its stale rule; `init(_:currentVersion:)`
+///          stays here
 @Model final class DocumentHighlight {
 
     // MARK: - Identity
@@ -151,34 +154,24 @@ extension DocumentHighlight {
 extension DocumentHighlight {
 
     /// Serialisable snapshot of a single highlight, injected into `WKWebView` as JSON
-    /// so the CSS Custom Highlight API renderer (`frus-highlights.js`) can paint
-    /// highlight ranges using the `FRUSOffsets.charToNode` map.
-    ///
-    /// `isStale` is computed at call time from the `renderingVersion` mismatch so the
-    /// web layer doesn't need to know the current document version.
-    struct HighlightDTO: Encodable {
-        /// UTF-16 start offset, matching `DocumentHighlight.startOffset`.
-        let startOffset: Int
-        /// UTF-16 end offset (exclusive), matching `DocumentHighlight.endOffset`.
-        let endOffset: Int
-        /// Highlight color name — one of `"yellow"`, `"green"`, `"blue"`, `"pink"`.
-        let color: String
-        /// `true` when the stored `renderingVersion` does not match the document's
-        /// current version. Stale highlights are rendered in amber by `::highlight(frus-stale)`.
-        let isStale: Bool
+    /// so the CSS Custom Highlight API renderer (`kHighlightsJS`) can paint
+    /// highlight ranges using the `FRUSOffsets.charToNode` map: FRUSCoreKit's `ReaderHighlight`,
+    /// with its stale rule, under the name the app calls it by.
+    typealias HighlightDTO = ReaderHighlight
+}
 
-        /// Convenience initialiser that computes `isStale` automatically.
-        ///
-        /// - Parameters:
-        ///   - highlight:       The `DocumentHighlight` to convert.
-        ///   - currentVersion:  The rendering version for the currently displayed document,
-        ///                      from `ASTToRenderNodeConverter.renderingVersion(for:)`.
-        init(_ highlight: DocumentHighlight, currentVersion: String) {
-            startOffset = highlight.startOffset
-            endOffset   = highlight.endOffset
-            color       = highlight.colorTag
-            isStale     = highlight.renderingVersion != currentVersion
-        }
+extension ReaderHighlight {
+
+    /// Convenience initialiser that computes `isStale` automatically.
+    ///
+    /// - Parameters:
+    ///   - highlight:       The `DocumentHighlight` to convert.
+    ///   - currentVersion:  The rendering version for the currently displayed document,
+    ///                      from `ASTToRenderNodeConverter.renderingVersion(for:)`.
+    init(_ highlight: DocumentHighlight, currentVersion: String) {
+        self.init(startOffset: highlight.startOffset, endOffset: highlight.endOffset,
+                  color: highlight.colorTag, renderingVersion: highlight.renderingVersion,
+                  currentVersion: currentVersion)
     }
 }
 

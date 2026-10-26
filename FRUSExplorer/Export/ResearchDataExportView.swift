@@ -21,7 +21,9 @@ import AppKit
 ///
 /// Offers three exports built from `ResearchDataExporter`:
 /// - A single versioned JSON file containing notes, tags, highlights, collections, user-created
-///   prompts, projects and the research trail (optionally including AI-generated summaries).
+///   prompts, projects, archive visit plans, saved searches, working corpora, volume scopes, the
+///   two kinds of correction, reviewed changes, Suggested Next leads, synced settings and the
+///   research trail (optionally including AI-generated summaries).
 /// - One Markdown file per research note, with YAML front matter linking back
 ///   to the source document, for use with Obsidian-style tools.
 /// - The query log as a **method appendix** (M-2) — a Markdown table and a CSV, each carrying the
@@ -33,8 +35,8 @@ import AppKit
 /// Every other row here is backed by a `@Query`, which is fine for notes and collections and
 /// wrong for the trail: it grows without bound by design (Wave R contract D5 — nothing prunes
 /// it), so a `@Query` would hold every recorded visit in memory on a Settings screen and re-run
-/// on each iCloud sync. `ResearchDataExporter.trailCounts(modelContext:)` is three `fetchCount`s,
-/// taken in the same pass that builds the file, so the numbers on screen and the file being
+/// on each iCloud sync. `ResearchDataExporter.trailCounts(modelContext:)` counts the three tables'
+/// distinct ids, taken in the same pass that builds the file, so the numbers on screen and the file being
 /// offered describe the same read.
 ///
 /// The accepted cost is that these three rows are a **snapshot** rather than live: the `@Query`
@@ -52,6 +54,9 @@ import AppKit
 ///          about, and the JSON footer says so under a new key
 ///   1.3 — M-2: the "Method Appendix" section — the query log as Markdown + CSV, which is the
 ///          half of Wave R decision D5 that the JSON export alone never delivered
+///   1.4 — FRUS Explorer Light: the inventory counts the eight types the JSON export carries from
+///          format version 7, and the JSON footer names them under a new key
+///   1.5 — #1791: every **Contents** count is of distinct ids, the records the export writes
 struct DataExportSections: View {
 
     @Environment(AppState.self) private var appState
@@ -64,12 +69,15 @@ struct DataExportSections: View {
     @Query private var collections: [Collection]
     @Query private var prompts: [SummarizationPrompt]
     @Query private var projects: [Project]
-    @Query private var summaries: [GeneratedSummary]
+    @Query private var summaryCopies: [GeneratedSummary]
     @Query private var archiveVisits: [ArchiveVisitPlan]
 
     /// Row counts for the three research-trail tables — see the type's note on why these are not
     /// `@Query`. Refreshed by `prepareJSONExport()`, which is also what writes the file.
     @State private var trailCounts: (visits: Int, searches: Int, exports: Int) = (0, 0, 0)
+
+    /// Row counts for the eight types format version 7 added, refreshed with the trail's.
+    @State private var inventoryCounts = ResearchDataExporter.InventoryCounts()
 
     @State private var includeGeneratedSummaries = false
     @State private var jsonExportURL: URL?
@@ -87,19 +95,30 @@ struct DataExportSections: View {
     @State private var databaseExportProblem: String?
 
     private var userPromptCount: Int {
-        prompts.filter { !$0.isStandard }.count
+        DuplicateCopies.count(prompts.filter { !$0.isStandard }, id: \.id)
     }
 
     var body: some View {
         Group {
             Section(String(localized: "settings.export.section.contents", defaultValue: "Contents")) {
-                LabeledContent(String(localized: "settings.export.notes", defaultValue: "Research Notes"), value: "\(notes.count)")
-                LabeledContent(String(localized: "settings.export.tags", defaultValue: "Tags & Assignments"), value: "\(tags.count + tagAssignments.count)")
-                LabeledContent(String(localized: "settings.export.highlights", defaultValue: "Highlights"), value: "\(highlights.count)")
-                LabeledContent(String(localized: "settings.export.collections", defaultValue: "Collections"), value: "\(collections.count)")
+                LabeledContent(String(localized: "settings.export.notes", defaultValue: "Research Notes"), value: "\(DuplicateCopies.count(notes, id: \.id))")
+                LabeledContent(String(localized: "settings.export.tags", defaultValue: "Tags & Assignments"), value: "\(DuplicateCopies.count(tags, id: \.id) + DuplicateCopies.count(tagAssignments, id: \.id))")
+                LabeledContent(String(localized: "settings.export.highlights", defaultValue: "Highlights"), value: "\(DuplicateCopies.count(highlights, id: \.id))")
+                LabeledContent(String(localized: "settings.export.collections", defaultValue: "Collections"), value: "\(DuplicateCopies.count(collections, id: \.id))")
                 LabeledContent(String(localized: "settings.export.prompts", defaultValue: "Custom Prompts"), value: "\(userPromptCount)")
-                LabeledContent(String(localized: "settings.export.projects", defaultValue: "Projects"), value: "\(projects.count)")
-                LabeledContent(String(localized: "settings.export.archiveVisits", defaultValue: "Archives Visits"), value: "\(archiveVisits.count)")
+                LabeledContent(String(localized: "settings.export.projects", defaultValue: "Projects"), value: "\(DuplicateCopies.count(projects, id: \.id))")
+                LabeledContent(String(localized: "settings.export.archiveVisits", defaultValue: "Archives Visits"), value: "\(DuplicateCopies.count(archiveVisits, id: \.id))")
+                // Format version 7. Each row takes its words from the screen or setting that keeps
+                // those records, and is counted like the trail rows below, from the read that
+                // writes the file.
+                LabeledContent(String(localized: "settings.export.savedSearches", defaultValue: "Saved Searches"), value: "\(inventoryCounts.savedSearches)")
+                LabeledContent(String(localized: "settings.export.workingCorpora", defaultValue: "Working Corpora"), value: "\(inventoryCounts.workingCorpora)")
+                LabeledContent(String(localized: "settings.export.volumeScopes", defaultValue: "Volume Scopes"), value: "\(inventoryCounts.volumeScopes)")
+                LabeledContent(String(localized: "settings.export.classificationCorrections", defaultValue: "Classification Corrections"), value: "\(inventoryCounts.classificationCorrections)")
+                LabeledContent(String(localized: "settings.export.personCorrections", defaultValue: "Person Corrections"), value: "\(inventoryCounts.personCorrections)")
+                LabeledContent(String(localized: "settings.export.reviewedChanges", defaultValue: "Reviewed Changes"), value: "\(inventoryCounts.reviewedChanges)")
+                LabeledContent(String(localized: "settings.export.suggestedNext", defaultValue: "Suggested Next Leads"), value: "\(inventoryCounts.suggestedLeads)")
+                LabeledContent(String(localized: "settings.export.syncedSettings", defaultValue: "Synced Settings"), value: "\(inventoryCounts.syncedSettings)")
                 // Wave R-5. The three trail rows are worded exactly as the History screen's
                 // section headers, so the same recorded thing is not called two different names
                 // in two places. New keys rather than reuse of the `history.section.*` ones: no
@@ -134,10 +153,11 @@ struct DataExportSections: View {
                 // Archive Visits Phase 2 mints the key anew once more (`…json.footer.visits`):
                 // the file now carries archive visit plans, and a footer that under-states the
                 // export's contents is the same fault as an erase screen that under-states its
-                // reach.
+                // reach. Format version 7 mints it again (`…json.footer.searches`), for the eight
+                // types the file now carries, saved searches first.
                 Text(String(
-                    localized: "settings.export.json.footer.visits",
-                    defaultValue: "One JSON file with your notes, tags, highlights, collections, custom prompts, projects, and archive visit plans. It also holds your research trail: every document you opened, every search you ran and how many results it returned, and every collection you exported."
+                    localized: "settings.export.json.footer.searches",
+                    defaultValue: "One JSON file with your notes, tags, highlights, collections, custom prompts, projects, archive visit plans, saved searches, working corpora, volume scopes, corrections, reviewed changes, Suggested Next leads, and synced settings. It also holds your research trail: every document you opened, every search you ran and how many results it returned, and every collection you exported."
                 ))
             }
 
@@ -378,11 +398,12 @@ struct DataExportSections: View {
     }
 
     /// Builds the JSON envelope and writes it to a temporary file for `ShareLink`, and refreshes
-    /// the trail counts shown in **Contents** from the same read.
+    /// the trail counts and format version 7's counts shown in **Contents** from the same read.
     private func prepareJSONExport() {
         jsonExportURL = nil
         jsonExportError = nil
         trailCounts = ResearchDataExporter.trailCounts(modelContext: modelContext)
+        inventoryCounts = ResearchDataExporter.inventoryCounts(modelContext: modelContext)
         do {
             let envelope = try ResearchDataExporter.makeEnvelope(
                 modelContext: modelContext,
@@ -428,4 +449,13 @@ struct DataExportSections: View {
         print("[DataExportSections] Markdown export prepared: \(urls.count) file(s)")
         #endif
     }
+}
+
+// MARK: - One copy of each summary (#1791)
+
+extension DataExportSections {
+    /// The generated summaries, one copy of each however many are stored under its id
+    /// (`DuplicateCopies`): the count the summaries switch's footer gives is the count the file
+    /// writes.
+    private var summaries: [GeneratedSummary] { DuplicateCopies.oneEach(summaryCopies, id: \.id) }
 }

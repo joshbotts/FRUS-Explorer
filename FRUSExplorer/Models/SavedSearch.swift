@@ -40,6 +40,8 @@ import SwiftData
 ///         ran this") + `lastModified` (the record joins `LastModifiedStamping`, so a
 ///         CloudKit merge finally has a tiebreaker newer than `createdAt`). Two new CloudKit
 ///         identifiers — deploy per R-7.
+///   1.2 — #1791: `oneCopyEach(_:)`, `copies(of:in:)`, `deleteEveryCopy(of:in:)` and
+///         `rename(_:to:in:)`, for copies stored under one id
 @Model final class SavedSearch {
 
     // MARK: - Identity
@@ -253,6 +255,68 @@ import SwiftData
             documentTypeFilter:  docType,
             personRef: personRef.isEmpty ? nil : personRef
         )
+    }
+}
+
+// MARK: - Copies under one id (#1791)
+
+extension SavedSearch {
+
+    /// `searches` with one copy of each saved search, the one last modified, in the order the
+    /// searches first appear. What a list or a picker of saved searches reads (`DuplicateCopies`
+    /// says why the copies are kept rather than collapsed).
+    ///
+    /// - Parameter searches: The saved searches, copies included.
+    /// - Returns: One saved search per id.
+    static func oneCopyEach(_ searches: [SavedSearch]) -> [SavedSearch] {
+        DuplicateCopies.oneEach(searches, id: \.id, lastModified: \.lastModified)
+    }
+
+    /// Every stored copy of the saved search `id`, the one last modified first, and copies
+    /// modified at the same moment in the order the store returns them. Almost always one.
+    ///
+    /// A rename and a run's watermark are written to each, so the copies keep one name and one
+    /// baseline, and a delete removes each, so a deleted search does not come back from a copy.
+    ///
+    /// - Parameters:
+    ///   - id: The saved search's id.
+    ///   - context: The context to read.
+    /// - Returns: The copies; none when the search is gone or the store cannot be read.
+    static func copies(of id: UUID, in context: ModelContext) -> [SavedSearch] {
+        let descriptor = FetchDescriptor<SavedSearch>(predicate: #Predicate { $0.id == id })
+        let found = (try? context.fetch(descriptor)) ?? []
+        return found.enumerated().sorted { lhs, rhs in
+            let l = lhs.element.lastModified ?? .distantPast
+            let r = rhs.element.lastModified ?? .distantPast
+            return l != r ? l > r : lhs.offset < rhs.offset
+        }.map(\.element)
+    }
+
+    /// Deletes `search` and every other copy stored under its id, so it does not come back from one
+    /// that remains. The caller saves.
+    ///
+    /// - Parameters:
+    ///   - search: The saved search to delete.
+    ///   - context: The context `search` belongs to.
+    static func deleteEveryCopy(of search: SavedSearch, in context: ModelContext) {
+        for copy in copies(of: search.id, in: context)
+        where copy.persistentModelID != search.persistentModelID {
+            context.delete(copy)
+        }
+        context.delete(search)
+    }
+
+    /// Renames `search` and every other copy stored under its id, so the copies keep one name and a
+    /// run recorded on another device's copy, which makes that copy the one last modified, cannot
+    /// bring the old name back. The caller saves.
+    ///
+    /// - Parameters:
+    ///   - search: The saved search to rename.
+    ///   - name: The new name.
+    ///   - context: The context `search` belongs to.
+    static func rename(_ search: SavedSearch, to name: String, in context: ModelContext) {
+        for copy in copies(of: search.id, in: context) { copy.name = name }
+        search.name = name
     }
 }
 
