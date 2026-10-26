@@ -60,6 +60,12 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
     - A git tag name cannot contain a space, so "version 1.0" is spelled `version-1.0`, as "build 51" is `build-51`.
     - This refines decision 87, which set the two build numbers and named no tag. Until this correction R3 put `build-51` on the submission.
 
+**The owner's instruction of 2026-10-26**, four days after the TestFlight upload:
+
+100. **The four issues filed on 2026-10-26 are one lane, L8, taken next**: #1796 to #1799. The owner's words: "read issues 1796, 1797, 1798, and 1798 and include a lane in the plan of record to address them next." They name 1798 twice; the fourth is taken to be #1799, the fourth issue filed that day.
+    - L8 comes before R3. None of the four carries the *before App Store submission* label that decision 84's nine carry; "next" is what puts them ahead of the submission.
+    - When L8 has merged, the owner decides whether its fixes go to TestFlight before R3. If they do, that upload is numbered between 1776 and 1861 (decision 87), and the bump follows `CLAUDE.md`'s procedure, as R2's did.
+
 **Rules carried from the earlier plans and `CLAUDE.md`.** Each is the owner's.
 - **The queue is serial.** The next pull request is pushed when the owner has merged the one before. Auto-merge is never enabled.
 - **One fresh session per pull request**, started from this plan and the issue numbers, and ended at the merge.
@@ -88,6 +94,7 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
 | L7 | The launch kit, the composer and the check copy's README | #1763 |
 | R1 | The retake sitting (decision 88) | — |
 | R2 | The TestFlight pass, 1.0 (1776) (decision 87) | — |
+| L8 | Four issues filed after the upload: the Mac's launch offline, the ranking chart's taps, the corpus word cloud on an iPad, and the timeline's earlier citations (decision 100) | #1796, #1797, #1798, #1799 |
 | R3 | The submission, 1.0 (1861) (decision 87) | — |
 
 - **L1 goes first**: it is cheap, and its fixes show on captured screens. L2 to L6 follow in any order the owner prefers. L7 is tools and copy; it can come any time before R1, since the composer's stamp shapes the store frames.
@@ -123,7 +130,7 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
   - Bump to 1.0 (1776) by `CLAUDE.md`'s procedure (`project.yml`, `project.pbxproj`, the README line and its mirror), and rewrite both TestFlight notes for 1776.
   - Before the archive: `./Scripts/fetch-llama-dsyms.sh` and `./Scripts/check_cloudkit_schema.py`.
   - The owner archives, uploads to TestFlight, tags the 1776 commit `build-51` after the upload (decision 99), and makes the device pass on an iPhone, an iPad and the Mac. A defect found goes to a lane, and the next TestFlight upload takes a number between 1776 and 1861 (decision 87).
-  - **R2 run on 2026-10-22** from `v2` at `0f5c8ef5` (R1 merged), on `claude/r2-testflight-1776-5d0908`, and **opened as #1782** on the owner's word of 2026-10-22; not yet merged. **The tree reads 1.0 (1776)** from `c96cad13`, the final code: `CURRENT_PROJECT_VERSION` in `project.yml`'s three targets and `project.pbxproj`'s nine occurrences, the README's line and its mirror, and an amendment-log bullet. **Both TestFlight notes are rewritten for first-time testers**, describing the app as it is, with the release-candidate flag at the head and the build-50 re-index named; every fix is in the one line (iOS 3,893 and Mac 3,882 characters). **The checklist at the final code, each figure A19's or explained:**
+  - **R2 run on 2026-10-22** from `v2` at `0f5c8ef5` (R1 merged), on `claude/r2-testflight-1776-5d0908`, and **opened as #1782** on the owner's word of 2026-10-22; **merged as `8cb1c868`**. **The tree reads 1.0 (1776)** from `c96cad13`, the final code: `CURRENT_PROJECT_VERSION` in `project.yml`'s three targets and `project.pbxproj`'s nine occurrences, the README's line and its mirror, and an amendment-log bullet. **Both TestFlight notes are rewritten for first-time testers**, describing the app as it is, with the release-candidate flag at the head and the build-50 re-index named; every fix is in the one line (iOS 3,893 and Mac 3,882 characters). **The checklist at the final code, each figure A19's or explained:**
     - the clean `build-for-testing` from an empty folder: 177 s, the two known residues and nothing else;
     - the full unit target on iPhone 17 under iOS 27.0: 7,606 tests in 900 suites with #1606's six known issues (A19's 7,540 in 891, with the lanes' tests since);
     - `swift test`: 3,030 tests in 361 suites, 38 runs, none failed (#1771's figure);
@@ -144,6 +151,21 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
     5. make the device pass on an iPhone, an iPad and the Mac.
 
     A defect the pass finds goes to a lane, and the next upload takes a number between 1776 and 1861 (decision 87). Otherwise R3 follows.
+  - **The upload, 2026-10-22.** App Store Connect refused 1.0 (1776)'s Mac notes for an invalid character, and #1783 (`f0479037`) put into words the three controls the notes had named by symbols no accepted upload carried: ⚙, ✕ and ⓘ. The owner tagged `f0479037` `build-51`, "TestFlight 1.0 (1776), both platforms" (decision 99). The four issues the owner filed on 2026-10-26 are L8 (decision 100).
+- **L8, four issues filed after the upload** (decision 100). One fresh session and one pull request: a commit for each issue, then a docs commit, under §0's rules. None of the four changes what indexing stores, so no index version; none adds a `@Model` or a stored property, so no CloudKit change. If #1799's lookup is made the kit's (beside `PageLink`, in `FRUSCoreKit/TEI/FRUSURLScheme.swift`), `swift build --target FRUSCoreKit` and `swift test` are owed. Each issue's body is a line or two, so this bullet is the brief, read from the code at `v2` `907febd2`:
+  - **#1796, a Mac launch with no network stalls.** Every platform's main window is `ContentViewWithSplash`. Its one resolve after the first frame raises the `.cloudKitImport` splash when a CloudKit event of any phase is in flight and no import has yet ended this launch (`CloudSurfaceArbiter.resolve`); `cloudKitSyncState` turns `.syncing` at the start of a setup, an import or an export. The splash lifts only when `hasInitialProjectSyncSettled` turns true, which only an ended `import` event sets, and deliberately "not on a timer" (`ContentView.swift`). So a launch that resolves while an event runs, and then sees no import end, keeps the splash over the window for as long as the app runs, and a launch with no network can be that launch. This is the first suspect, not a finding.
+    - Measure first. Read the unified log of the launch the issue reports (the app's `Logger` lines and `NSCloudKitMirroringDelegate`'s), read-only. Then take the owner's launches with the network off (a session changes no system setting), on the Mac and on an iPhone or iPad, whose window is the same.
+    - The fix lets the launch through whatever sync does: the splash lifts when the event it waited on ends with no import begun, or after a bound. `CloudSurfaceArbiterTests` takes the sequence: setup starts, the resolve, setup fails, no import.
+    - The issue also asks that an iCloud time-out or failure not hold the launch. Walk one launch signed out of iCloud and one whose sync fails, and read `bootSearchInfrastructureOnce()` and `checkCloudKitHealth()` for any other wait on the network.
+  - **#1797, the Most-Referenced Documents chart opens nothing.** The subtitle over both displays says "Select a document to open it" (`crossRefAnalytics.ranking.subtitle`), but only the list's rows are buttons (`rankingTable`, which calls `openDocument(volumeId:documentId:header:)`). `CrossReferenceRankingChart` has no tap, selection or overlay, on iOS or the Mac. Make a bar and its axis label open the document as its row does, on both platforms, and let VoiceOver open it too. The exported figure draws the same view (#1473), so the action stays out of the figure. A test in `CrossReferenceRankingChartTests` (`AnalyticsRotationTests.swift`) taps a bar and finds the document open, and `CLAUDE.md`'s row for the suite takes the new count.
+  - **#1798, the corpus word cloud crashed an M1 iPad Pro.** Browse ▸ Analysis Tools ▸ Corpus Word Cloud (`BrowserView.swift`) and the cloud's own Scope ▸ Entire Corpus count every document in the library on the device. `WordFrequencyService.topTerms` reads their text 400 at a time and tags it with WordCloudKit's `NLTagger` tokenizer, with no autorelease pool. The generator that counts the corpus with that kit recorded what no pool costs (`CloudVectorsRunner`'s "Memory" note, and `CloudVectorsGenerator`'s entry in `Generators-Runbook.md`): a 24.9 GB footprint over the corpus without one, and 893 MB with one for each document. Whether Swift's executor drains the app's objects at each chunk's `await` is for the measurement to settle.
+    - Measure first, as the issue asks: a corpus count's peak footprint and its time for each lens, on a simulator holding a full library and read from the host, and the owner's report from the iPad, where a `JetsamEvent` report means memory.
+    - Then fix in this order. First a pool for each document, as the runner has. Only if the count still does not fit an iPad, take the corpus scope off iOS as the issue proposes, with Browse's entry, the scope menu and both manuals brought to match; the Mac keeps it. The subseries and subject clouds count the same way and take the same fix.
+  - **#1799, the timeline leaves out what the Long Telegram cites.** The screenshot is `frus1946v06` d475, of 22 February 1946. Its note 45 cites 1943 vol. III, pp. 531–532 and 542–543: two ranges across documents of 19 May to 11 June 1943, which rule C leaves on the volume as `pg_531`, `pg_532`, `pg_542` and `pg_543`. The graph draws each as an outbound node with no title and Open disabled (`Cross-Volume-Page-Citations-Assessment-2026-10-20.md` §10, side finding 2). `CrossReferenceStore.graph` gives the node a placeholder with no date, and `timelineLayout` parks every undated node in the Undated column, so the four never reach the axis, which runs from the focus to 1 April 1946.
+    - The layout already starts the axis at the earliest dated node, so the fix is in the node, not the axis. Date an outbound page node by the documents on its page: from the device's page index when the volume is on the device, else from `cited-page-map.json`'s facts where it lists the page, else from the volume's own range in `manifest.json`, drawn at the precision it has (1943 vol. III's runs from 30 May 1942 to 24 March 1944). Title it by its volume and pages, as "1943, vol. III, pp. 531–532". This is §3's untitled outbound page node, which L8 takes.
+    - An outbound document in a volume not on the device, and an inbound one from such a volume (`resolved-edge-index.json` carries no dates), park the same way and take the same fallback.
+    - A18b's run left 19,213 of the 48,604 page references into other volumes on the volume: 10,633 "ff.", 8,326 ends of ranges across documents, 227 single pages naming nothing and 27 broken or outside the catalogue. Measure, over a full library and over one holding only the citing volume, how many nodes park as Undated before the fix and after it, and how many each source dates. Walk d475 on an iPhone and on the Mac, with 1943 vol. III present and absent.
+  - The lane's log entry lists the captures it changes, and decision 88 has them retaken before R3.
 - **R3, the submission.** Restore 1.0 (1861) by the same procedure. The owner archives, uploads, tags `version-1.0` on that commit (decision 99), and submits to App Review with §2's answers.
 
 ---
@@ -171,7 +193,7 @@ The repository holds drafts for each.
   - **#1723, A7: App Intents and Siri.** A7a covers the entities, the four intents and the copy. A7b covers the Spotlight association with `expirationDate` and a `CSSearchableIndexDelegate`, which closes two Spotlight findings: donated items expire after 31 days, and nothing answers Spotlight's requests to reindex. The plan is `App-Intents-Siri-Assessment-2026-10-18.md` §5, and the owner's device check (Spike Reader) decides A7b's place.
   - **Cross-references:**
     - #1764, the network at three hops;
-    - the graph's untitled outbound page node;
+    - the graph's untitled outbound page node, which L8 takes with #1799 (decision 100);
     - six cross-volume references by id to a section's row, missing from the bundled edge index (A18b).
   - **#1765, summaries:** the Long Telegram refused, and the Mac's stale collection preview.
   - **Numbers and states that read wrong:**
@@ -195,6 +217,7 @@ The repository holds drafts for each.
 ## 4. Waiting on the owner
 
 - §2's submission steps, and R2's TestFlight device pass.
+- **For L8** (decision 100): #1798's report from the M1 iPad Pro (Settings ▸ Privacy & Security ▸ Analytics & Improvements ▸ Analytics Data, or Xcode's Organizer), and #1796's launches with the network off, since a session changes no system setting.
 - **For #1620** (decision 72): install iOS 27.1's simulator runtime. A session then re-runs the affected suites, starting from the Stage Manager switch (#1620's comment of 2026-10-21).
 - **For A7** (#1723): the device check with Spike Reader. It is `App-Intents-Siri-Assessment-2026-10-18.md` §4, and `jolly-newton-d5828b`'s untracked `A6Spike/` holds the app.
 - **The manual review**, past build 52 (decision 94). `Manual-Revisions-Pending.md` and `Manual-Update-Build-49-Owner-Review.md` are its inputs and close with it.
