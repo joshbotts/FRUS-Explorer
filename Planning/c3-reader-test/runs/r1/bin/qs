@@ -1,0 +1,15 @@
+#!/bin/bash
+# qs [sqlite3 options] "SQL" -- like q, but the derived scope table is attached as schema s (work/scope.db, read-only). Logged as one re-runnable line.
+DB=/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db
+SC=/Users/jbotts/frus-analysis/c3/runs/r1/work/scope.db
+LOG=/Users/jbotts/frus-analysis/c3/runs/r1/queries.log
+n=$#
+SQL="${!n}"
+OPTS=("${@:1:$((n-1))}")
+optstr=""
+for o in "${OPTS[@]}"; do optstr+="$o "; done
+FULL="ATTACH 'file:$SC?mode=ro' AS s; $SQL"
+one=$(printf '%s' "$FULL" | tr '\n\t' '  ' | sed -E 's/  +/ /g')
+esc=$(printf '%s' "$one" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\$/\\$/g' -e 's/`/\\`/g')
+printf 'sqlite3 -readonly %s%s "%s"\n' "$optstr" "$DB" "$esc" >> "$LOG"
+exec sqlite3 -readonly "${OPTS[@]}" "$DB" "$FULL"

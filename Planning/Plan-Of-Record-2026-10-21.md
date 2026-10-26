@@ -44,7 +44,7 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
 88. **A retake sitting follows the P0 fixes, before submission**, for every screen the fixes change, in the manuals and the store frames.
 89. **The listing launches without App Previews.** They come in a later update (Visual Marketing Plan step 12).
 90. **Build 52's order is decided after submission**, by the next plan. §3 lists its candidates.
-91. **C-3 runs after submission and before build 52 starts.**
+91. **C-3 runs after submission and before build 52 starts.** *Overtaken 2026-10-25: the owner started it before the submission ("start C-3 now with build 1776"), on the Mac, with the TestFlight build's index; it ran to completion the same night, with three replicates under a stop line the owner raised from 69% to 75% while it ran. Results: `C-3-Results-2026-10-26.md`; the guide's §3a (v1.34) carries the table.*
 92. **#234's documents stay in place as deferred.** `CLAUDE.md`, kit code and `tools/semantic-harvest/` cite them.
 93. **The cross-platform review's leftovers that were not already filed are declined.** Its folder is marked complete in place; two app files cite it.
 94. **The manual review, and taking the *AI Generated* notice off, wait past build 52.** Decision 27 stands for 1.0.
@@ -166,7 +166,7 @@ The repository holds drafts for each.
 
 ## 3. After submission
 
-- **C-3, the agentic analysis measurements** (decision 91): before build 52 starts, on the owner's Mac. Its design is `C-3-Reader-Test-Design.md`, with its budget rule; the harness facts are in `Agentic-Harness-Runbook.md`.
+- **C-3, the agentic analysis measurements** (decision 91): before build 52 starts, on the owner's Mac. Its design is `C-3-Reader-Test-Design.md`, with its budget rule; the harness facts are in `Agentic-Harness-Runbook.md`. **Done 2026-10-25/26**, ahead of the submission on the owner's word: `C-3-Results-2026-10-26.md`, record in `c3-reader-test/`, the guide's §3a. Opus 5.5 at `medium` is the fastest and the best value, Sonnet 5.5 at `high` the highest quality; the reader-facing block section held in 31 of 36 reader items, the trace table (O2) its weak rule. The next plan decides whether the section is called adopted and what a second question looks like.
 - **Build 52's candidates.** Their order is the next plan's (decision 90).
   - **#1723, A7: App Intents and Siri.** A7a covers the entities, the four intents and the copy. A7b covers the Spotlight association with `expirationDate` and a `CSSearchableIndexDelegate`, which closes two Spotlight findings: donated items expire after 31 days, and nothing answers Spotlight's requests to reindex. The plan is `App-Intents-Siri-Assessment-2026-10-18.md` §5, and the owner's device check (Spike Reader) decides A7b's place.
   - **Cross-references:**

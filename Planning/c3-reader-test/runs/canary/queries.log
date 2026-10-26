@@ -1,0 +1,5 @@
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "BEGIN; CREATE TABLE zz(x); ROLLBACK;"
+ls "<volumes dir>"/*.xml | wc -l
+python3 -c manifest.json type/len
+sqlite3 "file:...?mode=ro" "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH 'recognition';"

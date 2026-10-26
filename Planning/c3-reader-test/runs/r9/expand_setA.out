@@ -1,0 +1,75 @@
+frus1895p1 d244 d247 whole 4 -> 4 Ecuador 1895 de facto government
+frus1899 d765 d810 whole 46 -> 46 Venezuela 1899 revolution, de facto government
+frus1900 d525 d533 whole 9 -> 9 Colombia 1900 new government
+frus1900 d538 d541 whole 4 -> 4 Dominican Republic 1900 new government
+frus1903 d348 d351 whole 4 -> 4 Dominican Republic 1903 revolution
+frus1903 d553 d557 whole 5 -> 5 Honduras 1903 revolution
+frus1904 d227 d233 whole 7 -> 7 Dominican Republic 1904 provisional government
+frus1907p2 d20 d30 whole 11 -> 11 Honduras 1907 provisional government
+frus1911 d220 d224 whole 5 -> 5 Dominican Republic 1911 assassination of Caceres, Victoria
+frus1911 d324 d360 whole 37 -> 37 Haiti 1911 Leconte
+frus1911 d361 d401 whole 41 -> 41 Honduras 1911 revolution, Bertrand, Bonilla
+frus1911 d454 d792 fts 339 -> 8 Mexico 1911 Madero revolution, de la Barra recognized
+frus1911 d931 d971 whole 41 -> 41 Nicaragua 1911 Estrada
+frus1912 d569 d599 fts 31 -> 1 Ecuador 1912 insurrection
+frus1912 d731 d734 whole 4 -> 4 Haiti 1912 Auguste
+frus1912 d1692 d1716 whole 25 -> 25 Paraguay 1911-12 coups and successions
+frus1913 d506 d506 whole 1 -> 1 Ecuador 1913 Plaza
+frus1913 d776 d1115 fts 340 -> 86 Mexico 1913 Huerta seizure
+frus1913 d1483 d1498 fts 16 -> 3 Peru 1913 Leguia deportation
+frus1914 d215 d369 fts 155 -> 11 Dominican Republic 1914 revolution, Baez, Jimenez
+frus1914 d487 d586 fts 100 -> 23 Haiti 1914 Zamor, Theodore conditions precedent
+frus1914 d651 d984 fts 334 -> 50 Mexico 1914 Constitutionalist revolution, Carranza
+frus1914 d1795 d1813 whole 19 -> 19 Peru 1914 junta, Benavides
+frus1915 d492 d583 fts 92 -> 8 Haiti 1915 Dartiguenave
+frus1915 d792 d1027 fts 236 -> 41 Mexico 1915 Carranza de facto recognition
+frus1916 d201 d269 whole 69 -> 69 Dominican Republic 1916 Henriquez refused
+frus1916 d551 d826 fts 276 -> 13 Mexico 1916 de facto government
+frus1917 d365 d430 whole 66 -> 66 Costa Rica 1917 Tinoco refused
+frus1919v01 d857 d894 whole 38 -> 38 Costa Rica 1919 Quiros refused
+frus1919v02 d317 d350 whole 34 -> 34 Honduras 1919 Bertrand, Lopez Gutierrez
+frus1919v02 d692 d730 whole 39 -> 39 Peru 1919 Leguia overthrow of Pardo
+frus1920v01 d371 d401 whole 31 -> 31 Bolivia 1920 coup
+frus1920v01 d873 d876 whole 4 -> 4 Costa Rica 1920 recognized
+frus1920v02 d607 d669 whole 63 -> 63 Guatemala 1920 fall of Estrada Cabrera
+frus1920v03 d190 d256 whole 67 -> 67 Mexico 1920 provisional government
+frus1920v03 d408 d413 whole 6 -> 6 Peru 1920 Leguia recognized
+frus1921v01 d235 d250 whole 16 -> 16 Bolivia 1921 Saavedra
+frus1921v02 d340 d353 whole 14 -> 14 Mexico 1921 Obregon, treaty
+frus1921v02 d354 d377 whole 24 -> 24 Mexico 1921 other governments
+frus1922v02 d381 d387 whole 7 -> 7 Guatemala 1922 Orellana
+frus1922v02 d569 d580 whole 12 -> 12 Mexico 1922 Obregon
+frus1922v02 d581 d587 whole 7 -> 7 Mexico 1922 other governments
+frus1923v02 d471 d494 whole 24 -> 24 Mexico 1923 Obregon recognized
+frus1925v02 d51 d54 whole 4 -> 4 Ecuador 1925 withheld
+frus1928v02 d741 d742 whole 2 -> 2 Ecuador 1928 de jure
+frus1931v02 d405 d428 whole 24 -> 24 Guatemala 1931 constitutional government
+frus1932v05 d617 d684 whole 68 -> 68 El Salvador 1932 Martinez refused
+frus1933v05 d631 d640 whole 10 -> 10 El Salvador 1933 Martinez refused
+frus1934v05 d74 d104 whole 31 -> 31 Cuba 1934 provisional government
+frus1934v05 d197 d258 whole 62 -> 62 El Salvador 1934 Martinez recognized
+frus1936v05 d105 d112 whole 8 -> 8 General 1936 abandoning article II of the 1923 treaty
+frus1937v05 d255 d287 whole 33 -> 33 Bolivia 1937 Busch
+frus1937v05 d333 d340 whole 8 -> 8 Brazil 1937 Vargas, no formal act
+frus1937v05 d471 d490 whole 20 -> 20 Ecuador 1937 Enriquez
+frus1937v05 d687 d736 whole 50 -> 50 Paraguay 1937 Paiva
+frus1940v05 d874 d880 whole 7 -> 7 Cuba 1940 refusal to indicate
+frus1943v05 d328 d344 whole 17 -> 17 Argentina 1943 Ramirez
+frus1943v05 d483 d491 whole 9 -> 9 Bolivia 1943 MNR regime not recognized
+frus1944v07 d211 d246 whole 36 -> 36 Argentina 1944 Farrell withheld
+frus1944v07 d383 d443 whole 61 -> 61 Bolivia 1944 junta recognized
+frus1944v07 d1003 d1025 whole 23 -> 23 Ecuador 1944 new government
+frus1944v07 d1065 d1103 whole 39 -> 39 El Salvador 1944 revolutions
+frus1944v07 d1119 d1146 whole 28 -> 28 Guatemala 1944 revolution
+frus1945v09 d242 d306 whole 65 -> 65 Argentina 1945 Farrell recognition and deterioration
+frus1945v09 d875 d883 whole 9 -> 9 El Salvador 1945 Aguirre y Salinas
+frus1945v09 d1157 d1184 whole 28 -> 28 Venezuela 1945 junta
+frus1946v11 d272 d324 whole 53 -> 53 Bolivia 1946 revolution
+frus1946v11 d768 d775 whole 8 -> 8 Haiti 1946 new government
+frus1947v08 d592 d605 whole 14 -> 14 Ecuador 1947 Mancheno, Suarez, Arosemena
+frus1947v08 d716 d755 whole 40 -> 39 Nicaragua 1947 nonrecognition
+frus1950v02 d476 d478 whole 3 -> 3 Haiti 1950 military junta
+frus1876 d214 d232 fts 19 -> 3 Mexico 1876 Diaz revolution
+frus1877 d207 d236 fts 30 -> 15 Mexico 1877 Diaz recognition withheld
+frus1878 d333 d391 fts 59 -> 26 Mexico 1878 Diaz recognized
+TOTAL setA pairs 1831

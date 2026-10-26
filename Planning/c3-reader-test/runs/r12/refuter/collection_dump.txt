@@ -1,0 +1,92 @@
+[0] HEADING: {"text": "The inherited test, 1877–1913: control, assent, and the treaties", "level": 1}
+[1] PROSE: {"text": "These documents give the rule the twentieth century inherited and show it applied: Mexico under Porfirio Díaz (1877–78), Ecuador (1895), Venezuela (1899), Colombia (1900) and Nicaragua (1911), plus a general statement of the three conditions written in 1913. The thread is what the Department wrote down as the test, and what it asked a new regime to do beyond meeting it."}
+[2] DOC frus1877/d222 notes=1
+[3] DOC frus1878/d344 notes=1
+[4] EXCERPT frus1878/d344: the Government of the United States before recognizing General Diaz as the President of Mexico waited to be assured that his administration was approved by the Mexican people, and was possessed of due stability and animated by a disposition to comply with the rules of international comity and the obligations of treaties.
+[5] DOC frus1895p1/d246 notes=1
+[6] DOC frus1899/d792 notes=1
+[7] DOC frus1900/d530 notes=1
+[8] EXCERPT frus1900/d530: the rule of the United States is to defer recognition of another executive in its place until it shall appear that it is in possession of the machinery of the state, administering government with the assent of the people thereof and without substantial resistance to its authority, and that it is in a position to fulfill all the international obligations and responsibilities incumbent upon a sovereign state under treaties and international law.
+[9] DOC frus1911/d933 notes=1
+[10] EXCERPT frus1911/d933: The Government of Nicaragua is to proceed at the earliest possible date to the signature of a convention with the United States which shall authorize the contemplated bankers’ loan contract, the terms of the latter to be approved thereafter by both Governments, and to make provision, among other things, for the service of the loan secured by a certain percentage of the customs receipts of the Republic collected in a manner satisfactory to both Governments.
+[11] DOC frus1913/d89 notes=1
+[12] HEADING: {"text": "Wilson to Hughes, 1913–1928: constitutional title, elections, and treaty guarantees", "level": 1}
+[13] PROSE: {"text": "Here the Department adds a constitutional test and begins asking for specific things first: an election in Mexico in 1913, a legally elected government in Costa Rica in 1917, elections and a three-power understanding for Bolivia in 1920–21, and a property treaty from Mexico in 1921. The Ecuador documents show recognition withheld in form for three years while business went on."}
+[14] DOC frus1913/d7 notes=1
+[15] EXCERPT frus1913/d7: based upon law, not upon arbitrary or irregular force
+[16] DOC frus1913/d1028 notes=1
+[17] DOC frus1917/d379 notes=1
+[18] EXCERPT frus1917/d379: the desire which this Government has of seeing the will of the people prevail in governmental matters in Costa Rica has forced it to the conclusion that no Government except such as may be elected legally and established according to the Constitution shall be considered entitled to recognition.
+[19] DOC frus1917/d407 notes=1
+[20] DOC frus1920v01/d387 notes=1
+[21] DOC frus1920v01/d391 notes=1
+[22] DOC frus1921v01/d238 notes=1
+[23] EXCERPT frus1921v01/d238: has now determined to extend recognition to the existing Government of Bolivia, not as the de facto Government, but as the Constitutional Government of that Republic.
+[24] DOC frus1921v02/d344 notes=1
+[25] EXCERPT frus1921v02/d344: In short, when it appears that there is a government in Mexico willing to bind itself to the discharge of primary international obligations, concurrently with that act its recognition will take place.
+[26] DOC frus1921v02/d349 notes=1
+[27] DOC frus1925v02/d54 notes=1
+[28] DOC frus1928v02/d741 notes=1
+[29] HEADING: {"text": "A treaty rule for Central America, enforced and then abandoned, 1923–1936", "level": 1}
+[30] PROSE: {"text": "These documents follow Article II of the 1923 Central American treaty, which the United States was not a party to but treated as its own policy: Hughes's 1923 statement, its use against General Martínez of El Salvador in 1931, the 1934 recognition after the treaty was denounced, and the 1936 decision to stop being guided by it."}
+[31] DOC frus1923v02/d345 notes=1
+[32] EXCERPT frus1923v02/d345: in the most hearty accord
+[33] DOC frus1930v01/d375 notes=1
+[34] EXCERPT frus1930v01/d375: will not recognize any other Government which may come into power in any of the five Republics through a coup d’état or a revolution against a recognized Government, so long as the freely elected representatives of the people thereof have not constitutionally reorganized the country.
+[35] DOC frus1931v02/d232 notes=1
+[36] EXCERPT frus1931v02/d232: The United States Government, therefore, will not recognize General Martínez as President of Salvador.
+[37] DOC frus1934v05/d199 notes=1
+[38] DOC frus1934v05/d255 notes=1
+[39] DOC frus1934v05/d257 notes=1
+[40] DOC frus1936v05/d109 notes=1
+[41] DOC frus1936v05/d112 notes=1
+[42] EXCERPT frus1936v05/d112: the United States should no longer be guided by Article II of the General Treaty of Peace and Amity of 1923 in extending or denying recognition to Governments in Central America, nor should it endeavor to utilize that Treaty as justification for any other action it may take or fail to take
+[43] HEADING: {"text": "Cuba, the Good Neighbor, and the wartime consultation test, 1933–1946", "level": 1}
+[44] PROSE: {"text": "Under Roosevelt the Department states its Cuban criteria in plain words, then in the war it adds a hemispheric test: consult the other American republics and ask whether Axis influence helped the coup. The Argentine and Bolivian files show what it asked; the El Salvador letter of 1945 shows a Department officer arguing that recognition cannot be a weapon."}
+[45] DOC frus1933v05/d508 notes=1
+[46] DOC frus1934v05/d85 notes=1
+[47] EXCERPT frus1934v05/d85: This Government will recognize a Cuban provisional Government which is substantially supported by the Cuban people and is able to maintain law, order and the normal functions of Government.
+[48] DOC frus1934v05/d103 notes=1
+[49] DOC frus1943v05/d334 notes=1
+[50] DOC frus1943v05/d486 notes=1
+[51] DOC frus1944v07/d388 notes=1
+[52] DOC frus1944v07/d226 notes=1
+[53] EXCERPT frus1944v07/d226: the road would be open for reconsideration of our attitude on recognition: 1. Thorough and effective collaboration to foil Axis activities in the Argentine, particularly those relating to espionage, smuggling, and telecommunications; 2. Appointment of new Cabinet Ministers, particularly in Foreign Relations and Interior, that would inspire confidence of collaboration for hemisphere security; and 3. Fixing of a date for general elections.
+[54] DOC frus1945v09/d883 notes=1
+[55] EXCERPT frus1945v09/d883: There are certain well established requirements of international law for recognition: (a) Control of the machinery of Government; (b) General popular support without active opposition; and (c) willingness and ability to observe international obligations. Due to the war, the Committee for Political Defense of Montevideo established a fourth—whereby when a Government came into power through force, the countries of the hemisphere would consult to determine whether its assumption to power demonstrated direct or indirect Axis influence.
+[56] DOC frus1945v09/d251 notes=1
+[57] DOC frus1945v09/d254 notes=1
+[58] DOC frus1946v11/d322 notes=1
+[59] HEADING: {"text": "1948: recognition separated from approval, and from leverage", "level": 1}
+[60] PROSE: {"text": "The Bogotá conference of 1948 and the Policy Planning Staff's paper of the same spring make explicit what the practice had been becoming: recognition or resumption of relations says nothing about the regime's domestic policy and should not be withheld as a weapon. Venezuela in December 1948 is the test case."}
+[61] DOC frus1948v09/d7 notes=1
+[62] EXCERPT frus1948v09/d7: The recognition policy of the Department should be based upon the three following factors, any or all of which would be applied in a given case according to U.S. national interests: (a) de facto control of the territory and the administrative machinery of State, including the maintenance of public order; (b) the ability and willingness of a government to discharge its international obligations; (c) general acquiescence of the people of a country in the government in power.
+[63] DOC frus1948v09/d89 notes=1
+[64] DOC frus1948v09/d115 notes=1
+[65] EXCERPT frus1948v09/d115: non-recognition is not a suitable weapon for influencing the course of internal events in Venezuela at this time.
+[66] DOC frus1948v09/d118 notes=1
+[67] DOC frus1948v09/d119 notes=1
+[68] DOC frus1949v02/d450 notes=1
+[69] DOC frus1951v02/d688 notes=1
+[70] EXCERPT frus1951v02/d688: From appearances to date the Junta has met the criteria which the United States has applied in other recent cases involving the recognition of Latin American governments which have come to power through irregular procedures. It has established its authority over Bolivian territory, with the substantial acquiescence of the people, it has declared its intent to honor Bolivia’s international obligations, and its assumption of power has not been due to any external influences.
+[71] EXCERPT frus1951v02/d688: applied in other recent cases
+[72] HEADING: {"text": "From prompt recognition to suspended relations and back, 1955–1973", "level": 1}
+[73] PROSE: {"text": "In the 1950s the Department recognized military and revolutionary regimes quickly. Under Kennedy it suspended relations and set conditions, in Peru in 1962 and in the Dominican Republic and Honduras in 1963, then recognized when leverage had run out; under Johnson it added the inter-American criteria and private political pledges; in 1973 it fell back on recognizing governments rather th
+[74] DOC frus1955-57v07/d193 notes=1
+[75] DOC frus1955-57v07/d465 notes=1
+[76] DOC frus1958-60v06/d217 notes=1
+[77] DOC frus1961-63v12/d416 notes=1
+[78] DOC frus1961-63v12/d423 notes=1
+[79] EXCERPT frus1961-63v12/d423: 1. Guarantee of continued civil liberties. 2. Guarantee of free and fair elections, preferably before June 9 but at no later date, with full rights to all parties under Constitution, and with guarantee that Armed Forces will respect results those elections. 3. Offer by Junta, as indication of good faith, to invite OAS observers during electoral processes. This concession would particularly strengthen Junta’s position with respect continental opinion and would also facilitate US recognition.
+[80] DOC frus1961-63v12/d359 notes=1
+[81] DOC frus1961-63v12/d363 notes=1
+[82] EXCERPT frus1961-63v12/d363: virtually nil
+[83] DOC frus1964-68v31/d72 notes=1
+[84] DOC frus1964-68v31/d152 notes=1
+[85] DOC frus1964-68v31/d132 notes=1
+[86] DOC frus1964-68v31/d139 notes=1
+[87] EXCERPT frus1964-68v31/d139: The classical criteria for recognition (i.e., general control of the country and pledge to honor international obligations) have been met. We are still awaiting public affirmation of the OAS criteria: respect for human rights, peaceful settlement of disputes, and eventual return to constitutional government.
+[88] DOC frus1969-76v21/d348 notes=1
+[89] EXCERPT frus1969-76v21/d348: we should take the public position that we recognize governments, not heads of government, and that question of recognition has not arisen
+[90] PROSE: {"text": "Threads I could not follow. (1) The 1861 to 1894 volumes: a loose search finds 445 documents on recognition and revolution in a Latin American country across 55 of 57 volumes, and I read only two (Mexico, 1877 and 1878). (2) The Mexican cases of 1913 to 1923 (Huerta, Carranza, Obregón) run to hundreds of documents in the chapter set; I read the points where policy was stated and not the 
+[91] GENERATED: {"generatedBlockType": "archivalSources"}

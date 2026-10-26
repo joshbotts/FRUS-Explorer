@@ -1,0 +1,44 @@
+
+##### central-files-index.json: top type dict
+  countrySeries: list len=12
+  generated: str = '2026-09-10'
+  lotFiles: list len=1070
+  numericalFile: dict len=3
+  schemaVersion: int = '3'
+lotFiles type: list len 1070
+lotFiles sample: [{"catalogURL": "https://catalog.archives.gov/id/2124670", "hmsMlrEntryNumbers": ["A1 1457"], "levelOfDescription": "series", "lotNumber": "428", "matchType": "control", "naId": "2124670", "recordGroup": "59", "title": "Subject Files Relating to Palestine, Political, Security, and Trusteeship Matters"}]
+countrySeries type: list len 12
+countrySeries sample: [{"category": "diplomaticDespatches", "displayName": "Diplomatic Despatches", "rolls": [{"catalogURL": "https://catalog.archives.gov/id/189346553", "endISO": "1887-05-31", "fileUnitNaId": "177380755", "fileUnitTitle": "Despatches from U.S. Ministers to Peru, 1826-1906", "geoKeys": ["peru"], "naId": "189346553", "startISO": "1318-11-01", "title": "Nov. 1, 11186-May 31, 1887"}, {"catalogURL": "https://catalog.archives.gov/id/188667460", "endISO": "1906-01-01", "fileUnitNaId": "177380727", "fileUnitTitle": "Despatches from U.S. Ministers to France, 1789-1906", "geoKeys": ["france"], "naId": "188667460", "startISO": "1789-01-01", "title": "Register: 1789-1906"}, {"catalogURL": "https://catalog.archives.gov/id/188667987", "endISO": "1790-12-30", "fileUnitNaId": "177380727", "fileUnitTitle": "Despatches from U.S. Ministers to France, 1789-1906", "geoKeys": ["france"], "naId": "188667987", "sta
+
+##### series-facts-index.json: top type dict
+  byNaId: dict len=698
+  findingAidTypes: list len=3
+  generated: str = '2026-09-10'
+  headings: list len=398
+  legend: dict len=2
+  referenceUnits: list len=2
+  restrictions: list len=8
+  schemaVersion: int = '3'
+  statuses: list len=5
+  useRestrictions: list len=2
+legend: {"keys": {"ar": {"field": "accessRestrictions", "into": "restrictions", "kind": "indexList"}, "as": {"field": "accessStatus", "into": "statuses", "kind": "index"}, "c": {"field": "creator", "into": "headings", "kind": "index"}, "cy0": {"field": "coverageStartYear", "kind": "year"}, "cy1": {"field": "coverageEndYear", "kind": "year"}, "fa": {"field": "findingAids", "into": "findingAidTypes", "kind": "indexList"}, "p": {"field": "predecessors", "into": "headings", "kind": "indexList"}, "ru": {"field": "referenceUnit", "into": "referenceUnits", "kind": "index"}, "ur": {"field": "useRestrictions", "into": "useRestrictions", "kind": "indexList"}, "us": {"field": "useStatus", "into": "statuses", "kind": "index"}, "x": {"field": "extent", "kind": "string"}, "y0": {"field": "inclusiveStartYear", "
+byNaId sample: 102260314 {"ar": [0], "as": 0, "c": 376, "ru": 0, "us": 1, "x": "11 linear feet, 8 linear inches", "y0": 1962, "y1": 1985}
+
+##### presidential-library-catalog.json: top type dict
+  generated: str = '2026-08-06'
+  libraries: list len=11
+  schemaVersion: int = '1'
+  source: str = 'apiV2'
+  libraries[0]: {"citedAs": "Hoover Library", "collections": [{"identifier": "HH-AAB", "naId": 597033, "series": [{"inclusiveDates": "1903–1959", "naId": 597034, "title": "Articles and Speeches"}, {"inclusiveDates": "1901–1966", "naId": 603721, "title": "Subject Files"}, {"inclusiveDates": "1901–1961", "naId": 603727, "title": "Correspondence"}], "statedSeriesCount": 3, "title": "Arthur A. Ballantine Papers"}, {"identifier": "HH-AOD", "naId": 651862, "series": [{"inclusiveDates": "1921–1989", "naId": 651859, "t
+
+##### collection-authority.json: top type dict
+  collections: list len=3977
+  generated: str = '2026-10-20'
+  schemaVersion: int = '1'
+  collections[0]: {"aliases": ["00 D 221", "Office of the Geographer and Global Issues Program files"], "id": "lot:00D221", "lotFileNorm": "00D221", "name": "INR /GGI Files: Lot 00 D 221 Office of the Geographer and Global Issues Program files", "repository": "National Archives", "volumeIds": ["frus1969-76ve01"]}
+
+##### manifest.json: top type list
+  first item: {"dateRange": {"earliest": "1860-12-31T00:00:00-05:00", "latest": "1861-12-31T23:59:59-05:00"}, "editors": [], "filename": "frus1861.xml", "publicationDate": "1861", "sizeBytes": 2609156, "status": "published", "subseries": "1861", "tags": ["belgium", "mexico", "united-kingdom", "austria", "france", "spain", "russia", "italy", "denmark", "netherlands", "turkey", "sweden", "portugal", "peru", "guat
+Traceback (most recent call last):
+  File "<stdin>", line 35, in <module>
+AttributeError: 'list' object has no attribute 'items'

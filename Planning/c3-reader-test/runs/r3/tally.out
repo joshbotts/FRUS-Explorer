@@ -1,0 +1,14 @@
+pairs/volumes|38|25
+came-from by era/repository/RG|decimal|Department of State|59|31
+came-from by era/repository/RG|cfpf|Department of State|59|1
+came-from by era/repository/RG|structured|Eisenhower Library||1
+came-from by era/repository/RG|structured|Johnson Library||1
+came-from by era/repository/RG|structured|National Archives|59|1
+came-from by era/repository/RG|structured|Nixon Presidential Materials||1
+came-from by era/repository/RG|subject_numeric|National Archives|59|1
+pointed-at rows|9|7
+whole-text capture|38|154469
+pointed-at rows by anchor|centralFileClass|6|5
+pointed-at rows by anchor|lotFile|1|1
+pointed-at rows by anchor|presidentialLibrary|2|1
+came-from rows total|37

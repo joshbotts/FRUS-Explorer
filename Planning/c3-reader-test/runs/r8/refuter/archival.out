@@ -1,0 +1,68 @@
+numericalFile: {"microfilm": "M862", "rolls": [{"caseEnd": 27, "caseStart": 1, "catalogURL": "https://catalog.archives.gov/id/19086784", "naId": "19086784", "title": "Numerical File: 1-27/200"}, {"caseEnd": 34, "caseStart": 27, "catalogURL": "https://catalog.archives.gov/id/19087957", "naId": "19087957", "title": "Numerical File: 27/201-34/39"}, {"caseEnd": 39, "caseStart": 34, "catalogURL": "https://catalog.archives.gov/id/19088882", "naId": "19088882", "title": "Numerical File: 34/40-39/175"}, {"caseEnd": 40, "caseStart": 39, "catalogURL": "https://catalog.archives.gov/id/19089758", "naId": "19089758", "title": "Numerical File: 39/176-40/135"}, {"caseEnd": 47, "caseStart": 40, "catalogURL": "https://catalog.archives.gov/id/19101116", "naId": "19101116", "title": "Numerical File: 40/795-47"}, {"caseEnd": 40, "caseStart": 40, "catalogURL": "https://catalog.archives.gov/id/19099822", "naId": "19099822", "title": "Numerical File: 40/794 (pt.)"}, {"caseEnd": 40, "caseStart": 40, "catalogURL": "https://catalog.archives.gov/id/19098628", "naId": "19098628", "title": "Numerical File: 40/794 (pt.)"}, {"caseEnd": 40, "caseStart": 40, "catalogURL": "https://catalog.archives.gov/id/19097666", "naId": "1909
+
+lotFiles rows for the named lots:
+{"hmsMlrEntryNumbers": ["A1 3157"], "lotNumber": "63D127", "matchType": "control", "naId": "2363840", "recordGroup": "59", "title": "Subject and Country Files"}
+    other keys: ['catalogURL', 'levelOfDescription']
+{"hmsMlrEntryNumbers": ["A1 3159"], "lotNumber": "64D16", "matchType": "control", "naId": "1750062", "recordGroup": "59", "title": "Records Relating to El Salvador"}
+    other keys: ['catalogURL', 'levelOfDescription']
+{"hmsMlrEntryNumbers": ["A1 1566"], "lotNumber": "65D330", "matchType": "control", "naId": "602231", "recordGroup": "59", "title": "The Secretary's and the Under Secretary's Memorandums of Conversation"}
+    other keys: ['catalogURL', 'levelOfDescription']
+{"hmsMlrEntryNumbers": ["A1 5158"], "lotNumber": "66D149", "matchType": "control", "naId": "610077", "recordGroup": "59", "title": "Presidential Memorandums of Conversation"}
+    other keys: ['catalogURL', 'levelOfDescription']
+{"hmsMlrEntryNumbers": ["A1 1586E"], "lotNumber": "66D95", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}
+    other keys: ['catalogURL', 'levelOfDescription']
+{"hmsMlrEntryNumbers": ["UD-WX 660"], "lotNumber": "71F154", "matchType": "control", "naId": "27023004", "recordGroup": "59", "title": "Records Relating to Petroleum Issues in Lima, Peru"}
+    other keys: ['catalogURL', 'levelOfDescription']
+{"hmsMlrEntryNumbers": ["UD-05D 71", "UD-05D 72"], "lotNumber": "82D100", "matchType": "control", "naId": "26309182", "recordGroup": "59", "title": "Official Files and Briefing Books of Edmund Muskie"}
+    other keys: ['catalogURL', 'levelOfDescription']
+{"hmsMlrEntryNumbers": ["UD-14D 69"], "lotNumber": "84D241", "matchType": "control", "naId": "26309216", "recordGroup": "59", "title": "Briefing Books of Cyrus R. Vance"}
+    other keys: ['catalogURL', 'levelOfDescription']
+not found: []
+rows per lot: {'63D127': 1, '64D16': 1, '65D330': 1, '66D149': 1, '66D95': 1, '71F154': 1, '82D100': 1, '84D241': 1}
+
+series-facts legend: {"keys": {"ar": {"field": "accessRestrictions", "into": "restrictions", "kind": "indexList"}, "as": {"field": "accessStatus", "into": "statuses", "kind": "index"}, "c": {"field": "creator", "into": "headings", "kind": "index"}, "cy0": {"field": "coverageStartYear", "kind": "year"}, "cy1": {"field": "coverageEndYear", "kind": "year"}, "fa": {"field": "findingAids", "into": "findingAidTypes", "kind": "indexList"}, "p": {"field": "predecessors", "into": "headings", "kind": "indexList"}, "ru": {"field": "referenceUnit", "into": "referenceUnits", "kind": "index"}, "ur": {"field": "useRestrictions", "into": "useRestrictions", "kind": "indexList"}, "us": {"field": "useStatus", "into": "statuses", "kind": "index"}, "x": {"field": "extent", "kind": "string"}, "y0": {"field": "inclusiveStartYear", "kind": "year"}, "y1": {"field": "inclusiveEndYear", "kind": "year"}}, "note": "Each `byNaId` row uses one-letter keys. `kind: index`/`indexList` values are offsets into the TOP-LEVEL array named by `into` — note that `as` and `us` share `statuses`, while `ar` uses `restrictions` and `ur` uses `useRestrictions`; the names do not tell you that. `y0`/`y1` are NARA's INCLUSIVE dates and `cy0`/`cy1` its COVERAGE dates, which it publishes for some series only. NEITHER PAIR CONTAINS THE OTHER: naId 604801 is inclusive 1963-1973 and coverage 1947-1964, and across 1,155 RG 59 series carrying both, coverage starts earlier in 880, the same year in 274 and LATER in 1. So a date screen must take the UNIO
+
+series-facts byNaId rows: 698
+654171 NOT IN series-facts-index
+2363840 {"accessStatus": "Restricted - Possibly", "creator": "Department of State. Bureau of Inter-American Affairs. Office of Central American and Panamanian Affairs.", "referenceUnit": "National Archives at College Park - Textual Reference", "useStatus": "Unrestricted", "extent": "3 linear feet, 6 linear inches", "inclusiveStartYear": 1955, "inclusiveEndYear": 1963}
+1750062 {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Bureau of Inter-American Affairs. Office of Central American Affairs.", "predecessors": ["Department of State. Bureau of Inter-American Affairs. Office of Central American and Panamanian Affairs."], "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "3 linear feet, 1 linear inch", "inclusiveStartYear": 1958, "inclusiveEndYear": 1975}
+602231 {"accessStatus": "Unrestricted", "creator": "Department of State. Executive Secretariat.", "referenceUnit": "National Archives at College Park - Textual Reference", "useStatus": "Unrestricted", "extent": "13 linear feet, 2 linear inches", "inclusiveStartYear": 1953, "inclusiveEndYear": 1964}
+610077 {"accessStatus": "Unrestricted", "creator": "Department of State. Executive Secretariat.", "referenceUnit": "National Archives at College Park - Textual Reference", "useStatus": "Unrestricted", "extent": "1 linear foot, 4 linear inches", "inclusiveStartYear": 1956, "inclusiveEndYear": 1964}
+2839192 {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Office of the Secretary. Executive Secretariat.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "26 linear feet, 3 linear inches", "inclusiveStartYear": 1947, "inclusiveEndYear": 1979}
+27023004 {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Fully", "creator": "Department of State. U.S. Embassy, Peru.", "referenceUnit": "National Archives at College Park - Textual Reference", "useStatus": "Unrestricted", "extent": "2 linear feet, 1 linear inch", "inclusiveStartYear": 1962, "inclusiveEndYear": 1966}
+26309182 {"accessRestrictions": ["FOIA (b)(1) National Security", "FOIA (b)(3) Statute"], "accessStatus": "Restricted - Fully", "creator": "Department of State. Office of the Secretary.", "referenceUnit": "National Archives at College Park - Textual Reference", "useStatus": "Unrestricted", "extent": "9 linear feet, 2 linear inches", "inclusiveStartYear": 1977, "inclusiveEndYear": 1981}
+26309216 {"accessRestrictions": ["FOIA (b)(1) National Security", "FOIA (b)(3) Statute"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Office of the Secretary.", "referenceUnit": "National Archives at College Park - Textual Reference", "useStatus": "Unrestricted", "extent": "1 linear foot", "inclusiveStartYear": 1978, "inclusiveEndYear": 1978}
+1164 NOT IN series-facts-index
+193236 NOT IN series-facts-index
+567979 NOT IN series-facts-index
+567985 NOT IN series-facts-index
+560131 NOT IN series-facts-index
+560151 NOT IN series-facts-index
+series-facts rows naming 'Central Decimal': 0 of 698
+
+presidential-library-catalog libraries: ['Hoover Library', 'Roosevelt Library', 'Truman Library', 'Eisenhower Library', 'Kennedy Library', 'Johnson Library', 'Nixon', 'Ford Library', 'Carter Library', 'Reagan Library', 'Bush Library']
+LIB Kennedy Library | collection JFK-4 1164 'Papers of John F. Kennedy: Presidential Papers: National Security Files' None
+     series 193236 'Country Files' 1961–1963
+LIB Johnson Library | collection LBJ-NSF 567979 'National Security Files' None
+     series 567985 'Latin America Country Files' 1963–1969
+NIXON collections: [(580001022, 'Papers of Carol Clawson'), (138930994, 'Papers of Artemus E. Weatherbee'), (138930952, 'Papers of Arthur F. Sampson'), (240035930, 'Papers of Anne Low'), (239086671, 'Papers of Alan Steelman'), (138930810, 'Papers of Bradley H. Patterson, Jr.'), (578258695, 'Papers of Victoria Boydd'), (138930811, 'Papers of Byron V. Pepitone'), (138924704, 'Papers of Charles A. Meyer'), (138930990, 'Papers of Carlos C. Villarreal'), (239897873, 'Papers of Charlotte Friel'), (138924208, 'Personal Papers of Carroll G. Brunthaver'), (138924440, 'Papers of Charles Jackson Grayson, Jr.'), (138924386, 'Papers of Clarence M. Coster'), (138924387, 'Papers of J. Curtis Counts'), (2570454, 'Records of the Committee for the Re-Election of th'), (138930976, 'Papers of Curtis W. Tarr'), (138930996, 'Papers of Caspar W. Weinberger'), (138924467, 'Papers of David A. Hamil'), (138924695, 'Papers of Dudley C. Mecum')]
+LIB Carter Library | collection JC-NSA 560131 'Records of the Office of the National Security Advisor (Carter Administration)' None
+     series 560151 "Zbigniew Brzezinski's Country Files" 1977–1981
+
+schedule 1910-1949 keys: ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+ class 8: Internal Affairs of States
+  country 12 = Mexico
+  country 37 = Cuba
+  country 18 = Costa Rica
+  country 16 = El Salvador
+  country 24 = Bolivia
+  country 14 = Guatemala
+  country 23 = Peru
+  country 39 = Dominican Republic
+  country 35 = Argentine Republic/ Argentina
+  country 31 = Venezuela
+ subclass-like keys: ['countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+
+schedule 1950-1959 keys: ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+
+schedule 1960-1963 keys: ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']

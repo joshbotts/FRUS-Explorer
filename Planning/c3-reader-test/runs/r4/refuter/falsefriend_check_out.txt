@@ -1,0 +1,4 @@
+heading chapters: 2654 docs; recogni 841 (0.317); Department of State 600 (0.226)
+outside chapters: 58634 docs; recogni 7449 (0.127); Department of State 16305 (0.278)
+enrichment recogni: 2.49x ; control: 0.81x
+overview: 'about one in three' = 0.317 ; 'about one in eight' = 0.127 (1/8 = 0.125)

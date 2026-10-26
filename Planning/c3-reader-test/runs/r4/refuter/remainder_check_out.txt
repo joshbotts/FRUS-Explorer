@@ -1,0 +1,74 @@
+source rows: 1180 non-decimal: 185
+
+non-decimal by (era, repository):
+    32  ('structured', 'Central Intelligence Agency')
+    25  ('lot_file', 'Department of State')
+    22  ('subject_numeric', 'National Archives')
+    22  ('cfpf', 'Department of State')
+    16  ('structured', 'Kennedy Library')
+    15  ('structured', 'Carter Library')
+    14  ('named_series', None)
+    10  ('structured', 'Eisenhower Library')
+    10  ('structured', 'Nixon Presidential Materials')
+     7  ('structured', 'National Archives')
+     6  ('structured', 'Johnson Library')
+     5  ('subject_numeric', 'Department of State')
+     1  ('published', None)
+
+presidential-library rows: 57; CIA rows: 32; PL+CIA = 89
+remainder A (all non-decimal) = 185 -> PL+CIA share = 0.481
+non-decimal rows with a lot_file_norm: 28; era=lot_file rows: 25
+remainder B (non-decimal, no lot) = 157 -> PL+CIA = 89 share = 0.567
+remainder C (non-decimal, era!=lot_file) = 160 -> PL+CIA = 89 share = 0.556
+
+what the rest of remainder B is (era, repository, series_name) top 15:
+    12  ('subject_numeric', 'National Archives', 'Central Files 1964–66')
+     7  ('named_series', None, 'IO Files')
+     7  ('subject_numeric', 'National Archives', 'Central Files 1967–69')
+     3  ('named_series', None, 'Department of State, INR /IL Historical Files')
+     2  ('subject_numeric', 'National Archives', 'Central Files 1970–73')
+     2  ('cfpf', 'Department of State', 'CFPF')
+     1  ('published', None, '')
+     1  ('named_series', None, 'Legal Adviser’s Files')
+     1  ('named_series', None, 'INR– NIE files')
+     1  ('named_series', None, 'Department of State, INR Files')
+     1  ('structured', 'National Archives', 'OASD (C) A Files: FRC 71 A 2896')
+     1  ('subject_numeric', 'Department of State', 'POL 2 GUAT')
+     1  ('subject_numeric', 'Department of State', 'POL 26 HOND')
+     1  ('subject_numeric', 'Department of State', 'POL 26 DOM REP')
+     1  ('subject_numeric', 'Department of State', 'POL 16 DOM REP')
+
+sample raw_text of 'structured'/'National Archives' rows:
+   frus1961-63v10 d178 structured | Source: Washington National Records Center, RG 330, OASD (C) A Files: FRC 71 A 2896, Cuba 381 (Sensitive). Top Secret.
+   frus1964-68v31 d132 subject_numeric | Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 23–9 ARG. Confidential; Flash. Repeated to USCINCSO.
+   frus1964-68v31 d141 subject_numeric | Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 16 ARG. Confidential. Drafted by Sayre and cleared b
+   frus1964-68v31 d152 structured | Source: Johnson Library, National Security File, Country File, Bolivia, Vol. III, Memoranda. December 1964–September 1965. No classification
+   frus1964-68v31 d209 subject_numeric | Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 23–9 BRAZ. Secret; Priority. Passed to the White Hou
+
+sample raw_text of repository=None rows:
+   frus1916 d563 published | Senate Doc. No. 324,
+   frus1949v02 d197 named_series | IO Files: US/A/C.1/1806
+   frus1950v02 d14 named_series | Legal Adviser’s Files: Opinions by the Legal Adviser, et al.
+   frus1950v02 d157 named_series | IO Files: SD/ A /223
+   frus1950v02 d158 named_series | IO Files: US/ A /2403
+   frus1950v02 d161 named_series | IO Files: US/ A /M (Chr)/134
+
+sample Department of State non-decimal rows:
+   frus1948v09 d115 lot_file None | Policy Planning Staff Files: Lot No. 64–D–563: PPS Papers
+   frus1950v02 d118 lot_file None | Secretary’s Memoranda: Lot 53 D 444
+   frus1950v02 d13 lot_file None | Executive Secretariat Files, Lot 57 D 649
+   frus1950v02 d330 lot_file file of documents | PPS Files, Lot 64 D 563 Master file of documents, drafts, records of meetings, memoranda, and related correspondence for
+   frus1952-54v04 d12 lot_file None | S/S – NSC files, lot 63 D 351, NSC 5432 series
+   frus1952-54v04 d3 lot_file None | S/S – NSC files, lot 63 D 351, NSC 144 series
+   frus1952-54v04 d4 lot_file None | S/S – NSC files, lot 63 D 351, NSC 144 series
+   frus1952-54v04 d721 lot_file None | Miller files, lot 53 D 26. “Venezuela”
+pointed-at 737.00: rows=9 years 1959-1962
+pointed-at 723.00: rows=5 years 1962-1962
+pointed-at 738.00: rows=4 years 1950-1959
+
+d439 circular: ” control, ability and willingness meet obligations, and acquiescence great majority of people (reference Deptcircinstr June 8, 1948 Not printed.). Embassy comment. It is timely accordingly summarize 
+d74 'Resolution XXXV' present: True | 'Final Act' in header: True
+d1023 'XXII' present: True | 'Montevideo' present: True
+d7 mentions 'Latin America': True | 'March 11' in text: True | [Untitled] Department of State, Washington, March 12, 1913—1 p.m. File No. 710.11/102a. File No. 710.11/102a. [Untitled] [Circular—Telegram.] Department of State, Washington, March 12, 1913—1 p.m. To the American Diplomatic Officers in Latin America. In view o
+d546 Tobar context: which the new Government is formed may not have accepted a doctrine such as the Tobar doctrine Doctrine stated in 1907 by Carlos R. Tobar, formerly Ecuadoran Fo
+d432 chapter path: Bolivia: > Recognition by the United States and other American Republics of the revolutionary junta in Bolivia

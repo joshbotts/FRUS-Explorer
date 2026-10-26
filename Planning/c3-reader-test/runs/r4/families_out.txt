@@ -1,0 +1,14 @@
+denominators (core docs per era): {'E1 to 1912': 80, 'E2 1913-1932': 523, 'E3 1933-1947': 329, 'E4 1948-1988': 295} ALL 1227
+family | TOLERANT ALL (STRICT ALL) of 1227 | E1 to 1912 | E2 1913-1932 | E3 1933-1947 | E4 1948-1988 (tolerant/strict of era denominator)
+international obligations | 102 (100) | 5/5 of 80 | 26/25 of 523 | 35/35 of 329 | 36/35 of 295
+constitutional government | 71 (71) | 4/4 of 80 | 37/37 of 523 | 11/11 of 329 | 19/19 of 295
+free elections | 44 (38) | 5/3 of 80 | 4/1 of 523 | 5/5 of 329 | 30/29 of 295
+effective control | 18 (18) | 0/0 of 80 | 0/0 of 523 | 3/3 of 329 | 15/15 of 295
+lives and property | 24 (12) | 3/0 of 80 | 21/12 of 523 | 0/0 of 329 | 0/0 of 295
+other American republics | 71 (68) | 0/0 of 80 | 1/1 of 523 | 51/50 of 329 | 19/17 of 295
+treaty of peace and amity | 28 (28) | 0/0 of 80 | 9/9 of 523 | 19/19 of 329 | 0/0 of 295
+Axis | 41 (41) | 0/0 of 80 | 0/0 of 523 | 41/41 of 329 | 0/0 of 295
+communist | 176 (147) | 0/0 of 80 | 11/7 of 523 | 11/7 of 329 | 154/133 of 295
+de facto | 181 (181) | 21/21 of 80 | 96/96 of 523 | 29/29 of 329 | 35/35 of 295
+Article 27 | 14 (13) | 0/0 of 80 | 14/13 of 523 | 0/0 of 329 | 0/0 of 295
+human rights | 28 (28) | 0/0 of 80 | 0/0 of 523 | 0/0 of 329 | 28/28 of 295

@@ -1,0 +1,15 @@
+#!/bin/zsh
+# Read-only sqlite3 wrapper: appends the exact command (newlines collapsed) to queries.log, then runs it.
+R=/Users/jbotts/frus-analysis/c3/runs/r10
+DB="file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro"
+export SQLITE_TMPDIR=$R/tmp
+opts=()
+while [[ "$1" == -* ]]; do
+  opts+=("$1")
+  if [[ "$1" == "-separator" || "$1" == "-cmd" ]]; then shift; opts+=("$1"); fi
+  shift
+done
+sql="$1"
+line="sqlite3 ${opts[*]} \"$DB\" \"$sql\""
+print -r -- "${line//$'\n'/ }" >> $R/queries.log
+sqlite3 "${opts[@]}" "$DB" "$sql"

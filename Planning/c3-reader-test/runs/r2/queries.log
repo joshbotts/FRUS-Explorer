@@ -1,0 +1,132 @@
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "BEGIN; CREATE TABLE zz(x); ROLLBACK;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE '%_data' AND name NOT LIKE '%_idx' AND name NOT LIKE '%_docsize' AND name NOT LIKE '%_config' AND name NOT LIKE '%_content' ORDER BY name;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT volume_id, COUNT(*) AS n, SUM(is_front_matter) fm, SUM(is_editorial_note) en FROM document_cache GROUP BY volume_id ORDER BY volume_id;"
+python3 -I -c "import json; m=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/manifest.json\")); ... (print top-level keys and first volume entry)"
+python3 -I -c "import json; m=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/manifest.json\")); print(len(m)); print(json.dumps(m[0])); print(json.dumps(m[300]))"
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/manifest_dump.py
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT volume_id, length(structure_json), substr(structure_json,1,1500) FROM volume_structures WHERE volume_id='frus1930v01';"
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/headings_dump.py   # SQL: SELECT volume_id, structure_json FROM volume_structures ORDER BY volume_id
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT term, doc, cnt FROM frus_documents_vocab WHERE term LIKE 'recogn%' OR term IN ('junta','coup','golpe','facto','tobar','estrada','revolut','revolutionari','overthrow','insurrect','nonrecognit','unconstitut','unrecogn','usurp','usurpat','constitut','continu','resumpt','suspens','electoral','elect') ORDER BY doc DESC LIMIT 60;"
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/doc_sections.py
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH 'NEAR(recogn* govern*, 6) OR NEAR(recogn* regim*, 6) OR NEAR(recogn* junta, 6)';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '(NEAR(recogn* govern*, 6) OR NEAR(recogn* regim*, 6) OR NEAR(recogn* junta, 6)) AND (revolut* OR coup OR junta OR "de facto" OR overthrow* OR insurrect* OR golpe OR "provision govern*" OR usurp* OR unconstitut*)';"
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/latam_classify.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/latam_classify.py   # v2: Panama word-bounded, single-country volumes, non-republic Caribbean excluded
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/latam_classify.py   # v3: deepest-heading-first classifier
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/latam_classify.py   # v4: a heading naming several republics counts as regional
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/scope_text.py
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '(NEAR(recogn* govern*, 6) OR NEAR(recogn* regim*, 6) OR NEAR(recogn* junta, 6)) AND (revolut* OR coup OR junta OR "de facto" OR overthrow* OR insurrect* OR golpe OR "provisional government" OR usurp* OR unconstitut*)';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '(NEAR(recogn* govern*, 6) OR NEAR(recogn* regim*, 6) OR NEAR(recogn* junta, 6)) AND (revolut* OR coup OR junta OR "de facto" OR overthrow* OR insurrect* OR golpe OR "provision govern*" OR usurp* OR unconstitut*)';"
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/chapter_candidates.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/scope_build.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/rule_recall.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/post1950_peek.py
+ls "<volumes dir>" | wc -l ; head -c 1500 "<volumes dir>/frus1930v01.xml" ; grep -n -m3 "type=\"document\"" "<volumes dir>/frus1930v01.xml"
+ls "<volumes dir>"/*.xml | wc -l ; ls "<volumes dir>" | grep -v "\.xml$" | sed -E "s/^frus[^.]*//" | sort | uniq -c
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && nohup python3 -I -u scripts/tei_pass.py > out/tei_pass.stdout 2>&1 &   # background TEI pass over the 137 scope volumes; progress in out/tei_progress.log
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py "\"orderly processes\" OR \"arbitrary or irregular force\""  all
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py 'NEAR(recogn* "international obligations", 25) AND "de facto"'
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py 'NEAR("conditions precedent" recogn*, 20)'
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py '"Peace and Amity" AND recogn*'
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py '"Resolution XXII" OR "Political Defense" AND recogn*'
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py '"Resolution XXII" OR ("Political Defense" AND recogn*)' all
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py '("Bogota Resolution" OR "Bogotá Resolution" OR "Resolution XXXV" OR "Resolution 35") AND recogn*' all
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py 'recogn* AND Maximilian AND (empire OR imperial)' all
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py 'NEAR(Huerta candidate, 15) AND (election* OR armistice)' all
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py 'Tinoco AND NEAR(recogn* govern*, 6) AND (Gonzalez OR González) AND "Secretary of State"' all
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1877/d222 frus1892/d517 frus1899/d792 frus1900/d530 --max 5000
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1913/d7 frus1913/d894 frus1913/d1028 frus1914-20v02/d348 frus1914-20v02/d384 --max 4500
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py 'Haiti AND NEAR(recogn* (condition* OR convention), 12) AND customs' all
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py 'Obregon AND NEAR(recogn* treaty, 20) AND (amity OR commerce) AND (article OR "Article 27" OR property)' all
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py 'Haiti AND (NEAR(recogn* condition*, 12) OR NEAR(recogn* convention, 12)) AND customs' all
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT c.document_id, d.date_iso, substr(c.header,1,90), length(c.body_text) FROM document_cache c LEFT JOIN document_dates d ON d.volume_id=c.volume_id AND d.document_id=c.document_id WHERE c.volume_id='frus1914' AND CAST(substr(c.document_id,2) AS INTEGER) BETWEEN 540 AND 575 ORDER BY CAST(substr(c.document_id,2) AS INTEGER);"
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1914/d540 frus1914/d544 frus1914/d568 --max 6000
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1921v02/d344 frus1923v02/d345 frus1936v05/d110 frus1936v05/d112 --max 7000
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py 'Grau AND NEAR(recogn* govern*, 8) AND (popular OR "support of the people" OR confidence OR "maintain order" OR "law and order")' all
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1930v01/d375 frus1931v02/d412 frus1932v05/d618 frus1933v05/d430 --max 4500
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1943v05/d33 frus1943v05/d142 frus1944v07/d1018 frus1945v09/d880 --max 4500
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py 'Bolivia AND recogn* AND (MNR OR "Movimiento Nacionalista") AND (Axis OR Nazi) AND (condition* OR requirement* OR elimination OR remov* OR expel* OR deport*)'
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1944v07/d419 frus1944v07/d437 frus1944v07/d239 --max 4000
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py 'Argentin* AND recogn* AND ("Final Act" OR Chapultepec) AND (Axis OR war)' all
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1944v07/d246 --max 3500
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1948v09/d7 frus1948v09/d89 frus1948v09/d114 --max 6500
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1955-57v06/d353 frus1958-60v06/d217 frus1961-63v12/d421 --max 6000
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1961-63v12/d363 frus1964-68v31/d141 frus1969-76v21/d355 --max 5000
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py 'recogn* AND (coup OR junta OR "Garcia Meza" OR "García Meza") AND (democra* OR "human rights")' all
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1977-80v24/d132 frus1977-80v24/d133 frus1977-80v24/d135 --max 4000
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py 'Tinoco AND NEAR("not recognize" (government OR Tinoco), 12)' all
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py 'Tinoco AND (NEAR("not recognize" government, 12) OR NEAR("not recognize" Tinoco, 12))' all
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT c.document_id, d.date_iso, substr(replace(c.header, char(10), ' '),1,80), length(c.body_text) FROM document_cache c LEFT JOIN document_dates d ON d.volume_id=c.volume_id AND d.document_id=c.document_id WHERE c.volume_id='frus1917' AND CAST(substr(c.document_id,2) AS INTEGER) BETWEEN 370 AND 392 ORDER BY CAST(substr(c.document_id,2) AS INTEGER);"
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1917/d376 frus1917/d378 frus1917/d379 --max 2500
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1934v05/d199 frus1943v05/d335 frus1923v02/d472 --max 4500
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/find.py 'Nicaragua AND recogn* AND (Dawson OR "Mixed Claims" OR "claims commission") AND (election* OR loan)' all
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1911/d933 --max 5000
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/literal_share_T.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/decades.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/tei_census.py > out/tei_census.txt
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && mkdir -p out/tei_v1 && mv out/tei/*.json out/tei_v1/ && python3 -I -u scripts/tei_pass.py   # v2 rerun: RECOG regex fixed (v1 missed "recognition"), SOVIET split from COMMUNISM
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/tei_census.py > out/tei_census.txt
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/false_friend.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/archival_sql.py
+python3 -I -c "<print top-level keys, types and sizes of 9 bundled JSON files in /Applications/FRUS Explorer.app/Contents/Resources>"   # body elided in this log line; printed output below in session
+python3 -I -c "<print decimal-class-labels.json coverage + schedule shapes; central-files-index.json countrySeries[0], numericalFile keys>"   # body elided
+python3 -I -c "<search decimal-class-labels.json 1910-1949 schedule subjects for keys 00,01,01x and labels containing Recogn>"   # body elided
+python3 -I -c "<print central-files-index.json countrySeries[0..1], numericalFile, lotFiles[0]; series-facts-index.json legend and one byNaId row>"   # body elided
+python3 -I -c "<print collection-usage-index.json coverage, categories, collections[0..2], classes[0..2], volumes[0]; volume-sources-index.json recordGroups[59] and majorCollections[0..2]>"   # body elided
+python3 -I -c "<grep bundled JSON for Central Decimal File / Subject-Numeric / Central Foreign Policy series names and NAIDs>"   # body elided
+grep -o -i ".\{0,200\}central decimal.\{0,300\}" "<Resources>"/{volume-sources-index,series-facts-index,central-files-index,collection-usage-index,source-provenance-index,provenance-flow-index,presidential-library-catalog}.json | head
+python3 -I -c "<inspect presidential-library-catalog.json libraries[0] shape; subject-numeric-labels.json keys and POL 16; collection-usage-index collectionIds prefixes>"   # body elided
+python3 -I -c "<inspect subject-numeric-labels.json coverage and schedules; look up POL and 16>"   # body elided
+python3 -I -c "<print subject-numeric-labels.json POL subject keys 14-17 for both schedules>"   # body elided
+python3 -I -c "<print external-citation-index.json coverage, targets[0..2], targetIds[0..4], classTargets[0..2]; lot-claimants lots[0]; curated-lot-resolutions lots[0]>"   # body elided
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/archival_resolve.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/archival_resolve.py > out/archival_resolve.txt   # v2: subject-numeric parser accepts en dash; full unit list to out/archival_camefrom_units.tsv
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/archival_resolve.py > out/archival_resolve.txt   # v3: two-word subject-numeric areas; unparsed raw texts to out/snf_unparsed.txt
+python3 -I -c "<list central-files-index.json countrySeries diplomaticDespatches/notesFromForeignMissions file units whose geoKeys name Latin American countries, with roll date spans>"   # body elided
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I -c "<summarise out/arch_document_sources.tsv decimal rows by class suffix (.00/.01/7xx/other) and by tier; count CFPF/library/lot rows>"   # body elided
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/verify_quotes.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/quotes_in_tei_doc_text.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I -c "<recheck Q14 in TEI document text with whitespace removed; annotate quotes/quotes_tei_location.json>"   # body elided
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/collection_check.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I -c "<scope facts: tier counts, C date span, countries, volumes, control minima from out/tei/*.json>"   # body elided
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/literal_share_R1R2.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/absence_checks.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1964-68v31/d205 frus1964-68v31/d206 --max 400   # then KWIC of recogn|relations from raw files
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT volume_id, document_id, instr(lower(body_text),'recogni') AS pos_recogni, length(body_text) FROM document_cache WHERE volume_id='frus1913' AND document_id='d7';"
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && (checks: recogni absent from frus1913/d7; cfpf date span; Carter citation raw_text; Brazil hits vs scope)  # awk/python one-liners, bodies elided
+awk -F"	" (Carter Library National Security Affairs citation raw_text from out/arch_external_citations.tsv)
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/verify_quotes.py && python3 -I scripts/quotes_in_tei_doc_text.py   # rerun after adding Q18-Q21
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/quotes_in_tei_doc_text.py   # v2 adds whitespace-insensitive test
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/collection_check.py   # after adding frus1964-68v31/d206
+cat > /Users/jbotts/frus-analysis/c3/runs/r2/overview.md <<EOF ... (overview text, written once; body elided here)
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/check_overview.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && grep -n "^RECOG " out/tei_census_v1_buggy.txt out/tei_census.txt | head -6
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/build_collection.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I -c "<reading accounting from out/reading_log.tsv and quotes/quotes_verified.json>"   # body elided
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I -c "<four phrase edits to overview.md: three short quotations turned to paraphrase, one date phrase>" && python3 -I scripts/build_collection.py && python3 -I scripts/check_overview.py   # v2 excerpt selection
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/build_memo.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/build_memo.py   # fix: no backslash in f-string (Python 3.9)
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I -c "<count scope docs dated through 1905 and those without a source row; Ed2 volumes among latam_docs>"
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I -c "<overview edits: round numbers in prose, one pointer to the memo>" && python3 -I scripts/check_overview.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/build_memo.py   # v2: M-PRE1906, M-SYNTH, trace table
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/build_memo.py && python3 -I scripts/check_overview.py   # v3: M-QUSED, M-ABS-SQL, SQL appendix; overview wording on headings
+# LATE ENTRY (ran between log lines 89 and 90, logged now): cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I -c "<open .../volumes/frus1945v09.xml, print raw TEI around 'Fourteen of the sixteen' (exact string)>"   # body elided; printed nothing
+# LATE ENTRY (ran between log lines 89 and 90, logged now): cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I -c "<open .../volumes/frus1945v09.xml, regex 'Fourteen\s+of\s+the\s+sixteen', print 850 characters of raw TEI>"   # body elided
+# LATE ENTRY (ran between log lines 89 and 90, logged now): cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I -c "<parse .../volumes/frus1945v09.xml, extract document text of d880 without notes/head, print 400 characters after 'Fourteen'>"   # body elided
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/build_memo.py   # v4: SQL appendix without truncation
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/check_overview.py && python3 -I scripts/build_collection.py   # final checks
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/read_docs.py frus1914/d1812 frus1919v02/d720 frus1914/d1808 --max 3000
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I -c "<add Peru 1914/1919 recognitions to F2, bottom line qualification; collection pairs +2>" && python3 -I scripts/collection_check.py && python3 -I scripts/build_collection.py && python3 -I scripts/build_memo.py && python3 -I scripts/check_overview.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/reading_accounting.py > out/reading_accounting.txt && python3 -I scripts/build_memo.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/build_collection.py   # intro qualification
+python3 -I -c "<list manifest volumes whose id starts frus1981-88>"; cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/build_collection.py && python3 -I scripts/build_memo.py && python3 -I scripts/check_overview.py   # scope condition sentence, M-THIN
+grep -c frus1981-88v13 / v16 in out/latam_docs.tsv; awk headings of frus1981-88v13 (own files)
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT f.volume_id, COUNT(*) FROM frus_documents f JOIN document_cache c ON c.volume_id=f.volume_id AND c.document_id=f.document_id WHERE frus_documents MATCH 'NEAR(recogn* govern*, 6) OR NEAR(recogn* regim*, 6) OR NEAR(recogn* junta, 6)' AND c.is_front_matter=0 AND c.is_editorial_note=0 AND f.volume_id IN ('frus1981-88v13','frus1981-88v16') GROUP BY f.volume_id;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT f.volume_id, COUNT(*) FROM frus_documents f JOIN document_cache c ON c.volume_id=f.volume_id AND c.document_id=f.document_id WHERE frus_documents MATCH '"Department of State"' AND c.is_front_matter=0 AND c.is_editorial_note=0 AND f.volume_id IN ('frus1981-88v13','frus1981-88v16') GROUP BY f.volume_id;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT COUNT(*) FROM frus_documents f WHERE frus_documents MATCH 'ZZZ_IMPOSSIBLE_ZZZ' AND f.volume_id IN ('frus1981-88v13','frus1981-88v16');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT f.document_id, d.date_iso, substr(c.header,1,70), snippet(frus_documents, 6, '[', ']', '…', 14) FROM frus_documents f JOIN document_cache c ON c.volume_id=f.volume_id AND c.document_id=f.document_id LEFT JOIN document_dates d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'NEAR(recogn* govern*, 6) OR NEAR(recogn* regim*, 6) OR NEAR(recogn* junta, 6)' AND c.is_front_matter=0 AND c.is_editorial_note=0 AND f.volume_id='frus1981-88v13' ORDER BY d.date_iso;"
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I -c "<overview 1980s item revised to include the South Atlantic volume; memo M-ABS-81 updated>" && python3 -I scripts/build_collection.py && python3 -I scripts/build_memo.py && python3 -I scripts/check_overview.py
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/build_collection.py   # intro 1980s wording
+cd /Users/jbotts/frus-analysis/c3/runs/r2 && python3 -I scripts/build_memo.py   # M-THIN wording
+ELIDED: (1) command bodies replaced in this log by a <...> description or '...': lines 5-6 (manifest inspection heredocs, paraphrased), 25-26 (TEI folder path written as <volumes dir>), 72-82 and 86 (bundled-JSON inspection heredocs; line 78 writes <Resources> for the resource folder), 87, 90, 92, 97, 106, 107, 110, 111, 120, 123 and 129 (python -c or heredoc bodies), 114-116 (three TEI debug commands logged late, out of order, as marked), and 102 (the body of the cat > overview.md heredoc; the first draft of overview.md was written with the editor tool, not a shell command, and has no log line); (2) shell heredocs that only created or edited files under scripts/ or out/ (cat > scripts/*.py, python edits of scripts and of out/collection_pairs.tsv, out/referent_coding_T.tsv, quotes/quotes.json) are not logged because they did not touch the resources; their final text is on disk; commands that read only files in this run directory (awk, grep, sed, python over out/ and raw/) are logged only where noted; (3) scripts/sq.sh writes each SQL statement with newlines collapsed and inner double quotes unescaped; the statement text is otherwise exact; (4) outputs shortened on screen during the session and not saved: read_docs.py --max display caps (full texts in raw/), find.py and other outputs cut with cut/head/fold; (5) in memo.md: (volume_id, document_id) VALUES lists shown as <scope pairs> (full statements in out/ff_sql_*.sql and out/arch_sql_*.sql, id lists in out/ff_ids_*.tsv), the literal-share sample indices shown as the first five (all 40 in out/literal_share_T.json), chapter headings cut at 150 characters (full in out/scope_chapters.tsv), absence-check hit lists cut at ten ids (full in out/absence_checks.json), archival units given as leading examples (full in out/archival_camefrom_units.tsv, out/archival_camefrom.json, out/archival_pointedat.json); (6) out/sql_trace.log records parameter args but names the VALUES-based statements by their .sql files instead of repeating them.

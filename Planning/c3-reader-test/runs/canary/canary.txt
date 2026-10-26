@@ -1,0 +1,5 @@
+553|321749|1103|8481
+Error in 3rd command line argument: attempt to write a readonly database
+553
+list 553
+16274

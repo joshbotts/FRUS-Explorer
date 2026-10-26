@@ -1,0 +1,83 @@
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "BEGIN; CREATE TABLE zz(x); ROLLBACK;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db ".schema document_cache" ".schema document_dates" ".schema document_sources" ".schema external_citations" ".schema volume_structures" ".schema frus_documents" ".schema cross_references"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db ".schema terms" ".schema document_subjects" ".schema document_subject_refs" ".schema page_ranges" "SELECT * FROM terms LIMIT 3;"
+python3 -c "
+import json
+m=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/manifest.json\"))
+print(type(m), list(m.keys())[:10] if isinstance(m,dict) else len(m))
+vols = m[\"volumes\"] if isinstance(m,dict) and \"volumes\" in m else m
+v0 = vols[0] if isinstance(vols,list) else list(vols.values())[0]
+print(json.dumps(v0,indent=1)[:1500])
+"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT term, COUNT(*) FROM frus_documents_vocab_tmp LIMIT 1;" 2>&1 | head -2
+python3 -I la_volumes.py
+python3 -I -u scan1.py
+python3 -I -u scan1.py
+python3 -I rank1.py
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT substr(structure_json,1,1500) FROM volume_structures WHERE volume_id=\"frus1932v05\";"
+python3 -I headings.py
+python3 -I headings2.py
+python3 -I -u scope.py
+python3 -I chapters_post1950.py
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "CREATE TEMP TABLE t1(x); INSERT INTO t1 VALUES(1); SELECT COUNT(*) FROM t1;"
+sqlite3 -separator " | " "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT d.volume_id,d.document_id,dd.date_iso,substr(d.header,1,110) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid LEFT JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE frus_documents MATCH '\"peace and amity\" AND recogn*' AND d.volume_id IN ('frus1923v01','frus1923v02') AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY 1,2;"
+sqlite3 -separator " | " "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT d.volume_id,d.document_id,dd.date_iso,substr(d.header,1,120),length(d.body_text) FROM document_cache d LEFT JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE d.volume_id='frus1936v05' AND d.document_id IN ('d105','d106','d107','d108','d109','d110','d111','d112') ORDER BY CAST(substr(d.document_id,2) AS INTEGER);"
+python3 -I hdr.py frus1961-63v12 413 427
+python3 -I hdr.py frus1958-60v05mSupp 28 44 es_d
+python3 -I hdr.py frus1964-68v31 127 143
+python3 -I hdr.py frus1964-68v31 509 518
+python3 -I hdr.py frus1969-76v21 348 361
+python3 -I hdr.py frus1977-80v24 133 160
+python3 -I hdr.py frus1961-63v10-12mSupp 158 167
+python3 -I hdr.py frus1950v02 476 478
+python3 -I hdr.py frus1943v05 328 344
+python3 -I hdr.py frus1943v05 483 491
+python3 -I hdr.py frus1945v09 1157 1184
+python3 -I hdr.py frus1923v02 345 347
+python3 -I hdr.py frus1923v02 550 550
+python3 -I core_scope.py
+python3 -I top.py frus1913 776 1115 'recogn* AND (lind OR elections OR constitutional)' 14
+python3 -I top.py frus1917 365 430 'recogn*' 10
+python3 -I top.py frus1930v01 358 378 'recogn*' 8
+python3 -I top.py frus1932v05 617 684 'recogn* AND (article OR treaty)' 8
+python3 -I top.py frus1944v07 211 246 'recogn*' 8
+python3 -I top.py frus1944v07 383 443 'recogn* AND consult*' 8
+python3 -I top.py frus1947v08 716 755 'recogn*' 8
+python3 -I top.py frus1961-63v12 307 363 'recogn*' 10
+python3 -I top.py frus1921v01 235 250 'recogn*' 6
+python3 -I top.py frus1934v05 197 258 'recogn*' 8
+python3 -I top.py frus1920v01 371 401 'recogn*' 6
+python3 -I top.py frus1945v09 242 306 'recogn*' 8
+python3 -I readdoc.py VOL:DOC ...  (SQL: SELECT volume_id, document_id, header, dateline, source_note, body_text, length(body_text) FROM document_cache WHERE volume_id=? AND document_id=?)
+python3 -I readdoc.py frus1913:d1028 frus1913:d1029 frus1917:d379 frus1917:d407 frus1920v01:d391 frus1921v01:d238 --ctx=700
+sqlite3 -separator " | " "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT d.volume_id,d.document_id,dd.date_iso,substr(d.header,1,80),length(d.body_text) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid LEFT JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE frus_documents MATCH '\"consent of the governed\"' AND d.volume_id IN ('frus1913','frus1914','frus1917') AND d.is_front_matter=0 ORDER BY 1,2;"
+python3 -I readdoc.py frus1923v02:d345 frus1923v02:d550 frus1930v01:d375 frus1932v05:d639 frus1932v05:d622 frus1934v05:d199 frus1936v05:d108 frus1936v05:d112 --ctx=700
+python3 -I readdoc.py frus1913:d7 frus1943v05:d334 frus1943v05:d486 frus1944v07:d386 frus1944v07:d390 frus1944v07:d231 frus1945v09:d251 frus1945v09:d1170 frus1947v08:d755 --ctx=500
+python3 -I readdoc.py frus1947v08:d742 frus1950v02:d477 frus1950v02:d478 frus1958-60v05mSupp:es_d29 frus1958-60v05mSupp:es_d43 frus1961-63v12:d421 frus1961-63v12:d422 frus1961-63v12:d359 frus1961-63v12:d360 frus1961-63v10-12mSupp:d160 --ctx=500
+python3 -I readdoc.py frus1964-68v31:d128 frus1964-68v31:d132 frus1964-68v31:d512 frus1969-76v21:d349 frus1969-76v21:d355 frus1977-80v24:d134 frus1977-80v24:d137 frus1977-80v24:d158 --ctx=500
+python3 -I chap_lookup.py frus1948v09 frus1949v02 frus1946v11 frus1951v02
+python3 -I hdr.py frus1948v09 74 119
+python3 -I top.py frus1948v09 74 119 'recogn*' 12
+python3 -I top.py frus1949v02 435 466 'recogn*' 8
+python3 -I top.py frus1946v11 272 324 'recogn*' 6
+python3 -I readdoc.py frus1948v09:d75 frus1948v09:d89 frus1948v09:d109 frus1948v09:d115 frus1948v09:d119 frus1949v02:d448 frus1946v11:d312 --ctx=500
+python3 -I -u core_build.py
+python3 -I -u core_build.py
+python3 -I json_keys.py
+sqlite3 -separator " | " "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT d.volume_id,d.document_id,dd.date_iso,length(d.body_text),substr(d.header,1,60) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid LEFT JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE frus_documents MATCH 'recogn* AND acheson AND september' AND d.volume_id='frus1949v02' AND d.is_editorial_note=1;"
+python3 -I readdoc.py frus1948v09:d74 frus1948v09:d114 --ctx=600
+python3 -I json_resolve.py
+python3 -I readdoc.py frus1961-63v10-12mSupp:d166 frus1961-63v10-12mSupp:d165 --ctx=400
+python3 -I sf_lookup.py
+# excerpts.py: SELECT body_text FROM document_cache WHERE volume_id=? AND document_id=?; then SELECT instr(body_text,?) ... for each excerpt
+python3 -I excerpts.py
+# build_collection.py: SELECT COUNT(*) FROM document_cache WHERE volume_id=? AND document_id=?; SELECT instr(body_text,?) FROM document_cache WHERE volume_id=? AND document_id=? (per entry)
+python3 -I build_collection.py
+python3 -I misses.py
+python3 -I misses2.py
+python3 -I final_check.py  (local files only: overview.md, collection.fruscollection, excerpts.json)
+python3 -I excerpts.py
+python3 -I build_collection.py
+python3 -I final_check.py  (local files only; re-run after the excerpt additions)
+ELIDED: the bodies of the Python scripts invoked above (la_volumes.py, scan1.py, rank1.py, headings.py, headings2.py, scope.py, chapters_post1950.py, hdr.py, top.py, readdoc.py, chap_lookup.py, core_scope.py, core_build.py, json_keys.py, json_resolve.py, sf_lookup.py, excerpts.py, build_collection.py, misses.py, misses2.py, final_check.py) are logged by name only and kept in this directory, not pasted here; the two in-place patches to scan1.py and core_build.py and the three edits to excerpts.py/build_collection.py/overview.md/memo.md/final_check.py were made by inline `python3 - <<EOF` passes that were not logged; four inline passes over local files only (the awk/cut listings of scope_hits_post1950.tsv, the show() pass over texts/, the (a)-(d) grep over texts/frus1913__d1028.txt, the reading_log count) were not logged; the readdoc.py SELECT is logged once as a template rather than once per document, and the 52 (volume_id, document_id) pairs it read are in reading_log.tsv; the 233-id IN list of the scope query is in la_volumes.tsv, not in this log; the first readdoc batch (frus1923v02:d345 … frus1936v05:d112) printed 30.8 KB that was read from the persisted tool output, not shown here.

@@ -1,0 +1,6 @@
+.mode list
+SELECT 'POS dept of state: docs / distinct volumes', count(*), count(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH 'body_text:"department of state"' AND d.is_front_matter=0 AND d.is_editorial_note=0;
+SELECT 'NEG ZZZ_IMPOSSIBLE_ZZZ', count(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH 'body_text:"ZZZ_IMPOSSIBLE_ZZZ"';
+SELECT 'denominator nonapparatus docs (Ed2 firsts suppressed)', count(*), count(DISTINCT volume_id) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 AND volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');
+SELECT 'recogni* corpus-wide docs', count(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH 'body_text:recogni*' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');
+SELECT 'dept of state corpus-wide docs', count(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH 'body_text:"department of state"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');

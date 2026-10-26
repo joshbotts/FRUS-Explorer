@@ -1,0 +1,1 @@
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db <  >  0.08s user 0.07s system 20% cpu 0.694 total

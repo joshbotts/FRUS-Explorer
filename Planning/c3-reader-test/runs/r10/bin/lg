@@ -1,0 +1,6 @@
+#!/bin/zsh
+# usage: lg 'shell command'  -- logs the command string (newlines collapsed), then evals it
+R=/Users/jbotts/frus-analysis/c3/runs/r10
+export SQLITE_TMPDIR=$R/tmp
+print -r -- "${1//$'\n'/ }" >> $R/queries.log
+eval "$1"

@@ -1,0 +1,343 @@
+{
+ "format": "fruscollection",
+ "formatVersion": 2,
+ "minimumReaderVersion": 1,
+ "name": "Recognizing governments that took power by force in Latin America",
+ "authorLine": "Agent run r4, 2026-10-25",
+ "introductionText": "What FRUS answers directly: across the whole published series, about twelve hundred documents in 73 volumes deal with whether Washington would recognize a Latin American government that had taken power by force. Three tests recur from 1895 to 1949: the new authority controls the country, it means to meet its international obligations, and its people accept it. Stimson's recognition of the Argentine, Peruvian and Bolivian juntas in September 1930 states all three and adds a promise of elections. From 1913 to 1936 Washington added a fourth test, how the government came to power. That test came from Wilson's March 1913 statement and from the Central American treaties of 1907 and 1923, which barred recognition of governments born of a coup until they were constitutionally reorganized. In practice recognition was also traded for specific undertakings: on Mexican oil and land law (Article 27) and claims in 1920–1923, on Axis influence in 1943–1944 (worked out in consultation with the other republics), and later on communism, elections and civil rights. After the Bogota conference's Resolution XXXV (1948), relations were to continue with any government without implying approval.\nWhere FRUS points for the rest: the printed documents came overwhelmingly from the State Department's Central Decimal File (Record Group 59), from the Mexico, El Salvador, Bolivia, Costa Rica, Haiti, Peru, Guatemala, Ecuador and Argentina political-affairs and government files. The bundled data names that file but gives no NARA identifier, entry or access status for it. After 1950 a few documents came from Bureau of Inter-American Affairs and Executive Secretariat lot files, for example Subject and Country Files (NAID 1074073, entry A1 5763, 1962–1975, partly restricted) and Records Relating to Honduras (NAID 2602882, entry A1 5732, 1957–1974, partly restricted). The editors' footnotes point, without printing them, to further decimal files (Cuba 737.00 and Peru 723.00 among them), to the Johnson Library's National Security File, to Carter's national-security-affairs files, and to lot files such as Subject Files of the Assistant Secretary for Inter-American Affairs (NAID 2108779, entry A1 1135, 1957–1959, unrestricted).\nWhat this request cannot get from FRUS: the Latin American side of the question (the Estrada doctrine named in 27 documents, the Tobar doctrine named in one, the Betancourt doctrine in three) lives in foreign archives that no bundled index reaches. The Department's 8 June 1948 circular instruction on the three conditions is cited but not printed. The published series this index holds has no Central America volume after 1980. Before 1910 the archival roadmap reaches only the despatch and instruction series on microfilm.",
+ "composition": {
+  "defaultBodyDepth": "full",
+  "footnoteStyle": "all",
+  "includeSourceNote": true,
+  "tocStyle": "citation",
+  "applyHighlights": false,
+  "includeNotes": true,
+  "includeWordCloud": false
+ },
+ "entries": [
+  {
+   "kind": "heading",
+   "text": "The standing tests: control, obligations, acquiescence",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "From 1895 to 1949 the Department kept returning to the same three questions about a government that had taken power: does it control the country, will it meet its international obligations, and do the people accept it. These four documents state the tests in four different decades."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1895p1",
+   "documentId": "d244",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: An instruction on Ecuador's 1895 revolution: do business with the de facto authority that controls the government with the people's general acquiescence; leave formal recognition to Washington."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1895p1",
+   "documentId": "d244",
+   "text": "intercourse for the disposal of current matters affecting American interests with the de facto authority administering the public affairs of the State with the general acquiescence of its people and controlling the machinery of government to that end, is in accordance with the traditional policy of this Government."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1913",
+   "documentId": "d894",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: Recognition of Huerta held back in February 1913 while the Department applied the 'usual tests': popular assent, and the ability to protect foreigners and meet international obligations."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1913",
+   "documentId": "d894",
+   "text": "the question of the degree to which the population of Mexico acquiesce in and assent to the new régime and the question of disposition and ability to protect foreigners and their interests and to respond to all international obligations."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1930v01",
+   "documentId": "d375",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: Stimson's press release of 17 September 1930 recognizing Argentina, Peru and Bolivia: de facto control, no active resistance, intent to fulfil obligations, and elections in due course."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1930v01",
+   "documentId": "d375",
+   "text": "the evidence has satisfied me that these provisional governments are de facto in control of their respective countries, and that there is no active resistance to their rule. Each of the present governments has also made it clear that it is its intention to fulfill its respective international obligations and to hold, in due course, elections to regularize its status."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1949v02",
+   "documentId": "d439",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: The Embassy in Panama, December 1949, names the three conditions, citing a circular instruction of 8 June 1948 that FRUS does not print."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1949v02",
+   "documentId": "d439",
+   "text": "three conditions viz. “de facto” control, ability and willingness meet obligations, and acquiescence great majority of people"
+  },
+  {
+   "kind": "heading",
+   "text": "Constitutional legitimacy and the Central American treaties, 1913-1936",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Wilson's March 1913 statement and the Central American treaties of 1907 and 1923 added a fourth test: how the government came to power. The thread runs from the Tinoco case in Costa Rica to the State Department dropping the treaty rule in 1936."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1913",
+   "documentId": "d7",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: Wilson's statement of 11 March 1913, circulated to the missions in Latin America: cooperation only with just government based on law, not on irregular force. Added by hand; it never uses the word recognition."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1913",
+   "documentId": "d7",
+   "text": "Cooperation is possible only when supported at every turn by the orderly processes of just government based upon law, not upon arbitrary or irregular force."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917",
+   "documentId": "d378",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: Lansing on Costa Rica, February 1917: no recognition for any government not elected by legal and constitutional means."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917",
+   "documentId": "d378",
+   "text": "it will not give recognition or support to any Government which may be established unless it is clearly proven that it is elected by legal and constitutional means."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917",
+   "documentId": "d414",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: Tinoco's agent quotes Article I of the 1907 Additional Treaty and argues it binds only the five republics, not the United States."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917",
+   "documentId": "d414",
+   "text": "The Governments of the High Contracting Parties shall not recognize any other Government which may come into power in any of the five Republics as a consequence of a coup d’état, or of a revolution against the recognized Government, so long as the fully elected representatives of the people thereof have not constitutionally reorganized the country."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1932v05",
+   "documentId": "d623",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: El Salvador, January 1932: the Department works through Article II of the 1923 treaty clause by clause to see who could be recognized."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1932v05",
+   "documentId": "d623",
+   "text": "he is not related through consanguinity to one of the leaders of the revolution as specified in Clause 1 of Article II of the Treaty."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1936v05",
+   "documentId": "d112",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: April 1936: the Department will no longer be guided by Article II of the 1923 treaty in extending or denying recognition in Central America."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1936v05",
+   "documentId": "d112",
+   "text": "the United States should no longer be guided by Article II of the General Treaty of Peace and Amity of 1923 in extending or denying recognition to Governments in Central America"
+  },
+  {
+   "kind": "heading",
+   "text": "Recognition as a bargain: Mexico, 1920-1923",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "With Mexico, recognition was tied to specific undertakings: the interpretation of Article 27 of the 1917 Constitution, claims, and a treaty."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1920v03",
+   "documentId": "d225",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: Under Secretary Davis, August 1920: Article 27 must be interpreted as not retroactive before relations resume."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1920v03",
+   "documentId": "d225",
+   "text": "it was necessary to have a proper and final interpretation of Article 27 of the Constitution to the effect that this Article shall not be retroactive and in any way conflict with the valid rights acquired before the adoption of the Constitution"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1921v02",
+   "documentId": "d344",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: Hughes, June 1921: recognition is 'a subordinate one' and will come with a treaty binding Mexico to its primary international obligations."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1921v02",
+   "documentId": "d344",
+   "text": "In short, when it appears that there is a government in Mexico willing to bind itself to the discharge of primary international obligations, concurrently with that act its recognition will take place."
+  },
+  {
+   "kind": "heading",
+   "text": "Wartime: consultation and the Axis test, 1943-1944",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "In wartime the question became collective and political: the other republics were consulted, and the test was whether the new regime had Axis connections."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1943v05",
+   "documentId": "d335",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: Armour in Buenos Aires, June 1943, denies that a break with the Axis was being imposed as a condition precedent to recognizing the Ramirez government."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1943v05",
+   "documentId": "d335",
+   "text": "it was not my Government’s intention or desire to bargain with the new Government or to impose a break in relations with the Axis as a condition precedent to recognition"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1944v07",
+   "documentId": "d432",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: Bolivia, June 1944: pro-Nazi MNR leaders made recognition impossible; none is now in a prominent post."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1944v07",
+   "documentId": "d432",
+   "text": "the pro-Nazi record of the MNR leaders made recognition by the other American republics impossible. There is now no MNR official in any position of prominence in Bolivia."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1944v07",
+   "documentId": "d1023",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: June 1944: under the Montevideo formula (Resolution XXII) every revolutionary change triggers consultation on Axis inspiration."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1944v07",
+   "documentId": "d1023",
+   "text": "consultation is automatically called for by the mere fact of a revolutionary change of government. The subject of the consultations is whether there is evidence in the possession of any government of Axis inspiration or tendencies."
+  },
+  {
+   "kind": "heading",
+   "text": "After Bogota: continuity, and what was still asked, 1948-1973",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Resolution XXXV at Bogota in 1948 recast recognition as continuity of relations that implied no approval. The later documents show what Washington still weighed: communism, elections, civil rights, and timing."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1948v09",
+   "documentId": "d74",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: Resolution XXXV, Bogota 1948: maintaining relations implies no judgment on the government's domestic policy."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1948v09",
+   "documentId": "d74",
+   "text": "That the establishment or maintenance of diplomatic relations with a government does not imply any judgment upon the domestic policy of that government."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1948v09",
+   "documentId": "d89",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: November 1948, Peru's military junta: the presumption is now to keep relations with all Latin American governments."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1948v09",
+   "documentId": "d89",
+   "text": "In the absence of any compelling reason to the contrary, it is desirable for the United States to maintain diplomatic relations with all Latin American governments."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v06",
+   "documentId": "d217",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: Herter to Eisenhower, 7 January 1959: recognize Castro's provisional government without delay; it claims control, promises to honour commitments, and appears free from Communist taint."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1958-60v06",
+   "documentId": "d217",
+   "text": "The Provisional Government appears free from Communist taint and there are indications that it intends to pursue friendly relations with the United States."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v12",
+   "documentId": "d421",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: Ball to Kennedy, July 1962: the suspension of relations after the Peruvian coup moved the junta on elections and civil rights."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v12",
+   "documentId": "d421",
+   "text": "the sharp reaction of the United States and other Latin American countries has led the junta to take a position with respect to new elections, with respect to current civil rights"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76v21",
+   "documentId": "d348",
+   "notes": [
+    "Agent finding, run r4, 2026-10-25: Washington Special Actions Group, 12 September 1973: well-disposed to the Chilean junta, but not the first to recognize it."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v21",
+   "documentId": "d348",
+   "text": "we should take the public position that we recognize governments, not heads of government, and that question of recognition has not arisen"
+  },
+  {
+   "kind": "heading",
+   "text": "Threads not followed",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Threads this run did not follow (run r4, 2026-10-25): the Mexican recognitions of 1913-1915 (Huerta, Carranza) beyond the February 1913 tests; the Haitian and Dominican recognitions under occupation; the 1930 recognitions of Brazil, Guatemala and the Dominican Republic, which sit under headings that never name recognition; the 1963 coups in the Dominican Republic and Honduras, printed mainly in the microfiche supplement; Nicaragua in 1979. The Department's circular instruction of 8 June 1948, the July 1950 Acheson speech cited as 'recognition does not imply approval', and the Latin American foreign ministries' own deliberations are cited or implied in FRUS but not printed in it."
+  },
+  {
+   "kind": "generated",
+   "generatedBlockType": "archivalSources"
+  }
+ ]
+}

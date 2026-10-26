@@ -1,0 +1,47 @@
+frus1945v04 | 16 | Denmark: > Proposed tripartite statement by the United States, the United Kingdom, and the Soviet Union recognizing Denmark as an ally; recognition by the United States of the Danish Government; conclusion of a civil aff | d553,d554,d555
+frus1945v05 | 92 | Yugoslavia > Concern of the United States with internal conditions in Yugoslavia and the recognition of the Federal People’s Republic of Yugoslavia | d965,d966,d967
+frus1945v07 | 0 | Exchange of views between the United States and China on the future status of Korea and the question of recognizing a provisional Korean Government | 
+frus1945v09 | 65 | Argentina: > Problems arising in connection with the recognition of the Farrell government followed by the deterioration of relations with that government | d242,d243,d244
+frus1945v09 | 9 | El Salvador: > Recognition by the United States and other American Republics of the government of Osmín Aguirre y Salinas | d875,d876,d877
+frus1945v09 | 28 | Venezuela: > Consultation concerning and recognition of the Venezuelan revolutionary junta | d1157,d1158,d1159
+frus1946v06 | 95 | Bulgaria: > Interest of the United States in the establishment of democratic government in Bulgaria; the question of the extension of diplomatic recognition to the Bulgarian Government | d27,d28,d29
+frus1946v07 | 2 | Yemen: > United States recognition of the independence of Yemen; establishment of formal treaty and diplomatic relations with Yemen | d730,d731
+frus1946v10 | 5 | Attitude of the Department of State toward recognition of the independence of outer Mongolia | d958,d959,d960
+frus1946v11 | 53 | Bolivia: > Concern of the United States with respect to the violence accompanying the Bolivian revolution and the problem of recognition | d272,d273,d274
+frus1946v11 | 8 | Haiti: > United States recognition of the new Haitian Government | d768,d769,d770
+frus1947v08 | 14 | Ecuador: > The question of recognizing the Mancheno, the Suarez, and the Arosemena regimes in Ecuador | d592,d593,d594
+frus1947v08 | 40 | Nicaragua: > Political upheaval in Nicaragua: United States policies of nonintervention and nonrecognition | d716,d717,d718
+frus1948v06 | 0 | Southeast Asia: > Siam: > Recognition of new government | 
+frus1949v06 | 7 | The Near East > Syria > Attitude of the United States toward recognition of governments in Syria following a succession of coups d’etat | d1132,d1133,d1134
+frus1949v07p1 | 320 | East and Southeast Asia: > Indonesia > The interest of the United States in nationalist opposition to the restoration of Netherlands rule in the East Indies and consideration by the United Nations Security Council of Ind | d95,d96,d97
+frus1949v08 | 117 | The Embassy in China after occupation of Nanking by Chinese Communists: > I. Violation of Ambassador Stuart’s residence; Chinese Communist refusal to recognize official status of diplomatic personnel; departure of the Am | d857,d858,d859
+frus1949v08 | 101 | Problems of United States Consulates in areas occupied by the Chinese Communists: > II. Consulates General at Peiping and Tientsin: Refusal of Chinese Communists to deal with Consulates without recognition; closing of of | d1301,d1302,d1303
+frus1949v09 | 290 | Policy of the United States with respect to the question of recognition | d1,d2,d3
+frus1949v09 | 76 | Policy of the United States with respect to the question of recognition > II. Chou En-lai’s bid of October 1 for recognition; de facto recognition by the British government; reaction of the United States and other Powers | d97,d98,d99
+frus1949v09 | 118 | Policy of the United States with respect to the question of recognition > III. Reactions to British proposal of November 1 favoring de jure recognition of the Peiping regime; British decision of December 15 to accord de  | d173,d174,d175
+frus1950v02 | 3 | The American Republics: > Haiti > Recognition by the United States of the military junta government of Haiti | d476,d477,d478
+frus1950v06 | 169 | Indochina: > Policy of the United States with respect to Indochina; United States recognition of Vietnam, Laos, and Cambodia as Associated States within the French Union; the extension of United States military assistanc | d439,d440,d441
+frus1951v05 | 23 | The Near and Middle East > Syria > Policy of the United States toward development of technical and military assistance to Syria; question involving diplomatic recognition following a military coup d’etat | d611,d612,d613
+frus1955-57v23p1 | 255 | Japan > U.S. Policy Toward and Relations With Japan: The NSC 5516 Series; U.S. Attitude Toward the Resumption of Diplomatic Relations Between Japan and the Soviet Union; Desire of Japan for Reversion of Okinawa and the B | d1,d2,d3
+frus1958-60v01 | 274 | Vietnam > THE ROLE OF THE TEMPORARY EQUIPMENT RECOVERY MISSION; THE QUESTION OF THE MILITARY ASSISTANCE ADVISORY GROUP CEILING; THE CIVIL GUARD AND THE DEVELOPMENT OF PARAMILITARY FORCES; UPGRADING THE REPUBLIC OF VIETNA | d1,d2,d3
+frus1958-60v06 | 68 | Cuba > U.S. interest in the Cuban revolution, the overthrow of the Batista government, and the consolidation of power by Fidel Castro, reevaluation by the U.S. Government of the policy of shipping arms to the Batista gov | d1,d2,d3
+frus1958-60v10p2 | 13 | Albania and Bulgaria > Continuing Non-Recognition of Albania; Resumption of Diplomatic Relations with Bulgaria | d31,d32,d33
+frus1958-60v12 | 36 | Iraq > JANUARY–JULY 1958: THE IRAQI COUP; ASSESSMENT OF THE QASSIM GOVERNMENT; U.S. RECOGNITION OF THE NEW GOVERNMENT | d96,d97,d98
+frus1958-60v12 | 36 | Iran > 1958: U.S. HIGH-LEVEL VISITS; IRANIAN REACTION TO THE IRAQI COUP; INCREASED U.S. MILITARY ASSISTANCE; U.S. INTEREST IN POLITICAL AND SOCIAL REFORM; THE SOVIET MILITARY THREAT | d224,d225,d226
+frus1958-60v13 | 85 | United Arab Republic > U.S. Recognition of the United Arab Republic | d182,d183,d184
+frus1958-60v14 | 34 | U.S. Recognition of and Concern With Newly-Independent African States | d56,d57,d58
+frus1958-60v14 | 27 | Guinea > U.S. Recognition of Guinea; U.S. Relations With Guinea; President Touré’s Visit to the United States | d306,d307,d308
+frus1958-60v16 | 90 | Cambodia > U.S. Military Assistance to Cambodia; South Vietnamese-Cambodian Relations; Lao-Cambodian Relations; Cambodia’s Recognition of the People’s Republic of China and Sihanouk’s Visit to Beijing; Sihanouk’s Visit t | d69,d70,d71
+frus1958-60v16 | 87 | Laos > III. the Political Crisis and the December 1959 Coup, July–December 1959 | d232,d233,d234
+frus1958-60v16 | 78 | Laos > V. The Kong Le Coup and U.S. Policy Debate, August 9–October 18, 1960 | d355,d356,d357
+frus1958-60v18 | 52 | Korea > November 1959–December 1960, the Political Crisis of April 1960: The March 15 Election and Resulting Crisis; Overthrow of President Syngman Rhee; U.S. Relations With the Government of President Po Sun Yun | d285,d286,d287
+frus1961-63v03 | 49 | Vietnam > V. Raids on the Pagodas and a Possible Coup, August 21–28, 1963: Martial Law, Lodge’s Arrival, Responsibility for the Crackdown on the Buddhists, the Cable of August 24, NSC Subcommittee Meetings on Vietnam, Ne | d261,d262,d263
+frus1961-63v04 | 72 | Vietnam > I. Reassessment in Washington and Inaction in Saigon, August 28–September 7, 1963: The Coup Stalls, President Kennedy’s Public Statement, Attempts To Negotiate Nhu’s Removal and Change South Vietnam’s Policies | d1,d2,d3
+frus1961-63v04 | 136 | Vietnam > II. Period of Interlude, September 7–October 22, 1963: Assessment of the Progress of the War, U.S. Efforts To Reform the Diem Government, The McNamara-Taylor Mission to Vietnam and Report, U.S. Policy on Coup P | d73,d74,d75
+frus1961-63v04 | 70 | Vietnam > III. The Coup Against the Diem Government, October 23–November 2, 1963: Differing Interpretations of U.S. Policy Toward Coup Plotting, Efforts To Obtain Information on a Potential Coup, Lodge-Diem Discussions,  | d209,d210,d211
+frus1961-63v04 | 44 | Vietnam > IV. U.S. Relations With the Provisional Government of Vietnam, November 2–22, 1963: U.S. Recognition of the Provisional Government, The Fate of Remaining Ngo Family Members and Tri Quang, U.S. Advice to the New | d279,d280,d281
+frus1964-68v01 | 27 | Vietnam > I. The Khanh Coup, January 1–31 | d1,d2,d3
+frus1964-68v16 | 29 | Cyprus; Greece; Turkey > The Military Coup in Greece and the Initial U.S. Response, April–September 1967 | d273,d274,d275
+frus1964-68v16 | 33 | Cyprus; Greece; Turkey > Relations With the Greek Military Junta and Continuing Discussions on Cyprus, December 1967–December 1968 | d343,d344,d345
+frus1964-68v26 | 64 | Indonesia > Coup and Counter Reaction: October 1965–March 1966 | d142,d143,d144
+frus1964-68v28 | 100 | Laos > January 1964 to June 1964: U.S. Response to the Pathet Lao/North Vietnamese Offensives of February and May; U.S. Support for Souvanna Phouma During the April Coup; U.S. Photo Reconnaissance and the Retaliatory Att | d1,d2,d3

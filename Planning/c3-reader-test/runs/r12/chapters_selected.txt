@@ -1,0 +1,75 @@
+A | frus1895p1 | Ecuador > Recognition of de facto government | 4
+A | frus1899 | Venezuela > Revolution in Venezuela and recognition of de facto government | 46
+A | frus1900 | Colombia > Recognition of new Government of Colombia | 9
+A | frus1900 | Dominican Republic > Recognition of new Government | 4
+A | frus1903 | Dominican Republic > Revolution in Santo Domingo, and recognition of new Government | 4
+A | frus1903 | Guatemala and Honduras > Revolution in Honduras, and recognition of new Government | 5
+A | frus1904 | Dominican Republic > Recognition of the provisional government of the Dominican Republic | 7
+A | frus1907p2 | Guatemala and Honduras > Recognition of the provisional Government of Honduras by the United States and Mexico | 11
+A | frus1911 |  Revolution in Haiti—Recognition by the United States of the Leconte Government—Temporary refuge offered President Simon | 37
+A | frus1911 | letion of the constitution by the second assembly and continuation of the assembly as a legislature; revolutionary plots | 41
+A | frus1912 | Haiti: > Death of President Leconte and recognition by the United States of President Auguste | 4
+A | frus1912 | l successions of Gondra, Jara, Rojas, Peña, Navero, and Schaerer; recognition of President Schaerer by the United States | 25
+A | frus1913 | Ecuador: > Recognition of President Plaza by the United States | 1
+A | frus1913 | ed States on the border and in Mexican waters; measures taken by the Diplomatic Corps to protect the lives of foreigners | 340
+A | frus1913 | uvian Government of the right of a political refugee to seek and be accorded asylum at the legation of a foreign country | 16
+A | frus1914 |  Protest of Haiti against shipment abroad on the U. S. S. Machias of Government funds on deposit in the Banque Nationale | 100
+A | frus1914 | Billinghurst; recognition by the United States of the Government Junta and of the Provisional President, Oscar Benavides | 19
+A | frus1916 | occupation of the Republic by United States forces and establishment of martial law. Protest by the Dominican Government | 69
+A | frus1917 | ly, and members of his government by the American Legation. Attitude of the United States towards counter-revolutionists | 66
+A | frus1919v01 | he United States and Nicaragua for the reconciliation of leaders and the holding of an election—Election of Julio Acosta | 38
+A | frus1919v02 | uration as constitutional President, October 12—Continued designation of his government by the United States as de facto | 39
+A | frus1920v01 | Costa Rica: > Recognition of the Government of Costa Rica by the United States | 4
+A | frus1920v01 | f the Republican Party in the elections of November 14—Decision of the United States Government for eventual recognition | 31
+A | frus1920v03 | Mexico: > Question of the recognition of the Provisional Government by the United States | 67
+A | frus1920v03 | Peru: > Recognition of the Leguia government by the United States | 6
+A | frus1921v01 | Bolivia: > Recognition of the Saavedra Government by the United States | 16
+A | frus1921v02 | Guatemala: > Overthrow of President Herrera | 12
+A | frus1921v02 | ed Treaty of Amity and Commerce; objection by the Obregon Government to concluding a treaty before receiving recognition | 14
+A | frus1922v02 | Guatemala: > Recognition of the Orellana government by the United States | 7
+A | frus1922v02 | Mexico: > Question of the recognition of the government of General Obregon by the United States | 12
+A | frus1923v02 | xico: > Recognition of the Government of General Obregón by the United States and the resumption of diplomatic relations | 24
+A | frus1925v02 | Ecuador: > Withholding of recognition by the United States of the revolutionary government in Ecuador | 4
+A | frus1928v02 | Ecuador: > Extension by the United States of de jure recognition to the Government of Ecuador | 2
+A | frus1931v02 | Guatemala: > Recognition of constitutional government in Guatemala | 24
+A | frus1932v05 | El Salvador: > Refusal of the United States to recognize the Martínez regime in El Salvador | 68
+A | frus1933v05 | El Salvador: > Refusal of the United States to recognize the Martínez regime in El Salvador | 10
+A | frus1934v05 |  > Recognition of the Martínez Government of El Salvador by Guatemala, Honduras, and Nicaragua, and by the United States | 62
+A | frus1934v05 | Cuba: > Recognition of the Provisional Government of Cuba | 31
+A | frus1936v05 | I of the General Treaty of Peace and Amity of 1923 in extending or denying recognition to governments in Central America | 8
+A | frus1937v05 | Bolivia: > Revolution in Bolivia; recognition of the Busch Government | 33
+A | frus1937v05 | Ecuador: > Forced resignation of President Paez of Ecuador; recognition of the Enriquez Government | 20
+A | frus1937v05 | Paraguay: > Revolution in Paraguay; recognition of the Paiva Government | 50
+A | frus1937v05 | f a new one continuing President Vargas in office; continuance of diplomatic relations without formal act of recognition | 8
+A | frus1940v05 | Cuba: > Refusal of the United States to indicate whether it would or would not recognize a future government of Cuba | 7
+A | frus1943v05 | Argentina: > Discussions leading to the recognition of the Government of General Pedro P. Ramirez | 17
+A | frus1943v05 | on by the United States of the revolutionary regime established in Bolivia by the Movimiento Nacionalista Revolucionario | 9
+A | frus1944v07 | Argentina: > Withholding of recognition from the regime of Edelmiro Farrell by the United States | 36
+A | frus1944v07 | Bolivia: > Recognition by the United States and other American Republics of the revolutionary junta in Bolivia | 61
+A | frus1944v07 | Ecuador: > Recognition by the United States and the other American Republics of the new government of Ecuador | 23
+A | frus1944v07 | Guatemala: > Revolution in Guatemala and recognition of a new regime by the United States and other American Republics | 28
+A | frus1944v07 | in El Salvador; policies of the United States and other American Republics regarding the right of asylum and recognition | 39
+A | frus1945v09 | Venezuela: > Consultation concerning and recognition of the Venezuelan revolutionary junta | 28
+A | frus1945v09 | l Salvador: > Recognition by the United States and other American Republics of the government of Osmín Aguirre y Salinas | 9
+A | frus1945v09 | onnection with the recognition of the Farrell government followed by the deterioration of relations with that government | 65
+A | frus1946v11 | Haiti: > United States recognition of the new Haitian Government | 8
+A | frus1946v11 | rn of the United States with respect to the violence accompanying the Bolivian revolution and the problem of recognition | 53
+A | frus1947v08 | Ecuador: > The question of recognizing the Mancheno, the Suarez, and the Arosemena regimes in Ecuador | 14
+A | frus1947v08 | Nicaragua: > Political upheaval in Nicaragua: United States policies of nonintervention and nonrecognition | 40
+A | frus1948v09 | atic relations with new governments on the basis of the Bogota Resolution and consultation with other American Republics | 51
+A | frus1950v02 | The American Republics: > Haiti > Recognition by the United States of the military junta government of Haiti | 3
+B | frus1918 | Costa Rica > Political affairs | 83
+B | frus1930v01 | Argentina: > Revolution in Argentina | 21
+B | frus1930v01 | Bolivia: > Revolution in Bolivia | 20
+B | frus1930v01 | Brazil: > Revolution in Brazil | 51
+B | frus1930v03 | Guatemala: > Revolution in Guatemala | 41
+B | frus1930v03 | Peru: > Revolution in Peru | 68
+B | frus1931v01 | Chile: > Revolution in Chile | 43
+B | frus1931v02 | El Salvador: > Revolution in El Salvador | 61
+B | frus1931v02 | Panama: > Revolution in Panama | 17
+B | frus1931v02 | Peru: > Revolution in Peru | 29
+B | frus1933v05 | Cuba: > Revolution in Cuba—Efforts of the United States to aid in restoring political peace: | 306
+B | frus1935v04 | Ecuador: > Revolution in Ecuador | 18
+B | frus1936v05 | Bolivia: > Revolution in Bolivia | 26
+B | frus1936v05 | Paraguay: > Revolution in Paraguay | 46
+B | frus1947v08 | Venezuela: > The position of the United States with respect to revolutionary activity in Venezuela | 13

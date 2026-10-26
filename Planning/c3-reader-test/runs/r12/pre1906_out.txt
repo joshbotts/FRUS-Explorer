@@ -1,0 +1,6 @@
+diplomaticDespatches colombia 1900-09-08 | Despatches from U.S. Ministers to Colombia, 1820-1906 | Sept. 7, 1900-Jan. 31, 1902 | roll NAID 189300896 | file unit NAID 177380752 | series-facts for file unit: False
+diplomaticDespatches venezuela 1899-10-23 | Despatches from U.S. Ministers to Venezuela, 1835-1906 | July 3, 1899-Mar. 24, 1900 | roll NAID 188967467 | file unit NAID 177380736 | series-facts for file unit: False
+diplomaticDespatches ecuador 1895-11-06 | Despatches from U.S. Ministers to Ecuador, 1848-1906 | May 14, 1894-Dec. 28, 1896 | roll NAID 189312130 | file unit NAID 177380753 | series-facts for file unit: False
+diplomaticDespatches venezuela 1899-11-18 | Despatches from U.S. Ministers to Venezuela, 1835-1906 | July 3, 1899-Mar. 24, 1900 | roll NAID 188967467 | file unit NAID 177380736 | series-facts for file unit: False
+diplomaticInstructions colombia 1900-09-08 | None | Volume 19: Colombia: Nov. 1, 1898-Aug. 8, 1906 | roll NAID 149302787 | file unit NAID None | series-facts for file unit: False
+diplomaticInstructions ecuador 1895-11-06 | None | Volume 1-2: Ecuador: Apr. 15, 1848-July 22, 1899; Aug. 7, 1899-Aug. 13, 1906 | roll NAID 149303924 | file unit NAID None | series-facts for file unit: False

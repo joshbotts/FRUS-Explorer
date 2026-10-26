@@ -1,0 +1,6 @@
+737.00 1959 1962 | 1950-1959 [Internal Political and National Defense Affairs] Cuba: subject 00 not in shipped subject list || 1960-1963 [Internal Political and National Defense Affairs] Cuba: subject 00 not in shipped subject list
+723.00 1962 1962 | 1960-1963 [Internal Political and National Defense Affairs] Peru: subject 00 not in shipped subject list || 1960-1963 [Internal Political and National Defense Affairs] Peru: subject 00 not in shipped subject list
+824.00 1921 1944 | 1910-1949 [Internal Affairs of States] Bolivia: Political affairs || 1910-1949 [Internal Affairs of States] Bolivia: Political affairs
+817.00 1947 1948 | 1910-1949 [Internal Affairs of States] Nicaragua: Political affairs || 1910-1949 [Internal Affairs of States] Nicaragua: Political affairs
+738.00 1950 1959 | 1950-1959 [Internal Political and National Defense Affairs] Haiti: subject 00 not in shipped subject list || 1950-1959 [Internal Political and National Defense Affairs] Haiti: subject 00 not in shipped subject list
+838.01 1946 1946 | 1910-1949 [Internal Affairs of States] Haiti: Government || 1910-1949 [Internal Affairs of States] Haiti: Government

@@ -1,0 +1,22 @@
+Article 27 tolerant ids: 14
+  frus1920v03/d224       1920-08-24  heading    Mexico: > Question of the recognition of the Provisional Government by the United States
+  frus1920v03/d225       1920-08-30  heading    Mexico: > Question of the recognition of the Provisional Government by the United States
+  frus1920v03/d237       1920-10-26  heading    Mexico: > Question of the recognition of the Provisional Government by the United States
+  frus1921v02/d340       1921-04-07  heading    ral Obregon by the United States: Proposed Treaty of Amity and Commerce; objection by the 
+  frus1921v02/d345       1921-06-10  heading    ral Obregon by the United States: Proposed Treaty of Amity and Commerce; objection by the 
+  frus1921v02/d348       1921-06-11  heading    ral Obregon by the United States: Proposed Treaty of Amity and Commerce; objection by the 
+  frus1921v02/d349       1921-07-21  heading    ral Obregon by the United States: Proposed Treaty of Amity and Commerce; objection by the 
+  frus1922v02/d572       1922-02-10  heading    Mexico: > Question of the recognition of the government of General Obregon by the United S
+  frus1922v02/d573       1922-04-15  heading    Mexico: > Question of the recognition of the government of General Obregon by the United S
+  frus1922v02/d576       1922-05-25  heading    Mexico: > Question of the recognition of the government of General Obregon by the United S
+  frus1922v02/d578       1922-07-21  heading    Mexico: > Question of the recognition of the government of General Obregon by the United S
+  frus1922v02/d579       1922-07-28  heading    Mexico: > Question of the recognition of the government of General Obregon by the United S
+  frus1923v02/d472       1923-04-05  heading    Mexico: > Recognition of the Government of General Obregón by the United States and the re
+  frus1923v02/d481       1923-05-08  heading    Mexico: > Recognition of the Government of General Obregón by the United States and the re
+all in frus1920v03..frus1923v02: True
+years: ['1920', '1921', '1922', '1923']
+treaty years: ['1917', '1930', '1931', '1932', '1933', '1934', '1936', '1944']
+Axis years: ['1943', '1944', '1945', '1946']
+human rights years: ['1948', '1950', '1952', '1961', '1962', '1963', '1965', '1966', '1968', '1973', '1976', '1977', '1978', '1979', '1980']
+international obligations: 102 of 1227 = 0.0831
+communist after 1948: 154 of 295 = 0.522 ; before: 22 of 932 = 0.024

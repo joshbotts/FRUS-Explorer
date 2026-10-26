@@ -1,0 +1,70 @@
+rows 3040 Counter({'heading': 2654, 'postwar': 264, 'revchapter': 122}) heading mentions 841
+volumes 74
+frus1895p1 4 Ecuador > Recognition of de facto government
+frus1896 5 Greater Republic of Central America > Recognition of the political union of Honduras, Nicaragua, and Salvador
+frus1899 46 Venezuela > Revolution in Venezuela and recognition of de facto government
+frus1900 9 Colombia > Recognition of new Government of Colombia
+frus1900 4 Dominican Republic > Recognition of new Government
+frus1903 4 Dominican Republic > Revolution in Santo Domingo, and recognition of new Government
+frus1903 5 Guatemala and Honduras > Revolution in Honduras, and recognition of new Government
+frus1904 7 Dominican Republic > Recognition of the provisional government of the Dominican Republic
+frus1907p2 49 Guatemala and Honduras > Central American peace protocol, Washington, September 17, 1907
+frus1907p2 11 Guatemala and Honduras > Recognition of the provisional Government of Honduras by the United States and Mexico
+frus1911 339 iplomatic corps in City of Mexico. Transportation of Mexican troops through border States of the United States
+frus1911 37 n in Haiti—Recognition by the United States of the Leconte Government—Temporary refuge offered President Simon
+frus1911 41 the constitution by the second assembly and continuation of the assembly as a legislature; revolutionary plots
+frus1912 4 Haiti: > Death of President Leconte and recognition by the United States of President Auguste
+frus1912 25 ons of Gondra, Jara, Rojas, Peña, Navero, and Schaerer; recognition of President Schaerer by the United States
+frus1913 1 Circular: President Wilson statement of March 11, 1913
+frus1913 1 Ecuador: > Recognition of President Plaza by the United States
+frus1913 16 rnment of the right of a political refugee to seek and be accorded asylum at the legation of a foreign country
+frus1913 340 on the border and in Mexican waters; measures taken by the Diplomatic Corps to protect the lives of foreigners
+frus1914 100 f Haiti against shipment abroad on the U. S. S. Machias of Government funds on deposit in the Banque Nationale
+frus1914 19 st; recognition by the United States of the Government Junta and of the Provisional President, Oscar Benavides
+frus1915 92 iti by American forces. Election of President Dartiguenave; recognition of his Government by the United States
+frus1915 235 t by the conferring powers. Surrender of Villistas; escape of Villa. Operations of Pelaez in Tuxpam oil fields
+frus1916 69  of the Republic by United States forces and establishment of martial law. Protest by the Dominican Government
+frus1917 66 mbers of his government by the American Legation. Attitude of the United States towards counter-revolutionists
+frus1919v01 38 States and Nicaragua for the reconciliation of leaders and the holding of an election—Election of Julio Acosta
+frus1919v02 39  constitutional President, October 12—Continued designation of his government by the United States as de facto
+frus1920v01 4 Costa Rica: > Recognition of the Government of Costa Rica by the United States
+frus1920v01 31 blican Party in the elections of November 14—Decision of the United States Government for eventual recognition
+frus1920v02 63 d resignation of the President—Inauguration of the Herrera government and its recognition by the United States
+frus1920v03 67 Mexico: > Question of the recognition of the Provisional Government by the United States
+frus1920v03 6 Peru: > Recognition of the Leguia government by the United States
+frus1921v01 16 Bolivia: > Recognition of the Saavedra Government by the United States
+frus1921v02 24 Mexico: > Attitude of other governments toward recognition of the Obregon Government
+frus1921v02 14 of Amity and Commerce; objection by the Obregon Government to concluding a treaty before receiving recognition
+frus1922v01 11 General: > Conference on Central American Affairs, convened at Washington December 4, 1922
+frus1922v02 7 Guatemala: > Recognition of the Orellana government by the United States
+frus1922v02 7 Mexico: > Attitude of other governments toward recognition of the Obregon government
+frus1922v02 12 Mexico: > Question of the recognition of the government of General Obregon by the United States
+frus1923v01 1  > Agreements between the United States and Central American Republics, signed at Washington, February 7, 1923
+frus1923v02 24 cognition of the Government of General Obregón by the United States and the resumption of diplomatic relations
+frus1925v02 4 Ecuador: > Withholding of recognition by the United States of the revolutionary government in Ecuador
+frus1928v02 2 Ecuador: > Extension by the United States of de jure recognition to the Government of Ecuador
+frus1931v02 24 Guatemala: > Recognition of constitutional government in Guatemala
+frus1932v05 68 El Salvador: > Refusal of the United States to recognize the Martínez regime in El Salvador
+frus1933v05 10 El Salvador: > Refusal of the United States to recognize the Martínez regime in El Salvador
+frus1934v05 31 Cuba: > Recognition of the Provisional Government of Cuba
+frus1934v05 62 tion of the Martínez Government of El Salvador by Guatemala, Honduras, and Nicaragua, and by the United States
+frus1936v05 8 eneral Treaty of Peace and Amity of 1923 in extending or denying recognition to governments in Central America
+frus1937v05 33 Bolivia: > Revolution in Bolivia; recognition of the Busch Government
+frus1937v05 20 Ecuador: > Forced resignation of President Paez of Ecuador; recognition of the Enriquez Government
+frus1937v05 50 Paraguay: > Revolution in Paraguay; recognition of the Paiva Government
+frus1940v05 7 > Refusal of the United States to indicate whether it would or would not recognize a future government of Cuba
+frus1943v05 17 Argentina: > Discussions leading to the recognition of the Government of General Pedro P. Ramirez
+frus1943v05 9 United States of the revolutionary regime established in Bolivia by the Movimiento Nacionalista Revolucionario
+frus1944v07 36 Argentina: > Withholding of recognition from the regime of Edelmiro Farrell by the United States
+frus1944v07 61 Bolivia: > Recognition by the United States and other American Republics of the revolutionary junta in Bolivia
+frus1944v07 23 Ecuador: > Recognition by the United States and the other American Republics of the new government of Ecuador
+frus1944v07 28 a: > Revolution in Guatemala and recognition of a new regime by the United States and other American Republics
+frus1945v09 65 with the recognition of the Farrell government followed by the deterioration of relations with that government
+frus1945v09 9 : > Recognition by the United States and other American Republics of the government of Osmín Aguirre y Salinas
+frus1945v09 28 Venezuela: > Consultation concerning and recognition of the Venezuelan revolutionary junta
+frus1946v11 53 United States with respect to the violence accompanying the Bolivian revolution and the problem of recognition
+frus1946v11 8 Haiti: > United States recognition of the new Haitian Government
+frus1947v08 14 Ecuador: > The question of recognizing the Mancheno, the Suarez, and the Arosemena regimes in Ecuador
+frus1947v08 39 Nicaragua: > Political upheaval in Nicaragua: United States policies of nonintervention and nonrecognition
+frus1948v09 49 ions with new governments on the basis of the Bogota Resolution and consultation with other American Republics
+frus1950v02 3 The American Republics: > Haiti > Recognition by the United States of the military junta government of Haiti

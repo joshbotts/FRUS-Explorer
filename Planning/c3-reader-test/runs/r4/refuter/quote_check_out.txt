@@ -1,0 +1,61 @@
+=== OVERVIEW QUOTATIONS (20) ===
+ov1 'usual tests' (bottom line, Huerta)       frus1913/d894   fm/en=(0, 0) -> OK offsets=[2299]
+ov6 (F1)                                      frus1895p1/d244   fm/en=(0, 0) -> OK offsets=[424]
+ov7 (F1)                                      frus1895p1/d244   fm/en=(0, 0) -> OK offsets=[568]
+ov8 (F1)                                      frus1930v01/d375   fm/en=(0, 0) -> OK offsets=[1016]
+ov9 (F1)                                      frus1949v02/d439   fm/en=(0, 0) -> OK offsets=[1654]
+ov11 (F2)                                     frus1913/d7     fm/en=(0, 0) -> OK offsets=[687]
+ov12 (F2)                                     frus1917/d378   fm/en=(0, 0) -> OK offsets=[898]
+ov13 (F2)                                     frus1917/d414   fm/en=(0, 0) -> OK offsets=[6456]
+ov14 (F2)                                     frus1932v05/d623   fm/en=(0, 0) -> OK offsets=[378]
+ov15 (F2)                                     frus1936v05/d112   fm/en=(0, 0) -> OK offsets=[605]
+ov16 (F3)                                     frus1920v03/d225   fm/en=(0, 0) -> OK offsets=[1211]
+ov17 (F3)                                     frus1921v02/d344   fm/en=(0, 0) -> OK offsets=[3021]
+ov18 (F4)                                     frus1943v05/d335   fm/en=(0, 0) -> OK offsets=[1114]
+ov19 (F4)                                     frus1944v07/d1023  fm/en=(0, 0) -> OK offsets=[1827]
+ov20 (F4)                                     frus1944v07/d432   fm/en=(0, 0) -> OK offsets=[1416]
+ov22 (F5)                                     frus1948v09/d74    fm/en=(0, 0) -> OK offsets=[1303]
+ov23 (F5)                                     frus1948v09/d89    fm/en=(0, 0) -> OK offsets=[905]
+ov24 (F5)                                     frus1958-60v06/d217   fm/en=(0, 0) -> OK offsets=[1495]
+ov25 (F5)                                     frus1961-63v12/d421   fm/en=(0, 0) -> OK offsets=[2346]
+ov26 (F5)                                     frus1969-76v21/d348   fm/en=(0, 0) -> OK offsets=[1802]
+overview failures: 0
+
+=== COLLECTION EXCERPTS ===
+frus1895p1/d244   fm/en=(0, 0) -> OK offsets=[353]   | 'intercourse for the disposal of current matters af'
+frus1913/d894   fm/en=(0, 0) -> OK offsets=[2349]   | 'the question of the degree to which the population'
+frus1930v01/d375   fm/en=(0, 0) -> OK offsets=[987]   | 'the evidence has satisfied me that these provision'
+frus1949v02/d439   fm/en=(0, 0) -> OK offsets=[1654]   | 'three conditions viz. “de facto” control, ability '
+frus1913/d7     fm/en=(0, 0) -> OK offsets=[687]   | 'Cooperation is possible only when supported at eve'
+frus1917/d378   fm/en=(0, 0) -> OK offsets=[896]   | 'it will not give recognition or support to any Gov'
+frus1917/d414   fm/en=(0, 0) -> OK offsets=[6368]   | 'The Governments of the High Contracting Parties sh'
+frus1932v05/d623   fm/en=(0, 0) -> OK offsets=[376]   | 'he is not related through consanguinity to one of '
+frus1936v05/d112   fm/en=(0, 0) -> OK offsets=[605]   | 'the United States should no longer be guided by Ar'
+frus1920v03/d225   fm/en=(0, 0) -> OK offsets=[1211]   | 'it was necessary to have a proper and final interp'
+frus1921v02/d344   fm/en=(0, 0) -> OK offsets=[3014]   | 'In short, when it appears that there is a governme'
+frus1943v05/d335   fm/en=(0, 0) -> OK offsets=[1114]   | 'it was not my Government’s intention or desire to '
+frus1944v07/d432   fm/en=(0, 0) -> OK offsets=[1416]   | 'the pro-Nazi record of the MNR leaders made recogn'
+frus1944v07/d1023  fm/en=(0, 0) -> OK offsets=[1827]   | 'consultation is automatically called for by the me'
+frus1948v09/d74    fm/en=(0, 0) -> OK offsets=[1303]   | 'That the establishment or maintenance of diplomati'
+frus1948v09/d89    fm/en=(0, 0) -> OK offsets=[905]   | 'In the absence of any compelling reason to the con'
+frus1958-60v06/d217   fm/en=(0, 0) -> OK offsets=[1471]   | 'The Provisional Government appears free from Commu'
+frus1961-63v12/d421   fm/en=(0, 0) -> OK offsets=[2280]   | 'the sharp reaction of the United States and other '
+frus1969-76v21/d348   fm/en=(0, 0) -> OK offsets=[1794]   | 'we should take the public position that we recogni'
+19 excerpts; failures: 0
+
+=== EXCERPT == memo quotes.json? ===
+quotes.json type: list len 19
+[["frus1895p1", "d244", "intercourse for the disposal of current matters affecting American interests with the de facto authority administering the public affairs of the State with the general acquiescence of its people and controlling the machinery of government to that end, is in accordance with the traditional policy of this Government."], ["frus1913", "d894", "the question of the degree to which the population of Mexico acquiesce in and assent to the new régime and the question of disposition and ability to protect foreigners and their interests and to respond to all international obligati
+
+=== BONUS: quoted phrases inside collection notes/prose ===
+note d894 'usual tests'                                                               -> OK offsets=[2299]
+note d344 'a subordinate one'                                                         -> OK offsets=[2792]
+prose Acheson 'recognition does not imply approval' vs frus1950v02/d476 (memo's grab) -> OK offsets=[3303]
+
+=== search-term phrases quoted in the overview (no document credited) ===
+international obligations
+the other American republics
+human rights
+recognition
+by force
+Department of State

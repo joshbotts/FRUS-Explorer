@@ -1,0 +1,1 @@
+\b(non-?)?recogni\w*([\s\-,().]+\S+){0,8}?[\s\-,().]+(governments?|government.s|regimes?|juntas?|administrations?|presiden\w*)\b|\b(governments?|government.s|regimes?|juntas?|administrations?|presiden\w*)([\s\-,().]+\S+){0,8}?[\s\-,().]+(non-?)?recogni\w*|\bnon-?recogni\w*

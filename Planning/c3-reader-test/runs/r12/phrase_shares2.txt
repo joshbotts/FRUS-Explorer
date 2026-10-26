@@ -1,0 +1,6 @@
+recogn* (prefix) | scope documents | FTS recogn* | M=1014 | evenly spaced 40 n=40 | STRICT 40 of 40 | TOLERANT 40 of 40
+department of state | scope documents | FTS "department of state" | M=333 | evenly spaced 40 n=40 | STRICT 40 of 40 | TOLERANT 40 of 40
+international obligations | scope documents | FTS "international obligations" | M=95 | census n=95 | STRICT 94 of 95 | TOLERANT 95 of 95
+recogn* (prefix) | non-scope documents | FTS recogn* | M=3928 | evenly spaced 40 n=40 | STRICT 40 of 40 | TOLERANT 40 of 40
+department of state | non-scope documents | FTS "department of state" | M=8194 | evenly spaced 40 n=40 | STRICT 40 of 40 | TOLERANT 40 of 40
+international obligations | non-scope documents | FTS "international obligations" | M=184 | census n=184 | STRICT 159 of 184 | TOLERANT 178 of 184

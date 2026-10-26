@@ -1,0 +1,480 @@
+
+##### collection-authority.json (1.8 MB) top: ['collections', 'generated', 'schemaVersion']
+
+##### central-files-index.json (3.6 MB) top: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+
+##### volume-sources-index.json (0.8 MB) top: ['generated', 'lots', 'majorCollections', 'recordGroups', 'schemaVersion']
+
+##### presidential-library-catalog.json (3.3 MB) top: ['generated', 'libraries', 'schemaVersion', 'source']
+
+##### external-citation-index.json (0.6 MB) top: ['classPairs', 'classSourceKeys', 'classTargetKeys', 'classTargets', 'coverage', 'generated', 'pairs', 'schemaVersion', 'sourceIds', 'targetIds', 'targets', 'volumes']
+
+##### series-facts-index.json (0.1 MB) top: ['byNaId', 'findingAidTypes', 'generated', 'headings', 'legend', 'referenceUnits', 'restrictions', 'schemaVersion', 'statuses', 'useRestrictions']
+
+##### lot-claimants-index.json (0.1 MB) top: ['generated', 'harvestGenerated', 'lots', 'note', 'schemaVersion']
+
+##### curated-library-resolutions.json (0.1 MB) top: ['schemaVersion', 'generated', 'note', 'entries']
+
+##### curated-lot-resolutions.json (0.0 MB) top: ['schemaVersion', 'generated', 'note', 'series', 'lots']
+
+##### subject-numeric-labels.json (0.1 MB) top: ['coverage', 'generated', 'provenance', 'schedules', 'schemaVersion']
+
+##### decimal-class-labels.json (0.1 MB) top: ['coverage', 'generated', 'provenance', 'schedules', 'schemaVersion']
+
+##### accession-series-index.json (0.6 MB) top: ['byAccession', 'generated', 'legend', 'note', 'schemaVersion']
+
+##### roll-scans-index.json (0.3 MB) top: ['generated', 'scans', 'schemaVersion', 'seriesNaId']
+
+
+================ HITS ================
+
+--- central-files-index.json :: ENTRY A1 1135  ()
+   /lotFiles[115]/hmsMlrEntryNumbers[0]
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "levelOfDescription": "series", "lotNumber": "59D573", "matchType": "control", "naId": "2108779", "recordGroup": "59", "title": "Subject Files"}
+   /lotFiles[154]/hmsMlrEntryNumbers[0]
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "levelOfDescription": "series", "lotNumber": "60D553", "matchType": "control", "naId": "2108779", "recordGroup": "59", "title": "Subject Files"}
+   /lotFiles[178]/hmsMlrEntryNumbers[0]
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "levelOfDescription": "series", "lotNumber": "61D279", "matchType": "control", "naId": "2108779", "recordGroup": "59", "title": "Subject Files"}
+
+--- central-files-index.json :: ENTRY A1 1583A  ()
+   /lotFiles[169]/hmsMlrEntryNumbers[0]
+      {"catalogURL": "https://catalog.archives.gov/id/2198167", "levelOfDescription": "series", "lotNumber": "61D167", "matchType": "control", "naId": "2198167", "recordGroup": "59", "title": "Alphabetical Files"}
+
+--- central-files-index.json :: ENTRY A1 1583B  ()
+   /lotFiles[169]/hmsMlrEntryNumbers[1]
+      {"catalogURL": "https://catalog.archives.gov/id/2198167", "levelOfDescription": "series", "lotNumber": "61D167", "matchType": "control", "naId": "2198167", "recordGroup": "59", "title": "Alphabetical Files"}
+
+--- central-files-index.json :: ENTRY A1 1583E  ()
+   /lotFiles[205]/hmsMlrEntryNumbers[0]
+      {"catalogURL": "https://catalog.archives.gov/id/2838992", "levelOfDescription": "series", "lotNumber": "62D1", "matchType": "control", "naId": "2838992", "recordGroup": "59", "title": "Records Relating to Activities with the National Security Council"}
+
+--- central-files-index.json :: ENTRY A1 1583F  ()
+   /lotFiles[205]/hmsMlrEntryNumbers[1]
+      {"catalogURL": "https://catalog.archives.gov/id/2838992", "levelOfDescription": "series", "lotNumber": "62D1", "matchType": "control", "naId": "2838992", "recordGroup": "59", "title": "Records Relating to Activities with the National Security Council"}
+
+--- central-files-index.json :: ENTRY A1 3157  ()
+   /lotFiles[243]/hmsMlrEntryNumbers[0]
+      {"catalogURL": "https://catalog.archives.gov/id/2363840", "levelOfDescription": "series", "lotNumber": "63D127", "matchType": "control", "naId": "2363840", "recordGroup": "59", "title": "Subject and Country Files"}
+
+--- central-files-index.json :: ENTRY A1 3159  ()
+   /lotFiles[274]/hmsMlrEntryNumbers[0]
+      {"catalogURL": "https://catalog.archives.gov/id/1750062", "levelOfDescription": "series", "lotNumber": "64D16", "matchType": "control", "naId": "1750062", "recordGroup": "59", "title": "Records Relating to El Salvador"}
+   /lotFiles[713]/hmsMlrEntryNumbers[0]
+      {"catalogURL": "https://catalog.archives.gov/id/1750062", "levelOfDescription": "series", "lotNumber": "73D29", "matchType": "control", "naId": "1750062", "recordGroup": "59", "title": "Records Relating to El Salvador"}
+
+--- central-files-index.json :: ENTRY A1 558-A  ()
+   /lotFiles[16]/hmsMlrEntryNumbers[0]
+      {"catalogURL": "https://catalog.archives.gov/id/1151288", "levelOfDescription": "series", "lotNumber": "54D195", "matchType": "control", "naId": "1151288", "recordGroup": "59", "title": "Numbered Staff Studies"}
+
+--- central-files-index.json :: ENTRY A1 5741  ()
+   /lotFiles[554]/hmsMlrEntryNumbers[0]
+      {"catalogURL": "https://catalog.archives.gov/id/26309336", "levelOfDescription": "series", "lotNumber": "70D247", "matchType": "control", "naId": "26309336", "recordGroup": "59", "title": "Subject Files Relating to Ecuador"}
+   /lotFiles[584]/hmsMlrEntryNumbers[0]
+      {"catalogURL": "https://catalog.archives.gov/id/26309336", "levelOfDescription": "series", "lotNumber": "70D478", "matchType": "control", "naId": "26309336", "recordGroup": "59", "title": "Subject Files Relating to Ecuador"}
+
+--- central-files-index.json :: LOT 59 D 573  ()
+   /lotFiles[115]/lotNumber
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "levelOfDescription": "series", "lotNumber": "59D573", "matchType": "control", "naId": "2108779", "recordGroup": "59", "title": "Subject Files"}
+
+--- central-files-index.json :: LOT 61 D 279  ()
+   /lotFiles[178]/lotNumber
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "levelOfDescription": "series", "lotNumber": "61D279", "matchType": "control", "naId": "2108779", "recordGroup": "59", "title": "Subject Files"}
+
+--- central-files-index.json :: LOT 62 D 1  ()
+   /lotFiles[205]/lotNumber
+      {"catalogURL": "https://catalog.archives.gov/id/2838992", "levelOfDescription": "series", "lotNumber": "62D1", "matchType": "control", "naId": "2838992", "recordGroup": "59", "title": "Records Relating to Activities with the National Security Council"}
+
+--- central-files-index.json :: LOT 63 D 127  ()
+   /lotFiles[243]/lotNumber
+      {"catalogURL": "https://catalog.archives.gov/id/2363840", "levelOfDescription": "series", "lotNumber": "63D127", "matchType": "control", "naId": "2363840", "recordGroup": "59", "title": "Subject and Country Files"}
+
+--- central-files-index.json :: LOT 64 D 16  ()
+   /lotFiles[274]/lotNumber
+      {"catalogURL": "https://catalog.archives.gov/id/1750062", "levelOfDescription": "series", "lotNumber": "64D16", "matchType": "control", "naId": "1750062", "recordGroup": "59", "title": "Records Relating to El Salvador"}
+
+--- central-files-index.json :: LOT 64 D 563  ()
+   /lotFiles[303]/lotNumber
+      {"catalogURL": "https://catalog.archives.gov/id/1136548", "levelOfDescription": "series", "lotNumber": "64D563", "matchType": "control", "naId": "1136548", "recordGroup": "59", "title": "Chronological Files"}
+
+--- central-files-index.json :: LOT 70 D 247  ()
+   /lotFiles[554]/lotNumber
+      {"catalogURL": "https://catalog.archives.gov/id/26309336", "levelOfDescription": "series", "lotNumber": "70D247", "matchType": "control", "naId": "26309336", "recordGroup": "59", "title": "Subject Files Relating to Ecuador"}
+
+--- central-files-index.json :: NAID 1151288  (lot 64 D 563 -> Numbered Staff Studies (PPS))
+   /lotFiles[16]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/1151288", "levelOfDescription": "series", "lotNumber": "54D195", "matchType": "control", "naId": "1151288", "recordGroup": "59", "title": "Numbered Staff Studies"}
+
+--- central-files-index.json :: NAID 149302787  (Instructions roll Colombia 1898-1906)
+   /countrySeries[1]/rolls[162]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/149302787", "endISO": "1906-08-08", "naId": "149302787", "startISO": "1898-11-01", "title": "Volume 19: Colombia: Nov. 1, 1898-Aug. 8, 1906"}
+
+--- central-files-index.json :: NAID 149324017  (Instructions roll Mexico 1873-79)
+   /countrySeries[1]/rolls[84]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/149324017", "endISO": "1879-06-19", "naId": "149324017", "startISO": "1873-05-07", "title": "Volume 19: Mexico: May 7, 1873 - June 19, 1879"}
+
+--- central-files-index.json :: NAID 1750062  (lot 64 D 16 -> El Salvador records)
+   /lotFiles[274]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/1750062", "levelOfDescription": "series", "lotNumber": "64D16", "matchType": "control", "naId": "1750062", "recordGroup": "59", "title": "Records Relating to El Salvador"}
+   /lotFiles[713]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/1750062", "levelOfDescription": "series", "lotNumber": "73D29", "matchType": "control", "naId": "1750062", "recordGroup": "59", "title": "Records Relating to El Salvador"}
+
+--- central-files-index.json :: NAID 2108779  (lots 59 D 573 / 61 D 279 -> Rubottom subject files)
+   /lotFiles[115]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "levelOfDescription": "series", "lotNumber": "59D573", "matchType": "control", "naId": "2108779", "recordGroup": "59", "title": "Subject Files"}
+   /lotFiles[154]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "levelOfDescription": "series", "lotNumber": "60D553", "matchType": "control", "naId": "2108779", "recordGroup": "59", "title": "Subject Files"}
+   /lotFiles[178]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "levelOfDescription": "series", "lotNumber": "61D279", "matchType": "control", "naId": "2108779", "recordGroup": "59", "title": "Subject Files"}
+
+--- central-files-index.json :: NAID 2198167  (lot 62 D 1 -> Alphabetical Files)
+   /lotFiles[169]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/2198167", "levelOfDescription": "series", "lotNumber": "61D167", "matchType": "control", "naId": "2198167", "recordGroup": "59", "title": "Alphabetical Files"}
+
+--- central-files-index.json :: NAID 2363840  (lot 63 D 127 -> ARA/OAP)
+   /lotFiles[243]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/2363840", "levelOfDescription": "series", "lotNumber": "63D127", "matchType": "control", "naId": "2363840", "recordGroup": "59", "title": "Subject and Country Files"}
+
+--- central-files-index.json :: NAID 26309336  (lot 70 D 247 -> Ecuador subject files)
+   /lotFiles[554]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/26309336", "levelOfDescription": "series", "lotNumber": "70D247", "matchType": "control", "naId": "26309336", "recordGroup": "59", "title": "Subject Files Relating to Ecuador"}
+   /lotFiles[584]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/26309336", "levelOfDescription": "series", "lotNumber": "70D478", "matchType": "control", "naId": "26309336", "recordGroup": "59", "title": "Subject Files Relating to Ecuador"}
+
+--- central-files-index.json :: NAID 2838992  (lot 62 D 1 -> Records Relating to Activities with the NSC)
+   /lotFiles[205]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/2838992", "levelOfDescription": "series", "lotNumber": "62D1", "matchType": "control", "naId": "2838992", "recordGroup": "59", "title": "Records Relating to Activities with the National Security Council"}
+
+--- central-files-index.json :: NAID 593313  (Diplomatic Instructions series)
+   /countrySeries[1]/seriesNaId
+      {"category": "diplomaticInstructions", "displayName": "Diplomatic Instructions", "seriesNaId": "593313"}
+
+--- central-files-index.json :: NAID 603720  (Diplomatic Despatches series)
+   /countrySeries[0]/seriesNaId
+      {"category": "diplomaticDespatches", "displayName": "Diplomatic Despatches", "seriesNaId": "603720"}
+
+--- central-files-index.json :: NAID 654171  (Numerical File microfilm series)
+   /numericalFile/seriesNaId
+      {"microfilm": "M862", "seriesNaId": "654171"}
+
+--- collection-authority.json :: LOT 59 D 573  ()
+   /collections[300]/aliases[0]
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "id": "lot:59D573", "lotFileNorm": "59D573", "naId": "2108779", "name": "Lot 59 D 573", "recordGroup": "59", "repository": "Department of State"}
+   /collections[300]/id
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "id": "lot:59D573", "lotFileNorm": "59D573", "naId": "2108779", "name": "Lot 59 D 573", "recordGroup": "59", "repository": "Department of State"}
+   /collections[300]/lotFileNorm
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "id": "lot:59D573", "lotFileNorm": "59D573", "naId": "2108779", "name": "Lot 59 D 573", "recordGroup": "59", "repository": "Department of State"}
+   /collections[300]/name
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "id": "lot:59D573", "lotFileNorm": "59D573", "naId": "2108779", "name": "Lot 59 D 573", "recordGroup": "59", "repository": "Department of State"}
+
+--- collection-authority.json :: LOT 61 D 279  ()
+   /collections[405]/aliases[0]
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "id": "lot:61D279", "lotFileNorm": "61D279", "naId": "2108779", "name": "Rubottom Files: Lot 61 D 279", "recordGroup": "59", "repository": "Department of State"}
+   /collections[405]/id
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "id": "lot:61D279", "lotFileNorm": "61D279", "naId": "2108779", "name": "Rubottom Files: Lot 61 D 279", "recordGroup": "59", "repository": "Department of State"}
+   /collections[405]/lotFileNorm
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "id": "lot:61D279", "lotFileNorm": "61D279", "naId": "2108779", "name": "Rubottom Files: Lot 61 D 279", "recordGroup": "59", "repository": "Department of State"}
+   /collections[405]/name
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "id": "lot:61D279", "lotFileNorm": "61D279", "naId": "2108779", "name": "Rubottom Files: Lot 61 D 279", "recordGroup": "59", "repository": "Department of State"}
+
+--- collection-authority.json :: LOT 62 D 1  ()
+   /collections[447]/aliases[0]
+      {"catalogURL": "https://catalog.archives.gov/id/2838992", "id": "lot:62D1", "lotFileNorm": "62D1", "naId": "2838992", "name": "S/P – NSC Files: Lot 62 D 1", "recordGroup": "59", "repository": "Department of State"}
+   /collections[447]/aliases[1]
+      {"catalogURL": "https://catalog.archives.gov/id/2838992", "id": "lot:62D1", "lotFileNorm": "62D1", "naId": "2838992", "name": "S/P – NSC Files: Lot 62 D 1", "recordGroup": "59", "repository": "Department of State"}
+   /collections[447]/aliases[2]
+      {"catalogURL": "https://catalog.archives.gov/id/2838992", "id": "lot:62D1", "lotFileNorm": "62D1", "naId": "2838992", "name": "S/P – NSC Files: Lot 62 D 1", "recordGroup": "59", "repository": "Department of State"}
+   /collections[447]/aliases[5]
+      {"catalogURL": "https://catalog.archives.gov/id/2838992", "id": "lot:62D1", "lotFileNorm": "62D1", "naId": "2838992", "name": "S/P – NSC Files: Lot 62 D 1", "recordGroup": "59", "repository": "Department of State"}
+
+--- collection-authority.json :: LOT 63 D 127  ()
+   /collections[504]/aliases[0]
+      {"catalogURL": "https://catalog.archives.gov/id/2363840", "id": "lot:63D127", "lotFileNorm": "63D127", "naId": "2363840", "name": "OAP Files: Lot 63 D 127", "recordGroup": "59", "repository": "Department of State"}
+   /collections[504]/id
+      {"catalogURL": "https://catalog.archives.gov/id/2363840", "id": "lot:63D127", "lotFileNorm": "63D127", "naId": "2363840", "name": "OAP Files: Lot 63 D 127", "recordGroup": "59", "repository": "Department of State"}
+   /collections[504]/lotFileNorm
+      {"catalogURL": "https://catalog.archives.gov/id/2363840", "id": "lot:63D127", "lotFileNorm": "63D127", "naId": "2363840", "name": "OAP Files: Lot 63 D 127", "recordGroup": "59", "repository": "Department of State"}
+   /collections[504]/name
+      {"catalogURL": "https://catalog.archives.gov/id/2363840", "id": "lot:63D127", "lotFileNorm": "63D127", "naId": "2363840", "name": "OAP Files: Lot 63 D 127", "recordGroup": "59", "repository": "Department of State"}
+
+--- collection-authority.json :: LOT 64 D 16  ()
+   /collections[563]/aliases[0]
+      {"catalogURL": "https://catalog.archives.gov/id/1750062", "id": "lot:64D16", "lotFileNorm": "64D16", "naId": "1750062", "name": "OAP Files: Lot 64 D 16", "recordGroup": "59", "repository": "Department of State"}
+   /collections[563]/id
+      {"catalogURL": "https://catalog.archives.gov/id/1750062", "id": "lot:64D16", "lotFileNorm": "64D16", "naId": "1750062", "name": "OAP Files: Lot 64 D 16", "recordGroup": "59", "repository": "Department of State"}
+   /collections[563]/lotFileNorm
+      {"catalogURL": "https://catalog.archives.gov/id/1750062", "id": "lot:64D16", "lotFileNorm": "64D16", "naId": "1750062", "name": "OAP Files: Lot 64 D 16", "recordGroup": "59", "repository": "Department of State"}
+   /collections[563]/name
+      {"catalogURL": "https://catalog.archives.gov/id/1750062", "id": "lot:64D16", "lotFileNorm": "64D16", "naId": "1750062", "name": "OAP Files: Lot 64 D 16", "recordGroup": "59", "repository": "Department of State"}
+
+--- collection-authority.json :: LOT 64 D 563  ()
+   /collections[607]/aliases[0]
+      {"catalogURL": "https://catalog.archives.gov/id/1136548", "id": "lot:64D563", "lotFileNorm": "64D563", "naId": "1136548", "name": "PPS Files, Lot 64 D 563", "recordGroup": "59", "repository": "Department of State"}
+   /collections[607]/aliases[1]
+      {"catalogURL": "https://catalog.archives.gov/id/1136548", "id": "lot:64D563", "lotFileNorm": "64D563", "naId": "1136548", "name": "PPS Files, Lot 64 D 563", "recordGroup": "59", "repository": "Department of State"}
+   /collections[607]/aliases[2]
+      {"catalogURL": "https://catalog.archives.gov/id/1136548", "id": "lot:64D563", "lotFileNorm": "64D563", "naId": "1136548", "name": "PPS Files, Lot 64 D 563", "recordGroup": "59", "repository": "Department of State"}
+   /collections[607]/aliases[3]
+      {"catalogURL": "https://catalog.archives.gov/id/1136548", "id": "lot:64D563", "lotFileNorm": "64D563", "naId": "1136548", "name": "PPS Files, Lot 64 D 563", "recordGroup": "59", "repository": "Department of State"}
+
+--- collection-authority.json :: LOT 70 D 247  ()
+   /collections[941]/aliases[0]
+      {"catalogURL": "https://catalog.archives.gov/id/26309336", "id": "lot:70D247", "lotFileNorm": "70D247", "naId": "26309336", "name": "ARA/EP /E Files: Lot 70 D 247", "recordGroup": "59", "repository": "Department of State"}
+   /collections[941]/id
+      {"catalogURL": "https://catalog.archives.gov/id/26309336", "id": "lot:70D247", "lotFileNorm": "70D247", "naId": "26309336", "name": "ARA/EP /E Files: Lot 70 D 247", "recordGroup": "59", "repository": "Department of State"}
+   /collections[941]/lotFileNorm
+      {"catalogURL": "https://catalog.archives.gov/id/26309336", "id": "lot:70D247", "lotFileNorm": "70D247", "naId": "26309336", "name": "ARA/EP /E Files: Lot 70 D 247", "recordGroup": "59", "repository": "Department of State"}
+   /collections[941]/name
+      {"catalogURL": "https://catalog.archives.gov/id/26309336", "id": "lot:70D247", "lotFileNorm": "70D247", "naId": "26309336", "name": "ARA/EP /E Files: Lot 70 D 247", "recordGroup": "59", "repository": "Department of State"}
+
+--- collection-authority.json :: NAID 1151288  (lot 64 D 563 -> Numbered Staff Studies (PPS))
+   /collections[70]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/1151288", "id": "lot:54D195", "lotFileNorm": "54D195", "naId": "1151288", "name": "Lot 54D195", "recordGroup": "59", "repository": "Department of State"}
+
+--- collection-authority.json :: NAID 1750062  (lot 64 D 16 -> El Salvador records)
+   /collections[563]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/1750062", "id": "lot:64D16", "lotFileNorm": "64D16", "naId": "1750062", "name": "OAP Files: Lot 64 D 16", "recordGroup": "59", "repository": "Department of State"}
+   /collections[1119]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/1750062", "id": "lot:73D29", "lotFileNorm": "73D29", "naId": "1750062", "name": "ARA/CEN/ES Files, Lots 73D29, 74D96, 76D45, 77D56, 78D113", "repository": "National Archives"}
+
+--- collection-authority.json :: NAID 2108779  (lots 59 D 573 / 61 D 279 -> Rubottom subject files)
+   /collections[300]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "id": "lot:59D573", "lotFileNorm": "59D573", "naId": "2108779", "name": "Lot 59 D 573", "recordGroup": "59", "repository": "Department of State"}
+   /collections[367]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "id": "lot:60D553", "lotFileNorm": "60D553", "naId": "2108779", "name": "Rubottom Files: Lot 60 D 553", "recordGroup": "59", "repository": "Department of State"}
+   /collections[405]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/2108779", "id": "lot:61D279", "lotFileNorm": "61D279", "naId": "2108779", "name": "Rubottom Files: Lot 61 D 279", "recordGroup": "59", "repository": "Department of State"}
+
+--- collection-authority.json :: NAID 2198167  (lot 62 D 1 -> Alphabetical Files)
+   /collections[394]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/2198167", "id": "lot:61D167", "lotFileNorm": "61D167", "naId": "2198167", "name": "S/P – NSC Files, Lot 61 D 167", "recordGroup": "59", "repository": "Department of State"}
+
+--- collection-authority.json :: NAID 2363840  (lot 63 D 127 -> ARA/OAP)
+   /collections[504]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/2363840", "id": "lot:63D127", "lotFileNorm": "63D127", "naId": "2363840", "name": "OAP Files: Lot 63 D 127", "recordGroup": "59", "repository": "Department of State"}
+
+--- collection-authority.json :: NAID 26309336  (lot 70 D 247 -> Ecuador subject files)
+   /collections[941]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/26309336", "id": "lot:70D247", "lotFileNorm": "70D247", "naId": "26309336", "name": "ARA/EP /E Files: Lot 70 D 247", "recordGroup": "59", "repository": "Department of State"}
+   /collections[976]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/26309336", "id": "lot:70D478", "lotFileNorm": "70D478", "naId": "26309336", "name": "ARA/EP /E Files: Lot 70 D 478", "recordGroup": "59", "repository": "Department of State"}
+
+--- collection-authority.json :: NAID 2838992  (lot 62 D 1 -> Records Relating to Activities with the NSC)
+   /collections[447]/naId
+      {"catalogURL": "https://catalog.archives.gov/id/2838992", "id": "lot:62D1", "lotFileNorm": "62D1", "naId": "2838992", "name": "S/P – NSC Files: Lot 62 D 1", "recordGroup": "59", "repository": "Department of State"}
+
+--- curated-library-resolutions.json :: NAID 567979  (Johnson Library NSF collection)
+   /entries[102]/resolution/naId
+      {"title": "National Security Files, 1963-1969", "url": "https://discoverlbj.org/loh/pres/nsf", "naId": "567979", "rationale": "The collection-level page, listing all 42 series with their extents — the answer for a citation naming a series the library files elsewhere or does not itemise, such as the `Aides File` (22 documents), whose staff files ARE the NSF's own per-person series. It carries the collection's NARA identifier, so these rows also reach the catalogue."}
+   /entries[135]/resolution/naId
+      {"title": "National Security Files, 1963-1969", "url": "https://discoverlbj.org/loh/pres/nsf", "naId": "567979", "rationale": "The collection under its abbreviation."}
+
+--- external-citation-index.json :: LOT 59 D 573  ()
+   /sourceIds[90]
+      {"generated": "2026-10-20", "schemaVersion": 2}
+   /targetIds[147]
+      {"generated": "2026-10-20", "schemaVersion": 2}
+
+--- external-citation-index.json :: LOT 61 D 279  ()
+   /sourceIds[124]
+      {"generated": "2026-10-20", "schemaVersion": 2}
+   /targetIds[214]
+      {"generated": "2026-10-20", "schemaVersion": 2}
+
+--- external-citation-index.json :: LOT 62 D 1  ()
+   /sourceIds[141]
+      {"generated": "2026-10-20", "schemaVersion": 2}
+   /targetIds[238]
+      {"generated": "2026-10-20", "schemaVersion": 2}
+
+--- external-citation-index.json :: LOT 63 D 127  ()
+   /sourceIds[161]
+      {"generated": "2026-10-20", "schemaVersion": 2}
+   /targetIds[277]
+      {"generated": "2026-10-20", "schemaVersion": 2}
+
+--- external-citation-index.json :: LOT 64 D 16  ()
+   /sourceIds[178]
+      {"generated": "2026-10-20", "schemaVersion": 2}
+   /targetIds[310]
+      {"generated": "2026-10-20", "schemaVersion": 2}
+
+--- external-citation-index.json :: LOT 64 D 563  ()
+   /sourceIds[193]
+      {"generated": "2026-10-20", "schemaVersion": 2}
+   /targetIds[335]
+      {"generated": "2026-10-20", "schemaVersion": 2}
+
+--- external-citation-index.json :: LOT 70 D 247  ()
+   /targetIds[515]
+      {"generated": "2026-10-20", "schemaVersion": 2}
+
+--- external-citation-index.json :: NAID 1164  (Kennedy Library NSF collection)
+   /classPairs[1773]/t
+      {"f": 817, "n": 12, "t": 1164}
+   /classPairs[1779]/t
+      {"f": 818, "n": 1, "t": 1164}
+   /classPairs[2459]/t
+      {"f": 1075, "n": 2, "t": 1164}
+   /classPairs[2642]/f
+      {"f": 1164, "n": 1, "t": 977}
+
+--- external-citation-index.json :: NAID 1191  (Reagan WHORM collection)
+   /classPairs[1846]/t
+      {"f": 841, "n": 1, "t": 1191}
+   /classPairs[2691]/f
+      {"f": 1191, "n": 1, "t": 1656}
+   /classTargets[1191]/k
+      {"k": 1191}
+
+--- lot-claimants-index.json :: ENTRY A1 1583A  ()
+   /lots[33]/claimants[0]/hmsMlrEntryNumbers[0]
+      {"dateRange": "1948–1961", "evidence": "controlNumber", "naId": "2198167", "recordGroup": "59", "title": "Alphabetical Files"}
+
+--- lot-claimants-index.json :: ENTRY A1 1583B  ()
+   /lots[33]/claimants[0]/hmsMlrEntryNumbers[1]
+      {"dateRange": "1948–1961", "evidence": "controlNumber", "naId": "2198167", "recordGroup": "59", "title": "Alphabetical Files"}
+
+--- lot-claimants-index.json :: ENTRY A1 1583C  ()
+   /lots[33]/claimants[1]/hmsMlrEntryNumbers[0]
+      {"dateRange": "1947–1961", "evidence": "controlNumber", "naId": "2838991", "recordGroup": "59", "title": "Numerical Files"}
+
+--- lot-claimants-index.json :: ENTRY A1 1583D  ()
+   /lots[33]/claimants[1]/hmsMlrEntryNumbers[1]
+      {"dateRange": "1947–1961", "evidence": "controlNumber", "naId": "2838991", "recordGroup": "59", "title": "Numerical Files"}
+
+--- lot-claimants-index.json :: ENTRY A1 1583E  ()
+   /lots[33]/claimants[2]/hmsMlrEntryNumbers[0]
+      {"dateRange": "1948–1961", "evidence": "controlNumber", "naId": "2838992", "recordGroup": "59", "title": "Records Relating to Activities with the National Security Council"}
+
+--- lot-claimants-index.json :: ENTRY A1 1583F  ()
+   /lots[33]/claimants[2]/hmsMlrEntryNumbers[1]
+      {"dateRange": "1948–1961", "evidence": "controlNumber", "naId": "2838992", "recordGroup": "59", "title": "Records Relating to Activities with the National Security Council"}
+
+--- lot-claimants-index.json :: ENTRY A1 558-A  ()
+   /lots[42]/claimants[1]/hmsMlrEntryNumbers[0]
+      {"dateRange": "1947–1949", "evidence": "controlNumber", "naId": "1151288", "recordGroup": "59", "title": "Numbered Staff Studies"}
+
+--- lot-claimants-index.json :: LOT 62 D 1  ()
+   /lots[33]/lotNumber
+      {"lotNumber": "62D1"}
+
+--- lot-claimants-index.json :: LOT 64 D 563  ()
+   /lots[42]/lotNumber
+      {"lotNumber": "64D563"}
+
+--- lot-claimants-index.json :: NAID 1151288  (lot 64 D 563 -> Numbered Staff Studies (PPS))
+   /lots[42]/claimants[1]/naId
+      {"dateRange": "1947–1949", "evidence": "controlNumber", "naId": "1151288", "recordGroup": "59", "title": "Numbered Staff Studies"}
+
+--- lot-claimants-index.json :: NAID 2198167  (lot 62 D 1 -> Alphabetical Files)
+   /lots[33]/claimants[0]/naId
+      {"dateRange": "1948–1961", "evidence": "controlNumber", "naId": "2198167", "recordGroup": "59", "title": "Alphabetical Files"}
+
+--- lot-claimants-index.json :: NAID 2838991  (lot 62 D 1 -> Numerical Files)
+   /lots[33]/claimants[1]/naId
+      {"dateRange": "1947–1961", "evidence": "controlNumber", "naId": "2838991", "recordGroup": "59", "title": "Numerical Files"}
+
+--- lot-claimants-index.json :: NAID 2838992  (lot 62 D 1 -> Records Relating to Activities with the NSC)
+   /lots[33]/claimants[2]/naId
+      {"dateRange": "1948–1961", "evidence": "controlNumber", "naId": "2838992", "recordGroup": "59", "title": "Records Relating to Activities with the National Security Council"}
+
+--- presidential-library-catalog.json :: NAID 1164  (Kennedy Library NSF collection)
+   /libraries[4]/collections[253]/naId
+      {"identifier": "JFK-4", "naId": 1164, "statedSeriesCount": 17, "title": "Papers of John F. Kennedy: Presidential Papers: National Security Files"}
+
+--- presidential-library-catalog.json :: NAID 1191  (Reagan WHORM collection)
+   /libraries[9]/collections[100]/naId
+      {"identifier": "RR-WHORM", "naId": 1191, "statedSeriesCount": 528, "title": "White House Office of Records Management File Systems (White House Central Files)"}
+
+--- presidential-library-catalog.json :: NAID 12024796  (Reagan NSC Latin American Affairs Directorate)
+   /libraries[9]/collections[26]/naId
+      {"identifier": "RR-0313", "naId": 12024796, "statedSeriesCount": 11, "title": "Records of the National Security Council, Latin American Affairs Directorate (Reagan Administration)"}
+
+--- presidential-library-catalog.json :: NAID 193236  (Kennedy NSF Country Files)
+   /libraries[4]/collections[253]/series[0]/naId
+      {"inclusiveDates": "1961–1963", "naId": 193236, "title": "Country Files"}
+
+--- presidential-library-catalog.json :: NAID 567979  (Johnson Library NSF collection)
+   /libraries[5]/collections[88]/naId
+      {"identifier": "LBJ-NSF", "naId": 567979, "statedSeriesCount": 48, "title": "National Security Files"}
+
+--- presidential-library-catalog.json :: NAID 567985  (Johnson NSF Latin America Country Files)
+   /libraries[5]/collections[88]/series[0]/naId
+      {"inclusiveDates": "1963–1969", "naId": 567985, "title": "Latin America Country Files"}
+
+--- presidential-library-catalog.json :: NAID 572235  (Nixon NSF collection)
+   /libraries[6]/collections[134]/naId
+      {"identifier": "RN-NSF", "naId": 572235, "statedSeriesCount": 4, "title": "National Security Files (Nixon Administration)"}
+
+--- presidential-library-catalog.json :: NAID 572247  (Nixon NSF Institutional Files)
+   /libraries[6]/collections[134]/series[0]/naId
+      {"inclusiveDates": "1969–1974", "naId": 572247, "title": "Institutional Files"}
+
+--- presidential-library-catalog.json :: NAID 6207697  (WHORM Subject Files South America, Central and Latin America)
+   /libraries[9]/collections[100]/series[149]/naId
+      {"inclusiveDates": "1981–1989", "naId": 6207697, "title": "Subject Files on South America, Central and Latin America"}
+
+--- roll-scans-index.json :: NAID 654171  (Numerical File microfilm series)
+   /seriesNaId
+      {"generated": "2026-08-07", "schemaVersion": 1, "seriesNaId": "654171"}
+
+--- volume-sources-index.json :: LOT 61 D 279  ()
+   /majorCollections[412]/key
+      {"isHeading": false, "key": "lot:61D279", "lotFile": "61 D 279", "occurrences": 3, "text": "Rubottom Files: Lot 61 D 279"}
+   /majorCollections[412]/lotFile
+      {"isHeading": false, "key": "lot:61D279", "lotFile": "61 D 279", "occurrences": 3, "text": "Rubottom Files: Lot 61 D 279"}
+   /majorCollections[412]/text
+      {"isHeading": false, "key": "lot:61D279", "lotFile": "61 D 279", "occurrences": 3, "text": "Rubottom Files: Lot 61 D 279"}
+
+--- volume-sources-index.json :: LOT 62 D 1  ()
+   /majorCollections[7]/key
+      {"isHeading": false, "key": "lot:62D1", "lotFile": "62 D 1", "occurrences": 64, "text": "S/P–NSC Files: Lot 62 D 1"}
+   /majorCollections[7]/lotFile
+      {"isHeading": false, "key": "lot:62D1", "lotFile": "62 D 1", "occurrences": 64, "text": "S/P–NSC Files: Lot 62 D 1"}
+   /majorCollections[7]/text
+      {"isHeading": false, "key": "lot:62D1", "lotFile": "62 D 1", "occurrences": 64, "text": "S/P–NSC Files: Lot 62 D 1"}
+
+--- volume-sources-index.json :: LOT 63 D 127  ()
+   /majorCollections[711]/key
+      {"isHeading": false, "key": "lot:63D127", "lotFile": "63 D 127", "occurrences": 2, "text": "OAP Files: Lot 63 D 127"}
+   /majorCollections[711]/lotFile
+      {"isHeading": false, "key": "lot:63D127", "lotFile": "63 D 127", "occurrences": 2, "text": "OAP Files: Lot 63 D 127"}
+   /majorCollections[711]/text
+      {"isHeading": false, "key": "lot:63D127", "lotFile": "63 D 127", "occurrences": 2, "text": "OAP Files: Lot 63 D 127"}
+
+--- volume-sources-index.json :: LOT 64 D 16  ()
+   /majorCollections[729]/key
+      {"isHeading": false, "key": "lot:64D16", "lotFile": "64 D 16", "occurrences": 2, "text": "OAP Files: Lot 64 D 16"}
+   /majorCollections[729]/lotFile
+      {"isHeading": false, "key": "lot:64D16", "lotFile": "64 D 16", "occurrences": 2, "text": "OAP Files: Lot 64 D 16"}
+   /majorCollections[729]/text
+      {"isHeading": false, "key": "lot:64D16", "lotFile": "64 D 16", "occurrences": 2, "text": "OAP Files: Lot 64 D 16"}
+
+--- volume-sources-index.json :: LOT 64 D 563  ()
+   /majorCollections[41]/key
+      {"isHeading": false, "key": "lot:64D563", "lotFile": "64 D 563", "occurrences": 27, "text": "Policy Planning Staff Files: Lot 64 D 563"}
+   /majorCollections[41]/lotFile
+      {"isHeading": false, "key": "lot:64D563", "lotFile": "64 D 563", "occurrences": 27, "text": "Policy Planning Staff Files: Lot 64 D 563"}
+   /majorCollections[41]/text
+      {"isHeading": false, "key": "lot:64D563", "lotFile": "64 D 563", "occurrences": 27, "text": "Policy Planning Staff Files: Lot 64 D 563"}
+
+--- volume-sources-index.json :: LOT 70 D 247  ()
+   /majorCollections[1454]/key
+      {"isHeading": false, "key": "lot:70D247", "lotFile": "70 D 247", "occurrences": 1, "text": "ARA/EP/E Files: Lot 70 D 247"}
+   /majorCollections[1454]/lotFile
+      {"isHeading": false, "key": "lot:70D247", "lotFile": "70 D 247", "occurrences": 1, "text": "ARA/EP/E Files: Lot 70 D 247"}
+   /majorCollections[1454]/text
+      {"isHeading": false, "key": "lot:70D247", "lotFile": "70 D 247", "occurrences": 1, "text": "ARA/EP/E Files: Lot 70 D 247"}
+
+--- identifiers with NO hit in any file:
+   'Clean Up' appears in neither presidential-library-catalog.json nor curated-library-resolutions.json (the overview's negative claim holds)
+
+##### subject-numeric-labels.json keys: ['coverage', 'generated', 'provenance', 'schedules', 'schemaVersion']
+
+##### central-files-index.json keys: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+   countrySeries: list[12] first: {"category": "diplomaticDespatches", "displayName": "Diplomatic Despatches", "rolls": [{"catalogURL": "https://catalog.archives.gov/id/189346553", "endISO": "1887-05-31", "fileUnitNaId": "177380755", "fileUnitTitle": "Despatches from U.S. Ministers to Peru, 1826-1906", "geoKeys": ["peru"], "naId": "
+   generated: 2026-09-10
+   lotFiles: list[1070] first: {"catalogURL": "https://catalog.archives.gov/id/2124670", "hmsMlrEntryNumbers": ["A1 1457"], "levelOfDescription": "series", "lotNumber": "428", "matchType": "control", "naId": "2124670", "recordGroup": "59", "title": "Subject Files Relating to Palestine, Political, Security, and Trusteeship Matters
+   numericalFile: dict keys ['microfilm', 'rolls', 'seriesNaId']
+   schemaVersion: 3
+   decimal-named keys content (first 1500): {}

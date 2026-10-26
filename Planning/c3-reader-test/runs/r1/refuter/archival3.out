@@ -1,0 +1,27 @@
+1151288 creator: Department of State. Office of the Secretary. Policy Planning Staff. | access: Unrestricted | inclusive 1947 1949
+2198167 creator: Department of State. Policy Planning Council. | access: Restricted - Partly | inclusive 1948 1961
+2838992 creator: Department of State. Policy Planning Council. | access: Restricted - Partly | inclusive 1948 1961
+2108779 creator: Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs. | access: Unrestricted | inclusive 1957 1959
+2363840 creator: Department of State. Bureau of Inter-American Affairs. Office of Central American and Panamanian Affairs. | access: Restricted - Possibly | inclusive 1955 1963
+1750062 creator: Department of State. Bureau of Inter-American Affairs. Office of Central American Affairs. | access: Restricted - Partly | inclusive 1958 1975
+26309336 creator: Department of State. Bureau of Inter-American Affairs. Office of Andean Affairs. | access: Restricted - Partly | inclusive 1964 1978
+
+resolved 32 of 38; creator heading names Inter-American Affairs: 20; others (12):
+    ('57D284', '1422076', 'Records of the Fifth Session at Torquay', 'Torquay Round of the General Agreement on Tariffs and Trade. U.S. Dele')
+    ('60D533', '2124188', 'Subject Files Relating to Iran', 'Department of State. Bureau of Near Eastern and South Asian Affairs. O')
+    ('62D1', '2838992', 'Records Relating to Activities with the ', 'Department of State. Policy Planning Council.')
+    ('63D75', '2521274', "Records Related to the Secretary's Staff", 'Department of State. Executive Secretariat.')
+    ('65D330', '602231', "The Secretary's and the Under Secretary'", 'Department of State. Executive Secretariat.')
+    ('66D95', '2839192', 'Records Relating to National Security Co', 'Department of State. Office of the Secretary. Executive Secretariat.')
+    ('72D192', '631695', 'Speeches and Statements', 'Department of State. Office of the Secretary.')
+    ('81D113', '1487627', 'Records of Deputy Secretary Warren Chris', 'Department of State. Office of the Deputy Secretary of State.')
+    ('81F1', '297910144', 'Political Program Files', 'Department of State. U.S. Embassy, Panama. Political Section.')
+    ('83D66', '1261450', 'Subject Files of Edmund S. Muskie', 'Department of State. Office of the Secretary.')
+    ('84D241', '26309216', 'Briefing Books of Cyrus R. Vance', 'Department of State. Office of the Secretary.')
+    ('85D366', '27499768', 'Central Subject Files', 'Department of State. Bureau of Human Rights and Humanitarian Affairs.')
+
+schedule 1963 1963 1963 | source: Records Classification Handbook (Department of State, March 1963)
+
+schedule 1964-1973 1964 1973 | source: Records Classification Handbook (Department of State, 1965)
+
+categories keys of first schedule: ['ACC', 'AE', 'AGR', 'AV', 'BG', 'BUD', 'BY', 'CON', 'CR', 'CSM', 'CUL', 'DEF']

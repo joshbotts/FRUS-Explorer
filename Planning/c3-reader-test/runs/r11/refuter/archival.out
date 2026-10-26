@@ -1,0 +1,94 @@
+central-files-index keys: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+series-facts keys: ['byNaId', 'findingAidTypes', 'generated', 'headings', 'legend', 'referenceUnits', 'restrictions', 'schemaVersion', 'statuses', 'useRestrictions']
+
+== LOT FILES named in the overview
+64D16 | claim: A1 3159 Records Relating to El Salvador NAID 1750062 1958-1975 partly restricted
+   index: RG 59 entry ['A1 3159'] NAID 1750062 | Records Relating to El Salvador | None | title-heading=Department of State. Bureau of Inter-American Affairs. Office of Central American Affairs. | 1958-1975 | access=Restricted - Partly
+63D351 | claim: A1 1586E NSC Policy Papers NAID 2839192 1947-1979 partly restricted
+   index: RG 59 entry ['A1 1586E'] NAID 2839192 | Records Relating to National Security Council Policy Papers | None | title-heading=Department of State. Office of the Secretary. Executive Secretariat. | 1947-1979 | access=Restricted - Partly
+66D95 | claim: same
+   index: RG 59 entry ['A1 1586E'] NAID 2839192 | Records Relating to National Security Council Policy Papers | None | title-heading=Department of State. Office of the Secretary. Executive Secretariat. | 1947-1979 | access=Restricted - Partly
+63D127 | claim: A1 3157 Subject and Country Files OCAPA NAID 2363840 1955-1963 possibly restricted
+   index: RG 59 entry ['A1 3157'] NAID 2363840 | Subject and Country Files | None | title-heading=Department of State. Bureau of Inter-American Affairs. Office of Central American and Panamanian Affairs. | 1955-1963 | access=Restricted - Possibly
+59D573 | claim: A1 1135 Subject Files Asst Sec ARA NAID 2108779 1957-1959 unrestricted
+   index: RG 59 entry ['A1 1135'] NAID 2108779 | Subject Files | None | title-heading=Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs. | 1957-1959 | access=Unrestricted
+61D279 | claim: same
+   index: RG 59 entry ['A1 1135'] NAID 2108779 | Subject Files | None | title-heading=Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs. | 1957-1959 | access=Unrestricted
+62D418 | claim: A1 3147 NAID 2068466 1959-1962 partly restricted
+   index: RG 59 entry ['A1 3147'] NAID 2068466 | Subject Files | None | title-heading=Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs. | 1959-1962 | access=Restricted - Partly
+72D192 | claim: A1 5376 Speeches and Statements NAID 631695 1961-1969 unrestricted
+   index: RG 59 entry ['A1 5376', 'A1 5376A'] NAID 631695 | Speeches and Statements | None | title-heading=Department of State. Office of the Secretary. | 1961-1969 | access=Unrestricted
+
+== scope rows that carry those lots (came-from: document_sources; pointed-at: external_citations inherited=0)
+64D16 came-from: ['frus1958-60v05mSupp/es_d35'] pointed-at: ['frus1958-60v05mSupp/es_d39']
+      frus1958-60v05mSupp/es_d35 | Source: Department of State, ARA / OAP Files, Lot 64 D 16, “Junta Memoranda: El Salvador, 1960.” Confidential. Kalijarvi enclosed this lette
+      frus1958-60v05mSupp/es_d39 | ARA / OAP Files, Lot 64 D 16, “Junta Correspondence: El Salvador, 1960.”
+63D351 came-from: ['frus1952-54v04/d4'] pointed-at: []
+      frus1952-54v04/d4 | S/S – NSC files, lot 63 D 351, NSC 144 series
+66D95 came-from: ['frus1958-60v05mSupp/es_d31'] pointed-at: ['frus1958-60v05mSupp/es_d32']
+      frus1958-60v05mSupp/es_d31 | Source: Department of State, S/S– NSC (Miscellaneous) Files, Lot 66 D 95, “NSC–5902-Memoranda.” Secret. Drafted by Gwynn and Higdon.
+      frus1958-60v05mSupp/es_d32 | Files, Lot 66 D 95, NSC Records of Action
+63D127 came-from: [] pointed-at: ['frus1958-60v05mSupp/es_d33', 'frus1958-60v05mSupp/es_d37']
+      frus1958-60v05mSupp/es_d33 | ARA / OAP Files, Lot 63 D 127, “El Salvador, 1960”
+      frus1958-60v05mSupp/es_d37 | ARA / OAP Files, Lot 63 D 127, “El Salvador, 1960”
+59D573 came-from: [] pointed-at: ['frus1955-57v07/d464']
+      frus1955-57v07/d464 | Ibid., Rubottom Files: Lot 59 D 573, Colombia
+61D279 came-from: [] pointed-at: ['frus1958-60v05/d12']
+      frus1958-60v05/d12 | ibid., Rubottom Files: Lot 61 D 279, Policy 1959
+62D418 came-from: [] pointed-at: ['frus1958-60v06/d235']
+      frus1958-60v06/d235 | A memorandum of this conversation, prepared by Elizabeth Beers, is ibid., Rubottom-Mann Files: Lot 62 D 418, Cuba
+72D192 came-from: [] pointed-at: ['frus1964-68v31/d206']
+      frus1964-68v31/d206 | National Archives and Records Administration, RG 59, Rusk Files: Lot 72 D 192, Telephone Calls 3/20/64–4/9/64
+
+== pre-1906 series
+countrySeries type list len 12
+sample: {"category": "diplomaticDespatches", "displayName": "Diplomatic Despatches", "rolls": [{"catalogURL": "https://catalog.archives.gov/id/189346553", "endISO": "1887-05-31", "fileUnitNaId": "177380755", "fileUnitTitle": "Despatches from U.S. Ministers to Peru, 1826-1906", "geoKeys": ["peru"], "naId": "189346553", "startISO": "1318-11-01", "title": "Nov. 1, 11186-May 31, 1887"}, {"catalogURL": "https://catalog.archives.gov/id/188667460", "endISO": "1906-01-01", "fileUnitNaId": "177380727", "fileUnitTitle": "Despatches from U.S. Ministers to France, 1789-1906", "geoKeys": ["france"], "naId": "18866
+603720 occurrences in central-files-index: 1
+    ctx: to the President of the United States, James Buchanan"}, {"catalogURL": "https://catalog.archives.gov/id/5675669", "fileUnitNaId": "5674398", "fileUnitTitle": "Despatches from U.S. Ministers to Argentina", "geoKeys": ["argentina"], "naId": "5675669", "title": "La Cuestion Chilena"}], "seriesNaId": "603720"}, {"category": "diplomaticInstructions", "displayName": "Diplomatic Instructions", "rolls": [{"catalogURL": "https://catalog.archives.gov/id/235126878", "endISO": "1790-12-26", "geoKeys": [], "naId"
+593313 occurrences in central-files-index: 1
+    ctx: ISO": "1904-08-26", "title": "Volume 35: Great Britain: Aug. 26, 1904 - Aug. 14, 1906"}, {"catalogURL": "https://catalog.archives.gov/id/220862447", "geoKeys": ["volume 5"], "naId": "220862447", "title": "United States Ministers, Instructions: Volume 5: Pages 1-418, Pages 437-457"}], "seriesNaId": "593313"}, {"category": "notesFromForeignMissions", "displayName": "Notes from Foreign Missions", "rolls": [{"catalogURL": "https://catalog.archives.gov/id/188039516", "endISO": "1795-08-14", "fileUnitNaId":
+177380753 occurrences in central-files-index: 19
+    ctx: eUnitTitle": "Despatches from U.S. Ministers to Brazil, 1809-1906", "geoKeys": ["brazil"], "naId": "188320862", "startISO": "1845-08-27", "title": "Volume 15: August 27, 1845 - September 29, 1846"}, {"catalogURL": "https://catalog.archives.gov/id/189305464", "endISO": "1850-08-08", "fileUnitNaId": "177380753", "fileUnitTitle": "Despatches from U.S. Ministers to Ecuador, 1848-1906", "geoKeys": ["ecuador"], "naId": "189305464", "startISO": "1846-01-01", "title": "Apr, 6, 1846-Aug. 8, 1850"}, {"catalogURL":
+177380752 occurrences in central-files-index: 64
+    ctx: d": "177380728", "fileUnitTitle": "Despatches from U.S. Ministers to Russia, 1808-1906", "geoKeys": ["russia"], "naId": "188726824", "startISO": "1820-02-02", "title": "Feb. 2, 1820-Nov. 26, 1821"}, {"catalogURL": "https://catalog.archives.gov/id/189273464", "endISO": "1821-06-20", "fileUnitNaId": "177380752", "fileUnitTitle": "Despatches from U.S. Ministers to Colombia, 1820-1906", "geoKeys": ["colombia"], "naId": "189273464", "startISO": "1820-03-14", "title": "Mar. 14, 1820-June 20, 1621"}, {"catalogU
+177380736 occurrences in central-files-index: 60
+    ctx: d": "177380728", "fileUnitTitle": "Despatches from U.S. Ministers to Russia, 1808-1906", "geoKeys": ["russia"], "naId": "188729274", "startISO": "1840-06-29", "title": "June 29, 1840-Feb. 3, 1846"}, {"catalogURL": "https://catalog.archives.gov/id/188942579", "endISO": "1840-12-03", "fileUnitNaId": "177380736", "fileUnitTitle": "Despatches from U.S. Ministers to Venezuela, 1835-1906", "geoKeys": ["venezuela"], "naId": "188942579", "startISO": "1840-07-01", "title": "July 1. 1835-Dec. 3, 1840"}, {"catalogU
+  series-facts rows: {'603720': 'NO series-facts row', '593313': 'NO series-facts row'}
+
+== Central Decimal File in series-facts?
+headings containing 'Central' or 'Decimal': ['Department of State. Bureau of African Affairs. Office of Central African Affairs.', 'Department of State. Bureau of African Affairs. Office of the Country Director for Congo (Kinshasa), Congo (Brazzaville), Rwanda, Burundi, Malagasy Republic, Mauritius, Gabon, Chad, Cameroon, Equatorial Guinea, and the Central African Republic.', 'Department of State. Bureau of European Affairs. Office of Central European Affairs.', 'Department of State. Bureau of European and Canadian Affairs. Office of Central European Affairs.', 'Department of State. Bureau of Inter-American Affairs. Office of Central American Affairs.', 'Department of State. Bureau of Inter-American Affairs. Office of Central American and Panamanian Affairs.', 'Department of State. Bureau of Inter-American Affairs. Office of the Country Director for Central America.', 'Department of State. Office of American Republic Affairs. Division of Central American and Panama Affairs.', 'Department of State. Office of European Affairs. Division of Central European Affairs.']
+
+== presidential libraries
+plc keys: ['generated', 'libraries', 'schemaVersion', 'source']
+George W. Ball occurrences: 1
+Ball occurrences: 9
+Dulles occurrences: 7
+Telephone occurrences: 86
+   ctx: onal Papers"}, {"identifier": "JFK-16", "naId": 600845, "series": [{"inclusiveDates": "1961–1963", "naId": 600846, "title": "Memoranda of Telephone Conversations"}], "statedSeriesCount": 1, "title": "George W. Ball Personal Papers"}, {"identifier": "JFK-160", "naId": 28894636, "series": [{"inclusiveDates": "1971–1972", "naId": 28894637, "title": "George McGovern 1972 Campaign Files"}, {"inclusiveDates": "1964–1972", "naId": 28894638, "title": "Personal Correspondence Files"}, {"inclusiveDates": "1962–1978", "
+   ctx: ment Records"}, {"inclusiveDates": "1866–1964", "naId": 26861298, "title": "Calendars"}, {"inclusiveDates": "1912–1962", "naId": 26861299, "title": "Misrepresentations Files"}, {"inclusiveDates": "1930–1933", "naId": 503329034, "title": "White House Telephone Logs"}, {"inclusiveDates": "1920–1964", "naId": 536447087, "title": "Articles, Addresses and Public Statements"}, {"inclusiveDates": "1920–1964", "na
+   ctx: ": "Cross Reference Sheets Files"}], "statedSeriesCount": 3, "title": "Confidential Files (Truman Administration)"}, {"identifier": "HST-CFB", "naId": 603649, "series": [{"inclusiveDates": "1948–1953", "naId": 603650, "title": "Appointment Books and Telephone Logs Files"}, {"inclusiveDates": "1933–1988", "naId": 603666, "title": "Subject Files"}, {"inclusiveDates": "1944–1987", "naId": 603676, "title": "Sp
+   ctx: naId": 594705, "series": [{"inclusiveDates": "1945–1953", "naId": 201193, "title": "Subject Files"}, {"inclusiveDates": "1950–1953", "naId": 2579397, "title": "Appointment Calendars Files"}, {"inclusiveDates": "1950–1953", "naId": 2579399, "title": "Telephone Memorandums Files"}, {"inclusiveDates": "1947–1953", "naId": 2579401, "title": "Correspondence Files"}, {"inclusiveDates": "1947–1953", "naId": 25794
+
+== external_citations rows for the two library citations (and in scope?)
+frus1964-68v31 d205 in scope: True
+     ('presidentialLibrary', 'Johnson Library', 'Papers of George W. Ball', 'Johnson Library, Papers of George W. Ball, Brazil, 3/30/64–4/21/66', 0)
+frus1958-60v06 d235 in scope: True
+     ('lotFile', 'Department of State', None, 'A memorandum of this conversation, prepared by Elizabeth Beers, is ibid., Rubottom-Mann Files: Lot 62 D 418, Cuba', 0)
+     ('presidentialLibrary', 'Eisenhower Library', 'Dulles Papers', 'A memorandum by Bernau of this conversation is in Eisenhower Library, Dulles Papers, General Telephone Conversations', 0)
+
+== presidentialLibrary anchors among scope pointed-at rows
+     frus1958-60v06/d235 | Eisenhower Library | Dulles Papers | A memorandum by Bernau of this conversation is in Eisenhower Library, Dulles Papers, General Telephone Conversations
+     frus1961-63v15/d134 | Kennedy Library | President’s Office Files | A memorandum of McNamara’s conversation with Schroeder is in the Kennedy Library, President’s Office Files, Germany/Secu
+     frus1964-68v31/d205 | Johnson Library | Papers of George W. Ball | Johnson Library, Papers of George W. Ball, Brazil, 3/30/64–4/21/66
+     frus1964-68v31/d452 | Johnson Library | Tom Johnson Meeting Notes | Johnson Library, Tom Johnson Meeting Notes
+
+== decimal-class-labels schedule 1910-1949: countries and subjects named
+  country 16 = El Salvador
+  country 24 = Bolivia
+  country 35 = Argentine Republic/ Argentina
+  country 22 = Ecuador
+  country 14 = Guatemala
+  country 12 = Mexico
+  country 18 = Costa Rica
+  class 8 subjects .00 = Political affairs ; .01 = Government
+  coverage: {'decimalFileOpensIn': 1910, 'glossableYears': [{'endYear': 1949, 'scheduleId': '1910-1949', 'startYear': 1910}, {'endYear': 1959, 'scheduleId': '1950-1959', 'startYear': 1950}, {'endYear': 1963, 'scheduleId': '1960-1963', 'startYear': 1960}], 'keyOutsideGlossableYears': 'no-gloss', 'notShipped': [], 'note': "A key is glossable only when the document's own date falls inside one of `glossableYears`. Outside them this file has NO gloss — do not compose one from a schedule that does not govern the key's era. The classification was renumbered in 1950, so composing across that year returns a plausible WRONG reading rather than a miss: `411` reads as Claims under the 1910–1949 schedule where the editors gloss `411.48` as Poland, and `48` reads as British Africa — and `48` is live in TWO of this schedule's vocabularies at once (country `British Africa`, class-8 subject `Calamities. Disasters`), so a hand-composed reading has more than one way to be wrong. For years listed in `notShipped`, gloss from `volume_sources` instead. This governs GLOSSING only: whether a key is well-formed is a separate, deliberately era-blind test, so a post-1950 key composing against these vocabularies is expected and is not a licence to gloss it. If you are gating a whole VOLUME's coverage span rather than a document's date, clamp the span's lower bound to `decimalFileOpensIn` before testing containment — a volume covering 1861–1947 holds no pre-1910 decimal keys to mislabel, and literal containment would silence it.", 'renumberedAt': 1950}

@@ -1,0 +1,20 @@
+54 volumes in scope_volumes.txt: 54
+M8 pre-1895 candidates: [(608, 58)]
+Estrada doctrine: [(28, 18)]
+Legal adviser NEAR recogn* 30, 54 vols: [(4, 4)]
+Dept of State volumes: [(552,)]
+ZZZ: [(0,)]
+on-topic N 2339 baseline N 312169
+  junta: on 146/2339=0.062 base 1695/312169=0.005 ratio 11.50
+  "by force": on 42/2339=0.018 base 4263/312169=0.014 ratio 1.31
+  "de facto": on 160/2339=0.068 base 3497/312169=0.011 ratio 6.11
+  recogn*: on 786/2339=0.336 base 48508/312169=0.155 ratio 2.16
+  coup: on 76/2339=0.032 base 3982/312169=0.013 ratio 2.55
+R1 chapter entries: 62 R2: 5
+frus1907p2/d22 source/body mentions 7357: [('The Acting Secretary of State to the Mexican Ambassador.', 'File No. 7357/5.', 10, 10, 0)]
+frus1907p2 docs citing 7357: [('d21', 'The Honduranean Minister to the Acting Secretary of State.'), ('d22', 'The Acting Secretary of State to the Mexican Ambassador.'), ('d25', 'The Costa Rican Minister to the Acting Secretary of State.'), ('d26', 'The Mexican Chargé to the Acting Secretary of State.'), ('d27', 'The Acting Secretary of State to the Provisional Minister for Foreign Affairs of'), ('d28', 'The Acting Secretary of State to the Honduranean Minister.'), ('d29', 'The Acting Secretary of State to Minister Lee.'), ('d30', 'The Honduranean Minister to the Acting Secretary of State.')]
+Carter pointed-at raw: [('Carter Library, Carter Presidential Papers, Staff Offices, National Security Affairs, Brzezinski Material, Subject File,',), ('Carter Library, Carter Presidential Papers, Staff Offices, National Security Affairs, Brzezinski Material, Subject File,',), ('Carter Library, Carter Presidential Papers, Staff Offices, National Security Affairs, Brzezinski Material, Subject File,',)]
+Ball papers row: [('frus1964-68v31', 'd199', 'Johnson Library, Papers of George W. Ball, Brazil, 3/30/64–4/21/66'), ('frus1964-68v31', 'd199', 'Johnson Library, Papers of George W. Ball, Brazil, 3/30/64–4/21/66'), ('frus1964-68v31', 'd205', 'Johnson Library, Papers of George W. Ball, Brazil, 3/30/64–4/21/66')]
+Rusk 72D192 row: [('frus1964-68v31', 'd3', 'National Archives and Records Administration, RG 59, Rusk Files: Lot 72 D 192, Telephone Calls 2/11/64–2/29/64'), ('frus1964-68v31', 'd22', 'ibid., Rusk Files: Lot 72 D 192, Telephone Calls 7/1/64–8/5/64'), ('frus1964-68v31', 'd197', 'National Archives and Records Administration, RG 59, Rusk Files: Lot 72 D 192, Telephone Calls 3/20/64–4/9/64')]
+Rubottom rows: [('frus1955-57v06', 'd133', '59D573', 'Department of State, Rubottom Files: Lot 59 D 573, CPR Committee on Presidential Representatives'), ('frus1955-57v06', 'd246', '59D573', 'Documentation on this subject is ibid., Rubottom Files: Lot 59 D 573, Eisenhower, Milton'), ('frus1955-57v06', 'd301', '59D573', 'Ibid., Rubottom Files: Lot 59 D 573, Cuba'), ('frus1955-57v06', 'd320', '59D573', 'Department of State, Rubottom Files: Lot 59 D 573, Dominican Republic')]
+70D247 row: [('frus1964-68v31', 'd51', 'An English translation of Arosemena’s address is ibid., ARA/EP /E Files: Lot 70 D 247, POL 3 Summit Conference'), ('frus1964-68v31', 'd51', 'ibid.')]

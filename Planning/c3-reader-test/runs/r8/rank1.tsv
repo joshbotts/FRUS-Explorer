@@ -1,0 +1,375 @@
+116	frus1916	LA	{"withhold_recognition": 1, "de_facto_gov": 114, "tobar": 1}
+65	frus1949v09	-	{"withhold_recognition": 25, "nonrecognition": 32, "de_facto_gov": 2, "recognition_policy": 6}
+62	frus1915	LA	{"withhold_recognition": 2, "de_facto_gov": 60}
+56	frus1944v07	LA	{"withhold_recognition": 8, "nonrecognition": 34, "de_facto_gov": 3, "estrada_doctrine": 3, "recognition_policy": 5, "military_junta": 3}
+51	frus1917	LA	{"withhold_recognition": 1, "nonrecognition": 3, "de_facto_gov": 45, "tobar": 2}
+41	frus1933v03	-	{"withhold_recognition": 1, "nonrecognition": 38, "recognition_policy": 2}
+39	frus1948v09	LA	{"withhold_recognition": 2, "nonrecognition": 11, "de_facto_gov": 13, "estrada_doctrine": 1, "recognition_policy": 2, "military_junta": 10}
+36	frus1949v02	LA	{"withhold_recognition": 2, "nonrecognition": 20, "de_facto_gov": 2, "estrada_doctrine": 1, "recognition_policy": 9, "military_junta": 2}
+36	frus1932v05	LA	{"withhold_recognition": 4, "nonrecognition": 13, "de_facto_gov": 15, "tobar": 1, "estrada_doctrine": 1, "recognition_policy": 1, "military_junta": 1}
+33	frus1964-68v31	LA	{"withhold_recognition": 2, "nonrecognition": 3, "de_facto_gov": 6, "estrada_doctrine": 1, "recognition_policy": 3, "military_junta": 18}
+26	frus1958-60v05mSupp	LA	{"withhold_recognition": 4, "nonrecognition": 1, "tobar": 2, "recognition_policy": 1, "military_junta": 18}
+24	frus1936v03	-	{"withhold_recognition": 3, "nonrecognition": 21}
+24	frus1932v04	-	{"withhold_recognition": 3, "nonrecognition": 20, "recognition_policy": 1}
+24	frus1931v02	LA	{"withhold_recognition": 3, "nonrecognition": 13, "de_facto_gov": 4, "estrada_doctrine": 1, "military_junta": 3}
+23	frus1934v03	-	{"withhold_recognition": 4, "nonrecognition": 19}
+22	frus1947v08	LA	{"withhold_recognition": 3, "nonrecognition": 8, "de_facto_gov": 5, "tobar": 1, "estrada_doctrine": 1, "recognition_policy": 2, "military_junta": 2}
+20	frus1955-57v07	LA	{"nonrecognition": 1, "de_facto_gov": 2, "military_junta": 17}
+19	frus1918Russiav02	-	{"nonrecognition": 8, "de_facto_gov": 11}
+19	frus1913	LA	{"withhold_recognition": 7, "nonrecognition": 3, "de_facto_gov": 8, "military_junta": 1}
+18	frus1952-54v04	LA	{"withhold_recognition": 1, "nonrecognition": 1, "de_facto_gov": 2, "recognition_policy": 1, "military_junta": 13}
+18	frus1950v02	LA	{"nonrecognition": 3, "de_facto_gov": 2, "recognition_policy": 5, "military_junta": 8}
+18	frus1894app2	-	{"de_facto_gov": 18}
+17	frus1958-60v06	LA	{"tobar": 2, "military_junta": 15}
+17	frus1945v09	LA	{"withhold_recognition": 1, "nonrecognition": 5, "de_facto_gov": 3, "estrada_doctrine": 7, "recognition_policy": 1}
+17	frus1940v05	LA	{"nonrecognition": 5, "tobar": 12}
+16	frus1949v08	-	{"withhold_recognition": 1, "nonrecognition": 14, "de_facto_gov": 1}
+16	frus1899	LA	{"de_facto_gov": 16}
+15	frus1939v05	LA	{"tobar": 15}
+15	frus1934v05	LA	{"withhold_recognition": 1, "nonrecognition": 10, "de_facto_gov": 2, "estrada_doctrine": 1, "recognition_policy": 1}
+15	frus1919v02	LA	{"nonrecognition": 2, "de_facto_gov": 13}
+15	frus1914-20v02	LA	{"nonrecognition": 3, "de_facto_gov": 12}
+15	frus1914	LA	{"withhold_recognition": 2, "nonrecognition": 2, "de_facto_gov": 11}
+14	frus1946v06	-	{"withhold_recognition": 2, "nonrecognition": 12}
+14	frus1933v05	LA	{"withhold_recognition": 3, "nonrecognition": 5, "de_facto_gov": 5, "estrada_doctrine": 1}
+14	frus1919Russia	-	{"de_facto_gov": 14}
+14	frus1918Russiav01	-	{"nonrecognition": 2, "de_facto_gov": 12}
+14	frus1903	LA	{"nonrecognition": 1, "de_facto_gov": 7, "tobar": 6}
+13	frus1961-63v12	LA	{"withhold_recognition": 2, "nonrecognition": 5, "de_facto_gov": 1, "military_junta": 5}
+13	frus1941v06	LA	{"tobar": 13}
+13	frus1920v03	LA	{"nonrecognition": 1, "de_facto_gov": 12}
+13	frus1912	LA	{"withhold_recognition": 1, "nonrecognition": 2, "de_facto_gov": 4, "tobar": 6}
+12	frus1961-63v22	-	{"nonrecognition": 2, "de_facto_gov": 1, "military_junta": 9}
+12	frus1930v01	LA	{"withhold_recognition": 1, "nonrecognition": 1, "de_facto_gov": 2, "recognition_policy": 1, "military_junta": 7}
+11	frus1964-68v32	LA	{"nonrecognition": 1, "de_facto_gov": 1, "military_junta": 9}
+11	frus1950v06	-	{"nonrecognition": 4, "de_facto_gov": 3, "recognition_policy": 4}
+11	frus1944v03	-	{"withhold_recognition": 7, "nonrecognition": 2, "de_facto_gov": 2}
+10	frus1977-80v24	LA	{"withhold_recognition": 1, "nonrecognition": 2, "de_facto_gov": 1, "military_junta": 6}
+10	frus1969-76ve10	LA	{"withhold_recognition": 1, "de_facto_gov": 2, "military_junta": 7}
+10	frus1969-76v21	LA	{"nonrecognition": 2, "estrada_doctrine": 1, "recognition_policy": 3, "military_junta": 4}
+10	frus1952-54v14p1	-	{"withhold_recognition": 3, "nonrecognition": 6, "recognition_policy": 1}
+10	frus1951v02	LA	{"nonrecognition": 2, "de_facto_gov": 2, "military_junta": 6}
+10	frus1938v05	LA	{"nonrecognition": 1, "tobar": 7, "military_junta": 2}
+10	frus1923v01	LA	{"withhold_recognition": 6, "nonrecognition": 4}
+9	frus1977-80v15	LA	{"withhold_recognition": 1, "de_facto_gov": 1, "estrada_doctrine": 1, "military_junta": 6}
+9	frus1969-76ve11p2	LA	{"withhold_recognition": 1, "de_facto_gov": 1, "military_junta": 7}
+9	frus1961-63v18	LA	{"withhold_recognition": 5, "nonrecognition": 4}
+9	frus1961-63v10-12mSupp	LA	{"withhold_recognition": 2, "nonrecognition": 1, "military_junta": 6}
+9	frus1961-63v04	-	{"nonrecognition": 1, "recognition_policy": 1, "military_junta": 7}
+9	frus1955-57v06	LA	{"withhold_recognition": 2, "nonrecognition": 1, "military_junta": 6}
+9	frus1948v05p2	-	{"withhold_recognition": 3, "nonrecognition": 2, "de_facto_gov": 3, "recognition_policy": 1}
+9	frus1937v04	-	{"nonrecognition": 8, "recognition_policy": 1}
+9	frus1936v05	LA	{"withhold_recognition": 1, "nonrecognition": 4, "de_facto_gov": 2, "estrada_doctrine": 1, "military_junta": 1}
+9	frus1930v03	LA	{"withhold_recognition": 2, "nonrecognition": 1, "de_facto_gov": 1, "military_junta": 5}
+9	frus1920v01	LA	{"de_facto_gov": 9}
+8	frus1969-76v28	LA	{"withhold_recognition": 5, "nonrecognition": 2, "de_facto_gov": 1}
+8	frus1950v04	-	{"withhold_recognition": 1, "nonrecognition": 7}
+8	frus1940v01	LA	{"withhold_recognition": 1, "nonrecognition": 5, "tobar": 1, "recognition_policy": 1}
+8	frus1937v05	LA	{"withhold_recognition": 3, "de_facto_gov": 1, "recognition_policy": 1, "military_junta": 3}
+8	frus1933v04	LA	{"nonrecognition": 5, "de_facto_gov": 2, "estrada_doctrine": 1}
+8	frus1932v03	-	{"nonrecognition": 7, "recognition_policy": 1}
+8	frus1919Parisv12	-	{"de_facto_gov": 8}
+7	frus1969-76ve02	-	{"nonrecognition": 7}
+7	frus1969-76v30	-	{"nonrecognition": 1, "de_facto_gov": 1, "military_junta": 5}
+7	frus1955-57v26	-	{"withhold_recognition": 1, "nonrecognition": 6}
+7	frus1952-54v03	LA	{"withhold_recognition": 2, "nonrecognition": 3, "de_facto_gov": 2}
+7	frus1946v11	LA	{"withhold_recognition": 1, "nonrecognition": 1, "de_facto_gov": 2, "estrada_doctrine": 1, "recognition_policy": 1, "military_junta": 1}
+7	frus1943v05	LA	{"withhold_recognition": 4, "nonrecognition": 1, "estrada_doctrine": 2}
+7	frus1941v07	LA	{"tobar": 7}
+7	frus1924v01	LA	{"withhold_recognition": 2, "nonrecognition": 1, "de_facto_gov": 2, "military_junta": 2}
+7	frus1917Supp01v01	LA	{"de_facto_gov": 5, "tobar": 2}
+6	frus1981-88v13	LA	{"military_junta": 6}
+6	frus1964-68v15	-	{"withhold_recognition": 1, "nonrecognition": 4, "de_facto_gov": 1}
+6	frus1919Parisv09	-	{"de_facto_gov": 6}
+6	frus1919Parisv07	-	{"de_facto_gov": 6}
+6	frus1919Parisv02	-	{"de_facto_gov": 6}
+6	frus1918	LA	{"nonrecognition": 2, "de_facto_gov": 2, "tobar": 2}
+6	frus1900	LA	{"withhold_recognition": 1, "de_facto_gov": 5}
+6	frus1868p2	LA	{"withhold_recognition": 1, "nonrecognition": 1, "de_facto_gov": 4}
+6	frus1862	LA	{"withhold_recognition": 1, "nonrecognition": 1, "de_facto_gov": 3, "recognition_policy": 1}
+5	frus1969-76ve16	LA	{"military_junta": 5}
+5	frus1969-76ve07	-	{"withhold_recognition": 2, "nonrecognition": 2, "de_facto_gov": 1}
+5	frus1964-68v26	-	{"nonrecognition": 2, "de_facto_gov": 1, "military_junta": 2}
+5	frus1961-63v21	-	{"nonrecognition": 3, "recognition_policy": 1, "military_junta": 1}
+5	frus1961-63v03	-	{"military_junta": 5}
+5	frus1958-60v19	-	{"nonrecognition": 4, "recognition_policy": 1}
+5	frus1958-60v14	-	{"withhold_recognition": 1, "nonrecognition": 2, "de_facto_gov": 2}
+5	frus1958-60v13	LA	{"withhold_recognition": 3, "nonrecognition": 2}
+5	frus1958-60v08	-	{"nonrecognition": 4, "recognition_policy": 1}
+5	frus1958-60v05	LA	{"tobar": 1, "recognition_policy": 1, "military_junta": 3}
+5	frus1958-60v02	LA	{"nonrecognition": 4, "recognition_policy": 1}
+5	frus1955-57v03	-	{"withhold_recognition": 1, "nonrecognition": 3, "recognition_policy": 1}
+5	frus1952-54v16	-	{"nonrecognition": 5}
+5	frus1951v07p2	-	{"withhold_recognition": 1, "nonrecognition": 2, "recognition_policy": 2}
+5	frus1949v06	-	{"withhold_recognition": 2, "nonrecognition": 2, "recognition_policy": 1}
+5	frus1948v06	-	{"withhold_recognition": 3, "de_facto_gov": 1, "recognition_policy": 1}
+5	frus1945v06	-	{"withhold_recognition": 1, "nonrecognition": 3, "de_facto_gov": 1}
+5	frus1945v04	-	{"withhold_recognition": 1, "nonrecognition": 4}
+5	frus1943v03	-	{"nonrecognition": 4, "recognition_policy": 1}
+5	frus1941v03	-	{"withhold_recognition": 2, "nonrecognition": 3}
+5	frus1938v03	-	{"nonrecognition": 4, "de_facto_gov": 1}
+5	frus1938v01	-	{"nonrecognition": 5}
+5	frus1936v04	-	{"nonrecognition": 5}
+5	frus1935v04	LA	{"withhold_recognition": 1, "nonrecognition": 2, "de_facto_gov": 2}
+5	frus1935v03	-	{"nonrecognition": 4, "recognition_policy": 1}
+5	frus1934v04	LA	{"withhold_recognition": 1, "nonrecognition": 4}
+5	frus1933-39	-	{"withhold_recognition": 1, "nonrecognition": 4}
+5	frus1931-41v01	-	{"nonrecognition": 4, "de_facto_gov": 1}
+5	frus1928v02	LA	{"withhold_recognition": 2, "de_facto_gov": 3}
+5	frus1927v03	LA	{"withhold_recognition": 2, "nonrecognition": 3}
+5	frus1926v01	LA	{"withhold_recognition": 4, "nonrecognition": 1}
+5	frus1925v01	LA	{"withhold_recognition": 3, "nonrecognition": 2}
+5	frus1921v01	LA	{"de_facto_gov": 4, "military_junta": 1}
+5	frus1919Parisv06	-	{"de_facto_gov": 5}
+5	frus1904	LA	{"de_facto_gov": 3, "tobar": 2}
+5	frus1892	LA	{"de_facto_gov": 5}
+5	frus1861	LA	{"de_facto_gov": 5}
+4	frus1977-80v12	-	{"withhold_recognition": 3, "nonrecognition": 1}
+4	frus1969-76ve03	LA	{"nonrecognition": 4}
+4	frus1964-68v16	-	{"military_junta": 4}
+4	frus1958-60v09	-	{"nonrecognition": 4}
+4	frus1958-60v07p1	-	{"nonrecognition": 3, "military_junta": 1}
+4	frus1955-57v21	LA	{"nonrecognition": 3, "recognition_policy": 1}
+4	frus1955-57v03mSupp	-	{"nonrecognition": 4}
+4	frus1951v06p2	-	{"withhold_recognition": 1, "nonrecognition": 2, "military_junta": 1}
+4	frus1950v07	-	{"withhold_recognition": 1, "nonrecognition": 2, "recognition_policy": 1}
+4	frus1950v05	-	{"withhold_recognition": 2, "nonrecognition": 2}
+4	frus1950v03	-	{"nonrecognition": 4}
+4	frus1949v07p2	-	{"nonrecognition": 1, "de_facto_gov": 3}
+4	frus1947v04	-	{"withhold_recognition": 1, "nonrecognition": 3}
+4	frus1941v01	-	{"nonrecognition": 4}
+4	frus1937v03	-	{"nonrecognition": 3, "de_facto_gov": 1}
+4	frus1926v02	LA	{"nonrecognition": 2, "de_facto_gov": 1, "military_junta": 1}
+4	frus1924v02	LA	{"withhold_recognition": 2, "nonrecognition": 1, "de_facto_gov": 1}
+4	frus1919Parisv05	-	{"de_facto_gov": 4}
+4	frus1918Supp01v01	-	{"de_facto_gov": 4}
+4	frus1875v01	LA	{"nonrecognition": 1, "de_facto_gov": 3}
+4	frus1868p1	-	{"nonrecognition": 1, "de_facto_gov": 3}
+4	frus1865p3	-	{"withhold_recognition": 1, "nonrecognition": 1, "de_facto_gov": 2}
+4	frus1865p1	-	{"de_facto_gov": 4}
+3	frus1981-88v10	-	{"withhold_recognition": 1, "nonrecognition": 2}
+3	frus1977-80v17p2	-	{"withhold_recognition": 1, "military_junta": 2}
+3	frus1969-76ve08	-	{"withhold_recognition": 1, "recognition_policy": 1, "military_junta": 1}
+3	frus1969-76ve06	-	{"withhold_recognition": 1, "nonrecognition": 2}
+3	frus1969-76ve05p1	-	{"withhold_recognition": 1, "nonrecognition": 2}
+3	frus1969-76v24	LA	{"withhold_recognition": 1, "nonrecognition": 1, "recognition_policy": 1}
+3	frus1969-76v17	-	{"de_facto_gov": 1, "recognition_policy": 2}
+3	frus1964-68v24	-	{"nonrecognition": 2, "military_junta": 1}
+3	frus1964-68v02	-	{"withhold_recognition": 1, "nonrecognition": 1, "de_facto_gov": 1}
+3	frus1961-63v17	-	{"nonrecognition": 1, "military_junta": 2}
+3	frus1961-63v15	-	{"nonrecognition": 2, "recognition_policy": 1}
+3	frus1958-60v16	LA	{"nonrecognition": 2, "military_junta": 1}
+3	frus1958-60v11	-	{"military_junta": 3}
+3	frus1958-60v10p2	-	{"military_junta": 3}
+3	frus1958-60v03	-	{"nonrecognition": 3}
+3	frus1955-57v19	LA	{"nonrecognition": 3}
+3	frus1955-57v02	-	{"nonrecognition": 2, "recognition_policy": 1}
+3	frus1952-54v09p2	-	{"nonrecognition": 1, "military_junta": 2}
+3	frus1952-54v02p1	-	{"withhold_recognition": 1, "nonrecognition": 1, "military_junta": 1}
+3	frus1947v03	LA	{"estrada_doctrine": 2, "recognition_policy": 1}
+3	frus1946v09	-	{"nonrecognition": 3}
+3	frus1944v04	-	{"withhold_recognition": 1, "nonrecognition": 2}
+3	frus1943v02	-	{"withhold_recognition": 1, "nonrecognition": 2}
+3	frus1942v02	-	{"withhold_recognition": 2, "nonrecognition": 1}
+3	frus1941v04	-	{"nonrecognition": 3}
+3	frus1940v04	-	{"nonrecognition": 2, "de_facto_gov": 1}
+3	frus1939v02	-	{"nonrecognition": 1, "military_junta": 2}
+3	frus1935v01	LA	{"nonrecognition": 3}
+3	frus1932v01	-	{"nonrecognition": 3}
+3	frus1927v02	LA	{"de_facto_gov": 3}
+3	frus1923v02	LA	{"nonrecognition": 1, "de_facto_gov": 2}
+3	frus1919v01	LA	{"nonrecognition": 1, "de_facto_gov": 2}
+3	frus1919Parisv04	-	{"de_facto_gov": 3}
+3	frus1919Parisv03	LA	{"de_facto_gov": 2, "tobar": 1}
+3	frus1911	LA	{"de_facto_gov": 3}
+3	frus1889	LA	{"de_facto_gov": 3}
+3	frus1887	LA	{"withhold_recognition": 1, "de_facto_gov": 2}
+3	frus1883	LA	{"withhold_recognition": 1, "de_facto_gov": 2}
+3	frus1877	LA	{"de_facto_gov": 3}
+2	frus1977-80v22	-	{"withhold_recognition": 1, "military_junta": 1}
+2	frus1969-76ve15p1	-	{"nonrecognition": 1, "recognition_policy": 1}
+2	frus1969-76ve11p1	LA	{"de_facto_gov": 1, "military_junta": 1}
+2	frus1969-76ve05p2	-	{"military_junta": 2}
+2	frus1969-76ve01	LA	{"nonrecognition": 2}
+2	frus1969-76v39	-	{"nonrecognition": 2}
+2	frus1969-76v29	-	{"nonrecognition": 1, "military_junta": 1}
+2	frus1969-76v27	-	{"nonrecognition": 1, "military_junta": 1}
+2	frus1969-76v18	-	{"nonrecognition": 2}
+2	frus1969-76v12	-	{"nonrecognition": 1, "military_junta": 1}
+2	frus1969-76v09	-	{"nonrecognition": 2}
+2	frus1969-76v05	LA	{"de_facto_gov": 1, "recognition_policy": 1}
+2	frus1964-68v21	-	{"withhold_recognition": 1, "nonrecognition": 1}
+2	frus1964-68v19	-	{"nonrecognition": 2}
+2	frus1964-68v14	LA	{"nonrecognition": 1, "recognition_policy": 1}
+2	frus1964-68v07	-	{"nonrecognition": 2}
+2	frus1964-68v05	-	{"military_junta": 2}
+2	frus1961-63v07	-	{"nonrecognition": 2}
+2	frus1958-60v18	-	{"nonrecognition": 2}
+2	frus1958-60v17	LA	{"de_facto_gov": 1, "military_junta": 1}
+2	frus1955-57v27	-	{"nonrecognition": 2}
+2	frus1955-57v22	-	{"military_junta": 2}
+2	frus1955-57v13	-	{"nonrecognition": 1, "military_junta": 1}
+2	frus1952-54Guat	LA	{"de_facto_gov": 1, "military_junta": 1}
+2	frus1951v05	-	{"nonrecognition": 2}
+2	frus1951v04p2	-	{"withhold_recognition": 1, "nonrecognition": 1}
+2	frus1951-54IranEd2	-	{"military_junta": 2}
+2	frus1951-54Iran	-	{"military_junta": 2}
+2	frus1950v01	LA	{"withhold_recognition": 1, "military_junta": 1}
+2	frus1949v07p1	-	{"de_facto_gov": 2}
+2	frus1949v03	-	{"withhold_recognition": 1, "nonrecognition": 1}
+2	frus1948v07	-	{"nonrecognition": 1, "recognition_policy": 1}
+2	frus1947v07	LA	{"nonrecognition": 2}
+2	frus1947v05	LA	{"withhold_recognition": 1, "nonrecognition": 1}
+2	frus1945v05	-	{"withhold_recognition": 1, "de_facto_gov": 1}
+2	frus1944v01	LA	{"nonrecognition": 2}
+2	frus1944Quebec	-	{"withhold_recognition": 1, "nonrecognition": 1}
+2	frus1943v04	-	{"nonrecognition": 2}
+2	frus1943China	-	{"withhold_recognition": 2}
+2	frus1939v03	-	{"nonrecognition": 2}
+2	frus1936v02	-	{"estrada_doctrine": 1, "military_junta": 1}
+2	frus1933v02	-	{"nonrecognition": 2}
+2	frus1932v02	-	{"nonrecognition": 2}
+2	frus1931-41v02	-	{"nonrecognition": 2}
+2	frus1929v03	LA	{"de_facto_gov": 2}
+2	frus1928v03	LA	{"withhold_recognition": 1, "de_facto_gov": 1}
+2	frus1928v01	-	{"withhold_recognition": 1, "nonrecognition": 1}
+2	frus1925v02	LA	{"withhold_recognition": 1, "nonrecognition": 1}
+2	frus1921v02	LA	{"withhold_recognition": 1, "de_facto_gov": 1}
+2	frus1919Parisv08	-	{"de_facto_gov": 2}
+2	frus1919Parisv01	LA	{"de_facto_gov": 2}
+2	frus1918Supp02	LA	{"de_facto_gov": 2}
+2	frus1917Supp02v01	-	{"de_facto_gov": 2}
+2	frus1917-72PubDipv07	-	{"military_junta": 2}
+2	frus1916Supp	-	{"nonrecognition": 1, "de_facto_gov": 1}
+2	frus1908	LA	{"withhold_recognition": 1, "de_facto_gov": 1}
+2	frus1906p1	LA	{"de_facto_gov": 2}
+2	frus1902	LA	{"de_facto_gov": 2}
+2	frus1895p2	LA	{"de_facto_gov": 2}
+2	frus1895p1	LA	{"nonrecognition": 1, "de_facto_gov": 1}
+2	frus1894	LA	{"de_facto_gov": 2}
+2	frus1893	LA	{"nonrecognition": 1, "de_facto_gov": 1}
+2	frus1890	LA	{"de_facto_gov": 2}
+2	frus1885	LA	{"withhold_recognition": 1, "nonrecognition": 1}
+2	frus1878	LA	{"nonrecognition": 1, "de_facto_gov": 1}
+2	frus1875v02	LA	{"nonrecognition": 1, "de_facto_gov": 1}
+2	frus1874	LA	{"de_facto_gov": 2}
+2	frus1872p2v1	-	{"de_facto_gov": 2}
+2	frus1871	LA	{"de_facto_gov": 2}
+2	frus1870	LA	{"de_facto_gov": 2}
+2	frus1867p2	LA	{"withhold_recognition": 1, "de_facto_gov": 1}
+2	frus1866p3	LA	{"nonrecognition": 1, "de_facto_gov": 1}
+2	frus1864p1	-	{"de_facto_gov": 2}
+2	frus1863p1	-	{"de_facto_gov": 1, "recognition_policy": 1}
+1	frus1981-88v06	LA	{"withhold_recognition": 1}
+1	frus1981-88v04	-	{"nonrecognition": 1}
+1	frus1977-80v21	-	{"military_junta": 1}
+1	frus1977-80v20	-	{"nonrecognition": 1}
+1	frus1977-80v19	-	{"withhold_recognition": 1}
+1	frus1977-80v09Ed2	-	{"nonrecognition": 1}
+1	frus1977-80v08	-	{"military_junta": 1}
+1	frus1977-80v01	LA	{"nonrecognition": 1}
+1	frus1969-76ve14p1	-	{"nonrecognition": 1}
+1	frus1969-76ve09p1	-	{"nonrecognition": 1}
+1	frus1969-76ve04	-	{"withhold_recognition": 1}
+1	frus1969-76v41	-	{"recognition_policy": 1}
+1	frus1969-76v40	LA	{"nonrecognition": 1}
+1	frus1969-76v38p2	LA	{"military_junta": 1}
+1	frus1969-76v26	-	{"nonrecognition": 1}
+1	frus1969-76v19p2	-	{"military_junta": 1}
+1	frus1969-76v10	-	{"nonrecognition": 1}
+1	frus1964-68v34	LA	{"nonrecognition": 1}
+1	frus1964-68v30	-	{"nonrecognition": 1}
+1	frus1964-68v29p2	-	{"withhold_recognition": 1}
+1	frus1964-68v29p1	-	{"military_junta": 1}
+1	frus1964-68v28	-	{"withhold_recognition": 1}
+1	frus1964-68v27	-	{"nonrecognition": 1}
+1	frus1964-68v23	-	{"de_facto_gov": 1}
+1	frus1964-68v18	-	{"nonrecognition": 1}
+1	frus1964-68v13	-	{"military_junta": 1}
+1	frus1964-68v04	-	{"de_facto_gov": 1}
+1	frus1961-63v25	LA	{"nonrecognition": 1}
+1	frus1961-63v23	-	{"nonrecognition": 1}
+1	frus1961-63v16	LA	{"military_junta": 1}
+1	frus1961-63v14	-	{"nonrecognition": 1}
+1	frus1961-63v09	LA	{"military_junta": 1}
+1	frus1961-63v07-09mSupp	-	{"nonrecognition": 1}
+1	frus1958-60v15	-	{"military_junta": 1}
+1	frus1958-60v12	-	{"military_junta": 1}
+1	frus1958-60v10p1	-	{"nonrecognition": 1}
+1	frus1958-60v07p2	-	{"nonrecognition": 1}
+1	frus1958-60v03mSupp	-	{"withhold_recognition": 1}
+1	frus1958-60v01	-	{"military_junta": 1}
+1	frus1955-57v25	LA	{"withhold_recognition": 1}
+1	frus1955-57v18	LA	{"withhold_recognition": 1}
+1	frus1955-57v15	-	{"military_junta": 1}
+1	frus1955-57v14	-	{"military_junta": 1}
+1	frus1955-57v11	LA	{"nonrecognition": 1}
+1	frus1955-57v09	LA	{"nonrecognition": 1}
+1	frus1955-57v08	-	{"de_facto_gov": 1}
+1	frus1955-57v01	-	{"nonrecognition": 1}
+1	frus1952-54v15p1	LA	{"withhold_recognition": 1}
+1	frus1952-54v13p1	-	{"de_facto_gov": 1}
+1	frus1952-54v12p2	LA	{"military_junta": 1}
+1	frus1952-54v11p2	LA	{"nonrecognition": 1}
+1	frus1952-54v11p1	LA	{"de_facto_gov": 1}
+1	frus1952-54v07p1	-	{"de_facto_gov": 1}
+1	frus1952-54v06p1	-	{"military_junta": 1}
+1	frus1952-54v05p2	-	{"de_facto_gov": 1}
+1	frus1952-54v01p2	LA	{"military_junta": 1}
+1	frus1952-54v01p1	LA	{"military_junta": 1}
+1	frus1951v07p1	-	{"recognition_policy": 1}
+1	frus1951v04p1	-	{"withhold_recognition": 1}
+1	frus1951v03p2	-	{"nonrecognition": 1}
+1	frus1951v01	LA	{"nonrecognition": 1}
+1	frus1948v08	-	{"withhold_recognition": 1}
+1	frus1948v05p1	-	{"nonrecognition": 1}
+1	frus1948v04	-	{"nonrecognition": 1}
+1	frus1947v06	-	{"withhold_recognition": 1}
+1	frus1946v08	-	{"de_facto_gov": 1}
+1	frus1946v07	-	{"withhold_recognition": 1}
+1	frus1946v05	-	{"de_facto_gov": 1}
+1	frus1946v04	-	{"nonrecognition": 1}
+1	frus1945v02	-	{"nonrecognition": 1}
+1	frus1945Berlinv02	-	{"nonrecognition": 1}
+1	frus1944v02	-	{"de_facto_gov": 1}
+1	frus1943v06	LA	{"de_facto_gov": 1}
+1	frus1942v06	LA	{"tobar": 1}
+1	frus1942v04	-	{"recognition_policy": 1}
+1	frus1942v03	-	{"nonrecognition": 1}
+1	frus1942v01	-	{"nonrecognition": 1}
+1	frus1941v05	-	{"nonrecognition": 1}
+1	frus1939v01	-	{"nonrecognition": 1}
+1	frus1938v04	-	{"de_facto_gov": 1}
+1	frus1938v02	-	{"nonrecognition": 1}
+1	frus1937v01	LA	{"de_facto_gov": 1}
+1	frus1935v02	-	{"withhold_recognition": 1}
+1	frus1934v02	-	{"withhold_recognition": 1}
+1	frus1933v01	LA	{"nonrecognition": 1}
+1	frus1931v01	LA	{"de_facto_gov": 1}
+1	frus1930v02	LA	{"de_facto_gov": 1}
+1	frus1927v01	LA	{"de_facto_gov": 1}
+1	frus1922v01	LA	{"nonrecognition": 1}
+1	frus1919Parisv13	-	{"nonrecognition": 1}
+1	frus1919Parisv11	-	{"de_facto_gov": 1}
+1	frus1918Russiav03	-	{"de_facto_gov": 1}
+1	frus1914Supp	LA	{"nonrecognition": 1}
+1	frus1910	LA	{"de_facto_gov": 1}
+1	frus1907p2	LA	{"withhold_recognition": 1}
+1	frus1905	LA	{"nonrecognition": 1}
+1	frus1901China	-	{"withhold_recognition": 1}
+1	frus1901	LA	{"nonrecognition": 1}
+1	frus1894app1	LA	{"de_facto_gov": 1}
+1	frus1894Nicaragua	LA	{"de_facto_gov": 1}
+1	frus1891	-	{"de_facto_gov": 1}
+1	frus1888p2	LA	{"withhold_recognition": 1}
+1	frus1888p1	LA	{"de_facto_gov": 1}
+1	frus1884	LA	{"nonrecognition": 1}
+1	frus1876	LA	{"de_facto_gov": 1}
+1	frus1873p2v3	-	{"de_facto_gov": 1}
+1	frus1873p1v2	LA	{"de_facto_gov": 1}
+1	frus1872p2v4	LA	{"de_facto_gov": 1}
+1	frus1872p2v3	-	{"de_facto_gov": 1}
+1	frus1872p1	LA	{"de_facto_gov": 1}
+1	frus1867p1	LA	{"withhold_recognition": 1}
+1	frus1864p2	-	{"recognition_policy": 1}
+1	frus1863p2	LA	{"withhold_recognition": 1}

@@ -1,0 +1,1 @@
+\b(recognize|recognized|recognition|nonrecognition)\b( \S+){0,8} (government|regime|junta|administration|president)\b|\b(government|regime|junta|administration|president)\b( \S+){0,8} (recognize|recognized|recognition|nonrecognition)\b|\bnonrecognition\b

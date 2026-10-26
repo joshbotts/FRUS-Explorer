@@ -1,0 +1,48 @@
+CH entries: 85 RANGES: 8
+selectors not found: []
+selectors matching >1 chapter: []
+core slots: 3549 (chapters only: 3431 )
+M3 in document_cache: 3549 front_matter 0 editorial 8 | non-apparatus 3541 in 52 volumes
+core slots not in document_cache: 0
+session core_scope.tsv rows: 3549 non-apparatus: 3541 | set equality with my rebuild: True
+M3 date span: ('1895-09-06', '1980-10-03', 0)
+per-volume: [('frus1914', 353), ('frus1913', 343), ('frus1915', 235), ('frus1933v05', 224), ('frus1944v07', 187), ('frus1932v05', 163), ('frus1931v02', 131), ('frus1911', 119), ('frus1930v03', 109), ('frus1937v05', 103), ('frus1945v09', 102), ('frus1934v05', 93), ('frus1930v01', 92), ('frus1918', 83), ('frus1936v05', 80), ('frus1920v03', 73), ('frus1919v02', 73), ('frus1916', 69), ('frus1917', 66), ('frus1920v02', 63), ('frus1946v11', 61), ('frus1947v08', 53), ('frus1921v02', 50), ('frus1948v09', 49), ('frus1949v02', 47), ('frus1899', 46), ('frus1931v01', 43), ('frus1930v02', 40), ('frus1919v01', 38), ('frus1920v01', 35), ('frus1912', 29), ('frus1977-80v24', 28), ('frus1964-68v31', 26), ('frus1943v05', 26), ('frus1922v02', 26), ('frus1923v02', 24), ('frus1961-63v12', 19), ('frus1935v04', 18), ('frus1958-60v05mSupp', 17), ('frus1921v01', 16), ('frus1969-76v21', 14), ('frus1900', 13), ('frus1907p2', 11), ('frus1961-63v10-12mSupp', 10), ('frus1903', 9), ('frus1940v05', 7), ('frus1904', 7), ('frus1924v02', 5), ('frus1925v02', 4), ('frus1895p1', 4), ('frus1950v02', 3), ('frus1928v02', 2)]
+M4 core by decade: [('1890s', 50), ('1900s', 40), ('1910s', 1411), ('1920s', 295), ('1930s', 1096), ('1940s', 531), ('1950s', 4), ('1960s', 72), ('1970s', 35), ('1980s', 7)]
+la_volumes.tsv rows: 233 Ed2 among them: []
+  1890s: 50 / 8748 = 5.7 per 1,000
+  1900s: 40 / 9947 = 4.0 per 1,000
+  1910s: 1411 / 19206 = 73.5 per 1,000
+  1920s: 295 / 19471 = 15.2 per 1,000
+  1930s: 1096 / 15936 = 68.8 per 1,000
+  1940s: 531 / 19816 = 26.8 per 1,000
+  1950s: 4 / 12538 = 0.3 per 1,000
+  1960s: 72 / 9265 = 7.8 per 1,000
+  1970s: 35 / 8057 = 4.3 per 1,000
+  1980s: 7 / 2319 = 3.0 per 1,000
+1910s core docs in frus1913/1914/1915: 931
+core docs in frus1913/1914/1915 (all dates): 931
+M1 wider net: (5518, 228) over 233 volumes
+non-apparatus corpus: 312169
+  core recognition: 959 of 3541 -> 1 in 3.7 | corpus 15991 of 312169 -> 0.051
+  core international obligations: 129 of 3541 -> 1 in 27.4 | corpus 1301 of 312169 -> 0.004
+  core de facto: 220 of 3541 -> 1 in 16.1 | corpus 3497 of 312169 -> 0.011
+  core free elections: 54 of 3541 -> 1 in 65.6
+  core control dept of state: 590 of 3541 -> 1 in 6.0 | corpus 94049 of 312169 -> 0.301
+  core control impossible: 0
+M14 external_citations over core (all core slots): (160, 118)
+M14 external_citations over core (non-apparatus only): (160, 118)
+M14 by repo/collection: [('Department of State', '?', 140, 104), ('Carter Library', 'National Security Affairs', 16, 12), ('Nixon Presidential Materials', 'NSC Files', 2, 1), ('Carter Library', 'Plains File', 1, 1), ('Carter Library', 'Presidential Materials', 1, 1)]
+M14 lots: [('63D127', 2, 2), ('64D16', 1, 1), ('65D330', 1, 1), ('66D95', 1, 1), ('71F154', 1, 1), ('82D100', 1, 1)]
+M14 earliest external_citation date corpus-wide: ('1910-12-06',)
+M13 rows: (3450,)
+M13 era: [('decimal', 3342), ('structured', 37), ('subject_numeric', 32), ('cfpf', 20), ('unrecognized', 11), ('lot_file', 4), ('published', 3), ('named_series', 1)]
+M13 record groups: [('59', 3400), (None, 50)]
+M13 decimal classes: [('812.00', 929), ('837.00', 227), ('818.00', 173), ('816.01', 170), ('824.00', 163), ('814.00', 126), ('823.00', 101), ('839.00', 99), ('825.00', 85), ('824.01', 76), ('834.00', 75), ('816.00', 73), ('815.00', 70), ('835.00', 69), ('817.00', 67), ('834.01', 44)]
+M13 decimal rows by year<=1949 vs >1949: [('after', 'structured', 37), ('after', 'subject_numeric', 32), ('after', 'decimal', 25), ('after', 'cfpf', 20), ('after', 'lot_file', 3), ('after', 'named_series', 1), ('to1949', 'decimal', 3317), ('to1949', 'unrecognized', 11), ('to1949', 'published', 3), ('to1949', 'lot_file', 1)]
+M13 named series/lots: [(None, None, None, None, 14), ('National Archives', '59', 'Central Files 1964–66', None, 12), ('Nixon Presidential Materials', None, 'NSC Files', None, 9), ('Carter Library', None, 'National Security Affairs', None, 7), ('Department of State', '59', 'POL 15 HOND', None, 7), ('Johnson Library', None, 'National Security File', None, 7), ('National Archives', '59', 'Central Files 1967–69', None, 7), ('Eisenhower Library', None, 'Whitman File', None, 4), ('Kennedy Library', None, 'National Security Files', None, 4), ('Library of Congress', None, 'Manuscript Division', None, 3), ('Department of State', '59', 'POL 26 DOM REP', None, 2), (None, None, 'Department of State, Bureau of Intelligence and Research', None, 1), ('Central Intelligence Agency', None, None, None, 1), ('Department of State', '59', None, '66D149', 1), ('Department of State', '59', None, '66D95', 1), ('Department of State', '59', None, 'NO', 1), ('Department of State', '59', 'CFPF', None, 1), ('Department of State', '59', 'CFPF D780008-0038', None, 1), ('Department of State', '59', 'CFPF D780315-0067', None, 1), ('Department of State', '59', 'CFPF D780486-0322', None, 1), ('Department of State', '59', 'CFPF D780540-0141', None, 1), ('Department of State', '59', 'CFPF D790140-0487', None, 1), ('Department of State', '59', 'CFPF D790165-0700', None, 1), ('Department of State', '59', 'CFPF D790192-0159', None, 1), ('Department of State', '59', 'CFPF D790313-1162', None, 1), ('Department of State', '59', 'CFPF D790481-1148', None, 1), ('Department of State', '59', 'CFPF D790501-0022', None, 1), ('Department of State', '59', 'CFPF D800111-0261', None, 1), ('Department of State', '59', 'CFPF D800352-0669', None, 1), ('Department of State', '59', 'CFPF D800354-0832', None, 1), ('Department of State', '59', 'CFPF D800432-0250', None, 1), ('Department of State', '59', 'CFPF P750011–2152', None, 1), ('Department of State', '59', 'CFPF P840140-2059', None, 1), ('Department of State', '59', 'CFPF P840140-2154', None, 1), ('Department of State', '59', 'CFPF P840153-1902', None, 1), ('Department of State', '59', 'CFPF P840175-1659', None, 1), ('Department of State', '59', 'Files', '64D16', 1), ('Department of State', '59', 'POL 15 DOM REP', None, 1), ('Department of State', '59', 'POL 15-1 DOM REP', None, 1), ('Department of State', '59', 'POL 16 DOM REP', None, 1), ('Department of State', '59', 'POL 2 DOM REP', None, 1), ('Department of State', '59', 'POL 26 HOND', None, 1), ('National Archives', '59', 'Office of the Secretariat Staff', '84D241', 1)]
+M13 came-from lots: [('64D16', '64 D 16', 1), ('66D149', '66 D 149', 1), ('66D95', '66 D 95', 1), ('84D241', '84D241', 1), ('NO', 'No', 1)]
+M17 acheson search: (0,)
+chapter check frus1930v03 Revolution in Peru -> ['Peru: > Revolution in Peru']
+chapter check frus1931v02 Revolution in Peru -> ['Peru: > Revolution in Peru']
+chapter check frus1932v05 Refusal of the United States to recognize the Martínez -> ['El Salvador: > Refusal of the United States to recognize the Martínez regime in El Salvador']
+chapter check frus1945v09 recognition of the Venezuelan revolutionary junta -> ['Venezuela: > Consultation concerning and recognition of the Venezuelan revolutionary junta']

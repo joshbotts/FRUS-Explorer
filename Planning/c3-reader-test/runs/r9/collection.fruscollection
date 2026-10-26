@@ -1,0 +1,569 @@
+{
+ "format": "fruscollection",
+ "formatVersion": 2,
+ "minimumReaderVersion": 1,
+ "name": "Recognizing governments that took power by force in Latin America",
+ "authorLine": "Agent run, Recognition study, 2026-10-25",
+ "introductionText": "What FRUS answers directly: the series prints the Department's own statements of the test it applied to a Latin American government that had taken power by force, from Evarts's wait before recognizing Díaz in 1878 to the 1979 recognition of Nicaragua's provisional government, and in each case what it asked of the new government first: control of the country, the people's acquiescence, a promise to honour international obligations, and, in some periods, constitutional origin or a dated return to elections. Where FRUS points for the rest: the printed documents came almost entirely from the Department of State's central decimal file (Record Group 59), chiefly the 'political affairs' and 'government' classes for each country; the editors' footnotes cite the same file, the Bureau of Inter-American Affairs lot files, and the presidential libraries, and after 1963 the Central Foreign Policy File's POL 16 (Independence. Recognition.) category. What this request cannot get from FRUS: the texts of the inter-American resolutions on recognition and of the Estrada and Tobar doctrines, the notes of recognition after 1963, and any case before 1876 under these headings; the series mentions them and points to the shelf but does not print them.",
+ "composition": {
+  "defaultBodyDepth": "full",
+  "footnoteStyle": "all",
+  "includeSourceNote": true,
+  "tocStyle": "citation",
+  "applyHighlights": false,
+  "includeNotes": true,
+  "includeWordCloud": false
+ },
+ "entries": [
+  {
+   "kind": "heading",
+   "text": "Before Wilson: control, consent and obligations, 1877–1914",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "The oldest cases in the series state the test the Department applied to a government that had taken power by arms: did it hold the country, did the people acquiesce, and would it meet the republic's international obligations. Nothing in these instructions asks how the government came to power. The documents run from the year-long wait before recognizing Porfirio Díaz to the two-line telegram recognizing Peru's junta in 1914."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1877",
+   "documentId": "d216",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Fish authorizes Foster to recognize Díaz, two months after the coup, because an indemnity instalment could not be received from an unacknowledged government; the authorization was not used for another fourteen months."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1877",
+   "documentId": "d216",
+   "text": "you would be warranted in recognizing the government of Porfirio Diaz, unless before this reaches you such a step should be made inexpedient by events which are not now foreseen"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1878",
+   "documentId": "d344",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Evarts states the three things the United States waited for before recognizing Díaz: popular approval, stability, and a disposition to comply with international law; he then waives them because non-recognition was blocking a frontier settlement."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1878",
+   "documentId": "d344",
+   "text": "the Government of the United States before recognizing General Diaz as the President of Mexico waited to be assured that his administration was approved by the Mexican people, and was possessed of due stability and animated by a disposition to comply with the rules of international"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1895p1",
+   "documentId": "d246",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Olney's one-sentence statement of the de facto practice: effective relations with the de facto government once fully established with the general consent of the people."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1895p1",
+   "documentId": "d246",
+   "text": "As to formal recognition, the practice of this Government has been to enter into effective relations with the de facto government when it shall have been fully established with the general consent of the people."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1914",
+   "documentId": "d1799",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Bryan recognizes Peru's junta as a provisional government on two findings: uncontested exercise of executive power and free acquiescence of the people."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1914",
+   "documentId": "d1799",
+   "text": "The Junta created by the Congress being in uncontested exercise of executive power and such exercise being freely acquiesced in by the people, you are instructed to recognize the Junta as a Provisional Government pending the establishment of a permanent executive."
+  },
+  {
+   "kind": "heading",
+   "text": "Wilson's constitutional test, 1913–1917",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Wilson added a question the earlier practice had not asked: whether the government had come to power by constitutional means. The thread runs from the conditions he put to Huerta in August 1913, through the de facto recognition of Carranza in 1915, to the flat refusal to recognize Tinoco in Costa Rica in 1917, where the new test was stated as a rule for the region."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1913",
+   "documentId": "d1028",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Lind's instructions carry Wilson's four conditions for a settlement in Mexico, with the pledge to recognize the administration chosen on those terms: armistice, an early free election, Huerta not a candidate, and all parties bound by the result."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1913",
+   "documentId": "d1028",
+   "text": "(a) An immediate cessation of fighting throughout Mexico, a definite armistice solemnly entered into and scrupulously observed; “(b) Security given for an early and free election in which all will agree to take part; “(c) The consent of General Huerta to bind himself not to be a candidate for election as President of the Republic at this election; and “(d) The agreement of all parties to abide by the results of the election and cooperate in the most loyal way in organizing and supporting the new administration."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1913",
+   "documentId": "d1047",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Bryan tells the chargé that the President would not recognize a president chosen in Huerta's October election, which lacked the sanctions of law."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1913",
+   "documentId": "d1047",
+   "text": "The President would not feel justified in accepting the result of such an election or in recognizing a president so chosen."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1915",
+   "documentId": "d1003",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Lansing's letter extending recognition to the de facto Government of Mexico under Carranza, after the Pan-American conference had decided to recognize whichever faction could guarantee life and property."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1915",
+   "documentId": "d1003",
+   "text": "the President of the United States takes this opportunity of extending recognition to the de facto Government of Mexico, of which General Venustiano Carranza is the Chief Executive."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917",
+   "documentId": "d378",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Lansing's circular to the other Central American governments: no recognition or support for any government in Costa Rica unless clearly proven to be elected by legal and constitutional means."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917",
+   "documentId": "d378",
+   "text": "it will not give recognition or support to any Government which may be established unless it is clearly proven that it is elected by legal and constitutional means."
+  },
+  {
+   "kind": "heading",
+   "text": "Obligations as the price, and the Central American treaty rule, 1921–1938",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "In the 1920s the Department asked a government that had come to power by force to bind itself first: Hughes made a treaty protecting property rights the act of recognition itself in Mexico, and in Central America the 1923 General Treaty's Article II made non-recognition of coup governments a treaty obligation the United States enforced. Both conditions were given up in the 1930s; the Legal Adviser's 1938 opinion on Brazil shows the narrower rule that replaced them."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1921v02",
+   "documentId": "d344",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Hughes tells Summerlin that recognition is subordinate: a treaty binding Mexico to protect persons and validly acquired property would itself accomplish recognition of the Obregón government."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1921v02",
+   "documentId": "d344",
+   "text": "The question of recognition is a subordinate one"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1921v02",
+   "documentId": "d344",
+   "text": "when it appears that there is a government in Mexico willing to bind itself to the discharge of primary international obligations, concurrently with that act its recognition will take place."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1932v05",
+   "documentId": "d618",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Stimson rules that Martínez can under no circumstances be recognized, because of the 1923 treaty, not from any animus against him."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1932v05",
+   "documentId": "d618",
+   "text": "Martínez can under no circumstances be recognized. This is not due to any animus against Martínez, but because of the clear provisions of the Treaty."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1936v05",
+   "documentId": "d111",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Welles agrees that the treaty has become a dead letter through its violation by Guatemala and Honduras, and that no public pronouncement is needed."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1936v05",
+   "documentId": "d111",
+   "text": "The violation of the provisions of the Treaty by both the present Government of Guatemala and the present Government of Honduras make the Treaty a complete dead letter"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1936v05",
+   "documentId": "d112",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Hull's instruction to the Central American missions adopting the conclusion that the United States should no longer be guided by Article II in extending or denying recognition."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1936v05",
+   "documentId": "d112",
+   "text": "the United States should no longer be guided by Article II of the General Treaty of Peace and Amity of 1923 in extending or denying recognition to Governments in Central America"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1937v05",
+   "documentId": "d338",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Hackworth: Vargas's abrogation of the constitution raises no occasion for recognition, because the situation is not one where a recognized government was ousted by a coup or revolution."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1937v05",
+   "documentId": "d338",
+   "text": "The situation is not analogous to that presented where the recognized government has been ousted by a coup d’état or revolution and a new régime set up contrary to constitutional methods."
+  },
+  {
+   "kind": "heading",
+   "text": "War, consultation and the hemisphere, 1943–1947",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "During the war the question became collective. Hull made hemisphere security and Axis influence the first test for Bolivia's new regime; the Montevideo committee's Resolution XXII asked the republics to consult before recognizing a government established by force; and Byrnes's recognition of Venezuela's junta shows the three-part finding and the fear of being last to recognize. Nicaragua in 1947 shows non-recognition kept up for a year against a Somoza-made government."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1943v05",
+   "documentId": "d486",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Hull's press statement on the Bolivian regime: hemisphere security and the war effort come first, including whether unfriendly outside influence played a part."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1943v05",
+   "documentId": "d486",
+   "text": "Considerations of the security of the Hemisphere and of the war effort of the United Nations must have first importance in any matter of this or similar character."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1944v07",
+   "documentId": "d386",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: The circular transmitting the Montevideo committee's recommendation that the republics consult and exchange information under Resolution XXII before recognizing Bolivia's new government."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1944v07",
+   "documentId": "d386",
+   "text": "before proceeding to recognize the new Government of Bolivia they carry out as soon as possible, through regular diplomatic channels, both the consultations and the exchange of information recommended in Resolution XXII"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1945v09",
+   "documentId": "d1170",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Byrnes's circular on Venezuela: control of the country, general support without active opposition, intention to fulfil international obligations, no pro-Axis inspiration; then consultation under Resolution XXII."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1945v09",
+   "documentId": "d1170",
+   "text": "(1) the seven man Junta in Venezuela is in control of that country; (2) that it enjoys general support without active opposition and (3) that it intends to fulfill its international obligations."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1945v09",
+   "documentId": "d1182",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Byrnes explains the hurried date: other countries were recognizing and the United States risked being last, to the prejudice of its interests."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1945v09",
+   "documentId": "d1182",
+   "text": "possibly place us in position of being last to recognize, thus creating possible prejudice to our interests in Venezuela"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1947v08",
+   "documentId": "d733",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Marshall insists that contact with Somoza be as a private citizen, not as Minister of War, while the Lacayo regime remains unrecognized."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1947v08",
+   "documentId": "d733",
+   "text": "you are communicating with him as a private citizen only and not in his official capacity as Minister of War or as Director of the Guardia Nacional"
+  },
+  {
+   "kind": "heading",
+   "text": "The post-war formula: control, obligations, elections as a hope, 1950–1959",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "After 1950 the Department applied a settled formula, stated almost identically for Haiti, Cuba, Venezuela and El Salvador: the junta controls the country, promises to honour international obligations, and, in the Cold War wording, is free of communist taint; elections are hoped for, not required. Dulles's 1957 telegram on Haiti says in so many words that recognition is not to be used as an instrument of policy."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1950v02",
+   "documentId": "d478",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Acheson's instruction for Haiti: the note of recognition records the junta's three statements, on international obligations, authority throughout Haiti, and democratic practices with elections as soon as practicable."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1950v02",
+   "documentId": "d478",
+   "text": "(1) Junta will honor all Haiti’s internatl obligations, (2) authority Junta recognized throughout Haiti, and (3) Junta intends maintain democratic practices and call for new legislative elections soon as practicable."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v04",
+   "documentId": "d327",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Acheson to Truman on Batista: the regime has requested recognition and given satisfactory statements on international obligations, private capital and communist activities; ten Latin American states have already continued relations."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v04",
+   "documentId": "d327",
+   "text": "The Batista regime has formally requested our recognition and has made satisfactory public and private statements with regard to Cuban intention to fulfill its international obligations; its attitude towards private capital; and its intention to take steps to curtail international communist activities in Cuba."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1955-57v06",
+   "documentId": "d356",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Dulles on Haiti's Kebreau junta: recognition is not ordinarily to be used as an instrument of policy, and elections are an internal decision, not a condition precedent."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v06",
+   "documentId": "d356",
+   "text": "it is not ordinarily desirable in inter-American relations to utilize recognition as an instrument of policy"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v06",
+   "documentId": "d356",
+   "text": "Whether or when elections are to be held is an internal decision not properly a condition precedent to recognition"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v05mSupp",
+   "documentId": "ve_d1",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Rubottom's recommendation to recognize Venezuela's junta five days after the fall of Pérez Jiménez, on assurances to foreign investment and anti-communism, because early recognition would steady the new regime."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1958-60v05mSupp",
+   "documentId": "ve_d1",
+   "text": "In the belief that early recognition on our part would contribute materially to the stability of the new regime, we propose that the U.S. recognize, at 6.00 p.m. today, the Junta as the Provisional Government of Venezuela."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v06",
+   "documentId": "d217",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Dulles to Eisenhower on Cuba: the new government's statements of intention were made in good faith, it appears free from communist taint, and should be recognized without delay."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1958-60v06",
+   "documentId": "d217",
+   "text": "I believe that the statements of intention of the new government have been made in good faith and that it is in our national interest to recognize the Provisional Government of Cuba without delay."
+  },
+  {
+   "kind": "heading",
+   "text": "Non-recognition against coups, and the retreat from it, 1962–1979",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Kennedy tried to make recognition a lever against military coups in Peru, Ecuador, the Dominican Republic and Honduras, asking for a dated return to elected government; by December 1963 the Department judged the lever exhausted. From 1964 the practice turned to avoiding the question: continuity of relations in Brazil and Bolivia, consultation so as not to recognize first, and an open proposal to adopt the Estrada doctrine, under which a government is dealt with because it exists and not because it is legitimate."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v12",
+   "documentId": "d427",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Martin recalls that Ambassador Loeb, on the President's authority, had warned Peru's generals before the coup that recognition would be very difficult and aid next to impossible."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v12",
+   "documentId": "d427",
+   "text": "Ambassador Loeb told top Peruvian military leaders that we would find it very difficult to recognize a government installed by military coup and next to impossible to continue assistance programs"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v10-12mSupp",
+   "documentId": "d109",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Rusk's circular on Ecuador: recognition withheld until the junta states its intention to return to civilian government, and not before several other Latin American countries have recognized."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v10-12mSupp",
+   "documentId": "d109",
+   "text": "However USG will not extend recognition until at least several other Latin American countries have done so."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v12",
+   "documentId": "d363",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: The Department explains the December 1963 recognition of the Honduran and Dominican regimes: the objective of non-recognition had been the earliest return to constitutionally elected government, and its further prospects were nil."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v12",
+   "documentId": "d363",
+   "text": "In cases both countries our principal objective in withholding recognition has been return at earliest possible date constitutionally elected government."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v31",
+   "documentId": "d206",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Ball at the NSC on Brazil: no recognition problem would arise because the United States would merely continue relations with the President."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v31",
+   "documentId": "d206",
+   "text": "there would be no problem of U.S. recognition of the new government because we would merely continue our relations with the President."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v32",
+   "documentId": "d14",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: The Embassy reports Dominicans reminding it that United States recognition of the triumvirate had rested on a promised election schedule."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v32",
+   "documentId": "d14",
+   "text": "We are already being reminded by some that US recognition of triumvirate was based on promise of election schedule to begin this fall."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v31",
+   "documentId": "d141",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Rusk asks Johnson to approve the note recognizing Onganía's government two weeks after the Argentine coup; the note itself is not printed, and the editors give its shelf in the Central Files under POL 16 ARG."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v31",
+   "documentId": "d141",
+   "text": "Attached but not printed. The instructions were eventually sent as telegram 2885 to Buenos Aires, July 14. (National Archives and Records Administration, RG 59, Central Files 1964–66, POL 16 ARG)"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v31",
+   "documentId": "d512",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Oliver proposes moving United States recognition doctrine toward a variant of the Estrada doctrine while keeping the Rio Resolution XXVI consultation, over the Peruvian coup."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v31",
+   "documentId": "d512",
+   "text": "Herein I shall seek to open dialogue on relative desirability in Peruvian case of moving U.S. recognition doctrine and practice toward a variant of Estrada Doctrine"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve10",
+   "documentId": "d95",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: Kissinger to Nixon on Bolivia: the armed forces' mandate permits the legal fiction that Torres's government is a change of administration, so no question of recognition arises."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve10",
+   "documentId": "d95",
+   "text": "this permits us to adopt the legal fiction that this is a change of administrations not a new government. Hence the question of recognition would not arise and we would “continue” relations."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76v21",
+   "documentId": "d348",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: The Washington Special Actions Group on Chile: the United States recognizes governments, not heads of government, and should not be first to recognize the junta."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v21",
+   "documentId": "d348",
+   "text": "we should take the public position that we recognize governments, not heads of government, and that question of recognition has not arisen"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v24",
+   "documentId": "d133",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: The Department's instruction on Bolivia, quoted in the editors' note: where there are elements of continuity, no question of recognition arises."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v24",
+   "documentId": "d133",
+   "text": "Especially in cases where there are elements of continuity in the situation, the USG tends to take the position that no question of recognition arises."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v15",
+   "documentId": "d282",
+   "notes": [
+    "Agent finding, Recognition study, 2026-10-25: On Nicaragua, recognition of the Sandinista provisional government is considered natural, with the statement to refer to the provisional government's pledges."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v15",
+   "documentId": "d282",
+   "text": "Recognition of the new government was considered to be natural, but the recognition statement will make reference to the provisional government’s pledges."
+  },
+  {
+   "kind": "prose",
+   "text": "Threads not followed here: the text of the 1923 General Treaty's Article II and of Resolutions XXII (1943), XXXV (1948) and XXVI (1965) are summarised in editors' notes but not printed; the Mexican and Ecuadorean statements of the Estrada and Tobar doctrines are mentioned, never printed; the notes of recognition after 1963 are mostly 'attached but not printed' and sit in the Central Foreign Policy File under POL 16; the Cuban exile 'provisional government' planning of 1961 and the Grenada and Suriname cases of 1979–80 were set aside as outside the question."
+  },
+  {
+   "kind": "generated",
+   "generatedBlockType": "archivalSources"
+  }
+ ]
+}

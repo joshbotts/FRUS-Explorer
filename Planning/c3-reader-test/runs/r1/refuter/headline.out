@@ -1,0 +1,399 @@
+
+### N01 canary  (0.0s)
+SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache
+   (553, 321749, 1103, 8481)
+
+### scope_docs row count vs document_cache  (0.2s)
+SELECT (SELECT COUNT(*) FROM s.scope_docs), (SELECT COUNT(*) FROM document_cache)
+   (321749, 321749)
+
+### scope_docs rows not in document_cache  (0.1s)
+SELECT COUNT(*) FROM s.scope_docs sd LEFT JOIN document_cache c ON c.volume_id=sd.volume_id AND c.document_id=sd.document_id WHERE c.volume_id IS NULL
+   (0,)
+
+### N02 breakdown  (0.1s)
+SELECT COUNT(*), SUM(apparatus=1), SUM(apparatus=0 AND numbered=0), SUM(apparatus=0 AND numbered=1 AND ed2_dup=1), SUM(apparatus=0 AND numbered=1 AND ed2_dup=0) FROM s.scope_docs
+   (321749, 9580, 5991, 740, 305438)
+
+### N02 apparatus flag agrees with document_cache flags  (5.2s)
+SELECT COUNT(*) FROM s.scope_docs sd JOIN document_cache c ON c.volume_id=sd.volume_id AND c.document_id=sd.document_id WHERE sd.apparatus <> (c.is_front_matter=1 OR c.is_editorial_note=1)
+   (0,)
+
+### N02 numbered flag agrees with document_number  (0.3s)
+SELECT COUNT(*) FROM s.scope_docs sd JOIN document_cache c ON c.volume_id=sd.volume_id AND c.document_id=sd.document_id WHERE sd.numbered <> (COALESCE(c.document_number,'')<>'')
+   (0,)
+
+### N02 ed2_dup volumes  (0.0s)
+SELECT volume_id, COUNT(*) FROM s.scope_docs WHERE ed2_dup=1 GROUP BY 1
+   ('frus1951-54IranEd2', 377)
+   ('frus1969-76ve15p2Ed2', 387)
+
+### N03 scope by basis  (0.0s)
+SELECT lat_basis, COUNT(*), SUM(numbered=1 AND apparatus=0 AND ed2_dup=0) FROM s.scope_docs WHERE latam=1 GROUP BY 1
+   ('hemisphere volume', 30290, 28686)
+   ('latam section', 28536, 28458)
+
+### N03 scope volumes  (0.0s)
+SELECT COUNT(DISTINCT volume_id), SUM(b='hemisphere volume'), SUM(b='latam section') FROM (SELECT volume_id, MIN(lat_basis) b FROM s.scope_docs WHERE latam=1 AND numbered=1 AND apparatus=0 AND ed2_dup=0 GROUP BY volume_id)
+   (157, 46, 111)
+
+### N03 scope date span  (0.0s)
+SELECT MIN(date_iso), MAX(date_iso), SUM(date_iso IS NULL), COUNT(*) FROM s.scope_docs WHERE latam=1 AND numbered=1 AND apparatus=0 AND ed2_dup=0
+   ('1861-04-06', '1988-12-30', 0, 57144)
+
+### N03b decades  (0.0s)
+SELECT decade, COUNT(*) FROM s.scope_docs WHERE latam=1 AND numbered=1 AND apparatus=0 AND ed2_dup=0 GROUP BY decade
+   (1860, 1968)
+   (1870, 1528)
+   (1880, 2039)
+   (1890, 2349)
+   (1900, 3084)
+   (1910, 10441)
+   (1920, 4972)
+   (1930, 9470)
+   (1940, 11083)
+   (1950, 3086)
+   (1960, 3548)
+   (1970, 3185)
+   (1980, 391)
+
+### scope_docs.date_iso vs document_dates (scope docs)  (0.2s)
+SELECT SUM(sd.date_iso IS NOT d.date_iso), COUNT(*) FROM s.scope_docs sd LEFT JOIN document_dates d ON d.volume_id=sd.volume_id AND d.document_id=sd.document_id WHERE sd.latam=1 AND sd.numbered=1 AND sd.apparatus=0 AND sd.ed2_dup=0
+   (0, 57144)
+
+### N04 family C count  (1.0s)
+SELECT COUNT(*) FROM frus_documents f JOIN s.scope_docs sd ON sd.volume_id=f.volume_id AND sd.document_id=f.document_id WHERE frus_documents MATCH 'NEAR(recogn* government*, 6) OR NEAR(recogn* regime*, 6) OR NEAR(recogn* junta, 6) OR NEAR(recogn* administration*, 6)' AND sd.latam=1 AND sd.numbered=1 AND sd.apparatus=0 AND sd.ed2_dup=0
+   (2883,)
+
+### N04 by stratum  (0.1s)
+SELECT sd.lat_basis, COUNT(*) FROM frus_documents f JOIN s.scope_docs sd ON sd.volume_id=f.volume_id AND sd.document_id=f.document_id WHERE frus_documents MATCH 'NEAR(recogn* government*, 6) OR NEAR(recogn* regime*, 6) OR NEAR(recogn* junta, 6) OR NEAR(recogn* administration*, 6)' AND sd.latam=1 AND sd.numbered=1 AND sd.apparatus=0 AND sd.ed2_dup=0 GROUP BY 1
+   ('hemisphere volume', 1241)
+   ('latam section', 1642)
+
+### N05 hit list (first 3 shown)  (0.1s)
+SELECT f.volume_id, f.document_id, sd.date_iso FROM frus_documents f JOIN s.scope_docs sd ON sd.volume_id=f.volume_id AND sd.document_id=f.document_id WHERE frus_documents MATCH 'NEAR(recogn* government*, 6) OR NEAR(recogn* regime*, 6) OR NEAR(recogn* junta, 6) OR NEAR(recogn* administration*, 6)' AND sd.latam=1 AND sd.numbered=1 AND sd.apparatus=0 AND sd.ed2_dup=0 ORDER BY f.volume_id, f.document...
+   ('frus1861', 'd307', '1861-08-07')
+   ('frus1862', 'd572', '1861-10-24')
+   ('frus1862', 'd586', '1862-04-28')
+   ('frus1862', 'd594', '1862-07-14')
+   ('frus1862', 'd598', '1861-12-15')
+   ('frus1862', 'd701', '1862-09-15')
+   ('frus1863p2', 'd522', '1863-05-07')
+   ('frus1863p2', 'd523', '1863-05-23')
+   ('frus1865p3', 'd336', '1864-04-07')
+   ('frus1865p3', 'd355', '1865-03-13')
+   ('frus1865p3', 'd357', '1865-03-13')
+   ('frus1865p3', 'd359', '1865-03-17')
+   ('frus1865p3', 'd368', '1865-05-26')
+   ('frus1865p3', 'd403', '1865-10-08')
+   ('frus1865p3', 'd423', '1865-12-16')
+   ('frus1865p3', 'd454', '1865-10-25')
+   ('frus1865p3', 'd462', '1866-01-22')
+   ('frus1865p3', 'd478', '1865-07-31')
+   ('frus1865p3', 'd479', '1865-08-01')
+   ('frus1865p3', 'd480', '1865-08-09')
+   ('frus1865p3', 'd484', '1865-12-16')
+   ('frus1865p3', 'd486', '1866-02-11')
+   ('frus1865p3', 'd498', '1865-07-04')
+   ('frus1865p3', 'd521', '1865-07-22')
+   ('frus1865p3', 'd542', '1865-11-01')
+   ('frus1865p3', 'd550', '1864-07-15')
+   ('frus1865p3', 'd563', '1865-07-03')
+   ('frus1865p3', 'd567', '1865-08-01')
+   ('frus1865p3', 'd573', '1866-02-14')
+   ('frus1865p3', 'd585', '1865-09-02')
+   ('frus1865p3', 'd593', '1866-01-25')
+   ('frus1865p3', 'd594', '1866-02-27')
+   ('frus1865p3', 'd598', '1865-11-14')
+   ('frus1865p3', 'd599', '1865-11-18')
+   ('frus1865p3', 'd605', '1864-02-10')
+   ('frus1865p3', 'd610', '1864-04-06')
+   ('frus1865p3', 'd639', '1863-12-25')
+   ('frus1865p3', 'd650', '1864-04-04')
+   ('frus1865p3', 'd652', '1864-04-08')
+   ('frus1865p3', 'd654', '1864-04-14')
+   ('frus1865p3', 'd689', '1864-04-07')
+   ('frus1865p3', 'd695', '1863-09-21')
+   ('frus1865p3', 'd701', '1864-10-04')
+   ('frus1865p3', 'd724', '1866-02-09')
+   ('frus1865p3', 'd747', '1866-03-27')
+   ('frus1865p3', 'd749', '1866-04-06')
+   ('frus1865p3', 'd754', '1866-05-06')
+   ('frus1865p3', 'd757', '1866-05-21')
+   ('frus1866p2', 'd296', '1866-04-16')
+   ('frus1866p2', 'd297', '1866-04-21')
+   ('frus1866p2', 'd298', '1866-05-31')
+   ('frus1866p2', 'd299', '1866-07-10')
+   ('frus1866p2', 'd301', '1865-10-31')
+   ('frus1866p2', 'd302', '1865-10-31')
+   ('frus1866p2', 'd317', '1866-04-02')
+   ('frus1866p2', 'd344', '1866-03-10')
+   ('frus1866p2', 'd393', '1866-06-27')
+   ('frus1866p2', 'd411', '1866-02-17')
+   ('frus1866p2', 'd412', '1866-02-23')
+   ('frus1866p2', 'd416', '1866-04-20')
+   ... 2883 rows
+
+### N05 regenerated sample (n=2883):
+   0 frus1861/d307 1861-08-07
+   74 frus1866p3/d143 1866-01-25
+   148 frus1872p1/d266 1871-11-09
+   222 frus1879/d106 1879-04-26
+   296 frus1882/d37 1882-01-09
+   369 frus1886/d41 1886-03-19
+   443 frus1892/d513 1892-10-16
+   517 frus1899/d789 1899-10-21
+   591 frus1904/d227 1903-12-03
+   665 frus1907p2/d83 1907-08-25
+   739 frus1912/d1425 1912-06-20
+   813 frus1913/d849 1913-02-21
+   887 frus1914/d594 1914-02-16
+   961 frus1915/d1445 1915-03-05
+   1035 frus1916/d731 1916-06-09
+   1108 frus1919v01/d792 1919-03-04
+   1182 frus1920v03/d201 1920-05-26
+   1256 frus1921v02/d435 1921-11-21
+   1330 frus1924v02/d426 1924-09-25
+   1404 frus1927v03/d435 1927-02-11
+   1478 frus1930v03/d140 1930-12-20
+   1552 frus1931v02/d237 1931-12-22
+   1626 frus1932v05/d653 1932-03-31
+   1700 frus1933v05/d453 1933-10-17
+   1774 frus1934v05/d250 1934-01-25
+   1847 frus1936v05/d780 1936-03-12
+   1921 frus1938v05/d611 1938-07-13
+   1995 frus1941v07/d483 1941-11-11
+   2069 frus1944v07/d1090 1944-10-27
+   2143 frus1944v07/d383 1944-01-04
+   2217 frus1945v09/d1173 1945-10-27
+   2291 frus1947v08/d135 1947-04-25
+   2365 frus1949v02/d309 1949-03-23
+   2439 frus1952-54v04/d234 1953-06-15
+   2513 frus1958-60v05/d11 1959-02-16
+   2586 frus1958-60v06/d613 1960-11-29
+   2660 frus1961-63v11/d141 1962-11-03
+   2734 frus1964-68v32/d278 1964-07-14
+   2808 frus1969-76ve11p2/d361 1976-09-15
+   2882 frus1981-88v16/d444 1981-08-10
+
+### C_recognition_near_government.tsv: 41 rows; header=['volume_id', 'document_id', 'date_iso', 'strict', 'tolerant', 'snippet']
+    ['frus1861', 'd307', '1861-08-07', '1', '1', ' that in the ports of Chili privateers be armed for the service of the States which have recently declined to recognize the authority of the government of the Union, and have constituted themselves under a de facto government, with the title of Confederated Sta']
+    ['frus1866p3', 'd143', '1866-01-25', '1', '1', 'the attack ought to suffer the extreme penalties of the law; instead of which they are now at the head of the recognized government of the State of Apure. Each of the three citizens killed on the occasion referred to has left a family that w']
+    ['frus1872p1', 'd266', '1871-11-09', '1', '1', ' the revolution, to which post he is summoned by all the minor chieftains now in the field, but, as the State government of Oaxaca has refused to recognize the election of President Juarez, has fortified that capital, and has caused its official organ to express ap']
+   pairs equal to regenerated sample: True | file n= 40
+   tally of strict: Counter({'1': 37, '0': 3})
+   tally of tolerant: Counter({'1': 40})
+
+### C_recognition_near_government.referent.tsv: 41 rows; header=['n', 'volume_id/document_id', 'judgment', 'reason (judged by reading the printed snippet; 17 also by reading the whole document)']
+    ['1', 'frus1861/d307', 'N', 'Chile 1861: states that declined to recognize the Union (U.S. Civil War), not a Latin American government']
+    ['2', 'frus1866p3/d143', 'N', 'recognized government of the State of Apure: domestic Venezuelan state government']
+    ['3', 'frus1872p1/d266', 'N', "a Mexican state government refusing to recognize Juarez's election: not U.S. recognition"]
+   tally of judgment: Counter({'Y': 23, 'N': 15, 'P': 2})
+
+### N07 cited rows  (0.0s)
+SELECT COUNT(*), COUNT(DISTINCT volume_id||'/'||document_id), SUM(role='quoted'), SUM(role='cited') FROM s.cited
+   (45, 45, 17, 28)
+
+### N07 cited by finding  (0.0s)
+SELECT finding, COUNT(*) FROM s.cited GROUP BY 1
+   (1, 5)
+   (2, 8)
+   (3, 9)
+   (4, 5)
+   (5, 9)
+   (6, 9)
+
+### N07 cited exist / flags  (0.0s)
+SELECT COUNT(*), SUM(c.is_front_matter), SUM(c.is_editorial_note), SUM(COALESCE(c.document_number,'')=''), SUM(ct.volume_id LIKE '%Ed2') FROM s.cited ct LEFT JOIN document_cache c ON c.volume_id=ct.volume_id AND c.document_id=ct.document_id
+   (45, 0, 0, 0, 0)
+
+### N07 cited inside the scope?  (0.0s)
+SELECT SUM(sd.latam=1), SUM(sd.latam=0 OR sd.latam IS NULL), group_concat(CASE WHEN sd.latam=1 THEN NULL ELSE ct.volume_id||'/'||ct.document_id END) FROM s.cited ct LEFT JOIN s.scope_docs sd ON sd.volume_id=ct.volume_id AND sd.document_id=ct.document_id
+   (44, 1, 'frus1913/d7')
+
+### N10 came-from cited  (0.0s)
+SELECT COALESCE(ds.citation_era,'(none)'), ds.repository, ds.record_group, CASE WHEN ds.citation_era='decimal' THEN '(decimal file number)' ELSE ds.series_name END, COUNT(*) FROM s.cited c LEFT JOIN document_sources ds ON ds.volume_id=c.volume_id AND ds.document_id=c.document_id GROUP BY 1,2,3,4 ORDER BY 5 DESC
+   ('decimal', 'Department of State', '59', '(decimal file number)', 30)
+   ('(none)', None, None, None, 4)
+   ('lot_file', 'Department of State', '59', None, 2)
+   ('structured', 'Eisenhower Library', None, 'Project “Clean Up” Records', 1)
+   ('structured', 'Johnson Library', None, 'National Security File', 1)
+   ('structured', 'Kennedy Library', None, 'National Security Files', 1)
+   ('structured', 'National Archives', '59', 'Central Files 1964–66', 1)
+   ('structured', 'Nixon Presidential Materials', None, 'NSC Files', 1)
+   ('subject_numeric', 'Department of State', '59', 'POL 16 DOM REP', 1)
+   ('subject_numeric', 'Department of State', '59', 'POL 2 GUAT', 1)
+   ('subject_numeric', 'Department of State', '59', 'POL 26 DOM REP', 1)
+   ('subject_numeric', 'National Archives', '59', 'Central Files 1964–66', 1)
+
+### N10 came-from cited, decimal total  (0.0s)
+SELECT SUM(ds.citation_era='decimal'), COUNT(*) FROM s.cited c LEFT JOIN document_sources ds ON ds.volume_id=c.volume_id AND ds.document_id=c.document_id
+   (30, 45)
+
+### N10 document_sources rows per cited doc (should be <=1)  (0.0s)
+SELECT MAX(n), SUM(n>1) FROM (SELECT c.volume_id, c.document_id, COUNT(ds.volume_id) n FROM s.cited c LEFT JOIN document_sources ds ON ds.volume_id=c.volume_id AND ds.document_id=c.document_id GROUP BY 1,2)
+   (1, 0)
+
+### N10 came-from cited: raw rows  (0.0s)
+SELECT c.volume_id, c.document_id, ds.citation_era, ds.repository, ds.record_group, ds.lot_file, ds.series_name, substr(ds.raw_text,1,80) FROM s.cited c LEFT JOIN document_sources ds ON ds.volume_id=c.volume_id AND ds.document_id=c.document_id ORDER BY 1,2
+   ('frus1877', 'd222', None, None, None, None, None, None)
+   ('frus1878', 'd344', None, None, None, None, None, None)
+   ('frus1900', 'd530', None, None, None, None, None, None)
+   ('frus1913', 'd1028', 'decimal', 'Department of State', '59', None, '812.00/8614a', 'File No. 812.00/8614a.')
+   ('frus1913', 'd7', 'decimal', 'Department of State', '59', None, '710.11/102a', 'File No. 710.11/102a.')
+   ('frus1914', 'd567', 'decimal', 'Department of State', '59', None, '838.51/379a', 'File No. 838.51/379a.')
+   ('frus1915', 'd448', 'decimal', 'Department of State', '59', None, '711.38/24a', 'File No. 711.38/24a.')
+   ('frus1919v01', 'd867', 'decimal', 'Department of State', '59', None, '818.00/830', '818.00/830')
+   ('frus1921v01', 'd238', 'decimal', 'Department of State', '59', None, '824.00/153', '824.00/153 supp.: Telegram')
+   ('frus1921v02', 'd344', 'decimal', 'Department of State', '59', None, '711.1211/8a', '711.1211/8a: Telegram')
+   ('frus1925v02', 'd498', 'decimal', 'Department of State', '59', None, '817.00/3354', '817.00/3354: Telegram')
+   ('frus1930v01', 'd375', 'decimal', 'Department of State', '59', None, '835.01/28', '835.01/28')
+   ('frus1931v02', 'd232', 'decimal', 'Department of State', '59', None, '816.01/27a', '816.01/27a: Telegram')
+   ('frus1932v05', 'd518', 'decimal', 'Department of State', '59', None, '825.00 Revolutions/158', '825.00 Revolutions/158: Telegram')
+   ('frus1932v05', 'd560', 'decimal', 'Department of State', '59', None, '825.00 Revolutions/225', '825.00 Revolutions/225: Telegram')
+   ('frus1932v05', 'd561', 'decimal', 'Department of State', '59', None, '825.00 Revolutions/226', '825.00 Revolutions/226: Telegram')
+   ('frus1932v05', 'd567', 'decimal', 'Department of State', '59', None, '825.01/148', '825.01/148: Telegram')
+   ('frus1934v05', 'd255', 'decimal', 'Department of State', '59', None, '816.01/405', '816.01/405')
+   ('frus1934v05', 'd85', 'decimal', 'Department of State', '59', None, '837.00/4609', '837.00/4609: Telegram')
+   ('frus1936v05', 'd109', 'decimal', 'Department of State', '59', None, '710.11/2060', '710.11/2060')
+   ('frus1937v05', 'd265', 'decimal', 'Department of State', '59', None, '824.01/55', '824.01/55: Telegram')
+   ('frus1943v05', 'd335', 'decimal', 'Department of State', '59', None, '835.00/1457', '835.00/1457: Telegram')
+   ('frus1944v07', 'd1090', 'decimal', 'Department of State', '59', None, '816.01/10–2744', '816.01/10–2744: Telegram')
+   ('frus1944v07', 'd388', 'decimal', 'Department of State', '59', None, '824.00/1530a', '824.00/1530a: Circular telegram')
+   ('frus1944v07', 'd403', 'decimal', 'Department of State', '59', None, '824.01/502b', '824.01/502b: Circular telegram')
+   ('frus1944v07', 'd432', 'decimal', 'Department of State', '59', None, '824.00/3225b', '824.00/3225b: Telegram')
+   ('frus1944v07', 'd437', 'decimal', 'Department of State', '59', None, '824.01/939b', '824.01/939b: Circular telegram')
+   ('frus1945v09', 'd1170', 'decimal', 'Department of State', '59', None, '831.01/10–2545', '831.01/10–2545: Circular telegram')
+   ('frus1948v09', 'd115', 'lot_file', 'Department of State', '59', 'No', None, 'Policy Planning Staff Files: Lot No. 64–D–563: PPS Papers')
+   ('frus1948v09', 'd7', 'decimal', 'Department of State', '59', None, '800.01/6–845', '800.01/6–845')
+   ('frus1948v09', 'd74', None, None, None, None, None, None)
+   ('frus1949v02', 'd489', 'decimal', 'Department of State', '59', None, '831.001 Gallegos, Rómulo/2–749', '831.001 Gallegos, Rómulo/2–749')
+   ('frus1952-54v04', 'd490', 'decimal', 'Department of State', '59', None, '714.00/6–2854', '714.00/6–2854:Telegram')
+   ('frus1952-54v04', 'd502', 'decimal', 'Department of State', '59', None, '714.02/7–1054', '714.02/7–1054')
+   ('frus1955-57v06', 'd354', 'decimal', 'Department of State', '59', None, '738.00/7–957', 'Source: Department of State, Central Files, 738.00/7–957. Confidential; Priority')
+   ('frus1958-60v05', 'd11', 'lot_file', 'Department of State', '59', '62 D 1', None, 'Source: Department of State, S/S– NSC Files: Lot 62 D 1, NSC 5902 Series. Secret')
+   ('frus1958-60v06', 'd217', 'structured', 'Eisenhower Library', None, None, 'Project “Clean Up” Records', 'Source: Eisenhower Library, Project “Clean Up” Records, Cuba. Confidential. The ')
+   ('frus1961-63v10-12mSupp', 'd109', 'structured', 'Kennedy Library', None, None, 'National Security Files', 'U.S. withholding recognition new Government in Ecuador until junta indicates int')
+   ('frus1961-63v10-12mSupp', 'd137', 'subject_numeric', 'Department of State', '59', None, 'POL 2 GUAT', 'Transmits memorandum summarizing the first 3 weeks of the Peralta regime in Guat')
+   ('frus1961-63v12', 'd359', 'subject_numeric', 'Department of State', '59', None, 'POL 26 DOM REP', 'Source: Department of State, Central Files, POL 26 DOM REP. Secret; Priority; Li')
+   ('frus1961-63v12', 'd363', 'subject_numeric', 'Department of State', '59', None, 'POL 16 DOM REP', 'Source: Department of State, Central Files, POL 16 DOM REP. Secret; Immediate. D')
+   ('frus1964-68v31', 'd132', 'subject_numeric', 'National Archives', '59', None, 'Central Files 1964–66', 'Source: National Archives and Records Administration, RG 59, Central Files 1964–')
+   ('frus1964-68v31', 'd152', 'structured', 'National Archives', '59', None, 'Central Files 1964–66', 'Source: Johnson Library, National Security File, Country File, Bolivia, Vol. III')
+   ('frus1964-68v31', 'd518', 'structured', 'Johnson Library', None, None, 'National Security File', 'Source: Johnson Library, National Security File, Country File, Peru, Vol. III, 1')
+   ('frus1969-76v21', 'd361', 'structured', 'Nixon Presidential Materials', None, None, 'NSC Files', 'Source: National Archives, Nixon Presidential Materials, NSC Files, NSC Institut')
+
+### N10 came-from candidates  (0.2s)
+SELECT ds.citation_era, ds.repository, ds.record_group, CASE WHEN ds.citation_era='decimal' THEN '(file number)' ELSE ds.series_name END AS series, COUNT(*) AS documents FROM frus_documents f JOIN s.scope_docs sd ON sd.volume_id=f.volume_id AND sd.document_id=f.document_id LEFT JOIN document_sources ds ON ds.volume_id=f.volume_id AND ds.document_id=f.document_id WHERE frus_documents MATCH 'NEAR(re...
+   ('decimal', 'Department of State', '59', '(file number)', 1874)
+   (None, None, None, None, 671)
+   ('structured', 'Central Intelligence Agency', None, None, 44)
+   ('lot_file', 'Department of State', '59', None, 41)
+   ('structured', 'Nixon Presidential Materials', None, 'NSC Files', 26)
+   ('structured', 'Carter Library', None, 'National Security Affairs', 18)
+   ('structured', 'Kennedy Library', None, 'National Security Files', 17)
+   ('subject_numeric', 'National Archives', '59', 'Central Files 1964–66', 16)
+   ('structured', 'Johnson Library', None, 'National Security File', 12)
+   ('subject_numeric', 'National Archives', '59', 'Central Files 1967–69', 11)
+   ('structured', 'Eisenhower Library', None, 'Whitman File', 9)
+   ('published', None, None, None, 7)
+   ('unrecognized', None, None, None, 7)
+   ('named_series', None, None, 'Department of State, INR /IL Historical Files', 6)
+   ('subject_numeric', 'National Archives', '59', 'Central Files 1970–73', 6)
+
+### N10 candidates with no source-note row, by decade  (0.2s)
+SELECT sd.decade, COUNT(*) FROM frus_documents f JOIN s.scope_docs sd ON sd.volume_id=f.volume_id AND sd.document_id=f.document_id WHERE frus_documents MATCH 'NEAR(recogn* government*, 6) OR NEAR(recogn* regime*, 6) OR NEAR(recogn* junta, 6) OR NEAR(recogn* administration*, 6)' AND sd.latam=1 AND sd.numbered=1 AND sd.apparatus=0 AND sd.ed2_dup=0 AND NOT EXISTS (SELECT 1 FROM document_sources ds WH...
+   (1860, 135)
+   (1870, 102)
+   (1880, 171)
+   (1890, 117)
+   (1900, 127)
+   (1910, 17)
+   (1940, 2)
+
+### N11 pointed-at candidates  (0.1s)
+SELECT COUNT(DISTINCT f.volume_id||'/'||f.document_id) FROM frus_documents f JOIN s.scope_docs sd ON sd.volume_id=f.volume_id AND sd.document_id=f.document_id JOIN external_citations ec ON ec.volume_id=f.volume_id AND ec.document_id=f.document_id WHERE frus_documents MATCH 'NEAR(recogn* government*, 6) OR NEAR(recogn* regime*, 6) OR NEAR(recogn* junta, 6) OR NEAR(recogn* administration*, 6)' AND s...
+   (208,)
+
+### N11 by anchor  (0.1s)
+SELECT ec.anchor, COUNT(*), COUNT(DISTINCT f.volume_id||'/'||f.document_id), MIN(sd.date_iso), MAX(sd.date_iso) FROM frus_documents f JOIN s.scope_docs sd ON sd.volume_id=f.volume_id AND sd.document_id=f.document_id JOIN external_citations ec ON ec.volume_id=f.volume_id AND ec.document_id=f.document_id WHERE frus_documents MATCH 'NEAR(recogn* government*, 6) OR NEAR(recogn* regime*, 6) OR NEAR(rec...
+   ('centralFileClass', 214, 148, '1912-05-08', '1962-11-03')
+   ('lotFile', 56, 34, '1950-01-04', '1980-05-26')
+   ('presidentialLibrary', 51, 36, '1955-09-23', '1980-09-04')
+
+### N11 earliest footnote citation, whole index  (0.3s)
+SELECT MIN(dd.date_iso), COUNT(*), COUNT(DISTINCT ec.volume_id||'/'||ec.document_id) FROM external_citations ec JOIN document_dates dd ON dd.volume_id=ec.volume_id AND dd.document_id=ec.document_id
+   ('1910-12-06', 50173, 32419)
+
+### N11 earliest footnote citation, latam scope  (0.0s)
+SELECT MIN(dd.date_iso), COUNT(*), COUNT(DISTINCT ec.volume_id||'/'||ec.document_id) FROM external_citations ec JOIN document_dates dd ON dd.volume_id=ec.volume_id AND dd.document_id=ec.document_id JOIN s.scope_docs sd ON sd.volume_id=ec.volume_id AND sd.document_id=ec.document_id WHERE sd.latam=1 AND sd.numbered=1 AND sd.apparatus=0 AND sd.ed2_dup=0
+   ('1910-12-06', 5169, 3490)
+
+### N11 cited set with external_citations rows  (0.0s)
+SELECT c.volume_id, c.document_id, COUNT(ec.volume_id), group_concat(DISTINCT ec.anchor) FROM s.cited c JOIN external_citations ec ON ec.volume_id=c.volume_id AND ec.document_id=c.document_id GROUP BY 1,2
+   ('frus1944v07', 'd432', 1, 'centralFileClass')
+   ('frus1952-54v04', 'd490', 1, 'centralFileClass')
+   ('frus1952-54v04', 'd502', 6, 'centralFileClass')
+   ('frus1955-57v06', 'd354', 1, 'centralFileClass')
+   ('frus1958-60v06', 'd217', 2, 'centralFileClass')
+
+### N09 internal by decade  (0.1s)
+SELECT sd.decade, COUNT(*) AS candidate_docs, SUM(c.header LIKE '%Memorandum%' OR c.header LIKE '%Paper Prepared%' OR c.header LIKE '%Minutes%' OR c.header LIKE '%Summary of Conclusions%' OR c.header LIKE '%Briefing%') AS internal FROM frus_documents f JOIN s.scope_docs sd ON sd.volume_id=f.volume_id AND sd.document_id=f.document_id JOIN document_cache c ON c.volume_id=f.volume_id AND c.document_i...
+   (1860, 137, 0)
+   (1870, 104, 1)
+   (1880, 171, 0)
+   (1890, 117, 1)
+   (1900, 165, 0)
+   (1910, 453, 4)
+   (1920, 295, 13)
+   (1930, 520, 46)
+   (1940, 432, 73)
+   (1950, 156, 79)
+   (1960, 202, 124)
+   (1970, 118, 60)
+   (1980, 13, 4)
+
+### N13 estrada doctrine  (0.0s)
+SELECT SUM(sd.latam=1), COUNT(*) FROM frus_documents f JOIN s.scope_docs sd ON sd.volume_id=f.volume_id AND sd.document_id=f.document_id WHERE frus_documents MATCH '"estrada doctrine"' AND sd.numbered=1 AND sd.apparatus=0 AND sd.ed2_dup=0
+   (25, 28)
+
+### N13 tobar doctrine  (0.0s)
+SELECT SUM(sd.latam=1), COUNT(*) FROM frus_documents f JOIN s.scope_docs sd ON sd.volume_id=f.volume_id AND sd.document_id=f.document_id WHERE frus_documents MATCH '"tobar doctrine"' AND sd.numbered=1 AND sd.apparatus=0 AND sd.ed2_dup=0
+   (1, 1)
+
+### N13 betancourt doctrine  (0.0s)
+SELECT SUM(sd.latam=1), COUNT(*) FROM frus_documents f JOIN s.scope_docs sd ON sd.volume_id=f.volume_id AND sd.document_id=f.document_id WHERE frus_documents MATCH '"betancourt doctrine"' AND sd.numbered=1 AND sd.apparatus=0 AND sd.ed2_dup=0
+   (3, 3)
+
+### N13 mann doctrine  (0.0s)
+SELECT SUM(sd.latam=1), COUNT(*) FROM frus_documents f JOIN s.scope_docs sd ON sd.volume_id=f.volume_id AND sd.document_id=f.document_id WHERE frus_documents MATCH '"mann doctrine"' AND sd.numbered=1 AND sd.apparatus=0 AND sd.ed2_dup=0
+   (None, 0)
+
+### N13 wilson doctrine  (0.0s)
+SELECT SUM(sd.latam=1), COUNT(*) FROM frus_documents f JOIN s.scope_docs sd ON sd.volume_id=f.volume_id AND sd.document_id=f.document_id WHERE frus_documents MATCH '"wilson doctrine"' AND sd.numbered=1 AND sd.apparatus=0 AND sd.ed2_dup=0
+   (None, 0)
+
+### N13 reconoc*  (0.0s)
+SELECT SUM(sd.latam=1), COUNT(*) FROM frus_documents f JOIN s.scope_docs sd ON sd.volume_id=f.volume_id AND sd.document_id=f.document_id WHERE frus_documents MATCH 'reconoc*' AND sd.numbered=1 AND sd.apparatus=0 AND sd.ed2_dup=0
+   (11, 24)
+
+### N16 positive control volumes  (2.9s)
+SELECT COUNT(*), SUM(n>0) FROM (SELECT v.volume_id, COALESCE(h.n,0) n FROM (SELECT DISTINCT volume_id FROM document_cache) v LEFT JOIN (SELECT volume_id, COUNT(*) n FROM frus_documents WHERE frus_documents MATCH '"department of state"' GROUP BY volume_id) h ON h.volume_id=v.volume_id)
+   (553, 552)
+
+### N16 negative control  (0.0s)
+SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH 'ZZZ_IMPOSSIBLE_ZZZ'
+   (0,)
+
+### N18 editors_recog  (0.0s)
+SELECT COUNT(*), COUNT(DISTINCT volume_id), COUNT(DISTINCT heading), COUNT(DISTINCT volume_id||'/'||heading) FROM s.editors_recog
+   (2257, 36, 61, 62)
+
+### N18 editors_recog schema  (0.0s)
+SELECT sql FROM s.sqlite_master WHERE name='editors_recog'
+   ('CREATE TABLE editors_recog(volume_id TEXT, document_id TEXT, heading TEXT, PRIMARY KEY(volume_id, document_id))',)
+
+### N18 editors_recog numbered non-apparatus and date span  (0.0s)
+SELECT COUNT(*), SUM(sd.numbered=1 AND sd.apparatus=0 AND sd.ed2_dup=0), MIN(sd.date_iso), MAX(sd.date_iso) FROM s.editors_recog e JOIN s.scope_docs sd ON sd.volume_id=e.volume_id AND sd.document_id=e.document_id
+   (2257, 2255, '1895-09-06', '1950-06-01')
+
+DONE

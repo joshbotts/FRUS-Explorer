@@ -1,0 +1,258 @@
+{
+ "53D26": [
+  {
+   "row": {
+    "catalogURL": "https://catalog.archives.gov/id/2108774",
+    "hmsMlrEntryNumbers": [
+     "A1 1130"
+    ],
+    "levelOfDescription": "series",
+    "lotNumber": "53D26",
+    "matchType": "control",
+    "naId": "2108774",
+    "recordGroup": "59",
+    "title": "Subject Files"
+   },
+   "facts": {
+    "accessStatus": "Unrestricted",
+    "creator": "Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs.",
+    "referenceUnit": "National Archives at College Park - Textual Reference",
+    "useStatus": "Unrestricted",
+    "extent": "6 linear feet, 2 linear inches",
+    "inclusiveStartYear": 1949,
+    "inclusiveEndYear": 1953
+   }
+  }
+ ],
+ "57D295": [
+  {
+   "row": {
+    "catalogURL": "https://catalog.archives.gov/id/2108778",
+    "hmsMlrEntryNumbers": [
+     "A1 1134"
+    ],
+    "levelOfDescription": "series",
+    "lotNumber": "57D295",
+    "matchType": "control",
+    "naId": "2108778",
+    "recordGroup": "59",
+    "title": "Reviews of Foreign Operations Missions"
+   },
+   "facts": {
+    "accessStatus": "Unrestricted",
+    "creator": "Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs.",
+    "referenceUnit": "National Archives at College Park - Textual Reference",
+    "useStatus": "Unrestricted",
+    "extent": "5 linear inches",
+    "inclusiveStartYear": 1953,
+    "inclusiveEndYear": 1956
+   }
+  }
+ ],
+ "81D113": [
+  {
+   "row": {
+    "catalogURL": "https://catalog.archives.gov/id/1487627",
+    "hmsMlrEntryNumbers": [
+     "P 14"
+    ],
+    "levelOfDescription": "series",
+    "lotNumber": "81D113",
+    "matchType": "control",
+    "naId": "1487627",
+    "recordGroup": "59",
+    "title": "Records of Deputy Secretary Warren Christopher"
+   },
+   "facts": {
+    "accessRestrictions": [
+     "FOIA (b)(1) National Security"
+    ],
+    "accessStatus": "Restricted - Partly",
+    "creator": "Department of State. Office of the Deputy Secretary of State.",
+    "coverageStartYear": 1975,
+    "coverageEndYear": 1981,
+    "findingAids": [
+     "Folder List"
+    ],
+    "referenceUnit": "National Archives at College Park - Textual Reference",
+    "useRestrictions": [
+     "Copyright"
+    ],
+    "useStatus": "Restricted - Possibly",
+    "extent": "14 linear feet",
+    "inclusiveStartYear": 1975,
+    "inclusiveEndYear": 1981
+   }
+  }
+ ],
+ "81D121": [
+  {
+   "row": {
+    "catalogURL": "https://catalog.archives.gov/id/26309351",
+    "hmsMlrEntryNumbers": [
+     "UD-UP 313"
+    ],
+    "levelOfDescription": "series",
+    "lotNumber": "81D121",
+    "matchType": "control",
+    "naId": "26309351",
+    "recordGroup": "59",
+    "title": "Records Relating to Chile Policy"
+   },
+   "facts": {
+    "accessRestrictions": [
+     "FOIA (b)(1) National Security"
+    ],
+    "accessStatus": "Restricted - Fully",
+    "creator": "Department of State. Office of the Legal Adviser. Office of the Deputy Legal Adviser for Administration.",
+    "coverageStartYear": 1963,
+    "coverageEndYear": 1970,
+    "referenceUnit": "National Archives at College Park - Textual Reference",
+    "useRestrictions": [
+     "Copyright"
+    ],
+    "useStatus": "Restricted - Possibly",
+    "extent": "2 linear feet, 1 linear inch",
+    "inclusiveStartYear": 1964,
+    "inclusiveEndYear": 1970
+   }
+  }
+ ],
+ "59D237": [
+  {
+   "row": {
+    "catalogURL": "https://catalog.archives.gov/id/2103077",
+    "hmsMlrEntryNumbers": [
+     "A1 1265"
+    ],
+    "levelOfDescription": "series",
+    "lotNumber": "59D237",
+    "matchType": "control",
+    "naId": "2103077",
+    "recordGroup": "59",
+    "title": "Subject Files"
+   },
+   "facts": {
+    "accessStatus": "Unrestricted",
+    "creator": "Department of State. Bureau of International Organization Affairs. Office of United Nations Political and Security Affairs.",
+    "predecessors": [
+     "Department of State. Office of United Nations Affairs. Division of International Security Affairs."
+    ],
+    "referenceUnit": "National Archives at College Park - Textual Reference",
+    "useStatus": "Unrestricted",
+    "extent": "5 linear feet, 8 linear inches",
+    "inclusiveStartYear": 1945,
+    "inclusiveEndYear": 1957
+   }
+  }
+ ],
+ "59D573": [
+  {
+   "row": {
+    "catalogURL": "https://catalog.archives.gov/id/2108779",
+    "hmsMlrEntryNumbers": [
+     "A1 1135"
+    ],
+    "levelOfDescription": "series",
+    "lotNumber": "59D573",
+    "matchType": "control",
+    "naId": "2108779",
+    "recordGroup": "59",
+    "title": "Subject Files"
+   },
+   "facts": {
+    "accessStatus": "Unrestricted",
+    "creator": "Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs.",
+    "referenceUnit": "National Archives at College Park - Textual Reference",
+    "useStatus": "Unrestricted",
+    "extent": "7 linear feet",
+    "inclusiveStartYear": 1957,
+    "inclusiveEndYear": 1959
+   }
+  }
+ ],
+ "60D665": [
+  {
+   "row": {
+    "catalogURL": "https://catalog.archives.gov/id/2660902",
+    "hmsMlrEntryNumbers": [
+     "A1 5474A"
+    ],
+    "levelOfDescription": "series",
+    "lotNumber": "60D665",
+    "matchType": "control",
+    "naId": "2660902",
+    "recordGroup": "59",
+    "title": "Records Relating to the Inter-American Cultural Council and the Committee for Cultural Action"
+   },
+   "facts": {
+    "accessStatus": "Unrestricted",
+    "creator": "Department of State. Bureau of Inter-American Affairs. Office of Inter-American Regional Political Affairs.",
+    "referenceUnit": "National Archives at College Park - Textual Reference",
+    "useRestrictions": [
+     "Copyright"
+    ],
+    "useStatus": "Restricted - Possibly",
+    "extent": "5 linear inches",
+    "inclusiveStartYear": 1951,
+    "inclusiveEndYear": 1960
+   }
+  }
+ ],
+ "66D149": [
+  {
+   "row": {
+    "catalogURL": "https://catalog.archives.gov/id/610077",
+    "hmsMlrEntryNumbers": [
+     "A1 5158"
+    ],
+    "levelOfDescription": "series",
+    "lotNumber": "66D149",
+    "matchType": "control",
+    "naId": "610077",
+    "recordGroup": "59",
+    "title": "Presidential Memorandums of Conversation"
+   },
+   "facts": {
+    "accessStatus": "Unrestricted",
+    "creator": "Department of State. Executive Secretariat.",
+    "referenceUnit": "National Archives at College Park - Textual Reference",
+    "useStatus": "Unrestricted",
+    "extent": "1 linear foot, 4 linear inches",
+    "inclusiveStartYear": 1956,
+    "inclusiveEndYear": 1964
+   }
+  }
+ ],
+ "81D64": [
+  {
+   "row": {
+    "catalogURL": "https://catalog.archives.gov/id/27499857",
+    "hmsMlrEntryNumbers": [
+     "UD-14D 61"
+    ],
+    "levelOfDescription": "series",
+    "lotNumber": "81D64",
+    "matchType": "control",
+    "naId": "27499857",
+    "recordGroup": "59",
+    "title": "Assistant Secretary\u2019s Files"
+   },
+   "facts": {
+    "accessRestrictions": [
+     "FOIA (b)(1) National Security"
+    ],
+    "accessStatus": "Restricted - Fully",
+    "creator": "Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs.",
+    "referenceUnit": "National Archives at College Park - Textual Reference",
+    "useRestrictions": [
+     "Copyright"
+    ],
+    "useStatus": "Restricted - Possibly",
+    "extent": "9 linear feet, 2 linear inches",
+    "inclusiveStartYear": 1978,
+    "inclusiveEndYear": 1981
+   }
+  }
+ ]
+}

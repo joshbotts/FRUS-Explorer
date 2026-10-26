@@ -1,0 +1,84 @@
+lotFiles entries: 1070 distinct lotNumbers: 1070
+
+=== lot -> series resolution (my own lookup) ===
+66D65: NAID 1074073 OK | RG 59 | entry ['A1 5763'] OK | match control | title: Subject and Country Files
+      facts: y0=1962 y1=1975 cy=None-None status=Restricted - Partly restr=['FOIA (b)(1) National Security'] creator=Department of State. Bureau of Inter-American Affairs.
+73D115: NAID 1074073 OK | RG 59 | entry ['A1 5763'] OK | match control | title: Subject and Country Files
+      facts: y0=1962 y1=1975 cy=None-None status=Restricted - Partly restr=['FOIA (b)(1) National Security'] creator=Department of State. Bureau of Inter-American Affairs.
+64D16: NAID 1750062 OK | RG 59 | entry ['A1 3159'] OK | match control | title: Records Relating to El Salvador
+      facts: y0=1958 y1=1975 cy=None-None status=Restricted - Partly restr=['FOIA (b)(1) National Security'] creator=Department of State. Bureau of Inter-American Affairs. Office of Centr
+67D46: NAID 2602882 OK | RG 59 | entry ['A1 5732'] OK | match control | title: Records Relating to Honduras
+      facts: y0=1957 y1=1974 cy=1957-1974 status=Restricted - Partly restr=['FOIA (b)(1) National Security'] creator=Department of State. Bureau of Inter-American Affairs. Office of Centr
+63D351: NAID 2839192 OK | RG 59 | entry ['A1 1586E'] OK | match control | title: Records Relating to National Security Council Policy Papers
+      facts: y0=1947 y1=1979 cy=None-None status=Restricted - Partly restr=['FOIA (b)(1) National Security'] creator=Department of State. Office of the Secretary. Executive Secretariat.
+66D95: NAID 2839192 OK | RG 59 | entry ['A1 1586E'] OK | match control | title: Records Relating to National Security Council Policy Papers
+      facts: y0=1947 y1=1979 cy=None-None status=Restricted - Partly restr=['FOIA (b)(1) National Security'] creator=Department of State. Office of the Secretary. Executive Secretariat.
+64D199: NAID 602231 OK | RG 59 | entry ['A1 1566'] OK | match control | title: The Secretary's and the Under Secretary's Memorandums of Conversation
+      facts: y0=1953 y1=1964 cy=None-None status=Unrestricted restr=None creator=Department of State. Executive Secretariat.
+59D573: NAID 2108779 OK | RG 59 | entry ['A1 1135'] OK | match control | title: Subject Files
+      facts: y0=1957 y1=1959 cy=None-None status=Unrestricted restr=None creator=Department of State. Bureau of Inter-American Affairs. Office of the A
+61D279: NAID 2108779 OK | RG 59 | entry ['A1 1135'] OK | match control | title: Subject Files
+      facts: y0=1957 y1=1959 cy=None-None status=Unrestricted restr=None creator=Department of State. Bureau of Inter-American Affairs. Office of the A
+63D127: NAID 2363840 OK | RG 59 | entry ['A1 3157'] OK | match control | title: Subject and Country Files
+      facts: y0=1955 y1=1963 cy=None-None status=Restricted - Possibly restr=None creator=Department of State. Bureau of Inter-American Affairs. Office of Centr
+63D75: NAID 2521274 OK | RG 59 | entry ['A1 1609'] OK | match control | title: Records Related to the Secretary's Staff Meetings
+      facts: y0=1952 y1=1961 cy=None-None status=Restricted - Possibly restr=None creator=Department of State. Executive Secretariat.
+
+=== other core came-from lots (not named in overview) ===
+62D430: NAID 2839191 Subject and Special Files (control)
+62D1: NAID 2838992 Records Relating to Activities with the National Security Council (control)
+53D444: NAID 2168520 Records Relating to Meetings and Visits of Foreign Dignitaries (control)
+57D649: not in lotFiles
+64D563: NAID 1136548 Chronological Files (control)
+53D26: NAID 2108774 Subject Files (control)
+60D553: NAID 2108779 Subject Files (control)
+58D776: NAID 596518 Subject Files (control)
+66D149: NAID 610077 Presidential Memorandums of Conversation (control)
+81D121: NAID 26309351 Records Relating to Chile Policy (control)
+NO: not in lotFiles
+61D385: not in lotFiles
+65D330: NAID 602231 The Secretary's and the Under Secretary's Memorandums of Conversation (control)
+
+=== presidential-library-catalog ===
+COLLECTION Johnson Library: LBJ-NSF NAID 567979 title='National Security Files' statedSeriesCount=48 inclusiveDates=None
+  SERIES in Johnson Library / LBJ-NSF 'National Security Files' (NAID 567979): series NAID 567985 title='Latin America Country Files' dates=1963–1969
+COLLECTION Carter Library: JC-NSA NAID 560131 title='Records of the Office of the National Security Advisor (Carter Administration)' statedSeriesCount=32 inclusiveDates=None
+Carter collections with 'national security' in the title: ['Records of the Office of the National Security Advisor (Carter Administration)', 'National Security Council Institutional Files (Carter Administration)']
+Carter: exact 'National Security Affairs' collection exists: False
+
+=== Ecuador 1895 rolls in countrySeries ===
+diplomaticDespatches (Diplomatic Despatches) seriesNaId=603720 | roll NAID 189312130 | May 14, 1894-Dec. 28, 1896 | 1894-05-14..1896-12-28 | fileUnit 177380753 'Despatches from U.S. Ministers to Ecuador, 1848-1906' | geo ['ecuador']
+diplomaticInstructions (Diplomatic Instructions) seriesNaId=593313 | roll NAID 149303924 | Volume 1-2: Ecuador: Apr. 15, 1848-July 22, 1899; Aug. 7, 1899-Aug. 13, 1906 | 1848-04-15..1906-08-13 | fileUnit None None | geo ['ecuador']
+notesFromForeignMissions (Notes from Foreign Missions) seriesNaId=594363 | roll NAID 188272170 | July 2, 1864-Aug. 11, 1906 | 1864-07-02..1906-08-11 | fileUnit 183303960 'Notes from the Ecuadorean Legation in the United States to the Department of State, 1839-1906' | geo ['ecuador']
+notesToForeignMissions (Notes to Foreign Missions) seriesNaId=597272 | roll NAID 216901799 | Bolivia and Ecuador: October 5, 1842 - May 17, 1906 | 1842-10-05..1906-05-17 | fileUnit None None | geo ['bolivia', 'ecuador']
+countrySeries headers: [('diplomaticDespatches', 'Diplomatic Despatches', {'category': 'diplomaticDespatches', 'displayName': 'Diplomatic Despatches', 'seriesNaId': '603720'}), ('diplomaticInstructions', 'Diplomatic Instructions', {'category': 'diplomaticInstructions', 'displayName': 'Diplomatic Instructions', 'seriesNaId': '593313'}), ('notesFromForeignMissions', 'Notes from Foreign Missions', {'category': 'notesFromForeignMissions', 'displayName': 'Notes from Foreign Missions', 'seriesNaId': '594363'}), ('notesToForeignMissions', 'Notes to Foreign Missions', {'category': 'notesToForeignMissions', 'displayName': 'Notes to Foreign Missions', 'seriesNaId': '597272'}), ('consularDespatches', 'Consular Despatches', {'category': 'consularDespatches', 'displayName': 'Consular Despatches', 'seriesNaId': '302031'}), ('consularInstructions', 'Consular Instructions', {'category': 'consularInstructions', 'displayName': 'Consular Instructions', 'seriesNaId': '604019'}), ('notesToForeignConsuls', 'Notes to Foreign Consuls', {'category': 'notesToForeignConsuls', 'displayName': 'Notes to Foreign Consuls', 'seriesNaId': '1076611'}), ('notesFromForeignConsuls', 'Notes from Foreign Consuls', {'category': 'notesFromForeignConsuls', 'displayName': 'Notes from Foreign Consuls', 'seriesNaId': '1076629'}), ('domesticLetters', 'Domestic Letters', {'category': 'domesticLetters', 'displayName': 'Domestic Letters', 'seriesNaId': '568025'}), ('lettersReceived', 'Letters Received', {'category': 'lettersReceived', 'displayName': 'Letters Received', 'seriesNaId': '583574'}), ('specialAgentsDespatches', 'Despatches from Special Agents', {'category': 'specialAgentsDespatches', 'displayName': 'Despatches from Special Agents', 'seriesNaId': '876974'}), ('specialAgentsInstructions', 'Instructions to Special Agents', {'category': 'specialAgentsInstructions', 'displayName': 'Instructions to Special Agents', 'seriesNaId': '871874'})]
+
+=== collection-authority: Central Decimal File / Central Files ===
+{"id": "txt:department of state|central decimal file 1910-1929", "name": "Central Decimal File 1910–1929", "recordGroup": "59", "repository": "Department of State", "volumeIds": "<1 volumes>"}
+{"aliases": ["Central Files . The major source of documentation for this volume was the indexed central files, or decimal files, of the Department of State.", "Central Files, 1967–1969", "Central Files, 1967–1969 and 1970–1973", "Central Files, 1967–1969, 1970–1973", "Central Files, 1970–1973", "Central Files, 1973", "Central Files. During the 1964-1968 period, the Department’s central files were 
+{"children": [{"decimalClass": "788.00", "name": "788.00", "volumeIds": ["frus1951-54Iran", "frus1951-54IranEd2"]}, {"decimalClass": "788.11", "name": "788.11", "volumeIds": ["frus1951-54Iran", "frus1951-54IranEd2"]}, {"decimalClass": "788.13", "name": "788.13", "volumeIds": ["frus1951-54Iran", "frus1951-54IranEd2"]}, {"decimalClass": "788.21", "name": "788.21", "volumeIds": ["frus1951-54Iran", "f
+{"id": "txt:department of state|central files 1964-66", "name": "Central Files 1964–66", "recordGroup": "59", "repository": "Department of State", "volumeIds": "<14 volumes>"}
+{"id": "txt:department of state|central files 1964-67", "name": "Central Files 1964–67", "recordGroup": "59", "repository": "Department of State", "volumeIds": "<2 volumes>"}
+{"children": [{"decimalClass": "POL 15-1 PORT", "name": "POL 15-1 PORT", "volumeIds": ["frus1969-76v28"]}, {"decimalClass": "POL 15-2 SAFR", "name": "POL 15-2 SAFR", "volumeIds": ["frus1969-76v28"]}, {"decimalClass": "POL 15-5 RHOD", "name": "POL 15-5 RHOD", "volumeIds": ["frus1969-76v28"]}, {"decimalClass": "POL 16 RHOD", "name": "POL 16 RHOD", "volumeIds": ["frus1969-76v28"]}, {"decimalClass": "
+{"children": [{"name": "POL UAR -US)", "volumeIds": ["frus1964-68v19", "frus1964-68v20"]}], "id": "txt:department of state|central files 1967-69", "name": "Central Files 1967–69", "recordGroup": "59", "repository": "Department of State", "volumeIds": "<44 volumes>"}
+{"children": [{"decimalClass": "DEF 12 SAFR", "name": "DEF 12 SAFR", "volumeIds": ["frus1969-76v28"]}, {"decimalClass": "DEF 12-5 SAFR", "name": "DEF 12-5 SAFR", "volumeIds": ["frus1969-76v28"]}, {"decimalClass": "FT 11-2 RHOD", "name": "FT 11-2 RHOD", "volumeIds": ["frus1969-76v28"]}, {"decimalClass": "INCO-CHROME 17 US-RHOD", "name": "INCO-CHROME 17 US-RHOD", "volumeIds": ["frus1969-76v28"]}, {"
+{"children": [{"name": "POL INDIA– PAK)", "volumeIds": ["frus1969-76v11", "frus1969-76ve07"]}], "id": "txt:department of state|central files 1970-73", "name": "Central Files 1970–73", "recordGroup": "59", "repository": "Department of State", "volumeIds": "<52 volumes>"}
+{"children": [{"decimalClass": "DEF 15 ETH-US", "name": "DEF 15 ETH-US", "volumeIds": ["frus1969-76ve06"]}, {"decimalClass": "DEF 15-10 ETH-US", "name": "DEF 15-10 ETH-US", "volumeIds": ["frus1969-76ve06"]}, {"decimalClass": "DEF 19-1 US-ETH", "name": "DEF 19-1 US-ETH", "volumeIds": ["frus1969-76ve06"]}, {"decimalClass": "POL 1 AFR-US", "name": "POL 1 AFR-US", "volumeIds": ["frus1969-76ve06"]}, {"
+{"id": "txt:department of state|central files1970-73", "name": "Central Files1970-73", "recordGroup": "59", "repository": "Department of State", "volumeIds": "<2 volumes>"}
+any collection-authority entry with 'Decimal' in name having naId: []
+
+=== decimal-class-labels glosses ===
+glossableYears: [{'endYear': 1949, 'scheduleId': '1910-1949', 'startYear': 1910}, {'endYear': 1959, 'scheduleId': '1950-1959', 'startYear': 1950}, {'endYear': 1963, 'scheduleId': '1960-1963', 'startYear': 1960}]
+812.00 1910-1922: 1910-1949 [Internal Affairs of States] Mexico: Political affairs  ||  1910-1949 [Internal Affairs of States] Mexico: Political affairs
+816.01 1931-1948: 1910-1949 [Internal Affairs of States] El Salvador: Government  ||  1910-1949 [Internal Affairs of States] El Salvador: Government
+824.00 1920-1946: 1910-1949 [Internal Affairs of States] Bolivia: Political affairs  ||  1910-1949 [Internal Affairs of States] Bolivia: Political affairs
+824.01 1930-1946: 1910-1949 [Internal Affairs of States] Bolivia: Government  ||  1910-1949 [Internal Affairs of States] Bolivia: Government
+818.00 1911-1920: 1910-1949 [Internal Affairs of States] Costa Rica: Political affairs  ||  1910-1949 [Internal Affairs of States] Costa Rica: Political affairs
+838.00 1911-1946: 1910-1949 [Internal Affairs of States] Haiti: Political affairs  ||  1910-1949 [Internal Affairs of States] Haiti: Political affairs
+823.00 1913-1930: 1910-1949 [Internal Affairs of States] Peru: Political affairs  ||  1910-1949 [Internal Affairs of States] Peru: Political affairs
+814.01 1931-1944: 1910-1949 [Internal Affairs of States] Guatemala: Government  ||  1910-1949 [Internal Affairs of States] Guatemala: Government
+822.01 1928-1947: 1910-1949 [Internal Affairs of States] Ecuador: Government  ||  1910-1949 [Internal Affairs of States] Ecuador: Government
+835.00 1930-1945: 1910-1949 [Internal Affairs of States] Argentine Republic/ Argentina: Political affairs  ||  1910-1949 [Internal Affairs of States] Argentine Republic/ Argentina: Political affairs
+737.00 1959-1962: 1950-1959 [Internal Political and National Defense Affairs] Cuba: subject 00 not in list  ||  1960-1963 [Internal Political and National Defense Affairs] Cuba: subject 00 not in list
+723.00 1962-1962: 1960-1963 [Internal Political and National Defense Affairs] Peru: subject 00 not in list  ||  1960-1963 [Internal Political and National Defense Affairs] Peru: subject 00 not in list
+738.00 1950-1959: 1950-1959 [Internal Political and National Defense Affairs] Haiti: subject 00 not in list  ||  1950-1959 [Internal Political and National Defense Affairs] Haiti: subject 00 not in list

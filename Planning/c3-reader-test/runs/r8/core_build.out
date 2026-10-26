@@ -1,0 +1,71 @@
+chapter selectors not found: []
+core slots 3549; in document_cache non-front-matter 3549; editorial notes 8; core non-apparatus 3541 in 52 volumes
+undated: 0
+1890s 50 8748 5.7
+1900s 40 9947 4.0
+1910s 1411 19206 73.5
+1920s 295 19471 15.2
+1930s 1096 15936 68.8
+1940s 531 19816 26.8
+1950s 4 12538 0.3
+1960s 72 9265 7.8
+1970s 35 8057 4.3
+1980s 7 2319 3.0
+international obligations: FTS hits in core 129 of 3541; literal STRICT 127 of 129; TOLERANT 129 of 129
+de facto: FTS hits in core 220 of 3541; literal STRICT 219 of 220; TOLERANT 220 of 220
+free elections: FTS hits in core 54 of 3541; literal STRICT 54 of 54; TOLERANT 54 of 54
+constitutional government: FTS hits in core 137 of 3541; literal STRICT 98 of 137; TOLERANT 125 of 137
+recognition: FTS hits in core 959 of 3541; literal STRICT 40 of 40; TOLERANT 40 of 40
+consult: FTS hits in core 254 of 3541; literal STRICT 248 of 254; TOLERANT 254 of 254
+withhold recognition: FTS hits in core 43 of 3541; literal STRICT 31 of 43; TOLERANT 38 of 43
+Department of State (control): FTS hits in core 590 of 3541; literal STRICT 40 of 40; TOLERANT 40 of 40
+ZZZ_IMPOSSIBLE_ZZZ (control) FTS hits in core: 0
+corpus-wide international obligations: 1301 of 312169
+corpus-wide de facto: 3497 of 312169
+corpus-wide recognition: 15991 of 312169
+corpus-wide Department of State (control): 94049 of 312169
+--- came-from (document_sources) over core, by citation_era / repository / series
+  era ('decimal', 3342)
+  era ('structured', 37)
+  era ('subject_numeric', 32)
+  era ('cfpf', 20)
+  era ('unrecognized', 11)
+  era ('lot_file', 4)
+  era ('published', 3)
+  era ('named_series', 1)
+   ('?', '?', '?', 14)
+   ('National Archives', '59', 'Central Files 1964–66', 12)
+   ('Department of State', '59', '812.00/11988', 9)
+   ('Nixon Presidential Materials', '?', 'NSC Files', 9)
+   ('Carter Library', '?', 'National Security Affairs', 7)
+   ('Department of State', '59', 'POL 15 HOND', 7)
+   ('Johnson Library', '?', 'National Security File', 7)
+   ('National Archives', '59', 'Central Files 1967–69', 7)
+   ('Department of State', '59', '824.00/6–1446', 6)
+   ('Department of State', '59', '831.01/10–2745', 5)
+   ('Department of State', '59', '835.00/10–1945', 5)
+   ('Department of State', '59', '710.11/2026', 4)
+   ('Department of State', '59', '812.00/11564', 4)
+   ('Department of State', '59', '812.00/12552', 4)
+   ('Department of State', '59', '812.00/13384', 4)
+   ('Department of State', '59', '812.00/14501', 4)
+   ('Department of State', '59', '816.01/355', 4)
+   ('Department of State', '59', '824.00/3076', 4)
+   ('Department of State', '59', '824.00/6–1746', 4)
+   ('Department of State', '59', '832.01/3', 4)
+   ('Eisenhower Library', '?', 'Whitman File', 4)
+   ('Kennedy Library', '?', 'National Security Files', 4)
+   ('Department of State', '59', '701.3212/60', 3)
+   ('Department of State', '59', '710.11/2060', 3)
+   ('Department of State', '59', '724.34119/983', 3)
+core docs with a document_sources row: 3450 of 3541
+--- pointed-at (external_citations) over core, by repository / collection
+   ('Department of State', '?', 140, 104)
+   ('Carter Library', 'National Security Affairs', 16, 12)
+   ('Nixon Presidential Materials', 'NSC Files', 2, 1)
+   ('Carter Library', 'Plains File', 1, 1)
+   ('Carter Library', 'Presidential Materials', 1, 1)
+external_citations rows over core: (160, 118)
+pointed-at lots: [('63D127', 2), ('64D16', 1), ('65D330', 1), ('66D95', 1), ('71F154', 1), ('82D100', 1)]
+came-from lots: [('64D16', 1), ('66D149', 1), ('66D95', 1), ('84D241', 1), ('NO', 1)]
+came-from decimal classes: [('812.00', 929), ('837.00', 227), ('818.00', 173), ('816.01', 170), ('824.00', 163), ('814.00', 126), ('823.00', 101), ('839.00', 99), ('825.00', 85), ('824.01', 76), ('834.00', 75), ('816.00', 73), ('815.00', 70), ('835.00', 69), ('817.00', 67)]

@@ -1,0 +1,42 @@
+scope volumes from the collection: 25 all in usage index: True
+volumeNoteCounts sum over 25 volumes: 19570
+by category: {'centralDecimalFile': 17683, 'presidentialLibrary': 666, 'lotFile': 345, 'subjectNumericFile': 303, 'namedFileSeries': 181, 'previouslyPublished': 93, 'intelligence': 91, 'naraCollection': 85, 'centralForeignPolicyFile': 83, 'unrecognized': 39, 'foreignArchive': 1}
+foreignArchive: 1 | sum of category counts: 19570
+foreignArchive volumes in scope: [('frus1969-76v21', 1)]
+
+early 1911-1945 scope volumes: 16 ['frus1911', 'frus1913', 'frus1917', 'frus1919v01', 'frus1920v03', 'frus1921v02', 'frus1923v02', 'frus1926v02', 'frus1930v01', 'frus1931v02', 'frus1932v05', 'frus1933v05', 'frus1934v05', 'frus1943v05', 'frus1944v07', 'frus1945v09']
+all class-keyed citations in the 16: 15671
+Latin American 8xx.00/.01 keys: 3413
+top 6: [('812.00', 839), ('837.00', 484), ('817.00', 357), ('818.00', 188), ('815.00', 176), ('816.01', 169)]
+by country prefix: [('812', 874), ('813', 16), ('814', 72), ('815', 186), ('816', 284), ('817', 372), ('818', 191), ('819', 36), ('821', 2), ('822', 44), ('823', 68), ('824', 85), ('825', 71), ('831', 21), ('832', 116), ('833', 4), ('835', 210), ('837', 515), ('838', 130), ('839', 116)]
+812.00 by early volume: [('frus1913', 326), ('frus1911', 324), ('frus1920v03', 117), ('frus1917', 40), ('frus1921v02', 30), ('frus1932v05', 1)]
+
+decimal-class-labels top keys: ['coverage', 'generated', 'provenance', 'schedules', 'schemaVersion']
+  812 -> "Canals"
+  813 -> NO KEY
+  814 -> NO KEY
+  815 -> NO KEY
+  816 -> NO KEY
+  817 -> NO KEY
+  818 -> NO KEY
+  819 -> NO KEY
+  820 -> NO KEY
+  821 -> "Signaling devices. Signal codes. Radio beacons"
+  822 -> "Lighthouses"
+  823 -> "Lightships"
+  824 -> "Buoys"
+  825 -> "Pilot service"
+  826 -> NO KEY
+  827 -> NO KEY
+  828 -> NO KEY
+  829 -> NO KEY
+  830 -> NO KEY
+  831 -> "Derelicts"
+  832 -> "Uncharted rocks, bars, shoals, obstructions"
+  833 -> NO KEY
+  834 -> NO KEY
+  835 -> NO KEY
+  836 -> NO KEY
+  837 -> NO KEY
+  838 -> NO KEY
+  839 -> NO KEY

@@ -1,0 +1,27 @@
+SQL1: SELECT count(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH '"department of state"' AND d.is_front_matter=0 AND d.is_editorial_note=0
+positive control: volumes (of 553) with >=1 non-apparatus doc matching "department of state": 552
+SQL2: SELECT count(*) FROM frus_documents WHERE frus_documents MATCH '"ZZZ_IMPOSSIBLE_ZZZ"'
+negative control rows: 0
+SQL: SELECT count(DISTINCT volume_id) FROM document_cache 553
+FALSE-FRIEND TEST (regex, case-insensitive, over header+dateline+source_note+body collapsed; 38 scope volumes):
+  recogni: scope docs 721 of 1667; other non-apparatus docs of the same 38 volumes 4062 of 38510
+  de facto: scope docs 138 of 1667; other non-apparatus docs of the same 38 volumes 535 of 38510
+  Department of State (control): scope docs 236 of 1667; other non-apparatus docs of the same 38 volumes 8830 of 38510
+  ZZZ_IMPOSSIBLE_ZZZ (neg control): scope docs 0 of 1667; other non-apparatus docs of the same 38 volumes 0 of 38510
+CENSUS over all scope docs (regex, case-insensitive): STRICT = single spaces; TOLERANT = any run of space/hyphen/comma/paren/full stop between words
+  de facto: STRICT 138 of 1667; TOLERANT 138 of 1667
+  free election(s): STRICT 23 of 1667; TOLERANT 23 of 1667
+  constitutional government/order: STRICT 66 of 1667; TOLERANT 66 of 1667
+  international obligations: STRICT 69 of 1667; TOLERANT 69 of 1667
+  recognition (recogni*): STRICT 721 of 1667; TOLERANT 721 of 1667
+  civil liberties: STRICT 1 of 1667; TOLERANT 1 of 1667
+  consult(ation) with other governments: STRICT 79 of 1667; TOLERANT 137 of 1667
+DECADE TABLE (document_dates.date_iso; non-apparatus docs):
+  1890s: scope 50 of 9845 dated non-apparatus docs = 5.1 per 1,000; top volume frus1899 holds 46 of 50 (92%)
+  1900s: scope 40 of 10261 dated non-apparatus docs = 3.9 per 1,000; top volume frus1900 holds 13 of 40 (32%)
+  1910s: scope 534 of 30842 dated non-apparatus docs = 17.3 per 1,000; top volume frus1914 holds 119 of 534 (22%)
+  1920s: scope 241 of 20374 dated non-apparatus docs = 11.8 per 1,000; top volume frus1920v03 holds 70 of 241 (29%)
+  1930s: scope 314 of 40073 dated non-apparatus docs = 7.8 per 1,000; top volume frus1937v05 holds 111 of 314 (35%)
+  1940s: scope 485 of 75872 dated non-apparatus docs = 6.4 per 1,000; top volume frus1944v07 holds 187 of 485 (39%)
+  1950s: scope 3 of 43159 dated non-apparatus docs = 0.1 per 1,000; top volume frus1950v02 holds 3 of 3 (100%)
+  scope docs without a date_iso: 0

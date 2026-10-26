@@ -1,0 +1,18 @@
+setA_chapters rows: 74 distinct (vol,first,last): 74
+Set A: 1831 pairs; chapters not found 0; whole-mode chapters 61 -> 1543 docs; fts-mode chapters 13 -> 288 of 2026 non-apparatus chapter docs
+lavols.txt volumes: 49
+Set B hits: 221 in 22 volumes
+controls: "Department of State" 8797 docs in 49 vols; ZZZ 0
+session setB_hits.tsv: 221 same set as my re-run: True
+setB_relevant.txt pairs: 132 all within hits: True not in hits: []
+SCOPE union 1960 docs in 57 volumes; A-only 1828, B-only 129, both 3
+overlap pairs: [('frus1950v02', 'd476'), ('frus1950v02', 'd477'), ('frus1950v02', 'd478')]
+session scope_pairs.tsv: 1960 same set: True
+date span: earliest ('1876-05-04', 'frus1876', 'd224') latest ('1979-12-19', 'frus1977-80v15', 'd400') undated 0
+by decade: {'1870s': 44, '1890s': 50, '1900s': 40, '1910s': 666, '1920s': 278, '1930s': 314, '1940s': 436, '1950s': 41, '1960s': 65, '1970s': 26}
+volumes: frus1876, frus1877, frus1878, frus1895p1, frus1899, frus1900, frus1903, frus1904, frus1907p2, frus1911, frus1912, frus1913, frus1914, frus1915, frus1916, frus1917, frus1919v01, frus1919v02, frus1920v01, frus1920v02, frus1920v03, frus1921v01, frus1921v02, frus1922v02, frus1923v02, frus1925v02, frus1928v02, frus1931v02, frus1932v05, frus1933v05, frus1934v05, frus1936v05, frus1937v05, frus1940v05, frus1943v05, frus1944v07, frus1945v09, frus1946v11, frus1947v08, frus1950v02, frus1951v02, frus1952-54Guat, frus1952-54v04, frus1955-57v06, frus1955-57v07, frus1958-60v05, frus1958-60v05mSupp, frus1958-60v06, frus1961-63v10-12mSupp, frus1961-63v12, frus1964-68v31, frus1964-68v32, frus1969-76v21, frus1969-76ve10, frus1969-76ve16, frus1977-80v15, frus1977-80v24
+CAME-FROM rows 1828, scope docs with no row 132
+by repository/RG: [(('Department of State', '59'), 1758), (('National Archives', '59'), 13), (('Johnson Library', '-'), 12), (('-', '-'), 10), (('Central Intelligence Agency', '-'), 9), (('Eisenhower Library', '-'), 8), (('Nixon Presidential Materials', '-'), 8), (('Carter Library', '-'), 6), (('Kennedy Library', '-'), 4)]
+citation_era: {'decimal': 1737, 'unrecognized': 7, 'published': 3, 'structured': 50, 'subject_numeric': 14, 'lot_file': 11, 'cfpf': 6}
+decimal parsable 1712; .00 1212; .01 308; share .01 = 0.180
+POINTED-AT rows 135 in 100 docs; top: [(('Department of State', '-', '-', '817.00'), 9), (('Department of State', '-', '-', '824.00'), 7), (('Carter Library', 'National Security Affairs', '-', '-'), 7), (('Department of State', '-', '-', '816.01'), 6), (('Department of State', '-', '-', '738.02'), 6), (('Department of State', '-', '-', '738.00'), 5), (('Department of State', '-', '-', '723.00'), 5), (('Department of State', '-', '-', '737.00'), 4), (('Department of State', '-', '81D64', '-'), 4), (('Department of State', '-', '-', '814.00'), 3), (('Department of State', '-', '-', '816.00'), 3), (('Department of State', '-', '-', '838.01'), 3), (('Department of State', '-', '-', '817.51'), 3), (('Department of State', '-', '-', '716.02'), 3), (('Department of State', '-', '-', '721.02'), 3), (('Department of State', '-', '-', '815.00'), 2)]

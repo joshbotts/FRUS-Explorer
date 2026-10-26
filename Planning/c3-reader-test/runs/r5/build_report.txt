@@ -1,0 +1,6 @@
+collection: 56 document entries (all pairs exist in document_cache, none duplicated, none Ed2), 18 excerpts, 18 of 18 excerpts verbatim in body_text
+overview: 18 verbatim quotations, each in the verified quote table (unverified long spans: 0)
+excerpt set equals overview quotation set: 18
+overview cites 48 distinct documents; not in collection: []
+overview forbidden strings present: []
+distinct documents quoted in the overview: 18

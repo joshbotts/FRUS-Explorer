@@ -1,0 +1,4 @@
+"Estrada doctrine"        FTS hits= 28  strict= 27  tolerant= 27 
+"Betancourt doctrine"     FTS hits=  3  strict=  3  tolerant=  3 [('frus1964-68v31', 'd32'), ('frus1964-68v31', 'd531'), ('frus1969-76ve11p2', 'd370')]
+Tobar                     FTS hits= 85  strict=  1  tolerant=  1 [('frus1932v05', 'd546')]
+"Stimson doctrine"        FTS hits= 10  strict= 10  tolerant= 10 

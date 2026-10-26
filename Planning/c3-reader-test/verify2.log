@@ -1,0 +1,39 @@
+Sun Oct 25 13:48:59 EDT 2026
+== journal mode (copy only) ==
+delete
+== readonly proof ==
+Error in 3rd command line argument: attempt to write a readonly database
+Error in 2nd command line argument: attempt to write a readonly database
+== coverage ==
+553|321749|1103|8481
+== own writing ==
+6558|8|111
+21
+== tables ==
+cross_references             frus_documents_data          terms
+document_cache               frus_documents_docsize       user_content
+document_dates               frus_documents_idx           user_content_config
+document_revisions           frus_documents_vocab         user_content_data
+document_sources             page_ranges                  user_content_docsize
+document_subject_refs        person_cluster_candidate     user_content_idx
+document_subject_volumes     person_list_sources          user_tags
+document_subjects            person_mentions              volume_sources
+external_citations           person_rollup                volume_structures
+frus_documents               person_rollup_member
+frus_documents_config        persons
+== quick_check ==
+ok
+total 7340080
+drwxr-xr-x@ 12 jbotts  staff         384 Oct 25 13:48 .
+drwxr-xr-x@  9 jbotts  staff         288 Oct 25 13:44 ..
+-rw-r--r--@  1 jbotts  staff           0 Oct 25 13:44 backup.log
+drwxr-xr-x@  3 jbotts  staff          96 Oct 25 13:47 calibration
+-rw-r--r--@  1 jbotts  staff          21 Oct 25 13:48 coverage.txt
+-rw-r--r--@  1 jbotts  staff        1955 Oct 25 13:48 facts.md
+-rw-r--r--@  1 jbotts  staff  3743547392 Oct 25 13:48 frus-copy-2026-10-25.db
+drwxr-xr-x@  2 jbotts  staff          64 Oct 25 13:48 prompts
+drwxr-xr-x@  2 jbotts  staff          64 Oct 25 13:48 runs
+-rw-r--r--@  1 jbotts  staff         539 Oct 25 13:48 usage.md
+-rw-r--r--@  1 jbotts  staff        1022 Oct 25 13:46 verify.log
+-rw-r--r--@  1 jbotts  staff        1083 Oct 25 13:49 verify2.log
+Sun Oct 25 13:49:04 EDT 2026
