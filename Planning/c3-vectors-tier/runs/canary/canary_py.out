@@ -1,0 +1,22 @@
+index top keys: ['documentCount', 'generated', 'harvestGenerated', 'harvestScriptSHA256', 'provenance', 'provenanceDigest', 'retrieval', 'schema', 'subseries', 'volumes']
+index provenanceDigest: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+manifest top keys: ['generated', 'provenanceDigest', 'schema', 'shards', 'shippingDims']
+manifest digest: ('provenanceDigest', '89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101')
+.generation: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+binary magic b'FRSV' version 1 dims 512 docs 314616 centroids 660 digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+volumes decoded to n: 553 of 553
+row of frus1861/d111: 110
+hamming 57 frus1861/d119
+hamming 62 frus1861/d39
+hamming 70 frus1863p1/d254
+hamming 75 frus1862/d130
+hamming 77 frus1861/d203
+hamming 77 frus1862/d262
+hamming 78 frus1861/d20
+hamming 78 frus1862/d111
+hamming 78 frus1862/d455
+hamming 79 frus1862/d118
+shard magic b'FRSS' version 1 dims 512 docs 312 digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+manifest row frus1861: None
+shard sha256 44815664fa1dc495df71c70113520bfec27ca245607e6da1b492c62708184f7b size 161056
+sha matches: False size matches: False

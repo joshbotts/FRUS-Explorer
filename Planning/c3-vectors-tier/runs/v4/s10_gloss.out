@@ -1,0 +1,15 @@
+SQL: SELECT volume_id,document_id,decimal_class FROM document_sources WHERE citation_era='decimal' AND decimal_class IS NOT NULL
+1910-1949 837.00 766 Internal Affairs of States | country 37=Cuba | subject 00=null
+1910-1949 837.51 367 Internal Affairs of States | country 37=Cuba | subject 51=null
+1910-1949 837.61 269 Internal Affairs of States | country 37=Cuba | subject 61=null
+1950-1959 737.00 184 Internal Political and National Defense Affairs | country 37=Cuba | subject 00=null
+1910-1949 611.37 145 Commerce. Customs Administration | country 11=United States | subject 37=null
+1960-1963 737.00 102 Internal Political and National Defense Affairs | country 37=Cuba | subject 00=null
+1910-1949 763.72 100 Political Relations of States. Bi-lateral Treaties | country 63=Austria | subject 72=null
+1910-1949 811.34 72 Internal Affairs of States | country 11=United States | subject 34=null
+1910-1949 837.15 72 Internal Affairs of States | country 37=Cuba | subject 15=null
+1910-1949 337.11 60 Protection of Interests | country 37=Cuba | subject 11=null
+1910-1949 862.85 57 Internal Affairs of States | country 62=Germany | subject 85=null
+1960-1963 611.37 54 International Political Relations. Other International Relations. Bilateral Treaties | country 11=United States | subject 37=null
+1960-1963 737.56 50 Internal Political and National Defense Affairs | country 37=Cuba | subject 56=null
+1910-1949 837.24 42 Internal Affairs of States | country 37=Cuba | subject 24=null

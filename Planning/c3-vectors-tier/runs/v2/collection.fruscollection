@@ -1,0 +1,302 @@
+{
+ "format": "fruscollection",
+ "formatVersion": 2,
+ "minimumReaderVersion": 1,
+ "name": "Cuba, security and prosperity, 1870–1980",
+ "authorLine": "Agent run v2, 2026-10-26",
+ "introductionText": "What FRUS answers directly: the printed record shows Cuba's stakes moving rather than simply growing — from a disordered neighbor whose wars injured American commerce (1870s–1898), to a guardianship that fused intervention rights, naval stations and Cuban prosperity (1901–1933), to sugar as the hinge of Cuban stability, U.S. exports and wartime supply (1933–1958), to a Soviet base and exporter of revolution (1959–1970), and finally to trade as political leverage and migration as a domestic problem (1977–1980); the set is about seven thousand documents the editors filed under Cuba in 130 volumes, 1849–1980. Where FRUS points for the rest: the printed documents came from the State Department's Central Decimal File (RG 59, Cuba files 837.00, 837.51, 837.61351 and U.S. trade 611.37) and the nineteenth-century despatch and legation-note microfilm before 1950, and afterward from the presidential libraries' national security files, CIA records and RG 59 lots such as 65D438 (Cuban Missile Crisis), 74D272 (Ball), 66D501 (Operation Mongoose), 62D24 and 62D418 (Inter-American subject files) and 62D1 (Policy Planning NSC records); the footnotes cite without printing chiefly decimal-file numbers, the same library files, lots 66D95 (NSC policy papers), 66D204 (heads-of-state correspondence) and 65D212 (sugar). What this request cannot get from FRUS: anything after 1980 (no Reagan-era document carries Cuba in its heading), a usable count of 'national security' (before the 1930s it almost never occurs and afterward it is mostly the name of the Council and no commoner in Cuba documents than in the corpus), and the commercial interests' own voice, which FRUS carries only through State Department correspondence.",
+ "composition": {
+  "defaultBodyDepth": "full",
+  "footnoteStyle": "all",
+  "includeSourceNote": true,
+  "tocStyle": "citation",
+  "applyHighlights": false,
+  "includeNotes": true,
+  "includeWordCloud": false
+ },
+ "entries": [
+  {
+   "kind": "heading",
+   "text": "1870s–1898: a neighbor's disorder as a cost to commerce and a menace to peace",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Commerce framed by proximity, Cuba as the key to the Gulf, and the 1898 case for intervention from injury to trade and the expense of watchfulness. These are the documents that state the stakes, in date order."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1870",
+   "documentId": "d197",
+   "notes": [
+    "Agent run v2, 2026-10-26: Fish's 1870 report on trade with Spanish America: Cuban commerce rests on necessity and proximity despite Spanish legislation."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1870",
+   "documentId": "d197",
+   "text": "With the Spanish islands of Cuba and Porto Rico we maintain, in spite of their adverse legislation, a large commerce by reason of our necessities and of their proximity."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1881",
+   "documentId": "d405",
+   "notes": [
+    "Agent run v2, 2026-10-26: Blaine's 1881 instruction: Cuba as key to the Gulf and part of the American commercial system (reprinted in the 1894 Hawaii appendix)."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1881",
+   "documentId": "d405",
+   "text": "That rich island, the key to the Gulf of Mexico, and the field for our most extended trade in the Western Hemisphere is, though in the hands of Spain, a part of the American commercial system."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1898",
+   "documentId": "d490",
+   "notes": [
+    "Agent run v2, 2026-10-26: Sherman to Woodford, July 1897: the war has ruined Cuban commerce, and the President weighs duty to neighbors and to the United States."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1898",
+   "documentId": "d490",
+   "text": "The commerce of Cuba has dwindled to such unprofitable proportions that its ability for self-support is questionable even if peace was restored to day."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1898",
+   "documentId": "ch83",
+   "notes": [
+    "Agent run v2, 2026-10-26: McKinley's message of April 11, 1898: intervention justified by injury to trade and property and by the cost of a permanent menace."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1898",
+   "documentId": "ch83",
+   "text": "The right to intervene may be justified by the very serious injury to the commerce, trade, and business of our people, and by the wanton destruction of property and devastation of the island."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1898",
+   "documentId": "ch83",
+   "text": "The present condition of affairs in Cuba is a constant menace to our peace, and entails upon this Government an enormous expense."
+  },
+  {
+   "kind": "heading",
+   "text": "1901–1933: security and prosperity fused in a guardianship",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "The conditions of independence, the naval-station lease and Roosevelt's 1906 warning: order, property, defense and Cuban prosperity as one test."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1902",
+   "documentId": "d313",
+   "notes": [
+    "Agent run v2, 2026-10-26: Despatch carrying the Cuban commission's report on Washington's conditions: the right to intervene for a stable government that protects property."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1902",
+   "documentId": "d313",
+   "text": "Cuba consents that the United States shall reserve and retain the right to intervene for the preservation of the independence of Cuba, and the maintenance of a stable government that will duly protect life, property, and individual liberty"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1903",
+   "documentId": "d331",
+   "notes": [
+    "Agent run v2, 2026-10-26: The 1903 agreement leasing coaling and naval stations, justified by Cuban independence and U.S. defense."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1903",
+   "documentId": "d331",
+   "text": "To enable the United States to maintain the independence of Cuba, and to protect the people thereof, as well as for its own defense, the Cuban Government will sell or lease to the United States the lands necessary for coaling or naval stations"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1906p1",
+   "documentId": "d427",
+   "notes": [
+    "Agent run v2, 2026-10-26: Roosevelt to Quesada, September 1906: Cuban peace and prosperity as the condition of Cuban independence; intervention only if order fails."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1906p1",
+   "documentId": "d427",
+   "text": "This nation asks nothing of Cuba, save that it shall continue to develop as it has developed during these past seven years"
+  },
+  {
+   "kind": "heading",
+   "text": "1933–1958: sugar as the hinge of stability, exports and supply",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Welles, the 1941 defense talks and Dulles in 1954: the sugar quota and defense cooperation valued for Cuban stability, U.S. exports and strategic supply."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1933v05",
+   "documentId": "d281",
+   "notes": [
+    "Agent run v2, 2026-10-26: Welles to Roosevelt, July 1933: a sugar settlement would steady Cuba and regain an export market."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1933v05",
+   "documentId": "d281",
+   "text": "We will likewise regain an exceedingly important market for our exports."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1941v07",
+   "documentId": "d119",
+   "notes": [
+    "Agent run v2, 2026-10-26: 1941 conversations on extending Guantánamo: a defense agreement valued for its political effect on Cuba and the hemisphere."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1941v07",
+   "documentId": "d119",
+   "text": "a cooperative defense agreement with the Cubans is nevertheless essential for its effect on United States relations with Cuba and the other American republics."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v04",
+   "documentId": "d343",
+   "notes": [
+    "Agent run v2, 2026-10-26: Dulles to Eisenhower, June 1954: cutting Cuba's sugar quota would risk revolution, U.S. exports and Cuba as a strategic sugar reserve."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v04",
+   "documentId": "d343",
+   "text": "It would result in corresponding reductions in the considerable United States exports to Cuba and would jeopardize the concept of Cuba as a strategic sugar reserve."
+  },
+  {
+   "kind": "heading",
+   "text": "1959–1970: a Soviet base and an exporter of revolution",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "From the 1961 task force's 'remote possibility' of a Soviet strategic base, through the missile crisis, to the 1969 'double-barreled problem' and the 1970 Cienfuegos alarm."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v10",
+   "documentId": "d202",
+   "notes": [
+    "Agent run v2, 2026-10-26: May 1961 interagency task force: no direct military threat; the danger is Cuba as base and example for revolution, with a strategic base a remote possibility."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v10",
+   "documentId": "d202",
+   "text": "There is the remote possibility of an attempt to convert Cuba into a Russian base for strategic attack on the United States."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v11",
+   "documentId": "d34",
+   "notes": [
+    "Agent run v2, 2026-10-26: NSC, October 20, 1962: Kennedy separates bombers he can live with from missiles that change the balance."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v11",
+   "documentId": "d34",
+   "text": "In his view the existence of fifty planes in Cuba did not affect the balance of power, but the missiles already in Cuba were an entirely different matter."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve10",
+   "documentId": "d205",
+   "notes": [
+    "Agent run v2, 2026-10-26: NSSM 32, July 1969: Cuba as a Soviet military base and an exporter of revolution; reached through a vector neighbour of the 1961 paper."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve10",
+   "documentId": "d205",
+   "text": "Cuba has been a double-barreled problem for the U.S.: —as a base for Soviet military power, and —as an exporter of revolutionary doctrine and violence to Latin America."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76v12",
+   "documentId": "d211",
+   "notes": [
+    "Agent run v2, 2026-10-26: Moorer, September 1970: Soviet submarine support at Cienfuegos as the most serious current challenge to U.S. security."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v12",
+   "documentId": "d211",
+   "text": "The latest and perhaps the most serious challenge to US security interests is occurring in Cuba."
+  },
+  {
+   "kind": "heading",
+   "text": "1977–1980: trade as leverage, migration as a domestic problem",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Carter-era papers weigh the embargo for its political leverage, and the 1980 boatlift turns Cuba's impact into a domestic coordination problem."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v23",
+   "documentId": "d21",
+   "notes": [
+    "Agent run v2, 2026-10-26: Blumenthal to Carter, August 1977: the embargo's political significance far outweighs its economic effects."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v23",
+   "documentId": "d21",
+   "text": "The political significance of both sides of the trade issue far outweighs economic effects."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v23",
+   "documentId": "d98",
+   "notes": [
+    "Agent run v2, 2026-10-26: April 1980 memorandum on the Mariel boatlift: controlling the refugee flow as a federal domestic task."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v23",
+   "documentId": "d98",
+   "text": "the influx of Cuban and Haitian refugees requires the highest degree of coordination of the Federal government’s domestic resources"
+  },
+  {
+   "kind": "prose",
+   "text": "Threads not followed in this run: the Reagan-era Cuba documents scattered through the 1981–1988 volumes (none filed under Cuba); the 1875–76 Ten Years' War instructions printed outside the annual volume; the domestic sugar interests' own records; Cuban-side sources; and a document-by-document reading of the 1950s Batista files, whose low Cold War vocabulary is measured but not explained."
+  },
+  {
+   "kind": "generated",
+   "generatedBlockType": "archivalSources"
+  }
+ ]
+}

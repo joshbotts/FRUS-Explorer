@@ -1,0 +1,8 @@
+{'classes': 'dict', 'countries': 'dict', 'countryAlternates': 'dict', 'countryArrangedClasses': 'list', 'endYear': 'int', 'id': 'str', 'relationsClasses': 'list', 'source': 'str', 'sources': 'dict', 'startYear': 'int', 'subjects': 'dict'}
+{"classes": {"0": "General. Miscellaneous", "1": "Administrations, United States Government", "2": "Extradition", "3": "Protection of Interests", "4": "Claims", "5": "Congresses and Conferences", "6": "Commerce. Customs Administration", "7": "Political Relations of States. Bi-lateral Treaties", "8": "Internal Affairs of States"}, "countries": {"00": "World, The", "10": "America. Pan-America", "11": "United States", "11a": "Hawaii", "11b": "Philippines", "11c": "Porto Rico", "11d": "Guam", "11e": "American Samoa", "11f": "Panama Canal Zone", "11g": "Virgin Islands (U.S.)", "12": "Mexico", "13": "Central America", "14": "Guatemala", "15": "Honduras", "16": "El Salvador", "17": "Nicaragua", "18": "Costa Rica", "19": "Panama", "20": "South America (West Coast)", "21": "Colombia", "22": "Ecuado
+numericalFile seriesNaId 654171
+Diplomatic Despatches | Despatches from U.S. Ministers to Cuba, 1902-1906 | fileUnitNaId 177380758
+Notes from Foreign Missions | Notes from the Cuban Legation in the United States to the Department of State, 1844-1906 | fileUnitNaId 183303950
+Consular Despatches | Despatches from United States Consuls in Havana, Cuba, 1783-1906 | fileUnitNaId 196006797
+302021 False
+2124670 True

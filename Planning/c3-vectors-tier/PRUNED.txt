@@ -1,0 +1,1 @@
+pruned: /Users/jbotts/Development/FRUS-Explorer/.claude/worktrees/c3-cloud-sessions-95c770/Planning/c3-vectors-tier/runs/v2/coreset.json (1.7M)

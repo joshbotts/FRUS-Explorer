@@ -1,0 +1,106 @@
+
+== anchor frus1881/d405 (1881-12-01); 25th-neighbour distance 100
+   (4, 'frus1894app2/d394', '1881-12-01', [0, 0])
+   (77, 'frus1894app2/d114', '1889-10-07', [0, 0])
+   (83, 'frus1894app2/d163', '1891-09-05', [0, 0])
+   (85, 'frus1894app2/d393', '1881-11-19', [0, 0])
+   (86, 'frus1881/d404', '1881-11-19', [0, 0])
+   (87, 'frus1870/d197', '1870-08-19', [0, 0])
+   (88, 'frus1894app2/d2a', '1893-01-17', [0, 0])
+   (92, 'frus1894app2/d55', '1868-07-05', [0, 0])
+   (92, 'frus1894app2/d71', '1893-02-15', [0, 0])
+   (92, 'frus1894app2/d186', '1892-11-20', [0, 0])
+   (94, 'frus1894app2/d70', '1892-11-20', [0, 0])
+   (94, 'frus1894app2/d395', '1881-12-01', [0, 0])
+   (96, 'frus1874/d552', '1874-02-06', [0, 0])
+   (96, 'frus1878/d257', '1878-07-08', [0, 0])
+   (97, 'frus1878/d255', '1877-12-28', [0, 0])
+
+== anchor frus1898/d490 (1897-07-16); 25th-neighbour distance 90
+   (48, 'frus1898/d495', '1897-09-23', [0, 0])
+   (61, 'frus1874/d552', '1874-02-06', [0, 0])
+   (61, 'frus1898/d503', '1897-10-26', [0, 0])
+   (64, 'frus1898/d531', '1898-02-09', [0, 0])
+   (70, 'frus1897/d581', '1896-04-04', [0, 0])
+   (72, 'frus1898/d526', '1897-12-23', [0, 0])
+   (73, 'frus1872p1/d431', '1872-10-29', [0, 0])
+   (74, 'frus1897/d582', '1896-06-04', [0, 0])
+   (74, 'frus1898/d557', '1898-03-25', [0, 0])
+   (77, 'frus1898/d492', '1897-09-13', [0, 0])
+   (77, 'frus1898/d497', '1897-10-04', [0, 0])
+   (77, 'frus1898/d544', '1898-03-09', [0, 0])
+   (79, 'frus1898/d546', '1898-03-18', [0, 0])
+   (82, 'frus1902/d313', '1902-11-21', [0, 0])
+   (83, 'frus1898/d615', '1898-04-10', [0, 0])
+
+== anchor frus1952-54v04/d343 (1954-06-07); 25th-neighbour distance 104
+   (79, 'frus1955-57v06/d260', '1955-03-10', [0, 0])
+   (83, 'frus1952-54v04/d342', '1954-06-04', [0, 0])
+   (90, 'frus1948v09/d420', '1948-07-29', [0, 0])
+   (90, 'frus1952-54v04/d344', '1954-06-08', [0, 0])
+   (91, 'frus1955-57v06/d256', '1955-01-28', [0, 0])
+   (93, 'frus1958-60v04/d304', '1960-01-15', [0, 0])
+   (95, 'frus1952-54v04/d352', '1954-12-06', [0, 0])
+   (95, 'frus1955-57v06/d273', '1955-06-08', [0, 0])
+   (96, 'frus1958-60v04/d308', '1958-01-10', [0, 1])
+   (97, 'frus1955-57v06/d269', '1955-05-05', [0, 0])
+   (97, 'frus1958-60v06/d328', '1959-07-01', [0, 0])
+   (98, 'frus1951v02/d769', '1951-06-14', [0, 0])
+   (98, 'frus1958-60v06/d413', '1958-12-23', [0, 0])
+   (99, 'frus1951v02/d773', '1951-06-27', [0, 0])
+   (99, 'frus1958-60v06/d377', '1959-10-23', [0, 0])
+
+== anchor frus1961-63v10/d202 (1961-05-04); 25th-neighbour distance 77
+   (55, 'frus1961-63v10/d182', '1961-04-27', [0, 0])
+   (55, 'frus1961-63v10/d274', '1961-11-09', [0, 0])
+   (60, 'frus1969-76ve10/d205', '1969-07-02', [0, 0])
+   (62, 'frus1961-63v10-12mSupp/d725', '1963-12-12', [0, 0])
+   (62, 'frus1961-63v10-12mSupp/d729', '1963-12-15', [0, 0])
+   (64, 'frus1961-63v10-12mSupp/d670', '1963-04-25', [0, 0])
+   (65, 'frus1958-60v06/d466', '1960-02-26', [0, 0])
+   (65, 'frus1958-60v06/d616', '1960-12-05', [0, 0])
+   (69, 'frus1958-60v06/d475', '1960-03-10', [0, 0])
+   (69, 'frus1961-63v10/d86', '1961-04-10', [0, 0])
+   (69, 'frus1961-63v10-12mSupp/d233', '1960-12-06', [0, 0])
+   (70, 'frus1961-63v10/d179', '1961-04-26', [0, 0])
+   (70, 'frus1961-63v11/d272', '1963-01-24', [0, 0])
+   (72, 'frus1958-60v06/d620', '1960-12-08', [0, 0])
+   (74, 'frus1958-60v06/d442', '1960-01-28', [0, 0])
+
+== centroid cosine (volume centroids, int8 dequantized, renormalized)
+	1874	1898	1902	1917	1933v05	1944v07	1958-60v06	1961-63v11	1977-80v23
+1874	1.000	0.965	0.961	0.950	0.932	0.928	0.894	0.867	0.903
+1898	0.965	1.000	0.974	0.952	0.933	0.930	0.891	0.865	0.892
+1902	0.961	0.974	1.000	0.956	0.925	0.922	0.882	0.861	0.890
+1917	0.950	0.952	0.956	1.000	0.951	0.946	0.905	0.878	0.918
+1933v05	0.932	0.933	0.925	0.951	1.000	0.962	0.930	0.900	0.929
+1944v07	0.928	0.930	0.922	0.946	0.962	1.000	0.928	0.898	0.929
+1958-60v06	0.894	0.891	0.882	0.905	0.930	0.928	1.000	0.960	0.959
+1961-63v11	0.867	0.865	0.861	0.878	0.900	0.898	0.960	1.000	0.941
+1977-80v23	0.903	0.892	0.890	0.918	0.929	0.929	0.959	0.941	1.000
+
+== map: Cuba core set by era band (date_iso year); top clusters; unclustered vs era-matched baseline (all dated non-apparatus docs in band, Ed2 dropped)
+1861-1898: core 891, unclustered 271 of 891; baseline unclustered 8337 of 32364
+    cluster (72, 457, 'sanguily, inclosure, azcuy, inclose')
+    cluster (41, 106, 'sickle, hoar, mcculloch, barlow')
+    cluster (63, 31, 'seward, adams, liverpool, confederate')
+    cluster (3, 18, 'nanking, shanghai, chinese, tientsin')
+    cluster (60, 4, 'seward, hovey, chili, koerner')
+1899-1933: core 2206, unclustered 783 of 2206; baseline unclustered 20352 of 74033
+    cluster (52, 485, 'panaman, panama, loubet, lefevre')
+    cluster (39, 310, 'grau, machado, habana, mendieta')
+    cluster (43, 296, 'zaya, crowder, airway, guatemala')
+    cluster (72, 166, 'sanguily, inclosure, azcuy, inclose')
+    cluster (3, 26, 'nanking, shanghai, chinese, tientsin')
+1934-1958: core 1181, unclustered 346 of 1181; baseline unclustered 38685 of 139702
+    cluster (35, 489, 'cuban, habana, braden, cuba')
+    cluster (42, 206, 'castro, somoza, cuban, cuba')
+    cluster (43, 39, 'zaya, crowder, airway, guatemala')
+    cluster (39, 29, 'grau, machado, habana, mendieta')
+    cluster (21, 23, 'falkland, galtieri, argentine, thatcher')
+1959-1980: core 2727, unclustered 416 of 2727; baseline unclustered 15775 of 54420
+    cluster (42, 2186, 'castro, somoza, cuban, cuba')
+    cluster (115, 50, 'edc, nato, nuclear, soviet')
+    cluster (74, 18, 'namibia, swapo, mobutu, rhodesia')
+    cluster (102, 14, 'brzezinski, carter, bib, kissinger')
+    cluster (136, 10, 'kissinger, brezhnev, dobrynin, mirv')

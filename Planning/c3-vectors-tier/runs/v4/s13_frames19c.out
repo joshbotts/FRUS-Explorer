@@ -1,0 +1,18 @@
+SQL: SELECT dc.volume_id, dc.document_id, dd.date_iso, dc.body_text FROM frus_documents f JOIN document_cache dc ON dc.rowid=f.rowid JOIN document_dates dd ON dd.volume_id=dc.volume_id AND dd.document_id=dc.document_id WHERE frus_documents MATCH 'cuba OR cuban' AND dc.is_front_matter=0 AND dc.is_editorial_note=0 AND dd.date_iso BETWEEN '1865' AND '1890'
+filter: >=2 case-sensitive \bCuba(n|ns)?\b in body
+frame	1860s	1870s	1880s
+N	68	240	167
+american_property_citizens	8	54	39
+commerce_trade	22	81	72
+sugar	1	22	19
+insurrection_revolution	20	121	28
+order_stability	5	23	8
+slavery	19	57	8
+annex_intervene	16	68	27
+strategic_defense	11	56	14
+communist_soviet	0	2	0
+missiles	0	0	0
+national_security_prose	0	0	0
+prosperity	6	26	12
+migration	8	37	11
+top volumes: [('frus1874', 64), ('frus1885', 33), ('frus1873p1v2', 32), ('frus1872p2v1', 27), ('frus1871', 26), ('frus1884', 24), ('frus1876', 23), ('frus1875v02', 21)]

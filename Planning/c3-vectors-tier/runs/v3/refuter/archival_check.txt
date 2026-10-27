@@ -1,0 +1,72 @@
+lotNumber format samples: ['428', '5226', '52D432', '53D211', '53D223', '53D233', '53D246', '53D26']
+=== overview claims: 65D438 A1 3053 27022950 1962–1963 partly restricted | Cuban Missile Crisis, Executive Secretariat
+   central-files lotFiles: {'lotNumber': '65D438', 'recordGroup': '59', 'hmsMlrEntryNumbers': ['A1 3053'], 'title': 'Records Relating to the Cuban Missile Crisis', 'matchType': 'control', 'levelOfDescription': 'series'}
+   series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Executive Secretariat.', 'useRestrictions': ['Copyright'], 'extent': '6 linear feet, 2 linear inches', 'inclusiveStartYear': 1962, 'inclusiveEndYear': 1963}
+=== overview claims: 74D272 A1 5175 614703 1961–1966 unrestricted | Under Secretary George W. Ball
+   central-files lotFiles: {'lotNumber': '74D272', 'recordGroup': '59', 'hmsMlrEntryNumbers': ['A1 5175'], 'title': 'Records of Under Secretary of State George W. Ball', 'matchType': 'control', 'levelOfDescription': 'series'}
+   series-facts: {'accessStatus': 'Unrestricted', 'creator': 'Department of State. Office of the Under Secretary of State.', 'extent': '16 linear feet, 3 linear inches', 'inclusiveStartYear': 1961, 'inclusiveEndYear': 1966}
+=== overview claims: 66D501 UD-UP 293-B 648748 1963–1965 unrestricted | Operation Mongoose, Coordinator of Cuban Affairs
+   central-files lotFiles: {'lotNumber': '66D501', 'recordGroup': '59', 'hmsMlrEntryNumbers': ['UD-UP 293-B'], 'title': 'Files Pertaining to Operation Mongoose', 'matchType': 'control', 'levelOfDescription': 'series'}
+   series-facts: {'accessStatus': 'Unrestricted', 'creator': 'Department of State. Bureau of Inter-American Affairs. Office of the Coordinator of Cuban Affairs.', 'coverageStartYear': 1960, 'coverageEndYear': 1999, 'extent': '2 linear feet, 8 linear inches', 'inclusiveStartYear': 1963, 'inclusiveEndYear': 1965}
+=== overview claims: 62D24 A1 3148 2363836 1958–1961 partly restricted | Special Assistant on Communism subject files
+   central-files lotFiles: {'lotNumber': '62D24', 'recordGroup': '59', 'hmsMlrEntryNumbers': ['A1 3148'], 'title': 'Subject Files', 'matchType': 'control', 'levelOfDescription': 'series'}
+   series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs. Office of the Special Assistant on Communism.', 'coverageStartYear': 1956, 'coverageEndYear': 1961, 'useRestrictions': ['Copyright'], 'extent': '4 linear feet, 10 linear inches', 'inclusiveStartYear': 1958, 'inclusiveEndYear': 1961}
+=== overview claims: 66D95 A1 1586E 2839192 1947–1979 partly restricted | NSC policy papers, Executive Secretariat
+   central-files lotFiles: {'lotNumber': '66D95', 'recordGroup': '59', 'hmsMlrEntryNumbers': ['A1 1586E'], 'title': 'Records Relating to National Security Council Policy Papers', 'matchType': 'control', 'levelOfDescription': 'series'}
+   series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'useRestrictions': ['Copyright'], 'extent': '26 linear feet, 3 linear inches', 'inclusiveStartYear': 1947, 'inclusiveEndYear': 1979}
+=== overview claims: 66D95 (second series) Subject Files 2839193   | 
+   central-files lotFiles: {'lotNumber': '66D148', 'recordGroup': '59', 'hmsMlrEntryNumbers': ['A1 1586F'], 'title': 'Subject Files', 'matchType': 'control', 'levelOfDescription': 'series'}
+   series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'useRestrictions': ['Copyright'], 'extent': '9 linear feet, 7 linear inches', 'inclusiveStartYear': 1947, 'inclusiveEndYear': 1965}
+=== overview claims: 73D191 A1-5758 1040618 1957–1975 partly restricted; 27 linear feet | Coordinator of Cuban Affairs, Records Relating to Cuba
+   central-files lotFiles: {'lotNumber': '78D287', 'recordGroup': '59', 'hmsMlrEntryNumbers': ['A1-5758'], 'title': 'Records Relating to Cuba', 'matchType': 'control', 'levelOfDescription': 'series'}
+   series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security', 'FOIA (b)(3) Statute', 'FOIA (b)(6) Personal Information'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Bureau of Inter-American Affairs. Office of the Coordinator of Cuban Affairs.', 'coverageStartYear': 1947, 'coverageEndYear': 1975, 'useRestrictions': ['Copyright'], 'extent': '27 linear feet, 8 linear inches', 'inclusiveStartYear': 1957, 'inclusiveEndYear': 1975}
+=== overview claims: 65D212 UD-UP 215 27022874 1955–1962 fully restricted | Records Relating to Sugar
+   central-files lotFiles: {'lotNumber': '65D212', 'recordGroup': '59', 'hmsMlrEntryNumbers': ['UD-UP 215'], 'title': 'Records Relating to Sugar', 'matchType': 'control', 'levelOfDescription': 'series'}
+   series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Fully', 'creator': 'Department of State. Bureau of Economic Affairs. Office of International Resources.', 'coverageStartYear': 1932, 'coverageEndYear': 1962, 'extent': '3 linear feet, 1 linear inch', 'inclusiveStartYear': 1955, 'inclusiveEndYear': 1962}
+=== overview claims: 66D204 A1 1590 2538452 1953–1964 possibly restricted | correspondence with foreign heads of state
+   central-files lotFiles: {'lotNumber': '66D204', 'recordGroup': '59', 'hmsMlrEntryNumbers': ['A1 1590'], 'title': 'Presidential and Secretary of State Correspondence with Foreign Heads of State', 'matchType': 'control', 'levelOfDescription': 'series'}
+   series-facts: {'accessStatus': 'Restricted - Possibly', 'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'extent': '9 linear feet, 8 linear inches', 'inclusiveStartYear': 1953, 'inclusiveEndYear': 1964}
+=== legend fields: {'ar': 'accessRestrictions', 'as': 'accessStatus', 'c': 'creator', 'cy0': 'coverageStartYear', 'cy1': 'coverageEndYear', 'fa': 'findingAids', 'p': 'predecessors', 'ru': 'referenceUnit', 'ur': 'useRestrictions', 'us': 'useStatus', 'x': 'extent', 'y0': 'inclusiveStartYear', 'y1': 'inclusiveEndYear'}
+=== lot-claimants for 66D95:
+   {"claimants": [{"dateRange": "1947\u20131979", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1586E"], "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}, {"dateRange": "1947\u20131965", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1586F"], "naId": "2839193", "recordGroup": "59", "title": "Subject Files"}], "lotNumber": "66D95"}
+   lots keys sample: ['claimants', 'lotNumber']
+=== presidential libraries:
+   Kennedy Library | id JFK-4 | naId 1164 | Papers of John F. Kennedy: Presidential Papers: National Security Files | series: [(193236, 'Country Files', '1961–1963')]
+   Johnson Library | id LBJ-NSF | naId 567979 | National Security Files | series: [(567985, 'Latin America Country Files', '1963–1969'), (573102, 'Africa Country Files', '1963–1969'), (580807, 'Europe and USSR Country Files', '1963–1969'), (587357, 'Middle East Country Files', '1963–1969')]
+   Carter Library | id JC-NSA | naId 560131 | Records of the Office of the National Security Advisor (Carter Administration) | series: [(560151, "Zbigniew Brzezinski's Country Files", '1977–1981')]
+   libraries cited as: ['Hoover Library', 'Roosevelt Library', 'Truman Library', 'Eisenhower Library', 'Kennedy Library', 'Johnson Library', 'Nixon', 'Ford Library', 'Carter Library', 'Reagan Library', 'Bush Library']
+=== pre-1910 microfilm countrySeries (Spain / Cuba / Havana / Cuban Legation):
+   Diplomatic Despatches | seriesNaId 603720 | Despatches from U.S. Ministers to Spain, 1792-1906 | fileUnitNaId 177380726
+   Diplomatic Despatches | seriesNaId 603720 | Despatches from U.S. Ministers to Cuba, 1902-1906 | fileUnitNaId 177380758
+   Notes from Foreign Missions | seriesNaId 594363 | Notes from the Cuban Legation in the United States to the Department of State, 1844-1906 | fileUnitNaId 183303950
+   Consular Despatches | seriesNaId 302031 | Despatches from United States Consuls in Havana, Cuba, 1783-1906 | fileUnitNaId 196006797
+   Consular Despatches | seriesNaId 302031 | Despatches from U. S. Consuls in Alicante, Spain, 1788-1905 | fileUnitNaId 196006927
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Gibraltar, Spain, 1791-1906 | fileUnitNaId 196006857
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Bilbao, Spain, 1791-1875 | fileUnitNaId 196006836
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Cadiz, Spain, 1791-1904 | fileUnitNaId 196006839
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Malaga, Spain, 1793-1906 | fileUnitNaId 196006867
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Barcelona, Spain, 1797-1906 | fileUnitNaId 196006811
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Santiago de Cuba, Cuba, 1799-1906 | fileUnitNaId 196007065
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Port Mahon, Spain, 1803-1876 | fileUnitNaId 196006976
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Valencia, Spain, 1816-1906 | fileUnitNaId 196006999
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Matanzas, Cuba, 1820-1899 | fileUnitNaId 196006914
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Trinidad, Cuba, 1824-1876 | fileUnitNaId 196007173
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Baracoa, Cuba. (1827-1846, 1878-1899), 1827-1899 | fileUnitNaId 196007040
+   Consular Despatches | seriesNaId 302031 | Despatches From U.S. Consuls in Porto Principe and Xibara, Cuba, 1828-1843 | fileUnitNaId 196007084
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Aleppo, Spain, 1835-1840 | fileUnitNaId 196006841
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Cienfuegos, Cuba, 1876-1906 | fileUnitNaId 196007063
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Nuevitas, Cuba, 1842-1847. | fileUnitNaId 196007099
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Cardenas, Cuba. (1843-1845, 1879-1898) | fileUnitNaId 196007096
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Manzanillo, Cuba, 1844-1846 | fileUnitNaId 196007121
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in San Juan de los Remedios, Cuba. (1844-1846, 1879-1898) | fileUnitNaId 196007097
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Vigo, Spain, 1852-1862 | fileUnitNaId 196007000
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Denia, Spain, 1852-1898 | fileUnitNaId 196006951
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Seville, Spain, 1859-1906 | fileUnitNaId 196006989
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Santander, Spain, 1862-1892 | fileUnitNaId 196006986
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Cartegena, Spain, 1863-1906 | fileUnitNaId 196006946
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Corunna, Spain, 1867-1906 | fileUnitNaId 196007002
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Garrucha, Spain, 1877-1897 | fileUnitNaId 196007088
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Sagua la Grande, Cuba, 1878-1900 | fileUnitNaId 196007159
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Madrid, Spain, 1882-1906 | fileUnitNaId 196007123
+   Consular Despatches | seriesNaId 302031 | Despatches from U.S. Consuls in Jerez de la Frontera, Spain, 1903-1906 | fileUnitNaId 196007108
+   countrySeries keys: ['category', 'displayName', 'rolls', 'seriesNaId']

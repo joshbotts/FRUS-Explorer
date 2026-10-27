@@ -1,0 +1,49 @@
+COVERAGE: (553, 321749, 1103, 8481)
+Ed2 volumes present: [('frus1951-54IranEd2', 377), ('frus1969-76ve15p2Ed2', 387), ('frus1977-80v09Ed2', 418)]
+tier-1 (cuba OR cuban, non-apparatus, not Ed2, dated 1870-1989): 12256
+per decade: [('1870s', 363), ('1880s', 294), ('1890s', 592), ('1900s', 367), ('1910s', 875), ('1920s', 712), ('1930s', 1094), ('1940s', 1316), ('1950s', 982), ('1960s', 3147), ('1970s', 1887), ('1980s', 627)]
+tier-1 date span: 1870-04-27 1989-01-11
+rows with NULL/empty date among raw hits: 24
+hits dated <1870: 337 ; dated >=1990: 0
+denominator 1870s-1980s: 298323 ; 1990s: 177
+1870s per 1000: 62.4
+1940s per 1000: 17.3
+1960s per 1000: 113.8
+tier-2 (>=5 case-sensitive Cuba/Cuban/Cubans in body_text): 4107
+tier-2 by band: [('1870-1899', 309), ('1900-1939', 731), ('1940-1957', 616), ('1958-1989', 2451)]
+tier-2 date span: 1870-06-24 1988-12-16
+tier-2 docs with >=1 external_citations row: (621,)
+tier-2 1870-1899 docs with a document_sources row: (1,) of (309,)
+earliest-dated external_citations row in tier-2: ('1913-05-18',)
+earliest-dated external_citations row in whole index: ('1910-12-06',)
+1990s dated non-apparatus docs (not Ed2): 177 ; Cuba hits dated 1990s: 0
+collection document entries: 22 distinct: 22
+  frus1874/d552  tier1=True tier2=True  Cuba mentions=38 fm=0 ed=0
+  frus1898/d498  tier1=True tier2=True  Cuba mentions=34 fm=0 ed=0
+  frus1898/ch83  tier1=True tier2=True  Cuba mentions=37 fm=0 ed=0
+  frus1902/d273  tier1=True tier2=True  Cuba mentions=31 fm=0 ed=0
+  frus1918/d333  tier1=True tier2=True  Cuba mentions=19 fm=0 ed=0
+  frus1933v05/d241  tier1=True tier2=True  Cuba mentions=84 fm=0 ed=0
+  frus1934v05/d170  tier1=True tier2=True  Cuba mentions=17 fm=0 ed=0
+  frus1934v05/d154  tier1=True tier2=True  Cuba mentions=32 fm=0 ed=0
+  frus1941v07/d134  tier1=True tier2=True  Cuba mentions=80 fm=0 ed=0
+  frus1948v09/d420  tier1=True tier2=True  Cuba mentions=64 fm=0 ed=0
+  frus1950v02/d440  tier1=True tier2=True  Cuba mentions=143 fm=0 ed=0
+  frus1952-54v04/d331  tier1=True tier2=True  Cuba mentions=41 fm=0 ed=0
+  frus1958-60v06/d362  tier1=True tier2=True  Cuba mentions=40 fm=0 ed=0
+  frus1958-60v06/d532  tier1=True tier2=True  Cuba mentions=20 fm=0 ed=0
+  frus1958-60v06/d535  tier1=True tier2=True  Cuba mentions=29 fm=0 ed=0
+  frus1958-60v06/d567  tier1=True tier2=True  Cuba mentions=31 fm=0 ed=0
+  frus1961-63v11/d18  tier1=True tier2=True  Cuba mentions=41 fm=0 ed=0
+  frus1961-63v11/d21  tier1=True tier2=True  Cuba mentions=52 fm=0 ed=0
+  frus1969-76ve10/d205  tier1=True tier2=True  Cuba mentions=211 fm=0 ed=0
+  frus1977-80v23/d18  tier1=True tier2=True  Cuba mentions=77 fm=0 ed=0
+  frus1977-80v01/d129  tier1=True tier2=True  Cuba mentions=46 fm=0 ed=0
+  frus1981-88v03/d10  tier1=True tier2=True  Cuba mentions=24 fm=0 ed=0
+Havana-only 1870 1900 240
+Havana-only 1900 1940 352
+Havana-only 1940 1958 455
+Havana-only 1958 1990 90
+Havana-only total: 1137
+positive control volumes: (553,) ; negative: (0,)
+pre-1947 (cuba OR cuban) AND "national security": (10,)

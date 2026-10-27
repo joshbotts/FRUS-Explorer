@@ -1,11 +1,28 @@
 # C-3, the vectors tier — Sonnet 5.5 at `high` and Opus 5.5 at `medium` with Appendix A and the vector artifacts added
 
-**Status:** DESIGN, written 2026-10-26 on the owner's instruction ("Plan but do not start a follow-up
-tier for Sonnet high and Opus medium that adds in Appendix A and the vector artifacts"). **Not
-started.** Nothing below has run; the figures quoted are C-3's (`C-3-Results-2026-10-26.md`) or the
-guide's. Four decisions are the owner's before the first cell launches (§8). Successor to
+**Status:** RUN 2026-10-26/27 under the four decisions below; results in
+**`C-3-Vectors-Tier-Results-2026-10-27.md`**, record in `c3-vectors-tier/`. Written 2026-10-26 on the
+owner's instruction ("Plan but do not start a follow-up tier for Sonnet high and Opus medium that
+adds in Appendix A and the vector artifacts"). The figures quoted below are C-3's
+(`C-3-Results-2026-10-26.md`) or the guide's. Successor to
 `C-3-Reader-Test-Design.md`, whose harness, instruments and record format it reuses; the record goes
 in `c3-vectors-tier/`.
+
+**The owner's four decisions, 2026-10-26 evening (§8), and what they change below.**
+
+1. **No embedder**: document-to-document only, as §2 proposes.
+2. **Run now, under a line at 92% of the weekly meter**, which read 80% when the decisions were
+   taken (resets 2026-10-28 16:00): 12 points for a tier projected at 8 to 10. C-3's stop rule, and
+   the owner is asked before the run stops at the line.
+3. **The owner's second question, not C-3's.** So there is **no control arm**: §1's comparability
+   argument is set aside, and §3's "cost of the appendix" and §6's "reader" readings compare the
+   four runs with C-3's figures for the same two cells on a different question, labelled as such,
+   not as controls. The judge ranks the four +V overviews alone. The reach reading, the V items and
+   the compliance floor stand as written. The question's text is the owner's, pasted into the
+   prompt from `question.txt` by the generator and printed in the record.
+4. **The shards are copied beside the index copy**, as §2 proposes.
+
+The text below is the design as written before the decisions, unchanged.
 
 **Why this tier.** C-3's twelve runs never opened a vector artifact: the prompt handed each cell the
 index copy, the TEI files and the bundle's JSON folder, and nothing pointed at the vector binary,

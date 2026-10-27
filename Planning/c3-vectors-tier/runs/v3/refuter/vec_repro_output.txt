@@ -1,0 +1,40 @@
+magic b'FRSV' ver 1 dims 512 docs 314616 centroids 660
+binary digest == index provenanceDigest: True 89481b1869da1880
+map digest == index: True map header docs/clusters (314616, 140)
+shards: 553 with a different digest: 0 | .generation: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+volumes decoded with length == n: 553 of 553 rows mapped: 314616 documentCount 314616
+ANCHOR frus1969-76ve10/d205 (0.4s)
+  ham  52 frus1961-63v10-12mSupp/d729
+  ham  54 frus1961-63v10-12mSupp/d670
+  ham  56 frus1958-60v06/d620
+  ham  57 frus1958-60v06/d616
+  ham  60 frus1961-63v10/d202
+  ham  61 frus1969-76ve11p1/d278
+  ham  63 frus1961-63v10-12mSupp/d543
+  ham  64 frus1950v02/d440
+  ham  64 frus1961-63v10-12mSupp/d665
+  ham  65 frus1958-60v06/d475
+  ham  66 frus1958-60v05/d126
+  ham  66 frus1961-63v10-12mSupp/d725
+  ham  67 frus1961-63v10-12mSupp/d288
+  ham  67 frus1961-63v10-12mSupp/d687
+  ham  67 frus1961-63v11/d349
+ANCHOR frus1958-60v06/d499 (0.4s)
+  ham 101 frus1958-60v06/d594
+  ham 103 frus1958-60v06/d555
+  ham 103 frus1958-60v06/d579
+  ham 104 frus1958-60v06/d527
+  ham 106 frus1958-60v05/d112
+  ham 106 frus1958-60v06/d423
+  ham 106 frus1958-60v06/d570
+  ham 107 frus1961-63v10/d179
+  ham 108 frus1958-60v06/d328
+  ham 108 frus1958-60v06/d536
+  ham 108 frus1958-60v06/d616
+  ham 108 frus1961-63v10/d432
+  ham 109 frus1958-60v06/d387
+  ham 109 frus1958-60v06/d409
+  ham 109 frus1958-60v06/d535
+Hamming frus1881/d405 vs frus1894app2/d394: 4
+Hamming d729 vs d205: 52
+frus1898/ch83 in index: False | frus1898 ids sample: []

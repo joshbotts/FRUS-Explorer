@@ -1,0 +1,101 @@
+OVERVIEW: 35 spans inside straight double quotes
+  attributed to a document (a URL follows in the same line): 20
+  #1 line 5 frus1874/d552 FOUND | Commercially, as well as geographically
+  #2 line 5 frus1898/ch83 FOUND | a constant menace to our peace
+  #3 line 5 frus1969-76ve11p1/d278 FOUND | The United States has no vital interests in Cuba
+  #14 line 25 frus1870/d197 FOUND | With the Spanish islands of Cuba and Porto Rico we maintain, in spite 
+  #15 line 26 frus1873p1v2/d50 FOUND | a question touching so large a number of colored people dwelling almos
+  #16 line 27 frus1874/d552 FOUND | Commercially, as well as geographically, it is by nature more closely 
+  #17 line 32 frus1898/d490 FOUND | Not only are our citizens largely concerned in the ownership of proper
+  #18 line 33 frus1898/ch83 FOUND | The present condition of affairs in Cuba is a constant menace to our p
+  #19 line 38 frus1902/d294 FOUND | The immediate remedy would be to obtain a satisfactory reduction in th
+  #20 line 39 frus1933v05/d241 FOUND | a speedy improvement in economic and commercial conditions in Cuba wou
+  #21 line 39 frus1933v05/d241 FOUND | They are, on the contrary, measures intended to prevent the necessity 
+  #22 line 40 frus1934v05/d170 FOUND | the stipulations of that agreement with regard to the naval station of
+  #23 line 41 frus1945v09/d745 FOUND | The military advantages to the United States of access to the Batista 
+  #24 line 46 frus1958-60v06/d517 FOUND | use judiciously selected economic pressures at those points where Cast
+  #25 line 47 frus1958-60v06/d567 FOUND | Since we have crossed one Rubicon with our sugar and oil actions, shou
+  #26 line 48 frus1961-63v10/d202 FOUND | there is no doubt that Cuba is being used as a base for export of the 
+  #27 line 49 frus1961-63v11/d34 FOUND | This route is aimed at preventing any addition to the strategic missil
+  #28 line 54 frus1969-76ve11p1/d278 FOUND | The United States has no vital interests in Cuba.
+  #29 line 55 frus1977-80v23/d19 FOUND | The embargo was our biggest bargaining chip, and we should not “punctu
+  #30 line 56 frus1977-80v23/d98 FOUND | trying to control the flow of Cuban refugees into the United States.
+  unattributed terms/names (no document; not a document quotation): 15
+    #4 line 9: "National security"
+    #5 line 9: "National Security Files"
+    #6 line 9: "Department of State"
+    #7 line 9: "Prosperity"
+    #8 line 15: "Cuba policy"
+    #9 line 17: "security"
+    #10 line 17: "menace"
+    #11 line 17: "peace"
+    #12 line 17: "intervention"
+    #13 line 17: "naval station"
+    #31 line 60: "communism"
+    #32 line 60: "communication"
+    #33 line 60: "national security"
+    #34 line 60: "prosperity"
+    #35 line 64: "Cuba, security and prosperity, 1870–1980"
+OVERVIEW block quotes ('>' lines): 0
+
+COLLECTION: 18 excerpts
+  E1 frus1870/d197 FOUND fm/en=0/0 | With the Spanish islands of Cuba and Porto Rico we maintain, in spite 
+  E2 frus1873p1v2/d50 FOUND fm/en=0/0 | a question touching so large a number of colored people dwelling almos
+  E3 frus1874/d552 FOUND fm/en=0/0 | Commercially, as well as geographically, it is by nature more closely 
+  E4 frus1874/d552 FOUND fm/en=0/0 | the existence of slave-labor in Cuba, and its influence over the feeli
+  E5 frus1898/d490 FOUND fm/en=0/0 | Not only are our citizens largely concerned in the ownership of proper
+  E6 frus1898/ch83 FOUND fm/en=0/0 | The present condition of affairs in Cuba is a constant menace to our p
+  E7 frus1902/d294 FOUND fm/en=0/0 | The immediate remedy would be to obtain a satisfactory reduction in th
+  E8 frus1933v05/d241 FOUND fm/en=0/0 | a speedy improvement in economic and commercial conditions in Cuba wou
+  E9 frus1933v05/d241 FOUND fm/en=0/0 | They are, on the contrary, measures intended to prevent the necessity 
+  E10 frus1934v05/d170 FOUND fm/en=0/0 | the stipulations of that agreement with regard to the naval station of
+  E11 frus1945v09/d745 FOUND fm/en=0/0 | The military advantages to the United States of access to the Batista 
+  E12 frus1958-60v06/d517 FOUND fm/en=0/0 | use judiciously selected economic pressures at those points where Cast
+  E13 frus1958-60v06/d567 FOUND fm/en=0/0 | Since we have crossed one Rubicon with our sugar and oil actions, shou
+  E14 frus1961-63v10/d202 FOUND fm/en=0/0 | there is no doubt that Cuba is being used as a base for export of the 
+  E15 frus1961-63v11/d34 FOUND fm/en=0/0 | This route is aimed at preventing any addition to the strategic missil
+  E16 frus1969-76ve11p1/d278 FOUND fm/en=0/0 | The United States has no vital interests in Cuba.
+  E17 frus1977-80v23/d19 FOUND fm/en=0/0 | The embargo was our biggest bargaining chip, and we should not “punctu
+  E18 frus1977-80v23/d98 FOUND fm/en=0/0 | trying to control the flow of Cuban refugees into the United States.
+
+OVERVIEW quotation vs collection excerpt of the same pair:
+  #1 frus1874/d552 inside-an-excerpt=True
+  #2 frus1898/ch83 inside-an-excerpt=True
+  #3 frus1969-76ve11p1/d278 inside-an-excerpt=True
+  #14 frus1870/d197 inside-an-excerpt=True
+  #15 frus1873p1v2/d50 inside-an-excerpt=True
+  #16 frus1874/d552 inside-an-excerpt=True
+  #17 frus1898/d490 inside-an-excerpt=True
+  #18 frus1898/ch83 inside-an-excerpt=True
+  #19 frus1902/d294 inside-an-excerpt=True
+  #20 frus1933v05/d241 inside-an-excerpt=True
+  #21 frus1933v05/d241 inside-an-excerpt=True
+  #22 frus1934v05/d170 inside-an-excerpt=True
+  #23 frus1945v09/d745 inside-an-excerpt=True
+  #24 frus1958-60v06/d517 inside-an-excerpt=True
+  #25 frus1958-60v06/d567 inside-an-excerpt=True
+  #26 frus1961-63v10/d202 inside-an-excerpt=True
+  #27 frus1961-63v11/d34 inside-an-excerpt=True
+  #28 frus1969-76ve11p1/d278 inside-an-excerpt=True
+  #29 frus1977-80v23/d19 inside-an-excerpt=True
+  #30 frus1977-80v23/d98 inside-an-excerpt=True
+
+MEMO M-22..M-39 passages found by regex: 18
+  M-22 frus1870/d197 FOUND | With the Spanish islands of Cuba and Porto Rico we maintain,
+  M-23 frus1873p1v2/d50 FOUND | a question touching so large a number of colored people dwel
+  M-24 frus1874/d552 FOUND | Commercially, as well as geographically, it is by nature mor
+  M-25 frus1874/d552 FOUND | the existence of slave-labor in Cuba, and its influence over
+  M-26 frus1898/d490 FOUND | Not only are our citizens largely concerned in the ownership
+  M-27 frus1898/ch83 FOUND | The present condition of affairs in Cuba is a constant menac
+  M-28 frus1902/d294 FOUND | The immediate remedy would be to obtain a satisfactory reduc
+  M-29 frus1933v05/d241 FOUND | a speedy improvement in economic and commercial conditions i
+  M-30 frus1933v05/d241 FOUND | They are, on the contrary, measures intended to prevent the 
+  M-31 frus1934v05/d170 FOUND | the stipulations of that agreement with regard to the naval 
+  M-32 frus1945v09/d745 FOUND | The military advantages to the United States of access to th
+  M-33 frus1958-60v06/d517 FOUND | use judiciously selected economic pressures at those points 
+  M-34 frus1958-60v06/d567 FOUND | Since we have crossed one Rubicon with our sugar and oil act
+  M-35 frus1961-63v10/d202 FOUND | there is no doubt that Cuba is being used as a base for expo
+  M-36 frus1961-63v11/d34 FOUND | This route is aimed at preventing any addition to the strate
+  M-37 frus1969-76ve11p1/d278 FOUND | The United States has no vital interests in Cuba.
+  M-38 frus1977-80v23/d19 FOUND | The embargo was our biggest bargaining chip, and we should n
+  M-39 frus1977-80v23/d98 FOUND | trying to control the flow of Cuban refugees into the United

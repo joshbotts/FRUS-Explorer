@@ -1,0 +1,55 @@
+== nineteenth-century file units (countrySeries rolls with geoKeys cuba/spain)
+   ('Diplomatic Despatches', 'Despatches from U.S. Ministers to Spain, 1792-1906', '177380726') rolls 134 years ('1792', '1906')
+   ('Diplomatic Despatches', 'Despatches from U.S. Ministers to Cuba, 1902-1906', '177380758') rolls 18 years ('1902', '1906')
+   ('Diplomatic Instructions', None, 'None') rolls 11 years ('1833', '1906')
+   ('Notes from Foreign Missions', 'Notes from the Spanish Legation in the United States to the Department of State, 1790-1906', '183303928') rolls 31 years ('1794', '1906')
+   ('Notes from Foreign Missions', 'Notes from the Cuban Legation in the United States to the Department of State, 1844-1906', '183303950') rolls 2 years ('1844', '1906')
+   ('Notes to Foreign Missions', None, 'None') rolls 7 years ('1834', '1906')
+  claimed file unit 177380726 present: [('Diplomatic Despatches', 'Despatches from U.S. Ministers to Spain, 1792-1906', '177380726')]
+  claimed file unit 177380758 present: [('Diplomatic Despatches', 'Despatches from U.S. Ministers to Cuba, 1902-1906', '177380758')]
+  claimed file unit 183303928 present: [('Notes from Foreign Missions', 'Notes from the Spanish Legation in the United States to the Department of State, 1790-1906', '183303928')]
+
+== decimal classes (decimal-class-labels.json)
+coverage: {"decimalFileOpensIn": 1910, "glossableYears": [{"endYear": 1949, "scheduleId": "1910-1949", "startYear": 1910}, {"endYear": 1959, "scheduleId": "1950-1959", "startYear": 1950}, {"endYear": 1963, "scheduleId": "1960-1963", "startYear": 1960}], "keyOutsideGlossableYears": "no-gloss", "notShipped": [], "note": "A key is glossable only when the document's own date falls inside one of `glossableYears`. Outside them this file has NO gloss \u2014 do not compose one from a schedule that does not govern the key's era. The classification was renumbered in 1950, so composing across that year returns a p
+schedule 1910-1949 1910 1949 | class 8: Internal Affairs of States | class 6: Commerce. Customs Administration | class 7: Political Relations of States. Bi-lateral Treaties | country 37: Cuba | country 11: United States
+   subject 8 00 -> Political affairs
+   subject 8 51 -> Financial conditions
+   subject 8 61351 -> Cane
+   subject 6 37 -> None
+   subject 6 3731 -> None
+schedule 1950-1959 1950 1959 | class 8: Internal Economic, Industrial and Social Affairs | class 6: International Political Relations. Other International Relations | class 7: Internal Political and National Defense Affairs | country 37: Cuba | country 11: United States
+   subject 8 00 -> None
+   subject 8 51 -> None
+   subject 8 61351 -> None
+   subject 6 37 -> None
+   subject 6 3731 -> None
+schedule 1960-1963 1960 1963 | class 8: Internal Economic, Industrial, and Social Affairs | class 6: International Political Relations. Other International Relations. Bilateral Treaties | class 7: Internal Political and National Defense Affairs | country 37: Cuba | country 11: United States
+   subject 8 00 -> None
+   subject 8 51 -> None
+   subject 8 61351 -> None
+   subject 6 37 -> None
+   subject 6 3731 -> None
+
+== document_sources rows over the core set for the named repositories/classes
+   Kennedy Library (426, 'NSF,Sorensen Papers,National Security Files,NFS,Schlesinger Papers,Ball Papers,President’s Office Files,Countries Series,. National Security Files,Papers of Arthur Schlesinger,Presidentʼs Office Files,Papers of Theodore C.  Sorensen,Hilsman Papers')
+   Johnson Library (192, 'NSF,Vice Presidential Security File,National Security File,Vice President’s Security Files,Recordings and Transcripts,Papers of Thomas C. Mann,Meetings Notes File')
+   Nixon Presidential Materials (84, 'NSC Files,Kissinger Office Files,Box 780,Box 207,White House Tapes')
+   Carter Library (215, 'National Security Affairs,National Security Council,Plains File')
+   Central Intelligence Agency (328, None)
+   lot 65D438 came-from rows 51 pointed-at docs 13
+   lot 74D272 came-from rows 46 pointed-at docs 6
+   lot 66D501 came-from rows 23 pointed-at docs 1
+   lot 62D24 came-from rows 15 pointed-at docs 8
+   lot 62D418 came-from rows 15 pointed-at docs 5
+   lot 62D1 came-from rows 6 pointed-at docs 1
+   lot 66D95 came-from rows 3 pointed-at docs 22
+   lot 66D204 came-from rows 8 pointed-at docs 9
+   lot 65D212 came-from rows 4 pointed-at docs 3
+   decimal_class 837.00 came-from over core: 749 | corpus-wide date span: ('1911-11-10', '1960-02-25')
+   decimal_class 837.51 came-from over core: 331 | corpus-wide date span: ('1917-06-18', '1949-11-01')
+   decimal_class 837.61351 came-from over core: 235 | corpus-wide date span: ('1917-09-05', '1949-09-22')
+   decimal_class 611.37 came-from over core: 63 | corpus-wide date span: ('1951-01-11', '1961-04-19')
+   decimal_class 611.3731 came-from over core: 140 | corpus-wide date span: ('1911-01-06', '1947-12-31')
+   record_group values among core came-from rows: [('59', 4086), (None, 1639), ('330', 101), ('84', 4), ('233', 1)]
+   came-from rows dated before 1950 by repository/record_group: [('Department of State', '59', 'decimal', 2800), ('Department of State', '59', 'lot_file', 20), (None, None, 'published', 11), (None, None, 'unrecognized', 11)]
+   came-from rows dated after 1958 by repository: [('Department of State', 869), ('Kennedy Library', 426), ('Central Intelligence Agency', 325), ('National Archives', 256), ('Carter Library', 215), ('Johnson Library', 192), (None, 180), ('Eisenhower Library', 94)]

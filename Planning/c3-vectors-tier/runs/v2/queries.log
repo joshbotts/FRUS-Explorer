@@ -1,0 +1,192 @@
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "BEGIN; CREATE TABLE zz(x); ROLLBACK;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db ".schema document_cache" ".schema document_dates" ".schema document_sources" ".schema external_citations" ".schema frus_documents"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "WITH base AS (SELECT c.volume_id, c.document_id, substr(d.date_iso,1,3)||'0s' AS dec FROM document_cache c JOIN document_dates d ON d.volume_id=c.volume_id AND d.document_id=c.document_id WHERE c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') AND d.date_iso IS NOT NULL), hits AS (SELECT c.volume_id, c.document_id FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '{header body_text}: (cuba OR cuban OR havana)') SELECT b.dec, COUNT(*) AS dated, SUM(h.volume_id IS NOT NULL) AS cuba, ROUND(1000.0*SUM(h.volume_id IS NOT NULL)/COUNT(*),1) FROM base b LEFT JOIN hits h ON h.volume_id=b.volume_id AND h.document_id=b.document_id GROUP BY b.dec ORDER BY b.dec;" > decade_cuba.txt; cat decade_cuba.txt
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "WITH hits AS (SELECT c.volume_id, c.document_id, substr(d.date_iso,1,3)||'0s' AS dec FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid JOIN document_dates d ON d.volume_id=c.volume_id AND d.document_id=c.document_id WHERE frus_documents MATCH '{header}: (cuba OR cuban OR havana)' AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')), byvol AS (SELECT dec, volume_id, COUNT(*) n FROM hits GROUP BY dec, volume_id), top AS (SELECT dec, volume_id, n, ROW_NUMBER() OVER (PARTITION BY dec ORDER BY n DESC) rk FROM byvol) SELECT t.dec, (SELECT SUM(n) FROM byvol b WHERE b.dec=t.dec) tot, t.volume_id, t.n FROM top t WHERE rk=1 ORDER BY t.dec;" > decade_cuba_header.txt; cat decade_cuba_header.txt
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT c.volume_id, COUNT(*) n FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '{header body_text}: (cuba OR cuban OR havana)' AND c.is_front_matter=0 AND c.is_editorial_note=0 GROUP BY c.volume_id ORDER BY n DESC LIMIT 60;" > vol_cuba.txt; cat vol_cuba.txt | tr "\n" " "
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db ".schema volume_structures" "SELECT volume_id, length(structure_json) FROM volume_structures LIMIT 2;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT structure_json FROM volume_structures WHERE volume_id='frus1874';" | head -c 1500
+python3 -u chapters.py > chapters_out.txt; wc -l chapters_out.txt; cat chapters_out.txt | cut -c1-170
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT c.volume_id, COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '{header body_text}: (cuba OR cuban OR havana)' AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id GLOB 'frus18[6789]*' GROUP BY c.volume_id ORDER BY c.volume_id;" | tr "\n" " "
+python3 -u coreset.py > coreset_out.txt 2>&1 &
+python3 -u baseline.py > baseline_out.txt 2>&1 &
+./find.sh 'cuba AND ("gulf of mexico" OR "key to the gulf" OR annex*) AND spain' 'frus187*' 10; echo ---; ./find.sh 'cuba AND insurrection AND intervention AND commerce' 'frus187*' 8
+./find.sh '{header}: (fish AND cushing) AND cuba AND ("good offices" OR mediation OR "intervention")' 'frus187*' 10; echo ---; ./find.sh '{header}: message AND cuba' 'frus187*' 5
+./find.sh '{body_text}: cuba AND "commercial intercourse" AND insurrection AND ("ten years" OR "seven years" OR "eight years" OR "interests of the united states")' 'frus187*' 10
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT c.volume_id||'/'||c.document_id, d.date_iso, length(c.body_text), substr(c.header,1,80) FROM document_cache c JOIN document_dates d USING(volume_id, document_id) WHERE d.date_iso BETWEEN '1875-11-01' AND '1875-11-30' AND c.body_text LIKE '%Cuba%' AND c.is_front_matter=0 AND c.is_editorial_note=0;"
+python3 dump.py frus1876/d298 frus1874/d591
+./find.sh '{body_text}: cuba AND (proximity OR vicinity OR "near neighbor" OR "neighboring") AND commerce AND (interests NEAR/5 united)' 'frus18[6789]*' 12
+./find.sh '{body_text}: cuba AND (proximity OR vicinity OR neighboring) AND commerce AND "interests of the united states"' 'frus18[6789]*' 12
+python3 dump.py frus1898/d490 frus1898/ch83 frus1870/d197
+./find.sh '{body_text}: cuba AND reciprocity AND sugar AND treaty' 'frus188*' 6; echo ---; ./find.sh '{body_text}: cuba AND ("Platt amendment" OR "naval stations" OR "coaling stations") AND independence' 'frus190*' 8; echo ---; ./find.sh '{body_text}: cuba AND reciprocity AND sugar' 'frus190*' 6
+python3 dump.py frus1881/d405 frus1903/d331 frus1904/d207 frus1902/d313
+./find.sh '{body_text}: cuba AND intervention AND ("Platt amendment" OR "article III") AND (abrogat* OR "good neighbor")' 'frus193*' 8; echo ---; ./find.sh '{body_text}: cuba AND sugar AND (quota OR tariff) AND ("purchasing power" OR "american exports" OR prosperity)' 'frus193*' 8
+python3 subsec.py frus1906p1 frus1917 frus1921v01 frus1933v05 frus1934v05 frus1940v05 frus1941v07 frus1942v06 frus1944v07 frus1946v11
+./find.sh '{body_text}: sugar AND ("purchasing power" OR prosperity OR "economic recovery") AND ("political" AND stability)' 'frus1933v05' 6; echo ---; ./find.sh '{body_text}: (market OR markets) AND ("american exports" OR "american products") AND sugar' 'frus1934v05' 6; echo ---; ./find.sh '{body_text}: (defense OR defence) AND (hemisphere) AND (airfield* OR bases OR "naval")' 'frus1941v07' 5
+./find.sh '{body_text}: welles AND sugar AND (economic OR prosperity)' 'frus1933v05' 6; echo; ./find.sh '{header}: (memorandum OR roosevelt) AND {body_text}: cuba AND ("good neighbor" OR "Platt")' 'frus1933v05' 6
+python3 dump.py frus1934v05/d114 frus1941v07/d119
+python3 dump.py frus1933v05/d281 frus1933v05/d500 frus1933v05/d246
+./find.sh '{body_text}: castro AND ("national security" OR "security of the united states") AND (sugar OR investment*) AND communis*' 'frus1958-60v06' 8; echo ---; ./find.sh '{body_text}: cuba AND communis* AND (sugar OR investment*) AND (strategic OR guantanamo)' 'frus195[25]*' 6
+python3 dump.py frus1958-60v06/d423 frus1952-54v04/d331 frus1952-54v04/d343 frus1958-60v06/d491
+./find.sh '{body_text}: cuba AND ("base for" OR "platform") AND subversion AND ("economic denial" OR "economic pressure" OR trade)' 'frus1961-63v1[01]' 8; echo ---; ./find.sh '{body_text}: cuba AND "economic denial"' 'frus1964-68v32' 5
+python3 dump.py frus1961-63v10/d202 frus1961-63v11/d349 frus1964-68v32/d304
+./find.sh '{body_text}: missiles AND cuba AND ("strategic balance" OR "balance of power") AND ("first strike" OR "warning")' 'frus1961-63v11' 8
+python3 dump.py frus1961-63v11/d34
+./find.sh '{body_text}: cuba AND embargo AND (normaliz* OR normalization) AND (africa OR angola) AND (trade OR economic)' 'frus1977-80v23' 6; echo ---; ./find.sh '{body_text}: cuba AND embargo AND normaliz* AND (trade OR economic OR business*)' 'frus1969-76ve11p1' 6; echo ---; ./find.sh '{body_text}: cienfuegos AND submarine AND (understanding OR 1962)' 'frus1969-76v12' 4
+python3 dump.py frus1977-80v23/d18 frus1977-80v23/d21 frus1969-76v12/d211
+./find.sh '{body_text}: roosevelt AND quesada AND (intervention OR "Platt")' 'frus1906p1' 4; echo ---; ./find.sh '{body_text}: ("Mariel" OR boatlift OR refugees) AND ("national security" OR "security") AND castro' 'frus1977-80v23' 4
+python3 dump.py frus1906p1/d427 frus1977-80v23/d98
+ls "/Users/jbotts/Library/Containers/bottsywattsy.FRUS-Explorer/Data/Library/Application Support/FRUSExplorer/volumes/" | wc -l; du -sh (volumes dir)
+nohup python3 -u tei_scan.py > tei_scan.log 2>&1 &
+python3 -u litshare.py
+python3 -u ff.py > ff_out.txt 2>&1 &
+python3 -u archival.py > archival_out.txt 2>&1
+python3 -c "
+import json
+R=\"/Applications/FRUS Explorer.app/Contents/Resources/\"
+for fn in [\"decimal-class-labels.json\",\"central-files-index.json\",\"series-facts-index.json\",\"collection-usage-index.json\",\"external-citation-index.json\"]:
+    j=json.load(open(R+fn)); print(fn, list(j.keys())[:20])
+j=json.load(open(R+\"decimal-class-labels.json\")); print(json.dumps(j[\"coverage\"])[:1500])
+"
+python3 -c "
+import json
+R=\"/Applications/FRUS Explorer.app/Contents/Resources/\"
+j=json.load(open(R+\"decimal-class-labels.json\"))
+s=j[\"schedules\"]; print(type(s), (list(s.keys()) if isinstance(s,dict) else len(s)))
+x = s[0] if isinstance(s,list) else s[list(s.keys())[0]]
+print(json.dumps(x)[:2500])
+"
+python3 -c "
+import json
+R=\"/Applications/FRUS Explorer.app/Contents/Resources/\"
+j=json.load(open(R+\"decimal-class-labels.json\"))
+for s in j[\"schedules\"]:
+    print(\"SCHED\", s.get(\"scheduleId\"), [k for k in s.keys()])
+    for k,v in s.items():
+        if isinstance(v,dict) and k not in (\"classes\",\"countries\"):
+            print(\" \",k, type(v), list(v.keys())[:8])
+"
+python3 -u gloss.py
+python3 -c "
+import json
+R=\"/Applications/FRUS Explorer.app/Contents/Resources/\"
+j=json.load(open(R+\"decimal-class-labels.json\"))
+s0,s1=j[\"schedules\"][0],j[\"schedules\"][1]
+print(s1[\"id\"], s1[\"classes\"], s1[\"countries\"].get(\"37\"))
+print(\"1910 class6 subject 31:\", s0[\"subjects\"][\"6\"].get(\"31\"), \"| 3731?\", s0[\"subjects\"][\"6\"].get(\"3731\"))
+"
+python3 -u lots.py
+python3 -c "
+import json
+sf=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/series-facts-index.json\"))
+print(\"statuses\",sf[\"statuses\"]); print(\"restrictions\",sf[\"restrictions\"]); print(\"useRestrictions\",sf[\"useRestrictions\"]); print(\"legend us\", sf[\"legend\"][\"keys\"].get(\"us\"))
+for c in [248,336,152,150,149,313,19]: print(c, sf[\"headings\"][c])
+"
+python3 -c "
+import json
+R=\"/Applications/FRUS Explorer.app/Contents/Resources/\"
+cf=json.load(open(R+\"central-files-index.json\"))
+print(\"numericalFile\", json.dumps(cf[\"numericalFile\"])[:900]); print(\"countrySeries\", type(cf[\"countrySeries\"]), json.dumps(cf[\"countrySeries\"])[:600])
+cu=json.load(open(R+\"collection-usage-index.json\"))
+print(\"coverage\", json.dumps(cu[\"coverage\"])[:600]); print(\"collections[0]\", json.dumps(cu[\"collections\"][0])[:400] if isinstance(cu[\"collections\"],list) else list(cu[\"collections\"].items())[:1]); print(\"volumes sample\", json.dumps(cu[\"volumes\"])[:500])
+"
+python3 -c "
+import json, collections
+cf=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/central-files-index.json\"))
+seen=collections.OrderedDict()
+for cat in cf[\"countrySeries\"]:
+    for r in cat[\"rolls\"]:
+        if any(g in (\"cuba\",\"spain\") for g in r.get(\"geoKeys\",[])):
+            k=(cat[\"displayName\"], r[\"fileUnitTitle\"], r[\"fileUnitNaId\"])
+            a=seen.setdefault(k,[0,r[\"startISO\"],r[\"endISO\"]]); a[0]+=1; a[1]=min(a[1],r[\"startISO\"]); a[2]=max(a[2],r[\"endISO\"])
+for k,v in seen.items(): print(k, v)
+"
+python3 -c "
+import json, collections
+cf=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/central-files-index.json\"))
+seen=collections.OrderedDict()
+for cat in cf[\"countrySeries\"]:
+    for r in cat[\"rolls\"]:
+        if any(g in (\"cuba\",\"spain\") for g in r.get(\"geoKeys\",[])):
+            k=(cat[\"displayName\"], r.get(\"fileUnitTitle\"), r.get(\"fileUnitNaId\"))
+            seen[k]=seen.get(k,0)+1
+for k,v in seen.items(): print(k, v)
+"
+python3 -c "
+import json
+j=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/semantic-vectors-index.json\"))
+print(list(j.keys())); print({k:(v if not isinstance(v,(list,dict)) else type(v).__name__) for k,v in j.items()})
+print(json.dumps(j[\"volumes\"][0])[:300]); print(json.dumps(j.get(\"retrieval\"))[:600]); print(json.dumps(j.get(\"subseries\"))[:200])
+"; head -c 400 /Users/jbotts/frus-analysis/c3/SemanticVectors/.generation; echo; ls /Users/jbotts/frus-analysis/c3/SemanticVectors | wc -l
+python3 -u vec_check.py > vec_check_out.txt 2>&1; cat vec_check_out.txt
+python3 -c "
+import json; j=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/semantic-map-index.json\")); print(list(j.keys())); c=j[\"clusters\"]; print(type(c), len(c)); print(json.dumps(c[0])[:500]); print({k:v for k,v in j.items() if not isinstance(v,(list,dict))}); print(json.dumps(j.get(\"eras\") or j.get(\"eraBands\"))[:300])
+"
+nohup python3 -u vec_ops.py > vec_ops_out.txt 2>&1 &
+python3 -c "
+import csv
+rows=list(csv.DictReader(open(\"tei_scan.tsv\"),delimiter=\"\t\"))
+ks=[k for k in rows[0] if k!=\"volume\"]
+print(\"volumes\",len(rows))
+for k in ks: print(k, sum(int(r[k]) for r in rows), \"volumes>0:\", sum(int(r[k])>0 for r in rows))
+print(\"volumes with POS=0:\", [r[\"volume\"] for r in rows if int(r[\"POS_Department_of_State\"])==0])
+"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '{header body_text dateline}: habana NOT (cuba OR cuban OR havana)' AND c.is_front_matter=0 AND c.is_editorial_note=0; SELECT COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '{header body_text dateline}: habana' AND c.is_front_matter=0 AND c.is_editorial_note=0;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "WITH base AS (SELECT c.volume_id, c.document_id, substr(d.date_iso,1,3)||'0s' AS dec FROM document_cache c JOIN document_dates d ON d.volume_id=c.volume_id AND d.document_id=c.document_id WHERE c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') AND d.date_iso IS NOT NULL), hits AS (SELECT c.volume_id, c.document_id FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '{header dateline body_text}: (cuba OR cuban OR havana OR habana)') SELECT b.dec, COUNT(*) AS dated, SUM(h.volume_id IS NOT NULL) AS cuba, ROUND(1000.0*SUM(h.volume_id IS NOT NULL)/COUNT(*),1) FROM base b LEFT JOIN hits h ON h.volume_id=b.volume_id AND h.document_id=b.document_id WHERE b.dec BETWEEN '1860s' AND '1980s' GROUP BY b.dec ORDER BY b.dec;" > decade_cuba2.txt; cat decade_cuba2.txt
+python3 -c "
+from veclib import *
+print(\"frus1898/ch83 in vector index:\", (\"frus1898\",\"ch83\") in row_of)
+ids=[d for (v,d) in row_of if v==\"frus1898\"]; print(\"frus1898 vector rows\", len(ids), \"non-d ids:\", [d for d in ids if not d.startswith(\"d\")][:10])
+"
+sed -i "" s/("frus1898", "ch83")/("frus1898", "d490")/ vec_ops.py
+nohup python3 -u vec_ops.py > vec_ops_out.txt 2>&1 &
+nohup python3 -u vec_dups.py > vec_dups_out.txt 2>&1 &
+python3 dump.py frus1969-76ve10/d205 frus1955-57v06/d260
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT volume_id||'/'||document_id, substr(header,1,90), length(body_text) FROM document_cache WHERE (volume_id,document_id) IN (VALUES ('frus1894app2','d394'),('frus1881','d405'));"
+python3 -u headings.py > headings_out.txt; cat headings_out.txt
+sed -i '' 's/lend-lease|economic|rice/lend-lease|econom|rice/' headings.py
+python3 -u headings.py > headings_out.txt; cat headings_out.txt
+python3 -c "
+import json
+m=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/manifest.json\"))
+print(type(m), list(m.keys())[:10] if isinstance(m,dict) else len(m))
+vs=m[\"volumes\"] if isinstance(m,dict) else m
+print(json.dumps(vs[0])[:400])
+for v in vs:
+    t=json.dumps(v)
+    if \"Cuba\" in t and (v.get(\"id\",\"\") or \"\")>\"frus1950\": print(v.get(\"id\"), v.get(\"title\"), v.get(\"coverageStart\") or v.get(\"startYear\"), v.get(\"coverageEnd\") or v.get(\"endYear\"))
+"
+python3 -c "
+import json
+m=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/manifest.json\"))
+print(sorted(m[0].keys()))
+for v in m:
+    if \"cuba\" in v.get(\"tags\",[]) and v[\"filename\"]>\"frus1955\": print(v[\"filename\"][:-4], \"|\", v.get(\"title\"), \"|\", v[\"dateRange\"][\"earliest\"][:4], v[\"dateRange\"][\"latest\"][:4], \"| pub\", v.get(\"publicationDate\"))
+print(\"latest coverage in manifest:\", max(v[\"dateRange\"][\"latest\"] for v in m if v.get(\"dateRange\")))
+"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT c.volume_id, COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid JOIN document_dates d ON d.volume_id=c.volume_id AND d.document_id=c.document_id WHERE frus_documents MATCH '{header dateline body_text}: (cuba OR cuban OR havana OR habana)' AND c.is_front_matter=0 AND c.is_editorial_note=0 AND d.date_iso >= '1981-01-21' GROUP BY 1 ORDER BY 2 DESC;" | tr "\n" " "; echo; sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid JOIN document_dates d ON d.volume_id=c.volume_id AND d.document_id=c.document_id WHERE frus_documents MATCH '{header}: (cuba OR cuban OR havana OR habana)' AND c.is_front_matter=0 AND c.is_editorial_note=0 AND d.date_iso >= '1981-01-21';"
+python3 verify.py > verify_out.txt; cat verify_out.txt
+python3 citeinfo.py > citeinfo_out.txt; cat citeinfo_out.txt
+python3 -c "
+import json
+R=\"/Applications/FRUS Explorer.app/Contents/Resources/\"
+cf=json.load(open(R+\"central-files-index.json\")); sf=json.load(open(R+\"series-facts-index.json\"))
+idx={r[\"lotNumber\"]:r for r in cf[\"lotFiles\"]}
+for lot in [\"62D1\",\"65D212\"]:
+    r=idx.get(lot); print(lot, json.dumps(r)[:400] if r else \"NOT IN central-files-index\")
+    if r:
+        f=sf[\"byNaId\"].get(r[\"naId\"]); print(\"  facts\", f, sf[\"headings\"][f[\"c\"]] if f and \"c\" in f else \"\", sf[\"statuses\"][f[\"as\"]] if f and \"as\" in f else \"\")
+for lot in [\"65D438\",\"74D272\",\"66D501\",\"62D24\",\"62D418\",\"66D95\",\"66D204\",\"65A987\"]:
+    f=sf[\"byNaId\"][idx[lot][\"naId\"]]; print(lot, \"access:\", sf[\"statuses\"][f[\"as\"]])
+"
+python3 -c "
+import json,collections
+c=json.load(open(\"coreset.json\")); print(\"core docs\",len(c),\"volumes\",len(set(x[\"v\"] for x in c)), \"date span\", min(x[\"date\"] for x in c), max(x[\"date\"] for x in c))
+b=collections.Counter()
+for x in c:
+    y=int(x[\"date\"][:4]); b[\"1840-1860\" if y<1861 else \"1861-1898\" if y<=1898 else \"1899-1933\" if y<=1933 else \"1934-1958\" if y<=1958 else \"1959-1980\"]+=1
+print(dict(b))
+"
+python3 - (in-place phrasing edits to overview.md and memo.md trace table)
+python3 build_collection.py && python3 check_collection.py > check_collection_out.txt; cat check_collection_out.txt
+ELIDED: (1) the bodies of every script written by heredoc (chapters.py, coreset.py, baseline.py, find.sh, dump.py, subsec.py, tei_scan.py, litshare.py, ff.py, archival.py, gloss.py, lots.py, veclib.py, vec_check.py, vec_ops.py, vec_dups.py, headings.py, verify.py, citeinfo.py, build_collection.py, check_collection.py, quotes.json) — the log records only their invocations; each script is kept whole in this run directory; (2) the in-place phrasing edit to overview.md and memo.md, logged as a one-line summary rather than its python body; (3) the `ls`/`du` of the TEI volumes folder, logged in abbreviated form; (4) local reads of files already in this run directory (cat/grep/fold/tr/head of raw/*.txt, *_out.txt, *.tsv, ls raw, and two `ls … | grep -v '\.xml$'` / `ls *.xml | wc -l` checks of the volumes folder) that were not passed through q.sh and are not listed above; (5) output of every command is not in this log — it is in the *_out.txt / *.tsv / *.json files named in memo.md, or was shown in-session only (find.sh results, grep of raw texts). (6) nothing is shortened inside the logged commands, but the multi-line `python3 -c` bodies occupy several physical lines each, so the log is one command per entry rather than strictly one per line.

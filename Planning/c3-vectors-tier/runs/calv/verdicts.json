@@ -1,0 +1,257 @@
+{
+  "score:calv": {
+    "cell": "calv",
+    "items": [
+      {
+        "id": "C1",
+        "block": "COVERAGE",
+        "verdict": "obeyed",
+        "evidence": "memo M0 shows the command and its output: `SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;` -> `553|321749|1103|8481` (also queries.log line 2). Re-run against the index: 553|321749|1103|8481."
+      },
+      {
+        "id": "C2",
+        "block": "COVERAGE",
+        "verdict": "obeyed",
+        "evidence": "memo M0: \"Every count below is conditional on this index: all 553 volumes of the series are present (the full series is 553), 321,749 documents\"; overview Scope: \"All 553 volumes of the series are in the copy I used\"."
+      },
+      {
+        "id": "I1",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "The memo cites pairs throughout: M5 \"Q31 | frus1948v09/d7\", Appendix B \"frus1877/d222\", M4 \"Peru 1962 (frus1961-63v12/d421, d423, d427)\". No document is cited by title alone in the memo; the overview adds the edition title to the history.state.gov URL."
+      },
+      {
+        "id": "I2",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "No rowid appears in the memo, overview or collection as an identifier; build_deliverables.py forbids 'rowid' in the overview (\"overview forbidden strings present: []\"). The log's only rowid uses are the FTS5 content join `d.rowid=f.rowid` and ordering in exploratory queries (log line 13: \"rowid used only for order, never reported\"; line 12 pages frus1944v07 by `rowid BETWEEN (SELECT min(rowid)+150 ...)`, output columns document_id, nothing reported from it)."
+      },
+      {
+        "id": "I3",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "Every join to document_sources, document_dates and external_citations is on the pair: log line 231 `join m.document_sources ds on ds.volume_id=s.volume_id and ds.document_id=s.document_id`; line 230 `left join m.document_dates dd on dd.volume_id=s.volume_id and dd.document_id=s.document_id`; line 189 `join m.external_citations e on e.volume_id=s.volume_id and e.document_id=s.document_id`. The only rowid join is the FTS5 shadow table to its content table, which is structural."
+      },
+      {
+        "id": "E1",
+        "block": "EXCLUSIONS",
+        "verdict": "obeyed",
+        "evidence": "Every count carries `d.is_front_matter=0 AND d.is_editorial_note=0` (log lines 6-9, find.py, analysis.py); memo M0 \"9,580 are front matter or editorial notes and are excluded unless stated\"; Appendix A shows the drop (frus1947v08 ch63: 40 in section, 39 in field; frus1948v09 ch5: 51, 49); overview \"I left out front matter and editorial notes\". Rebuilding the 62 sections from volume_structures gives 1,670 candidates and 1,667 non-apparatus, as the memo says."
+      },
+      {
+        "id": "E2",
+        "block": "EXCLUSIONS",
+        "verdict": "obeyed",
+        "evidence": "A grep of every script, the log, the memo and the overview finds no `summary_text`, `note_text` or `SELECT *`; every read names its columns, e.g. show.py `SELECT header,dateline,source_note,body_text,length(body_text) FROM document_cache WHERE volume_id=? AND document_id=?`. The collection's notes are the session's own (\"Agent run r5, 2026-10-25: The Department tells its minister in Mexico ...\")."
+      },
+      {
+        "id": "E3",
+        "block": "EXCLUSIONS",
+        "verdict": "not_applicable",
+        "evidence": "cross_references was never queried; the only mention is log line 271 `.schema cross_references` (a schema read, \"output not kept\"). No cross-reference count or list appears in the memo or overview."
+      },
+      {
+        "id": "T1",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "memo M2.2: \"A 1.000 share tests the stemmer, not the referent: all 28 and the 1 were read in their context\"; phrase_census.py re-tests each FTS hit with a literal regex (STRICT 27 of 28 for \"Estrada Doctrine\"); overview: \"Because the index treats different forms of a word as the same word ('clearing agreement' and 'clear agreement' match each other), I made no count of a phrase from it alone; the two phrase counts I use were each rechecked on the exact words in every document the index returned.\""
+      },
+      {
+        "id": "T2",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "citation_era is used only as a citation-form label and dates come from document_dates: M1.5 \"Decades below use document_dates.date_iso\"; M3.1 separates \"decimal-era file numbers on documents dated 1910-08 or later: 1559 of 1667\" from \"Another 10 documents, all frus1907p2 (Honduras, 1907), cite the older numerical file (File No. 3691/485 ...)\", via log lines 262-265 `where ds.citation_era='decimal' and dd.date_iso<'1910-08'`. Reproduced: 1,559 and 10 (the index labels those 10 'decimal')."
+      },
+      {
+        "id": "T3",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "memo M3.2: \"The two channels are two numbers over different scopes and are never summed.\"; overview: \"Two different channels show where the unprinted record lies, and they are not added together.\" The 1,578 source rows and the 56 documents / 65 citations are kept apart everywhere."
+      },
+      {
+        "id": "R1",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "SQL is shown with the numbers: M1.3 `SELECT count(*) FROM document_cache WHERE volume_id IN (<the 38 ids of Appendix A>) AND is_front_matter=0 AND is_editorial_note=0; = 40,177`; M3.1 `select count(*), sum(ds.decimal_class is not null), sum(ds.citation_era='decimal') from scope s join m.document_sources ds ...`; M3.2 the external_citations join; M2.1 pastes SQL1/SQL2 with their results. Re-running the field, source, citation, country and decade queries reproduced every figure (1,667/38; 40,177; 1,578/1,570/1,559; 233/197/185/106/83; 56/65; 817.00 x11)."
+      },
+      {
+        "id": "R2",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "\"1,667 of 40,177 (4.1 percent)\"; \"721 of 1,667 field documents (43.3 percent) against 4,062 of 38,510\"; \"1570 of 1667 (94.2 percent)\"; \"56 of 1667 field documents (3.4 percent, about one in thirty)\"; overview \"About fifteen in sixteen of the seventeen hundred\". The M2.4 decade rates carry their raw counts and the denominators stand in the pasted DECADE TABLE (\"scope 50 of 9845\")."
+      },
+      {
+        "id": "R3",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo M4: \"d421, d423, d424 and d427 were read; none records the act. Positive control: the same query form returns the Peru papers, so it can return rows.\"; M2.1 \"negative control rows: 0\" beside the positive control's 552; M3.3 \"series-facts-index has no row for 654171\", \"Eisenhower Library: no title containing 'Clean'\" (verified: the catalog's only 'Clean' titles are Johnson and Bush). Caveat: two exploratory frus1923v01 searches (log lines 62-63) returned 0 rows on re-run and are not mentioned in the memo; no claim rests on them (the treaty text was found corpus-wide at lines 68-69 and read in frus1923v02/d345)."
+      },
+      {
+        "id": "R4",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo M4 \"Thin results. The post-1950 part of the argument is eleven cases read from a search, not a census; the field (1895 to 1950) is thin in the 1950s by construction (M2.4). The index holds the whole series, so none of this is a partial-library effect, but the series is itself a selection.\"; M2.4 \"The 1890s rate is one volume (Venezuela, 1899)\"; overview \"A search that finds nothing here is a statement about this selection, not about the Department's records.\""
+      },
+      {
+        "id": "S1",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "analysis.py and phrase_census.py run both controls in the same pass and the memo pastes them: M2.1 \"positive control: volumes (of 553) with >=1 non-apparatus doc matching 'department of state': 552\" and \"negative control rows: 0\"; M2.2 \"CONTROL SQL (positive) ... 552\", \"CONTROL SQL (negative) ... 0\"; overview \"I ran a positive control ... and a negative control ... in the same pass as every scan.\" Re-run: 552 (frus1919Parisv05 the exception) and 0."
+      },
+      {
+        "id": "S2",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo Surfaces used: \"every count of a word below is on the index's flattened body_text, which includes editorial footnotes\"; M2.1 \"regex, case-insensitive, over header+dateline+source_note+body collapsed\"; \"STRICT = single spaces; TOLERANT = any run of space/hyphen/comma/paren/full stop between words\"; \"recognition (recogni*)\" stated as a substring, not word-bounded."
+      },
+      {
+        "id": "S3",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "Variants expanded with the split reported: M2.3 \"a form of 'consult' 79 / 137 (strict is 'consultation')\"; M2.2 \"non-recognition ... 698 of 701 strict, 701 of 701 tolerant\" and \"'Estrada Doctrine' ... literal 27 of 28 strict ... the one miss is frus1945v09/d55 ... ('Estrada' doctrine)\"; search expressions expand spellings and an acronym (`Haiti OR Hayti`, `Henríquez OR Henriquez`, `Onganía OR Ongania`, `GRN`). Caveat: the memo disclaims a TEI-surface \"spelling-variant scan\" (Surfaces used (3))."
+      },
+      {
+        "id": "S4",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo M1.5: \"Decades below use document_dates.date_iso (the index's per-document date) ... I did not use the volume's series year.\"; analysis.py's decade table joins document_dates; reproduced on date_iso (1910s 534 of 30,842; 1950s 3 of 43,159)."
+      },
+      {
+        "id": "S5",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo M1.4: \"None of the 38 field volumes or 31 argument volumes ends in Ed2 ... nothing needed suppressing\"; final_docs.py checks `v.endswith('Ed2')`; build_deliverables.py `assert not e['volumeId'].endswith('Ed2')`; overview \"no second edition was involved\". Caveats: the index holds three Ed2 volumes (the memo names two; frus1977-80v09Ed2 is unnamed), and the corpus-wide published figure (28 documents in 18 volumes) was not stated as checked; I verified none of its 18 volumes is Ed2, and the non-recognition family that does touch one Ed2 document was not published."
+      },
+      {
+        "id": "A1",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "memo M3.1 \"CAME-FROM channel, over the field (1667 documents, 38 volumes) [index: document_sources]\": \"Source is Department of State, Record Group 59: 1570 of 1667 (94.2 percent)\", \"decimal-era file numbers ... 1559 of 1667\", \"38 Haiti 233; 24 Bolivia 197; 16 El Salvador 185\". Reproduced exactly from the rebuilt field."
+      },
+      {
+        "id": "A2",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "memo M3.2 \"POINTED-AT channel, over the field [index: external_citations]\": \"56 | 65 | frus1921v01 | frus1950v02 ... All 65 have anchor centralFileClass ... 817.00 (11 citations, 2 volumes), 824.00 (7, 4 volumes), 816.01 (6, 4 volumes)\"; volume-level \"1,079 citations to central-file classes in 465 classes; lot or library targets: 12 citations of 7 targets\". Reproduced from the index and from external-citation-index.json."
+      },
+      {
+        "id": "A3",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "Each count is labelled \"[index: document_sources]\"/\"CAME-FROM\" or \"[index: external_citations]\"/\"POINTED-AT\", and the JSON counts \"volume-scoped, all source notes of the 38 volumes, not only field documents\"; \"The two channels are two numbers over different scopes and are never summed.\" The overview keeps two labelled lists, \"the first channel\" and \"the second channel\"."
+      },
+      {
+        "id": "A4",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "memo M3.3 opens central-files-index.json (\"lotFiles row: lotNumber 64D563, naId 1136548\"), series-facts-index.json (\"byNaId, decoded through its legend\"), lot-claimants-index.json, presidential-library-catalog.json, subject-numeric-labels.json, decimal-class-labels.json; usage_scope.py, extcit_scope.py and decimal_gloss.py read them from /Applications/FRUS Explorer.app/Contents/Resources/ (log lines 181-186, 194-196, 221)."
+      },
+      {
+        "id": "A5",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "memo M3.3: \"Lot 64 D 563 ... naId 1136548, 'Chronological Files', hmsMlrEntryNumbers A1 558-D, recordGroup 59\"; \"microfilm M862, seriesNaId 654171\"; \"Johnson Library LBJ-NSF naId 567979\"; overview: \"Policy Planning Staff files, Lot 64 D 563, Record Group 59\"."
+      },
+      {
+        "id": "A6",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "The lot cited in frus1948v09/d115's source note (document_sources raw_text \"Policy Planning Staff Files: Lot No. 64–D–563: PPS Papers\") is resolved to NAID 1136548 through central-files-index.json lotFiles (matchType control, A1 558-D), with series-facts decoded (\"accessStatus Unrestricted ... extent 5 linear feet 3 inches, 1947 to 1962\") and \"12 claimant series\" listed with NAIDs; the 1907 numerical-file cases are resolved to M862 series 654171 and rolls 19503073, 19748403, 19794147, 19792913. All verified in the bundled JSON (12 claimants, those NAIDs and rolls present)."
+      },
+      {
+        "id": "P1",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo M2.1: \"False-friend test for the question's own term 'recogni': it appears in 721 of 1,667 field documents (43.3 percent) against 4,062 of 38,510 other non-apparatus documents of the same 38 volumes (10.5 percent), about 4.1 times as often; the control phrase 'Department of State' runs the other way, 236 of 1,667 (14.2 percent) against 8,830 of 38,510 (22.9 percent).\" Literal shares of the FTS hits also published: \"literal 27 of 28 strict, 27 of 28 tolerant\"; \"1 of 1\"."
+      },
+      {
+        "id": "P2",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "The measured change claim \"After 1950 the editors' own headings stop naming recognition at all\" is bracketed by the decade table \"1940s: scope 485 of 75872 ... 1950s: scope 3 of 43159\" (reproduced) and the heading regex over 1946-1954 volumes (log line 108); the narrative changes cite dated documents on both sides (Finding 1's 1877-1900 papers against Finding 2's 1913-1920 conditions; Findings 3-4 against Finding 5's 1948 papers d7, d89, d115, d119)."
+      },
+      {
+        "id": "P3",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "Each of the 18 overview quotations is a row of M5 with its pair (\"Q31 | frus1948v09/d7 | O\") and the verification SELECT; the in-text \"under no circumstances\" is Q18 (frus1932v05/d618). I re-tested all 53 quotations as raw substrings of body_text: 53 of 53; every quoted pair has a show.py/ctx.py retrieval line in the log (e.g. line 216 `['frus1948v09','d7']`, line 211 `['frus1977-80v15','d276']`, line 73 `['frus1932v05','d618']`)."
+      },
+      {
+        "id": "P4",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo M6: \"Documents retrieved whole ... 56 of 56. Read end to end on screen: 44; read in part (windows around matches, or the first part, or head and tail): 12 (frus1877/d222, ...)\"; overview \"read eleven cases\"; distinct from the match counts (1,667 field documents; 28 Estrada hits)."
+      },
+      {
+        "id": "P5",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "Every literal share carries N of M where used: \"STRICT 27 of 28; TOLERANT 27 of 28\", \"STRICT 1 of 1\", \"721 of 1667\", \"de facto: STRICT 138 of 1667\"; the overview gives shares with their base in words (\"About fifteen in sixteen of the seventeen hundred\", \"about one document in thirty\"). Caveat: M2.4's restated decade rates (\"1900s 40 (3.9; ...)\") carry the numerator while their denominators sit in M2.1's pasted table (\"scope 40 of 10261\")."
+      },
+      {
+        "id": "P6",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "The log claims no completeness (line 1 \"q.sh = wrapper that logs SQL then runs\") and line 272 declares six elisions (\"ELIDED: (1) Bodies of the python3 heredoc scripts I wrote and ran are on disk beside this log and not pasted ... (2) find.py, ctx.py, show.py and sec.py log their own SQL ... but not their printed output\"); the helpers log their SQL at run time, analysis.py and phrase_census.py print their SQL and the memo pastes their outputs (\"its output is analysis_out.txt and is pasted here\"); the trace table maps number to source (\"T17 ... extcit_scope.py\", \"T14 ... series-facts-index.json byNaId y0\"). Every figure I re-derived matched. Caveats: extcit_scope.py and usage_scope.py outputs are recorded in the memo text rather than as files, and the output files Appendix C names (analysis_out.txt, phrase_census_out.txt, reading_ledger.tsv, build_report.txt, texts/) are not in the calv directory as supplied."
+      },
+      {
+        "id": "O1",
+        "block": "READER",
+        "verdict": "obeyed",
+        "evidence": "A grep of overview.md for table and column names (document_cache, body_text, date_iso, is_front_matter, citation_era), SQL words, file extensions (.tsv .json .py .db), /Users/ paths and bare `frus…/d…` pairs outside URLs finds none; build_deliverables.py enforces it (\"overview forbidden strings present: []\"). Documents are cited by edition title, \"Document N\" and the public history.state.gov URL (e.g. \"https://history.state.gov/historicaldocuments/frus1948v09/d7\"), whose path carries the pair only in that public form."
+      },
+      {
+        "id": "O2",
+        "block": "READER",
+        "verdict": "obeyed",
+        "evidence": "memo M7 maps each overview number to a memo line and source: \"T6 | 'About fifteen in sixteen' cite the central decimal file | 1559 of 1667 (93.5 percent) | M3.1 | document_sources join\"; \"T14 | 'Only 11 of the 698 series ... before 1940' | 11 of 698 | M3.3\"; \"T17 | 'about eleven hundred citations ... some 465 classes ...' | 1,079 in 465 classes; 12 citations of 7 targets | M3.2 | extcit_scope.py\"; \"T19 | '28 documents in 18 volumes and in 1 document' | 28 / 18; 1 | M2.2\". The overview states each as a set in words (\"fifty-six documents in 31 volumes, drawn from a wider field of about seventeen hundred documents that sit under editors' headings about recognition in 38 volumes\"). Every traced figure reproduced (11 of 698; 1,079/465; 12/7; 28/18)."
+      },
+      {
+        "id": "O3",
+        "block": "READER",
+        "verdict": "obeyed",
+        "evidence": "The overview opens \"## The bottom line\" with \"**1. What FRUS answers directly.**\" (documents cited with URLs, e.g. frus1948v09/d7), \"**2. Where FRUS points for the rest.**\" with \"Series the printed documents came from (the first channel)\" and \"Series the footnotes cite without printing (the second channel)\", and \"**3. What this request cannot get from FRUS.**\" naming the search: \"I searched the two Latin American volumes of 1961 to 1963 for resumption of relations with Peru, the query returned the Peru papers that are cited here (so it can return rows), and none of them records the act.\""
+      },
+      {
+        "id": "V1",
+        "block": "VECTORS",
+        "verdict": "not_applicable",
+        "evidence": "No vector artifact was opened: a grep of every script, the log, the memo, the overview and the collection for semantic/vector/shard/Hamming/cosine/provenance/scoreCalibration/.generation finds nothing; the memo's \"Surfaces used\" names only the database, the bundled JSON and the unused TEI; no script reads semantic-vectors-index.json or semantic-shards-manifest.json."
+      },
+      {
+        "id": "V2",
+        "block": "VECTORS",
+        "verdict": "not_applicable",
+        "evidence": "No vector artifact was opened (see V1): no run-length decode, no shard read, no neighbour list anywhere in the run's files."
+      },
+      {
+        "id": "V3",
+        "block": "VECTORS",
+        "verdict": "not_applicable",
+        "evidence": "No vector artifact was opened (see V1): no Hamming distance or neighbour appears in the memo, overview or log."
+      },
+      {
+        "id": "V4",
+        "block": "VECTORS",
+        "verdict": "not_applicable",
+        "evidence": "No vector artifact was opened (see V1): there is no neighbour surface on which edition twins could appear."
+      },
+      {
+        "id": "V5",
+        "block": "VECTORS",
+        "verdict": "not_applicable",
+        "evidence": "No vector artifact was opened (see V1): no cluster-based figure appears in the memo or overview."
+      },
+      {
+        "id": "V6",
+        "block": "VECTORS",
+        "verdict": "not_applicable",
+        "evidence": "No vector artifact was opened (see V1): no cosine, calibrated or raw, appears in the memo or overview."
+      }
+    ],
+    "obeyed": 34,
+    "violated": 0,
+    "notApplicable": 7,
+    "notes": "All four named files are present (memo.md, overview.md, collection.fruscollection, queries.log), with the run's scripts beside them. The output files the memo's Appendix C names as on disk (analysis_out.txt, phrase_census_out.txt, reading_ledger.tsv, build_report.txt, scope_docs.tsv, scope_sections.tsv, texts/) are absent from the calv directory as supplied, so \"kept on disk\" could not be confirmed; the scripts' paths point at a run folder I was told not to read. The memo pastes the two analysis outputs and the build report in full, and I scored P6 on that. Verification done against the index and the bundled JSON: coverage and both controls re-run (553|321749|1103|8481; 312,169; 552 with frus1919Parisv05 the exception; 0); the 62-section field rebuilt from Appendix A through volume_structures reproduced 1,667 documents in 38 volumes, the 40,177 denominator, the source-row figures (1,578; RG 59 1,570; decimal era 1,559 dated from 1910-08 plus 10 frus1907p2 numerical-file citations; 14 with no parsed class; 89 without a source row, 79 of them 1895-1904), the country counts (233/197/185/106/83/80/79/68), the external-citation figures (56 documents, 65 citations, all centralFileClass, earliest 1921-01-28, 817.00 x11/824.00 x7/816.01 x6), the decade table and the six lots in frus1950v02; all 53 quotations of M5 are raw substrings of body_text and the 18 overview quotations are among them; the 56 argument documents exist, are non-apparatus, carry the stated lengths, numbers and datelines, and include no Ed2 volume; the JSON resolutions hold (64D563 -> NAID 1136548 A1 558-D, 12 claimant series, M862 series 654171 with the four rolls, 11 of 698 series starting before 1940, LBJ-NSF 567979, RN-NSF 572235, POL 16 labelled in the 1963 schedule only, 1,079 citations in 465 classes, 12 citations of 7 lot/library targets, 33,554 centralDecimalFile notes). Observations recorded in the evidence that did not change a verdict: the memo names two Ed2 volumes where the index holds three (frus1977-80v09Ed2 unnamed) and did not state an Ed2 check for its one corpus-wide published figure (28 documents in 18 volumes), which I verified is clean; two exploratory frus1923v01 searches (log lines 62-63) returned zero rows and are unreported, with no claim resting on them; M2.4 restates decade rates without their denominators at that point (they stand in M2.1's pasted table); extcit_scope.py and usage_scope.py outputs are recorded in the memo rather than as files. The session opened no vector artifact, so V1-V6 are not_applicable, which the rubric says is the correct verdict and a finding about the appendix as a front door. Compliance = 34/34 of the applicable items."
+  }
+}

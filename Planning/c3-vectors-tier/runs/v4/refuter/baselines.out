@@ -1,0 +1,9 @@
+random-pair baseline (20,000, Random(1877)): mean 167.1 sd 14.8 p1 132 min 95   [session: 167.1 14.8 132 95]
+25th-neighbour baseline over 40 docs: median 108.0 q1 103 q3 113 (17s)   [session: 108.0 103 113]
+file size check: 64 + rows + 660 centroids = 20476048 actual 20476048
+centroid cosine frus1898~frus1961-63v11 = 0.865 (memo 0.865)
+centroid cosine frus1872p2v1~frus1961-63v11 = 0.861 (memo 0.861)
+centroid cosine frus1933v05~frus1958-60v06 = 0.930 (memo 0.930)
+centroid cosine frus1977-80v23~frus1969-76ve11p1 = 0.981 (memo 0.981)
+centroid cosine frus1977-80v23~frus1977-80v24 = 0.972 (memo 0.972)
+nearest to frus1977-80v23: [('frus1969-76ve11p1', 0.981), ('frus1977-80v24', 0.972), ('frus1969-76ve10', 0.972)]

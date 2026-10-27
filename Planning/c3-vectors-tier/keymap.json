@@ -1,0 +1,28 @@
+{
+  "O-med+V (1)": {
+    "label": "v2",
+    "model": "claude-opus-5-5",
+    "effort": "medium"
+  },
+  "S-high+V (1)": {
+    "label": "v3",
+    "model": "claude-sonnet-5-5",
+    "effort": "high"
+  },
+  "O-med+V (2)": {
+    "label": "v4",
+    "model": "claude-opus-5-5",
+    "effort": "medium"
+  },
+  "S-high+V (2)": {
+    "label": "v1",
+    "model": "claude-sonnet-5-5",
+    "effort": "high"
+  },
+  "calv": {
+    "label": "calv",
+    "model": null,
+    "effort": null,
+    "note": "calibration of V1\u2013V6: C-3's r5 (S-high, first run, no vectors) scored with the extended rubric; V1\u2013V6 must all be not_applicable"
+  }
+}

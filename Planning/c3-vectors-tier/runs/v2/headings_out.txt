@@ -1,0 +1,4 @@
+1840-1898 docs 401 {'security': '3/401', 'economy': '37/401', 'property_claims': '18/401', 'politics_order': '41/401', 'other': '303/401'}
+1899-1933 docs 2206 {'security': '208/2206', 'economy': '642/2206', 'property_claims': '173/2206', 'politics_order': '956/2206', 'other': '492/2206'}
+1934-1958 docs 1231 {'security': '250/1231', 'economy': '796/1231', 'property_claims': '10/1231', 'politics_order': '330/1231', 'other': '191/1231'}
+1959-1980 docs 2677 {'security': '485/2677', 'economy': '46/2677', 'property_claims': '0/2677', 'politics_order': '241/2677', 'other': '1979/2677'}

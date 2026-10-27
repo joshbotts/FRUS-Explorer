@@ -1,0 +1,475 @@
+{
+  "format": "fruscollection",
+  "formatVersion": 2,
+  "minimumReaderVersion": 1,
+  "name": "Cuba, national security and prosperity, 1874-1981 (agent run, 2026-10-27)",
+  "authorLine": "Agent run, 2026-10-27",
+  "introductionText": "What FRUS answers directly: the printed record shows American officials describing Cuba as a neighbouring, commercially rich island that should become independent and stay out of European hands (1874-1886), a sugar supply, market and source of disorder that justified war (1897-98), a place where security (naval stations, the right to intervene) and prosperity (sugar, tariffs, American capital) were handled in one treaty system (1904-1934), a hemispheric-defence problem (1941-1958), a Soviet and revolutionary threat with prosperity turned into a weapon (1959-1963), and a managed problem whose economic leverage was modest (1969-1981). The set is 23 documents chosen from about 4,900 in the editors' Cuba chapters and about 13,900 that mention Cuba, in the 553 volumes indexed.\n\nWhere FRUS points for the rest: the printed documents came from the State Department's central decimal file on Cuba, the Kennedy, Johnson, Carter and Eisenhower libraries' national-security files, CIA files and Record Group 59 lot series such as the Cuban Missile Crisis records (Lot 65 D 438, NAID 27022950) and the Operation Mongoose files (Lot 66 D 501, NAID 648748); the editors cite without printing the Executive Secretariat's NSC policy-paper records (Lot 66 D 95, NAIDs 2839192 and 2839193), the Cuba records of the Coordinator of Cuban Affairs (Lot 73 D 191, NAID 1040618) and the sugar records (Lot 65 D 212, NAID 27022874).\n\nWhat this request cannot get from FRUS: the phrase 'national security' is absent from the Cuba chapters before the 1940s, so the earlier thinking has to be read under other names (independence, defence, commerce, sanitation); Cuban and Spanish views, trade and investment statistics, Congress and the sugar lobbies are not systematically printed; and the library holds nothing on Cuba after January 1989.",
+  "composition": {
+    "defaultBodyDepth": "full",
+    "footnoteStyle": "all",
+    "includeSourceNote": true,
+    "tocStyle": "citation",
+    "applyHighlights": false,
+    "includeNotes": true,
+    "includeWordCloud": false
+  },
+  "entries": [
+    {
+      "kind": "heading",
+      "text": "1. A rich neighbour that must stay out of European hands, 1874-1886",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "Why these documents: they are the earliest statements in the indexed library of what Cuba meant to the United States, written while Spain was fighting the Ten Years' War and before any treaty tied the two countries together. The thread is that independence, not annexation, was the stated aim, and that Cuba's value was described in commercial and geographic terms, not in the vocabulary of national security."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1874",
+      "documentId": "d552",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Secretary Fish's instructions to the new minister in Madrid, 6 February 1874. Cuba is described as almost contiguous, commercially closer to the United States than to Spain, and the war there as 'the one great cause of perpetual solicitude' in the nation's foreign relations. Independence is called inevitable and desirable. Index number 552; the printed number is 550."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1874",
+      "documentId": "d552",
+      "text": "Cuba is the largest insular possession still retained by any European power in America. It is almost contiguous to the United States."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1874",
+      "documentId": "d552",
+      "text": "In fine, Cuba, like the former continental colonies of Spain in America, ought to belong to the great family of American republics, with political forms and public policy of their own, and attached to Europe by no ties, save those of international amity, and of intellectual, commercial, and social intercourse."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1874",
+      "documentId": "d552",
+      "text": "In short, the state of Cuba is the one great cause of perpetual solicitude in the foreign relations of the United States."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1881",
+      "documentId": "d405",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Secretary Blaine to the minister in Hawaii, 1 December 1881, using Cuba as the model for Hawaii: the 'key to the Gulf', part of the American commercial system though Spanish. The same text is reprinted in an 1894 appendix volume (a near-duplicate found by vector distance of 4 bits); only the 1881 copy is cited."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1881",
+      "documentId": "d405",
+      "text": "That rich island, the key to the Gulf of Mexico, and the field for our most extended trade in the Western Hemisphere is, though in the hands of Spain, a part of the American commercial system."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1886",
+      "documentId": "d414",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Minister Curry to Secretary Bayard from Madrid, 22 October 1886, on tonnage dues and the sugar trade. The one-line statistic quoted here (the United States buys about 95 per cent of Cuba's sugar exports) is the earliest quantified statement of the trade interest in this run."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1886",
+      "documentId": "d414",
+      "text": "which buys about 95 per cent, of the sugar exported from Cuba"
+    },
+    {
+      "kind": "heading",
+      "text": "2. The sugar bowl and the case for war, 1897-1898",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "Why these documents: in the last year before the war with Spain, American officials set out what they thought Cuba was worth: a sugar supply, a market, American capital, a health risk and a source of disorder at the door. The two documents are an envoy explaining US aims to a foreign ambassador, and the President's own message to Congress."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1898",
+      "documentId": "d498",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Minister Woodford to Secretary Sherman, 5 October 1897: his account to the German ambassador of why the United States cares about Cuba (no annexation, sugar, American investments, yellow fever, the cost of policing neutrality). The best single list of the prosperity case. Its nearest vector neighbours are other Woodford despatches (Hamming distance 32 and 50), which is why those were not added."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1898",
+      "documentId": "d498",
+      "text": "the United States does not seek to annex Cuba or to establish a protectorate over Cuba"
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1898",
+      "documentId": "d498",
+      "text": "the sugar plantations of Cuba are as necessary to the food supply of the United States as are the cotton fields of India and the cotton and wheat fields of Egypt and the grain fields of Russia to England and to other countries"
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1898",
+      "documentId": "d498",
+      "text": "our native cane-sugar crop, raised mostly in Louisiana and Texas, does not furnish more than one-tenth of the sugar we consume"
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1898",
+      "documentId": "ch83",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: The President's message on Cuba, April 1898 (the index dates it 12 April). It lists four grounds for intervention: humanity, protection of citizens, injury to commerce, and the 'constant menace' to peace and expense of the war. Not in the vector index, which has no row for this chapter-level text."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1898",
+      "documentId": "ch83",
+      "text": "The right to intervene may be justified by the very serious injury to the commerce, trade, and business of our people, and by the wanton destruction of property and devastation of the island."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1898",
+      "documentId": "ch83",
+      "text": "The present condition of affairs in Cuba is a constant menace to our peace, and entails upon this Government an enormous expense."
+    },
+    {
+      "kind": "heading",
+      "text": "3. Security and prosperity written into one treaty system, 1904-1934",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "Why these documents: after 1898 the two aims are put in one set of instruments. The Platt Amendment's text joins independence, intervention, sanitation and naval stations; a 1929 note shows how much capital Cuba was said to hold; Stimson and Welles apply and argue about the intervention right; and in 1934 the right is dropped while the sugar tariff is cut."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1904",
+      "documentId": "d207",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: President Roosevelt's proclamation of the treaty of 22 May 1904, which reprints the eight articles of the Platt Amendment: article III (the right to intervene) and article VII (coaling or naval stations, 'for its own defense'). Security and sanitation (article V) are in the same text."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1904",
+      "documentId": "d207",
+      "text": "That the government of Cuba consents that the United States may exercise the right to intervene for the preservation of Cuban independence, the maintenance of a government adequate for the protection of life, property, and individual liberty"
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1904",
+      "documentId": "d207",
+      "text": "That to enable the United States to maintain the independence of Cuba, and to protect the people thereof, as well as for its own defense, the government of Cuba will sell or lease to the United States lands necessary for coaling or naval stations at certain specified points to be agreed upon with the President of the United States"
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1929v02",
+      "documentId": "d924",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: The Cuban ambassador's note of 10 January 1929 in the negotiation over revising the 1902 reciprocity treaty. The figure of nearly 1,500 million dollars of American capital is the Cuban government's own statement to the Secretary of State, not an American estimate; it is the only investment total printed in this run. The note also names a US Tariff Commission report of 1929 on the treaty's effects."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1929v02",
+      "documentId": "d924",
+      "text": "there is invested in Cuba at the present time, nearly 1,500 million dollars of American capital"
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1930v02",
+      "documentId": "d747",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Secretary Stimson's background talk to the press, 2 October 1930, during the Machado crisis: the Platt Amendment is about preserving independence, not a protectorate over internal affairs, quoting Root's 1901 reading."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1930v02",
+      "documentId": "d747",
+      "text": "A great many people seem to think that the Platt Amendment gives us a protectorate over the internal affairs of Cuba"
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1933v05",
+      "documentId": "d299",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Ambassador Welles to the President, 8 August 1933: his mission is to avoid a situation that would require intervention under article III of the permanent treaty. Shows intervention still treated as a live obligation in 1933."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1933v05",
+      "documentId": "d299",
+      "text": "the purpose of my mission here is to avoid the existence of a situation which would give rise to intervention by the United States"
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1934v05",
+      "documentId": "d127",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Secretary Hull's instruction of 26 July 1934 on the reciprocal trade agreement. It says the new treaty of relations has removed the permissive right of intervention and presents the sugar duty cut as helping the Cuban people and opening markets for American farm and factory goods."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1934v05",
+      "documentId": "d127",
+      "text": "eliminating the permissive right of intervention by this Government, has removed a chronic source of friction between our two countries, and has placed our political relations on a basis of true and friendly equality."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1934v05",
+      "documentId": "d127",
+      "text": "The magnitude of this concession is a further indication of the desire of this Government to assist the Cuban people in regaining an adequate and satisfactory standard of living."
+    },
+    {
+      "kind": "heading",
+      "text": "4. Hemisphere defence, bases and sovereignty, 1941-1958",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "Why these documents: the Second World War turned Cuba into a defence problem. They show the Navy and the Joint Chiefs wanting exclusive jurisdiction over bases, the State Department and the Cubans resisting it, and, at the other end, sugar defended as a 'strategic concept' and internal stability defined as hemispheric defence."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1941v07",
+      "documentId": "d119",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: State Department memorandum of 14 July 1941 on the Navy's draft for extending the Guantanamo naval station. State argues that leased areas under unquestioned US jurisdiction could not be applied elsewhere in the hemisphere, and the Navy hints it would use Jamaica instead."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1941v07",
+      "documentId": "d119",
+      "text": "The principle of leased areas over which the United States forces exercise unquestioned jurisdiction could not be applied to other countries of the Hemisphere"
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1944v07",
+      "documentId": "d878",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Secretary of State to Ambassador Braden, 20 December 1944, relaying the Joint Chiefs' wish for a long-term lease of the San Antonio de los Banos and San Julian air bases under exclusive US jurisdiction after the war."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1944v07",
+      "documentId": "d878",
+      "text": "Plans of the President and of the Joint Chiefs of Staff call for a defense facility in western Cuba under the exclusive jurisdiction of the United States Government, although it is understood that it may not be possible to obtain exclusive jurisdiction."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1945v09",
+      "documentId": "d741",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Braden to the Secretary of State, 12 January 1945: President Grau refuses any lease of the bases as a matter of sovereignty, and offers instead to keep them available for the defence of the continent."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1945v09",
+      "documentId": "d741",
+      "text": "President Grau, as a matter of sovereignty, is adamant on the proposition that there shall not be a lease of the bases to anyone."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1952-54v04",
+      "documentId": "d342",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Secretary of State to the Secretary of Agriculture, 4 June 1954, opposing a cut in Cuba's share of the US sugar market. It argues from Cuban stability, US exports and the claim that Cuba is a reliable source of sugar in war and peace, 'a strategic concept'."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1952-54v04",
+      "documentId": "d342",
+      "text": "It would seem to ignore the fact that Cuba has been a reliable expansible source of sugar in both war and peace, a strategic concept which should not be jeopardized."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1958-60v06",
+      "documentId": "d70",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: State-Joint Chiefs meeting, 27 June 1958, on arms supplied to Batista. Murphy links Cuban internal security, leftist exploitation and hemispheric defence; Admiral Burke objects that the US is telling a sovereign nation what to do with its arms."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1958-60v06",
+      "documentId": "d70",
+      "text": "If the security of the nation is destroyed or an avenue is opened up for leftist exploitation, this would certainly weaken the nation’s stability and affect hemispheric defense."
+    },
+    {
+      "kind": "heading",
+      "text": "5. Communism, missiles and economic denial, 1959-1963",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "Why these documents: after Castro, the threat is defined by Soviet weapons and Cuban subversion, and prosperity becomes an instrument: the plan is to hurt the Cuban economy. The October 1962 transcripts show the security argument at its most explicit, including the Defense Secretary's private view that the missiles changed the strategic balance 'not at all'."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1958-60v05",
+      "documentId": "d112",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Director of Central Intelligence Dulles to the Acting Secretary of State, March 1959 (undated): the earliest document in this run to frame Castro as a regional instigator tied to communism. Reached only through vector similarity (106 bits from the Mallory memo, no closer than a median 25th neighbour); it never uses the word Cuba, so a Cuba search would not return it."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1958-60v05",
+      "documentId": "d112",
+      "text": "Fidel Castro, the instigator of the present unsettled situation, is advocating a neutralistic bloc in Latin America, while actually supporting Communist-dominated revolutionary groups conspiring against the Dominican Republic and Nicaragua."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1958-60v06",
+      "documentId": "d499",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Mallory to Rubottom, 6 April 1960, 'The Decline and Fall of Castro': weaken the Cuban economy through sugar legislation and other means to bring about hunger and the overthrow of the government. The turn from prosperity as a shared interest to prosperity as a weapon."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1958-60v06",
+      "documentId": "d499",
+      "text": "it follows that every possible means should be undertaken promptly to weaken the economic life of Cuba."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1958-60v06",
+      "documentId": "d499",
+      "text": "The principal item in our economic quiver would be flexible authority in the sugar legislation."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v11",
+      "documentId": "d21",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Transcript of the first White House meeting on the missiles, 16 October 1962 (long, about 100,000 characters; the quoted exchange is Bundy and McNamara). The Defense Secretary says his own view is that the strategic effect is 'not at all'."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v11",
+      "documentId": "d21",
+      "text": "What is the strategic impact on the position of the United States of MRBMs in Cuba? How gravely does this change the strategic balance? McNamara: Mac, I asked the Chiefs that this afternoon, in effect. And they said, substantially. My own personal view is, not at all."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v11",
+      "documentId": "d34",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: NSC minutes, 20 October 1962: the President says planes in Cuba did not concern him but missiles had 'an entirely different impact' in Latin America. The danger is political and regional as much as strategic."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v11",
+      "documentId": "d34",
+      "text": "However, the existence of strategic missiles in Cuba had an entirely different impact throughout Latin America."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v11",
+      "documentId": "d34",
+      "text": "In his view the existence of fifty planes in Cuba did not affect the balance of power, but the missiles already in Cuba were an entirely different matter."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v10-12mSupp",
+      "documentId": "d729",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Bundy to President Johnson, 15 December 1963: defines the post-crisis aim as a Cuba that poses no threat to its neighbours and is not a Soviet satellite, and names isolation measures and covert measures as the two chief offensive weapons. Reached only through vector similarity (52 bits from the 1969 study), not by a text search."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v10-12mSupp",
+      "documentId": "d729",
+      "text": "The bare minimum objective of our policy is a Cuba which poses no threat to its neighbors and which is not a Soviet satellite."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v10-12mSupp",
+      "documentId": "d729",
+      "text": "intensifying Cuba’s already-serious economic difficulties; increasing the cost and unpleasantness to the Soviets of maintaining Cuba; and stimulating direct and indirect internal resistance to the regime"
+    },
+    {
+      "kind": "heading",
+      "text": "6. A managed problem, 1969-1981",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "Why these documents: after the missile crisis, Cuba is analysed as a double problem (a Soviet base and an exporter of revolution) whose economic leverage is modest. The last document shows the 1962 understanding still being used to define the limit in 1981."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76ve10",
+      "documentId": "d205",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Interdepartmental study answering National Security Study Memorandum 32, 2 July 1969: ranks US interests in Cuba from preventing strategic weapons (vital) to demonstrating that radicalism does not pay. Found by text search; its nearest vector neighbour (52 bits) is the 1963 Bundy memo above, which is how that memo was found."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1969-76ve10",
+      "documentId": "d205",
+      "text": "Cuba has been a double-barreled problem for the U.S.: —as a base for Soviet military power, and —as an exporter of revolutionary doctrine and violence to Latin America."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1977-80v23",
+      "documentId": "d21",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Treasury Secretary Blumenthal to President Carter, 12 August 1977, on normalization: lifting the embargo would give little economic leverage; the political significance of trade outweighs economic effects; US claims of about 2 billion dollars could be settled for perhaps 30 per cent."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1977-80v23",
+      "documentId": "d21",
+      "text": "The political significance of both sides of the trade issue far outweighs economic effects."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1977-80v23",
+      "documentId": "d21",
+      "text": "Even on sugar, our leverage in economic terms is quite modest."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1977-80v23",
+      "documentId": "d21",
+      "text": "U.S. claims now total about $2 billion, on which a settlement of at least $600 million (the usual 30%) might well be possible."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1981-88v03",
+      "documentId": "d5",
+      "notes": [
+        "Agent finding, Cuba security-and-prosperity run, 2026-10-27: Haig to President Reagan, 26 January 1981, on the 1962 US-Soviet understanding, the 1970 clarification on naval facilities, the 1979 brigade and MiG-23s. The aim of the 1962 understanding is restated as keeping Cuba from threatening US and hemispheric security."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1981-88v03",
+      "documentId": "d5",
+      "text": "The intent of the 1962 Understanding was to prevent Cuba from becoming a threat to the security of the US—and to countries friendly to us in the Hemisphere."
+    },
+    {
+      "kind": "prose",
+      "text": "Threads not followed in this run. (1) The Ten Years' War and the 1895-98 insurrection were read only through the 1874 and 1897 documents above, not through the despatches of the consuls in Cuba. (2) The 1898-1902 military occupation, the 1906-09 intervention, and the Bay of Pigs were left out; the editors' chapters on them are large and unread here. (3) Congress, the sugar lobbies and public opinion appear only as the officials describe them. (4) The Cuban government's and Spain's own papers are not in FRUS. (5) Nothing after January 1989 is in the indexed library for this topic. (6) The Mariel boatlift and Cuba's African commitments are not followed beyond passing mentions in the 1977 Treasury memorandum and the 1981 Haig memorandum."
+    },
+    {
+      "kind": "generated",
+      "generatedBlockType": "archivalSources"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+volume_structures rows: 553 | A (heading rule) = 6668 | B (header FTS) = 2236 | union = 6928 | W kept = 6718
+session cuba_set.tsv: 6718 | symmetric difference with my W: 0
+W dated: 6712 undated: 6 | span 1860-04-06 to 1980-12-25 | volumes in W: 109
+W with a document_sources row: 5934
+W with a non-empty source_note text: 5934 | with text but no document_sources row: 0 | with row but empty text: 0
+W documents with external_citations rows: 681 | rows: 960
+earliest W document with an external citation: ('1913-05-18', ('frus1913', 'd260'))
+pointed-at lots, top 6 (rows): [('66D95', 25), ('65D438', 15), ('62D24', 10), ('66D204', 9), ('74D272', 7), ('65D533', 6)]
+pointed-at lots, top 6 (documents): [(22, '66D95'), (13, '65D438'), (9, '66D204'), (8, '62D24'), (6, '74D272'), (5, '65D330')]
+"national security" FTS hits in W: 1039
+"national security" surviving the institution-name deletion: 47 {'1910s': 1, '1930s': 1, '1940s': 1, '1950s': 1, '1960s': 32, '1970s': 9, '1980s': 2}
+prosper* in W by decade: {'1890s': 17, '1900s': 18, '1910s': 13, '1920s': 17, '1930s': 11, '1940s': 11, '1950s': 10, '1960s': 22, '1970s': 7}
+second set (M19) N by decade: {'1860s': 68, '1870s': 240, '1880s': 167} total 475 | prosper* in it: {'1860s': 6, '1870s': 26, '1880s': 12}
+pointed-at lots in W not in central-files-index lotFiles: 11 ['56D569', '59D258', '59D376', '63D330', '64D438', '65D366', '65D533', '69D258', '69D41', '70D149', '82D85']
+1870s W 3 of 5821 per 1000 0.5 top [('frus1872p2v1', 3)]
+1890s W 290 of 9845 per 1000 29.5 top [('frus1898', 149)]
+1940s W 775 of 75872 per 1000 10.2 top [('frus1944v07', 132)]
+1960s W 2002 of 27654 per 1000 72.4 top [('frus1961-63v10-12mSupp', 515)]
+1980s W 89 of 6038 per 1000 14.7 top [('frus1977-80v23', 89)]
+mention set 1860s 306 of 11268 per 1000 27.2
+mention set 1870s 363 of 5821 per 1000 62.4
+mention set 1880s 294 of 6484 per 1000 45.3
+mention set 1890s 592 of 9845 per 1000 60.1
+mention set 1940s 1316 of 75872 per 1000 17.3
+mention set 1960s 3147 of 27654 per 1000 113.8
+mention set 1970s 1887 of 22258 per 1000 84.8
+mention set 1980s 627 of 6038 per 1000 103.8
+mention set M size (all rows): 13199

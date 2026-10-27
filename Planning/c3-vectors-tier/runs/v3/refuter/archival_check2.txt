@@ -1,0 +1,30 @@
+=== all lotFiles rows with naId 1040618 or 2839193, and lotNumber 73D191 / 66D95 / 66D148 / 78D287
+   {'lotNumber': '66D148', 'naId': '2839193', 'hmsMlrEntryNumbers': ['A1 1586F'], 'title': 'Subject Files', 'matchType': 'control'}
+   {'lotNumber': '66D95', 'naId': '2839192', 'hmsMlrEntryNumbers': ['A1 1586E'], 'title': 'Records Relating to National Security Council Policy Papers', 'matchType': 'control'}
+   {'lotNumber': '70D305', 'naId': '1040618', 'hmsMlrEntryNumbers': ['A1-5758'], 'title': 'Records Relating to Cuba', 'matchType': 'control'}
+   {'lotNumber': '71D201', 'naId': '1040618', 'hmsMlrEntryNumbers': ['A1-5758'], 'title': 'Records Relating to Cuba', 'matchType': 'control'}
+   {'lotNumber': '73D191', 'naId': '1040618', 'hmsMlrEntryNumbers': ['A1-5758'], 'title': 'Records Relating to Cuba', 'matchType': 'control'}
+   {'lotNumber': '73D245', 'naId': '1040618', 'hmsMlrEntryNumbers': ['A1-5758'], 'title': 'Records Relating to Cuba', 'matchType': 'control'}
+   {'lotNumber': '74D438', 'naId': '1040618', 'hmsMlrEntryNumbers': ['A1-5758'], 'title': 'Records Relating to Cuba', 'matchType': 'control'}
+   {'lotNumber': '78D189', 'naId': '1040618', 'hmsMlrEntryNumbers': ['A1-5758'], 'title': 'Records Relating to Cuba', 'matchType': 'control'}
+   {'lotNumber': '78D287', 'naId': '1040618', 'hmsMlrEntryNumbers': ['A1-5758'], 'title': 'Records Relating to Cuba', 'matchType': 'control'}
+=== any bundled identifier for the RG 59 central decimal file?
+   central-files-index.json : []
+   collection-authority.json : []
+   volume-sources-index.json : []
+   series-facts-index.json : []
+   external-citation-index.json : []
+   accession-series-index.json : []
+   numericalFile: {'microfilm': 'M862', 'rolls': 'list[1261]', 'seriesNaId': '654171'}
+   collection-authority central-file rows: 36
+      lot:62F69 | Cited as Lot 62 F 69. Classified and unclassified central files of the Embassy in the Repu | Department of State | naId None
+      txt:carter library|white house central file | White House Central Files | Carter Library | naId None
+      txt:department of state|central decimal file 1910-1929 | Central Decimal File 1910–1929 | Department of State | naId None
+      txt:department of state|central file | Central Files | Department of State | naId None
+      txt:department of state|central files 1950-1954 | Central Files 1950–1954 | Department of State | naId None
+      txt:department of state|central files 1964-66 | Central Files 1964–66 | Department of State | naId None
+      txt:department of state|central files 1964-67 | Central Files 1964–67 | Department of State | naId None
+      txt:department of state|central files 1967-1969 | Central Files 1967–1969 | Department of State | naId None
+   sample authority keys: ['aliases', 'id', 'lotFileNorm', 'name', 'repository', 'volumeIds']
+=== decimal-class-labels top keys: ['coverage', 'generated', 'provenance', 'schedules', 'schemaVersion']
+   coverage keys: ['decimalFileOpensIn', 'glossableYears', 'keyOutsideGlossableYears', 'notShipped', 'note', 'renumberedAt']

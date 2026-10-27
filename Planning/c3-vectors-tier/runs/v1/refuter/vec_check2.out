@@ -1,0 +1,13 @@
+anchor ('frus1874', 'd552') rows strictly nearer than 81 : 9 ; rows at exactly 81 : [('frus1866p1', 'd422'), ('frus1897', 'd581')]
+    ('frus1897', 'd581') distance 81 row 31348
+    ('frus1866p1', 'd422') distance 81 row 7772
+anchor ('frus1950v02', 'd440') rows strictly nearer than 77 : 9 ; rows at exactly 77 : [('frus1948v09', 'd425'), ('frus1958-60v06', 'd517'), ('frus1958-60v06', 'd527')]
+    ('frus1958-60v06', 'd527') distance 77 row 252177
+    ('frus1948v09', 'd425') distance 77 row 200887
+100 random docs (seed 2026): NN median 82 (q1 74 q3 92); 25th median 106 (q1 100 q3 111)  [42s]
+centroid trailing float32: min 0.00267696 max 0.00302211 | leading float32: min -1.83397e+38 max 6.50946e-30
+centroid frus1874 -> frus1875v02 0.993 frus1876 0.992 frus1875v01 0.992
+centroid frus1958-60v06 -> frus1961-63v10-12mSupp 0.973 frus1961-63v10 0.971 frus1964-68v32 0.965
+centroid frus1977-80v23 -> frus1969-76ve11p1 0.981 frus1977-80v24 0.972 frus1969-76ve10 0.972
+random volume pairs (seed 1877): mean 0.904 sd 0.032
+max |code| over the first 5 centroids: [127, 127, 127, 127, 127]

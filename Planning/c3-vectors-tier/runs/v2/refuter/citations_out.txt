@@ -1,0 +1,62 @@
+URL citations in overview: 19 distinct 16
+  frus1870/d197: in document_cache=True; number=197; fm/en=(0, 0); manifest title=Papers Relating to the Foreign Relations of the United States, Transmitted to Congress with the Annual Message
+  frus1881/d405: in document_cache=True; number=405; fm/en=(0, 0); manifest title=Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, With the Annual Messag
+  frus1898/ch83: in document_cache=True; number=None; fm/en=(0, 0); manifest title=Papers Relating to the Foreign Relations of the United States, With the Annual Message of the President Transm
+  frus1898/d490: in document_cache=True; number=490; fm/en=(0, 0); manifest title=Papers Relating to the Foreign Relations of the United States, With the Annual Message of the President Transm
+  frus1902/d313: in document_cache=True; number=313; fm/en=(0, 0); manifest title=Papers Relating to the Foreign Relations of the United States, With the Annual Message of the President Transm
+  frus1903/d331: in document_cache=True; number=331; fm/en=(0, 0); manifest title=Papers Relating to the Foreign Relations of the United States, With the Annual Message of the President Transm
+  frus1906p1/d427: in document_cache=True; number=427; fm/en=(0, 0); manifest title=Papers Relating to the Foreign Relations of the United States, With the Annual Message of the President Transm
+  frus1933v05/d281: in document_cache=True; number=281; fm/en=(0, 0); manifest title=Foreign Relations of the United States, Diplomatic Papers, 1933, The American Republics, Volume V
+  frus1941v07/d119: in document_cache=True; number=119; fm/en=(0, 0); manifest title=Foreign Relations of the United States, Diplomatic Papers, 1941, The American Republics, Volume VII
+  frus1952-54v04/d343: in document_cache=True; number=343; fm/en=(0, 0); manifest title=Foreign Relations of the United States, 1952–1954, The American Republics, Volume IV
+  frus1961-63v10/d202: in document_cache=True; number=202; fm/en=(0, 0); manifest title=Foreign Relations of the United States, 1961–1963, Volume X, Cuba, January 1961–September 1962
+  frus1961-63v11/d34: in document_cache=True; number=34; fm/en=(0, 0); manifest title=Foreign Relations of the United States, 1961–1963, Volume XI, Cuban Missile Crisis and Aftermath
+  frus1969-76v12/d211: in document_cache=True; number=211; fm/en=(0, 0); manifest title=Foreign Relations of the United States, 1969–1976, Volume XII, Soviet Union, January 1969–October 1970
+  frus1969-76ve10/d205: in document_cache=True; number=205; fm/en=(0, 0); manifest title=Foreign Relations of the United States, 1969–1976, Volume E–10, Documents on American Republics, 1969–1972
+  frus1977-80v23/d21: in document_cache=True; number=21; fm/en=(0, 0); manifest title=Foreign Relations of the United States, 1977–1980, Volume XXIII, Mexico, Cuba, and the Caribbean
+  frus1977-80v23/d98: in document_cache=True; number=98; fm/en=(0, 0); manifest title=Foreign Relations of the United States, 1977–1980, Volume XXIII, Mexico, Cuba, and the Caribbean
+
+== printed citations without a URL (bottom line):
+  '1902, Document 313' -> frus1902/d313: document_number=313 match=True; title=Papers Relating to the Foreign Relations of the United States, With the Annual M
+  '1903, Document 331' -> frus1903/d331: document_number=331 match=True; title=Papers Relating to the Foreign Relations of the United States, With the Annual M
+  '1906, Part I, Document 427' -> frus1906p1/d427: document_number=427 match=True; title=Papers Relating to the Foreign Relations of the United States, With the Annual M
+  '1933, Volume V, Document 281' -> frus1933v05/d281: document_number=281 match=True; title=Foreign Relations of the United States, Diplomatic Papers, 1933, The American Re
+  '1952–1954, Volume IV, Document 343' -> frus1952-54v04/d343: document_number=343 match=True; title=Foreign Relations of the United States, 1952–1954, The American Republics, Volum
+  '1961–1963, Volume X, Document 202' -> frus1961-63v10/d202: document_number=202 match=True; title=Foreign Relations of the United States, 1961–1963, Volume X, Cuba, January 1961–
+  'Volume XI, Document 34' -> frus1961-63v11/d34: document_number=34 match=True; title=Foreign Relations of the United States, 1961–1963, Volume XI, Cuban Missile Cris
+  '1969–1976, Volume E–10, Document 205' -> frus1969-76ve10/d205: document_number=205 match=True; title=Foreign Relations of the United States, 1969–1976, Volume E–10, Documents on Ame
+  'Volume XII, Document 211' -> frus1969-76v12/d211: document_number=211 match=True; title=Foreign Relations of the United States, 1969–1976, Volume XII, Soviet Union, Jan
+  '1977–1980, Volume XXIII, Documents 21 and 98' -> frus1977-80v23/d21: document_number=21 match=True; title=Foreign Relations of the United States, 1977–1980, Volume XXIII, Mexico, Cuba, a
+  '(same) Document 98' -> frus1977-80v23/d98: document_number=98 match=True; title=Foreign Relations of the United States, 1977–1980, Volume XXIII, Mexico, Cuba, a
+  '1870, Document 197' -> frus1870/d197: document_number=197 match=True; title=Papers Relating to the Foreign Relations of the United States, Transmitted to Co
+  '1881, Document 405' -> frus1881/d405: document_number=405 match=True; title=Papers Relating to the Foreign Relations of the United States, Transmitted to Co
+  '1898, Document 490' -> frus1898/d490: document_number=490 match=True; title=Papers Relating to the Foreign Relations of the United States, With the Annual M
+
+== frus1898/ch83 identity
+  header: 'Message' | dateline: None
+  body head: 'Message To the Congress of the United States: Obedient to that precept of the Constitution which commands the President to give from time to time to the Congress information of the state of the Union and to recommend to their consideration such measures as he shall judge necessary and expedient, it '
+  'April 11, 1898' at 34954: 'justification for our contemplated action. William McKinley. Executive Mansion, April 11, 1898.'
+  'WILLIAM McKINLEY' NOT FOUND
+  'William McKinley' at 34917: 'If it fails, it will be only another justification for our contemplated action. William McKinley. Executive Mansion, April 11, 1898.'
+  'McKinley' at 34925: 'ils, it will be only another justification for our contemplated action. William McKinley. Executive Mansion, April 11, 1898.'
+  'Executive Mansion' at 34935: 'll be only another justification for our contemplated action. William McKinley. Executive Mansion, April 11, 1898.'
+
+== Q13 context (frus1961-63v11/d34): 'In his view the existence of fifty planes'
+'eneral Taylor said that the military would be prepared to live with a twenty-four hour advance notice or grace period if such advance notice was worthwhile politically. The President expressed his doubt that any notice beyond seven hours had any political value. There was a brief discussion of the usefulness of sending a draft message to Castro, and a copy of such message was circulated. Not found. The President stated flatly that the Soviet planes in Cuba did not concern him particularly. He said we must be prepared to live with the Soviet threat as represented by Soviet bombers. However, the existence of strategic missiles in Cuba had an entirely different impact throughout Latin America. In his view the existence of fifty planes in Cuba did not affect the balance of power, but the missiles already in Cuba were an entirely different matter. The Attorney General said that in his opinion'
+
+== Q10 context (frus1941v07/d119): 'nevertheless essential'
+'es forces be permitted to guard and patrol the installations it builds or establishes. It was suggested that this could be taken care of without raising the question of jurisdiction by assigning specific functions to the United States and Cuban forces in the area under a joint board which is provided for in the Department’s draft agreement. Captain Schuirmann agreed to pass copies of the draft around the Navy Department but threw out the hint again that it might be difficult to convince the Navy Department that the cooperative principle was workable or desirable and that the possibility of abandoning the Guantánamo extension in favor of Jamaica had by no means been dissipated. In this connection the Department’s view was made clear that even though the Navy Department might never decide to carry through the Guantánamo extension project, a cooperative defense agreement with the Cubans is nevertheless essential for its effect on United States relations with Cuba and the other American republics. Such an agreement, even though no action were taken under it, would give the Cubans a sense'
+
+== Q1 signature (frus1870/d197)
+  header: 'Circular–Department of States to ministers and consuls in Spanish-American States and Brazil.'
+  tail: 'Mexico 1868 350,664 92,077 Central American states 1868 939,827 173,611 Colombia 1869 971,396 2,500,039 Peru 1869 2,734,784 1,180,931 Chili 1869 3,211,174 3,596,905 Argentine Republic 1869 1,034,445 1,841,953 Uruguay 1869 535,015 1,009,425 Brazil 1869 7,754,526 5,477,439 Venezuela 1868 69,997 10,452'
+
+== editors' heading quoted in finding 4 ('a policy to weaken the Cuban economy')
+   frus1958-60v06 Cuba > Inauguration by the U.S. Government of a policy to weaken the Cuban economy, April–July 1960 docs 50
+
+== d211 header / d205 header / d21 header
+   frus1969-76v12 d211 '211. Paper Prepared by the Chairman of the Joint Chiefs of Staff (Moorer)'
+   frus1969-76ve10 d205 '205. Study Prepared in Response to National Security Study Memorandum 32'
+   frus1977-80v23 d21 '21. Memorandum From Secretary of the Treasury Blumenthal to President Carter'
+   frus1977-80v23 d98 '98. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) and the White House Chief of Staff (Watson)'
+   frus1961-63v10 d202 '202. Paper Prepared for the National Security Council by an Interagency Task Force on Cuba'
