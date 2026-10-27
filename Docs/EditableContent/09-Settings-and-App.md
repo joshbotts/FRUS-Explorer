@@ -1768,7 +1768,7 @@ Partially Published
 
 #### `graph.panel.close.a11y`
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.panel.close.a11y | ships at: CrossReferenceGraphView.swift:1229, ReferenceListPanel.swift:357, ReferenceListPanel.swift:549 | same text also in: FRUSExplorer/CrossReference/ReferenceListPanel.swift -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.panel.close.a11y | ships at: CrossReferenceGraphView.swift:1232, ReferenceListPanel.swift:362, ReferenceListPanel.swift:554 | same text also in: FRUSExplorer/CrossReference/ReferenceListPanel.swift -->
 
 Close details
 
@@ -1808,7 +1808,7 @@ Share of source notes
 
 #### `wordcloud.scope.corpus`
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | key: wordcloud.scope.corpus | ships at: WordCloudView.swift:2391, WordCloudView.swift:2531, WordCloudScopeResolver.swift:87 | same text also in: FRUSExplorer/Analytics/WordCloud/WordCloudScopeResolver.swift -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | key: wordcloud.scope.corpus | ships at: WordCloudView.swift:2483, WordCloudView.swift:2623, WordCloudScopeResolver.swift:87 | same text also in: FRUSExplorer/Analytics/WordCloud/WordCloudScopeResolver.swift -->
 
 Entire Corpus
 
@@ -1818,7 +1818,7 @@ Entire Corpus
 
 #### `graph.resetView.a11y`
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.resetView.a11y | ships at: CrossReferenceGraphView.swift:1507 -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.resetView.a11y | ships at: CrossReferenceGraphView.swift:1510 -->
 
 Reset view
 
@@ -1872,13 +1872,13 @@ OK
 
 #### `menu.find.search` and `menu.find.search.mac`
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4390–4390 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4296 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4390–4390 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4390 -->
 
 Search
 
 <!-- END SOURCE: menu.find.search -->
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3892–3892 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3799 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3892–3892 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3892 -->
 
 Search…
 

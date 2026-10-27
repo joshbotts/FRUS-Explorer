@@ -542,10 +542,17 @@ PLOT, not the bar's length (every one 218 pt on an iPhone 17), so it is the plot
 suite's spelling of the figure). `v2`'s label column is its widest title's one line, about 961 pt whatever the
 device: on an iPhone 17, iOS 26.5, every bar was 1 pt wide at x 977 of a 402 pt window, and a 13-inch iPad in the
 portrait the suite sets keeps a plot of only about 31–39 pt. The suite's first floor, 20 pt, passes that: a mutant
-leaving the iPhone 17 a plot that size drew every bar's row 36 pt wide, which the 150 pt floor fails. No iPad has
-been run, so the iPad half is reasoned. Expect **1 test, 1 passed**. The Mac, where #1473 was found at 720–820 pt,
+leaving the iPhone 17 a plot that size drew every bar's row 36 pt wide, which the 150 pt floor fails. The first iPad
+run was #1797's, on the fixed code, so that the floor fails the code before #1473 on an iPad is still reasoned. The Mac, where #1473 was found at 720–820 pt,
 has no UI target: `RankingChartAxisTests` draws the chart at 720, 820 and 402 pt and counts the bars in the
-pixels, and the by-eye check is the owner's.
+pixels, and the by-eye check is the owner's. **Since #1797 two more tests tap the ranking's first bar and its
+title** and find the document open: the fixture's documents are in volumes the simulator lacks, so each opens
+on its *Volume Not Downloaded* page, which names the volume, as the list's row opens it. Each bar is now a
+button over its row across the plot (identifier `crossRefAnalytics.ranking.bar.<volume>/<document>`, which
+`RankingChartAxisTests` holds the suite's spelling to), so the first test still measures the row Swift Charts
+gave the mark: 218 pt on the iPhone 17, as before. Measured on the iPhone 17, iOS 27.0, and an iPad Pro 13-inch (M5), iOS 26.5: **3 tests, 3 passed** on each;
+on the iPhone, with the screen's chart given no action, as on `v2`, both tap tests fail (no bar button). Expect **3 tests,
+3 passed**.
 
 **`CollectionProseRowRestTests` (#1360) must run on an iPad AND an iPhone; it lives in
 `CollectionEditorTitleTests.swift`.** It types a long paragraph into a collection note block (and into the
