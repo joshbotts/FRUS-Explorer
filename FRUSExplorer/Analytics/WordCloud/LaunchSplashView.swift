@@ -25,7 +25,9 @@ import SwiftUI
 /// the sync state arrives, so that splash is raised by the resolve, a frame or more later.
 ///
 /// ## Dismissal differs by reason, deliberately
-/// - `.cloudKitImport` dismisses when the import settles — a real wait, of real duration.
+/// - `.cloudKitImport` dismisses when the import settles — a real wait, of real duration — or
+///   sooner where there is none to wait for (#1796): the device goes offline, the event it waited
+///   on ends with no import begun, or 15 seconds pass (`CloudSurfaceArbiter.cloudKitImportSplashLift`).
 /// - `.freshInstall` has nothing to wait for, so it holds briefly and flows into
 ///   onboarding's own cloud: onboarding's backdrop fades its words in under this one, on the same
 ///   seeded lens, so the fade-out crosses one cloud into the other. That hold is **once per
