@@ -1597,7 +1597,7 @@ struct WordCloudView: View {
         switch scope {
         case .corpus:
             return String(localized: "wordcloud.loading.corpus.v2",
-                          defaultValue: "Reading every indexed document. On a full library this takes several minutes — you can leave this screen and come back.")
+                          defaultValue: "Reading every indexed document. On a full library this takes about twenty minutes, and longer on an older device; the finished cloud is kept, but closing this screen before then stops it.")
         case .subseries:
             return String(localized: "wordcloud.loading.subseries",
                           defaultValue: "Reading this subseries’ documents. This can take a minute or two.")

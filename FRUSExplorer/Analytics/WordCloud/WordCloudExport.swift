@@ -28,6 +28,8 @@ import UniformTypeIdentifiers
 ///          before it tags, so a collection export made while the warm-up is still running — it
 ///          starts at launch, and can wait up to 30 s on its assets — does not hold the main thread;
 ///          and a cloud it counted as printed says so on the plate
+///   1.3 — #1798: `collectionCloudImage` tags each document in an autorelease pool of its own, as
+///          `WordFrequencyService` does
 enum WordCloudExporter {
 
     /// Fixed export canvas size (4:3, comfortable for slides and print).
@@ -163,7 +165,9 @@ enum WordCloudExporter {
             wordForm: languageAnalysis.wordForm
         )
         var counts: [String: Int] = [:]
-        for text in texts { tokenizer.accumulate(from: text, into: &counts) }
+        // A pool for each document, as `WordFrequencyService.topTerms` has (#1798): this loop runs
+        // in one turn of the main run loop, which drains nothing until it ends.
+        for text in texts { _ = autoreleasepool { tokenizer.accumulate(from: text, into: &counts) } }
         let terms = counts
             .filter { $0.value >= tuning.minimumCount }
             .map { TermCount(term: $0.key, count: $0.value) }

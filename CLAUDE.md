@@ -87,7 +87,7 @@ is the index, not the entry.
 | `ResearchSidebarSelectionTests` | iPad Pro 13-inch or iPad Air 13-inch | 2 tests, 0 skipped; an iPhone run is a skip |
 | `BrowseRootSelectionTests` (in `TwoPaneDocumentTests.swift`) | the same 13-inch iPads | 4 tests, 0 skipped; an iPhone run is a skip |
 | `CrossReferenceMatrixScrollTests` (in `AnalyticsRotationTests.swift`) | iPad Pro 11-inch (M5) and iPhone 17 | 5 tests: 1 skipped on the iPad, 2 on the iPhone |
-| `CrossReferenceRankingChartTests` (same file) | any iPhone or iPad | 1 test, 1 passed; never skips |
+| `CrossReferenceRankingChartTests` (same file) | any iPhone or iPad | 3 tests, 3 passed; never skips; two tap a bar and its title and find the document open (#1797) |
 | `BrowseWithinScopeTests` | iPad Pro 11-inch (M5) and iPhone 17 Pro, both `OS=26.4` | 3 passed on each; neither is a control |
 | `SummarizationPromptCopyTests` | iPhone 17 or iPad Pro 11-inch (M5), `OS=27.0` | 1 test, 1 passed on each; never skips; its test must stay the pane's first action |
 | `AnalyticsCompareFromTableTests` | iPhone 17, `OS=27.0`, or iPad mini (A17 Pro), `OS=26.5` | 1 test, 1 passed on each; never skips; needs no index; on an iPad simulator under iOS 27.0 the run is killed at teardown (#1620) |

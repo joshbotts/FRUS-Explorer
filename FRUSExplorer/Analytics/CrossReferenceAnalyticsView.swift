@@ -186,6 +186,8 @@ private struct HeatCell: Identifiable, Equatable {
 ///          leave the topic too little room; the column input is `HeatMatrixColumnAxis.column`
 ///   1.7 — #1761: the excluded-references caption says one reference in the singular and groups a
 ///          larger count, as the export's caveat does
+///   1.8 — #1797: a bar of the Most-Referenced chart, or its title, opens the document as its row
+///          in the list does; the exported figure's chart takes no action
 /// What keys a Cross-Reference Analytics window (UI review F-11, CW-9e).
 ///
 /// ## An empty marker, deliberately — and the assessment that chose it
@@ -887,15 +889,19 @@ struct CrossReferenceAnalyticsView: View {
                 emptyRow(String(localized: "crossRefAnalytics.ranking.empty",
                                 defaultValue: "No resolved cross-references are indexed yet. Index more volumes to build the citation network."))
             } else if viewMode == .chart {
-                rankingChart
+                // A bar, or its title, opens the document as its row in the list does (#1797).
+                CrossReferenceRankingChart(ranking: ranking, inspector: rankingInspectorTable) { row in
+                    openDocument(volumeId: row.volumeId, documentId: row.documentId, header: row.label)
+                }
             } else {
                 rankingTable
             }
         }
     }
 
-    /// The Most-Referenced Documents chart, on screen and in the exported figure — its own view
-    /// since #1473, so a test can draw it at a given width (`CrossReferenceRankingChart`).
+    /// The Most-Referenced Documents chart as the exported figure draws it — its own view since
+    /// #1473, so a test can draw it at a given width (`CrossReferenceRankingChart`). It takes no
+    /// open action, so the figure carries no tap targets; the screen's chart takes one (#1797).
     private var rankingChart: some View {
         CrossReferenceRankingChart(ranking: ranking, inspector: rankingInspectorTable)
     }
@@ -1525,6 +1531,18 @@ struct CrossReferenceAnalyticsView: View {
 /// categorical scale otherwise reorders the axis), and a lookup renders the human title —
 /// disambiguated when a title is shared — on the axis.
 ///
+/// ## Why a bar opens its document, and how (#1797)
+/// The section's subtitle invites the reader to select a document to open it, and until #1797 only
+/// the list's rows could: the chart drew no tap target at all. Given ``onOpen``, a tap or click
+/// anywhere across a ranked row — its bar, its count or its title — opens that row's document, as
+/// its row in the list does. The figure export passes no action, so a figure carries none.
+///
+/// VoiceOver reaches the same action through a button over each bar's row across the plot, named as
+/// the bar was. Swift Charts offers a mark a label and a value but no action, so with an action the
+/// marks themselves are hidden from VoiceOver and the buttons take their place: one element a bar,
+/// as before, at the bar's row, as before (`CrossReferenceRankingChartTests` measures those rows for
+/// #1473).
+///
 /// Version history:
 ///   1.0 — #1473: moved out of `CrossReferenceAnalyticsView.rankingChart`; the axis labels take at
 ///          most `RankingChartAxis.labelWidth` and wrap to two lines
@@ -1533,6 +1551,7 @@ struct CrossReferenceAnalyticsView: View {
 ///   1.2 — 2026-10-12: #1617 — its Audio Graph names each bar as the axis does: the table states
 ///          its graph (`AnalyticsChartTables.crossRefRankingTable`), where its Document column
 ///          was read and two documents of one title were one category
+///   1.3 — #1797: ``onOpen`` — a bar or its title opens its document, and VoiceOver can open it too
 struct CrossReferenceRankingChart: View {
 
     /// The ranked rows, highest in-degree first.
@@ -1540,6 +1559,14 @@ struct CrossReferenceRankingChart: View {
 
     /// The ranking as a table, for the chart's audio graph (#268).
     let inspector: ChartInspectorData
+
+    /// Opens a row's document. The screen passes the action the list's rows take; the exported
+    /// figure passes none, and draws no tap targets (#1797).
+    var onOpen: ((InDegreeRow) -> Void)? = nil
+
+    /// The prefix of each bar button's accessibility identifier, which ends with the row's id
+    /// (`volumeId/documentId`), so a UI test can tell which document a bar opens.
+    static let barIdentifierPrefix = "crossRefAnalytics.ranking.bar."
 
     var body: some View {
         let axisLabels = disambiguatedRankingLabels(
@@ -1579,8 +1606,9 @@ struct CrossReferenceRankingChart: View {
             // The bar is keyed on the opaque id for correct geometry, so restore a meaningful
             // VoiceOver announcement: the human document label + its inbound-citation count.
             .accessibilityLabel(Text(axisLabels[row.id] ?? row.label))
-            .accessibilityValue(Text(String(localized: "crossRefAnalytics.axis.inDegreeValue",
-                                             defaultValue: "\(row.inDegree) inbound citations")))
+            .accessibilityValue(Text(Self.inDegreeValue(row)))
+            // With an action, the bar's button (`openTargets`) speaks for it instead (#1797).
+            .accessibilityHidden(onOpen != nil)
         }
         // Highest in-degree at the top: `ranking` is sorted descending, and the first domain
         // element is placed at the top of a horizontal-bar categorical y-axis.
@@ -1603,6 +1631,69 @@ struct CrossReferenceRankingChart: View {
                                 .lineLimit(RankingChartAxis.labelLines)
                                 .truncationMode(.tail)
                                 .multilineTextAlignment(.trailing)
+                        }
+                    }
+                }
+            }
+        }
+        .chartOverlay { proxy in
+            if let onOpen {
+                openTargets(proxy, axisLabels: axisLabels, onOpen: onOpen)
+            }
+        }
+    }
+
+    /// What VoiceOver reads as a bar's value: its inbound-citation count.
+    private static func inDegreeValue(_ row: InDegreeRow) -> String {
+        String(localized: "crossRefAnalytics.axis.inDegreeValue",
+               defaultValue: "\(row.inDegree) inbound citations")
+    }
+
+    /// The chart's tap targets, on screen only (#1797).
+    ///
+    /// A clear layer over the whole chart takes a tap or click anywhere across a ranked row — the
+    /// title in the label column, the bar, or its count — and opens the row whose band holds it,
+    /// read through `ChartProxy.value(atY:as:)` as `AnalyticsView`'s category charts read theirs.
+    /// A point above or below the plot, among the x-axis's labels, names no row and opens nothing.
+    ///
+    /// Over it, each bar's row across the plot is a button, for VoiceOver and keyboard focus, named
+    /// as the hidden mark was. It spans the plot and not the titles, so its frame is the row Swift
+    /// Charts gave the mark: `CrossReferenceRankingChartTests` measures those rows, and a squeezed
+    /// plot (#1473) still shows as narrow ones.
+    ///
+    /// - Parameters:
+    ///   - chart: The chart's proxy.
+    ///   - axisLabels: Row id → the label its axis shows.
+    ///   - onOpen: Opens a row's document.
+    private func openTargets(_ chart: ChartProxy, axisLabels: [String: String],
+                             onOpen: @escaping (InDegreeRow) -> Void) -> some View {
+        GeometryReader { geometry in
+            if let anchor = chart.plotFrame {
+                let plot = geometry[anchor]
+                let band = plot.height / CGFloat(max(ranking.count, 1))
+                ZStack(alignment: .topLeading) {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onTapGesture { location in
+                            guard location.y >= plot.minY, location.y <= plot.maxY,
+                                  let id = chart.value(atY: location.y - plot.minY, as: String.self),
+                                  let row = ranking.first(where: { $0.id == id }) else { return }
+                            onOpen(row)
+                        }
+                        .accessibilityHidden(true)
+                    ForEach(ranking) { row in
+                        if let y = chart.position(forY: row.id) {
+                            Button {
+                                onOpen(row)
+                            } label: {
+                                Color.clear.contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .frame(width: plot.width, height: band)
+                            .position(x: plot.midX, y: plot.minY + y)
+                            .accessibilityLabel(Text(axisLabels[row.id] ?? row.label))
+                            .accessibilityValue(Text(Self.inDegreeValue(row)))
+                            .accessibilityIdentifier(Self.barIdentifierPrefix + row.id)
                         }
                     }
                 }

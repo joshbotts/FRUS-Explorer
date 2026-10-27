@@ -26,6 +26,7 @@ import Foundation
 /// Version history:
 ///   1.0 — O-3: initial implementation
 ///   1.1 — #1759: the splash drawn before the resolve (`firstFrameSplash`)
+///   1.2 — #1796: when a CloudKit splash lifts, and none raised offline
 @Suite("Cloud surface arbiter — precedence")
 @MainActor
 struct CloudSurfaceArbiterTests {
@@ -142,6 +143,76 @@ struct CloudSurfaceArbiterTests {
         testing.isUITestMode = true
         #expect(CloudSurfaceArbiter.firstFrameSplash(testing) == nil)
         #expect(CloudSurfaceArbiter.firstFrameSplash(quiet) == nil)
+    }
+
+    // MARK: - A CloudKit splash lets the launch through (#1796)
+
+    /// Whether the splash lifts, for one moment of a launch with network and no import ended yet.
+    private func lifts(syncing: Bool, quietFor: Duration?, shownFor: Duration,
+                       importSettled: Bool = false, isOnline: Bool = true) -> Bool {
+        lift(syncing: syncing, quietFor: quietFor, shownFor: shownFor,
+             importSettled: importSettled, isOnline: isOnline) != nil
+    }
+
+    /// Why the splash lifts at that moment, or `nil` while it waits.
+    private func lift(syncing: Bool, quietFor: Duration?, shownFor: Duration,
+                      importSettled: Bool = false, isOnline: Bool = true) -> CloudSurfaceArbiter.CloudKitSplashLift? {
+        CloudSurfaceArbiter.cloudKitImportSplashLift(importSettled: importSettled, isSyncing: syncing,
+                                                     isOnline: isOnline, quietFor: quietFor,
+                                                     shownFor: shownFor)
+    }
+
+    /// **#1796's sequence: setup starts, the resolve, setup fails, no import.** The splash used to
+    /// lift only when an import ended, so this launch kept it over the window for as long as the app
+    /// ran. Now the event it waited on has ended and nothing followed, so it lifts once the sync has
+    /// been idle for the grace.
+    @Test("Setup starts, the resolve raises the splash, setup fails, no import: the splash lifts after the grace")
+    func setupFailsAndNoImportFollows() {
+        var setupInFlight = quiet
+        setupInFlight.isCloudKitImporting = true
+        #expect(CloudSurfaceArbiter.resolve(setupInFlight) == .splash(.cloudKitImport))
+        // Setup is still in flight at the resolve.
+        #expect(!lifts(syncing: true, quietFor: nil, shownFor: .zero))
+        // It fails 0.2 s later, and no event begins after it.
+        #expect(!lifts(syncing: false, quietFor: .zero, shownFor: .milliseconds(200)))
+        #expect(!lifts(syncing: false, quietFor: .milliseconds(2_900), shownFor: .milliseconds(3_100)))
+        #expect(lift(syncing: false, quietFor: CloudSurfaceArbiter.cloudKitImportSplashGrace,
+                     shownFor: .milliseconds(3_200)) == .idle)
+    }
+
+    /// The splash still covers a real import: an import that begins within the grace of setup's end
+    /// is waited for, and the splash lifts when it ends, as before.
+    @Test("An import that begins within the grace is waited for, and lifts the splash when it ends")
+    func importAfterSetupIsWaitedFor() {
+        // Setup ends; the import begins a second later and runs for ten.
+        #expect(!lifts(syncing: false, quietFor: .seconds(1), shownFor: .seconds(1)))
+        #expect(!lifts(syncing: true, quietFor: nil, shownFor: .seconds(2)))
+        #expect(!lifts(syncing: true, quietFor: nil, shownFor: .seconds(11)))
+        #expect(lift(syncing: false, quietFor: .zero, shownFor: .seconds(12), importSettled: true) == .importSettled)
+    }
+
+    /// With no network an import can begin and never end: the owner's Mac launch of 2026-10-26 met
+    /// CloudKit's "network unavailable" at every zone check and ended no import before it was quit.
+    /// Whatever sync does, the splash holds no longer than the bound.
+    @Test("An import that never ends holds the splash no longer than the bound")
+    func importThatNeverEndsIsBounded() {
+        let bound = CloudSurfaceArbiter.cloudKitImportSplashBound
+        #expect(!lifts(syncing: true, quietFor: nil, shownFor: bound - .milliseconds(1)))
+        #expect(lift(syncing: true, quietFor: nil, shownFor: bound) == .bound)
+    }
+
+    /// With no network path no import can arrive, so the resolve raises no CloudKit splash, and a
+    /// splash already up lifts when the path goes.
+    @Test("Offline, no CloudKit splash is raised, and one already up lifts")
+    func offlineRaisesNoSplashAndLiftsOne() {
+        var offline = quiet
+        offline.isCloudKitImporting = true
+        offline.isOnline = false
+        #expect(CloudSurfaceArbiter.resolve(offline) == .none)
+        // A fresh install's splash does not wait on the network, and is still raised.
+        offline.hasCompletedOnboarding = false
+        #expect(CloudSurfaceArbiter.resolve(offline) == .splash(.freshInstall))
+        #expect(lift(syncing: true, quietFor: nil, shownFor: .milliseconds(500), isOnline: false) == .offline)
     }
 
     // MARK: - Suppression

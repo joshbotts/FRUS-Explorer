@@ -811,6 +811,38 @@ struct RankingChartAxisTests {
                 "the exported figure gives the chart a height of its own:\n\(figure)")
     }
 
+    /// On screen a bar, or its title, opens its document as its row in the list does; the exported
+    /// figure takes no action, so it carries no tap targets (#1797). Both charts are members of the
+    /// whole view, so only its source shows which passes what. The UI suite
+    /// `CrossReferenceRankingChartTests` taps a bar and a title on screen; it cannot import the app,
+    /// so it spells the bars' identifier prefix, which this reads, as `uiSuiteFloorIsThePlotMinimum`
+    /// reads its floor.
+    @Test("On screen a bar opens its document as its row does, and the exported figure takes no action")
+    func screenChartOpensItsDocumentsAndTheFigureDoesNot() throws {
+        let code = try HeatMatrixRowAxisTests.viewCode()
+        let section = try HeatMatrixRowAxisTests.braces(after: "private var rankingSection: some View", in: code)
+        #expect(HeatMatrixRowAxisTests.count(
+            "CrossReferenceRankingChart(ranking: ranking, inspector: rankingInspectorTable) { row in", in: section) == 1,
+                "the screen's chart must take an open action:\n\(section)")
+        let table = try HeatMatrixRowAxisTests.braces(after: "private var rankingTable: some View", in: code)
+        let open = "openDocument(volumeId: row.volumeId, documentId: row.documentId, header: row.label)"
+        #expect(HeatMatrixRowAxisTests.count(open, in: section) == 1 && HeatMatrixRowAxisTests.count(open, in: table) == 1,
+                "a bar must open its document as its row in the list does")
+        let figureChart = try HeatMatrixRowAxisTests.braces(after: "private var rankingChart: some View", in: code)
+        #expect(figureChart.trimmingCharacters(in: .whitespacesAndNewlines)
+                    == "CrossReferenceRankingChart(ranking: ranking, inspector: rankingInspectorTable)",
+                "the figure's chart must take no action, or the figure carries tap targets:\n\(figureChart)")
+        let figure = try HeatMatrixRowAxisTests.braces(after: "private func exportRankingFigure(", in: code)
+        #expect(HeatMatrixRowAxisTests.count("rankingChart", in: figure) == 1,
+                "the exported figure must draw `rankingChart`:\n\(figure)")
+
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let suite = try String(contentsOf: root.appending(path: "FRUSExplorerUITests/AnalyticsRotationTests.swift"),
+                               encoding: .utf8)
+        #expect(suite.contains("private static let barIdentifierPrefix = \"\(CrossReferenceRankingChart.barIdentifierPrefix)\""),
+                "the UI suite must spell the bars' identifier prefix as the chart does")
+    }
+
     @Test("At 720 pt every row's title is drawn, on up to two lines, with no row left blank")
     func everyTitleIsDrawn() throws {
         let ranking = try fixtureRanking()
