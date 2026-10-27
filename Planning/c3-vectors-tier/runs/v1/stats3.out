@@ -1,0 +1,6 @@
+Cuba docs 1947-1989 [(cuba OR cuban) AND "national security"]: hit list 2588; sample 40 (every 64.7th): STRICT 'national security' 40 of 40 ; TOLERANT 40 of 40 ; NON-INSTITUTIONAL (not followed by Council/Act/Adviser/Affairs/Action/Study/Decision/Agency/Files/Staff...) 10 of 40
+Mexico docs 1947-1989 [(mexico OR mexican) AND "national security"]: hit list 947; sample 40 (every 23.7th): STRICT 'national security' 40 of 40 ; TOLERANT 40 of 40 ; NON-INSTITUTIONAL (not followed by Council/Act/Adviser/Affairs/Action/Study/Decision/Agency/Files/Staff...) 14 of 40
+Cuba docs 1870-1946 [(cuba OR cuban) AND "national security"]: hit list 10; sample 40 (every 0.2th): STRICT 'national security' 36 of 40 ; TOLERANT 36 of 40 ; NON-INSTITUTIONAL (not followed by Council/Act/Adviser/Affairs/Action/Study/Decision/Agency/Files/Staff...) 36 of 40
+Cuba docs 1870-1946 [(cuba OR cuban) AND prosper]: hit list 204; sample 40 (every 5.1th): STRICT 'prosperity' 30 of 40 ; TOLERANT prosper(ity|ous|ing|ed|s)? 39 of 40
+Cuba docs 1947-1989 [(cuba OR cuban) AND prosper]: hit list 194; sample 40 (every 4.8th): STRICT 'prosperity' 25 of 40 ; TOLERANT prosper(ity|ous|ing|ed|s)? 40 of 40
+Mexico docs 1870-1946 [(mexico OR mexican) AND prosper]: hit list 344; sample 40 (every 8.6th): STRICT 'prosperity' 33 of 40 ; TOLERANT prosper(ity|ous|ing|ed|s)? 39 of 40

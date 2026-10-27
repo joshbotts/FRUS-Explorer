@@ -1,0 +1,59 @@
+came-from SQL: SELECT volume_id, document_id, repository, record_group, lot_file_norm, series_name, citation_era, decimal_class FROM document_sources (filtered in Python to W)
+W docs with a document_sources row: 5934 of 6718
+citation_era (a FORM, not a date): [('decimal', 3554), ('structured', 1556), ('lot_file', 313), ('subject_numeric', 157), ('cfpf', 154), ('named_series', 136), ('unrecognized', 53), ('published', 11)]
+top repository/series:
+  ('Central Intelligence Agency', '-') 328
+  ('Department of State', '-') 287
+  ('Kennedy Library', 'National Security Files') 249
+  ('Carter Library', 'National Security Affairs') 198
+  ('Johnson Library', 'National Security File') 165
+  ('Kennedy Library', 'NSF') 112
+  ('National Archives', 'Central Files 1964–66') 97
+  ('Nixon Presidential Materials', 'NSC Files') 79
+  ('Eisenhower Library', 'Whitman File') 65
+  ('-', '-') 64
+  ('-', 'Department of State, INR/IL Historical Files') 58
+  ('National Archives', 'OASD (C) A Files: FRC 71 A 2896') 47
+  ('Naval Historical Center', 'Area Files') 39
+  ('-', 'Department of State, INR /IL Historical Files') 31
+  ('Ford Library', 'National Security Adviser') 19
+  ('National Archives', 'Central Files 1967–69') 18
+  ('-', 'USUN Files') 17
+  ('Carter Library', 'National Security Council') 17
+  ('Eisenhower Library', 'Project “Clean Up” Records') 16
+  ('Kennedy Library', 'Presidentʼs Office Files') 16
+  ('Johnson Library', 'Recordings and Transcripts') 14
+  ('National Defense University', 'Taylor Papers') 12
+  ('Department of State', 'Files') 12
+  ('Kennedy Library', 'Ball Papers') 12
+  ('National Archives', '-') 10
+top record_group: [('59', 4191), ('330', 101), ('84', 4), ('233', 1)]
+top lots: [('65D438', 51), ('74D272', 46), ('66D501', 23), ('62D418', 15), ('62D24', 15), ('70D149', 14), ('67D548', 10), ('65D330', 10), ('77D163', 9), ('66D204', 8), ('62D1', 7), ('64D199', 6), ('66D149', 6), ('61D411', 5), ('63D75', 5), ('56D569', 4), ('65D212', 4), ('72D192', 4), ('72D316', 4), ('73D191', 4), ('58D776', 3), ('60D553', 3), ('66D95', 3), ('65D366', 3), ('65D533', 3)]
+top decimal_class prefix: [('837.00', 751), ('837.51', 331), ('737.00', 279), ('837.613', 241), ('611.373', 144), ('763.72', 76), ('811.345', 73), ('611.37', 63), ('337.11', 60), ('862.85', 57), ('837.156', 49), ('737.563', 48), ('POL 23-', 43), ('837.24', 41), ('437.00', 37)]
+
+pointed-at SQL: SELECT volume_id, document_id, anchor, repository, collection, lot_file_norm, decimal_class FROM external_citations (filtered in Python to W)
+rows: 960 citing docs: 681 of 6718
+anchors: [('centralFileClass', 466), ('presidentialLibrary', 344), ('lotFile', 150)]
+top repository/collection:
+  ('Department of State', '-') 616
+  ('Carter Library', 'National Security Affairs') 100
+  ('Kennedy Library', 'National Security Files') 72
+  ('Johnson Library', 'National Security File') 71
+  ('Johnson Library', 'Recordings and Transcripts') 14
+  ('Carter Library', 'Presidential Materials') 9
+  ('Eisenhower Library', 'Project “Clean Up” Records') 8
+  ('Carter Library', 'National Security Council') 6
+  ('Eisenhower Library', 'Herter Papers') 5
+  ('Kennedy Library', 'Sorensen Papers') 5
+  ('Eisenhower Library', 'Whitman File') 4
+  ('Kennedy Library', 'Ball Papers') 4
+  ('Johnson Library', 'Rusk Appointment Book') 4
+  ('Johnson Library', 'Presidentʼs Daily Diary') 4
+  ('Kennedy Library', 'Presidentʼs Appointment Book') 3
+  ('Kennedy Library', 'President’s Office Files') 3
+  ('Johnson Library', 'Papers of Thomas C. Mann') 3
+  ('Johnson Library', 'Office of the President File') 3
+  ('Eisenhower Library', 'Dulles Papers') 2
+  ('Eisenhower Library', 'President’s Appointment Book') 2
+top lots: [('66D95', 25), ('65D438', 15), ('62D24', 10), ('66D204', 9), ('74D272', 7), ('65D533', 6), ('64D199', 5), ('62D418', 5), ('65D330', 5), ('73D191', 5), ('65D212', 4), ('72D192', 4), ('57D284', 3), ('61D411', 3), ('77D163', 3), ('66D65', 3), ('53D26', 2), ('56D569', 2), ('59D376', 2), ('70D149', 2)]
+top decimal prefix: [('737.00', 143), ('611.37', 35), ('837.613', 33), ('737.563', 22), ('800.883', 11), ('762.00', 11), ('837.51', 10), ('371.04', 10), ('811.235', 9), ('560.AL', 8), ('737.561', 8), ('837.00', 7), ('837.24', 7), ('811.345', 5), ('711.372', 5)]

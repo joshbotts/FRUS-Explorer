@@ -1,0 +1,876 @@
+volume_id,document_id,date,header,len,ncuba,nsec,npro,nboth
+frus1910,d954,1910-03-08,Chargé Magruder to the Secretary of State.,6311,1,0,1,0
+frus1910,d32,1910-03-14,Minister Sherrill to the Secretary of State.,8264,1,0,0,0
+frus1910,d425,1910-04-13,Minister Jackson to the Secretary of State.,564,1,0,0,0
+frus1910,d426,1910-05-03,The Acting Secretary of State to Minister Jackson.,2107,8,0,0,0
+frus1910,d428,1910-05-23,The Secretary of State to Minister Jackson.,2613,6,0,0,0
+frus1910,d87,1910-05-27,Ambassador Dudley to the Secretary of State.,22711,1,1,0,0
+frus1910,d429,1910-06-01,Minister Jackson to the Secretary of State.,889,3,0,0,0
+frus1910,d427,1910-06-21,The Secretary of State to Minister Jackson.,3962,12,0,3,0
+frus1911,d112,1910-08-18,The Acting Secretary of State to the American Minister.,3669,7,4,1,0
+frus1911,d313,1910-08-18,[Untitled],14786,1,1,1,1
+frus1910,d26,1910-08-30,Delegates of the United States to the Fourth International Conference of American States to the Secretary of State.,124506,24,8,7,4
+frus1910,d430,1910-09-09,Minister Jackson to the Secretary of State.,1309,2,0,0,0
+frus1910,d663,1910-10-26,The Secretary of State to Chargé Garrett.,5174,1,1,0,0
+frus1911,d1070,1910-10-26,The Secretary of the American Agency to the Secretary of State.,13209,1,0,0,0
+frus1910,d431,1910-12-06,The President of Cuba to President Taft.,634,5,0,0,0
+frus1911,d115,1910-12-11,[Untitled],609,1,1,0,0
+frus1910,d667,1910-12-17,The Secretary of State to Chargé Benson.,1126,1,0,0,0
+frus1910,d432,1910-12-23,President Taft to the President of Cuba.,1044,3,0,0,0
+frus1912,d1738,1910-12-28,Memorandum of the Solicitor’s office of the Department of State.,29723,3,0,0,0
+frus1911,d135,1911-01-05,[Untitled],1354,4,3,4,3
+frus1911,d93,1911-01-06,The American Minister to the Secretary of State.,1095,5,0,3,0
+frus1911,ch40,1911-01-06,Sugar: proposal to adhere to the Brussels Convention,2467,6,0,6,0
+frus1911,d116,1911-01-07,The Secretary of State to the American Minister.,2396,6,5,2,1
+frus1911,d117,1911-01-14,The American Minister to the Secretary of State.,2460,4,1,3,1
+frus1911,d148,1911-01-14,The American Minister to the Secretary of State.,1703,6,3,2,2
+frus1911,d118,1911-01-24,[Extract.],1688,2,1,0,0
+frus1911,d149,1911-01-25,The Secretary of War to the Secretary of State.,1083,1,1,1,1
+frus1912,d427,1911-02-10,The Secretary of War to the Secretary of State.,1097,4,0,0,0
+frus1911,d120,1911-02-11,The American Minister to the Secretary of State.,5652,16,10,3,1
+frus1911,d150,1911-02-11,The Acting Secretary of State to the American Minister.,1180,3,3,0,0
+frus1911,d151,1911-02-11,The American Minister to the Secretary of State.,1698,6,4,0,0
+frus1911,d154,1911-02-11,The American Minister to the Secretary of State.,1923,4,4,0,0
+frus1911,ch45,1911-02-11,Sovereignty of the Isle of Pines,357,1,0,0,0
+frus1911,d94,1911-02-14,The American Minister to the Secretary of State.,1346,4,0,4,0
+frus1911,d80,1911-02-17,The American Minister to the Secretary of State.,1345,4,0,4,0
+frus1911,d210,1911-02-19,The American Minister to the Secretary of State.,1036,1,1,1,1
+frus1911,d121,1911-02-22,The American Minister to the Secretary of State.,866,2,1,0,0
+frus1911,d95,1911-02-23,The American Minister to the Secretary of State.,1100,1,0,1,0
+frus1911,d122,1911-02-28,The Secretary of the Navy to the Secretary of State.,1676,2,0,0,0
+frus1911,d96,1911-03-04,The Secretary of State to the American Minister.,839,4,0,4,0
+frus1911,d97,1911-03-05,The American Minister to the Secretary of State.,416,2,0,2,0
+frus1911,d123,1911-03-14,The Acting Secretary of Navy to the Secretary of State.,965,1,1,0,0
+frus1911,d100,1911-03-16,The American Minister to the Secretary of State.,1032,3,0,3,0
+frus1911,d101,1911-03-19,The American Minister to the Secretary of State.,6689,21,3,17,0
+frus1911,d81,1911-03-21,The Acting Secretary of State to the American Minister.,3311,16,2,16,2
+frus1911,d124,1911-03-25,The American Minister to the Secretary of State.,985,1,0,0,0
+frus1911,d102,1911-04-08,The Secretary of State to the American Minister.,742,1,0,1,0
+frus1911,d103,1911-04-09,The American Minister to the Secretary of State.,538,2,0,2,0
+frus1911,d125,1911-04-12,The Secretary of State to the American Minister.,1510,6,5,0,0
+frus1911,d155,1911-04-12,The Secretary of State to the American Minister.,949,2,1,0,0
+frus1911,d105,1911-04-13,The American Minister to the Secretary of State.,2165,12,0,10,0
+frus1911,d106,1911-04-13,The American Minister to the Cuban Secretary of State.,1091,3,0,3,0
+frus1911,d82,1911-04-14,The American Minister to the Secretary of State.,703,2,0,2,0
+frus1911,d126,1911-04-17,The American Minister to the Secretary of State.,2527,6,6,0,0
+frus1911,d152,1911-04-17,The American Minister to the Secretary of State.,1721,7,6,0,0
+frus1911,d153,1911-04-17,The American Minister to the Secretary of State.,772,1,1,0,0
+frus1911,d156,1911-04-17,The American Minister to the Secretary of State.,1286,3,3,0,0
+frus1911,ch41,1911-05-08,Tobacco: proposal to alter tariff rates,4411,18,0,18,0
+frus1912,d756,1911-05-24,"Statement of the Secretary of State before the Senate Committee on Foreign Relations, May 24, 1911.",82810,9,2,9,2
+frus1911,d127,1911-06-01,[Untitled],3760,8,2,2,2
+frus1911,d743,1911-06-01,The Secretary of State to the American Minister to Cuba.,499,1,0,0,0
+frus1911,d136,1911-06-08,The Secretary of State to the American Minister.,1492,6,3,3,3
+frus1911,d108,1911-06-09,The American Minister to the Secretary of State.,2804,11,0,9,0
+frus1911,d138,1911-06-16,[Untitled],1295,3,0,1,0
+frus1912,d425,1911-06-19,The American Minister to the Secretary of State.,1939,4,0,0,0
+frus1911,ch32,1911-06-19,Visit of the Chinese cruiser “Hai Chi”,1617,1,1,0,0
+frus1911,d128,1911-06-21,The Acting Secretary of Navy to the Secretary of State.,1258,1,1,1,1
+frus1912,d426,1911-06-27,The Secretary of State to the American Minister.,652,2,0,0,0
+frus1911,d139,1911-07-01,[Extract.],482,1,0,0,0
+frus1911,d129,1911-07-06,The Secretary of State to the American Minister.,894,4,4,0,0
+frus1911,d141,1911-07-06,The President of Cuba to the President of the United States.,1404,5,0,2,0
+frus1911,d109,1911-07-08,The American Minister to the Secretary of State.,669,2,0,2,0
+frus1911,d130,1911-07-11,The American Minister to the Secretary of State.,997,3,1,0,0
+frus1911,d140,1911-07-11,[Untitled],1098,3,0,1,0
+frus1911,d337,1911-07-31,[Untitled],470,1,0,0,0
+frus1911,d142,1911-08-02,The President of the United States to the President of Cuba.,1705,4,0,3,0
+frus1911,d143,1911-08-10,The American Minister to the Secretary of State.,1686,3,0,1,0
+frus1911,d144,1911-08-10,The Secretary of State to the American Minister.,1566,3,0,3,0
+frus1911,d145,1911-08-16,The American Minister to the Secretary of State.,1791,6,0,6,0
+frus1911,d83,1911-10-07,[Untitled],1808,7,2,7,2
+frus1911,d84,1911-10-18,[Untitled],1123,4,0,4,0
+frus1911,d86,1911-10-25,The American Minister to the Secretary of State.,1075,3,0,1,0
+frus1911,d87,1911-10-27,The American Minister to the Secretary of State.,807,3,0,3,0
+frus1911,d131,1911-10-27,[Untitled],509,1,1,0,0
+frus1911,d88,1911-11-02,The Secretary of State to the American Chargé d’Affaires.,3232,16,0,16,0
+frus1917,d764,1911-11-02,Minister Egan to the Secretary of State,7648,1,1,0,0
+frus1911,d146,1911-11-09,The American Chargé d’Affaires to the Secretary of State.,756,3,0,3,0
+frus1912,d320,1911-11-10,The American Chargé d’Affaires to the Secretary of State.,2998,4,3,0,0
+frus1911,d89,1911-11-13,The American Chargé d’Affaires to the Secretary of State.,667,2,0,2,0
+frus1911,d90,1911-11-13,The American Chargé d’Affaires to the Cuban Secretary of State.,1101,3,0,2,0
+frus1912,d321,1911-11-13,[Untitled],697,2,1,0,0
+frus1917,d765,1911-11-14,Minister Egan to the Secretary of State,1926,1,1,1,1
+frus1912,d322,1911-11-16,[Untitled],809,1,1,0,0
+frus1911,d132,1911-11-24,The Secretary of State to the American Chargé d’Affaires.,1561,2,2,0,0
+frus1912,d324,1911-12-01,[Untitled],1543,1,0,0,0
+frus1911,d133,1911-12-04,The American Chargé d’Affaires to the Secretary of State.,609,1,0,0,0
+frus1912,d326,1911-12-08,[Untitled],558,1,0,0,0
+frus1911,d91,1911-12-09,The Secretary of State to the American Chargé d’Affaires.,943,3,0,3,0
+frus1911,d217,1911-12-11,The American Minister to the Secretary of State.,498,1,0,0,0
+frus1911,d147,1911-12-12,[Extract.],671,2,2,2,2
+frus1911,d92,1911-12-19,The American Minister to the Secretary of State.,1058,2,0,2,0
+frus1911,d134,1911-12-19,The American Minister to the Secretary of State.,1161,3,3,0,0
+frus1912,d705,1911-12-19,The American Minister to the Secretary of State.,9442,1,0,0,0
+frus1911,d970,1911-12-21,[Untitled],2727,1,0,0,0
+frus1912,d1357,1912-01-10,The American Ambassador to the Secretary of State.,1960,1,0,0,0
+frus1912,d331,1912-01-16,The Secretary of State to the American Minister.,975,4,0,0,0
+frus1912,d706,1912-01-16,The American Minister to the Secretary of State.,8423,3,1,0,0
+frus1912,d333,1912-01-17,The Secretary of State to the American Minister.,440,1,0,0,0
+frus1912,d334,1912-01-20,The American Minister to the Secretary of State.,2178,2,2,0,0
+frus1912,d1493,1912-01-22,The Secretary of State to various Senators.,45598,10,9,2,1
+frus1912,d306,1912-01-23,International Opium Convention.,21294,1,1,0,0
+frus1912,d335,1912-01-26,The American Minister to the Secretary of State.,2083,2,0,0,0
+frus1912,d403,1912-01-30,The American Minister to the Secretary of State.,659,3,0,2,0
+frus1912,d404,1912-01-30,[Untitled],1389,2,0,2,0
+frus1912,d416,1912-02-02,[Untitled],1720,3,2,0,0
+frus1912,d405,1912-02-12,The American Minister to the Secretary of State.,18130,22,3,14,0
+frus1912,d1660,1912-02-13,"The Acting Secretary of State to the Ministers of Costa Rica, Cuba, the Dominican Republic, Guatemala, Haiti, Honduras, ",1691,1,1,0,0
+frus1912,d422,1912-02-15,The Minister of Cuba to the Secretary of State.,969,5,3,0,0
+frus1912,d428,1912-02-17,The Acting Secretary of State to the American Minister.,1115,5,0,0,0
+frus1912,d429,1912-02-22,[Untitled],1317,5,2,0,0
+frus1912,d430,1912-02-26,The American Minister to the Secretary of State.,1801,7,6,0,0
+frus1912,d432,1912-03-02,[Untitled],580,2,0,0,0
+frus1912,d406,1912-03-05,The American Minister to the Secretary of State.,7554,15,4,8,3
+frus1913,d332,1912-03-05,The Acting Secretary of State to the American Minister.,629,3,0,2,0
+frus1912,d964,1912-03-06,The Acting Secretary of State to the American Ambassador.,1709,1,1,0,0
+frus1912,d495,1912-03-08,The American Minister to the Dominican Republic to the Secretary of State.,436,1,0,0,0
+frus1912,d496,1912-03-08,The Acting Secretary of State to the American Minister to Cuba.,780,5,3,0,0
+frus1912,d497,1912-03-08,The Acting Secretary of State to the American Minister to Haiti.,632,1,0,1,0
+frus1912,d498,1912-03-09,The American Minster to Haiti to the Secretary of State.,536,1,0,0,0
+frus1912,d989,1912-03-20,The Acting Secretary of State to the American Minister to Cuba,410,1,0,0,0
+frus1912,d338,1912-03-23,[Untitled],1509,3,0,0,0
+frus1912,d435,1912-03-27,[Untitled],1612,6,0,0,0
+frus1912,d407,1912-04-06,The Acting Secretary of State to the American Minister.,2161,5,1,5,1
+frus1912,d424,1912-04-17,The American Minister to the Secretary of State.,25172,34,3,10,1
+frus1912,ch51,1912-04-23,Wreck of the British vessel Titanic; consular disposition of effects of the deceased; recognition of the services of Cap,1211,1,1,0,0
+frus1913,d336,1912-05-22,The Secretary of State to the American Minister.,358,2,0,0,0
+frus1912,d343,1912-05-23,The Secretary of State to the American Minister.,1364,3,0,1,0
+frus1912,d345,1912-05-24,[Untitled],4890,5,4,1,1
+frus1912,d346,1912-05-25,The Secretary of State to the American Minister.,621,2,2,2,2
+frus1913,d337,1912-05-25,The American Minister to the Secretary of State.,2572,5,0,0,0
+frus1912,d347,1912-05-26,The President of Cuba to the President.,3227,6,1,2,1
+frus1912,d348,1912-05-27,The President to the President of Cuba.,795,3,2,1,1
+frus1912,d349,1912-05-27,The President of Cuba to the President.,857,4,0,2,0
+frus1912,d350,1912-05-28,The Secretary of State to the American Minister.,419,1,0,0,0
+frus1912,d351,1912-05-29,[Untitled],1026,1,0,1,0
+frus1912,d354,1912-05-30,[Untitled],1224,3,2,0,0
+frus1913,d338,1912-05-31,The Chargé d’Affaires of Great Britain to the Secretary of State.,2566,8,0,1,0
+frus1912,d355,1912-06-01,The Secretary of State to the American Minister.,842,3,0,3,0
+frus1912,d356,1912-06-01,[Untitled],521,3,2,2,1
+frus1912,d361,1912-06-04,[Untitled],1358,1,0,0,0
+frus1912,d362,1912-06-05,[Untitled],1649,6,6,0,0
+frus1912,d364,1912-06-05,The Secretary of State to the American Minister.,981,5,3,4,2
+frus1912,d365,1912-06-06,The American Minister to the Secretary of State.,5554,17,8,11,5
+frus1912,d366,1912-06-07,[Untitled],1023,3,1,0,0
+frus1912,d368,1912-06-08,The Minister for Foreign Affairs to the American Minister.,9340,10,3,4,1
+frus1913,d340,1912-06-08,The Secretary of State to the American Minister.,463,1,0,0,0
+frus1912,d369,1912-06-09,The American Minister to the Secretary of State.,708,1,0,0,0
+frus1913,d341,1912-06-09,The American Minister to the Secretary of State.,1934,4,0,0,0
+frus1912,d371,1912-06-10,[Untitled],1459,5,5,2,2
+frus1912,d372,1912-06-10,The American Minister to the Secretary of State.,1633,1,1,0,0
+frus1912,d373,1912-06-11,[Untitled],3665,4,1,0,0
+frus1912,d375,1912-06-13,The Special Representative of President Gómez to the Secretary of State.,2155,9,2,5,1
+frus1912,d376,1912-06-13,The Chargé d’Affaires of Great Britain to the Secretary of State.,1223,3,3,3,3
+frus1912,d377,1912-06-13,The American Minister to the Secretary of State.,913,1,0,0,0
+frus1912,d378,1912-06-13,[Untitled],165,1,0,0,0
+frus1912,d379,1912-06-13,The Secretary of State to the Cuban Minister.,1047,6,2,0,0
+frus1912,d380,1912-06-14,The Secretary of State to the American Minister.,1944,8,6,4,4
+frus1912,d381,1912-06-14,[Untitled],638,2,0,0,0
+frus1913,d342,1912-06-14,The Secretary of State to the Chargé d’Affaires of Great Britain.,3392,7,0,0,0
+frus1912,d382,1912-06-15,The Secretary of State to the Special Representative of President Gómez.,597,1,0,0,0
+frus1912,d721,1912-06-19,The American Minister to the Secretary of State.,2984,2,0,0,0
+frus1912,d383,1912-06-20,The Secretary of State to the Chargé d’Affaires of Great Britain.,880,4,4,4,4
+frus1912,d408,1912-06-24,The Acting Secretary of State to the American Minister.,2896,14,9,6,6
+frus1912,d384,1912-06-28,The American Consul at Santiago to the Secretary of State.,292,1,0,0,0
+frus1912,d385,1912-06-29,The Secretary of State to the American Minister.,832,1,0,0,0
+frus1912,d409,1912-07-01,The American Minister to the Secretary of State.,2947,16,5,8,2
+frus1912,d437,1912-07-05,The American Minister to the Secretary of State.,5563,3,0,0,0
+frus1912,d703,1912-07-05,The American Minister to the Secretary of State.,9931,1,0,0,0
+frus1912,d410,1912-07-12,The American Minister to the Secretary of State.,5691,17,5,5,0
+frus1912,d438,1912-07-17,The Secretary of State to the American Minister.,751,4,0,0,0
+frus1912,d439,1912-07-18,The American Minister to the Secretary of State.,1355,6,0,0,0
+frus1912,d440,1912-07-19,The American Minister to the Secretary of State.,5741,9,1,5,0
+frus1912,d442,1912-07-20,The Acting Secretary of State to the American Minister.,594,1,0,0,0
+frus1912,d387,1912-07-22,The Chargé d’Affaires of Great Britain to the Secretary of State.,662,1,1,1,1
+frus1912,d443,1912-07-22,The American Minister to the Secretary of State.,1494,2,0,0,0
+frus1912,d445,1912-08-15,The Secretary of State to the American Chargé d’Affaires.,4799,24,12,4,2
+frus1912,d447,1912-08-27,[Untitled],4056,7,0,0,0
+frus1912,d389,1912-08-28,The Acting Secretary of State to the Minister of Cuba.,856,3,0,0,0
+frus1912,d390,1912-08-28,The Acting Secretary of State to the American Chargé d’Affaires.,582,3,0,0,0
+frus1912,d391,1912-08-29,The American Chargé d’Affaires to the Secretary of State.,8984,10,1,0,0
+frus1912,d392,1912-08-30,The Acting Secretary of State to the American Chargé d’Affaires.,651,4,0,3,0
+frus1912,d393,1912-08-31,The Minister of Cuba to the Acting Secretary of State.,1960,8,0,0,0
+frus1912,d395,1912-09-02,The Minister of Cuba to the Secretary of State.,3368,13,0,0,0
+frus1912,d396,1912-09-03,The American Chargé d’Affaires to the Secretary of State.,767,3,0,0,0
+frus1912,d397,1912-09-04,The President to the President of Cuba.,1195,3,0,0,0
+frus1912,d398,1912-09-06,The American Chargé d’Affaires to the Secretary of State.,835,1,0,0,0
+frus1912,d411,1912-09-16,The Acting Secretary of State to the American Chargé d’Affaires.,1638,9,0,2,0
+frus1912,d399,1912-09-23,[Untitled],231,1,0,0,0
+frus1912,d412,1912-09-26,The American Chargé d’Affaires to the Secretary of State.,6745,23,0,7,0
+frus1912,d402,1912-10-12,The Acting Secretary of State to the American Chargé d’Affaires.,637,1,0,0,0
+frus1912,d1181,1912-10-17,The Acting Secretary of State to the Secretary of the Navy.,3669,1,0,0,0
+frus1912,d413,1912-10-21,The Secretary of State to the American Minister.,893,3,0,3,0
+frus1912,d450,1912-10-24,The Acting Secretary of State to the American Consul General.,3876,7,0,0,0
+frus1912,d419,1912-11-15,The Secretary of State to the American Minister.,826,1,0,0,0
+frus1913,d314,1912-11-15,The American Minister to the Secretary of State.,1615,2,0,0,0
+frus1912,d420,1912-11-21,[Untitled],550,2,1,0,0
+frus1913,d343,1912-11-27,The British Ambassador to the Secretary of State.,1182,3,0,2,0
+frus1912,d1392,1912-11-29,"Report of the Claims Commission appointed by the War Department in pursuance of the Joint Resolution of Congress, approv",44505,1,1,1,1
+frus1913,d344,1912-11-30,The British Ambassador to the Secretary of State.,710,1,0,0,0
+frus1913,d345,1912-12-02,The British Chargé d’Affaires to the Solicitor of the Department of State.,686,1,0,0,0
+frus1913,d346,1912-12-04,The Secretary of State to the American Minister.,3185,11,0,1,0
+frus1913,d347,1912-12-05,The American Minister to the Secretary of State.,4217,13,0,1,0
+frus1913,d348,1912-12-09,The Secretary of State to the British Ambassador.,848,2,0,0,0
+frus1913,d349,1912-12-11,The American Minister to the Secretary of State.,9616,21,0,8,0
+frus1912,d414,1912-12-20,The Ambassador of Great Britain to the Secretary of State.,8220,26,0,16,0
+frus1912,d421,1912-12-27,The American Minister to the Secretary of State.,8064,18,7,6,2
+frus1912,d17,1912-12-31,The United States Delegates to the Secretary of State.,98363,6,0,3,0
+frus1913,d279,1913-01-06,The Acting Secretary of State to the American Minister.,733,2,0,2,0
+frus1913,d280,1913-01-09,The American Minister to the Secretary of State.,1503,3,0,1,0
+frus1913,d316,1913-01-10,The American Minister to the Secretary of State.,1920,2,0,0,0
+frus1913,d274,1913-01-11,The Secretary of State to the American Minister.,1268,2,1,0,0
+frus1913,d306,1913-01-11,The Secretary of State to the American Minister.,2981,3,0,2,0
+frus1913,d307,1913-01-11,The Secretary of State to the American Consul General.,1657,2,0,0,0
+frus1913,d317,1913-01-15,The Secretary of State to the American Minister.,1347,3,2,2,2
+frus1913,d350,1913-01-20,The British Ambassador to the Secretary of State.,932,2,0,0,0
+frus1913,d275,1913-01-21,The American Minister to the Secretary of State.,742,1,0,0,0
+frus1913,d276,1913-01-23,The American Minister to the Secretary of State.,1805,3,1,0,0
+frus1913,d319,1913-01-25,[Untitled],580,2,0,0,0
+frus1913,d320,1913-01-28,The Secretary of State to the American Minister.,734,2,0,0,0
+frus1913,d1705,1913-01-28,By the President of the United States of America.,7032,5,3,1,1
+frus1913,d1706,1913-01-28,By the President of the United States of America.,7397,4,0,0,0
+frus1913,d263,1913-01-29,The American Minister to the Secretary of State.,660,1,0,1,0
+frus1913,d321,1913-01-29,The American Minister to the Secretary of State.,2629,2,0,0,0
+frus1913,ch34,1913-01-29,"Proposal of France, Germany, and Great Britain to arbitrate with Cuba certain insurrectionary claims of their nationals ",187,1,0,1,0
+frus1913,d322,1913-02-06,The American Minister to the Secretary of State.,4162,7,0,1,0
+frus1913,d366,1913-02-06,The American Minister to the Secretary of State.,905,3,0,0,0
+frus1913,d367,1913-02-06,[Untitled],394,2,2,0,0
+frus1913,d368,1913-02-06,The American Minister to the Secretary of State.,1005,2,0,0,0
+frus1913,d369,1913-02-07,The American Minister to the Secretary of State.,1073,5,0,0,0
+frus1913,d370,1913-02-07,The Secretary of State to the American Minister.,340,1,0,0,0
+frus1913,d323,1913-02-08,The Secretary of State to the American Minister.,1751,2,1,0,0
+frus1913,d351,1913-02-08,The Secretary of State to the American Minister.,1082,5,2,2,0
+frus1913,d352,1913-02-08,The Secretary of State to the British Ambassador.,726,2,0,0,0
+frus1913,d371,1913-02-10,The American Minister to the Secretary of State.,3834,7,0,1,0
+frus1913,d324,1913-02-13,The Secretary of State to the American Minister.,3420,6,0,0,0
+frus1913,d1707,1913-02-13,By the President of the United States of America.,18815,4,0,0,0
+frus1913,d325,1913-02-14,The Secretary of State to the American Minister.,614,1,0,0,0
+frus1913,d353,1913-02-17,The American Minister to the Secretary of State.,17588,25,0,5,0
+frus1913,d372,1913-02-18,The American Minister to the Secretary of State.,1268,5,0,0,0
+frus1913,d355,1913-02-20,The American Minister to the Secretary of State.,2028,9,0,0,0
+frus1913,d374,1913-02-20,The Secretary of State to the American Minister.,938,4,0,0,0
+frus1913,d356,1913-02-25,The Secretary of State to the British Ambassador.,1268,5,0,0,0
+frus1913,d326,1913-02-26,The American Minister to the Secretary of State.,6727,6,3,2,2
+frus1913,d357,1913-02-26,The Secretary of State to the American Minister.,1137,2,0,0,0
+frus1913,d358,1913-02-27,The British Ambassador to the Secretary of State.,2008,6,0,0,0
+frus1913,d359,1913-03-03,The Secretary of State to the British Ambassador.,766,2,0,0,0
+frus1913,d360,1913-03-03,The Secretary of State to the American Minister.,958,3,0,2,0
+frus1913,d283,1913-03-05,The Secretary of State to the American Minister.,347,1,0,0,0
+frus1913,d285,1913-03-07,The Cuban Minister to the Secretary of State.,597,3,0,0,0
+frus1913,d286,1913-03-07,The Secretary of State to the American Minister.,669,3,0,2,0
+frus1913,d288,1913-03-08,The Secretary of State to the American Minister.,563,2,0,0,0
+frus1913,d289,1913-03-10,The Cuban Legation to the Department of State.,4009,15,0,0,0
+frus1913,d290,1913-03-12,The Department of State to the Cuban Legation.,3216,14,0,2,0
+frus1913,d291,1913-03-12,The Secretary of State to the American Minister.,289,1,0,0,0
+frus1913,d6,1913-03-13,[Untitled],11347,6,4,2,1
+frus1913,d375,1913-03-14,The American Minister to the Secretary of State.,2404,1,1,0,0
+frus1913,d264,1913-03-15,[Untitled],1805,4,3,4,3
+frus1913,d293,1913-03-15,[Untitled],1205,1,0,0,0
+frus1913,d361,1913-03-15,The American Minister to the Secretary of State.,2496,4,0,0,0
+frus1913,d265,1913-03-18,[Untitled],1415,2,2,2,2
+frus1913,d295,1913-03-18,The American Minister to the Secretary of State.,2723,9,0,0,0
+frus1913,d376,1913-03-18,The American Minister to the Secretary of State.,4321,6,0,2,0
+frus1913,d308,1913-03-20,The American Consul General to the Secretary of State.,1420,2,1,2,1
+frus1913,d362,1913-03-22,The American Minister to the Secretary of State.,2251,4,0,0,0
+frus1913,d266,1913-03-27,[Untitled],198,1,0,0,0
+frus1913,d277,1913-03-27,The American Minister to the Secretary of State.,464,1,0,0,0
+frus1913,d93,1913-04-02,Aide Mémoire handed by the Secretary of State to the representatives in Washington of countries having treaty relations ,1184,2,0,0,0
+frus1913,d310,1913-04-04,The Secretary of State to the American Minister.,1909,2,0,0,0
+frus1913,d1708,1913-04-29,By the President of the United States of America.,29647,4,0,0,0
+frus1913,d364,1913-05-08,The Secretary of State to the American Minister.,1137,2,0,0,0
+frus1913,d26,1913-05-17,The American Ambassador to the Secretary of Stale.,6144,1,1,0,0
+frus1913,d267,1913-05-17,The Secretary of State to the American Minister.,512,3,0,3,0
+frus1913,d260,1913-05-18,Report of the Secretary of the Special Mission.,20073,48,7,19,5
+frus1913,d259,1913-05-20,The Cuban Chargé d’Affaires to the Acting Secretary of State.,997,2,0,0,0
+frus1913,d365,1913-05-24,The Secretary of State to the British Ambassador.,1217,2,0,0,0
+frus1913,d61,1913-05-27,The American Ambassador to the Secretary of State.,1246,1,1,0,0
+frus1913,d381,1913-05-27,The Acting Secretary of State to the Secretary of the Navy.,1284,5,4,1,1
+frus1913,d382,1913-05-27,The Legation of Cuba to the Department of State.,1241,10,0,0,0
+frus1917,d767,1913-05-27,Minister Egan to the Secretary of State,37489,1,0,1,0
+frus1913,d261,1913-06-03,The Cuban Chargé d’Affaires to the Secretary of State.,1625,3,0,0,0
+frus1913,d383,1913-06-03,The Secretary of State of Cuba to the Secretary of State.,718,3,0,0,0
+frus1913,d271,1913-06-06,The Legation of Cuba to the Department of State.,10112,44,21,28,10
+frus1913,d328,1913-06-11,The Secretary of State to the American Minister.,1788,4,3,0,0
+frus1913,d377,1913-06-16,The American Minister to the Secretary of State.,1885,9,6,1,0
+frus1913,d384,1913-06-19,The Secretary of State to the American Minister.,1575,7,0,0,0
+frus1913,d262,1913-06-23,The Secretary of State to the American Minister.,1333,4,0,4,0
+frus1913,d329,1913-06-23,The American Minister to the Secretary of State.,416,2,0,0,0
+frus1913,d379,1913-06-27,The American Minister to the Secretary of State.,3735,6,2,0,0
+frus1913,d385,1913-06-30,The American Chargé d’Affaires to the Secretary of State.,580,2,0,0,0
+frus1913,d272,1913-07-12,The Department of State to the Legation of Cuba.,2814,11,1,11,1
+frus1913,d1340,1913-07-15,The Legation of Nicaragua to the Department of State.,5920,2,1,2,1
+frus1913,d229,1913-07-31,Report to the Secretary of State on the Second International Opium Conference by the American delegates: Hamilton Wright,266918,4,1,0,0
+frus1913,d1026,1913-08-08,The Secretary of State to certain Diplomatic Officers of the United States.,1044,1,1,0,0
+frus1913,d10,1913-08-12,"To the diplomatic officers of the United States in Argentina, Austria-Hungary, Belgium, Bolivia, Brazil, Chile, China, C",1602,1,0,0,0
+frus1913,d273,1913-08-18,The Cuban Secretary of State to the French Minister to Cuba.,14959,26,5,16,3
+frus1913,d1031,1913-08-28,The Secretary of State to Certain Diplomatic Officers of the United States.,1024,1,0,0,0
+frus1913,d1345,1913-09-01,The Minister of Nicaragua and the Minister of the Treasury of Nicaragua to the Secretary of State.,7366,1,0,1,0
+frus1913,d417,1913-09-12,The Secretary of State to the American Consul at Santiago de Cuba.,1462,1,0,0,0
+frus1913,d1051,1913-10-14,The Secretary of State to certain diplomatic officers of the United States.,714,1,1,0,0
+frus1913,d1081,1913-10-28,The American Ambassador to Great Britain to the Secretary of State.,1467,1,0,0,0
+frus1913,d302,1913-11-21,The Secretary of State to the American Minister.,599,1,0,0,0
+frus1913,d444,1913-11-24,The Secretary of State to the American Minister.,471,1,0,0,0
+frus1913,d330,1913-12-01,The Secretary of State to the American Minister.,1089,3,0,1,0
+frus1913,d454,1913-12-06,The Secretary of State to the Representatives of the Department of State appointed to observe the Dominican elections: H,532,1,0,0,0
+frus1913,d380,1913-12-08,The Secretary of State to the American Minister.,963,5,0,0,0
+frus1913,d12,1913-12-18,"To the diplomatic officers of the ‘United States in Argentina, Austria-Hungary, Belgium, Bolivia, Brazil, Chile, China, ",2060,1,0,0,0
+frus1913,d469,1913-12-19,[Untitled],282,1,0,0,0
+frus1913,d470,1913-12-20,Report to the Secretary of State made by the representatives of the Department of State appointed to observe the Dominic,14219,1,0,1,0
+frus1913,d331,1913-12-22,The American Minister to the Secretary of State.,1081,1,0,0,0
+frus1914,d202,1914-01-19,The Secretary of State to the Secretary of the Navy.,1049,1,1,0,0
+frus1914,d1305,1914-01-24,Consul Gracey to the Secretary of State.,1684,1,0,1,0
+frus1914,d1687,1914-02-12,The Minister of Nicaragua to the Secretary of State.,2935,1,1,0,0
+frus1914,d721,1914-04-22,The Secretary of State to the Bolivian Minister.,675,1,1,0,0
+frus1914,d723,1914-04-22,Special Agent Carothers to the Secretary of State.,5181,1,0,0,0
+frus1914,d744,1914-04-29,The Secretary of State to certain American diplomatic missions.,736,1,0,0,0
+frus1914Supp,d1,1914-06-15,The Secretary of State to the Greek Minister of Foreign Affairs (Streit),1123,1,1,0,0
+frus1914,d211,1914-06-16,Minister Gonzales to the Secretary of State.,2575,9,0,0,0
+frus1914,d212,1914-06-23,The Secretary of State to Minister Gonzales.,515,2,0,0,0
+frus1914,d1531,1914-06-29,[Untitled],1468,1,0,0,0
+frus1914,d213,1914-07-11,Minister Gonzales to the Secretary of State.,4237,6,0,0,0
+frus1914,d1863,1914-07-13,By the President of the United States of America.,1916,1,1,0,0
+frus1914,d214,1914-07-28,The Secretary of State to Minister Gonzales.,575,1,0,0,0
+frus1914,d1864,1914-07-29,By the President of the United States of America.,1879,1,1,1,1
+frus1914,d1865,1914-07-29,By the President of the United States of America.,1919,2,2,0,0
+frus1914-20v01,d157,1914-08-12,Memorandum by the Counselor for the Department of State (Lansing) on the Use by Belligerents of Wireless Stations and Su,12813,1,0,0,0
+frus1914,d334,1914-08-15,The Secretary of State to Chargé White.,533,1,0,1,0
+frus1914,d204,1914-10-01,Chargé Scholle to the Secretary of State.,575,1,0,0,0
+frus1914,ch51,1914-10-01,Cuban amnesty bill; attitude of the United States,95,1,0,0,0
+frus1914,d205,1914-10-03,The Acting Secretary of State to Chargé Scholle.,739,3,0,0,0
+frus1914,d206,1914-10-04,Chargé Scholle to the Secretary of State.,538,1,0,0,0
+frus1914,d207,1914-10-09,The Acting Secretary of State to Chargé Scholle.,474,2,0,0,0
+frus1914,d1187,1914-11-21,Consul Letcher to the Secretary of State.,2977,1,0,1,0
+frus1914-20v01,d166,1914-12-01,President Wilson to the Acting Secretary of State,12517,1,0,0,0
+frus1914,d192,1914-12-04,The Secretary of State to Minister Gonzales.,514,2,2,2,2
+frus1915,d216,1915-01-16,The Chinese Legation to the Department of State.,890,3,0,0,0
+frus1915,d217,1915-01-20,The Secretary of State to Minister Gonzales.,646,2,1,0,0
+frus1915,d218,1915-01-27,Minister Gonzales to the Secretary of State.,925,1,0,0,0
+frus1915,d9,1915-01-28,"To the Diplomatic Officers of the United States in Argentina, Bolivia, Cuba, Dominican Republic, Ecuador, Guatemala, Hon",1160,1,1,0,0
+frus1915,d10,1915-01-28,The Secretary of State to Ambassador Willard,1231,1,0,0,0
+frus1915,d219,1915-01-28,The Secretary of State to the Chinese Minister.,1015,2,0,0,0
+frus1915,d220,1915-02-05,The Chinese Minister to the Secretary of State.,887,2,0,0,0
+frus1915,d221,1915-02-19,The Chinese Minister to the Secretary of State.,2016,9,2,0,0
+frus1915,d500,1915-02-20,The Secretary of State to Minister Blanchard.,1833,1,1,0,0
+frus1915,d222,1915-02-27,The Secretary of State to Minister Gonzales.,1423,9,4,0,0
+frus1915,d223,1915-02-27,The Secretary of State to the Chinese Minister.,1145,6,0,0,0
+frus1915,d506,1915-02-27,The Secretary of State to Minister Blanchard.,735,1,0,0,0
+frus1915,d831,1915-03-06,[Untitled],602,1,1,0,0
+frus1915,d16,1915-03-09,[Untitled],932,1,1,0,0
+frus1915,d515,1915-03-15,Minister Blanchard to the Secretary of State.,215,1,0,0,0
+frus1915Supp,d1123,1915-04-03,The Chamber of German-American Commerce to the Department of State,1278,1,0,0,0
+frus1915,d224,1915-04-12,Minister Gonzales to the Secretary of State.,6372,16,6,0,0
+frus1915,d226,1915-04-20,The Secretary of State to the Chinese Minister.,808,1,0,0,0
+frus1915,d227,1915-05-13,The Chinese Minister to the Secretary of State.,876,3,1,0,0
+frus1915,d228,1915-05-17,The Secretary of State to Minister Gonzales.,500,3,0,0,0
+frus1915,d229,1915-05-18,The Secretary of State to the Chinese Minister.,724,3,0,0,0
+frus1915,d231,1915-05-25,The Secretary of State to the Chinese Minister.,764,3,0,0,0
+frus1915,d232,1915-06-12,The Chinese Minister to the Secretary of State.,1137,5,0,0,0
+frus1915Supp,d657,1915-06-29,The Consul General at London (Skinner) to the Secretary of State,3129,1,0,1,0
+frus1915,d542,1915-07-28,The Acting Secretary of the Navy to Admiral Caperton.,678,1,0,0,0
+frus1914-20v02,d386,1915-08-06,The Secretary of State to President Wilson,2162,1,1,0,0
+frus1915,d1778,1915-08-13,Minister Price to the Secretary of State.,2020,1,1,0,0
+frus1915,d559,1915-08-28,Chargé Johnson to the Secretary of State.,469,3,0,0,0
+frus1915,d560,1915-08-28,The Secretary of State to Chargé Johnson.,210,1,0,0,0
+frus1915,d561,1915-09-01,Minister Gonzales to the Secretary of State.,447,4,4,0,0
+frus1917,d624,1915-10-12,The Secretary of State to Chargé Scholle,1938,5,0,0,0
+frus1917,ch24,1915-10-12,"Controversy between the Compañia de los Puertos de Cuba (Cuban Ports Co.) and the Government of Cuba, growing out of the",2480,17,0,2,0
+frus1915,d1004,1915-10-19,The Secretary of State to the Minister of Venezuela.,815,1,1,0,0
+frus1917,d626,1915-10-20,The Secretary of State to Chargé Scholle,1182,3,1,0,0
+frus1917,d628,1915-11-06,The Secretary of State to the British Ambassador,873,3,0,0,0
+frus1917,d627,1915-11-08,The British Ambassador to the Secretary of State,2303,9,0,0,0
+frus1917,d629,1915-11-22,Minister Gonzales to the Secretary of State,265,1,0,0,0
+frus1914-20v02,d284,1915-11-24,The Secretary of State to President Wilson,10454,1,1,0,0
+frus1917,d630,1915-11-27,The Acting Secretary of State to Minister Gonzales,1519,6,0,4,0
+frus1916,d1325,1916-01-07,"Minutes of the Informal Conference on Radio Communication, Held at the Department of State on Friday Afternoon, January ",11814,1,1,0,0
+frus1916,d2,1916-01-24,The Secretary of State to certain American Missions,1782,1,1,0,0
+frus1917,d631,1916-02-29,The Secretary of State to Minister Gonzales,207,1,0,0,0
+frus1917,d632,1916-03-09,Minister Gonzales to the Secretary of State,1080,1,0,0,0
+frus1916,d19,1916-03-14,The Acting Secretary of State to Minister Gonzales,1071,1,0,0,0
+frus1917,d633,1916-03-15,The Acting Secretary of State to Minister Gonzales,2077,4,1,0,0
+frus1916Supp,d997,1916-03-20,The British Ambassador (Spring Rice) to the Secretary of State,11850,1,0,0,0
+frus1917,d635,1916-03-24,The Secretary of State to Minister Gonzales,461,1,0,0,0
+frus1916Supp,d481,1916-04-24,The British Ambassador (Spring Rice) to the Secretary of State,64578,1,0,0,0
+frus1917,d636,1916-05-10,The Secretary of State to Minister Gonzales,493,1,0,0,0
+frus1917,d639,1916-06-07,The Attorney for the Cuban Ports Company to the Secretary of State,10014,57,5,7,3
+frus1916,d756,1916-06-21,The Secretary of State to the Argentine Ambassador,1738,1,1,0,0
+frus1917,d640,1916-06-22,The British Ambassador to the Secretary of State,686,3,0,0,0
+frus1917,d641,1916-07-13,The Cuban Minister to the Secretary of State,4000,26,3,4,0
+frus1916,d934,1916-07-17,[Untitled],548,1,0,0,0
+frus1916,d238,1916-07-25,Minister Russell to the Secretary of State,728,1,0,0,0
+frus1917,d642,1916-07-31,The Acting Secretary of State to Minister Gonzales,9428,51,8,8,0
+frus1917,d643,1916-07-31,The Acting Secretary of State to the Attorney for the Cuban Ports Company,2448,8,0,1,0
+frus1917,d819,1916-08-14,Consul Payne to the Secretary of State,12912,1,0,0,0
+frus1917,d644,1916-08-25,Minister Gonzales to the Secretary of State,24961,70,13,2,0
+frus1916,d246,1916-09-05,Minister Russell to the Secretary of State,2406,1,1,0,0
+frus1916,d1326,1916-09-16,By the President of the United States of America,17215,10,5,5,3
+frus1916Supp,d569,1916-09-28,The Consul General at London (Skinner) to the Secretary of State,3846,1,1,1,1
+frus1916,d802,1916-11-02,General Pershing to General Funston,6437,1,1,0,0
+frus1917,d645,1916-12-14,The Secretary of State to Minister Gonzales,4188,18,7,0,0
+frus1917,d431,1917-01-22,Minister Gonzales to the Secretary of State,2098,2,2,0,0
+frus1917,d432,1917-01-26,The Secretary of State to Minister Gonzales,1144,4,0,3,0
+frus1917Supp01v01,d269,1917-02-04,The Minister in Cuba (Gonzales) to the Secretary of State,1114,4,0,0,0
+frus1914-20v01,d559,1917-02-05,The Secretary of State to President Wilson,528,2,0,0,0
+frus1914-20v01,d560,1917-02-05,The Secretary of State to President Wilson,620,1,1,0,0
+frus1914-20v01,d563,1917-02-06,President Wilson to the Secretary of State,705,3,3,0,0
+frus1914-20v01,d566,1917-02-07,Memorandum by the Secretary of State,257,2,0,0,0
+frus1917Supp01v01,d275,1917-02-08,The Minister in Cuba (Gonzales) to the Secretary of State,601,3,0,0,0
+frus1917,d434,1917-02-10,The Secretary of State to Minister Gonzales,3739,9,1,1,0
+frus1917,d435,1917-02-10,Minister Gonzales to the Secretary of State,2039,1,0,0,0
+frus1917,d436,1917-02-11,[Untitled],3051,1,1,0,0
+frus1917,d437,1917-02-12,The Secretary of State to Minister Gonzales,522,1,1,0,0
+frus1917,d438,1917-02-12,Minister Gonzales to the Secretary of State,2730,3,3,0,0
+frus1917,d439,1917-02-13,Consul General Rodgers to the Secretary of State,1134,1,1,0,0
+frus1917,d440,1917-02-13,The Secretary of State to Minister Gonzales,1598,4,3,2,2
+frus1917,d442,1917-02-13,Minister Gonzales to the Secretary of State,1128,2,1,0,0
+frus1917,d444,1917-02-14,[Untitled],1071,2,2,1,1
+frus1917,d451,1917-02-14,The Minister for Foreign Affairs to the Cuban Minister,1348,2,0,0,0
+frus1917,d452,1917-02-15,The Secretary of the Navy to the Secretary of State,970,2,1,0,0
+frus1917,d455,1917-02-16,Minister Gonzales to the Secretary of State,690,1,1,0,0
+frus1914-20v01,d696,1917-02-17,The Ambassador in Italy (Page) to the Secretary of State,6183,1,0,1,0
+frus1917,d456,1917-02-17,The Secretary of State to Minister Gonzales,972,1,0,0,0
+frus1917,d457,1917-02-17,Consul Griffith to the Secretary of State,753,1,1,0,0
+frus1917,d458,1917-02-17,Minister Gonzales to the Secretary of State,765,1,0,0,0
+frus1917,d460,1917-02-18,The Secretary of State to Minister Gonzales,1549,7,2,1,0
+frus1917,d461,1917-02-18,[Untitled],402,2,2,2,2
+frus1917,d464,1917-02-19,[Untitled],375,1,0,0,0
+frus1917,d565,1917-02-19,The Secretary of State to Minister Gonzales,427,1,0,0,0
+frus1917,d566,1917-02-19,The Secretary of State to Consul Griffith,578,1,0,0,0
+frus1917,d467,1917-02-20,[Untitled],1228,1,0,1,0
+frus1917,d469,1917-02-23,The Secretary of State to Consul Griffith,1440,3,0,1,0
+frus1917Supp01v01,d197,1917-02-24,The Consul at Cork (Frost) to the Secretary of State,4369,2,0,0,0
+frus1917,d470,1917-02-25,Minister Gonzales to the Secretary of State,1311,1,1,1,1
+frus1917,d471,1917-02-25,[Untitled],2466,4,4,3,3
+frus1917,d472,1917-02-25,Consul Griffith to the Secretary of State,209,2,0,0,0
+frus1917,d568,1917-02-26,[Untitled],431,1,0,1,0
+frus1917,d476,1917-02-27,[Untitled],1244,1,1,1,1
+frus1917,d477,1917-02-27,[Untitled],453,1,1,0,0
+frus1917,d479,1917-02-28,Minister Gonzales to the Secretary of State,4081,6,1,0,0
+frus1917,d569,1917-02-28,The Secretary of Commerce to the Secretary of State,1267,4,0,3,0
+frus1917,d481,1917-03-01,The Secretary of State to Minister Gonzales,2616,6,0,2,0
+frus1917,d570,1917-03-01,The Secretary of State to Minister Gonzales,559,1,0,1,0
+frus1917,d483,1917-03-02,The Secretary of State to Minister Gonzales,467,2,2,0,0
+frus1917,d484,1917-03-02,Minister Gonzales to the Secretary of State,3156,1,1,1,1
+frus1917,d486,1917-03-03,Minister Gonzales to the Secretary of State,5619,2,1,0,0
+frus1917,d487,1917-03-03,The Secretary of State to Minister Gonzales,1193,1,0,0,0
+frus1917,d572,1917-03-03,The Secretary of State to Minister Gonzales,488,3,0,3,0
+frus1917,d573,1917-03-03,[Untitled],542,1,1,1,1
+frus1917,d488,1917-03-04,Minister Gonzales to the Secretary of State,3171,3,1,3,1
+frus1917,d489,1917-03-04,[Untitled],1083,1,1,1,1
+frus1917,d491,1917-03-05,Minister Gonzales to Secretary of State,1442,1,0,0,0
+frus1917,d492,1917-03-06,The Secretary of State to Minister Gonzales,722,2,0,1,0
+frus1917,d575,1917-03-06,The Secretary of State to Minister Gonzales,419,1,1,0,0
+frus1917,d494,1917-03-07,Minister Gonzales to the Secretary of State,251,1,0,0,0
+frus1917,d500,1917-03-07,The Cuban Government to the Cuban Minister,945,3,0,0,0
+frus1917,d576,1917-03-07,The Secretary of State to the Secretary of Commerce,1547,3,0,3,0
+frus1917,d496,1917-03-08,[Untitled],4216,3,2,0,0
+frus1917,d498,1917-03-09,The Secretary of State to Consul Griffith,1115,4,0,1,0
+frus1917,d577,1917-03-09,Minister Gonzales to the Secretary of State,451,1,0,0,0
+frus1917,d501,1917-03-10,The Secretary of State to Minister Gonzales,927,2,0,1,0
+frus1917,d502,1917-03-10,Consul Griffith to the Secretary of State,467,2,0,0,0
+frus1917,d578,1917-03-10,The Secretary of State to Minister Gonzales,444,1,0,1,0
+frus1917,d503,1917-03-12,Minister Gonzales to the Secretary of State,1251,4,2,2,0
+frus1917,d581,1917-03-12,[Untitled],415,1,1,1,1
+frus1917,d585,1917-03-12,[Untitled],416,1,0,1,0
+frus1917,d583,1917-03-13,The Secretary of State to Minister Gonzales,985,3,2,3,2
+frus1917,d584,1917-03-13,[Untitled],436,2,0,2,0
+frus1917,d505,1917-03-14,Consul Griffith to the Secretary of State,546,1,1,0,0
+frus1917,d588,1917-03-14,[Untitled],167,1,1,0,0
+frus1917,d589,1917-03-15,[Untitled],1791,3,1,1,0
+frus1917,d590,1917-03-15,The Secretary of State to Minister Gonzales,484,1,0,1,0
+frus1917,d507,1917-03-16,[Untitled],581,1,1,0,0
+frus1917,d509,1917-03-16,[Untitled],1343,1,0,0,0
+frus1917,d510,1917-03-17,[Untitled],948,2,1,0,0
+frus1917,d513,1917-03-22,[Untitled],645,1,1,1,1
+frus1917,d593,1917-03-22,The Secretary of State to Minister Gonzales,360,1,0,1,0
+frus1917,d515,1917-03-23,The Secretary of State to Minister Gonzales,2062,7,3,0,0
+frus1917,d516,1917-03-23,Minister Gonzales to the Secretary of State,7472,5,1,1,1
+frus1914-20v01,d592,1917-03-26,The Secretary of State to President Wilson,2198,6,5,0,0
+frus1914-20v01,d593,1917-03-27,President Wilson to the Secretary of State,599,2,2,0,0
+frus1917,d518,1917-03-27,The Secretary of State to Minister Gonzales,527,1,0,1,0
+frus1917,d594,1917-03-27,[Untitled],451,2,0,2,0
+frus1917,d595,1917-03-27,Minister Gonzales to the Secretary of State,749,2,0,2,0
+frus1917,d519,1917-03-28,Minister Gonzales to the Secretary of State,432,1,0,0,0
+frus1917,d520,1917-03-29,Minister Gonzales to the Secretary of State,8148,7,2,5,2
+frus1917,d596,1917-03-30,The Secretary of State to Minister Gonzales,1134,3,0,3,0
+frus1917,d523,1917-03-31,The Secretary of State to Minister Gonzales,888,2,2,1,1
+frus1917,d597,1917-03-31,[Untitled],1025,1,0,0,0
+frus1917,d598,1917-03-31,[Untitled],343,1,0,0,0
+frus1917,d600,1917-03-31,[Untitled],332,1,0,1,0
+frus1917Supp01v01,d312,1917-04-05,The Cuban Minister (Céspedes) to the Secretary of State,1525,5,0,0,0
+frus1917,d527,1917-04-06,Minister Gonzales to the Secretary of State,951,1,0,0,0
+frus1917,d603,1917-04-07,[Untitled],473,1,0,0,0
+frus1917Supp01v01,d316,1917-04-07,The Minister in Cuba (Gonzales) to the Secretary of State,2193,2,0,1,0
+frus1917Supp01v01,d317,1917-04-07,The Minister in Cuba (Gonzales) to the Secretary of State,1396,3,1,0,0
+frus1917,d604,1917-04-10,Minister Gonzales to the Secretary of State,629,1,0,0,0
+frus1917Supp01v01,d324,1917-04-12,The Secretary of State to the Minister in Cuba (Gonzales),785,4,0,0,0
+frus1917Supp01v01,d331,1917-04-14,The Secretary of State to the Minister in Cuba (Gonzales),636,5,0,0,0
+frus1917,d605,1917-04-16,The Secretary of State to Minister Gonzales,521,1,0,0,0
+frus1917,d606,1917-04-16,[Untitled],817,1,1,0,0
+frus1917,d607,1917-04-17,[Untitled],411,1,1,0,0
+frus1917,d609,1917-04-17,[Untitled],1108,1,0,0,0
+frus1917,d612,1917-04-19,The Secretary of State to Minister Gonzales,595,1,0,1,0
+frus1917Supp01v01,d344,1917-04-19,The Secretary of State to the Minister in Panama (Price),650,1,1,0,0
+frus1917,d613,1917-04-20,[Untitled],678,3,3,3,3
+frus1917,d614,1917-04-20,[Untitled],394,1,1,1,1
+frus1917Supp01v01,d345,1917-04-20,The Ambassador in Argentina (Stimson) to the Secretary of State,865,1,0,0,0
+frus1917Supp01v01,d346,1917-04-20,The Ambassador in Argentina (Stimson) to the Secretary of State,1537,1,0,0,0
+frus1917,d615,1917-04-21,Minister Gonzales to the Secretary of State,2404,2,2,0,0
+frus1917Supp01v01,d352,1917-04-22,The Ambassador in Argentina (Stimson) to the Secretary of State,1339,1,0,0,0
+frus1917,d1148,1917-04-26,Ambassador Fletcher to the Secretary of State,29885,1,0,0,0
+frus1917,d533,1917-04-29,Minister Gonzales to the Secretary of State,16458,21,10,3,0
+frus1917,d534,1917-04-29,Minister Gonzales to the Secretary of State,2019,2,2,1,1
+frus1917Supp01v01,d362,1917-04-29,The Secretary of State to the Minister in Cuba (Gonzales),1940,14,0,0,0
+frus1917,d617,1917-04-30,Consul General Rodgers to the Secretary of State,1141,2,1,0,0
+frus1917,d536,1917-05-07,Minister Gonzales to the Secretary of State,810,1,0,0,0
+frus1917,d619,1917-05-07,The Secretary of State to Minister Gonzales,1013,3,0,1,0
+frus1917,d537,1917-05-08,[Untitled],893,1,0,1,0
+frus1917,d542,1917-05-10,The Secretary of State to Minister Gonzales,309,2,0,0,0
+frus1917,d543,1917-05-10,The Secretary of State to the Secretary of War,1501,4,1,4,1
+frus1917,d544,1917-05-11,The Secretary of State to Minister Gonzales,1058,3,1,0,0
+frus1917Supp01v01,d384,1917-05-12,The Secretary of State to the Minister in Honduras (Ewing),1839,1,1,0,0
+frus1917Supp01v01,d385,1917-05-12,The Secretary of State to the Minister in Panama (Price),2153,1,1,0,0
+frus1917,d547,1917-05-14,The Secretary of State to Minister Gonzales,592,1,0,0,0
+frus1917,d548,1917-05-14,The Secretary of War to the Secretary of State,1961,3,2,2,2
+frus1917,d549,1917-05-15,The Secretary of State to Minister Gonzales,1527,2,1,2,1
+frus1917,d550,1917-05-15,[Untitled],2154,11,9,4,3
+frus1917,d552,1917-05-16,Minister Gonzales to the Secretary of State,2323,1,1,0,0
+frus1917,d621,1917-05-17,The Secretary of State to Minister Gonzales,409,1,0,1,0
+frus1917,d553,1917-05-18,The Secretary of State to Minister Gonzales,805,2,0,0,0
+frus1917,d554,1917-05-18,The Secretary of State to the Secretary of War,1645,6,5,5,4
+frus1917,d555,1917-05-21,The Cuban Minister to the Secretary of State,535,3,0,0,0
+frus1917Supp01v01,d396,1917-05-24,The Minister in Cuba (Gonzales) to the Secretary of State,763,4,0,2,0
+frus1917,d557,1917-05-25,The Secretary of State to the Cuban Minister.,797,3,0,0,0
+frus1917Supp01v01,d399,1917-05-25,"The Secretary of State to the Diplomatic Representatives in Central and South America, except Argentina, Mexico, Panama,",640,1,1,0,0
+frus1917Supp02v01,d722,1917-06-01,The Ambassador in France (Sharp) to the Secretary of State,7720,1,0,1,0
+frus1917,d646,1917-06-12,The Secretary of State to Minister Gonzales,1165,6,2,2,1
+frus1917Supp01v01,d422,1917-06-15,The Secretary of State to the Minister in Cuba (Gonzales),646,1,0,0,0
+frus1917,d559,1917-06-18,Minister Gonzales to the Secretary of State,1387,3,3,0,0
+frus1918,d320,1917-06-18,The Secretary of State to the Minister in Cuba (Gonzales),294,1,0,1,0
+frus1917Supp01v01,d430,1917-06-23,The Ambassador in Argentina (Stimson) to the Secretary of State,769,1,1,0,0
+frus1918,d321,1917-07-02,The Minister in Cuba (Gonzales) to the Secretary of State,1855,1,0,0,0
+frus1917,d647,1917-07-03,Minister Gonzales to the Secretary of State,6250,4,1,4,1
+frus1917Supp01v01,d439,1917-07-06,The Acting Secretary of State to the Uruguayan Minister (de Pena),953,1,0,0,0
+frus1917,d1305,1917-07-09,Proclamation by the President,5136,1,0,1,0
+frus1917Supp01v01,d441,1917-07-09,The Acting Secretary of State to the Minister in Cuba (Gonzales),662,2,0,0,0
+frus1917Supp02v02,d47,1917-07-09,"Proclamation No. 1885 July 9, 1917, Restricting Exports",5152,1,0,1,0
+frus1917,d560,1917-07-12,The Acting Secretary of State to Minister Gonzales,1152,2,1,1,1
+frus1918,d322,1917-07-13,The Minister in Cuba (Gonzales) to the Secretary of State,697,3,0,3,0
+frus1917,d561,1917-07-14,Minister Gonzales to the Secretary of State,473,1,1,0,0
+frus1918,d323,1917-07-24,The Minister in Cuba (Gonzales) to the Secretary of State,424,1,0,1,0
+frus1917Supp01v01,d443,1917-07-25,The Acting Secretary of State to the Minister in Cuba (Gonzales),565,4,0,0,0
+frus1917Supp02v02,d54,1917-07-25,The Acting Secretary of State to the Cuban Minister (De Céspedes),732,2,0,0,0
+frus1918,d324,1917-07-26,The Minister in Cuba (Gonzales) to the Secretary of State,446,1,0,0,0
+frus1917,d651,1917-07-27,Minister Gonzales to the Secretary of State,673,1,0,1,0
+frus1918,d325,1917-07-28,The Minister in Cuba (Gonzales) to the Secretary of State,356,3,0,3,0
+frus1917Supp01v01,d444,1917-07-29,The Minister in Peru (McMillin) to the Secretary of State,1674,1,1,0,0
+frus1918,d326,1917-08-01,The Minister in Cuba (Gonzales) to the Secretary of State,34134,8,0,3,0
+frus1918,d327,1917-08-02,The Acting Secretary of State to the Minister in Cuba (Gonzales),286,2,0,2,0
+frus1917,d894,1917-08-08,The Secretary of the Navy to the Secretary of State,39740,1,0,0,0
+frus1918,d328,1917-08-08,The Minister in Cuba (Gonzales) to the Secretary of State,300,2,0,0,0
+frus1918,d329,1917-08-08,The Minister in Cuba (Gonzales) to the Secretary of State,12945,7,3,5,3
+frus1917,d562,1917-08-10,The Cuban Minister to the Secretary of State,1655,3,0,0,0
+frus1917Supp02v02,d64,1917-08-10,The Department of State to the Brazilian Embassy,1862,1,0,1,0
+frus1918,d330,1917-08-13,The Secretary of State to the Secretary of the Treasury (McAdoo),6140,33,10,26,9
+frus1917,d563,1917-08-15,The Secretary of State to the Cuban Minister,646,2,0,0,0
+frus1918,d302,1917-08-18,The Secretary of State to the Consul at Santiago de Cuba (Griffith),1552,6,3,3,0
+frus1917Supp01v01,d459,1917-08-21,The Minister in Cuba (Gonzales) to the Secretary of State,877,4,0,0,0
+frus1918,d303,1917-08-22,The Special Agent in Cuba (Consul General Morgan) to the Secretary of State,634,2,0,0,0
+frus1918,d331,1917-08-22,The Secretary of the Treasury (McAdoo) to the Secretary of State,2281,12,5,12,5
+frus1917Supp02v02,d72,1917-08-27,"Proclamation No. 1391, August 27, 1917, Further Restricting Exports",11044,1,1,0,0
+frus1918,d332,1917-08-27,The Acting Secretary of the Treasury (Crosby) to the Secretary of State,2241,7,4,7,4
+frus1918,d333,1917-08-29,Memorandum of the Division of Latin American Affairs of the Department of State,6472,19,12,16,10
+frus1917Supp02v01,d556,1917-08-31,The Food Administrator (Hoover) to the British Food Controller (Rhondda),1095,6,0,6,0
+frus1918,d304,1917-08-31,The Special Agent in Cuba (Consul General Morgan) to the Secretary of State,597,1,0,0,0
+frus1918,d334,1917-09-01,The Minister in Cuba (Gonzales) to the Secretary of State,1048,4,2,4,2
+frus1918,d335,1917-09-04,The Secretary of War (Baker) to the Secretary of State,8453,17,3,17,3
+frus1917Supp02v01,d557,1917-09-05,The Food Administration Representative at London (Sheldon) to the Food Administrator (Hoover),644,1,0,1,0
+frus1918,d305,1917-09-05,The Secretary of State to the Minister in Cuba (Gonzales),899,3,1,1,0
+frus1918,d336,1917-09-05,The Assistant Secretary of the Treasury (Crosby) to the Secretary of State,683,2,0,2,0
+frus1918,d374,1917-09-05,The Secretary of State to the Food Administrator (Hoover),822,4,0,3,0
+frus1917,d564,1917-09-06,The Secretary of State to Minister Gonzales,1201,3,0,2,0
+frus1918,d306,1917-09-06,The Minister in Cuba (Gonzales) to the Secretary of State,637,1,0,0,0
+frus1917Supp02v02,d82,1917-09-07,"Proclamation No. 1392, September 7, 1917, Restricting Exports of Coin, Bullion, and Currency",5493,1,0,0,0
+frus1918,d337,1917-09-08,The Secretary of State to the Minister in Cuba (Gonzales),3340,13,7,9,6
+frus1918,d307,1917-09-10,The Minister in Cuba (Gonzales) to the Secretary of State,1106,1,0,0,0
+frus1918,d338,1917-09-11,The Minister in Cuba (Gonzales) to the Secretary of State,1472,3,0,3,0
+frus1918,d339,1917-09-14,The Minister in Cuba (Gonzales) to the Secretary of State,1164,4,0,3,0
+frus1918,d340,1917-09-15,The Secretary of State to the Cuban Minister (De Céspedes),2280,9,0,4,0
+frus1918,d341,1917-09-15,The Secretary of State to the Minister in Cuba (Gonzales),1604,7,0,4,0
+frus1918,d342,1917-09-16,The Minister in Cuba (Gonzales) to the Secretary of State,980,3,0,1,0
+frus1918,d343,1917-09-20,The Secretary of State to the Secretary of the Treasury (McAdoo),4217,22,4,7,0
+frus1917Supp02v01,d559,1917-09-21,"Public Statement Issued by the Food Administration, September 21, 1917",1330,1,0,1,0
+frus1918,d308,1917-09-26,The Minister in Cuba (Gonzales) to the Secretary of State,426,1,1,0,0
+frus1918,d375,1917-09-27,The United States Food Administration to the Chief of the Latin American Division of the Department of State (Stabler),15862,25,0,25,0
+frus1918,d344,1917-10-05,The Acting Secretary of the Treasury (Crosby) to the Secretary of State,4602,9,0,4,0
+frus1917,d652,1917-10-06,[Untitled],396,1,0,1,0
+frus1917Supp01v01,d500,1917-10-09,The Ecuadoran Minister (Elizalde) to the Secretary of State,8163,1,0,0,0
+frus1918,d309,1917-10-11,The Cuban Minister (De Céspedes) to the Secretary of State,2070,7,0,0,0
+frus1917,d653,1917-10-12,[Untitled],1180,4,0,0,0
+frus1917Supp02v02,d103,1917-10-16,"The Secretary of State to Mr. Robert Otis Hayward, New York",5291,1,0,0,0
+frus1917Supp01v01,d508,1917-10-20,The Secretary of State to the Minister in Cuba (Gonzales),1325,6,0,0,0
+frus1918,d376,1917-10-26,The International Sugar Committee to the Secretary of State,595,1,0,1,0
+frus1918,d377,1917-10-26,The Cuban Minister (De Céspedes) to the Secretary of State,5049,12,0,11,0
+frus1918,d378,1917-10-29,The Secretary of State to the Cuban Minister (De Céspedes),1237,4,0,4,0
+frus1918,d379,1917-10-31,The Cuban Minister (De Céspedes) to the Secretary of State,608,2,0,2,0
+frus1918,d345,1917-11-07,The Assistant Secretary of the Treasury (Leffingwell) to the Secretary of State,1826,6,0,6,0
+frus1918,d380,1917-11-08,The Secretary of State to the Cuban Minister (De Céspedes),2208,6,1,6,1
+frus1918,d346,1917-11-20,The Secretary of the Treasury (McAdoo) to the Secretary of State,2820,18,3,15,1
+frus1918,d381,1917-11-20,The Cuban Minister (De Céspedes) to the Secretary of State,7515,27,0,24,0
+frus1918Supp01v02,d792,1917-11-20,The Secretary of State to the Chargé in Cuba (Scholle),2114,7,0,3,0
+frus1918Supp01v02,d793,1917-11-21,The Chargé in Cuba (Scholle) to the Secretary of State,257,1,0,0,0
+frus1918,d382,1917-11-24,The United States Food Administrator (Hoover) to President Wilson,1933,5,0,5,0
+frus1917Supp02v01,d355,1917-11-27,The Secretary of State to the Ambassador in Great Britain (Page),955,1,1,0,0
+frus1917Supp02v02,d123,1917-11-28,"Proclamation No. 1410, November 28, 1917, Further Restricting Exports",4379,1,0,1,0
+frus1917Supp02v02,d124,1917-11-28,"Proclamation No. 1411, November 28, 1917, Prohibiting Certain Imports except under License",4233,1,0,1,0
+frus1918Supp01v02,d794,1917-11-28,The Chargé in Cuba (Scholle) to the Secretary of State,319,1,0,0,0
+frus1914-20v02,d55,1917-12-01,The Secretary of State to President Wilson,8798,1,0,0,0
+frus1918Supp02,d494,1917-12-11,The Minister in Cuba (Gonzales) to the Secretary of State,632,2,0,0,0
+frus1917Supp01v01,d571,1917-12-14,The Secretary of State to the Minister in Cuba (Gonzales),1776,9,0,0,0
+frus1918,d347,1917-12-14,The Secretary of the Treasury (McAdoo) to the Secretary of State,3588,25,10,4,2
+frus1917Supp01v01,d573,1917-12-15,The Secretary of State to the Ambassador in Argentina (Stimson),2006,1,1,0,0
+frus1917Supp02v01,d370,1917-12-15,Report of the Special Representative of the United States Government (House),295197,1,0,1,0
+frus1918,d383,1917-12-16,The Minister in Cuba (Gonzales) to the Secretary of State,9560,13,0,12,0
+frus1918,d310,1917-12-17,The Minister in Cuba (Gonzales) to the Secretary of State,481,2,1,0,0
+frus1917Supp01v01,d583,1917-12-21,The Cuban Chargé (Torralbas) to the Secretary of State,476,2,0,0,0
+frus1918Supp02,d391,1917-12-28,The Secretary of State to the Minister in Cuba (Gonzales),778,4,0,3,0
+frus1918Supp02,d498,1918-01-03,The Secretary of State to the Minister in Cuba (Gonzales),405,4,0,4,0
+frus1918Supp01v02,d848,1918-01-05,The Secretary of State to the Heads of Certain Diplomatic Missions in Washington,1282,1,0,0,0
+frus1917Supp02v02,d416,1918-01-11,The Director of the Bureau of Transportation (Richards) to the Acting Chief of the Washington Office of the Panama Canal,2730,1,0,0,0
+frus1918,d384,1918-01-14,The Acting Secretary of State to the United States Food Administrator (Hoover),1267,7,2,7,2
+frus1917Supp01v01,d595,1918-01-15,The Minister in Cuba (Gonzales) to the Secretary of State,344,1,0,0,0
+frus1918,d311,1918-01-15,The Secretary of State to the Cuban Minister (De Céspedes),2984,10,2,3,0
+frus1918,d385,1918-01-18,The Cuban Minister (De Céspedes) to the Secretary of State,2280,6,2,6,2
+frus1918,d348,1918-01-19,The Acting Secretary of State to the Minister in Cuba (Gonzales),296,3,0,3,0
+frus1918,d349,1918-01-22,The Minister in Cuba (Gonzales) to the Secretary of State,435,1,0,0,0
+frus1918,d505,1918-01-25,The Chargé in Mexico (Summerlin) to the Secretary of State,733,2,2,0,0
+frus1918,d312,1918-01-29,The Minister in Cuba (Gonzales) to the Secretary of State,447,1,0,0,0
+frus1918,d350,1918-01-30,The Adviser to the Secretary of the Treasury (Davis) to the Chief of the Division of Latin American Affairs of the Depar,5814,23,3,17,2
+frus1918,d386,1918-02-12,The Secretary of State to the Secretary of the Treasury (McAdoo),2740,9,0,9,0
+frus1918,d387,1918-02-12,The Secretary of State to the Consul General at Habana (Harris),1071,3,0,2,0
+frus1918Supp01v02,d41,1918-02-14,"Proclamation No. 1428, February 14, 1918, Regarding Exports in Time of War",5467,1,0,0,0
+frus1918Supp01v02,d42,1918-02-14,"Proclamation No. 1429, February 14, 1918, Regarding Imports in Time of War",5295,1,0,1,0
+frus1918,d388,1918-02-15,The Special Agent in Cuba (Consul General Morgan) to the Secretary of State,526,3,0,3,0
+frus1918Supp01v02,d796,1918-02-16,The Secretary of State to the Minister in Cuba (Gonzales),347,2,0,0,0
+frus1918,d351,1918-02-18,The Minister in Cuba (Gonzales) to the Secretary of State,3600,10,2,8,2
+frus1918,d352,1918-02-19,The Acting Secretary of State to the Food Administrator (Hoover),2017,7,0,7,0
+frus1918,d313,1918-02-21,The Cuban Minister (De Céspedes) to the Secretary of State,1070,3,0,2,0
+frus1918,d314,1918-02-23,The Minister in Cuba (Gonzales) to the Secretary of State,702,1,0,0,0
+frus1918Supp01v02,d122,1918-02-25,The Secretary of State to the Diplomatic Representatives in Certain Countries,710,1,1,0,0
+frus1918Supp01v02,d123,1918-02-25,The Secretary of State to the War Trade Board,2332,2,2,1,1
+frus1918Supp01v02,d797,1918-03-01,The Secretary of State to the Minister in Cuba (Gonzales),806,2,0,0,0
+frus1918,d245,1918-03-02,The Consul at San José (Chase) to the Secretary of State,2787,1,1,0,0
+frus1918,d315,1918-03-02,The Acting Secretary of State to the Cuban Minister (De Céspedes),1374,4,0,2,0
+frus1918,d353,1918-03-06,The Cuban Minister (De Céspedes) to the Secretary of State,1030,5,1,4,1
+frus1918Supp01v01,d622,1918-03-06,The Minister in Cuba (Gonzales) to the Secretary of State,878,3,0,0,0
+frus1918,d316,1918-03-07,The Cuban Minister (De Céspedes) to the Secretary of State,570,1,0,0,0
+frus1918,d354,1918-03-07,The Assistant Secretary of the Treasury (Leffingwell) to the Counselor for the Department of State (Polk),723,6,5,0,0
+frus1918Supp02,d308,1918-03-08,The Ambassador in Great Britain (Page) to the Secretary of State,1927,3,3,3,3
+frus1918,d355,1918-03-09,The Assistant Secretary of the Treasury (Leffingwell) to the Counselor for the Department of State (Polk),2781,19,11,1,1
+frus1918Supp01v02,d798,1918-03-09,The Minister in Cuba (Gonzales) to the Secretary of State,470,1,0,0,0
+frus1918Supp01v02,d799,1918-03-09,The Acting Secretary of State to the Minister in Cuba (Gonzales),564,2,0,1,0
+frus1918Supp01v01,d626,1918-03-13,The Minister in Cuba (Gonzales) to the Secretary of State,1351,3,0,1,0
+frus1918Supp01v02,d800,1918-03-13,The Acting Secretary of State to the Minister in Cuba (Gonzales),843,2,0,1,0
+frus1918Supp01v02,d801,1918-03-16,The Minister in Cuba (Gonzales) to the Secretary of State,1460,1,0,0,0
+frus1919v02,d301,1918-03-16,The Financial Adviser of Haiti (Ruan) to the Chief of the Division of Latin American Affairs of the Department of State ,3469,1,0,1,0
+frus1918,d356,1918-03-18,The Cuban Minister (De Céspedes) to the Secretary of State,2298,5,2,2,2
+frus1918,d402,1918-03-18,Memorandum of the Office of the Solicitor for the Department of State,25272,14,7,5,2
+frus1918,d317,1918-03-19,The Minister in Cuba (Gonzales) to the Secretary of State,225,1,0,0,0
+frus1918,d318,1918-03-21,The Minister in Cuba (Gonzales) to the Secretary of State,224,2,0,0,0
+frus1918Supp01v02,d802,1918-03-24,The War Trade Board Representative in Cuba (Morgan) to the Secretary of State,697,2,0,2,0
+frus1918,d357,1918-03-26,The Secretary of State to the Secretary of the Treasury (McAdoo),2248,10,0,4,0
+frus1918Supp01v01,d629,1918-03-27,The Secretary of State to the Minister in Cuba (Gonzales),701,6,0,0,0
+frus1918,d358,1918-03-29,The Secretary of the Treasury (McAdoo) to the Secretary of State,1790,7,3,2,0
+frus1918,d359,1918-03-29,The Cuban Minister (De Céspedes) to the Secretary of State,1613,8,0,6,0
+frus1918,d481,1918-03-31,The Liberian Consul General (Lyon) to the Secretary of State,8205,1,0,1,0
+frus1918,d389,1918-04-01,The Minister in Cuba (Gonzales) to the Secretary of State,1077,3,0,3,0
+frus1918Supp01v02,d804,1918-04-01,The Minister in Cuba (Gonzales) to the Secretary of State,1541,2,0,0,0
+frus1918Supp01v02,d805,1918-04-03,The Secretary of State to the Minister in Cuba (Gonzales),432,1,0,0,0
+frus1918Supp01v02,d806,1918-04-03,The War Trade Board Representative in Cuba (Morgan) to the Secretary of State,1533,4,0,1,0
+frus1918Supp01v02,d807,1918-04-04,The Secretary of State to the War Trade Board Representative in Cuba (Morgan),1015,3,0,3,0
+frus1918,d360,1918-04-06,The Minister in Cuba (Gonzales) to the Secretary of State,642,4,0,0,0
+frus1918,d361,1918-04-09,The Secretary of State to the Minister in Cuba (Gonzales),1639,11,0,6,0
+frus1918Supp01v01,d632,1918-04-10,The Minister in Cuba (Gonzales) to the Secretary of State,407,3,0,0,0
+frus1918,d362,1918-04-13,The Secretary of State to the Minister in Cuba (Gonzales),1012,7,0,0,0
+frus1918,d69,1918-04-19,The Secretary of State to the Ambassador in Brazil (Morgan),760,1,1,0,0
+frus1918,d363,1918-04-20,The Acting Secretary of State to the Chargé in Cuba (Scholle),1354,5,0,3,0
+frus1918,d364,1918-04-30,The Chargé in Cuba (Scholle) to the Secretary of State,479,1,0,0,0
+frus1918,d407,1918-05-02,The Minister in the Dominican Republic (Russell) to the Secretary of State,381,1,0,0,0
+frus1918,d365,1918-05-08,The Minister in Cuba (Gonzales) to the Secretary of State,7203,18,4,6,1
+frus1918,d366,1918-05-09,The Minister in Cuba (Gonzales) to the Secretary of State,2602,10,0,7,0
+frus1918Supp01v01,d642,1918-05-10,The Secretary of State to the Minister in Haiti (Bailly-Blanchard),2307,1,1,1,1
+frus1918Supp01v01,d648,1918-05-21,The Minister in Cuba (Gonzales) to the Secretary of State,677,1,0,0,0
+frus1918Supp02,d572,1918-05-21,The Secretary of State to the Secretary of War (Baker),1818,1,0,1,0
+frus1918Supp02,d573,1918-05-23,Public Statement Issued by the Food Administration,2409,1,0,1,0
+frus1918Supp01v01,d654,1918-05-24,The Ambassador in Mexico (Fletcher) to the Secretary of State,2929,9,1,0,0
+frus1918Supp01v02,d75,1918-05-25,The Secretary of State to the Diplomatic Representatives in Certain Countries,1002,1,0,0,0
+frus1918Supp01v01,d657,1918-05-29,The Mexican Ambassador (Bonillas) to the Secretary of State,815,3,0,2,0
+frus1918,d390,1918-05-30,The Minister in Cuba (Gonzales) to the Secretary of State,867,1,0,1,0
+frus1918Supp01v01,d661,1918-06-04,The Ambassador in Brazil (Morgan) to the Secretary of State,1751,1,0,1,0
+frus1918Supp01v02,d808,1918-06-04,The Minister in Cuba (Gonzales) to the Secretary of State,992,4,0,0,0
+frus1918,d367,1918-06-05,The Minister in Cuba (Gonzales) to the Secretary of State,3972,2,0,0,0
+frus1918Supp01v01,d665,1918-06-10,The Secretary of State to the Cuban Minister (De Céspedes),1861,8,2,1,1
+frus1918,d549,1918-06-13,The Consul General at Guayaquil (Goding) to the Secretary of State,5758,2,2,1,1
+frus1918,d548,1918-06-14,The Chargé in Chile (De Billier) to the Secretary of State,2656,1,0,0,0
+frus1918Supp01v02,d809,1918-06-14,The Minister in Cuba (Gonzales) to the Secretary of State,1558,5,0,2,0
+frus1918Supp01v01,d666,1918-06-15,The Cuban Minister (De Céspedes) to the Secretary of State,2789,15,7,12,5
+frus1918Supp01v02,d810,1918-06-19,The Secretary of State to the Minister in Cuba (Gonzales),448,4,0,0,0
+frus1918Supp01v02,d811,1918-06-22,The Secretary of State to the Minister in Cuba (Gonzales),521,6,0,5,0
+frus1918Supp01v02,d736,1918-06-24,The Secretary of State to the Ambassador in France (Sharp),703,1,1,0,0
+frus1918,d554,1918-06-26,The Ambassador in Mexico (Fletcher) to the Secretary of State,19327,1,1,1,1
+frus1918Supp01v02,d436,1918-06-28,The Chargé in Great Britain (Laughlin) to the Secretary of State,2189,1,0,0,0
+frus1918Supp01v01,d670,1918-07-02,The Secretary of State to the Cuban Minister (De Céspedes),1347,8,4,0,0
+frus1918Supp01v02,d813,1918-07-02,The Secretary of State to the War Trade Board Representative in Cuba (Morgan),1374,6,0,4,0
+frus1918Supp01v02,d814,1918-07-05,The Secretary of State to the Minister in Cuba (Gonzales),2406,3,0,0,0
+frus1918Supp01v02,d816,1918-07-06,The Assistant to the War Trade Board Representative in Cuba (Farnsworth) to the Secretary of State,507,2,0,2,0
+frus1918Supp01v01,d210,1918-07-07,The Minister in the Netherlands (Garrett) to the Secretary of State,3799,1,0,0,0
+frus1918,d391,1918-07-10,The Cuban Minister (De Céspedes) to the Secretary of State,822,4,0,3,0
+frus1918Supp02,d392,1918-07-13,The Minister in Cuba (Gonzales) to the Secretary of State,477,1,0,0,0
+frus1918,d368,1918-07-18,The Minister in Cuba (Gonzales) to the Secretary of State,1114,5,3,4,3
+frus1918Supp02,d393,1918-07-23,The Acting Secretary of State to the Minister in Cuba (Gonzales),661,1,0,0,0
+frus1918Supp01v02,d817,1918-07-31,The Acting Secretary of State to the Minister in Cuba (Gonzales),563,3,0,2,0
+frus1918Supp01v02,d818,1918-07-31,The Acting Secretary of State to the Ambassador in Spain (Willard),705,4,0,2,0
+frus1918Supp02,d394,1918-08-06,The Minister in Cuba (Gonzales) to the Secretary of State,1699,3,0,2,0
+frus1918Supp02,d237,1918-08-07,The Swiss Chargé (Hübscher) to the Secretary of State,2123,7,0,2,0
+frus1918Supp01v02,d822,1918-08-10,The War Trade Board Representative in Cuba (Morgan) to the Chief of the Division of Latin American Affairs (Stabler),1206,1,1,1,1
+frus1918Supp02,d115,1918-08-10,The Ambassador in Spain (Willard) to the Secretary of State,917,1,1,0,0
+frus1918Supp01v02,d821,1918-08-12,The Secretary of State to the Ambassador in Spain (Willard),978,1,0,0,0
+frus1918,d369,1918-08-14,The Cuban Minister (De Céspedes) to the Secretary of State,5953,10,3,6,3
+frus1918Supp01v02,d824,1918-08-14,The War Trade Board Representative in Cuba (Morgan) to the Chief of the Division of Latin American Affairs (Stabler),680,1,0,1,0
+frus1918,d319,1918-08-16,The Minister in Cuba (Gonzales) to the Secretary of State,4716,3,2,0,0
+frus1918,d370,1918-08-19,The Secretary of State to the Secretary of the Treasury (McAdoo),1906,7,0,3,0
+frus1918,d371,1918-08-20,The Secretary of State to the Cuban Minister (De Céspedes),1018,6,0,1,0
+frus1918Supp01v02,d823,1918-08-21,The Secretary of State to the War Trade Board Representative in Cuba (Morgan),371,2,0,1,0
+frus1918Supp01v02,d825,1918-08-22,The War Trade Board Representative in Cuba (Morgan) to the Secretary of State,432,1,0,1,0
+frus1918,d372,1918-08-26,The Secretary of the Treasury (McAdoo) to the Secretary of State,3445,17,0,12,0
+frus1918Supp01v02,d826,1918-08-31,The Ambassador in Spain (Willard) to the Secretary of State,552,2,0,2,0
+frus1918Supp01v02,d827,1918-09-09,The Secretary of State to the Ambassador in Spain (Willard),365,1,0,1,0
+frus1918,d392,1918-09-12,The Minister in Cuba (Gonzales) to the Secretary of State,2294,2,0,1,0
+frus1918Supp02,d121,1918-09-13,The Ambassador in France (Sharp) to the Secretary of State,766,1,1,1,1
+frus1918Supp01v02,d828,1918-09-18,The War Trade Board Representative in Cuba (Morgan) to the Secretary of State,999,1,0,1,0
+frus1918Supp01v01,d693,1918-09-19,The Cuban Minister (De Céspedes) to the Secretary of State,7924,19,11,3,3
+frus1918Supp02,d395,1918-09-20,The Minister in Cuba (Gonzales) to the Secretary of State,270,1,0,1,0
+frus1918Supp01v01,d694,1918-09-23,The Secretary of State to the Cuban Minister (De Céspedes),2676,11,9,5,5
+frus1918Supp02,d128,1918-09-25,The Minister in Switzerland (Stovall) to the Secretary of State,2183,1,1,0,0
+frus1918Supp02,d129,1918-09-28,The Minister in Switzerland (Stovall) to the Secretary of State,2248,2,2,0,0
+frus1918Supp02,d130,1918-09-30,The Secretary of State to the Minister in Switzerland (Stovall),1166,1,1,1,1
+frus1918Russiav01,d664,1918-10-09,The Minister in Cuba (Gonzales) to the Secretary of State,805,3,0,0,0
+frus1918Supp02,d135,1918-10-09,The Secretary of State to the Minister in Switzerland (Stovall),864,2,2,0,0
+frus1918,d373,1918-10-17,The Assistant Secretary of the Treasury (Rathbone) to the Counselor for the Department of State (Polk),10969,57,6,18,1
+frus1918Supp01v01,d328,1918-10-23,The Secretary of State to the Italian Ambassador (Macchi di Cellere),2233,1,1,0,0
+frus1919Parisv01,d337,1918-11-15,The Special Representative (House) to the Secretary of State,17196,1,1,0,0
+frus1918Supp01v02,d831,1918-11-20,The Ambassador in Spain (Willard) to the Secretary of State,826,3,0,3,0
+frus1919Parisv01,d339,1918-11-22,"Memorandum by Mr. D. H. Miller on Revised French Proposals of November 21, 1918",29970,2,2,1,1
+frus1918,d1,1918-11-27,The Secretary of State to the Argentine Chargé (Quintana),2005,1,1,0,0
+frus1919Parisv01,d235,1918-11-29,The Secretary of State to the Minister in Panama (Price),1282,1,1,0,0
+frus1918,d77,1918-11-30,The Vice Consul in Charge at Rio de Janeiro (Momsen) to the Secretary of State,12160,3,0,0,0
+frus1918Supp01v02,d832,1918-11-30,The Secretary of State to the Ambassador in Spain (Willard),770,7,0,7,0
+frus1919Parisv01,d387,1918-12-01,Mr. D. H. Miller to Colonel E. M. House,7333,1,0,1,0
+frus1918,d2,1918-12-05,The Secretary of State to the Ambassador in Brazil (Morgan),3861,2,0,1,0
+frus1919Parisv01,d319,1918-12-30,Skeleton Draft of Peace Treaty,31575,3,1,0,0
+frus1919Parisv01,d250,1919-01-07,The Acting Secretary of State to the Minister in Panama (Price),1504,1,1,0,0
+frus1919Parisv01,d321,1919-01-09,"The Technical Advisers to the Commission to Negotiate Peace (Miller, Scott) to the Secretary of State",21006,1,1,0,0
+frus1919Parisv01,d345,1919-01-09,The Chargé in France (Bliss) to Mr. Henry White,22166,2,2,0,0
+frus1919Parisv01,d346,1919-01-12,"The Technical Advisers to the Commission to Negotiate Peace (Miller, Scott) to the Secretary of State",25171,1,1,0,0
+frus1919Parisv03,d22,1919-01-12,"Notes of a Meeting of the Supreme War Council Held at Quai d’Orsay at 2:30 on January 12, 1919",31695,2,0,2,0
+frus1919Parisv03,d28,1919-01-15,"Secretary’s Notes of a Conversation Held in M. Pichon’s Room at the Quai d’Orsay, on Wednesday, January 15, 1919, at 10:",35616,2,2,0,0
+frus1919Parisv03,d29,1919-01-15,"Secretary’s Notes of a Conversation Held in M. Pichon’s Room at the Quai d’Orsay, Paris, on Wednesday, January 15, 1919,",20788,1,0,0,0
+frus1919v02,d1,1919-01-15,The Acting Secretary of State to the Chargé in Cuba (Bingham),2066,10,2,5,0
+frus1919Parisv03,d33,1919-01-17,"Secretary’s Notes of a Conversation Held in M. Pichon’s Room at the Quai d’Orsay, Paris, on Friday, January 17, 1919, at",17472,1,1,0,0
+frus1919Parisv03,d3,1919-01-18,"Preliminary Peace Conference, Protocol No. 1, Session of January 18, 1919",43490,6,3,2,0
+frus1919v02,d2,1919-01-18,The Chargé in Cuba (Bingham) to the Acting Secretary of State,2759,9,0,2,0
+frus1919v02,d3,1919-01-23,The Minister in Cuba (Gonzales) to the Acting Secretary of State,7646,7,0,0,0
+frus1919v02,d4,1919-01-24,The Acting Secretary of State to the Minister in Cuba (Gonzales),1363,3,0,0,0
+frus1919Parisv03,d4,1919-01-25,"Preliminary Peace Conference, Protocol No. 2, Plenary Session of January 25, 1919",76125,2,0,1,0
+frus1919v02,d5,1919-01-25,The Minister in Cuba (Gonzales) to the Acting Secretary of State,732,1,0,0,0
+frus1919Parisv03,d17,1919-01-27,"Minutes of the Meeting Held by the Representatives of Powers With Special Interests, January 27, 1919",21928,3,0,0,0
+frus1919v02,d6,1919-02-03,The Minister in Cuba (Gonzales) to the Acting Secretary of State,1671,1,0,0,0
+frus1919v02,d7,1919-02-06,The Acting Secretary of State to the Minister in Cuba (Gonzales),1198,3,0,0,0
+frus1919v02,d8,1919-02-12,The Minister in Cuba (Gonzales) to the Acting Secretary of State,1933,8,4,0,0
+frus1919v02,d9,1919-02-12,The Acting Secretary of State to the Minister in Cuba (Gonzales),521,2,0,0,0
+frus1919v02,d10,1919-02-13,The Minister in Cuba (Gonzales) to the Acting Secretary of State,530,2,0,0,0
+frus1919Parisv03,d5,1919-02-14,"Preliminary Peace Conference, Protocol No. 3, Plenary Session of February 14, 1919",81585,1,0,0,0
+frus1919v02,d11,1919-02-15,The Minister in Cuba (Gonzales) to the Acting Secretary of State,352,1,0,0,0
+frus1919Parisv03,d18,1919-03-03,"Meeting Held by the Representatives of the Powers With Special Interests on Monday, March 3, 1919",15378,1,1,0,0
+frus1919v02,d12,1919-03-03,The Acting Secretary of State to the Minister in Cuba (Gonzales),959,2,0,0,0
+frus1919Parisv04,d12,1919-03-05,"Secretary’s Notes of a Conversation Held in M. Pichon’s Room at the Quai d’Orsay, Paris, on Wednesday, March 5, 1919, at",54096,1,0,1,0
+frus1919Parisv03,d19,1919-03-06,"Meeting Held by the Representatives of the Powers With Special Interests on Thursday, March 6, 1919",11258,3,1,2,0
+frus1919Parisv04,d15,1919-03-08,"Minutes of the 3rd Meeting of the 17th Session, Supreme War Council, Held in M. Pichon’s Room at the Quai d’Orsay, Paris",70940,4,3,1,1
+frus1919Parisv04,d19,1919-03-15,"Minutes of the Meeting of the Supreme War Council Held in M. Pichon’s Room at the Quai d’Orsay, Paris, Saturday, March 1",4535,3,1,3,1
+frus1919v02,d49,1919-03-23,"The Consul at Santo Domingo (Edwards), Temporarily in Charge of the Legation in the Dominican Republic, to the Acting Se",3206,5,2,0,0
+frus1919v02,d13,1919-03-24,The Acting Secretary of State to the Minister in Cuba (Gonzales),1272,6,0,1,0
+frus1920v02,d85,1919-03-25,The Acting Secretary of State to the Minister in Cuba (Gonzales),3177,15,4,6,0
+frus1919Parisv11,d39,1919-03-28,"Minutes of the Daily Meetings of the Commissioners Plenipotentiary, Friday, March 28th, 1919",3694,3,0,0,0
+frus1919Parisv03,d1,1919-04-01,PART I. Composition of the Conference,122752,4,0,0,0
+frus1919v02,d14,1919-04-01,General Enoch H. Crowder to the Acting Secretary of State,6804,4,2,0,0
+frus1919v02,d15,1919-04-03,General Enoch H. Crowder to the Acting Secretary of State,4632,4,0,1,0
+frus1919v02,d285,1919-04-05,The Haitian Minister (Moravia) to the Acting Secretary of State,13834,1,1,0,0
+frus1919Parisv10,d10,1919-04-07,"Supreme Economic Council: Eleventh Meeting Held at the Ministry of Commerce [on 7th April and 9th April, 1919, at 10 a.m",123644,1,0,0,0
+frus1919Parisv03,d6,1919-04-11,"Preliminary Peace Conference, Protocol No. 4, Plenary Session of April 11, 1919",108724,7,1,0,0
+frus1919v02,d16,1919-04-15,The Minister in Cuba (Gonzales) to the Acting Secretary of State,3435,3,0,0,0
+frus1919v02,d17,1919-04-16,The Minister in Cuba (Gonzales) to the Acting Secretary of State,1096,1,0,0,0
+frus1919v02,d18,1919-04-23,General Enoch H. Crowder to the Acting Secretary of State,5982,5,1,2,0
+frus1919v02,d52,1919-04-25,The Secretary General of the Commission to Negotiate Peace (Grew) to the Acting Secretary of State,31453,5,0,0,0
+frus1919Parisv05,d25,1919-04-26,"Notes of a Meeting Held at President Wilson’s House at the Place des Etats-Unis, Paris, on Saturday, April 26, at 3 p.m.",5071,1,0,0,0
+frus1919Parisv03,d7,1919-04-28,"Preliminary Peace Conference, Protocol No. 5, Plenary Session of April 28, 1919",130898,2,1,0,0
+frus1919v02,d20,1919-04-29,General Enoch H. Crowder to the Acting Secretary of State,3194,3,0,0,0
+frus1919v01,d253,1919-05-01,The Ambassador in Brazil (Morgan) to the Acting Secretary of State,696,1,0,0,0
+frus1919v01,ch15,1919-05-01,Concessions to the Central & South American Telegraph Co. for cables connecting Brazil with Cuba and Uruguay; opposition,188,1,0,0,0
+frus1919Parisv03,d11,1919-05-07,"Peace Congress (Versailles), Protocol No. 1, Plenary Session of May 7, 1919",18756,2,0,2,0
+frus1919v02,d21,1919-05-08,General Enoch H. Crowder to the Acting Secretary of State,7339,5,0,1,0
+frus1919v02,d22,1919-05-11,The Minister in Cuba (Gonzales) to the Acting Secretary of State,2939,4,0,1,0
+frus1919v02,d23,1919-05-13,The Acting Secretary of State to the Minister in Cuba (Gonzales),554,1,0,0,0
+frus1919v02,d24,1919-05-16,The Minister in Cuba (Gonzales) to the Acting Secretary of State,617,1,0,0,0
+frus1919v01,d254,1919-05-18,The Acting Secretary of State to the Ambassador in Great Britain (Davis),1858,3,0,1,0
+frus1919Parisv11,d257,1919-05-22,Colonel E. M. House to President Wilson,28027,1,0,0,0
+frus1919Parisv03,d8,1919-05-29,"Preliminary Peace Conference, Protocol No. 6, Plenary Session of May 6, 1919",135284,1,0,0,0
+frus1919Parisv03,d10,1919-05-31,"Preliminary Peace Conference, Protocol No. 8, Plenary Session of May 31, 1919",42719,1,1,0,0
+frus1919v01,d218,1919-05-31,The Acting Secretary of State to Certain Consular Officers,4291,1,0,0,0
+frus1919v01,d219,1919-05-31,The Acting Secretary of State to the Consul at Tegucigalpa (Donald),1509,1,0,0,0
+frus1919Parisv03,d13,1919-06-02,"Peace Congress (Saint-Germain), Protocol No. 1, Plenary Session of June 2, 1919",16299,2,0,2,0
+frus1919Parisv11,d261,1919-06-05,Senator Elihu Root to Mr. Henry White,1457,1,0,1,0
+frus1919v01,d730,1919-06-08,The Minister in Colombia (Philip) to the Acting Secretary of State,1057,1,0,0,0
+frus1919Parisv10,d21,1919-06-10,"Supreme Economic Council: Twenty-second Meeting Held at the Ministry of Commerce [on 10th June, 1919, at 3:30 p.m.]",42788,2,1,1,0
+frus1919v01,d250,1919-06-21,The Acting Secretary of State to the Ambassador in Brazil (Morgan),3335,2,1,2,1
+frus1919Parisv10,d23,1919-06-23,"Supreme Economic Council: Twenty-fourth Meeting Held at the Ministry of Commerce [on 23d June, 1919, at 10 a.m.]",132355,1,0,1,0
+frus1919v01,d251,1919-06-23,The Ambassador in Brazil (Morgan) to the Acting Secretary of State,961,1,0,0,0
+frus1919Parisv03,d12,1919-06-28,"Peace Congress (Versailles), Protocol No. 2, Plenary Session of June 28, 1919",5840,1,0,0,0
+frus1919v01,d252,1919-07-01,The Ambassador in Brazil (Morgan) to the Acting Secretary of State,12330,3,0,0,0
+frus1919v02,d25,1919-07-01,The Minister in Cuba (Gonzales) to the Acting Secretary of State,5304,5,0,0,0
+frus1919v01,d53,1919-07-16,The Acting Secretary of State to the Chargé in Bolivia (Goold),7421,1,1,0,0
+frus1920v02,d86,1919-07-25,The Minister in Cuba (Gonzales) to the Secretary of State,15449,36,4,7,1
+frus1919v02,d26,1919-08-08,The Minister in Cuba (Gonzales) to the Secretary of State,421,3,0,0,0
+frus1919v01,d256,1919-08-13,The Ambassador in Great Britain (Davis) to the Secretary of State,3442,1,0,0,0
+frus1919Parisv07,d42,1919-08-23,"Notes of a Meeting of the Heads of Delegations of the Five Great Powers Held in M. Pichon’s Room at the Quai d’Orsay, Pa",57394,2,2,1,1
+frus1919Parisv12,d380,1919-08-28,Report of the American Section of the International Commission on Mandates in Turkey,255100,2,0,0,0
+frus1919Parisv12,d381,1919-08-28,Confidential Appendix to the Report Upon Syria,43980,2,0,1,0
+frus1919v02,d296,1919-08-28,The Minister in Haiti (Bailly-Blanchard) to the Secretary of State,398,1,0,0,0
+frus1919v02,d27,1919-08-30,General Enoch H. Crowder to the Secretary of State,131731,26,1,5,0
+frus1919v02,d59,1919-09-05,Doctor Henriquez y Carvajal to the Acting Chief of the Division of Latin American Affairs of the Department of State (Jo,4140,2,1,1,0
+frus1919v02,d61,1919-09-08,Memorandum of Mr. J. C. Dunn of the Division of Latin American Affairs of the Department of State,2481,1,1,0,0
+frus1919Parisv03,d14,1919-09-10,"Peace Congress (Saint-Germain), Protocol No. 2, Plenary Session of September 10, 1919",6741,1,1,0,0
+frus1920v01,d174,1919-09-10,"Convention for the Control of the Trade in Arms and Ammunition, and Protocol, Signed at Saint-Germain-en-Laye and Paris ",36168,3,1,2,0
+frus1919Parisv08,d15,1919-09-18,"Notes of a Meeting of the Heads of Delegations of the Five Great Powers Held in M. Pichon’s Room at the Quai d’Orsay, Pa",35482,1,1,0,0
+frus1919v02,d65,1919-09-18,Doctor Henriquez y Carvajal to the Secretary of State,4600,3,2,0,0
+frus1919Parisv08,d21,1919-09-27,"Notes of a Meeting of the Heads of Delegations of the Five Great Powers Held in M. Pichon’s Room at the Quai d’Orsay, Pa",61031,2,0,0,0
+frus1919Parisv03,d2,1919-10-01,A,68810,2,0,0,0
+frus1919v02,d828,1919-10-16,The Chief of the Military Mission to Armenia (Harbord) to the Secretary of State,124364,3,2,2,1
+frus1919Parisv08,d31,1919-10-18,"Notes of a Meeting of the Heads of Delegations of the Five Great Powers Held in M. Pichon’s Room at the Quai d’Orsay, Pa",58305,1,1,0,0
+frus1919v02,d28,1919-10-23,The Acting Secretary of State to the Minister in Cuba (Gonzales),5144,15,0,2,0
+frus1919v01,d258,1919-10-25,The Ambassador in Brazil (Morgan) to the Secretary of State,599,1,0,0,0
+frus1919v02,d68,1919-10-27,Doctor Henriquez y Carvajal to the Secretary of State,2943,2,0,0,0
+frus1920v02,d87,1919-10-29,The Secretary of State to the Minister in Cuba (Gonzales),8648,43,7,2,0
+frus1919v02,d70,1919-10-30,The Secretary of State to the Minister in the Dominican Republic (Russell),329,1,0,0,0
+frus1919v01,d223,1919-11-06,The British Appointed Ambassador (Grey) to the Secretary of State,6897,1,1,0,0
+frus1919v02,d29,1919-11-07,The Minister in Cuba (Gonzales) to the Secretary of State,8606,20,9,5,2
+frus1919v02,d30,1919-11-25,The Minister in Cuba (Gonzales) to the Secretary of State,536,1,0,0,0
+frus1919Parisv03,d16,1919-11-27,"Peace Congress (Neuilly-sur-Seine), Protocol No. 2, Plenary Session of November 27, 1919",4369,1,0,0,0
+frus1919v02,d31,1919-12-01,The Secretary of State to the Minister in Cuba (Gonzales),1474,6,0,0,0
+frus1919v02,d32,1919-12-04,The Minister in Cuba (Gonzales) to the Secretary of State,291,1,0,0,0
+frus1919v02,d73,1919-12-05,The Minister in the Dominican Republic (Russell) to the Secretary of State,9426,4,3,1,1
+frus1919v02,d33,1919-12-08,The Secretary of State to the Minister in Cuba (Gonzales),303,1,0,0,0
+frus1919v02,d34,1919-12-10,The Secretary of State to the Minister in Cuba (Gonzales),525,2,0,0,0
+frus1920v02,d88,1919-12-10,The Minister in Cuba (Gonzales) to the Secretary of State,416,1,0,0,0
+frus1919v02,d35,1919-12-11,The Minister in Cuba (Gonzales) to the Secretary of State,1423,5,0,0,0
+frus1919v01,d260,1919-12-16,The Chargé in Brazil (Wadsworth) to the Secretary of State,321,1,0,0,0
+frus1920v02,d89,1919-12-16,The Secretary of State to the Minister in Cuba (Gonzales),446,2,0,0,0

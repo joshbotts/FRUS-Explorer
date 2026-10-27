@@ -1,0 +1,18 @@
+COVERAGE: (553, 321749, 1103, 8481)
+CONTROLS (FTS, all columns): positive 'department AND state' = 183557 ; negative 'zzz_impossible_zzz' = 0
+positive control per volume: volumes with >=1 non-apparatus document matching 'department AND state': 553 of 553
+decade | dated non-apparatus docs (M) | Cuba/Cuban FTS hits (N) | N of M per 1,000 | top volume (share of N)
+1870s | 5821 | 363 | 62.4 | frus1874 101 of 363 (0.28)
+1880s | 6484 | 294 | 45.3 | frus1885 58 of 294 (0.20)
+1890s | 9845 | 592 | 60.1 | frus1898 234 of 592 (0.40)
+1900s | 10261 | 367 | 35.8 | frus1902 93 of 367 (0.25)
+1910s | 30842 | 875 | 28.4 | frus1917 147 of 875 (0.17)
+1920s | 20374 | 712 | 34.9 | frus1921v01 137 of 712 (0.19)
+1930s | 40073 | 1094 | 27.3 | frus1933v05 344 of 1094 (0.31)
+1940s | 75872 | 1316 | 17.3 | frus1944v07 171 of 1316 (0.13)
+1950s | 42801 | 982 | 22.9 | frus1958-60v06 354 of 982 (0.36)
+1960s | 27654 | 3147 | 113.8 | frus1961-63v10-12mSupp 560 of 3147 (0.18)
+1970s | 22258 | 1887 | 84.8 | frus1969-76ve11p1 175 of 1887 (0.09)
+1980s | 6038 | 627 | 103.8 | frus1981-88v03 72 of 627 (0.11)
+hit list 1870s-1980s: 12256
+literal share, sample 40 of 12256 (every 306.4th): STRICT 39 of 40; TOLERANT 40 of 40; misses []

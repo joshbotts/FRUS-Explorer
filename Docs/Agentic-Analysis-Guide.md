@@ -273,6 +273,19 @@ of 34), so on this question it is not the choice for any of the three. These are
 figures: a second question is the first thing a later run adds, and until then read the table as
 where to start, not as a ranking of the models.
 
+**With the vector artifacts.** Measured on 2026-10-27 on a second question (how policymakers'
+thinking about Cuba changed since the 1870s), the same two cells were handed Appendix A whole and
+the artifacts of §A.1 by path, with no embedder and no helper script, two runs each
+(`Planning/C-3-Vectors-Tier-Results-2026-10-27.md`). Every run ran all five of §A.5's operations,
+compared the digests first and calibrated against both baselines; two runs of four cited and
+quoted a document that no full-text or heading query they ran returns, reached through a
+neighbour list; compliance on the 35 items above fell by one item in three runs of four (0.941 to
+1.000 against four perfect runs without the appendix), and wall clock and usage did not rise. So
+on a question whose vocabulary drifts across the series, hand these cells the artifacts and this
+appendix, paste §A.8's addendum into the §12 block, and expect about one cited document in twenty
+to be reachable no other way. The one rule all four runs missed was §A.7's last paragraph, the
+calibration offsets on a cosine the reader sees, which the addendum now states.
+
 ---
 
 ## 4. Schema reference
@@ -2826,26 +2839,32 @@ subseries in the index's `subseries` order. Dequantize any int8 vector as `code 
 ### A.5 What an agent can do with no model
 
 **Nearest neighbors of a document, corpus-wide.** XOR-and-popcount over the sign bits. Executed
-against the shipped binary, the ten nearest neighbors of `frus1861/d111` are:
+against the shipped binary (EmbeddingGemma 2, digest `89481b18…`, re-taken 2026-10-26), the ten
+nearest neighbors of `frus1861/d111` are:
 
 ```
-hamming  87  frus1862/d130        hamming  91  frus1861/d163
-hamming  87  frus1862/d455        hamming  91  frus1861/d212
-hamming  89  frus1861/d39         hamming  91  frus1862/d462
-hamming  90  frus1862/d457        hamming  96  frus1863p2/d165
-hamming  90  frus1865p3/d5        hamming  97  frus1864p4/d212
+hamming  57  frus1861/d119        hamming  77  frus1862/d262
+hamming  62  frus1861/d39         hamming  78  frus1861/d20
+hamming  70  frus1863p1/d254      hamming  78  frus1862/d111
+hamming  75  frus1862/d130        hamming  78  frus1862/d455
+hamming  77  frus1861/d203        hamming  79  frus1862/d118
 ```
 
-— all Civil War-era diplomacy, which is what a working index looks like.
+— all Civil War-era diplomacy, which is what a working index looks like. (The 300m generation's
+list, which this paragraph carried until 2026-10-26, began `87 frus1862/d130`; three of its ten
+survive here at shorter distances. A regeneration moves every list, as §A.8 says.)
 
 Calibrate before reading any distance, against **two** baselines. Random pairs at this digest
-(20,000, `default_rng(1877)`): mean 193, sd 17, 1st percentile 152, minimum ~100 of 512 — the list
-above at 87–97 is far outside chance. But every nearest-neighbour list is a tail of that
-distribution by construction, so a neighbour at 126 is not "top 0.1%" evidence of a link: the
-corpus's median document has its 25th-nearest neighbour at 124, and one document whose nearest
-neighbour in the whole corpus sits at 126 is a semantic isolate. Judge a neighbour against the
+(20,000 pairs drawn with the standard library's `random.Random(1877)`): mean 167, sd 15, 1st
+percentile 132, minimum 95 of 512 — the list above at 57–79 is far outside chance. But every
+nearest-neighbour list is a tail of that distribution by construction, so a neighbour at 110 is
+not "top 0.1%" evidence of a link: over a 200-document sample the median document has its
+25th-nearest neighbour at 108 (quartiles 101 and 113), and one document whose nearest neighbour
+in the whole corpus sits at 130 is a semantic isolate. Judge a neighbour against the
 k-th-neighbour distribution and a set's cohesion against random pairs; a random 512-bit pattern has
-minimum 215 to the corpus. Recompute both after any regeneration.
+minimum 200 to 206 to the corpus (ten patterns). Recompute both after any regeneration: the 300m
+generation's figures were mean 193, sd 17, 25th neighbour 124 and pattern minimum 215, and
+EmbeddingGemma 2's distances run about 25 bits shorter throughout.
 
 The core loop, given the `row_of`/`doc_of` maps built from §A.3's decode:
 
@@ -2870,6 +2889,8 @@ for row in range(docs):
 
 A full scan is milliseconds in a compiled language and a few seconds even in pure Python; no ANN
 index is needed at this scale (the app measured its own full scan at 1.43 ms and decided the same).
+`int.bit_count()` needs Python 3.10; on 3.9, which a Mac's system Python still is, write
+`bin(q ^ sign_row(row)).count("1")`, which is the same count at a few times the cost.
 
 **Semantic joins into the database.** This is where an agent goes past the app's own UI: take a
 neighbor set or a cluster's members, then join `(volume_id, document_id)` into `document_dates`,
@@ -2881,26 +2902,28 @@ stemming mangles.
 
 **Volume and subseries similarity, and outliers.** The centroid block gives every volume a vector.
 Executed against the shipped file, the volumes nearest `frus1861` by centroid cosine are
-`frus1862` (0.976), `frus1863p2` (0.967), `frus1866p1` (0.957) — the adjacent Civil War annuals,
+`frus1862` (0.989), `frus1863p2` (0.986), `frus1864p4` (0.984) — the adjacent Civil War annuals,
 as they should be. A document's distance from its own volume's centroid is an off-the-shelf
 outlier detector: "the least typical document in this volume."
 
 **The map.** Six bytes per document give a 2-D position and a cluster; the map index names each
-cluster with sampled c-TF-IDF terms and an era histogram. Verified example, in the 2026-10-10
-layout: `frus1929v03/d17`, the Jerusalem consul general's despatch of 23 August 1929, sits in
-cluster 16, whose terms are `israel, israeli, arab, uar` and 11,624 of whose 12,130 documents come
-from volumes of 1945 and later — a Mandate-era despatch landing in the region of the Arab–Israeli
-dispute, which is the kind of long-arc continuity the layout exists to show. (The example this
-paragraph gave until 2026-10-10, `frus1881/d625` in a region labelled `shah, iran, iranian,
-mosadeq`, was true of the 2026-08-16 layout alone: that despatch was unclustered in the 2026-09-09
-layout and sits in `porte, constantinople, terrell, ottoman` now. An example is a reading of one
-layout, like an id.) 92,268 of 314,616 placements (29.3%) are
-unclustered (`0xFFFF`); that share is a property of the corpus, not an error, and any figure built
-on clusters owes the reader the number. It is corpus-wide and strongly era-dependent: over all
-placements, by the midpoint of each volume's date range in the manifest, 37.5% of 1861–1899
-documents are unclustered against 24.4% of 1945–1964 (the 2026-08-16 layout, over a narrower
-working scope with apparatus excluded and Ed2 folded, gave 46.7% against 22.3%). Compare any
-set's unclustered share to an era-matched baseline, never to the corpus figure.
+cluster with sampled c-TF-IDF terms and an era histogram. Verified example, in the 2026-10-15
+layout (the EmbeddingGemma 2 generation, 140 clusters): `frus1881/d625`, the 1881 despatch from
+Constantinople, sits in cluster 73, whose terms are `constantinople, terrell, porte, sublime` and
+1,307 of whose 1,643 documents come from the layout's earliest era band; `frus1961-63v11/d1` sits
+in cluster 42, `castro, somoza, cuban, cuba`, 7,650 documents, with `frus1964-68v31/d512`, a Chile
+memorandum of 1964, beside it. (The example this paragraph gave until 2026-10-26, `frus1929v03/d17`
+in a cluster labelled `israel, israeli, arab, uar`, was a reading of the 2026-10-10 layout: that
+despatch is unclustered in this one, and so is `frus1913/d1028`. Before that the example was
+`frus1881/d625` in `shah, iran, iranian, mosadeq`, true of the 2026-08-16 layout alone. An example
+is a reading of one layout, like an id.) 88,059 of 314,616 placements (28.0%) are unclustered
+(`0xFFFF`); that share is a property of the corpus, not an error, and any figure built on clusters
+owes the reader the number. Its era dependence is a property of the layout, not a constant: over
+all placements, by the midpoint of each volume's date range in the manifest, 24.8% of 1861–1899
+documents are unclustered against 26.9% of 1945–1964 in this layout, where the 2026-10-10 layout
+gave 37.5% against 24.4% and the 2026-08-16 layout, over a narrower working scope with apparatus
+excluded and Ed2 folded, 46.7% against 22.3%. Compare any set's unclustered share to an
+era-matched baseline computed on the layout in use, never to the corpus figure.
 
 **Near-duplicate detection.** FRUS reprints some documents across volumes. Very small Hamming
 distances flag reprints — worth running over any sample before counting anything, so a document
@@ -2995,9 +3018,11 @@ The database caveats in §7 all still apply — and the semantic layer adds its 
 - **The map is a projection.** Clustering ran on the 2-D embedding, not the 512-dim space — the
   layout's input was the 256-dim cut (`layout.sourceDims`), not the shipped 512-bit sign block; map
   neighbours and Hamming neighbours are two measurements. 28% of documents are unclustered; the
-  28.0% is corpus-wide and strongly era-dependent — 46.7% of 1861–1899 documents are unclustered
-  against 22.3% of 1945–1964 (working scope: apparatus excluded, Ed2 folded). Compare any set's
-  unclustered share to an era-matched baseline, never to 28%. Labels are c-TF-IDF over a *sample* of
+  28.0% is corpus-wide, and how it falls by era depends on the layout — 24.8% of 1861–1899
+  documents against 26.9% of 1945–1964 in the 2026-10-15 layout, where earlier layouts had put
+  the nineteenth century far higher (46.7% against 22.3% in 2026-08-16's, over a narrower working
+  scope). Compare any set's unclustered share to an era-matched baseline computed on the layout
+  in use, never to 28%. Labels are c-TF-IDF over a *sample* of
   each cluster's members. Use clusters to explore and to sample, not to measure.
 - **Recall 0.851 means misses.** Roughly one to two of any document's ten true nearest neighbors
   are absent from the shipped funnel's answer. Fine for discovery; fatal for any claim of the form
@@ -3018,6 +3043,8 @@ SEMANTIC VECTORS
 - Tier-1 covers all 553 volumes even when the SQLite index does not: flag any neighbor whose
   volume is absent from document_cache, and cite it by its canonical URL.
 - Absence of a neighbor is not evidence of absence: the funnel's measured recall@10 is 0.851.
+- A cosine the reader sees goes through the index's `retrieval.scoreCalibration` offsets
+  (§A.7), or is labelled raw. Four runs of four skipped this in the 2026-10-27 measurement.
 ```
 
 
@@ -3069,6 +3096,25 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.36 — 2026-10-27: **§3a's paragraph on the vector artifacts**, from the C-3 vectors tier
+  (`Planning/C-3-Vectors-Tier-Results-2026-10-27.md`: Opus 5.5 at `medium` and Sonnet 5.5 at
+  `high`, two runs each, handed Appendix A and the artifacts on a second question): every run ran
+  all five of §A.5's operations correctly, two of four reached and quoted a document no full-text
+  query returns, compliance fell by one item in three of four, and time and usage did not rise.
+  §A.8's addendum gains the calibration-offsets line, the one rule all four runs missed. The
+  §15.1 block is unchanged.
+- 1.35 — 2026-10-26: **Appendix A's worked figures re-taken at the shipped generation**
+  (EmbeddingGemma 2, digest `89481b18…`), found stale while the C-3 vectors tier was prepared
+  (`Planning/C-3-Vectors-Tier-Design.md`): §A.5's ten neighbours of `frus1861/d111` (the 300m
+  list began at Hamming 87; this generation's at 57, three of the ten in common), the two
+  baselines (random pairs mean 167, sd 15, 1st percentile 132, minimum 95; the 25th neighbour's
+  median 108; a random pattern's minimum 200 to 206), the centroid example (`frus1862` 0.989,
+  `frus1863p2` 0.986, `frus1864p4` 0.984), and the map example and its shares
+  (`frus1929v03/d17` is unclustered in the 2026-10-15 layout; 88,059 of 314,616 placements,
+  28.0%). The appendix's own rule, that a regeneration moves every list and the baselines are
+  recomputed after one, had not been applied to its own examples when B4 moved the generation.
+  Tooling: `int.bit_count()` in §A.5's loop needs Python 3.10; the Mac's 3.9 has `bin(x).count("1")`.
+  The §15.1 block is unchanged.
 - 1.34 — 2026-10-26: **§3a, *Choosing a model and an effort*** — C-3's table
   (`Planning/C-3-Results-2026-10-26.md`, run 2026-10-25 on one question, nine model × effort
   cells and three replicates, instruments on Fable 5.1 at `max`): Opus 5.5 at `medium` for the

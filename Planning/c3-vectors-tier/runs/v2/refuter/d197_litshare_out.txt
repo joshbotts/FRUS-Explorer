@@ -1,0 +1,29 @@
+## d197 opening and any 'Secretary' / signature lines
+Circular–Department of States to ministers and consuls in Spanish-American States and Brazil. Department of State, Washington, August 19, 1870. Sir: Copies of a report of this Department to the President, of the 14th, ultimo in answer to a resolution of the Senate, touching the commercial relations between the United States and Spanish-American countries, are herewith transmitted. With a view to enable the President more fully to comply with the request for information upon that subject; and to make recommendations with a view to the improvement of those relations, you will, without unnecessary delay, communicate to this Department any facts, and will make any suggestions which you may deem 
+---
+ugrep: error: error at position 111
+SH|Fish|Acting)(?:[^\n\x80-\xbf][\x80-\xbf]*){0,80}
+                      exceeds complexity limits___/
+
+
+## frus1870 structure path for d197
+III. Correspondence in relation to the condition of the commercial relations between the United States and the Spanish American States and Brazil. > [Correspondence in relation to the condition of the commercial relations between the United States and the Spanish American States and Brazil.]
+## litshare.py
+# Literal share for the FTS family {header body_text}: (cuba OR cuban OR havana), apparatus excluded, Ed2 dropped.
+# Hit list sorted by (volume_id, document_id); evenly spaced sample of 40. Surface: header+dateline+source_note+body_text, whitespace-collapsed.
+# STRICT: \b(cuba|cuban|havana)\b (re.I).  TOLERANT: \b(cuba|cubans?|havana|havannah?)('s)?\b (re.I).
+import sqlite3, re
+db = sqlite3.connect("file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro", uri=True)
+SQL = """SELECT c.volume_id, c.document_id FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid
+WHERE frus_documents MATCH '{header body_text}: (cuba OR cuban OR havana)' AND c.is_front_matter=0 AND c.is_editorial_note=0
+AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ORDER BY c.volume_id, c.document_id"""
+hits = db.execute(SQL).fetchall()
+M = len(hits); step = M / 40; sample = [hits[int(i * step)] for i in range(40)]
+S = re.compile(r"\b(cuba|cuban|havana)\b", re.I); T = re.compile(r"\b(cuba|cubans?|havana|havannah?)('s)?\b", re.I)
+s = t = 0; miss = []
+for v, d in sample:
+    r = db.execute("SELECT header, dateline, source_note, body_text FROM document_cache WHERE volume_id=? AND document_id=?", (v, d)).fetchone()
+    x = " ".join(" ".join(z or "" for z in r).split())
+    a, b = bool(S.search(x)), bool(T.search(x)); s += a; t += b
+    if not b: miss.append(f"{v}/{d}")
+print("hit list M =", M); print("TOLERANT", t, "of 40; STRICT", s, "of 40"); print("tolerant misses:", miss)

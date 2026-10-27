@@ -1,0 +1,103 @@
+“…” strings in overview: 37
+ 1. PASS  frus1874/d552  “almost contiguous to the United States”  -> ok (1 segment)
+ 2. PASS  frus1874/d552  “a large and lucrative market”  -> ok (1 segment)
+ 3. PASS  frus1898/ch83  “the commerce, trade, and business of our people”  -> ok (1 segment)
+ 4. PASS  frus1898/ch83  “a constant menace to our peace”  -> ok (1 segment)
+ 5. PASS  frus1950v02/d440  “of great strategic importance”  -> ok (1 segment)
+ 6. PASS  frus1961-63v11/d21  “a domestic, political problem”  -> ok (1 segment)
+ 7. PASS  frus1969-76ve10/d205  “strategic weapons”  -> ok (1 segment)
+ 8. PASS  frus1977-80v01/d129  “It presents no direct threat to us”  -> ok (1 segment)
+ 9. [term, not a quotation] “Department of State”
+10. [term, not a quotation] “national security”
+11. [term, not a quotation] “menace”
+12. PASS  frus1874/d552  “perpetual solicitude”  -> ok (1 segment)
+13. PASS  frus1874/d552  “It is almost contiguous to the United States.”  -> ok (1 segment)
+14. PASS  frus1898/d498  “our great commerce with Cuba has thus been practically destroyed”  -> ok (1 segment)
+15. PASS  frus1898/ch83  “The present condition of affairs in Cuba is a constant menace to our p”  -> ok (1 segment)
+16. PASS  frus1902/d273  “nor in any manner authorize or permit any foreign power or powers to o”  -> ok (1 segment)
+17. PASS  frus1918/d333  “Cuba’s greatest aid to the United States in the prosecution of the war”  -> ok (1 segment)
+18. PASS  frus1934v05/d170  “the stipulations of that agreement with regard to the naval station of”  -> ok (1 segment)
+19. PASS  frus1941v07/d134  “economic and defense reasons”  -> ok (1 segment)
+20. PASS  frus1941v07/d134  “our interest in the Cuban situation for economic and defense reasons i”  -> ok (1 segment)
+21. PASS  frus1948v09/d420  “we could, by manipulation of tariff or quota affecting sugar, plunge t”  -> ok (1 segment)
+22. PASS  frus1950v02/d440  “Cuba, lying 90 miles to the south of Key West, Florida, is of great st”  -> ok (1 segment)
+23. PASS  frus1958-60v06/d362  “retaliatory instruments”  -> ok (1 segment)
+24. PASS  frus1958-60v06/d567  “one Rubicon”  -> ok (1 segment)
+25. PASS  frus1958-60v06/d362  “our retaliatory instruments, such as GATT and the sugar quota, are lik”  -> ok (1 segment)
+26. PASS  frus1958-60v06/d532  “Amendment of the preferential sugar quota act to provide for a reducti”  -> ok (1 segment)
+27. PASS  frus1958-60v06/d567  “Since we have crossed one Rubicon with our sugar and oil actions”  -> ok (1 segment)
+28. PASS  frus1961-63v11/d18  “intolerable and not acceptable”  -> ok (1 segment)
+29. PASS  frus1961-63v11/d21  “doesn’t mean that much”  -> ok (1 segment)
+30. PASS  frus1961-63v11/d18  “this kind of a base is intolerable and not acceptable”  -> ok (1 segment)
+31. PASS  frus1961-63v11/d21  “I don’t think there is a military problem here.”  -> ok (1 segment)
+32. PASS  frus1961-63v11/d21  “Geography doesn’t mean that much.”  -> ok (1 segment)
+33. PASS  frus1969-76ve10/d205  “subsidiary and lesser”  -> ok (1 segment)
+34. PASS  frus1969-76ve10/d205  “We have a vital interest: 1. In preventing the introduction into Cuba ”  -> ok (1 segment)
+35. PASS  frus1977-80v23/d18  “to gain access to U.S. markets and technology to stimulate its economy”  -> ok (1 segment)
+36. PASS  frus1977-80v01/d129  “It presents no direct threat to us.”  -> ok (1 segment)
+37. [term, not a quotation] “Department of State”
+overview quotations checked: 33 passed: 33 failed: 0
+X01 PASS frus1874/d552 “It is almost contiguous to the United States.” -> ok (1 segment)
+X02 PASS frus1874/d552 “it would afford a large and lucrative market for the product” -> ok (1 segment)
+X03 PASS frus1874/d552 “In short, the state of Cuba is the one great cause of perpet” -> ok (1 segment)
+X04 PASS frus1898/d498 “our great commerce with Cuba has thus been practically destr” -> ok (1 segment)
+X05 PASS frus1898/ch83 “The present condition of affairs in Cuba is a constant menac” -> ok (1 segment)
+X06 PASS frus1898/ch83 “The right to intervene may be justified by the very serious ” -> ok (1 segment)
+X07 PASS frus1902/d273 “nor in any manner authorize or permit any foreign power or p” -> ok (1 segment)
+X08 PASS frus1902/d273 “wise and beneficient legislation aiming to stimulate the com” -> ok (1 segment)
+X09 PASS frus1918/d333 “Cuba’s greatest aid to the United States in the prosecution ” -> ok (1 segment)
+X10 PASS frus1933v05/d241 “must be determined primarily by its rights and obligations a” -> ok (1 segment)
+X11 PASS frus1934v05/d170 “the stipulations of that agreement with regard to the naval ” -> ok (1 segment)
+X12 PASS frus1934v05/d154 “in continuation of the policy adopted in the Convention of C” -> ok (1 segment)
+X13 PASS frus1941v07/d134 “our interest in the Cuban situation for economic and defense” -> ok (1 segment)
+X14 PASS frus1948v09/d420 “we could, by manipulation of tariff or quota affecting sugar” -> ok (1 segment)
+X15 PASS frus1950v02/d440 “Cuba, lying 90 miles to the south of Key West, Florida, is o” -> ok (1 segment)
+X16 PASS frus1952-54v04/d331 “It is the policy, and in the best interest, of the United St” -> ok (1 segment)
+X17 PASS frus1958-60v06/d362 “our retaliatory instruments, such as GATT and the sugar quot” -> ok (1 segment)
+X18 PASS frus1958-60v06/d532 “Amendment of the preferential sugar quota act to provide for” -> ok (1 segment)
+X19 PASS frus1958-60v06/d535 “it would be impossible to carry on friendly relations with t” -> ok (1 segment)
+X20 PASS frus1958-60v06/d567 “Since we have crossed one Rubicon with our sugar and oil act” -> ok (1 segment)
+X21 PASS frus1961-63v11/d18 “this kind of a base is intolerable and not acceptable” -> ok (1 segment)
+X22 PASS frus1961-63v11/d21 “Geography doesn’t mean that much.” -> ok (1 segment)
+X23 PASS frus1961-63v11/d21 “I don’t think there is a military problem here.” -> ok (1 segment)
+X24 PASS frus1961-63v11/d21 “this is a domestic, political problem” -> ok (1 segment)
+X25 PASS frus1969-76ve10/d205 “We have a vital interest: 1. In preventing the introduction ” -> ok (1 segment)
+X26 PASS frus1969-76ve10/d205 “to promote meanwhile the realization of subsidiary and lesse” -> ok (1 segment)
+X27 PASS frus1977-80v23/d18 “U.S. Objectives are to get Cuba to demonstrate: —restraint i” -> ok (1 segment)
+X28 PASS frus1977-80v23/d18 “to gain access to U.S. markets and technology to stimulate i” -> ok (1 segment)
+X29 PASS frus1977-80v01/d129 “It presents no direct threat to us.” -> ok (1 segment)
+X30 PASS frus1977-80v01/d129 “In contrast to the 1962 crisis, no nuclear threat to the Uni” -> ok (1 segment)
+X31 PASS frus1981-88v03/d10 “Cuba has been a sore spot in the US-Soviet relationship sinc” -> ok (1 segment)
+excerpts checked: 31 passed: 31 failed: 0
+prose-quote (no pair on the entry) 's importance as proximity plus trade: a rich island next door whose wars cost American commerce and whose ownership by a European power was an irritant. The thread runs from Hamilton Fish'
+note-quote FAIL frus1898/ch83 's message to Congress on Cuba (dated by the index 12 April 1898). It lists four grounds for intervention, the third commercial and the fourth the menace to the nation' -> segment not found: 'smessagetocongressoncubadatedbytheindex12april1898itlistsfou'
+note-quote PASS frus1941v07/d134 'economic and defense reasons' -> ok (1 segment)
+note-quote PASS frus1958-60v06/d362 'retaliatory instruments' -> ok (1 segment)
+prose-quote (no pair on the entry) 'intolerable and not acceptable'
+prose-quote (no pair on the entry) 's words, no military problem but a domestic, political one. Kennedy'
+note-quote PASS frus1969-76ve10/d205 'subsidiary and lesser' -> ok (1 segment)
+
+EDITION CITATIONS (printed title / document number vs the URL's pair and the manifest title):
+ ??  frus1874/d552 | printed='Papers Relating to the Foreign Relations of the United States, 1874, Document 552' | manifest title='Papers Relating to the Foreign Relations of the United\n                    States, Transmitted to Congress, With the Annual Message of the President,\n                    December 7, 1874' | docnum in index='552' | title-match=False doc-match=True
+ ??  frus1898/ch83 | printed="Papers Relating to the Foreign Relations of the United States, 1898, the President's message to Congress" | manifest title='Papers Relating to the Foreign Relations of the United\n                    States, With the Annual Message of the President Transmitted to Congress\n                    December 5, 1898' | docnum in index=None | title-match=False doc-match=True
+ ??  frus1934v05/d170 | printed='Papers Relating to the Foreign Relations of the United States, 1902, Document 273, https://history.state.gov/historicaldocuments/frus1902/d273; Foreign Relations of the United States, Diplomatic Papers, 1934, The American Republics, Volume V, Document 170' | manifest title='Foreign Relations of the United States, Diplomatic Papers,\n                    1934, The American Republics, Volume V' | docnum in index='170' | title-match=False doc-match=True
+ ??  frus1950v02/d440 | printed='Foreign Relations of the United States, 1950, The United Nations; The Western Hemisphere, Volume II, Document 440' | manifest title='Foreign Relations of the United States, 1950, The United\n                    Nations; The Western Hemisphere, Volume II' | docnum in index='440' | title-match=False doc-match=True
+ ??  frus1969-76ve10/d205 | printed='Foreign Relations of the United States, 1969–1976, Volume E–10, Documents on American Republics, 1969–1972, Document 205' | manifest title='Foreign Relations of the United States, 1969–1976, Volume\n                    E–10, Documents on American Republics, 1969–1972' | docnum in index='205' | title-match=False doc-match=True
+ ??  frus1977-80v01/d129 | printed='Foreign Relations of the United States, 1977–1980, Volume I, Foundations of Foreign Policy, Document 129' | manifest title='Foreign Relations of the United States, 1977–1980, Volume I,\n                    Foundations of Foreign Policy' | docnum in index='129' | title-match=False doc-match=True
+ ??  frus1933v05/d241 | printed='Foreign Relations of the United States, Diplomatic Papers, 1933, The American Republics, Volume V, Document 241' | manifest title='Foreign Relations of the United States, Diplomatic Papers,\n                    1933, The American Republics, Volume V' | docnum in index='241' | title-match=False doc-match=True
+ ??  frus1934v05/d154 | printed='Foreign Relations of the United States, Diplomatic Papers, 1934, The American Republics, Volume V, Document 154' | manifest title='Foreign Relations of the United States, Diplomatic Papers,\n                    1934, The American Republics, Volume V' | docnum in index='154' | title-match=False doc-match=True
+ ??  frus1952-54v04/d331 | printed='Foreign Relations of the United States, 1952–1954, The American Republics, Volume IV, Document 331' | manifest title='Foreign Relations of the United States, 1952–1954, The\n                    American Republics, Volume IV' | docnum in index='331' | title-match=False doc-match=True
+ ??  frus1958-60v06/d535 | printed='Foreign Relations of the United States, 1958–1960, Cuba, Volume VI, Document 535' | manifest title='Foreign Relations of the United States, 1958–1960, Cuba,\n                    Volume VI' | docnum in index='535' | title-match=False doc-match=True
+ ??  frus1981-88v03/d10 | printed='Foreign Relations of the United States, 1981–1988, Volume III, Soviet Union, January 1981–January 1983, Document 10' | manifest title='Foreign Relations of the United States, 1981–1988, Volume\n                    III, Soviet Union, January 1981–January 1983' | docnum in index='10' | title-match=False doc-match=True
+ ??  frus1898/d498 | printed='Papers Relating to the Foreign Relations of the United States, 1898, Document 498' | manifest title='Papers Relating to the Foreign Relations of the United\n                    States, With the Annual Message of the President Transmitted to Congress\n                    December 5, 1898' | docnum in index='498' | title-match=False doc-match=True
+ ??  frus1902/d273 | printed='Papers Relating to the Foreign Relations of the United States, 1902, Document 273' | manifest title='Papers Relating to the Foreign Relations of the United\n                    States, With the Annual Message of the President Transmitted to Congress\n                    December 2, 1902' | docnum in index='273' | title-match=False doc-match=True
+ ??  frus1918/d333 | printed='Papers Relating to the Foreign Relations of the United States, 1918, Document 333' | manifest title='Papers Relating to the Foreign Relations of the United\n                    States, 1918' | docnum in index='333' | title-match=False doc-match=True
+ ??  frus1934v05/d170 | printed='Foreign Relations of the United States, Diplomatic Papers, 1934, The American Republics, Volume V, Document 170' | manifest title='Foreign Relations of the United States, Diplomatic Papers,\n                    1934, The American Republics, Volume V' | docnum in index='170' | title-match=False doc-match=True
+ ??  frus1941v07/d134 | printed='Foreign Relations of the United States, Diplomatic Papers, 1941, The American Republics, Volume VII, Document 134' | manifest title='Foreign Relations of the United States, Diplomatic Papers,\n                    1941, The American Republics, Volume VII' | docnum in index='134' | title-match=False doc-match=True
+ ??  frus1948v09/d420 | printed='Foreign Relations of the United States, 1948, The Western Hemisphere, Volume IX, Document 420' | manifest title='Foreign Relations of the United States, 1948, The Western\n                    Hemisphere, Volume IX' | docnum in index='420' | title-match=False doc-match=True
+ ??  frus1958-60v06/d362 | printed='Foreign Relations of the United States, 1958–1960, Cuba, Volume VI, Document 362' | manifest title='Foreign Relations of the United States, 1958–1960, Cuba,\n                    Volume VI' | docnum in index='362' | title-match=False doc-match=True
+ ??  frus1958-60v06/d532 | printed='Foreign Relations of the United States, 1958–1960, Cuba, Volume VI, Document 532' | manifest title='Foreign Relations of the United States, 1958–1960, Cuba,\n                    Volume VI' | docnum in index='532' | title-match=False doc-match=True
+ ??  frus1958-60v06/d567 | printed='Foreign Relations of the United States, 1958–1960, Cuba, Volume VI, Document 567' | manifest title='Foreign Relations of the United States, 1958–1960, Cuba,\n                    Volume VI' | docnum in index='567' | title-match=False doc-match=True
+ ??  frus1961-63v11/d18 | printed='Foreign Relations of the United States, 1961–1963, Volume XI, Cuban Missile Crisis and Aftermath, Document 18' | manifest title='Foreign Relations of the United States, 1961–1963, Volume XI,\n                    Cuban Missile Crisis and Aftermath' | docnum in index='18' | title-match=False doc-match=True
+ ??  frus1961-63v11/d21 | printed='Foreign Relations of the United States, 1961–1963, Volume XI, Cuban Missile Crisis and Aftermath, Document 21' | manifest title='Foreign Relations of the United States, 1961–1963, Volume XI,\n                    Cuban Missile Crisis and Aftermath' | docnum in index='21' | title-match=False doc-match=True
+ ??  frus1977-80v23/d18 | printed='Foreign Relations of the United States, 1977–1980, Volume XXIII, Mexico, Cuba, and the Caribbean, Document 18' | manifest title='Foreign Relations of the United States, 1977–1980, Volume\n                    XXIII, Mexico, Cuba, and the Caribbean' | docnum in index='18' | title-match=False doc-match=True

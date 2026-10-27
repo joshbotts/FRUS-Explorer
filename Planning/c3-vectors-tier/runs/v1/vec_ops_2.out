@@ -1,0 +1,22 @@
+=== CENTROID SIMILARITY (cosine of int8 centroid x scale; 553 volume centroids)
+frus1874 -> frus1875v02 0.993 frus1876 0.992 frus1875v01 0.992 frus1873p1v1 0.989 frus1871 0.988 frus1872p1 0.987
+frus1898 -> frus1899 0.983 frus1897 0.982 frus1896 0.977 frus1895p2 0.975 frus1900 0.975 frus1902 0.974
+frus1941v07 -> frus1942v06 0.986 frus1941v06 0.985 frus1940v05 0.982 frus1943v06 0.981 frus1939v05 0.979 frus1944v07 0.977
+frus1958-60v06 -> frus1961-63v10-12mSupp 0.973 frus1961-63v10 0.971 frus1964-68v32 0.965 frus1961-63v12 0.964 frus1961-63v11 0.960 frus1958-60v05mSupp 0.960
+frus1961-63v11 -> frus1961-63v10-12mSupp 0.988 frus1961-63v10 0.977 frus1961-63v05 0.961 frus1958-60v06 0.960 frus1961-63v12 0.952 frus1961-63v07-09mSupp 0.951
+frus1977-80v23 -> frus1969-76ve11p1 0.981 frus1977-80v24 0.972 frus1969-76ve10 0.972 frus1964-68v32 0.970 frus1961-63v12 0.969 frus1964-68v31 0.965
+random volume pairs: mean 0.904 sd 0.032
+map docs 314616 clusters 140 keys ['clusters', 'documentCount', 'generated', 'gridExtent', 'layout', 'provenanceDigest', 'schema']
+=== MAP placements of anchor and chapter documents
+frus1874/d552 cluster unclustered 
+frus1898/d498 cluster unclustered 
+frus1902/d273 cluster 72 {"terms": ["sanguily", "inclosure", "azcuy", "inclose"]}
+frus1941v07/d134 cluster unclustered 
+frus1948v09/d420 cluster unclustered 
+frus1950v02/d440 cluster unclustered 
+frus1958-60v06/d535 cluster 42 {"terms": ["castro", "somoza", "cuban", "cuba"]}
+frus1961-63v11/d21 cluster 42 {"terms": ["castro", "somoza", "cuban", "cuba"]}
+frus1969-76ve10/d205 cluster 42 {"terms": ["castro", "somoza", "cuban", "cuba"]}
+frus1977-80v23/d18 cluster 42 {"terms": ["castro", "somoza", "cuban", "cuba"]}
+frus1977-80v01/d129 cluster 42 {"terms": ["castro", "somoza", "cuban", "cuba"]}
+frus1981-88v03/d10 cluster 42 {"terms": ["castro", "somoza", "cuban", "cuba"]}

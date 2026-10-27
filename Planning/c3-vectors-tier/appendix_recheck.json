@@ -1,0 +1,107 @@
+{
+  "digest": "89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101",
+  "dims": 512,
+  "docs": 314616,
+  "neighbours_frus1861_d111": [
+    [
+      57,
+      "frus1861/d119"
+    ],
+    [
+      62,
+      "frus1861/d39"
+    ],
+    [
+      70,
+      "frus1863p1/d254"
+    ],
+    [
+      75,
+      "frus1862/d130"
+    ],
+    [
+      77,
+      "frus1861/d203"
+    ],
+    [
+      77,
+      "frus1862/d262"
+    ],
+    [
+      78,
+      "frus1861/d20"
+    ],
+    [
+      78,
+      "frus1862/d111"
+    ],
+    [
+      78,
+      "frus1862/d455"
+    ],
+    [
+      79,
+      "frus1862/d118"
+    ]
+  ],
+  "random_pairs": {
+    "n": 20000,
+    "mean": 167.1,
+    "sd": 14.8,
+    "p1": 132,
+    "min": 95
+  },
+  "random_pattern_min_to_corpus": [
+    200,
+    201,
+    202,
+    202,
+    203,
+    203,
+    203,
+    205,
+    205,
+    206
+  ],
+  "kth_neighbour_25_over_200_sample": {
+    "median": 107.5,
+    "p25": 101,
+    "p75": 113
+  },
+  "volumes_nearest_frus1861_by_centroid": [
+    [
+      0.989,
+      "frus1862"
+    ],
+    [
+      0.986,
+      "frus1863p2"
+    ],
+    [
+      0.984,
+      "frus1864p4"
+    ],
+    [
+      0.98,
+      "frus1866p1"
+    ],
+    [
+      0.98,
+      "frus1867p1"
+    ]
+  ],
+  "map": {
+    "docs": 314616,
+    "clusters": 140,
+    "digest_matches": true,
+    "unclustered": 88059,
+    "unclustered_share": 0.2799,
+    "frus1929v03_d17": {
+      "x": -11427,
+      "y": -15667,
+      "cluster": 65535,
+      "label": null,
+      "count": null
+    }
+  }
+}

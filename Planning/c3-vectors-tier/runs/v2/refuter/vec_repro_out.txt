@@ -1,0 +1,52 @@
+index keys: ['documentCount', 'generated', 'harvestGenerated', 'harvestScriptSHA256', 'provenance', 'provenanceDigest', 'retrieval', 'schema', 'subseries', 'volumes']
+index provenanceDigest: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 | generated: 2026-10-15 | harvestGenerated: 2026-10-15T06:55:14
+retrieval: {"measuredBy": "Planning/semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md \u00a75, 3,600 era-stratified queries over the 314,616-document corpus; Hamming-800 over 512 sign bits \u2192 int8-512", "measuredRecallAt10": 0.9021, "rerankPool": 800, "scoreCalibration": {"documentOffset": 0.4, "meas
+first volume entry: {"n": 312, "r": 0, "seg": [{"i": "d1", "n": 312, "s": 0}], "v": "frus1861"}
+volumes 553 rows decoded 314616 distinct 314616
+binary magic b'FRSV' size 20476048
+version 1 dims 512 docs 314616 centroids 660 bytes/row 64
+binary digest (bytes 20..52): 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+layout check: 64 + docs*bpr + cents*(dims+4) = 20476048 file size 20476048 diff 0
+map magic b'FRSM' map digest (20..52): 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 map size 1887760 64+6*docs = 1887760
+shard folder .generation: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 | shard files: 553
+sha256 of semantic-vectors-binary.bin: 66cfb26560c74f5f318fdf9c2c55d147afba80465c7d01050b1ad7ecfd9ece87
+
+== anchor frus1961-63v10/d202 row 261718; 25th-neighbour distance 77
+   55 frus1961-63v10/d182
+   55 frus1961-63v10/d274
+   60 frus1969-76ve10/d205
+   62 frus1961-63v10-12mSupp/d725
+   62 frus1961-63v10-12mSupp/d729
+   64 frus1961-63v10-12mSupp/d670
+   65 frus1958-60v06/d466
+   65 frus1958-60v06/d616
+   69 frus1958-60v06/d475
+   69 frus1961-63v10/d86
+   69 frus1961-63v10-12mSupp/d233
+   70 frus1961-63v10/d179
+   70 frus1961-63v11/d272
+   72 frus1958-60v06/d620
+   74 frus1958-60v06/d442
+
+== anchor frus1881/d405 row 18290; 25th-neighbour distance 100
+   4 frus1894app2/d394
+   77 frus1894app2/d114
+   83 frus1894app2/d163
+   85 frus1894app2/d393
+   86 frus1881/d404
+   87 frus1870/d197
+   88 frus1894app2/d2a
+   92 frus1894app2/d55
+   92 frus1894app2/d71
+   92 frus1894app2/d186
+   94 frus1894app2/d70
+   94 frus1894app2/d395
+   96 frus1874/d552
+   96 frus1878/d257
+   97 frus1878/d255
+
+frus1898/ch83 in index: False | frus1969-76ve10/d205 row: 298411
+hamming frus1881/d405 frus1894app2/d394 4
+hamming frus1969-76v12/d211 frus1969-76ve10/d225 80
+hamming frus1969-76v12/d212 frus1969-76ve10/d225 19
+hamming frus1865p2/d33 frus1865p2/d647 14

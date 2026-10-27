@@ -1,0 +1,23 @@
+rule A listed pairs (distinct) 6729
+rule B pairs 503 of which also in A 5
+CORE 7013 A 6515 B 498 volumes 130
+dated 7013 undated 0 span 1849-08-09 1980-12-25
+bands {'1840-1860': 8, '1861-1898': 891, '1899-1933': 2206, '1934-1958': 1181, '1959-1980': 2727}
+session coreset.json 7013 my core 7013 symmetric difference 0 []
+cited pairs in core set:
+   frus1870/d197 B 
+   frus1881/d405 B 
+   frus1898/d490 A Spain > Political situation in Cuba
+   frus1898/ch83 NOT IN CORE 
+   frus1902/d313 A Cuba
+   frus1903/d331 A Cuba
+   frus1906p1/d427 A Cuba
+   frus1933v05/d281 A Cuba:
+   frus1941v07/d119 A Cuba:
+   frus1952-54v04/d343 A Cuba
+   frus1961-63v10/d202 A Cuba, 1961–1962
+   frus1961-63v11/d34 A Cuban Missile Crisis and Aftermath
+   frus1969-76ve10/d205 A Documents on American Republics, 1969–1972 > Cuba
+   frus1969-76v12/d211 A Soviet Union, January 1969–October 1970 > Soviet Military Buildup in Cuba and Crisis in Jordan, August 4–October 9, 1970
+   frus1977-80v23/d21 A Mexico, Cuba, and the Caribbean
+   frus1977-80v23/d98 A Mexico, Cuba, and the Caribbean

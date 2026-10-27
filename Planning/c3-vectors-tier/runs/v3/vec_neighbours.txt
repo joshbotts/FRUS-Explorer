@@ -1,0 +1,96 @@
+ANCHOR frus1874/d552
+  ham  61 frus1898/d490 1897-07-16 cuba_in_text=1 fm=0 en=0 | Mr. Sherman to Mr. Woodford.
+  ham  68 frus1898/d503 1897-10-26 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to Mr. Sherman.
+  ham  71 frus1898/d531 1898-02-09 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to Mr. Sherman.
+  ham  73 frus1898/d495 1897-09-23 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to Mr. Sherman.
+  ham  77 frus1898/d526 1897-12-23 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to Mr. Sherman.
+  ham  77 frus1902/d313 1902-11-21 cuba_in_text=1 fm=0 en=0 | Mr. Squiers to Mr. Hay.
+  ham  78 frus1898/d544 1898-03-09 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to the President.
+  ham  80 frus1898/d492 1897-09-13 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to Mr. Sherman.
+  ham  80 frus1898/d498 1897-10-05 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to Mr. Sherman.
+  ham  81 frus1866p1/d422 1866-05-23 cuba_in_text=1 fm=0 en=0 | Mr. Seward to Mr. Hale
+  ham  81 frus1897/d581 1896-04-04 cuba_in_text=1 fm=0 en=0 | Mr. Olney to Mr. Dupuy de Lôme.
+  ham  83 frus1870/d197 1870-08-19 cuba_in_text=1 fm=0 en=0 | Circular–Department of States to ministers and consuls in Sp
+  ham  84 frus1872p1/d431 1872-10-29 cuba_in_text=1 fm=0 en=0 | No. 432. Mr. Fish to Mr. Sickles.
+  ham  84 frus1898/d497 1897-10-04 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to Mr. Sherman.
+  ham  86 frus1877/d288 1876-12-04 cuba_in_text=1 fm=0 en=0 | No. 288. Mr. Adee to Mr. Fish.
+ANCHOR frus1898/d498
+  ham  32 frus1898/d497 1897-10-04 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to Mr. Sherman.
+  ham  50 frus1898/d492 1897-09-13 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to Mr. Sherman.
+  ham  74 frus1898/d544 1898-03-09 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to the President.
+  ham  75 frus1898/d557 1898-03-25 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to Mr. Sherman.
+  ham  79 frus1897/d581 1896-04-04 cuba_in_text=1 fm=0 en=0 | Mr. Olney to Mr. Dupuy de Lôme.
+  ham  80 frus1874/d552 1874-02-06 cuba_in_text=1 fm=0 en=0 | No. 550. Mr. Fish to Mr. Cushing.
+  ham  81 frus1898/d534 1898-03-01 cuba_in_text=1 fm=0 en=0 | Mr. Sherman to Mr. Woodford.
+  ham  83 frus1898/d526 1897-12-23 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to Mr. Sherman.
+  ham  85 frus1898/d490 1897-07-16 cuba_in_text=1 fm=0 en=0 | Mr. Sherman to Mr. Woodford.
+  ham  85 frus1898/d495 1897-09-23 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to Mr. Sherman.
+  ham  85 frus1898/d504 1897-10-27 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to Mr. Sherman.
+  ham  85 frus1898/d531 1898-02-09 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to Mr. Sherman.
+  ham  88 frus1877/d288 1876-12-04 cuba_in_text=1 fm=0 en=0 | No. 288. Mr. Adee to Mr. Fish.
+  ham  90 frus1898/d545 1898-03-17 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to the President.
+  ham  90 frus1898/d546 1898-03-18 cuba_in_text=1 fm=0 en=0 | Mr. Woodford to the President.
+ANCHOR frus1934v05/d127
+  ham  68 frus1941v07/d169 1941-09-27 cuba_in_text=1 fm=0 en=0 | The Secretary of State to the Chargé in Cuba (Briggs)
+  ham  75 frus1934v05/d114 1934-04-03 cuba_in_text=1 fm=0 en=0 | The Secretary of State to the Ambassador in Cuba (Caffery)
+  ham  78 frus1941v07/d171 1941-12-04 cuba_in_text=1 fm=0 en=0 | The Secretary of State to the Ambassador in Cuba (Messersmit
+  ham  80 frus1934v05/d131 1934-08-01 cuba_in_text=1 fm=0 en=0 | The Department of State to the Cuban Embassy
+  ham  84 frus1941v07/d172 1941-12-12 cuba_in_text=1 fm=0 en=0 | The Ambassador in Cuba (Messersmith) to the Secretary of Sta
+  ham  84 frus1948v09/d420 1948-07-29 cuba_in_text=1 fm=0 en=0 | Memorandum Prepared in the Department of State
+  ham  85 frus1927v02/d595 1927-12-15 cuba_in_text=1 fm=0 en=0 | The Cuban Ambassador (Ferrara) to the Secretary of State
+  ham  85 frus1934v05/d116 1934-04-11 cuba_in_text=1 fm=0 en=0 | The American Technical Advisers (Donnelly and Turkel) to the
+  ham  85 frus1941v07/d167 1941-04-18 cuba_in_text=1 fm=0 en=0 | The Cuban Minister of State (Cortina) to the American Ambass
+  ham  86 frus1939v05/d528 1939-07-19 cuba_in_text=1 fm=0 en=0 | The Secretary of State to the Ambassador in Cuba (Wright), T
+  ham  87 frus1926v02/d8 1926-05-07 cuba_in_text=1 fm=0 en=0 | The Ambassador in Cuba (Crowder) to the Secretary of State
+  ham  88 frus1934v05/d129 1934-07-28 cuba_in_text=1 fm=0 en=0 | The Secretary of State to the Ambassador in Cuba (Caffery)
+  ham  88 frus1939v05/d541 1939-07-20 cuba_in_text=1 fm=0 en=0 | The Cuban Chargé (Barón) to the Secretary of State
+  ham  89 frus1934v05/d126 1934-06-18 cuba_in_text=1 fm=0 en=0 | The American Technical Adviser (Turkel) to the Ambassador in
+  ham  90 frus1944v07/d914 1944-07-18 cuba_in_text=1 fm=0 en=0 | The Ambassador in Cuba (Braden) to the Secretary of State
+ANCHOR frus1944v07/d878
+  ham  83 frus1944v07/d874 1944-09-21 cuba_in_text=1 fm=0 en=0 | Admiral William D. Leahy, Chief of Staff to the Commander in
+  ham  87 frus1944v07/d876 1944-11-09 cuba_in_text=1 fm=0 en=0 | The Ambassador in Cuba (Braden) to the Secretary of State
+  ham  89 frus1944v07/d875 1944-10-26 cuba_in_text=1 fm=0 en=0 | The Secretary of State to the Ambassador in Cuba (Braden)
+  ham  99 frus1945v09/d741 1945-01-12 cuba_in_text=1 fm=0 en=0 | The Ambassador in Cuba (Braden) to the Secretary of State
+  ham 102 frus1946v11/d644 1946-06-19 cuba_in_text=1 fm=0 en=0 | The Chargé in Cuba (Woodward) to the Secretary of State
+  ham 103 frus1945v09/d745 1945-08-22 cuba_in_text=1 fm=0 en=0 | The Ambassador in Cuba (Norweb) to the Secretary of State
+  ham 103 frus1946v11/d639 1946-03-22 cuba_in_text=1 fm=0 en=0 | The Secretary of State to the Secretary of the Navy (Forrest
+  ham 107 frus1941v07/d115 1941-06-19 cuba_in_text=1 fm=0 en=0 | The Ambassador in Cuba (Messersmith) to the Secretary of Sta
+  ham 108 frus1942v06/d306 1942-06-19 cuba_in_text=1 fm=0 en=0 | Agreement Between the United States and Cuba for Military Co
+  ham 108 frus1942v06/d318 1942-09-07 cuba_in_text=1 fm=0 en=0 | Agreement Between the United States and Cuba for Military an
+  ham 108 frus1945v09/d744 1945-08-08 cuba_in_text=1 fm=0 en=0 | The Ambassador in Cuba (Norweb) to the Secretary of State
+  ham 108 frus1946v01/d580 1945-11-07 cuba_in_text=1 fm=0 en=0 | Memorandum by the Joint Chiefs of Staff to the Secretary of 
+  ham 109 frus1942v06/d289 1942-01-14 cuba_in_text=1 fm=0 en=0 | The Cuban Secretary of State (Cortina) to the American Charg
+  ham 109 frus1942v06/d301 1942-05-07 cuba_in_text=1 fm=0 en=0 | The Chargé in Cuba (Briggs) to the Secretary of State
+  ham 109 frus1949v02/d422 1949-01-18 cuba_in_text=0 fm=0 en=0 | The Acting Secretary of State to the Secretary of the hiArmy
+ANCHOR frus1958-60v06/d499
+  ham 101 frus1958-60v06/d594 1960-10-19 cuba_in_text=1 fm=0 en=0 | 594. Memorandum From the Assistant Secretary of State for In
+  ham 103 frus1958-60v06/d555 1960-07-13 cuba_in_text=1 fm=0 en=0 | 555. Memorandum From the Assistant Secretary of State for Po
+  ham 103 frus1958-60v06/d579 1960-09-01 cuba_in_text=1 fm=0 en=0 | 579. Paper Prepared in the Department of State
+  ham 104 frus1958-60v06/d527 1960-06-07 cuba_in_text=1 fm=0 en=0 | 527. Memorandum of a Conference, Department of State, Washin
+  ham 106 frus1958-60v05/d112 1959-03-15 cuba_in_text=0 fm=0 en=0 | 112. Memorandum From the Director of Central Intelligence (D
+  ham 106 frus1958-60v06/d423 1960-01-14 cuba_in_text=1 fm=0 en=0 | 423. Memorandum of Discussion at the 432d Meeting of the Nat
+  ham 106 frus1958-60v06/d570 1960-08-02 cuba_in_text=1 fm=0 en=0 | 570. Letter From the Ambassador in Cuba (Bonsal) to the Assi
+  ham 107 frus1961-63v10/d179 1961-04-26 cuba_in_text=1 fm=0 en=0 | 179. Memorandum From the Presidentʼs Assistant Special Couns
+  ham 108 frus1958-60v06/d328 1959-07-01 cuba_in_text=1 fm=0 en=0 | 328. Memorandum by the Director of the Office of Inter-Ameri
+  ham 108 frus1958-60v06/d536 1960-06-27 cuba_in_text=1 fm=0 en=0 | 536. Memorandum of a Conference, Department of State, Washin
+  ham 108 frus1958-60v06/d616 1960-12-05 cuba_in_text=1 fm=0 en=0 | 616. Despatch From the Embassy in Cuba to the Department of 
+  ham 108 frus1961-63v10/d432 1962-09-19 cuba_in_text=1 fm=0 en=0 | 432. Memorandum From the Assistant Secretary of State for In
+  ham 109 frus1958-60v06/d387 1959-11-05 cuba_in_text=1 fm=0 en=0 | 387. Memorandum From the Secretary of State to the President
+  ham 109 frus1958-60v06/d409 1959-12-14 cuba_in_text=1 fm=0 en=0 | 409. Memorandum From the Chairman of the Working Group on th
+  ham 109 frus1958-60v06/d535 1960-06-27 cuba_in_text=1 fm=0 en=0 | 535. Memorandum From the Assistant Secretary of State for In
+ANCHOR frus1969-76ve10/d205
+  ham  52 frus1961-63v10-12mSupp/d729 1963-12-15 cuba_in_text=1 fm=0 en=0 | 729. Memorandum from McGeorge Bundy to President Johnson, De
+  ham  54 frus1961-63v10-12mSupp/d670 1963-04-25 cuba_in_text=1 fm=0 en=0 | 670. Memorandum prepared by McCone, April 25
+  ham  56 frus1958-60v06/d620 1960-12-08 cuba_in_text=1 fm=0 en=0 | 620. Special National Intelligence Estimate
+  ham  57 frus1958-60v06/d616 1960-12-05 cuba_in_text=1 fm=0 en=0 | 616. Despatch From the Embassy in Cuba to the Department of 
+  ham  60 frus1961-63v10/d202 1961-05-04 cuba_in_text=1 fm=0 en=0 | 202. Paper Prepared for the National Security Council by an 
+  ham  61 frus1969-76ve11p1/d278 1974-01-21 cuba_in_text=1 fm=0 en=0 | 278. Memorandum From Acting Secretary of State Rush to the A
+  ham  63 frus1961-63v10-12mSupp/d543 1962-11-19 cuba_in_text=1 fm=0 en=0 | 543. Memorandum for members of the NSC Executive Committee f
+  ham  64 frus1950v02/d440 1951-01-11 cuba_in_text=1 fm=0 en=0 | Department of State Policy Statement
+  ham  64 frus1961-63v10-12mSupp/d665 1963-04-22 cuba_in_text=1 fm=0 en=0 | 665. Memorandum from Kent to McCone, April 22
+  ham  65 frus1958-60v06/d475 1960-03-10 cuba_in_text=1 fm=0 en=0 | 475. Letter From the Under Secretary of State for Political 
+  ham  66 frus1958-60v05/d126 1959-12-29 cuba_in_text=1 fm=0 en=0 | 126. Special National Intelligence Estimate
+  ham  66 frus1961-63v10-12mSupp/d725 1963-12-12 cuba_in_text=1 fm=0 en=0 | 725. Memorandum prepared in the CIA, December 12
+  ham  67 frus1961-63v10-12mSupp/d687 1963-06-14 cuba_in_text=1 fm=0 en=0 | 687. National Intelligence Estimate 85–63, June 14
+  ham  67 frus1961-63v11/d349 1963-06-20 cuba_in_text=1 fm=0 en=0 | 349. Paper Prepared by the Bureau of Inter-American Affairs 
+  ham  67 frus1964-68v32/d300 1965-03-19 cuba_in_text=1 fm=0 en=0 | 300. Memorandum From Gordon Chase of the National Security C

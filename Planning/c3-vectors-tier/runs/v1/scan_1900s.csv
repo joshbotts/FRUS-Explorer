@@ -1,0 +1,368 @@
+volume_id,document_id,date,header,len,ncuba,nsec,npro,nboth
+frus1900,d1072,1900-05-17,Mr. Loomis to Mr. Hay.,601,2,0,0,0
+frus1901,d221,1900-05-31,memorandum.,1388,1,0,0,0
+frus1900,d1073,1900-06-08,Mr. Hay to Mr. Loomis.,498,3,0,0,0
+frus1902,d311,1900-07-25,[Untitled],2371,8,3,0,0
+frus1900,d1023,1900-10-22,Mr. Storer to Mr. Hay.,741,2,0,0,0
+frus1900,d1024,1900-10-22,Mr. Storer to Mr. Hay.,2581,3,0,0,0
+frus1900,d1026,1900-11-05,Mr. Storer to Mr. Hay.,565,1,0,0,0
+frus1900,d1027,1900-11-06,Mr. Storer to Mr. Hay.,2629,4,0,0,0
+frus1900,d1028,1900-11-06,Mr. Hay to Mr. Storer.,389,1,1,0,0
+frus1900,d1029,1900-11-09,Mr. Hay to Mr. Storer.,8519,16,4,2,0
+frus1902,d312,1900-11-09,[Untitled],2053,10,8,0,0
+frus1901,d404,1900-12-20,Mr. Storer to Mr. Hay.,18317,20,0,0,0
+frus1901,d405,1901-01-16,Mr. Hay to Mr. Storer.,2360,4,1,0,0
+frus1901,d406,1901-01-30,Mr. Hay to Mr. Storer.,2371,3,1,2,0
+frus1901,d407,1901-02-01,Mr. Stover to Mr. Hay.,4714,9,9,0,0
+frus1901,d408,1901-02-21,Mr. Hill to Mr. Storer.,1607,6,3,0,0
+frus1901,d222,1901-03-02,memorandum.,25571,23,4,1,0
+frus1901,d409,1901-03-16,Mr. Storer to Mr. Hay.,12812,12,3,1,0
+frus1901,d212,1901-03-26,Mr. Hay to Lord Pauncefote.,701,2,1,0,0
+frus1901,ch85,1901-03-26,"Erection of tablet in memory of Frederick W. Ramsden, late British consul-general at Santiago de Cuba",138,1,0,0,0
+frus1901,d410,1901-04-08,Mr. Hay to Mr. Storer.,2138,4,1,0,0
+frus1901,d213,1901-04-24,Lord Pauncefote to Mr. Hay.,743,1,1,0,0
+frus1901,d422,1901-06-27,"Mr. Sickles, chargé d’affaires, to Mr. Hay.",484,1,0,0,0
+frus1901,d423,1901-06-28,Mr. Hill to Mr. Sickles.,332,1,0,0,0
+frus1901,d424,1901-06-28,Mr. Sickles to Mr. Hay.,3800,12,0,0,0
+frus1901,d425,1901-06-30,Mr. Sickles to Mr. Hay.,378,1,0,1,0
+frus1901,d426,1901-07-02,Mr. Hill to Mr. Sickles.,242,1,0,0,0
+frus1901,d325,1901-07-25,Mr. Hill to Mr. Takahira.,14866,1,0,0,0
+frus1906p1,d18,1901-08-05,Mr. Adee to Duke de Arcos.,3023,1,0,0,0
+frus1906p1,d19,1901-08-07,Duke de Arcos to Mr. Hay.,3902,1,0,0,0
+frus1901,d173,1901-10-08,Mr. Adee to Count von Quadt.,570,1,0,0,0
+frus1901,d83,1901-12-09,Mr. Wu to Mr. Hay.,12918,1,0,0,0
+frus1902,d330,1902-02-24,Mr. Powell to Mr. Hay.,1869,1,0,0,0
+frus1902,d273,1902-03-27,[Untitled],6449,31,17,13,4
+frus1902,d6,1902-05-20,Mr. Hay to Mr. Lord.,590,1,1,0,0
+frus1902,d272,1902-05-20,"General Wood, Military Governor of Cuba, to the Adjutant-General of the Army.",846,5,2,0,0
+frus1902,d286,1902-05-22,"Señor de Zaldo, Cuban secretary of state, to Mr. Hay.",590,3,0,0,0
+frus1902,ch95,1902-05-22,Protection of Cuban interests by United States consular officials.,124,1,0,0,0
+frus1902,d7,1902-05-24,Mr. Hay to Mr. Lord.,510,3,0,0,0
+frus1902,d287,1902-05-24,Mr. Hay to Señor Zaldo.,371,1,0,0,0
+frus1902,d110,1902-05-26,Mr. Hutchinson to Mr. Hay.,963,3,0,0,0
+frus1902,d276,1902-05-26,Mr. Hay to Mr. Squiers.,747,3,0,0,0
+frus1902,d274,1902-05-27,Mr. Squiers to Mr. Hay.,376,2,0,0,0
+frus1902,d275,1902-05-27,Mr. Squiers to Mr. Hay.,4591,4,0,1,0
+frus1902,d338,1902-05-28,Mr. Sampson to Mr. Hay.,558,2,0,0,0
+frus1902,d915,1902-05-28,Mr. Hardy to Mr. Hay.,355,1,0,0,0
+frus1902,d916,1902-05-28,Mr. Hardy to Mr. Hay.,1156,3,0,0,0
+frus1902,d777,1902-05-29,Mr. McCreery to Mr. Hay.,1922,8,0,0,0
+frus1902,d399,1902-05-30,Mr. White to Mr. Hay.,211,1,0,0,0
+frus1902,d400,1902-05-30,Mr. White to Mr. Hay.,682,2,0,0,0
+frus1902,ch136,1902-05-30,Protection of Cuban interests by United States consular officials.,78,1,0,0,0
+frus1902,d683,1902-05-31,Mr. Meyer to Mr. Hay.,177,1,0,0,0
+frus1902,d1015,1902-06-01,Mr. Bowen to Mr. Hay.,857,5,0,0,0
+frus1902,d88,1902-06-02,Mr. Barber to Mr. Hay.,1486,8,0,0,0
+frus1902,d195,1902-06-02,Mr. Conger to Mr. Hay.,3020,14,0,0,0
+frus1902,d294,1902-06-02,Mr. Squiers to Mr. Hay.,22608,24,4,8,2
+frus1902,d684,1902-06-02,Mr. Meyer to Mr. Hay.,1070,3,0,0,0
+frus1902,d724,1902-06-02,Mr. Buck to Mr. Hay.,1435,6,0,0,0
+frus1902,d297,1902-06-03,Mr. Squiers to Mr. Hay.,3052,2,0,2,0
+frus1902,d381,1902-06-03,Mr. Vignaud to Mr. Hay.,646,1,0,0,0
+frus1902,d732,1902-06-03,Mr. Allen to Mr. Hay.,3221,16,5,0,0
+frus1902,d678,1902-06-04,Mr. Powell to Mr. Hay.,2158,6,0,6,0
+frus1902,d895,1902-06-05,Mr. Sickles to Mr. Hay.,1729,4,0,0,0
+frus1902,d546,1902-06-06,Mr. Choate to Mr. Hay.,275,1,0,0,0
+frus1902,d547,1902-06-07,Mr. Choate to Mr. Hay.,1324,4,0,0,0
+frus1902,d828,1902-06-09,Mr. Dudley to Mr. Hay.,3445,8,0,0,0
+frus1902,d977,1902-06-09,Mr. Leishman to Mr. Hay.,3478,8,0,0,0
+frus1902,d298,1902-06-10,Mr. Squiers to Mr. Hay.,206,1,1,0,0
+frus1902,d73,1902-06-11,Mr. Townsend to Mr. Hay.,1451,3,0,0,0
+frus1902,d299,1902-06-11,Mr. Squiers to Mr. Hay.,1631,1,1,0,0
+frus1902,d300,1902-06-13,Mr. Hay to Mr. Squiers.,446,2,0,0,0
+frus1902,ch99,1902-06-13,Exclusion of Chinese from Cuba.,63,1,0,0,0
+frus1902,d862,1902-06-14,Mr. Riddle to Mr. Hay.,978,2,0,0,0
+frus1902,d15,1902-06-16,Mr. Lord to Mr. Hay.,705,1,0,0,0
+frus1902,d279,1902-06-16,Mr. Squiers to Mr. Hay.,1360,5,3,3,2
+frus1902,d301,1902-06-16,Mr. Squiers to Mr. Hay.,281,1,0,0,0
+frus1902,d302,1902-06-16,Mr. Squiers to Mr. Hay.,689,2,0,0,0
+frus1902,d838,1902-06-16,Mr. Wilson to Mr. Hay.,525,2,0,0,0
+frus1902,ch240,1902-06-16,Protection of Cuban interests by United States consular officials.,100,1,0,0,0
+frus1902,d277,1902-06-17,Señor Quesada to Mr. Say.,3688,15,3,1,0
+frus1902,d875,1902-06-17,Mr. King to Mr. Hay.,1547,7,2,0,0
+frus1902,d303,1902-06-18,Mr. Squiers to Mr. Hay.,2034,1,0,0,0
+frus1902,d810,1902-06-18,Mr. Merry to Mr. Hay.,678,1,0,0,0
+frus1902,d794,1902-06-20,Mr. Newel to Mr. Hay.,1779,7,0,1,0
+frus1902,d811,1902-06-20,Mr. Merry to Mr. Hay.,604,1,0,0,0
+frus1902,d1000,1902-06-20,Mr. Finch to Mr. Hay.,547,2,0,0,0
+frus1902,ch221,1902-06-20,Protection of Cuban interests by United States consular officials.,91,1,0,0,0
+frus1902,d578,1902-06-21,Mr. Wilson to Mr. Hay.,505,2,0,0,0
+frus1902,ch184,1902-06-21,Protection of Cuban interests by United States consular officials.,100,1,0,0,0
+frus1902,d33,1902-06-28,Mr. McCormick to Mr. Hay.,375,2,0,0,0
+frus1902,d288,1902-06-28,Señor Quesada to Mr. Hay.,449,2,0,0,0
+frus1902,d829,1902-06-28,Mr. Dudley to Mr. Hay.,3600,10,2,0,0
+frus1902,d305,1902-07-03,By the President of the United States of America,1415,3,0,3,0
+frus1902,d284,1902-07-07,Mr. Squiers to Mr. Hay.,2329,4,0,0,0
+frus1902,d93,1902-07-11,Mr. Bryan to Mr. Hay.,3248,9,3,1,1
+frus1902,d558,1902-07-12,Mr. Hay to Mr. Choate.,638,1,1,0,0
+frus1902,d285,1902-07-15,Mr. Hay to Mr. Squiers.,367,2,0,0,0
+frus1902,d289,1902-07-16,Mr. Hay to Señor Quesada.,1086,7,0,0,0
+frus1902,d830,1902-07-21,Mr. Hill to Mr. Dudley.,778,3,0,0,0
+frus1902,d278,1902-08-02,Mr. Adee to Señor Quesada.,658,2,2,0,0
+frus1902,d270,1902-08-10,Mr. Hart to Mr. Hay.,476,1,0,0,0
+frus1902,d627,1902-08-10,Mr. Powell to Mr. Hay.,473,1,0,0,0
+frus1902,d628,1902-08-11,Mr. Adee to Mr. Powell.,280,1,0,0,0
+frus1902,d290,1902-08-12,Señor Quesada to Mr. Adee.,1678,9,3,0,0
+frus1902,d333,1902-08-13,Mr. Powell to Mr. Say.,2871,8,0,8,0
+frus1902,d631,1902-08-15,Mr. Powell to Mr. Hay.,23947,8,1,1,0
+frus1902,d213,1902-08-20,Mr. Wu to Mr. Adee.,11462,31,10,2,1
+frus1902,d635,1902-08-20,Mr. Powell to Mr. Hay.,8004,1,0,0,0
+frus1902,d1001,1902-08-26,Mr. Finch to Mr. Hay.,3999,17,0,2,0
+frus1902,d640,1902-09-06,Mr. Powell to Mr. Hay.,14371,2,2,1,1
+frus1902,d214,1902-09-12,Mr. Adee to Mr. Wu.,790,4,2,0,0
+frus1902,d291,1902-09-13,Mr. Adee to Señor Quesada.,2223,9,1,6,0
+frus1902,d304,1902-09-13,Mr. Adee to Mr. Squiers.,607,2,2,1,1
+frus1902,d978,1902-09-17,Mr. Eddy to Mr. Hay.,947,6,0,0,0
+frus1902app2,d91,1902-09-22,cinquième séance.,70765,0,0,0,0
+frus1902app2,d23,1902-09-25,Supplemental brief on behalf of the United States.,174902,0,0,0,0
+frus1902,d662,1902-10-03,Mr. Powell to Mr. Hay.,4824,1,0,0,0
+frus1902,d292,1902-10-27,Señor Quesada to Mr. Hay.,1186,6,0,0,0
+frus1902,d791,1902-11-04,Mr. Clayton to Mr. Hay.,4095,10,0,5,0
+frus1902,d295,1902-11-08,Mr. Squiers to Mr. Hay.,30532,18,4,9,1
+frus1902,d296,1902-11-08,Mr. Squiers to Mr. Hay.,16622,9,2,7,2
+frus1902,d903,1902-11-10,Mr. Thomas to Mr. Hay.,1897,7,0,0,0
+frus1902,d310,1902-11-13,Mr. Squiers to Mr. Hay.,8759,14,1,0,0
+frus1902,d293,1902-11-15,Mr. Hay to Señor Quesada.,2521,15,0,11,0
+frus1902,d313,1902-11-21,Mr. Squiers to Mr. Hay.,22559,55,24,21,10
+frus1903,d475,1902-12-31,Sir Michael Herbert to Mr. Hay.,13210,4,3,4,3
+frus1903,d331,1903-02-16,Agreement between the United States of America and the Republic of Cuba for the lease (subject to terms to be agreed upo,4385,16,12,3,1
+frus1911,d110,1903-02-16,"Agreement between the United States and Cuba for lease of coaling or naval stations, February 16/23, 1903.",2431,11,9,2,1
+frus1903,d333,1903-04-11,Mr. Squiers to Mr. Hay.,27858,20,4,7,1
+frus1903,d335,1903-04-24,Mr. Squiers to Mr. Hay.,6946,9,1,0,0
+frus1903,d336,1903-05-02,Mr. Hay to Mr. Squiers.,1200,8,0,0,0
+frus1903,d21,1903-05-08,Mr. Thompson to Mr. Hay.,10461,3,0,1,0
+frus1903,d337,1903-05-09,Mr. Squiers to Mr. Hay.,11138,2,0,0,0
+frus1903,d349,1903-05-12,Mr. Powell to Mr. Hay.,4299,1,1,0,0
+frus1903,d128,1903-06-20,Mr. Beaupré to Mr. Hay.,11238,1,0,0,0
+frus1911,d111,1903-07-02,"Lease of Land, and Water at Guantánamo and Bahía Honda.",2654,7,3,5,2
+frus1903,d627,1903-08-25,Mr. Loomis to Mr. Clayton.,3216,2,0,1,0
+frus1903,d338,1903-09-19,Mr. Squiers to Mr. May.,1832,4,0,1,0
+frus1903,d332,1903-10-02,Lease to the United States by the Government of Cuba of certain areas of land and water for naval or coaling stations in,5000,20,5,11,0
+frus1903,d742,1903-11-06,Mr. Leishman to Mr. Hay.,625,1,0,0,0
+frus1903,d334,1903-11-07,Mr. Squiers to Mr. Hay.,37063,28,6,14,3
+frus1904,d216,1903-11-07,Mr. Squiers to Mr. Hay.,1762,1,0,0,0
+frus1903,d310,1903-11-08,[Untitled],70721,8,7,3,3
+frus1903,d309,1903-11-09,Mr. Ehrman to Mr. Loomis.,19577,2,1,0,0
+frus1903,d541,1903-11-09,Mr. Hay to Mr. Choate.,2466,2,2,0,0
+frus1903,d358,1903-11-11,Mr. Powell to Mr. Hay,4918,1,0,0,0
+frus1904,d217,1903-12-16,Mr. Adee to Mr. Squiers.,853,1,0,0,0
+frus1903,d340,1903-12-17,"By the President of the United States of America,",17873,51,1,47,1
+frus1903,d341,1903-12-17,By the President of the United States of America.,2648,3,0,2,0
+frus1903,ch40,1903-12-17,Commercial convention between the United States and Cuba,323,2,0,2,0
+frus1903,ch41,1903-12-17,"Supplementary convention between the United States and Cuba, extending the time within which above commercial convention",411,2,0,2,0
+frus1903,d542,1903-12-18,Mr. Choate to Mr. Hay.,1490,2,1,0,0
+frus1904,d218,1903-12-31,Mr. Sleeper to Mr. Hay.,3127,3,0,0,0
+frus1903,d321,1904-01-05,Mr. Hay to General Reyes.,44487,1,1,0,0
+frus1904,d199,1904-01-09,Mr. Sleeper to Mr. Hay.,23944,39,1,26,1
+frus1904,d200,1904-02-01,Mr. Squiers to Mr. Hay.,1000,1,0,0,0
+frus1904,d203,1904-02-04,Mr. Squiers to Mr. Hay.,2260,4,3,2,1
+frus1904,d204,1904-02-05,Mr. Squiers to Mr. Hay.,932,2,2,0,0
+frus1904,d201,1904-02-12,Mr. Squiers to Mr. Hay.,2862,1,0,0,0
+frus1904,d250,1904-02-12,Mr. Powell to Mr. Hay.,6585,1,0,0,0
+frus1925v02,d4,1904-03-02,"Treaty Between the United States of America and Cuba, Signed at Washington, March 2, 1904",3415,12,4,2,2
+frus1904,d205,1904-04-23,Mr. Squiers to Mr. Hay.,8063,11,2,5,0
+frus1904,d836,1904-06-07,Mr. Hardy to Mr. Hay.,3769,1,0,0,0
+frus1904,d207,1904-07-02,By the President of the United States of America.,8984,42,23,14,8
+frus1904,d208,1904-07-02,By the President or the United States of America.,2835,6,0,1,0
+frus1904,ch50,1904-07-02,Treaty between the United States and Cuba embodying the provisions defining the future relations of the United States wi,457,3,0,0,0
+frus1904,ch51,1904-07-02,Supplementary convention between the United States and Cuba extending the period within which may be exchanged the ratif,500,3,0,0,0
+frus1905,d1043,1904-08-07,Minister Bowen to the Secretary of State.,43815,1,0,0,0
+frus1904,d222,1904-10-10,Mr. Hay to Mr. Squiers.,738,1,0,0,0
+frus1904,d481,1904-10-12,Mr. Clayton to Mr. Hay.,5800,1,0,0,0
+frus1904,d209,1904-10-22,Mr. Sleeper to Mr. Hay.,8493,8,1,3,0
+frus1904,d198,1904-10-25,Mr. Snyder to Mr. Hay.,2933,1,1,0,0
+frus1904,d210,1904-10-28,Mr. Sleeper to Mr. Hay.,2257,1,0,0,0
+frus1904,d206,1904-11-10,Mr. Sleeper to Mr. Hay.,2522,4,0,0,0
+frus1904,d211,1904-11-25,Mr. Hay to Mr. Squiers.,4074,9,0,0,0
+frus1904,d212,1904-11-28,Mr. Squiers to Mr. Hay.,451,1,0,0,0
+frus1904,d213,1904-12-03,Mr. Squiers to Mr. Hay.,3294,1,0,0,0
+frus1904,d486,1904-12-08,Mr. Clayton to Mr. Hay.,8471,1,0,0,0
+frus1904,d215,1904-12-17,Mr. Squiers to Mr. Hay.,440,1,0,0,0
+frus1905,d274,1905-01-09,The Acting Secretary of State to Minister Squiers.,647,2,0,0,0
+frus1905,d285,1905-01-12,The Cuban Legation to the Department of State.,1325,6,2,0,0
+frus1905,d286,1905-01-17,The Department of State to the Cuban Legation.,1395,3,1,0,0
+frus1905,d287,1905-01-19,The Cuban Legation to the Department of State.,1672,6,2,0,0
+frus1905,d316,1905-01-23,Minister Dawson to the Secretary of State.,40512,1,0,1,0
+frus1905,d288,1905-01-26,The Department of State to the Cuban Legation.,635,2,0,0,0
+frus1905,d275,1905-02-01,Minister Squiers to the Secretary of State.,2230,3,0,0,0
+frus1905,d276,1905-02-08,The Secretary of State to Minister Squiers.,606,1,0,0,0
+frus1905,d295,1905-02-08,By the President of the United States of America.,13125,12,1,2,0
+frus1905,ch60,1905-02-08,Treaty between the United States and Cuba for the mutual extradition of fugitives from justice,351,2,0,1,0
+frus1905,d289,1905-02-10,The Cuban Minister to the Secretary of State.,679,3,0,0,0
+frus1905,d290,1905-02-14,The Secretary of State to the Cuban Minister.,569,2,0,0,0
+frus1905,d325,1905-02-15,"Message from the President of the United States, transmitting a protocol of an agreement between the United States and t",69169,6,0,0,0
+frus1905,d277,1905-02-18,Minister Squiers to the Secretary of State.,3334,4,0,1,0
+frus1905,d351,1905-03-07,Minister Dawson to the Secretary of State.,4728,1,0,0,0
+frus1905,d279,1905-03-10,The Secretary of State to Minister Squiers.,19087,67,33,7,0
+frus1905,d291,1905-03-29,The Cuban Minister to Acting Secretary of State Adee.,625,2,0,0,0
+frus1905,d292,1905-04-06,The Chief of the Bureau of Accounts to the Cuban Minister.,544,1,0,0,0
+frus1905,d293,1905-04-07,The Acting Secretary of State to the Cuban Minister.,673,1,0,0,0
+frus1905,d294,1905-04-07,The Cuban Minister to the Secretary of State.,538,3,1,0,0
+frus1905,d280,1905-04-15,Minister Squiers to the Secretary of State.,1754,4,0,0,0
+frus1905,d296,1905-04-15,Minister Squiers to the Secretary of State.,5608,9,0,6,0
+frus1905,d281,1905-05-06,Minister Squiers to the Secretary of State.,4562,10,2,2,0
+frus1905,d26,1905-07-01,The President of Cuba to President Roosevelt.,271,2,0,0,0
+frus1905,d345,1905-07-01,Minister Dawson to the President.,38568,1,0,0,0
+frus1905,d282,1905-07-26,The Acting Secretary of State to Minister Squiers.,354,2,0,0,0
+frus1905,d283,1905-08-17,Minister Squiers to the Secretary of State.,4737,4,0,0,0
+frus1906p1,d437,1905-09-01,Minister Squiers to the Secretary of State.,2397,6,0,4,0
+frus1905,d298,1905-09-20,Chargé Sleeper to the Secretary of State.,558,1,0,0,0
+frus1905,d299,1905-09-21,The Cuban Minister to Acting Secretary of State Adee.,1401,5,0,0,0
+frus1905,d300,1905-09-21,The Acting Secretary of State to Chargé Sleeper.,455,3,0,0,0
+frus1905,d301,1905-09-23,The Acting Secretary of State to the Cuban Minister.,599,2,0,0,0
+frus1905,d302,1905-09-23,Chargé Sleeper to the Secretary of State.,5307,3,0,0,0
+frus1905,d303,1905-10-03,The Secretary of State to Minister Squiers.,850,2,0,0,0
+frus1905,d112,1905-10-29,Minister Wilson to the Secretary of State.,1118,1,0,0,0
+frus1906p1,d438,1905-10-30,The Secretary of State to Minister Squiers.,1951,2,0,2,0
+frus1905,d297,1905-11-16,Minister Squiers to the Secretary of State.,5321,9,0,4,0
+frus1917,d750,1905-12-01,Chargé Lorillard to the Secretary of State,3003,2,0,2,0
+frus1905,d284,1905-12-21,The Secretary of State to Chargé Sleeper.,4387,10,0,7,0
+frus1906p2,d77,1906-01-02,Ambassador White to the Secretary of State.,2602,1,0,0,0
+frus1906p1,d445,1906-01-13,Chargé Sleeper to the Secretary of State.,9910,14,0,7,0
+frus1906p1,ch69,1906-01-13,Sanitation of Cuban cities,84,1,0,0,0
+frus1906p1,d446,1906-01-20,The Secretary of State to Chargé Sleeper.,728,2,0,0,0
+frus1906p1,d457,1906-01-30,The Secretary of State to the American Legation.,723,3,0,3,0
+frus1906p1,d439,1906-02-01,Chargé Sleeper to the Secretary of State.,5869,3,0,3,0
+frus1906p1,d459,1906-02-02,Chargé Sleeper to the Secretary of State.,2000,5,0,3,0
+frus1906p1,d486,1906-02-02,Minister Dawson to the Secretary of State.,19212,3,1,0,0
+frus1906p1,d448,1906-02-03,Chargé Sleeper to the Secretary of State.,2643,1,0,0,0
+frus1906p1,d449,1906-02-06,Chargé Sleeper to the Secretary of State.,3347,5,0,1,0
+frus1906p2,d2,1906-02-10,Minister Furniss to the Secretary of State.,1059,1,0,1,0
+frus1906p1,d460,1906-02-20,Chargé Sleeper to the Secretary of State.,5179,6,0,6,0
+frus1906p1,d461,1906-03-03,The Acting Secretary of State to Minister Morgan.,1012,3,0,3,0
+frus1906p2,d596,1906-03-21,The Russian Ambassador to the Secretary of State.,1258,1,1,0,0
+frus1906p1,d462,1906-04-10,Minister Morgan to the Secretary of State.,975,3,2,3,2
+frus1906p2,d602,1906-04-12,The Russian Ambassador to the Secretary of State.,4473,1,0,0,0
+frus1906p1,d465,1906-05-05,Minister Morgan to the Secretary of State.,5419,7,0,7,0
+frus1906p1,d117,1906-05-17,Chargé Richardson to the Secretary of State.,10261,1,0,0,0
+frus1906p1,d440,1906-05-19,The Acting Secretary of State to Minister Morgan.,2408,11,2,11,2
+frus1906p2,d594,1906-05-23,The Acting Secretary of State to the Brazilian Ambassador.,250399,26,21,6,2
+frus1906p1,d450,1906-06-11,Minister Morgan to the Secretary of State.,2749,2,0,0,0
+frus1906p1,d441,1906-06-15,Minister Morgan to the Secretary of State.,1641,4,3,4,3
+frus1906p1,d501,1906-06-16,Minister Dawson to the Secretary of State.,40409,1,0,0,0
+frus1906p1,d463,1906-07-06,Minister Morgan to the Secretary of State.,4486,9,0,9,0
+frus1906p2,d82,1906-07-11,The Acting Secretary of State to Ambassador White.,9912,1,0,0,0
+frus1906p1,d464,1906-07-14,The Acting Secretary of State to Minister Morgan.,625,2,0,2,0
+frus1906p1,d452,1906-07-19,Chargé Sleeper to the Secretary of State.,6979,2,2,0,0
+frus1906p1,d456,1906-07-26,Chargé Sleeper to the Secretary of State.,6859,2,1,0,0
+frus1906p2,d432,1906-08-01,Agreement as to reciprocal tariff concessions between the United States of America and Spain.,3690,2,0,2,0
+frus1906p1,d442,1906-08-20,Chargé Sleeper to the Secretary of State.,11985,21,3,18,1
+frus1906p1,d390,1906-08-21,Chargé Sleeper to the Secretary of State.,4624,1,0,0,0
+frus1906p1,d395,1906-08-28,Chargé Sleeper to the Secretary of State.,8105,3,0,1,0
+frus1906p1,d396,1906-08-29,Chargé Sleeper to the Secretary of State.,527,1,0,1,0
+frus1906p1,d399,1906-08-30,Chargé Sleeper to the Secretary of State.,1519,2,0,2,0
+frus1906p1,d400,1906-08-30,Chargé Sleeper to the Secretary of State.,8300,9,3,0,0
+frus1906p1,d402,1906-08-31,The Acting Secretary of State to Chargé Sleeper.,670,4,3,0,0
+frus1906p1,d403,1906-09-01,Chargé Sleeper to the Secretary of State.,9107,2,0,1,0
+frus1906p1,d404,1906-09-04,Chargé Sleeper to the Secretary of State.,6653,3,1,1,1
+frus1906p1,d23,1906-09-06,Minister Beaupré to the Secretary of State.,92337,2,1,0,0
+frus1906p1,d407,1906-09-08,Chargé Sleeper to the Secretary of State.,9093,4,1,1,1
+frus1906p1,d408,1906-09-08,Consul-General Steinhart to the Secretary of State.,890,1,0,0,0
+frus1906p1,d410,1906-09-10,The Acting Secretary of State to Consul-General Stienhart.,1408,3,3,0,0
+frus1906p1,d411,1906-09-10,Consul-General Steinhart to the Secretary of State.,1038,3,3,0,0
+frus1906p1,d494,1906-09-10,Minister Dawson to the Secretary of State.,11954,1,0,0,0
+frus1906p1,d412,1906-09-11,The Acting Secretary of State to Consul-General Steinhart.,873,1,1,0,0
+frus1906p1,d414,1906-09-12,Consul-General Steinhart to the Secretary of State.,1075,2,2,1,1
+frus1906p1,d415,1906-09-12,Consul-General Steinhart to Acting Secretary of State.,514,1,0,0,0
+frus1906p1,d416,1906-09-12,Consul-General Steinhart to the Acting Secretary of State.,851,2,1,1,1
+frus1906p1,d418,1906-09-13,Chargé Sleeper to the Secretary of State.,676,1,0,0,0
+frus1906p1,d419,1906-09-13,Chargé Sleeper to the Secretary of State.,624,1,0,0,0
+frus1906p1,d420,1906-09-13,Consul-General Steinhart to the Acting Secretary of State.,1032,3,3,3,3
+frus1906p1,d421,1906-09-13,The Acting Secretary of State to Chargê Sleeper.,790,2,0,1,0
+frus1906p1,d424,1906-09-14,Chargé Sleeper to the Secretary of State.,1337,1,0,1,0
+frus1906p1,d426,1906-09-14,The President to Acting Secretary of State Bacon.,1212,3,1,0,0
+frus1906p1,d427,1906-09-14,The President to the Cuban Minister.,4771,23,10,7,5
+frus1906p1,d429,1906-09-15,Chargé Sleeper to the Secretary of State.,11340,6,0,2,0
+frus1906p1,d430,1906-09-17,Chargé Sleeper to the Secretary of State.,3009,2,1,0,0
+frus1906p1,d432,1906-09-17,The Cuban Chargé to Acting Secretary of State Adee.,771,3,0,0,0
+frus1906p1,d433,1906-10-01,The Secretary of State to the Cuban Minister.,1933,8,3,0,0
+frus1906p1,d434,1906-10-03,The Cuban Minister to the Secretary of State.,2778,18,0,0,0
+frus1906p1,d435,1906-10-06,The Secretary of State to the Provisional Governor of Cuba.,540,4,3,4,3
+frus1906p1,d2,1906-10-09,[Untitled],1862,1,0,0,0
+frus1906p1,d436,1906-10-13,Minister Morgan to the Secretary of State.,21659,50,4,12,0
+frus1906p1,d499,1906-10-18,Minister Dawson to the Secretary of State.,104714,3,1,0,0
+frus1906p1,d75,1906-10-28,Minister Moncheur to the Secretary of State.,2086,1,0,1,0
+frus1906p1,d443,1906-11-09,Minister Morgan to the Secretary of State.,3705,10,0,10,0
+frus1906p2,d151,1906-11-10,Ambassador Wright to the Secretary of State.,1281,8,0,0,0
+frus1906p2,d152,1906-11-12,The Secretary of State to Ambassador Wright.,800,7,0,0,0
+frus1907p1,d238,1906-11-20,Chargé Coolidge to the Secretary of State.,4909,1,0,0,0
+frus1906p1,d444,1906-11-23,The Acting Secretary of State to Minister Morgan.,671,3,0,1,0
+frus1906p2,d153,1906-11-23,Ambassador Wright to the Secretary of State.,1489,2,0,0,0
+frus1907p1,d257,1906-11-26,Minister Morgan to the Secretary of State.,10381,5,2,5,2
+frus1906p2,d154,1906-12-08,Ambassador Wright to the Secretary of State.,1229,2,0,0,0
+frus1907p1,d240,1907-01-21,The Chinese Minister to the Secretary of State.,2058,1,0,0,0
+frus1907p1,d439,1907-01-30,Rear-Admiral Davis to the Secretary of the Navy.,2635,2,0,0,0
+frus1907p2,d150,1907-03-02,Minister Furniss to the Secretary of State.,8176,2,0,1,0
+frus1907p2,d155,1907-03-08,Minister Furniss to the Secretary of State.,18590,2,0,1,0
+frus1907p2,d158,1907-03-14,Minister Furniss to the Secretary of State.,5168,1,0,0,0
+frus1907p1,d273,1907-03-31,[Untitled],92653,4,0,3,0
+frus1907p2,d504,1907-04-30,The Acting Secretary of State to Minister Hill.,436,2,0,0,0
+frus1907p1,d440,1907-05-01,The Secretary of State to the British Ambassador.,4107,2,0,0,0
+frus1908,d579,1907-05-10,Memorandum by the Solicitor for the Department of State.,26709,1,0,0,0
+frus1907p1,d295,1907-05-18,The Secretary of State to the French Ambassador.,7908,3,1,2,0
+frus1917,d753,1907-05-29,Minister O’Brien to the Secretary of State,6942,2,0,2,0
+frus1908,d240,1907-06-19,Memorandum to the French Embassy.,12264,1,0,1,0
+frus1907p1,d296,1907-06-20,The French Ambassador to the Secretary of State.,2678,1,0,1,0
+frus1908,d580,1907-07-02,The Acting Secretary of State to the Mexican Ambassador.,9891,1,0,0,0
+frus1907p1,d253,1907-07-18,The Acting Secretary of State to Minister Morgan.,2010,7,0,0,0
+frus1907p1,d254,1907-07-29,Minister Morgan to the Secretary of State.,2762,8,2,0,0
+frus1907p2,d375,1907-08-02,The Acting Secretary of State to Minister Collier.,10323,6,0,4,0
+frus1907p1,d297,1907-10-04,The Acting Secretary of State to the French Chargé.,8718,2,1,1,1
+frus1907p1,d72,1907-10-12,The Acting Secretary of State to the Belgian Chargé.,10361,1,0,0,0
+frus1907p2,d508b,1907-10-18,[Untitled],40309,1,0,0,0
+frus1907p2,d508c,1907-10-18,[Untitled],6646,1,0,0,0
+frus1907p2,d508d,1907-10-18,,6698,1,0,0,0
+frus1907p2,d508e,1907-10-18,[Untitled],28163,1,0,0,0
+frus1907p2,d508f,1907-10-18,[Untitled],12013,1,0,0,0
+frus1907p2,d508g,1907-10-18,[Untitled],9198,1,0,0,0
+frus1907p2,d508h,1907-10-18,[Untitled],9336,1,0,0,0
+frus1907p2,d508i,1907-10-18,[Untitled],16448,1,0,0,0
+frus1907p2,d508j,1907-10-18,[Untitled],9008,1,0,0,0
+frus1907p2,d508k,1907-10-18,[Untitled],16004,1,0,0,0
+frus1907p2,d508m,1907-10-18,[Untitled],8104,1,0,0,0
+frus1907p2,d508n,1907-10-18,[Untitled],7120,1,0,0,0
+frus1907p2,d508o,1907-10-18,[Untitled],30133,2,0,0,0
+frus1907p2,d508p,1907-10-18,[Untitled],28147,1,0,0,0
+frus1907p1,d255,1907-10-23,The Acting Secretary of State to Minister Morgan.,570,2,0,0,0
+frus1907p1,d256,1907-10-29,Chargé Turner to the Secretary of State.,1774,7,1,0,0
+frus1907p1,d74,1907-11-14,Minister Wilson to the Secretary of State.,3867,2,0,1,0
+frus1908,d246,1907-12-28,Memorandum to the French Embassy.,18054,1,0,1,0
+frus1908,d362,1908-01-17,Minister Furniss to the Secretary of State.,3544,1,0,0,0
+frus1908,d214,1908-01-24,The Cuban Minister to the Secretary of State.,1430,6,0,0,0
+frus1908,d215,1908-01-28,The Secretary of State to the Cuban Minister.,1056,2,0,0,0
+frus1908,d457,1908-01-29,"By the President of the United States of America,",2239,2,0,0,0
+frus1908,d376,1908-01-31,The Acting Secretary of State to Minister Furniss.,879,1,0,0,0
+frus1908,d378,1908-02-03,The Acting Secretary of State to Minister Furniss.,2093,1,1,0,0
+frus1908,d379,1908-02-05,Minister Furniss to the Secretary of State.,1113,2,0,0,0
+frus1908,d381,1908-02-07,The Acting Secretary of State to Minister Furniss.,778,1,1,0,0
+frus1909,d225,1908-02-19,The Cuban Minister to the Secretary of State.,1153,4,0,0,0
+frus1909,d226,1908-02-27,The Acting Secretary of State to the Cuban Minister.,647,3,0,0,0
+frus1908,d409,1908-05-13,Minister Furniss to the Secretary of State.,9304,1,0,0,0
+frus1908,d3,1908-05-15,[Untitled],2794,1,0,1,0
+frus1908,d578,1908-05-25,"Message from the President of the United States, transmitting a report by the Secretary of State concerning the claim of",3845,1,0,0,0
+frus1920v02,d84,1908-06-25,The Minister in Cuba (Morgan) to the Secretary of State,25375,32,5,9,2
+frus1920v02,ch5,1908-06-25,"McGivney and Rokeby Construction Company’s contract of June 23, 1908; proposal by the United States for arbitration of d",361,1,0,0,0
+frus1908,d216,1908-09-29,Chargé Tarler to the Secretary of State.,2427,1,0,0,0
+frus1908,ch45,1908-09-29,Sanitation of Cuban cities,94,1,0,0,0
+frus1908,d206,1908-11-04,Minister Morgan to the Secretary of State.,193,1,0,0,0
+frus1908,d233,1908-11-04,Minister Fox to the Secretary of State.,14557,1,0,0,0
+frus1908,d210,1908-11-16,President-elect Gomez to President Roosevelt.,375,1,0,0,0
+frus1908,d211,1908-11-16,President Roosevelt to President-elect Gomez.,1190,4,0,3,0
+frus1908,d212,1908-11-17,The Secretary of State to Governor Magoon.,774,3,0,0,0
+frus1908,d213,1908-11-18,President-elect Gomez to President Roosevelt.,1352,3,1,3,1
+frus1908,d600,1908-11-18,Secretary of Legation Philip to the Secretary of State.,2174,1,0,1,0
+frus1908,d209,1908-11-19,The Acting Secretary of State to Minister Morgan.,968,4,0,0,0
+frus1908,d397,1908-12-06,Minister Furniss to the Secretary of State.,1464,1,0,0,0
+frus1909,d223,1909-01-09,treaty with panama.,29231,1,0,0,0
+frus1910,d360,1909-02-12,Chargé Hibben to the Secretary of State.,5360,1,1,1,1
+frus1910,d366,1909-02-26,Minister Dawson to the Secretary of State.,54915,1,1,1,1
+frus1909,d611,1909-03-01,"By the President of the United States of America,",36348,6,2,0,0
+frus1909,d228,1909-03-04,Minister Morgan to the Secretary of State.,1402,2,0,0,0
+frus1909,d229,1909-03-15,The Acting Secretary of State to Minister Morgan.,1091,1,0,0,0
+frus1910,d384,1909-03-29,Minister Dawson to the Secretary of State.,29889,1,1,0,0
+frus1909,d104,1909-04-06,By the President of the United States of America.,4128,1,0,0,0
+frus1917,d755,1909-04-17,Minister Egan to the Secretary of State,1436,1,0,1,0
+frus1909,d227,1909-08-04,The Secretary of State to the Cuban Minister.,1354,3,0,1,0
+frus1909,d619,1909-09-28,The American Delegates to the Secretary of State.,65847,3,0,0,0
+frus1910,d142,1909-10-15,The Minister of Foreign Affairs to Minister Dawson.,27797,1,0,0,0
+frus1909,d615,1909-12-28,Consul Lee to the Secretary of State.,1953,1,0,1,0

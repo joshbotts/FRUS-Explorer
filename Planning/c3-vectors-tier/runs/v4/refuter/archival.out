@@ -1,0 +1,227 @@
+collection-authority keys: {'collections': ('list', 3977), 'generated': ('str', 10), 'schemaVersion': ('int', 1)}
+volume-sources-index keys: {'generated': ('str', 10), 'lots': ('dict', 0), 'majorCollections': ('list', 2470), 'recordGroups': ('dict', 36), 'schemaVersion': ('int', 2)}
+external-citation-index keys: {'classPairs': ('list', 8143), 'classSourceKeys': ('list', 3451), 'classTargetKeys': ('list', 4460), 'classTargets': ('list', 4460), 'coverage': ('dict', 24), 'generated': ('str', 10), 'pairs': ('list', 3114), 'schemaVersion': ('int', 2), 'sourceIds': ('list', 814), 'targetIds': ('list', 1006), 'targets': ('list', 1006), 'volumes': ('list', 441)}
+series-facts legend keys: {"keys": {"ar": {"field": "accessRestrictions", "into": "restrictions", "kind": "indexList"}, "as": {"field": "accessStatus", "into": "statuses", "kind": "index"}, "c": {"field": "creator", "into": "headings", "kind": "index"}, "cy0": {"field": "coverageStartYear", "kind": "year"}, "cy1": {"field": "coverageEndYear", "kind": "year"}, "fa": {"field": "findingAids", "into": "findingAidTypes", "kind": "indexList"}, "p": {"field": "predecessors", "into": "headings", "kind": "indexList"}, "ru": {"field": "referenceUnit", "into": "referenceUnits", "kind": "index"}, "ur": {"field": "useRestrictions", "into": "useRestrictions", "kind": "indexList"}, "us": {"field": "useStatus", "into": "statuses", "kind": "index"}, "x": {"field": "extent", "kind": "string"}, "y0": {"field": "inclusiveStartYear", "kind": "year"}, "y1": {"field": "inclusiveEndYear", "kind": "year"}}, "note": "Each `byNaId` row uses one-letter keys. `kind: index`/`indexList` values are offsets into the TOP-LEVEL array named by `into` \u2014 note that `as` and `us` share `statuses`, while `ar` uses `restrictions` and `ur` uses `useRestrictions`; the names do not tell you that. `y0`/`y1` are NARA's INCLUSIVE dates and `cy0`/`cy
+
+== Lot files named in the bottom line (lot -> entry, NAID, title, dates, access) ==
+65D438 | RG 59 | entries ['A1 3053'] | NAID 27022950 | Records Relating to the Cuban Missile Crisis | 1962-1963 | access Restricted - Partly | creator Department of State. Executive Secretariat.
+    claim: entry True naid True title True dates True access True
+74D272 | RG 59 | entries ['A1 5175'] | NAID 614703 | Records of Under Secretary of State George W. Ball | 1961-1966 | access Unrestricted | creator Department of State. Office of the Under Secretary of State.
+    claim: entry True naid True title True dates True access True
+66D501 | RG 59 | entries ['UD-UP 293-B'] | NAID 648748 | Files Pertaining to Operation Mongoose | 1963-1965 | access Unrestricted | creator Department of State. Bureau of Inter-American Affairs. Office of the Coordinator of Cuban Affairs.
+    claim: entry True naid True title True dates True access True
+62D418 | RG 59 | entries ['A1 3147'] | NAID 2068466 | Subject Files | 1959-1962 | access Restricted - Partly | creator Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs.
+    claim: entry True naid True title True dates True access True
+62D24 | RG 59 | entries ['A1 3148'] | NAID 2363836 | Subject Files | 1958-1961 | access Restricted - Partly | creator Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs. Office of the Special Assistant on Communism.
+    claim: entry True naid True title True dates True access True
+62D1 | RG 59 | entries ['A1 1583E', 'A1 1583F'] | NAID 2838992 | Records Relating to Activities with the National Security Council | 1948-1961 | access Restricted - Partly | creator Department of State. Policy Planning Council.
+    claim: entry False naid True title True dates True access True
+66D95 | RG 59 | entries ['A1 1586E'] | NAID 2839192 | Records Relating to National Security Council Policy Papers | 1947-1979 | access Restricted - Partly | creator Department of State. Office of the Secretary. Executive Secretariat.
+    claim: entry True naid True title True dates True access True
+66D204 | RG 59 | entries ['A1 1590'] | NAID 2538452 | Presidential and Secretary of State Correspondence with Foreign Heads of State | 1953-1964 | access Restricted - Possibly | creator Department of State. Office of the Secretary. Executive Secretariat.
+    claim: entry True naid True title True dates True access True
+64D199 | RG 59 | entries ['A1 1566'] | NAID 602231 | The Secretary's and the Under Secretary's Memorandums of Conversation | 1953-1964 | access Unrestricted | creator Department of State. Executive Secretariat.
+    claim: entry True naid True title True dates True access True
+65D330 | RG 59 | entries ['A1 1566'] | NAID 602231 | The Secretary's and the Under Secretary's Memorandums of Conversation | 1953-1964 | access Unrestricted | creator Department of State. Executive Secretariat.
+    claim: entry True naid True title True dates True access True
+73D191 | RG 59 | entries ['A1-5758'] | NAID 1040618 | Records Relating to Cuba | 1957-1975 | access Restricted - Partly | creator Department of State. Bureau of Inter-American Affairs. Office of the Coordinator of Cuban Affairs.
+    claim: entry True naid True title True dates True access True
+
+== 62D1 raw record == {"catalogURL": "https://catalog.archives.gov/id/2838992", "hmsMlrEntryNumbers": ["A1 1583E", "A1 1583F"], "levelOfDescription": "series", "lotNumber": "62D1", "matchType": "control", "naId": "2838992", "recordGroup": "59", "title": "Records Relating to Activities with the National Security Council"}
+
+== Presidential libraries ==
+Eisenhower Library | DDE-1148 | NAID 612103 | William Merrill Whitman Papers | series: []
+Eisenhower Library | DDE-1417 | NAID 599128 | Records of the Office of the Special Assistant for National Security Affairs (Eisenhower Administration) | series: []
+Eisenhower Library | DDE-1424 | NAID 643447 | Ann C. Whitman Papers | series: []
+Eisenhower Library | DDE-EPRES | NAID 1124 | Eisenhower, Dwight D.: Papers as President of the United States | series: [('Ann Whitman Diary', '1953–1961', 186474)]
+Kennedy Library | JFK-383 | NAID 27882917 | Papers of John F. Kennedy: Draft Transcripts, Presidential Recordings | series: []
+Kennedy Library | JFK-4 | NAID 1164 | Papers of John F. Kennedy: Presidential Papers: National Security Files | series: [('Country Files', '1961–1963', 193236)]
+Johnson Library | LBJ-LBJ | NAID 1150 | Recordings and Transcripts of Telephone Conversations and Meetings | series: []
+Johnson Library | LBJ-NSF | NAID 567979 | National Security Files | series: [('Latin America Country Files', '1963–1969', 567985), ('Africa Country Files', '1963–1969', 573102), ('Europe and USSR Country Files', '1963–1969', 580807), ('Middle East Country Files', '1963–1969', 587357)]
+Johnson Library | LBJ-P14021 | NAID 38330279 | Papers of Mary L. Linscome | series: []
+Johnson Library | LBJ-PPCONVOS | NAID 330747675 | Recordings, Notes, and Transcripts of Lyndon Johnson’s Pre-Presidential Telephone Conversations and Meetings | series: []
+Carter Library | JC-DMBRZEZ | NAID 1104 | Zbigniew Brzezinski Collection | series: []
+Carter Library | JC-NSA | NAID 560131 | Records of the Office of the National Security Advisor (Carter Administration) | series: [("Zbigniew Brzezinski's Country Files", '1977–1981', 560151)]
+Carter Library | JC-NSC | NAID 623746 | National Security Council Institutional Files (Carter Administration) | series: []
+
+-- all Carter Library collections (titles):
+    JC-1005 1085 Office of the Chief of Staff Files
+    JC-1130 12015388 Robert K. Stiles’ Papers
+    JC-76C 561323 Records of the 1976 Campaign Committee to Elect Jimmy Carter
+    JC-80C 593160 Carter/Mondale 1980 Re-Election Committee Papers
+    JC-AGING 1112 Records of the Office of the Counselor to the President on Aging
+    JC-ANDERS 76089513 Patrick Anderson Papers
+    JC-APPTSCHED 1100 Records of the Appointments/Scheduling/Advance Office
+    JC-ARAG 1108 Records of Joseph Aragon, Assistant to the President
+    JC-BARNAR 586240 Harry Barnard Papers
+    JC-BASS 1937934 Jack Bass Papers
+    JC-BAUER 1109 Patricia E. Bauer Papers
+    JC-BENES 586241 Bernardo Benes Papers
+    JC-BERK 589920 Edward D. Berkowitz Papers
+    JC-BLEICH 1938026 Michael N. Bleicher Papers
+    JC-BONN 586246 James T. Bonnen Papers
+    JC-BOURNE 1096 Records of the Office of Peter Bourne, Special Assistant to the President for Health Issues
+    JC-BRAUNS 178924874 Braunstein/Sloat Papers
+    JC-BROWN 586248 Harold Brown Papers
+    JC-CABSEC 568941 Records of the Cabinet Secretary (Carter Administration)
+    JC-CALD 2641913 Dan Caldwell Papers
+    JC-CAMPB 7347173 Carlos Campbell Papers
+    JC-CAMPIO 1937992 Heather Campion Papers
+    JC-CEA 560384 Records of the Council of Economic Advisers (Carter Administration)
+    JC-CFP 593321 Pre-Presidential Carter Family Photographs
+    JC-CHRIST 586255 Warren Christopher Papers
+    JC-CLEL 587335 Max Cleland Papers
+    JC-CLOUGH 1110 Records of Susan Clough, Personal Secretary to the President
+    JC-CLYMER 2387564 Adam Clymer Papers
+    JC-COHEN 593064 Allan Cohen Papers
+    JC-COMMUN 1098 Records of the Office of the Assistant to the President for Communications
+    JC-CONGLIAS 559574 Records of the Office of Congressional Liaison (Carter Administration)
+    JC-CONSUM 583400 Records of Esther Peterson, Special Assistant to the President
+    JC-COSTLE 587338 Doug Costle Papers
+    JC-COSTON 587340 Dean Coston Papers
+    JC-COUNSL 1083 Records of the White House Office of Counsel to the President
+    JC-CROHN 7347174 Richard Crohn Papers
+    JC-DAVIS 4492503 Christopher L. Davis Papers
+    JC-DIXON 134610377 Mary Dixon Collection
+    JC-DMBOUR 586247 Peter Bourne Papers
+    JC-DMBRZEZ 1104 Zbigniew Brzezinski Collection
+    JC-DMCOSTAN 76089502 Midge Costanza Papers
+    JC-DMEIZEN 587938 Stuart Eizenstat Papers
+    JC-DMHOYT 590268 Mary Finch Hoyt Papers
+    JC-DMJORD 590272 Hamilton Jordan Papers
+    JC-DMKRAFT 1137975 Tim Kraft Papers
+    JC-DMLCUT 4051464 Lloyd Cutler Papers
+    JC-DMLIPSH 590316 Robert Lipshutz Papers
+    JC-DMMCDON 559511 Alonzo L. McDonald Papers
+    JC-DMMOORE 7347175 Frank Moore Papers
+    JC-DMRAFSH 1095 Gerald M. Rafshoon Papers
+    JC-DMSCHULT 76089548 Charles Schultze Papers
+    JC-DMWATS 591191 Jack Watson Papers
+    JC-DMWURF 2580567 Walter Wurfel Papers
+    JC-DOLVIN 1106 Emily Gordy Dolvin Papers
+    JC-DONOV 1087 Records of Hedley W. Donovan, Senior Adviser to the President
+    JC-DPS 1113 Records of the Domestic Policy Staff (Carter Administration)
+    JC-DROZ 102251119 Fred Droz Papers
+    JC-DUDLEY 587926 Mary Faye Dudley Papers
+    JC-DUNCAN 76089506 Charles W. Duncan and Deanne C. Siemer Papers
+    JC-ETHNIC 583011 Records of the Office of the Special Assistant for Ethnic Affairs (Carter Administration)
+    JC-EXCLERK 5803332 Records of the Office of the Executive Clerk
+    JC-FAMILY 592907 Carter Family Papers
+    JC-FINK 587984 Gary M. Fink Papers
+    JC-FLAG 588004 Records of the Family Liaison Action Group
+    JC-FLO 561326 Records of the First Lady's Office (Carter Administration)
+    JC-FREE 4492648 James Free Papers
+    JC-GREG 166663094 Claire Gregory Papers
+    JC-GUTH 589918 David W. Guth Papers
+    JC-HARDEN 590491 Records of the Office of the Special Assistant to the President for Information Management (Carter Administration)
+    JC-HARRIS 1938030 Hubert Harris Papers
+    JC-HERTZ 598781 Hendrik Hertzberg Papers
+    JC-HISPAN 1114 Records of the Office of Hispanic Affairs
+    JC-HODCART 586249 Hodding Carter Papers
+    JC-HUFSTED 1107 Shirley M. Hufstedler Papers
+    JC-HUTTO 95118388 Rick Hutto Papers
+    JC-JACART 586250 Jack Carter Papers
+    JC-JAGOD 1938037 Barry Jagoda Papers
+    JC-JANIS 590270 Jay Janis Papers
+    JC-JCPOST 594557780 Jimmy Carter Post-Presidential Files
+    JC-JEWISH 1089 Records of the Adviser to the President on American Jewish Affairs
+    JC-JGD 573204 John Gunther Dean Papers
+    JC-JULANG 586253 Judy Langford Carter Papers
+    JC-KAHN 590742 Records of the Office of the Special Adviser to the President on Inflation (Carter Administration)
+    JC-KING 590274 Mary King Papers
+    JC-KIRBO 608232443 Charles H. Kirbo Papers
+    JC-KNAEUS 134674092 Ursula Knaeusel Papers
+    JC-KOURY 166663088 Leo Koury Papers
+    JC-KRAFT 1088 Records of Tim Kraft, Special Assistant to the President
+    JC-LAING 4051467 Bruce Laingen Papers
+    JC-LAIRO 589914 Alexander N. Lairo Papers
+    JC-LINOW 590303 David F. Linowes Papers
+    JC-MARTIN 1084 Records of Louis Martin, Special Assistant to the President
+    JC-MAZLIS 5801474 Bruce Mazlish Papers
+    JC-MCDON 591730 Records of the Office of the Assistant to the President and White House Staff Director (Carter Administration)
+    JC-MCINTY 1090 James T. McIntyre Papers
+    JC-MENZIE 178924930 Grant Hayter-Menzies Papers
+    JC-MFH 1525352 Mary Finch Hoyt Papers
+    JC-MH 1115 Jimmy Carter Library Museum Holdings Collection
+    JC-MILLER 1938034 G. William Miller Papers
+    JC-MILLS 1101 Helen Mills Papers
+    JC-MITCH 1111 Records of Martha (Bunny) Mitchell, Special Assistant to the President
+    JC-MOFFET 1091 George D. Moffett Papers
+    JC-MONDAL 623728 Walter Mondale Papers
+    JC-MOREF 590481 Richard Morefield Papers
+    JC-NEVIL 1092 Carlton Neville Papers
+    JC-NPC 562763 Naval Photographic Center Collection (Carter Administration)
+    JC-NSA 560131 Records of the Office of the National Security Advisor (Carter Administration)
+    JC-NSC 623746 National Security Council Institutional Files (Carter Administration)
+    JC-ODE 589909 Robert C. Ode Papers
+    JC-ORALHIST 1121 Jimmy Carter Library Oral History Collection
+    JC-PARHAM 76508610 Jim Parham Papers
+    JC-PASTOR 590482 Robert Pastor Papers
+    JC-PETKAS 1938021 Peter J. Petkas Papers
+    JC-PETT 583165 Records of the President's Reorganization Project
+    JC-PLAINS 591256 Plains Files
+    JC-POPE 591111 John and Betty Pope Papers
+    JC-POSTON 102075751 Gretchen Poston Papers
+    JC-POSTPRES 7347345 Post Presidential Papers
+    JC-PPO 592621 Records of the Presidential Personnel Office (Carter Administration)
+    JC-PREPRES 2092722 Pre-Presidential Papers
+    JC-PUBLIAIS 1105 Records of the Office of the Assistant for Public Liaison
+    JC-RAINWAT 102251115 Betty Rainwater Papers
+    JC-REID 591131 Joseph Reid Papers
+    JC-RPRP 177960600 Records of the President's Reorganization Project
+    JC-RSCPOST 662062561 Rosalynn Carter Post-Presidential Files
+    JC-RUCUTL 593078 Rupert Cutler Papers
+    JC-SCHLES 1102 Records of James R. Schlesinger, Assistant to the President
+    JC-SCHNEID 76089616 Gregory Schneider Papers
+    JC-SCITECH 1086 Records of the Office of Science and Technology Policy
+    JC-SDMCD 7787115 Records of the Office of the Assistant to the President and White House Staff Director (Carter Administration)
+    JC-SHORT 589921 Milton Short Papers
+    JC-SOLOM 1093 Anthony M. Solomon Papers
+    JC-SSO 1099 Records of the Office of the Staff Secretary
+    JC-STRAUS 591093 Records of the Office of the Special Counselor on Inflation (Carter Administration)
+    JC-SWBD 5803339 White House Switchboard Office (Carter Administration)
+    JC-SWO 1116 Records of the Speechwriter's Office
+    JC-TCC 659965227 The Carter Center Files
+    JC-THOM 6003795 Kenneth H. Thomas, Jr. Papers
+    JC-THOMPS 178924951 Rita Thompson Papers
+    JC-USHER 4492691 Records of the White House Usher's Office (Carter Administration)
+    JC-VHEUV 590041 William J. Vanden Heuvel Papers
+    JC-VISIT 4492693 Records of the White House Visitor's Office (Carter Administration)
+    JC-WALL 591145 James Wall Papers
+    JC-WALLACE 1094 Robert Ash Wallace Papers
+    JC-WEDDIN 1097 Records of the Office of the Assistant to the President for Women's Affairs (Sarah Weddington)
+    JC-WEEKS 5802557 Robert Weeks Papers
+    JC-WEIN 102251110 Kenneth Weiner Papers
+    JC-WEXLER 583501 Records of Anne Wexler as Special Assistant to the President
+    JC-WHCA 562717 White House Communications Agency Collection (Carter Administration)
+    JC-WHCF 1117 Carter White House Central Files
+    JC-WHOA 1118 Records of the White House Office of Administration
+    JC-WHORM 70657676 Records of the White House Office of Records Management (Carter Administration)
+    JC-WHPO 1119 Records of the White House Press Office (Carter Administration)
+    JC-WHSP 1120 White House Staff Photographers Collection
+    JC-WILSON 591279 Cynthia Wilson Papers
+    JC-WISE 591293 Phillip Wise Papers
+    JC-WOLF 4076496 Milton Wolf Papers
+
+== Nineteenth-century microfilm file units ==
+Diplomatic Despatches | Despatches from U.S. Ministers to Cuba, 1902-1906 | fileUnitNaId 177380758 | series NAID None | rg None | keys ['catalogURL', 'endISO', 'fileUnitNaId', 'fileUnitTitle', 'geoKeys', 'naId', 'startISO', 'title']
+Notes from Foreign Missions | Notes from the Cuban Legation in the United States to the Department of State, 1844-1906 | fileUnitNaId 183303950 | series NAID None | rg None | keys ['catalogURL', 'endISO', 'fileUnitNaId', 'fileUnitTitle', 'geoKeys', 'naId', 'startISO', 'title']
+Consular Despatches | Despatches from United States Consuls in Havana, Cuba, 1783-1906 | fileUnitNaId 196006797 | series NAID None | rg None | keys ['catalogURL', 'endISO', 'fileUnitNaId', 'fileUnitTitle', 'geoKeys', 'naId', 'startISO', 'title']
+
+== Central Decimal File: any identifier in the bundled data? ==
+series-facts titles with 'decimal': []
+collection-authority strings mentioning 'decimal file': 135 [('/collections[1995]/children[0]/name', 'Subject decimal files of the Office of the Secretary of Defense for 1964'), ('/collections[1996]/children[0]/name', 'Subject decimal files of the Office of the Secretary of Defense for 1965'), ('/collections[1997]/children[0]/name', 'Subject decimal files of the Office of the Secretary of Defense for 1966'), ('/collections[1998]/children[0]/name', 'Subject decimal files of the Office of the Secretary of Defense for 1967'), ('/collections[2017]/children[0]/name', 'Decimal Files of the Office of the Secretary of Defense'), ('/collections[2018]/children[0]/name', 'Top Secret Decimal Files of the Office of the Secretary of Defense')]
+central-files-index strings mentioning 'decimal file': 2 [('/lotFiles[132]/title', 'Decimal Files'), ('/lotFiles[158]/title', 'Decimal Files')]
+volume-sources-index strings mentioning 'decimal file': 10 [('/majorCollections[937]/key', 'txt:indexed central files. papers in the indexed central files of the department for the years 1955–1957 are indicated b'), ('/majorCollections[937]/text', 'Indexed Central Files. Papers in the indexed central files of the Department for the years 1955–1957 are indicated by a '), ('/majorCollections[1869]/key', 'txt:1. indexed central files. papers in the indexed central files of the department for the years 1955–1957 are indicate'), ('/majorCollections[1869]/text', '1. Indexed Central Files. Papers in the indexed central files of the Department for the years 1955–1957 are indicated by'), ('/majorCollections[2129]/key', 'txt:indexed central files. papers in the indexed central files of the department for the years 1955–1957 are indicated b'), ('/majorCollections[2129]/text', 'Indexed Central Files. Papers in the indexed central files of the Department for the years 1955–1957 are indicated by a ')]
+external-citation-index strings mentioning 'decimal file': 0 []
+numericalFile seriesNaId: 654171 | microfilm: M862
+central-files-index top keys: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+   generated : "2026-09-10"
+   schemaVersion : 3
+
+== 1910-1949 schedule glosses ==
+class 8: Internal Affairs of States | country 37: Cuba
+subjects['8'] type: dict
+  8/00: Political affairs | 8/51: Financial conditions | 8/61: Agriculture | 8/61.3: None | 8/15: Public Works
+class 6: Commerce. Customs Administration | country 11: United States | 611.37 second country 37: Cuba
+1950-59 class 7: Internal Political and National Defense Affairs country 37: Cuba

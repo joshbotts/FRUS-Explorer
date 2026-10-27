@@ -1,0 +1,308 @@
+{
+ "format": "fruscollection",
+ "formatVersion": 2,
+ "minimumReaderVersion": 1,
+ "name": "Cuba, security and prosperity, 1870–1980",
+ "authorLine": "Agent run v4, 2026-10-27",
+ "introductionText": "1. What FRUS answers directly. Across the whole printed series — all 553 volumes, of which about 6,700 documents fall under the editors' Cuba headings or name Cuba in their titles — the documents show the argument moving through four registers. In the 1870s Cuba mattered as a neighbour whose war, slavery and commerce spilled onto the United States: Secretary Fish wrote that the island was \"Commercially, as well as geographically\" closer to the United States than to Spain (Papers Relating to the Foreign Relations of the United States, 1874, Document 552, https://history.state.gov/historicaldocuments/frus1874/d552). By 1897–98 the same disorder had become a threat to American property and to domestic peace, \"a constant menace to our peace\" in the President's 1898 message (Papers Relating to the Foreign Relations of the United States, 1898, the President's message, https://history.state.gov/historicaldocuments/frus1898/ch83). From 1902 to the Second World War the security case was a protectorate's — intervention rights, Guantánamo, wartime air bases — and the prosperity case was sugar and tariffs, with Washington arguing in 1933 that better trade would calm Cuban politics (Foreign Relations of the United States, Diplomatic Papers, 1933, The American Republics, Volume V, Document 241, https://history.state.gov/historicaldocuments/frus1933v05/d241). After 1959 the two were fused and inverted: Cuba became a Soviet-aligned base for revolution and missiles, and the economy became a weapon to be turned against it (Foreign Relations of the United States, 1958–1960, Cuba, Volume VI, Document 517, https://history.state.gov/historicaldocuments/frus1958-60v06/d517; Foreign Relations of the United States, 1961–1963, Volume XI, Cuban Missile Crisis and Aftermath, Document 34, https://history.state.gov/historicaldocuments/frus1961-63v11/d34). By 1974 a State Department memorandum could say flatly that \"The United States has no vital interests in Cuba\" (Foreign Relations of the United States, 1969–1976, Volume E–11, Part 1, Document 278, https://history.state.gov/historicaldocuments/frus1969-76ve11p1/d278), and the Carter documents treat Cuba as a bargaining problem, Africa and refugees (Foreign Relations of the United States, 1977–1980, Volume XXIII, Mexico, Cuba, and the Caribbean, Documents 19 and 98, https://history.state.gov/historicaldocuments/frus1977-80v23/d19 and https://history.state.gov/historicaldocuments/frus1977-80v23/d98).\n\n2. Where FRUS points for the rest. Series the printed documents came from (about 5,900 of the 6,700 carry a source note): the Department of State's Central Decimal File in Record Group 59, chiefly the classes for Cuba's internal political affairs, its finances, its agriculture (sugar) and U.S.–Cuban commerce, 1910–1963 (the bundled data name no identifier for the decimal file series itself); in RG 59 the lot files Records Relating to the Cuban Missile Crisis, 1962–1963 (entry A1 3053, NARA identifier 27022950, partly restricted), Records of Under Secretary George W. Ball, 1961–1966 (A1 5175, 614703, unrestricted), Files Pertaining to Operation Mongoose, 1963–1965 (UD-UP 293-B, 648748, unrestricted), the Assistant Secretary for Inter-American Affairs' Subject Files, 1959–1962 (A1 3147, 2068466, partly restricted), the Special Assistant on Communism's Subject Files, 1958–1961 (A1 3148, 2363836, partly restricted), and Records Relating to Activities with the National Security Council, 1948–1961 (A1 1583E/F, 2838992, partly restricted); and, outside RG 59, the Kennedy Library's National Security Files (collection 1164; Country Files 1961–1963, 193236), the Johnson Library's National Security File (567979; Latin America Country Files, 567985) and the Eisenhower Library's Whitman File (probably Papers as President, 1124), for which the bundled data give no access status; the Carter Library's National Security Affairs files did not resolve to an identifier. For the nineteenth century the shelves are RG 59's microfilmed Despatches from U.S. Consuls in Havana, 1783–1906 (file unit 196006797), Notes from the Cuban Legation, 1844–1906 (183303950), and Despatches from U.S. Ministers to Cuba, 1902–1906 (177380758), with no entry or access data bundled. Series the editors cited without printing (about 680 documents carry such citations, none before December 1910): RG 59's Records Relating to National Security Council Policy Papers, 1947–1979 (A1 1586E, 2839192, partly restricted), the most-cited lot; Presidential and Secretary of State Correspondence with Foreign Heads of State, 1953–1964 (A1 1590, 2538452); the Secretary's and Under Secretary's Memorandums of Conversation, 1953–1964 (A1 1566, 602231, unrestricted); Records Relating to Cuba, 1957–1975, of the Coordinator of Cuban Affairs (A1-5758, 1040618, partly restricted); and, again, the Missile Crisis and Ball lots and the Kennedy, Johnson and Carter national security files. Two lots that the documents cite did not resolve to any series.\n\n3. What this request cannot get from FRUS. \"National security\" as the policymakers' own concept: I searched the phrase in all 553 volumes. It appears in about 1,040 of the Cuba documents, but in only about 47 of them in the officials' own prose; in the rest it is the name of an archive or of the Council (the Kennedy Library's \"National Security Files\"). Its rate among the 1960s Cuba documents is no higher than in the whole 1960s corpus, so the phrase measures the series, not Cuba. The controls held: the phrase \"Department of State\" was found in all but one of the 553 volumes, and a nonsense term in none. \"Prosperity\": in no decade do more than 22 Cuba documents use the word, so it is not how anyone argued. The period's own words (commerce, property, sugar, tariffs, reciprocity) carry the economic case instead. The 1880s and the Ten Years' War seen from Havana: the editors filed this in the Spain chapters, and the Cuba headings hold almost nothing for 1870–1889. The shelf is the Havana consular despatches named above. Public, congressional and business opinion, and Cuban sources: FRUS prints government records. It cannot show what sugar interests, Congress or Cubans thought, except where a document quotes them.",
+ "composition": {
+  "defaultBodyDepth": "full",
+  "footnoteStyle": "all",
+  "includeSourceNote": true,
+  "tocStyle": "citation",
+  "applyHighlights": false,
+  "includeNotes": true,
+  "includeWordCloud": false
+ },
+ "entries": [
+  {
+   "kind": "heading",
+   "text": "In the 1870s Cuba was a neighbour's war, a slave society and a market",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Three State Department documents of 1870–1874 show the earliest frame: proximity, trade, the insurrection and Cuban slavery, argued from American commercial and racial politics. The 1874 instruction was found as a semantic neighbour of the 1897 Sherman instruction, not by word search."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1870",
+   "documentId": "d197",
+   "notes": [
+    "Agent run v4, 2026-10-27: Fish's 1870 circular on commerce with the Spanish American states: Cuba's trade with the United States is explained by need and proximity."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1870",
+   "documentId": "d197",
+   "text": "With the Spanish islands of Cuba and Porto Rico we maintain, in spite of their adverse legislation, a large commerce by reason of our necessities and of their proximity."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1873p1v2",
+   "documentId": "d50",
+   "notes": [
+    "Agent run v4, 2026-10-27: Sickles in Madrid ties Cuban slavery to the four million freedpeople of the United States and to Cuba's nearness."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1873p1v2",
+   "documentId": "d50",
+   "text": "a question touching so large a number of colored people dwelling almost within sight of our southern boundary"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1874",
+   "documentId": "d552",
+   "notes": [
+    "Agent run v4, 2026-10-27: Fish to Cushing, 1874: Cuba is commercially and geographically tied to the United States, ought to be independent, and slavery lies at the root of the war. Reached through a vector neighbour."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1874",
+   "documentId": "d552",
+   "text": "Commercially, as well as geographically, it is by nature more closely connected with the United States than with Spain."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1874",
+   "documentId": "d552",
+   "text": "the existence of slave-labor in Cuba, and its influence over the feelings and interests of the peninsular Spaniards, lie at the foundation of all the calamities"
+  },
+  {
+   "kind": "heading",
+   "text": "In 1897–98 disorder became a danger to property and domestic peace",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "The instruction of July 1897 and the President's message of April 1898 recast the Cuban war as a threat to American capital and to domestic tranquillity, the ground for intervention."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1898",
+   "documentId": "d490",
+   "notes": [
+    "Agent run v4, 2026-10-27: Sherman to Woodford, 1897: American property, capital and domestic political peace are all endangered by the Cuban war."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1898",
+   "documentId": "d490",
+   "text": "Not only are our citizens largely concerned in the ownership of property and in the industrial and commercial ventures which have been set on foot in Cuba through our enterprising initiative and sustained by their capital, but the chronic condition of trouble and violent derangement in that island constantly causes disturbance in the social and political condition of our own people."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1898",
+   "documentId": "ch83",
+   "notes": [
+    "Agent run v4, 2026-10-27: The President's message on Cuba, 1898: the war is a constant menace to the peace of the United States and a heavy expense."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1898",
+   "documentId": "ch83",
+   "text": "The present condition of affairs in Cuba is a constant menace to our peace, and entails upon this Government an enormous expense."
+  },
+  {
+   "kind": "heading",
+   "text": "1902–1945: a protectorate's security and a sugar economy",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "From independence to the end of the Second World War the prosperity case is sugar, tariffs and reciprocity, and the security case is treaty rights, Guantánamo and wartime bases."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1902",
+   "documentId": "d294",
+   "notes": [
+    "Agent run v4, 2026-10-27: Squiers encloses the Cuban President's first message: Cuba's remedy for the sugar crisis is a cut in American tariffs and a reciprocity treaty. A Cuban voice, cited as context."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1902",
+   "documentId": "d294",
+   "text": "The immediate remedy would be to obtain a satisfactory reduction in the American tariffs"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1933v05",
+   "documentId": "d241",
+   "notes": [
+    "Agent run v4, 2026-10-27: Hull's instructions to Welles, 1933: trade as the cure for unrest, and U.S. pressure presented as a way to avoid intervention under the Platt Amendment's treaty."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1933v05",
+   "documentId": "d241",
+   "text": "a speedy improvement in economic and commercial conditions in Cuba would result in an immediate allaying of popular unrest and of political agitation"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1933v05",
+   "documentId": "d241",
+   "text": "They are, on the contrary, measures intended to prevent the necessity of intervention."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1934v05",
+   "documentId": "d170",
+   "notes": [
+    "Agent run v4, 2026-10-27: The 1934 Treaty of Relations abrogates the 1903 treaty but keeps the Guantánamo naval station."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1934v05",
+   "documentId": "d170",
+   "text": "the stipulations of that agreement with regard to the naval station of Guantánamo shall continue in effect."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1945v09",
+   "documentId": "d745",
+   "notes": [
+    "Agent run v4, 2026-10-27: Norweb, 1945: the wartime Batista air base is of great military value to the United States after the war."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1945v09",
+   "documentId": "d745",
+   "text": "The military advantages to the United States of access to the Batista base, at the very least on conditions permitting unlimited use at all times during the life of the convention, are of course very great."
+  },
+  {
+   "kind": "heading",
+   "text": "1959–1963: Cuba as a Soviet base, and the economy as a weapon",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "After the revolution, security and prosperity are fused: Cuba is a Communist base and missile site, and U.S. economic power is turned against the Cuban economy."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v06",
+   "documentId": "d517",
+   "notes": [
+    "Agent run v4, 2026-10-27: Rubottom, May 1960: sugar legislation and selected economic pressures to create discontent with Castro."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1958-60v06",
+   "documentId": "d517",
+   "text": "use judiciously selected economic pressures at those points where Castro’s domestic and international policies have weakened Cuba’s economic structure in order to engender more public discomfort and discontent"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v06",
+   "documentId": "d567",
+   "notes": [
+    "Agent run v4, 2026-10-27: Gates, July 1960: after the sugar and oil actions, further economic measures against Castro's regime."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1958-60v06",
+   "documentId": "d567",
+   "text": "Since we have crossed one Rubicon with our sugar and oil actions, should we not consider other economic measures that could have a significant impact on Castro’s regime?"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v10",
+   "documentId": "d202",
+   "notes": [
+    "Agent run v4, 2026-10-27: NSC task force, May 1961: Cuba's threat is chiefly as a base and example for Communist revolution in the hemisphere."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v10",
+   "documentId": "d202",
+   "text": "there is no doubt that Cuba is being used as a base for export of the communist-fidelista revolution."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v11",
+   "documentId": "d34",
+   "notes": [
+    "Agent run v4, 2026-10-27: 505th NSC meeting, 20 October 1962: the blockade route to stop and remove the strategic missiles."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v11",
+   "documentId": "d34",
+   "text": "This route is aimed at preventing any addition to the strategic missiles already deployed to Cuba and eventually to eliminate these missiles."
+  },
+  {
+   "kind": "heading",
+   "text": "1974–1980: a declining stake, a bargaining chip and refugees",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "In the 1970s the Department doubts the stake itself; under Carter the embargo is a bargaining lever and the 1980 boatlift makes migration a security problem. The 1974 memorandum was found as a semantic neighbour of the 1960 Rubottom memorandum."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve11p1",
+   "documentId": "d278",
+   "notes": [
+    "Agent run v4, 2026-10-27: Rush to Kubisch, 1974: the United States has no vital interests in Cuba; the economic denial programme outlived its first aim. Reached through a vector neighbour."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve11p1",
+   "documentId": "d278",
+   "text": "The United States has no vital interests in Cuba."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v23",
+   "documentId": "d19",
+   "notes": [
+    "Agent run v4, 2026-10-27: Policy Review Committee, August 1977: the embargo as a bargaining chip for Cuban restraint abroad and human rights."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v23",
+   "documentId": "d19",
+   "text": "The embargo was our biggest bargaining chip, and we should not “puncture” it without getting some commitment to international restraint."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v23",
+   "documentId": "d98",
+   "notes": [
+    "Agent run v4, 2026-10-27: Carter's decision, April 1980: control the flow of Cuban refugees during the boatlift."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v23",
+   "documentId": "d98",
+   "text": "trying to control the flow of Cuban refugees into the United States."
+  },
+  {
+   "kind": "prose",
+   "text": "Threads not followed in this run: the Madrid legation and Havana consular despatches of 1868–1898 behind the 1870s documents; the 1910s–1920s financial and electoral interventions; the Cuban sugar crop purchases of 1941–1946 read against trade figures; the 1964–1968 and 1969–1976 Cuba documents beyond the one memorandum cited; the editors' unprinted National Security Council policy papers; and any measure of the question's terms that separates the documents' text from the editors' footnotes."
+  },
+  {
+   "kind": "generated",
+   "generatedBlockType": "archivalSources"
+  }
+ ]
+}

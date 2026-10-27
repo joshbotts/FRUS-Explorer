@@ -1,0 +1,48 @@
+find.sh invocations in the log: 27
+[1] n=54 limit=10 glob=frus187* :: cuba AND ("gulf of mexico" OR "key to the gulf" OR annex*) AND spain
+[2] n=13 limit=8 glob=frus187* :: cuba AND insurrection AND intervention AND commerce
+[3] n=5 limit=10 glob=frus187* :: {header}: (fish AND cushing) AND cuba AND ("good offices" OR mediation OR "intervention")
+[4] n=0 limit=5 glob=frus187* :: {header}: message AND cuba
+[5] n=3 limit=10 glob=frus187* :: {body_text}: cuba AND "commercial intercourse" AND insurrection AND ("ten years" OR "seven
+[6] ERROR fts5: syntax error near "/": {body_text}: cuba AND (proximity OR vicinity OR "near neighb
+[7] n=10 limit=12 glob=frus18[6789]* :: {body_text}: cuba AND (proximity OR vicinity OR neighboring) AND commerce AND "interests o
+[8] n=7 limit=6 glob=frus188* :: {body_text}: cuba AND reciprocity AND sugar AND treaty
+[9] n=9 limit=8 glob=frus190* :: {body_text}: cuba AND ("Platt amendment" OR "naval stations" OR "coaling stations") AND in
+[10] n=9 limit=6 glob=frus190* :: {body_text}: cuba AND reciprocity AND sugar
+[11] n=3 limit=8 glob=frus193* :: {body_text}: cuba AND intervention AND ("Platt amendment" OR "article III") AND (abrogat* 
+[12] n=3 limit=8 glob=frus193* :: {body_text}: cuba AND sugar AND (quota OR tariff) AND ("purchasing power" OR "american exp
+[13] n=0 limit=6 glob=frus1933v05 :: {body_text}: sugar AND ("purchasing power" OR prosperity OR "economic recovery") AND ("pol
+[14] n=4 limit=6 glob=frus1934v05 :: {body_text}: (market OR markets) AND ("american exports" OR "american products") AND sugar
+[15] n=27 limit=5 glob=frus1941v07 :: {body_text}: (defense OR defence) AND (hemisphere) AND (airfield* OR bases OR "naval")
+[16] n=12 limit=6 glob=frus1933v05 :: {body_text}: welles AND sugar AND (economic OR prosperity)
+[17] n=3 limit=6 glob=frus1933v05 :: {header}: (memorandum OR roosevelt) AND {body_text}: cuba AND ("good neighbor" OR "Platt")
+[18] n=37 limit=8 glob=frus1958-60v06 :: {body_text}: castro AND ("national security" OR "security of the united states") AND (suga
+[19] n=22 limit=6 glob=frus195[25]* :: {body_text}: cuba AND communis* AND (sugar OR investment*) AND (strategic OR guantanamo)
+[20] n=8 limit=8 glob=frus1961-63v1[01] :: {body_text}: cuba AND ("base for" OR "platform") AND subversion AND ("economic denial" OR 
+[21] n=9 limit=5 glob=frus1964-68v32 :: {body_text}: cuba AND "economic denial"
+[22] n=2 limit=8 glob=frus1961-63v11 :: {body_text}: missiles AND cuba AND ("strategic balance" OR "balance of power") AND ("first
+[23] n=15 limit=6 glob=frus1977-80v23 :: {body_text}: cuba AND embargo AND (normaliz* OR normalization) AND (africa OR angola) AND 
+[24] n=0 limit=6 glob=frus1969-76ve11p1 :: {body_text}: cuba AND embargo AND normaliz* AND (trade OR economic OR business*)
+[25] n=13 limit=4 glob=frus1969-76v12 :: {body_text}: cienfuegos AND submarine AND (understanding OR 1962)
+[26] n=2 limit=4 glob=frus1906p1 :: {body_text}: roosevelt AND quesada AND (intervention OR "Platt")
+[27] n=31 limit=4 glob=frus1977-80v23 :: {body_text}: ("Mariel" OR boatlift OR refugees) AND ("national security" OR "security") AN
+
+== LIKE query (Nov 1875): [('frus1876/d298',)]
+
+== per cited pair: find.sh queries returning it within LIMIT | unlimited | in corpus-wide mention MATCH | in heading scope set
+  frus1870/d197            within=[7]            unlimited=[1, 7]             mention=True scope=True
+  frus1881/d405            within=[8]            unlimited=[8]                mention=True scope=True
+  frus1898/d490            within=[7]            unlimited=[7]                mention=True scope=True
+  frus1898/ch83            within=[7]            unlimited=[7]                mention=True scope=False
+  frus1902/d313            within=[9]            unlimited=[9]                mention=True scope=True
+  frus1903/d331            within=[9]            unlimited=[9]                mention=True scope=True
+  frus1906p1/d427          within=[26]           unlimited=[26]               mention=True scope=True
+  frus1933v05/d281         within=[16]           unlimited=[16]               mention=True scope=True
+  frus1941v07/d119         within=[15]           unlimited=[15]               mention=True scope=True
+  frus1952-54v04/d343      within=[19]           unlimited=[19]               mention=True scope=True
+  frus1961-63v10/d202      within=[20]           unlimited=[20]               mention=True scope=True
+  frus1961-63v11/d34       within=[22]           unlimited=[22]               mention=True scope=True
+  frus1969-76ve10/d205     within=[]             unlimited=[]                 mention=True scope=True
+  frus1969-76v12/d211      within=[25]           unlimited=[25]               mention=True scope=True
+  frus1977-80v23/d21       within=[23]           unlimited=[23]               mention=True scope=True
+  frus1977-80v23/d98       within=[27]           unlimited=[27]               mention=True scope=True

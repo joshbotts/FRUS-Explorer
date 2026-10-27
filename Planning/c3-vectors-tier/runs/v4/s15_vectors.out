@@ -1,0 +1,123 @@
+DIGESTS index 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 binary 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 map 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 generation file 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+volume keys: ['n', 'r', 'seg', 'v']
+round trip ok volumes: 553 of 553
+RANDOM-PAIR baseline (20,000 pairs, Random(1877)): mean 167.1 sd 14.8 p1 132 min 95
+
+NN of frus1898/d490 date 1897-07-16 ; 25th-neighbour distance 90
+   48 frus1898/d495 1897-09-23 
+   61 frus1874/d552 1874-02-06 OTHER-DECADE
+   61 frus1898/d503 1897-10-26 
+   64 frus1898/d531 1898-02-09 
+   70 frus1897/d581 1896-04-04 
+   72 frus1898/d526 1897-12-23 
+   73 frus1872p1/d431 1872-10-29 OTHER-DECADE
+   74 frus1897/d582 1896-06-04 
+   74 frus1898/d557 1898-03-25 
+   77 frus1898/d492 1897-09-13 
+   77 frus1898/d497 1897-10-04 
+   77 frus1898/d544 1898-03-09 
+   79 frus1898/d546 1898-03-18 
+   82 frus1902/d313 1902-11-21 OTHER-DECADE
+   83 frus1898/d615 1898-04-10 
+   84 frus1898/d504 1897-10-27 
+   85 frus1897/d529 1897-06-26 
+   85 frus1898/d498 1897-10-05 
+   85 frus1898/d545 1898-03-17 
+   86 frus1873p1v2/d94 1873-03-30 OTHER-DECADE
+   86 frus1898/d534 1898-03-01 
+   88 frus1878/d484 1878-03-23 OTHER-DECADE
+   89 frus1961-63v06/d11 1961-04-22 OTHER-DECADE
+   89 frus1961-63v06/d83 1962-12-11 OTHER-DECADE
+   90 frus1906p1/d427 1906-09-14 OTHER-DECADE
+
+NN of frus1958-60v06/d517 date 1960-05-11 ; 25th-neighbour distance 86
+   66 frus1969-76ve11p1/d278 1974-01-21 OTHER-DECADE
+   73 frus1948v09/d420 1948-07-29 OTHER-DECADE
+   73 frus1969-76ve10/d205 1969-07-02 
+   76 frus1958-60v06/d423 1960-01-14 
+   76 frus1958-60v06/d616 1960-12-05 
+   77 frus1950v02/d440 1951-01-11 OTHER-DECADE
+   77 frus1961-63v10-12mSupp/d729 1963-12-15 
+   79 frus1958-60v06/d535 1960-06-27 
+   80 frus1958-60v06/d417 1960-01-06 
+   80 frus1958-60v06/d475 1960-03-10 
+   80 frus1961-63v10-12mSupp/d233 1960-12-06 
+   82 frus1958-60v06/d328 1959-07-01 OTHER-DECADE
+   82 frus1961-63v10/d355 1962-07-19 
+   82 frus1961-63v11/d349 1963-06-20 
+   82 frus1969-76ve11p1/d293 1975-02-07 OTHER-DECADE
+   82 frus1977-80v06/d194 1979-05-19 OTHER-DECADE
+   83 frus1958-60v06/d364 1959-09-24 OTHER-DECADE
+   83 frus1958-60v06/d412 1959-12-22 OTHER-DECADE
+   84 frus1958-60v06/d573 1960-08-08 
+   84 frus1958-60v06/d607 1960-11-07 
+   85 frus1958-60v06/d473 1960-03-09 
+   85 frus1958-60v06/d620 1960-12-08 
+   85 frus1964-68v32/d226 1964-01-24 
+   85 frus1969-76ve10/d207 1969-09-02 
+   86 frus1964-68v32/d300 1965-03-19 
+
+NN of frus1933v05/d241 date 1933-05-01 ; 25th-neighbour distance 97
+   71 frus1932v05/d594 1932-01-25 
+   83 frus1902/d313 1902-11-21 OTHER-DECADE
+   84 frus1898/d503 1897-10-26 OTHER-DECADE
+   84 frus1933v05/d246 1933-05-13 
+   87 frus1927v02/d598 1927-05-05 OTHER-DECADE
+   88 frus1904/d207 1904-07-02 OTHER-DECADE
+   89 frus1902/d294 1902-06-02 OTHER-DECADE
+   90 frus1930v02/d763 1930-11-24 
+   92 frus1874/d552 1874-02-06 OTHER-DECADE
+   92 frus1958-60v06/d364 1959-09-24 OTHER-DECADE
+   93 frus1898/d490 1897-07-16 OTHER-DECADE
+   93 frus1913/d260 1913-05-18 OTHER-DECADE
+   93 frus1958-60v06/d253 1959-02-18 OTHER-DECADE
+   94 frus1922v01/d830 1922-01-21 OTHER-DECADE
+   94 frus1933v05/d363 1933-09-08 
+   95 frus1906p1/d427 1906-09-14 OTHER-DECADE
+   95 frus1958-60v06/d573 1960-08-08 OTHER-DECADE
+   95 frus1961-63v10/d86 1961-04-10 OTHER-DECADE
+   96 frus1933v05/d452 1933-10-16 
+   96 frus1939v05/d528 1939-07-19 
+   96 frus1949v02/d391 1949-09-22 OTHER-DECADE
+   96 frus1950v02/d440 1951-01-11 OTHER-DECADE
+   97 frus1906p1/d436 1906-10-13 OTHER-DECADE
+   97 frus1933v05/d375 1933-09-10 
+   97 frus1941v07/d134 1941-01-08 OTHER-DECADE
+
+NEAR-DUP check (nearest neighbour distance) for reading set:
+  frus1876/d298 nearest 63 frus1876/d278
+  frus1898/d490 nearest 48 frus1898/d495
+  frus1898 ch83 not in vectors
+  frus1902/d294 nearest 60 frus1903/d334
+  frus1933v05/d241 nearest 71 frus1932v05/d594
+  frus1934v05/d170 nearest 112 frus1961-63v10/d301
+  frus1941v07/d444 nearest 79 frus1941v07/d170
+  frus1945v09/d745 nearest 93 frus1946v11/d644
+  frus1958-60v06/d517 nearest 66 frus1969-76ve11p1/d278
+  frus1958-60v06/d567 nearest 81 frus1948v09/d420
+  frus1961-63v10/d202 nearest 55 frus1961-63v10/d182
+  frus1961-63v11/d34 nearest 57 frus1961-63v11/d41
+  frus1977-80v23/d19 nearest 74 frus1977-80v23/d8
+  frus1977-80v23/d98 nearest 86 frus1977-80v23/d97
+  frus1875v01 message not in vectors
+  frus1870/d197 nearest 75 frus1906p2/d553
+
+CENTROID cosine matrix (volume centroids):
+              1872p2v1       1898       1902    1933v05    1934v05    1945v09 1958-60v06 1961-63v10 1961-63v11 1964-68v32 1977-80v23
+1872p2v1         1.000      0.950      0.949      0.912      0.915      0.915      0.879      0.875      0.861      0.883      0.884
+1898             0.950      1.000      0.974      0.933      0.932      0.930      0.891      0.869      0.865      0.888      0.892
+1902             0.949      0.974      1.000      0.925      0.924      0.921      0.882      0.865      0.861      0.887      0.890
+1933v05          0.912      0.933      0.925      1.000      0.974      0.958      0.930      0.906      0.900      0.922      0.929
+1934v05          0.915      0.932      0.924      0.974      1.000      0.957      0.915      0.894      0.884      0.912      0.919
+1945v09          0.915      0.930      0.921      0.958      0.957      1.000      0.927      0.909      0.896      0.928      0.931
+1958-60v06       0.879      0.891      0.882      0.930      0.915      0.927      1.000      0.971      0.960      0.965      0.959
+1961-63v10       0.875      0.869      0.865      0.906      0.894      0.909      0.971      1.000      0.977      0.965      0.953
+1961-63v11       0.861      0.865      0.861      0.900      0.884      0.896      0.960      0.977      1.000      0.949      0.941
+1964-68v32       0.883      0.888      0.887      0.922      0.912      0.928      0.965      0.965      0.949      1.000      0.970
+1977-80v23       0.884      0.892      0.890      0.929      0.919      0.931      0.959      0.953      0.941      0.970      1.000
+nearest volumes to frus1898 [('frus1899', 0.983), ('frus1897', 0.982), ('frus1896', 0.977), ('frus1895p2', 0.975), ('frus1900', 0.975), ('frus1902', 0.974)]
+nearest volumes to frus1958-60v06 [('frus1961-63v10-12mSupp', 0.973), ('frus1961-63v10', 0.971), ('frus1964-68v32', 0.965), ('frus1961-63v12', 0.964), ('frus1961-63v11', 0.96), ('frus1958-60v05mSupp', 0.96)]
+nearest volumes to frus1977-80v23 [('frus1969-76ve11p1', 0.981), ('frus1977-80v24', 0.972), ('frus1969-76ve10', 0.972), ('frus1964-68v32', 0.97), ('frus1961-63v12', 0.969), ('frus1964-68v31', 0.965)]
+
+MAP header: (1, 314616, 140, 30000)
+map index keys ['clusters', 'documentCount', 'generated', 'gridExtent', 'layout', 'provenanceDigest', 'schema']

@@ -1,0 +1,2 @@
+random pairs n=20000 mean=167.1 sd=14.8 p1=132 min=95
+100 random docs: nearest-neighbour median 82 (q1 74 q3 92); 25th-neighbour median 106 (q1 100 q3 111)

@@ -1,0 +1,3 @@
+documents 16 excerpts 18 all pairs verified in document_cache; all excerpts substrings of body_text
+overview-cited pairs 17 missing from collection: {('frus1958-60v06', 'd517;')}
+overview quoted strings not inside a verified quotation: ['National security', 'National Security Files', 'Department of State', 'Prosperity', 'Cuba policy', 'security', 'communism', 'communication', 'national security', 'prosperity', 'Cuba, security and prosperity, 1870–1980']

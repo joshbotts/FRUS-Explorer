@@ -1,0 +1,22 @@
+ANCHOR ('frus1950v02', 'd440')
+  ham  62 frus1948v09/d420 date=1948-07-29 | came-from era=decimal repo=Department of State RG=59 lot=None | footnote citations (pointed-at rows)=0
+  ham  64 frus1969-76ve10/d205 date=1969-07-02 | came-from era=structured repo=Nixon Presidential Materials RG=None lot=None | footnote citations (pointed-at rows)=0
+  ham  69 frus1964-68v32/d300 date=1965-03-19 | came-from era=structured repo=Johnson Library RG=None lot=None | footnote citations (pointed-at rows)=2
+  ham  69 frus1969-76ve11p1/d278 date=1974-01-21 | came-from era=cfpf repo=Department of State RG=59 lot=None | footnote citations (pointed-at rows)=0
+  ham  73 frus1946v11/d658 date=1946-09-12 | came-from era=decimal repo=Department of State RG=59 lot=None | footnote citations (pointed-at rows)=0
+  ham  73 frus1952-54v04/d351 date=1954-11-23 | came-from era=lot_file repo=Department of State RG=59 lot=70D467 | footnote citations (pointed-at rows)=0
+  ham  73 frus1958-60v06/d423 date=1960-01-14 | came-from era=structured repo=Eisenhower Library RG=None lot=None | footnote citations (pointed-at rows)=2
+  ham  74 frus1961-63v10-12mSupp/d729 date=1963-12-15 | came-from era=structured repo=Johnson Library RG=None lot=None | footnote citations (pointed-at rows)=0
+  ham  76 frus1958-60v06/d364 date=1959-09-24 | came-from era=decimal repo=Department of State RG=59 lot=None | footnote citations (pointed-at rows)=0
+  ham  77 frus1958-60v06/d527 date=1960-06-07 | came-from era=decimal repo=Department of State RG=59 lot=None | footnote citations (pointed-at rows)=0
+ANCHOR ('frus1874', 'd552')
+  ham  61 frus1898/d490 date=1897-07-16 | came-from era=None repo=None RG=None lot=None | footnote citations (pointed-at rows)=0
+  ham  68 frus1898/d503 date=1897-10-26 | came-from era=None repo=None RG=None lot=None | footnote citations (pointed-at rows)=0
+  ham  71 frus1898/d531 date=1898-02-09 | came-from era=None repo=None RG=None lot=None | footnote citations (pointed-at rows)=0
+  ham  73 frus1898/d495 date=1897-09-23 | came-from era=None repo=None RG=None lot=None | footnote citations (pointed-at rows)=0
+  ham  77 frus1898/d526 date=1897-12-23 | came-from era=None repo=None RG=None lot=None | footnote citations (pointed-at rows)=0
+  ham  77 frus1902/d313 date=1902-11-21 | came-from era=None repo=None RG=None lot=None | footnote citations (pointed-at rows)=0
+  ham  78 frus1898/d544 date=1898-03-09 | came-from era=None repo=None RG=None lot=None | footnote citations (pointed-at rows)=0
+  ham  80 frus1898/d492 date=1897-09-13 | came-from era=None repo=None RG=None lot=None | footnote citations (pointed-at rows)=0
+  ham  80 frus1898/d498 date=1897-10-05 | came-from era=None repo=None RG=None lot=None | footnote citations (pointed-at rows)=0
+  ham  81 frus1897/d581 date=1896-04-04 | came-from era=None repo=None RG=None lot=None | footnote citations (pointed-at rows)=0

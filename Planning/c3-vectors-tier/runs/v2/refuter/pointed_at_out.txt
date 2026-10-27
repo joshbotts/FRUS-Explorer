@@ -1,0 +1,26 @@
+core rows 7013
+('Department of State', None, None, 467, 342, 1913, 1962)
+('Carter Library', 'National Security Affairs', None, 100, 73, 1977, 1980)
+('Kennedy Library', 'National Security Files', None, 72, 62, 1961, 1963)
+('Johnson Library', 'National Security File', None, 71, 59, 1963, 1968)
+('Department of State', None, '66D95', 25, 22, 1958, 1960)
+DoS/no collection/no lot rows by citation kind columns:
+['volume_id', 'document_id', 'note_ordinal', 'citation_index', 'anchor', 'repository', 'collection', 'lot_file', 'lot_file_norm', 'file_id', 'inherited', 'raw_text', 'decimal_class', 'note_label']
+DoS no-collection no-lot: (467, 342, 1913, 1962)
+rows with decimal_class not null: (467, 342, 1913, 1962)
+sample of the DoS no-collection rows:
+('frus1913', 'd260', 0, 0, 'centralFileClass', 'Department of State', None, None, None, None, 0, 'File No. 837.001M52/10', '837.001M52', '1')
+('frus1913', 'd260', 1, 0, 'centralFileClass', 'Department of State', None, None, None, None, 0, 'File No. 837.001M52/16A', '837.001M52', '2')
+('frus1913', 'd260', 2, 0, 'centralFileClass', 'Department of State', None, None, None, None, 0, 'File No. 837.001M52/17', '837.001M52', '1')
+('frus1917Supp01v01', 'd568', 0, 0, 'centralFileClass', 'Department of State', None, None, None, None, 0, 'File No. 763.72/8023a.', '763.72', '1')
+('frus1918Supp01v01', 'd651', 0, 0, 'centralFileClass', 'Department of State', None, None, None, None, 0, 'File No. 862.85/468.', '862.85', '2')
+came-from decimal classes:
+('837.00', 749)
+('837.51', 331)
+('737.00', 279)
+('837.61351', 235)
+('611.3731', 140)
+('763.72', 73)
+('811.34537', 71)
+('611.37', 63)
+came-from rows over core: (5831,)

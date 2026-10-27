@@ -1,0 +1,628 @@
+volume_id,document_id,date,header,len,ncuba,nsec,npro,nboth
+frus1977-80v12,d158,1980-01-01,158. Intelligence Assessment Prepared in the Central Intelligence Agency,5410,4,4,0,0
+frus1977-80v11p1,d131,1980-01-02,131. Minutes of a National Security Council Meeting,6157,1,0,0,0
+frus1977-80v12,d135,1980-01-02,135. Minutes of a National Security Council Meeting,59009,1,1,0,0
+frus1977-80v12,d137,1980-01-03,137. Memorandum From Marshall Brement of the National Security Council Staff to the President’s Assistant for National S,4818,2,2,1,1
+frus1977-80v23,d84,1980-01-03,84. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secur,19209,54,25,7,3
+frus1977-80v16,d41,1980-01-04,41. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to Secretary of State Vance,5998,12,11,0,0
+frus1977-80v06,d255,1980-01-07,255. Memorandum From Marshall Brement of the National Security Council Staff to the President’s Assistant for National S,5735,1,1,0,0
+frus1977-80v12,d148,1980-01-07,148. Intelligence Memorandum Prepared in the Central Intelligence Agency,13597,2,2,1,1
+frus1977-80v13,d290,1980-01-07,290. Memorandum of Conversation,34903,2,2,0,0
+frus1977-80v13,d292,1980-01-08,292. Memorandum of Conversation,31032,2,2,0,0
+frus1977-80v23,d169,1980-01-08,169. Telegram From the Department of State to the Embassy in Mexico,5781,1,1,0,0
+frus1977-80v06,d256,1980-01-09,256. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,10101,2,1,2,1
+frus1977-80v12,d152,1980-01-09,152. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,10593,2,1,2,1
+frus1977-80v13,d294,1980-01-09,294. Memorandum of Conversation,22529,2,2,0,0
+frus1977-80v15,d310,1980-01-09,310. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,5978,7,4,0,0
+frus1977-80v12,d160,1980-01-11,160. Response to Request for Intelligence From the Acting Assistant Director for Joint Chiefs of Staff Support ([name no,6130,1,1,0,0
+frus1977-80v23,d85,1980-01-15,85. Memorandum From Secretary of State Vance and the President’s Assistant for National Security Affairs (Brzezinski) to,8942,31,25,4,0
+frus1977-80v15,d37,1980-01-16,37. Telegram From the Department of State to the Embassy in the United Kingdom,5280,7,7,0,0
+frus1977-80v18,d41,1980-01-16,41. Memorandum From Jasper Welch and Fritz Ermarth of the National Security Council Staff to the President’s Assistant f,14847,3,3,0,0
+frus1977-80v23,d86,1980-01-16,86. Memorandum From the Executive Secretary of the Department of State (Tarnoff) and Robert Pastor of the National Secur,15380,53,39,15,9
+frus1977-80v12,d174,1980-01-18,174. Intelligence Information Cable Prepared in the Central Intelligence Agency,3448,2,2,0,0
+frus1977-80v15,d404,1980-01-18,404. Memorandum From the National Intelligence Officer for Latin America (Davis) to Director of Central Intelligence Tur,7674,2,2,0,0
+frus1977-80v16,d42,1980-01-18,42. Memorandum From William Griffith of the National Security Council Staff to the President’s Assistant for National Se,2623,3,3,0,0
+frus1977-80v23,d202,1980-01-21,202. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,4295,1,1,0,0
+frus1977-80v11p1,d159,1980-01-22,159. Memorandum From the White House Chief of Staff (Jordan) to President Carter,9895,1,1,0,0
+frus1977-80v12,d178,1980-01-22,178. Intelligence Information Cable Prepared in the Central Intelligence Agency,4772,3,3,2,2
+frus1977-80v01,d138,1980-01-23,138. Address by President Carter on the State of the Union Before a Joint Session of Congress,24087,1,1,1,1
+frus1977-80v15,d405,1980-01-23,405. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,4052,2,2,0,0
+frus1977-80v17p1,d100,1980-01-24,100. Central Intelligence Agency Intelligence Information Cable,1622,12,12,0,0
+frus1977-80v12,d180,1980-01-26,180. Memorandum From Marshall Brement of the National Security Council Staff to the President’s Assistant for National S,13079,2,2,0,0
+frus1977-80v15,d38,1980-01-28,38. Telegram From the Department of State to the Consulate in Belize City and the Embassies in Guatemala and the United ,10770,4,3,1,1
+frus1977-80v15,d406,1980-01-28,406. Minutes of a Special Coordination Committee Meeting,19968,2,1,0,0
+frus1977-80v23,d374,1980-01-28,374. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,4982,5,4,3,2
+frus1977-80v01,d140,1980-01-30,140. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,7641,2,1,0,0
+frus1977-80v12,d186,1980-01-30,186. Telegram From the Embassy in the Soviet Union to the Department of State,14065,1,0,0,0
+frus1977-80v18,d50,1980-01-30,50. Summary of Conclusions of a Special Coordination Committee Meeting,6891,1,1,0,0
+frus1977-80v18,d51,1980-01-30,51. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,7474,2,1,1,0
+frus1977-80v18,d139,1980-02-04,139. Telegram From the United States Interests Section in Baghdad to the Department of State,12240,1,0,0,0
+frus1977-80v18,d207,1980-02-05,207. Telegram From the United States Liaison Office in Riyadh to the White House,14623,2,2,0,0
+frus1977-80v12,d197,1980-02-06,197. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,5286,2,2,1,1
+frus1977-80v12,d198,1980-02-06,198. Summary of Conclusions of a Special Coordination Committee Meeting,5337,1,1,0,0
+frus1977-80v18,d208,1980-02-06,208. Summary of Conclusions of a Special Coordination Committee Meeting,2643,1,1,0,0
+frus1977-80v06,d260,1980-02-08,260. Letter From Secretary of State Vance to Soviet Foreign Minister Gromyko,6236,1,1,0,0
+frus1977-80v12,d202,1980-02-08,202. Letter From Secretary of State Vance to Soviet Foreign Minister Gromyko,5671,1,1,0,0
+frus1977-80v15,d408,1980-02-08,408. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,4135,1,1,0,0
+frus1977-80v26,d464,1980-02-08,464. Telegram From the Embassy in Mexico to the Department of State,6226,3,2,0,0
+frus1977-80v24,d368,1980-02-10,"368. Telegram From the Department of State to the Embassies in Venezuela, Colombia, Peru, Panama and Ecuador",7015,3,3,0,0
+frus1977-80v15,d409,1980-02-11,409. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,5825,2,2,0,0
+frus1977-80v15,d410,1980-02-12,410. Memorandum for the Record,7734,1,1,1,1
+frus1977-80v15,d411,1980-02-14,411. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,12918,1,0,1,0
+frus1977-80v20,d281,1980-02-14,281. Memorandum From the Deputy Executive Secretary of the Department of State (Bremer) to Secretary of State Vance,4021,1,1,1,1
+frus1977-80v29,d258,1980-02-14,258. Telegram From the Embassy in Panama to the Department of State,5493,4,4,4,4
+frus1977-80v11p1,d184,1980-02-15,184. Handwritten Memorandum From the White House Chief of Staff (Jordan) to President Carter,17540,1,0,0,0
+frus1977-80v23,d203,1980-02-15,203. Evening Report by Robert Pastor of the National Security Council Staff for the President’s Assistant for National S,1726,2,2,2,2
+frus1977-80v06,d261,1980-02-16,261. Letter From Soviet Foreign Minister Gromyko to Secretary of State Vance,9276,1,1,0,0
+frus1977-80v12,d211,1980-02-16,211. Translation of a Letter From Soviet Foreign Minister Gromyko to Secretary of State Vance,6948,1,1,0,0
+frus1977-80v03,d344,1980-02-18,344. Memorandum From the Under Secretary of State for Economic Affairs (Cooper) to Secretary of State Vance,6515,1,0,0,0
+frus1977-80v17p2,d173,1980-02-20,173. Memorandum of Conversation,22579,1,1,0,0
+frus1977-80v15,d414,1980-02-21,414. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,7102,2,1,0,0
+frus1977-80v23,d170,1980-02-21,170. Memorandum From the Deputy Director of Central Intelligence (Carlucci) to the Assistant Secretary of State for Inte,4098,2,2,0,0
+frus1977-80v29,d260,1980-02-21,260. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,6274,4,3,2,2
+frus1977-80v22,d270,1980-02-25,270. Memorandum of Conversation,9554,1,1,0,0
+frus1977-80v27,d130,1980-02-25,130. Memorandum by Secretary of State Vance,39440,1,1,0,0
+frus1977-80v15,d418,1980-02-26,418. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,7686,1,0,0,0
+frus1977-80v23,d343,1980-02-27,343. Memorandum From the Director of the Office of Caribbean Affairs (Warne) to the Under Secretary of State for Politic,4325,1,1,0,0
+frus1977-80v06,d264,1980-02-28,264. Memorandum of Conversation of a Special Coordination Committee Meeting,4111,6,5,0,0
+frus1977-80v12,d222,1980-02-28,222. Telegram From the Embassy in the Soviet Union to the Department of State and the International Communication Agency,15654,1,1,0,0
+frus1977-80v12,d223,1980-02-28,223. Memorandum From Lincoln Bloomfield of the National Security Council Staff to the President’s Assistant for National,4552,5,5,3,3
+frus1977-80v23,d87,1980-02-28,87. Memorandum of Conversation of a Special Coordination Committee Meeting,4741,7,6,0,0
+frus1977-80v15,d352,1980-02-29,352. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,4072,2,2,0,0
+frus1977-80v29,d262,1980-03-01,262. Telegram From the Department of State to the Embassy in Panama,5135,3,0,0,0
+frus1977-80v15,d353,1980-03-03,353. Memorandum of Conversation,13900,3,3,0,0
+frus1977-80v15,d39,1980-03-05,39. Memorandum of Conversation,5863,1,1,0,0
+frus1977-80v27,d132,1980-03-05,132. Memorandum of Conversation,22427,2,2,1,1
+frus1977-80v06,d266,1980-03-11,266. Telegram From the Embassy in the Soviet Union to the Department of State,9620,1,1,0,0
+frus1977-80v15,d425,1980-03-13,425. Summary of Conclusions of a Mini-Special Coordination Committee Meeting,4180,2,2,0,0
+frus1977-80v26,d465,1980-03-15,465. Telegram From the Embassy in Mexico to the Department of State,3604,18,9,0,0
+frus1977-80v12,d237,1980-03-18,237. Telegram From the Embassy in the Soviet Union to the Department of State,13659,1,1,0,0
+frus1977-80v06,d271,1980-03-20,271. Memorandum of Conversation,20215,3,3,0,0
+frus1977-80v12,d241,1980-03-20,241. Memorandum of Conversation,20263,3,3,0,0
+frus1977-80v23,d345,1980-03-20,345. Telegram From the Department of State to the Embassies in Suriname and the Netherlands,5874,3,2,1,1
+frus1977-80v06,d272,1980-03-21,272. Memorandum of Conversation,13878,3,3,0,0
+frus1977-80v15,d428,1980-03-21,428. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,5497,1,1,0,0
+frus1977-80v23,d88,1980-03-24,88. Briefing Memorandum From the Department of State Legal Adviser (Owen) to Secretary of State Vance,4084,6,1,1,1
+frus1977-80v26,d466,1980-03-24,466. Memorandum of Conversation,11377,3,2,0,0
+frus1977-80v17p2,d53,1980-03-25,"53. Intelligence Memorandum Prepared in the National Foreign Assessment Center, Central Intelligence Agency",7948,2,2,0,0
+frus1977-80v12,d243,1980-03-28,243. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,4806,1,1,0,0
+frus1977-80v11p1,d233,1980-04-01,233. Record of an Oval Office Meeting,8763,1,1,0,0
+frus1977-80v15,d489,1980-04-03,489. Memorandum From Paul Henze of the National Security Council Staff to the President’s Assistant for National Securit,7946,12,2,1,0
+frus1977-80v19,d484,1980-04-03,484. Telegram From the Department of State to the Embassy in Sri Lanka,6772,4,3,1,1
+frus1977-80v17p1,d102,1980-04-04,102. Memorandum From Paul B. Henze of the National Security Council Staff to the President’s Assistant for National Secu,9440,12,12,0,0
+frus1977-80v27,d280,1980-04-04,280. Telegram From the Embassy in Iceland to the Department of State,5235,1,1,0,0
+frus1977-80v17p1,d103,1980-04-07,103. Summary of Conclusions of a Special Coordination Committee (Intelligence) Meeting,4117,1,1,0,0
+frus1977-80v17p2,d54,1980-04-08,54. Memorandum of Conversation,4160,2,2,1,1
+frus1977-80v23,d89,1980-04-09,89. Summary of Conclusions of a Mini-Special Coordination Committee Meeting,2498,17,7,0,0
+frus1977-80v11p1,d252,1980-04-11,252. Memorandum From Paul Henze of the National Security Council Staff to the President’s Assistant for National Securit,4902,2,2,0,0
+frus1977-80v15,d333,1980-04-11,333. Telegram From the Embassy in Costa Rica to the Department of State,6304,4,4,0,0
+frus1977-80v23,d90,1980-04-11,90. Memorandum From the Assistant National Intelligence Officer for Latin America ([name not declassified]) to Director ,4150,8,1,0,0
+frus1977-80v11p1,d254,1980-04-15,254. Minutes of a National Security Council Meeting,7407,1,1,0,0
+frus1977-80v15,d355,1980-04-16,355. Presidential Finding,2879,1,1,1,1
+frus1977-80v23,d91,1980-04-16,91. Presidential Finding,1848,6,2,0,0
+frus1977-80v06,d273,1980-04-17,273. Memorandum From Paul Henze of the National Security Council Staff to the President’s Assistant for National Securit,8536,1,1,0,0
+frus1977-80v12,d254,1980-04-17,254. Briefing Memorandum From the Director of the Bureau of Intelligence and Research (Spiers) to Secretary of State Van,9820,1,1,0,0
+frus1977-80v20,d37,1980-04-17,37. Memorandum From Paul Henze of the National Security Council Staff to the President’s Assistant for National Security,8468,1,1,0,0
+frus1977-80v15,d356,1980-04-18,356. Telegram From the Embassy in Honduras to the Department of State,6891,1,0,1,0
+frus1977-80v23,d206,1980-04-20,206. Memorandum From the Deputy Secretary of Defense (Claytor) to the President’s Assistant for National Security Affair,4413,5,2,1,1
+frus1977-80v23,d92,1980-04-22,92. Summary of Conclusions of a Mini-Policy Review Committee Meeting,4979,25,2,0,0
+frus1977-80v23,d93,1980-04-24,93. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,3646,17,0,3,0
+frus1977-80v24,d186,1980-04-24,186. Briefing Memorandum From the Director of the Policy Planning Staff (Lake) to Secretary of State Vance,5247,1,1,0,0
+frus1977-80v23,d94,1980-04-25,94. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,2740,7,1,0,0
+frus1977-80v23,d95,1980-04-25,95. Telegram From the U.S. Interests Section in Cuba to the Department of State,6356,14,5,0,0
+frus1977-80v23,d96,1980-04-25,96. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,1813,9,2,0,0
+frus1977-80v23,d97,1980-04-26,97. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,4791,19,8,0,0
+frus1977-80v23,d98,1980-04-28,98. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) and the White House Chief of St,2290,9,4,0,0
+frus1977-80v23,d99,1980-04-28,99. Central Intelligence Agency Information Report,1955,14,1,4,0
+frus1977-80v11p1,d271,1980-04-29,271. Summary of Conclusions of a Special Coordination Committee Meeting,5725,1,0,1,0
+frus1977-80v23,d100,1980-04-29,100. Telegram From the U.S. Interests Section in Cuba to the Department of State,2232,6,3,0,0
+frus1977-80v23,d101,1980-04-29,101. Paper Prepared in the Central Intelligence Agency,6705,19,10,2,1
+frus1977-80v02,d200,1980-04-30,200. Briefing Memorandum From the Assistant Secretary of State for Human Rights and Humanitarian Affairs (Derian) to Act,6889,2,0,0,0
+frus1977-80v12,d258,1980-04-30,258. Memorandum From Marshall Brement of the National Security Council Staff to the President’s Assistant for National S,7157,1,1,0,0
+frus1977-80v23,d102,1980-05-01,102. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,5656,22,4,0,0
+frus1977-80v28,d24,1980-05-01,24. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,10408,6,1,1,0
+frus1977-80v28,d25,1980-05-03,25. Memorandum of Conversation,54985,4,1,2,0
+frus1977-80v20,d288,1980-05-04,288. Memorandum From Acting Secretary of State Christopher to Vice President Mondale,28881,6,4,0,0
+frus1977-80v23,d103,1980-05-05,103. Telegram From the U.S. Interests Section in Cuba to the Department of State,3414,5,2,0,0
+frus1977-80v20,d290,1980-05-07,290. Telegram From the Embassy in Yugoslavia to the Department of State,17265,1,1,0,0
+frus1981-88v13,d2,1980-05-07,2. Telegram From the Department of State to the Embassy in Argentina,3786,4,4,3,3
+frus1977-80v15,d40,1980-05-08,40. Telegram From the Department of State to the Consulate in Belize City,7544,2,0,2,0
+frus1977-80v15,d312,1980-05-08,312. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,4456,10,8,2,2
+frus1977-80v01,d147,1980-05-09,147. Address by President Carter,25555,5,0,0,0
+frus1977-80v06,d277,1980-05-12,277. Telegram From the Central Intelligence Agency to the Director of the National Security Agency (Inman),3755,1,1,0,0
+frus1977-80v15,d313,1980-05-12,313. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,4691,10,7,0,0
+frus1977-80v24,d109,1980-05-12,109. Paper Prepared in the Department of State,25319,1,0,1,0
+frus1977-80v23,d104,1980-05-14,104. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,2160,5,5,0,0
+frus1977-80v24,d110,1980-05-14,110. Minutes of a Policy Review Committee Meeting,14289,1,1,1,1
+frus1977-80v06,d278,1980-05-16,278. Memorandum of Conversation,53531,5,3,0,0
+frus1977-80v17p3,d131,1980-05-16,131. Intelligence Memorandum Prepared in the Central Intelligence Agency,16521,3,2,0,0
+frus1977-80v23,d105,1980-05-19,105. Telegram From the U.S. Interests Section in Cuba to the Department of State,2460,6,4,3,2
+frus1977-80v04,d185,1980-05-22,185. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,5586,1,1,0,0
+frus1977-80v06,d279,1980-05-27,279. Telegram From the Embassy in the Soviet Union to the Department of State,17547,10,6,0,0
+frus1977-80v23,d262,1980-05-28,262. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,9810,24,11,5,2
+frus1977-80v30,d206,1980-05-30,206. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to the Director of the Interna,1353,8,8,0,0
+frus1977-80v17p2,d133,1980-06-01,133. Interagency Intelligence Memorandum,39665,2,2,0,0
+frus1977-80v23,d263,1980-06-03,263. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,3529,19,15,5,5
+frus1977-80v02,d340,1980-06-04,340. Telegram From the Department of State to Multiple Diplomatic and Consular Posts,2539,1,0,0,0
+frus1977-80v04,d189,1980-06-06,189. Memorandum From the President’s Science and Technology Adviser (Press) to the President’s Assistant for National Se,18132,1,0,0,0
+frus1977-80v23,d106,1980-06-06,106. Memorandum From the Acting Director of the International Communication Agency (Bray) to the President’s Assistant f,3810,22,10,9,1
+frus1977-80v30,d207,1980-06-06,207. Memorandum From the Acting Director of the International Communication Agency (Bray) to the President’s Assistant f,3989,19,7,9,1
+frus1977-80v17p1,d107,1980-06-07,107. Memorandum From the Assistant Secretary of Defense for International Security Affairs (McGiffert) to Secretary of D,3054,2,2,1,1
+frus1977-80v17p2,d62,1980-06-07,62. Memorandum From Gerald Funk of the National Security Council Staff to the President’s Assistant for National Securit,4572,1,1,0,0
+frus1977-80v18,d84,1980-06-09,84. Summary of Conclusions of a Special Coordination Committee Meeting,6383,4,4,0,0
+frus1977-80v23,d107,1980-06-09,107. Memorandum From Attorney General Civiletti to President Carter,5206,17,4,5,2
+frus1977-80v20,d293,1980-06-12,293. Telegram From the Department of State to the Embassy in Yugoslavia,6291,1,0,0,0
+frus1977-80v23,d207,1980-06-12,207. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,3695,4,3,0,0
+frus1977-80v20,d294,1980-06-13,294. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,13157,3,2,3,2
+frus1977-80v30,d208,1980-06-16,208. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to the Deputy Director of the ,3507,14,6,8,1
+frus1977-80v23,d108,1980-06-17,108. Memorandum From the Executive Secretary of the Department of State (Tarnoff) and Robert Pastor of the National Secu,10382,48,15,33,11
+frus1977-80v15,d335,1980-06-19,335. Telegram From the Embassy in Costa Rica to the Department of State,2447,3,0,0,0
+frus1977-80v15,d41,1980-06-20,"41. Memorandum From the Chief of the Latin American Division, Central Intelligence Agency ([name not declassified]) to t",4722,2,2,0,0
+frus1977-80v15,d336,1980-06-21,336. Telegram From the Department of State to the Embassy in Costa Rica,5984,17,13,4,2
+frus1977-80v20,d295,1980-06-24,295. Memorandum of Conversation,25771,2,1,2,1
+frus1977-80v23,d171,1980-06-26,171. Telegram From the Embassy in Mexico to the Department of State,10019,11,3,1,1
+frus1977-80v15,d337,1980-06-30,337. Telegram From the Embassy in Costa Rica to the Department of State,4480,2,0,2,0
+frus1977-80v23,d109,1980-06-30,109. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,3171,13,7,0,0
+frus1977-80v11p1,d307,1980-07-01,307. Summary of Conclusions of a Special Coordination Committee Meeting,14516,1,0,0,0
+frus1977-80v12,d294,1980-07-01,294. Intelligence Assessment Prepared in the Central Intelligence Agency,5541,1,1,0,0
+frus1977-80v23,d110,1980-07-01,110. Summary of Conclusions of a Special Coordination Committee Meeting,6237,24,10,0,0
+frus1977-80v23,d346,1980-07-01,346. Action Memorandum From the Director of the Bureau of Politico-Military Affairs (Bartholomew) to the Under Secretary,5466,3,2,0,0
+frus1977-80v24,d237,1980-07-01,237. Memorandum of Conversation,9699,1,0,1,0
+frus1977-80v02,d203,1980-07-03,203. Memorandum From Lincoln Bloomfield of the National Security Council Staff to Roger Molander of the National Securit,15515,1,0,0,0
+frus1977-80v15,d338,1980-07-03,338. Telegram From the Embassy in Costa Rica to the Department of State,5278,11,6,0,0
+frus1977-80v23,d111,1980-07-03,111. Memorandum From the National Intelligence Officer for Latin America (Davis) to Director of Central Intelligence Tur,4644,16,9,0,0
+frus1977-80v23,d112,1980-07-04,112. Telegram From the U.S. Interests Section in Cuba to the Department of State,5625,12,4,0,0
+frus1977-80v01,d151,1980-07-07,151. Address by Secretary of State Muskie,13526,1,1,0,0
+frus1977-80v23,d113,1980-07-07,113. Telegram From the U.S. Interests Section in Cuba to the Department of State,3552,14,9,0,0
+frus1977-80v06,d289,1980-07-09,289. Telegram From the Embassy in the Soviet Union to the Department of State,7450,1,1,0,0
+frus1977-80v13,d313,1980-07-10,313. Memorandum of Conversation,18437,2,2,0,0
+frus1977-80v15,d42,1980-07-14,42. Strategy Paper on Guatemala Prepared in the Department of State,16225,5,5,3,3
+frus1977-80v15,d339,1980-07-16,339. Telegram From the Embassy in Costa Rica to the Department of State,3863,10,5,1,0
+frus1977-80v04,d205,1980-07-18,205. Memorandum From Secretary of Defense Brown to President Carter,8171,1,1,0,0
+frus1977-80v17p2,d63,1980-07-18,63. Memorandum of Conversation,6326,2,1,0,0
+frus1977-80v23,d210,1980-07-19,210. Telegram From the Department of State to the Embassy in Jamaica,8194,1,1,0,0
+frus1977-80v23,d211,1980-07-21,211. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,2309,1,1,0,0
+frus1977-80v17p2,d66,1980-07-23,66. Memorandum of Conversation,10611,2,0,0,0
+frus1977-80v04,d208,1980-07-25,208. Presidential Directive/ NSC –59,9903,1,0,0,0
+frus1977-80v15,d43,1980-07-28,43. Summary of Conclusions of a Special Coordination Committee (Intelligence) Meeting,5483,4,2,1,0
+frus1977-80v23,d114,1980-07-28,114. Memorandum From the National Intelligence Officer for Latin America (Davis) to Director of Central Intelligence Tur,4917,11,0,0,0
+frus1977-80v15,d44,1980-07-31,44. Memorandum From William McAfee of the Bureau of Intelligence and Research to the Assistant Secretary of State for In,2810,1,1,0,0
+frus1977-80v02,d205,1980-08-04,205. Paper Prepared in the Department of State,15469,1,1,1,1
+frus1977-80v15,d46,1980-08-04,46. Memorandum Prepared in the Central Intelligence Agency for the Special Coordination Committee,4114,1,0,0,0
+frus1977-80v15,d340,1980-08-04,340. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,6973,4,4,1,1
+frus1977-80v23,d115,1980-08-06,115. Memorandum From the National Intelligence Officer for Latin America (Davis) to Director of Central Intelligence Tur,2802,6,2,1,1
+frus1977-80v01,d152,1980-08-07,152. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,23636,6,6,0,0
+frus1977-80v23,d116,1980-08-07,116. Summary of Conclusions of an Interagency Meeting,4304,13,6,2,0
+frus1977-80v23,d117,1980-08-07,117. Presidential Determination No. 80–24,2290,2,1,1,0
+frus1977-80v15,d491,1980-08-11,491. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,15040,9,5,0,0
+frus1977-80v24,d114,1980-08-15,114. Telegram From the Embassy in Argentina to the Department of State,3390,1,1,0,0
+frus1981-88v01,d8,1980-08-18,8. Address by Ronald Reagan,26027,12,12,2,2
+frus1977-80v23,d118,1980-08-20,118. Summary of Conclusions of a Mini-Special Coordination Committee Meeting,6914,16,9,2,0
+frus1977-80v23,d119,1980-08-20,119. Department of State Evening Report for President Carter,1887,7,7,0,0
+frus1977-80v23,d172,1980-08-21,172. Telegram From the Embassy in Mexico to the Department of State,8888,14,10,2,2
+frus1977-80v15,d435,1980-08-23,435. Telegram From the Embassy in El Salvador to the Department of State,14006,1,1,1,1
+frus1977-80v04,d211,1980-08-26,211. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,11187,1,1,0,0
+frus1977-80v16,d258,1980-08-27,258. Memorandum of Conversation,8820,2,2,0,0
+frus1977-80v23,d120,1980-08-29,120. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) and the Cabinet Secretary (Eid,6891,20,9,1,0
+frus1977-80v23,d121,1980-08-30,121. Memorandum From President Carter to Attorney General Civiletti,2291,2,1,0,0
+frus1977-80v11p1,d350,1980-09-03,350. Memorandum From the National Intelligence Officer for Near East and South Asia (Ames) to Director of Central Intell,6660,2,2,0,0
+frus1977-80v23,d122,1980-09-03,122. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,2887,3,2,3,2
+frus1977-80v15,d437,1980-09-05,437. Memorandum From the Acting Assistant Secretary of Defense for International Security Affairs (Kramer) to Secretary ,4466,2,2,1,1
+frus1977-80v23,d123,1980-09-08,123. Memorandum for the Record by the Executive Secretary of the Department of State (Tarnoff),9097,29,3,7,0
+frus1977-80v15,d316,1980-09-09,316. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,6337,2,1,0,0
+frus1977-80v15,d52,1980-09-11,52. Telegram From the Embassy in Guatemala to the Department of State,7354,1,0,0,0
+frus1977-80v12,d316,1980-09-12,316. Analysis Paper Prepared in the Bureau of Intelligence and Research,2514,1,1,0,0
+frus1977-80v23,d124,1980-09-13,124. Situation Room Checklist,3872,13,2,0,0
+frus1977-80v23,d377,1980-09-13,377. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,3167,1,1,0,0
+frus1977-80v23,d125,1980-09-21,125. Presidential Determination No. 80–27,2024,2,0,0,0
+frus1977-80v06,d302,1980-09-25,302. Summary Memorandum of Conversation,22264,1,1,0,0
+frus1977-80v29,d270,1980-09-28,270. Memorandum of Conversation,12674,2,2,0,0
+frus1977-80v23,d126,1980-09-30,126. Memorandum From the President’s Deputy Assistant for National Security Affairs (Aaron) to President Carter,1956,4,4,0,0
+frus1977-80v22,d279,1980-10-04,279. Memorandum of Conversation,12936,2,2,2,2
+frus1977-80v24,d328,1980-10-05,328. Telegram From the Department of State to the Embassy in Uruguay,6251,1,0,0,0
+frus1977-80v17p2,d69,1980-10-07,69. Memorandum of Conversation,17427,1,1,0,0
+frus1977-80v15,d439,1980-10-08,439. Memorandum From Secretary of Defense Brown to the President’s Assistant for National Security Affairs (Brzezinski),6547,3,2,0,0
+frus1977-80v23,d213,1980-10-08,213. Action Memorandum From the Assistant Secretary of State for Inter-American Affairs (Bowdler) to the Under Secretary,2622,7,4,0,0
+frus1977-80v15,d341,1980-10-09,341. Telegram From the Embassy in Costa Rica to the Department of State,6155,15,11,0,0
+frus1977-80v23,d214,1980-10-14,214. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,2813,3,0,1,0
+frus1977-80v01,d158,1980-10-19,158. Radio Address by President Carter to the Nation,15685,1,1,0,0
+frus1981-88v01,d14,1980-10-19,14. Address by Ronald Reagan,30784,2,2,2,2
+frus1977-80v15,d317,1980-10-21,317. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,5090,7,5,0,0
+frus1977-80v15,d56,1980-10-24,56. Telegram From the Department of State to the Embassy in Guatemala,10562,1,1,0,0
+frus1977-80v15,d442,1980-10-28,"442. Memorandum From the Acting Chief of the Latin America Division, Central Intelligence Agency ([name not declassified",4911,7,5,0,0
+frus1977-80v23,d379,1980-10-28,379. Summary of Conclusions of a Mini-Policy Review Committee Meeting,6923,1,1,0,0
+frus1977-80v24,d50,1980-10-29,50. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secur,24781,15,13,8,7
+frus1977-80v23,d268,1980-10-31,268. Telegram From the Embassy in Haiti to the Department of State,14049,1,0,0,0
+frus1977-80v26,d394,1980-11-01,394. Intelligence Assessment Prepared in the Central Intelligence Agency,7925,1,0,0,0
+frus1977-80v23,d173,1980-11-06,173. Telegram From the Embassy in Mexico to the Department of State,5285,1,1,0,0
+frus1977-80v02,d206,1980-11-10,206. Memorandum From the Assistant Secretary of State for Human Rights and Humanitarian Affairs (Derian) to the Executiv,6792,2,1,0,0
+frus1977-80v15,d318,1980-11-12,318. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,2629,7,6,0,0
+frus1977-80v15,d319,1980-11-13,319. Minutes of a Special Coordination Committee Meeting,20514,51,33,6,4
+frus1977-80v15,d320,1980-11-13,320. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,3566,8,4,0,0
+frus1977-80v15,d321,1980-11-14,321. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Deputy Assistant for Nation,3213,7,5,0,0
+frus1977-80v15,d322,1980-11-15,322. Memorandum From the President’s Deputy Assistant for National Security Affairs (Aaron) to President Carter,5792,14,14,4,4
+frus1977-80v15,d323,1980-11-17,323. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to Secretary of State Muskie,8553,25,13,1,1
+frus1977-80v23,d216,1980-11-17,"216. Memorandum Prepared in the National Foreign Assessment Center, Central Intelligence Agency",4518,1,0,1,0
+frus1977-80v12,d334,1980-11-19,334. Telegram From the Embassy in Afghanistan to the Department of State,4985,1,1,0,0
+frus1977-80v15,d324,1980-11-20,324. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,3306,1,1,0,0
+frus1977-80v30,d215,1980-11-20,215. Summary Prepared in the International Communication Agency,21369,1,1,1,1
+frus1977-80v17p1,d110,1980-11-25,"110. Memorandum From the Deputy Director for Operations, Central Intelligence Agency (McMahon) to the Director of Centra",9610,1,1,0,0
+frus1977-80v15,d342,1980-11-28,342. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,5232,9,6,8,6
+frus1977-80v15,d343,1980-12-01,343. Memorandum of Conversation,11458,9,4,0,0
+frus1977-80v24,d371,1980-12-01,371. Intelligence Assessment Prepared in the Central Intelligence Agency,6510,8,6,0,0
+frus1977-80v23,d127,1980-12-02,127. Telegram From the Department of State to the U.S. Interests Section in Cuba,2677,8,4,0,0
+frus1977-80v04,d219,1980-12-03,219. Memorandum From Director of Central Intelligence Turner to the Special Coordination Committee,11228,1,1,0,0
+frus1977-80v15,d325,1980-12-05,325. Memorandum of Notification Prepared in the Central Intelligence Agency for the Special Coordination Committee,10181,3,3,0,0
+frus1977-80v04,d220,1980-12-07,220. Minutes of a National Security Council Meeting,30625,1,1,0,0
+frus1977-80v15,d451,1980-12-15,451. Memorandum From the President’s Deputy Assistant for National Security Affairs (Aaron) to the President’s Assistant,2854,1,1,1,1
+frus1977-80v15,d492,1980-12-16,492. Memorandum for the Files Prepared in the Bureau of Intelligence and Research,5365,2,1,1,0
+frus1977-80v18,d97,1980-12-16,97. Summary of Conclusions of a Special Coordination Committee Meeting,11864,1,0,0,0
+frus1977-80v23,d270,1980-12-16,270. Airgram From the Embassy in Haiti to the Department of State,28025,1,0,1,0
+frus1977-80v13,d327,1980-12-19,327. Memorandum From Michel Oksenberg to the President’s Assistant for National Security Affairs (Brzezinski),19599,1,1,1,1
+frus1977-80v15,d454,1980-12-19,454. Memorandum of Notification Prepared in the Central Intelligence Agency for the Special Coordination Committee,8514,3,3,1,1
+frus1977-80v19,d213,1980-12-19,213. Memorandum of Conversation,7370,1,1,1,1
+frus1977-80v15,d456,1980-12-29,456. Memorandum Prepared in the Central Intelligence Agency,4911,2,2,0,0
+frus1977-80v04,d221,1981-01-08,221. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,11261,3,3,0,0
+frus1977-80v15,d327,1981-01-10,327. Telegram From the Embassy in Nicaragua to the Department of State,16171,26,23,1,1
+frus1977-80v15,d494,1981-01-12,494. Memorandum From Secretary of State Muskie to President Carter,10837,2,1,0,0
+frus1977-80v15,d344,1981-01-14,"344. Memorandum Prepared in the National Foreign Assessment Center, Central Intelligence Agency",7608,5,4,1,1
+frus1977-80v15,d459,1981-01-14,459. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to President Carter,5222,2,2,0,0
+frus1977-80v04,d222,1981-01-15,222. Presidential Directive/ NSC –62,6205,3,3,0,0
+frus1977-80v15,d328,1981-01-15,328. Telegram From the Embassy in Nicaragua to the Department of State,12951,5,0,0,0
+frus1977-80v15,d345,1981-01-15,345. Telegram From the Embassy in Costa Rica to the Department of State,1574,6,6,0,0
+frus1977-80v15,d495,1981-01-15,495. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,6282,2,2,0,0
+frus1977-80v15,d496,1981-01-16,496. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Secu,7605,1,0,0,0
+frus1977-80v15,d329,1981-01-18,329. Telegram From the Embassy in Nicaragua to the Department of State,8639,3,1,1,1
+frus1977-80v15,d461,1981-01-20,461. Telegram From the Embassy in El Salvador to the Department of State,25057,1,1,0,0
+frus1981-88v03,d3,1981-01-22,3. Telegram From the Embassy in the Soviet Union to the Department of State,12991,3,3,0,0
+frus1981-88v24,d370,1981-01-24,370. Memorandum From the Acting Under Secretary of Defense for Policy (Kramer) to Secretary of Defense Weinberger,6798,4,4,0,0
+frus1981-88v03,d5,1981-01-26,5. Memorandum From Secretary of State Haig to President Reagan,9074,37,37,4,4
+frus1981-88v03,d9,1981-01-29,9. Memorandum From Secretary of State Haig to President Reagan,2626,1,0,1,0
+frus1981-88v03,d10,1981-01-30,10. Issues Paper Prepared in the Bureau of Intelligence and Research,11630,24,24,11,11
+frus1981-88v03,d12,1981-02-03,12. Telegram From the Department of State to the Embassy in the Soviet Union,10637,2,1,1,1
+frus1981-88v16,d368,1981-02-05,368. Telegram From the Department of State to the Embassy in Ecuador,7827,1,1,0,0
+frus1981-88v03,d13,1981-02-06,13. Memorandum From the Counselor-Designate of the Department of State (McFarlane) to the Director-Designate of Policy P,9444,1,1,1,1
+frus1981-88v03,d15,1981-02-06,15. Minutes of a National Security Council Meeting,10383,13,8,3,3
+frus1981-88v03,d16,1981-02-06,16. Memorandum From Secretary of State Haig to President Reagan,3771,2,2,0,0
+frus1981-88v03,d18,1981-02-13,18. Memorandum From Richard Pipes of the National Security Council Staff to the President’s Assistant for National Secur,3615,1,1,0,0
+frus1981-88v41,d42,1981-02-18,"42. Action Memorandum From the Assistant Secretary of State for International Organization Affairs (Abrams), the Acting ",8910,1,0,0,0
+frus1981-88v01,d30,1981-02-26,30. Memorandum of Conversation,18155,4,4,2,2
+frus1981-88v03,d23,1981-02-27,23. Memorandum From the President’s Assistant for National Security Affairs (Allen) to President Reagan,1465,1,1,0,0
+frus1981-88v03,d24,1981-03-02,24. Memorandum From the President’s Assistant for National Security Affairs (Allen) to President Reagan,6589,3,3,0,0
+frus1981-88v38,d5,1981-03-10,5. Memorandum of Conversation,6602,2,0,0,0
+frus1981-88v01,d35,1981-03-12,35. Memorandum of Conversation,8316,1,1,0,0
+frus1981-88v38,d6,1981-03-12,6. Notes of a Meeting,3915,1,0,0,0
+frus1981-88v01,d36,1981-03-16,36. Memorandum From Secretary of State Haig to President Reagan,17195,16,15,2,2
+frus1981-88v03,d28,1981-03-16,28. Action Memorandum From the Assistant Secretary of State-Designate for European Affairs (Eagleburger) and the Directo,29029,2,1,1,1
+frus1981-88v03,d29,1981-03-17,29. Minutes of an Interagency Coordinating Committee for U.S.-Soviet Affairs Meeting,11229,1,1,0,0
+frus1981-88v38,d7,1981-03-18,7. Memorandum From Secretary of State Haig to President Reagan,3701,3,0,1,0
+frus1981-88v41,d47,1981-03-18,47. Telegram From the Mission to the United Nations to the Department of State,23271,1,0,0,0
+frus1981-88v01,d38,1981-03-19,38. Memorandum of Conversation,7337,9,5,3,2
+frus1981-88v03,d31,1981-03-19,31. Memorandum of Conversation,5813,9,6,3,2
+frus1981-88v16,d460,1981-03-24,460. Memorandum From the Executive Secretary of the Department of State (Bremer) to the President’s Assistant for Nation,3185,1,1,0,0
+frus1981-88v03,d36,1981-03-26,36. Memorandum for the Record,8815,2,1,0,0
+frus1981-88v03,d35,1981-03-28,35. Telegram From the Department of State to the Embassy in the Soviet Union,7189,4,4,0,0
+frus1981-88v03,d38,1981-04-03,38. Memorandum From Secretary of State Haig to President Reagan,5343,4,4,1,1
+frus1981-88v16,d369,1981-04-14,369. Telegram From the Department of State to the Embassy in Ecuador,12662,1,1,1,1
+frus1981-88v16,d462,1981-04-15,462. Memorandum From Roger Fontaine of the National Security Council Staff to the President’s Assistant for National Sec,5793,4,3,1,0
+frus1981-88v24,d105,1981-04-20,105. Telegram From the Embassy in Algeria to the Department of State,12175,1,1,0,0
+frus1981-88v01,d44,1981-04-21,44. Memorandum From the Under Secretary of Defense for Policy (Iklé) to Secretary of Defense Weinberger,6463,4,4,1,1
+frus1981-88v03,d45,1981-04-23,45. Memorandum for the Record,8918,2,2,0,0
+frus1981-88v03,d46,1981-04-24,46. Letter From President Reagan to Soviet General Secretary Brezhnev,6233,2,2,0,0
+frus1981-88v10,d189,1981-04-28,189. Telegram From the Department of State to the Embassy in Yugoslavia,4148,2,2,1,1
+frus1981-88v01,d48,1981-05-09,48. Address by Secretary of State Haig,17111,1,1,0,0
+frus1981-88v16,d463,1981-05-13,463. Memorandum From Secretary of State Haig to President Reagan,4810,1,1,0,0
+frus1981-88v03,d55,1981-05-19,55. Action Memorandum From the Assistant Secretary of State for European Affairs (Eagleburger) to Secretary of State Hai,6359,1,1,0,0
+frus1981-88v16,d464,1981-05-19,"464. Memorandum From Robert Schweitzer, Roger Fontaine, Robert Kimmitt, and Chris Shoemaker of the National Security Cou",8022,2,2,1,1
+frus1981-88v16,d465,1981-05-20,465. Memorandum of Conversation,8820,3,3,1,1
+frus1981-88v03,d56,1981-05-22,56. Minutes of a National Security Council Meeting,14623,7,7,2,2
+frus1981-88v03,d58,1981-05-25,58. Memorandum From Secretary of State Haig to President Reagan,13711,2,2,2,2
+frus1981-88v03,d60,1981-05-28,60. Memorandum From the President’s Assistant for National Security Affairs (Allen) to President Reagan,2751,1,1,1,1
+frus1981-88v16,d466,1981-06-01,466. Minutes of a National Security Council Meeting,11221,2,0,0,0
+frus1981-88v03,d62,1981-06-04,"62. Action Memorandum From the Director of Policy Planning (Wolfowitz), the Assistant Secretary of State for European Af",29542,1,1,1,1
+frus1981-88v16,d370,1981-06-10,370. Telegram From the Department of State to the Embassy in Ecuador,3706,2,2,2,2
+frus1981-88v10,d193,1981-06-16,193. Report Prepared in the Bureau of Intelligence and Research,25709,1,1,0,0
+frus1981-88v01,d53,1981-06-30,53. Memorandum From James Lilley of the National Security Council Staff to the President’s Assistant for National Securi,21418,11,10,4,3
+frus1981-88v01,d55,1981-07-01,55. Information Memorandum From the Director of the Bureau of Politico-Military Affairs (Burt) and the Director of the P,9835,1,1,1,1
+frus1981-88v03,d73,1981-07-11,73. Telegram From the Department of State to the Embassy in the Soviet Union,5134,1,0,0,0
+frus1981-88v01,d56,1981-07-14,56. Address by Secretary of State Haig,27295,1,1,1,1
+frus1981-88v03,d74,1981-07-20,74. Letter From Soviet Foreign Minister Gromyko to Secretary of State Haig,6258,1,0,0,0
+frus1981-88v16,d398,1981-07-28,398. Telegram From the Embassy in Paraguay to the Department of State,14512,5,4,4,3
+frus1981-88v38,d31,1981-07-30,31. Memorandum From the President’s Assistant for National Security Affairs (Allen) to the White House Deputy Chief of S,4303,1,0,0,0
+frus1981-88v16,d467,1981-08-01,467. Intelligence Memorandum Prepared in the Central Intelligence Agency,2024,1,1,1,1
+frus1981-88v24,d108,1981-08-05,108. Telegram From the Embassy in Algeria to the Department of State,5985,1,1,0,0
+frus1981-88v16,d444,1981-08-10,444. Telegram From the Embassy in Uruguay to the Department of State,9868,1,1,0,0
+frus1981-88v10,d4,1981-08-13,4. Memorandum Prepared in the Central Intelligence Agency,22268,2,1,0,0
+frus1981-88v38,d36,1981-08-22,36. Information Memorandum From the Assistant Secretary of State for Economic and Business Affairs (Hormats) to Secretar,8584,1,1,1,1
+frus1981-88v16,d399,1981-08-28,399. Telegram From the Department of State to the Embassy in Paraguay,5311,4,4,2,2
+frus1981-88v03,d82,1981-09-04,82. Memorandum From the Assistant Secretary of State for European Affairs (Eagleburger) to Secretary of State Haig,4665,1,1,0,0
+frus1981-88v03,d83,1981-09-08,83. Telegram From the Embassy in the Soviet Union to the Department of State,17545,1,1,0,0
+frus1981-88v03,d84,1981-09-18,84. Memorandum From Secretary of State Haig to President Reagan,5447,2,2,0,0
+frus1981-88v03,d85,1981-09-18,85. Memorandum From Secretary of State Haig to President Reagan,7223,1,1,0,0
+frus1981-88v10,d194,1981-09-22,194. Telegram From the Department of State to the Embassy in Yugoslavia,33165,14,10,1,1
+frus1981-88v03,d88,1981-09-23,88. Memorandum of Conversation,44700,16,12,1,1
+frus1981-88v03,d89,1981-09-23,89. Memorandum of Conversation,18536,1,0,0,0
+frus1981-88v03,d90,1981-09-28,90. Memorandum of Conversation,70681,54,40,5,5
+frus1981-88v41,d53,1981-10-02,53. Action Memorandum From the Director of the Policy Planning Staff (Wolfowitz) and the Assistant Secretary of State fo,12706,2,1,1,0
+frus1981-88v01,d65,1981-10-08,65. Memorandum From Secretary of State Haig to President Reagan,10196,1,0,0,0
+frus1981-88v03,d92,1981-10-13,92. Minutes of a National Security Council Meeting,16364,2,2,0,0
+frus1981-88v24,d384,1981-10-14,384. Memorandum From Secretary of State Haig to President Reagan,2239,1,1,1,1
+frus1981-88v03,d93,1981-10-15,93. Letter From Soviet General Secretary Brezhnev to President Reagan,10383,3,0,0,0
+frus1981-88v03,d95,1981-10-16,95. Memorandum for the Record,4883,1,0,0,0
+frus1981-88v24,d385,1981-10-16,385. Memorandum From Secretary of State Haig to President Reagan,1150,1,1,0,0
+frus1981-88v03,d96,1981-10-21,96. Telegram From the Embassy in the Soviet Union to the Department of State,12458,1,1,0,0
+frus1981-88v24,d388,1981-10-30,388. Memorandum From Secretary of State Haig to President Reagan,2644,1,1,0,0
+frus1981-88v38,d74,1981-11-05,74. Intelligence Information Cable From the Central Intelligence Agency to Multiple Recipients,10729,2,0,0,0
+frus1981-88v24,d290,1981-11-09,290. Minutes of a Meeting of the Joint Military Commission,11442,1,1,0,0
+frus1981-88v03,d101,1981-11-11,101. Memorandum for the Record,6380,4,2,0,0
+frus1981-88v03,d103,1981-11-17,103. Letter From President Reagan to Soviet General Secretary Brezhnev,7390,4,4,4,4
+frus1981-88v16,d469,1981-11-17,469. Memorandum of Conversation,10011,3,1,1,0
+frus1981-88v01,d69,1981-11-18,69. Remarks by President Reagan,25162,2,2,0,0
+frus1981-88v01,d70,1981-11-25,70. Memorandum From Henry Nau of the National Security Council Staff to Members of the National Security Council Staff,20737,1,1,1,1
+frus1981-88v03,d108,1981-12-01,108. Letter From Soviet General Secretary Brezhnev to President Reagan,9565,2,0,0,0
+frus1981-88v03,d114,1981-12-09,114. Memorandum of Conversation,9059,10,10,3,3
+frus1981-88v01,d74,1981-12-15,74. Memorandum From Secretary of State Haig to President Reagan,12214,2,2,1,1
+frus1981-88v38,d80,1981-12-27,80. Memorandum From Secretary of State Haig to President Reagan,3069,1,0,0,0
+frus1981-88v03,d127,1982-01-08,127. Telegram From the Department of State to the Embassy in the Soviet Union,9223,23,18,1,1
+frus1981-88v03,d128,1982-01-10,128. Telegram From the Department of State to Secretary of State Haig’s Aircraft and the Embassy in Moscow,5193,14,14,0,0
+frus1981-88v01,d77,1982-01-11,77. Memorandum From Secretary of State Haig to President Reagan,14880,2,1,1,1
+frus1981-88v03,d131,1982-01-18,131. Memorandum for the Record,12998,16,15,5,5
+frus1981-88v03,d132,1982-01-19,132. Memorandum From Secretary of State Haig to President Reagan,1797,2,2,0,0
+frus1981-88v03,d134,1982-01-21,134. Memorandum of Conversation,15858,8,5,1,1
+frus1981-88v03,d135,1982-01-22,135. Telegram From the Department of State to the Embassy in the Soviet Union,8273,17,17,0,0
+frus1981-88v03,d137,1982-01-26,137. Memorandum of Conversation,42140,9,9,3,3
+frus1981-88v03,d138,1982-01-26,138. Memorandum of Conversation,72364,74,64,1,1
+frus1981-88v10,d90,1982-01-29,90. Telegram From the Embassy in Romania to the Department of State,6463,1,1,0,0
+frus1981-88v10,d94,1982-02-03,94. Memorandum From Secretary of State Haig to President Reagan,2559,1,1,1,1
+frus1981-88v24,d396,1982-02-14,396. Telegram From the Embassy in Algeria to the Department of State,11591,1,0,0,0
+frus1981-88v03,d143,1982-02-25,143. Telegram From the Department of State to the Embassy in the Soviet Union,4085,3,3,0,0
+frus1981-88v03,d148,1982-03-04,148. Memorandum From Secretary of State Haig to President Reagan,1995,1,1,0,0
+frus1981-88v01,d84,1982-03-08,84. Memorandum From Secretary of State Haig to President Reagan,5906,1,1,0,0
+frus1981-88v03,d151,1982-03-17,151. Memorandum From Secretary of State Haig to President Reagan,2901,2,2,0,0
+frus1981-88v03,d152,1982-03-25,152. Memorandum of Conversation,14537,1,1,0,0
+frus1981-88v03,d153,1982-04-01,153. Memorandum of Conversation,4754,1,1,0,0
+frus1981-88v03,d154,1982-04-02,154. Memorandum From Secretary of State Haig to President Reagan,23292,5,4,1,1
+frus1981-88v13,d52,1982-04-02,52. Paper Prepared in the Central Intelligence Agency,12928,2,2,0,0
+frus1981-88v13,d89,1982-04-09,89. Memorandum of Conversation,4128,2,2,0,0
+frus1981-88v13,d90,1982-04-10,90. Memorandum of Conversation,23089,7,5,0,0
+frus1981-88v13,d92,1982-04-11,92. Telegram From Secretary of State Haig to the White House,5971,2,2,0,0
+frus1981-88v13,d94,1982-04-11,94. Telegram From the Department of State to Secretary of State Haig in Buenos Aires,5763,4,4,0,0
+frus1981-88v13,d95,1982-04-11,95. Paper Prepared in the Department of State,7405,1,1,0,0
+frus1981-88v13,d98,1982-04-12,98. Memorandum of Conversation,5386,1,1,0,0
+frus1981-88v13,d104,1982-04-13,104. Telegram From the Department of State to Secretary of State Haig in London,4978,1,1,1,1
+frus1981-88v13,d109,1982-04-13,109. Action Memorandum From the Acting Assistant Secretary of State for European Affairs (Holmes) to Secretary of State ,2445,1,1,1,1
+frus1981-88v13,d113,1982-04-13,113. Action Memorandum From the Acting Assistant Secretary of State for Inter-American Affairs (Bosworth) and the Perman,12202,1,1,0,0
+frus1981-88v13,d114,1982-04-13,114. Information Memorandum From the Acting Assistant Secretary of State for Inter-American Affairs (Bosworth) to Secret,9296,1,1,1,1
+frus1981-88v13,d143,1982-04-17,143. Information Memorandum From the Director of the Bureau of Politico-Military Affairs (Burt) to Acting Secretary of S,10226,2,2,1,1
+frus1981-88v01,d95,1982-04-21,95. Memorandum From William Stearman of the National Security Council Staff to the President’s Assistant for National Se,4803,1,1,0,0
+frus1981-88v13,d161,1982-04-21,161. Information Memorandum From the Director of the Bureau of Intelligence and Research (Montgomery) to Secretary of St,4854,1,1,0,0
+frus1981-88v01,d97,1982-04-22,97. Information Memorandum From the Director of the Policy Planning Staff (Wolfowitz) to the Under Secretary of State fo,12701,1,1,0,0
+frus1981-88v38,d87,1982-04-22,87. Information Memorandum From the Director of the Policy Planning Staff (Wolfowitz) to the Under Secretary of State fo,12396,1,1,0,0
+frus1981-88v03,d164,1982-04-26,164. Minutes of an Interagency Coordinating Committee for U.S.-Soviet Affairs Meeting,8929,1,1,0,0
+frus1981-88v01,d99,1982-05-09,99. Address by President Reagan,27309,2,2,0,0
+frus1981-88v11,d18,1982-05-11,18. Memorandum for the Record,12166,1,1,0,0
+frus1981-88v13,d252,1982-05-12,252. Telegram From the Central Intelligence Agency to Multiple Recipients,3252,1,1,0,0
+frus1981-88v13,d257,1982-05-13,257. Memorandum of Telephone Conversation,18024,1,1,1,1
+frus1981-88v13,d266,1982-05-15,266. Memorandum From the Acting Chairman of the Joint Chiefs of Staff (Hayward) to Secretary of Defense Weinberger,2982,1,1,0,0
+frus1981-88v13,d274,1982-05-19,274. Telegram From the Mission to the United Nations to the Department of State and the White House,4945,2,1,0,0
+frus1981-88v13,d283,1982-05-21,283. Information Memorandum From the Assistant Secretary of State-Designate for European Affairs (Burt) to Secretary of ,5373,1,1,0,0
+frus1981-88v13,d289,1982-05-24,289. Telegram From the Mission to the United Nations to the Department of State and the White House,5930,1,1,0,0
+frus1981-88v03,d175,1982-05-25,175. Telegram From the Department of State to the Embassy in the Soviet Union,17106,12,5,0,0
+frus1981-88v13,d294,1982-05-25,294. Telegram From the Department of State to the Embassy in the United Kingdom,5112,2,2,0,0
+frus1981-88v13,d292,1982-05-26,292. Telegram From the Mission to the United Nations to the Department of State,4532,1,1,0,0
+frus1981-88v13,d298,1982-05-26,298. Memorandum From Secretary of State Haig to President Reagan,4395,1,1,0,0
+frus1981-88v13,d304,1982-05-27,304. Memorandum From Secretary of State Haig to President Reagan,2705,1,1,0,0
+frus1981-88v13,d309,1982-05-28,"309. Memorandum From Roger W. Fontaine, Christopher C. Shoemaker, and Richard T. Childress of the National Security Coun",9703,2,2,0,0
+frus1981-88v13,d318,1982-06-01,318. Information Memorandum From the Director of the Bureau of Politico-Military Affairs (Howe) to Secretary of State Ha,10315,4,3,1,1
+frus1981-88v01,d104,1982-06-08,104. Address by President Reagan Before the British Parliament,30205,1,1,0,0
+frus1981-88v03,d186,1982-06-18,186. Memorandum of Conversation,57696,6,6,1,1
+frus1981-88v03,d188,1982-06-18,188. Memorandum From the President’s Assistant for National Security Affairs (Clark) to President Reagan,9973,2,2,1,1
+frus1981-88v03,d187,1982-06-19,187. Memorandum of Conversation,43534,46,35,6,4
+frus1981-88v13,d364,1982-06-24,364. Memorandum From Secretary of State Haig to President Reagan,2011,1,1,0,0
+frus1981-88v41,d58,1982-06-25,58. Papers Prepared in the Department of State,10291,1,1,0,0
+frus1981-88v03,d193,1982-07-09,193. Memorandum of Conversation,14479,1,1,0,0
+frus1981-88v03,d197,1982-07-23,197. Memorandum From Richard Pipes of the National Security Council Staff to the President’s Assistant for National Secu,2511,1,1,1,1
+frus1981-88v03,d202,1982-08-16,202. Information Memorandum From the Director of Policy Planning (Wolfowitz) to Secretary of State Shultz,11815,1,1,1,1
+frus1981-88v03,d209,1982-09-04,209. Memorandum From the Under Secretary of State for Political Affairs (Eagleburger) to Secretary of State Shultz,6827,4,2,1,0
+frus1981-88v13,d394,1982-09-21,394. Memorandum From the President’s Assistant for National Security Affairs (Clark) to President Reagan,5927,1,1,0,0
+frus1981-88v03,d215,1982-09-22,215. Information Memorandum From the Director of Policy Planning (Wolfowitz) to Secretary of State Shultz,6918,1,1,0,0
+frus1981-88v03,d216,1982-09-22,216. Memorandum From the Under Secretary of State for Political Affairs (Eagleburger) to Secretary of State Shultz,8972,5,5,0,0
+frus1981-88v01,d119,1982-09-24,119. Briefing Memorandum From the Director of the Policy Planning Staff (Wolfowitz) to Secretary of State Shultz,13032,2,2,1,1
+frus1981-88v03,d217,1982-09-28,217. Memorandum of Conversation,31076,1,1,0,0
+frus1981-88v03,d219,1982-09-30,219. Memorandum From the Under Secretary of State for Political Affairs (Eagleburger) to Secretary of State Shultz,7853,3,2,1,1
+frus1981-88v13,d397,1982-10-02,397. Telegram From the Department of State to the Mission to the United Nations and the Embassies in Argentina and the U,10638,2,1,0,0
+frus1981-88v03,d221,1982-10-04,221. Memorandum of Conversation,52182,29,27,1,1
+frus1981-88v03,d222,1982-10-04,222. Memorandum From Secretary of State Shultz to President Reagan,2960,4,4,0,0
+frus1981-88v13,d401,1982-10-09,401. Telegram From the Department of State to the Embassies in Argentina and the United Kingdom,3297,1,1,1,1
+frus1981-88v01,d121,1982-10-29,121. Memorandum From Steven Sestanovich of the Policy Planning Staff to the Director of the Policy Planning Staff (Wolfo,4391,1,1,1,1
+frus1981-88v13,d405,1982-11-01,405. Memorandum From the President’s Assistant for National Security Affairs (Clark) to President Reagan,7633,1,0,0,0
+frus1981-88v10,d202,1982-11-17,202. Memorandum From the Executive Secretary of the Department of State (Bremer) to the Interagency Group on Yugoslavia,45880,1,1,1,1
+frus1981-88v01,d126,1982-11-19,126. Remarks by Vice President Bush,22495,4,4,3,3
+frus1981-88v03,d242,1982-11-22,242. Memorandum From Director of Central Intelligence Casey to President Reagan,8285,1,1,0,0
+frus1981-88v13,d416,1982-11-30,416. National Security Decision Directive 71,8244,2,2,1,1
+frus1981-88v11,d44,1982-12-13,44. Memorandum From the Special Representative for Arms Control and Disarmament (Rowny) to Acting Secretary of State Dam,12494,1,1,1,1
+frus1981-88v01,d129,1983-01-04,129. Memorandum From Robert Sims of the National Security Council Staff to the President’s Assistant for National Securi,14084,1,1,0,0
+frus1981-88v01,d132,1983-01-14,132. Memorandum of Conversation,20772,5,1,2,1
+frus1981-88v03,d260,1983-01-17,260. National Security Decision Directive 75,22436,8,8,6,6
+frus1981-88v01,d135,1983-01-19,135. Memorandum From Secretary of State Shultz to President Reagan,11481,1,1,0,0
+frus1981-88v04,d1,1983-01-19,1. Memorandum From Secretary of State Shultz to President Reagan,11250,1,1,1,1
+frus1981-88v01,d137,1983-01-22,137. Memorandum From Paula Dobriansky of the National Security Council Staff to the President’s Assistant for National S,9152,1,1,1,1
+frus1981-88v13,d422,1983-01-22,422. Telegram From the Department of State to the Embassies in Argentina and the United Kingdom,4583,1,0,0,0
+frus1981-88v04,d3,1983-01-28,3. Memorandum From the President’s Assistant for National Security Affairs (Clark) to President Reagan,8972,1,1,1,1
+frus1981-88v13,d423,1983-02-09,423. Memorandum From the President’s Deputy Assistant for National Security Affairs (McFarlane) to the Under Secretary o,3720,1,1,1,1
+frus1981-88v13,d424,1983-02-17,424. Draft Interagency Group Paper,23253,4,4,3,3
+frus1981-88v24,d213,1983-03-09,213. Telegram From the Department of State to the Embassies in Morocco and the United Kingdom,5060,2,2,1,1
+frus1981-88v13,d426,1983-03-14,"426. Memorandum From the Deputy Director for Operations, Central Intelligence Agency (Stein) to the Assistant Secretary ",6410,5,4,0,0
+frus1981-88v01,d145,1983-03-23,145. Address by President Reagan to the Nation,29419,10,10,6,6
+frus1981-88v04,d28,1983-03-25,28. Memorandum From John Lenczowski of the National Security Council Staff to the President’s Assistant for National Sec,21579,1,1,0,0
+frus1981-88v04,d33,1983-04-02,33. Memorandum From Secretary of State Shultz to President Reagan,6440,1,1,0,0
+frus1981-88v04,d41,1983-04-14,"41. Memorandum From Director of Central Intelligence Casey to President Reagan, Secretary of State Shultz, Secretary of ",24126,12,12,1,1
+frus1981-88v01,d152,1983-04-27,152. Address by President Reagan Before a Joint Session of Congress,29837,8,8,4,4
+frus1981-88v04,d52,1983-05-18,52. Memorandum From William Stearman of the National Security Council Staff to the President’s Assistant for National Se,3156,1,1,0,0
+frus1981-88v01,d153,1983-05-27,153. Memorandum From the Chairman of the Policy Planning Council (Bosworth) to the Under Secretary of State for Politica,9524,1,1,0,0
+frus1981-88v01,d154,1983-06-01,154. Letter From President Reagan to Richard Nixon,2210,1,1,1,1
+frus1981-88v01,d159,1983-06-15,159. Memorandum of Conversation,14260,4,4,0,0
+frus1981-88v04,d62,1983-06-15,62. Memorandum of Conversation,12688,2,2,0,0
+frus1981-88v04,d64,1983-06-18,64. Memorandum of Conversation,16538,1,1,0,0
+frus1981-88v04,d71,1983-07-13,71. Information Memorandum From the Chairman of the Policy Planning Council (Bosworth) to Secretary of State Shultz,34005,6,6,0,0
+frus1981-88v01,d165,1983-07-15,165. Memorandum From the President’s Assistant for National Security Affairs (Clark) to President Reagan,20296,3,3,0,0
+frus1981-88v01,d161,1983-07-21,161. Paper Prepared in the Department of State,33270,6,5,0,0
+frus1981-88v01,d166,1983-07-25,166. Information Memorandum From the Chairman of the Policy Planning Council (Bosworth) to Secretary of State Shultz,21739,10,10,2,2
+frus1981-88v04,d79,1983-08-18,79. Telegram From the Embassy in the Soviet Union to the Department of State,23087,1,0,0,0
+frus1981-88v04,d83,1983-08-30,83. Memorandum From Secretary of State Shultz to President Reagan,12196,1,1,1,1
+frus1981-88v04,d93,1983-09-03,93. Information Memorandum From the Chairman of the Policy Planning Council (Bosworth) to Secretary of State Shultz,7076,17,17,5,5
+frus1981-88v04,d96,1983-09-05,96. Briefing Memorandum From the Assistant Secretary of State for European Affairs (Burt) to Secretary of State Shultz,24501,4,4,0,0
+frus1981-88v10,d212,1983-09-22,212. Telegram From the Embassy in Yugoslavia to the Department of State and the White House,7270,1,1,0,0
+frus1981-88v04,d116,1983-09-27,"116. Memorandum Prepared by the Deputy Director for Intelligence, Central Intelligence Agency (Gates)",13618,5,5,1,1
+frus1981-88v04,d123,1983-10-03,123. Information Memorandum From the Assistant Secretary of State for European and Canadian Affairs (Burt) to Secretary ,10651,2,2,0,0
+frus1981-88v01,d172,1983-10-25,172. Information Memorandum From the Assistant Secretary of State for European and Canadian Affairs (Burt) to Secretary ,24100,1,1,1,1
+frus1981-88v04,d128,1983-10-25,128. Information Memorandum From the Assistant Secretary of State for European and Canadian Affairs (Burt) to Secretary ,5821,8,8,0,0
+frus1981-88v10,d22,1983-10-25,22. Information Memorandum From the Assistant Secretary of State for European and Canadian Affairs (Burt) to Secretary o,21400,1,1,1,1
+frus1981-88v04,d129,1983-10-28,129. Note From the Assistant Secretary of State for European and Canadian Affairs (Burt) to Secretary of State Shultz,17836,1,1,0,0
+frus1981-88v04,d130,1983-10-28,130. Memorandum From Secretary of State Shultz to President Reagan,2866,1,1,0,0
+frus1981-88v01,d174,1983-10-31,174. Address by the Deputy Secretary of State (Dam),35801,3,3,2,2
+frus1981-88v04,d132,1983-11-03,132. Memorandum From Jack Matlock of the National Security Council Staff to the President’s Assistant for National Secur,8743,3,3,0,0
+frus1981-88v04,d138,1983-11-19,138. Notes of a Meeting,11111,1,0,1,0
+frus1981-88v04,d139,1983-11-22,139. Action Memorandum From the Chairman of the Policy Planning Council (Bosworth) to Secretary of State Shultz,22395,31,20,11,6
+frus1981-88v01,d176,1983-11-30,176. Draft Memorandum From Frederick Wettering and Constantine Menges of the National Security Council Staff to the Pres,7723,3,3,1,1
+frus1981-88v01,d177,1983-12-05,177. Memorandum From Donald Fortier of the National Security Council Staff to Robert Kimmitt of the National Security Co,7562,1,0,0,0
+frus1981-88v04,d146,1983-12-16,146. Information Memorandum From the Assistant Secretary of State for European and Canadian Affairs (Burt) to the Under ,7564,2,2,0,0
+frus1981-88v04,d152,1984-01-04,152. Memorandum From Secretary of State Shultz to President Reagan,8582,1,1,1,1
+frus1981-88v04,d153,1984-01-05,153. Information Memorandum From the Chairman of the Policy Planning Council (Bosworth) to Secretary of State Shultz,12946,2,2,0,0
+frus1981-88v04,d159,1984-01-18,159. Memorandum of Conversation,78561,6,4,0,0
+frus1981-88v10,d215,1984-02-01,215. Memorandum of Conversation,26096,1,1,0,0
+frus1981-88v16,d475,1984-02-04,475. Telegram From Secretary of State Shultz’s Delegation to the White House and the Department of State,4174,1,1,1,1
+frus1981-88v01,d186,1984-02-22,186. Address by Secretary of State Shultz,30171,1,1,0,0
+frus1981-88v04,d187,1984-03-02,187. Information Memorandum From the Assistant Secretary of State for European and Canadian Affairs (Burt) to Secretary ,3760,1,1,0,0
+frus1981-88v04,d188,1984-03-02,188. Memorandum of Conversation,22233,1,1,0,0
+frus1981-88v10,d219,1984-03-14,219. National Security Decision Directive 133,3737,1,1,0,0
+frus1981-88v01,d192,1984-04-06,192. Remarks by President Reagan,39028,5,5,1,1
+frus1981-88v04,d221,1984-05-18,221. Special National Intelligence Estimate,29540,3,3,0,0
+frus1981-88v01,d195,1984-06-05,195. Memorandum From Frederick Wettering of the National Security Council Staff to Donald Fortier of the National Securi,5546,1,0,0,0
+frus1981-88v01,d196,1984-06-10,196. Note From the President’s Assistant for National Security Affairs (McFarlane) to President Reagan,26886,1,1,1,1
+frus1981-88v16,d379,1984-06-26,379. Memorandum of Conversation,5701,1,1,1,1
+frus1981-88v16,d380,1984-06-29,380. Telegram From the Department of State to the Embassy in Ecuador,5847,7,7,2,2
+frus1981-88v01,d198,1984-07-03,198. Information Memorandum From the Chairman of the Policy Planning Council (Rodman) to Secretary of State Shultz,9435,1,1,0,0
+frus1981-88v10,d272,1984-07-19,272. Information Memorandum From the Chairman of the Policy Planning Council (Rodman) to Secretary of State Shultz,14602,1,1,0,0
+frus1981-88v04,d254,1984-07-26,254. Memorandum From the Chairman of the Policy Planning Council (Rodman) to Secretary of State Shultz,9080,1,1,1,1
+frus1981-88v04,d255,1984-07-27,255. Memorandum From the Chairman of the Policy Planning Council (Rodman) to Secretary of State Shultz,5330,2,2,0,0
+frus1981-88v01,d202,1984-07-31,202. Memorandum From the Permanent Representative to the United Nations (Kirkpatrick) to Secretary of State Shultz,4036,2,1,0,0
+frus1981-88v16,d381,1984-08-01,381. Intelligence Assessment Prepared in the Central Intelligence Agency,5164,2,1,0,0
+frus1981-88v01,d203,1984-08-02,203. Information Memorandum From the Chairman of the Policy Planning Council (Rodman) to Secretary of State Shultz,14311,1,1,0,0
+frus1981-88v04,d260,1984-08-02,260. Paper Prepared in the Bureau of European and Canadian Affairs,50396,3,2,1,1
+frus1981-88v01,d204,1984-08-07,204. Memorandum of Conversation,25800,3,3,1,1
+frus1981-88v04,d277,1984-09-18,277. Minutes of a National Security Planning Group Meeting,17911,2,2,1,1
+frus1981-88v38,d322,1984-09-25,322. Memorandum From David Wigg of the National Security Council Staff to the President’s Assistant for National Securit,4499,1,1,1,1
+frus1981-88v04,d284,1984-09-26,284. Memorandum of Conversation,47615,2,1,2,1
+frus1981-88v04,d286,1984-09-28,286. Memorandum of Conversation,32282,1,1,0,0
+frus1981-88v16,d447,1984-10-10,447. Telegram From the Department of State to the Embassy in Uruguay,10322,4,1,0,0
+frus1981-88v04,d302,1984-11-03,302. Memorandum of Conversation,9927,1,0,0,0
+frus1981-88v16,d477,1984-12-01,477. Memorandum From the President’s Assistant for National Security Affairs (McFarlane) to President Reagan,5487,6,6,1,1
+frus1981-88v16,d478,1984-12-04,478. Memorandum of Conversation,16047,10,10,1,1
+frus1981-88v01,d222,1984-12-09,222. Address by Secretary of State Shultz,16293,1,1,0,0
+frus1981-88v41,d231,1984-12-13,231. Telegram From the Embassy in Ethiopia to the Department of State,3654,1,0,0,0
+frus1981-88v44p1,d5,1984-12-14,5. Notes of a Meeting,21414,1,1,0,0
+frus1981-88v04,d336,1984-12-21,336. Letter From President Reagan to Soviet General Secretary Chernenko,4345,1,1,0,0
+frus1981-88v04,d351,1985-01-04,351. Memorandum From the President’s Assistant for National Security Affairs (McFarlane) to President Reagan,7336,2,2,1,1
+frus1981-88v04,d366,1985-01-18,366. Memorandum From William Stearman of the National Security Council Staff to the President’s Assistant for National S,6163,2,2,0,0
+frus1981-88v16,d448,1985-01-18,448. Article in Latin America Review,9832,1,0,1,0
+frus1981-88v01,d232,1985-02-22,232. Address by Secretary of State Shultz,34877,12,12,2,2
+frus1981-88v16,d383,1985-03-01,383. Telegram From Secretary of State Shultz’s Delegation to the Department of State and the White House,4190,4,3,1,1
+frus1981-88v41,d243,1985-03-02,243. Action Memorandum From the Assistant Secretary of State for African Affairs (Crocker) to Secretary of State Shultz,15373,2,2,1,1
+frus1981-88v16,d449,1985-03-02,449. Telegram From Secretary of State Shultz’s Delegation to the Department of State and the Mission in Geneva,7684,5,2,1,0
+frus1981-88v16,d450,1985-03-02,450. Telegram From Secretary of State Shultz’s Delegation to the Department of State and the White House,3819,1,0,0,0
+frus1981-88v04,d378,1985-03-07,378. Memorandum of Conversation,19108,1,1,0,0
+frus1981-88v01,d237,1985-03-22,237. Paper Prepared in the Department of State,15466,2,0,1,0
+frus1981-88v05,d21,1985-04-17,21. Memorandum From Jack Matlock of the National Security Council Staff to the President’s Assistant for National Securi,3228,2,2,0,0
+frus1981-88v01,d239,1985-04-25,239. Address by Secretary of State Shultz,27798,5,5,1,1
+frus1981-88v44p1,d34,1985-05-07,34. Memorandum From the Assistant Secretary of Defense for International Security Policy (Perle) to Secretary of Defense,11695,1,1,0,0
+frus1981-88v05,d28,1985-05-14,28. Memorandum of Conversation,87650,3,3,1,1
+frus1981-88v05,d60,1985-07-15,60. Memorandum From the President’s Assistant for National Security Affairs (McFarlane) to President Reagan,18346,1,1,0,0
+frus1981-88v05,d61,1985-07-17,61. Telegram From the Department of State to Secretary of State Shultz in Nadi,26181,1,1,0,0
+frus1981-88v41,d77,1985-07-29,77. Memorandum From the United States Representative to the United Nations Commission on Human Rights (Schifter) to the ,6850,1,1,0,0
+frus1981-88v16,d384,1985-07-29,"384. Memorandum From the President’s Assistant for National Security Affairs (McFarlane) to Secretary of State Shultz, S",2725,2,0,2,0
+frus1981-88v05,d70,1985-07-30,70. Letter From the Ambassador-Designate to the Federal Republic of Germany (Burt) to Secretary of State Shultz,17098,1,1,0,0
+frus1981-88v44p1,d53,1985-07-30,53. Letter From the Assistant Secretary of State for European and Canadian Affairs (Burt) to Secretary of State Shultz,17310,1,1,0,0
+frus1981-88v05,d71,1985-07-31,71. Memorandum of Conversation,65900,1,1,0,0
+frus1981-88v05,d72,1985-07-31,72. Telegram From Secretary of State Shultz to the White House,7915,1,1,0,0
+frus1981-88v24,d245,1985-08-03,245. Telegram From the Department of State to the Embassy Morocco,4810,1,0,0,0
+frus1981-88v05,d74,1985-08-08,74. Memorandum From the President’s Assistant for National Security Affairs (McFarlane) to President Reagan,21395,2,2,0,0
+frus1981-88v38,d341,1985-08-16,341. Memorandum From the Chairman of the Third World Hunger Study (Keating) to the President’s Assistant for National Se,23656,1,1,1,1
+frus1981-88v05,d86,1985-09-13,86. Notes of a Meeting,8748,1,1,0,0
+frus1981-88v01,d251,1985-10-02,251. Address by Secretary of State Shultz,18444,1,1,0,0
+frus1981-88v05,d117,1985-10-18,117. Memorandum From the President’s Assistant for National Security Affairs (McFarlane) to President Reagan,5747,1,1,1,1
+frus1981-88v01,d253,1985-10-24,253. Address by President Reagan Before the United Nations General Assembly,25501,3,3,0,0
+frus1981-88v05,d129,1985-11-01,129. Memorandum From the President’s Assistant for National Security Affairs (McFarlane) to President Reagan,15788,1,1,0,0
+frus1981-88v10,d35,1985-11-14,"35. Action Memorandum From the Assistant Secretary of State for European and Canadian Affairs (Ridgway), the Assistant S",14405,1,0,0,0
+frus1981-88v05,d151,1985-11-19,151. Memorandum of Conversation,22625,2,2,0,0
+frus1981-88v41,d82,1985-12-20,82. Telegram From the Mission to the United Nations to the Department of State,8262,3,0,0,0
+frus1981-88v16,d452,1986-01-01,452. Intelligence Assessment Prepared in the Central Intelligence Agency,5576,4,3,0,0
+frus1981-88v16,d388,1986-01-14,388. Memorandum of Conversation,19184,1,0,0,0
+frus1981-88v16,d387,1986-01-23,387. Telegram From the Department of State to the Embassy in Ecuador,9124,4,0,1,0
+frus1981-88v05,d186,1986-01-29,186. Information Memorandum From the Director of the Policy Planning Staff (Rodman) to Secretary of State Shultz,17389,2,2,0,0
+frus1981-88v10,d238,1986-03-03,238. Memorandum Prepared in the Central Intelligence Agency,11504,1,0,0,0
+frus1981-88v01,d264,1986-03-06,264. Information Memorandum From the Director of the Bureau of Intelligence and Research (Abramowitz) to Secretary of St,16574,1,1,0,0
+frus1981-88v38,d361,1986-04-01,361. Memorandum From the Under Secretary of State for Economic and Agricultural Affairs (Wallis) to Secretary of State S,9742,1,1,1,1
+frus1981-88v05,d214,1986-04-14,214. Memorandum of Conversation,12369,1,1,0,0
+frus1981-88v44p1,d112,1986-06-06,112. Memorandum for the Record,8061,1,1,0,0
+frus1981-88v11,d135,1986-06-13,135. Electronic Message From Peter Rodman of the National Security Council Staff to the President’s Assistant for Nation,2242,1,1,0,0
+frus1981-88v16,d454,1986-06-16,454. Memorandum From the President’s Assistant for National Security Affairs (Poindexter) to President Reagan,14709,1,1,0,0
+frus1981-88v16,d481,1986-08-08,481. Telegram From Secretary of State Shultz’s Delegation to the Department of State and the Embassy in Venezuela,10374,1,0,1,0
+frus1981-88v01,d276,1986-09-06,276. Paper Prepared in the Policy Planning Staff,8266,1,1,1,1
+frus1981-88v05,d282,1986-09-18,282. Memorandum From the President’s Assistant for National Security Affairs (Poindexter) to President Reagan,3562,1,1,0,0
+frus1981-88v11,d155,1986-09-18,155. Memorandum From the President’s Assistant for National Security Affairs (Poindexter) to President Reagan,3490,1,1,0,0
+frus1981-88v05,d287,1986-09-20,287. Memorandum of Conversation,41209,15,13,2,2
+frus1981-88v05,d306,1986-10-12,306. Memorandum of Conversation,52393,1,1,0,0
+frus1981-88v01,d279,1986-10-21,279. Briefing Memorandum From the Assistant Secretary of State for African Affairs (Crocker) to Secretary of State Shult,6441,4,3,3,3
+frus1981-88v38,d371,1986-11-20,371. Memorandum From Secretary of State Shultz to President Reagan,5071,3,0,0,0
+frus1981-88v01,d290,1987-01-01,290. Report on the National Security Strategy of the United States,44255,2,2,0,0
+frus1981-88v44p1,d193,1987-01-15,193. Memorandum From Acting Director of Central Intelligence Gates to the President’s Assistant for National Security Af,120123,1,1,0,0
+frus1981-88v10,d390,1987-02-05,390. Telegram From the Embassy in Bulgaria to the Department of State,11651,1,1,0,0
+frus1981-88v41,d90,1987-02-22,90. Draft Telegram From the Department of State to Secretary of State Shultz,3434,6,4,2,1
+frus1981-88v01,d292,1987-02-25,292. Notes of a Meeting,5244,1,1,1,1
+frus1981-88v24,d164,1987-03-03,164. Telegram From the Department of State to the Mission to the United Nations,5965,4,0,0,0
+frus1981-88v01,d294,1987-03-10,"294. Memorandum From the President’s Special Assistant and Counselor, National Security Council Staff (Rodman) to the Pr",19454,2,1,1,1
+frus1981-88v01,d295,1987-03-13,295. Minutes of a National Security Council Meeting,30246,9,4,1,1
+frus1981-88v41,d91,1987-03-13,91. Telegram From the Mission to the United Nations to the Department of State,2038,4,0,0,0
+frus1981-88v06,d44,1987-04-14,44. Memorandum of Conversation,52983,6,5,0,0
+frus1981-88v10,d240,1987-05-06,240. Telegram From the Department of State to the Embassy in Yugoslavia,5449,1,1,0,0
+frus1981-88v24,d270,1987-07-13,270. Telegram From the Embassy in Morocco to the Departments of State and Defense,3111,1,1,0,0
+frus1981-88v06,d58,1987-07-17,58. Memorandum for the Record,3439,1,1,0,0
+frus1981-88v06,d61,1987-07-27,61. Minutes of a National Security Planning Group Meeting,21134,1,0,0,0
+frus1981-88v16,d483,1987-09-26,483. Telegram From Secretary of State Shultz’s Delegation to the Department of State,11684,7,4,0,0
+frus1981-88v16,d457,1987-09-30,457. Telegram From Secretary of State Shultz’s Delegation to the Department of State,9270,1,0,0,0
+frus1981-88v41,d34,1987-10-06,"34. Memorandum From the National Intelligence Officer at Large and the Director of the Analytic Group, Central Intellige",8877,12,6,0,0
+frus1981-88v06,d80,1987-10-22,80. Memorandum of Conversation,38530,1,1,0,0
+frus1981-88v06,d82,1987-10-22,82. Memorandum of Conversation,45861,7,0,2,0
+frus1981-88v01,d312,1987-11-09,312. Remarks by President Reagan,18636,1,1,0,0
+frus1981-88v10,d245,1987-11-09,245. Telegram From the Embassy in the Federal Republic of Germany to the Department of State,3605,1,0,0,0
+frus1981-88v06,d97,1987-11-20,97. Memorandum From the President’s Assistant for National Security Affairs (Carlucci) to President Reagan,27491,1,1,0,0
+frus1981-88v06,d103,1987-11-24,103. Memorandum From Director of Central Intelligence Webster to President Reagan,8970,2,2,2,2
+frus1981-88v01,d313,1987-12-01,313. Memorandum From Secretary of State Shultz to President Reagan,6631,1,1,0,0
+frus1981-88v41,d35,1987-12-11,"35. Memorandum From the Chairman of the Foreign Intelligence Priorities Committee, Central Intelligence Agency, [name no",27927,7,5,2,2
+frus1981-88v38,d385,1987-12-14,385. Memorandum From the Economic Policy Council to President Reagan,5968,3,0,3,0
+frus1981-88v38,d388,1988-01-12,388. Action Memorandum From the Acting Assistant Secretary of State for Economic and Business Affairs (Larson) to Secret,5135,3,0,0,0
+frus1981-88v24,d274,1988-03-12,274. Telegram From the Embassy in Morocco to the Department of State,5932,1,1,0,0
+frus1981-88v41,d105,1988-03-12,105. Telegram From the Mission to the United Nations to the Department of State,6135,25,3,0,0
+frus1981-88v06,d130,1988-03-20,130. Memorandum From the Deputy Secretary of State (Whitehead) to Secretary of State Shultz,2896,4,4,0,0
+frus1981-88v06,d131,1988-03-21,131. Memorandum From the President’s Assistant for National Security Affairs (Powell) to President Reagan,6959,1,1,1,1
+frus1981-88v06,d137,1988-03-23,137. Memorandum of Conversation,36383,1,0,0,0
+frus1981-88v06,d139,1988-03-23,139. Memorandum of Conversation,75267,8,6,2,1
+frus1981-88v38,d393,1988-04-06,393. Summary of a Meeting,6413,7,0,7,0
+frus1981-88v38,d395,1988-04-16,395. Memorandum From the Under Secretary of State for Economic and Agricultural Affairs (Wallis) to Secretary of State S,3789,1,1,1,1
+frus1981-88v06,d146,1988-04-21,146. Memorandum of Conversation,48405,2,2,1,1
+frus1981-88v06,d150,1988-05-11,150. Memorandum of Conversation,30001,4,1,3,1
+frus1981-88v06,d154,1988-05-17,154. Minutes of a National Security Planning Group Meeting,12426,1,1,1,1
+frus1981-88v06,d160,1988-05-31,160. Memorandum of Conversation,21968,3,2,1,1
+frus1981-88v06,d161,1988-05-31,161. Memorandum of Conversation,25607,5,4,0,0
+frus1981-88v06,d162,1988-06-01,162. Memorandum of Conversation,47760,1,1,0,0
+frus1981-88v06,d175,1988-09-23,175. Memorandum of Conversation,64198,1,1,0,0
+frus1981-88v24,d458,1988-10-05,458. Telegram From the Department of State to the Embassy in Morocco,4138,1,0,0,0
+frus1981-88v24,d282,1988-10-06,282. Telegram From Secretary of State Shultz to the Department of State and the Embassy in Morocco,4668,1,0,0,0
+frus1981-88v16,d484,1988-10-20,484. Telegram From the Department of State to the Embassy in Venezuela,3984,1,0,0,0
+frus1981-88v16,d397,1988-10-26,397. Telegram From the Embassy in Ecuador to the Department of State,6941,3,1,2,0
+frus1981-88v01,d331,1988-12-06,331. Talking Points Prepared in the Policy Planning Staff,12678,8,8,0,0
+frus1981-88v06,d178,1988-12-07,178. Memorandum of Conversation,24198,3,3,1,1
+frus1981-88v01,d333,1988-12-16,333. Remarks by President Reagan,27032,6,6,1,1
+frus1981-88v06,d183,1989-01-08,183. Memorandum of Conversation,44019,1,0,0,0
+frus1981-88v01,d335,1989-01-11,335. Address by President Reagan to the Nation,18381,1,1,0,0

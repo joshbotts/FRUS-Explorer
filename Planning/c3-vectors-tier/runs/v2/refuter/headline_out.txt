@@ -1,0 +1,11 @@
+## 553 canary
+553|321749|1103|8481
+## post-1981-01-21 mentions by volume
+frus1981-88v03|72 frus1981-88v01|64 frus1981-88v04|40 frus1981-88v13|36 frus1981-88v16|35 frus1981-88v06|20 frus1981-88v10|18 frus1981-88v38|17 frus1981-88v05|17 frus1981-88v41|15 frus1981-88v24|15 frus1981-88v44p1|5 frus1981-88v11|4 
+## total mentions, volumes
+358|13
+## headed docs after 1981-01-21
+0
+## manifest latest coverage
+volumes in manifest 553
+latest 1991-11-20T23:59:59-05:00
