@@ -29,6 +29,8 @@ import SwiftData
 /// Version history:
 ///   1.0 — #1051 B-4: initial implementation
 ///   1.1 — #1761: `rowCaption` quotes a query that is one phrase once, without its own marks
+///   1.2 — Session 2026-10-25 (FRUS Explorer Light, S17b): `truncationLine` forwards to FRUSCoreKit's
+///          `CorpusCaptureTruncation.line(documentCount:isMeaningCapture:locale:)`, its strings with it
 enum CorporaAxis {
 
     /// One member document, split from its `"volumeId/documentId"` key.
@@ -88,7 +90,9 @@ enum CorporaAxis {
         return parts.joined(separator: " · ")
     }
 
-    /// The truncation disclosure line, or `nil` when the capture was complete.
+    /// The truncation disclosure line, or `nil` when the capture was complete: FRUSCoreKit's
+    /// `CorpusCaptureTruncation.line(documentCount:isMeaningCapture:locale:)` since S17b (FRUS Explorer
+    /// Light), which the method appendix prints too.
     ///
     /// A Meaning search's capture is recorded as cut short with no total (`ResultSetScope.isCapturePartial`), the
     /// value every reader of the flag treats with care, and until #1688 it read "The capture stopped short of every
@@ -104,26 +108,7 @@ enum CorporaAxis {
     static func truncationLine(_ truncation: WorkingCorpus.CaptureTruncation,
                                documentCount: Int,
                                isMeaningCapture: Bool = false) -> String? {
-        switch truncation {
-        case .truncated where isMeaningCapture:
-            return documentCount == 1
-                ? String(localized: "browser.corpora.meaning.one",
-                         defaultValue: "The closest match of a Meaning search")
-                : String(format: String(localized: "browser.corpora.meaning %@",
-                                        defaultValue: "The %@ closest matches of a Meaning search"),
-                         documentCount.formatted())
-        case .truncated(let total?):
-            return String(localized: "browser.corpora.truncated",
-                          defaultValue: "Saved \(documentCount) of \(total) matches")
-        case .truncated(nil):
-            return String(localized: "browser.corpora.truncated.noTotal",
-                          defaultValue: "The capture stopped short of every match")
-        case .complete:
-            return nil
-        case .unrecorded:
-            return String(localized: "browser.corpora.unrecorded",
-                          defaultValue: "Capture completeness not recorded")
-        }
+        truncation.line(documentCount: documentCount, isMeaningCapture: isMeaningCapture)
     }
 
     /// Whether ``truncationLine(_:documentCount:isMeaningCapture:)`` is drawn in amber: for a capture that stopped

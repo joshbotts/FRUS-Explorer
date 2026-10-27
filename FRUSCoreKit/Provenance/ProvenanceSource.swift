@@ -24,7 +24,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — PV-0: initial implementation
-enum ProvenanceTier: Int, Comparable, CaseIterable, Sendable {
+///   1.1 — Session 2026-10-25 (FRUS Explorer Light, S17b and S18a): moved into FRUSCoreKit, public, unchanged
+public enum ProvenanceTier: Int, Comparable, CaseIterable, Sendable {
 
     /// Derived from the FRUS volumes and nothing else.
     ///
@@ -40,7 +41,7 @@ enum ProvenanceTier: Int, Comparable, CaseIterable, Sendable {
     /// between the volumes and the value.
     case computed = 3
 
-    static func < (a: ProvenanceTier, b: ProvenanceTier) -> Bool { a.rawValue < b.rawValue }
+    public static func < (a: ProvenanceTier, b: ProvenanceTier) -> Bool { a.rawValue < b.rawValue }
 }
 
 /// The eight things a value's provenance can be, and the words for each.
@@ -60,7 +61,9 @@ enum ProvenanceTier: Int, Comparable, CaseIterable, Sendable {
 ///          `eval-baseline.txt` as #1489 left it (5,469 of 267,663 notes unrecognized); the
 ///          sentence the reader sees is unchanged
 ///   1.2 — #1514: documentation only — the overall residual reads 5,465 since #1514; the bands quoted are unchanged
-enum ProvenanceSource: String, CaseIterable, Sendable {
+///   1.3 — Session 2026-10-25 (FRUS Explorer Light, S17b and S18a): moved into FRUSCoreKit, public, unchanged, for the
+///          sources blocks of the web edition's method appendix and collection colophon
+public enum ProvenanceSource: String, CaseIterable, Sendable {
 
     /// The volumes themselves: their text, their apparatus, and anything read from them alone.
     case frusText
@@ -90,7 +93,7 @@ enum ProvenanceSource: String, CaseIterable, Sendable {
     case yourReading
 
     /// How far from the volumes this source sits.
-    var tier: ProvenanceTier {
+    public var tier: ProvenanceTier {
         switch self {
         case .frusText:                                   return .frusOnly
         case .naraCatalog, .ohPeopleRegister,
@@ -102,7 +105,7 @@ enum ProvenanceSource: String, CaseIterable, Sendable {
     }
 
     /// What a chip says. Short, because it sits inline beside a value.
-    var label: String {
+    public var label: String {
         switch self {
         case .frusText:
             return String(localized: "provenance.source.frusText", defaultValue: "FRUS text")
@@ -132,7 +135,7 @@ enum ProvenanceSource: String, CaseIterable, Sendable {
     /// **These reach a footnote, which is the whole point of the wave**, so they say what the
     /// label cannot: that the app did the reading, that an unmatched record is absent rather than
     /// wrong, and that a computed figure is the app's output rather than the record's.
-    var methodSentence: String {
+    public var methodSentence: String {
         switch self {
         case .frusText:
             return String(localized: "provenance.method.frusText",
@@ -151,7 +154,7 @@ enum ProvenanceSource: String, CaseIterable, Sendable {
     }
 
     /// The partner named inside a joined method sentence.
-    var partnerName: String {
+    public var partnerName: String {
         switch self {
         case .naraCatalog:
             return String(localized: "provenance.partner.nara",
@@ -177,7 +180,7 @@ enum ProvenanceSource: String, CaseIterable, Sendable {
     /// `curated-lot-resolutions.json` says so about itself while nothing on screen does. They fold
     /// into ``naraCatalog`` for the label — an eight-word vocabulary should not grow a ninth entry
     /// for twenty rows — and surface here instead.
-    static let curatedDisclosure = String(
+    public static let curatedDisclosure = String(
         localized: "provenance.curated.disclosure",
         defaultValue: "Some archival identifiers in this material were matched by hand rather than found in the catalog, because NARA publishes no control number for them.")
 
@@ -202,7 +205,7 @@ enum ProvenanceSource: String, CaseIterable, Sendable {
     /// **100.0% before 1906** (the parser recognises 1 note in 2,034) and **7.2% for 1952–1954**,
     /// the worst post-1906 band. Quoting 1906–1939's 0.3% as "the post-1906 rate" would understate
     /// 1952–1954 by twenty-four times, which is the opposite of what a caveat is for.
-    static let parseResidualDisclosure = String(
+    public static let parseResidualDisclosure = String(
         localized: "provenance.parseResidual.disclosure",
         defaultValue: "Archival units are read from the volumes' own source notes by a parser, which leaves 2.0% of notes unrecognized across the series — but the rate is very uneven: about 7% for 1952–1954, and effectively every note before 1906. A unit missing from this list may be one the parser could not read rather than one the editors did not cite.")
 }

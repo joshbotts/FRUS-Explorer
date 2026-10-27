@@ -42,6 +42,9 @@ import SwiftData
 ///         identifiers — deploy per R-7.
 ///   1.2 — #1791: `oneCopyEach(_:)`, `copies(of:in:)`, `deleteEveryCopy(of:in:)` and
 ///         `rename(_:to:in:)`, for copies stored under one id
+///   1.3 — Session 2026-10-25 (FRUS Explorer Light, S17b): the watermark, `SavedSearchFreshness`, is
+///         FRUSCoreKit's, and `freshness` and `recordRun` read and write it through the kit. No stored
+///         property changed.
 @Model final class SavedSearch {
 
     // MARK: - Identity
@@ -187,8 +190,7 @@ import SwiftData
 
     /// The decoded watermark, or `nil` when none was ever recorded or the blob does not parse.
     var freshness: SavedSearchFreshness? {
-        guard let freshnessData else { return nil }
-        return try? JSONDecoder().decode(SavedSearchFreshness.self, from: freshnessData)
+        SavedSearchFreshness.decoded(from: freshnessData)
     }
 
     /// Records a run of this search: stamps the watermark with now, the run's match count,
@@ -198,11 +200,8 @@ import SwiftData
     /// baseline would keep claiming "+N" about results already seen. The freshness evaluator
     /// backfills a nil baseline with the current count (showing no badge for that cycle).
     func recordRun(matchCount: Int?, indexedVolumeCount: Int?) {
-        let mark = SavedSearchFreshness(
-            lastRunAt: .now,
-            matchCountAtLastRun: matchCount,
-            indexedVolumeCountAtLastRun: indexedVolumeCount)
-        freshnessData = try? JSONEncoder().encode(mark)
+        freshnessData = SavedSearchFreshness.run(at: .now, matchCount: matchCount,
+                                                 indexedVolumeCount: indexedVolumeCount).encoded
     }
 
     // MARK: - Round-trip
@@ -322,45 +321,5 @@ extension SavedSearch {
 
 // MARK: - SavedSearchFreshness
 
-/// The `SavedSearch` run watermark (W-5 / #266): when the search was last run, what it
-/// matched then, and how many volumes were indexed on the device that ran it.
-///
-/// `indexedVolumeCountAtLastRun` is context for the surfaces, not part of the verdict math:
-/// a "+12 since last run" caption after six new volumes indexed is growth of the library, not
-/// of the archive — a surface may choose to say so.
-///
-/// Every field is optional and the decoder is hand-written per-field-tolerant (`try?` around
-/// each), so a blob written by a build with more fields — or a corrupted one — degrades to
-/// whatever still parses rather than discarding the whole watermark.
-///
-/// Version history:
-///   1.0 — W-5 (#266): initial implementation
-struct SavedSearchFreshness: Codable, Equatable, Sendable {
-    /// When the search was last recalled and run. `nil` never happens in a freshly-recorded
-    /// mark, but survives decoding a partial blob.
-    var lastRunAt: Date?
-    /// The exact match count that run reported (`searchCount` — uncapped), the baseline the
-    /// "+N since last run" delta is computed against. `nil` when the last run came through a
-    /// hand-off site that never learns the count; the freshness evaluator backfills it.
-    var matchCountAtLastRun: Int?
-    /// How many volumes were indexed on the device at that run.
-    var indexedVolumeCountAtLastRun: Int?
-
-    init(lastRunAt: Date?, matchCountAtLastRun: Int?, indexedVolumeCountAtLastRun: Int?) {
-        self.lastRunAt = lastRunAt
-        self.matchCountAtLastRun = matchCountAtLastRun
-        self.indexedVolumeCountAtLastRun = indexedVolumeCountAtLastRun
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case lastRunAt, matchCountAtLastRun, indexedVolumeCountAtLastRun
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        lastRunAt = try? container.decodeIfPresent(Date.self, forKey: .lastRunAt)
-        matchCountAtLastRun = try? container.decodeIfPresent(Int.self, forKey: .matchCountAtLastRun)
-        indexedVolumeCountAtLastRun = try? container.decodeIfPresent(
-            Int.self, forKey: .indexedVolumeCountAtLastRun)
-    }
-}
+// The watermark, `SavedSearchFreshness`, and the rules of "+N since last run" moved to FRUSCoreKit
+// for FRUS Explorer Light: `FRUSCoreKit/Search/SavedSearchFreshness.swift`.

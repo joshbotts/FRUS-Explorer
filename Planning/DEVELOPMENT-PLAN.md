@@ -7733,6 +7733,84 @@ On the owner's request of 2026-10-27, both C-3 results files and their records (
 
 **Proposed.** A conditional SEMANTIC VECTORS section inside the §12 block (31 lines, no generation-specific figure, V6 satisfied by a heading) replacing the §A.8 addendum; a §14.17 placing the neighbour pass after the heading scope and before it closes, with one anchor per era and a three-flag join; required (neighbours, near-duplicates), conditional (the map) and optional (centroids) operations; "vector-reached" defined in a strict and a practical reading; the memo's VECTORS section as a guide obligation; the reader-facing rule extended to the collection's prose and notes with the vector vocabulary named; block fixes for the prefix-on-stem trap, the quotable figure, the URL-carries-the-pair contradiction, the numerals check for O2 and the relaxed query beside a zero; Appendix A's shares as N of M and its stale 300m figures (0.851, 193 / 17, §9's 47% / 22%) re-taken; and a 110-line operating card as the prompt payload, to be measured against the whole appendix. Open to the owner: where the vectors section lives, whether centroids stay, the third question, whether READER-FACING OUTPUT is adopted, and the budget.
 
+## Session 2026-10-25/27 — The research layer's rules are FRUSCoreKit's, over values a host's rows map to, so FRUS Explorer Light's saved searches, corpora, scopes, trail, method appendix and Research page answer as the app's do
+
+FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) keeps each researcher's research layer in its own store and shows it as the app does. Its row S17b moves the rules the app computes over its research rows into FRUSCoreKit, public, each over values a host's rows map to, and the app calls them: its models are mapped to the values in app files, and every name it used is kept. Nothing changes on Apple platforms. The branch was begun on `v2` @ `9fa4375d` and rebased onto `41950692`, past #1792 and #1793. #1791's one copy of each note is read in the two fetches this leaves in the app, `ResearchItemCounts+App.swift` and `NotesPaneSnapshot+App.swift`, as #1792 read it there, and `DuplicateCopiesTests` passes.
+
+**Moved into the kit**
+- **A saved search's freshness** (`Search/SavedSearchFreshness.swift`): `SavedSearchFreshness`, from `Models/SavedSearch.swift`, unchanged, with the rules of "+N since last run" that `SavedSearchFreshnessEvaluator` applied: `evaluation(currentCount:)` (no badge, new results, or a backfill to store), `verdict(current:baseline:)`, `hasRun`, the mark a run writes (`run(at:matchCount:indexedVolumeCount:)`) and its blob (`encoded`, `decoded(from:)`). The evaluator takes the count and writes the store, as before.
+- **A working corpus and a volume scope as a search's filter.**
+  - `Models/WorkingCorpusResolver.swift` (`git mv`): `WorkingCorpusResolution`; `WorkingCorpusResolver.resolve(documentKeys:)`, which the app's `resolve(_:)` passes a corpus's keys; `DocumentScopeGate`; `SearchParameters.runningInside(workingCorpus:)`, from `Search/SearchModels.swift`.
+  - In the same file, `CorpusCaptureTruncation`, which was `WorkingCorpus.CaptureTruncation` (now its typealias). It carries the rule `truncationAtCapture` reads the two fields by, and `line(documentCount:isMeaningCapture:locale:)`, which was `CorporaAxis.truncationLine` (now its forwarder).
+  - Also there, `WorkingCorpusProvenance`: the Meaning search's provenance sentence and `isMeaningCapture(_:)`, which were `ResultSetScope`'s (now forwarders).
+  - `Models/CustomScopeResolver.swift`: `IndexedResolution` and `CustomScopeResolver`'s two grains, unchanged. `resolve(scopeId:context:indexed:)`, which reads the store, stays in an extension in `CustomVolumeScope.swift`.
+- **The trail's sessions** (`Models/ResearchTrailSessions.swift`, `git mv`): the activities, the 30-minute grouping, the newest window's merge (`newestFirst(_:limit:)`) and the session log's page (`SessionLogSnapshot.page(of:datedActivityCount:limit:)`). The loaders and `SessionLogSnapshot.fetch(from:limit:)` are in the new `Models/ResearchTrailSessions+App.swift`, unchanged but for the merge they call.
+- **The method appendix** (`Export/QueryMethodAppendix.swift`, `git mv`).
+  - It is made from `RecordedSearch` values (`Search/RecordedSearch.swift`): a trail search row's fields, and `RecordedCount`, which was `SearchHistoryEntry.RecordedCount` (now its typealias), with the rule `recordedCount` reads a row by.
+  - It is rendered for a `QueryMethodAppendix.Host` (`markdown(for:)`, `csv(for:)`, `plainTextLines(for:)`): the app's version for the Generated line, the data files that name a subject, and the locale, calendar and time zone its dates and numbers are written in.
+  - The app's half is the new `Export/QueryMethodAppendix+App.swift`: `Host.app`, with its bundle's version, `IndexingResources.bundled` and the reader's locale, read at each rendering as before; `make(searches:…)` over `SearchHistoryEntry.recordedSearch`; and the properties every call site used.
+  - With it, `Search/SearchScopeSignature.swift` (`git mv`), its CryptoKit import guarded:
+    - `describe(_:resources:locale:)`, the app's `describe(_:)` passing its bundled resources;
+    - `layered(_:parameters:basePart:)`, the app's `layered(_:parameters:base:)` in `SearchLayering.swift`;
+    - `QueryQuoting.quotable(_:)`, which `PinnedResultBase.quotable` forwards to.
+  - With it, `Provenance/ProvenanceSource.swift` and `ProvenanceStatement.swift` (`git mv`), unchanged and byte for byte as S18a's pull request carries them.
+  - With it, a corpus's coverage, `Models/DocumentEngagement.swift`: `DocumentEngagement`, `EngagementCoverage` (each sentence also taking a locale), what counts as opened, annotated and collected over values, and the partition. The app's gatherers over its models stay in `DocumentEngagementService.swift`.
+- **The Research page.**
+  - `Research/ResearchDocumentAggregation.swift`: the aggregation over values (`distinctDocumentKeys(among:)`, `annotatedKeys(among:)`, `summaryCounts(among:)`), with the row's destination and change lines unchanged. Its overloads over the models stay in `ResearchView.swift`.
+  - `Models/ResearchItemCounts.swift` (`git mv`), with `tally`. Its fetch is in the new `ResearchItemCounts+App.swift`.
+  - `Models/NotesPaneSnapshot.swift` (`git mv`), with `build(notes:projects:tags:)` and All Notes' search-field filter, `filtered(project:tagId:query:)`, which was `AllNotesScreen`'s. Its fetches are in the new `NotesPaneSnapshot+App.swift`.
+  - `Models/CollectionEntryKind.swift`, out of `Models/Collection.swift`, unchanged but public.
+
+**Changed in the moved code, and why it is the same on Apple platforms**
+- **Each rule's body is the app's,** over a value with the fields it read; the app maps each row where it called the rule.
+  - It filters notes and collections by the kit's project rule before mapping them, as the rules did. So no note or collection outside a project has more than its projects read, and no relationship is faulted that was not before.
+  - A visit's project, a highlight's note and a heading's two empty ids are now read where the old loop's conditions stopped short of them. The Research page's union maps its six arrays to values first. Both are a constant factor.
+- **The appendix, the scope's prose, the coverage sentences and the truncation line take a `locale`,** and the appendix a calendar and time zone too, where they used the current ones. Every app path passes `.autoupdatingCurrent`, which is what `formatted()`, `formatted(date:time:)` and `.list(type:)` default to, and `String(localized:)` is given that locale for its interpolations. The output is the same string.
+- **Every public type that was implicitly `Sendable` is explicitly so.** Every old name is kept as a typealias, a forwarder or an extension.
+- **On Linux only,** the kit's `String(localized:)` stand-in (`Linux/LinuxFoundationShims.swift`) holds an interpolated integer until the string is made, and writes it with `String(format: "%lld", locale:)`, as Foundation does on Apple platforms. It printed the integer bare, so a count of a thousand or more read differently there.
+
+**Tests**
+- **`QueryMethodAppendixFixtureTests`** (new kit suite): a fixture trail's appendix, rendered for `en_US`, the Gregorian calendar and UTC, held to the byte in three forms:
+  - as Markdown: 3,381 bytes, SHA-256 `ecc9ebf0…`;
+  - as CSV with `count_basis`: 3,945 bytes, `28273936…`;
+  - as the plain-text lines a collection export prints.
+
+  The same literals pass in Xcode on iOS, in `swift test` on macOS and on Linux, so the file is the same on each.
+- **`ResearchLayerRulesTests`** (9 new kit suites): each rule over values. `FacetSelectionTests`' two signature tests run in the package too.
+- **Every app suite of these rules is unchanged,** and passes through the forwarders. `ArchivalCopyRulesTests` reads the kit's three files where the copy moved. The count scan's baseline names the kit's paths for its ten moved entries, its ceiling unchanged.
+- **Counts:** `FRUSCoreKitTests` goes from 1,197 tests in 157 suites to 1,243 in 167, and the iOS unit target from 7,673 tests in 912 suites to 7,717 tests in 922 suites.
+
+**Apple platforms, and how that was checked.** Each heavy job ran through `Scripts/heavy.sh`, one at a time, from a clone at a real path, with Xcode 27.1 (27A9275), clean and unsigned. The branch ran at its code commit's tree, and `v2` @ `41950692` was built and run the same way.
+- **`FRUSExplorerMac`, Debug:** "** BUILD SUCCEEDED **" on both, with 5 warning lines each, the two known residues.
+- **Symbols,** with thunk numbers and file-private discriminators dropped: `v2` has 250,315 names and the branch 251,186, so 172 are removed and 1,043 added, the same diff as before the rebase.
+  - Of the removed, 106 reappear under the moved types' new names (`CorpusCaptureTruncation`, `RecordedSearch.RecordedCount`). 44 are closures of bodies that moved or now forward, 7 are the appendix's and the signature's private helpers, which now take the host or a locale, and 7 are the moved nested types' mangled names. 2 are `SavedSearchFreshness`'s `CodingKeys` witnesses, and 6 are initialisers and default-argument generators that the spelled-out public initialisers replace.
+  - The added are the kit's new API and the app's mappings, and 27 more: the Foundation formatters the passed-in locale, calendar and time zone call (19), the search view model's stored truncation under its new type (4), `SearchHistoryEntry.recordedSearch` (3) and an outlined copy of `IndexingResources` (1).
+- **iOS 27.0, iPhone 17 (`3C216D17`):**
+  - `build-for-testing`: "** TEST BUILD SUCCEEDED **" with 7 warning lines on both.
+  - The full unit target (`test-without-building -collect-test-diagnostics never -only-testing FRUSExplorerTests`, with `TEST_RUNNER_FRUS_TEI_MIRROR` set and the app removed first): "✘ Test run with 7717 tests in 922 suites failed after 582.945 seconds with 14 issues (including 6 known issues)."
+  - `v2`, the same way: "✘ Test run with 7673 tests in 912 suites failed after 705.798 seconds with 14 issues (including 6 known issues)."
+  - On both, the 8 issues are the Keychain tests an unsigned build fails (`KeychainStoreTests`, `SettingsTests`, `SourceExplorerTests`), the 6 known issues are #1606's in `SyncDiagnosticsEntryTests`, and 17 tests and 2 suites were skipped. Every new suite passed, as did `DuplicateCopiesTests` and each app suite of the rules moved.
+- **`swift build --target FRUSCoreKit`:** exit 0 on both.
+- **`swift test`:** exit 0, 38 runs, 3,136 tests in 379 suites, against `v2`'s 3,090 tests in 369 suites. `FRUSCoreKitTests` ran 1,243 tests in 167 suites, against 1,197 in 157.
+
+**Linux.** The runs were in a scratch worktree of FRUS Explorer Light's `main` at `4028b22` (its pin `503a730b`), with this branch and then `v2` @ `41950692` copied over the submodule, in `swift:6.4-noble`.
+- **`FRUSCoreKitTests`:** 1,243 tests in 167 suites passed, against `v2`'s 1,197 in 157. Neither build had a warning, and each run's one skip was the named one in `FTS5StoreTests` (`backupExclusion()`).
+- **The web edition's own parity suites** fail on `v2`, which is past its pin, from golden-file staleness and #1792's exporter.
+  - On this branch, seven more fail, each one that reads a file this moves, and one more test's issues double. They cover the import's saved-search columns and entry kinds, All Notes' rules and words, the user store's JSON fields and the export's freshness.
+  - FRUS Explorer Light's pin move past this, its S17c, points them at the kit.
+- **A scratch file outside the kit,** never committed, used every name this makes public without `@testable`, and its target built.
+
+**Docs:**
+- `CLAUDE.md`: the directory map, the kit's subfolders, the FRUSCoreKit entry and its forwarders.
+- Version-history lines in every file touched.
+- `Docs/EditableContent`: 103 blocks re-pointed, each to start on its key and keep its length, with the amendment log's line. No string's text changes.
+
+**Owed by the owner:** the Mac check for this pull request, from a clone at a real path, and then the merge. FRUS Explorer Light's pin move after it, its S17c, takes it with S17a's.
+
+**Not done:**
+- The Research page's per-group lists stay private view code in `ResearchView`, with the hang fix `ResearchDocumentAggregationTests` pins, since moving them would change that path. They are which documents a tag, a collection or a highlight colour lists, the sidebar's counts and the list's order.
+- Not run: the UI suites, iOS 26.x, a device and a signed run. Neither app was run.
+
 ## Session 2026-10-25/27 — A search can read its notes, summaries and tags from a store its host attaches, as FRUS Explorer Light keeps each researcher's; with none, each statement is the text it was
 
 FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) serves one index to many researchers and keeps each one's notes, summaries and tags in a store of its own, never in the index: `user_search`, an FTS5 table of a user's note and summary text for each document, with `user_content`'s two indexed columns and its tokenizer, and `tag_assignments`. Its plan's S17a has the kit's search read that half from such a store, where the app's reads the index's own `user_content` and `document_cache` columns. The app passes nothing, and each statement it runs is the text it was, which a new suite pins. Begun on `v2` at `9fa4375d` and rebased onto `41950692` (clean) after #1792, #1793 and #1801 merged; every run below is at the rebased head.

@@ -45,6 +45,9 @@ import SwiftData
 ///   1.0 — W-5 (#266): initial implementation
 ///   1.1 — #1646, #1648: `recordRun(of:service:indexedVolumeCount:context:)`, the stamp a recall
 ///          writes, from the saved search's own count rather than the total on screen
+///   1.2 — Session 2026-10-25 (FRUS Explorer Light, S17b): the rules are FRUSCoreKit's
+///          (`SavedSearchFreshness.evaluation(currentCount:)` and `verdict(current:baseline:)`); this
+///          type takes the count and writes the store, as before
 @MainActor
 enum SavedSearchFreshnessEvaluator {
 
@@ -59,27 +62,28 @@ enum SavedSearchFreshnessEvaluator {
                                context: ModelContext) async -> Int? {
         guard let service,
               let freshness = saved.freshness,
-              freshness.lastRunAt != nil else { return nil }
-        guard let current = try? await service.searchCount(parameters: saved.searchParameters)
-        else { return nil }
-        guard let baseline = freshness.matchCountAtLastRun else {
+              freshness.hasRun else { return nil }
+        let current = try? await service.searchCount(parameters: saved.searchParameters)
+        switch freshness.evaluation(currentCount: current) {
+        case .noBadge:
+            return nil
+        case .newResults(let count):
+            return count
+        case .backfill(let mark):
             // A hand-off run stamped the time but never learned the count: adopt the current
             // count as the baseline (lastRunAt is preserved — this is a backfill, not a run).
-            var mark = freshness
-            mark.matchCountAtLastRun = current
-            saved.freshnessData = try? JSONEncoder().encode(mark)
+            saved.freshnessData = mark.encoded
             try? context.save()
             return nil
         }
-        return verdict(current: current, baseline: baseline)
     }
 
     /// The verdict arithmetic, factored out so it is testable without a live index:
     /// the positive growth since the baseline, or `nil` for "no badge" (nothing new, or
     /// results went AWAY — a shrunken index is not news the NEW capsule should claim).
+    /// FRUSCoreKit's, since S17b: ``SavedSearchFreshness/verdict(current:baseline:)``.
     static func verdict(current: Int, baseline: Int) -> Int? {
-        let delta = current - baseline
-        return delta > 0 ? delta : nil
+        SavedSearchFreshness.verdict(current: current, baseline: baseline)
     }
 
     /// Stamps a run of `saved` recalled from the Saved Searches list, with the count its badge is

@@ -53,6 +53,10 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — M-1: initial implementation
+///   1.1 — Session 2026-10-25 (FRUS Explorer Light, S17b): `CaptureTruncation` and the rule
+///          `truncationAtCapture` reads the two fields by are FRUSCoreKit's (`CorpusCaptureTruncation`),
+///          as is the resolver, which `WorkingCorpusResolver.resolve(_:)` reaches with the corpus's keys.
+///          No stored property changed
 @Model final class WorkingCorpus {
 
     // MARK: - Identity
@@ -182,27 +186,15 @@ import SwiftData
 
     // MARK: - Derived
 
-    /// What is known about whether the capture was the whole answer to its query.
-    ///
-    /// Three states, not two. `unrecorded` is not a synonym for `complete`: it is the honest
-    /// description of every corpus captured before the fields existed, and a consumer that
-    /// collapses it into `complete` re-tells the lie the fields were added to stop.
-    enum CaptureTruncation: Equatable, Sendable {
-        /// The fetch stopped short. `total` is the whole-query count where the device had one.
-        case truncated(total: Int?)
-        /// The capture was every matching document.
-        case complete
-        /// Captured before the app recorded this. Nothing can be concluded either way.
-        case unrecorded
-    }
+    /// What is known about whether the capture was the whole answer to its query: three states,
+    /// not two. FRUSCoreKit's `CorpusCaptureTruncation` since S17b (FRUS Explorer Light).
+    typealias CaptureTruncation = CorpusCaptureTruncation
 
-    /// ``CaptureTruncation`` for this corpus. The only supported way to read the two fields.
+    /// ``CaptureTruncation`` for this corpus. The only supported way to read the two fields, by the
+    /// kit's rule (`CorpusCaptureTruncation.init(wasTruncated:totalMatchCount:)`).
     var truncationAtCapture: CaptureTruncation {
-        switch wasTruncatedAtCapture {
-        case .some(true): .truncated(total: totalMatchCountAtCapture)
-        case .some(false): .complete
-        case nil: .unrecorded
-        }
+        CorpusCaptureTruncation(wasTruncated: wasTruncatedAtCapture,
+                                totalMatchCount: totalMatchCountAtCapture)
     }
 
     /// How many documents the corpus names.
@@ -225,4 +217,18 @@ extension WorkingCorpus {
     /// search" of such a corpus (`CorporaAxis.truncationLine`), where a keyword capture cut short is said to have
     /// stopped short of every match: a ranking has no "every match" to stop short of.
     var isMeaningCapture: Bool { ResultSetScope.isMeaningCaptureProvenance(sourceDescription) }
+}
+
+// MARK: - WorkingCorpusResolver + WorkingCorpus
+
+extension WorkingCorpusResolver {
+
+    /// Resolves `corpus` against the index, by its keys: FRUSCoreKit's
+    /// ``WorkingCorpusResolver/resolve(documentKeys:)`` since S17b (FRUS Explorer Light).
+    ///
+    /// - Parameter corpus: The working corpus.
+    /// - Returns: What the corpus amounts to on this device.
+    func resolve(_ corpus: WorkingCorpus) -> WorkingCorpusResolution {
+        resolve(documentKeys: corpus.documentKeys)
+    }
 }

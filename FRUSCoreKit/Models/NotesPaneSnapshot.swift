@@ -7,7 +7,6 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
-import SwiftData
 
 // MARK: - NotesPaneSnapshot
 
@@ -34,30 +33,50 @@ import SwiftData
 ///   1.0 — S-5b: initial implementation
 ///   1.1 — #1275: a second consumer — the Research tab's notes destination. The Settings pane
 ///          this type is named for is retired; the snapshot outlived it.
-///   1.2 — #1791: one row per note however many copies of it are stored, and ``note(id:in:)``
-///          returns the copy last modified
-struct NotesPaneSnapshot: Equatable, Sendable {
+///   1.2 — #1791: one row per note however many copies of it are stored, and `note(id:in:)`
+///          returns the copy last modified (both in the fetch, which stays in the app)
+///   1.3 — Session 2026-10-25 (FRUS Explorer Light, S17b): moved into FRUSCoreKit, public, with All Notes'
+///          rows, filters and counts unchanged, the build from a note's values (``build(notes:projects:tags:)``)
+///          and the search field's filter, which was `AllNotesScreen`'s (``filtered(project:tagId:query:)``),
+///          for the web edition's All Notes; `fetch(from:)` and `note(id:in:)` stay in the app's
+///          `NotesPaneSnapshot+App.swift`
+public struct NotesPaneSnapshot: Equatable, Sendable {
 
     /// One note, with everything the row needs already resolved.
-    struct Row: Identifiable, Equatable, Sendable {
+    public struct Row: Identifiable, Equatable, Sendable {
         /// The note's own id — also the identity the editor sheet is keyed on.
-        let id: UUID
+        public let id: UUID
         /// FRUS volume identifier the note is attached to.
-        let volumeId: String
+        public let volumeId: String
         /// Document identifier within the volume.
-        let documentId: String
+        public let documentId: String
         /// The note's body text, as stored. Empty for a note that was never written into.
-        let bodyText: String
+        public let bodyText: String
         /// Names of the projects this note is filed under, in the order the ids appear.
-        let projectNames: [String]
+        public let projectNames: [String]
         /// Names of the user tags on this note.
-        let tagNames: [String]
+        public let tagNames: [String]
         /// When the note was last edited. `nil` on legacy rows written before the field existed.
-        let lastModified: Date?
+        public let lastModified: Date?
         /// Project ids, kept for filtering.
-        let projectIds: [UUID]
+        public let projectIds: [UUID]
         /// User-tag ids, kept for filtering.
-        let userTagIds: [UUID]
+        public let userTagIds: [UUID]
+
+        /// Creates a row from a note's values and its resolved names.
+        public init(id: UUID, volumeId: String, documentId: String, bodyText: String,
+                    projectNames: [String], tagNames: [String], lastModified: Date?,
+                    projectIds: [UUID], userTagIds: [UUID]) {
+            self.id = id
+            self.volumeId = volumeId
+            self.documentId = documentId
+            self.bodyText = bodyText
+            self.projectNames = projectNames
+            self.tagNames = tagNames
+            self.lastModified = lastModified
+            self.projectIds = projectIds
+            self.userTagIds = userTagIds
+        }
 
         /// How many characters of the first line the row shows before eliding.
         ///
@@ -66,10 +85,10 @@ struct NotesPaneSnapshot: Equatable, Sendable {
         /// a bound, "first line" is the whole note, and a settings row grows as tall as it. The
         /// row it replaced was `Text(note.bodyText).lineLimit(2)`; this keeps that promise in the
         /// value type, where it can be tested.
-        static let titleLimit = 90
+        public static let titleLimit = 90
 
         /// The row's primary line: the note's first non-empty line, bounded, or a placeholder.
-        var title: String {
+        public var title: String {
             // Split on the newline *character set*, not "\n": Swift stores a CRLF as one grapheme
             // that does not equal "\n", so a note pasted from Windows or Word would otherwise
             // never split and would smear its whole body across the row.
@@ -90,7 +109,7 @@ struct NotesPaneSnapshot: Equatable, Sendable {
         /// "frus1969-76v01 / d42 · Berlin Crisis · Cables" — one line rather than the capsule
         /// chips the old row drew, because `SettingsNavRow` is the settled list grammar and a
         /// row of coloured capsules inside a grouped Form reads as a different component.
-        var detail: String {
+        public var detail: String {
             var parts = ["\(volumeId) / \(documentId)"]
             parts.append(contentsOf: projectNames)
             parts.append(contentsOf: tagNames)
@@ -99,19 +118,26 @@ struct NotesPaneSnapshot: Equatable, Sendable {
     }
 
     /// Every note, newest first.
-    let rows: [Row]
+    public let rows: [Row]
     /// Project ids paired with their names, sorted by name — the filter picker's options.
-    let projects: [(id: UUID, name: String)]
+    public let projects: [(id: UUID, name: String)]
     /// Tag ids paired with their names, sorted by name.
-    let tags: [(id: UUID, name: String)]
+    public let tags: [(id: UUID, name: String)]
+
+    /// Creates a snapshot from its rows and the filter picker's options.
+    public init(rows: [Row], projects: [(id: UUID, name: String)], tags: [(id: UUID, name: String)]) {
+        self.rows = rows
+        self.projects = projects
+        self.tags = tags
+    }
 
     /// The state before the first fetch.
-    static let empty = NotesPaneSnapshot(rows: [], projects: [], tags: [])
+    public static let empty = NotesPaneSnapshot(rows: [], projects: [], tags: [])
 
     /// How many notes exist in total, before any filter.
-    var total: Int { rows.count }
+    public var total: Int { rows.count }
 
-    static func == (lhs: NotesPaneSnapshot, rhs: NotesPaneSnapshot) -> Bool {
+    public static func == (lhs: NotesPaneSnapshot, rhs: NotesPaneSnapshot) -> Bool {
         lhs.rows == rhs.rows
             && lhs.projects.map(\.id) == rhs.projects.map(\.id)
             && lhs.projects.map(\.name) == rhs.projects.map(\.name)
@@ -121,20 +147,50 @@ struct NotesPaneSnapshot: Equatable, Sendable {
 
     // MARK: - Building
 
-    /// Builds the snapshot in three fetches, resolving every row's names as it goes.
-    ///
-    /// - Parameter context: The SwiftData context to read.
-    @MainActor
-    static func fetch(from context: ModelContext) -> NotesPaneSnapshot {
-        // One row per note, not per stored copy of one, so no two rows share an id (#1791).
-        let notes = ResearchNote.oneCopyEach((try? context.fetch(
-            FetchDescriptor<ResearchNote>(
-                sortBy: [SortDescriptor(\.lastModified, order: .reverse)]))) ?? [])
-        let projects = (try? context.fetch(
-            FetchDescriptor<Project>(sortBy: [SortDescriptor(\.name)]))) ?? []
-        let tags = (try? context.fetch(
-            FetchDescriptor<UserTag>(sortBy: [SortDescriptor(\.name)]))) ?? []
+    /// A note's values, as a row is built from them (`ResearchNote`'s).
+    public struct Note: Sendable, Equatable {
+        /// The note's id.
+        public var id: UUID
+        /// FRUS volume identifier the note is attached to.
+        public var volumeId: String
+        /// Document identifier within the volume.
+        public var documentId: String
+        /// The note's body text, as stored.
+        public var bodyText: String
+        /// When the note was last edited, `nil` on legacy rows.
+        public var lastModified: Date?
+        /// The projects the note is filed under, in the note's order.
+        public var projectIds: [UUID]
+        /// The user tags on the note, in the note's order.
+        public var userTagIds: [UUID]
 
+        /// Creates a note's values.
+        public init(id: UUID, volumeId: String, documentId: String, bodyText: String,
+                    lastModified: Date?, projectIds: [UUID], userTagIds: [UUID]) {
+            self.id = id
+            self.volumeId = volumeId
+            self.documentId = documentId
+            self.bodyText = bodyText
+            self.lastModified = lastModified
+            self.projectIds = projectIds
+            self.userTagIds = userTagIds
+        }
+    }
+
+    /// Builds the snapshot, resolving every row's names as it goes.
+    ///
+    /// The order is the host's, as its fetch gives it: the app's `fetch(from:)` passes the notes newest
+    /// first (`lastModified`, descending) and the projects and tags each sorted by name. A row names
+    /// its projects and tags in the order its note holds their ids, and leaves out an id with no
+    /// project or tag of that id; where two share an id, the first one's name is used.
+    ///
+    /// - Parameters:
+    ///   - notes: Every note, in the order the rows show them.
+    ///   - projects: Every project, as the filter picker lists them.
+    ///   - tags: Every tag, as the filter picker lists them.
+    /// - Returns: The snapshot.
+    public static func build(notes: [Note], projects: [(id: UUID, name: String)],
+                             tags: [(id: UUID, name: String)]) -> NotesPaneSnapshot {
         // One dictionary each, so resolving a row's names is a lookup rather than a scan over
         // every project for every id on every note.
         let projectNamesById = Dictionary(projects.map { ($0.id, $0.name) },
@@ -154,26 +210,7 @@ struct NotesPaneSnapshot: Equatable, Sendable {
                 userTagIds: note.userTagIds)
         }
 
-        return NotesPaneSnapshot(
-            rows: rows,
-            projects: projects.map { (id: $0.id, name: $0.name) },
-            tags: tags.map { (id: $0.id, name: $0.name) })
-    }
-
-    /// Re-reads one note by id, for the editor sheet.
-    ///
-    /// Rows are plain values, so opening the editor needs the live model back. Scalar `==` on a
-    /// UUID is safe in a `#Predicate` — the trap documented above is `contains` on a
-    /// transformable array column, not equality on a stored scalar. A note stored as several
-    /// copies under one id returns the copy last modified (``ResearchNote/copies(of:in:)``, #1791).
-    ///
-    /// - Parameters:
-    ///   - id: The note's id.
-    ///   - context: The SwiftData context to read.
-    /// - Returns: The note, or `nil` if it has since been deleted.
-    @MainActor
-    static func note(id: UUID, in context: ModelContext) -> ResearchNote? {
-        ResearchNote.copies(of: id, in: context).first
+        return NotesPaneSnapshot(rows: rows, projects: projects, tags: tags)
     }
 
     // MARK: - Filtering
@@ -183,7 +220,7 @@ struct NotesPaneSnapshot: Equatable, Sendable {
     /// - Parameters:
     ///   - project: What to match on the project axis.
     ///   - tagId: A tag id every returned row must carry, or `nil` for any.
-    func filtered(project: ProjectFilter = .any, tagId: UUID? = nil) -> [Row] {
+    public func filtered(project: ProjectFilter = .any, tagId: UUID? = nil) -> [Row] {
         rows.filter { row in
             let matchesProject: Bool
             switch project {
@@ -196,6 +233,27 @@ struct NotesPaneSnapshot: Equatable, Sendable {
         }
     }
 
+    /// The rows matching both filters and the search field's text (All Notes, #1275).
+    ///
+    /// The text is trimmed of spaces and tabs, and a row matches when its text, its volume's id or its
+    /// document's holds it, whatever the case, as `localizedCaseInsensitiveContains` finds it. Empty
+    /// text filters nothing. Moved here from `AllNotesScreen.filtered` in S17b (FRUS Explorer Light).
+    ///
+    /// - Parameters:
+    ///   - project: What to match on the project axis.
+    ///   - tagId: A tag id every returned row must carry, or `nil` for any.
+    ///   - query: The search field's text, as typed.
+    public func filtered(project: ProjectFilter = .any, tagId: UUID? = nil, query: String) -> [Row] {
+        let matches = filtered(project: project, tagId: tagId)
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return matches }
+        return matches.filter {
+            $0.bodyText.localizedCaseInsensitiveContains(trimmed)
+                || $0.volumeId.localizedCaseInsensitiveContains(trimmed)
+                || $0.documentId.localizedCaseInsensitiveContains(trimmed)
+        }
+    }
+
     /// What the project filter is asking for.
     ///
     /// `unfiled` is its own case rather than a sentinel UUID. The old pane tagged its "Untagged"
@@ -203,7 +261,7 @@ struct NotesPaneSnapshot: Equatable, Sendable {
     /// it — which no note ever does, so selecting it always produced zero results and the
     /// "no notes match" empty state. (`GlobalContextView`, since deleted, had it in a worse form:
     /// it minted a fresh `UUID()` per render, so the selection could not even stick.)
-    enum ProjectFilter: Hashable, Sendable {
+    public enum ProjectFilter: Hashable, Sendable {
         /// No project constraint.
         case any
         /// Only notes filed under no project at all.
@@ -221,7 +279,7 @@ extension NotesPaneSnapshot {
     /// nothing and the two forms are spelled out. Reuses ``ResearchItemCounts/notesPhrase(_:)``
     /// rather than minting a third copy of the sentence; it groups the number through `CountCopy`
     /// since #1374, where both forms had carried it through a `%lld`.
-    static func noteCount(_ count: Int) -> String {
+    public static func noteCount(_ count: Int) -> String {
         ResearchItemCounts.notesPhrase(count)
     }
 
@@ -230,7 +288,7 @@ extension NotesPaneSnapshot {
     /// - Parameters:
     ///   - shown: How many rows the pane is actually drawing.
     ///   - total: How many match the current filters.
-    static func showingCount(shown: Int, of total: Int) -> String {
+    public static func showingCount(shown: Int, of total: Int) -> String {
         guard shown < total else { return noteCount(total) }
         return String(format: String(localized: "settings.notes.showing %lld %@",
                                      defaultValue: "Showing %lld of %@"),

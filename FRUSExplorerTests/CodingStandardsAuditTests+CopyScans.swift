@@ -116,6 +116,9 @@ import Foundation
 ///   1.15 — 2026-10-21: #1761 — five baseline entries gone: the excluded-references caption, the
 ///         Administrations row's volume and document counts and its VoiceOver label, and the working
 ///         corpus coverage line, so the ceiling goes 278 → 273
+///   1.16 — 2026-10-25: FRUS Explorer Light's S17b — ten baseline entries re-pointed to the FRUSCoreKit
+///         files their strings moved to (the method appendix's five, the scope signature's four and the
+///         capture's truncation line), so the ceiling is unchanged
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -898,6 +901,16 @@ extension CodingStandardsAuditTests {
     /// counts, says its volume count through `CountCopy` ("1 volumes" on George H. W. Bush's drill).
     static let countCopyBaseline: [String] = [
         #"../FRUSCoreKit/Collections/CollectionCitationLineResolver.swift | collection.addDocs.citations.topOf"#,
+        #"../FRUSCoreKit/Export/QueryMethodAppendix.swift | appendix.caveat.floor.many %lld"#,
+        #"../FRUSCoreKit/Export/QueryMethodAppendix.swift | appendix.caveat.semantic.many %lld"#,
+        #"../FRUSCoreKit/Export/QueryMethodAppendix.swift | appendix.caveat.unrecorded.many %lld"#,
+        #"../FRUSCoreKit/Export/QueryMethodAppendix.swift | appendix.line.indexed %lld"#,
+        #"../FRUSCoreKit/Export/QueryMethodAppendix.swift | appendix.line.results %@"#,
+        #"../FRUSCoreKit/Models/WorkingCorpusResolver.swift | browser.corpora.truncated"#,
+        #"../FRUSCoreKit/Search/SearchScopeSignature.swift | appendix.scope.documents %lld"#,
+        #"../FRUSCoreKit/Search/SearchScopeSignature.swift | appendix.scope.excludedDocuments %lld"#,
+        #"../FRUSCoreKit/Search/SearchScopeSignature.swift | appendix.scope.subjectTags %lld"#,
+        #"../FRUSCoreKit/Search/SearchScopeSignature.swift | appendix.scope.volumes %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.compare.cap %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.dispersion.volumes"#,
@@ -987,7 +1000,6 @@ extension CodingStandardsAuditTests {
         #"Browser/ClustersBrowseView.swift | browser.clusters.saved.truncated"#,
         #"Browser/CorpusBrowseView.swift | browser.corpora.row.a11y"#,
         #"Browser/CorpusBrowseView.swift | browser.corpora.row.count"#,
-        #"Browser/CorpusBrowseView.swift | browser.corpora.truncated"#,
         #"Browser/CorpusView.swift | browser.corpus.search.prompt"#,
         #"Browser/EditorIndexView.swift | browser.editors.coverage"#,
         #"Browser/EditorIndexView.swift | browser.editors.variants"#,
@@ -1042,11 +1054,6 @@ extension CodingStandardsAuditTests {
         #"DocumentView/DocumentView.swift | document.share.zotero.result %lld %lld"#,
         #"Export/ExcerptVerifier.swift | excerpt.verify.failures.many %lld"#,
         #"Export/ExcerptVerifier.swift | excerpt.verify.vanished.many %lld"#,
-        #"Export/QueryMethodAppendix.swift | appendix.caveat.floor.many %lld"#,
-        #"Export/QueryMethodAppendix.swift | appendix.caveat.semantic.many %lld"#,
-        #"Export/QueryMethodAppendix.swift | appendix.caveat.unrecorded.many %lld"#,
-        #"Export/QueryMethodAppendix.swift | appendix.line.indexed %lld"#,
-        #"Export/QueryMethodAppendix.swift | appendix.line.results %@"#,
         #"Export/ResearchDataExportView.swift | settings.export.includeSummaries.footer"#,
         #"History/HistoryView.swift | history.exports.documentCount"#,
         #"History/HistoryView.swift | history.searches.resultCount"#,
@@ -1087,10 +1094,6 @@ extension CodingStandardsAuditTests {
         #"Search/SearchFilterView.swift | search.subject.facet.reach %lld"#,
         #"Search/SearchFilterView.swift | search.usertags.a11y"#,
         #"Search/SearchModels.swift | settings.search.snippet.nLines %lld"#,
-        #"Search/SearchScopeSignature.swift | appendix.scope.documents %lld"#,
-        #"Search/SearchScopeSignature.swift | appendix.scope.excludedDocuments %lld"#,
-        #"Search/SearchScopeSignature.swift | appendix.scope.subjectTags %lld"#,
-        #"Search/SearchScopeSignature.swift | appendix.scope.volumes %lld"#,
         #"Search/SearchView.swift | search.volumeScope.multiple %lld"#,
         #"Search/SearchViewModel.swift | search.narrowing.tags"#,
         #"Search/SearchViewModel.swift | search.narrowing.volumes"#,

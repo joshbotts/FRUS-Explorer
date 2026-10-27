@@ -39,6 +39,8 @@ import FTS5Store
 ///   1.0 — Session 2026-08-10: #775
 ///   1.1 — FRUS Explorer Light: a kit suite, beside the selection it tests, with the staged
 ///          sections held to the applier
+///   1.2 — Session 2026-10-25 (FRUS Explorer Light, S17b): the year set's signature and the appendix's
+///          words for it run in the package too, since `SearchScopeSignature` is the kit's
 @Suite("Facet selection (#775)")
 struct FacetSelectionTests {
 
@@ -401,7 +403,8 @@ struct YearKeysPersistenceTests {
             """)
     }
 
-    #if !SWIFT_PACKAGE // SearchScopeSignature is the app's
+    // `SearchScopeSignature` is FRUSCoreKit's since S17b (FRUS Explorer Light), so these two run in the
+    // package as well as in Xcode.
     @Test("Two searches differing only in their years sign differently")
     func signatureSeesTheYearSet() {
         var a = SearchParameters(keywords: "berlin")
@@ -428,13 +431,13 @@ struct YearKeysPersistenceTests {
         var parameters = SearchParameters(keywords: "berlin")
         parameters.yearKeys = ["1951", "1953"]
         let phrases = try #require(
-            SearchScopeSignature.describe(SearchScopeSignature.signature(for: parameters)))
+            SearchScopeSignature.describe(SearchScopeSignature.signature(for: parameters),
+                                          resources: .none, locale: Locale(identifier: "en_US")))
         #expect(phrases.contains { $0.contains("1951") && $0.contains("1953") }, """
             Which years were kept is the finding. An appendix reading "2 years" leaves a reader \
             unable to reproduce the search. Got: \(phrases)
             """)
     }
-    #endif
 }
 
 #if !SWIFT_PACKAGE // the facet panel's controller and the search view model are the app's

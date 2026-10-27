@@ -12,8 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
 import Foundation
+// The package builds FTS5Store as a module of its own; Xcode compiles it into the app.
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
 
 // MARK: - SearchScopeSignature
 
@@ -53,7 +61,12 @@ import Foundation
 ///          documents it ranked inside, which no parameter value holds
 ///   1.5 — plan of record §6g, found in A8: `describe(_:)` quotes a base found by one phrase once, as the row
 ///          that named it does (`PinnedResultBase.quotable(_:)`); the `base=` part still records it as typed
-enum SearchScopeSignature {
+///   1.6 — Session 2026-10-25 (FRUS Explorer Light, S17b): moved into FRUSCoreKit, public, for the web
+///          edition's history and method appendix. Two reads became parameters: `describe(_:resources:locale:)`
+///          names a subject from the host's `IndexingResources` where it read the app's subject store, and
+///          formats for `locale`; `layered(_:parameters:basePart:)` takes the held base's `base=` part,
+///          which the app's `layered(_:parameters:base:)` passes. The quoting rule is ``QueryQuoting``
+public enum SearchScopeSignature {
 
     /// The signature for `parameters`.
     ///
@@ -65,7 +78,7 @@ enum SearchScopeSignature {
     /// key: `describe` handles it explicitly below, and any OTHER decoder that only knows the
     /// keyword grammar fails closed and prints it verbatim rather than paraphrasing a semantic
     /// run as a keyword scope.
-    static let semanticRouteSignature = "route=semantic;engine=on-device"
+    public static let semanticRouteSignature = "route=semantic;engine=on-device"
 
     /// Whether `signature` records a Meaning-route search: one that begins `route=semantic`, as
     /// every signature a Meaning search or a ranking by a question has written does, in this build
@@ -75,7 +88,7 @@ enum SearchScopeSignature {
     ///
     /// - Parameter signature: A trail row's `scopeSignature`, or `nil` for one with none.
     /// - Returns: `true` for a Meaning-route signature.
-    static func isMeaningRoute(_ signature: String?) -> Bool {
+    public static func isMeaningRoute(_ signature: String?) -> Bool {
         signature?.hasPrefix("route=semantic") == true
     }
 
@@ -97,7 +110,7 @@ enum SearchScopeSignature {
     ///
     /// - Parameter parameters: The executed search's parameters.
     /// - Returns: The signature.
-    static func semanticSignature(for parameters: SearchParameters) -> String {
+    public static func semanticSignature(for parameters: SearchParameters) -> String {
         guard parameters.documentIds != nil else { return semanticRouteSignature }
         return semanticRouteSignature + ";docs=\(idComponent(parameters.documentIds))"
     }
@@ -112,7 +125,7 @@ enum SearchScopeSignature {
     ///
     /// - Parameter keys: The documents the ranking ranked inside.
     /// - Returns: The signature.
-    static func semanticSignature(rankingInside keys: [String]) -> String {
+    public static func semanticSignature(rankingInside keys: [String]) -> String {
         semanticRouteSignature + ";docs=\(idComponent(keys))"
     }
 
@@ -133,15 +146,16 @@ enum SearchScopeSignature {
     ///   - signature: The route's own signature (a Meaning run's), or `nil` for a keyword run, which
     ///     signs ``signature(for:)``.
     ///   - parameters: The executed parameters.
-    ///   - base: The held base, or `nil` outside one.
+    ///   - basePart: The held base's `base=` part (`PinnedResultBase.signaturePart`), or `nil` outside
+    ///     one.
     /// - Returns: The signature to record, or `nil` to let the writer derive the keyword one.
-    static func layered(_ signature: String?, parameters: SearchParameters,
-                        base: PinnedResultBase?) -> String? {
-        guard let base else { return signature }
-        return (signature ?? self.signature(for: parameters)) + ";" + base.signaturePart
+    public static func layered(_ signature: String?, parameters: SearchParameters,
+                               basePart: String?) -> String? {
+        guard let basePart else { return signature }
+        return (signature ?? self.signature(for: parameters)) + ";" + basePart
     }
 
-    static func signature(for parameters: SearchParameters) -> String {
+    public static func signature(for parameters: SearchParameters) -> String {
         // Fixed order, written out rather than derived, so a reordering is a visible diff.
         var parts: [String] = []
         parts.append("mode=\(parameters.booleanMode == .or ? "or" : "and")")
@@ -236,11 +250,17 @@ enum SearchScopeSignature {
     /// states the method, and the signature itself is printed beside it for anyone who needs to
     /// check that two rows really did run under the same scope.
     ///
-    /// - Parameter signature: a string produced by ``signature(for:)``.
+    /// - Parameters:
+    ///   - signature: a string produced by ``signature(for:)``.
+    ///   - resources: the host's data files, whose subject vocabulary names a `subj=` part; the app
+    ///     passes its bundled ones (`IndexingResources.bundled`). With none, the part is printed as
+    ///     recorded.
+    ///   - locale: the locale that formats the counts and the list of fields.
     /// - Returns: the phrases describing the scope, or `nil` if `signature` does not parse. `nil`
     ///   is the caller's cue to print the raw key: an appendix that guessed would be describing a
     ///   scope the search did not run under, which is worse than an ugly line.
-    static func describe(_ signature: String) -> [String]? {
+    public static func describe(_ signature: String, resources: IndexingResources,
+                                locale: Locale) -> [String]? {
         // The Meaning route, stated as method rather than decoded as a keyword scope: what the
         // reader must know is that this was NOT a term search, so a zero is not term absence.
         if signature.hasPrefix("route=semantic") {
@@ -252,12 +272,12 @@ enum SearchScopeSignature {
                 .first { $0.hasPrefix("docs=") }
                 .map { String($0.dropFirst("docs=".count)) }
             phrases += countPhrase(documents,
-                                   some: { Self.rankedInsidePhrase(documents: $0) },
+                                   some: { Self.rankedInsidePhrase(documents: $0, locale: locale) },
                                    empty: String(localized: "appendix.scope.semantic.within.empty",
                                                  defaultValue: "ranked inside a set that held no documents"))
             // #1577 lane 4: the held list a ranking ran inside.
             if let base = signature.split(separator: ";").first(where: { $0.hasPrefix("base=") }),
-               let phrase = basePhrase(String(base.dropFirst("base=".count))) {
+               let phrase = basePhrase(String(base.dropFirst("base=".count)), locale: locale) {
                 phrases.append(phrase)
             }
             return phrases
@@ -286,7 +306,7 @@ enum SearchScopeSignature {
                                   defaultValue: "no fields searched"))
         } else {
             phrases.append(String(localized: "appendix.scope.fields %@",
-                                  defaultValue: "searched \(fields.formatted(.list(type: .and)))"))
+                                  defaultValue: "searched \(fields.formatted(.list(type: .and).locale(locale)))"))
         }
 
         if pairs["mode"] == "or" {
@@ -311,7 +331,7 @@ enum SearchScopeSignature {
         // someone REPRODUCE the search, and a positional index into an artifact they do not have
         // is not reproducible. Falls back to the id only when the vocabulary cannot name it.
         if let subject = pairs["subj"], subject != "any" {
-            let vocabulary = DocumentSubjectStore.shared?.bucketVocabulary
+            let vocabulary = resources.documentSubjects()?.bucketVocabulary
             // The component is a durable pair key on anything recent, and a bare position only on
             // a signature written before this shipped.
             let named = (vocabulary?.id(forKey: subject) ?? Int(subject))
@@ -321,25 +341,25 @@ enum SearchScopeSignature {
         }
         phrases += countPhrase(pairs["vols"],
                                some: { String(localized: "appendix.scope.volumes %lld",
-                                              defaultValue: "\($0) volumes") },
+                                              defaultValue: "\($0) volumes", locale: locale) },
                                empty: String(localized: "appendix.scope.volumes.empty",
                                              defaultValue: "no volumes selected"))
         phrases += countPhrase(pairs["docs"],
                                some: { String(localized: "appendix.scope.documents %lld",
-                                              defaultValue: "\($0) documents") },
+                                              defaultValue: "\($0) documents", locale: locale) },
                                empty: String(localized: "appendix.scope.documents.empty",
                                              defaultValue: "no documents selected"))
         phrases += countPhrase(pairs["exdocs"],
                                some: { String(localized: "appendix.scope.excludedDocuments %lld",
-                                              defaultValue: "\($0) documents excluded") },
+                                              defaultValue: "\($0) documents excluded", locale: locale) },
                                empty: nil)
         phrases += countPhrase(pairs["stags"],
                                some: { String(localized: "appendix.scope.subjectTags %lld",
-                                              defaultValue: "\($0) subject tags") },
+                                              defaultValue: "\($0) subject tags", locale: locale) },
                                empty: nil)
         phrases += countPhrase(pairs["utags"],
                                some: { String(localized: "appendix.scope.userTags %lld",
-                                              defaultValue: "\($0) of your tags") },
+                                              defaultValue: "\($0) of your tags", locale: locale) },
                                empty: nil)
 
         switch pairs["type"] {
@@ -370,7 +390,7 @@ enum SearchScopeSignature {
             phrases.append(String(localized: "appendix.scope.project", defaultValue: "gated to a project"))
         }
         // #1577 lane 4: the held list words were found in.
-        if let base = pairs["base"], let phrase = basePhrase(base) {
+        if let base = pairs["base"], let phrase = basePhrase(base, locale: locale) {
             phrases.append(phrase)
         }
         return phrases
@@ -383,22 +403,24 @@ enum SearchScopeSignature {
     /// so a part recorded `%22offset%20agreement%22` reads “offset agreement”, in a row recorded before
     /// that rule as in one recorded since.
     ///
-    /// - Parameter component: The part's value: kind, size and percent-encoded words, `:`-separated.
+    /// - Parameters:
+    ///   - component: The part's value: kind, size and percent-encoded words, `:`-separated.
+    ///   - locale: The locale that groups the size.
     /// - Returns: The phrase, or `nil`.
-    private static func basePhrase(_ component: String) -> String? {
+    private static func basePhrase(_ component: String, locale: Locale) -> String? {
         let fields = component.split(separator: ":", maxSplits: 2, omittingEmptySubsequences: false)
         guard fields.count == 3, let count = Int(fields[1]) else { return nil }
         let text = String(fields[2]).removingPercentEncoding ?? String(fields[2])
-        let documents = CountCopy.documents(count)
+        let documents = CountCopy.documents(count, locale: locale)
         switch fields[0] {
         case "meaning":
             return String(format: String(localized: "appendix.scope.base.meaning %@ %@",
                                          defaultValue: "inside the closest matches of a Meaning search for “%2$@” (%1$@)"),
-                          documents, PinnedResultBase.quotable(text))
+                          documents, QueryQuoting.quotable(text))
         case "keywords":
             return String(format: String(localized: "appendix.scope.base.keywords %@ %@",
                                          defaultValue: "inside the results of a keyword search for “%2$@” (%1$@)"),
-                          documents, PinnedResultBase.quotable(text))
+                          documents, QueryQuoting.quotable(text))
         case "browse":
             guard !text.isEmpty else {
                 return String(format: String(localized: "appendix.scope.base.browse.unnamed %@",
@@ -416,12 +438,14 @@ enum SearchScopeSignature {
     /// "ranked inside a set of 212 documents, not across the whole series" — what the appendix
     /// says of a Meaning search that ran inside a document set.
     ///
-    /// - Parameter documents: The set's size as the signature recorded it.
+    /// - Parameters:
+    ///   - documents: The set's size as the signature recorded it.
+    ///   - locale: The locale that groups the size.
     /// - Returns: The phrase.
-    private static func rankedInsidePhrase(documents: Int) -> String {
+    private static func rankedInsidePhrase(documents: Int, locale: Locale) -> String {
         String(format: String(localized: "appendix.scope.semantic.within %@",
                               defaultValue: "ranked inside a set of %@, not across the whole series"),
-               CountCopy.documents(documents))
+               CountCopy.documents(documents, locale: locale))
     }
 
     /// Renders a `count/digest`, `empty` or `none` component. `none` is no constraint and yields
@@ -444,11 +468,43 @@ extension DocumentTypeFilter {
 
     /// A stable, non-localized token. The raw value is not used directly so that renaming a case
     /// for display cannot silently change every recorded signature.
-    var signatureToken: String {
+    public var signatureToken: String {
         switch self {
         case .all: "all"
         case .documentsOnly: "documents"
         case .editorialNotesOnly: "editorial"
         }
+    }
+}
+
+// MARK: - QueryQuoting
+
+/// How the record's prose quotes the words a search was found by.
+///
+/// Version history:
+///   1.0 — #1577 lane 4, plan of record §6g and #1761: initial implementation, as
+///          `PinnedResultBase.quotable(_:)` in the app's `Search/SearchLayering.swift`
+///   1.1 — Session 2026-10-25 (FRUS Explorer Light, S17b): moved into FRUSCoreKit, public, unchanged, with
+///          the method appendix that quotes by it; `PinnedResultBase.quotable(_:)` forwards here
+public enum QueryQuoting {
+
+    /// The words to print between the quotation marks for `query`: a query that is one phrase, between
+    /// two double quotation marks (`FTS5InlineQueryParser.isDoubleQuotationMark(_:)`): straight, curly,
+    /// low-9, fullwidth or a guillemet, at either end, is quoted once, without its own marks. Any other
+    /// query keeps its marks, since they say what ran: a phrase beside a word or a prefix
+    /// (`"wheat" embarg*`), two phrases, a mark left open, or an empty pair. A single mark is none, as
+    /// the grammar gives it no meaning.
+    ///
+    /// The app's `PinnedResultBase.quotable(_:)` says where the rule is used.
+    ///
+    /// - Parameter query: The words or question as typed, trimmed, as a submitted query is.
+    /// - Returns: The words to print between the quotation marks.
+    public static func quotable(_ query: String) -> String {
+        let isMark = FTS5InlineQueryParser.isDoubleQuotationMark
+        guard let first = query.first, let last = query.last, isMark(first), isMark(last) else { return query }
+        let phrase = query.dropFirst().dropLast()
+        let words = phrase.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !words.isEmpty, !phrase.contains(where: isMark) else { return query }
+        return words
     }
 }
