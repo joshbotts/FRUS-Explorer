@@ -1,0 +1,113 @@
+overview double-quoted spans: 30
+[OK] frus1874/d552 :: is the largest insular possession still retained by any European power in America. It is a
+[OK] frus1874/d552 :: the one great cause of perpetual solicitude
+[OK] frus1881/d405 :: That rich island, the key to the Gulf of Mexico, and the field for our most extended trade
+[OK] frus1881/d405 :: a part of the American commercial system
+[OK] frus1886/d414 :: buys about 95 per cent, of the sugar exported from Cuba
+[OK] frus1898/d498 :: the United States does not seek to annex Cuba or to establish a protectorate over Cuba,
+[OK] frus1898/d498 :: are as necessary to the food supply of the United States as are the cotton fields of India
+[OK] frus1898/d498 :: does not furnish more than one-tenth of the sugar we consume
+[OK] frus1898/ch83 :: The right to intervene may be justified by the very serious injury to the commerce, trade,
+[OK] frus1898/ch83 :: The present condition of affairs in Cuba is a constant menace to our peace
+[OK] frus1904/d207 :: to enable the United States to maintain the independence of Cuba, and to protect the peopl
+[OK] frus1904/d207 :: for the preservation of Cuban independence
+[OK] frus1930v02/d747 :: A great many people seem to think that the Platt Amendment gives us a protectorate over th
+[OK] frus1934v05/d127 :: eliminating the permissive right of intervention by this Government, has removed a chronic
+[OK] frus1941v07/d119 :: could not be applied to other countries of the Hemisphere
+[OK] frus1944v07/d878 :: a defense facility in western Cuba under the exclusive jurisdiction of the United States G
+[OK] frus1945v09/d741 :: President Grau, as a matter of sovereignty, is adamant on the proposition that there shall
+[OK] frus1952-54v04/d342 :: has been a reliable expansible source of sugar in both war and peace, a strategic concept 
+[OK] frus1958-60v05/d112 :: Fidel Castro, the instigator of the present unsettled situation,
+[OK] frus1958-60v05/d112 :: advocating a neutralistic bloc in Latin America, while actually supporting Communist-domin
+[OK] frus1958-60v06/d499 :: it follows that every possible means should be undertaken promptly to weaken the economic 
+[OK] frus1961-63v11/d21 :: What is the strategic impact on the position of the United States of MRBMs in Cuba? How gr
+[OK] frus1961-63v11/d21 :: substantially
+[OK] frus1961-63v11/d21 :: My own personal view is, not at all
+[OK] frus1961-63v11/d34 :: an entirely different impact throughout Latin America
+[OK] frus1961-63v10-12mSupp/d729 :: a Cuba which poses no threat to its neighbors and which is not a Soviet satellite
+[OK] frus1969-76ve10/d205 :: Cuba has been a double-barreled problem for the U.S.: —as a base for Soviet military power
+[OK] frus1977-80v23/d21 :: The political significance of both sides of the trade issue far outweighs economic effects
+[OK] frus1981-88v03/d5 :: The intent of the 1962 Understanding was to prevent Cuba from becoming a threat to the sec
+[NO URL] None/None :: Cuba, national security and prosperity, 1874–1981
+  single-quoted: [FAIL] frus1874/d552 ::  thinking about Cuba
+  single-quoted: [FAIL] frus1874/d552 ::  own Cuba chapters and about 13,900 documents that mention Cuba anywhere, in the
+  single-quoted: [FAIL] frus1874/d552 :: s central decimal files on Cuba (Record Group 59; file numbers beginning 837 thr
+  single-quoted: [FAIL] frus1874/d552 :: s subject files (Lot 62 D 24, entry A1 3148, identifier 2363836, 1958–1961, part
+  single-quoted: [FAIL] frus1874/d552 :: s office (560131), and the Eisenhower and Nixon materials, all under the librari
+  single-quoted: [FAIL] frus1874/d552 :: s records relating to National Security Council policy papers (Lot 66 D 95, entr
+  single-quoted: [FAIL] frus1874/d552 ::  microfilmed Record Group 59 series: the despatches of the U.S. ministers to Spa
+  single-quoted: [FAIL] frus1874/d552 :: national security
+  single-quoted: [FAIL] frus1874/d552 :: s importance: I searched every document that mentions Cuba, Cuban or Havana in a
+  single-quoted: [FAIL] frus1874/d552 ::  own words: independence, defence, commerce, sanitation. Second, any measurement
+  single-quoted: [FAIL] frus1874/d552 :: s claim of 1929, not an American estimate. The shelf that holds the figures is t
+  single-quoted: [FAIL] frus1874/d552 ::  accounts; I did not try to measure them.
+
+**Scope.** All 553 volumes of the ser
+  single-quoted: [FAIL] frus1874/d552 ::  own Cuba chapters (62 volumes, 1900–1980). Everything below is conditional on t
+  single-quoted: [FAIL] frus1874/d552 :: s impact.
+  single-quoted: [FAIL] frus1874/d552 ::  own Cuba chapters for trends from 1900 and any mention of Cuba for the nineteen
+  single-quoted: [FAIL] frus1874/d552 ::  or its equivalents.** The phrase is almost absent before the 1940s. I read inde
+  single-quoted: [FAIL] frus1874/d552 :: ** I took it to mean trade and sugar, American investment and claims, and (later
+  single-quoted: [FAIL] frus1874/d552 :: s last Cuba material is January 1989. A later period needs a different source.
+
+
+  single-quoted: [FAIL] frus1874/d552 :: national security
+  single-quoted: [FAIL] frus1898/ch83 :: s message to Congress in April 1898 added injury to American commerce and a thre
+  single-quoted: [FAIL] frus1934v05/d127 :: s instruction on the trade agreement said the new treaty, "eliminating the permi
+  single-quoted: [FAIL] frus1929v02/d924 :: s note of 1929 claiming nearly 1,500 million dollars of American capital in Cuba
+  single-quoted: [FAIL] frus1941v07/d119 :: strategic concept,
+  single-quoted: [FAIL] frus1945v09/d741 :: s president refused: "President Grau, as a matter of sovereignty, is adamant on 
+  single-quoted: [FAIL] frus1961-63v11/d34 :: s view that the missiles had "an entirely different impact throughout Latin Amer
+  single-quoted: [NO URL] None/None :: s wording against the actual text of the documents (the index treats related wor
+excerpt [OK] frus1874/d552 :: Cuba is the largest insular possession still retained by any European power in A
+excerpt [OK] frus1874/d552 :: In fine, Cuba, like the former continental colonies of Spain in America, ought t
+excerpt [OK] frus1874/d552 :: In short, the state of Cuba is the one great cause of perpetual solicitude in th
+excerpt [OK] frus1881/d405 :: That rich island, the key to the Gulf of Mexico, and the field for our most exte
+excerpt [OK] frus1886/d414 :: which buys about 95 per cent, of the sugar exported from Cuba
+excerpt [OK] frus1898/d498 :: the United States does not seek to annex Cuba or to establish a protectorate ove
+excerpt [OK] frus1898/d498 :: the sugar plantations of Cuba are as necessary to the food supply of the United 
+excerpt [OK] frus1898/d498 :: our native cane-sugar crop, raised mostly in Louisiana and Texas, does not furni
+excerpt [OK] frus1898/ch83 :: The right to intervene may be justified by the very serious injury to the commer
+excerpt [OK] frus1898/ch83 :: The present condition of affairs in Cuba is a constant menace to our peace, and 
+excerpt [OK] frus1904/d207 :: That the government of Cuba consents that the United States may exercise the rig
+excerpt [OK] frus1904/d207 :: That to enable the United States to maintain the independence of Cuba, and to pr
+excerpt [OK] frus1929v02/d924 :: there is invested in Cuba at the present time, nearly 1,500 million dollars of A
+excerpt [OK] frus1930v02/d747 :: A great many people seem to think that the Platt Amendment gives us a protectora
+excerpt [OK] frus1933v05/d299 :: the purpose of my mission here is to avoid the existence of a situation which wo
+excerpt [OK] frus1934v05/d127 :: eliminating the permissive right of intervention by this Government, has removed
+excerpt [OK] frus1934v05/d127 :: The magnitude of this concession is a further indication of the desire of this G
+excerpt [OK] frus1941v07/d119 :: The principle of leased areas over which the United States forces exercise unque
+excerpt [OK] frus1944v07/d878 :: Plans of the President and of the Joint Chiefs of Staff call for a defense facil
+excerpt [OK] frus1945v09/d741 :: President Grau, as a matter of sovereignty, is adamant on the proposition that t
+excerpt [OK] frus1952-54v04/d342 :: It would seem to ignore the fact that Cuba has been a reliable expansible source
+excerpt [OK] frus1958-60v06/d70 :: If the security of the nation is destroyed or an avenue is opened up for leftist
+excerpt [OK] frus1958-60v05/d112 :: Fidel Castro, the instigator of the present unsettled situation, is advocating a
+excerpt [OK] frus1958-60v06/d499 :: it follows that every possible means should be undertaken promptly to weaken the
+excerpt [OK] frus1958-60v06/d499 :: The principal item in our economic quiver would be flexible authority in the sug
+excerpt [OK] frus1961-63v11/d21 :: What is the strategic impact on the position of the United States of MRBMs in Cu
+excerpt [OK] frus1961-63v11/d34 :: However, the existence of strategic missiles in Cuba had an entirely different i
+excerpt [OK] frus1961-63v11/d34 :: In his view the existence of fifty planes in Cuba did not affect the balance of 
+excerpt [OK] frus1961-63v10-12mSupp/d729 :: The bare minimum objective of our policy is a Cuba which poses no threat to its 
+excerpt [OK] frus1961-63v10-12mSupp/d729 :: intensifying Cuba’s already-serious economic difficulties; increasing the cost a
+excerpt [OK] frus1969-76ve10/d205 :: Cuba has been a double-barreled problem for the U.S.: —as a base for Soviet mili
+excerpt [OK] frus1977-80v23/d21 :: The political significance of both sides of the trade issue far outweighs econom
+excerpt [OK] frus1977-80v23/d21 :: Even on sugar, our leverage in economic terms is quite modest.
+excerpt [OK] frus1977-80v23/d21 :: U.S. claims now total about $2 billion, on which a settlement of at least $600 m
+excerpt [OK] frus1981-88v03/d5 :: The intent of the 1962 Understanding was to prevent Cuba from becoming a threat 
+excerpts: 35 failing: 0
+  prose-quote (no pair) ::  War and before any treaty tied the two countries together. The thread
+  note-quote [FAIL] frus1874/d552 :: s instructions to the new minister in Madrid, 6 February 1874. Cuba is
+  note-quote [FAIL] frus1874/d552 ::  in the nation
+  note-quote [OK] frus1881/d405 :: key to the Gulf
+  note-quote [FAIL] frus1898/ch83 :: s message on Cuba, April 1898 (the index dates it 12 April). It lists 
+  note-quote [FAIL] frus1904/d207 :: s proclamation of the treaty of 22 May 1904, which reprints the eight 
+  note-quote [FAIL] frus1929v02/d924 :: s note of 10 January 1929 in the negotiation over revising the 1902 re
+  note-quote [FAIL] frus1930v02/d747 :: s background talk to the press, 2 October 1930, during the Machado cri
+  prose-quote (no pair) :: strategic concept
+  note-quote [FAIL] frus1952-54v04/d342 :: s share of the US sugar market. It argues from Cuban stability, US exp
+  prose-quote (no pair) :: s private view that the missiles changed the strategic balance 
+  note-quote [OK] frus1958-60v06/d499 :: The Decline and Fall of Castro
+  note-quote [OK] frus1961-63v11/d21 :: not at all
+  note-quote [OK] frus1961-63v11/d34 :: an entirely different impact
+  prose-quote (no pair) ::  War and the 1895-98 insurrection were read only through the 1874 and 
+  prose-quote (no pair) :: s and Spain

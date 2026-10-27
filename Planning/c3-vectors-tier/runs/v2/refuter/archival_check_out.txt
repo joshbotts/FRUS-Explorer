@@ -1,0 +1,63 @@
+lotFiles keys: ['catalogURL', 'hmsMlrEntryNumbers', 'levelOfDescription', 'lotNumber', 'matchType', 'naId', 'recordGroup', 'title']
+series-facts legend: {"keys": {"ar": {"field": "accessRestrictions", "into": "restrictions", "kind": "indexList"}, "as": {"field": "accessStatus", "into": "statuses", "kind": "index"}, "c": {"field": "creator", "into": "headings", "kind": "index"}, "cy0": {"field": "coverageStartYear", "kind": "year"}, "cy1": {"field": "coverageEndYear", "kind": "year"}, "fa": {"field": "findingAids", "into": "findingAidTypes", "kind": "indexList"}, "p": {"field": "predecessors", "into": "headings", "kind": "indexList"}, "ru": {"field": "referenceUnit", "into": "referenceUnits", "kind": "index"}, "ur": {"field": "useRestrictions", "into": "useRestrictions", "kind": "indexList"}, "us": {"field": "useStatus", "into": "statuses", "kind": "index"}, "x": {"field": "extent", "kind": "string"}, "y0": {"field": "inclusiveStartYear", "kind": "year"}, "y1": {"field": "inclusiveEndYear", "kind": "year"}}, "note": "Each `byNaId` row use
+statuses: ['Restricted - Fully', 'Unrestricted', 'Restricted - Partly', 'Restricted - Possibly', 'Undetermined']
+
+== lot 65D438 claimed: ('Records Relating to the Cuban Missile Crisis', 'A1 3053', '27022950', 1962, 1963, 'partly restricted')
+   lotFiles row: {"catalogURL": "https://catalog.archives.gov/id/27022950", "hmsMlrEntryNumbers": ["A1 3053"], "levelOfDescription": "series", "lotNumber": "65D438", "matchType": "control", "naId": "27022950", "recordGroup": "59", "title": "Records Relating to the Cuban Missile Crisis"}
+   series-facts byNaId[27022950]: {'ar': [0], 'as': 2, 'c': 248, 'ru': 0, 'ur': [0], 'us': 3, 'x': '6 linear feet, 2 linear inches', 'y0': 1962, 'y1': 1963}
+     access status: Restricted - Partly
+     creator heading: Department of State. Executive Secretariat.
+
+== lot 74D272 claimed: ('Records of Under Secretary George W. Ball', 'A1 5175', '614703', 1961, 1966, 'unrestricted')
+   lotFiles row: {"catalogURL": "https://catalog.archives.gov/id/614703", "hmsMlrEntryNumbers": ["A1 5175"], "levelOfDescription": "series", "lotNumber": "74D272", "matchType": "control", "naId": "614703", "recordGroup": "59", "title": "Records of Under Secretary of State George W. Ball"}
+   series-facts byNaId[614703]: {'as': 1, 'c': 336, 'fa': [0], 'ru': 0, 'us': 1, 'x': '16 linear feet, 3 linear inches', 'y0': 1961, 'y1': 1966}
+     access status: Unrestricted
+     creator heading: Department of State. Office of the Under Secretary of State.
+
+== lot 66D501 claimed: ('Files Pertaining to Operation Mongoose', 'UD-UP 293-B', '648748', 1963, 1965, 'unrestricted')
+   lotFiles row: {"catalogURL": "https://catalog.archives.gov/id/648748", "hmsMlrEntryNumbers": ["UD-UP 293-B"], "levelOfDescription": "series", "lotNumber": "66D501", "matchType": "control", "naId": "648748", "recordGroup": "59", "title": "Files Pertaining to Operation Mongoose"}
+   series-facts byNaId[648748]: {'as': 1, 'c': 152, 'cy0': 1960, 'cy1': 1999, 'ru': 0, 'us': 1, 'x': '2 linear feet, 8 linear inches', 'y0': 1963, 'y1': 1965}
+     access status: Unrestricted
+     creator heading: Department of State. Bureau of Inter-American Affairs. Office of the Coordinator of Cuban Affairs.
+
+== lot 62D24 claimed: ('Subject Files (Inter-American bureau)', 'A1 3148', '2363836', 1958, 1961, 'partly restricted')
+   lotFiles row: {"catalogURL": "https://catalog.archives.gov/id/2363836", "hmsMlrEntryNumbers": ["A1 3148"], "levelOfDescription": "series", "lotNumber": "62D24", "matchType": "control", "naId": "2363836", "recordGroup": "59", "title": "Subject Files"}
+   series-facts byNaId[2363836]: {'ar': [0], 'as': 2, 'c': 150, 'cy0': 1956, 'cy1': 1961, 'ru': 0, 'ur': [0], 'us': 2, 'x': '4 linear feet, 10 linear inches', 'y0': 1958, 'y1': 1961}
+     access status: Restricted - Partly
+     creator heading: Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs. Office of the Special Assistant on Communism.
+
+== lot 62D418 claimed: ('Subject Files (Inter-American bureau)', 'A1 3147', '2068466', 1959, 1962, 'partly restricted')
+   lotFiles row: {"catalogURL": "https://catalog.archives.gov/id/2068466", "hmsMlrEntryNumbers": ["A1 3147"], "levelOfDescription": "series", "lotNumber": "62D418", "matchType": "control", "naId": "2068466", "recordGroup": "59", "title": "Subject Files"}
+   series-facts byNaId[2068466]: {'ar': [0], 'as': 2, 'c': 149, 'ru': 0, 'ur': [0], 'us': 3, 'x': '1 linear foot, 9 linear inches', 'y0': 1959, 'y1': 1962}
+     access status: Restricted - Partly
+     creator heading: Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs.
+
+== lot 62D1 claimed: ("Policy Planning Council's NSC records", 'A1 1583E/F', '2838992', 1948, 1961, 'partly restricted')
+   lotFiles row: {"catalogURL": "https://catalog.archives.gov/id/2838992", "hmsMlrEntryNumbers": ["A1 1583E", "A1 1583F"], "levelOfDescription": "series", "lotNumber": "62D1", "matchType": "control", "naId": "2838992", "recordGroup": "59", "title": "Records Relating to Activities with the National Security Council"}
+   series-facts byNaId[2838992]: {'ar': [0], 'as': 2, 'c': 341, 'ru': 0, 'ur': [0], 'us': 3, 'x': '3 linear feet, 1 linear inch', 'y0': 1948, 'y1': 1961}
+     access status: Restricted - Partly
+     creator heading: Department of State. Policy Planning Council.
+
+== lot 66D95 claimed: ('Records Relating to NSC Policy Papers', 'A1 1586E', '2839192', 1947, 1979, 'partly restricted')
+   lotFiles row: {"catalogURL": "https://catalog.archives.gov/id/2839192", "hmsMlrEntryNumbers": ["A1 1586E"], "levelOfDescription": "series", "lotNumber": "66D95", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}
+   series-facts byNaId[2839192]: {'ar': [0], 'as': 2, 'c': 313, 'ru': 0, 'ur': [0], 'us': 3, 'x': '26 linear feet, 3 linear inches', 'y0': 1947, 'y1': 1979}
+     access status: Restricted - Partly
+     creator heading: Department of State. Office of the Secretary. Executive Secretariat.
+
+== lot 66D204 claimed: ('Presidential and Secretary of State Correspondence with Foreign Heads of State', 'A1 1590', '2538452', 1953, 1964, 'possibly restricted')
+   lotFiles row: {"catalogURL": "https://catalog.archives.gov/id/2538452", "hmsMlrEntryNumbers": ["A1 1590"], "levelOfDescription": "series", "lotNumber": "66D204", "matchType": "control", "naId": "2538452", "recordGroup": "59", "title": "Presidential and Secretary of State Correspondence with Foreign Heads of State"}
+   series-facts byNaId[2538452]: {'as': 3, 'c': 313, 'ru': 0, 'us': 1, 'x': '9 linear feet, 8 linear inches', 'y0': 1953, 'y1': 1964}
+     access status: Restricted - Possibly
+     creator heading: Department of State. Office of the Secretary. Executive Secretariat.
+
+== lot 65D212 claimed: ('Records Relating to Sugar', 'UD-UP 215', '27022874', 1955, 1962, 'fully restricted')
+   lotFiles row: {"catalogURL": "https://catalog.archives.gov/id/27022874", "hmsMlrEntryNumbers": ["UD-UP 215"], "levelOfDescription": "series", "lotNumber": "65D212", "matchType": "control", "naId": "27022874", "recordGroup": "59", "title": "Records Relating to Sugar"}
+   series-facts byNaId[27022874]: {'ar': [0], 'as': 0, 'c': 38, 'cy0': 1932, 'cy1': 1962, 'ru': 0, 'us': 1, 'x': '3 linear feet, 1 linear inch', 'y0': 1955, 'y1': 1962}
+     access status: Restricted - Fully
+     creator heading: Department of State. Bureau of Economic Affairs. Office of International Resources.
+
+== nineteenth-century file units (countrySeries rolls with geoKeys cuba/spain)
+Traceback (most recent call last):
+  File "/Users/jbotts/frus-analysis/c3v/runs/v2/refuter/archival_check.py", line 39, in <module>
+    a[1] = min(a[1], roll.get("startISO")); a[2] = max(a[2], roll.get("endISO"))
+TypeError: '<' not supported between instances of 'NoneType' and 'str'

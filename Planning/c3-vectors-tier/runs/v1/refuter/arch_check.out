@@ -1,0 +1,42 @@
+central-files-index keys: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+series-facts keys: ['byNaId', 'findingAidTypes', 'generated', 'headings', 'legend', 'referenceUnits', 'restrictions', 'schemaVersion', 'statuses', 'useRestrictions']
+lot-claimants keys: ['generated', 'harvestGenerated', 'lots', 'note', 'schemaVersion'] lots[0] keys: ['claimants', 'lotNumber']
+lotFiles rows: 1070 lotFiles[0] keys: ['catalogURL', 'hmsMlrEntryNumbers', 'levelOfDescription', 'lotNumber', 'matchType', 'naId', 'recordGroup', 'title']
+statuses: ['Restricted - Fully', 'Unrestricted', 'Restricted - Partly', 'Restricted - Possibly', 'Undetermined']
+
+== 65D438 Missile Crisis | overview says entry A1 3053 NAID 27022950 1962–1963 Restricted - Partly
+  lotFiles: {"hmsMlrEntryNumbers": ["A1 3053"], "lotNumber": "65D438", "naId": "27022950", "recordGroup": "59", "title": "Records Relating to the Cuban Missile Crisis"}
+  series-facts: {"ar": [0], "as": 2, "c": 248, "ru": 0, "ur": [0], "us": 3, "x": "6 linear feet, 2 linear inches", "y0": 1962, "y1": 1963} | creator heading: Department of State. Executive Secretariat. | access: Restricted - Partly
+
+== 64D199 Memcons | overview says entry A1 1566 NAID 602231 1953–1964 Unrestricted
+  lotFiles: {"hmsMlrEntryNumbers": ["A1 1566"], "lotNumber": "64D199", "naId": "602231", "recordGroup": "59", "title": "The Secretary's and the Under Secretary's Memorandums of Conversation"}
+  series-facts: {"as": 1, "c": 248, "ru": 0, "us": 1, "x": "13 linear feet, 2 linear inches", "y0": 1953, "y1": 1964} | creator heading: Department of State. Executive Secretariat. | access: Unrestricted
+
+== 65D330 Memcons | overview says entry A1 1566 NAID 602231 1953–1964 Unrestricted
+  lotFiles: {"hmsMlrEntryNumbers": ["A1 1566"], "lotNumber": "65D330", "naId": "602231", "recordGroup": "59", "title": "The Secretary's and the Under Secretary's Memorandums of Conversation"}
+  series-facts: {"as": 1, "c": 248, "ru": 0, "us": 1, "x": "13 linear feet, 2 linear inches", "y0": 1953, "y1": 1964} | creator heading: Department of State. Executive Secretariat. | access: Unrestricted
+
+== 62D24 Special Assistant on Communism | overview says entry A1 3148 NAID 2363836 1958–1961 Restricted - Partly
+  lotFiles: {"hmsMlrEntryNumbers": ["A1 3148"], "lotNumber": "62D24", "naId": "2363836", "recordGroup": "59", "title": "Subject Files"}
+  series-facts: {"ar": [0], "as": 2, "c": 150, "cy0": 1956, "cy1": 1961, "ru": 0, "ur": [0], "us": 2, "x": "4 linear feet, 10 linear inches", "y0": 1958, "y1": 1961} | creator heading: Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs. Office of the Special Assistant on Communism. | access: Restricted - Partly
+
+== 66D501 Mongoose | overview says entry UD-UP 293-B NAID 648748 1963–1965 Unrestricted
+  lotFiles: {"hmsMlrEntryNumbers": ["UD-UP 293-B"], "lotNumber": "66D501", "naId": "648748", "recordGroup": "59", "title": "Files Pertaining to Operation Mongoose"}
+  series-facts: {"as": 1, "c": 152, "cy0": 1960, "cy1": 1999, "ru": 0, "us": 1, "x": "2 linear feet, 8 linear inches", "y0": 1963, "y1": 1965} | creator heading: Department of State. Bureau of Inter-American Affairs. Office of the Coordinator of Cuban Affairs. | access: Unrestricted
+
+== 66D95 NSC Policy Papers | overview says entry A1 1586E NAID 2839192 1947–1979 Restricted - Partly
+  lotFiles: {"hmsMlrEntryNumbers": ["A1 1586E"], "lotNumber": "66D95", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}
+  series-facts: {"ar": [0], "as": 2, "c": 313, "ru": 0, "ur": [0], "us": 3, "x": "26 linear feet, 3 linear inches", "y0": 1947, "y1": 1979} | creator heading: Department of State. Office of the Secretary. Executive Secretariat. | access: Restricted - Partly
+  lot-claimants: {"claimants": [{"dateRange": "1947–1979", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1586E"], "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}, {"dateRange": "1947–1965", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1586F"], "naId": "2839193", "recordGroup": "59", "title": "Subject Files"}], "lotNumber": "66D95"}
+
+== 65D212 Sugar | overview says entry UD-UP 215 NAID 27022874 1955–1962 cov 1932 Restricted - Fully
+  lotFiles: {"hmsMlrEntryNumbers": ["UD-UP 215"], "lotNumber": "65D212", "naId": "27022874", "recordGroup": "59", "title": "Records Relating to Sugar"}
+  series-facts: {"ar": [0], "as": 0, "c": 38, "cy0": 1932, "cy1": 1962, "ru": 0, "us": 1, "x": "3 linear feet, 1 linear inch", "y0": 1955, "y1": 1962} | creator heading: Department of State. Bureau of Economic Affairs. Office of International Resources. | access: Restricted - Fully
+
+decimal-class-labels keys: ['coverage', 'generated', 'provenance', 'schedules', 'schemaVersion']
+coverage: {"decimalFileOpensIn": 1910, "glossableYears": [{"endYear": 1949, "scheduleId": "1910-1949", "startYear": 1910}, {"endYear": 1959, "scheduleId": "1950-1959", "startYear": 1950}, {"endYear": 1963, "scheduleId": "1960-1963", "startYear": 1960}], "keyOutsideGlossableYears": "no-gloss", "notShipped": [], "note": "A key is glossable only when the document's own date falls inside one of `glossableYears`. Outside them this file has NO gloss \u2014 do not compose one from a schedule that does not govern the key's era. The classification was renumbered in 1950, so composing across that year returns a plausible WRONG reading rather than a miss: `411` reads as Claims under the 1910\u20131949 schedule where the editors gloss `411.48` as Poland, and `48` reads as British Africa \u2014 and `48` is live 
+   /schedules[0]/countries/37 = Cuba
+   /schedules[1]/countries/37 = Cuba
+   /schedules[2]/countries/37 = Cuba
+coverage dict keys sample: ['decimalFileOpensIn', 'glossableYears', 'keyOutsideGlossableYears', 'notShipped', 'note', 'renumberedAt']
+schedules list len 3 first: {"classes": {"0": "General. Miscellaneous", "1": "Administrations, United States Government", "2": "Extradition", "3": "Protection of Interests", "4": "Claims", "5": "Congresses and Conferences", "6": "Commerce. Customs Administration", "7": "Political Relations of States. Bi-lateral Treaties", "8":

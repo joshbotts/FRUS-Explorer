@@ -1,0 +1,19 @@
+SQL B: SELECT dc.volume_id, dc.document_id FROM frus_documents f JOIN document_cache dc ON dc.rowid=f.rowid WHERE frus_documents MATCH 'header:(cuba OR cuban)'
+A (heading) = 6668 B (header FTS) = 2236 union = 6928 not in document_cache = 0
+kept after apparatus/Ed2 exclusion: 6718  A-only 4482  B-only 260  both 1976
+undated in set: 6
+decade	set	dated_nonapparatus	per1000	top_volume	top_share
+1860s	149	11268	13.2	frus1872p2v1	146 of 149
+1870s	3	5821	0.5	frus1872p2v1	3 of 3
+1880s	0	6484	0.0	-	-
+1890s	290	9845	29.5	frus1898	149 of 290
+1900s	305	10261	29.7	frus1902	97 of 305
+1910s	1004	30842	32.6	frus1917	224 of 1004
+1920s	500	20374	24.5	frus1921v01	135 of 500
+1930s	682	40073	17.0	frus1933v05	344 of 682
+1940s	775	75872	10.2	frus1944v07	132 of 775
+1950s	460	42801	10.7	frus1958-60v06	355 of 460
+1960s	2002	27654	72.4	frus1961-63v10-12mSupp	515 of 2002
+1970s	453	22258	20.4	frus1977-80v23	289 of 453
+1980s	89	6038	14.7	frus1977-80v23	89 of 89
+1990s	0	177	0.0	-	-

@@ -1,0 +1,50 @@
+decoded rows: 314616 documentCount: 314616 max row+1: 314616
+frus1898/ch83 has a vector row: False
+ANCHOR frus1874/d552 (row 14413), 0.4s
+   ham  61 frus1898/d490                ('1897-07-16', 'Mr. Sherman to Mr. Woodford.', 1)
+   ham  68 frus1898/d503                ('1897-10-26', 'Mr. Woodford to Mr. Sherman.', 1)
+   ham  71 frus1898/d531                ('1898-02-09', 'Mr. Woodford to Mr. Sherman.', 1)
+   ham  73 frus1898/d495                ('1897-09-23', 'Mr. Woodford to Mr. Sherman.', 1)
+   ham  77 frus1898/d526                ('1897-12-23', 'Mr. Woodford to Mr. Sherman.', 1)
+   ham  77 frus1902/d313                ('1902-11-21', 'Mr. Squiers to Mr. Hay.', 1)
+   ham  78 frus1898/d544                ('1898-03-09', 'Mr. Woodford to the President.', 1)
+   ham  80 frus1898/d492                ('1897-09-13', 'Mr. Woodford to Mr. Sherman.', 1)
+   ham  80 frus1898/d498                ('1897-10-05', 'Mr. Woodford to Mr. Sherman.', 1)
+   ham  81 frus1866p1/d422              ('1866-05-23', 'Mr. Seward to Mr. Hale', 1)
+   memo list: [('frus1898/d490', 61), ('frus1898/d503', 68), ('frus1898/d531', 71), ('frus1898/d495', 73), ('frus1898/d526', 77), ('frus1902/d313', 77), ('frus1898/d544', 78), ('frus1898/d492', 80), ('frus1898/d498', 80), ('frus1897/d581', 81)]
+   SAME SET: False ; SAME ORDER (ties aside): False ; same distances: True
+ANCHOR frus1950v02/d440 (row 209786), 0.4s
+   ham  62 frus1948v09/d420             ('1948-07-29', 'Memorandum Prepared in the Department of State', 1)
+   ham  64 frus1969-76ve10/d205         ('1969-07-02', '205. Study Prepared in Response to National Securi', 1)
+   ham  69 frus1964-68v32/d300          ('1965-03-19', '300. Memorandum From Gordon Chase of the National ', 1)
+   ham  69 frus1969-76ve11p1/d278       ('1974-01-21', '278. Memorandum From Acting Secretary of State Rus', 1)
+   ham  73 frus1946v11/d658             ('1946-09-12', 'The Ambassador in Cuba (Norweb) to the Secretary o', 1)
+   ham  73 frus1952-54v04/d351          ('1954-11-23', 'Extract From Current Economic Developments', 1)
+   ham  73 frus1958-60v06/d423          ('1960-01-14', '423. Memorandum of Discussion at the 432d Meeting ', 1)
+   ham  74 frus1961-63v10-12mSupp/d729  ('1963-12-15', '729. Memorandum from McGeorge Bundy to President J', 1)
+   ham  76 frus1958-60v06/d364          ('1959-09-24', '364. Memorandum From the Ambassador to Cuba (Bonsa', 1)
+   ham  77 frus1948v09/d425             ('1948-12-07', 'Memorandum by the Acting Secretary of State to Pre', 1)
+   memo list: [('frus1948v09/d420', 62), ('frus1969-76ve10/d205', 64), ('frus1964-68v32/d300', 69), ('frus1969-76ve11p1/d278', 69), ('frus1946v11/d658', 73), ('frus1952-54v04/d351', 73), ('frus1958-60v06/d423', 73), ('frus1961-63v10-12mSupp/d729', 74), ('frus1958-60v06/d364', 76), ('frus1958-60v06/d527', 77)]
+   SAME SET: False ; SAME ORDER (ties aside): False ; same distances: True
+V5 pair ('frus1881', 'd405') ('frus1894app2', 'd394') hamming 4
+V5 pair ('frus1961-63v06', 'd74') ('frus1961-63v11', 'd155') hamming 23
+V5 pair ('frus1961-63v11', 'd18') ('frus1961-63v11', 'd21') hamming 43
+V1 random pairs (seed 1877): n=20000 mean=167.1 sd=14.8 min=95
+map layout check: 64 + docs*6 = 1887760 size 1887760
+cluster 42: ['castro', 'somoza', 'cuban', 'cuba'] documentCount 7650
+N07 1870-1899: Cuba docs with a row 1240, unclustered 300, in cluster 42 0, without a row 9
+N07 1900-1939: Cuba docs with a row 2996, unclustered 1200, in cluster 42 3, without a row 52
+N07 1940-1957: Cuba docs with a row 1803, unclustered 482, in cluster 42 229, without a row 30
+N07 1958-1989: Cuba docs with a row 6124, unclustered 1235, in cluster 42 2982, without a row 2
+  map ('frus1874', 'd552') cluster unclustered
+  map ('frus1898', 'd498') cluster unclustered
+  map ('frus1902', 'd273') cluster 72
+  map ('frus1941v07', 'd134') cluster unclustered
+  map ('frus1948v09', 'd420') cluster unclustered
+  map ('frus1950v02', 'd440') cluster unclustered
+  map ('frus1958-60v06', 'd535') cluster 42
+  map ('frus1961-63v11', 'd21') cluster 42
+  map ('frus1969-76ve10', 'd205') cluster 42
+  map ('frus1977-80v23', 'd18') cluster 42
+  map ('frus1977-80v01', 'd129') cluster 42
+  map ('frus1981-88v03', 'd10') cluster 42

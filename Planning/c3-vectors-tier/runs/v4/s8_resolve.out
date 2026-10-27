@@ -1,0 +1,44 @@
+65D438 | RG 59 | entry ['A1 3053'] | NAID 27022950 | Records Relating to the Cuban Missile Crisis | control
+    facts: {'creator': 'Department of State. Executive Secretariat.', 'inclusiveStartYear': 1962, 'inclusiveEndYear': 1963, 'accessStatus': 'Restricted - Partly', 'useStatus': 'Restricted - Possibly', 'extent': '6 linear feet, 2 linear inches', 'referenceUnit': 'National Archives at College Park - Textual Reference'}
+74D272 | RG 59 | entry ['A1 5175'] | NAID 614703 | Records of Under Secretary of State George W. Ball | control
+    facts: {'creator': 'Department of State. Office of the Under Secretary of State.', 'inclusiveStartYear': 1961, 'inclusiveEndYear': 1966, 'accessStatus': 'Unrestricted', 'useStatus': 'Unrestricted', 'extent': '16 linear feet, 3 linear inches', 'referenceUnit': 'National Archives at College Park - Textual Reference'}
+66D501 | RG 59 | entry ['UD-UP 293-B'] | NAID 648748 | Files Pertaining to Operation Mongoose | control
+    facts: {'creator': 'Department of State. Bureau of Inter-American Affairs. Office of the Coordinator of Cuban Affairs.', 'inclusiveStartYear': 1963, 'inclusiveEndYear': 1965, 'accessStatus': 'Unrestricted', 'useStatus': 'Unrestricted', 'extent': '2 linear feet, 8 linear inches', 'referenceUnit': 'National Archives at College Park - Textual Reference'}
+62D418 | RG 59 | entry ['A1 3147'] | NAID 2068466 | Subject Files | control
+    facts: {'creator': 'Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs.', 'inclusiveStartYear': 1959, 'inclusiveEndYear': 1962, 'accessStatus': 'Restricted - Partly', 'useStatus': 'Restricted - Possibly', 'extent': '1 linear foot, 9 linear inches', 'referenceUnit': 'National Archives at College Park - Textual Reference'}
+62D24 | RG 59 | entry ['A1 3148'] | NAID 2363836 | Subject Files | control
+    facts: {'creator': 'Department of State. Bureau of Inter-American Affairs. Office of the Assistant Secretary of State for Inter-American Affairs. Office of the Special Assistant on Communism.', 'inclusiveStartYear': 1958, 'inclusiveEndYear': 1961, 'accessStatus': 'Restricted - Partly', 'useStatus': 'Restricted - Partly', 'extent': '4 linear feet, 10 linear inches', 'referenceUnit': 'National Archives at College Park - Textual Reference'}
+70D149 NOT IN central-files-index
+66D95 | RG 59 | entry ['A1 1586E'] | NAID 2839192 | Records Relating to National Security Council Policy Papers | control
+    facts: {'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'inclusiveStartYear': 1947, 'inclusiveEndYear': 1979, 'accessStatus': 'Restricted - Partly', 'useStatus': 'Restricted - Possibly', 'extent': '26 linear feet, 3 linear inches', 'referenceUnit': 'National Archives at College Park - Textual Reference'}
+66D204 | RG 59 | entry ['A1 1590'] | NAID 2538452 | Presidential and Secretary of State Correspondence with Foreign Heads of State | control
+    facts: {'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'inclusiveStartYear': 1953, 'inclusiveEndYear': 1964, 'accessStatus': 'Restricted - Possibly', 'useStatus': 'Unrestricted', 'extent': '9 linear feet, 8 linear inches', 'referenceUnit': 'National Archives at College Park - Textual Reference'}
+65D533 NOT IN central-files-index
+64D199 | RG 59 | entry ['A1 1566'] | NAID 602231 | The Secretary's and the Under Secretary's Memorandums of Conversation | control
+    facts: {'creator': 'Department of State. Executive Secretariat.', 'inclusiveStartYear': 1953, 'inclusiveEndYear': 1964, 'accessStatus': 'Unrestricted', 'useStatus': 'Unrestricted', 'extent': '13 linear feet, 2 linear inches', 'referenceUnit': 'National Archives at College Park - Textual Reference'}
+65D330 | RG 59 | entry ['A1 1566'] | NAID 602231 | The Secretary's and the Under Secretary's Memorandums of Conversation | control
+    facts: {'creator': 'Department of State. Executive Secretariat.', 'inclusiveStartYear': 1953, 'inclusiveEndYear': 1964, 'accessStatus': 'Unrestricted', 'useStatus': 'Unrestricted', 'extent': '13 linear feet, 2 linear inches', 'referenceUnit': 'National Archives at College Park - Textual Reference'}
+73D191 | RG 59 | entry ['A1-5758'] | NAID 1040618 | Records Relating to Cuba | control
+    facts: {'creator': 'Department of State. Bureau of Inter-American Affairs. Office of the Coordinator of Cuban Affairs.', 'inclusiveStartYear': 1957, 'inclusiveEndYear': 1975, 'accessStatus': 'Restricted - Partly', 'useStatus': 'Restricted - Possibly', 'extent': '27 linear feet, 8 linear inches', 'referenceUnit': 'National Archives at College Park - Textual Reference'}
+
+numericalFile keys ['microfilm', 'rolls', 'seriesNaId']
+countrySeries: [('Diplomatic Despatches', 'diplomaticDespatches', 2160), ('Diplomatic Instructions', 'diplomaticInstructions', 177), ('Notes from Foreign Missions', 'notesFromForeignMissions', 522), ('Notes to Foreign Missions', 'notesToForeignMissions', 104), ('Consular Despatches', 'consularDespatches', 3357), ('Consular Instructions', 'consularInstructions', 7), ('Notes to Foreign Consuls', 'notesToForeignConsuls', 4), ('Notes from Foreign Consuls', 'notesFromForeignConsuls', 11), ('Domestic Letters', 'domesticLetters', 272), ('Letters Received', 'lettersReceived', 14), ('Despatches from Special Agents', 'specialAgentsDespatches', 22), ('Instructions to Special Agents', 'specialAgentsInstructions', 4)]
+Cuba rolls: 225
+  ('Diplomatic Despatches', 'Despatches from U.S. Ministers to Cuba, 1902-1906') 18 rolls 1902-05-27 None e.g. NAID 189231252
+  ('Diplomatic Instructions', None) 1 rolls 1902-05-20 1906-08-14 e.g. NAID 149302975
+  ('Notes from Foreign Missions', 'Notes from the Cuban Legation in the United States to the Department of State, 1844-1906') 2 rolls 1844-01-20 1906-08-10 e.g. NAID 188256306
+  ('Notes to Foreign Missions', None) 1 rolls 1902-05-24 1906-08-11 e.g. NAID 216904230
+  ('Consular Despatches', 'Despatches from United States Consuls in Havana, Cuba, 1783-1906') 133 rolls 1783-12-14 None e.g. NAID 211318791
+  ('Consular Despatches', 'Despatches from U.S. Consuls in Santiago de Cuba, Cuba, 1799-1906') 17 rolls 1799-05-13 1906-08-09 e.g. NAID 211450556
+  ('Consular Despatches', 'Despatches from U.S. Consuls in Matanzas, Cuba, 1820-1899') 17 rolls 1820-01-01 1899-12-14 e.g. NAID 212025228
+  ('Consular Despatches', 'Despatches from U.S. Consuls in Trinidad, Cuba, 1824-1876') 9 rolls 1824-11-27 1876-10-23 e.g. NAID 212462719
+  ('Consular Despatches', 'Despatches from U.S. Consuls in Baracoa, Cuba. (1827-1846, 1878-1899), 1827-1899') 3 rolls 1827-05-23 1899-02-28 e.g. NAID 212320893
+  ('Consular Despatches', 'Despatches From U.S. Consuls in Porto Principe and Xibara, Cuba, 1828-1843') 1 rolls 1828-08-15 1843-06-03 e.g. NAID 212367149
+  ('Consular Despatches', 'Despatches from U.S. Consuls in Cienfuegos, Cuba, 1876-1906') 8 rolls 1842-01-18 1906-08-06 e.g. NAID 212347227
+  ('Consular Despatches', 'Despatches from U.S. Consuls in Nuevitas, Cuba, 1842-1847.') 1 rolls 1842-02-22 1898-08-16 e.g. NAID 212380132
+  ('Consular Despatches', 'Despatches from U.S. Consuls in Cardenas, Cuba. (1843-1845, 1879-1898)') 5 rolls 1843-06-20 1898-10-20 e.g. NAID 212377001
+  ('Consular Despatches', 'Despatches from U.S. Consuls in Manzanillo, Cuba, 1844-1846') 1 rolls 1844-01-02 1846-08-07 e.g. NAID 212399544
+  ('Consular Despatches', 'Despatches from U.S. Consuls in San Juan de los Remedios, Cuba. (1844-1846, 1879-1898)') 2 rolls 1844-09-11 1898-04-26 e.g. NAID 212379304
+  ('Consular Despatches', 'Despatches from U.S. Consuls in Sagua la Grande, Cuba, 1878-1900') 6 rolls 1878-06-03 1900-09-07 e.g. NAID 212446359
+
+decimal coverage: {"decimalFileOpensIn": 1910, "glossableYears": [{"endYear": 1949, "scheduleId": "1910-1949", "startYear": 1910}, {"endYear": 1959, "scheduleId": "1950-1959", "startYear": 1950}, {"endYear": 1963, "scheduleId": "1960-1963", "startYear": 1960}], "keyOutsideGlossableYears": "no-gloss", "notShipped": [], "note": "A key is glossable only when the document's own date falls inside one of `glossableYears`. Outside them this file has NO gloss \u2014 do not compose one from a schedule that does not govern the key's era. The classification was renumbered in 1950, so composing across that year returns a plausible WRONG reading rather than a miss: `411` reads as Claims under the 1910\u20131949 schedule where the editors gloss `411.48` as Poland, and `48` reads as British Africa \u2014 and `48` is live in TWO of this schedule's vocabularies at once (country `British Africa`, class-8 subject `Calamitie

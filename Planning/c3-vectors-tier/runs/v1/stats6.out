@@ -1,0 +1,5 @@
+band | 'cuba OR cuban' | 'cuba OR cuban OR havana OR habana' | (havana OR habana) NOT cuba/cuban | (antilles OR "isle of pines") NOT cuba/cuban
+1870-1899 | 1249 | 1489 | 240 of 1489 | 43
+1900-1939 | 3048 | 3400 | 352 of 3400 | 31
+1940-1957 | 1833 | 2288 | 455 of 2288 | 62
+1958-1989 | 6126 | 6216 | 90 of 6216 | 9

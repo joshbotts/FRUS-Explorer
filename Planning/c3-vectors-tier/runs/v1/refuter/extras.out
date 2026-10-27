@@ -1,0 +1,142 @@
+== CHANNEL ONE (document_sources) over tier-2 (4107 docs)
+1900-1957: docs 1347 ; with a source row 1252 ; citation_era=decimal & RG 59 1187
+1958-1989 came-from by (era, repository, RG):
+    ('decimal', 'Department of State', '59', 436)
+    ('structured', 'Kennedy Library', None, 355)
+    ('lot_file', 'Department of State', '59', 309)
+    ('structured', 'Carter Library', None, 259)
+    ('structured', 'Central Intelligence Agency', None, 207)
+    ('cfpf', 'Department of State', '59', 158)
+    ('structured', 'Nixon Presidential Materials', None, 130)
+    ('structured', 'Eisenhower Library', None, 89)
+    ('structured', 'National Archives', '330', 88)
+    ('named_series', None, None, 79)
+    ('structured', 'Johnson Library', None, 79)
+    ('subject_numeric', 'National Archives', '59', 76)
+1958-1989 came-from lot files (lot_file_norm, series_name, n):
+    ('65D438', None, 28)
+    ('62D24', None, 14)
+    ('62D418', None, 13)
+    ('66D501', None, 12)
+    ('70D149', None, 12)
+    ('64D199', None, 11)
+    ('65D330', None, 11)
+    ('67D548', None, 11)
+    ('74D272', None, 9)
+    ('77D163', 'Files', 9)
+    ('66D149', None, 8)
+    ('61D411', None, 7)
+named lots in came-from (any band):
+    65D438 (32, '1962-03-02', '1963-12-18')
+    64D199 (11, '1959-11-24', '1960-08-20')
+    65D330 (13, '1961-02-14', '1964-04-22')
+    62D24 (14, '1959-02-06', '1961-04-20')
+    66D501 (14, '1961-11-09', '1963-12-02')
+    66D95 (2, '1961-04-22', '1961-06-22')
+    65D212 (1, '1955-03-10', '1955-03-10')
+came-from structured collections (repository, series_name, n), all bands:
+    ('Kennedy Library', 'National Security Files', 225)
+    ('Carter Library', 'National Security Affairs', 215)
+    ('Central Intelligence Agency', None, 208)
+    ('Nixon Presidential Materials', 'NSC Files', 118)
+    ('Kennedy Library', 'NSF', 81)
+    ('Johnson Library', 'National Security File', 69)
+    ('Eisenhower Library', 'Whitman File', 66)
+    ('National Archives', 'OASD (C) A Files: FRC 71 A 2896', 40)
+    ('Ford Library', 'National Security Adviser', 31)
+    ('Carter Library', 'National Security Council', 29)
+    ('Kennedy Library', 'President’s Office Files', 12)
+    ('Eisenhower Library', 'Project “Clean Up” Records', 11)
+    ('Kennedy Library', 'Presidentʼs Office Files', 11)
+    ('Library of Congress', 'Manuscript Division', 11)
+came-from repositories matching the libraries and CIA (any era):
+    %Kennedy% 355 [('National Security Files', 225), ('NSF', 81), ('President’s Office Files', 12)]
+    %Johnson% 79 [('National Security File', 69), ('NSF', 4), ('Recordings and Transcripts', 3)]
+    %Carter% 259 [('National Security Affairs', 215), ('National Security Council', 29), ('NSC Institutional Files', 4)]
+    %Nixon% 131 [('NSC Files', 118), ('Henry Kissinger Telephone Conversation Transcripts', 4), ('White House Tapes', 3)]
+    %Eisenhower% 92 [('Whitman File', 66), ('Project “Clean Up” Records', 11), ('Herter Papers', 5)]
+    %Central Intelligence% 208 [(None, 208)]
+== CHANNEL TWO (external_citations) over tier-2
+rows by band: [('1900-1939', 7), ('1940-1957', 179), ('1958-1989', 774)]
+anchors: [('centralFileClass', 424), ('presidentialLibrary', 345), ('lotFile', 191)]
+lots pointed at (rows, distinct docs):
+    ('66D95', 28, 24)
+    ('65D438', 13, 11)
+    ('62D24', 10, 8)
+    ('65D330', 8, 8)
+    ('66D204', 8, 8)
+    ('64D199', 7, 5)
+    ('65D533', 6, 5)
+    ('84D241', 6, 4)
+    ('62D418', 5, 5)
+    ('73D191', 5, 4)
+   named lot 66D95 (28, 24, '1958-12-23', '1963-01-22')
+   named lot 65D438 (13, 11, '1962-10-02', '1963-12-19')
+   named lot 62D24 (10, 8, '1959-04-15', '1960-12-21')
+   named lot 65D330 (8, 8, '1961-04-04', '1964-12-09')
+   named lot 64D199 (7, 5, '1954-06-08', '1960-10-20')
+   named lot 65D212 (2, 2, '1955-02-02', '1955-03-31')
+libraries pointed at (repository, collection, rows):
+    ('Carter Library', 'National Security Affairs', 134)
+    ('Kennedy Library', 'National Security Files', 65)
+    ('Johnson Library', 'National Security File', 26)
+    ('Nixon Presidential Materials', 'NSC Files', 20)
+    ('Carter Library', 'Presidential Materials', 10)
+    ('Eisenhower Library', 'Project “Clean Up” Records', 8)
+    ('Eisenhower Library', 'Whitman File', 7)
+    ('Eisenhower Library', 'Herter Papers', 6)
+central-file classes pointed at: (424,)
+docs with >=1 row: (621,)
+earliest external_citations row (whole index) with its document: [('1910-12-06', 'frus1911', 'd488', 'centralFileClass'), ('1911-04-13', 'frus1913', 'd707', 'centralFileClass')]
+== DECIMAL CLASSES came-from, tier-2 dated <1958, citation_era=decimal:
+    ('837.51', 171, '1917-08-01', '1949-11-01')
+    ('837.61351', 155, '1917-09-27', '1949-09-22')
+    ('837.00', 151, '1912-05-24', '1954-07-26')
+    ('611.3731', 73, '1911-01-06', '1947-12-31')
+    ('837.24', 30, '1941-04-14', '1948-11-18')
+    ('811.34537', 28, '1903-02-16', '1946-11-25')
+    (None, 27, '1906-11-26', '1949-04-14')
+    ('810.20', 18, '1940-05-29', '1945-08-08')
+== PRESIDENTIAL LIBRARY CATALOGUE
+keys: ['generated', 'libraries', 'schemaVersion', 'source']
+    ('/libraries[4]/collections[253]/title', 'Papers of John F. Kennedy: Presidential Papers: National Security Files')
+    ('/libraries[5]/collections[88]/title', 'National Security Files')
+    ('/libraries[8]/collections[102]/series[8]/title', 'Issues National Security Files')
+== PRE-1906 SERIES (central-files-index countrySeries)
+countrySeries type: <class 'list'> 12
+    177380726 present ": ["netherlands"], "naId": "188769613", "startISO": "1792-01-01", "title": "Register-1792-1870"}, {"catalogURL": "https://catalog.archives.gov/id/188602180", "endISO": "1795-02-02", "fileUnitNaId": "177380726", "fileUnitTitle": "Despatches from U.S. Ministers
+    603720 present v/id/5675669", "fileUnitNaId": "5674398", "fileUnitTitle": "Despatches from U.S. Ministers to Argentina", "geoKeys": ["argentina"], "naId": "5675669", "title": "La Cuestion Chilena"}], "seriesNaId": "603720"}, {"category": "diplomaticInstructions", "displayNam
+    177380758 present ["korea"], "naId": "188412968", "startISO": "1902-05-01", "title": "May 1, 1902 - Oct. 31, 1902"}, {"catalogURL": "https://catalog.archives.gov/id/189231252", "endISO": "1902-07-30", "fileUnitNaId": "177380758", "fileUnitTitle": "Despatches from U.S. Ministers
+    183303928 present britain"], "naId": "188039516", "startISO": "1794-08-21", "title": "Aug. 21, 1794-Aug. 14, 1795"}, {"catalogURL": "https://catalog.archives.gov/id/188201653", "endISO": "1798-01-01", "fileUnitNaId": "183303928", "fileUnitTitle": "Notes from the Spanish Legatio
+    183303950 present  britain"], "naId": "188045328", "startISO": "1842-06-13", "title": "June 13, 1842-Feb. 3, 1844"}, {"catalogURL": "https://catalog.archives.gov/id/188256306", "endISO": "1903-12-30", "fileUnitNaId": "183303950", "fileUnitTitle": "Notes from the Cuban Legation 
+    593313 present L": "https://catalog.archives.gov/id/220862447", "geoKeys": ["volume 5"], "naId": "220862447", "title": "United States Ministers, Instructions: Volume 5: Pages 1-418, Pages 437-457"}], "seriesNaId": "593313"}, {"category": "notesFromForeignMissions", "displayN
+== MANIFEST TITLES
+manifest entry keys: ['dateRange', 'editors', 'filename', 'publicationDate', 'sizeBytes', 'status', 'subseries', 'tags', 'title', 'volumeId']
+    short frus1874 | printed: Papers Relating to the Foreign Relations of the United States, 1874 | manifest: Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, With the Annual Message of the President, December 7, 1874
+    short frus1898 | printed: Papers Relating to the Foreign Relations of the United States, 1898 | manifest: Papers Relating to the Foreign Relations of the United States, With the Annual Message of the President Transmitted to Congress December 5, 1898
+    short frus1902 | printed: Papers Relating to the Foreign Relations of the United States, 1902 | manifest: Papers Relating to the Foreign Relations of the United States, With the Annual Message of the President Transmitted to Congress December 2, 1902
+    EXACT frus1918 | printed: Papers Relating to the Foreign Relations of the United States, 1918 | manifest: Papers Relating to the Foreign Relations of the United States, 1918
+    EXACT frus1933v05 | printed: Foreign Relations of the United States, Diplomatic Papers, 1933, The American Republics, Volume V | manifest: Foreign Relations of the United States, Diplomatic Papers, 1933, The American Republics, Volume V
+    EXACT frus1934v05 | printed: Foreign Relations of the United States, Diplomatic Papers, 1934, The American Republics, Volume V | manifest: Foreign Relations of the United States, Diplomatic Papers, 1934, The American Republics, Volume V
+    EXACT frus1941v07 | printed: Foreign Relations of the United States, Diplomatic Papers, 1941, The American Republics, Volume VII | manifest: Foreign Relations of the United States, Diplomatic Papers, 1941, The American Republics, Volume VII
+    EXACT frus1948v09 | printed: Foreign Relations of the United States, 1948, The Western Hemisphere, Volume IX | manifest: Foreign Relations of the United States, 1948, The Western Hemisphere, Volume IX
+    EXACT frus1950v02 | printed: Foreign Relations of the United States, 1950, The United Nations; The Western Hemisphere, Volume II | manifest: Foreign Relations of the United States, 1950, The United Nations; The Western Hemisphere, Volume II
+    EXACT frus1952-54v04 | printed: Foreign Relations of the United States, 1952–1954, The American Republics, Volume IV | manifest: Foreign Relations of the United States, 1952–1954, The American Republics, Volume IV
+    EXACT frus1958-60v06 | printed: Foreign Relations of the United States, 1958–1960, Cuba, Volume VI | manifest: Foreign Relations of the United States, 1958–1960, Cuba, Volume VI
+    EXACT frus1961-63v11 | printed: Foreign Relations of the United States, 1961–1963, Volume XI, Cuban Missile Crisis and Aftermath | manifest: Foreign Relations of the United States, 1961–1963, Volume XI, Cuban Missile Crisis and Aftermath
+    EXACT frus1969-76ve10 | printed: Foreign Relations of the United States, 1969–1976, Volume E–10, Documents on American Republics, 1969–1972 | manifest: Foreign Relations of the United States, 1969–1976, Volume E–10, Documents on American Republics, 1969–1972
+    EXACT frus1977-80v23 | printed: Foreign Relations of the United States, 1977–1980, Volume XXIII, Mexico, Cuba, and the Caribbean | manifest: Foreign Relations of the United States, 1977–1980, Volume XXIII, Mexico, Cuba, and the Caribbean
+    EXACT frus1977-80v01 | printed: Foreign Relations of the United States, 1977–1980, Volume I, Foundations of Foreign Policy | manifest: Foreign Relations of the United States, 1977–1980, Volume I, Foundations of Foreign Policy
+    EXACT frus1981-88v03 | printed: Foreign Relations of the United States, 1981–1988, Volume III, Soviet Union, January 1981–January 1983 | manifest: Foreign Relations of the United States, 1981–1988, Volume III, Soviet Union, January 1981–January 1983
+    volumes whose id starts with frus1874: ['frus1874']
+    volumes whose id starts with frus1898: ['frus1898']
+    volumes whose id starts with frus1902: ['frus1902', 'frus1902app1', 'frus1902app2']
+    volumes whose id starts with frus1918: ['frus1918', 'frus1918Russiav01', 'frus1918Russiav02', 'frus1918Russiav03', 'frus1918Supp01v01', 'frus1918Supp01v02', 'frus1918Supp02']
+== N05 NARROW (scan2.py's regexes over my tier-2 set)
+   1870-1899 | 309 | security 94 (0.304) | prosperity 171 (0.553)
+   1900-1939 | 731 | security 160 (0.219) | prosperity 360 (0.492)
+   1940-1957 | 616 | security 203 (0.330) | prosperity 434 (0.705)
+   1958-1989 | 2451 | security 1918 (0.783) | prosperity 1237 (0.505)
+== SAMPLE 40 literal share (sorted hit list, every len/40th)
+   hit list 12256; STRICT 39 of 40; TOLERANT 40 of 40
+   same 40 as the session's sample40_cuba.txt: True

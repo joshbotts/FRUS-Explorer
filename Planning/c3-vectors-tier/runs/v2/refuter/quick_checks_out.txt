@@ -1,0 +1,52 @@
+## d197 Fish?
+0|Brazil 1869 7,754,526 5,477,439 Venezuela 1868 69,997 10,452
+## collection entry counts
+Counter({'excerpt': 17, 'document': 16, 'prose': 6, 'heading': 5, 'generated': 1})
+documents with notes 16 distinct doc pairs 16 excerpt pairs not among documents []
+## ff_out.txt
+band	set	N	natsec_strict	natsec_tolerant	prosper	CONTROL_secretary_of_state
+1861-1898	cuba_core	891	0/891	0/891	69/891	304/891
+1861-1898	baseline	400	0/400	0/400	15/400	92/400
+1899-1933	cuba_core	2206	1/2206	1/2206	56/2206	1888/2206
+1899-1933	baseline	400	1/400	1/400	3/400	332/400
+1934-1958	cuba_core	1181	9/1181	9/1181	18/1181	848/1181
+1934-1958	baseline	400	10/400	10/400	3/400	292/400
+1959-1980	cuba_core	2727	1021/2727	1021/2727	33/2727	601/2727
+1959-1980	baseline	400	181/400	181/400	6/400	103/400
+## headings_out.txt
+1840-1898 docs 401 {'security': '3/401', 'economy': '37/401', 'property_claims': '18/401', 'politics_order': '41/401', 'other': '303/401'}
+1899-1933 docs 2206 {'security': '208/2206', 'economy': '642/2206', 'property_claims': '173/2206', 'politics_order': '956/2206', 'other': '492/2206'}
+1934-1958 docs 1231 {'security': '250/1231', 'economy': '796/1231', 'property_claims': '10/1231', 'politics_order': '330/1231', 'other': '191/1231'}
+1959-1980 docs 2677 {'security': '485/2677', 'economy': '46/2677', 'property_claims': '0/2677', 'politics_order': '241/2677', 'other': '1979/2677'}
+## decade_cuba2.txt
+1860s|11268|448|39.8
+1870s|5821|400|68.7
+1880s|6484|306|47.2
+1890s|9845|783|79.5
+1900s|10261|408|39.8
+1910s|30842|1033|33.5
+1920s|20374|767|37.6
+1930s|40073|1192|29.7
+1940s|75872|1725|22.7
+1950s|42801|1032|24.1
+1960s|27654|3173|114.7
+1970s|22258|1931|86.8
+1980s|6038|643|106.5
+## tei_scan totals
+volumes 553
+Cuba 50771 vols>0 472
+CUBA 364 vols>0 55
+Cuban 29249 vols>0 372
+Cubans 5041 vols>0 195
+CUBAN(S) 82 vols>0 13
+Havana 4623 vols>0 260
+Habana 6076 vols>0 165
+Havanna(h) 1 vols>0 1
+HAVANA/HABANA 12 vols>0 7
+Isle_of_Cuba 1029 vols>0 86
+POS_Department_of_State 177748 vols>0 552
+NEG_ZZZ 0 vols>0 0
+## M (cuba OR cuban OR havana) corpus-wide, apparatus excluded; habana-only; habana
+13154
+759
+3079

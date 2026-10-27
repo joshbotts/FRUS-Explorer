@@ -1,0 +1,12 @@
+SQL per doc: SELECT document_id, header, coalesce(dateline,''), coalesce(source_note,''), body_text FROM document_cache WHERE volume_id=? AND document_id=?
+pattern	1860s	1870s	1890s	1900s	1910s	1920s	1930s	1940s	1950s	1960s	1970s	1980s	undated
+N	149	3	290	305	1004	500	682	775	460	2002	453	89	6
+ns_strict	0	0	0	0	1	0	1	1	21	678	266	67	0
+ns_tol	0	0	0	0	1	0	1	1	21	678	266	67	0
+communis_lit	0	0	0	0	0	1	40	24	169	644	39	9	0
+commun_other	31	1	76	65	135	101	70	90	59	301	75	8	0
+soviet_lit	0	0	0	0	0	1	2	6	24	915	177	21	0
+sugar_lit	0	0	14	15	90	59	73	283	127	223	37	3	0
+security_lit	2	0	11	8	17	20	23	30	70	1007	306	73	0
+prosper_lit	0	0	17	18	13	17	11	11	10	22	7	0	0
+strategic_lit	0	0	0	0	3	1	1	22	10	129	41	0	0

@@ -1,0 +1,89 @@
+=== A.5 NEAREST NEIGHBOURS (Hamming over 512 sign bits; digest 89481b18)
+ANCHOR frus1874/d552 ('1874-02-06', 'No. 550. Mr. Fish to Mr. Cushing.', 0, 0, 1)
+  ham  61  frus1898/d490  1897-07-16 | Mr. Sherman to Mr. Woodford. | contains-Cuba=1 fm=0 ed=0
+  ham  68  frus1898/d503  1897-10-26 | Mr. Woodford to Mr. Sherman. | contains-Cuba=1 fm=0 ed=0
+  ham  71  frus1898/d531  1898-02-09 | Mr. Woodford to Mr. Sherman. | contains-Cuba=1 fm=0 ed=0
+  ham  73  frus1898/d495  1897-09-23 | Mr. Woodford to Mr. Sherman. | contains-Cuba=1 fm=0 ed=0
+  ham  77  frus1898/d526  1897-12-23 | Mr. Woodford to Mr. Sherman. | contains-Cuba=1 fm=0 ed=0
+  ham  77  frus1902/d313  1902-11-21 | Mr. Squiers to Mr. Hay. | contains-Cuba=1 fm=0 ed=0
+  ham  78  frus1898/d544  1898-03-09 | Mr. Woodford to the President. | contains-Cuba=1 fm=0 ed=0
+  ham  80  frus1898/d492  1897-09-13 | Mr. Woodford to Mr. Sherman. | contains-Cuba=1 fm=0 ed=0
+  ham  80  frus1898/d498  1897-10-05 | Mr. Woodford to Mr. Sherman. | contains-Cuba=1 fm=0 ed=0
+  ham  81  frus1897/d581  1896-04-04 | Mr. Olney to Mr. Dupuy de Lôme. | contains-Cuba=1 fm=0 ed=0
+ANCHOR frus1902/d273 ('1902-03-27', '[Untitled]', 0, 0, 1)
+  ham  70  frus1904/d207  1904-07-02 | By the President of the United States of America. | contains-Cuba=1 fm=0 ed=0
+  ham  87  frus1902/d313  1902-11-21 | Mr. Squiers to Mr. Hay. | contains-Cuba=1 fm=0 ed=0
+  ham  92  frus1903/d333  1903-04-11 | Mr. Squiers to Mr. Hay. | contains-Cuba=1 fm=0 ed=0
+  ham  94  frus1922v01/d830  1922-01-21 | The Secretary of State to the Representative on Special Miss | contains-Cuba=1 fm=0 ed=0
+  ham  97  frus1905/d279  1905-03-10 | The Secretary of State to Minister Squiers. | contains-Cuba=1 fm=0 ed=0
+  ham  98  frus1933v05/d241  1933-05-01 | The Secretary of State to the Appointed Ambassador in Cuba ( | contains-Cuba=1 fm=0 ed=0
+  ham 101  frus1902/d294  1902-06-02 | Mr. Squiers to Mr. Hay. | contains-Cuba=1 fm=0 ed=0
+  ham 101  frus1920v02/d54  1920-12-21 | The Minister in Cuba (Long) to the Acting Secretary of State | contains-Cuba=1 fm=0 ed=0
+  ham 102  frus1898/d503  1897-10-26 | Mr. Woodford to Mr. Sherman. | contains-Cuba=1 fm=0 ed=0
+  ham 103  frus1903/d334  1903-11-07 | Mr. Squiers to Mr. Hay. | contains-Cuba=1 fm=0 ed=0
+ANCHOR frus1941v07/d134 ('1941-01-08', 'Memorandum by the Ambassador to Cuba (Messersmith)', 0, 0, 1)
+  ham  60  frus1941v07/d137  1941-02-12 | The Ambassador in Cuba (Messersmith) to the Secretary of Sta | contains-Cuba=1 fm=0 ed=0
+  ham  69  frus1948v09/d420  1948-07-29 | Memorandum Prepared in the Department of State | contains-Cuba=1 fm=0 ed=0
+  ham  70  frus1941v07/d141  1941-04-20 | The Ambassador in Cuba (Messersmith) to the Secretary of Sta | contains-Cuba=1 fm=0 ed=0
+  ham  78  frus1958-60v06/d328  1959-07-01 | 328. Memorandum by the Director of the Office of Inter-Ameri | contains-Cuba=1 fm=0 ed=0
+  ham  80  frus1941v07/d145  1941-05-08 | The Ambassador in Cuba (Messersmith) to the Secretary of Sta | contains-Cuba=1 fm=0 ed=0
+  ham  80  frus1958-60v06/d570  1960-08-02 | 570. Letter From the Ambassador in Cuba (Bonsal) to the Assi | contains-Cuba=1 fm=0 ed=0
+  ham  81  frus1921v01/d690  1921-08-01 | The Acting Chief of the Division of Latin American Affairs,  | contains-Cuba=1 fm=0 ed=0
+  ham  81  frus1941v07/d135  1941-01-11 | The Secretary of State to the Ambassador to Cuba (Messersmit | contains-Cuba=1 fm=0 ed=0
+  ham  84  frus1941v07/d167  1941-04-18 | The Cuban Minister of State (Cortina) to the American Ambass | contains-Cuba=1 fm=0 ed=0
+  ham  87  frus1948v09/d410  1948-04-08 | The Acting Secretary of State to the Embassy in Colombia | contains-Cuba=1 fm=0 ed=0
+ANCHOR frus1950v02/d440 ('1951-01-11', 'Department of State Policy Statement', 0, 0, 1)
+  ham  62  frus1948v09/d420  1948-07-29 | Memorandum Prepared in the Department of State | contains-Cuba=1 fm=0 ed=0
+  ham  64  frus1969-76ve10/d205  1969-07-02 | 205. Study Prepared in Response to National Security Study M | contains-Cuba=1 fm=0 ed=0
+  ham  69  frus1964-68v32/d300  1965-03-19 | 300. Memorandum From Gordon Chase of the National Security C | contains-Cuba=1 fm=0 ed=0
+  ham  69  frus1969-76ve11p1/d278  1974-01-21 | 278. Memorandum From Acting Secretary of State Rush to the A | contains-Cuba=1 fm=0 ed=0
+  ham  73  frus1946v11/d658  1946-09-12 | The Ambassador in Cuba (Norweb) to the Secretary of State | contains-Cuba=1 fm=0 ed=0
+  ham  73  frus1952-54v04/d351  1954-11-23 | Extract From Current Economic Developments | contains-Cuba=1 fm=0 ed=0
+  ham  73  frus1958-60v06/d423  1960-01-14 | 423. Memorandum of Discussion at the 432d Meeting of the Nat | contains-Cuba=1 fm=0 ed=0
+  ham  74  frus1961-63v10-12mSupp/d729  1963-12-15 | 729. Memorandum from McGeorge Bundy to President Johnson, De | contains-Cuba=1 fm=0 ed=0
+  ham  76  frus1958-60v06/d364  1959-09-24 | 364. Memorandum From the Ambassador to Cuba (Bonsal) to the  | contains-Cuba=1 fm=0 ed=0
+  ham  77  frus1958-60v06/d527  1960-06-07 | 527. Memorandum of a Conference, Department of State, Washin | contains-Cuba=1 fm=0 ed=0
+ANCHOR frus1961-63v11/d21 ('1962-10-16', '21. Off the Record Meeting on Cuba', 0, 0, 1)
+  ham  43  frus1961-63v11/d18  1962-10-16 | 18. Transcript of a Meeting at the White House | contains-Cuba=1 fm=0 ed=0
+  ham  84  frus1964-68v07/d125  1968-10-26 | 125. Telephone Conversation Between President Johnson and Se | contains-Cuba=0 fm=0 ed=0
+  ham  86  frus1961-63v11/d43  1962-10-24 | 43. Memorandum for the File | contains-Cuba=1 fm=0 ed=0
+  ham  86  frus1964-68v03/d87  1965-07-26 | 87. Notes of Meeting | contains-Cuba=0 fm=0 ed=0
+  ham  87  frus1964-68v01/d280  1964-08-04 | 280. Notes of the Leadership Meeting, White House | contains-Cuba=1 fm=0 ed=0
+  ham  87  frus1964-68v07/d109  1968-10-23 | 109. Telephone Conversation Between President Johnson and Se | contains-Cuba=0 fm=0 ed=0
+  ham  87  frus1969-76v08/d13  1972-02-02 | 13. National Security Council Meeting | contains-Cuba=0 fm=0 ed=0
+  ham  88  frus1961-63v08/d121  1962-12-27 | 121. Memorandum of Conference With President Kennedy | contains-Cuba=1 fm=0 ed=0
+  ham  88  frus1961-63v11/d38  1962-10-21 | 38. Minutes of the 506th Meeting of the National Security Co | contains-Cuba=1 fm=0 ed=0
+  ham  88  frus1964-68v07/d126  1968-10-26 | 126. Telephone Conversation Between President Johnson and Se | contains-Cuba=0 fm=0 ed=0
+ANCHOR frus1969-76ve10/d205 ('1969-07-02', '205. Study Prepared in Response to National Security Study M', 0, 0, 1)
+  ham  52  frus1961-63v10-12mSupp/d729  1963-12-15 | 729. Memorandum from McGeorge Bundy to President Johnson, De | contains-Cuba=1 fm=0 ed=0
+  ham  54  frus1961-63v10-12mSupp/d670  1963-04-25 | 670. Memorandum prepared by McCone, April 25 | contains-Cuba=1 fm=0 ed=0
+  ham  56  frus1958-60v06/d620  1960-12-08 | 620. Special National Intelligence Estimate | contains-Cuba=1 fm=0 ed=0
+  ham  57  frus1958-60v06/d616  1960-12-05 | 616. Despatch From the Embassy in Cuba to the Department of  | contains-Cuba=1 fm=0 ed=0
+  ham  60  frus1961-63v10/d202  1961-05-04 | 202. Paper Prepared for the National Security Council by an  | contains-Cuba=1 fm=0 ed=0
+  ham  61  frus1969-76ve11p1/d278  1974-01-21 | 278. Memorandum From Acting Secretary of State Rush to the A | contains-Cuba=1 fm=0 ed=0
+  ham  63  frus1961-63v10-12mSupp/d543  1962-11-19 | 543. Memorandum for members of the NSC Executive Committee f | contains-Cuba=1 fm=0 ed=0
+  ham  64  frus1950v02/d440  1951-01-11 | Department of State Policy Statement | contains-Cuba=1 fm=0 ed=0
+  ham  64  frus1961-63v10-12mSupp/d665  1963-04-22 | 665. Memorandum from Kent to McCone, April 22 | contains-Cuba=1 fm=0 ed=0
+  ham  65  frus1958-60v06/d475  1960-03-10 | 475. Letter From the Under Secretary of State for Political  | contains-Cuba=1 fm=0 ed=0
+ANCHOR frus1977-80v23/d18 ('1977-07-06', '18. Policy Paper Prepared in the Department of State', 0, 0, 1)
+  ham  69  frus1969-76ve11p1/d299  1975-07-11 | 299. Telegram 164011/Tosec 60117 From the Department of Stat | contains-Cuba=1 fm=0 ed=0
+  ham  71  frus1958-60v06/d364  1959-09-24 | 364. Memorandum From the Ambassador to Cuba (Bonsal) to the  | contains-Cuba=1 fm=0 ed=0
+  ham  77  frus1948v09/d420  1948-07-29 | Memorandum Prepared in the Department of State | contains-Cuba=1 fm=0 ed=0
+  ham  79  frus1958-60v06/d473  1960-03-09 | 473. Memorandum From the Assistant Secretary of State for In | contains-Cuba=1 fm=0 ed=0
+  ham  79  frus1961-63v10-12mSupp/d729  1963-12-15 | 729. Memorandum from McGeorge Bundy to President Johnson, De | contains-Cuba=1 fm=0 ed=0
+  ham  80  frus1964-68v32/d300  1965-03-19 | 300. Memorandum From Gordon Chase of the National Security C | contains-Cuba=1 fm=0 ed=0
+  ham  81  frus1950v02/d440  1951-01-11 | Department of State Policy Statement | contains-Cuba=1 fm=0 ed=0
+  ham  81  frus1977-80v23/d7  1977-03-08 | 7. Memorandum From Robert Pastor of the National Security Co | contains-Cuba=1 fm=0 ed=0
+  ham  81  frus1977-80v23/d19  1977-08-03 | 19. Summary of Conclusions of a Policy Review Committee Meet | contains-Cuba=1 fm=0 ed=0
+  ham  82  frus1961-63v10/d406  1962-09-03 | 406. Memorandum From the Counselor of the Department of Stat | contains-Cuba=1 fm=0 ed=0
+ANCHOR frus1977-80v01/d129 ('1979-10-01', '129. Address by President Carter to the Nation', 0, 0, 1)
+  ham  77  frus1977-80v01/d87  1978-06-07 | 87. Address by President Carter | contains-Cuba=1 fm=0 ed=0
+  ham  79  frus1961-63v06/d83  1962-12-11 | 83. Message From Chairman Khrushchev to President Kennedy | contains-Cuba=1 fm=0 ed=0
+  ham  81  frus1961-63v11/d266  1963-01-09 | 266. Memorandum of Conversation | contains-Cuba=1 fm=0 ed=0
+  ham  83  frus1961-63v11/d29  1962-10-18 | 29. Memorandum of Conversation | contains-Cuba=1 fm=0 ed=0
+  ham  85  frus1961-63v06/d68  1962-10-28 | 68. Letter From Chairman Khrushchev to President Kennedy | contains-Cuba=1 fm=0 ed=0
+  ham  85  frus1977-80v01/d52  1977-07-21 | 52. Remarks by President Carter | contains-Cuba=1 fm=0 ed=0
+  ham  85  frus1977-80v13/d108  1978-05-20 | 108. Memorandum of Conversation | contains-Cuba=1 fm=0 ed=0
+  ham  86  frus1969-76v01/d118  1972-06-15 | 118. Briefing by the President’s Assistant for National Secu | contains-Cuba=0 fm=0 ed=0
+  ham  86  frus1969-76v12/d194  1970-08-04 | 194. Memorandum From the President’s Assistant for National  | contains-Cuba=1 fm=0 ed=0
+  ham  86  frus1977-80v01/d111  1979-02-20 | 111. Remarks by President Carter | contains-Cuba=0 fm=0 ed=0

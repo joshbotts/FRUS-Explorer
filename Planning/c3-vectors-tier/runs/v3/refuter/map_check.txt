@@ -1,0 +1,12 @@
+map index keys: {'clusters': 'list[140]', 'documentCount': 314616, 'generated': '2026-10-15', 'gridExtent': 30000, 'layout': 'dict[8]', 'provenanceDigest': '89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101', 'schema': 1}
+  layout : {"clustering": "HDBSCAN(min_cluster_size=250) over the 2-D embedding", "labelSampling": "c-TF-IDF over up to 300 stride-sampled documents per cluster (41670 read of 226557 clustered)", "method": "PCA-50 -> UMAP-2 (cosine)", "minDist": 0.1, "neighbors": 15, "seed": 18610810, "sourceDims": 256, "unclusteredCount": 88059}
+  cluster sample: {"centreX": -2259, "centreY": -10310, "documentCount": 698, "eraCounts": {"1": 134, "2": 564}, "id": 0, "terms": ["spanish", "salazar", "spain", "lagen"]}
+map header 32 bytes: 4652534d01000000f8cc04008c00000030750000 | size 1887760 | (size-64)/docs = 6.0
+cluster-field value count: 141 | most common: [(65535, 88059), (3, 37899), (72, 15484)] | max value: 65535
+Scope A from 1950: N= 2263 | top cluster ids: [(42, 1920), (65535, 263), (21, 23)] | share in top: 0.848
+  anchor ('frus1958-60v05', 'd112') cluster field: 42
+  anchor ('frus1961-63v10-12mSupp', 'd729') cluster field: 42
+  anchor ('frus1969-76ve10', 'd205') cluster field: 42
+  anchor ('frus1944v07', 'd878') cluster field: 35
+  anchor ('frus1881', 'd405') cluster field: 72
+  anchor ('frus1874', 'd552') cluster field: 65535

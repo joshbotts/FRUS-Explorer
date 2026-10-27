@@ -1,0 +1,10 @@
+## M with Ed2 dropped
+13140
+## near-duplicate pair headers
+frus1865p2/d33|Mr. Jackson to Mr. F. W. Seward|1995
+frus1865p2/d647|Mr. Jackson to Mr. F. W. Seward|1995
+frus1881/d405|No. 401. Mr. Blaine to Mr. Comly.|14627
+frus1894app2/d394|Mr. Blaine to Mr. Comly.|14625
+frus1969-76v12/d211|211. Paper Prepared by the Chairman of the Joint Chiefs of Staff (Moorer)|10584
+frus1969-76v12/d212|212. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to Presiden|21517
+frus1969-76ve10/d225|225. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to Presiden|20525

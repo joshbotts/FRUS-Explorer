@@ -1,0 +1,37 @@
+ranked retrieval queries parsed from queries.log: 15
+  Q1 rows=15 | MATCH 'body_text:(cuba AND (insurrection OR independence) AND (intervention OR mediation))'
+  Q2 rows=5 | MATCH 'header:(fish AND cushing) AND body_text:cuba'
+  Q3 rows=8 | MATCH 'body_text:(cuba AND intervention AND (humanity OR commerce))'
+  Q4 rows=1 | LIKE
+  Q5 rows=1 | MATCH 'body_text:("platt amendment" AND (abrogat* OR treaty))'
+  Q6 rows=8 | MATCH 'body_text:(cuba AND (strategic OR defense) AND (base OR bases))'
+  Q7 rows=6 | MATCH 'body_text:(reciprocity AND cuba AND (independence OR welfare))'
+  Q8 rows=6 | MATCH 'body_text:(cuba AND intervention AND (machado OR welles))'
+  Q9 rows=6 | MATCH 'body_text:(cuba AND economy AND (weaken* OR hunger OR deny))'
+  Q10 rows=6 | MATCH 'body_text:(cuba AND (normalization OR normalize) AND (soviet OR africa OR angola))'
+  Q11 rows=6 | MATCH 'body_text:(cuba AND (sugar OR economic) AND (war OR defense) AND hemisphere)'
+  Q12 rows=4 | MATCH 'body_text:(missile AND "balance of power")'
+  Q13 rows=6 | MATCH 'body_text:(castro AND ("western hemisphere") AND (threat OR danger) AND (subversion OR export))'
+  Q14 rows=5 | MATCH 'body_text:(mariel OR (refugees AND boatlift))'
+  Q15 rows=8 | MATCH 'body_text:(cuba AND ("neighboring" OR "proximity" OR "vicinity") AND (commerce OR commercial) AND inter
+
+per cited pair: ranked queries | scope set W | heading rule A | header FTS B | census M ('cuba OR cuban') | M19 (1865-89) | 'national security' | 'department of state'
+  frus1870/d197: Q1,Q15 | W=False | A=False | B=False | M=True | M19=True | NS=False | DOS=True
+  frus1873p1v2/d50: Q1 | W=False | A=False | B=False | M=True | M19=True | NS=False | DOS=False
+  frus1874/d552: - | W=False | A=False | B=False | M=True | M19=True | NS=False | DOS=True
+  frus1898/d490: Q3 | W=True | A=True | B=False | M=True | M19=False | NS=False | DOS=True
+  frus1898/ch83: Q3 | W=False | A=False | B=False | M=True | M19=False | NS=False | DOS=False
+  frus1902/d294: Q7 | W=True | A=True | B=False | M=True | M19=False | NS=False | DOS=False
+  frus1933v05/d241: Q8 | W=True | A=True | B=True | M=True | M19=False | NS=False | DOS=False
+  frus1934v05/d170: Q5 | W=True | A=True | B=True | M=True | M19=False | NS=False | DOS=True
+  frus1945v09/d745: Q6 | W=True | A=True | B=True | M=True | M19=False | NS=False | DOS=False
+  frus1958-60v06/d517: Q9 | W=True | A=True | B=False | M=True | M19=False | NS=True | DOS=True
+  frus1958-60v06/d567: Q9 | W=True | A=True | B=False | M=True | M19=False | NS=True | DOS=False
+  frus1961-63v10/d202: Q13 | W=True | A=True | B=True | M=True | M19=False | NS=True | DOS=True
+  frus1961-63v11/d34: Q12 | W=True | A=True | B=False | M=True | M19=False | NS=True | DOS=False
+  frus1969-76ve11p1/d278: - | W=True | A=True | B=False | M=True | M19=False | NS=False | DOS=False
+  frus1977-80v23/d19: Q10 | W=True | A=True | B=False | M=True | M19=False | NS=True | DOS=False
+  frus1977-80v23/d98: Q14 | W=True | A=True | B=False | M=True | M19=False | NS=True | DOS=False
+
+STRICT (any logged MATCH/heading query or the scope set, census queries included): reached 16 of 16
+RETRIEVAL-ONLY (ranked LIMIT queries + scope set W/heading walk): reached 15 of 16 | not reached: [('frus1874', 'd552')]

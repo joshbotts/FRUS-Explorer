@@ -185,9 +185,18 @@ carries one; neither does C-0's or C-2's.
 
 | C-3 reader test **[VERIFIED]** | 53 agents in 13 workflow runs: 1 canary, 3 calibration instruments, 12 cells (9 + 3 replicates) each with a scorer, a refuter and a judge on Fable at `max` | 14.57 M output (thinking included); 56.5 M cache write; 1.33 B cache read | 11 h 06 m elapsed, 13:54 to 01:00, one cell at a time; 15 h 02 m summed over the agents, since a cell's three instruments ran in parallel | 2,848 tool calls, 0 errored, 0 empty. 30 points of the Max plan's weekly meter (44% → 74%), 52 of its Fable window; the instruments were about 1 point a cell and 36 of the 52 Fable points. `Planning/c3-reader-test/usage.md`, one row per step |
 
+| C-3 vectors tier **[VERIFIED]** | 18 agents in 6 workflow runs: 1 calibration scorer, 1 canary, 4 cells each with a scorer, a refuter and a judge on Fable at `max` | 4.08 M output (thinking included); 13.8 M cache write; 216 M cache read; 654 tool calls, 0 errored | 2 h 46 m elapsed, 23:13 to 01:59, one cell at a time, 33 to 40 minutes a cell with its instruments in parallel | 8 points of the weekly meter (80% → 88%), 16 of the Fable window. `Planning/c3-vectors-tier/usage.md` |
+
 The refuter share is the number to plan around: an adversarial pass is not a rounding error on the
 budget, it is half of it. In C-3 the three instruments together cost about as much as a cheap
 cell and more than the cheapest (`Planning/C-3-Results-2026-10-26.md` §4 item 4).
+
+**[VERIFIED, the vectors tier, 2026-10-26] Run the appendix's own examples before handing it to an
+agent.** Appendix A's worked figures were the previous vector generation's: a canary that had held
+the agents to the printed neighbour list would have failed every cell, and an agent that trusted
+the list would have doubted a correct decode. `Planning/c3-vectors-tier/appendix_recheck.py` is the
+re-take; `vectors_check.py` the known answer the canary was held to. And Python 3.9, which the Mac's
+system Python is, has no `int.bit_count()`: the appendix's loop as printed fails there.
 
 **[VERIFIED, C-3, 2026-10-25] Four harness facts the C-3 run added.** (1) The desktop app's usage
 card is readable from a session through `get_usage` and gives the same figures as `/usage`

@@ -1,0 +1,94 @@
+manifest volumes: 553 | sample keys: ['dateRange', 'editors', 'filename', 'publicationDate', 'sizeBytes', 'status', 'subseries', 'tags', 'title', 'volumeId']
+printed citations with URL: 23
+
+frus1874/d552: printed = Papers Relating to the Foreign Relations of the United States, 1874, Mr. Fish to Mr. Cushing, 6 February 1874
+   index: number='552' date=1874-02-06 header='No. 550. Mr. Fish to Mr. Cushing.' dateline='Department of State, Washington, February 6, 1874.'
+   manifest title: 'Papers Relating to the Foreign Relations of the United\n                    States, Transmitted to Congress, With the Annual Message of the President,\n                    December 7, 1874'
+
+frus1881/d405: printed = Papers Relating to the Foreign Relations of the United States, 1881, Mr. Blaine to Mr. Comly, 1 December 1881
+   index: number='405' date=1881-12-01 header='No. 401. Mr. Blaine to Mr. Comly.' dateline='Department of State, Washington, December 1, 1881.'
+   manifest title: 'Papers Relating to the Foreign Relations of the United\n                    States, Transmitted to Congress, With the Annual Message of the President,\n                    December 5, 1881'
+
+frus1886/d414: printed = Papers Relating to the Foreign Relations of the United States, 1886, Mr. Curry to Mr. Bayard, 22 October 1886
+   index: number='414' date=1886-10-22 header='No. 409. Mr. Curry to Mr. Bayard.' dateline='Legation of the United States, Madrid, October 22, 1886. (Re'
+   manifest title: 'Papers Relating to the Foreign Relations of the United\n                    States, Transmitted to Congress, With the Annual Message of the President,\n                    December 6, 1886'
+
+frus1898/d498: printed = Papers Relating to the Foreign Relations of the United States, 1898, Mr. Woodford to Mr. Sherman, 5 October 1897
+   index: number='498' date=1897-10-05 header='Mr. Woodford to Mr. Sherman.' dateline='Madrid, Spain, Tuesday, October 5, 1897.'
+   manifest title: 'Papers Relating to the Foreign Relations of the United\n                    States, With the Annual Message of the President Transmitted to Congress\n                    December 5, 1898'
+
+frus1898/ch83: printed = Papers Relating to the Foreign Relations of the United States, 1898, the President's message on Cuba
+   index: number=None date=1898-04-12 header='Message' dateline=''
+   manifest title: 'Papers Relating to the Foreign Relations of the United\n                    States, With the Annual Message of the President Transmitted to Congress\n                    December 5, 1898'
+
+frus1904/d207: printed = Papers Relating to the Foreign Relations of the United States, 1904, proclamation of the treaty with Cuba
+   index: number='207' date=1904-07-02 header='By the President of the United States of America.' dateline=''
+   manifest title: 'Papers Relating to the Foreign Relations of the United\n                    States, With the Annual Message of the President Transmitted to Congress\n                    December 6, 1904'
+
+frus1930v02/d747: printed = Papers Relating to the Foreign Relations of the United States, 1930, Volume II, Memorandum of Conference by the Secretary of State with the Press, 2 October 1930
+   index: number='747' date=1930-10-02 header='Memorandum of Conference by the Secretary of State With the Press on October 2, 1930' dateline='October 2, 1930'
+   manifest title: 'Papers Relating to the Foreign Relations of the United\n                    States, 1930, Volume II'
+
+frus1934v05/d127: printed = Foreign Relations of the United States, Diplomatic Papers, 1934, The American Republics, Volume V, Document 127
+   index: number='127' date=1934-07-26 header='The Secretary of State to the Ambassador in Cuba (Caffery)' dateline='Washington, July 26, 1934.'
+   manifest title: 'Foreign Relations of the United States, Diplomatic Papers,\n                    1934, The American Republics, Volume V'
+
+frus1933v05/d299: printed = Foreign Relations of the United States, Diplomatic Papers, 1933, The American Republics, Volume V, Document 299
+   index: number='299' date=1933-08-08 header='The Ambassador in Cuba (Welles) to the Secretary of State' dateline='Habana, August 8, 1933—8 p.m. [Received 10:35 p.m.]'
+   manifest title: 'Foreign Relations of the United States, Diplomatic Papers,\n                    1933, The American Republics, Volume V'
+
+frus1929v02/d924: printed = Papers Relating to the Foreign Relations of the United States, 1929, Volume II, Document 924
+   index: number='924' date=1929-01-10 header='The Cuban Ambassador (Ferrara) to the Secretary of State' dateline='Washington, January 10, 1929.'
+   manifest title: 'Papers Relating to the Foreign Relations of the United\n                    States, 1929, Volume II'
+
+frus1941v07/d119: printed = Foreign Relations of the United States, Diplomatic Papers, 1941, The American Republics, Volume VII, Document 119
+   index: number='119' date=1941-07-14 header='Memorandum of Conversations, by the Assistant Chief of the Division of the American Republ' dateline='[Washington,] July 14, 1941.'
+   manifest title: 'Foreign Relations of the United States, Diplomatic Papers,\n                    1941, The American Republics, Volume VII'
+
+frus1944v07/d878: printed = Foreign Relations of the United States, Diplomatic Papers, 1944, The American Republics, Volume VII, Document 878
+   index: number='878' date=1944-12-20 header='The Secretary of State to the Ambassador in Cuba (Braden)' dateline='Washington, December 20, 1944.'
+   manifest title: 'Foreign Relations of the United States, Diplomatic Papers,\n                    1944, The American Republics, Volume VII'
+
+frus1945v09/d741: printed = Foreign Relations of the United States, Diplomatic Papers, 1945, The American Republics, Volume IX, Document 741
+   index: number='741' date=1945-01-12 header='The Ambassador in Cuba (Braden) to the Secretary of State' dateline='Habana, January 12, 1945. [Received January 22.]'
+   manifest title: 'Foreign Relations of the United States, Diplomatic Papers,\n                    1945, The American Republics, Volume IX'
+
+frus1952-54v04/d342: printed = Foreign Relations of the United States, 1952–1954, The American Republics, Volume IV, Document 342
+   index: number='342' date=1954-06-04 header='The Secretary of State to the Secretary of Agriculture (Benson)' dateline='[Washington, June 4, 1954.]'
+   manifest title: 'Foreign Relations of the United States, 1952–1954, The\n                    American Republics, Volume IV'
+
+frus1958-60v06/d70: printed = Foreign Relations of the United States, 1958–1960, Cuba, Volume VI, Document 70
+   index: number='70' date=1958-06-27 header='70. Memorandum of Discussion at a Department of State-Joint Chiefs of Staff Meeting, Penta' dateline='Pentagon, Washington, June 27, 1958, 10 a.m.'
+   manifest title: 'Foreign Relations of the United States, 1958–1960, Cuba,\n                    Volume VI'
+
+frus1958-60v05/d112: printed = Foreign Relations of the United States, 1958–1960, American Republics, Volume V, Document 112
+   index: number='112' date=1959-03-15 header='112. Memorandum From the Director of Central Intelligence (Dulles) to the Acting Secretary' dateline='Washington, undated.'
+   manifest title: 'Foreign Relations of the United States, 1958–1960, American\n                    Republics, Volume V'
+
+frus1958-60v06/d499: printed = Foreign Relations of the United States, 1958–1960, Cuba, Volume VI, Document 499
+   index: number='499' date=1960-04-06 header='499. Memorandum From the Deputy Assistant Secretary of State for Inter-American Affairs (M' dateline='Washington, April 6, 1960.'
+   manifest title: 'Foreign Relations of the United States, 1958–1960, Cuba,\n                    Volume VI'
+
+frus1961-63v11/d21: printed = Foreign Relations of the United States, 1961–1963, Volume XI, Cuban Missile Crisis and Aftermath, Document 21
+   index: number='21' date=1962-10-16 header='21. Off the Record Meeting on Cuba' dateline='Washington, October 16, 1962, 6:30–7:55 p.m.'
+   manifest title: 'Foreign Relations of the United States, 1961–1963, Volume XI,\n                    Cuban Missile Crisis and Aftermath'
+
+frus1961-63v11/d34: printed = Foreign Relations of the United States, 1961–1963, Volume XI, Document 34
+   index: number='34' date=1962-10-20 header='34. Minutes of the 505th Meeting of the National Security Council' dateline='Washington, October 20, 1962, 2:30–5:10 p.m.'
+   manifest title: 'Foreign Relations of the United States, 1961–1963, Volume XI,\n                    Cuban Missile Crisis and Aftermath'
+
+frus1961-63v10-12mSupp/d729: printed = Foreign Relations of the United States, 1961–1963, Volumes X/XI/XII, Microfiche Supplement, Document 729
+   index: number='729' date=1963-12-15 header='729. Memorandum from McGeorge Bundy to President Johnson, December 15' dateline='December 15, 1963'
+   manifest title: 'Foreign Relations of the United States, 1961–1963, Volumes\n                    X/XI/XII, Microfiche Supplement, American Republics; Cuba 1961–1962; Cuban\n                    Missile Crisis and Aftermath'
+
+frus1969-76ve10/d205: printed = Foreign Relations of the United States, 1969–1976, Volume E–10, Documents on American Republics, 1969–1972, Document 205
+   index: number='205' date=1969-07-02 header='205. Study Prepared in Response to National Security Study Memorandum 32' dateline='Washington, July 2, 1969'
+   manifest title: 'Foreign Relations of the United States, 1969–1976, Volume\n                    E–10, Documents on American Republics, 1969–1972'
+
+frus1977-80v23/d21: printed = Foreign Relations of the United States, 1977–1980, Volume XXIII, Mexico, Cuba, and the Caribbean, Document 21
+   index: number='21' date=1977-08-12 header='21. Memorandum From Secretary of the Treasury Blumenthal to President Carter' dateline='Washington, August 12, 1977'
+   manifest title: 'Foreign Relations of the United States, 1977–1980, Volume\n                    XXIII, Mexico, Cuba, and the Caribbean'
+
+frus1981-88v03/d5: printed = Foreign Relations of the United States, 1981–1988, Volume III, Soviet Union, January 1981–January 1983, Document 5
+   index: number='5' date=1981-01-26 header='5. Memorandum From Secretary of State Haig to President Reagan' dateline='Washington, January 26, 1981'
+   manifest title: 'Foreign Relations of the United States, 1981–1988, Volume\n                    III, Soviet Union, January 1981–January 1983'

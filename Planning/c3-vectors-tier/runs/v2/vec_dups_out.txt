@@ -1,0 +1,9 @@
+progress 0
+progress 1000
+progress 2000
+progress 3000
+progress 4000
+progress 5000
+progress 6000
+progress 7000
+core rows in vectors 7013 not in vectors 0 pairs<=20 3

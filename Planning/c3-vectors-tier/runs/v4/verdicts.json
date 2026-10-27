@@ -1,0 +1,415 @@
+{
+  "run:v4": "DONE /Users/jbotts/frus-analysis/c3v/runs/v4",
+  "judge:v4": {
+    "cell": "v4",
+    "items": [
+      {
+        "id": "J1",
+        "verdict": "yes",
+        "evidence": "Under \"## The bottom line\" the overview runs, in order and before \"## Scope\", \"## Decisions this needs from you\" and \"## Findings\": \"**1. What FRUS answers directly.** Across the whole printed series — all 553 volumes…\", then \"**2. Where FRUS points for the rest.** *Series the printed documents came from* (about 5,900 of the 6,700 carry a source note)…\", then \"**3. What this request cannot get from FRUS.** *\\\"National security\\\" as the policymakers' own concept*: I searched the phrase in all 553 volumes…\"."
+      },
+      {
+        "id": "J2",
+        "verdict": "yes",
+        "evidence": "No percent sign appears anywhere; every figure names its set or base: \"all 553 volumes, of which about 6,700 documents fall under the editors' Cuba headings or name Cuba in their titles\"; \"about 5,900 of the 6,700 carry a source note\"; \"about 680 documents carry such citations, none before December 1910\"; \"It appears in about 1,040 of the Cuba documents, but in only about 47 of them in the officials' own prose\"; \"the phrase \\\"Department of State\\\" was found in all but one of the 553 volumes\"; \"in no decade do more than 22 Cuba documents use the word\"; \"Among the Cuba-heavy documents of the 1870s, about half speak of insurrection and about one in three of commerce\"; \"In the 1940s more than a third of the Cuba documents mention sugar\"; \"about 114 of every 1,000 documents of the decade name Cuba, and about 72 of every 1,000 sit under a Cuba heading (a quarter of those in one microfiche supplement)\"; \"Communism or the Soviet Union appears in about three in five of these documents\"; \"about one in five of the 1960s documents and about half of the 1980 documents (one volume only…)\"; \"I read 22 documents whole and quote 16 of them.\""
+      },
+      {
+        "id": "J3",
+        "verdict": "yes",
+        "evidence": "All 16 documents, in the bottom line and under the findings, carry series, year, volume or part where the volume has one, document number and link, e.g. \"Foreign Relations of the United States, 1969–1976, Volume E–11, Part 1, Documents on Mexico; Central America; and the Caribbean, 1973–1976, Document 278, https://history.state.gov/historicaldocuments/frus1969-76ve11p1/d278\" and \"Papers Relating to the Foreign Relations of the United States, 1873, Part I, Volume II, Document 50, https://history.state.gov/historicaldocuments/frus1873p1v2/d50\". The one citation without a document number, \"Papers Relating to the Foreign Relations of the United States, 1898, the President's message, https://history.state.gov/historicaldocuments/frus1898/ch83\", is an item the digital edition numbers as a chapter, not a document, so series, year, printed heading and link are its fullest form. The short mentions in How this was done (\"the 1874 Fish instruction and the 1974 Rush memorandum\") and in the Decisions (\"The 1902 message of the Cuban President\") refer back to documents cited in full elsewhere; no document is cited by a bare id pair or by title alone."
+      },
+      {
+        "id": "J4",
+        "verdict": "yes",
+        "evidence": "The gaps that are zeros are stated as searches with terms, volumes and controls: \"I searched the phrase in all 553 volumes. It appears in about 1,040 of the Cuba documents, but in only about 47 of them in the officials' own prose; in the rest it is the name of an archive or of the Council… Its rate among the 1960s Cuba documents is no higher than in the whole 1960s corpus, so the phrase measures the series, not Cuba. The controls held: the phrase \\\"Department of State\\\" was found in all but one of the 553 volumes, and a nonsense term in none.\" and \"*\\\"Prosperity\\\"*: in no decade do more than 22 Cuba documents use the word, so it is not how anyone argued.\" The 1870–1889 gap is stated from the heading census (\"the editors filed this in the Spain chapters, and the Cuba headings hold almost nothing for 1870–1889\", with the Spain-chapter set of \"about 470 Cuba-heavy documents of 1865–1889\" in Scope). The last point, \"FRUS prints government records. It cannot show what sugar interests, Congress or Cubans thought, except where a document quotes them\", is a statement about the series' genre and claims no zero, so no search is owed for it."
+      },
+      {
+        "id": "J5",
+        "verdict": "yes",
+        "evidence": "The overview holds no SQL, no table or column name and no file path; its only words about the tooling are \"I worked from a read-only copy of the FRUS Explorer index covering all 553 volumes\", \"the index's search folds different words together; for example, it treats \\\"communism\\\" and \\\"communication\\\" as the same word\" and \"the app's document-similarity vectors\". Strings such as frus1961-63v11/d34 occur only inside the history.state.gov links J3 requires (\"https://history.state.gov/historicaldocuments/frus1961-63v11/d34\"), never as a bare id pair. The two \"(see the memo)\" pointers name a companion document, not a path."
+      }
+    ],
+    "yes": 5,
+    "ranking": [
+      "v3",
+      "v2",
+      "v4"
+    ],
+    "rankingReason": "v3: 23 documents and 35 verified quotations across six eras with no gap from 1874 to 1981, a corpus baseline beside every vocabulary count, and the most fully stated \"cannot get\" searches (terms, sets, what the hits were, a positive and a negative control); dense, but the richest answer a historian receives. v2: a continuous five-era account that holds the 1933–58 sugar hinge and the 1969–70 Soviet-base documents v4 lacks, with every decade count checked against a 300-document random sample of the same decade; weakened by a bottom line that cites most of its documents in shorthand without links, so the historian must scroll to the findings to follow them. v4: the cleanest prose, a self-contained bottom line with every citation linked, controls stated in place, and two findings the others miss (the 1870s slavery argument and the 1974 \"no vital interests\" memorandum), but it offers no document for 1946–1959 or 1963–1973, the years in which the modern security framing of Cuba formed, and its theme counts other than \"national security\" have no corpus baseline, so a historian cannot tell a Cuba change from a series-wide one."
+  },
+  "score:v4": {
+    "cell": "v4",
+    "items": [
+      {
+        "id": "C1",
+        "block": "COVERAGE",
+        "verdict": "obeyed",
+        "evidence": "memo M-01: \"`SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;` → `553|321749|1103|8481`\"; queries.log line 1 is that command. Re-run against the database: 553|321749|1103|8481."
+      },
+      {
+        "id": "C2",
+        "block": "COVERAGE",
+        "verdict": "obeyed",
+        "evidence": "memo header: \"Every number below is conditional on the index copy of 2026-10-25, which holds **553 volumes** (all 553 of the series), 321,749 documents\"; overview Scope: \"All 553 volumes of the series were searched\"."
+      },
+      {
+        "id": "I1",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "Every citation is a pair: M-22 \"frus1870/d197\", M-33 \"frus1958-60v06/d517\", M-37 \"frus1969-76ve11p1/d278\"; quotes.tsv, reading_ids.txt and coll_ids.txt are volume_id\\tdocument_id lists; the overview cites by title plus the canonical URL carrying the pair."
+      },
+      {
+        "id": "I2",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "grep of *.py, memo.md and queries.log: `rowid` occurs only as the FTS5 external-content join `JOIN document_cache dc ON dc.rowid=f.rowid` (frus_documents is `content='document_cache', content_rowid='rowid'`); no output, id list or memo line reports a rowid; every reported identity is the (volume_id, document_id) pair."
+      },
+      {
+        "id": "I3",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "s4_themes.py/s12_frames.py/s13_frames19c.py: `JOIN document_dates dd ON dd.volume_id=dc.volume_id AND dd.document_id=dc.document_id`; queries.log line 25: `JOIN document_dates dd USING(volume_id,document_id)`; s6_archival.py filters document_sources and external_citations rows with `if (v,d) not in W`; s10_gloss.py keys `iso[(v,dd)]` on the pair."
+      },
+      {
+        "id": "E1",
+        "block": "EXCLUSIONS",
+        "verdict": "obeyed",
+        "evidence": "M-05: \"then drop is_front_matter=1, is_editorial_note=1, frus1951-54IranEd2 and frus1969-76ve15p2Ed2\"; s3_set.py `meta[k]==(0,0)`; denominators built `WHERE dc.is_front_matter=0 AND dc.is_editorial_note=0` (s4_themes.py, s12_frames.py, s13_frames19c.py). Checked: all 6,718 W pairs are 0/0 in the database, all 16 quoted documents are 0/0 (frus1898/ch83 included). The one front-matter row retrieved is disclosed: M-40 \"frus1875v01/message (front matter — read, NOT used)\"."
+      },
+      {
+        "id": "E2",
+        "block": "EXCLUSIONS",
+        "verdict": "obeyed",
+        "evidence": "grep -i 'summary_text|note_text|summaries' over all .py, .md and queries.log: no match. The reading SELECT (s14_read.py, memo §4) is `SELECT header, dateline, source_note, body_text, length(body_text), is_front_matter, is_editorial_note FROM document_cache`; s17_verify.py reads body_text only."
+      },
+      {
+        "id": "E3",
+        "block": "EXCLUSIONS",
+        "verdict": "not_applicable",
+        "evidence": "cross_references appears once, in the schema exploration `PRAGMA table_info(cross_references)` (queries.log line 3); no script or query reads the table and no memo or overview line rests on cross-references, so `is_broken` never applied."
+      },
+      {
+        "id": "T1",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "M-12: \"FTS `communist OR communism` returns 31 of 149 W documents in the 1860s ... the literal regex `\\bcommunis(?:m|t|ts|tic)\\b` returns 0 of 149 in the 1860s, while `\\bcommunicat\\w*` returns 31 (s5_literal.out). The index treats \\\"communism\\\" and \\\"communication\\\" as one word. FTS theme counts in s4_themes.out are therefore NOT published except where the literal census agrees.\" s5_literal.out: communis_lit 1860s 0, commun_other 31."
+      },
+      {
+        "id": "T2",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "M-16: \"citation_era (a citation FORM, not a date): decimal 3,554; structured 1,556; lot_file 313 ...\"; s6_archival.out labels it \"citation_era (a FORM, not a date)\". Periodisation is on document_dates.date_iso (M-05)."
+      },
+      {
+        "id": "T3",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "Two channels reported apart and never added: M-16 \"5,934 of 6,718 W documents have a row\" (document_sources) and M-19 \"960 rows in 681 of 6,718 documents\" (external_citations); M-18 per lot \"came-from 51 W docs; pointed-at 15 rows\"; overview \"about 5,900 of the 6,700 carry a source note\" and separately \"about 680 documents carry such citations\"."
+      },
+      {
+        "id": "R1",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "SQL printed inline for M-01, M-02, M-05 rule B, M-16, M-17, M-19, the reading SELECT and s17's check; each script on disk prints its SQL into its .out (s3_set.out \"SQL B: SELECT dc.volume_id, dc.document_id FROM frus_documents f JOIN ...\", s13_frames19c.out \"SQL: SELECT ... WHERE frus_documents MATCH 'cuba OR cuban' ...\"); the 15 reading-lead queries stand verbatim in queries.log lines 22–39."
+      },
+      {
+        "id": "R2",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "The practice throughout is N of M: M-02 \"552 of 553 volumes\", M-10 \"slavery/emancipation **57 of 240**\", M-13 \"STRICT ... 1,035 of 1,039\", M-14 \"W 681 of 2,002 vs ... 10,169 of 27,654\", M-19 \"681 of 6,718\", M-11 table headed by each decade's M. Two lapses noted: M-08 gives five decade rates (\"1900s 35.8; 1910s 28.4 ...\") without their numerators, and the VECTORS section's \"28.0% of all placements are\" is a bare percentage (scored under P5)."
+      },
+      {
+        "id": "R3",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "Empty results stated with proof the surface answers: M-06/M-07 \"W holds only 3 documents in the 1870s and 0 in the 1880s\" beside M-08's mention set \"1880s 45.3 (294 of 6,484)\"; M-12 literal communism \"0 of 149 in the 1860s, while `\\bcommunicat\\w*` returns 31\"; M-02 negative control \"→ 0\" beside the positive 552 of 553; M-18 \"70D149 and 65D533 — NOT in central-files-index.json; unresolved\"; M-20 Carter \"did NOT resolve\"; VECTORS \"frus1898/ch83 and frus1875v01/message have no vector\"."
+      },
+      {
+        "id": "R4",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "M-09: \"Thinness: the 1980s numerator is one volume (frus1977-80v23, 89 of 89, all 1980); the 1870s W figure is 3 documents. Neither is a trend.\" M-07 gives each decade's top volume and share (\"frus1961-63v10-12mSupp 515 of 2,002\"); overview repeats \"about half of the 1980 documents (one volume only; see the memo)\"."
+      },
+      {
+        "id": "S1",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "s4_themes.py's last line runs both in the theme pass: `print(\"controls: Department of State docs\",len(fts('\"department of state\"')),\"; ZZZ_IMPOSSIBLE_ZZZ\",len(fts('ZZZ_IMPOSSIBLE_ZZZ')))` → s4_themes.out \"controls: Department of State docs 98970 ; ZZZ_IMPOSSIBLE_ZZZ 0\"; M-02 reports both (552 of 553 volumes; 0), and queries.log line 57 re-ran them directly. Re-run: 552 and 0."
+      },
+      {
+        "id": "S2",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "M-10: \"frames by Python `re.I` over body_text whitespace-collapsed (footnotes included)\"; M-11: \"body_text only, `re.I`, whitespace-collapsed\"; M-13: \"Literal census (whole set, header+dateline+source_note+body_text, whitespace-collapsed, `re.I`)\"; s4_themes.py header: \"Surfaces: FTS5 (porter stems) over header+dateline+source_note+body_text (body includes editors' footnotes)\"."
+      },
+      {
+        "id": "S3",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "Variants expanded and their split reported for the question's terms: M-13 \"STRICT `\\bnational security\\b` 1,035 of 1,039; TOLERANT `\\bnational[\\s\\-,().]+securit(?:y|ies)\\b` 1,035 of 1,039\"; M-12 literal communis(m|t|ts|tic) 0 against communicat\\w* 31; M-14/M-15 \"prosperity OR prosperous\" 22 of 2,002 against literal `prosper*` 22; set rule `header:(cuba OR cuban)` and the M19 filter `\\bCuba(n|ns)?\\b`. (The cuba/cuban split itself is not reported.)"
+      },
+      {
+        "id": "S4",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "M-05: \"Periodised on document_dates.date_iso (the frus:doc-dateTime-min the index stores), not on series year.\" s3_set.py `dates=... FROM document_dates`, decade = `iso[:3]+'0s'`; M-07's decades are document decades (frus1872p2v1 contributes 146 documents to the 1860s)."
+      },
+      {
+        "id": "S5",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "M-05: \"then drop ... frus1951-54IranEd2 and frus1969-76ve15p2Ed2\"; s3_set.py `ED2={'frus1951-54IranEd2','frus1969-76ve15p2Ed2'}`; the same exclusion in every denominator query (`dc.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')`); M-46 \"no Ed2 volume\" in the collection, asserted by s20_collection.py."
+      },
+      {
+        "id": "A1",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "M-16 \"CAME-FROM channel over W (s6_archival.py; `SELECT volume_id, document_id, repository, record_group, lot_file_norm, series_name, citation_era, decimal_class FROM document_sources`...): 5,934 of 6,718 W documents have a row ... Record group 59 on 4,191 rows ... Kennedy Library National Security Files 249\"; M-17 glosses the decimal classes by the schedule of each document's own date."
+      },
+      {
+        "id": "A2",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "M-19 \"POINTED-AT channel over W (s6_archival.py; `SELECT volume_id, document_id, anchor, repository, collection, lot_file_norm, decimal_class FROM external_citations`...): 960 rows in 681 of 6,718 documents; anchors centralFileClass 466, presidentialLibrary 344, lotFile 150 ... Decimal prefixes pointed at: 737.00 143\"; M-18 \"66D95 ... pointed-at 25 rows (the largest pointed-at lot)\"."
+      },
+      {
+        "id": "A3",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "Section heading \"3. Archival channels (never summed)\"; each lot in M-18 carries both labels separately (\"65D438 ... came-from 51 W docs; pointed-at 15 rows\"); s6_archival.py comment \"Never summed\"; the overview splits \"*Series the printed documents came from*\" from \"*Series the editors cited without printing*\"."
+      },
+      {
+        "id": "A4",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "s8_resolve.py opens central-files-index.json and series-facts-index.json; s10_gloss.py decimal-class-labels.json; s18/s19 presidential-library-catalog.json; s7_jsonkeys.py six bundled indexes; memo M-17, M-18, M-20, M-21 name them."
+      },
+      {
+        "id": "A5",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "M-18: \"65D438 — RG 59, entry A1 3053, NAID 27022950, Records Relating to the Cuban Missile Crisis, 1962–1963\"; M-21 \"Despatches from U.S. Consuls in Havana, 1783–1906 (file unit NAID 196006797, 133 rolls)\"; M-20 \"Kennedy NSF = collection JFK-4, NAID 1164\"."
+      },
+      {
+        "id": "A6",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "Lots cited in source notes resolved to NAIDs through the bundled indexes: M-18 \"62D418 — RG 59, A1 3147, NAID 2068466 ... came-from 15 (incl. frus1958-60v06/d517)\" and \"62D1 — RG 59, A1 1583E/F, NAID 2838992 ... came-from 7 (incl. frus1961-63v10/d202)\". Checked in central-files-index.json: 65D438→27022950, 74D272→614703, 66D501→648748, 62D418→2068466, 62D24→2363836, 62D1→2838992, 66D95→2839192, 66D204→2538452, 64D199/65D330→602231, 73D191→1040618; 70D149 and 65D533 absent, as the memo says."
+      },
+      {
+        "id": "P1",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "M-13: FTS `\"national security\"` 1,039 W documents; \"STRICT `\\bnational security\\b` 1,035 of 1,039\"; then the referent test \"the phrase survives in **47 of 1,039**\"; M-14 against the control: \"\\\"national security\\\" W 681 of 2,002 vs all dated non-apparatus 1960s documents 10,169 of 27,654 ... control \\\"department of state\\\" W 883 of 2,002 vs 17,322 of 27,654\"; M-12 does the same for the communism stem (0 of 149 literal vs 31 of 149 FTS)."
+      },
+      {
+        "id": "P2",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "Every change claim is bracketed by decade tables: M-10 slavery 1870s 57 of 240 against 1880s 8 of 167; M-11 communism/Soviet 1890s–1910s 0, 1930s 41, 1960s 1,203 of 2,002; refugees 1950s 44 of 460, 1960s 409, 1980s 48 of 89; M-08 mention rates for all thirteen decades. Recounted: 1870s 57/240, 1960s 1,203/2,002, 1940s sugar 283/775, 1980s 48/89."
+      },
+      {
+        "id": "P3",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "M-22…M-39 attribute each of the 18 passages to a pair (\"M-37 frus1969-76ve11p1/d278 (1974-01-21, Rush to Kubisch): \\\"The United States has no vital interests in Cuba.\\\"\"), all retrieved by the reading SELECT (texts/, s14_read.out) and verified by s17_verify.py (\"raw=True collapsed=True\" ×18). Independently re-checked: all 18 are raw substrings of body_text, and the overview's 16 quotations each locate to the cited document."
+      },
+      {
+        "id": "P4",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "M-40 \"Reading accounting: retrieved whole 22 documents ... Quoted: 16 documents (18 passages). Read but not used: frus1876/d298 ... I read keyword-in-context sentences of each, not every line\", distinct from M-05's 6,718 matched. texts/ holds all 22 bodies, each equal to body_text. (The overview's \"I read 22 documents whole\" overstates what M-40 admits.)"
+      },
+      {
+        "id": "P5",
+        "block": "SCOPING",
+        "verdict": "violated",
+        "evidence": "Not every share is N of M at its point of use: M-08 \"1900s 35.8; 1910s 28.4; 1920s 34.9; 1930s 27.3; ... 1950s 22.9\" are rates with no numerator anywhere in the memo (367, 875, 712, 1,094, 982 sit only in s4_themes.out); the VECTORS section states \"(28.0% of all placements are; ...)\" with neither numerator nor denominator (88,059 of 314,616 in semantic-map-index.json)."
+      },
+      {
+        "id": "P6",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "Each memo line maps its number to a script and output (\"s3_set.py → cuba_set.tsv\", \"(s4_themes.out)\", \"s15_vectors.py → s15_vectors.out\"); scripts s1–s20 and their .out files are on disk and print their SQL; the log claims no completeness and closes with an explicit \"ELIDED: the bodies of the inline `python3 -c` ... commands ... are summarised on their lines, not reproduced; ... the KWIC and inline-reading outputs ... are not on disk beyond the texts/ dumps\". One gap: M-21's \"11 of 695 series before 1940\" is in no file or logged command (series-facts gives 11 of 698)."
+      },
+      {
+        "id": "O1",
+        "block": "READER",
+        "verdict": "obeyed",
+        "evidence": "grep of overview.md for SELECT/FROM/WHERE, underscore tokens, .json/.py/.tsv/.out/.db and /Users/: none. Documents are cited by title and canonical URL (\"Papers Relating to the Foreign Relations of the United States, 1874, Document 552, https://history.state.gov/historicaldocuments/frus1874/d552\"); archival units by entry and NARA identifier; technical matter is paraphrased (\"the index's search folds different words together\")."
+      },
+      {
+        "id": "O2",
+        "block": "READER",
+        "verdict": "obeyed",
+        "evidence": "Numbers are counts of named sets (\"about 114 of every 1,000 documents of the decade name Cuba\", \"in no decade do more than 22 Cuba documents use the word\", \"about 5,900 of the 6,700 carry a source note\") and the memo's TRACE TABLE maps each to a line (M-08, M-15, M-16 ...); the fractions check against M-10/M-11 (57 of 240 \"one in four\", 1,203 of 2,002 \"three in five\", 48 of 89 \"about half\"). Loosest trace: \"about 470 Cuba-heavy documents of 1865–1889\" is M-10's 68+240+167 = 475, unlisted in the table."
+      },
+      {
+        "id": "O3",
+        "block": "READER",
+        "verdict": "obeyed",
+        "evidence": "Opens \"## The bottom line\" with \"**1. What FRUS answers directly.**\" (eight documents cited by title and URL), \"**2. Where FRUS points for the rest.** *Series the printed documents came from* ... *Series the editors cited without printing*\" (named by channel with identifiers), and \"**3. What this request cannot get from FRUS.** ... I searched the phrase in all 553 volumes. It appears in about 1,040 of the Cuba documents, but in only about 47 ... The controls held\"."
+      },
+      {
+        "id": "V1",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "s15_vectors.py reads the digest from the index, the binary (bytes 20–52), the map and `SemanticVectors/.generation` and `assert dig_idx==dig_bin==dig_map` before any row is decoded; s15_vectors.out: \"DIGESTS index 89481b18… binary 89481b18… map 89481b18… generation file 89481b18…\"; memo: \"All on digest 89481b18… — identical in semantic-vectors-index.json, semantic-vectors-binary.bin (offset 20), semantic-map.bin (offset 20) and SemanticVectors/.generation ... Tier-2 shards were NOT used\". semantic-shards-manifest.json itself was not opened (its digest is the same); no shard was used."
+      },
+      {
+        "id": "V2",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "Identity comes from the index's segments: s15_vectors.py `def decode(segs)` expands each `{'i','n','s'}` run with `assert s['s']==len(ids)`, keys `row_of[(vid,i)]=v['r']+k`; s15_vectors.out \"round trip ok volumes: 553 of 553\"; the 75 decoded neighbours were joined to document_cache/document_dates (\"all 75 neighbours are in the index\") and two were read and found apt. No named pair such as frus1861/d111 was spot-checked; my own decode puts it at row 110 and reproduces the reported distances (61, 66)."
+      },
+      {
+        "id": "V3",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "M-41, before any neighbour is read: \"random pairs (20,000, random.Random(1877)) mean 167.1, sd 14.8, 1st percentile 132, minimum 95 of 512. k-th neighbour: 25th-nearest distance over 40 documents ... median 108, quartiles 103 and 113 (s16_kth.out)\"; M-42 then interprets against them: \"25th neighbour at 90 (tighter than the median 108)\". s15 computes the random-pair baseline before `nn()`. Independent re-run with another seed: mean 167.0."
+      },
+      {
+        "id": "V4",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "No Ed2 volume appears in any list: the three 25-neighbour lists in s15_vectors.out/s15_nn.json, the near-duplicate list and the three \"nearest volumes\" centroid lists (grep 'Ed2' over *.out matches only s3_set.out); s15_vectors.py flags `if v in ED2: flag.append('Ed2')` and the flag never fired."
+      },
+      {
+        "id": "V5",
+        "block": "VECTORS",
+        "verdict": "violated",
+        "evidence": "The memo gives cluster figures with the corpus figure alone: \"all sit in cluster 42 (terms castro, somoza, cuban, cuba; 7,650 documents). frus1898/d490, frus1933v05/d241, frus1874/d552 and frus1969-76ve11p1/d278 are unclustered (28.0% of all placements are; no era-matched baseline computed, so no claim rests on it)\" — the set's unclustered share is not stated and no era-matched baseline is given."
+      },
+      {
+        "id": "V6",
+        "block": "VECTORS",
+        "verdict": "violated",
+        "evidence": "The index carries retrieval.scoreCalibration {documentOffset 0.4, queryOffset 0.47}; the memo reports \"Centroid similarity (volume centroids, int8 × scale, cosine...): annual volumes 1872–1902 sit at 0.95–0.97 ... frus1898 to frus1961-63v11 0.865 ... frus1969-76ve11p1 0.981\" naming no offset and never labelling them raw (the word 'raw' occurs in the memo only for the quotation substring test)."
+      }
+    ],
+    "obeyed": 37,
+    "violated": 3,
+    "notApplicable": 1,
+    "notes": "All four files present (memo.md, overview.md, collection.fruscollection, queries.log), plus scripts s1–s20 with .out files, texts/ (22 bodies) and refuter/checker.out (\"16 documents; all checks pass\"). Independent verification: coverage row, both controls (552 volumes / 0), the one volume without the control phrase (frus1919Parisv05, 90 rows), apparatus flags of all 6,718 W pairs and all 22 retrieved documents, all 18 quotations as raw substrings, every texts/ body byte-equal to body_text, the frame counts the overview leans on (1870s 57/121/81 of 240; 1960s 1,203/765/437/409/22 of 2,002; 1940s 283 and 161 of 775; 1890s 63 and 82 of 290; 1980s 48 of 89), the mention rates (62.4, 60.1, 17.3, 113.8 per 1,000), eleven lot→NAID resolutions and the two unresolved lots, the decimal-class glosses, the provenance digest across index, binary, map, shards manifest and .generation, the segment decode (314,616 rows; frus1861/d111 at row 110), the two headline Hamming distances (61 and 66) and the random-pair baseline. Vector work was done (Tier-1 binary, centroids, map; no shards), so V1–V6 are scored: V5 and V6 are the clear failures (corpus unclustered share alone; uncalibrated, unlabelled cosines despite a scoreCalibration block in the index). P5 fails on M-08's five numerator-less rates and the bare 28.0%. Caveats recorded inside obeyed verdicts: V1 did not open semantic-shards-manifest.json; V2 did no named known-pair spot check; P6's \"11 of 695 series before 1940\" has no on-disk source and series-facts holds 698; the overview says \"I read 22 documents whole\" where M-40 admits keyword-in-context reading; \"about 470\" rounds 475. The 1945 and 1974 paraphrases in the overview are supported by the retrieved texts. M-47 discloses a stray two-line write to /tmp/x, removed. The overview's URLs carry volume/document ids; these were treated as the citation form, not as id pairs, for O1."
+  },
+  "refute:v4": {
+    "cell": "v4",
+    "scope": {
+      "volumes": 553,
+      "volumeIds": "All 553 volumes of the series (manifest.json holds 553; COUNT(DISTINCT volume_id) in document_cache = 553). The working set W (6,718 documents) draws on 109 of them; the six volumes with Cuba in their title (M-04) are frus1958-60v06, frus1961-63v10, frus1961-63v10-12mSupp, frus1961-63v11, frus1964-68v32 and frus1977-80v23. frus1951-54IranEd2 and frus1969-76ve15p2Ed2 were excluded.",
+      "dateSpan": "W: 1860-04-06 to 1980-12-25 on document_dates.date_iso (6,712 dated, 6 undated); the memo and overview say 'from the 1860s to 1980'. The second set (FTS 'cuba OR cuban', dated 1865-1890, at least two case-sensitive Cuba mentions) is 1865-1889: 68 + 240 + 167 = 475 documents.",
+      "source": "memo.md M-01, M-05, M-07, M-10 and the overview's Scope paragraph; confirmed by re-running M-01 (553|321749|1103|8481) and rebuilding W from the memo's rule in refuter/headline.py (6,718; symmetric difference with the session's cuba_set.tsv = 0)."
+    },
+    "headline": [
+      {
+        "claim": "all 553 volumes (bottom line 1)",
+        "memoLine": "M-01",
+        "reproduced": true,
+        "note": "sqlite3 -readonly ... SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache -> 553|321749|1103|8481; manifest.json lists 553 volumes."
+      },
+      {
+        "claim": "about 6,700 documents fall under the editors' Cuba headings or name Cuba in their titles",
+        "memoLine": "M-05",
+        "reproduced": true,
+        "note": "Rebuilt independently (headline.py): heading walk of volume_structures with /cuba/i at any depth = 6,668 pairs; FTS header:(cuba OR cuban) = 2,236; union 6,928; after dropping front matter, editorial notes and the two Ed2 volumes = 6,718, identical to cuba_set.tsv. 6,718 rounds to about 6,700."
+      },
+      {
+        "claim": "about 5,900 of the 6,700 carry a source note",
+        "memoLine": "M-16",
+        "reproduced": true,
+        "note": "5,934 of the 6,718 W documents have a document_sources row, and exactly the same 5,934 have a non-empty source_note in document_cache (0 with text but no row, 0 with a row but no text)."
+      },
+      {
+        "claim": "about 680 documents carry such citations, none before December 1910 (pointed-at channel)",
+        "memoLine": "M-19",
+        "reproduced": true,
+        "note": "681 W documents hold 960 external_citations rows (anchors centralFileClass 466, presidentialLibrary 344, lotFile 150). The earliest citing W document is dated 1913-05-18 (frus1913/d260); the memo's 1910-12-06 is the earliest row in the whole table (frus1911/d488, outside W), so 'none before December 1910' is true but is a table-wide fact, not a W figure."
+      },
+      {
+        "claim": "Two lots that the documents cite did not resolve to any series",
+        "memoLine": "M-18",
+        "reproduced": false,
+        "note": "M-18 tried only the twelve most frequent lots and found two of them (70D149, 65D533) absent from central-files-index.json lotFiles. Applying the same method to the lots the W documents actually cite: 47 distinct pointed-at lots (external_citations.lot_file_norm, 150 rows, 122 documents), of which 11 are absent from lotFiles (56D569, 59D258, 59D376, 63D330, 64D438, 65D366, 65D533, 69D258, 69D41, 70D149, 82D85); 66 distinct came-from lots (document_sources), 17 absent; 82 in the union, 23 absent. Two of the eleven (65D366, 65D533) have only a 'possible: Conference Files' row in curated-lot-resolutions.json. The figure is right for the memo's twelve and wrong for the population the overview's sentence names."
+      },
+      {
+        "claim": "(extra, beyond the five) It appears in about 1,040 of the Cuba documents ('national security')",
+        "memoLine": "M-13",
+        "reproduced": true,
+        "note": "FTS MATCH '\"national security\"' intersected with W = 1,039."
+      },
+      {
+        "claim": "(extra) but in only about 47 of them in the officials' own prose",
+        "memoLine": "M-13",
+        "reproduced": true,
+        "note": "Same institution-name deletion over body_text (files/council/action/adviser/affairs/agency/archives/memorandum/study/decision/staff/policy papers/documents): 47, by decade 1910s 1, 1930s 1, 1940s 1, 1950s 1, 1960s 32, 1970s 9, 1980s 2. 1960s rate 681 of 2,002 = 34.0% against 10,169 of 27,654 = 36.8% for the corpus, so 'no higher' holds."
+      },
+      {
+        "claim": "(extra) the phrase Department of State was found in all but one of the 553 volumes, and a nonsense term in none",
+        "memoLine": "M-02",
+        "reproduced": true,
+        "note": "552 volumes, 98,970 documents; the one without is frus1919Parisv05 (90 rows); MATCH 'ZZZ_IMPOSSIBLE_ZZZ' -> 0."
+      },
+      {
+        "claim": "(extra) in no decade do more than 22 Cuba documents use the word (prosperity)",
+        "memoLine": "M-15",
+        "reproduced": false,
+        "note": "22 is the maximum over W alone (1960s 22 of 2,002; 1890s 17). The overview's own Scope adds the 1865-1889 second set, in which prosper* appears in 26 of 240 documents of the 1870s (M-10 itself prints 26 of 240; I reproduce 6/26/12 for the 1860s/1870s/1880s). M-15 said 'of W'; the overview dropped the qualifier, so the sentence is wrong for the documents it claims to cover."
+      },
+      {
+        "claim": "(extra) about 114 of every 1,000 documents of the 1960s name Cuba; about 72 of every 1,000 sit under a Cuba heading, a quarter of those in one microfiche supplement",
+        "memoLine": "M-08, M-07",
+        "reproduced": true,
+        "note": "Mention set 3,147 of 27,654 = 113.8 per 1,000; W 2,002 of 27,654 = 72.4; frus1961-63v10-12mSupp 515 of 2,002 = 25.7%. The other mention rates (1870s 62.4, 1940s 17.3, 1970s 84.8, 1980s 103.8) and the frame proportions in findings 1-5 (121/240, 81/240, 57/240; 63/290, 82/290; 283/775, 161/775; 1,203/2,002, 765/2,002, 437/2,002; 409/2,002, 48/89) all reproduce from the session's own census definitions."
+      }
+    ],
+    "numbersReproduced": 4,
+    "numbersTotal": 5,
+    "quotationsTotal": 38,
+    "quotationsVerified": 38,
+    "fabrications": 0,
+    "fabricationDetails": "None. refuter/quotes.py applied the guide's rule (lower-case, keep [a-z0-9], split at ellipsis marks, segments in order at increasing offsets) against header||dateline||source_note||body_text of the exact pair the memo's trace gives: all 20 overview passages followed by a document URL on the same line are FOUND (each a single segment; none uses an ellipsis), and all 18 collection excerpts are FOUND in their own (volumeId, documentId), every pair is_front_matter=0 and is_editorial_note=0; the memo's own M-22 to M-39 passages (18) are FOUND too. The overview's other 15 quoted spans ('National security', 'National Security Files', 'Department of State', 'Prosperity', 'Cuba policy', 'security', 'menace', 'peace', 'intervention', 'naval station', 'communism', 'communication', 'national security', 'prosperity', and the collection's title) are search terms, archive names or a title, attributed to no document, and are not document quotations. No block quotes exist.",
+    "miscitations": 0,
+    "miscitationDetails": "None. Each 'Document N' citation resolves to the pair whose document_cache.document_number is N (197, 50, 552, 490, 294, 241, 170, 745, 517, 567, 202, 34, 278, 19, 98) in the volume whose manifest.json title the overview's short form names (all 12 volumes checked); 'the President's message' resolves to frus1898/ch83, a chapter-level id with no number whose header is 'Message' and whose body runs 'To the Congress of the United States ... William McKinley. Executive Mansion, April 11, 1898'. Attributions checked in the text: d552 is 'No. 550. Mr. Fish to Mr. Cushing'; d197 is signed HAMILTON FISH; d50 is 'General Sickles to Mr. Fish'; the d294 passage is inside the Cuban President's message that Squiers encloses, and the overview presents it as such; the d34 line is McNamara's 'blockade route' as the minutes record it; the d19 line is Brzezinski's as the summary of conclusions records it; d278 is Acting Secretary Rush to Kubisch. Two loose readings, neither a wrong pair: the overview says the 1945 ambassador 'valued' the Batista base above all others in the Caribbean, where d745 reports that Army flyers regard it as the outstanding airport in the region; and the memo dates ch83 1898-04-12 (the index's date_iso) where the message itself is dated April 11, 1898.",
+    "identifiersChecked": 32,
+    "identifiersConfirmed": 30,
+    "identifierDetails": "Checked (refuter/archival.py): 18 NAIDs, 10 entry numbers, the record group, and three negative claims. CONFIRMED in central-files-index.json lotFiles + series-facts-index.json byNaId (legend-decoded), with entry, NAID, title, inclusive years and access status all matching: 65D438 = A1 3053 / 27022950 / Records Relating to the Cuban Missile Crisis / 1962-1963 / Restricted - Partly; 74D272 = A1 5175 / 614703 / Records of Under Secretary of State George W. Ball / 1961-1966 / Unrestricted; 66D501 = UD-UP 293-B / 648748 / Files Pertaining to Operation Mongoose / 1963-1965 / Unrestricted; 62D418 = A1 3147 / 2068466 / Subject Files (Assistant Secretary for Inter-American Affairs) / 1959-1962 / Restricted - Partly; 62D24 = A1 3148 / 2363836 / Subject Files (Special Assistant on Communism) / 1958-1961 / Restricted - Partly; 62D1 = entries A1 1583E and A1 1583F (the overview's 'A1 1583E/F') / 2838992 / Records Relating to Activities with the National Security Council / 1948-1961 / Restricted - Partly; 66D95 = A1 1586E / 2839192 / Records Relating to National Security Council Policy Papers / 1947-1979 / Restricted - Partly, and it is the most-cited pointed-at lot (25 rows, 22 documents); 66D204 = A1 1590 / 2538452 / 1953-1964 (access Restricted - Possibly, which the overview omits); 64D199 and 65D330 both = A1 1566 / 602231 / The Secretary's and the Under Secretary's Memorandums of Conversation / 1953-1964 / Unrestricted; 73D191 = A1-5758 / 1040618 / Records Relating to Cuba (Coordinator of Cuban Affairs) / 1957-1975 / Restricted - Partly; all RG 59. presidential-library-catalog.json: Kennedy JFK-4 collection NAID 1164 with series Country Files 1961-1963 NAID 193236; Johnson LBJ-NSF 567979 with Latin America Country Files 1963-1969 567985; Eisenhower DDE-EPRES 1124 'Papers as President' (Ann Whitman Diary among its series), flagged 'probably' by the session; the catalogue carries no access field for library collections, as stated. central-files-index countrySeries: file units 196006797 (Despatches from United States Consuls in Havana, 1783-1906), 183303950 (Notes from the Cuban Legation, 1844-1906), 177380758 (Despatches from U.S. Ministers to Cuba, 1902-1906); the roll records carry no entry, access or record-group field, as stated. Negative claim confirmed: no series-level identifier for the Central Decimal File is bundled (series-facts has no 'decimal' title and lacks NAID 302021; collection-authority's 'Central Decimal File 1910-1929' entry has no NAID field at all; central-files-index's two 'Decimal Files' rows are lots 60D171/60D648 = NAID 2561240, entry P 225; volume-sources-index gives only RG 59 itself, NAID 388). The 1910-49 schedule glosses used (837.00 Political affairs, 837.51 Financial conditions, 837.61 Agriculture, 611.37 Commerce United States-Cuba) are as decimal-class-labels.json gives them. NOT CONFIRMED (2): 'the Carter Library's National Security Affairs files did not resolve to an identifier' - the catalogue holds JC-NSA, NAID 560131, 'Records of the Office of the National Security Advisor (Carter Administration)', with series 560151 'Zbigniew Brzezinski's Country Files, 1977-1981', the obvious match for FRUS's 'National Security Affairs, Brzezinski Material, Country File'; the session's regex (national security affairs|brzezinski) missed it because the title says 'Advisor'. 'Two lots that the documents cite did not resolve' - 11 of the 47 pointed-at lots and 17 of the 66 came-from lots are absent from lotFiles (see headline 5).",
+    "collection": {
+      "opens": true,
+      "checkerOutput": "16 documents; all checks pass",
+      "documents": 16,
+      "headings": 5,
+      "prose": 6,
+      "excerpts": 18,
+      "generated": 1,
+      "documentsWithNotes": 16,
+      "citedInOverview": 16,
+      "citedAndPresent": 16,
+      "citedMissing": "none - the overview's 24 URL citations resolve to 16 distinct pairs (frus1870/d197, frus1873p1v2/d50, frus1874/d552, frus1898/d490, frus1898/ch83, frus1902/d294, frus1933v05/d241, frus1934v05/d170, frus1945v09/d745, frus1958-60v06/d517, frus1958-60v06/d567, frus1961-63v10/d202, frus1961-63v11/d34, frus1969-76ve11p1/d278, frus1977-80v23/d19, frus1977-80v23/d98), all 16 document entries of the collection, which holds no document the overview does not cite; the one generated block is archivalSources; 46 entries in all"
+    },
+    "notes": "FILES: all four present (memo.md 154 lines, overview.md 64, queries.log 68 lines ending in an ELIDED footer that says inline python bodies and KWIC output are summarised, collection.fruscollection 46 entries), plus scripts s1-s20 with .out files, cuba_set.tsv (6,718 rows), quotes.tsv (18), reading_ids.txt, texts/ (22 dumps), s15_nn.json. Scratch written only under /Users/jbotts/frus-analysis/c3v/runs/v4/refuter/ (headline.py/.out, quotes.py/.out, archival.py/.out, vectors_rerun.py/.out, reach.py/.out, baselines.py/.out, refuter_W.json, checker.out). Nothing under Development/, Downloads/ or another c3v run was read; vector artifacts read: the bundle's semantic-vectors-index.json, semantic-vectors-binary.bin, semantic-map.bin, semantic-map-index.json and SemanticVectors/.generation (no .vec shard). Python 3.9.6, no numpy, run with -I. The database was opened read-only throughout (-readonly / ?mode=ro).\n1 SCOPE: sqlite3 -readonly db 'SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache' -> 553|321749|1103|8481. headline.py rebuilt W (A 6,668, B 2,236, union 6,928, kept 6,718; symmetric difference with cuba_set.tsv 0; span 1860-04-06 to 1980-12-25; 6 undated; 109 volumes); second set 68/240/167 = 475.\n2 NUMBERS: five in strict reading order from the bottom line: 553 (M-01) ok; about 6,700 (M-05) = 6,718 ok; about 5,900 (M-16) = 5,934 ok, and the same 5,934 have source_note text; about 680 (M-19) = 681 docs / 960 rows ok (earliest W citer 1913-05-18; the memo's 1910-12-06 is the whole table's first row, frus1911/d488); 'Two lots ... did not resolve' (M-18) NOT reproduced: 47 distinct pointed-at lots with 11 absent from lotFiles, 66 came-from lots with 17 absent, 23 of 82 overall - the memo's two are the two among the twelve lots it tried. Extras all reproduce (1,039; 47; 552 of 553 with frus1919Parisv05 the exception; 0 for the nonsense term; the per-1,000 rates; every frame proportion in findings 1-5; the 1960s false-friend rates 34.0% vs 36.8%) except 'in no decade do more than 22 Cuba documents use the word' (M-15), which holds for W alone and fails for the overview's own scope: the 1865-1889 second set has prosper* in 26 of 240 documents of the 1870s, a figure the memo's M-10 itself prints. One imprecise sentence, not a wrong number: 'In the mid-nineteenth-century annuals Cuba came up more often ... than in any decade before the 1960s' rests on 1870s 62.4 vs 1890s 60.1 per 1,000; the 1860s (27.2) are below the 1890s.\n3 QUOTATIONS: quotes.py found 35 straight-quoted spans in overview.md, 20 followed by a URL on the same line (3 in the bottom line, 17 in the findings) -> all FOUND in the exact pair by the segment-strict rule; 15 unattributed terms; 0 block quotes; 18 excerpts all FOUND, all fm/en 0/0; every overview quotation lies inside a collection excerpt of the same pair; M-22..M-39 all FOUND. Document numbers and manifest titles resolve every printed citation to its pair. Context reads: d745's 'outstanding military airport in the Caribbean region' is Army flyers' view reported by Norweb; d98's quoted goal is the President's approved Option No. 2; d19's line is Brzezinski's; d294's passage is the enclosed message of the Cuban President; d34's is McNamara's; ch83 is McKinley's message dated April 11, 1898 (index date_iso 1898-04-12). Collection notes spot-checked: d50 does say 'four millions of the same race'; d552's 'ought to be independent' paraphrases 'ought to belong to the great family of American republics'.\n4 IDENTIFIERS: 32 checked, 30 confirmed; the two misses are the Carter 'did not resolve' (JC-NSA 560131 / series 560151 exist in the catalogue) and the 'two lots' count. The decimal-file 'no identifier' claim holds.\n5 DELIVERABLE: python3 -I check_collection.py collection.fruscollection db -> '16 documents; all checks pass'. Kinds: heading 5, prose 6, document 16, excerpt 18, generated 1 (archivalSources); 16 documents carry notes; 16 cited pairs, 16 present, none missing, none uncited. The session's own s20 reported a 17th 'pair' only because its regex kept a trailing semicolon on d517.\n6 VECTORS: vectors_rerun.py - digests equal across index, binary (offset 20), map and .generation (89481b18...); header FRSV v1, 512 dims, 314,616 rows, 660 centroids = 553 volumes + 107 subseries, and 64 + 314,616 x 64 + 660 x 516 = 20,476,048 bytes = file size; my own decode (row = r + s + k, runs d<base+k>) gives 314,616 rows with 0 segment/n mismatches. Top-25 lists for all three anchors: every distance identical to s15_nn.json, 24 of 25 pairs identical, the 25th slot a tie at the cutoff resolved differently (d490: 90, session frus1906p1/d427 vs mine frus1898/d514; d517: 86; d241: 97). The load-bearing neighbours reproduce exactly: frus1874/d552 at 61, frus1969-76ve11p1/d278 at 66, frus1898/d495 at 48. baselines.py: random pairs mean 167.1 sd 14.8 p1 132 min 95 and 25th-neighbour median 108 (q1 103, q3 113) reproduce exactly; five centroid cosines reproduce to three decimals; map clusters and the 28.0% unclustered share reproduce; frus1898/ch83 has no vector row.\n7 REACH: reach.py parsed and re-ran the 15 ranked MATCH/LIKE queries in queries.log (Q1 15 rows ... Q15 8 rows; the two COUNT controls and the document_number lookup are not retrieval), rebuilt W (heading rule A, header FTS B), and re-ran the census queries inside the scripts (M = 'cuba OR cuban', 13,199 rows; M19; '\\\"national security\\\"'; '\\\"department of state\\\"'). 14 pairs are returned by a ranked query and/or sit in W; frus1969-76ve11p1/d278 is returned by no ranked query but sits in W under the volume's editors' heading 'Cuba' (57 documents) - so the overview's 'found ... by no word search' and the memo's 'no full-text query of mine touched frus1969-76ve11p1' overstate it (its volume was also in every census query); frus1874/d552 is returned by no ranked query (Q1's top 15 and Q15's top 8 omit it) and is outside W, and is in the memo as the second-nearest neighbour of frus1898/d490 - it is in the census sets M and M19 only because it names Cuba. Reported under the retrieval reading: 15 FTS-reached, 1 vector-reached (quoted), 0 untraced; under the literal reading that counts the census MATCH queries, 16/0/0. \nOTHER: M-47 discloses a two-line write to /tmp/x, removed; not re-verified. The memo's M-19 sentence 'no row before 1910-12-06' describes the whole table, not W.",
+    "vectorUse": {
+      "operations": [
+        "nearest neighbours of a document",
+        "semantic join",
+        "centroid similarity",
+        "the map",
+        "near-duplicates"
+      ],
+      "anchors": "Nearest neighbours: frus1898/d490, frus1958-60v06/d517 and frus1933v05/d241, top 25 each by Hamming distance over the 512 sign bits, full scan of 314,616 rows (s15_vectors.py, M-42 to M-44). Semantic join: the 75 neighbours joined to document_dates (OTHER-DECADE flag) and document_cache (NOT-IN-INDEX flag): all 75 in the index, 8/8/18 in another decade. Centroid similarity: volume centroids (int8 codes x float32 scale, cosine) over 11 focus volumes plus the six nearest volumes to frus1898, frus1958-60v06 and frus1977-80v23. The map: cluster membership of d490, d517, d241, d202, d19, d552 and d278 (cluster 42: castro, somoza, cuban, cuba; 7,650 documents) with 28.0% of placements unclustered. Near-duplicates: nearest-neighbour distance for each of the 16 reading-set documents that have a vector (minimum 48, frus1898/d490 to frus1898/d495); frus1898/ch83 and frus1875v01/message have no vector.",
+      "files": "The bundle's semantic-vectors-index.json (segment decode), semantic-vectors-binary.bin (sign-bit rows from offset 64 and the centroid block after them), semantic-map.bin with semantic-map-index.json; SemanticVectors/.generation read for its digest only. Tier-2 shards (.vec) were not used; no rerank.",
+      "digestsCompared": true,
+      "baselinesUsed": "Yes: random pairs (20,000 with random.Random(1877): mean 167.1, sd 14.8, 1st percentile 132, minimum 95 of 512) and the 25th-nearest distance over 40 random documents (median 108, quartiles 103 and 113), M-41; each anchor's 25th distance (90, 86, 97) is read against the 108 median. Both baselines reproduce exactly in refuter/baselines.py.",
+      "neighbourListReproduced": "Yes, up to the tie at the cutoff. Re-run of frus1898/d490 from semantic-vectors-binary.bin with an independent decode of the index's segments (refuter/vectors_rerun.py): all 25 distances identical and 24 of 25 pairs identical; the 25th slot is a tie at distance 90 that the session's heap kept as frus1906p1/d427 and mine as frus1898/d514. The other two anchors behave the same (one boundary tie each, at 86 and 97). The neighbours the memo relies on reproduce exactly: frus1874/d552 at 61 (second-nearest to d490, the vector-reached document), frus1969-76ve11p1/d278 at 66 (nearest to d517), frus1898/d495 at 48 (near-duplicate minimum).",
+      "notes": "The memo reports the digest (89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101) as equal in the index, the binary at offset 20, the map at offset 20 and .generation; confirmed. The binary's 660 centroids are the 553 volumes followed by 107 subseries, and the session indexed the first 553 in volume order, which the five reproduced cosines (0.865, 0.861, 0.930, 0.981, 0.972) bear out. Map placements and the 7,650-document cluster 42 reproduce. The session read both vector-reached candidates before citing them (texts/ holds both dumps at full body length)."
+    },
+    "reach": {
+      "citedDocuments": 16,
+      "ftsReached": 15,
+      "vectorReached": 1,
+      "vectorReachedQuoted": 1,
+      "untraced": 0,
+      "vectorReachedPairs": "frus1874/d552 (Fish to Cushing, 1874-02-06): returned by none of the 15 ranked queries in queries.log (Q1, the 1870s bm25 top 15, and Q15, top 8, both omit it), outside the scope set W (neither under a Cuba heading nor matching header:(cuba OR cuban)), and shown in M-42/M-45 as the second-nearest neighbour of frus1898/d490 at Hamming 61; the overview quotes it twice and the collection carries two excerpts from it. The session's second claimed pair, frus1969-76ve11p1/d278, is NOT vector-reached under the task's rule: it sits under the editors' heading 'Cuba' (57 documents) in its volume and therefore inside the session's own scope set W (rule A, cuba_set.tsv), so a chapter-heading query the session logged returns it; the overview's 'found ... by no word search' overstates it.",
+      "method": "refuter/reach.py: parsed the 15 ranked MATCH/LIKE SELECT queries written in queries.log (the two COUNT controls and the document_number lookup are not retrieval), re-ran each with its own LIMIT and tested the 16 pairs' membership; rebuilt the memo's scope set W (heading walk /cuba/i at any depth + FTS header:(cuba OR cuban), apparatus and Ed2 removed) and tested membership; and separately re-ran the census MATCH queries inside the session's scripts (M = 'cuba OR cuban' any column, 13,199 rows; M19 = the same dated 1865-1890 with at least two Cuba mentions; '\"national security\"'; '\"department of state\"'). A pair returned by a ranked query or in W is FTS/heading-reached; one returned by neither and shown in the memo as found through a neighbour list is vector-reached. Under this retrieval reading: 15 reached, 1 vector-reached (d552), 0 untraced. Under a literal reading that also counts the corpus-wide census queries as 'queries the session logged', every cited document is returned (all 16 are in M, since all name Cuba), which would make the count 16/0/0; I report the retrieval reading because a census that returns every document naming Cuba is not a retrieval event, and state the literal figure here."
+    }
+  }
+}

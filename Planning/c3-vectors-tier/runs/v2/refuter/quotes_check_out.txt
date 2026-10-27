@@ -1,0 +1,107 @@
+=== (1) every double-quoted span in overview.md, with the pairs among the 16 cited that contain it ===
+spans found: 40
+[1] 'the key to the Gulf of Mexico'
+     found in: ['frus1881/d405']
+[2] 'a stable government,'
+     found in: ['frus1870/d197', 'frus1898/ch83', 'frus1902/d313']
+[3] 'for its own defense,'
+     found in: ['frus1903/d331']
+[4] 'a strategic sugar reserve'
+     found in: ['frus1952-54v04/d343']
+[5] 'far outweighs economic effects'
+     found in: ['frus1977-80v23/d21']
+[6] 'national security'
+     found in: ['frus1961-63v10/d202', 'frus1961-63v11/d34', 'frus1969-76ve10/d205', 'frus1977-80v23/d21', 'frus1977-80v23/d98']
+[7] 'Spain,'
+     found in: ['frus1870/d197', 'frus1881/d405', 'frus1898/d490', 'frus1898/ch83', 'frus1902/d313', 'frus1961-63v11/d34', 'frus1969-76ve10/d205']
+[8] 'a Cuba document.'
+     found in: NONE of the 16
+[9] 'any document that mentions Cuba'
+     found in: NONE of the 16
+[10] 'policymakers'
+     found in: NONE of the 16
+[11] 'prosperity'
+     found in: ['frus1881/d405', 'frus1898/d490', 'frus1898/ch83', 'frus1906p1/d427', 'frus1969-76ve10/d205']
+[12] 'since the 1870s,'
+     found in: NONE of the 16
+[13] 'menace to our peace'
+     found in: ['frus1898/ch83']
+[14] 'With the Spanish islands of Cuba and Porto Rico we maintain, in spite of their adverse legislat'
+     found in: ['frus1870/d197']
+[15] 'That rich island, the key to the Gulf of Mexico, and the field for our most extended trade in t'
+     found in: ['frus1881/d405']
+[16] 'The present condition of affairs in Cuba is a constant menace to our peace, and entails upon th'
+     found in: ['frus1898/ch83']
+[17] 'a stable government'
+     found in: ['frus1870/d197', 'frus1898/ch83', 'frus1902/d313']
+[18] 'defense.'
+     found in: ['frus1902/d313', 'frus1903/d331', 'frus1941v07/d119', 'frus1961-63v10/d202', 'frus1961-63v11/d34', 'frus1969-76ve10/d205', 'frus1969-76v12/d211', 'frus1977-80v23/d98']
+[19] 'Cuba consents that the United States shall reserve and retain the right to intervene for the pr'
+     found in: ['frus1902/d313']
+[20] 'To enable the United States to maintain the independence of Cuba, and to protect the people the'
+     found in: ['frus1903/d331']
+[21] 'This nation asks nothing of Cuba, save that it shall continue to develop as it has developed du'
+     found in: ['frus1906p1/d427']
+[22] 'a strategic sugar reserve.'
+     found in: ['frus1952-54v04/d343']
+[23] 'We will likewise regain an exceedingly important market for our exports.'
+     found in: ['frus1933v05/d281']
+[24] 'a cooperative defense agreement with the Cubans is nevertheless essential for its effect on Uni'
+     found in: ['frus1941v07/d119']
+[25] 'It would result in corresponding reductions in the considerable United States exports to Cuba a'
+     found in: ['frus1952-54v04/d343']
+[26] 'remote possibility'
+     found in: ['frus1961-63v10/d202']
+[27] 'double-barreled problem,'
+     found in: ['frus1969-76ve10/d205']
+[28] 'a policy to weaken the Cuban economy.'
+     found in: NONE of the 16
+[29] 'There is the remote possibility of an attempt to convert Cuba into a Russian base for strategic'
+     found in: ['frus1961-63v10/d202']
+[30] 'In his view the existence of fifty planes in Cuba did not affect the balance of power, but the '
+     found in: ['frus1961-63v11/d34']
+[31] 'Cuba has been a double-barreled problem for the U.S.: —as a base for Soviet military power, and'
+     found in: ['frus1969-76ve10/d205']
+[32] 'The latest and perhaps the most serious challenge to US security interests is occurring in Cuba'
+     found in: ['frus1969-76v12/d211']
+[33] 'prosperity,'
+     found in: ['frus1881/d405', 'frus1898/d490', 'frus1898/ch83', 'frus1906p1/d427', 'frus1969-76ve10/d205']
+[34] 'The political significance of both sides of the trade issue far outweighs economic effects.'
+     found in: ['frus1977-80v23/d21']
+[35] 'the influx of Cuban and Haitian refugees requires the highest degree of coordination of the Fed'
+     found in: ['frus1977-80v23/d98']
+[36] 'Spain'
+     found in: ['frus1870/d197', 'frus1881/d405', 'frus1898/d490', 'frus1898/ch83', 'frus1902/d313', 'frus1961-63v11/d34', 'frus1969-76ve10/d205']
+[37] 'national security'
+     found in: ['frus1961-63v10/d202', 'frus1961-63v11/d34', 'frus1969-76ve10/d205', 'frus1977-80v23/d21', 'frus1977-80v23/d98']
+[38] 'Habana'
+     found in: ['frus1898/ch83', 'frus1902/d313', 'frus1903/d331', 'frus1906p1/d427', 'frus1933v05/d281']
+[39] 'Havana,'
+     found in: ['frus1898/ch83', 'frus1977-80v23/d98']
+[40] 'Cuba, security and prosperity, 1870–1980'
+     found in: NONE of the 16
+
+=== (2) every excerpt in the collection against its own pair ===
+frus1870/d197	True	With the Spanish islands of Cuba and Porto Rico we maintain, in spite 
+frus1881/d405	True	That rich island, the key to the Gulf of Mexico, and the field for our
+frus1898/d490	True	The commerce of Cuba has dwindled to such unprofitable proportions tha
+frus1898/ch83	True	The right to intervene may be justified by the very serious injury to 
+frus1898/ch83	True	The present condition of affairs in Cuba is a constant menace to our p
+frus1902/d313	True	Cuba consents that the United States shall reserve and retain the righ
+frus1903/d331	True	To enable the United States to maintain the independence of Cuba, and 
+frus1906p1/d427	True	This nation asks nothing of Cuba, save that it shall continue to devel
+frus1933v05/d281	True	We will likewise regain an exceedingly important market for our export
+frus1941v07/d119	True	a cooperative defense agreement with the Cubans is nevertheless essent
+frus1952-54v04/d343	True	It would result in corresponding reductions in the considerable United
+frus1961-63v10/d202	True	There is the remote possibility of an attempt to convert Cuba into a R
+frus1961-63v11/d34	True	In his view the existence of fifty planes in Cuba did not affect the b
+frus1969-76ve10/d205	True	Cuba has been a double-barreled problem for the U.S.: —as a base for S
+frus1969-76v12/d211	True	The latest and perhaps the most serious challenge to US security inter
+frus1977-80v23/d21	True	The political significance of both sides of the trade issue far outwei
+frus1977-80v23/d98	True	the influx of Cuban and Haitian refugees requires the highest degree o
+excerpts 17 pass 17
+
+=== (3) collection prose single-quoted fragments (not required) ===
+'s ' ['frus1870/d197', 'frus1881/d405', 'frus1898/d490', 'frus1898/ch83', 'frus1902/d313', 'frus1903/d331', 'frus1906p1/d427', 'frus1933v05/d281', 'frus1941v07/d119', 'frus1952-54v04/d343', 'frus1961-63v10/d202', 'frus1961-63v11/d34', 'frus1969-76ve10/d205', 'frus1969-76v12/d211', 'frus1977-80v23/d21', 'frus1977-80v23/d98']
+' of a Soviet strategic base, through the missile crisis, to the 1969 ' []
+' War instructions printed outside the annual volume; the domestic sugar interests' []

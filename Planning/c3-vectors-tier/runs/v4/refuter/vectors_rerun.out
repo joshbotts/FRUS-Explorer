@@ -1,0 +1,52 @@
+digest index==binary==map==.generation: True 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+header: version 1 dims 512 docs 314616 centroids 660 | index documentCount 314616
+volumes: 553 decoded rows: 314616 volumes whose segments do not sum to n: 0
+
+NN of frus1898/d490 (0.4s): 25th at 90
+  reproduces the session's list exactly (same 25 pairs, same distances, same order): False
+  same set of 25 pairs: False
+    48 frus1898/d495
+    61 frus1874/d552
+    61 frus1898/d503
+    64 frus1898/d531
+    70 frus1897/d581
+    72 frus1898/d526
+    73 frus1872p1/d431
+    74 frus1897/d582
+  mine-not-theirs: {(90, 'frus1898', 'd514')}  theirs-not-mine: {(90, 'frus1906p1', 'd427')}
+
+NN of frus1958-60v06/d517 (0.4s): 25th at 86
+  reproduces the session's list exactly (same 25 pairs, same distances, same order): False
+  same set of 25 pairs: False
+    66 frus1969-76ve11p1/d278
+    73 frus1948v09/d420
+    73 frus1969-76ve10/d205
+    76 frus1958-60v06/d423
+    76 frus1958-60v06/d616
+    77 frus1950v02/d440
+    77 frus1961-63v10-12mSupp/d729
+    79 frus1958-60v06/d535
+  mine-not-theirs: {(86, 'frus1958-60v06', 'd458')}  theirs-not-mine: {(86, 'frus1964-68v32', 'd300')}
+
+NN of frus1933v05/d241 (0.4s): 25th at 97
+  reproduces the session's list exactly (same 25 pairs, same distances, same order): False
+  same set of 25 pairs: False
+    71 frus1932v05/d594
+    83 frus1902/d313
+    84 frus1898/d503
+    84 frus1933v05/d246
+    87 frus1927v02/d598
+    88 frus1904/d207
+    89 frus1902/d294
+    90 frus1930v02/d763
+  mine-not-theirs: {(97, 'frus1898', 'd495')}  theirs-not-mine: {(97, 'frus1941v07', 'd134')}
+
+cited pairs without a vector row: [('frus1898', 'ch83')]
+map: frus1898/d490 unclustered
+map: frus1958-60v06/d517 cluster 42 ['castro', 'somoza', 'cuban', 'cuba'] n=7650
+map: frus1933v05/d241 unclustered
+map: frus1961-63v10/d202 cluster 42 ['castro', 'somoza', 'cuban', 'cuba'] n=7650
+map: frus1977-80v23/d19 cluster 42 ['castro', 'somoza', 'cuban', 'cuba'] n=7650
+map: frus1874/d552 unclustered
+map: frus1969-76ve11p1/d278 unclustered
+unclustered placements: 88059 of 314616 (28.0%)

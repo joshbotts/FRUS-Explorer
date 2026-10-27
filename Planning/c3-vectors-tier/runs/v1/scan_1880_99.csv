@@ -1,0 +1,887 @@
+volume_id,document_id,date,header,len,ncuba,nsec,npro,nboth
+frus1880,d156,1880-03-01,No. 156. Mr. Seward to Mr. Evarts.,1214,3,0,0,0
+frus1880,d410,1880-08-09,No. 410. Mr. Langston to Mr. Evarts.,14345,1,0,1,0
+frus1880,d582,1880-08-11,No. 582. Mr. Evarts to Mr. Fairchild.,18671,22,1,8,0
+frus1880,d584,1880-09-23,No. 584. Mr. Reed to Mr. Evarts.,3446,2,0,1,0
+frus1881,d126,1880-10-11,No. 126. The commission to Mr. Evarts.,17346,2,0,0,0
+frus1881,d129,1880-11-03,No. 129. The commission to Mr. Evarts.,28178,1,0,0,0
+frus1881,d644,1880-12-04,No. 640. Mr. Fairchild to Mr. Evarts.,1581,2,0,0,0
+frus1881,d645,1880-12-16,No. 641. Mr. Fairchild to Mr. Evarts.,5972,8,2,0,0
+frus1881,d646,1880-12-29,No. 642. Mr. Fairchild to Mr. Evarts.,715,1,0,0,0
+frus1881,d648,1881-01-29,No. 644. Mr. Fairchild to Mr. Evarts.,12774,9,1,4,0
+frus1881,d649,1881-03-03,No. 645. Mr. Evarts to Mr. Fairchild.,3924,2,0,0,0
+frus1881,d650,1881-04-07,No. 646. Mr. Reed to Mr. Blaine.,7392,5,1,0,0
+frus1881,d468,1881-07-30,No. 464. Mr. Morgan to Mr. Blaine.,5996,2,0,0,0
+frus1881,d660,1881-11-02,No. 656. Mr. Blaine to Mr. Fairchild.,4272,3,0,1,0
+frus1881,d413,1881-11-05,No. 409. Mr. Langston to Mr. Blaine.,10191,1,0,0,0
+frus1881,d661,1881-11-15,No. 657. Mr. Blaine to Mr. Fairchild.,1989,3,0,1,0
+frus1881,d405,1881-12-01,No. 401. Mr. Blaine to Mr. Comly.,14627,8,3,6,3
+frus1894app2,d394,1881-12-01,Mr. Blaine to Mr. Comly.,14625,8,3,6,3
+frus1882,d337,1882-01-10,No. 273. Mr. Frelinghuysen to Mr. Hamlin.,2795,3,0,1,0
+frus1882,d338,1882-01-16,No. 274. Mr. Hamlin to Mr. Frelinghuysen.,7300,4,0,0,0
+frus1882,d339,1882-01-20,No. 275. Mr. Frelinghuysen to Mr. Hamlin.,1886,1,0,0,0
+frus1882,d340,1882-01-30,No. 276. Mr. Frelinghuysen to Mr. Hamlin.,2056,2,0,0,0
+frus1882,d341,1882-02-15,No. 277. Mr. Frelinghuysen to Mr. Hamlin.,4511,6,2,5,2
+frus1882,d342,1882-03-20,No. 278. Mr. Reed to Mr. Frelinghuysen.,4236,9,1,4,0
+frus1882,d344,1882-03-27,No. 280. Mr. Frelinghuysen to Mr. Reed.,3212,1,0,1,0
+frus1882,d345,1882-03-27,No. 281. Mr. Frelinghuysen to Mr. Reed.,9504,15,4,9,4
+frus1882,d347,1882-04-21,Mr. Frelinghuysen to Mr. Hamlin.,4072,1,0,1,0
+frus1882,d348,1882-05-16,No. 284. Mr. Hamlin to Mr. Frelinghuysen.,6202,13,0,12,0
+frus1882,d349,1882-05-16,No. 285. Mr. Hamlin to Mr. Frelinghuysen.,5233,1,0,1,0
+frus1882,d350,1882-05-29,No. 286. Mr. Hamlin to Mr. Frelinghuysen.,4015,5,0,2,0
+frus1882,d351,1882-06-06,No. 287. Mr. Hamlin to Mr. Frelinghuysen.,6593,1,0,1,0
+frus1882,d352,1882-06-14,No. 288. Mr. Frelinghuysen to Mr. Hamlin.,9812,4,0,3,0
+frus1882,d81,1882-07-05,No. 81. Mr. Scruggs to Mr. Frelinghuysen.,11253,1,0,0,0
+frus1882,d353,1882-07-10,No. 289. Mr. Hamlin to Mr. Frelinghuysen.,1586,2,0,2,0
+frus1882,d354,1882-07-31,No. 290. Mr. Frelinghuysen to Mr. Hamlin.,645,2,0,2,0
+frus1882,d355,1882-09-04,No. 291. Mr. Davis to Mr. Hamlin.,5928,11,1,10,1
+frus1882,d358,1882-10-12,No. 294. Mr. Hamlin to Mr. Frelinghuysen.,1661,2,0,2,0
+frus1882,d359,1882-10-12,No. 295. Mr. Hamlin to Mr. Frelinghuysen.,13352,12,0,11,0
+frus1882,d360,1882-10-12,No. 296. Mr. Hamlin to Mr. Frelinghuysen.,2801,1,0,0,0
+frus1882,d361,1882-11-10,No. 297. Mr. Frelinghuysen to Mr. Reed.,3767,1,0,0,0
+frus1883,d87,1883-01-06,No. 87. Mr. Frelinghuysen to Mr. Cheng Tsao Ju.,4441,1,0,0,0
+frus1883,d488,1883-01-12,No. 489. Mr. Frelinghuysen to Mr. Reed.,7819,21,0,5,0
+frus1883,d74,1883-01-19,No. 74. Mr. Frelinghuysen to Mr. Young.,1583,1,0,0,0
+frus1883,d81,1883-03-17,No. 81. Mr. Young to Mr. Frelinghuysen.,4550,1,0,1,0
+frus1883,d391,1883-04-04,No. 390. Mr. Morgan to Mr. Frelinghuysen.,20763,1,0,0,0
+frus1883,d493,1883-04-28,No. 494. Mr. Reed to Mr. Frelinghuysen.,4038,5,0,4,0
+frus1883,d494,1883-05-03,No. 495. Mr. Frelinghuysen to Mr. Foster.,13593,8,2,8,2
+frus1883,d495,1883-05-28,No. 496. Mr. Reed to Mr. Frelinghuysen.,9723,1,0,1,0
+frus1883,d236,1883-07-05,No. 236. Mr. Lowell to Mr. Frelinghuysen.,1404,1,0,0,0
+frus1883,d497,1883-07-12,No. 498. Mr. Foster to Mr. Frelinghuysen.,16974,8,3,8,3
+frus1883,d498,1883-07-18,No. 499. Mr. Foster to Mr. Frelinghuysen.,3088,6,0,0,0
+frus1883,d500,1883-07-31,No. 501. Mr. Foster to Mr. Frelinghuysen.,2452,3,0,2,0
+frus1883,d501,1883-08-01,No. 502. Mr. Foster to Mr. Frelinghuysen.,3770,5,2,5,2
+frus1883,d241,1883-08-07,No. 241. Mr. Davis to Mr. Lowell.,9597,2,0,0,0
+frus1883,d502,1883-08-14,No. 503. Mr. Frelinghuysen to Mr. Foster.,522,1,1,1,1
+frus1883,d504,1883-09-18,No. 505. Mr. Hunter to Mr. Foster.,5749,3,2,1,0
+frus1883,d505,1883-09-28,No. 506. Mr. Davis to Mr. Foster.,5787,3,3,0,0
+frus1883,d507,1883-11-13,No. 508. Mr. Foster to Mr. Frelinghuysen.,1482,3,0,3,0
+frus1883,d508,1883-11-15,No. 509. Mr. Foster to Mr. Frelinghuysen.,13896,15,10,10,7
+frus1884,d335,1883-12-15,No. 335. Mr. Foster to Mr. Frelinghuysen.,5914,6,0,3,0
+frus1884,d337,1883-12-22,No. 337. Mr. Foster to Mr. Frelinghuysen.,1092,2,0,2,0
+frus1884,d338,1883-12-27,No. 338. Mr. Foster to Mr. Frelinghuysen.,6397,11,1,10,0
+frus1884,d339,1883-12-29,No. 339. Mr. Foster to Mr. Frelinghuysen.,625,2,0,0,0
+frus1884,d340,1884-01-03,No. 340. Mr. Foster to Mr. Frelinghuysen.,2938,3,2,3,2
+frus1884,d341,1884-01-04,No. 341. Mr. Foster to Mr. Frelinghuysen.,2780,5,0,3,0
+frus1884,d342,1884-01-15,No. 342. Mr. Foster to Mr. Frelinghuysen.,3812,1,0,0,0
+frus1884,d343,1884-01-23,No. 343. Mr. Foster to Mr. Frelinghuysen.,10139,1,0,1,0
+frus1884,d344,1884-01-31,No. 344. Mr. Frelinghuysen to Mr. Foster.,3961,1,0,1,0
+frus1884,d345,1884-02-14,No. 345. Mr. Foster to Mr. Frelinghuysen.,7331,1,0,1,0
+frus1884,d346,1884-02-15,No. 346. Mr. Foster to Mr. Frelinghuysen.,1653,1,1,0,0
+frus1884,d347,1884-03-03,No. 347. Mr. Foster to Mr. Frelinghuysen.,7365,15,0,13,0
+frus1884,d348,1884-03-12,No. 348. Mr. Frelinghuysen to Mr. Foster.,3961,2,0,0,0
+frus1884,d349,1884-03-13,No. 349. Mr. Frelinghuysen to Mr. Foster.,1980,1,0,1,0
+frus1884,d350,1884-03-17,No. 350. Mr. Frelinghuysen to Mr. Foster.,2735,5,0,5,0
+frus1884,d364,1884-03-17,No. 364. Mr. Valera to Mr. Frelinghuysen.,3636,4,2,1,0
+frus1884,d351,1884-03-21,No. 351. Mr. Frelinghuysen to Mr. Foster.,6176,3,0,3,0
+frus1884,d365,1884-03-21,No. 365. Mr. Frelinghuysen to Mr. Valera.,2430,1,0,1,0
+frus1884,d368,1884-03-27,No. 368. Mr. Valera to Mr. Frelinghuysen.,1774,5,0,0,0
+frus1884,d369,1884-03-29,No. 369. Mr. Frelinghuysen to Mr. Valera.,700,1,1,0,0
+frus1884,d352,1884-04-01,No. 352. Mr. Foster to Mr. Frelinghuysen.,697,2,0,0,0
+frus1884,d353,1884-04-02,No. 353. Mr. Foster to Mr. Frelinghuysen.,5441,3,2,2,1
+frus1884,d354,1884-04-04,No. 354. Mr. Foster to Mr. Frelinghuysen.,7590,1,0,1,0
+frus1884,d355,1884-04-08,No. 355. Mr. Reed to Mr. Frelinghuysen.,1031,2,0,0,0
+frus1884,d370,1884-04-10,No. 370. Mr. Valera to Mr. Frelinghuysen.,1325,1,0,0,0
+frus1884,d371,1884-04-11,No. 371. Mr. Frelinghuysen to Mr. Valera.,1056,1,0,0,0
+frus1884,d374,1884-04-14,No. 374. Mr. Valera to Mr. Frelinghuysen.,771,1,0,0,0
+frus1884,d375,1884-04-15,No. 375. Mr. Frelinghuysen to Mr. Valera.,849,1,0,0,0
+frus1884,d376,1884-04-16,No. 376. Mr. Frelinghuysen to Mr. Valera.,721,1,0,0,0
+frus1884,d357,1884-04-17,No. 357. Mr. Frelinghuysen to Mr. Reed.,525,1,0,1,0
+frus1884,d377,1884-04-18,No. 377. Mr. Valera to Mr. Frelinghuysen.,1739,2,0,0,0
+frus1884,d378,1884-04-18,No. 378. Mr. Frelinghuysen to Mr. Valera.,3120,1,0,1,0
+frus1884,d379,1884-04-19,No. 379. Mr. Frelinghuysen to Mr. Valera.,473,1,0,0,0
+frus1884,d381,1884-04-24,No. 381. Mr. Frelinghuysen to Mr. Valera.,957,1,0,0,0
+frus1884,d359,1884-04-30,No. 359. Mr. Frelinghuysen to Mr. Reed.,10473,9,0,1,0
+frus1884,d382,1884-04-30,No. 382. Mr. Valera to Mr. Frelinghuysen.,1187,1,0,0,0
+frus1884,d383,1884-04-30,No. 383. Mr. Frelinghuysen to Mr. Valera.,479,1,0,0,0
+frus1884,d384,1884-05-02,No. 384. Mr. Frelinghuysen to Mr. Valera.,1060,3,0,0,0
+frus1884,d387,1884-05-16,No. 387. Mr. Frelinghuysen to Mr. Valera.,816,1,0,0,0
+frus1884,d388,1884-05-17,No. 388. Mr. Frelinghuysen to Mr. Valera.,1613,1,1,0,0
+frus1884,d389,1884-05-17,No. 389. Mr. Frelinghuysen to Mr. Valera.,1149,1,1,0,0
+frus1884,d392,1884-06-02,No. 392. Mr. Valera to Mr. Frelinghuysen.,2392,2,0,0,0
+frus1884,d313,1884-06-20,No. 313. Mr. Francis to Mr. Frelinghuysen.,2833,1,0,0,0
+frus1884,d394,1884-07-12,No. 394. Mr. Valera to Mr. Frelinghuysen.,1291,2,2,0,0
+frus1884,d395,1884-07-14,No. 395. Mr. Frelinghuysen to Mr. Valera.,1674,1,1,0,0
+frus1884,d397,1884-07-14,No. 397. Mr. Valera to Mr. Frelinghuysen.,939,1,0,1,0
+frus1884,d398,1884-07-24,No. 398. Mr. Frelinghuysen to Mr. Valera.,3375,4,1,0,0
+frus1884,d360,1884-07-28,No. 360. Mr. Foster to Mr. Frelinghuysen.,7543,15,2,9,2
+frus1884,d399,1884-07-31,No. 399. Mr. Valera to Mr. Frelinghuysen.,907,1,0,0,0
+frus1884,d361,1884-08-23,No. 361. Mr. Foster to Mr. Frelinghuysen.,7321,10,1,0,0
+frus1884,d362,1884-09-16,No. 362. Mr. Foster to Mr. Frelinghuysen.,4644,1,1,1,1
+frus1884,d400,1884-10-07,No. 400. Mr. Valera to Mr. Hunter.,1492,2,0,0,0
+frus1884,d63,1884-10-08,No. 63. Mr. Tsai Kwoh Ching to Mr. Frelinghuysen.,5769,1,1,0,0
+frus1884,d401,1884-10-09,No. 401. Mr. Frelinghuysen to Mr. Valera.,1327,1,0,0,0
+frus1884,d402,1884-10-29,No. 402. Mr. Frelinghuysen to Mr. Valera.,687,1,0,0,0
+frus1885,d1,1884-12-29,Mr. Frelinghuysen to Mr. Osborn.,3636,1,0,0,0
+frus1885,d573,1885-01-08,Mr. Valera to Mr. Frelinghuysen.,1154,2,1,0,0
+frus1885,d574,1885-01-15,Mr. Valera to Mr. Frelinghuysen.,995,2,0,0,0
+frus1885,d575,1885-01-16,Mr. Frelinghuysen to Mr. Valera.,654,1,1,0,0
+frus1885,d576,1885-01-21,Mr. Frelinghuysen to Mr. Valera.,628,1,0,0,0
+frus1885,d520,1885-01-28,Mr. Frelinghuysen to Mr. Reed.,1400,1,0,0,0
+frus1885,d578,1885-01-28,Mr. Frelinghuysen to Mr. Valera.,947,2,2,0,0
+frus1885,d521,1885-02-05,Mr. Reed to Mr. Frelinghuysen.,1872,2,0,1,0
+frus1885,d522,1885-02-05,Mr. Reed to Mr. Frelinghuysen.,8440,8,0,7,0
+frus1885,d46,1885-02-10,Mr. Hall to Mr. Frelinghuysen.,5552,1,1,0,0
+frus1885,d524,1885-02-24,Mr. Reed to Mr. Frelinghuysen.,1501,1,0,0,0
+frus1885,d525,1885-02-27,Mr. Frelinghuysen to Mr. Reed.,25965,1,0,0,0
+frus1885,d579,1885-02-27,Mr. Frelinghuysen to Mr. Valera.,511,1,0,0,0
+frus1885,d528,1885-03-10,Mr. Bayard to Mr. Reed.,8905,9,0,7,0
+frus1885,d580,1885-03-21,Mr. Valera to Mr. Bayard.,4164,6,2,0,0
+frus1885,d581,1885-03-31,Mr. Bayard to Mr. Valera.,2172,3,2,0,0
+frus1885,d530,1885-04-08,Mr. Reed to Mr. Bayard.,8101,3,0,1,0
+frus1885,d531,1885-04-09,Mr. Bayard to Mr. Reed.,11757,2,0,1,0
+frus1885,d532,1885-04-29,Mr. Bayard to Mr. Foster.,1788,1,0,1,0
+frus1885,d533,1885-05-06,Mr. Bayard to Mr. Foster.,5219,6,3,3,3
+frus1885,d582,1885-05-26,Mr. Valera to Mr. Bayard.,1684,1,0,0,0
+frus1885,d367,1885-05-28,Mr. Langston to Mr. Bayard.,2049,1,0,0,0
+frus1885,d534,1885-05-28,Mr. Bayard to Mr. Foster.,7272,2,0,0,0
+frus1885,d583,1885-05-28,Mr. Bayard to Mr. Valera.,1445,1,1,0,0
+frus1885,d535,1885-06-03,Mr. Porter to Mr. Foster.,5655,5,0,4,0
+frus1885,d536,1885-06-06,Mr. Porter to Mr. Foster.,5004,1,0,0,0
+frus1885,d538,1885-06-10,Mr. Foster to Mr. Bayard.,2034,2,0,0,0
+frus1885,d584,1885-06-13,Mr. Bayard to Mr. Valera.,599,1,0,1,0
+frus1885,d541,1885-06-19,Mr. Foster to Mr. Bayard.,3271,3,0,3,0
+frus1885,d372,1885-06-23,Mr. Bayard to Mr. Thompson.,4131,1,1,1,1
+frus1885,d545,1885-06-30,Mr. Foster to Mr. Bayard.,11698,15,3,4,2
+frus1885,d585,1885-07-21,Mr. Valera to Mr. Bayard.,7566,10,2,0,0
+frus1885,d549,1885-07-23,Mr. Foster to Mr. Bayard.,6358,4,0,2,0
+frus1885,d550,1885-07-25,Mr. Foster to Mr. Bayard.,4682,7,1,1,0
+frus1885,d551,1885-07-25,Mr. Bayard to Mr. Foster.,6868,3,0,1,0
+frus1885,d552,1885-07-29,Mr. Bayard to Mr. Foster.,5454,1,0,0,0
+frus1885,d586,1885-07-31,Mr. Bayard to Mr. Valera.,9493,3,0,0,0
+frus1885,d311,1885-08-03,Mr. von Alvensleben to Mr. Bayard.,3640,1,0,1,0
+frus1885,d553,1885-08-03,Mr. Foster to Mr. Bayard.,22551,66,9,36,5
+frus1888p2,d572,1885-08-03,No. 10. Mr. von Alvensleben to Mr. Bayard,3638,1,0,1,0
+frus1885,d123,1885-08-05,Mr. Cheng Tsao Ju to Mr. Bayard.,2254,1,0,1,0
+frus1886,d140,1885-08-06,No. 136. Mr. Flores to Mr. Bayard.,30673,1,1,0,0
+frus1885,d557,1885-08-10,Mr. Foster to Mr. Bayard.,2619,3,0,2,0
+frus1885,d558,1885-08-18,Mr. Foster to Mr. Bayard.,6896,7,0,7,0
+frus1885,d559,1885-08-21,Mr. Bayard to Mr. Foster.,6489,14,0,3,0
+frus1885,d560,1885-08-22,Mr. Foster to Mr. Bayard.,4086,1,0,1,0
+frus1885,d562,1885-08-26,Mr. Foster to Mr. Bayard.,1771,3,0,2,0
+frus1885,d563,1885-08-29,Mr. Foster to Mr. Bayard.,3507,3,0,0,0
+frus1885,d96,1885-09-11,Mr. Hall to Mr. Bayard.,3416,1,1,0,0
+frus1885,d587,1885-09-28,Mr. Valera to Mr. Bayard.,1001,2,1,0,0
+frus1885,d97,1885-09-29,Mr. Hall to Mr. Bayard.,3951,1,0,0,0
+frus1885,d588,1885-10-06,Mr. Bayard to Mr. Valera.,620,2,2,0,0
+frus1885,d589,1885-10-08,Mr. Bayard to Mr. Valera.,493,1,0,0,0
+frus1885,d590,1885-10-10,Mr. Valera to Mr. Bayard.,1650,1,0,1,0
+frus1885,d565,1885-10-13,Mr. Sirobel to Mr. Bayard.,12225,4,0,3,0
+frus1885,d566,1885-11-04,Mr. Bayard to Mr. Strobel.,2483,2,0,1,0
+frus1886,d285,1885-11-07,No. 281. Mr. Bayard to Mr. Thompson.,5895,1,1,0,0
+frus1885,d567,1885-11-17,Mr. Bayard to Mr. Strobel.,1795,6,0,5,0
+frus1886,d65,1885-11-30,No. 64. Cheng Tsao Ju to Mr. Bayard,219270,4,2,2,0
+frus1886,d352,1885-12-01,No. 348. Mr. Bell to Mr. Bayard.,2567,1,0,0,0
+frus1885,d571,1885-12-05,Mr. Bayard to Mr. Curry.,1511,1,0,1,0
+frus1885,d596,1885-12-07,Mr. Bayard to Mr. Valera.,573,1,0,1,0
+frus1885,d572,1885-12-10,Mr. Bayard to Mr. Curry.,1486,2,0,1,0
+frus1886,d357,1886-01-21,No. 353. Mr. Bell to Mr. Bayard.,17411,3,0,1,0
+frus1886,d358,1886-02-08,No. 354. Mr. Bayard to Mr. Bell.,6417,1,0,1,0
+frus1886,d71,1886-02-18,No. 67. Mr. Bayard to Mr. Cheng Tsao Ju.,38606,1,1,0,0
+frus1886,d383,1886-02-23,No. 379. Mr. Bayard to Mr. Curry.,8804,9,1,7,1
+frus1886,d384,1886-02-24,No. 380. Mr. Bayard to Mr. Curry.,37972,36,0,23,0
+frus1886,d385,1886-05-04,No. 381. Mr. Bayard to Mr. Curry.,12685,12,0,8,0
+frus1886,d386,1886-05-21,No. 382. Mr. Curry to Mr. Bayard.,9661,16,0,12,0
+frus1886,d388,1886-06-05,No. 384. Mr. Curry to Mr. Bayard.,2575,1,0,0,0
+frus1886,d389,1886-06-23,No. 385. Mr. Curry to Mr. Bayard.,4766,9,1,5,0
+frus1886,d390,1886-07-09,No. 386. Mr. Bayard to Mr. Curry.,670,1,0,0,0
+frus1894app1,d359,1886-07-09,Mr. Curry to Mr. Bayard.,8359,5,0,5,0
+frus1886,d391,1886-07-12,No. 387. Mr. Bayard to Mr. Curry.,496,1,0,1,0
+frus1886,d392,1886-08-21,No. 387½. Mr. Porter to Mr. Strobel.,2639,1,0,1,0
+frus1886,d393,1886-09-08,No. 388. Mr. Strobel to Mr. Bayard.,2335,4,0,1,0
+frus1886,d394,1886-09-24,No. 389. Mr. Bayard to Mr. Curry.,1029,3,0,1,0
+frus1886,d395,1886-09-29,No. 390. Mr. Curry to Mr. Bayard.,14469,4,0,2,0
+frus1886,d396,1886-09-29,No. 391. Mr. Porter to Mr. Gurry.,732,1,0,1,0
+frus1886,d400,1886-10-04,No. 395. Mr. Porter to Mr. Curry.,2381,2,0,2,0
+frus1886,d401,1886-10-06,No. 396. Mr. Curry to Mr. Bayard.,306,1,0,1,0
+frus1886,d403,1886-10-14,No. 398. Mr. Curry to Mr. Bayard.,5230,3,0,1,0
+frus1886,d432,1886-10-14,No. 426. Mr. Bayard to Mr. Muruaga.,6977,10,1,9,0
+frus1886,d404,1886-10-16,No. 399. Mr. Bayard to Mr. Curry.,608,1,0,1,0
+frus1886,d406,1886-10-16,No. 401. Mr. Curry to Mr. Bayard.,5256,1,0,1,0
+frus1886,d407,1886-10-19,No. 402. Mr. Bayard to Mr. Curry.,2575,1,0,1,0
+frus1886,d420,1886-10-19,Mr. Curry to Mr. Moret.,6601,8,0,8,0
+frus1886,d415,1886-10-20,No. 410. Mr. Curry to Mr. Bayard.,395,1,0,0,0
+frus1886,d411,1886-10-21,No. 406. Mr. Curry to Mr. Bayard.,934,1,0,1,0
+frus1886,d414,1886-10-22,No. 409. Mr. Curry to Mr. Bayard.,9773,10,3,6,1
+frus1886,d416,1886-10-23,No. 411. Mr. Bayard to Mr. Curry.,558,2,0,0,0
+frus1894app1,d360,1886-10-23,Mr. Curry to Mr. Bayard.,2368,1,0,0,0
+frus1886,d418,1886-10-25,No. 413. Mr. Curry to Mr. Bayard.,720,1,0,0,0
+frus1886,d419,1886-10-26,No. 414. Mr. Curry to Mr. Bayard.,15289,12,0,10,0
+frus1886,d422,1886-10-27,No. 416. Mr. Curry to Mr. Bayard.,5798,2,0,1,0
+frus1886,d423,1886-10-28,No. 417. Mr. Porter to Mr. Curry.,4681,6,0,6,0
+frus1886,d424,1886-11-03,No. 418. Mr. Curry to Mr. Bayard.,20062,8,0,3,0
+frus1887,d608,1886-11-23,No. 608. Mr. Bayard to Mr. Curry.,16372,10,0,0,0
+frus1887,d609,1886-11-23,No. 609. Mr. Curry to Mr. Bayard.,5749,4,0,0,0
+frus1894app1,d361,1886-11-30,Mr. Curry to Mr. Bayard.,283,1,0,0,0
+frus1887,d631,1886-12-03,No. 631. Mr. Bayard to Mr. de Muruaga.,32158,4,3,4,3
+frus1894app1,d363,1886-12-03,"Messrs. Shipman, Barlow, Larocque & Choate to Mr. Bayard.",1010,2,0,2,0
+frus1894app1,d365,1886-12-09,Mr. Curry to Mr. Bayard.,4548,3,0,1,0
+frus1887,d120,1886-12-29,No. 120. Mr. Roberts to Mr. Bayard.,10447,1,0,1,0
+frus1887,d633,1887-01-04,No. 633. Mr. de Muruaga to Mr. Bayard.,3720,5,0,1,0
+frus1887,d612,1887-01-10,No. 612. Mr. Bayard to Mr. Curry.,6641,6,0,4,0
+frus1887,d634,1887-02-05,No. 634. Mr. Bayard to Mr. de Muruaga.,4664,2,0,1,0
+frus1887,d158,1887-03-08,No. 158. Mr. Denby to Mr. Bayard.,24584,1,0,0,0
+frus1887,d385,1887-03-08,No. 385. Mr. Bayard to Mr. Thompson.,174748,2,0,1,0
+frus1887,d636,1887-03-08,No. 636. Mr. de Muruaga to Mr. Bayard.,1739,1,1,0,0
+frus1887,d637,1887-03-10,No. 637. Mr. Bayard to Mr. de Muruaga.,1394,1,1,0,0
+frus1887,d638,1887-03-15,No. 638. Mr. Bayard to Mr. de Muruaga.,431,1,0,0,0
+frus1887,d615,1887-03-18,No. 615. Mr. Bayard to Mr. Curry.,24585,8,0,1,0
+frus1887,d616,1887-03-21,No. 616. Mr. Bayard to Mr. Curry.,3046,1,0,0,0
+frus1887,d640,1887-03-28,No. 640. Mr. Bayard to Mr. de Muruaga.,509,1,0,0,0
+frus1887,d617,1887-03-29,No. 617. Mr. Bayard to Mr. Curry.,8083,2,0,2,0
+frus1887,d641,1887-04-11,No. 641. Mr. Bayard to Mr. de Muruaga.,3514,3,0,0,0
+frus1887,d642,1887-04-15,No. 642. Mr. de Muruaga to Mr. Bayard.,1050,1,0,0,0
+frus1887,d618,1887-04-16,No. 618. Mr. Adee to Mr. Curry.,3991,2,0,0,0
+frus1887,d619,1887-04-25,No. 619. Mr. Bayard to Mr. Curry.,375,1,0,1,0
+frus1887,d620,1887-05-31,No. 620. Mr. Bayard to Mr. Curry.,6306,2,0,0,0
+frus1887,d643,1887-06-10,No. 643. Mr. de Muruaga to Mr. Bayard.,794,2,0,0,0
+frus1887,d91,1887-06-24,No. 91. Mr. Hall to Mr. Bayard.,2297,1,0,1,0
+frus1887,d644,1887-07-12,No. 644. Mr. de Muruaga to Mr. Bayard.,2454,1,0,0,0
+frus1887,d645,1887-08-16,No. 645. Mr. Bayard to Mr. de Muruaga.,2048,1,0,0,0
+frus1887,d188,1887-08-26,No. 188. Mr. Denby to Mr. Bayard.,2996,2,0,1,0
+frus1887,d649,1887-09-21,"No. 649. Memorandum of agreement between the United States of America, and Spain for the reciprocal and complete suspens",2494,2,0,1,0
+frus1887,d650,1887-09-21,"No. 650. By the President of the United States of America,",2327,3,0,3,0
+frus1887,d626,1887-10-20,No. 626. Mr. Bayard to Mr. Strobel.,8940,6,0,0,0
+frus1887,d491,1887-11-01,No. 491. Mr. Bayard to Mr. Connery.,384916,1,0,0,0
+frus1887,d627,1887-11-02,No. 627. Mr. Strobel to Mr. Bayard.,2759,4,0,0,0
+frus1888p2,d264,1887-12-22,No. 977. Mr. Curry to Mr. Bayard.,1543,1,0,1,0
+frus1888p1,d628,1887-12-24,No. 628. Mr. Thompson to Mr. Bayard.,2754,2,0,2,0
+frus1888p2,d265,1888-01-26,No. 978. Mr. Bayard to Mr. Curry.,3977,2,0,1,0
+frus1888p2,d266,1888-02-11,No. 979. Mr. Bayard to Mr. Curry.,4787,5,0,4,0
+frus1888p2,d267,1888-02-28,No. 980. Mr. Bayard to Mr. Curry.,43301,60,2,24,1
+frus1888p2,d268,1888-02-28,No. 981. Mr. Bayard to Mr. Curry.,10517,2,0,1,0
+frus1888p2,d270,1888-03-19,No. 983. Mr. Bayard to Mr. Curry.,3622,1,0,0,0
+frus1888p2,d272,1888-04-02,No. 985. Mr. Bayard to Mr. Curry.,3363,1,0,1,0
+frus1888p2,d273,1888-04-19,No. 986. Mr. Bayard to Mr. Curry.,56753,62,1,49,1
+frus1894app1,d369,1888-04-21,Mr. Bayard to Mr. Curry.,172,1,0,0,0
+frus1894app1,d370,1888-04-25,Mr. Curry to Mr. Bayard.,4020,5,0,0,0
+frus1888p2,d283,1888-05-01,No. 996. Mr. de Muruaga to Mr. Bayard.,3633,3,3,1,1
+frus1888p2,d284,1888-05-01,No. 997. Mr. Bayard to Mr. de Muruaga.,1094,1,1,0,0
+frus1888p2,d285,1888-05-05,No. 998. Mr. Bayard to Mr. de Muruaga.,926,1,1,1,1
+frus1894app1,d371,1888-05-14,Mr. Curry to Mr. Bayard.,7701,5,0,1,0
+frus1888p1,d629,1888-05-26,No. 629. Mr. Thompson to Mr. Bayard.,280,1,1,0,0
+frus1888p1,d631,1888-06-06,No. 631. Mr. Thompson to Mr. Bayard.,1172,2,1,0,0
+frus1888p1,d632,1888-06-11,No. 632. Mr. Thompson to Mr. Bayard.,16882,2,0,0,0
+frus1888p1,d633,1888-06-11,No. 633. Mr. Adee to Mr. Thompson.,841,1,1,0,0
+frus1888p1,d642,1888-07-11,No. 642. Mr. Bayard to Mr. Thompson.,267,1,0,0,0
+frus1888p1,d644,1888-07-16,No. 644. Mr. Bayard to Mr. Thompson.,2680,2,0,0,0
+frus1894app1,d373,1888-08-09,Mr. Strobel to Mr. Bayard.,13794,5,0,3,0
+frus1888p1,d650,1888-08-16,No. 650. Mr. Adee to Mr. Thompson.,164,1,0,0,0
+frus1888p1,d652,1888-08-18,No. 652. Mr. Thompson to Mr. Bayard.,41679,1,0,0,0
+frus1888p1,d662,1888-09-24,No. 662. Mr. Bayard to Mr. Thompson.,9591,1,0,1,0
+frus1888p2,d279,1888-09-26,No. 992. Mr. Bayard to Mr. Strobel.,2294,1,0,0,0
+frus1888p1,d663,1888-10-09,No. 663. Mr. Rives to Mr. Thompson.,877,2,0,0,0
+frus1888p1,d664,1888-10-16,No. 664. Mr. Thompson to Mr. Bayard.,21215,1,0,0,0
+frus1888p1,d669,1888-10-31,No. 669. Mr. Rives to Mr. Thompson.,12179,1,1,0,0
+frus1889,d187,1888-12-10,Mr. Bayard to Mr. Thompson.,5600,1,1,0,0
+frus1889,d209,1889-01-10,Mr. Preston to Mr. Bayard.,7211,3,2,0,0
+frus1889,d86,1889-01-18,Mr. Chang Yen Hoon to Mr. Bayard.,2764,2,0,1,0
+frus1889,d89,1889-02-07,Mr. Shu Cheou Port to Mr. Bayard.,1641,2,0,1,0
+frus1889,d298,1889-02-20,Mr. Bayard to Mr. Belmont.,75590,35,3,21,0
+frus1889,d299,1889-03-01,Mr. Bayard to Mr. Belmont.,5342,6,1,2,0
+frus1894app1,d376,1889-03-01,Mr. Rodriguez to Mr. Bayard.,37483,21,0,13,0
+frus1889,d245,1889-03-23,Mr. Bragg to Mr. Blaine.,6829,0,0,0,0
+frus1889,d300,1889-04-10,Mr. Belmont to Mr. Blaine.,8182,25,0,12,0
+frus1889,d148,1889-04-11,"Mr. Blaine to Messrs. Kasson, Phelps, and Bates.",942321,3,2,1,1
+frus1889,d302,1889-05-01,Mr. Blaine to Mr. Belmont.,2801,4,0,3,0
+frus1894app1,d377,1889-05-20,Mr. Blaine to Mr. Palmer.,24786,12,0,7,0
+frus1889,d303,1889-05-27,Mr. Blaine to Mr. Palmer.,1547,2,0,1,0
+frus1889,d305,1889-07-11,Mr. Palmer to Mr. Blaine.,8232,9,1,6,0
+frus1889,d103,1889-07-19,Mr. Chang Yen Hoon to Mr. Blaine.,1415,1,0,1,0
+frus1894app1,d380,1889-07-31,Mr. Palmer to Mr. Blaine.,18658,3,0,1,0
+frus1894app1,d383,1889-08-01,Mr. Trescot to Mr. Blaine.,18226,6,0,3,0
+frus1889,d108,1889-11-05,Mr. Tsui Kwo Yin to Mr. Blaine.,9289,3,0,0,0
+frus1889,d111,1889-12-16,Mr. Tsui Kwo Yin to Mr. Blaine.,3957,1,0,0,0
+frus1890,d157,1890-01-31,Mr. Blaine to Mr. Tsui.,1155,1,0,0,0
+frus1890,d158,1890-02-27,Mr. Tsui to Mr. Blaine.,1916,1,0,0,0
+frus1894app1,d384,1890-07-03,"Messrs. Shipman, Trescot, Rodriguez, and Page to Mr. Blaine.",21629,6,0,2,0
+frus1890,d317,1890-07-09,Mr. Douglass to Mr. Blaine.,22676,1,0,1,0
+frus1890,d115,1890-11-18,Mr. Blaine to Mr. Mizner.,73320,7,2,1,1
+frus1891,d646,1891-04-14,Mr. Blaine to Marquis Imperiali.,14000,1,0,0,0
+frus1892,d369,1891-10-12,Mr. Wharton to Mr. Newberry.,13344,2,1,0,0
+frus1892,d374,1892-02-13,Mr. Grubb to Mr. Blaine.,1056,1,0,0,0
+frus1892,d108,1892-03-22,Mr. Tsui to Mr. Blaine.,5398,1,0,1,0
+frus1892,d253,1892-10-02,Mr. Herbert to Mr. Foster.,20287,3,0,3,0
+frus1894app2,d258,1893-05-24,No. 10. Mr. Blount to Mr. Gresham.,25611,1,1,0,0
+frus1894app1,d399,1893-07-14,Mr. Gresham to Mr. Taylor.,15590,6,2,4,2
+frus1894app2,d267,1893-07-26,No. 19. Mr. Blount to Mr. Gresham.,101746,2,2,0,0
+frus1893,d322,1893-09-26,Mr. Bayard to Mr. Gresham.,6182,1,0,0,0
+frus1894,d598,1893-10-12,Mr. Gresham to Mr. Taylor.,986,3,0,2,0
+frus1894,d599,1893-10-18,Mr. Taylor to Mr. Gresham.,507,1,0,0,0
+frus1893,d282,1893-10-23,Mr. Gresham to Mr. Yang Yü.,5744,1,0,0,0
+frus1894,d600,1893-10-26,Mr. Gresham to Mr. Taylor.,1843,4,0,3,0
+frus1894,d601,1893-11-07,Mr. Taylor to Mr. Gresham.,1055,2,0,0,0
+frus1894,d602,1893-11-15,Mr. Taylor to Mr. Gresham.,1239,2,0,1,0
+frus1894,ch138,1893-12-02,Fines for clerical errors in manifests.,199,1,0,0,0
+frus1894,d581,1893-12-09,Mr. Gresham to Mr. Taylor.,22093,14,2,8,2
+frus1894,d583,1893-12-28,Mr. Uhl to Mr. Taylor.,3703,1,1,1,1
+frus1894app1,d411,1893-12-30,Mr. Taylor to Mr. Gresham.,9149,4,0,2,0
+frus1894,d603,1894-01-13,Mr. Taylor to Mr. Gresham.,998,2,0,0,0
+frus1894,d604,1894-01-13,Mr. Gresham to Mr. Taylor.,350,1,0,0,0
+frus1894,d605,1894-01-15,Mr. Taylor to Mr. Gresham.,1553,4,0,1,0
+frus1894,d606,1894-01-20,Mr. Taylor to Mr. Gresham.,1065,2,0,0,0
+frus1894,d619,1894-01-22,Mr. Muruaga to Mr. Gresham.,2092,5,3,5,3
+frus1894,d585,1894-01-23,Mr. Gresham to Mr. Taylor.,2732,2,0,0,0
+frus1894,d620,1894-02-03,Mr. Uhl to Mr. Muruaga.,1087,1,1,0,0
+frus1894,d621,1894-02-10,Mr. Muruaga to Mr. Gresham.,1422,2,1,2,1
+frus1894app1,d414,1894-02-14,Mr. Gresham to Mr. Taylor.,15724,2,0,1,0
+frus1894,d607,1894-02-22,Mr. Taylor to Mr. Gresham.,499,1,0,1,0
+frus1894,d608,1894-02-22,Mr. Taylor to Mr. Gresham.,3506,2,0,1,0
+frus1894,d609,1894-02-26,Mr. Taylor to Mr. Gresham.,2487,2,0,0,0
+frus1894app1,d416,1894-03-05,Mr. Taylor to Mr. Gresham.,18476,7,0,4,0
+frus1894,d625,1894-03-25,Mr. Muruaga to Mr. Gresham.,811,1,0,1,0
+frus1894app1,d422,1894-03-29,Mr. Taylor to Mr. Gresham.,5329,1,0,0,0
+frus1894,d610,1894-03-30,Mr. Uhl to Mr. Taylor.,7847,13,2,12,2
+frus1894,ch144,1894-04-27,Commercial relations,1205,1,0,1,0
+frus1894,d624,1894-05-10,Mr. Uhl to Mr. Muruaga.,6007,3,0,1,0
+frus1894,d631,1894-05-14,Mr. Muruaga to Mr. Gresham.,1393,1,0,1,0
+frus1894,d613,1894-05-24,Mr. Taylor to Mr. Gresham.,5853,2,0,2,0
+frus1894app1,d423,1894-06-05,Mr. Gresham to Mr. Taylor.,7738,8,1,6,1
+frus1894,d633,1894-06-13,Mr. Uhl to Mr. Muruaga.,2778,3,0,3,0
+frus1894,d616,1894-06-17,Mr. Taylor to Mr. Gresham.,289,1,0,0,0
+frus1894,d617,1894-06-22,Mr. Taylor to Mr. Gresham.,1430,2,0,0,0
+frus1894,d627,1894-08-20,Mr. Taylor to Mr. Gresham.,2635,2,0,2,0
+frus1894,d628,1894-08-23,Mr. Taylor to Mr. Gresham.,1304,1,0,1,0
+frus1894,d629,1894-08-30,Mr. Taylor to Mr. Gresham.,1506,2,0,2,0
+frus1894,d630,1894-09-12,Mr. Uhl to Mr. Taylor.,2357,2,0,2,0
+frus1894,d586,1894-09-22,Mr. Gresham to Mr. Taylor.,6096,2,0,1,0
+frus1894,d638,1894-12-17,Mr. Taylor to Mr. Gresham.,279,1,1,1,1
+frus1894,d639,1894-12-17,Mr. Taylor to Mr. Gresham.,2357,2,1,2,1
+frus1894,d642,1895-01-01,Mr. Taylor to Mr. Gresham.,402,1,0,1,0
+frus1894,d643,1895-01-01,Mr. Taylor to Mr. Gresham.,2072,2,0,1,0
+frus1894,d644,1895-01-04,Mr. Taylor to Mr. Gresham.,927,4,0,4,0
+frus1895p2,d361,1895-01-04,Mr. Taylor to Mr. Gresham.,5737,1,0,1,0
+frus1894,d646,1895-01-05,Mr. Taylor to Mr. Gresham.,1512,3,0,3,0
+frus1894,d648,1895-01-08,Mr. Taylor to Mr. Gresham.,4380,1,1,1,1
+frus1894,d651,1895-01-11,Mr. Taylor to Mr. Gresham.,4894,5,0,4,0
+frus1894,d653,1895-01-12,Mr. Taylor to Mr. Gresham.,3357,5,0,5,0
+frus1894,d658,1895-02-01,Mr. Taylor to Mr. Gresham.,174,1,0,0,0
+frus1894,d659,1895-02-05,Mr. Taylor to Mr. Gresham.,186,1,0,0,0
+frus1895p2,d410,1895-02-09,Mr. Taylor to Mr. Gresham.,3358,6,0,4,0
+frus1895p2,ch45,1895-02-09,Commercial arrangement—Cuba and Puerto Rico,87,1,0,1,0
+frus1896,d701,1895-02-27,Mr. Williams to Mr. Uhl.,5893,2,0,1,0
+frus1896,d702,1895-03-09,Mr. Williams to Mr. Uhl.,5480,4,0,0,0
+frus1896,d703,1895-03-11,Mr. Uhl to Mr. Williams.,691,1,1,0,0
+frus1895p2,d393,1895-03-14,Mr. Gresham to Mr. Taylor.,1452,3,1,2,1
+frus1895p2,d394,1895-03-15,Mr. Taylor to Mr. Gresham.,855,2,0,0,0
+frus1895p2,d414,1895-03-15,Mr. Muruaga to Mr. Gresham.,1347,1,0,0,0
+frus1895p2,d395,1895-03-16,Mr. Taylor to Mr. Gresham.,3693,6,0,4,0
+frus1895p2,d396,1895-03-19,Mr. Muruaga to Mr. Uhl.,1444,2,0,0,0
+frus1895p2,d415,1895-03-20,Mr. Muruaga to Mr. Gresham.,1773,2,2,2,2
+frus1895p2,d416,1895-03-21,Mr. Gresham to Mr. Muruaga.,833,1,0,1,0
+frus1896,d705,1895-03-23,Mr. Williams to Mr. Uhl.,8636,2,1,0,0
+frus1895p2,d417,1895-03-30,Mr. Muruaga to Mr. Gresham.,835,1,0,0,0
+frus1895p2,d418,1895-03-30,Mr. Gresham to Mr. Muruaga.,4448,7,3,0,0
+frus1895p2,d419,1895-04-01,Mr. Gresham to Mr. Muruaga.,454,1,0,0,0
+frus1895p2,d420,1895-04-01,Mr. Gresham to Mr. Muruaga.,1518,1,0,1,0
+frus1896,d707,1895-04-02,Mr. Williams to Mr. Uhl.,2896,3,0,0,0
+frus1895p2,d399,1895-04-03,Mr. Gresham to Mr. Muruaga.,582,1,0,0,0
+frus1895p2,d421,1895-04-04,Mr. Muruaga to Mr. Gresham.,582,2,2,0,0
+frus1895p2,d422,1895-04-06,Mr. Uhl to Mr. Muruaga.,1208,2,2,0,0
+frus1895p2,d423,1895-04-06,Mr. Uhl to Mr. Muruaga.,737,1,0,0,0
+frus1895p2,d402,1895-04-16,Mr. Gresham to Mr. Taylor.,625,1,0,0,0
+frus1896,d711,1895-04-26,Mr. Williams to Mr. Uhl.,3001,1,1,0,0
+frus1896,d712,1895-05-04,Mr. Springer to Mr. Uhl.,2308,2,2,0,0
+frus1896,d713,1895-05-06,Mr. Williams to Mr. Uhl.,10867,8,2,3,0
+frus1896,d714,1895-05-07,Mr. Springer to Mr. Uhl.,4141,2,1,0,0
+frus1895p2,d472,1895-05-17,Mr. Uhl to Mr. Taylor.,1411,1,0,0,0
+frus1895p2,d473,1895-05-20,Mr. Taylor to Mr. Gresham.,294,1,0,0,0
+frus1896,d716,1895-05-25,Mr. Springer to Mr. Uhl.,6127,1,0,0,0
+frus1895p2,d474,1895-05-31,Mr. Taylor to Mr. Uhl.,876,2,0,0,0
+frus1896,d717,1895-06-10,Mr. Uhl to Mr. Springer.,522,1,1,0,0
+frus1895p2,d424,1895-06-17,Mr. Olney to Mr. Taylor.,3525,1,0,0,0
+frus1895p2,d475,1895-06-18,Mr. Olney to Mr. Taylor.,23465,10,0,0,0
+frus1895p2,d425,1895-06-24,Señor Dupuy de Lôme to Mr. Olney.,633,1,0,0,0
+frus1895p2,d426,1895-06-27,Mr. Olney to Mr. Dupuy de Lôme.,838,1,1,0,0
+frus1895p2,d428,1895-06-29,Mr. Uhl to Mr. Dupuy de Lôme.,1243,1,0,0,0
+frus1895p2,d429,1895-07-02,Mr. Uhl to Mr. Dupuy de Lôme.,675,1,0,0,0
+frus1895p2,d430,1895-07-05,Mr. Adee to Mr. Dupuy de Lôme.,1405,1,0,0,0
+frus1895p2,d464,1895-07-05,Mr. Adee to Mr. Taylor.,5737,4,0,2,0
+frus1895p1,d527,1895-07-20,Mr. Olney to Mr. Bayard.,68817,1,1,0,0
+frus1895p2,d380,1895-08-13,Mr. Dupuy de Lôme to Mr. Olney.,963,1,0,1,0
+frus1895p2,d381,1895-08-19,Mr. Olney to Mr. Dupuy de Lôme.,1254,1,0,0,0
+frus1895p2,d383,1895-08-24,Mr. Adee to Mr. Taylor.,1025,2,0,2,0
+frus1895p2,d433,1895-09-05,Mr. Adee to Mr. Dupuy de Lôme.,885,1,0,1,0
+frus1896,d733,1895-09-06,Mr. Williams to Mr. Adee.,4315,2,1,0,0
+frus1895p2,d389,1895-09-09,Mr. Armstrong to Mr. Olney.,3381,1,0,1,0
+frus1896,d735,1895-09-11,Mr. Williams to Mr. Adee.,6922,2,1,0,0
+frus1896,d736,1895-09-12,Mr. Williams to Mr. Adee.,12713,3,1,0,0
+frus1896,d737,1895-09-12,Mr. Rockhill to Mr. Williams.,1674,1,1,0,0
+frus1895p2,d390,1895-09-13,Mr. Dupuy de Lôme to Mr. Olney.,3794,1,0,1,0
+frus1895p2,d438,1895-09-18,Mr. Olney to Mr. Dupuy de Lôme.,802,1,1,0,0
+frus1895p2,d439,1895-09-19,Mr. Dupuy de Lôme to Mr. Olney.,605,1,0,0,0
+frus1895p2,d440,1895-09-19,Mr. Dupuy de Lôme to Mr. Olney.,2663,2,2,0,0
+frus1895p2,d458,1895-09-26,Mr. Olney to Mr. Dupuy de Lôme.,5639,10,2,1,0
+frus1895p2,d459,1895-09-26,Mr. Olney to Mr. Taylor.,1985,3,2,2,2
+frus1895p2,d445,1895-09-27,Mr. Olney to Mr. Dupuy de Lôme.,624,1,0,0,0
+frus1895p2,d476,1895-09-27,Mr. Olney to Mr. Dupuy de Lôme.,4852,2,0,0,0
+frus1895p2,d460,1895-10-01,Mr. Dupuy de Lôme to Mr. Olney.,2298,4,0,0,0
+frus1895p2,d477,1895-10-02,Mr. Dupuy de Lôme to Mr. Olney.,4501,4,1,0,0
+frus1895p2,d478,1895-10-05,Mr. Olney to Mr. Dupuy de Lôme.,687,1,0,0,0
+frus1895p2,d447,1895-10-07,Mr. Dupuy de Lôme to Mr. Olney.,791,1,0,0,0
+frus1895p2,d461,1895-10-11,Mr. Olney to Mr. Dupuy de Lôme.,3681,3,0,0,0
+frus1895p2,d450,1895-10-12,Mr. Olney to Mr. Dupuy de Lôme.,1348,2,0,0,0
+frus1895p2,d462,1895-10-21,Mr. Taylor to Mr. Olney.,373,1,0,0,0
+frus1895p2,d463,1895-10-23,Mr. Uhl to Mr. Taylor.,588,1,0,0,0
+frus1895p2,d452,1895-11-14,Mr. Dupuy de Lôme to Mr. Olney.,1444,1,1,0,0
+frus1895p2,d453,1895-11-23,Mr. Dupuy de Lôme to Mr. Olney.,1113,1,0,0,0
+frus1895p2,d454,1895-11-28,Mr. Dupuy de Lôme to Mr. Olney.,3263,1,0,0,0
+frus1895p2,d455,1895-12-07,Mr. Dupuy de Lôme to Mr. Olney.,6477,2,0,0,0
+frus1896,d750,1895-12-07,Mr. Williams to Mr. Uhl.,139194,7,4,1,1
+frus1896,d751,1895-12-07,Mr. Uhl to Mr. Williams.,1077,1,0,0,0
+frus1895p2,d465,1895-12-12,Mr. Olney to Mr. Dupuy de Lôme.,4276,5,0,5,0
+frus1896,d752,1895-12-23,Mr. Uhl to Mr. Williams.,1359,1,0,0,0
+frus1895p2,d467,1895-12-31,Mr. Dupuy de Lôme to Mr. Olney.,822,1,0,0,0
+frus1895p2,d468,1896-01-02,Mr. Olney to Mr. Dupuy de Lôme.,903,3,0,0,0
+frus1895p2,d469,1896-01-03,Mr. Dupuy de Lôme to Mr. Olney.,598,1,0,1,0
+frus1895p2,d470,1896-01-07,Mr. Olney to Mr. Dupuy de Lôme.,413,1,0,1,0
+frus1895p2,d471,1896-01-22,Mr. Olney to Mr. Dupuy de Lôme.,827,1,0,0,0
+frus1895p2,d456,1896-01-26,Mr. Dupuy de Lôme to Mr. Olney.,1696,1,0,0,0
+frus1896,d567,1896-02-14,Mr. Olney to Mr. Dupuy de Lôme.,5770,7,2,4,1
+frus1896,d573,1896-02-14,Mr. Olney to Mr. Dupuy de Lôme.,4969,1,0,1,0
+frus1896,d574,1896-02-16,Mr. Dupuy de Lôme to Mr. Olney.,872,1,0,0,0
+frus1896,d580,1896-02-17,Mr. Olney to Mr. Dupuy de Lôme.,1839,3,0,0,0
+frus1896,d581,1896-02-18,Mr. Dupuy de Lôme to Mr. Olney.,3215,2,0,0,0
+frus1896,d575,1896-02-24,Mr. Olney to Mr. Dupuy de Lôme.,538,1,0,1,0
+frus1896,d614,1896-02-26,Mr. Olney to Mr. Dupuy de Lôme.,2263,4,0,1,0
+frus1896,d582,1896-02-29,Mr. Olney to Mr. Dupuy de Lôme.,510,1,0,0,0
+frus1896,d568,1896-03-02,Mr. Olney to Mr. Dupuy de Lôme.,2627,2,1,1,1
+frus1896,d765,1896-03-10,Mr. Williams to Mr. Rockhill.,17960,7,2,0,0
+frus1896,d583,1896-03-12,Mr. Olney to Mr. Dupuy de Lôme.,1891,1,0,0,0
+frus1896,d569,1896-03-13,Mr. Olney to Mr. Dupuy de Lôme.,2402,1,1,1,1
+frus1896,d584,1896-03-13,Mr. Dupuy de Lôme to Mr. Olney.,607,1,0,0,0
+frus1896,d570,1896-03-14,Mr. Dupuy de Lôme to Mr. Olney.,823,1,1,0,0
+frus1896,d578,1896-03-30,Mr. Olney to Mr. Dupuy de Lôme.,710,1,0,1,0
+frus1896,d579,1896-03-31,Mr. Dupuy de Lôme to Mr. Olney.,361,1,0,0,0
+frus1896,d571,1896-04-01,Mr. Dupuy de Lôme to Mr. Olney.,752,1,1,0,0
+frus1897,d581,1896-04-04,Mr. Olney to Mr. Dupuy de Lôme.,15377,10,4,1,1
+frus1897,ch118,1896-04-04,Pacification of Cuba,113,1,0,0,0
+frus1896,d504,1896-04-10,Mr. Olney to Mr. Dupuy de Lôme.,7735,3,2,0,0
+frus1896,d572,1896-04-15,Mr. Olney to Mr. Dupuy de Lôme.,542,1,0,0,0
+frus1896,d505,1896-04-30,Mr. Olney to Mr. Dupuy de Lôme.,4263,2,0,0,0
+frus1896,d642,1896-05-01,Mr. Olney to Mr. Taylor.,318,1,0,0,0
+frus1896,d649,1896-05-02,Mr. Williams to Mr. Rockhill.,8191,1,0,0,0
+frus1896,d650,1896-05-04,Mr. Taylor to Mr. Olney.,219,1,0,0,0
+frus1896,d506,1896-05-11,Mr. Olney to Mr. Taylor.,51614,14,0,1,0
+frus1896,d522,1896-05-13,Mr. Olney to Mr. Taylor.,1443,1,1,0,0
+frus1896,d523,1896-05-13,Mr. Olney to Mr. Taylor.,1993,1,1,0,0
+frus1896,d524,1896-05-13,Mr. Olney to Mr. Taylor.,2003,4,4,0,0
+frus1896,d241,1896-05-16,Sir Julian Pauncefote to Mr. Olney.,1144,3,0,3,0
+frus1896,d587,1896-05-20,Mr. Olney to Mr. Taylor.,490,2,0,2,0
+frus1896,d589,1896-05-21,Mr. Taylor to Mr. Olney.,353,1,0,1,0
+frus1896,d672,1896-05-21,Mr. Williams to Mr. Rockhill.,53968,5,2,0,0
+frus1896,d673,1896-05-21,Mr. Williams to Mr. Rockhill.,799,1,0,0,0
+frus1896,d590,1896-05-22,Mr. Olney to Mr. Taylor,988,1,0,1,0
+frus1896,d674,1896-05-23,Mr. Williams to Mr. Rockhill.,5351,3,1,0,0
+frus1896,d591,1896-05-25,Mr. Armstrong to Mr. Olney.,432,1,0,1,0
+frus1896,d592,1896-05-26,Mr. Armstrong to Mr. Olney.,3575,4,1,2,1
+frus1896,d527,1896-06-02,Mr. Armstrong to Mr. Olney.,574,1,1,0,0
+frus1896,d528,1896-06-02,Mr. Armstrong to Mr. Olney.,534,1,1,0,0
+frus1897,d582,1896-06-04,Mr. Dupuy de Lôme to Mr. Olney.,13940,18,2,2,0
+frus1896,d242,1896-06-05,Mr. Olney to Sir Julian Pauncefote.,7380,8,0,1,0
+frus1896,d529,1896-06-05,Mr. Olney to Mr. Taylor.,16232,23,2,0,0
+frus1896,d619,1896-06-24,Mr. Dupuy de Lôme to Mr. Olney.,7328,4,0,0,0
+frus1896,d769,1896-06-30,Mr. Lee to Mr. Rockhill.,3815,3,0,0,0
+frus1896,d515,1896-07-08,Mr. Taylor to Mr. Olney.,80693,7,3,1,0
+frus1896,d516,1896-07-25,Mr. Rockhill to Mr. Taylor.,431,1,1,0,0
+frus1896,d517,1896-07-25,Mr. Rockhill to Mr. Taylor.,9685,6,1,1,1
+frus1896,d585,1896-07-25,Mr. Rockhill to Mr. Dupuy de Lôme.,5499,6,0,1,0
+frus1896,d243,1896-07-26,Sir Julian Pauncefote to Mr. Olney.,6336,3,0,1,0
+frus1896,d678,1896-08-11,Mr. Lee to Mr. Rockhill.,4155,1,0,0,0
+frus1896,d679,1896-08-19,Mr. Lee to Mr. Rockhill.,1831,1,0,0,0
+frus1896,d244,1896-08-24,Mr. Rockhill to Lord Gough.,3848,2,0,0,0
+frus1896,d629,1896-08-26,Mr. Lee to the Governor-General of Cuba.,1724,1,0,0,0
+frus1896,d245,1896-08-27,Lord Gough to Mr. Rockhill.,1303,1,0,0,0
+frus1896,d520,1896-09-08,Mr. Taylor to Mr. Olney.,38713,4,1,1,1
+frus1896,d586,1896-09-09,Mr. Rockhill to Mr. Dupuy de Lôme.,9101,18,0,0,0
+frus1896,d683,1896-09-09,Mr. Lee to Mr. Rockhill.,863,1,0,0,0
+frus1896,d593,1896-09-12,Mr. Adee to Mr. Taylor.,3205,6,0,6,0
+frus1896,d635,1896-09-15,Mr. Lee to Governor-General of Cuba.,999,2,0,0,0
+frus1896,d636,1896-09-18,Mr. Lee to Mr. Rockhill.,2694,2,0,0,0
+frus1896,d594,1896-09-24,Mr. Rockhill to Mr. Taylor.,770,1,0,1,0
+frus1896,d595,1896-10-02,Mr. Rockhill to Mr. Taylor.,587,1,0,1,0
+frus1896,d637,1896-10-02,Mr. Lee to Governor-General of Cuba.,942,1,0,0,0
+frus1896,d246,1896-10-05,Mr. Olney to Lord Gough.,1125,1,0,0,0
+frus1896,d596,1896-10-06,Mr. Olney to Mr. Taylor.,655,1,0,1,0
+frus1896,d772,1896-10-07,Mr. Lee to Mr. Rockhill.,4316,4,0,0,0
+frus1896,d638,1896-10-08,Mr. Rockhill to Mr. Lee.,513,1,0,0,0
+frus1896,d597,1896-10-09,Mr. Olney to Mr. Taylor.,224,1,0,1,0
+frus1896,d598,1896-10-10,Mr. Taylor to Mr. Olney.,306,1,0,0,0
+frus1896,d536,1896-10-11,Mr. Taylor to Mr. Olney.,463,1,1,0,0
+frus1896,d537,1896-10-14,Mr. Olney to Mr. Taylor.,13168,9,1,1,0
+frus1896,d599,1896-10-15,Mr. Olney to Mr. Taylor.,700,1,0,1,0
+frus1896,d600,1896-10-15,Mr. Olney to Mr. Taylor.,532,1,0,1,0
+frus1896,d639,1896-10-17,Mr. Lee to Mr. Rockhill.,1427,2,0,0,0
+frus1896,d603,1896-10-20,Mr. Taylor to Mr. Olney.,246,1,0,1,0
+frus1896,d539,1896-10-21,Mr. Olney to Mr. Taylor.,3726,2,0,0,0
+frus1896,d684,1896-10-21,Mr. Lee to Mr. Rockhill.,5954,2,0,0,0
+frus1896,d605,1896-10-23,Mr. Olney to Mr. Taylor.,1290,2,0,2,0
+frus1896,d606,1896-10-24,Mr. Taylor to Mr. Olney.,526,1,0,1,0
+frus1896,d623,1896-10-26,Mr. Taylor to Mr. Olney.,2029,3,2,2,2
+frus1896,d685,1896-10-28,Mr. Rockhill to Mr. Lee.,1439,1,0,0,0
+frus1896,d542,1896-10-29,Mr. Taylor to Mr. Olney.,2434,6,1,0,0
+frus1896,d543,1896-10-29,Mr. Taylor to Mr. Olney.,1878,1,0,0,0
+frus1896,d607,1896-10-30,Mr. Taylor to Mr. Olney.,455,1,0,1,0
+frus1896,d608,1896-10-30,Mr. Taylor to Mr. Olney.,470,1,0,1,0
+frus1896,d558,1896-11-03,Mr. Brice to Mr. Rockhill.,3554,5,2,0,0
+frus1896,d545,1896-11-05,Mr. Taylor to Mr. Olney.,250,1,0,0,0
+frus1896,d546,1896-11-06,Mr. Taylor to Mr. Olney.,1029,1,0,0,0
+frus1896,d547,1896-11-06,Mr. Taylor to Mr. Olney.,5635,7,4,0,0
+frus1896,d559,1896-11-06,Mr. Springer to Mr. Rockhill.,2817,1,0,0,0
+frus1896,d611,1896-11-21,Mr. Olney to Mr. Taylor.,762,1,0,1,0
+frus1896,d564,1896-12-02,Mr. Springer to Mr. Rockhill.,5563,7,2,0,0
+frus1896,d565,1896-12-03,Mr. Springer to Mr. Rockhill.,5556,2,0,0,0
+frus1896,d612,1896-12-07,Mr. Olney to Mr. Taylor.,739,1,0,1,0
+frus1896,d549,1896-12-14,Mr. Taylor to Mr. Olney.,13590,9,2,0,0
+frus1896,d550,1896-12-14,Mr. Taylor to Mr. Olney.,24278,10,8,0,0
+frus1896,d624,1896-12-15,Mr. Olney to Mr. Taylor.,712,1,0,1,0
+frus1896,d778,1896-12-24,Mr. Springer to Mr. Rockhill.,11537,1,1,0,0
+frus1896,d780,1896-12-31,Mr. Lee to Mr. Rockhill.,2747,2,0,0,0
+frus1896,d625,1897-01-20,Mr. Taylor to Mr. Olney.,1207,2,0,1,0
+frus1896,d551,1897-01-22,Mr. Olney to Mr. Taylor.,786,2,0,0,0
+frus1896,d698,1897-01-22,Report of the Secretary of State.,17896,43,16,0,0
+frus1896,d781,1897-01-22,Mr. Lee to Mr. Olney,1111,1,1,0,0
+frus1896,ch103,1897-01-22,List of claims against Spain growing out of the insurrection in Cuba filed in the Department of State prior to January 2,205,1,1,1,1
+frus1896,ch105,1897-01-22,Citizens of the United States arrested in Cuba,120,1,0,0,0
+frus1896,d697,1897-01-25,Message of the President.,434,1,0,0,0
+frus1896,d553,1897-01-27,Mr. Olney to Mr. Taylor.,457,1,0,0,0
+frus1896,d554,1897-01-28,Mr. Taylor to Mr. Olney.,469,1,0,0,0
+frus1896,d700,1897-01-30,Report of the Secretary of State.,1041,1,0,0,0
+frus1896,d699,1897-02-01,Message of the President.,452,1,0,0,0
+frus1896,d786,1897-02-11,Message of the President.,336,1,0,0,0
+frus1896,d787,1897-02-11,Report of the Secretary of State.,3012,4,1,1,1
+frus1897,d477,1897-02-11,Mr. Taylor to Mr. Olney.,1436,1,1,0,0
+frus1896,d613,1897-02-12,Mr. Olney to Mr. Taylor.,10466,13,1,10,1
+frus1897,d521,1897-02-17,Mr. Olney to Mr. Taylor.,706,1,0,0,0
+frus1897,d547,1897-02-18,Mr. Taylor to Mr. Olney.,410,1,0,1,0
+frus1897,d522,1897-02-20,Mr. Taylor to Mr. Olney.,259,1,0,0,0
+frus1897,d479,1897-02-28,Mr. Dupuy de Lôme to Mr. Olney.,1563,1,1,0,0
+frus1896,d785,1897-03-01,Mr. Lee to Mr. Rockhill.,1393,1,0,0,0
+frus1897,d480,1897-03-01,Mr. Dupuy de Lôme to Mr. Olney.,1571,2,0,0,0
+frus1897,d481,1897-03-03,Mr. Taylor to Mr. Olney.,1393,2,0,0,0
+frus1897,d548,1897-03-10,Mr. Taylor to Mr. Sherman.,1670,2,0,1,0
+frus1897,d485,1897-03-11,Mr. Taylor to Mr. Sherman.,463,1,0,1,0
+frus1897,ch108,1897-03-11,Prohibition of the exportation of leaf tobacco from Cuba,96,1,0,1,0
+frus1897,d488,1897-03-24,Mr. Sherman to Mr. Taylor.,1655,3,0,3,0
+frus1897,d549,1897-03-31,Mr. Taylor to Mr. Sherman.,1426,2,1,1,0
+frus1897,d482,1897-04-23,Mr. Taylor to Mr. Sherman.,617,1,0,0,0
+frus1897,d493,1897-04-23,Mr. Sherman to Mr. Taylor.,788,2,0,2,0
+frus1897,d494,1897-05-04,Mr. Sherman to Mr. Taylor.,1594,1,0,1,0
+frus1897,d483,1897-05-08,Mr. Taylor to Mr. Sherman.,1897,4,0,0,0
+frus1897,d496,1897-05-28,Mr. Day to Mr. Taylor.,1823,1,0,0,0
+frus1897,d523,1897-05-29,Mr. Sherman to Mr. Dupuy de Lôme.,1270,3,0,1,0
+frus1897,d524,1897-05-31,Mr. Dupuy de Lôme to Mr. Sherman.,3856,2,0,0,0
+frus1897,d525,1897-06-01,Mr. Dupuy de Lôme to Mr. Sherman.,1252,1,1,0,0
+frus1897,d526,1897-06-02,Mr. Sherman to Mr. Dupuy de Lôme.,935,2,0,0,0
+frus1897,d527,1897-06-21,Mr. Sherman to Mr. Dupuy de Lôme.,5588,5,0,0,0
+frus1897,d502,1897-06-25,Mr. Sherman to Mr. Taylor.,633,1,0,1,0
+frus1897,d503,1897-06-25,Mr. Taylor to Mr. Sherman.,10233,6,0,6,0
+frus1897,d529,1897-06-26,Mr. Sherman to Mr. Dupuy de Lóme.,5394,6,1,0,0
+frus1897,d528,1897-06-29,Mr. Dupuy de Lôme to Mr. Sherman.,2498,1,0,1,0
+frus1897,d539,1897-07-02,Mr. Sherman to Mr. Dupuy de Lôme.,5012,6,1,2,1
+frus1897,d541,1897-07-03,Mr. Dupuy de Lôme to Mr. Sherman.,4093,1,0,1,0
+frus1897,d540,1897-07-06,Mr. Sherman to Mr. Dupuy de Lôme.,3049,1,0,0,0
+frus1897,d543,1897-07-09,Mr. Dupuy de Lôme to Mr. Sherman.,762,1,0,1,0
+frus1897,d542,1897-07-14,Mr. Sherman to Mr. Dupuy de Lôme.,2891,2,0,0,0
+frus1897,d505,1897-07-15,Mr. Taylor to Mr. Sherman.,933,1,0,0,0
+frus1898,d490,1897-07-16,Mr. Sherman to Mr. Woodford.,12644,24,4,7,1
+frus1897,d563,1897-08-02,Mr. Soler to Mr. Adee.,1415,1,0,0,0
+frus1897,d545,1897-08-03,Señor Soler to Mr. Adee.,626,1,0,1,0
+frus1897,d554,1897-08-05,Mr. Taylor to Mr. Sherman.,3602,4,0,0,0
+frus1897,d566,1897-08-06,Mr. Adee to Mr. Depuy de Lôme.,2301,1,1,0,0
+frus1897,d546,1897-08-11,Mr. Sherman to Mr. Dupuy de Lôme.,2465,1,1,1,1
+frus1897,d507,1897-08-21,Mr. Sherman to Mr. Taylor.,832,1,0,1,0
+frus1897,d530,1897-08-24,Mr. Sherman to Mr. Dupuy de Lôme.,914,1,1,0,0
+frus1897,d558,1897-08-28,Mr. Sherman to Mr. Woodford.,8439,8,3,7,3
+frus1897,d567,1897-09-02,Mr. Depuy de Lôme to Mr. Sherman.,1225,1,0,0,0
+frus1897,d509,1897-09-03,Mr. Taylor to Mr. Sherman.,1558,1,0,1,0
+frus1898,d492,1897-09-13,Mr. Woodford to Mr. Sherman.,11670,33,9,15,6
+frus1897,d513,1897-09-18,Mr. Woodford to Mr. Sherman.,441,1,0,0,0
+frus1898,d493,1897-09-20,Mr. Woodford to Mr. Sherman.,7651,5,2,4,1
+frus1898,d494,1897-09-23,Mr. Woodford to Mr. Sherman.,1319,2,2,1,1
+frus1898,d495,1897-09-23,Mr. Woodford to Mr. Sherman.,15114,27,6,9,2
+frus1897,d568,1897-09-28,Mr. Dupuy de Lôme to Mr. Sherman.,4026,5,1,0,0
+frus1898,d497,1897-10-04,Mr. Woodford to Mr. Sherman.,10663,29,10,19,6
+frus1898,d498,1897-10-05,Mr. Woodford to Mr. Sherman.,10535,34,13,25,9
+frus1898,d501,1897-10-11,Mr. Woodford to Mr. Sherman.,1351,2,0,0,0
+frus1898,d502,1897-10-16,Mr. Woodford to Mr. Sherman.,2404,3,0,0,0
+frus1898,d503,1897-10-26,Mr. Woodford to Mr. Sherman.,27701,20,14,3,3
+frus1898,d504,1897-10-27,Mr. Woodford to Mr. Sherman.,8287,10,4,2,2
+frus1898,d505,1897-10-30,Mr. Woodford to Mr. Sherman.,13848,14,2,8,1
+frus1897,d574,1897-11-03,Mr. Dupuy de Lôme to Mr. Sherman.,1493,1,0,0,0
+frus1897,d531,1897-11-06,Mr. Sherman to Mr. de Lôme.,3559,3,1,0,0
+frus1898,d507,1897-11-06,Mr. Woodford to Mr. Sherman.,3838,1,1,0,0
+frus1898,d508,1897-11-08,Mr. Sherman to Mr. Woodford.,4239,2,0,1,0
+frus1898,d509,1897-11-08,Mr. Woodford to Mr. Sherman.,2512,1,0,1,0
+frus1897,d532,1897-11-10,Mr. Dupuy de Lôme to Mr. Sherman.,2511,1,0,0,0
+frus1898,d510,1897-11-11,Mr. Sherman to Mr. Woodford.,6094,2,0,0,0
+frus1898,d511,1897-11-13,Mr. Woodford to Mr. Sherman.,7323,13,3,9,2
+frus1898,d512,1897-11-15,Mr. Woodford to Mr. Sherman.,1355,1,0,0,0
+frus1898,d980,1897-11-17,Mr. Woodford to Mr. Sherman.,3819,2,0,0,0
+frus1897,d533,1897-11-18,Mr. Sherman to Mr. Dupuy de Lôme.,414,1,0,0,0
+frus1898,d513,1897-11-20,Mr. Woodford to Mr. Sherman.,1247,3,0,0,0
+frus1898,d514,1897-11-20,Mr. Sherman to Mr. Woodford.,41289,31,9,11,1
+frus1898,d515,1897-11-23,Mr. Sherman to Mr. Woodford.,6546,1,1,1,1
+frus1898,d517,1897-11-24,Mr. Woodford to Mr. Sherman.,840,1,1,1,1
+frus1898,d518,1897-11-26,Mr. Woodford to Mr. Sherman.,4733,10,0,4,0
+frus1898,d519,1897-11-27,Mr. Woodford to Mr. Sherman.,123699,47,4,15,2
+frus1898,d520,1897-11-28,Mr. Woodford to Mr. Sherman.,197,1,0,0,0
+frus1897,d534,1897-12-01,Mr. Day to Mr. Dupuy de Lôme.,2073,3,0,0,0
+frus1897,d484,1897-12-04,Mr. Woodford to Mr. Sherman.,1413,2,0,0,0
+frus1898,d521,1897-12-04,Mr. Woodford to Mr. Sherman.,1419,2,0,0,0
+frus1897,d535,1897-12-08,Mr. Sherman to Mr. Dupuy de Lôme.,919,2,0,0,0
+frus1898,ch112,1897-12-10,"Retirement of Senor Don Enrique Dupuy de Lome, Spanish minister at Washington",3727,5,2,0,0
+frus1897,d519,1897-12-11,Mr. Woodford to Mr. Sherman.,729,3,0,3,0
+frus1898,d523,1897-12-11,Mr. Sherman to Mr. Woodford.,1107,1,0,1,0
+frus1897,d578,1897-12-15,Mr. Dupuy de Lôme to Mr. Sherman.,3892,5,0,0,0
+frus1897,d579,1897-12-16,Mr. Sherman to Mr. Dupuy de Lôme.,949,1,0,0,0
+frus1897,d536,1897-12-18,Mr. Day to Mr. Dupuy de Lôme.,1886,1,0,1,0
+frus1898,d526,1897-12-23,Mr. Woodford to Mr. Sherman.,28119,27,7,7,1
+frus1897,d537,1897-12-24,Mr. Dupuy de Lôme to Mr. Day.,2243,1,0,0,0
+frus1897,d538,1897-12-27,Mr. Day to Mr. Dupuy de Lôme.,2674,5,0,1,0
+frus1898,d982,1897-12-27,Mr. Woodford to Mr. Sherman.,1737,1,0,0,0
+frus1897,d520,1897-12-31,Mr. Woodford to Mr. Sherman.,399,2,0,2,0
+frus1898,d527,1897-12-31,Mr. Woodford to Mr. Sherman.,987,3,0,0,0
+frus1898,d528,1898-01-08,Relief of suffering in Cuba.,2731,7,0,4,0
+frus1898,d529,1898-01-17,Señor Dupuy de Lome to Mr. Day.,847,2,0,0,0
+frus1897,d160,1898-01-18,Mr. Richards to Mr. Sherman.,30232,2,1,0,0
+frus1898,d530,1898-01-18,Mr. Day to Señor Dupuy de Lome.,740,1,0,0,0
+frus1898,d988,1898-01-24,Mr. Day to Mr. Lee.,275,1,1,0,0
+frus1898,d1001,1898-01-24,Mr. Day to Mr. Woodford.,456,1,1,0,0
+frus1898,d1002,1898-01-25,Mr. Woodford to Mr. Sherman.,558,1,0,0,0
+frus1898,d531,1898-02-09,Mr. Woodford to Mr. Sherman.,28832,24,8,2,1
+frus1898,d1008,1898-02-17,Señor du Bosc to Mr. Sherman.,1749,1,0,0,0
+frus1898,d1009,1898-02-17,Mr. Day to Señor du Bosc.,1039,1,0,0,0
+frus1898,d975,1898-02-23,Mr. Sherman to Mr. Woodford.,8156,3,0,2,0
+frus1898,d1021,1898-02-24,Mr. Sherman to Mr. Woodford.,449,1,0,0,0
+frus1898,d532,1898-02-26,Mr. Woodford to the President.,3246,8,1,2,1
+frus1898,d533,1898-02-28,Mr. Woodford to Mr. Sherman.,795,2,2,0,0
+frus1898,d534,1898-03-01,Mr. Sherman to Mr. Woodford.,29095,43,8,4,0
+frus1898,d536,1898-03-01,Mr. Day to Mr. Woodford.,663,1,1,0,0
+frus1898,d535,1898-03-02,Mr. Woodford to the President.,8587,3,0,0,0
+frus1898,d538,1898-03-03,Mr. Woodford to Mr. Sherman.,1165,3,2,0,0
+frus1898,d543,1898-03-03,Mr. Day to Mr. Woodford.,3728,2,0,0,0
+frus1898,d539,1898-03-04,Mr. Day to Mr. Woodford.,495,1,0,0,0
+frus1898,d1075,1898-03-05,Mr. Sewall to Mr. Sherman.,1381,1,0,0,0
+frus1898,d541,1898-03-06,Mr. Woodford to Mr. Day.,2242,1,0,0,0
+frus1898,d542,1898-03-07,Mr. Sherman to Mr. Woodford.,4704,6,3,0,0
+frus1898,d1022,1898-03-08,Mr. Woodford to Mr. Sherman.,687,1,0,0,0
+frus1898,d544,1898-03-09,Mr. Woodford to the President.,11048,28,8,5,0
+frus1898,d1082,1898-03-11,Mr. Clayton to Mr. Sherman.,1999,1,0,0,0
+frus1898,d1054,1898-03-15,Mr. Powell to Mr. Sherman.,1131,1,0,0,0
+frus1898,d545,1898-03-17,Mr. Woodford to the President.,10878,14,3,3,1
+frus1898,d546,1898-03-18,Mr. Woodford to the President.,12046,10,6,1,1
+frus1898,d549,1898-03-19,Mr. Woodford to the President.,1968,2,1,0,0
+frus1898,d548,1898-03-20,Mr. Day to Mr. Woodford.,1519,3,1,1,0
+frus1898,d550,1898-03-21,Mr. Woodford to Mr. Sherman.,3169,5,0,3,0
+frus1898,d551,1898-03-21,Mr. Woodford to the President.,2591,3,1,1,0
+frus1898,d1090,1898-03-21,Mr. Dudley to Mr. Sherman.,2159,1,0,1,0
+frus1898,d553,1898-03-22,Mr. Woodford to the President.,2511,1,0,0,0
+frus1898,d556,1898-03-24,Mr. Woodford to the President.,2261,5,3,0,0
+frus1898,d552,1898-03-25,Señor Polo de Bernabé to Mr. Day.,591,1,0,0,0
+frus1898,d557,1898-03-25,Mr. Woodford to Mr. Sherman.,12408,24,8,8,3
+frus1898,d558,1898-03-26,Mr. Woodford to Mr. Sherman.,6759,2,0,0,0
+frus1898,d559,1898-03-26,Mr Woodford to the President.,4224,6,0,0,0
+frus1898,d560,1898-03-26,Mr. Day to Mr. Woodford.,2268,3,0,0,0
+frus1898,d561,1898-03-26,Señor Polo de Bernabé to Mr. Day.,24405,9,2,3,1
+frus1898,d1027,1898-03-26,Mr. Woodford to Mr. Sherman.,6730,2,0,0,0
+frus1898,d563,1898-03-27,Mr. Woodford to the President.,4328,1,0,0,0
+frus1898,d565,1898-03-27,Mr. Woodford to Mr. Day.,4861,12,6,0,0
+frus1898,d566,1898-03-28,Mr. Day to Mr. Woodford.,376,1,0,1,0
+frus1898,d569,1898-03-28,Mr. Day to Señor Polo de Bernabé.,601,1,0,0,0
+frus1898,d570,1898-03-28,Señor Polo de Bernabé to Mr. Day,1001,1,0,0,0
+frus1898,d571,1898-03-28,Mr. Day to Señor Polo de Bernabé.,517,1,0,0,0
+frus1898,d572,1898-03-29,Mr. Woodford to the President.,544,1,0,0,0
+frus1898,d575,1898-03-29,Mr. Woodford to the President.,7854,7,1,0,0
+frus1898,d578,1898-03-30,Mr. Woodford to Mr. Day.,9470,8,1,1,0
+frus1898,d579,1898-03-30,Mr. Day to Señor Polo de Bernabé.,662,1,0,0,0
+frus1898,d580,1898-03-31,Señor Polo de Bernabé to Mr. Day.,917,1,0,0,0
+frus1898,d582,1898-03-31,Señor Polo de Bernabé to Mr. Day.,610,1,0,1,0
+frus1898,d583,1898-03-31,Mr. Woodford to Mr. Day.,4882,3,2,0,0
+frus1898,d584,1898-04-01,Mr. Woodford to the President.,2228,1,0,0,0
+frus1898,d586,1898-04-01,Señor Polo de Bernabé to Mr. Sherman.,3272,14,0,3,0
+frus1898,d588,1898-04-01,Mr. Woodford to Mr. Day.,1663,3,0,0,0
+frus1898,d590,1898-04-02,Mr. Sherman to Señor Polo de Bernabé.,363,1,0,0,0
+frus1898,d591,1898-04-02,Mr. Woodford to Mr. Day.,1636,2,1,0,0
+frus1898,d592,1898-04-03,Señor Polo de Bernabé to Mr. Sherman.,2921,8,2,3,0
+frus1898,d593,1898-04-03,Mr. Woodford to the President.,2630,5,2,0,0
+frus1898,d594,1898-04-04,Mr. Day to Mr. Woodford.,830,1,1,0,0
+frus1898,d596,1898-04-04,Mr. Day to Mr. Woodford.,808,1,0,0,0
+frus1898,d599,1898-04-05,Mr. Woodford to the President.,1615,2,0,0,0
+frus1898,d601,1898-04-05,Mr. Woodford to Mr. Day.,6113,11,7,0,0
+frus1898,d602,1898-04-05,Mr. Sherman to Señor Polo de Bernabé.,686,1,0,0,0
+frus1898,d600,1898-04-06,Mr. Day to Mr. Woodford.,1129,2,0,0,0
+frus1898,d606,1898-04-06,Joint note of the Powers.,2089,2,1,0,0
+frus1898,d608,1898-04-06,Mr. Woodford to Mr. Day.,4320,5,0,0,0
+frus1898,d609,1898-04-06,Mr. Woodford to Mr. Day.,2539,6,0,0,0
+frus1898,d611,1898-04-07,Mr. Woodford to Mr. Day.,1970,2,0,0,0
+frus1898,d868,1898-04-07,Sir Julian Pauncefote to Mr. Sherman.,966,1,0,0,0
+frus1898,d612,1898-04-08,Mr. Woodford to Mr. Sherman.,5129,5,4,0,0
+frus1898,d869,1898-04-08,Mr. Sherman to Sir Julian Pauncefote.,575,2,0,2,0
+frus1898,d614,1898-04-09,Mr. Woodford to Mr. Day.,3580,4,3,0,0
+frus1898,d615,1898-04-10,Señor Polo de Bernabé to Mr. Sherman.,6464,10,0,3,0
+frus1898,d618,1898-04-11,Señor Polo de Bernabé to Mr. Day.,1205,1,0,0,0
+frus1898,d619,1898-04-12,Mr. Sherman to Señor Polo de Bernabé.,477,1,0,0,0
+frus1898,ch83,1898-04-12,Message,34969,37,11,5,2
+frus1898,d622,1898-04-14,Mr. Sherman to Mr. Woodford.,1088,4,4,0,0
+frus1898,d1190a,1898-04-15,[Untitled],20590,12,1,0,0
+frus1898,d623,1898-04-17,Mr. Day to Mr. Woodford.,1752,5,3,0,0
+frus1898,d75,1898-04-19,Mr. Hoyt to Mr. Day.,48885,1,0,1,0
+frus1898,d624,1898-04-19,Mr. Day to Mr. Woodford.,785,1,0,0,0
+frus1898,d625,1898-04-20,Mr. Sherman to Mr. Woodford.,3700,14,11,0,0
+frus1898,d627,1898-04-20,Mr. Sherman to Señor Polo de Bernabé.,3506,13,9,0,0
+frus1898,d632,1898-04-21,Mr. Woodford to Mr. Sherman.,1104,1,1,0,0
+frus1898,d636,1898-04-22,Blockade of Cuban ports.,2574,8,3,0,0
+frus1898,d637,1898-04-23,Call for volunteers—Spain.,5522,10,8,0,0
+frus1898,d770,1898-04-25,Mr. Angell to Mr. Sherman.,663,1,0,0,0
+frus1898,d1145,1898-04-25,Mr. Andrade to Mr. Sherman.,656,1,0,0,0
+frus1898,d742,1898-04-26,Mr. Draper to Mr. Sherman.,3349,1,0,0,0
+frus1898,d887,1898-04-26,Sir Juliun Pauncefote to Mr. Sherman.,749,1,0,0,0
+frus1898,d713,1898-04-28,Mr. Jones to Mr. Sherman.,1771,1,1,0,0
+frus1898,d716,1898-04-29,Mr. Bryan to Mr. Sherman.,2622,1,1,0,0
+frus1898,d760,1898-04-29,Mr. Dudley to Mr. Sherman.,2489,1,1,0,0
+frus1898,d714,1898-04-30,Mr. Storer to Mr. Sherman.,8982,2,2,0,0
+frus1898,d751,1898-04-30,Mr. Clayton to Mr. Sherman.,6098,1,0,0,0
+frus1898,d888,1898-04-30,Mr. Moore to Sir Julian Pauncefote.,964,2,1,0,0
+frus1898,d722,1898-05-03,Mr. Denby to Mr. Sherman.,2009,1,1,0,0
+frus1898,d889,1898-05-04,Mr. Moore to Sir Julian Pauncefote.,512,1,0,0,0
+frus1898,d717,1898-05-05,Mr. Bryan to Mr. Sherman.,12536,1,1,0,0
+frus1898,d654,1898-05-07,Mr. Day to Mr. Cambon.,552,1,0,0,0
+frus1898,d766,1898-05-10,Mr. King to Mr. Sherman.,2733,1,0,0,0
+frus1898,d725,1898-05-14,Mr. Merry to Mr. Moore.,3542,1,0,0,0
+frus1898,d642,1898-06-20,Instructions to blockading vessels and cruisers.,23825,4,3,2,2
+frus1898,d904,1898-06-21,Mr. Moore to Sir Julian Pauncefote.,1739,3,1,0,0
+frus1898,d905,1898-06-23,Mr. Moore to Sir Julian Pauncefote.,598,1,0,0,0
+frus1898,d661,1898-06-24,Mr. Day to Mr. Cambon.,1470,1,0,0,0
+frus1898,d662,1898-06-25,Mr. Cambon to Mr. Day.,1970,1,0,0,0
+frus1898,d640,1898-06-27,"Blockade—Southern Cuba and San Juan, Porto Rico.",1388,4,0,0,0
+frus1898,d663,1898-06-29,Mr. Moore to Mr. Cambon.,1132,1,0,0,0
+frus1898,d1156,1898-07-07,Mr. Day to Mr. Loomis.,785,1,1,0,0
+frus1898,d666,1898-07-12,Mr. Cambon to Mr. Day.,1700,1,1,0,0
+frus1898,d667,1898-07-13,Mr. Day to Mr. Cambon.,947,1,0,0,0
+frus1898,d920,1898-07-14,Mr. Day to Sir Julian Pauncefote.,946,1,0,1,0
+frus1898,d1166,1898-07-15,Note to all foreign representatives in Washington.,1671,1,0,0,0
+frus1898,d1187,1898-07-16,Mr. Grip to Mr. Day.,564,1,0,1,0
+frus1898,d1188,1898-07-16,Señor Andrade to Mr. Day.,756,1,0,0,0
+frus1898,d927,1898-07-18,Mr. Day to Mr. Hay.,546,1,1,0,0
+frus1898,d1171,1898-07-18,Mr. Calvo to Mr. Day.,854,1,0,0,0
+frus1898,d1176,1898-07-18,Sir Julian Pauncefote to Mr. Day.,473,1,0,0,0
+frus1898,d1179,1898-07-18,Mr. Léger to Mr. Day.,588,1,0,0,0
+frus1898,d1181,1898-07-18,Mr. Pom Ye to Mr. Day.,500,1,1,0,0
+frus1898,d1182,1898-07-18,Mr. Romero to Mr. Day.,661,1,0,0,0
+frus1898,d1180,1898-07-19,Mr. Hoshí to Mr. Day.,684,1,1,0,0
+frus1898,d1186,1898-07-19,Count Cassini to Mr. Day.,937,1,0,0,0
+frus1898,d704,1898-07-22,"Message of the Government of Her Majesty the Queen Regent of Spain, submitted by His Excellency, Mr. J. Cambon, Ambassad",2984,4,2,0,0
+frus1898,d1170,1898-07-23,Mr. Rengifo to Mr. Day.,992,1,0,0,0
+frus1898,d931,1898-07-24,Mr. Hay to Mr. Day.,1889,1,0,0,0
+frus1898,d932,1898-07-25,Mr. Hay to Mr. Day.,2716,3,3,0,0
+frus1898,d933,1898-07-25,Mr. Moore to Mr. Hay.,643,2,0,0,0
+frus1898,d934,1898-07-25,Mr. Hay to Mr. Day.,477,1,0,0,0
+frus1898,d1183,1898-07-25,Mr. de Weckherlin to Mr. Day.,482,1,0,0,0
+frus1898,d936,1898-07-28,Mr. Hay to Mr. Day.,9934,7,4,0,0
+frus1898,d705,1898-07-30,Mr. Day to Duke of Almodovar del Rio.,5661,6,2,1,1
+frus1898,d706,1898-08-07,"Message of His Excellency the Duke of Almodovar del Rio, minister of state of Spain, submitted by His Excellency Mr. J. ",5853,8,0,0,0
+frus1898,d707,1898-08-10,Mr. Day to Mr. Cambon.,4154,4,0,0,0
+frus1898,d708,1898-08-10,Mr. Day to Mr. Cambon.,546,1,0,0,0
+frus1898,d710,1898-08-12,Mr. Cambon to Mr. Day.,1654,1,0,0,0
+frus1898,d711a,1898-08-12,[Untitled],5710,6,0,0,0
+frus1898,d675,1898-08-15,Memorandum left at the Department of State.,896,3,0,0,0
+frus1898,d711,1898-08-15,Mr. Day to Mr. Cambon.,4893,2,0,0,0
+frus1898,d676,1898-08-16,Mr. Moore to Mr. Cambon.,526,2,0,0,0
+frus1898,d677,1898-08-16,Mr. Moore to Mr. Cambon.,714,1,0,0,0
+frus1898,d679,1898-08-17,Mr. Moore to Mr. Cambon.,2705,4,0,2,0
+frus1898,d680,1898-08-19,Mr. Moore to Mr. Cambon.,2607,1,0,0,0
+frus1898,d683,1898-08-20,Mr. Cambon to Mr. Day.,1107,1,0,0,0
+frus1898,d684,1898-08-20,Mr. Cambon to Mr. Day.,1564,2,0,2,0
+frus1898,d686,1898-08-22,Mr. Cambon to Mr. Day.,674,1,1,0,0
+frus1898,d689,1898-08-24,Mr. Day to Mr. Cambon.,877,1,0,0,0
+frus1898,d690,1898-08-24,Mr. Cambon to Mr. Day.,703,1,0,0,0
+frus1898,d692,1898-08-29,Mr. Cambon to Mr. Day.,906,1,0,0,0
+frus1898,d924,1898-09-14,Mr. Day to Sir Julian Pauncefote.,848,2,0,1,0
+frus1898,d776,1898-09-16,Instructions to the Peace Commissioners.,32275,29,11,7,5
+frus1898,d311,1898-09-17,Mr. Adee to Mr. White.,784,1,0,0,0
+frus1898,d951,1898-09-19,Sir Julian Pauncefote to Mr. Adee.,3855,7,3,3,2
+frus1898,d952,1898-09-23,Mr. Adee to Sir Julian Pauncefote.,1163,2,1,0,0
+frus1898,d312,1898-09-26,Sir Julian Pauncefote to Mr. Adee.,870,1,1,1,1
+frus1898,d313,1898-09-29,Mr. Adee to Sir Julian Pauncefote.,1410,1,1,0,0
+frus1898,d786,1898-10-03,Mr. Day to Mr. Hay.,499,1,0,0,0
+frus1898,d789,1898-10-06,Mr. Hay to Mr. Day.,3502,2,0,0,0
+frus1898,d790,1898-10-06,Mr. Day to Mr. Hay.,12222,1,1,0,0
+frus1898,d791,1898-10-07,Mr. Day to the Secretary of State,901,2,1,1,1
+frus1898,d792,1898-10-07,Mr. Hay to Mr. Day.,781,2,0,0,0
+frus1898,d793,1898-10-07,The President to Mr. Day.,685,1,0,0,0
+frus1898,d795,1898-10-08,Mr. Day to Mr. Hay.,626,1,1,0,0
+frus1898,d796,1898-10-08,Mr. Hay to Mr. Day.,528,1,1,0,0
+frus1898,d797,1898-10-08,Mr. Day to Mr. Hay.,1573,5,1,0,0
+frus1898,d799,1898-10-09,Mr. Day to Mr. Hay.,7310,1,0,0,0
+frus1898,d314,1898-10-12,Mr. White to Mr. Hay.,1718,3,0,0,0
+frus1898,d800,1898-10-12,Mr. Day to Mr. Hay.,1181,6,0,0,0
+frus1898,d801,1898-10-13,Mr. Hay to Mr. Day.,417,1,0,0,0
+frus1898,d803,1898-10-17,Mr. Day to Mr. Hay.,1088,5,0,3,0
+frus1898,d807,1898-10-22,Mr. Day to Mr. Hay.,1511,7,5,1,1
+frus1898,d808,1898-10-22,Mr. Day to Mr. Hay.,832,3,0,3,0
+frus1898,d809,1898-10-23,Mr. Hay to Mr. Day.,246,1,0,0,0
+frus1898,d811,1898-10-25,Mr. Day to Mr. Hay.,1445,3,0,0,0
+frus1898,d812,1898-10-25,Mr. Hay to Mr. Day.,1065,3,0,0,0
+frus1898,d813,1898-10-25,Peace Commissioners to Mr. Hay.,11069,2,0,1,0
+frus1898,d815,1898-10-27,Mr. Day to Mr. Hay.,444,1,0,1,0
+frus1898,d816,1898-10-27,Mr. Day to Mr. Adee.,2914,3,0,1,0
+frus1898,d817,1898-10-27,Mr. Day to Mr. Hay.,595,1,0,0,0
+frus1898,d703,1898-10-29,Mr. Hay to Mr. Thiebaut.,5074,7,3,1,1
+frus1898,d822,1898-10-30,Mr. Frye to Mr. Adee.,2176,2,2,0,0
+frus1898,d828,1898-11-05,Mr. Day to Mr. Hay.,4005,1,1,0,0
+frus1898,d829,1898-11-09,Mr. Day to Mr. Hay.,3264,3,1,1,0
+frus1898,d830,1898-11-10,Mr. Day to Mr. Hay.,2409,2,0,2,0
+frus1898,d831,1898-11-11,American Peace Commissioners to Mr. Hay.,12052,9,2,4,0
+frus1898,d832,1898-11-13,Mr. Hay to Mr. Day.,2449,1,0,1,0
+frus1898,d835,1898-11-15,Mr. Moore to Mr. Hay.,3438,3,3,1,1
+frus1898,d838,1898-11-18,Mr. Moore to Mr. Hay.,12252,4,3,1,1
+frus1898,d839,1898-11-18,Mr. Day to Mr. Adee.,11479,3,1,1,0
+frus1898,d845,1898-11-25,Mr. Moore to Mr. Hay.,3238,3,2,0,0
+frus1898,d855,1898-11-30,Mr. Moore to Mr. Hay.,2938,4,1,2,1
+frus1898,d856,1898-12-01,Mr. Hay to Mr. Day.,812,1,0,0,0
+frus1898,d857,1898-12-01,Mr. Day to Mr. Hay.,309,1,0,1,0
+frus1898,d859,1898-12-03,Mr. Day to Mr. Hay.,1078,1,0,1,0
+frus1898,d860,1898-12-03,Mr. Hay to Mr. Day.,338,1,0,0,0
+frus1898,d712a,1898-12-10,[Untitled],28973,16,2,8,2
+frus1898,d863,1898-12-10,Mr. Moore to Mr. Hay.,2276,4,2,4,2
+frus1899,d309,1899-01-19,Sir Julian Pauncefote to Mr. Hay.,432,1,0,0,0
+frus1899,d310,1899-01-21,Mr. Hay to Sir Julian Pauncefote.,486,2,0,0,0
+frus1899,d538,1899-03-06,Mr. Merry to Mr. Hay.,2019,1,1,0,0
+frus1899,d265,1899-03-27,Mr. White to Mr. Hay.,2412,2,0,2,0
+frus1899,d361,1899-04-05,Mr. Powell to Mr. Hay.,5919,3,0,0,0
+frus1899,d571,1899-05-09,Mr. Merry to Mr. Hay.,1557,1,0,0,0
+frus1899,d662,1899-06-27,Mr. Storer to Mr. Hay.,847,1,1,0,0
+frus1899,d663,1899-07-07,Mr. Hay to Mr. Storer.,5669,9,4,0,0
+frus1899,d640,1899-07-17,Mr. Hay to Mr. Storer.,2854,1,1,0,0
+frus1899,d664,1899-07-17,Mr. Hay to Mr. Storer.,1975,4,3,0,0
+frus1899,d665,1899-07-19,Mr. Storer to Mr. Hay.,4244,11,2,0,0
+frus1899,d691,1899-07-20,The Duke de Arcos to Mr. Hay.,1900,2,0,0,0
+frus1899,d573,1899-07-25,Mr. Merry to Mr. Hay.,1663,1,0,0,0
+frus1899,d666,1899-07-26,Mr. Storer to Mr. Hay.,1183,3,0,0,0
+frus1899,d667,1899-08-03,Mr. Adee to Mr. Storer.,465,1,0,0,0
+frus1899,d668,1899-08-03,Mr. Adee to Mr. Storer.,3352,4,0,0,0
+frus1899,d669,1899-08-04,Mr. Storer to Mr. Hay.,3767,3,0,0,0
+frus1899,d671,1899-08-07,Mr. Sickles to Mr. Hay.,1268,1,0,0,0
+frus1899,d196,1899-08-09,Mr. Powell to Mr. Hay.,6851,1,0,0,0
+frus1899,d672,1899-08-09,Mr. Sickles to Mr. Hay.,703,2,0,0,0
+frus1899,d692,1899-08-09,Mr. Adee to the Duke de Arcos.,2723,6,5,0,0
+frus1899,d693,1899-08-11,The Duke de Arcos to Mr. Hay.,1510,3,1,0,0
+frus1899,d673,1899-08-14,Mr. Sickles to Mr. Hay.,2566,10,2,0,0
+frus1899,d674,1899-08-22,Mr. Adee to Mr. Storer.,5241,14,0,0,0
+frus1899,d675,1899-08-24,Mr. Sickles to Mr. Hay.,2067,6,0,0,0
+frus1899,d694,1899-08-26,Mr. Adee to the Duke de Arcos.,947,2,2,0,0
+frus1899,d676,1899-08-30,Mr. Hay to Mr. Sickles.,650,2,2,0,0
+frus1899,d379,1899-09-05,Mr. Powell to Mr. Hay.,4286,2,0,0,0
+frus1899,d677,1899-09-09,Mr. Sickles to Mr. Hay.,1178,3,0,0,0
+frus1899,d678,1899-09-13,Mr. Sickles to Mr. Hay.,5201,10,5,2,1
+frus1899,d778,1899-09-16,Mr. Russell to the Secretary of State.,196,1,0,0,0
+frus1899,d679,1899-09-19,Mr. Sickles to Mr. Hay.,1521,2,0,0,0
+frus1899,d779,1899-09-19,Mr. Adee to Mr. Russell.,222,1,1,1,1
+frus1899,d283,1899-10-25,Mr. Hay to Mr. von Mumm.,1529,5,4,0,0
+frus1899,d799,1899-11-07,Mr. Loomis to Mr. Hay.,6670,1,0,0,0
+frus1899,d382,1899-11-15,Mr. Powell to Mr. Hay.,5428,1,1,0,0
+frus1899,d695,1899-12-07,Memorandum of interview between the Spanish minister and the Secretary of State.,881,1,0,0,0
+frus1899,d697,1899-12-13,The Duke de Arcos to Mr. Hay.,5527,2,0,0,0
+frus1899,d698,1899-12-28,Mr. Hay to the Duke de Arcos.,5321,6,0,1,0

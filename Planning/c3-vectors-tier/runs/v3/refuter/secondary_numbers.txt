@@ -1,0 +1,18 @@
+national security AND cuba: hits 2643 after 1950 2615 (overview: about 2,600; memo 2,643 / 2,615)
+pre-1940 hits 9 with the literal phrase 8 : [('frus1887', 'd491', '1887-11-01'), ('frus1918', 'd1', '1918-11-27'), ('frus1918', 'd343', '1917-09-20'), ('frus1919Parisv03', 'd8', '1919-05-29'), ('frus1919Parisv07', 'd42', '1919-08-23'), ('frus1929v01', 'd42', '1929-03-23'), ('frus1937v01', 'd741', '1937-07-28'), ('frus1939v05', 'd493', '1939-05-15')]
+1989+: [('frus1981-88v01', 'd335', '1989-01-11'), ('frus1981-88v06', 'd183', '1989-01-08')]
+1870s 400 of 5821 = 68.7 per 1,000 = one in 14.6
+1890s 783 of 9845 = 79.5 per 1,000 = one in 12.6
+1940s 1725 of 75872 = 22.7 per 1,000 = one in 44.0
+1960s 3173 of 27654 = 114.7 per 1,000 = one in 8.7
+baseline soviet group 1960s: (13849,) of 27654
+centrality: dated hits 13874 >=1 literal 13863 >=5 5253 fewer than five 8621 = 0.62
+1900s M 209 {'nsec': 0, 'sugar': 15, 'comm': 0}
+1910s M 741 {'nsec': 1, 'sugar': 87, 'comm': 0}
+1920s M 399 {'nsec': 0, 'sugar': 59, 'comm': 0}
+1930s M 620 {'nsec': 0, 'sugar': 72, 'comm': 29}
+1940s M 665 {'nsec': 2, 'sugar': 275, 'comm': 19}
+1950s M 449 {'nsec': 23, 'sugar': 127, 'comm': 154}
+1960s M 1578 {'nsec': 483, 'sugar': 183, 'comm': 1013}
+1970s M 192 {'nsec': 127, 'sugar': 19, 'comm': 103}
+1980s M 44 {'nsec': 39, 'sugar': 0, 'comm': 13}
