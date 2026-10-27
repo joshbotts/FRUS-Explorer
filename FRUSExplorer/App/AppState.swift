@@ -1399,7 +1399,8 @@ final class AppState {
 
     func refreshReadOnlyStores() {
         guard let databaseURL else { return }
-        crossReferenceStore = try? CrossReferenceStore(databaseURL: databaseURL)
+        crossReferenceStore = try? CrossReferenceStore(databaseURL: databaseURL,
+                                                       volumes: manifestStore.bundledEntries)
         personMentionStore = try? PersonMentionStore(databaseURL: databaseURL)
         let freshPageRangeStore = try? PageRangeStore(databaseURL: databaseURL)
         pageRangeStore = freshPageRangeStore

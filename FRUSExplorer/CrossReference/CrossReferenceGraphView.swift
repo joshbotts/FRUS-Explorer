@@ -144,6 +144,8 @@ private enum CompactGraphContent {
 ///          on iOS (`openDocumentActionName`), keeping "Open in Main Window" on the Mac
 ///   2.10 — 2026-10-01 (lane GRAPH review round 1): #1481 — `openDocumentActionName` names the
 ///          reference list's row item too, which read "Open in Main Window" on iPhone and iPad
+///   2.11 — #1799: a page node is labelled by its page ("p. 531"), and the node panel's View
+///          Document is disabled where the list's Open is, for a node with no document to open
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -1195,7 +1197,8 @@ struct CrossReferenceGraphView: View {
                                         defaultValue: "View Document"))
                         }
                         .buttonStyle(.borderedProminent)
-                        .disabled(!node.isDownloaded)
+                        // A page node names no document to open (#1799), as the list's Open says.
+                        .disabled(!node.isDownloaded || vm.makeEntry(for: key) == nil)
                     }
                 }
             }
@@ -1565,7 +1568,7 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.timeline.title",
                               defaultValue: "Timeline and Network layouts"),
                 body:  String(localized: "graph.info.timeline.body",
-                              defaultValue: "Timeline mode places each document at its date along a horizontal time axis. Outgoing references usually sit to the left, since they are earlier. Incoming references usually sit to the right, since they are later. Documents with no recorded date go in the Undated column. Network mode arranges nodes by their connections alone.")
+                              defaultValue: "Timeline mode places each document at its date along a horizontal time axis. Outgoing references usually sit to the left, since they are earlier. Incoming references usually sit to the right, since they are later. A cited page sits at the dates of the documents printed on it. A document or page in a volume you have not downloaded sits at the dates the app has for it, often only its volume’s span, which its label then shows. Documents with no recorded date go in the Undated column. Network mode arranges nodes by their connections alone.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.degree.title",
@@ -1894,7 +1897,15 @@ struct CrossReferenceGraphView: View {
                 Int64(count), periodLabel
             )
         default:
-            if let num = node.metadata?.documentNumber {
+            if let page = node.metadata?.citedPage {
+                // A page the index left on its volume (#1799), named as a document is by its
+                // number; the panel's title names the volume too.
+                labelText = String(
+                    format: String(localized: "graph.node.page %lld",
+                                   defaultValue: "p. %lld"),
+                    Int64(page)
+                )
+            } else if let num = node.metadata?.documentNumber {
                 labelText = String(
                     format: String(localized: "graph.node.docNumber %@",
                                    defaultValue: "Doc. %@"),

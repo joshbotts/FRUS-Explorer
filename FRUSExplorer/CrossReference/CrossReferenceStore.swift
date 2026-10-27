@@ -43,6 +43,9 @@ import SQLite3
 ///          `inboundEdges` and the rankings take it with no change here
 ///   1.8 — FRUS Explorer Light: `DocumentTitleFacts` is a typealias of the kit's
 ///          `DocumentDisplayTitle.Facts`, which moved there with the display title
+///   1.9 — #1799: a graph endpoint the device holds no row for is dated by the documents on its
+///          page, the page map or its volume's span (`endpointMetadata`), and a page is titled by
+///          its volume and page; the store takes the bundled catalogue for both
 public actor CrossReferenceStore {
 
     // MARK: - SQLite handle
@@ -54,10 +57,20 @@ public actor CrossReferenceStore {
 
     // MARK: - Init / deinit
 
+    /// The bundled catalogue's entries by volume id, from which a node the device holds no row for
+    /// takes its volume's span and subseries (#1799).
+    private let volumesById: [String: VolumeManifestEntry]
+
     /// Opens a read-only connection to `databaseURL`.
     ///
+    /// - Parameters:
+    ///   - databaseURL: The search index's database.
+    ///   - volumes: The bundled catalogue (`ManifestStore.bundledEntries`). A graph node the device
+    ///     holds no row for is dated by its volume's span where nothing nearer dates it, and a page
+    ///     node is titled by its volume (#1799); with none, such a node stays undated and untitled.
     /// - Throws: `CrossReferenceError.databaseOpenFailed` if SQLite cannot open the file.
-    public init(databaseURL: URL) throws {
+    public init(databaseURL: URL, volumes: [VolumeManifestEntry] = []) throws {
+        volumesById = Dictionary(volumes.map { ($0.volumeId, $0) }, uniquingKeysWith: { first, _ in first })
         var handle: OpaquePointer?
         let rc = sqlite3_open_v2(
             databaseURL.path,
@@ -126,16 +139,7 @@ public actor CrossReferenceStore {
         for key in endpoints {
             let parts = key.split(separator: "/", maxSplits: 1).map(String.init)
             guard parts.count == 2 else { continue }
-            let vol = parts[0], doc = parts[1]
-            if let m = try fetchMetadata(volumeId: vol, documentId: doc) {
-                meta[key] = m
-            } else {
-                // Placeholder for unindexed/undownloaded nodes.
-                meta[key] = CrossReferenceNodeMetadata(
-                    documentId: doc, volumeId: vol,
-                    documentNumber: nil, header: nil, dateline: nil
-                )
-            }
+            meta[key] = try endpointMetadata(volumeId: parts[0], documentId: parts[1])
         }
 
         return CrossReferenceGraph(
@@ -320,14 +324,8 @@ public actor CrossReferenceStore {
                 allNodeKeys.insert(nk)
                 let np = nk.split(separator: "/", maxSplits: 1).map(String.init)
                 guard np.count == 2 else { continue }
-                if let m = try? fetchMetadata(volumeId: np[0], documentId: np[1]) {
-                    extendedMeta[nk] = m
-                } else {
-                    extendedMeta[nk] = CrossReferenceNodeMetadata(
-                        documentId: np[1], volumeId: np[0],
-                        documentNumber: nil, header: nil, dateline: nil
-                    )
-                }
+                extendedMeta[nk] = (try? endpointMetadata(volumeId: np[0], documentId: np[1]))
+                    ?? undatedEndpoint(volumeId: np[0], documentId: np[1], pageSpan: nil)
             }
         }
         return newEdges
@@ -1293,6 +1291,168 @@ public actor CrossReferenceStore {
             dateISO:    columnString(stmt, 3),
             summary:    columnString(stmt, 4)
         )
+    }
+
+    // MARK: - Nodes the device holds no row for (#1799)
+
+    /// The bundled page map, or `nil` when it failed to load. Read through a property, as
+    /// ``resolvedEdgeIndex`` is.
+    var citedPageMap: CitedPageMap? { CitedPageMapStore.shared }
+
+    /// A graph endpoint's metadata: its `document_cache` row where the device holds one, and
+    /// otherwise a node dated by what the app does hold (#1799).
+    ///
+    /// Until #1799 such a node had no date and no title, and the timeline parked it in its Undated
+    /// column. The Long Telegram (`frus1946v06` d475) cites 1943 vol. III, pp. 531–532 and
+    /// 542–543 in its note 45, two ranges across documents that the index leaves on the volume as
+    /// four pages, so the four nodes never reached the axis, which ran from the telegram to
+    /// 1 April 1946.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The endpoint's volume.
+    ///   - documentId: The endpoint's id: a document's, or a page's (`pg_N`).
+    /// - Returns: The row, or the node ``undatedEndpoint(volumeId:documentId:pageSpan:map:volume:)``
+    ///   makes; the page index is asked about a page, and a failed read of it dates nothing.
+    private func endpointMetadata(volumeId: String, documentId: String) throws -> CrossReferenceNodeMetadata {
+        if let row = try fetchMetadata(volumeId: volumeId, documentId: documentId) { return row }
+        let span = Self.citedPage(in: documentId).flatMap { (try? pageDateSpan(volumeId: volumeId, page: $0)) ?? nil }
+        return undatedEndpoint(volumeId: volumeId, documentId: documentId, pageSpan: span)
+    }
+
+    /// ``undatedEndpoint(volumeId:documentId:pageSpan:map:volume:)`` with this store's page map and
+    /// catalogue.
+    private func undatedEndpoint(volumeId: String, documentId: String,
+                                 pageSpan: ClosedRange<String>?) -> CrossReferenceNodeMetadata {
+        Self.undatedEndpoint(volumeId: volumeId, documentId: documentId, pageSpan: pageSpan,
+                             map: citedPageMap, volume: volumesById[volumeId])
+    }
+
+    /// The days the documents on `page` of `volumeId` are dated, the first day of the earliest to
+    /// the last day of the latest, from the device's page index.
+    ///
+    /// - Returns: The span, or `nil` when the volume is not indexed, the page names no document, or
+    ///   none of the documents on it is dated.
+    private func pageDateSpan(volumeId: String, page: Int) throws -> ClosedRange<String>? {
+        let sql = """
+            SELECT MIN(dd.date_iso), MAX(COALESCE(dd.date_iso_max, dd.date_iso))
+            FROM page_ranges pr
+            JOIN document_dates dd ON dd.volume_id = pr.volume_id AND dd.document_id = pr.document_id
+            WHERE pr.volume_id = ? AND pr.page_number_type = 'arabic' AND pr.page_number_int = ?
+              AND dd.date_iso IS NOT NULL AND dd.date_iso != ''
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_CR)
+        sqlite3_bind_int64(stmt, 2, Int64(page))
+        guard sqlite3_step(stmt) == SQLITE_ROW,
+              let first = columnString(stmt, 0), let last = columnString(stmt, 1) else { return nil }
+        return first...max(first, last)
+    }
+
+    /// The node of an endpoint the device holds no row for (#1799): dated by the nearest of three
+    /// sources, and titled by its volume and page when it is a page.
+    ///
+    /// - A page (`pg_N`) is dated by the documents on it: from the device's page index
+    ///   (`pageSpan`) when its volume is on the device, else from the page map's facts where the
+    ///   map lists the page and the days of its documents.
+    /// - A document of a volume not on the device is dated by its own day where the page map
+    ///   carries one; the map carries the facts of the documents on the pages that name several.
+    /// - Anything else is dated by its volume's span in the catalogue (``volumeSpan(_:)``), the
+    ///   only date the app has for it, and the date label draws it as that span.
+    ///
+    /// The timeline places the node at the middle of its span (`CrossReferenceGraphViewModel.buildDateValues`).
+    /// An endpoint none of the three dates stays undated: a volume outside the catalogue, side-loaded,
+    /// with no page index for the page.
+    ///
+    /// Pure, so a test drives every branch without a database.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The endpoint's volume.
+    ///   - documentId: The endpoint's id: a document's, or a page's.
+    ///   - pageSpan: For a page, what the device's page index dates it by (``pageDateSpan``), or `nil`.
+    ///   - map: The bundled page map, or `nil`.
+    ///   - volume: The volume's catalogue entry, or `nil` when the catalogue has none.
+    /// - Returns: The node's metadata, with no number, dateline or summary.
+    nonisolated static func undatedEndpoint(volumeId: String, documentId: String,
+                                            pageSpan: ClosedRange<String>?, map: CitedPageMap?,
+                                            volume: VolumeManifestEntry?) -> CrossReferenceNodeMetadata {
+        let page = citedPage(in: documentId)
+        var span: ClosedRange<String>?
+        var dating: CrossReferenceNodeMetadata.Dating?
+        if page != nil, let pageSpan {
+            (span, dating) = (pageSpan, .pageIndex)
+        } else if let map {
+            let ids = page.map { map.entry(volumeId: volumeId, page: $0)?.documentIds ?? [] } ?? [documentId]
+            let days = map.facts(volumeId: volumeId, documentIds: ids).values.compactMap { facts -> String? in
+                guard let day = facts.day, let year = day.year else { return nil }
+                return String(format: "%04ld-%02ld-%02ld", year, day.month, day.day)
+            }.sorted()
+            if let first = days.first, let last = days.last { (span, dating) = (first...last, .pageMap) }
+        }
+        if span == nil, let volume, let volumeSpan = volumeSpan(volume) {
+            (span, dating) = (volumeSpan, .volume)
+        }
+        return CrossReferenceNodeMetadata(
+            documentId: documentId, volumeId: volumeId, documentNumber: nil,
+            header: page.map { pageTitle(volumeId: volumeId, subseries: volume?.subseries, page: $0) },
+            dateline: nil,
+            dateISO: span?.lowerBound,
+            dateISOMax: span.flatMap { $0.upperBound == $0.lowerBound ? nil : $0.upperBound },
+            dating: dating,
+            citedPage: page)
+    }
+
+    /// The arabic page a node id names (`pg_531` → 531), or `nil` for any other id: a document, a
+    /// roman or front-matter page (`pg_III`, `pg_fm12`).
+    nonisolated static func citedPage(in documentId: String) -> Int? {
+        guard documentId.hasPrefix("pg_") else { return nil }
+        let digits = documentId.dropFirst(3)
+        guard !digits.isEmpty, digits.allSatisfy({ $0.isASCII && $0.isNumber }) else { return nil }
+        return Int(digits)
+    }
+
+    /// A volume's span in the catalogue, its first and last days (`yyyy-MM-dd`), or `nil` when the
+    /// catalogue gives none. The catalogue writes each end as an instant at −05:00, and its first
+    /// ten characters are the day: 1943 vol. III's `1942-05-30T00:00:00-05:00` and
+    /// `1944-03-24T19:00:00-05:00` are 30 May 1942 and 24 March 1944.
+    nonisolated static func volumeSpan(_ volume: VolumeManifestEntry) -> ClosedRange<String>? {
+        guard let earliest = volume.dateRange.earliest.map({ String($0.prefix(10)) }),
+              earliest.wholeMatch(of: /[0-9]{4}-[0-9]{2}-[0-9]{2}/) != nil else { return nil }
+        let latest = volume.dateRange.latest.map { String($0.prefix(10)) }
+            .flatMap { $0.wholeMatch(of: /[0-9]{4}-[0-9]{2}-[0-9]{2}/) != nil ? $0 : nil } ?? earliest
+        return earliest...max(earliest, latest)
+    }
+
+    /// A page node's title, as a footnote cites the page: "1943, vol. III, p. 531".
+    nonisolated static func pageTitle(volumeId: String, subseries: String?, page: Int) -> String {
+        String(format: String(localized: "graph.node.pageTitle %@ %lld", defaultValue: "%1$@, p. %2$lld"),
+               volumeCitation(volumeId: volumeId, subseries: subseries), Int64(page))
+    }
+
+    /// A volume as a footnote names it, "1943, vol. III" or "1952–54, vol. II, pt. 1", where its id
+    /// is its subseries and those tokens alone (`frus1943v03`, `frus1952-54v02p1`,
+    /// `frus1969-76ve05p1`, `frus1864p1`, `frus1913`). Any other id reads as the tag the app's volume
+    /// labels use (`frus1919Parisv01` → "1919 Paris v1", `frus1961-63v10-12mSupp` →
+    /// "1961-63 v10–12 fiche"): a citation's form would drop what tells such a volume from the
+    /// one beside it. With no catalogue entry, the id itself.
+    nonisolated static func volumeCitation(volumeId: String, subseries: String?) -> String {
+        guard let subseries else { return volumeId }
+        let prefix = "frus" + subseries
+        guard volumeId.hasPrefix(prefix),
+              volumeId.dropFirst(prefix.count).wholeMatch(of: /(ve?[0-9]+)?(p[0-9]+)?/) != nil else {
+            return ChronologyViewModel.distilledVolumeLabelParts(volumeId: volumeId, subseries: subseries,
+                                                                 title: "").tag
+        }
+        var text = subseries.replacingOccurrences(of: "-", with: "–")
+        if let designation = CitationNumerals.volumeDesignation(inVolumeId: volumeId) {
+            text = String(format: String(localized: "graph.node.volumeCitation %@ %@", defaultValue: "%1$@, vol. %2$@"),
+                          text, designation.replacingOccurrences(of: "-", with: "–"))
+        }
+        if let part = CitationNumerals.partNumber(inVolumeId: volumeId) {
+            text = String(format: String(localized: "graph.node.volumePart %@ %lld", defaultValue: "%1$@, pt. %2$lld"),
+                          text, Int64(part))
+        }
+        return text
     }
 
     private func collectEdges(_ stmt: OpaquePointer) throws -> [CrossReferenceEdge] {
