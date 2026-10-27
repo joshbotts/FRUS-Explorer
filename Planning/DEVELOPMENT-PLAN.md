@@ -7938,3 +7938,37 @@ FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) compiles FRUSCoreKit on 
 - The ZIP writer stays private to `DocxCollectionExporter`.
 - `CollectionPreset.Recipe` has no public initialiser.
 - Not run: the UI suites, iOS 26.x, a device and a signed run. The Mac app was built and not run, and the commits between `v2` and the head were not built one by one.
+
+## Session 2026-10-27 — The website drafts go into `Planning/website-drafts/`, and the plan of record makes their generation, review and revision post-submission work (decision 101)
+
+**What was asked.** From the owner, after asking whether the home page and the tour were in the repository (they were not; they existed only as published review pages): "Open a PR with drafts in planning. As part of PR, include generation, review, and revision of the website pages as part of the post-build 1861 submission work."
+
+**What changed.**
+- `Planning/website-drafts/`, new, 2.0 MB:
+  - `page-drafts.html`, the review sheet of the home page and the Support and Privacy drafts, in both versions;
+  - `Support-draft.md` and `Privacy-Policy-draft.md`, plain-language drafts of the copies of record;
+  - `tour/tour.html` and its 18 images;
+  - a `README.md` saying what each file is, what changes on release day, what the drafts already follow and what the review owes.
+- **The drafts brought up to `v2` at `1c18b51`** before they were committed:
+  - the disclaimer of #1802, word for word, in the sheet, the home page, the tour and the Support draft;
+  - the series credited to the Office's open TEI editions, and the "not a pile of old files" contrast taken out of the home page and the tour, under the kit's 2026-10-27 framing;
+  - the Support draft's first sentence carrying the copy of record's credit to the Office;
+  - its coming-soon line saying the app "has been submitted to the App Store", as the banners have said since the owner's comment of 2026-10-20;
+  - the sheet's publishing steps reordered to follow the plan.
+- `Planning/Plan-Of-Record-2026-10-21.md`:
+  - decision 101, with the owner's words;
+  - a §3 item, *The website's pages*: generate, review, revise and publish;
+  - a §4 line for the owner's pastes and call;
+  - `website-drafts/` added to §6's kept-live list.
+  - The `§7 struck:` line is unchanged.
+
+**Checked.**
+- `Scripts/build_website_pages.py --check` passes on the two drafts in a scratch copy of the script's tree. `Docs/` is unchanged, so the repository's own pages need no rebuild.
+- The Support draft's disclaimer matches `Docs/Support.md`'s exactly. Since the drafts' base, only #1731 and #1802 touched the two copies of record, and both are in the drafts.
+- Reading levels were taken by the drafts' method and are in the README.
+- No `.js` or `.mjs` file was added under `Planning/`, so the workflow-script scan in `CodingStandardsAuditTests` reads nothing new.
+- **Not run:** the unit target, since this container has no Swift toolchain. No Swift or test file changed. The one test that reads the plan of record, `planOfRecordMatchesTheVisualMarketingPlan`, reads its `§7 struck:` line, which this change leaves alone.
+
+**For the owner.**
+- The home page's kicker and button ("Coming soon to the App Store") and the tour's "will be free" still assume approval; only the banners were changed.
+- The tour's figures and screens predate index versions 70 and 71 and the retakes. The README lists each one to recount or retake.

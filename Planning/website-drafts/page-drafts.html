@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>frusexplorer.app Page Drafts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap">
+<style>
+/* Layout: a working sheet. The notes on what to publish sit on top; below them, each page is shown in a site-like frame, set in the Printed Volume style, with its version switch and copy buttons. */
+:root {
+  --paper: #FFFFFF; --ink: #1B1B1F; --muted: #64646C; --rule: #D9D9DE; --tint: #F4F4F6;
+  --red: #A61C2A; --link: #2B7A6B; --ok: #2F6B3A;
+  --note-bg: #FFF7E6; --note-ink: #6B4A00; --note-line: #E8C88A; --new: #5B4FC4;
+  --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+  --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --paper: #131418; --ink: #E9E9EC; --muted: #A4A6AE; --rule: #2E3037; --tint: #1C1E23; --red: #EE8593; --link: #6FC6B3; --ok: #8FD19B; --note-bg: #2A2214; --note-ink: #F0C987; --note-line: #5A4724; --new: #A99BFF; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --paper: #131418; --ink: #E9E9EC; --muted: #A4A6AE; --rule: #2E3037; --tint: #1C1E23; --red: #EE8593; --link: #6FC6B3; --ok: #8FD19B; --note-bg: #2A2214; --note-ink: #F0C987; --note-line: #5A4724; --new: #A99BFF; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 17px/1.6 var(--serif); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--note-bg); }
+.inner { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { margin: 0; text-wrap: balance; font-weight: 600; }
+p { margin: 0; }
+a { color: var(--link); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+code, .mono { font-family: var(--mono); font-size: 0.86em; }
+.sc { font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted); }
+body[data-state="soon"] [data-show="launch"], body[data-state="launch"] [data-show="soon"] { display: none !important; }
+
+/* Preview bar */
+.preview { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--note-bg); border-bottom: 1px dashed var(--note-line); font-family: var(--sans); font-size: 13px; color: var(--note-ink); }
+.preview .inner { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding-block: 8px; }
+.preview nav { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-left: auto; }
+.preview nav a { color: var(--note-ink); }
+.seg { display: inline-flex; border: 1px solid var(--note-line); border-radius: 999px; overflow: hidden; }
+.seg button { font: 500 12.5px/1 var(--sans); color: var(--note-ink); background: transparent; border: 0; padding: 7px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--note-ink); color: var(--note-bg); }
+
+.top { padding-block: 44px 8px; display: grid; gap: 14px; }
+.top h1 { font-size: clamp(34px, 5.2vw, 56px); line-height: 1.04; letter-spacing: -0.01em; }
+.top .lead { font-size: 19px; line-height: 1.55; max-width: 40em; }
+section.work { padding-block: 40px 8px; display: grid; gap: 18px; }
+.sec-head { border-top: 2px solid var(--ink); padding-top: 16px; display: grid; gap: 6px; }
+.sec-head h2 { font-size: clamp(24px, 3vw, 32px); line-height: 1.1; }
+.sec-head h2 .n { color: var(--red); margin-right: 0.3em; }
+.sec-head p { color: var(--muted); max-width: 42em; }
+.when { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+@media (max-width: 760px) { .when { grid-template-columns: 1fr; } }
+.when > div { display: grid; gap: 10px; align-content: start; border-top: 1px solid var(--rule); padding-top: 12px; }
+.when h3 { font-size: 20px; }
+.when ol { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; font-size: 16px; }
+.when ol li::marker { font-family: var(--sans); color: var(--red); font-weight: 600; }
+.table-wrap { overflow-x: auto; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
+table { border-collapse: collapse; width: 100%; font-size: 15.5px; line-height: 1.5; min-width: 620px; }
+tbody th { font-weight: 600; white-space: nowrap; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--rule); }
+thead th { font-family: var(--sans); font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--ink); }
+tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+td.num { font-family: var(--sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.num b { color: var(--ok); }
+.method { font-family: var(--sans); font-size: 13.5px; color: var(--muted); max-width: 52em; }
+.words { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; }
+@media (max-width: 760px) { .words { grid-template-columns: 1fr; } }
+.words div { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr); gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: 15.5px; }
+.words .was { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--rule); }
+.kept { font-size: 15.5px; display: grid; gap: 6px; padding-left: 1.2em; margin: 0; }
+
+/* Page frames */
+.frame-head { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; justify-content: space-between; }
+.frame-head h2 { font-size: clamp(24px, 3vw, 32px); }
+.frame-head .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.copy-btn { font: 600 12.5px/1 var(--sans); color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 999px; padding: 8px 13px; cursor: pointer; }
+.paste { font-family: var(--sans); font-size: 14px; line-height: 1.55; background: var(--tint); border-left: 3px solid var(--rule); padding: 10px 14px; display: grid; gap: 6px; }
+.paste b { font-weight: 600; }
+.frame { border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--paper); }
+.frame-bar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--tint); border-bottom: 1px solid var(--rule); }
+.frame-bar .dots { display: flex; gap: 5px; }
+.frame-bar .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--rule); display: block; }
+.frame-bar .url { font: 400 12px/1 var(--mono); color: var(--muted); background: var(--paper); border: 1px solid var(--rule); border-radius: 5px; padding: 5px 10px; }
+.frame-body { padding: 28px clamp(18px, 4vw, 48px) 32px; }
+
+/* The home page, as drafted */
+.pg-banner { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: -28px calc(-1 * clamp(18px, 4vw, 48px)) 26px; padding: 10px clamp(18px, 4vw, 48px); background: var(--tint); border-bottom: 1px solid var(--rule); font-family: var(--sans); font-size: 14.5px; }
+.pg-banner b { color: var(--red); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; font-size: 12px; }
+.pg-hero { display: grid; gap: 14px; padding-bottom: 26px; border-bottom: 1px solid var(--ink); }
+.pg-kick { font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--red); }
+.pg-hero h1 { font-size: clamp(30px, 4.6vw, 50px); line-height: 1.05; letter-spacing: -0.01em; max-width: 18em; }
+.pg-lead { font-size: 19px; line-height: 1.55; max-width: 36em; }
+.pg-cta { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; font-family: var(--sans); font-size: 15px; margin-top: 4px; }
+.pg-btn { padding: 10px 18px; border-radius: 3px; font-weight: 600; }
+.pg-btn.soon { border: 1px solid var(--ink); color: var(--ink); }
+.pg-badge { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 16px; border: 1px dashed var(--muted); border-radius: 7px; font-size: 13.5px; color: var(--muted); }
+.pg-disc { font-family: var(--sans); font-size: 13.5px; color: var(--muted); }
+.pg-sec { display: grid; gap: 12px; padding-block: 26px; border-bottom: 1px solid var(--rule); }
+.pg-sec h2 { font-size: 26px; line-height: 1.15; }
+.pg-sec > p { max-width: 38em; }
+.pg-four { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
+@media (max-width: 860px) { .pg-four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .pg-four { grid-template-columns: 1fr; } }
+.pg-four div { display: grid; gap: 6px; align-content: start; border-top: 2px solid var(--red); padding-top: 10px; }
+.pg-four h3 { font-size: 18px; }
+.pg-four p { font-size: 15.5px; line-height: 1.5; }
+.pg-more { font-family: var(--sans); font-size: 15px; }
+.pg-list { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; max-width: 40em; }
+.pg-list b { font-weight: 600; }
+#home-frame [data-new] { outline: 2px dashed var(--new); outline-offset: 6px; border-radius: 3px; }
+.pg-faq { margin: 0; display: grid; gap: 4px 0; max-width: 40em; }
+.pg-faq dt { font-weight: 600; margin-top: 10px; }
+.pg-faq dd { margin: 0; }
+.pg-foot { padding-top: 22px; display: grid; gap: 8px; font-family: var(--sans); font-size: 13px; color: var(--muted); line-height: 1.55; }
+.pg-links a { color: var(--muted); }
+
+/* Support and Privacy, as the repo's script writes them */
+.pg-doc { max-width: 44em; }
+.pg-doc h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1; margin-bottom: 14px; }
+.pg-doc h2 { font-size: 22px; margin-top: 28px; margin-bottom: 8px; }
+.pg-doc p, .pg-doc li { margin-block: 0 10px; }
+.pg-doc ul { padding-left: 1.3em; margin: 0 0 12px; }
+.pg-doc blockquote { margin: 14px 0; padding: 10px 16px; border-left: 3px solid var(--rule); background: var(--tint); font-size: 15.5px; }
+.pg-doc hr { border: 0; border-top: 1px solid var(--rule); margin: 22px 0; }
+.pg-doc code { background: var(--tint); padding: 1px 4px; border-radius: 3px; }
+.pg-soonline { background: var(--note-bg); border: 1px dashed var(--note-line); padding: 8px 12px; border-radius: 4px; }
+pre.src { display: none; }
+footer.src { border-top: 1px solid var(--rule); padding-block: 18px 48px; font-family: var(--sans); font-size: 13px; color: var(--muted); }
+</style>
+
+<div class="preview" role="region" aria-label="Draft controls">
+  <div class="inner">
+    <span><b>Show the pages as they read:</b></span>
+    <span class="seg" role="group" aria-label="Page version">
+      <button type="button" data-state-btn="soon" aria-pressed="true">Coming soon</button>
+      <button type="button" data-state-btn="launch" aria-pressed="false">At launch</button>
+    </span>
+    <nav aria-label="Pages"><a href="#pg-home">Home</a><a href="#pg-support">Support</a><a href="#pg-privacy">Privacy</a><a href="tour/tour.html" target="_blank" rel="noopener">Tour ↗</a></nav>
+  </div>
+</div>
+
+<main>
+  <div class="inner">
+    <header class="top">
+      <p class="sc">frusexplorer.app · drafts for after submission and for launch · 27 October 2026</p>
+      <h1>Three pages, two versions each</h1>
+      <p class="lead">The home, support and privacy pages, ready to publish. Each has a coming-soon version for the weeks the app is in App Store review, and a launch version for the day it goes live. All the text has had a plain-language pass aimed at an 8th–9th grade reading level. Terms the app itself uses are kept and explained where they first appear. The tour has the same switch.</p>
+    </header>
+
+    <section class="work" aria-labelledby="w1">
+      <div class="sec-head"><h2 id="w1"><span class="n">1</span>What to publish, and when</h2></div>
+      <div class="when">
+        <div>
+          <h3>After submission, while the app is in review</h3>
+          <ol>
+            <li>At submission, the plan of record's §2 puts up <code>/privacy</code> and <code>/support</code> as the repository's copies of record stand. App Review opens both.</li>
+            <li>Then review these drafts against 1.0 (1861) as submitted: every figure, every screen, the wording rules and the reading level. Revise them (plan of record decision 101).</li>
+            <li>Fold the Support and Privacy drafts into <code>Docs/Support.md</code> and <code>Docs/Privacy-Policy.md</code>, run <code>Scripts/build_website_pages.py</code>, add a trace row for any new sentence, and paste each page's HTML into its Code Block.</li>
+            <li>Publish the <b>Home</b> page in its coming-soon version. It has no App Store badge and no download link. Optionally, publish the tour at <code>/tour</code> with its switch set to <i>Coming soon</i>.</li>
+          </ol>
+        </div>
+        <div>
+          <h3>On launch day</h3>
+          <ol>
+            <li>Switch the <b>Home</b> page to its launch version, and put Apple's official "Download on the App Store" badge where the placeholder is, linked to the listing.</li>
+            <li>Delete the "Coming soon" line from <code>Docs/Support.md</code>, run the script, and paste the new Support HTML. That keeps the two copies in step, as decision 36 requires.</li>
+            <li>Switch the tour to <i>At launch</i>.</li>
+            <li>Leave <b>Privacy</b> alone. It covers the app from version 1.0 and has no coming-soon text.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="work" aria-labelledby="w2">
+      <div class="sec-head"><h2 id="w2"><span class="n">2</span>Reading level, before and after</h2>
+        <p>Flesch–Kincaid grade level, measured on each page's running text.</p></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Page</th><th scope="col">Before</th><th scope="col">After</th><th scope="col">Blocks above grade 9.5</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Home</th><td class="num">new</td><td class="num"><b>6.6</b> coming soon · <b>6.9</b> at launch</td><td class="num">1 of 18 · 1 of 17</td></tr>
+            <tr><th scope="row">Support</th><td class="num">8.1</td><td class="num"><b>6.9</b></td><td class="num">5 → 4</td></tr>
+            <tr><th scope="row">Privacy</th><td class="num">9.7</td><td class="num"><b>8.5</b></td><td class="num">17 → 11</td></tr>
+            <tr><th scope="row">Tour</th><td class="num">8.3</td><td class="num"><b>7.2</b></td><td class="num">38 of 102 → 33 of 139</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="method">“Before” is the copy of record on <code>v2</code> at <code>1c18b51</code> (27 October 2026) for Support and Privacy, and the tour as it stood on 17 October. How it was measured: paragraphs, list items, table cells and captions of eight words or more, with labels, navigation and production notes left out. Syllables come from a standard English hyphenation dictionary. Most blocks still above 9.5 are a single sentence that holds a web address, a menu path or a long feature name such as "Cross-Reference Analytics". The formula counts sentence and word length only. It can't tell a term the reader needs from jargon, so the app's own terms stay, each with a short explanation. Those explanations cost the tour 0.2 of a grade. The tour now also holds the new Part V and People step.</p>
+    </section>
+
+    <section class="work" aria-labelledby="w3">
+      <div class="sec-head"><h2 id="w3"><span class="n">3</span>The app's own terms, kept and explained</h2>
+        <p>Where the app uses a word on screen or in its Research Guide, the pages keep it and say what it means the first time it appears. Plain words replace jargon only where the app has no term of its own.</p></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Term</th><th scope="col">What it means in the app</th><th scope="col">Explained on</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">editorial annotation</th><td>Everything the editors add to a document: its heading, source note, footnotes, cross-references, editorial notes and the people they tag. The Research Guide's own term.</td><td>Home; Tour, before Part I</td></tr>
+            <tr><th scope="row">your annotations</th><td>Your highlights, notes and tags. The app keeps them apart from the editors' annotation.</td><td>Tour 6</td></tr>
+            <tr><th scope="row">archival provenance</th><td>The archive, collection and file that hold a document's original, as its source note records them. A facet in Search, a measure in Related, a column in Archival Analytics.</td><td>Home; Tour, note D</td></tr>
+            <tr><th scope="row">provenance (of a value)</th><td>The source the app took a number or a name from, shown as labels such as <i>FRUS text</i>, <i>FRUS + NARA catalog</i> and <i>This app's model</i>. The tour's four source groups now name these labels.</td><td>Tour, before Part I</td></tr>
+            <tr><th scope="row">semantic</th><td>Having to do with meaning. Semantic match, semantic similarity, the semantic map, Semantic Analytics, Semantic Match Feedback.</td><td>Tour 2; Privacy</td></tr>
+            <tr><th scope="row">corpus, working corpus</th><td>A corpus is a body of texts you study. Corpus Analytics works across every volume on your device. A working corpus is a fixed set of documents saved from one set of results.</td><td>Tour 8 and 10; Privacy</td></tr>
+            <tr><th scope="row">volume scope</th><td>A set of volumes you choose to work within.</td><td>Tour 3; Privacy</td></tr>
+            <tr><th scope="row">corpus proximity</th><td>How near each other the editors placed two documents. One of Related's eight measures.</td><td>Tour 4</td></tr>
+            <tr><th scope="row">lasso</th><td>Draw a loop around documents on the semantic map, to save them as a working corpus.</td><td>Tour 8</td></tr>
+            <tr><th scope="row">hops</th><td>Steps along cross-references in the graph. One hop is a direct link; two hops reach the documents linked to those.</td><td>Tour 12</td></tr>
+            <tr><th scope="row">TEI</th><td>The standard markup of the Office's digital editions. The app reads it to tell a heading from a footnote, or a name from the words around it.</td><td>Support</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="sc" style="margin-top:10px">Plain words, where the app has no term of its own</p>
+      <div class="words">
+        <div><span class="was">statute, directive</span><span>law, rule</span></div>
+        <div><span class="was">resolves</span><span>reads, matches, looks up</span></div>
+        <div><span class="was">Joined · Computed</span><span>From other records · Made by the app. These are the app's internal tier names; its on-screen labels are named instead.</span></div>
+        <div><span class="was">summarize, pertinent</span><span>sum up (outside quotations)</span></div>
+      </div>
+      <p class="sc" style="margin-top:10px">Kept as written</p>
+      <ul class="kept">
+        <li>The not-an-official-product disclaimer, the NARA sentence and the privacy sentence of decision 28. They are the store listing's vetted wording, word for word.</li>
+        <li>Quotations from the series' prefaces, and the question the demo project asks, which is on screen in the captures.</li>
+        <li>Names the app shows on screen, such as Facets, Query Inspector, Concordance, Working Corpora and Semantic Match Feedback. Each one is explained the first time it appears.</li>
+      </ul>
+    </section>
+
+    <section class="work" id="pg-home" aria-labelledby="h-home">
+      <div class="frame-head"><h2 id="h-home">Home</h2><div class="acts"><button class="copy-btn" type="button" data-copy="home-frame">Copy the shown version's text</button></div></div>
+      <div class="paste"><p><b>In Squarespace:</b> a page at <code>/</code> built from Text blocks in the site's Printed Volume styles. The four "What it does" items are a four-column layout. The coming-soon banner is an announcement bar, and it comes down at launch. The dashed section, “Work that holds up,” is new in this draft: it points to Part V of the tour. Links go to <code>/tour</code>, <code>/support</code> and <code>/privacy</code> on the live site.</p></div>
+      <div class="frame"><div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="url">frusexplorer.app</span></div>
+        <div class="frame-body" id="home-frame">
+<div class="pg-banner" data-show="soon"><b>Coming soon</b><span>FRUS Explorer has been submitted to the App Store for iPhone, iPad and Mac.</span></div>
+
+<section class="pg-hero">
+  <p class="pg-kick" data-show="soon">Coming soon to the App Store</p>
+  <p class="pg-kick" data-show="launch">Free on the App Store</p>
+  <h1>Search 553 volumes of the U.S. diplomatic record.</h1>
+  <p class="pg-lead" data-show="soon">FRUS Explorer is a free research app for iPhone, iPad and Mac, coming soon to the App Store. It puts the <i>Foreign Relations of the United States</i> series on your device, so you can read it, search it and work with it offline.</p>
+  <p class="pg-lead" data-show="launch">FRUS Explorer is a free research app for iPhone, iPad and Mac. It puts the <i>Foreign Relations of the United States</i> series on your device, so you can read it, search it and work with it offline.</p>
+  <div class="pg-cta" data-show="soon"><span class="pg-btn soon">Coming soon to the App Store</span><a href="tour/tour.html" target="_blank" rel="noopener">Take the tour</a><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md" target="_blank" rel="noopener">Read the manual</a></div>
+  <div class="pg-cta" data-show="launch"><span class="pg-badge" title="Use Apple's official badge artwork">Download on the App Store</span><a href="tour/tour.html" target="_blank" rel="noopener">Take the tour</a><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md" target="_blank" rel="noopener">Read the manual</a></div>
+  <p class="pg-disc">FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State.</p>
+</section>
+
+<section class="pg-sec">
+  <h2>What it does</h2>
+  <div class="pg-four">
+    <div><h3>Find what you need</h3><p>Search every volume you download at once, offline. Narrow the results by year, volume, person or subject. Or search by meaning: ask a question in your own words.</p></div>
+    <div><h3>Manage your research</h3><p>Highlight, take notes and tag documents as you read. Save searches, gather documents into collections, and plan a trip to the archives.</p></div>
+    <div><h3>See the patterns</h3><p>Chart a word across the years, lay out a crisis day by day, and follow how documents point to each other.</p></div>
+    <div><h3>Share what you find</h3><p>Copy a citation, send documents to Zotero, or turn a collection into a reader for your class.</p></div>
+  </div>
+  <p class="pg-more"><a href="tour/tour.html" target="_blank" rel="noopener">See all of it in the tour →</a></p>
+</section>
+
+<section class="pg-sec">
+  <h2>Built on the editors' work</h2>
+  <p>FRUS is an edited series. Its editors, today the historians of the State Department's Office of the Historian, choose each document and put the documents in order. They give each one a heading, note where the original is kept, and add notes that explain it. All of this is called editorial annotation. The Office publishes the series, with that work, as open TEI data.</p>
+  <p>FRUS Explorer builds on that work. A source note records where the original is kept, which the app calls its archival provenance. That note becomes a lead to the archive. A note that points to another document becomes a link you can follow. The app keeps the editorial annotation apart from what it works out on its own.</p>
+  <p class="pg-more"><a href="tour/tour.html" target="_blank" rel="noopener">See one document, with its editorial annotation labeled →</a></p>
+</section>
+
+<section class="pg-sec" data-new>
+  <h2>Work that holds up</h2>
+  <ul class="pg-list">
+    <li><b>Show how you got your results.</b> The app keeps a record of your searches, saved sets and charts, down to the searches that found nothing.</li>
+    <li><b>Check a citation.</b> Paste a footnote, or a whole chapter's notes, and open the documents they name.</li>
+    <li><b>Keep up with corrections.</b> When the Office corrects a volume, the app shows what changed in the documents you've marked, and leaves each decision to you.</li>
+  </ul>
+  <p class="pg-more"><a href="tour/tour.html" target="_blank" rel="noopener">See how in the tour →</a></p>
+</section>
+
+<section class="pg-sec">
+  <h2>Your research stays yours</h2>
+  <p>FRUS Explorer collects no data. What you read, search and write stays with you: notes and collections sync only through your own iCloud account, and the app reaches the National Archives' catalog or your Zotero library only when you ask it to.</p>
+  <p class="pg-more"><a href="#pg-privacy">Read the privacy policy →</a></p>
+</section>
+
+<section class="pg-sec">
+  <h2>Questions</h2>
+  <dl class="pg-faq">
+    <dt>Is this an official government app?</dt>
+    <dd>No. FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State. The FRUS series itself is in the public domain.</dd>
+    <dt data-show="soon">When will it be out?</dt>
+    <dd data-show="soon">Soon. This page will link to the App Store as soon as the app is there.</dd>
+    <dt>What does it cost?</dt>
+    <dd data-show="soon">It will be free.</dd>
+    <dd data-show="launch">It's free.</dd>
+    <dt>What do I need?</dt>
+    <dd>An iPhone or iPad with iOS or iPadOS 26 or later, or a Mac with macOS 26 or later. Document summaries also need Apple Intelligence.</dd>
+    <dt>Does it need the internet?</dt>
+    <dd>Only to download volumes and a few optional extras, or when you ask it to look something up. After that, reading and searching work offline.</dd>
+    <dt>How much space does it take?</dt>
+    <dd>The whole series is about 3.3 GB. The search index the app builds takes about 2.8 times as much again. You can download only the volumes you need, and remove them later.</dd>
+    <dt>Does it use AI?</dt>
+    <dd>Two optional features use a model on your device. Apple Intelligence writes document summaries, and each one is labeled as generated. Search by meaning is still experimental. Nothing you type leaves your device.</dd>
+    <dt>Which languages does it support?</dt>
+    <dd>English only, for now.</dd>
+  </dl>
+</section>
+
+<section class="pg-sec" data-show="soon">
+  <h2>Questions before it's out?</h2>
+  <p>Email <span class="mono">help@frusexplorer.app</span>. If you're testing the app, the <a href="#pg-support">Support page</a> has the manuals and tells you what to put in a bug report.</p>
+</section>
+<section class="pg-sec" data-show="launch">
+  <h2>Tell me what it can't answer yet</h2>
+  <p>Bug reports, ideas and questions are all welcome. Email <span class="mono">help@frusexplorer.app</span>, or see the <a href="#pg-support">Support page</a> for what to include.</p>
+</section>
+
+<footer class="pg-foot">
+  <p>FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State. Any commentary, advice, or guidance about the FRUS series in this app reflects personal views about historical research methodology and makes no interpretive claims about the history of U.S. foreign policy. Those views are not necessarily those of the Department of State or the U.S. Government. The FRUS series itself is in the public domain.</p>
+  <p>FRUS Explorer is not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration.</p>
+  <p class="pg-links"><a href="#pg-support">Support</a> · <a href="#pg-privacy">Privacy</a> · <a href="tour/tour.html" target="_blank" rel="noopener">Tour</a> · <a href="https://github.com/joshbotts/FRUS-Explorer" target="_blank" rel="noopener">Source code</a></p>
+</footer>
+
+        </div>
+      </div>
+    </section>
+
+    <section class="work" id="pg-support" aria-labelledby="h-support">
+      <div class="frame-head"><h2 id="h-support">Support</h2><div class="acts"><button class="copy-btn" type="button" data-copy-src="md-support">Copy the Markdown for the repo</button></div></div>
+      <div class="paste"><p><b>From the repo:</b> this replaces <code>Docs/Support.md</code>. The script writes <code>Docs/Website/support.html</code> from it, and <code>--check</code> passes on this draft. The highlighted "Coming soon" line is the only text that changes at launch. One other sentence is new: it says what TEI is and that the app reads its markup. Add it to the trace in <code>Docs/Website/README.md</code>. No other claim was added or removed.</p></div>
+      <div class="frame"><div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="url">frusexplorer.app/support</span></div>
+        <div class="frame-body"><div class="pg-doc">
+
+
+
+<h1>FRUS Explorer Support</h1>
+
+<p>FRUS Explorer is a research app for iPhone, iPad and Mac. It helps you read and search the Foreign Relations of the United States series: the official documentary record of U.S. foreign policy, published since 1861 by the Office of the Historian. The app builds on the Office's open TEI editions.</p>
+
+<p data-show="soon" class="pg-soonline"><strong>Coming soon.</strong> FRUS Explorer has been submitted to the App Store and is not there yet. Until it is, this page is here for the people testing it.</p>
+
+<blockquote><p>FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State. Any commentary, advice, or guidance about the FRUS series in this app reflects personal views about historical research methodology and makes no interpretive claims about the history of U.S. foreign policy. Those views are not necessarily those of the Department of State or the U.S. Government. The FRUS series itself is in the public domain.</p></blockquote>
+
+<p>For help with the app, write to its developer, not to the Office of the Historian.</p>
+
+<h2 id="sp-manuals-and-guides">Manuals and guides</h2>
+
+<ul>
+  <li><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md" target="_blank" rel="noopener">FRUS Explorer for iPad and iPhone — User Manual</a></li>
+  <li><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/macOS-User-Manual.md" target="_blank" rel="noopener">FRUS Explorer for macOS — User Manual</a></li>
+</ul>
+
+<p>The app links to both manuals from <strong>Settings → System → About</strong>. It also has a <strong>FRUS Research Guide</strong>, which introduces the series itself. On iPhone and iPad, find it on the Research tab, or in <strong>Settings → System → About → FRUS Research Guide</strong>. On a Mac, choose <strong>Help → FRUS Research Guide</strong>.</p>
+
+<h2 id="sp-contact">Contact</h2>
+
+<p>Email <strong><a href="mailto:help@frusexplorer.app">help@frusexplorer.app</a></strong>. It helps to include:</p>
+
+<ul>
+  <li>your device and its system version;</li>
+  <li>the app's version and build, from <strong>Settings → System → About</strong> (for example, <em>Version 1.0 (1861)</em>);</li>
+  <li>what you did, what you expected, and what happened instead;</li>
+  <li>for a problem with iCloud sync, the Sync Log, from <strong>Settings → System → Data &amp; Recovery → Sync Log → Export…</strong>. The log holds the kinds of events, their times and any error codes. It never holds your content.</li>
+</ul>
+
+<p>The <a href="#pg-privacy">privacy policy</a> says what happens to an email you send.</p>
+
+<h2 id="sp-common-questions">Common questions</h2>
+
+<p><strong>What does the app need?</strong> An iPhone or iPad with iOS or iPadOS 26 or later, or a Mac with macOS 26 or later. Document summaries also need Apple Intelligence. On a Mac, that means a Mac with Apple silicon.</p>
+
+<p><strong>Where do the documents come from?</strong> From the Office of the Historian's public TEI editions of the series. TEI is a standard way to mark up a text. The app reads those marks to tell a heading from a footnote, or a person's name from the words around it. The app downloads the volumes you choose from the Office's collection on GitHub. Then it builds a search index on your device. After that, reading and searching work offline.</p>
+
+<p><strong>Do I need an account?</strong> No. If your device is signed in to iCloud, your notes, collections and other research sync through your own iCloud account. Two services are optional. Each needs a free key of your own, which you add in <strong>Settings → System → Connections</strong>:</p>
+
+<ul>
+  <li>the National Archives Catalog, which lets Source Explorer look up the records a document's source note names (the card links to where you get a key);</li>
+  <li>Zotero, which lets you send documents, with your tags and notes, to your Zotero library.</li>
+</ul>
+
+<p><strong>What is natural-language search?</strong> A way to search by meaning instead of by matching words. It is still experimental. It needs a model, Google's EmbeddingGemma 2, which is an optional 310 MB download (<strong>Settings → Volumes &amp; Storage → Download Search Model</strong>). The model runs only on your device, so nothing you search leaves it.</p>
+
+<p><strong>Can I use the search index with my own tools?</strong> Yes, on a Mac. <strong>Settings → System → Data &amp; Recovery → Export Research Database…</strong> saves a checked copy of the index as a SQLite file. Your notes, summaries and tag names are left out unless you turn on <strong>Include My Notes, Summaries, and Tags</strong>. The <a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Agentic-Analysis-Guide.md" target="_blank" rel="noopener">Agentic Analysis Guide</a> explains the database, and how to check what an AI tool tells you about it. If you give a copy to an online service, that service's terms apply.</p>
+
+<p><strong>My notes are not reaching my other devices.</strong> First, check the app's iCloud status. On iPhone and iPad, it is at the top of Settings. On a Mac, it is at the right end of the main window's status bar. If something is wrong, the status says what. Then read the manual's section on Data &amp; Recovery. It lists the recovery steps in order and says what each one deletes.</p>
+
+<h2 id="sp-privacy">Privacy</h2>
+
+<p>FRUS Explorer collects no data. What you read, search and write stays with you: notes and collections sync only through your own iCloud account, and the app reaches the National Archives' catalog or your Zotero library only when you ask it to. The <a href="#pg-privacy">privacy policy</a> has the details.</p>
+
+<h2 id="sp-source-code">Source code</h2>
+
+<p>FRUS Explorer's source code is public, under the Apache License 2.0, at <a href="https://github.com/joshbotts/FRUS-Explorer" target="_blank" rel="noopener">https://github.com/joshbotts/FRUS-Explorer</a>.</p>
+
+<hr>
+
+<p>This page is published in two copies kept identical: at <a href="#pg-support">https://frusexplorer.app/support</a> and at <a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Support.md" target="_blank" rel="noopener">https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Support.md</a>.</p>
+
+
+
+        </div></div>
+      </div>
+      <pre class="src" id="md-support">&lt;!--
+  One of two copies kept in step (plan of record decision 36). Its twin is
+  Docs/Website/support.html, published at https://frusexplorer.app/support, the address App Store
+  Connect names. This copy is the one edited: run Scripts/build_website_pages.py after any change,
+  and commit both. Docs/Website/README.md traces its factual sentences to the code.
+--&gt;
+
+# FRUS Explorer Support
+
+FRUS Explorer is a research app for iPhone, iPad and Mac. It helps you read and search the Foreign Relations of the United States series: the official documentary record of U.S. foreign policy, published since 1861 by the Office of the Historian. The app builds on the Office&#x27;s open TEI editions.
+
+**Coming soon.** FRUS Explorer has been submitted to the App Store and is not there yet. Until it is, this page is here for the people testing it.
+
+&gt; FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State. Any commentary, advice, or guidance about the FRUS series in this app reflects personal views about historical research methodology and makes no interpretive claims about the history of U.S. foreign policy. Those views are not necessarily those of the Department of State or the U.S. Government. The FRUS series itself is in the public domain.
+
+For help with the app, write to its developer, not to the Office of the Historian.
+
+## Manuals and guides
+
+- [FRUS Explorer for iPad and iPhone — User Manual](https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md)
+- [FRUS Explorer for macOS — User Manual](https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/macOS-User-Manual.md)
+
+The app links to both manuals from **Settings → System → About**. It also has a **FRUS Research Guide**, which introduces the series itself. On iPhone and iPad, find it on the Research tab, or in **Settings → System → About → FRUS Research Guide**. On a Mac, choose **Help → FRUS Research Guide**.
+
+## Contact
+
+Email **help@frusexplorer.app**. It helps to include:
+
+- your device and its system version;
+- the app&#x27;s version and build, from **Settings → System → About** (for example, *Version 1.0 (1861)*);
+- what you did, what you expected, and what happened instead;
+- for a problem with iCloud sync, the Sync Log, from **Settings → System → Data &amp; Recovery → Sync Log → Export…**. The log holds the kinds of events, their times and any error codes. It never holds your content.
+
+The [privacy policy](https://frusexplorer.app/privacy) says what happens to an email you send.
+
+## Common questions
+
+**What does the app need?** An iPhone or iPad with iOS or iPadOS 26 or later, or a Mac with macOS 26 or later. Document summaries also need Apple Intelligence. On a Mac, that means a Mac with Apple silicon.
+
+**Where do the documents come from?** From the Office of the Historian&#x27;s public TEI editions of the series. TEI is a standard way to mark up a text. The app reads those marks to tell a heading from a footnote, or a person&#x27;s name from the words around it. The app downloads the volumes you choose from the Office&#x27;s collection on GitHub. Then it builds a search index on your device. After that, reading and searching work offline.
+
+**Do I need an account?** No. If your device is signed in to iCloud, your notes, collections and other research sync through your own iCloud account. Two services are optional. Each needs a free key of your own, which you add in **Settings → System → Connections**:
+
+- the National Archives Catalog, which lets Source Explorer look up the records a document&#x27;s source note names (the card links to where you get a key);
+- Zotero, which lets you send documents, with your tags and notes, to your Zotero library.
+
+**What is natural-language search?** A way to search by meaning instead of by matching words. It is still experimental. It needs a model, Google&#x27;s EmbeddingGemma 2, which is an optional 310 MB download (**Settings → Volumes &amp; Storage → Download Search Model**). The model runs only on your device, so nothing you search leaves it.
+
+**Can I use the search index with my own tools?** Yes, on a Mac. **Settings → System → Data &amp; Recovery → Export Research Database…** saves a checked copy of the index as a SQLite file. Your notes, summaries and tag names are left out unless you turn on **Include My Notes, Summaries, and Tags**. The [Agentic Analysis Guide](https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Agentic-Analysis-Guide.md) explains the database, and how to check what an AI tool tells you about it. If you give a copy to an online service, that service&#x27;s terms apply.
+
+**My notes are not reaching my other devices.** First, check the app&#x27;s iCloud status. On iPhone and iPad, it is at the top of Settings. On a Mac, it is at the right end of the main window&#x27;s status bar. If something is wrong, the status says what. Then read the manual&#x27;s section on Data &amp; Recovery. It lists the recovery steps in order and says what each one deletes.
+
+## Privacy
+
+FRUS Explorer collects no data. What you read, search and write stays with you: notes and collections sync only through your own iCloud account, and the app reaches the National Archives&#x27; catalog or your Zotero library only when you ask it to. The [privacy policy](https://frusexplorer.app/privacy) has the details.
+
+## Source code
+
+FRUS Explorer&#x27;s source code is public, under the Apache License 2.0, at &lt;https://github.com/joshbotts/FRUS-Explorer&gt;.
+
+---
+
+This page is published in two copies kept identical: at &lt;https://frusexplorer.app/support&gt; and at &lt;https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Support.md&gt;.
+</pre>
+    </section>
+
+    <section class="work" id="pg-privacy" aria-labelledby="h-privacy">
+      <div class="frame-head"><h2 id="h-privacy">Privacy</h2><div class="acts"><button class="copy-btn" type="button" data-copy-src="md-privacy">Copy the Markdown for the repo</button></div></div>
+      <div class="paste"><p><b>From the repo:</b> this replaces <code>Docs/Privacy-Policy.md</code>, and the script writes <code>Docs/Website/privacy.html</code>. The pass shortened sentences and swapped legal words for plain ones ("not aimed at children" for "not directed at children"). Short glosses explain "semantic match files", "working corpora" and "volume scopes". No claim was added or removed, so the README's trace to the code still holds line by line. Set the "Last updated" date to the day it merges.</p></div>
+      <div class="frame"><div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="url">frusexplorer.app/privacy</span></div>
+        <div class="frame-body"><div class="pg-doc">
+
+
+
+<h1>FRUS Explorer Privacy Policy</h1>
+
+<p><em>Last updated October 20, 2026. This policy covers FRUS Explorer for iPhone, iPad and Mac, from version 1.0.</em></p>
+
+<p>FRUS Explorer is made by Joshua Botts ("the developer").</p>
+
+<h2 id="pv-in-short">In short</h2>
+
+<p>FRUS Explorer collects no data. The app has no account of its own to sign in to. It has no advertising, no analytics and no tracking. The developer runs no server that the app reports to. The app's privacy label on the App Store reads <strong>Data Not Collected</strong>.</p>
+
+<p>What you read, search and write stays with you: notes and collections sync only through your own iCloud account, and the app reaches the National Archives' catalog or your Zotero library only when you ask it to.</p>
+
+<p>The rest of this page explains what the app keeps, where it keeps it, and every place it connects to.</p>
+
+<h2 id="pv-what-stays-on-your-device">What stays on your device</h2>
+
+<ul>
+  <li><strong>Your library.</strong> The volumes you download and the search index the app builds from them. Also their figure images, the semantic match files that let the app compare documents by meaning, and the search model, if you download it.</li>
+  <li><strong>Your research.</strong> Notes, highlights, tags, collections, projects, saved searches, working corpora (saved sets of documents), volume scopes (saved sets of volumes), archive visit plans and leads. Also AI summaries, your summary prompts, and any corrections you make to who a person is or how a document is classified.</li>
+  <li><strong>Your research trail.</strong> While <strong>Log Research Sessions</strong> is on, the app records the documents you open, the words of the searches you run, and the collections you export. History, a project's recent activity and the Session Log show this record. The switch is on unless you turn it off, in <strong>Settings → Research → Research Sessions</strong>. When you turn it off, the recording stops. <strong>Delete Recorded Sessions…</strong> on the same screen removes what was recorded.</li>
+  <li><strong>What you ask the app.</strong> Searches run against the index on your device. When you search by meaning, a model on your device turns your question into numbers, and the question does not leave the device. Apple Intelligence's on-device model writes document summaries, and the document's text does not leave your device.</li>
+  <li><strong>Diagnostics.</strong> The app's diagnostic records stay on your device unless you copy or export them yourself. They are the iCloud Sync Log (the kinds of events, their times and any error codes, never your content), the iCloud schema report, the language-analysis record and the index's research-state record.</li>
+  <li><strong>Semantic Match Feedback.</strong> The verdicts you record on the semantic matches in Related Documents stay on your device and are not synced (see <a href="#pv-sending-feedback">Sending feedback</a>).</li>
+  <li><strong>Spotlight and Handoff.</strong> The app adds the documents in your downloaded volumes to your device's Spotlight index, so system search can find them. That index stays on your device. While you read a document or use the semantic map, the app offers it to your other devices through Handoff. Apple carries Handoff between devices signed in to the same Apple Account. The offer names the document, or the volumes and scope the map shows.</li>
+  <li><strong>Files you export.</strong> A collection, a chart's data, the JSON export, the method appendix and, on a Mac, a copy of the search index go only where you save or send them. If you give one to another service, such as an AI tool, that service's terms apply.</li>
+</ul>
+
+<h2 id="pv-icloud">iCloud</h2>
+
+<p>If your device is signed in to iCloud, and iCloud is on for FRUS Explorer, the app syncs your research and your research trail through your own private iCloud database. That is how they appear on your other devices. Apple stores them under its own terms and privacy policy, and the developer cannot see them. To keep your research on one device, turn off iCloud for FRUS Explorer in your device's iCloud settings.</p>
+
+<p>Downloaded volumes and the search index are not synced. Each device downloads and indexes its own.</p>
+
+<p>The app's own settings stay on each device. They sync only if you turn on <strong>Sync Settings Across Devices</strong>, which starts off. It shares your word-cloud filters and stop lists, your citation style, your default document mode and the research-logging switch, through the same private database.</p>
+
+<p>The NARA Catalog and Zotero API keys you enter are stored in your device's keychain. If you use iCloud Keychain, it carries them to your other devices.</p>
+
+<h2 id="pv-what-the-app-downloads-and-from-where">What the app downloads, and from where</h2>
+
+<p>The app downloads public files from the hosts below. Each request names a file or a folder. It carries nothing that identifies you or your device. Like any request on the internet, it shows the host your network address and ordinary technical details, such as the app's name. The host receives the request, not the developer, and the host's own privacy policy covers what it records.</p>
+
+<ul>
+  <li><strong>The list of published volumes</strong>, from GitHub (<code>api.github.com</code>), in the Office of the Historian's public <code>HistoryAtState/frus</code> repository. The app asks for it at launch while the device is online, and when you open <strong>Settings → Volumes &amp; Storage</strong> or refresh its list.</li>
+  <li><strong>Volumes</strong>, from GitHub (<code>raw.githubusercontent.com</code>), in the same repository. The app gets a volume when you download or update it. At launch, or when the device reconnects, it also finishes a download you started.</li>
+  <li><strong>Figure images</strong>, from the Office of the Historian's image server (<code>static.history.state.gov</code>). The app gets them after a volume with figures downloads. At launch and when the device reconnects, it gets any images still missing from downloaded volumes. It also gets a single image when a document or an export needs it first.</li>
+  <li><strong>Semantic match files</strong>, one small file for each volume, from GitHub (<code>raw.githubusercontent.com</code>), in the developer's public <code>frus-semantic-vectors</code> repository. The app gets one with each volume you download, and when Related Documents or a search by meaning needs it. Turn off <strong>Download With Volumes</strong> in <strong>Settings → Volumes &amp; Storage</strong> to stop both. The app gets them all at once when you choose <strong>Download Missing Vectors</strong> or <strong>Download Vectors for Every Volume</strong>. The files that a search by meaning or Related Documents asks for depend on the volumes it found. So those requests show GitHub which volumes they were, but never your question.</li>
+  <li><strong>The search model</strong>, Google's EmbeddingGemma 2 (310 MB), from GitHub (<code>github.com</code>), in a release of the same repository. The app gets it only when you choose <strong>Download Search Model</strong>.</li>
+</ul>
+
+<h2 id="pv-services-you-connect-yourself">Services you connect yourself</h2>
+
+<p>Neither service is required. The app uses neither until you add your own key in <strong>Settings → System → Connections</strong>. <strong>Remove Key</strong> and <strong>Disconnect</strong> on the same screen remove them.</p>
+
+<p><strong>The National Archives Catalog.</strong> With a NARA Catalog API key, Source Explorer looks up the records a document's source note names. When you open Source Explorer on such a document, or run a catalog lookup yourself, the app sends the search terms and your key to the National Archives Catalog (<code>catalog.archives.gov</code>). The terms come from the note or from what you type: a record group, a lot number, a collection or keywords. Because the key is yours, the National Archives can link those lookups to it, under its own terms of use and privacy policy. Without a key, the app sends the Catalog nothing.</p>
+
+<p><strong>Zotero.</strong> After you connect your Zotero account with your own API key, the app sends your Zotero library (<code>api.zotero.org</code>) only what you choose to send. That is the citation details of the documents or the collection, with your tags and research notes on them. It never sends the documents' text. To connect, the app asks Zotero which account the key belongs to. It asks again on a device the key reached through iCloud Keychain. The developer never receives any of it. Zotero's own terms and privacy policy apply.</p>
+
+<h2 id="pv-links-you-open">Links you open</h2>
+
+<p>Links in About and in the FRUS Research Guide open in a browser built into the app. Links that lead out of a document, Source Explorer or a catalog lookup open in your default browser. The sites they lead to have their own privacy policies. Like any browser, the built-in one keeps the cookies and website data those sites set, inside the app.</p>
+
+<h2 id="pv-sending-feedback">Sending feedback</h2>
+
+<p><strong>Semantic Match Feedback</strong> (<strong>Settings → System → Data &amp; Recovery</strong>) keeps the verdicts you give on the experimental semantic matches in Related Documents. Each verdict records the two documents, your judgement, the match score, which release of the match files it applies to, and when you gave it. The app sends none of it on its own. If you choose to share the file, by email to <a href="mailto:feedback@frusexplorer.app">feedback@frusexplorer.app</a> or any other way your device offers, it goes where you send it.</p>
+
+<p>If you write to the developer with a question, a bug report or the feedback file, the developer receives your message, your email address and anything you attach. The developer uses them only to answer you and to improve the app. They are not sold or shared, and you can ask for them to be deleted.</p>
+
+<h2 id="pv-apples-services">Apple's services</h2>
+
+<p>Apple provides the App Store, iCloud, iCloud Keychain, Handoff, Spotlight and Apple Intelligence under its own privacy policy. You may have chosen, in your device's privacy settings, to share analytics with app developers. If so, Apple may give the developer crash reports and usage statistics for the app. The app adds nothing of its own to them.</p>
+
+<h2 id="pv-children">Children</h2>
+
+<p>FRUS Explorer is a research tool and is not aimed at children. It collects no information from anyone, children included.</p>
+
+<h2 id="pv-deleting-your-data">Deleting your data</h2>
+
+<ul>
+  <li>Delete a note, highlight, tag, collection or other item in the app, and iCloud deletes it from your other devices too.</li>
+  <li><strong>Settings → Research → Research Sessions → Delete Recorded Sessions…</strong> deletes your research trail.</li>
+  <li><strong>Settings → System → Data &amp; Recovery → Erase Everything…</strong> deletes the downloaded volumes and the search index on the device. It also deletes all of your research data, research trail included, on every device that syncs it. Your app settings are kept.</li>
+  <li>Deleting the app deletes what it stored on that device. Your research in iCloud stays until you delete it in the app. Your API keys stay in your keychain until you remove them in <strong>Settings → System → Connections</strong>.</li>
+</ul>
+
+<h2 id="pv-changes-to-this-policy">Changes to this policy</h2>
+
+<p>When the app's handling of data changes, this page changes too, and the date at the top says when. The policy is published in two copies kept identical: at <a href="#pg-privacy">https://frusexplorer.app/privacy</a> and in the app's public repository on GitHub, at <a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Privacy-Policy.md" target="_blank" rel="noopener">https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Privacy-Policy.md</a>, where every change to it is recorded.</p>
+
+<h2 id="pv-contact">Contact</h2>
+
+<p>Questions about this policy: <a href="mailto:help@frusexplorer.app">help@frusexplorer.app</a>. For help with the app, see <a href="#pg-support">FRUS Explorer Support</a>.</p>
+
+
+
+        </div></div>
+      </div>
+      <pre class="src" id="md-privacy">&lt;!--
+  One of two copies kept in step (plan of record decision 36). Its twin is
+  Docs/Website/privacy.html, published at https://frusexplorer.app/privacy, the address App Store
+  Connect names. This copy is the one edited: run Scripts/build_website_pages.py after any change,
+  and commit both. Docs/Website/README.md traces every factual sentence here to the code it
+  describes; a change to what the app sends, keeps or syncs owes this page an edit.
+--&gt;
+
+# FRUS Explorer Privacy Policy
+
+*Last updated October 20, 2026. This policy covers FRUS Explorer for iPhone, iPad and Mac, from version 1.0.*
+
+FRUS Explorer is made by Joshua Botts (&quot;the developer&quot;).
+
+## In short
+
+FRUS Explorer collects no data. The app has no account of its own to sign in to. It has no advertising, no analytics and no tracking. The developer runs no server that the app reports to. The app&#x27;s privacy label on the App Store reads **Data Not Collected**.
+
+What you read, search and write stays with you: notes and collections sync only through your own iCloud account, and the app reaches the National Archives&#x27; catalog or your Zotero library only when you ask it to.
+
+The rest of this page explains what the app keeps, where it keeps it, and every place it connects to.
+
+## What stays on your device
+
+- **Your library.** The volumes you download and the search index the app builds from them. Also their figure images, the semantic match files that let the app compare documents by meaning, and the search model, if you download it.
+- **Your research.** Notes, highlights, tags, collections, projects, saved searches, working corpora (saved sets of documents), volume scopes (saved sets of volumes), archive visit plans and leads. Also AI summaries, your summary prompts, and any corrections you make to who a person is or how a document is classified.
+- **Your research trail.** While **Log Research Sessions** is on, the app records the documents you open, the words of the searches you run, and the collections you export. History, a project&#x27;s recent activity and the Session Log show this record. The switch is on unless you turn it off, in **Settings → Research → Research Sessions**. When you turn it off, the recording stops. **Delete Recorded Sessions…** on the same screen removes what was recorded.
+- **What you ask the app.** Searches run against the index on your device. When you search by meaning, a model on your device turns your question into numbers, and the question does not leave the device. Apple Intelligence&#x27;s on-device model writes document summaries, and the document&#x27;s text does not leave your device.
+- **Diagnostics.** The app&#x27;s diagnostic records stay on your device unless you copy or export them yourself. They are the iCloud Sync Log (the kinds of events, their times and any error codes, never your content), the iCloud schema report, the language-analysis record and the index&#x27;s research-state record.
+- **Semantic Match Feedback.** The verdicts you record on the semantic matches in Related Documents stay on your device and are not synced (see [Sending feedback](#sending-feedback)).
+- **Spotlight and Handoff.** The app adds the documents in your downloaded volumes to your device&#x27;s Spotlight index, so system search can find them. That index stays on your device. While you read a document or use the semantic map, the app offers it to your other devices through Handoff. Apple carries Handoff between devices signed in to the same Apple Account. The offer names the document, or the volumes and scope the map shows.
+- **Files you export.** A collection, a chart&#x27;s data, the JSON export, the method appendix and, on a Mac, a copy of the search index go only where you save or send them. If you give one to another service, such as an AI tool, that service&#x27;s terms apply.
+
+## iCloud
+
+If your device is signed in to iCloud, and iCloud is on for FRUS Explorer, the app syncs your research and your research trail through your own private iCloud database. That is how they appear on your other devices. Apple stores them under its own terms and privacy policy, and the developer cannot see them. To keep your research on one device, turn off iCloud for FRUS Explorer in your device&#x27;s iCloud settings.
+
+Downloaded volumes and the search index are not synced. Each device downloads and indexes its own.
+
+The app&#x27;s own settings stay on each device. They sync only if you turn on **Sync Settings Across Devices**, which starts off. It shares your word-cloud filters and stop lists, your citation style, your default document mode and the research-logging switch, through the same private database.
+
+The NARA Catalog and Zotero API keys you enter are stored in your device&#x27;s keychain. If you use iCloud Keychain, it carries them to your other devices.
+
+## What the app downloads, and from where
+
+The app downloads public files from the hosts below. Each request names a file or a folder. It carries nothing that identifies you or your device. Like any request on the internet, it shows the host your network address and ordinary technical details, such as the app&#x27;s name. The host receives the request, not the developer, and the host&#x27;s own privacy policy covers what it records.
+
+- **The list of published volumes**, from GitHub (`api.github.com`), in the Office of the Historian&#x27;s public `HistoryAtState/frus` repository. The app asks for it at launch while the device is online, and when you open **Settings → Volumes &amp; Storage** or refresh its list.
+- **Volumes**, from GitHub (`raw.githubusercontent.com`), in the same repository. The app gets a volume when you download or update it. At launch, or when the device reconnects, it also finishes a download you started.
+- **Figure images**, from the Office of the Historian&#x27;s image server (`static.history.state.gov`). The app gets them after a volume with figures downloads. At launch and when the device reconnects, it gets any images still missing from downloaded volumes. It also gets a single image when a document or an export needs it first.
+- **Semantic match files**, one small file for each volume, from GitHub (`raw.githubusercontent.com`), in the developer&#x27;s public `frus-semantic-vectors` repository. The app gets one with each volume you download, and when Related Documents or a search by meaning needs it. Turn off **Download With Volumes** in **Settings → Volumes &amp; Storage** to stop both. The app gets them all at once when you choose **Download Missing Vectors** or **Download Vectors for Every Volume**. The files that a search by meaning or Related Documents asks for depend on the volumes it found. So those requests show GitHub which volumes they were, but never your question.
+- **The search model**, Google&#x27;s EmbeddingGemma 2 (310 MB), from GitHub (`github.com`), in a release of the same repository. The app gets it only when you choose **Download Search Model**.
+
+## Services you connect yourself
+
+Neither service is required. The app uses neither until you add your own key in **Settings → System → Connections**. **Remove Key** and **Disconnect** on the same screen remove them.
+
+**The National Archives Catalog.** With a NARA Catalog API key, Source Explorer looks up the records a document&#x27;s source note names. When you open Source Explorer on such a document, or run a catalog lookup yourself, the app sends the search terms and your key to the National Archives Catalog (`catalog.archives.gov`). The terms come from the note or from what you type: a record group, a lot number, a collection or keywords. Because the key is yours, the National Archives can link those lookups to it, under its own terms of use and privacy policy. Without a key, the app sends the Catalog nothing.
+
+**Zotero.** After you connect your Zotero account with your own API key, the app sends your Zotero library (`api.zotero.org`) only what you choose to send. That is the citation details of the documents or the collection, with your tags and research notes on them. It never sends the documents&#x27; text. To connect, the app asks Zotero which account the key belongs to. It asks again on a device the key reached through iCloud Keychain. The developer never receives any of it. Zotero&#x27;s own terms and privacy policy apply.
+
+## Links you open
+
+Links in About and in the FRUS Research Guide open in a browser built into the app. Links that lead out of a document, Source Explorer or a catalog lookup open in your default browser. The sites they lead to have their own privacy policies. Like any browser, the built-in one keeps the cookies and website data those sites set, inside the app.
+
+## Sending feedback
+
+**Semantic Match Feedback** (**Settings → System → Data &amp; Recovery**) keeps the verdicts you give on the experimental semantic matches in Related Documents. Each verdict records the two documents, your judgement, the match score, which release of the match files it applies to, and when you gave it. The app sends none of it on its own. If you choose to share the file, by email to feedback@frusexplorer.app or any other way your device offers, it goes where you send it.
+
+If you write to the developer with a question, a bug report or the feedback file, the developer receives your message, your email address and anything you attach. The developer uses them only to answer you and to improve the app. They are not sold or shared, and you can ask for them to be deleted.
+
+## Apple&#x27;s services
+
+Apple provides the App Store, iCloud, iCloud Keychain, Handoff, Spotlight and Apple Intelligence under its own privacy policy. You may have chosen, in your device&#x27;s privacy settings, to share analytics with app developers. If so, Apple may give the developer crash reports and usage statistics for the app. The app adds nothing of its own to them.
+
+## Children
+
+FRUS Explorer is a research tool and is not aimed at children. It collects no information from anyone, children included.
+
+## Deleting your data
+
+- Delete a note, highlight, tag, collection or other item in the app, and iCloud deletes it from your other devices too.
+- **Settings → Research → Research Sessions → Delete Recorded Sessions…** deletes your research trail.
+- **Settings → System → Data &amp; Recovery → Erase Everything…** deletes the downloaded volumes and the search index on the device. It also deletes all of your research data, research trail included, on every device that syncs it. Your app settings are kept.
+- Deleting the app deletes what it stored on that device. Your research in iCloud stays until you delete it in the app. Your API keys stay in your keychain until you remove them in **Settings → System → Connections**.
+
+## Changes to this policy
+
+When the app&#x27;s handling of data changes, this page changes too, and the date at the top says when. The policy is published in two copies kept identical: at &lt;https://frusexplorer.app/privacy&gt; and in the app&#x27;s public repository on GitHub, at &lt;https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Privacy-Policy.md&gt;, where every change to it is recorded.
+
+## Contact
+
+Questions about this policy: help@frusexplorer.app. For help with the app, see [FRUS Explorer Support](https://frusexplorer.app/support).
+</pre>
+    </section>
+  </div>
+</main>
+
+<footer class="src"><div class="inner">
+  <p>Drafts for the owner of frusexplorer.app. FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State.</p>
+</div></footer>
+
+<script>
+(function () {
+  var KEY = 'frus-drafts-state';
+  var btns = document.querySelectorAll('[data-state-btn]');
+  function setState(st) {
+    document.body.setAttribute('data-state', st);
+    btns.forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-state-btn') === st ? 'true' : 'false'); });
+  }
+  var saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) {}
+  setState(saved === 'launch' ? 'launch' : 'soon');
+  btns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var st = b.getAttribute('data-state-btn'); setState(st);
+      try { localStorage.setItem(KEY, st); } catch (e) {}
+    });
+  });
+  function done(b, msg) { var o = b.textContent; b.textContent = msg; setTimeout(function () { b.textContent = o; }, 1600); }
+  function copyText(b, text, el) {
+    function fallback() {
+      try { var r = document.createRange(); r.selectNodeContents(el); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); done(b, 'Selected'); } catch (e) {}
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done(b, 'Copied'); }, fallback);
+      else fallback();
+    } catch (e) { fallback(); }
+  }
+  document.querySelectorAll('[data-copy]').forEach(function (b) {
+    b.addEventListener('click', function () { var el = document.getElementById(b.getAttribute('data-copy')); copyText(b, el.innerText, el); });
+  });
+  document.querySelectorAll('[data-copy-src]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var el = document.getElementById(b.getAttribute('data-copy-src'));
+      var frame = b.closest('section').querySelector('.pg-doc');
+      copyText(b, el.textContent, frame);
+    });
+  });
+})();
+</script>
+
+</html>

@@ -66,6 +66,12 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
     - L8 comes before R3. None of the four carries the *before App Store submission* label that decision 84's nine carry; "next" is what puts them ahead of the submission.
     - When L8 has merged, the owner decides whether its fixes go to TestFlight before R3. If they do, that upload is numbered between 1776 and 1861 (decision 87), and the bump follows `CLAUDE.md`'s procedure, as R2's did.
 
+**The owner's instruction of 2026-10-27**, with the pull request that commits the website drafts:
+
+101. **The website's pages are generated, reviewed and revised after the submission of 1.0 (1861).** The owner's words: "Open a PR with drafts in planning. As part of PR, include generation, review, and revision of the website pages as part of the post-build 1861 submission work."
+    - The drafts are in `Planning/website-drafts/`: the home page and the tour, each in a coming-soon version for the weeks of App Review and a launch version, and plain-language drafts of the Support and Privacy pages. Its `README.md` says what each owes.
+    - §2's website step is unchanged: at submission the Privacy Policy and Support pages go up as `Docs/` holds them, since App Store Connect requires both addresses. This work follows it (§3).
+
 **Rules carried from the earlier plans and `CLAUDE.md`.** Each is the owner's.
 - **The queue is serial.** The next pull request is pushed when the owner has merged the one before. Auto-merge is never enabled.
 - **One fresh session per pull request**, started from this plan and the issue numbers, and ended at the merge.
@@ -189,6 +195,10 @@ The repository holds drafts for each.
 
 ## 3. After submission
 
+- **The website's pages** (decision 101), while App Review runs and before release.
+  - **Generate.** Build each page from `Planning/website-drafts/`: the home page and the tour in their coming-soon versions, and the Support and Privacy drafts folded into `Docs/Support.md` and `Docs/Privacy-Policy.md`, the copies of record, with `Scripts/build_website_pages.py` and a row in `Docs/Website/README.md` for each new sentence (decision 36).
+  - **Review.** Recount every figure from 1.0 (1861)'s shipped artifacts, retake every screen from the submitted build, read each page against the launch kit's §6, and keep the reading level by the drafts' method.
+  - **Revise and publish.** The owner pastes the pages into frusexplorer.app. On release day the home page and the tour switch to their launch versions, the home page takes Apple's App Store badge, and Support's coming-soon line comes out. Whether the home page and the tour become copies of record under `Docs/Website/` is the owner's call at this step.
 - **C-3, the agentic analysis measurements** (decision 91): before build 52 starts, on the owner's Mac. Its design is `C-3-Reader-Test-Design.md`, with its budget rule; the harness facts are in `Agentic-Harness-Runbook.md`. **Done 2026-10-25/26**, ahead of the submission on the owner's word: `C-3-Results-2026-10-26.md`, record in `c3-reader-test/`, the guide's §3a. Opus 5.5 at `medium` is the fastest and the best value, Sonnet 5.5 at `high` the highest quality; the reader-facing block section held in 31 of 36 reader items, the trace table (O2) its weak rule. The next plan decides whether the section is called adopted and what a second question looks like. The run used no vector artifact; the tier adding Appendix A and the vectors for the two recommended cells (`C-3-Vectors-Tier-Design.md`) **ran 2026-10-26/27** on the owner's four decisions and the owner's Cuba question: `C-3-Vectors-Tier-Results-2026-10-27.md`, record in `c3-vectors-tier/`, the guide's §3a paragraph (v1.36). Every run used all five of Appendix A's operations; two of four reached and quoted a document full-text search could not; one compliance item lost a run; Appendix A's worked figures were found to be the previous generation's and re-taken (v1.35).
 - **Build 52's candidates.** Their order is the next plan's (decision 90).
   - **#1723, A7: App Intents and Siri.** A7a covers the entities, the four intents and the copy. A7b covers the Spotlight association with `expirationDate` and a `CSSearchableIndexDelegate`, which closes two Spotlight findings: donated items expire after 31 days, and nothing answers Spotlight's requests to reindex. The plan is `App-Intents-Siri-Assessment-2026-10-18.md` §5, and the owner's device check (Spike Reader) decides A7b's place.
@@ -218,6 +228,7 @@ The repository holds drafts for each.
 ## 4. Waiting on the owner
 
 - §2's submission steps, and R2's TestFlight device pass.
+- **The website's pages** (decision 101): the pastes into frusexplorer.app, and whether the home page and the tour become copies of record.
 - **For #1620** (decision 72): install iOS 27.1's simulator runtime. A session then re-runs the affected suites, starting from the Stage Manager switch (#1620's comment of 2026-10-21).
 - **For A7** (#1723): the device check with Spike Reader. It is `App-Intents-Siri-Assessment-2026-10-18.md` §4, and `jolly-newton-d5828b`'s untracked `A6Spike/` holds the app.
 - **The manual review**, past build 52 (decision 94). `Manual-Revisions-Pending.md` and `Manual-Update-Build-49-Owner-Review.md` are its inputs and close with it.
@@ -327,6 +338,7 @@ The review's §1 has each disposition with its reason. This change applies them.
   - the session log (split, decision 97);
   - `New-Volume-Release-Plan.md`;
   - the Visual Marketing Plan, the launch kit, the listing draft and `marketing-drafts/`, until submission;
+  - `website-drafts/`, until the website's pages are published (decision 101);
   - the two manual-review documents, until the review;
   - the A7, C-3 and person-authority designs, until their work runs;
   - #234's documents (decision 92);
