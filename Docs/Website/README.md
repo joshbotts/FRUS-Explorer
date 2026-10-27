@@ -93,13 +93,13 @@ shared, deleted on request); and that the page changes when the app's handling o
 
 | Claim | Where it is true |
 |---|---|
-| The disclaimer | `Planning/Store-Listing-Draft.md` §2, the listing's wording, word for word; the app's own is `about.dos.disclaimer` |
+| The disclaimer | `Planning/Store-Listing-Draft.md` §2, the listing's wording, word for word (since 2026-10-27 *independent, private-capacity*, and personal views *about historical research methodology* that make *no interpretive claims about the history of U.S. foreign policy*); the app's own, `about.dos.disclaimer`, keeps the earlier wording by the owner's decision of 2026-10-27 |
 | Manual titles and links; About links to both | `Docs/iOS-User-Manual.md` and `Docs/macOS-User-Manual.md` line 1; `AboutLinks.iosManual`, `AboutLinks.macManual` (`Settings/AboutView.swift`, the Resources section) |
 | Where the Research Guide is | iOS manual §16 (Research tab row; Settings → System → About → FRUS Research Guide); macOS manual's menu table (Help → FRUS Research Guide) |
 | Version and build in About, as *Version 1.0 (1861)* | `AboutView.appVersion` (`"\(v) (\(b))"`) and `about.version`; decision 25 |
 | The Sync Log path, Export…, and what it holds | `SettingsPaneModel` (System group: Connections, Data & Recovery, About); `DataRecoveryView` (`settings.dataRecovery.syncLog`); `SyncDiagnosticsView` |
 | Requirements | `project.yml` (`deploymentTarget: "26.0"` for every target); both manuals §2.1 |
-| Where the documents come from; offline after download | `VolumeManifestEntry.downloadUrl`; `Store-Listing-Draft.md` §2 |
+| Where the documents come from; offline after download; the Office publishes the series as open TEI | `VolumeManifestEntry.downloadUrl`; `Store-Listing-Draft.md` §2 |
 | Free keys, where they are entered, the NARA card's link | `ConnectionsView` (`A free key from the National Archives Catalog…`, `Get a free key from NARA`); iOS manual (Create a Zotero API key) |
 | Natural-language search: experimental, 310 MB, on the device, where to download | `SemanticModelSection` (`settings.model.footer`, `settings.model.download.detail`, `Download Search Model`), mounted by both Volumes & Storage hubs |
 | The research database export: Mac only, its path, a checked copy, the reader's writing left out unless switched on; the guide | `DataExportSections` (`Export/ResearchDataExportView.swift`: the section under `#if os(macOS)`, `Export Research Database…`, `Include My Notes, Summaries, and Tags`, a `@State` that is `false` on every entry, an `NSSavePanel` named `frus-index.sqlite`), hosted by `DataRecoveryView` in Settings' System group (`SettingsPaneModel.group`); `ResearchDataExporter` (`PRAGMA quick_check` and each FTS table's `integrity-check` after the copy; a copy that fails is named on screen, `settings.export.database.integrity`, never reported as a plain success); `Docs/Agentic-Analysis-Guide.md` |

@@ -9,7 +9,12 @@ draft was written, when the manifest held 552 volumes. §5 gives each figure's s
 lengths did not move (552 → 553 is the same length), and §6's counter was re-run. **Three
 sentences of the description that shipped features contradicted were reworded by the owner on
 2026-10-15 — see "Settled before paste" under §2.** The price (free) and the territories (every
-storefront, English only) were confirmed the same day.
+storefront, English only) were confirmed the same day. **Revised 2026-10-27 from the owner's
+briefing deck:** the description's disclaimer reads *independent, private-capacity* and says
+the commentary is personal views about historical research methodology that make no
+interpretive claims about the history of U.S. foreign policy, and the BUILT ON THE EDITORS'
+WORK section describes the Office's work by its statutory mandate (see the note under §2). The
+app's own About disclaimer, `about.dos.disclaimer`, is unchanged by the owner's decision.
 
 **Every field below is counted, not estimated.** The plan's headline correction for this step is a
 length failure — a candidate subtitle 83 characters over a 30-character field — so the counts are
@@ -71,8 +76,8 @@ FRUS,diplomacy,history,archives,primary source,NARA,research,foreign policy,decl
 
 ## 2. Description
 
-**4,000-character field. This draft is 3,038 / 4,000 ✅** (counted with Python's `len()` over the
-block on 2026-10-17, after the BUILT ON THE EDITORS' WORK section and the READ line's credit to the
+**4,000-character field. This draft is 3,423 / 4,000 ✅** (counted with Python's `len()` over the
+block on 2026-10-27; 3,038 on 2026-10-17, after the BUILT ON THE EDITORS' WORK section and the READ line's credit to the
 editors; 2,525 on 2026-10-15 after the owner's three sentences, 2,324 before them), leaving room for
 the owner to add or cut.
 
@@ -83,19 +88,22 @@ which is the placement §4.1 requires — the two must not be separated.
 FRUS Explorer is a research tool for the Foreign Relations of the United States series: the
 official documentary record of U.S. foreign policy, published since 1861.
 
-FRUS Explorer is an independent research tool. It is not an official product of the Office of the
-Historian or the U.S. Department of State. Any commentary, advice, or guidance about the FRUS
-series in this app reflects personal views. Those views are not necessarily those of the
-Department of State or the U.S. Government. The FRUS series itself is in the public domain.
+FRUS Explorer is an independent, private-capacity research tool. It is not an official product of
+the Office of the Historian or the U.S. Department of State. Any commentary, advice, or guidance
+about the FRUS series in this app reflects personal views about historical research methodology
+and makes no interpretive claims about the history of U.S. foreign policy. Those views are not
+necessarily those of the Department of State or the U.S. Government. The FRUS series itself is in
+the public domain.
 
 BUILT ON THE EDITORS' WORK
-FRUS is an edited series. Its editors, today the historians of the
-Department of State's Office of the Historian, choose each document from the
-government's files, write its heading, record where the original is kept,
-annotate what it refers to, and summarize what they could not print. FRUS
-Explorer reads that apparatus: source notes become archival leads,
-cross-references become a graph, and the people the editors identified become
-an index you can search.
+By statute, FRUS must be "a thorough, accurate, and reliable record" of major foreign policy
+decisions, with every deletion marked where it occurs. The Office of the Historian fulfills
+this mandate through research in the classified files of the Department of State and other
+agencies: its historians select the most important documents, arrange them in date order, and
+annotate them, from headings, source notes and cross-references to descriptions of material
+that cannot be declassified. The Office publishes all of this as open TEI data. FRUS Explorer
+reads that apparatus: source notes become archival leads, cross-references become a graph, and
+the people the editors identified become an index you can search.
 
 The app downloads the Office of the Historian's TEI editions, indexes them on your device, and
 works offline from then on. What you read, search and write stays with you: notes and collections
@@ -180,6 +188,14 @@ the READ line's "the editors' headings". The section names the Office of the His
 disclaimer above it already covers. It says what the editors do in the terms of the series' own
 prefaces and claims no figure, so §5 owes it nothing. The owner may cut the section whole; nothing
 else in the field depends on it.
+
+*Rewritten 2026-10-27 from the owner's briefing deck (its slide on the series):* the section now
+opens with the statute's standard, "a thorough, accurate, and reliable record", with every
+deletion marked where it occurs, and says that the Office fulfills it through research in the
+classified files of the Department and other agencies and publishes the result as open TEI data.
+The statute line is the one the kit's §1a already quotes, and the section still claims no figure.
+The disclaimer above it gained *private-capacity* and the scope of the commentary in the same
+pass; the description was recounted (the figure in the heading of §2).
 
 The promotional text has an alternate for the theme, 152 / 170, counted the same way:
 

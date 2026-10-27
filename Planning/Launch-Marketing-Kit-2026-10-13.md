@@ -21,6 +21,17 @@ decision is to make no comparison at all: the site is the Office's own edition o
 document in the app links back to, and the app is described by what it builds on, the Office's editorial work and
 its open TEI editions, and by what it adds. The rule is now §6's last row.
 
+**Revised 2026-10-27: the briefing deck's framing.** The owner's revision of the internal briefing deck
+(`Docs/Briefing/`, uncommitted) on 2026-10-26 set four things this kit now follows. The app is an
+*independent, private-capacity* project, in every disclaimer but the app's own About screen, which
+keeps its wording. Its commentary is personal views about historical research methodology and makes no
+interpretive claim about the history of U.S. foreign policy. The series is credited to generations of
+editorial skill and technological innovation in the Office of the Historian, by its statutory standard
+and its publication as open TEI, and never set against anything else. FRUS Explorer Light, the web
+edition, is an Office of the Historian initiative and appears in no public marketing (§6). The copy
+changed is in §1 (the line, the pitch, two table cells, *What it is not*), §1a's table, §5.1, §5.2,
+§5.3's first post, §5.4 and §5.5's first answer.
+
 **What this session could and could not do.** This was written on a Linux container with no simulator
 and no Mac, so **no capture was taken**. Every composed frame in `Planning/marketing-drafts/` stands
 on a capture already in `Docs/screenshots/` (builds 47 and 48, 2026-09-13 to 2026-09-23), and
@@ -46,32 +57,41 @@ layout, the copy and the argument, not as the pixels: the pixels come from §8's
 
 ## 1. Positioning
 
-**One line.** *The edited record of U.S. diplomacy, on your device, with tools built on its editors'
-work.* (Until 2026-10-17: *The U.S. diplomatic record, on your device, with the tools a 553-volume
-corpus needs.*)
+**One line.** *An independent, offline research app for the Foreign Relations of the United States
+series, built on generations of editorial skill and technological innovation from the Office of the
+Historian.* (Until 2026-10-27: *The edited record of U.S. diplomacy, on your device, with tools built
+on its editors' work.*; until 2026-10-17: *The U.S. diplomatic record, on your device, with the tools
+a 553-volume corpus needs.*)
 
-**The pitch (boilerplate, 105 words).**
+**The pitch (boilerplate, 142 words).**
 
 > FRUS Explorer is a research tool for the *Foreign Relations of the United States* series, the
-> State Department's documentary record of American foreign policy, published since 1861 and edited
-> today by historians in the Office of the Historian. It downloads the Office's TEI editions, indexes
-> them on your iPhone, iPad or Mac, and works offline. Its tools are built on the editors' apparatus:
-> source notes resolved to the shelf, cross-references drawn as a graph, and the people and dates the
-> editors identified made searchable. It is an independent project, not an official product of the
-> Office of the Historian or the U.S. Department of State.
+> Department of State's official documentary record of American foreign policy, published since 1861
+> and edited today by the historians of the Office of the Historian, who publish it as open TEI data.
+> It downloads the Office's TEI editions, indexes them on your iPhone, iPad or Mac, and works offline.
+> Its tools are made possible by generations of editorial skill and technological innovation in the
+> Office: source notes resolved to the shelf, cross-references drawn as a graph, and the people and
+> dates the editors identified made searchable. It is an independent, private-capacity project, not an
+> official product of the Office of the Historian or the U.S. Department of State, and its commentary
+> is about research method, never an interpretive claim about the history of U.S. foreign policy.
 
 **Three proof points, each with its screen.**
 
 | Claim | The screen that proves it | Why it is the claim |
 |---|---|---|
 | **Offline, whole-series search with facets.** 553 volumes; phrases, proximity and exact words; facets by year, volume, person, document type, provenance and subject. | Search with the Facets inspector open (`macos/search.png`) | The Office of the Historian publishes each digitized volume as open TEI, with the editors' dates, people, document types and source notes encoded. The app indexes that encoding whole, on the device, and adds facets that count the whole match by person, document type, provenance and subject, and a result set frozen as a working corpus. Say what the app builds on and adds; never measure it against history.state.gov. |
-| **The editors' apparatus, put to work.** Headings, source notes, cross-references and the people the editors tagged, read from the volumes and made live: a source note resolves to record group, entry and lot; a cross-reference becomes an edge in a graph; a name becomes a person you can follow across the series. | The reader with the Research rail; Source Explorer (`ipad/source-explorer.png`) | A bulk release of documents has none of this. Nothing else turns a FRUS footnote into a pull slip. |
-| **The series as a whole.** A map of 314,616 documents by the language they share; term frequency, person networks, chronology, archival sourcing, all exportable with their method. | The semantic map (`ipad/semantic-map.png`); Corpus Analytics (`macos/analytics.png`) | The first time anyone has been able to look at the published record from above. |
+| **The editors' apparatus, put to work.** Headings, source notes, cross-references and the people the editors tagged, read from the volumes and made live: a source note resolves to record group, entry and lot; a cross-reference becomes an edge in a graph; a name becomes a person you can follow across the series. | The reader with the Research rail; Source Explorer (`ipad/source-explorer.png`) | Source Explorer, the Archives Visit packet, Archival Analytics and the Cross-Reference Graph put the editors' source notes and cross-references to work. The claim is what the app reads and what it adds, in the Office's own terms; never what anything else lacks. |
+| **The series as a whole.** A map of 314,616 documents by the language they share; term frequency, person networks, chronology, archival sourcing, all exportable with their method. | The semantic map (`ipad/semantic-map.png`); Corpus Analytics (`macos/analytics.png`) | Corpus-wide readings of the Office's editions. The map and the analytics are the app's own computation, labelled as such, and experimental where a model reads the language. |
 
-**What it is not, said first by us.** Not official. Not every document (two honest counts, neither
-"every"). Not a chatbot: the on-device model turns a question into a vector, and summaries are
-Apple's on-device framework, one document at a time, with authorship recorded. **English only**: no
-`.xcstrings` ships, so the launch is scoped to English-language territories or the listing says so.
+**What it is not.** Not official: the series is published by the Office of the Historian and is in
+the public domain; the app's commentary is personal views about historical research methodology and
+makes no interpretive claims about the history of U.S. foreign policy. Not every historical record of
+U.S. foreign policy: about 317,000 FRUS documents, against tens of millions of pages of records on the
+shelves of the National Archives and the presidential libraries (the app's own surfaces carry two
+counts, 314,616 on the map, and neither is "every"). Not a chatbot: the optional on-device model
+turns a question into a vector for natural-language search, and summaries are Apple's on-device
+framework, one document at a time, with authorship recorded. **English only** is a storefront fact,
+not a disclaimer: it stays in §5.5's FAQ and §8's decision 3 (no `.xcstrings` ships).
 
 **Voice.** Plain, concrete, in the second person, with the research vocabulary the audience already
 has (source note, lot file, RG, entry, finding aid, course reader, method appendix). No exclamation
@@ -98,13 +118,13 @@ collection or project.
 
 | What a researcher needs | The edited series | What the app does with it |
 |---|---|---|
-| Selection | "all records needed to provide comprehensive documentation of major foreign policy decisions", chosen from the files of the Department and the other agencies involved | Searches the record the editors assembled; its counts are counts of what they chose to print |
-| Order | "The documents are presented chronologically according to Washington time." | Chronology, Administrations and date order use the dates the editors assigned |
-| A name for each item | "A heading has been supplied by the editors for each document included in the volume." | Results, Browse, citations and collections list documents under those headings |
-| Where the original is | "The first footnote to each document indicates the document's source, original classification, distribution, and drafting information." | Source Explorer, the Archives Visit packet, the provenance facet and Archival Analytics |
-| How documents connect | annotation that will "provide references to important related documents printed in other volumes" | Live links, the Cross-Reference Graph and Cross-Reference Analytics |
-| What isn't there | editorial notes "summarize pertinent material not printed"; withheld text is marked with "the number of lines or pages of text that were omitted" | Editorial notes are searchable; the packet lists files the editors cited but didn't print |
-| Who is speaking | lists of persons and of abbreviations and terms in the front matter | Person cards, the People browser, the person facet and Person Analytics |
+| Selection | "all records needed to provide comprehensive documentation of major foreign policy decisions", chosen from the files of the Department and the other agencies involved | Treats it as a defined corpus for reproducible search results and analytical findings |
+| Order | "The documents are presented chronologically according to Washington time." | The Chronology browser and the time-based analytics; chronological filters and views in search |
+| A name for each item | "A heading has been supplied by the editors for each document included in the volume." | Results, Browse, citations and collections list documents under those labels |
+| Where the original is | "The first footnote to each document indicates the document's source, original classification, distribution, and drafting information." | Source Explorer, the Archives Visit packet, Archival Analytics and the Cross-Reference Graph |
+| How documents connect | annotation that will "provide references to important related documents printed in other volumes" | Live links, Archival Analytics, the Cross-Reference Graph and Cross-Reference Analytics |
+| What isn't there | editorial notes "summarize pertinent material not printed"; withheld text is marked with "the number of lines or pages of text that were omitted" | Source Explorer and Archival Analytics point to the collections the editors cite, and an Archives Visit plans the deeper research |
+| Who is speaking | lists of persons and of abbreviations and terms in the front matter | Person cards, the People browser, the person facet in search and Person Analytics |
 
 **Rules.**
 
@@ -399,24 +419,26 @@ chart exports", "every document carries a note") are **not** repeated here: this
 collections sync through your own iCloud account", "most charts export", and "where the editors gave
 one".
 
-### 5.1 Announcement post (for the README, a blog, or a newsletter; 447 words)
+### 5.1 Announcement post (for the README, a blog, or a newsletter; 499 words)
 
 > **FRUS Explorer, first public release**
 >
 > *Foreign Relations of the United States* is the State Department's official documentary record of
 > American foreign policy: 553 volumes published since 1861, declassified cables, memoranda, minutes
 > and intelligence estimates, every one of them in the public domain. FRUS Explorer is a free,
-> independent research tool that puts that series on your iPhone, iPad or Mac and builds a workbench
-> around it. It is not an official product of the Office of the Historian or the U.S. Department of
-> State.
+> independent, private-capacity research tool that puts that series on your iPhone, iPad or Mac and
+> builds a workbench around it. It is not an official product of the Office of the Historian or the
+> U.S. Department of State, and its commentary is about research method, not the history itself.
 >
-> The series is worth building on because of how it is made. Its editors, today the historians of
-> the Office of the Historian, choose the documents that record major decisions from the files of
-> the Department and the other agencies involved. They print them in date order, write each one's
-> heading, note where the original is kept, point to related documents, summarize what they could
-> not print, and mark what remains classified. FRUS Explorer is built on that apparatus. Where a
-> feature reads it, the app says so, and where the app computes something of its own, it says that
-> too.
+> The series is worth building on because of how it has been made. By statute, FRUS must be "a
+> thorough, accurate, and reliable record," with every deletion marked where it occurs. The Office of
+> the Historian fulfills that mandate through research in the classified files of the Department and
+> other agencies: its historians select the most important documents, arrange them in date order, and
+> annotate them, from headings, source notes and cross-references to descriptions of material that
+> cannot be declassified. The Office publishes all of this as open TEI data, free to read, search and
+> download at history.state.gov. FRUS Explorer is built on that work, and on generations of editorial
+> skill and technological innovation in the Office. Where a feature reads the editors' apparatus, the
+> app says so, and where the app computes something of its own, it says that too.
 >
 > Download a volume, a subseries or the whole corpus, and the app indexes it on the device. From then
 > on, search works offline across everything you hold: phrases, proximity, exact words, and facets by
@@ -442,7 +464,7 @@ one".
 >
 > The series is in the public domain; the app's code is Apache 2.0 on GitHub.
 
-### 5.2 Listserv note (H-Diplo, SHAFR members, a departmental list; 163 words)
+### 5.2 Listserv note (H-Diplo, SHAFR members, a departmental list; 164 words)
 
 > Colleagues: I have released FRUS Explorer, a free iPhone, iPad and Mac app for working with the
 > *Foreign Relations of the United States* series offline. It is built on the editors' apparatus. It
@@ -450,16 +472,17 @@ one".
 > makes the people they identified and the dates they assigned searchable, and plans an archives
 > visit that includes files the editors cited but did not print. It also adds full-text search with
 > facets, collections that export as course readers or Zotero records, and series-wide analytics,
-> and it keeps what it read from the volumes apart from what it computed itself. It is an independent
-> project, not an official product of the Office of the Historian or the Department of State; the
+> and it keeps what it read from the volumes apart from what it computed itself. It is an independent,
+> private-capacity project, not an official product of the Office of the Historian or the Department
+> of State; the
 > series is public domain and the code is open source. Manuals and the download are at [link]. I
 > would be grateful for bug reports and, especially, for the questions it cannot yet answer.
 
 ### 5.3 Social posts (each under 300 characters)
 
 1. *FRUS Explorer is out: 553 volumes of the U.S. diplomatic record on your iPhone, iPad or Mac,
-   searchable offline, with the editors' footnotes and source notes kept. Independent, free, open
-   source. Not an official product of the Office of the Historian. [link]*
+   searchable offline, with the editors' footnotes and source notes kept. Independent and
+   private-capacity, free, open source. Not an official product of the Office of the Historian. [link]*
 2. *Most FRUS documents carry the editors' note on where the original is kept. FRUS Explorer
    resolves it to record group, lot file and entry, then plans the archives trip, including files
    the editors cited but didn't print. [frame 04 or 05]*
@@ -475,15 +498,17 @@ one".
 ### 5.4 One-line press description (under 200 characters)
 
 > FRUS Explorer: an independent, offline research app for the *Foreign Relations of the United
-> States* series, built on its editors' annotation. iPhone, iPad and Mac. Free.
+> States* series, built on the Office of the Historian's editorial work. iPhone, iPad and Mac. Free.
 
-(Until 2026-10-17: *…the Foreign Relations of the United States series, on iPhone, iPad and Mac.
+(Until 2026-10-27: *…built on its editors' annotation. iPhone, iPad and Mac. Free.* Until 2026-10-17: *…the Foreign Relations of the United States series, on iPhone, iPad and Mac.
 Free; the series is public domain.*)
 
 ### 5.5 FAQ (for the landing page and the listing's reviewer notes)
 
-- **Is this official?** No. It is an independent tool. The series is published by the Office of the
-  Historian and is in the public domain; the app's commentary reflects personal views.
+- **Is this official?** No. It is an independent, private-capacity tool. The series is published by
+  the Office of the Historian and is in the public domain; the app's commentary reflects personal
+  views about historical research methodology and makes no interpretive claims about the history of
+  U.S. foreign policy.
 - **Does it need the network?** To download volumes, the optional search model, and figure images;
   and when you ask it to look something up in the NARA Catalog or send to Zotero. Reading, search,
   annotation and most archival resolution run on the device.
@@ -520,6 +545,8 @@ Free; the series is public domain.*)
 | the Office of the Historian, by name | the not-an-official-product sentence, in the same asset | §1a rule 4; every §5 piece that names the Office |
 | a feature built on the editors' apparatus | the part it reads (source note, cross-reference, the people they tagged) and its layer: FRUS text, joined or computed | §1a's feature lines; frames 02, 04 and 06 |
 | history.state.gov, by name | the Office's own edition of the series, which every document in the app links back to; never a comparison, a list of what the site lacks, or a claim about how its search works (owner's decision, 2026-10-22) | §1's table, §2.1's answer |
+| the app's commentary, advice or guidance | *independent, private-capacity*, and personal views about historical research methodology that make no interpretive claim about the history of U.S. foreign policy (owner's decision, 2026-10-27); the app's own About screen keeps its earlier wording | the disclaimer in the store draft's §2, the Support page and both manuals; §1's pitch; §5.5's first answer |
+| FRUS Explorer Light, the web edition | never, in any public asset: it is an Office of the Historian initiative and appears only in internal briefings (owner's decision, 2026-10-27) | the briefing deck's web-edition slide and its closing line; nothing in this kit, the store draft, the README, the Support page or the manuals |
 
 ---
 

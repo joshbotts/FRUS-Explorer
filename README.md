@@ -4,15 +4,17 @@ A macOS, iPadOS, and iOS application providing tools to help researchers use the
 [Foreign Relations of the United States (FRUS)](https://history.state.gov/historicaldocuments)
 series more effectively.
 
-FRUS is the official documentary record of U.S. foreign policy since 1861. The app's bundled
-manifest covers 553 volumes; a full local index holds roughly 317,000 documents. FRUS Explorer
-downloads the Office of the Historian's TEI editions, indexes them on your device, and adds the
-reading, searching, sourcing and analysis tools a corpus that size needs — all of it working
-offline once volumes are downloaded.
+FRUS is the official documentary record of U.S. foreign policy, published since 1861 and edited
+today by the historians of the Office of the Historian, who publish it as open TEI data. The app's
+bundled manifest covers 553 volumes, from the Lincoln through the George H.W. Bush administrations;
+a full local index holds roughly 317,000 documents. FRUS Explorer downloads those TEI editions,
+indexes them on your device, and adds reading, searching, sourcing and analysis tools built on the
+Office's editorial work — all of it working offline once volumes are downloaded.
 
-It is an independent project, developed with [Claude Code](https://claude.ai/code), and is **not**
-an official product of the Office of the Historian or the U.S. Department of State. Current build:
-**1776** (version 1.0).
+It is an independent, private-capacity project, developed with [Claude Code](https://claude.ai/code),
+and is **not** an official product of the Office of the Historian or the U.S. Department of State.
+Its commentary is about research method and makes no interpretive claims about the history of U.S.
+foreign policy. Current build: **1776** (version 1.0).
 
 ## Screenshots
 
