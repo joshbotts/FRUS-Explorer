@@ -17,11 +17,33 @@ import Foundation
 /// Version history:
 ///   1.0 — FRUSCoreKit, part 1: moved from `DocumentHighlight.Color`
 ///   1.1 — Session 2026-10-24 (FRUS Explorer Light, S15a): public, for the web edition's reader
+///   1.2 — 2026-10-25 (FRUS Explorer Light, S18a): `ooxmlHighlightName`, from the app's extension, with
+///          the Word exporter that reads it
 public enum HighlightColor: String, CaseIterable, Sendable {
     case yellow
     case green
     case blue
     case pink
+}
+
+extension HighlightColor {
+
+    /// Closest match in the fixed OOXML `<w:highlight w:val="...">` palette, used
+    /// for DOCX export (`DocxCollectionExporter`). OOXML has no blue or pink/magenta
+    /// shades close to this app's palette; `cyan` and `magenta` are the nearest
+    /// available named colours.
+    ///
+    /// The app's until FRUS Explorer Light's S18a (2026-10-25), in an extension of
+    /// `DocumentHighlight.Color` beside its display helpers; FRUSCoreKit's, public and unchanged,
+    /// with the Word exporter that reads it.
+    public var ooxmlHighlightName: String {
+        switch self {
+        case .yellow: return "yellow"
+        case .green:  return "green"
+        case .blue:   return "cyan"
+        case .pink:   return "magenta"
+        }
+    }
 }
 
 // MARK: - ReaderHighlight
@@ -89,8 +111,20 @@ public struct ReaderHighlight: Encodable, Sendable {
 ///   1.0 — Session 153: initial implementation
 ///   1.1 — FRUSCoreKit, part 1: moved from `CollectionExporter.swift`; `color` is the kit's
 ///          `HighlightColor`, which `DocumentHighlight.Color` names
-struct ExportHighlight: Sendable {
-    let startOffset: Int
-    let endOffset:   Int
-    let color:       HighlightColor
+///   1.2 — 2026-10-25 (FRUS Explorer Light, S18a): public, with its initialiser spelled out, since
+///          the export payloads that carry it are
+public struct ExportHighlight: Sendable {
+    /// Where the highlight starts in the document's flat text, in UTF-16 code units.
+    public let startOffset: Int
+    /// Where it ends, exclusive.
+    public let endOffset:   Int
+    /// Its colour.
+    public let color:       HighlightColor
+
+    /// Creates a highlight snapshot.
+    public init(startOffset: Int, endOffset: Int, color: HighlightColor) {
+        self.startOffset = startOffset
+        self.endOffset = endOffset
+        self.color = color
+    }
 }

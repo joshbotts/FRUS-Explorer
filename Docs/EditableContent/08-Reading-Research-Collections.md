@@ -850,42 +850,42 @@ the only category saying something is wrong with the work; the rest are stated a
 check rather than as problems with the quotations.
 
 #### Export check — one quotation not found
-<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 297–298 | key: excerpt.verify.failures.one | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Export/ExcerptVerifier.swift | lines: 307–308 | key: excerpt.verify.failures.one | shared: iOS+macOS (single edit point) -->
 
 One quotation was not found in the document it cites.
 
 <!-- END SOURCE: excerpt.verify.failures.one -->
 
 #### Export check — several not found
-<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 299–300 | key: excerpt.verify.failures.many %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Export/ExcerptVerifier.swift | lines: 309–310 | key: excerpt.verify.failures.many %lld | shared: iOS+macOS (single edit point) -->
 
 %lld quotations were not found in the documents they cite.
 
 <!-- END SOURCE: excerpt.verify.failures.many %lld -->
 
 #### Export check — one document removed by an update
-<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 304–305 | key: excerpt.verify.vanished.one | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Export/ExcerptVerifier.swift | lines: 314–315 | key: excerpt.verify.vanished.one | shared: iOS+macOS (single edit point) -->
 
 One quotation cites a document that is no longer in its volume.
 
 <!-- END SOURCE: excerpt.verify.vanished.one -->
 
 #### Export check — several documents removed by an update
-<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 306–307 | key: excerpt.verify.vanished.many %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Export/ExcerptVerifier.swift | lines: 316–317 | key: excerpt.verify.vanished.many %lld | shared: iOS+macOS (single edit point) -->
 
 %lld quotations cite documents that are no longer in their volumes.
 
 <!-- END SOURCE: excerpt.verify.vanished.many %lld -->
 
 #### Export check — volumes not downloaded
-<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 310–311 | key: excerpt.verify.unindexed %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Export/ExcerptVerifier.swift | lines: 320–321 | key: excerpt.verify.unindexed %lld | shared: iOS+macOS (single edit point) -->
 
 %lld could not be checked — their volumes are not downloaded.
 
 <!-- END SOURCE: excerpt.verify.unindexed %lld -->
 
 #### Export check — too short to check
-<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 314–315 | key: excerpt.verify.inconclusive %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Export/ExcerptVerifier.swift | lines: 324–325 | key: excerpt.verify.inconclusive %lld | shared: iOS+macOS (single edit point) -->
 
 %lld were too short to check.
 
@@ -905,7 +905,7 @@ Note: the apostrophe in "don’t" is a curly quote (U+2019), copied verbatim fro
 #### Export format grid — Web page
 <!-- #1688 (2026-10-19), decision 67: the caption under the HTML card in the export sheet's format grid, where it
      read "Web page + word cloud" though PDF and Word carry the word-cloud overview too when it is on. -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | ExportFormat.gridCaption | key: export.grid.html.caption.v2 -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter+App.swift | ExportFormat.gridCaption | key: export.grid.html.caption.v2 -->
 
 Web page
 
@@ -2323,7 +2323,7 @@ A collection can belong to more than one project. Attaching it here doesn’t re
      this one key through `CollectionEditorNaming.listName`, trimmed. The two Project Home keys
      (`project.home.collections.untitled`, `project.collections.manage.untitled`) are gone, so their
      two blocks are this one, the one place the wording lives. -->
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.navigationTitle | lines: 937–937 | key: collection.untitled.name | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionEditorNaming.swift | CollectionEditorNaming.navigationTitle | lines: 60–60 | key: collection.untitled.name | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Untitled Collection
@@ -2440,7 +2440,7 @@ This is a smart collection. Its documents are resolved from the linked saved sea
 <!-- END SOURCE: collection.editor.docs.smartEmpty -->
 
 #### Smart collection. Its documents come from its saved search.
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.sentence | lines: 1104–1105 | key: collection.picker.smart -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.sentence | lines: 1008–1009 | key: collection.picker.smart -->
 
 *The line under a smart collection's name in Add to Collection and Add Excerpt to Collection, on iPhone, iPad and Mac, where an ordinary collection's row prints its document count; the row is listed and does not take a tap (#1593). Since #1619 it is also the first row of a smart collection's Contents, in the iPhone and iPad editor and in the Mac's Collections window, whose Add menus then take no hand-added document, section heading, note block or passage.*
 
@@ -2449,7 +2449,7 @@ Smart collection. Its documents come from its saved search.
 <!-- END SOURCE: collection.picker.smart -->
 
 #### Smart collection
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1112–1112 | key: collection.smart.listLabel -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1016–1016 | key: collection.smart.listLabel -->
 
 *What a smart collection's row prints where an ordinary collection's prints its document count (#1619): in the Collections list on iPhone and iPad, in the Mac Collections window's collection picker and its Manage Collections sheet, and since #1687 in Project Home's Collections sheet (**Manage**), on every platform. On the Mac's toolbar the picker shows a bolt in its place, which VoiceOver reads as these words.*
 
@@ -2458,7 +2458,7 @@ Smart collection
 <!-- END SOURCE: collection.smart.listLabel -->
 
 #### Not part of the smart collection: added before it was…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.entriesFromBeforeLinkHeading | lines: 1067–1068 | key: collection.smart.earlier.heading -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.entriesFromBeforeLinkHeading | lines: 971–972 | key: collection.smart.earlier.heading -->
 
 *The dimmed heading over a smart collection's entries from before its link (#1619; decision 22 of the 2026-10-14 plan of record), in a section of its own under the collection's Contents: in the iPhone and iPad editor, which is also the Mac's New Collection sheet, and in the Mac's Collections window. A smart collection takes no hand-added document, section heading, note block or passage, so an entry of those kinds is one it held before it was linked, and every export, the preview and the Archives Visit list leave it out. The section shows only while there is such an entry; each is listed dimmed, by its title or its words.*
 
@@ -2467,7 +2467,7 @@ Not part of the smart collection: added before it was linked to its saved search
 <!-- END SOURCE: collection.smart.earlier.heading -->
 
 #### Remove These Entries
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLink | lines: 1073–1073 | key: collection.smart.earlier.remove -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLink | lines: 977–977 | key: collection.smart.earlier.remove -->
 
 *The button under those entries, on iPhone, iPad and Mac, and the destructive button of the dialog it opens. It removes nothing itself: the dialog asks first, and only its button removes them. Nothing else removes them; unlinked, the collection counts them again.*
 
@@ -2476,7 +2476,7 @@ Remove These Entries
 <!-- END SOURCE: collection.smart.earlier.remove -->
 
 #### Remove These Entries?
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkTitle | lines: 1078–1078 | key: collection.smart.earlier.remove.confirm.title -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkTitle | lines: 982–982 | key: collection.smart.earlier.remove.confirm.title -->
 
 *The title of the dialog that asks before the entries from before the link are removed. Its message is the next block, or the one after it for more than one entry.*
 
@@ -2485,7 +2485,7 @@ Remove These Entries?
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.title -->
 
 #### Removes the entry added before this collection was linked…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1089–1090 | key: collection.smart.earlier.remove.confirm.message.one -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 993–994 | key: collection.smart.earlier.remove.confirm.message.one -->
 
 *The dialog's message when one entry would go.*
 
@@ -2494,7 +2494,7 @@ Removes the entry added before this collection was linked to its saved search.
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.message.one -->
 
 #### Removes the %@ entries added before this collection was…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1091–1092 | key: collection.smart.earlier.remove.confirm.message.many -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 995–996 | key: collection.smart.earlier.remove.confirm.message.many -->
 
 *The dialog's message when more than one entry would go. `%@` is the count, grouped: "Removes the 1,204 entries added before…".*
 
@@ -2503,7 +2503,7 @@ Removes the %@ entries added before this collection was linked to its saved sear
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.message.many -->
 
 #### Empty note block
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.emptyNoteBlock | lines: 1098–1098 | key: collection.smart.earlier.emptyNote -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.emptyNoteBlock | lines: 1002–1002 | key: collection.smart.earlier.emptyNote -->
 
 *What a row in that section prints for a note block that holds no text. A section heading with none reads "Untitled section", as it does in the entry inspector.*
 
@@ -2729,7 +2729,7 @@ Connect a Zotero account to send with your tags & research notes. Without one th
 #### Send to Zotero Library — the Zotero collection made for a collection with no name
 <!-- #1497, your decision D16 (2026-09-28): new in lane EXPORT. Only the Zotero send uses it; a file
      export of the same collection keeps "Untitled Collection". -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1646–1647 | key: export.zotero.collection.untitled %@ -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1464–1465 | key: export.zotero.collection.untitled %@ -->
 
 FRUS Explorer Collection - %@
 
@@ -2742,21 +2742,21 @@ FRUS Explorer Collection - %@
      name, in its body and its Contents, set apart in grey italics; every export leaves the heading
      out, and the editor's own row keeps its "Section heading" prompt. The inspector's identity row
      has always used it. -->
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.untitledSection | lines: 984–984 | key: collection.inspector.section.untitled -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionEditorNaming.swift | CollectionEditorNaming.untitledSection | lines: 98–98 | key: collection.inspector.section.untitled -->
 
 Untitled section
 
 <!-- END SOURCE: collection.inspector.section.untitled -->
 
 #### Compiled with FRUS Explorer · \(…) document\(…) from \(…)…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 1010–1011 | key: export.colophon.line -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 886–887 | key: export.colophon.line -->
 
 Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") from \(volCount) volume\(volCount == 1 ? "" : "s") · \(df.string(from: date))
 
 <!-- END SOURCE: export.colophon.line -->
 
 #### No stored summary for this document — generate one in the…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteHTML | lines: 456–457 | key: collection.headnote.missing | same text also in: FRUSExplorer/Collections/DocxCollectionExporter.swift, FRUSExplorer/Collections/PDFCollectionExporter.swift -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteHTML | lines: 465–466 | key: collection.headnote.missing | same text also in: FRUSCoreKit/Collections/DocxCollectionExporter.swift, FRUSExplorer/Collections/PDFCollectionExporter.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 No stored summary for this document — generate one in the document view to fill this headnote.

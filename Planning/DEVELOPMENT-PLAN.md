@@ -7856,3 +7856,85 @@ FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) serves one index to many
 **Owed by the owner:** Mac check 11 (FRUS Explorer Light's plan) for this pull request, from a clone at a real path; then the merge. FRUS Explorer Light's pin move follows (its S17c).
 
 **Not done:** `documentSnippets(forKeys:)` (the snippets of Related Documents and Project Home) and `documentsInDateRange` (the Chronology's rows) still read `document_cache.summary_text`, which an attached store does not feed; neither feature is in FRUS Explorer Light's phase 2. `documentsWithUserTagIds()`, the reconcile's read of the tag column itself, stays the index's. The exact-word set reads every row of `user_search`, whose `user_id` no index holds, so its cost grows with the whole store; not measured at a shared instance's size. Not run: the UI suites, iOS 26.x, a device and a signed run; the Mac app was built and not run.
+
+## Session 2026-10-25/27 — A collection's HTML, Word, BibTeX and RIS exports render from values in FRUSCoreKit, so FRUS Explorer Light's collections export as the app's do
+
+FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) compiles FRUSCoreKit on Linux from a pinned commit. Its phase 2 brings collections to the web, in its rows S18a to S18f: their editor, their preview and their exports. In this pull request, its row S18a, what renders a collection from values moves into the kit, public, and the app calls the moved code. A second pull request, S18b's, is to move what resolves a collection behind a data source. The branch was made from `v2` at `9fa4375d` on 25 October. On 27 October it was rebased onto `41950692`, and then onto `391b3461` after #1805 and #1806 merged, and every run below was taken at the last head. #1805 moved the provenance vocabulary into the kit byte for byte as this branch did, so this branch's commit for it fell away.
+
+**Nothing changes on Apple platforms.** Every export a test collection makes is byte for byte what it was, in HTML, Word, BibTeX and RIS. The PDF prints the same text, and every app call site calls the same code.
+
+**Moved, one commit each**
+- **The export's payloads, options, presets and naming** (`FRUSCoreKit/Collections/CollectionExporter.swift`), with `CollectionEditorNaming` and `CollectionGeneratedBlockType`.
+  - What reads a SwiftData `Collection`, Apple Intelligence, the app's rendering of the method appendix, or AppKit and UIKit stays in the app, unchanged, in `CollectionExporter+App.swift`, with `ExportFormat`.
+  - A prose item carries the paragraphs of spans that every format renders. The content resolver decodes them with `CollectionProse.paragraphs(fromRTF:)`, the call each exporter used to make.
+  - The span rules, `CollectionProse.append` and `hex(r:g:b:)`, are the kit's, public, with #1793's clamp in `hex`.
+  - `CollectionExportMetadata.exportDate` is the day the Word cover and the colophon print. The app passes `nil`, which means now, in the device's calendar, with the formatter each exporter made for itself.
+- **The outline's value core** (`FRUSCoreKit/Collections/CollectionOutline.swift`): every rule over `StructuralRef`. The rules over `CollectionEntry` are in `CollectionOutline+App.swift`.
+- **The quotation check,** `ExcerptVerifier` with its report (`FRUSCoreKit/Export/`). `IndexingPipeline.documentBodyTextsByKey(forKeys:)` and `WordCloudDocumentKey` are public.
+- **The HTML renderer and exporter.**
+  - The stylesheet is `ReaderPage`'s.
+  - Figures come from a `FigureImageSource` the host passes in. The app's `FigureImageStore` conforms, and `ExportFormat.makeExporter()` and the preview pass it.
+  - `FRUSRenderNodeHTMLSerializer.serialize(_:includeFootnotes:highlights:)` is public.
+- **The Word exporter, with its ZIP writer.**
+  - Its word cloud is image data, a `CollectionWordCloud`, from a drawing the host passes in. That drawing is the app's `CollectionWordCloud.drawnByTheApp`, which `makeExporter()` passes to it and to the HTML exporter.
+  - A PNG's pixel size is the kit's `FigureImagePNG`, which `FigureImageLibrary` forwards to.
+  - `HighlightColor.ooxmlHighlightName` is the kit's.
+- **The BibTeX and RIS collection exporters,** over the kit's `BibtexExporter` and `RISExporter`. Each also offers the text it writes as a function.
+
+**Tests**
+- **`CollectionRenderingTests`** (new, `FRUSExplorerTests/FRUSCoreKit/`):
+  - `CollectionRenderingPinTests` pins, by SHA-256 and length, each export of two value collections (the HTML page, the Word package, the BibTeX and the RIS) and the live preview's page. The date is fixed in a fixed calendar, so the pins hold on any platform.
+  - `CollectionOutlineCoreTests` covers the outline's value core three levels deep.
+  - `CollectionProseSpanTests` covers the span rules.
+- **`ExcerptVerifierTests`** moved into the kit's suites. Its three source checks of the export sheet are Xcode's alone.
+- **The collection suites** build their prose items as the resolver does, decoded from the same RTF, #1793's sRGB test among them.
+  - The word-cloud parity test makes its HTML and Word exporters as `makeExporter()` does.
+  - Four source checks read the moved files at their new paths.
+- **Counts:** `FRUSCoreKitTests` goes from 1,251 tests in 169 suites to 1,286 in 175, and the iOS unit target from 7,725 tests in 924 suites to 7,739 in 927.
+
+**Docs:**
+- `CLAUDE.md`'s `Collections/` row and the FRUSCoreKit entry;
+- version-history lines in every touched Swift file;
+- 20 blocks in Docs/EditableContent re-pointed, with the amendment log's line for each commit, measured against `391b3461`;
+- `IndexingPipeline.swift`'s version line 4.48, after #1806's 4.47.
+
+**Apple platforms, and how that was checked.** Each heavy job ran through `Scripts/heavy.sh`, one at a time, with Xcode 27.1 (27A9275) on macOS 27.2, clean and unsigned, beside `v2` @ `391b3461` built and run the same way from a worktree, the same day. This entry was added after the runs.
+- **`FRUSExplorerMac`**, Debug: "** BUILD SUCCEEDED **" for both, with the same five warning lines.
+- **The symbol diff,** with the numbers the compiler gives local thunks and the file-private discriminators dropped: 251,332 names on `v2` and 251,475 on the branch, 103 removed and 246 added, the same names as at `41950692`.
+  - 32 of the removed were private, and reappear without the discriminator: `CollectionPreset.Recipe` and `recipe`, `CollectionProse.hex` (with the local `byte(_:)` of #1793's clamp) and `append`, and `CollectionOutline.sectionRangeCore`.
+  - 60 reappear under a new signature:
+    - the prose renderers, which take spans;
+    - the exporters' `figureImages` and initialisers;
+    - the Word exporter's cloud;
+    - the colophon's date;
+    - `pngPixelSize`'s closures;
+    - the BibTeX and RIS exporters' closures;
+    - the metadata's initialiser.
+  - The other 11 removed are gone with nothing in their place:
+    - 10 default-argument generators of declarations that are public now and keep their signatures;
+    - `CollectionExportOptions.init()`, which the spelled-out initialiser replaces.
+  - The other 152 added are the new API (`CollectionExportDate`, `CollectionWordCloud`, `FigureImageSource`, `NoFigureImages`, `FigureImagePNG`, `documentData`) and the names the compiler makes for it.
+- **iOS 27.0,** iPhone 18 Pro:
+  - a clean `build-for-testing` of `FRUSExplorer`: "** TEST BUILD SUCCEEDED **" for both, with the same 7 warning lines;
+  - the full unit target (`test-without-building -collect-test-diagnostics never -only-testing FRUSExplorerTests`, `TEST_RUNNER_FRUS_TEI_MIRROR` set, the app removed first): "✘ Test run with 7739 tests in 927 suites failed after 558.463 seconds with 14 issues (including 6 known issues).". On `v2`: "✘ Test run with 7725 tests in 924 suites failed after 566.342 seconds with 14 issues (including 6 known issues).";
+  - the 14 issues are the same on both:
+    - the 8 Keychain tests that an unsigned build fails with -34018: KeychainStoreTests 5, SettingsTests 2, SourceExplorerTests 1;
+    - the 6 known issues of the Sync Diagnostics test that cannot open this process's system log in the simulator (#1606). That test passes.
+  - Both runs skip the same 17 tests and 2 suites.
+  - `RichTextRestingCapTests`' link-alert test, which #1785's runs saw fail on `v2` too, passed in both full runs. Run alone, alternating the two heads, it failed 1 of 15 runs at `v2` and 2 of 15 at the branch, each time waiting out the alert's dismissal (`host.dismissPresented()`). Nothing here touches the editor or its alerts.
+- **Each export, byte for byte.** A scratch suite, appended to `CollectionTests.swift` for one run and never committed, exported the test collections through `ExportFormat.makeExporter()` in HTML, Word, BibTeX, RIS and PDF (its text). One of them was resolved by `CollectionContentResolver` from SwiftData entries. It ran at `v2` and at the branch, the same day, and all 22 files were identical, the same bytes as at `41950692`.
+- **`swift build --target FRUSCoreKit`:** "Build complete!".
+- **`swift test`, the whole package, on the macOS host:** exit 0; 38 runs and 3,179 tests in 387 suites, all passed, none skipped, against 3,144 in 381 on `v2`. `FRUSCoreKitTests`: "✔ Test run with 1286 tests in 175 suites passed".
+
+**Linux** (Docker Desktop, `swift:6.4-noble` on arm64): FRUS Explorer Light's package at its `main` (`37a4e35`), with this branch copied over its submodule and its own targets built clean, with no build warning, and the same with `v2`.
+- `FRUSCoreKitTests` "✔ Test run with 1286 tests in 175 suites passed", with the one named skip, so the pins hold there.
+- The parity suites' issues are the same as `v2`'s but for the one test that reads the moved `CollectionExporter.swift`. The rest is golden-file and golden-span staleness, and the mirrors of what #1792, #1805 and #1806 changed in the app, which FRUS Explorer Light's pin move takes up.
+- A scratch file in its server target, importing FRUSCoreKit without `@testable` and never committed, used every name this makes public, and the target built.
+
+**Owed by the owner:** Mac check 13 (FRUS Explorer Light's plan) for this pull request, from a clone at a real path; then the merge. S18b's pull request is branched after it merges, and FRUS Explorer Light's pin move past both follows (its S18c).
+
+**Not done:**
+- The PDF exporter stays in the app, since it draws with CoreGraphics, CoreText and ImageIO.
+- The ZIP writer stays private to `DocxCollectionExporter`.
+- `CollectionPreset.Recipe` has no public initialiser.
+- Not run: the UI suites, iOS 26.x, a device and a signed run. The Mac app was built and not run, and the commits between `v2` and the head were not built one by one.

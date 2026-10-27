@@ -439,7 +439,7 @@ struct MethodAppendixRenderingTests {
         let pdf = try Self.source("FRUSExplorer/Collections/PDFCollectionExporter.swift")
         #expect(pdf.contains("collection.methodAppendixLines"),
                 "the PDF exporter never read the field")
-        let docx = try Self.source("FRUSExplorer/Collections/DocxCollectionExporter.swift")
+        let docx = try Self.source("FRUSCoreKit/Collections/DocxCollectionExporter.swift")
         #expect(docx.contains("collection.methodAppendixLines"),
                 "the DOCX exporter never read the field")
     }

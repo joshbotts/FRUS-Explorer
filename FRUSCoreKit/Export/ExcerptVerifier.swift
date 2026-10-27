@@ -59,17 +59,19 @@ import Foundation
 /// Version history:
 ///   1.0 — M-3: initial implementation
 ///   1.1 — R-5 P3b-1: `Outcome.documentVanished` and `upgradingVanished`
-enum ExcerptVerifier {
+///   1.2 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public and otherwise unchanged, so a host
+///          outside the app checks a collection's quotations by the same rules before it exports them
+public enum ExcerptVerifier {
 
     /// The shortest fragment this will accept as evidence, in normalised characters.
     ///
     /// Below this a fragment matches too much of any document to mean anything. Applies per
     /// fragment, so a long quotation with one two-word fragment is inconclusive rather than
     /// verified — the weakest link governs, because a reader takes "verified" to cover the whole.
-    static let minimumFragmentLength = 12
+    public static let minimumFragmentLength = 12
 
     /// What a check concluded.
-    enum Outcome: Equatable, Sendable {
+    public enum Outcome: Equatable, Sendable {
         /// Found, in order, in the indexed body text.
         case verified
         /// Not found. The quotation does not appear in the document it names.
@@ -90,17 +92,24 @@ enum ExcerptVerifier {
         ///
         /// Only ``notFound`` is. The other three non-verified cases are statements about what could
         /// be checked, and dressing them as failures is how a warning gets ignored.
-        var isFailure: Bool { self == .notFound }
+        public var isFailure: Bool { self == .notFound }
     }
 
     /// One quotation to check.
-    struct Request: Hashable, Sendable {
+    public struct Request: Hashable, Sendable {
         /// FRUS volume identifier.
-        var volumeId: String
+        public var volumeId: String
         /// Document identifier within the volume.
-        var documentId: String
+        public var documentId: String
         /// The stored quotation, exactly as it will be exported.
-        var text: String
+        public var text: String
+
+        /// Creates a request.
+        public init(volumeId: String, documentId: String, text: String) {
+            self.volumeId = volumeId
+            self.documentId = documentId
+            self.text = text
+        }
     }
 
     // MARK: - Checking
@@ -111,7 +120,7 @@ enum ExcerptVerifier {
     ///   - excerpt: the stored quotation.
     ///   - bodyText: the indexed body text, or `nil` when the document is not in the cache.
     /// - Returns: the outcome.
-    static func verify(_ excerpt: String, against bodyText: String?) -> Outcome {
+    public static func verify(_ excerpt: String, against bodyText: String?) -> Outcome {
         guard let bodyText else { return .documentNotIndexed }
         let fragments = self.fragments(of: excerpt)
         guard !fragments.isEmpty else { return .inconclusive }
@@ -139,8 +148,8 @@ enum ExcerptVerifier {
     ///     document that is not indexed, which is why the miss is `.documentNotIndexed` rather
     ///     than an error.
     /// - Returns: one outcome per request.
-    static func verify(_ requests: [Request],
-                       bodyTexts: [String: String]) -> [Request: Outcome] {
+    public static func verify(_ requests: [Request],
+                              bodyTexts: [String: String]) -> [Request: Outcome] {
         var results: [Request: Outcome] = [:]
         for request in requests {
             results[request] = verify(request.text,
@@ -159,7 +168,7 @@ enum ExcerptVerifier {
     ///
     /// Empties are dropped so a quotation that opens or closes with an ellipsis — the ordinary way
     /// to mark a mid-sentence start — does not fail on a zero-length fragment.
-    static func fragments(of excerpt: String) -> [String] {
+    public static func fragments(of excerpt: String) -> [String] {
         var pieces = [excerpt]
         for marker in elisionMarkers {
             pieces = pieces.flatMap { $0.components(separatedBy: marker) }
@@ -172,7 +181,7 @@ enum ExcerptVerifier {
     /// - Parameter text: any string.
     /// - Returns: the comparable form. Both sides of every comparison go through this, so the
     ///   policy cannot be applied asymmetrically.
-    static func normalize(_ text: String) -> String {
+    public static func normalize(_ text: String) -> String {
         var result = ""
         result.reserveCapacity(text.count)
         var lastWasSpace = false
@@ -220,8 +229,8 @@ extension ExcerptVerifier {
     ///
     /// - Parameter changeKinds: `"volumeId/documentId"` → the row's `change_kind`, for the
     ///   documents the caller looked up. Absent keys and non-vanished kinds leave the miss alone.
-    static func upgradingVanished(_ outcomes: [Request: Outcome],
-                                  changeKinds: [String: String]) -> [Request: Outcome] {
+    public static func upgradingVanished(_ outcomes: [Request: Outcome],
+                                         changeKinds: [String: String]) -> [Request: Outcome] {
         var result = outcomes
         for (request, outcome) in outcomes where outcome == .documentNotIndexed {
             if changeKinds["\(request.volumeId)/\(request.documentId)"] == "vanished" {
@@ -244,27 +253,28 @@ extension ExcerptVerifier {
 /// Version history:
 ///   1.0 — M-3: initial implementation
 ///   1.1 — R-5 P3b-1: the `vanished` bucket, named from the revision table
-struct ExcerptVerificationReport: Equatable, Sendable {
+///   1.2 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public and otherwise unchanged
+public struct ExcerptVerificationReport: Equatable, Sendable {
 
     /// Quotations that were not found in the document they name.
-    var failures: [ExcerptVerifier.Request]
+    public var failures: [ExcerptVerifier.Request]
 
     /// Quotations that could not be checked because their volume is not on this device.
-    var unindexed: [ExcerptVerifier.Request]
+    public var unindexed: [ExcerptVerifier.Request]
 
     /// Quotations whose document an update removed from its volume (R-5 P3b-1).
-    var vanished: [ExcerptVerifier.Request]
+    public var vanished: [ExcerptVerifier.Request]
 
     /// Quotations too short — or too heavily elided — to check.
-    var inconclusive: [ExcerptVerifier.Request]
+    public var inconclusive: [ExcerptVerifier.Request]
 
     /// How many were checked and found.
-    var verifiedCount: Int
+    public var verifiedCount: Int
 
     /// Builds a report from a batch result.
     ///
     /// - Parameter outcomes: the result of ``ExcerptVerifier/verify(_:bodyTexts:)``.
-    init(outcomes: [ExcerptVerifier.Request: ExcerptVerifier.Outcome]) {
+    public init(outcomes: [ExcerptVerifier.Request: ExcerptVerifier.Outcome]) {
         // Sorted, so the same collection reports the same order twice running — a dictionary's
         // iteration order would reshuffle the warning on every render.
         func sorted(_ outcome: ExcerptVerifier.Outcome) -> [ExcerptVerifier.Request] {
@@ -279,17 +289,17 @@ struct ExcerptVerificationReport: Equatable, Sendable {
     }
 
     /// `true` when at least one quotation does not appear in its source.
-    var hasFailures: Bool { !failures.isEmpty }
+    public var hasFailures: Bool { !failures.isEmpty }
 
     /// `true` when there is nothing at all to say — every quotation checked out.
-    var isClean: Bool { failures.isEmpty && unindexed.isEmpty && vanished.isEmpty && inconclusive.isEmpty }
+    public var isClean: Bool { failures.isEmpty && unindexed.isEmpty && vanished.isEmpty && inconclusive.isEmpty }
 
     /// The sentence shown above the export button, or `nil` when there is nothing to report.
     ///
     /// Failures lead, because they are the only category that says something is wrong with the
     /// work. The other three are stated after, and stated as limits on the check rather than as
     /// problems with the quotations.
-    var summary: String? {
+    public var summary: String? {
         guard !isClean else { return nil }
         var parts: [String] = []
         if !failures.isEmpty {

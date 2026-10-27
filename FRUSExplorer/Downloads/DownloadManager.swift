@@ -1319,6 +1319,8 @@ enum FigureImageFetch: Sendable, Equatable {
 ///          `FRUSURLScheme.isSafeComponent`, which the reader's figure URLs are checked by
 ///   1.3 — 2026-10-09: `removeImages(notIn:for:)` removes images only, so a prune no longer
 ///          takes the temporary file of an image being written
+///   1.4 — 2026-10-25 (FRUS Explorer Light, S18a): `isPNG(_:)` and `pngPixelSize(_:)` forward to FRUSCoreKit's
+///          `FigureImagePNG`, which the Word exporter, now the kit's, reads
 public struct FigureImageLibrary: Sendable {
 
     /// The app's volumes directory.
@@ -1396,19 +1398,16 @@ public struct FigureImageLibrary: Sendable {
 
     /// Whether `data` opens with the PNG signature. Every image the corpus names is served as
     /// `image/png`; anything else the transfer returned is not an image to keep.
+    ///
+    /// The rule is the kit's `FigureImagePNG.isPNG(_:)` (FRUSCoreKit), which the Word export reads.
     public static func isPNG(_ data: Data) -> Bool {
-        data.starts(with: [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+        FigureImagePNG.isPNG(data)
     }
 
     /// The pixel size a PNG states in its header, or `nil` when `data` is no PNG: what the Word
-    /// export sizes an image by without decoding it.
+    /// export sizes an image by without decoding it, through the kit's `FigureImagePNG.pixelSize(of:)`.
     public static func pngPixelSize(_ data: Data) -> (width: Int, height: Int)? {
-        guard isPNG(data), data.count >= 24 else { return nil }
-        let bytes = [UInt8](data.prefix(24))
-        // The IHDR chunk is first: its width and height are big-endian at offsets 16 and 20.
-        let width = bytes[16..<20].reduce(0) { $0 << 8 | Int($1) }
-        let height = bytes[20..<24].reduce(0) { $0 << 8 | Int($1) }
-        return width > 0 && height > 0 ? (width, height) : nil
+        FigureImagePNG.pixelSize(of: data)
     }
 
     /// Writes `data` as the image named `fileName` in `volumeId`, creating the volume's folder.
@@ -1592,13 +1591,17 @@ private final class FigureGraphicScanner: NSObject, XMLParserDelegate {
 /// else, and `FRUSURLSchemeHandler` answers its image requests on WebKit's call; neither has an
 /// `AppState` to ask, and a view in a window opened without one in its environment must not
 /// declare that it needs one. The exporters are built by a factory that is handed a format and
-/// nothing else (`CollectionExportFormat.makeExporter()`). Each of them takes a store as a
-/// parameter defaulting to this one, so a test passes its own.
+/// nothing else (`CollectionExportFormat.makeExporter()`). The PDF exporter takes a store as a
+/// parameter defaulting to this one, so a test passes its own; the HTML and Word exporters, which
+/// are FRUSCoreKit's, take any `FigureImageSource`, none by default, and the factory and the live
+/// preview hand them this one.
 ///
 /// Version history:
 ///   1.0 — #1516: initial implementation
 ///   1.1 — #1516 review, round 1: `isUnitTestHost(_:)`; `fetchAbsent` stops when its task is cancelled
-final class FigureImageStore: @unchecked Sendable {
+///   1.2 — 2026-10-25 (FRUS Explorer Light, S18a): a `FigureImageSource`, FRUSCoreKit's, which the collection
+///          exporters it serves take their images from now that they are the kit's
+final class FigureImageStore: @unchecked Sendable, FigureImageSource {
 
     /// The process-wide store.
     static let shared = FigureImageStore()

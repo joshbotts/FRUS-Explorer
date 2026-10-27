@@ -14,7 +14,13 @@
 
 import Foundation
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - ExcerptVerifierTests
 
@@ -26,6 +32,8 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — M-3: initial implementation
+///   1.1 — 2026-10-25 (FRUS Explorer Light, S18a): moved to the kit's suites with `ExcerptVerifier`, so the
+///          normalisation runs on Linux too
 @Suite("Excerpt verification")
 struct ExcerptVerifierTests {
 
@@ -176,6 +184,7 @@ struct ExcerptVerifierTests {
 ///
 /// Version history:
 ///   1.0 — M-3: initial implementation
+///   1.1 — 2026-10-25 (FRUS Explorer Light, S18a): moved to the kit's suites with `ExcerptVerificationReport`
 @Suite("Excerpt verification report")
 struct ExcerptVerificationReportTests {
 
@@ -251,12 +260,16 @@ struct ExcerptVerificationReportTests {
 ///
 /// Version history:
 ///   1.0 — M-3: initial implementation
+///   1.1 — 2026-10-25 (FRUS Explorer Light, S18a): moved to the kit's suites with `ExcerptVerifier`; the three
+///          tests that read the app's export sheet are Xcode's alone, and the source root is one folder further up
 @Suite("Excerpt verification wiring")
 struct ExcerptVerificationWiringTests {
 
+    // The export sheet is the app's, and how it mounts the check is no part of the kit: Xcode's alone.
+    #if !SWIFT_PACKAGE
     private static func source(_ path: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
         #expect(text.count > 1_000, "\(path) is implausibly small — did it move?")
         return text
@@ -294,6 +307,8 @@ struct ExcerptVerificationWiringTests {
         #expect(sheet.contains("ExcerptVerifier.Outcome.documentNotIndexed"),
                 "a missing pipeline must report uncheckable rather than skipping the check")
     }
+
+    #endif
 
     /// R-5 P3b-1 (design Q-7 g): a document an update removed is named as such, not as "volume
     /// not downloaded"; the report is not clean while one is present; one and many read as English.

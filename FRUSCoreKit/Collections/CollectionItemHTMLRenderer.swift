@@ -7,7 +7,6 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
-import SwiftUI
 
 // MARK: - CollectionItemHTMLRenderer
 
@@ -29,8 +28,9 @@ import SwiftUI
 ///   - `pageHTML(metadata:items:wordCloudPNGBase64:)` — assembles a complete standalone
 ///     HTML page (shared `<head>`/CSS + header + ToC + every item fragment) — the exporter
 ///     writes this string to disk; the preview loads it into a `WKWebView`.
-///   - `embeddedCSS` — the shared stylesheet: `FRUSTheme.cssVariables` +
-///     `HTMLTemplate.documentCSS` + collection layout + highlight + print layers.
+///   - `embeddedCSS` — the shared stylesheet: the reader page's variables and document layer
+///     (FRUSCoreKit's `ReaderPage`, which the app's `FRUSTheme.cssVariables` and
+///     `HTMLTemplate.documentCSS` forward to) + collection layout + highlight + print layers.
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 2b: extracted verbatim from `HTMLCollectionExporter.buildHTML`
@@ -100,18 +100,26 @@ import SwiftUI
 ///          backgrounds they are drawn on: the contents panel's page numbers and the
 ///          AI-attribution caption (#888 to #6e6e6e), the colophon and the "See also" label
 ///          (#777 to #757575), and the preview's citation-only card note (#a06a00 to #986500)
-struct CollectionItemHTMLRenderer {
+///   1.14 — 2026-10-25 (FRUS Explorer Light, S18a): a prose item carries the spans the resolver
+///          decoded, which `proseHTML` renders as it rendered `CollectionProse`'s; the colophon is
+///          dated by `CollectionExportMetadata.exportDate`, `nil` being now, as before
+///   1.15 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public. The stylesheet's
+///          first two layers are `ReaderPage`'s, which `FRUSTheme.cssVariables` and
+///          `HTMLTemplate.documentCSS` forward to, so the page is the same to the byte; a figure's
+///          image comes from the `FigureImageSource` the host passes in (`figureImages`), where it
+///          came from the app's `FigureImageStore.shared`, which the app now passes
+public struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
     /// footnote inclusion, inline highlight annotation, and research-note visibility.
-    let options: CollectionExportOptions
+    public let options: CollectionExportOptions
 
     /// Volume ids whose documents render as **citation-only cards** — a bordered card
     /// carrying the citation and a "Volume not downloaded" note — instead of a body.
     /// Set only by the live preview (whose `.preview` resolution yields empty bodies
     /// for un-downloaded volumes); exporters leave it empty, so the HTML export byte
     /// output is unaffected.
-    var citationOnlyVolumeIds: Set<String> = []
+    public var citationOnlyVolumeIds: Set<String> = []
 
     /// When `true`, a `.summaryOnly` document with no stored summary renders a
     /// **summary-placeholder card** (styled like the citation card) noting that the
@@ -119,12 +127,13 @@ struct CollectionItemHTMLRenderer {
     /// live preview, whose `.preview` resolution never generates summaries; exporters
     /// leave it `false` — an `.export` resolve either attaches a summary or throws, so
     /// export output never contains the placeholder.
-    var showsSummaryPlaceholders: Bool = false
+    public var showsSummaryPlaceholders: Bool = false
 
     /// Where a figure's image comes from (#1516): the page embeds each one's bytes, so an
     /// exported file carries its images and the preview draws them without the reader's scheme
-    /// handler. The app's store; a test sets its own.
-    var figureImages: FigureImageStore = .shared
+    /// handler. The host's source: the app passes its `FigureImageStore.shared`, a test its own,
+    /// and a renderer given none prints each figure's placeholder.
+    public var figureImages: any FigureImageSource = NoFigureImages()
 
     /// `true` when any preview-only affordance is configured — the gate for emitting the
     /// preview-only card stylesheet (`previewCSS`). Exporters set neither property, so
@@ -136,7 +145,7 @@ struct CollectionItemHTMLRenderer {
     /// Creates a renderer with the given export options.
     ///
     /// - Parameter options: Rendering options; defaults preserve the standard export look.
-    init(options: CollectionExportOptions = CollectionExportOptions()) {
+    public init(options: CollectionExportOptions = CollectionExportOptions()) {
         self.options = options
     }
 
@@ -160,7 +169,7 @@ struct CollectionItemHTMLRenderer {
     ///
     /// - Parameter item: The resolved item to render.
     /// - Returns: An HTML fragment string (may be empty for an empty prose payload).
-    func itemHTML(_ item: CollectionExportItem) -> String {
+    public func itemHTML(_ item: CollectionExportItem) -> String {
         switch item {
         case .heading(let heading, let level):
             let tag = "h\(Self.clampedLevel(level) + 1)"   // level 1 → h2 (pre-Phase-4), 2 → h3, 3 → h4
@@ -486,7 +495,7 @@ struct CollectionItemHTMLRenderer {
     ///
     /// - Parameter metadata: The collection's display snapshot.
     /// - Returns: The `<header>…</header>` HTML fragment.
-    func headerHTML(metadata: CollectionExportMetadata) -> String {
+    public func headerHTML(metadata: CollectionExportMetadata) -> String {
         var body = ""
         body += "<header>\n"
         body += "  <h1>\(escaped(metadata.name))</h1>\n"
@@ -522,7 +531,7 @@ struct CollectionItemHTMLRenderer {
     ///
     /// - Parameter items: The ordered items whose documents and headings populate the ToC.
     /// - Returns: The `<nav>…</nav>` HTML fragment.
-    func tableOfContentsHTML(for items: [CollectionExportItem]) -> String {
+    public func tableOfContentsHTML(for items: [CollectionExportItem]) -> String {
         /// Line indentation for list items at a nesting level (level 1 = the pre-Phase-4
         /// four spaces; each deeper level adds two).
         func indent(_ level: Int) -> String { String(repeating: "  ", count: level + 1) }
@@ -576,7 +585,7 @@ struct CollectionItemHTMLRenderer {
     ///   - wordCloudPNGBase64: Optional base64-encoded PNG for the word-cloud overview
     ///     figure (export-only; the preview passes `nil`).
     /// - Returns: A full `<!DOCTYPE html>…</html>` document string.
-    func pageHTML(
+    public func pageHTML(
         metadata: CollectionExportMetadata,
         items: [CollectionExportItem],
         wordCloudPNGBase64: String? = nil
@@ -625,7 +634,7 @@ struct CollectionItemHTMLRenderer {
         // enable it keep their pre-Phase-4 bytes.
         if metadata.includeColophon {
             body += "<footer class=\"colophon\">\n"
-            body += "  <p>\(escaped(CollectionColophon.text(for: items)))</p>\n"
+            body += "  <p>\(escaped(CollectionColophon.text(for: items, dated: metadata.exportDate)))</p>\n"
             // PV-1: the sources block travels with the colophon, in all three rich formats.
             for line in CollectionColophon.sourceLines(for: items, embedsWordCloud: wordCloudPNGBase64 != nil) {
                 body += "  <p>\(escaped(line))</p>\n"
@@ -679,8 +688,8 @@ struct CollectionItemHTMLRenderer {
     /// author line, the colophon opt-in, the M-2 method appendix, or a heading nested deeper
     /// than level 1. Gates
     /// `frameCSS` so a collection using no new feature emits the exact pre-Phase-4 bytes.
-    static func usesFrameFeatures(metadata: CollectionExportMetadata,
-                                  items: [CollectionExportItem]) -> Bool {
+    public static func usesFrameFeatures(metadata: CollectionExportMetadata,
+                                         items: [CollectionExportItem]) -> Bool {
         if let subtitle = metadata.subtitle, !subtitle.isEmpty { return true }
         if let author = metadata.authorLine, !author.isEmpty { return true }
         if metadata.includeColophon { return true }
@@ -694,7 +703,7 @@ struct CollectionItemHTMLRenderer {
     /// `true` when any document item carries a headnote request (Authoring Phase 5).
     /// Gates `headnoteCSS` so a collection with no headnotes emits the exact
     /// pre-Phase-5 stylesheet bytes.
-    static func usesHeadnotes(items: [CollectionExportItem]) -> Bool {
+    public static func usesHeadnotes(items: [CollectionExportItem]) -> Bool {
         items.contains {
             if case .document(let doc) = $0 { return doc.includeHeadnote }
             return false
@@ -703,7 +712,7 @@ struct CollectionItemHTMLRenderer {
 
     /// `true` when the item list contains an excerpt (Authoring Phase 5). Gates
     /// `excerptCSS` so an excerpt-free collection emits the exact prior stylesheet bytes.
-    static func usesExcerpts(items: [CollectionExportItem]) -> Bool {
+    public static func usesExcerpts(items: [CollectionExportItem]) -> Bool {
         items.contains {
             if case .excerpt = $0 { return true }
             return false
@@ -712,7 +721,7 @@ struct CollectionItemHTMLRenderer {
 
     /// `true` when some document carries a related-documents line (Authoring Phase 5).
     /// Gates `relatedCSS` so a collection with none emits the exact prior stylesheet bytes.
-    static func usesRelatedDocuments(items: [CollectionExportItem]) -> Bool {
+    public static func usesRelatedDocuments(items: [CollectionExportItem]) -> Bool {
         items.contains {
             if case .document(let doc) = $0 { return !doc.relatedDocumentCitations.isEmpty }
             return false
@@ -722,7 +731,7 @@ struct CollectionItemHTMLRenderer {
     /// `true` when the item list contains a generated apparatus block (Authoring
     /// Phase 6). Gates `generatedCSS` so a block-free collection emits the exact prior
     /// stylesheet bytes.
-    static func usesGeneratedBlocks(items: [CollectionExportItem]) -> Bool {
+    public static func usesGeneratedBlocks(items: [CollectionExportItem]) -> Bool {
         items.contains {
             if case .generated = $0 { return true }
             return false
@@ -733,7 +742,7 @@ struct CollectionItemHTMLRenderer {
     /// non-empty `.summaryOnly` summary body or a filled (non-placeholder) headnote.
     /// Gates `attributionCSS` so a collection rendering no generated summary emits the
     /// exact prior stylesheet bytes.
-    static func usesAIAttribution(items: [CollectionExportItem]) -> Bool {
+    public static func usesAIAttribution(items: [CollectionExportItem]) -> Bool {
         items.contains {
             guard case .document(let doc) = $0 else { return false }
             if doc.bodyDepth == .summaryOnly,
@@ -752,7 +761,7 @@ struct CollectionItemHTMLRenderer {
     ///
     /// - Parameter doc: The document whose anchor id to compute.
     /// - Returns: A sanitized HTML id string.
-    static func anchorId(doc: CollectionExportDocument) -> String {
+    public static func anchorId(doc: CollectionExportDocument) -> String {
         "doc-\(doc.volumeId)-\(doc.documentId)"
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .joined(separator: "-")
@@ -762,14 +771,15 @@ struct CollectionItemHTMLRenderer {
 
     /// Combined CSS for the assembled HTML page.
     ///
-    /// Layer 1: CSS custom properties (light mode, medium text size) from `FRUSTheme`.
+    /// Layer 1: CSS custom properties (light mode, large text size) from `ReaderPage`, which
+    ///          `FRUSTheme.cssVariables(colorScheme:textSize:)` forwards to.
     /// Layer 2: Document body styles shared with the in-app WKWebView renderer
-    ///          (`HTMLTemplate.documentCSS`).
+    ///          (`ReaderPage.documentCSS`, which `HTMLTemplate.documentCSS` forwards to).
     /// Layer 3: Collection-export-specific layout (header, nav, section, research-note).
     /// Layer 4: Print overrides.
-    static var embeddedCSS: String {
-        FRUSTheme.cssVariables(colorScheme: .light, textSize: .large)
-        + "\n" + HTMLTemplate.documentCSS
+    public static var embeddedCSS: String {
+        ReaderPage.cssVariables(appearance: .light, textSize: .large)
+        + "\n" + ReaderPage.documentCSS
         + "\n" + collectionExportCSS
         + "\n" + FRUSRenderNodeHTMLSerializer.highlightCSS
         + "\n" + printCSS
@@ -778,7 +788,7 @@ struct CollectionItemHTMLRenderer {
     /// Every stylesheet layer this renderer writes of its own, joined: the layout layer every
     /// page carries and the seven a page carries only when it uses them. What
     /// `CollectionExportContrastTests` measures (#1602); no page is built from it.
-    static var ownLayersCSS: String {
+    public static var ownLayersCSS: String {
         [collectionExportCSS, frameCSS, headnoteCSS, excerptCSS, relatedCSS, attributionCSS,
          generatedCSS, previewCSS].joined(separator: "\n")
     }
@@ -1153,15 +1163,14 @@ struct CollectionItemHTMLRenderer {
 
     // MARK: - Helpers
 
-    /// Renders a rich-text prose block — supplied as **RTF** (or a legacy Phase 3b JSON blob,
-    /// which the shared decoder recovers rather than dropping) — to an HTML fragment:
-    /// bold/italic/underline/colour runs map to `<strong>`/`<em>`/`<u>`/`<span style=color>`,
-    /// a `.link` run to an outermost `<a href>` (Session 2026-07-03: the editor's Link
-    /// control), blank lines to `<p>` boundaries, single newlines to `<br>`. Formatting is
-    /// decoded once by the shared `CollectionProse.paragraphs(fromRTF:)`, which resolves
-    /// paragraph breaks *before* spans are emitted so open/close tags never straddle a `<p>`.
-    private func proseHTML(_ rtf: Data) -> String {
-        let paragraphs = CollectionProse.paragraphs(fromRTF: rtf)
+    /// Renders a rich-text prose block — the paragraphs of formatted spans the resolver decoded
+    /// from its RTF (or a legacy Phase 3b JSON blob, which the shared decoder recovers rather
+    /// than dropping) — to an HTML fragment: bold/italic/underline/colour runs map to
+    /// `<strong>`/`<em>`/`<u>`/`<span style=color>`, a `.link` run to an outermost `<a href>`
+    /// (Session 2026-07-03: the editor's Link control), blank lines to `<p>` boundaries, single
+    /// newlines to `<br>`. Paragraph breaks are resolved *before* spans are emitted
+    /// (`CollectionProse`), so open/close tags never straddle a `<p>`.
+    private func proseHTML(_ paragraphs: [[ProseFormattedSpan]]) -> String {
         guard !paragraphs.isEmpty else { return "" }
 
         var out = "<div class=\"prose-block\">\n"

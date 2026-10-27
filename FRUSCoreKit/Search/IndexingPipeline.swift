@@ -493,6 +493,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         `init(readingIndexAt:fts5Store:resources:volumesDirectory:userStore:)` attaches the store
 ///         read-only (`attachedUserStoreSchema`). With the index as the source every statement is the same
 ///         text as before. No index version
+///  4.48 — 2026-10-25 (FRUS Explorer Light S18a): `documentBodyTextsByKey(forKeys:)` is public, with
+///         `WordCloudDocumentKey`, for a host's check of a collection's quotations before an export. A read
+///         that only an export runs; nothing it indexes or stores changes. No index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -10713,7 +10716,10 @@ public actor IndexingPipeline {
     /// output is quoted evidence.
     ///
     /// Chunked like its sibling to stay under SQLite's variable limit.
-    func documentBodyTextsByKey(forKeys keys: [WordCloudDocumentKey]) throws -> [String: String] {
+    ///
+    /// Public since FRUS Explorer Light's S18a: the check of a collection's quotations before an export
+    /// (`ExcerptVerifier.verify(_:bodyTexts:)`) reads the bodies in the shape this returns.
+    public func documentBodyTextsByKey(forKeys keys: [WordCloudDocumentKey]) throws -> [String: String] {
         guard !keys.isEmpty else { return [:] }
         var result: [String: String] = [:]
         let chunkSize = 400

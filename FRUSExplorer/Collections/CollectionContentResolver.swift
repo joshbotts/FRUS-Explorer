@@ -174,6 +174,9 @@ enum CollectionResolveError: Error, LocalizedError {
 ///          images — PDF, Word, HTML (`ExportFormat.printsFigureImages`) — fetches the ones not on the device once its
 ///          items are resolved, for the documents resolved at full body depth only. BibTeX, RIS and the Zotero send
 ///          fetch none; nor does the preview
+///   1.14 — 2026-10-25 (FRUS Explorer Light, S18a): a prose block and the introduction resolve to the spans every
+///          format renders (`CollectionProse.paragraphs(fromRTF:)`, the decoder each exporter called before), since the
+///          exporters' payloads are FRUSCoreKit's and take spans, not RTF
 @MainActor
 class CollectionContentResolver {
 
@@ -344,14 +347,15 @@ class CollectionContentResolver {
     /// `CollectionExportMetadata`), keeping the item stream pure content.
     ///
     /// - Parameter collection: The collection whose introduction to snapshot.
-    /// - Returns: `[.prose(introductionRTF)]`, or `[]` when no introduction is set —
+    /// - Returns: `[.prose(spans)]`, the introduction's RTF decoded by
+    ///   `CollectionProse.paragraphs(fromRTF:)`, or `[]` when no introduction is set —
     ///   so a collection without one resolves to exactly the pre-Phase-4 item list.
     private func introductionItems(for collection: Collection) -> [CollectionExportItem] {
         guard let rtf = ProseRichText.exportRTF(richText: collection.introductionRichText,
                                                 plainText: collection.introductionText) else {
             return []
         }
-        return [.prose(rtf)]
+        return [.prose(CollectionProse.paragraphs(fromRTF: rtf))]
     }
 
     /// Documents-only resolution — for callers that need a flat document list and no
@@ -1017,8 +1021,9 @@ class CollectionContentResolver {
     // MARK: - Per-entry pipeline
 
     /// Resolves one entry into its export item — the shared per-entry body used by both
-    /// the batch loop and the incremental `resolveItem` API. Heading and prose entries
-    /// pass through as structural items; document entries are fully resolved (citation,
+    /// the batch loop and the incremental `resolveItem` API. A heading passes through as a
+    /// structural item, and a prose entry as the spans its RTF decodes to (`CollectionProse`);
+    /// document entries are fully resolved (citation,
     /// body, notes, highlights, source note, related documents, Zotero item) per the
     /// override cascade: entry override → `section` value → collection default.
     ///
@@ -1041,7 +1046,7 @@ class CollectionContentResolver {
         case .heading:
             return .heading(ref.text ?? "", level: headingLevel)
         case .prose:
-            return .prose(ref.proseRTF ?? Data())
+            return .prose(CollectionProse.paragraphs(fromRTF: ref.proseRTF ?? Data()))
         case .excerpt:
             return excerptItem(for: ref, batch: batch)
         case .generated:

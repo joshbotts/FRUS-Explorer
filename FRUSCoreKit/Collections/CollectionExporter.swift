@@ -7,11 +7,6 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
-#if canImport(AppKit)
-import AppKit
-#elseif canImport(UIKit)
-import UIKit
-#endif
 
 // MARK: - CollectionToCStyle
 
@@ -19,15 +14,17 @@ import UIKit
 ///
 /// Version history:
 ///   1.0 — Session 128: introduced alongside `CollectionExportOptions`
-enum CollectionToCStyle: String, CaseIterable, Identifiable, Sendable {
+///   1.1 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit with the export's other
+///          payloads and options, public
+public enum CollectionToCStyle: String, CaseIterable, Identifiable, Sendable {
     /// Use the formatted `history.state.gov`-style citation string (default).
     case citation
     /// Use the document's heading and dateline extracted from the TEI body.
     case headerAndDateline
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .citation:          return String(localized: "export.tocStyle.citation",
                                                defaultValue: "Citation")
@@ -54,7 +51,16 @@ enum CollectionToCStyle: String, CaseIterable, Identifiable, Sendable {
 /// while the apparatus blocks (`apparatusBlocks`) must be inserted through the **host's** entry
 /// management (which keeps its `sortedEntries` mirror + `sortOrder` consistent), so the host drives
 /// insertion via `apparatusBlocks(notAlreadyIn:)`.
-enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
+///
+/// The recipe is FRUSCoreKit's (`recipe`), and so are the names and the apparatus; `applyFields(to:)`
+/// and `matches(_:)`, which read and write a SwiftData `Collection`, are the app's
+/// (`CollectionExporter+App.swift`). A host with collections of its own reads the same `recipe`.
+///
+/// Version history:
+///   1.0 — Composer redesign 4a: the four presets
+///   1.1 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, with `recipe` and
+///          `Recipe` public; `applyFields(to:)` and `matches(_:)` stay in the app
+public enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
     /// Full text with the researcher's notes, an archival source note, and an opening persons index
     /// + chronology — a classroom reader.
     case teachingReader
@@ -65,10 +71,10 @@ enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
     /// Everything on, full apparatus — a scholarly edition.
     case scholarlyEdition
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
     /// The preset's display name.
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .teachingReader:   return String(localized: "collection.preset.teachingReader",
                                               defaultValue: "Teaching reader")
@@ -82,7 +88,7 @@ enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
     }
 
     /// A one-line summary of what the preset composes.
-    var subtitle: String {
+    public var subtitle: String {
         switch self {
         case .teachingReader:   return String(localized: "collection.preset.teachingReader.subtitle",
                                               defaultValue: "Full text · notes · chronology")
@@ -96,7 +102,7 @@ enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
     }
 
     /// The row/menu icon (SF Symbol).
-    var systemImage: String {
+    public var systemImage: String {
         switch self {
         case .teachingReader:   return "book"
         case .briefingPacket:   return "doc.text.magnifyingglass"
@@ -107,7 +113,7 @@ enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
 
     /// A one-word name for the compact (iPhone) preset chip, where the full `displayName`
     /// ("Briefing packet") is too wide (Composer v2 §C preset row).
-    var shortName: String {
+    public var shortName: String {
         switch self {
         case .teachingReader:   return String(localized: "collection.preset.teachingReader.short", defaultValue: "Teaching")
         case .briefingPacket:   return String(localized: "collection.preset.briefingPacket.short", defaultValue: "Briefing")
@@ -117,7 +123,7 @@ enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
     }
 
     /// A one-word descriptor under the compact preset chip ("full text" / "summaries" / …).
-    var shortTag: String {
+    public var shortTag: String {
         switch self {
         case .teachingReader:   return String(localized: "collection.preset.teachingReader.tag", defaultValue: "full text")
         case .briefingPacket:   return String(localized: "collection.preset.briefingPacket.tag", defaultValue: "summaries")
@@ -127,62 +133,40 @@ enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
     }
 
     /// The apparatus blocks the preset composes (each placed front/back per its type by the host).
-    var apparatusBlocks: [CollectionGeneratedBlockType] { recipe.apparatus }
+    public var apparatusBlocks: [CollectionGeneratedBlockType] { recipe.apparatus }
 
     /// The preset's apparatus blocks that are **not** already present, given the set of
     /// `generatedBlockType` raw values the collection already carries — the append-only,
     /// non-destructive filter the host uses to decide which blocks to insert.
-    func apparatusBlocks(notAlreadyIn presentRawValues: Set<String>) -> [CollectionGeneratedBlockType] {
+    public func apparatusBlocks(notAlreadyIn presentRawValues: Set<String>) -> [CollectionGeneratedBlockType] {
         recipe.apparatus.filter { !presentRawValues.contains($0.rawValue) }
     }
 
-    /// Overwrites `collection`'s composition **fields** to the preset's recipe. Apparatus is added
-    /// separately by the host (see `apparatusBlocks(notAlreadyIn:)`); this touches only scalar
-    /// fields, which every host reads live via `@Bindable`, so the preview updates immediately.
-    @MainActor
-    func applyFields(to collection: Collection) {
-        let r = recipe
-        collection.defaultBodyDepth = r.bodyDepth.rawValue
-        collection.effectiveIncludeFootnotes = r.footnotes
-        collection.effectiveIncludeSourceNote = r.sourceNote
-        collection.includeNotes = r.notes
-        collection.defaultIncludeHeadnote = r.headnotes
-        collection.applyHighlights = r.highlights
-        collection.includeWordCloud = r.wordCloud
-        collection.tocStyle = r.toc.rawValue
-    }
-
-    /// Whether `collection`'s current composition scalar fields all equal this preset's recipe —
-    /// i.e. this preset is the collection's active starting composition, so the Composer preset
-    /// grid highlights its card (Composer v2). Apparatus is intentionally NOT compared: preset
-    /// apparatus is append-only/non-destructive, so a collection carrying extra blocks still matches.
-    @MainActor
-    func matches(_ collection: Collection) -> Bool {
-        let r = recipe
-        return collection.defaultBodyDepth == r.bodyDepth.rawValue
-            && collection.effectiveIncludeFootnotes == r.footnotes
-            && collection.effectiveIncludeSourceNote == r.sourceNote
-            && collection.includeNotes == r.notes
-            && collection.defaultIncludeHeadnote == r.headnotes
-            && collection.applyHighlights == r.highlights
-            && collection.includeWordCloud == r.wordCloud
-            && collection.tocStyle == r.toc.rawValue
-    }
-
     /// The resolved field set for one preset — one place so `apply` and `apparatusBlocks` agree.
-    private struct Recipe {
-        let bodyDepth: CollectionBodyDepth
-        let footnotes: Bool
-        let sourceNote: Bool
-        let notes: Bool
-        let headnotes: Bool
-        let highlights: Bool
-        let wordCloud: Bool
-        let toc: CollectionToCStyle
-        let apparatus: [CollectionGeneratedBlockType]
+    public struct Recipe: Sendable {
+        /// The collection's default body depth.
+        public let bodyDepth: CollectionBodyDepth
+        /// Whether footnotes are included.
+        public let footnotes: Bool
+        /// Whether each document's archival source note is included.
+        public let sourceNote: Bool
+        /// Whether research notes are included.
+        public let notes: Bool
+        /// Whether a document's headnote is on by default.
+        public let headnotes: Bool
+        /// Whether highlights are drawn.
+        public let highlights: Bool
+        /// Whether the word-cloud overview is drawn.
+        public let wordCloud: Bool
+        /// The contents' label style.
+        public let toc: CollectionToCStyle
+        /// The apparatus blocks the preset appends, in order.
+        public let apparatus: [CollectionGeneratedBlockType]
     }
 
-    private var recipe: Recipe {
+    /// The preset's recipe: the fields `applyFields(to:)` writes and `matches(_:)` compares, and the
+    /// apparatus `apparatusBlocks` lists.
+    public var recipe: Recipe {
         switch self {
         case .teachingReader:
             return Recipe(bodyDepth: .full, footnotes: false, sourceNote: true, notes: true,
@@ -213,7 +197,9 @@ enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 153: introduced alongside `CollectionFootnoteStyle`
-enum CollectionBodyDepth: String, CaseIterable, Identifiable, Sendable {
+///   1.1 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public; `available`, which
+///          asks Apple Intelligence, stays in the app (`CollectionExporter+App.swift`)
+public enum CollectionBodyDepth: String, CaseIterable, Identifiable, Sendable {
     /// Full document body — current default. Respects the document as written.
     case full
     /// Replace the body with an AI-generated summary. Requires Apple Intelligence.
@@ -224,9 +210,9 @@ enum CollectionBodyDepth: String, CaseIterable, Identifiable, Sendable {
     /// reference list or briefing outline.
     case index
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .full:        return String(localized: "export.bodyDepth.full",
                                          defaultValue: "Full document")
@@ -239,7 +225,7 @@ enum CollectionBodyDepth: String, CaseIterable, Identifiable, Sendable {
 
     /// A short label for the compact override chip on a document row (Composer redesign 3):
     /// "Full" / "Summary" / "Index" — briefer than `displayName`, which labels full controls.
-    var chipLabel: String {
+    public var chipLabel: String {
         switch self {
         case .full:        return String(localized: "collection.entry.chip.bodyDepth.full",
                                          defaultValue: "Full")
@@ -250,21 +236,12 @@ enum CollectionBodyDepth: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// The body depths a user can choose given the device / AI configuration.
-    /// `.summaryOnly` is gated on Apple Intelligence being available.
-    @MainActor
-    static var available: [CollectionBodyDepth] {
-        AppleIntelligenceProvider.shared.isAvailable
-            ? allCases
-            : allCases.filter { $0 != .summaryOnly }
-    }
-
     /// A document's effective body depth (Phase 3c cascade, most specific wins): the entry's
     /// own override → the section override (the nearest preceding heading's) → the collection
     /// default. Inputs are `CollectionBodyDepth` raw values; `nil` means "not set".
-    static func resolve(entryOverride: String?,
-                        sectionOverride: String?,
-                        collectionDefault: String) -> CollectionBodyDepth {
+    public static func resolve(entryOverride: String?,
+                               sectionOverride: String?,
+                               collectionDefault: String) -> CollectionBodyDepth {
         CollectionBodyDepth(rawValue: entryOverride ?? sectionOverride ?? collectionDefault) ?? .full
     }
 }
@@ -283,7 +260,8 @@ enum CollectionBodyDepth: String, CaseIterable, Identifiable, Sendable {
 /// Version history:
 ///   1.0 — Session 153: initial implementation
 ///   1.1 — Authoring Phase 5: demoted to the legacy raw-value vocabulary (see above)
-enum CollectionFootnoteStyle: String, CaseIterable, Identifiable, Sendable {
+///   1.2 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public
+public enum CollectionFootnoteStyle: String, CaseIterable, Identifiable, Sendable {
     /// No footnotes — body text only.
     case none
     /// Archival source note only — strips editorial/explanatory footnotes but
@@ -292,9 +270,9 @@ enum CollectionFootnoteStyle: String, CaseIterable, Identifiable, Sendable {
     /// All footnotes — current default behavior.
     case all
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .none:           return String(localized: "export.footnoteStyle.none",
                                             defaultValue: "None")
@@ -345,6 +323,8 @@ enum CollectionFootnoteStyle: String, CaseIterable, Identifiable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Future (unnumbered): PDF/DOCX inline highlight annotation
+///   1.1 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit with the Word exporter;
+///          its colour is the kit's `HighlightColor`, which `DocumentHighlight.Color` names
 final class HighlightPaintTracker {
     private let sorted: [ExportHighlight]
     private var flatPos = 0
@@ -364,7 +344,7 @@ final class HighlightPaintTracker {
     /// - Returns: An ordered, non-overlapping list of `(range, color)` pairs whose
     ///   ranges concatenate to cover all of `text`. When inactive or `text` is
     ///   empty, returns the whole string as a single unhighlighted span.
-    func partition(_ text: String) -> [(range: Range<String.Index>, color: DocumentHighlight.Color?)] {
+    func partition(_ text: String) -> [(range: Range<String.Index>, color: HighlightColor?)] {
         let chunkStart = flatPos
         let chunkLen = text.utf16.count
         flatPos += chunkLen
@@ -413,7 +393,7 @@ final class HighlightPaintTracker {
         }
         let cuts = slots.sorted()
 
-        var spans: [(Range<String.Index>, DocumentHighlight.Color?)] = []
+        var spans: [(Range<String.Index>, HighlightColor?)] = []
         spans.reserveCapacity(cuts.count - 1)
         for i in 0..<(cuts.count - 1) {
             let startSlot = cuts[i], endSlot = cuts[i + 1]
@@ -445,204 +425,57 @@ final class HighlightPaintTracker {
 ///          whose nil-pair derivation reproduces each legacy tri-state value exactly
 ///   1.4 — 2026-10-09: #1585 — `init(composing:)`, the one place a collection's composition
 ///          becomes options, which the export sheet and the content resolver each wrote out
-struct CollectionExportOptions: Sendable {
+///   1.5 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, with its
+///          initialiser spelled out with the same defaults; `init(composing:)`, which reads a
+///          SwiftData `Collection`, stays in the app (`CollectionExporter+App.swift`)
+public struct CollectionExportOptions: Sendable {
     /// Which label style to use in the table of contents.
-    var tocStyle: CollectionToCStyle = .citation
+    public var tocStyle: CollectionToCStyle = .citation
     /// When `true`, document footnotes are rendered where footnote rendering is gated
     /// (the shared HTML renderer / live preview). Defaults to `true` — the legacy
     /// `.all` behavior. (The PDF/DOCX exporters have never gated footnotes on the old
     /// tri-state; that pre-existing behavior is deliberately unchanged so untouched
     /// collections keep exporting byte-identically.)
-    var includeFootnotes: Bool = true
+    public var includeFootnotes: Bool = true
     /// When `true`, the resolver fetches each document's archival source note and every
     /// format appends a "Source:" block. Defaults to `false` — pre-Phase-5, only the
     /// legacy `.sourceNoteOnly` style resolved it.
-    var includeSourceNote: Bool = false
+    public var includeSourceNote: Bool = false
     /// When `true`, inline user highlights are annotated in the document body.
     /// Implemented for all three export formats: HTML (`FRUSRenderNodeHTMLSerializer.injectHighlights`),
     /// PDF (`PDFCollectionExporter.drawFrameWithHighlights`), and DOCX
     /// (`DocxCollectionExporter.runsXML(for:props:tracker:)`).
-    var applyHighlights: Bool = false
+    public var applyHighlights: Bool = false
     /// When `true`, attached research notes appear below each document body.
     /// Default `true`; set `false` for a clean primary-source reader.
-    var includeNotes: Bool = true
+    public var includeNotes: Bool = true
     /// The `SummarizationPrompt.id` to use when `bodyDepth == .summaryOnly`.
     /// Summaries are generated on demand if none exist for this prompt.
-    var summaryPromptId: UUID? = nil
+    public var summaryPromptId: UUID? = nil
     /// When `true`, a word-cloud overview page/section of the collection's most
-    /// frequent terms is included. The PDF, HTML and Word exporters draw it.
-    var includeWordCloud: Bool = false
+    /// frequent terms is included. The PDF, HTML and Word exporters draw it; the HTML and Word
+    /// exporters, FRUSCoreKit's, with the drawing they are handed (`wordCloud`), which
+    /// `ExportFormat.makeExporter()` passes, and none when they are handed none.
+    public var includeWordCloud: Bool = false
     /// The collection-level default a document entry's `includeHeadnote == nil` (Default) resolves
     /// to (Composer redesign). `false` by default, so collections that never set a headnote default
     /// resolve exactly as before. Set from `Collection.defaultIncludeHeadnote`.
-    var includeHeadnoteDefault: Bool = false
-}
+    public var includeHeadnoteDefault: Bool = false
 
-extension CollectionExportOptions {
-
-    /// The options `collection`'s own composition settings give: what the Composition section
-    /// stores, with nothing decided by the format.
-    ///
-    /// One builder for the two callers that used to write the same eight lines apart: the export
-    /// sheet (through ``ExportFormat/exportOptions(for:)``) and the content resolver's
-    /// `resolutionOptions(for:)`. The sheet's copy had grown a format test on the word cloud that
-    /// the resolver's never had, which is how the Word export lost its cloud (#1585).
-    ///
-    /// - Parameter collection: The collection being exported.
-    init(composing collection: Collection) {
-        self.init(
-            tocStyle:          CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
-            includeFootnotes:  collection.effectiveIncludeFootnotes,
-            includeSourceNote: collection.effectiveIncludeSourceNote,
-            applyHighlights:   collection.applyHighlights,
-            includeNotes:      collection.includeNotes,
-            summaryPromptId:   collection.summaryPromptId,
-            includeWordCloud:  collection.includeWordCloud,
-            includeHeadnoteDefault: collection.defaultIncludeHeadnote
-        )
-    }
-}
-
-// MARK: - ExportFormat
-
-/// Supported output formats for collection export.
-///
-/// Version history:
-///   1.0 — Session 22: initial implementation
-///   1.1 — Session 82: added `.docx` backed by `DocxCollectionExporter`
-///   1.2 — Session 155: added `.zoteroJSON` backed by `ZoteroCollectionExporter`
-///          (Zotero JSON exchange format, one item per document)
-///   1.3 — Session 164: `.zoteroJSON` now emits RIS (`.ris`)
-///   1.4 — Zotero strategy: `.zoteroJSON` (RIS) is the **Zotero desktop**
-///          fallback only — iOS Zotero has no RIS import. The annotation-
-///          preserving path on both platforms is the Zotero Web API (separate).
-///   1.5 — Collections rework Phase 4 (D7): added `.bibtex` (`.bib`) backed by
-///          `BibTeXCollectionExporter`, for LaTeX / non-Zotero reference managers.
-///   1.6 — Collections rework Phase 4 (D9): added `.fruscollection` — the native,
-///          round-trippable collection file. It is not a `CollectionExporter` (it
-///          serializes the collection's *source* via `NativeCollectionSerializer`), so
-///          `makeExporter()` returns `nil` for it and the export flow special-cases it.
-///   1.7 — 2026-10-09: #1585 — `drawsWordCloud` and `exportOptions(for:)`: the format says
-///          whether it draws the word cloud, Word included, and builds the options its exporter
-///          is handed
-enum ExportFormat: String, CaseIterable, Identifiable {
-    case pdf
-    case html
-    case docx
-    case zoteroJSON
-    case bibtex
-    case fruscollection
-
-    var id: String { rawValue }
-
-    var displayName: String {
-        switch self {
-        case .pdf:        return "PDF"
-        case .html:       return "HTML"
-        case .docx:       return "DOCX"
-        case .zoteroJSON: return String(localized: "export.format.zotero",
-                                        defaultValue: "Zotero RIS (desktop)")
-        case .bibtex:     return String(localized: "export.format.bibtex",
-                                        defaultValue: "BibTeX")
-        case .fruscollection: return String(localized: "export.format.native",
-                                            defaultValue: "FRUS Collection (shareable)")
-        }
-    }
-
-    /// The card title in the Composer v2 export format grid (§ Export): the short, canvas-exact
-    /// label (`.zoteroJSON` reads as "RIS" there — the web-API send is a separate row).
-    var gridLabel: String {
-        switch self {
-        case .pdf:            return "PDF"
-        case .html:           return "HTML"
-        case .docx:           return String(localized: "export.grid.docx.title", defaultValue: "Word")
-        case .bibtex:         return "BibTeX"
-        case .zoteroJSON:     return String(localized: "export.grid.ris.title", defaultValue: "RIS")
-        case .fruscollection: return String(localized: "export.grid.native.title", defaultValue: ".fruscollection")
-        }
-    }
-
-    /// The one-line descriptor under the format card's title (Composer v2 export grid).
-    ///
-    /// HTML's said "Web page + word cloud" until #1688, as though it alone carried the cloud: PDF and Word draw it
-    /// too when Word-cloud overview is on (`options.includeWordCloud`, Word since #1621).
-    var gridCaption: String {
-        switch self {
-        case .pdf:            return String(localized: "export.grid.pdf.caption", defaultValue: "Formatted reader")
-        case .html:           return String(localized: "export.grid.html.caption.v2", defaultValue: "Web page")
-        case .docx:           return String(localized: "export.grid.docx.caption", defaultValue: "Editable .docx")
-        case .bibtex:         return String(localized: "export.grid.bibtex.caption", defaultValue: "Reference manager")
-        case .zoteroJSON:     return String(localized: "export.grid.ris.caption", defaultValue: "Zotero / EndNote")
-        case .fruscollection: return String(localized: "export.grid.native.caption", defaultValue: "Editable copy for a colleague")
-        }
-    }
-
-    /// The formats offered in the export grid, in canvas order (PDF · HTML · Word · BibTeX · RIS ·
-    /// .fruscollection). The native `.fruscollection` file is dropped for smart (saved-search)
-    /// collections until they're snapshotted (D8/D9b); the web-API Zotero send is a separate row,
-    /// not a grid card.
-    static func gridFormats(smartCollection: Bool) -> [ExportFormat] {
-        let ordered: [ExportFormat] = [.pdf, .html, .docx, .bibtex, .zoteroJSON, .fruscollection]
-        return smartCollection ? ordered.filter { $0 != .fruscollection } : ordered
-    }
-
-    var fileExtension: String {
-        switch self {
-        case .zoteroJSON:     return "ris"
-        case .bibtex:         return "bib"
-        case .fruscollection: return NativeCollectionSerializer.fileExtension
-        default:              return rawValue
-        }
-    }
-
-    /// Whether an export in this format prints a figure's image (#1516): PDF, Word and HTML do.
-    /// BibTeX and RIS print citations, and the native file carries the collection's source, so
-    /// an export in one of those fetches no image.
-    var printsFigureImages: Bool {
-        switch self {
-        case .pdf, .html, .docx: return true
-        case .zoteroJSON, .bibtex, .fruscollection: return false
-        }
-    }
-
-    /// Whether an export in this format draws the collection's word-cloud overview when the
-    /// collection asks for one: PDF, HTML and Word do (#1585). BibTeX and RIS print citations, and
-    /// the native file carries the setting itself, not a drawing.
-    var drawsWordCloud: Bool {
-        switch self {
-        case .pdf, .html, .docx: return true
-        case .zoteroJSON, .bibtex, .fruscollection: return false
-        }
-    }
-
-    /// The options the export sheet hands this format's exporter for `collection`: the
-    /// collection's composition, with the word cloud asked for only of a format that draws one.
-    ///
-    /// On the format, and not in the sheet, so that a test hands an exporter exactly what the
-    /// sheet does. Until #1585 the sheet built these itself and asked for the cloud of PDF and
-    /// HTML only, a condition older than the Word exporter's cloud (#960): the Word exporter drew
-    /// the cloud whenever it was asked, the parity test asked it directly, and the app never did.
-    ///
-    /// - Parameter collection: The collection being exported.
-    /// - Returns: The options for this format's exporter.
-    func exportOptions(for collection: Collection) -> CollectionExportOptions {
-        var options = CollectionExportOptions(composing: collection)
-        options.includeWordCloud = options.includeWordCloud && drawsWordCloud
-        return options
-    }
-
-    /// Returns a fresh exporter instance for this format, or `nil` for `.fruscollection`,
-    /// which is produced by `NativeCollectionSerializer` (it serializes the collection's
-    /// source rather than rendering resolved content) and handled directly by the export flow.
-    func makeExporter() -> (any CollectionExporter)? {
-        switch self {
-        case .pdf:            return PDFCollectionExporter()
-        case .html:           return HTMLCollectionExporter()
-        case .docx:           return DocxCollectionExporter()
-        case .zoteroJSON:     return ZoteroCollectionExporter()
-        case .bibtex:         return BibTeXCollectionExporter()
-        case .fruscollection: return nil
-        }
+    /// Creates options; every one defaults to the standard export, so `CollectionExportOptions()`
+    /// is the look an untouched collection exports with.
+    public init(tocStyle: CollectionToCStyle = .citation, includeFootnotes: Bool = true,
+                includeSourceNote: Bool = false, applyHighlights: Bool = false,
+                includeNotes: Bool = true, summaryPromptId: UUID? = nil,
+                includeWordCloud: Bool = false, includeHeadnoteDefault: Bool = false) {
+        self.tocStyle = tocStyle
+        self.includeFootnotes = includeFootnotes
+        self.includeSourceNote = includeSourceNote
+        self.applyHighlights = applyHighlights
+        self.includeNotes = includeNotes
+        self.summaryPromptId = summaryPromptId
+        self.includeWordCloud = includeWordCloud
+        self.includeHeadnoteDefault = includeHeadnoteDefault
     }
 }
 
@@ -682,98 +515,100 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 ///          unchanged and every format renders the line inside the document section
 ///          it belongs to. All defaulted, so existing construction sites — and every
 ///          untouched collection — render byte-identically
-struct CollectionExportDocument: Sendable {
+///   1.7 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, so a host outside
+///          the app resolves a document into the payload the app's exporters render
+public struct CollectionExportDocument: Sendable {
     /// The FRUS document identifier (e.g. `"d1"`).
-    let documentId: String
+    public let documentId: String
     /// The containing volume identifier (e.g. `"frus1969-76v01"`).
-    let volumeId: String
+    public let volumeId: String
     /// Position within the collection (ascending).
-    let sortOrder: Int
+    public let sortOrder: Int
     /// How much of this document's body to render — the per-entry effective depth
     /// (`CollectionEntry.bodyDepthOverride`, else the collection's `defaultBodyDepth`).
     /// Exporters switch on this per document, so one collection can mix full documents,
     /// summaries, and citation-only entries.
-    let bodyDepth: CollectionBodyDepth
+    public let bodyDepth: CollectionBodyDepth
     /// Human-readable document title (volume title + document ID).
-    let title: String
+    public let title: String
     /// The user's per-entry title override (M3, D4). `nil`/empty uses the derived heading
     /// (`exportHeading`). A non-empty value replaces **both** the ToC label (`tocLabel`,
     /// for both styles) and the top-of-document export heading. Defaulted `nil` at every
     /// construction site so untouched exports stay byte-identical.
-    let titleOverride: String?
+    public let titleOverride: String?
     /// ISO 8601 date string, if known.
-    let date: String?
+    public let date: String?
     /// Plain-text body of the document. Preserved as fallback when `renderModel` is nil.
-    let bodyText: String
+    public let bodyText: String
     /// Research note texts linked to this entry (one per linked `ResearchNote`).
-    let noteTexts: [String]
+    public let noteTexts: [String]
     /// Formatted citation string (history.state.gov style).
-    let citation: String
+    public let citation: String
     /// `https://history.state.gov/historicaldocuments/{volumeId}/{documentId}`
-    let historyStateGovURL: String
+    public let historyStateGovURL: String
     /// Fully converted render model for structured export output.
     /// Non-nil when the volume XML was successfully parsed during collection assembly.
-    let renderModel: FRUSDocumentRenderModel?
+    public let renderModel: FRUSDocumentRenderModel?
     /// The document heading extracted from the TEI body (e.g. `"1. Memorandum From…"`).
-    let header: String
+    public let header: String
     /// The dateline extracted from the TEI body.
-    let dateline: String?
+    public let dateline: String?
     /// AI-generated summary text for this document. Populated when
     /// `options.bodyDepth == .summaryOnly`; `nil` otherwise.
-    let summaryText: String?
+    public let summaryText: String?
     /// User highlights to annotate inline in the body. Populated when
     /// `options.applyHighlights == true`; empty otherwise.
-    let highlights: [ExportHighlight]
+    public let highlights: [ExportHighlight]
     /// Raw archival source note text. Populated when
     /// `options.includeSourceNote == true`; `nil` otherwise.
-    let sourceNoteText: String?
+    public let sourceNoteText: String?
     /// Whether this entry requested a headnote (Authoring Phase 5). When `true` and
     /// `headnoteText` is empty/nil, renderers emit a placeholder note instead — the
     /// resolver never generates a summary for a headnote.
-    let includeHeadnote: Bool
+    public let includeHeadnote: Bool
     /// The resolved headnote text — the chosen (or fallback) stored `GeneratedSummary`.
     /// Rendered as an italic abstract above the body when `includeHeadnote` is `true`.
-    let headnoteText: String?
+    public let headnoteText: String?
     /// The headnote summary's provenance (Composer redesign) — drives the export attribution so a
     /// user-edited/-written headnote is not labeled "AI-generated". `.aiGenerated` when no headnote.
-    let headnoteAuthorship: SummaryAuthorship
+    public let headnoteAuthorship: SummaryAuthorship
     /// The entry/section highlight override resolved by the cascade (Authoring Phase 5).
     /// `nil` = inherit — renderers gate inline highlights on
     /// `applyHighlightsOverride ?? options.applyHighlights`, so the default reproduces
     /// the collection-level behavior exactly.
-    let applyHighlightsOverride: Bool?
+    public let applyHighlightsOverride: Bool?
     /// The entry/section research-notes override resolved by the cascade (Phase 5).
     /// `nil` = inherit — renderers gate note blocks on
     /// `includeNotesOverride ?? options.includeNotes`.
-    let includeNotesOverride: Bool?
+    public let includeNotesOverride: Bool?
     /// The entry/section footnote override resolved by the cascade (Phase 5). `nil` =
     /// inherit — every renderer (the shared HTML renderer / preview, PDF, and DOCX —
     /// the latter two gated since the 2026-07-03 owner decision) gates footnote bodies
     /// on `includeFootnotesOverride ?? options.includeFootnotes`.
-    let includeFootnotesOverride: Bool?
+    public let includeFootnotesOverride: Bool?
     /// The entry/section summary-prompt override resolved by the cascade (Phase 5).
     /// `nil` = inherit the collection's `summaryPromptId`. Drives which prompt's stored
     /// summary attaches (preview) or generates (export) for a `.summaryOnly` body, and
     /// the headnote fallback pick.
-    let summaryPromptIdOverride: UUID?
+    public let summaryPromptIdOverride: UUID?
     /// The resolved "See also:" citations (decision A10, Authoring Phase 5): documents
     /// this one cross-references that are **also in the collection**, in collection
     /// order, deduplicated, self excluded. Empty (the default, and whenever the entry's
     /// `includeRelatedDocuments` resolves off) renders nothing — untouched collections
     /// are byte-identical.
-    let relatedDocumentCitations: [String]
+    public let relatedDocumentCitations: [String]
     /// Pre-built Zotero JSON item for `.zoteroJSON` export. `nil` if volume
     /// metadata was unavailable when this document was resolved.
-    let zoteroItem: ZoteroJSONExporter.Item?
+    public let zoteroItem: ZoteroJSONExporter.Item?
 
     /// Backward-compatible single-note accessor.
-    var noteText: String? { noteTexts.first }
+    public var noteText: String? { noteTexts.first }
 
     /// The top-of-document export heading (M3, D4): the user's `titleOverride` when
     /// non-empty, else the citation (or `title` when no citation). The single centralizer
     /// so the three exporters (HTML/PDF/DOCX) stay in lockstep — each renders this instead
     /// of re-deriving `citation.isEmpty ? title : citation`.
-    var exportHeading: String {
+    public var exportHeading: String {
         if let override = titleOverride, !override.isEmpty { return override }
         return citation.isEmpty ? title : citation
     }
@@ -781,7 +616,7 @@ struct CollectionExportDocument: Sendable {
     /// Returns the ToC label appropriate for the given display style. A non-empty
     /// `titleOverride` wins first for **both** styles (M3, D4), so the ToC label and the
     /// export heading name the document identically.
-    func tocLabel(style: CollectionToCStyle) -> String {
+    public func tocLabel(style: CollectionToCStyle) -> String {
         if let override = titleOverride, !override.isEmpty { return override }
         switch style {
         case .citation:
@@ -793,7 +628,7 @@ struct CollectionExportDocument: Sendable {
         }
     }
 
-    init(
+    public init(
         documentId: String,
         volumeId: String,
         sortOrder: Int,
@@ -859,7 +694,7 @@ struct CollectionExportDocument: Sendable {
     /// Returns a copy of this document with `summaryText` set — used after on-demand
     /// summary generation, which only runs for entries whose effective `bodyDepth`
     /// is `.summaryOnly`. All other fields (including `bodyDepth`) are preserved.
-    func withSummary(_ text: String) -> CollectionExportDocument {
+    public func withSummary(_ text: String) -> CollectionExportDocument {
         CollectionExportDocument(
             documentId: documentId, volumeId: volumeId, sortOrder: sortOrder,
             bodyDepth: bodyDepth, title: title, titleOverride: titleOverride,
@@ -900,29 +735,33 @@ struct CollectionExportDocument: Sendable {
 ///          `Collection.includeMethodAppendix`; defaulted empty, which every renderer skips)
 ///   1.4 — #1463: `init` resolves `name` through `CollectionExportNaming.title(savedName:)`, so a
 ///          collection with no name exports titled "Untitled Collection" rather than blank
-struct CollectionExportMetadata: Sendable {
+///   1.5 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, with `exportDate`
+///          (defaulted `nil`, the app's case: an export is dated when it is rendered, as before);
+///          `methodAppendix(enabled:appendix:)`, which reads the app's `QueryMethodAppendix`, stays
+///          in the app (`CollectionExporter+App.swift`)
+public struct CollectionExportMetadata: Sendable {
     /// The collection's display name — the export title. Never empty: `init` stores the name it is
     /// given trimmed, or "Untitled Collection" when that has no text (`CollectionExportNaming.title`).
-    let name: String
+    public let name: String
     /// Optional one-line description rendered under the title (pre-Phase-4 behavior).
-    let note: String?
+    public let note: String?
     /// Optional title-page subtitle (Authoring Phase 4). `nil`/empty renders nothing,
     /// keeping the export header byte-identical to pre-Phase-4 output.
-    let subtitle: String?
+    public let subtitle: String?
     /// Optional title-page author/byline (Authoring Phase 4). `nil`/empty renders nothing.
-    let authorLine: String?
+    public let authorLine: String?
     /// Optional project provenance — the name of the project this export was generated under
     /// (#377 Phase 4). `nil` unless the collection opts in (`includeProjectProvenance`) *and* a
     /// project is active; renders a "Project: …" line between the author and the note. The value
     /// is the **live** active project at export time (like `authorLine`'s placeholder), not a
     /// value stored on the collection.
-    let projectName: String?
+    public let projectName: String?
     /// Optional project research question, rendered under the project name (#377 Phase 4). `nil`
     /// unless a project is active with a non-empty question and the collection opts in.
-    let projectResearchQuestion: String?
+    public let projectResearchQuestion: String?
     /// When `true`, renderers append a trailing colophon (`CollectionColophon`).
     /// Defaults to `false`, so collections that never opt in export exactly as today.
-    let includeColophon: Bool
+    public let includeColophon: Bool
 
     /// The method appendix as flat lines, or empty (M-2).
     ///
@@ -931,7 +770,16 @@ struct CollectionExportMetadata: Sendable {
     /// renderer that received the whole appendix could render an un-narrowed one by mistake.
     /// Empty is the "feature unused" state and every renderer emits nothing for it, so a
     /// collection that never opts in exports byte-identically to before.
-    let methodAppendixLines: [String]
+    public let methodAppendixLines: [String]
+
+    /// The day the export is dated: what the Word cover's "Exported" line and every colophon print.
+    ///
+    /// `nil`, which the app passes, dates the export when it is rendered, in the device's own
+    /// calendar, as every export always has. A host that must print the same bytes for the same
+    /// collection wherever it runs (FRUS Explorer Light, S18a) names the moment, the locale and the
+    /// time zone: in the app's Foundation the long date reads "October 26, 2026" in `en_US` and
+    /// "26 October 2026" in `en_001`, the locale a Linux server takes when none is set.
+    public let exportDate: CollectionExportDate?
 
     /// Creates a metadata snapshot. The Phase 4 parameters default to "feature unused"
     /// so pre-Phase-4 call sites compile — and render — unchanged.
@@ -939,10 +787,10 @@ struct CollectionExportMetadata: Sendable {
     /// `name` is the collection's SAVED name, which may be empty (#1463); the snapshot's `name` is
     /// the title every exporter prints, resolved here so that no construction site can pass a blank
     /// one through.
-    init(name: String, note: String?, subtitle: String? = nil,
-         authorLine: String? = nil, projectName: String? = nil,
-         projectResearchQuestion: String? = nil, includeColophon: Bool = false,
-         methodAppendixLines: [String] = []) {
+    public init(name: String, note: String?, subtitle: String? = nil,
+                authorLine: String? = nil, projectName: String? = nil,
+                projectResearchQuestion: String? = nil, includeColophon: Bool = false,
+                methodAppendixLines: [String] = [], exportDate: CollectionExportDate? = nil) {
         self.name = CollectionExportNaming.title(savedName: name)
         self.note = note
         self.subtitle = subtitle
@@ -951,28 +799,14 @@ struct CollectionExportMetadata: Sendable {
         self.projectResearchQuestion = projectResearchQuestion
         self.includeColophon = includeColophon
         self.methodAppendixLines = methodAppendixLines
+        self.exportDate = exportDate
     }
 
     /// Resolves the export's project provenance from the toggle + the active project's fields —
     /// pure, so the gating is unit-testable without the SwiftData `@Query` lookup at the call site.
     /// Returns `(nil, nil)` when disabled or when there's no active project with a non-empty name;
     /// the research question is dropped when blank. The name is the anchor: no name → no provenance.
-    /// Resolves the method-appendix lines from the toggle + the appendix — pure, so the gating is
-    /// unit-testable without the SwiftData fetch at the call site.
-    ///
-    /// Returns `[]` when disabled or when the narrowed appendix has no rows. An appendix with a
-    /// heading and caveats but no searches would be a methods section asserting a method that was
-    /// never used, which is worse than omitting it.
-    ///
-    /// - Parameters:
-    ///   - enabled: `Collection.includeMethodAppendix`.
-    ///   - appendix: the appendix, **already narrowed** to the export's project.
-    static func methodAppendix(enabled: Bool, appendix: QueryMethodAppendix?) -> [String] {
-        guard enabled, let appendix, !appendix.rows.isEmpty else { return [] }
-        return appendix.plainTextLines
-    }
-
-    static func projectProvenance(enabled: Bool, projectName: String?, researchQuestion: String?)
+    public static func projectProvenance(enabled: Bool, projectName: String?, researchQuestion: String?)
         -> (name: String?, question: String?) {
         guard enabled,
               let name = projectName?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -980,6 +814,44 @@ struct CollectionExportMetadata: Sendable {
         else { return (nil, nil) }
         let question = researchQuestion?.trimmingCharacters(in: .whitespacesAndNewlines)
         return (name, (question?.isEmpty == false) ? question : nil)
+    }
+}
+
+// MARK: - CollectionExportDate
+
+/// The moment an export is dated, and the calendar its day is written in: the Word cover's
+/// "Exported" line and every colophon print the day, long, with no time.
+///
+/// The app never names one (`CollectionExportMetadata.exportDate` is `nil`), so an export is dated
+/// when it is rendered, in the device's locale and time zone, as it always has been. A host outside
+/// the app names all three, so the same collection prints the same bytes wherever it is rendered.
+///
+/// Version history:
+///   1.0 — 2026-10-25 (FRUS Explorer Light, S18a): the date the Word exporter and the colophon each
+///          took from `Date()` and a `DateFormatter` of the device's locale, passed in
+public struct CollectionExportDate: Sendable {
+    /// The moment the export is dated.
+    public var date: Date
+    /// The locale the day is written in; `nil` writes it in the device's own.
+    public var locale: Locale?
+    /// The time zone the day is read in; `nil` reads it in the device's own.
+    public var timeZone: TimeZone?
+
+    /// Creates an export date: now, in the device's locale and time zone, unless told otherwise.
+    public init(date: Date = Date(), locale: Locale? = nil, timeZone: TimeZone? = nil) {
+        self.date = date
+        self.locale = locale
+        self.timeZone = timeZone
+    }
+
+    /// The formatter an export writes the day with: `.long`, with no time, in this date's locale and
+    /// time zone where it names them — otherwise exactly the formatter the exporters made for
+    /// themselves.
+    public var formatter: DateFormatter {
+        let df = DateFormatter(); df.dateStyle = .long; df.timeStyle = .none
+        if let locale { df.locale = locale }
+        if let timeZone { df.timeZone = timeZone }
+        return df
     }
 }
 
@@ -993,19 +865,23 @@ struct CollectionExportMetadata: Sendable {
 ///   1.0 — Authoring Phase 4: initial implementation
 ///   1.1 — Lane EXPORT review round 1 (PV-1): `sourceLines(for:embedsWordCloud:)` names the app's word lists when
 ///          the export embeds the collection's word cloud
-enum CollectionColophon {
+///   1.2 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public; `text(for:dated:)`
+///          takes the export's date (`CollectionExportMetadata.exportDate`), `nil` being now, as before
+public enum CollectionColophon {
     /// The colophon line for a resolved item list: app attribution, document/volume
     /// counts, and the compilation date.
     ///
     /// - Parameters:
     ///   - items: The resolved items whose `.document` payloads are counted.
-    ///   - date: The compilation date (defaults to now; injectable for tests).
+    ///   - exportDate: The compilation date; `nil`, the default, is now, in the device's calendar.
     /// - Returns: A single localized colophon line.
-    static func text(for items: [CollectionExportItem], date: Date = Date()) -> String {
+    public static func text(for items: [CollectionExportItem],
+                            dated exportDate: CollectionExportDate? = nil) -> String {
         let docs = items.documents
         let docCount = docs.count
         let volCount = Set(docs.map(\.volumeId)).count
-        let df = DateFormatter(); df.dateStyle = .long; df.timeStyle = .none
+        let exportDate = exportDate ?? CollectionExportDate()
+        let df = exportDate.formatter, date = exportDate.date
         return String(
             localized: "export.colophon.line",
             defaultValue: "Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") from \(volCount) volume\(volCount == 1 ? "" : "s") · \(df.string(from: date))")
@@ -1032,7 +908,7 @@ enum CollectionColophon {
     /// - Parameters:
     ///   - items: The resolved items the export prints.
     ///   - embedsWordCloud: Whether this export draws the collection's word cloud.
-    static func sourceLines(for items: [CollectionExportItem], embedsWordCloud: Bool) -> [String] {
+    public static func sourceLines(for items: [CollectionExportItem], embedsWordCloud: Bool) -> [String] {
         // **No `includesCuratedResolutions`, and the omission is measured rather than an oversight.**
         // PV-1 shipped this call passing `true` whenever an archival-sources block was present, on
         // the assumption that such a block "may carry an identifier the owner matched by hand". It
@@ -1075,7 +951,8 @@ enum CollectionColophon {
 ///
 /// Version history:
 ///   1.0 — Session 2026-07-03: initial implementation
-enum CollectionAIAttribution {
+///   1.1 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public
+public enum CollectionAIAttribution {
     /// The attribution caption for an exported generated summary.
     ///
     /// `GeneratedSummary` does not currently store a producing-model identifier — the
@@ -1087,7 +964,7 @@ enum CollectionAIAttribution {
     /// - Parameter modelName: The producing model's display name, when the stored
     ///   summary carries one; `nil` (today, always) selects the generic wording.
     /// - Returns: A single localized attribution line.
-    static func label(modelName: String? = nil) -> String {
+    public static func label(modelName: String? = nil) -> String {
         if let modelName, !modelName.isEmpty {
             return String(
                 localized: "export.aiAttribution.model",
@@ -1106,7 +983,7 @@ enum CollectionAIAttribution {
     ///
     /// - Parameter authorship: The headnote summary's provenance.
     /// - Returns: The localized caption, or `nil` when no AI attribution should appear.
-    static func headnoteLabel(authorship: SummaryAuthorship) -> String? {
+    public static func headnoteLabel(authorship: SummaryAuthorship) -> String? {
         switch authorship {
         case .aiGenerated:
             return label()
@@ -1129,25 +1006,37 @@ enum CollectionAIAttribution {
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 5 (excerpts): initial implementation
-struct CollectionExportExcerpt: Sendable {
+///   1.1 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, with its
+///          initialiser spelled out; `color` is the kit's `HighlightColor`, which
+///          `DocumentHighlight.Color` names
+public struct CollectionExportExcerpt: Sendable {
     /// The frozen verbatim passage (the excerpt entry's `text`).
-    let text: String
+    public let text: String
     /// The source FRUS document identifier (provenance).
-    let documentId: String
+    public let documentId: String
     /// The source volume identifier (provenance).
-    let volumeId: String
+    public let volumeId: String
     /// The formatted history.state.gov-style citation for the source line — the same
     /// citation formatting document items use; empty when no provenance could be
     /// resolved (renderers then omit the source line).
-    let citation: String
+    public let citation: String
     /// The source highlight's colour raw value (`DocumentHighlight.Color`), when the
     /// excerpt was created from a highlight — drives the quote block's accent. `nil`
     /// for excerpts captured from a plain selection.
-    let colorTag: String?
+    public let colorTag: String?
+
+    /// Creates an excerpt payload.
+    public init(text: String, documentId: String, volumeId: String, citation: String, colorTag: String?) {
+        self.text = text
+        self.documentId = documentId
+        self.volumeId = volumeId
+        self.citation = citation
+        self.colorTag = colorTag
+    }
 
     /// The typed colour accent, when `colorTag` carries a known value.
-    var color: DocumentHighlight.Color? {
-        colorTag.flatMap { DocumentHighlight.Color(rawValue: $0) }
+    public var color: HighlightColor? {
+        colorTag.flatMap { HighlightColor(rawValue: $0) }
     }
 }
 
@@ -1162,23 +1051,24 @@ struct CollectionExportExcerpt: Sendable {
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 6 (core): initial implementation
-struct CollectionGeneratedRow: Sendable {
+///   1.1 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public
+public struct CollectionGeneratedRow: Sendable {
     /// The row's primary text (e.g. a citation, a person's name, a tag).
-    let text: String
+    public let text: String
     /// Optional secondary text rendered after/below the primary (e.g. a description or
     /// a "Documents 3, 7, 12" reference list). `nil` renders nothing.
-    let secondaryText: String?
+    public let secondaryText: String?
     /// Optional external link for the row (e.g. a NARA catalog URL). HTML links the
     /// row text; DOCX emits a real hyperlink relationship; PDF renders the URL as
     /// visible small text (CoreText frame drawing has no link annotations — documented
     /// tradeoff in `PDFCollectionExporter`).
-    let url: String?
+    public let url: String?
     /// Nesting indent (0 = flush; each level steps the row inward). Used by outline-
     /// shaped blocks such as the archival-sources tree.
-    let indentLevel: Int
+    public let indentLevel: Int
 
     /// Creates a row; secondary text, URL, and indent default to "none".
-    init(text: String, secondaryText: String? = nil, url: String? = nil, indentLevel: Int = 0) {
+    public init(text: String, secondaryText: String? = nil, url: String? = nil, indentLevel: Int = 0) {
         self.text = text
         self.secondaryText = secondaryText
         self.url = url
@@ -1198,13 +1088,22 @@ struct CollectionGeneratedRow: Sendable {
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 6 (core): initial implementation
-struct CollectionGeneratedBlock: Sendable {
+///   1.1 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, with its
+///          initialiser spelled out
+public struct CollectionGeneratedBlock: Sendable {
     /// Which apparatus block this is.
-    let type: CollectionGeneratedBlockType
+    public let type: CollectionGeneratedBlockType
     /// The localized block title — the rendered section title and the ToC label.
-    let title: String
+    public let title: String
     /// The resolved rows, in display order.
-    let rows: [CollectionGeneratedRow]
+    public let rows: [CollectionGeneratedRow]
+
+    /// Creates a resolved block.
+    public init(type: CollectionGeneratedBlockType, title: String, rows: [CollectionGeneratedRow]) {
+        self.type = type
+        self.title = title
+        self.rows = rows
+    }
 }
 
 // MARK: - CollectionExportItem
@@ -1226,16 +1125,21 @@ struct CollectionGeneratedBlock: Sendable {
 ///   Authoring Phase 6 — `generated(CollectionGeneratedBlock)`: a pre-resolved apparatus
 ///     block rendered as a titled plain table/list in HTML/PDF/DOCX and listed in ToCs
 ///     by title (like sections); the reference formats skip it by design.
-enum CollectionExportItem: Sendable {
+///   2026-10-25 (FRUS Explorer Light, S18a) — moved to FRUSCoreKit, public; `prose` carries the
+///     block's paragraphs of `ProseFormattedSpan`, decoded when the item is resolved, where it
+///     carried the stored RTF and each exporter decoded it with `CollectionProse.paragraphs(fromRTF:)`
+public enum CollectionExportItem: Sendable {
     /// A FRUS document, fully resolved.
     case document(CollectionExportDocument)
     /// A section heading: the title text plus its resolved nesting level (1 = top-level,
     /// exactly the pre-Phase-4 rendering; 2–3 render as stepped sub-section headings).
     case heading(String, level: Int)
-    /// An editorial prose block, as **RTF** data (Phase 3b). Exporters decode it to an
-    /// `NSAttributedString` to render bold/italic/underline/colour, or read its `.string` for
-    /// the plain-text projection. `Data` (unlike `NSAttributedString`) is `Sendable`.
-    case prose(Data)
+    /// An editorial prose block (Phase 3b), as the paragraphs of formatted spans every format
+    /// renders: bold, italic, underline, colour and links. The host decodes the stored rich text
+    /// once, when it resolves the item — the app's resolver with
+    /// `CollectionProse.paragraphs(fromRTF:)`, a host outside the app with its own reader of the
+    /// same RTF — so HTML, Word and PDF render the same spans. `[]` renders nothing.
+    case prose([[ProseFormattedSpan]])
     /// A frozen verbatim quotation with provenance (Authoring Phase 5) — rendered as a
     /// quote block plus a source-citation line in the rich formats; dropped by the
     /// flat reference formats.
@@ -1265,7 +1169,7 @@ extension Array where Element == CollectionExportItem {
     ///
     /// A bibliography and a chronology add nothing: both are built from the documents' own
     /// metadata, which `frusText` already covers.
-    var provenanceSources: Set<ProvenanceSource> {
+    public var provenanceSources: Set<ProvenanceSource> {
         var out: Set<ProvenanceSource> = []
         for item in self {
             switch item {
@@ -1292,7 +1196,7 @@ extension Array where Element == CollectionExportItem {
 
     /// The `.document` payloads, in order (heading/prose items dropped). Used where an
     /// exporter needs the documents alone — e.g. the collection word cloud.
-    var documents: [CollectionExportDocument] {
+    public var documents: [CollectionExportDocument] {
         compactMap { if case .document(let doc) = $0 { return doc } else { return nil } }
     }
 }
@@ -1304,54 +1208,58 @@ extension Array where Element == CollectionExportItem {
 /// traits, underline from the underline-style attribute, `colorHex` from the
 /// foreground colour, and `linkURL` from the `.link` attribute (Session 2026-07-03 —
 /// the editor's Link control; RTF round-trips it as a `HYPERLINK` field). Produced by
-/// `CollectionProse.paragraphs(fromRTF:)`.
-struct ProseFormattedSpan: Sendable {
+/// `CollectionProse.append(text:bold:italic:underline:colorHex:linkURL:to:)`, which the app's
+/// `CollectionProse.paragraphs(fromRTF:)` calls for each run it reads, and a host's own reader
+/// for each of its runs.
+///
+/// Version history:
+///   1.0 — 2026-07-01: with `CollectionProse`
+///   1.1 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, with its
+///          initialiser spelled out
+public struct ProseFormattedSpan: Sendable {
     /// The run's text. May contain single `\n` line breaks; paragraph breaks (blank
     /// lines) are already split out into separate paragraphs by the decoder.
-    let text: String
+    public let text: String
     /// `true` when the run's font carries the bold symbolic trait.
-    let bold: Bool
+    public let bold: Bool
     /// `true` when the run's font carries the italic symbolic trait.
-    let italic: Bool
+    public let italic: Bool
     /// `true` when the run carries a non-zero underline style.
-    let underline: Bool
+    public let underline: Bool
     /// Uppercase `RRGGBB` (no leading `#`), or `nil` for (near-)black default text so
     /// ordinary prose isn't tagged with a redundant colour. The colour as the light
     /// appearance draws it, whatever appearance the export runs under, so typed text is
     /// `nil` in dark mode too (see `CollectionProse`).
-    let colorHex: String?
+    public let colorHex: String?
     /// The run's `.link` URL as a string, or `nil` for unlinked text. HTML renders it as
     /// an `<a href>`, DOCX as a real `<w:hyperlink>` relationship, PDF as underlined text
     /// followed by the visible URL (CoreText frame drawing has no link annotations).
-    let linkURL: String?
+    public let linkURL: String?
+
+    /// Creates a span.
+    public init(text: String, bold: Bool, italic: Bool, underline: Bool, colorHex: String?,
+                linkURL: String?) {
+        self.text = text
+        self.bold = bold
+        self.italic = italic
+        self.underline = underline
+        self.colorHex = colorHex
+        self.linkURL = linkURL
+    }
 }
 
 // MARK: - CollectionProse
 
-/// Shared decoder that turns a rich-text prose block — supplied as **RTF** `Data`
-/// (as carried by `CollectionExportItem.prose`) — into paragraphs of `ProseFormattedSpan`,
-/// so every exporter (HTML, DOCX, PDF) reads prose formatting through one code path and
-/// cannot drift. Blank lines (`"\n\n"`) split paragraphs; each paragraph is an ordered list
-/// of spans covering its text.
+/// The rules that turn a rich-text prose block's formatted runs into the paragraphs of
+/// `ProseFormattedSpan` every exporter (HTML, DOCX, PDF) renders, so no format reads prose
+/// formatting its own way. Blank lines (`"\n\n"`) split paragraphs; each paragraph is an ordered
+/// list of spans covering its text.
 ///
-/// **Data-loss guard.** A payload that fails the RTF decode is *not* dropped: a legacy
-/// Phase 3b blob (the `AttributedString`'s own JSON `Codable` encoding, written before the
-/// RTF switch and still reachable via CloudKit sync or `.fruscollection` files) is decoded
-/// directly, with bold/italic recovered from `inlinePresentationIntent`. Only data that is
-/// neither format yields `[]` — and `ProseRichText.exportRTF(from:)` never emits such a
-/// payload, falling back to the entry's plain `text` instead.
-///
-/// **Colours are read as the light appearance draws them.** Text typed in the editor carries
-/// the text view's dynamic colour, `NSColor.textColor` on the Mac and `UIColor.label` on iOS,
-/// which RTF stores by name (`\cname textColor`, `\cname labelColor`). The Mac reads either
-/// name back as that dynamic colour; iOS reads `labelColor` so, and `textColor`, a name UIKit
-/// does not know, as the black its colour table holds. Resolved under the current appearance,
-/// which outside drawing is whatever the thread was last left with, typed text was white
-/// whenever that was dark: `color:#FFFFFF` in HTML, `w:color FFFFFF` in Word, white text in a
-/// PDF, and white on the live preview's page, which is always light. Resolved for the light
-/// appearance it is black, which `hex(r:g:b:)` reads as no colour. A system colour takes its
-/// light shade at standard contrast, which iOS's Increase Contrast draws in a shade of its own;
-/// a fixed colour is unchanged.
+/// The host decodes a stored block into runs and hands each run to `append`: the app reads the
+/// editor's RTF, or a legacy Phase 3b JSON blob, with `paragraphs(fromRTF:)`, which stays in the
+/// app with AppKit and UIKit (`CollectionExporter+App.swift`); FRUS Explorer Light reads the same
+/// RTF with a codec of its own, held to the app's reading by golden spans. A colour reaches a span
+/// as `hex(r:g:b:)` writes it, as the light appearance draws it (see the app's extension).
 ///
 /// Version history:
 ///   1.0 — 2026-07-01: the shared decoder, as PDF and DOCX began rendering headings and prose
@@ -1362,81 +1270,16 @@ struct ProseFormattedSpan: Sendable {
 ///          under, so typed text is no longer white in either when that appearance is dark
 ///   1.4 — Session 2026-10-25: a colour outside sRGB is clamped to it before it is formatted, so
 ///          iOS writes six hex digits for it, as the Mac does
-enum CollectionProse {
-    /// Decodes `rtf` into paragraphs of formatted spans, resolving paragraph breaks *before*
-    /// spans are emitted so callers never straddle a paragraph boundary with a single run.
-    /// Falls back to the legacy Phase 3b JSON `AttributedString` encoding when the RTF
-    /// decode fails (see the type doc), so pre-RTF prose still renders in every exporter.
-    ///
-    /// - Returns: One inner array per paragraph; empty (`[]`) when the data is empty or is
-    ///   decodable as neither RTF nor the legacy JSON encoding.
-    static func paragraphs(fromRTF rtf: Data) -> [[ProseFormattedSpan]] {
-        if let ns = ProseRichText.decodedRTF(rtf) {
-            return ns.length > 0 ? paragraphs(fromDecoded: ns) : []
-        }
-        if let legacy = ProseRichText.legacyJSONAttributedString(rtf) {
-            return paragraphs(fromLegacy: legacy)
-        }
-        return []
-    }
-
-    /// Emits spans for a decoded RTF body: bold/italic from the run's concrete font traits,
-    /// underline from the underline-style attribute, colour from the foreground colour,
-    /// link URL from the `.link` attribute (`URL` or `String` valued — the RTF reader
-    /// restores `HYPERLINK` fields as `NSURL`).
-    private static func paragraphs(fromDecoded ns: NSAttributedString) -> [[ProseFormattedSpan]] {
-        var paragraphs: [[ProseFormattedSpan]] = [[]]
-        let plain = ns.string as NSString
-        ns.enumerateAttributes(in: NSRange(location: 0, length: ns.length), options: []) { attrs, range, _ in
-            var bold = false, italic = false, underline = false
-            var colorHex: String?
-            var linkURL: String?
-            if let link = attrs[.link] {
-                linkURL = (link as? URL)?.absoluteString ?? (link as? String)
-            }
-            #if canImport(AppKit)
-            if let font = attrs[.font] as? NSFont {
-                let traits = font.fontDescriptor.symbolicTraits
-                bold = traits.contains(.bold); italic = traits.contains(.italic)
-            }
-            if let color = attrs[.foregroundColor] as? NSColor { colorHex = hexColor(color) }
-            #elseif canImport(UIKit)
-            if let font = attrs[.font] as? UIFont {
-                let traits = font.fontDescriptor.symbolicTraits
-                bold = traits.contains(.traitBold); italic = traits.contains(.traitItalic)
-            }
-            if let color = attrs[.foregroundColor] as? UIColor { colorHex = hexColor(color) }
-            #endif
-            if let style = attrs[.underlineStyle] as? Int, style != 0 { underline = true }
-
-            append(text: plain.substring(with: range), bold: bold, italic: italic,
-                   underline: underline, colorHex: colorHex, linkURL: linkURL, to: &paragraphs)
-        }
-        return paragraphs
-    }
-
-    /// Emits spans for a legacy Phase 3b body: bold/italic from each run's Foundation
-    /// `inlinePresentationIntent` (the only formatting that encoding carried — Phase 3b had
-    /// no underline or colour affordances).
-    private static func paragraphs(fromLegacy attributed: AttributedString) -> [[ProseFormattedSpan]] {
-        guard !attributed.characters.isEmpty else { return [] }
-        var paragraphs: [[ProseFormattedSpan]] = [[]]
-        for run in attributed.runs {
-            let intent = run.inlinePresentationIntent ?? []
-            append(text: String(attributed.characters[run.range]),
-                   bold: intent.contains(.stronglyEmphasized),
-                   italic: intent.contains(.emphasized),
-                   underline: false, colorHex: nil, linkURL: nil, to: &paragraphs)
-        }
-        return paragraphs
-    }
-
+///   1.5 — 2026-10-25 (FRUS Explorer Light, S18a): the span rules, `append(text:bold:italic:
+///          underline:colorHex:linkURL:to:)` and `hex(r:g:b:)`, are FRUSCoreKit's and public; decoding
+///          a stored block stays in the app, whose resolver now decodes it when it builds the item
+public enum CollectionProse {
     /// Splits one formatted run on blank lines (`"\n\n"`) and appends the resulting spans,
     /// starting a new paragraph at each blank line — the single splitting rule both decode
     /// paths share.
-    private static func append(text: String, bold: Bool, italic: Bool, underline: Bool,
-                               colorHex: String?, linkURL: String?,
-                               to paragraphs: inout [[ProseFormattedSpan]]) {
+    public static func append(text: String, bold: Bool, italic: Bool, underline: Bool,
+                              colorHex: String?, linkURL: String?,
+                              to paragraphs: inout [[ProseFormattedSpan]]) {
         let parts = text.components(separatedBy: "\n\n")
         for (index, part) in parts.enumerated() {
             if index > 0 { paragraphs.append([]) }   // a blank line starts a new paragraph
@@ -1449,35 +1292,6 @@ enum CollectionProse {
         }
     }
 
-    // MARK: - Colour helpers
-
-    #if canImport(AppKit)
-    /// `RRGGBB` for a colour as the light appearance draws it, or `nil` for (near-)black
-    /// default text. `usingColorSpace(_:)` resolves a catalog colour under the current
-    /// drawing appearance, so it is resolved under Aqua here, whatever appearance the export
-    /// runs under (see the type doc). The call puts back the appearance it found, as a view's
-    /// drawing does.
-    private static func hexColor(_ color: NSColor) -> String? {
-        var light: NSColor?
-        NSAppearance(named: .aqua)?.performAsCurrentDrawingAppearance {
-            light = color.usingColorSpace(.sRGB)
-        }
-        guard let c = light ?? color.usingColorSpace(.sRGB) else { return nil }
-        return hex(r: c.redComponent, g: c.greenComponent, b: c.blueComponent)
-    }
-    #elseif canImport(UIKit)
-    /// `RRGGBB` for a colour as the light appearance draws it, or `nil` for (near-)black
-    /// default text. `getRed(_:green:blue:alpha:)` resolves a dynamic colour with the current
-    /// trait collection, so it is resolved for the light style here, whatever appearance the
-    /// export runs under (see the type doc).
-    private static func hexColor(_ color: UIColor) -> String? {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        color.resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
-            .getRed(&r, green: &g, blue: &b, alpha: &a)
-        return hex(r: r, g: g, b: b)
-    }
-    #endif
-
     /// Formats an RGB triple as uppercase `RRGGBB`, returning `nil` for (near-)black so
     /// ordinary prose isn't tagged with a redundant colour.
     ///
@@ -1486,7 +1300,7 @@ enum CollectionProse {
     /// that as `116FFFFFFC7FFFFFFDA`: no colour in HTML, and a `w:val` Word may call damaged. The
     /// Mac's `usingColorSpace(.sRGB)` already clamps, so both write `FF0000`. A component is
     /// still truncated, not rounded, so no colour inside sRGB changes its hex.
-    private static func hex(r: CGFloat, g: CGFloat, b: CGFloat) -> String? {
+    public static func hex(r: CGFloat, g: CGFloat, b: CGFloat) -> String? {
         if r < 0.08, g < 0.08, b < 0.08 { return nil }   // (near-)black default text
         func byte(_ x: CGFloat) -> Int { Int(min(max(x, 0), 1) * 255) }
         return String(format: "%02X%02X%02X", byte(r), byte(g), byte(b))
@@ -1512,7 +1326,9 @@ enum CollectionProse {
 ///   1.4 — Collections rework Phase 3a: primary parameter is now an ordered
 ///          `[CollectionExportItem]` (documents + headings + prose); a `documents:`
 ///          convenience overload wraps a flat document list as `.document` items
-protocol CollectionExporter {
+///   1.5 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, so an exporter in
+///          the kit conforms to it; the PDF exporter, the app's, conforms as before
+public protocol CollectionExporter {
     /// Exports `metadata` and its ordered `items` to a temporary file using the given `options`.
     ///
     /// - Returns: A `file://` URL pointing to the written output.
@@ -1528,7 +1344,7 @@ protocol CollectionExporter {
 extension CollectionExporter {
     /// Convenience: export a flat list of documents, wrapped as `.document` items.
     @MainActor
-    func export(
+    public func export(
         metadata: CollectionExportMetadata,
         documents: [CollectionExportDocument],
         options: CollectionExportOptions = CollectionExportOptions()
@@ -1538,7 +1354,7 @@ extension CollectionExporter {
 
     /// Backward-compatible overload that uses default `CollectionExportOptions`.
     @MainActor
-    func export(
+    public func export(
         metadata: CollectionExportMetadata,
         items: [CollectionExportItem]
     ) async throws -> URL {
@@ -1555,9 +1371,9 @@ extension CollectionExporter {
 /// formats **and the in-app preview** (the preview is the HTML renderer), masked in HTML from
 /// naive search because the label carries markup (`<strong>Source:</strong> Source: …`).
 /// Fixing it per-renderer would be three sites that can drift; this is the single point.
-enum SourceNoteDisplay {
+public enum SourceNoteDisplay {
     /// `sourceNote` without any leading `Source:` label, ready for a renderer that adds its own.
-    static func withoutLeadingLabel(_ sourceNote: String) -> String {
+    public static func withoutLeadingLabel(_ sourceNote: String) -> String {
         var t = sourceNote.trimmingCharacters(in: .whitespaces)
         if let r = t.range(of: #"^Source\s*:\s*"#, options: [.regularExpression, .caseInsensitive]) {
             t.removeSubrange(r)
@@ -1588,7 +1404,9 @@ enum SourceNoteDisplay {
 ///          the export sheet's inline copy of it for the native file
 ///   1.1 — #1498: `fileName` cuts a stem too long for the file system (`ExportFileName`); #1497:
 ///          `zoteroCollectionName`, the name of the Zotero collection a send creates
-enum CollectionExportNaming {
+///   1.2 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, with
+///          `CollectionEditorNaming`, whose `listName` the title is
+public enum CollectionExportNaming {
 
     /// The characters a file name may not carry here, each written as `-` — the set that the five
     /// exporters' private sanitizers and the export sheet's inline copy, which this replaces, each
@@ -1597,7 +1415,7 @@ enum CollectionExportNaming {
 
     /// The title an export of a collection saved under `savedName` carries: the name trimmed, or
     /// "Untitled Collection" when it has no text — what a list row names the same collection.
-    static func title(savedName: String) -> String {
+    public static func title(savedName: String) -> String {
         CollectionEditorNaming.listName(savedName: savedName)
     }
 
@@ -1610,7 +1428,7 @@ enum CollectionExportNaming {
     /// (`ExportFileName`, #1498): uncut, a name past the file system's 255 UTF-16 units failed every
     /// format's write in the temporary directory. The export's title, and a `.fruscollection` file's own
     /// name field, keep the whole name; only the file's name is cut.
-    static func fileName(savedName: String, suffix: String) -> String {
+    public static func fileName(savedName: String, suffix: String) -> String {
         let written = title(savedName: savedName)
             .components(separatedBy: hostileCharacters)
             .joined(separator: "-")
@@ -1634,8 +1452,8 @@ enum CollectionExportNaming {
     ///   - date: When the send is made.
     ///   - timeZone: The zone the day is read in — the reader's own, so it is the day on their
     ///     calendar.
-    static func zoteroCollectionName(savedName: String, on date: Date = Date(),
-                                     timeZone: TimeZone = .current) -> String {
+    public static func zoteroCollectionName(savedName: String, on date: Date = Date(),
+                                            timeZone: TimeZone = .current) -> String {
         let trimmed = savedName.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { return trimmed }
         let formatter = DateFormatter()
@@ -1650,7 +1468,7 @@ enum CollectionExportNaming {
 
     /// Where an export of a collection saved under `savedName` is written: `fileName(savedName:suffix:)`
     /// in the temporary directory.
-    static func temporaryFileURL(savedName: String, suffix: String) -> URL {
+    public static func temporaryFileURL(savedName: String, suffix: String) -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent(fileName(savedName: savedName, suffix: suffix))
     }
@@ -1685,16 +1503,17 @@ enum CollectionExportNaming {
 ///   1.0 — #1498 and the 2026-09-28 audit's analytics stem: initial implementation
 ///   1.1 — #1498 review, round 1: `length(of:)` counts the decomposed form's UTF-8 bytes, which bounds the UTF-16 units
 ///          the file system counts, and `maxBytes` is `maxLength`; the trip packet's PDF names its file here too
-enum ExportFileName {
+///   1.2 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, with `CollectionExportNaming`
+public enum ExportFileName {
 
     /// The longest a file name may be here, suffix included, by `length(of:)`: the file system's 255, less 15, so a
     /// name the system lengthens when the reader keeps a second copy beside the first — Finder adds " 2" — still fits.
-    static let maxLength = 240
+    public static let maxLength = 240
 
     /// How long `name` is for a file name: the UTF-8 bytes of its canonically decomposed form, the form Foundation
     /// hands the file system. The count is additive over a string's characters and the same for every normalization
     /// of one name, so a name read back from a file URL — decomposed — measures what it measured when it was made.
-    static func length(of name: String) -> Int {
+    public static func length(of name: String) -> Int {
         name.decomposedStringWithCanonicalMapping.utf8.count
     }
 
@@ -1706,7 +1525,7 @@ enum ExportFileName {
     ///   - stem: The name's own part.
     ///   - reservedLength: The `length(of:)` of what the caller puts around it — a suffix, a prefix and a date.
     /// - Returns: The stem, cut to fit; empty when nothing fits.
-    static func fitting(_ stem: String, reserving reservedLength: Int) -> String {
+    public static func fitting(_ stem: String, reserving reservedLength: Int) -> String {
         let budget = max(maxLength - reservedLength, 0)
         guard length(of: stem) > budget else { return stem }
         var used = 0
@@ -1723,13 +1542,46 @@ enum ExportFileName {
     }
 }
 
+// MARK: - CollectionWordCloud
+
+/// A collection's word-cloud overview as an export embeds it: a PNG and its size in pixels
+/// (#960, #1585). The HTML export embeds the PNG as a `data:` URL; the Word export stores it as
+/// `word/media/wordcloud.png` and sizes its drawing by the pixels.
+///
+/// Version history:
+///   1.0 — 2026-10-25 (FRUS Explorer Light, S18a): the image the HTML and Word exporters took from
+///          the app's `WordCloudExporter.collectionCloudImage`, handed to them as data now that they
+///          are FRUSCoreKit's
+public struct CollectionWordCloud: Sendable {
+    /// The image, as PNG.
+    public let png: Data
+    /// Its width in pixels.
+    public let pixelWidth: Int
+    /// Its height in pixels.
+    public let pixelHeight: Int
+
+    /// Creates a word-cloud image.
+    public init(png: Data, pixelWidth: Int, pixelHeight: Int) {
+        self.png = png
+        self.pixelWidth = pixelWidth
+        self.pixelHeight = pixelHeight
+    }
+}
+
+/// Draws the word cloud of a collection's documents — their body texts, in order — titled with
+/// the collection's name, or returns `nil` when there is nothing to count. The app draws it with its
+/// own tokenizer and SwiftUI renderer (`CollectionWordCloud.drawnByTheApp`, in the app).
+public typealias CollectionWordCloudDrawing = @MainActor (_ texts: [String], _ title: String) async -> CollectionWordCloud?
+
 // MARK: - ExportError
 
-enum ExportError: Error, LocalizedError {
+/// Why a collection export failed: it could not be rendered, or its file could not be written.
+/// FRUSCoreKit's since FRUS Explorer Light's S18a, with the exporters that throw it.
+public enum ExportError: Error, LocalizedError {
     case renderingFailed
     case writeFailure(underlying: Error)
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .renderingFailed:
             return String(localized: "export.error.rendering",

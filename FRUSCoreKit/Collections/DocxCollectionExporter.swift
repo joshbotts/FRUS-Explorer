@@ -183,10 +183,23 @@ import Foundation
 ///          mark in a table cell stays in the cell's line. In a footnote an image prints as its placeholder, since
 ///          `word/footnotes.xml` has no relationships part to name it by (no image in the corpus sits in a note).
 ///          The fold-in: the space between two inline elements prints, outside the highlight tracker.
-final class DocxCollectionExporter: CollectionExporter {
+///   1.24 — 2026-10-25 (FRUS Explorer Light, S18a): a prose item carries the spans the resolver decoded, which
+///          `proseDocxXML` prints as it printed `CollectionProse`'s; the cover's "Exported" date and the colophon's are
+///          `CollectionExportMetadata.exportDate`, `nil` being now, in the device's calendar, as before
+///   1.25 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, with its ZIP writer. The host passes
+///          in where figures come from and how the word cloud is drawn (`wordCloud`), which the exporter took from the
+///          app's `FigureImageStore.shared` and `WordCloudExporter`: the app's `ExportFormat.makeExporter()` passes both,
+///          and an exporter given none draws no cloud. `documentData(metadata:items:options:wordCloud:)` gives the
+///          bytes `export` writes, with the cloud as data, for a host that keeps them
+public final class DocxCollectionExporter: CollectionExporter {
 
-    /// Where figure images come from (#1516). The app's store; a test sets its own.
-    var figureImages: FigureImageStore = .shared
+    /// Where figure images come from (#1516): the app's store, which `ExportFormat.makeExporter()`
+    /// passes, a test's own, or none, which prints each figure's placeholder.
+    public var figureImages: any FigureImageSource
+
+    /// How the collection's word cloud is drawn when the options ask for one: the app draws it with
+    /// its tokenizer and renderer (`CollectionWordCloud.drawnByTheApp`); `nil` draws none.
+    public var wordCloud: CollectionWordCloudDrawing?
 
     /// The context of the export being built: where a figure registers its image and a video its link (#1516). Set
     /// for the length of `buildDocx`, because the body's render walk is not handed the context.
@@ -196,23 +209,31 @@ final class DocxCollectionExporter: CollectionExporter {
     /// print as text, since `word/footnotes.xml` carries no relationships.
     private var footnoteDepth = 0
 
+    /// Creates an exporter.
+    ///
+    /// - Parameters:
+    ///   - figureImages: Where figure images come from; none by default.
+    ///   - wordCloud: How the word cloud is drawn; none by default.
+    public init(figureImages: any FigureImageSource = NoFigureImages(),
+                wordCloud: CollectionWordCloudDrawing? = nil) {
+        self.figureImages = figureImages
+        self.wordCloud = wordCloud
+    }
+
     // MARK: - CollectionExporter
 
     @MainActor
-    func export(
+    public func export(
         metadata: CollectionExportMetadata,
         items: [CollectionExportItem],
         options: CollectionExportOptions
     ) async throws -> URL {
-        // #960: the word cloud, from the SAME call HTML and PDF make — computed here
+        // #960: the word cloud, from the SAME drawing HTML and PDF make — computed here
         // because the renderer is main-actor. Before this the option was silently
         // ignored: a user who ticked the box got no cloud and nothing said so.
-        var cloud: (png: Data, widthPx: Int, heightPx: Int)?
-        if options.includeWordCloud,
-           let rendered = await WordCloudExporter.collectionCloudImage(
-               texts: items.documents.map(\.bodyText), title: metadata.name),
-           let png = Data(base64Encoded: rendered.pngBase64) {
-            cloud = (png, rendered.cgImage.width, rendered.cgImage.height)
+        var cloud: CollectionWordCloud?
+        if options.includeWordCloud, let wordCloud {
+            cloud = await wordCloud(items.documents.map(\.bodyText), metadata.name)
         }
         let data = buildDocx(collection: metadata, items: items, options: options, cloud: cloud)
         let url = CollectionExportNaming.temporaryFileURL(savedName: metadata.name, suffix: ".docx")
@@ -224,13 +245,28 @@ final class DocxCollectionExporter: CollectionExporter {
         return url
     }
 
+    /// The Word document `export` writes, as bytes: for a host that keeps them rather than a file in
+    /// the temporary directory. The word cloud, when the options ask for one, is `wordCloud` as given.
+    ///
+    /// - Parameters:
+    ///   - metadata: The collection's display snapshot.
+    ///   - items: The ordered, pre-resolved items.
+    ///   - options: The export's options.
+    ///   - wordCloud: The word cloud to draw, or `nil` for none.
+    /// - Returns: The `.docx` package.
+    public func documentData(metadata: CollectionExportMetadata, items: [CollectionExportItem],
+                             options: CollectionExportOptions, wordCloud: CollectionWordCloud? = nil) -> Data {
+        buildDocx(collection: metadata, items: items, options: options,
+                  cloud: options.includeWordCloud ? wordCloud : nil)
+    }
+
     // MARK: - DOCX Assembly
 
     private func buildDocx(
         collection: CollectionExportMetadata,
         items: [CollectionExportItem],
         options: CollectionExportOptions,
-        cloud: (png: Data, widthPx: Int, heightPx: Int)? = nil
+        cloud: CollectionWordCloud? = nil
     ) -> Data {
         let ctx = DocxRenderContext()
         renderContext = ctx
@@ -240,7 +276,7 @@ final class DocxCollectionExporter: CollectionExporter {
 
         let bodyXML = documentBodyXML(collection: collection, items: items,
                                        ctx: ctx, options: options,
-                                       wordCloudXML: cloud.map { Self.cloudDrawingXML(widthPx: $0.widthPx, heightPx: $0.heightPx) })
+                                       wordCloudXML: cloud.map { Self.cloudDrawingXML(widthPx: $0.pixelWidth, heightPx: $0.pixelHeight) })
         let wNS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
         // The relationships namespace is declared ONLY when something references one — a
         // hyperlink run, the word-cloud image or a figure's image (#1516) — so a plain export's
@@ -562,9 +598,10 @@ final class DocxCollectionExporter: CollectionExporter {
         // Cover: export metadata
         let docCount = documents.count
         let volCount = Set(documents.map { $0.volumeId }).count
-        let df = DateFormatter(); df.dateStyle = .long; df.timeStyle = .none
+        let exportDate = collection.exportDate ?? CollectionExportDate()
+        let df = exportDate.formatter
         let info = "\(docCount) document\(docCount == 1 ? "" : "s") from "
-            + "\(volCount) volume\(volCount == 1 ? "" : "s") · Exported \(df.string(from: Date()))"
+            + "\(volCount) volume\(volCount == 1 ? "" : "s") · Exported \(df.string(from: exportDate.date))"
         body += styledPara(info, styleId: "Normal")
 
         // Contents heading + Word TOC field code (updates on first open in Word). The
@@ -603,8 +640,8 @@ final class DocxCollectionExporter: CollectionExporter {
                 let styles = ["SectionHeading", "SectionHeading2", "SectionHeading3"]
                 let l = min(max(level, 1), CollectionOutline.maxLevel)
                 body += markdownItalicRuns(text, styleId: styles[l - 1], bold: true)
-            case .prose(let rtf):
-                body += proseDocxXML(rtf, ctx: ctx)
+            case .prose(let paragraphs):
+                body += proseDocxXML(paragraphs, ctx: ctx)
             case .excerpt(let excerpt):
                 body += excerptDocxXML(excerpt)
             case .generated(let block):
@@ -623,7 +660,8 @@ final class DocxCollectionExporter: CollectionExporter {
 
         // Trailing colophon paragraph (Authoring Phase 4) — opt-in only.
         if collection.includeColophon {
-            body += styledPara(escaped(CollectionColophon.text(for: items)), styleId: "Colophon")
+            body += styledPara(escaped(CollectionColophon.text(for: items, dated: collection.exportDate)),
+                               styleId: "Colophon")
             // PV-1: the sources block travels with the colophon, in all three rich formats.
             for line in CollectionColophon.sourceLines(for: items, embedsWordCloud: wordCloudXML != nil) {
                 body += styledPara(escaped(line), styleId: "Colophon")
@@ -747,16 +785,15 @@ final class DocxCollectionExporter: CollectionExporter {
         return body
     }
 
-    /// Renders a rich-text prose block (RTF, or a legacy Phase 3b JSON blob the shared
-    /// decoder recovers rather than dropping) to Word paragraph XML. Bold/italic/
-    /// underline/colour spans (decoded once by `CollectionProse`) map to `<w:r>` run
+    /// Renders a rich-text prose block (the spans the resolver decoded from its RTF, or from a
+    /// legacy Phase 3b JSON blob the shared decoder recovers rather than dropping) to Word
+    /// paragraph XML. Bold/italic/underline/colour spans map to `<w:r>` run
     /// properties; a span carrying a link URL is wrapped in a real `<w:hyperlink r:id>`
     /// whose external relationship is allocated by `ctx` (Session 2026-07-03 — the same
     /// Phase 6 plumbing generated-block rows use); blank lines split paragraphs; single
     /// newlines within a paragraph become `<w:br/>`. Empty (whitespace-only) paragraphs
     /// are dropped.
-    private func proseDocxXML(_ rtf: Data, ctx: DocxRenderContext) -> String {
-        let paragraphs = CollectionProse.paragraphs(fromRTF: rtf)
+    private func proseDocxXML(_ paragraphs: [[ProseFormattedSpan]], ctx: DocxRenderContext) -> String {
         guard !paragraphs.isEmpty else { return "" }
         var xml = ""
         for paragraph in paragraphs {
@@ -1162,7 +1199,7 @@ final class DocxCollectionExporter: CollectionExporter {
         let placeholder = "<w:r><w:t xml:space=\"preserve\">\(xmlEscaped(FigureBlock.missingImageLabel))</w:t></w:r>"
         guard footnoteDepth == 0, let ctx = renderContext,
               let data = figureImages.data(for: image),
-              let pixels = FigureImageLibrary.pngPixelSize(data) else { return placeholder }
+              let pixels = FigureImagePNG.pixelSize(of: data) else { return placeholder }
         let index = ctx.figureIndex(for: image, data: data)
         let headText = figure.head.map { flatText(of: $0) } ?? ""
         return Self.figureDrawingRunXML(
@@ -1584,7 +1621,7 @@ final class DocxCollectionExporter: CollectionExporter {
 
     /// Builds `<w:rPr>` XML combining `props`' formatting flags with an optional
     /// `<w:highlight w:val="...">` element for the given highlight color.
-    private func highlightedRPrXML(props: RunProps, color: DocumentHighlight.Color?) -> String {
+    private func highlightedRPrXML(props: RunProps, color: HighlightColor?) -> String {
         var inner = ""
         if props.bold      { inner += "<w:b/>" }
         if props.italic    { inner += "<w:i/>" }

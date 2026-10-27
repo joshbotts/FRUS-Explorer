@@ -40,16 +40,22 @@ import Foundation
 ///         document number moved from N1 (Notes) to M2 (Extra)
 ///   2.2 — #1463: the file is named through `CollectionExportNaming`, so an unnamed collection
 ///         writes `Untitled Collection-zotero.ris` rather than `-zotero.ris`
-final class ZoteroCollectionExporter: CollectionExporter {
+///   2.3 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, over the kit's
+///         `RISExporter`; `ris(for:options:)` gives the text `export` writes
+public final class ZoteroCollectionExporter: CollectionExporter {
 
-    // MARK: - CollectionExporter
+    /// Creates an exporter.
+    public init() {}
 
-    @MainActor
-    func export(
-        metadata: CollectionExportMetadata,
-        items: [CollectionExportItem],
-        options: CollectionExportOptions
-    ) async throws -> URL {
+    /// The RIS file's text for `items`: one record per document that carries a Zotero item, in
+    /// collection order, blank-line separated — what `export` writes, for a host that keeps the text
+    /// rather than a file.
+    ///
+    /// - Parameters:
+    ///   - items: The ordered, pre-resolved items; only `.document` items apply.
+    ///   - options: The export's options; `includeNotes == false` strips the child notes.
+    /// - Returns: The RIS text.
+    public func ris(for items: [CollectionExportItem], options: CollectionExportOptions) -> String {
         // A Zotero RIS file is a flat reference list — only `.document` items apply; section
         // headings and prose blocks have no Zotero representation and are dropped.
         var zoteroItems = items.documents
@@ -63,8 +69,18 @@ final class ZoteroCollectionExporter: CollectionExporter {
         }
 
         let exporter = RISExporter()
-        let ris = zoteroItems.map { exporter.export(zoteroItem: $0) }.joined(separator: "\n\n")
-        let data = Data(ris.utf8)
+        return zoteroItems.map { exporter.export(zoteroItem: $0) }.joined(separator: "\n\n")
+    }
+
+    // MARK: - CollectionExporter
+
+    @MainActor
+    public func export(
+        metadata: CollectionExportMetadata,
+        items: [CollectionExportItem],
+        options: CollectionExportOptions
+    ) async throws -> URL {
+        let data = Data(ris(for: items, options: options).utf8)
 
         let url = CollectionExportNaming.temporaryFileURL(savedName: metadata.name, suffix: "-zotero.ris")
         do {
