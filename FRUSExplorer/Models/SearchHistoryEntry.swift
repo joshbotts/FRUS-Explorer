@@ -43,6 +43,9 @@ import SwiftData
 ///          No stored property changed, so the CloudKit schema is untouched by this.
 ///   1.3 — 2026-10-19: #1688 — `recordedCount` reads a Meaning-route row written with no match
 ///          count as its list, never a floor. No stored property changed.
+///   1.4 — Session 2026-10-25 (FRUS Explorer Light, S17b): `RecordedCount` and the rule `recordedCount`
+///          reads a row by are FRUSCoreKit's (`RecordedSearch.RecordedCount`), and `recordedSearch` gives
+///          the kit an entry's values. No stored property changed.
 @Model final class SearchHistoryEntry {
 
     // MARK: - Identity
@@ -178,47 +181,18 @@ import SwiftData
 
     // MARK: - Reading the recorded count
 
-    /// What an entry's count actually asserts.
-    ///
-    /// Four states, not one number. `resultCount` alone cannot say whether 1,000 is the answer or
-    /// a floor, nor whether a row predates the fields that would tell you — and an appendix built
-    /// on "1,000" where the truth is "at least 1,000, of an unknown total" is the defect the Q
-    /// wave spent nine PRs removing from the screen.
-    ///
-    /// Modelled on ``WorkingCorpus/CaptureTruncation``, and for the same reason: `unrecorded` is
-    /// not a synonym for any of the others, and a consumer that collapses it into one re-tells the
-    /// claim the type exists to prevent.
-    enum RecordedCount: Equatable, Sendable {
-        /// A real whole-query total, with the fetch that accompanied it.
-        case exact(match: Int, loaded: Int)
-        /// The count failed and the fetch capped: the answer is **at least** `loaded`.
-        case floor(loaded: Int, fetchLimit: Int)
-        /// The count failed but the fetch did not cap, so `loaded` *is* every matching document.
-        case completeWithoutTotal(loaded: Int)
-        /// Written before M-2. The number is whatever that build recorded; nothing more is known.
-        case unrecorded(reported: Int)
-    }
+    /// What an entry's count actually asserts: four states, not one number. FRUSCoreKit's
+    /// `RecordedSearch.RecordedCount` since S17b (FRUS Explorer Light), which says why.
+    typealias RecordedCount = RecordedSearch.RecordedCount
 
-    /// The only supported way to read this entry's count.
+    /// The only supported way to read this entry's count, by the kit's rule
+    /// (`RecordedSearch.RecordedCount.init(resultCount:loadedCount:matchCount:fetchLimit:scopeSignature:)`).
     ///
     /// Reading `resultCount`, `matchCount` or `loadedCount` directly loses the distinction between
     /// a measured total and a floor, which is the distinction the appendix exists to preserve.
     var recordedCount: RecordedCount {
-        // `fetchLimit` is nil if and only if the row predates M-2 — it is the one field with no
-        // legitimate nil on a new row, which is what makes it the discriminator.
-        guard let fetchLimit, let loadedCount else { return .unrecorded(reported: resultCount) }
-        if let matchCount { return .exact(match: matchCount, loaded: loadedCount) }
-        // A Meaning list is the whole of its ranking (#1688). Since build 51 its row records the
-        // list's length as its match count; a row an earlier build wrote has none, under the
-        // engine's 100-row length, and read by the rule below a full list was "at least 100". It is
-        // read as the list it recorded, never as a floor.
-        if SearchScopeSignature.isMeaningRoute(scopeSignature) {
-            return .exact(match: loadedCount, loaded: loadedCount)
-        }
-        // The same predicate `ResultSetScope.didHitFetchLimit` uses. Sound because `loadedCount`
-        // is the unfiltered fetch: checklist filtering happens after, and never lowers it.
-        if loadedCount >= fetchLimit { return .floor(loaded: loadedCount, fetchLimit: fetchLimit) }
-        return .completeWithoutTotal(loaded: loadedCount)
+        RecordedCount(resultCount: resultCount, loadedCount: loadedCount, matchCount: matchCount,
+                      fetchLimit: fetchLimit, scopeSignature: scopeSignature)
     }
 
     /// Whether this entry's count describes less than the whole answer to its query.
@@ -226,8 +200,16 @@ import SwiftData
     /// A corpus the search ran inside may itself have been a truncated capture, which this entry
     /// cannot know alone — hence the parameter. Resolve it from ``appliedCorpusId``.
     func isPartialEvidence(corpusTruncation: WorkingCorpus.CaptureTruncation? = nil) -> Bool {
-        if case .truncated = corpusTruncation { return true }
-        if case .floor = recordedCount { return true }
-        return false
+        recordedCount.isPartialEvidence(corpusTruncation: corpusTruncation)
+    }
+
+    /// This entry as the kit's values, for the rules that read a recorded search there (the method
+    /// appendix's `QueryMethodAppendix.make(searches:corpusNames:projectName:researchQuestion:generatedAt:corpusCoverage:)`).
+    var recordedSearch: RecordedSearch {
+        RecordedSearch(id: id, queryText: queryText, resultCount: resultCount, projectId: projectId,
+                       executedAt: executedAt, loadedCount: loadedCount, matchCount: matchCount,
+                       fetchLimit: fetchLimit, indexedVolumeCount: indexedVolumeCount,
+                       scopeSignature: scopeSignature, appliedCorpusId: appliedCorpusId,
+                       renderedExpression: renderedExpression)
     }
 }

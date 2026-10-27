@@ -136,6 +136,8 @@ enum SearchLayerDirection: Equatable, Sendable {
 ///          ``filtersNarrowTheMatch(_:)``, what the Meaning strip may say before a question
 ///   1.3 — plan of record §6g, found in A8: a list found by one phrase in quotation marks is quoted once, as the
 ///          manuals print it (``quotable(_:)``), in its row, its VoiceOver label and its capture's description
+///   1.4 — Session 2026-10-25 (FRUS Explorer Light, S17b): ``quotable(_:)`` forwards to FRUSCoreKit's
+///          `QueryQuoting.quotable(_:)`, which the method appendix there quotes by
 struct PinnedResultBase: Sendable {
 
     /// What kind of list the base is, for the row that names it and the record.
@@ -293,12 +295,7 @@ struct PinnedResultBase: Sendable {
     /// - Parameter query: The words or question as typed, trimmed, as a submitted query is.
     /// - Returns: The words to print between the quotation marks.
     static func quotable(_ query: String) -> String {
-        let isMark = FTS5InlineQueryParser.isDoubleQuotationMark
-        guard let first = query.first, let last = query.last, isMark(first), isMark(last) else { return query }
-        let phrase = query.dropFirst().dropLast()
-        let words = phrase.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !words.isEmpty, !phrase.contains(where: isMark) else { return query }
-        return words
+        QueryQuoting.quotable(query)
     }
 
     /// How a list found by a restored phrase or prefix, with no typed words, names its words: `"wheat
@@ -1092,5 +1089,37 @@ extension SearchResult {
             userTagIds: userTagIds,
             isEditorialNote: isEditorialNote,
             isFrontMatter: isFrontMatter)
+    }
+}
+
+// MARK: - SearchScopeSignature + the app
+
+// `SearchScopeSignature` moved to FRUSCoreKit for FRUS Explorer Light (S17b), where the method appendix
+// that reads it went too: `FRUSCoreKit/Search/SearchScopeSignature.swift`. These two keep the app's
+// calls as they were, passing what the kit takes as parameters.
+extension SearchScopeSignature {
+
+    /// The signature a search inside a held base records (#1577 lane 4), or `signature` itself outside
+    /// one: the kit's ``SearchScopeSignature/layered(_:parameters:basePart:)``, with the base's `base=`
+    /// part (``PinnedResultBase/signaturePart``).
+    ///
+    /// - Parameters:
+    ///   - signature: The route's own signature (a Meaning run's), or `nil` for a keyword run.
+    ///   - parameters: The executed parameters.
+    ///   - base: The held base, or `nil` outside one.
+    /// - Returns: The signature to record, or `nil` to let the writer derive the keyword one.
+    static func layered(_ signature: String?, parameters: SearchParameters,
+                        base: PinnedResultBase?) -> String? {
+        layered(signature, parameters: parameters, basePart: base?.signaturePart)
+    }
+
+    /// A recorded signature as the method appendix's prose, the kit's
+    /// ``SearchScopeSignature/describe(_:resources:locale:)`` over the app's bundled data files and the
+    /// reader's locale.
+    ///
+    /// - Parameter signature: a string produced by ``SearchScopeSignature/signature(for:)``.
+    /// - Returns: the phrases describing the scope, or `nil` if `signature` does not parse.
+    static func describe(_ signature: String) -> [String]? {
+        describe(signature, resources: .bundled, locale: .autoupdatingCurrent)
     }
 }

@@ -37,27 +37,9 @@ extension SearchParameters {
             || supportsFilterOnlySearch
     }
 
-    /// These parameters as a hand-off or a recalled search runs them on a screen whose applied
-    /// working corpus is `corpus`: inside that corpus, and under no other document gate (#1646).
-    ///
-    /// A snapshot's own gates are never inherited. Its `documentIds` and `excludeDocumentIds` carry
-    /// the project's History and Focus scopes, which are live, manual choices (#377 Phase 2), or a
-    /// corpus as it stood when the search was saved. The applied working corpus is the screen's own
-    /// state and stays applied: its banner goes on naming it, so the search runs inside it.
-    ///
-    /// iPhone and iPad have always run a hand-off this way, because `SearchViewModel` composes the
-    /// gate from the corpus it holds each time it builds parameters. The Mac's window holds whole
-    /// parameters, and until #1646 it dropped the corpus with the project's gates while its banner
-    /// went on saying the search was inside it. `MacSearchViewModel.applyParameters(_:)` asks this.
-    ///
-    /// - Parameter corpus: The applied working corpus's indexed keys, or `nil` when none is applied.
-    /// - Returns: These parameters, with that corpus as their only document gate.
-    func runningInside(workingCorpus corpus: [String]?) -> SearchParameters {
-        var parameters = self
-        parameters.documentIds = DocumentScopeGate.combine(corpus: corpus, projectGate: nil)
-        parameters.excludeDocumentIds = nil
-        return parameters
-    }
+    // `runningInside(workingCorpus:)`, these parameters inside the applied working corpus and under no
+    // other document gate (#1646), moved to FRUSCoreKit beside `DocumentScopeGate` for FRUS Explorer
+    // Light (S17b): `FRUSCoreKit/Models/WorkingCorpusResolver.swift`.
 }
 
 // MARK: - ChecklistLoggingNotice

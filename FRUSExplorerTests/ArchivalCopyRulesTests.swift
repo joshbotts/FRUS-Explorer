@@ -45,6 +45,9 @@ import Testing
 ///   1.4 — 2026-09-25: `ArchivalCounts.swift` joins `sources`, because #1374 and its review moved
 ///         the ranking caption, the umbrella caveat and the gloss's "and N others" there; and the
 ///         page-disclosure test reads the umbrella caveat's call rather than its key
+///   1.5 — 2026-10-25: FRUS Explorer Light's S17b moved the method appendix, the coverage sentences and
+///         the Research rows' change lines into FRUSCoreKit, so `sources` names the kit's three files
+///         (`../FRUSCoreKit/…`) where it named the appendix's and the engagement service's
 @Suite("Archival copy rules (#838)")
 struct ArchivalCopyRulesTests {
 
@@ -75,6 +78,8 @@ struct ArchivalCopyRulesTests {
         // Build-43 en-US sweep (1.1): every file it fixed joins the guard, for the same reason
         // FRUSTheme did — a sweep that does not extend the guard holds only until the next edit.
         "Research/ResearchView.swift",
+        // S17b: the update-review sentences of the Research rows moved into the kit with the aggregation.
+        "../FRUSCoreKit/Research/ResearchDocumentAggregation.swift",
         "Settings/WordCloudSettingsView.swift",
         "SeriesAnalytics/SourceProvenanceDashboard.swift",
         "SeriesAnalytics/SeriesAnalyticsExport.swift",
@@ -96,8 +101,10 @@ struct ArchivalCopyRulesTests {
         // collection PDF, which is the copy least likely to be re-read and the most likely to be
         // quoted — and until it was listed here nothing checked its spelling at all. Both files
         // were already clean, so enrolling them is a zero-diff guard against the next edit.
-        "Export/QueryMethodAppendix.swift",
-        "ProjectContext/DocumentEngagementService.swift",
+        // S17b (FRUS Explorer Light): both moved into FRUSCoreKit with the method appendix, and the
+        // coverage statement's prose with them; the guard follows the copy.
+        "../FRUSCoreKit/Export/QueryMethodAppendix.swift",
+        "../FRUSCoreKit/Models/DocumentEngagement.swift",
         // R-5 P2: the update-review copy — a hub section, the in-document change banner, and the
         // two document-view twins that mount it. All four were clean when enrolled (zero-diff),
         // so this is the guard against the next edit, not a fix.
