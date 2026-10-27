@@ -485,6 +485,14 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         kept with it by `sqlite3_set_auxdata` (`ExactWordArgument`). The same answers: over the full index,
 ///         `=Soviet`'s count and its page each fell from 23–28 s to 0.2–0.3 s on Linux and on a Mac. No index
 ///         version
+///  4.47 — 2026-10-25 (FRUS Explorer Light S17a): a search's user half, the notes and summaries its words
+///         match, the tags its filter, its rows and its tag counts read, and the texts its exact-word filter
+///         reads among them, comes from the index's own `user_content` and `document_cache` columns, as
+///         before, or from one user's rows of a store the host attaches (`SearchUserSource`, which
+///         `SearchSQLFilters.userSource` carries), joined to the index's rows on `(volume_id, document_id)`.
+///         `init(readingIndexAt:fts5Store:resources:volumesDirectory:userStore:)` attaches the store
+///         read-only (`attachedUserStoreSchema`). With the index as the source every statement is the same
+///         text as before. No index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -507,9 +515,14 @@ public actor IndexingPipeline {
     /// the host. `nonisolated` so the nonisolated parse step and the search service read it directly.
     nonisolated public let resources: IndexingResources
 
-    /// Whether the index was opened read-only and immutable (`init(readingIndexAt:fts5Store:resources:volumesDirectory:)`),
+    /// Whether the index was opened read-only and immutable (`init(readingIndexAt:fts5Store:resources:volumesDirectory:userStore:)`),
     /// where every write fails with `SQLITE_READONLY`.
     nonisolated public let isReadOnly: Bool
+
+    /// The name a store of users' notes, summaries and tags is attached under, read-only, by
+    /// `init(readingIndexAt:fts5Store:resources:volumesDirectory:userStore:)`, and which a search whose
+    /// `SearchSQLFilters.userSource` is `SearchUserSource.attachedStore(userId:)` reads.
+    public static let attachedUserStoreSchema = "user_store"
 
     /// What indexing tells a system search index, or `nil`: the app's Spotlight donor.
     ///
@@ -2138,6 +2151,42 @@ public actor IndexingPipeline {
         searchStatementTestHook = hook
     }
 
+    /// Test hook: what records the statements this pipeline prepares and runs while it is set (S17a),
+    /// `setStatementTraceForTesting(_:)`'s. `nil` in the app.
+    private var statementTrace: StatementTraceForTesting?
+
+    /// Test hook: records every statement the pipeline prepares (`auxPrepare`) and then runs on its
+    /// connection, as SQLite expands it with its bound values, into `trace`, in the order they begin,
+    /// until it is called with `nil` (S17a). A test pins the text and binds of the app's statements by it,
+    /// and the same test, run against an earlier tree with this hook copied in, gives what they were. Only
+    /// the pipeline's own statements are recorded, not those FTS5 runs inside them, whose text is SQLite's.
+    func setStatementTraceForTesting(_ trace: StatementTraceForTesting?) {
+        // The callback holds its trace unretained, so it is removed before the property lets the trace
+        // go: a nonisolated read can step a statement on this connection at any moment. SQLite takes the
+        // connection's mutex for both, so no callback runs once this returns.
+        sqlite3_trace_v2(auxDb, 0, nil, nil)
+        statementTrace = trace
+        guard let trace else { return }
+        sqlite3_trace_v2(auxDb, UInt32(SQLITE_TRACE_STMT), { _, context, statement, text in
+            guard let context, let statement, let text else { return 0 }
+            // A trigger's subprogram is reported with a comment for its text, and is not a statement.
+            guard !String(cString: text.assumingMemoryBound(to: CChar.self)).hasPrefix("--"),
+                  let sql = sqlite3_sql(OpaquePointer(statement)) else { return 0 }
+            let expanded = sqlite3_expanded_sql(OpaquePointer(statement))
+            defer { sqlite3_free(expanded) }
+            Unmanaged<StatementTraceForTesting>.fromOpaque(context).takeUnretainedValue()
+                .began(String(cString: sql), expanded: expanded.map { String(cString: $0) } ?? String(cString: sql))
+            return 0
+        }, Unmanaged.passUnretained(trace).toOpaque())
+    }
+
+    /// Test hook: whether the store `init(readingIndexAt:fts5Store:resources:volumesDirectory:userStore:)`
+    /// attached is read-only on this connection, `sqlite3_db_readonly`'s answer: 1 when it is, 0 when it
+    /// is writable, -1 when no store is attached (S17a).
+    nonisolated func attachedUserStoreAccessForTesting() -> Int32 {
+        sqlite3_db_readonly(auxDb, Self.attachedUserStoreSchema)
+    }
+
     /// The bundled person-authority crosswalk (Phase 5), loaded lazily on first consolidation. The
     /// double optional distinguishes "not yet loaded" (`nil`) from "loaded, absent" (`.some(nil)`),
     /// so a missing bundle resource is only looked up once. Injectable for tests.
@@ -2241,7 +2290,7 @@ public actor IndexingPipeline {
     ) throws {
         try self.init(fts5Store: fts5Store, databaseURL: databaseURL, volumesDirectory: volumesDirectory,
                       resources: resources, stateTracker: stateTracker, concurrencyLimit: concurrencyLimit,
-                      defaults: defaults, donor: donor, readOnly: false)
+                      defaults: defaults, donor: donor, readOnly: false, userStore: nil)
     }
 
     /// Opens an index another program built, read-only and immutable, to search and browse it:
@@ -2259,25 +2308,35 @@ public actor IndexingPipeline {
     /// `volumesDirectory` is read by `unindexedDownloadedVolumeIds()`, and by the indexing methods,
     /// which find and parse a volume's file before its first write is refused.
     ///
+    /// A host that keeps its users' notes, summaries and tags in a store of its own passes the store's
+    /// file as `userStore`, and the connection attaches it read-only, as `attachedUserStoreSchema`: with
+    /// `mode=ro` and never `immutable`, since the host writes to it while the index is served, so each
+    /// statement reads the store as it was last committed. A search reads one user's rows of it when its
+    /// filters say so (`SearchUserSource.attachedStore(userId:)`), and a write through the attachment is
+    /// refused as a write to the index is.
+    ///
     /// - Parameters:
     ///   - databaseURL: The index file, which must exist.
     ///   - fts5Store: A store over the same file, opened with `FTS5Store(readingDatabaseAt:)`.
     ///   - resources: The bundled data files, which subject filters read (`IndexingResources`).
     ///   - volumesDirectory: The folder of volume files, or `nil` for the index's own folder.
+    ///   - userStore: The host's store of users' notes, summaries and tags, which must exist and hold the
+    ///     tables `SearchUserSource.attachedStore(userId:)` names, or `nil` for none.
     public init(
         readingIndexAt databaseURL: URL,
         fts5Store: FTS5Store,
         resources: IndexingResources,
-        volumesDirectory: URL? = nil
+        volumesDirectory: URL? = nil,
+        userStore: URL? = nil
     ) throws {
         try self.init(fts5Store: fts5Store, databaseURL: databaseURL,
                       volumesDirectory: volumesDirectory ?? databaseURL.deletingLastPathComponent(),
                       resources: resources, stateTracker: nil, concurrencyLimit: 1,
-                      defaults: InMemoryIndexingStampStore(), donor: nil, readOnly: true)
+                      defaults: InMemoryIndexingStampStore(), donor: nil, readOnly: true, userStore: userStore)
     }
 
     /// The initialisers' shared body. Read-write, it opens or creates the file and sets up the schema;
-    /// read-only, it opens the file immutable and changes nothing in it.
+    /// read-only, it opens the file immutable and changes nothing in it, and attaches `userStore`, if any.
     private init(
         fts5Store: FTS5Store,
         databaseURL: URL,
@@ -2287,7 +2346,8 @@ public actor IndexingPipeline {
         concurrencyLimit: Int,
         defaults: any IndexingStampStore,
         donor: (any IndexedDocumentDonor)?,
-        readOnly: Bool
+        readOnly: Bool,
+        userStore: URL?
     ) throws {
         self.isReadOnly = readOnly
         self.fts5Store = fts5Store
@@ -2341,6 +2401,10 @@ public actor IndexingPipeline {
                 sqlite3_close(h)
                 throw IndexingError.databaseOpenFailed(message: msg)
             }
+            if let userStore, let message = Self.attachUserStore(userStore, to: h) {
+                sqlite3_close(h)
+                throw IndexingError.databaseOpenFailed(message: message)
+            }
         } else {
             try Self.setupDatabase(h)
         }
@@ -2386,6 +2450,22 @@ public actor IndexingPipeline {
         metadataContinuation.finish()
         if let stmt = preparedCacheInsert { sqlite3_finalize(stmt) }
         if let db = auxDb { sqlite3_close_v2(db) }
+    }
+
+    /// Attaches the store at `url` to `handle` as `attachedUserStoreSchema`, read-only: its
+    /// percent-encoded `file:` URL with `?mode=ro`, bound rather than spliced into the statement, so any
+    /// path attaches. Not `immutable`: the host writes to the store while it is attached.
+    ///
+    /// - Returns: SQLite's message when the store could not be attached, or `nil`.
+    private static func attachUserStore(_ url: URL, to handle: OpaquePointer) -> String? {
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, "ATTACH DATABASE ? AS \(attachedUserStoreSchema)", -1, &stmt, nil) == SQLITE_OK,
+              let stmt else {
+            return String(cString: sqlite3_errmsg(handle))
+        }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, "\(url.standardizedFileURL.absoluteString)?mode=ro", -1, SQLITE_TRANSIENT_IP)
+        return sqlite3_step(stmt) == SQLITE_DONE ? nil : String(cString: sqlite3_errmsg(handle))
     }
 
     // MARK: - Public API
@@ -2974,12 +3054,30 @@ public actor IndexingPipeline {
     /// Marked `async` so callers outside the actor (e.g. SwiftUI `.task` closures)
     /// can use `await` to hop onto the actor's executor without a warning.
     ///
+    /// From an attached store (S17a), the user's assignments of the document, as a search row reads
+    /// them (`rowTagsColumn(_:)`): each tag once, in uppercase and sorted, and none for a document the
+    /// index does not hold.
+    ///
     /// - Parameters:
     ///   - volumeId:   Volume identifier.
     ///   - documentId: Document identifier within the volume.
-    public func currentUserTagIds(volumeId: String, documentId: String) async throws -> [String] {
-        guard let cached = try fetchCache(volumeId: volumeId, documentId: documentId),
-              let raw = cached.userTagIds, !raw.isEmpty else { return [] }
+    ///   - userSource: Where the tags are read: the index's column, as the app reads them, or one
+    ///     user's assignments in an attached store.
+    public func currentUserTagIds(
+        volumeId: String, documentId: String, userSource: SearchUserSource = .index
+    ) async throws -> [String] {
+        guard case .attachedStore = userSource else {
+            guard let cached = try fetchCache(volumeId: volumeId, documentId: documentId),
+                  let raw = cached.userTagIds, !raw.isEmpty else { return [] }
+            return raw.split(separator: " ").map(String.init)
+        }
+        let rowTags = Self.rowTagsColumn(userSource)
+        let stmt = try auxPrepare("SELECT \(rowTags.sql) FROM document_cache dc WHERE dc.volume_id = ? AND dc.document_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        for (index, value) in (rowTags.binds + [volumeId, documentId]).enumerated() {
+            sqlite3_bind_text(stmt, Int32(index + 1), value, -1, SQLITE_TRANSIENT_IP)
+        }
+        guard try auxStep(stmt), let raw = auxColumnString(stmt, 0), !raw.isEmpty else { return [] }
         return raw.split(separator: " ").map(String.init)
     }
 
@@ -3758,6 +3856,9 @@ public actor IndexingPipeline {
     ) throws -> (sql: String, binds: [String])? {
         let sql: String
         let binds: [String]
+        // A row's tags: the index's column, or the user's assignments in an attached store (S17a). Its
+        // binds go where its text falls in each shape's statement.
+        let rowTags = Self.rowTagsColumn(filters.userSource)
         if corpusMatch == nil, userContentMatch == nil {
             // Filter-only query (the People browser's "Find all mentions", or a subject filter with
             // no FTS terms since #1022). No MATCH/BM25; the WHERE clause — which carries whatever
@@ -3783,7 +3884,7 @@ public actor IndexingPipeline {
             // because a filter-only query has no ranking phase to split.
             sql = """
                 SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
-                       dc.source_note, '' AS body_text, dc.subject_tag_ids, dc.user_tag_ids,
+                       dc.source_note, '' AS body_text, dc.subject_tag_ids, \(rowTags.sql),
                        dc.is_editorial_note, dc.is_front_matter, dd.date_iso, 0.0 AS score,
                        dd.date_iso_max, dd.date_precision
                 FROM document_cache dc
@@ -3793,17 +3894,18 @@ public actor IndexingPipeline {
                 ORDER BY dc.volume_id, dc.document_id
                 LIMIT \(limit) OFFSET \(offset)
                 """
-            binds = clause.binds
+            binds = rowTags.binds + clause.binds
         } else if singlePhaseForParity {
             // The pre-R-3a shape, retained ONLY so `searchDocumentsSinglePhaseForTesting` can assert
             // the two-phase rewrite against it in-process. Never taken in the app.
-            let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+            let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch,
+                                                           userSource: filters.userSource)
             let clause = Self.filterConditions(filters, gateRowid: "m.docrowid",
                                                gateByKeyForParity: gateByKeyForParity)
             sql = """
                 \(matchCTE)
                 SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
-                       dc.source_note, dc.body_text, dc.subject_tag_ids, dc.user_tag_ids,
+                       dc.source_note, dc.body_text, dc.subject_tag_ids, \(rowTags.sql),
                        dc.is_editorial_note, dc.is_front_matter, dd.date_iso, m.score,
                        dd.date_iso_max, dd.date_precision
                 FROM merged m
@@ -3814,7 +3916,7 @@ public actor IndexingPipeline {
                 ORDER BY m.score
                 LIMIT \(limit) OFFSET \(offset)
                 """
-            binds = matchBinds + clause.binds
+            binds = matchBinds + rowTags.binds + clause.binds
         } else {
             // TWO-PHASE FETCH (R-3a). Rank narrow, then hydrate only the window that survives.
             //
@@ -3858,7 +3960,8 @@ public actor IndexingPipeline {
             // functions before the same query block's ORDER BY and LIMIT, so that model is
             // backwards. The ordinal reuses the sort the ORDER BY already needs, which is why the
             // A/B measured no difference.
-            let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+            let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch,
+                                                           userSource: filters.userSource)
             // The gate is tested against the match's own rowid (decision 53): see `filterConditions`.
             let clause = Self.filterConditions(filters, gateRowid: "m.docrowid",
                                                gateByKeyForParity: gateByKeyForParity)
@@ -3893,7 +3996,7 @@ public actor IndexingPipeline {
                     LIMIT \(limit) OFFSET \(offset)
                 )
                 SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
-                       dc.source_note, dc.body_text, dc.subject_tag_ids, dc.user_tag_ids,
+                       dc.source_note, dc.body_text, dc.subject_tag_ids, \(rowTags.sql),
                        dc.is_editorial_note, dc.is_front_matter, dd.date_iso, r.score,
                        dd.date_iso_max, dd.date_precision
                 FROM ranked r
@@ -3902,7 +4005,7 @@ public actor IndexingPipeline {
                     ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
                 ORDER BY r.ordinal
                 """
-            binds = matchBinds + clause.binds
+            binds = matchBinds + clause.binds + rowTags.binds
         }
         return (sql, binds)
     }
@@ -4019,7 +4122,8 @@ public actor IndexingPipeline {
             // and each `_docsize` shadow holds exactly as many rows as `document_cache`, so
             // an FTS rowid with no content row cannot exist. `countMatchesTheJoinedShape`
             // pins that rather than trusting it.
-            let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+            let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch,
+                                                           userSource: filters.userSource)
             sql = """
                 \(matchCTE)
                 SELECT COUNT(*) FROM merged m
@@ -4031,7 +4135,8 @@ public actor IndexingPipeline {
             // on a full index, the statement alone for a common word inside 327 documents fell from
             // 6.7 s to 0.5 s cold, and from 145,350 page reads to 2,182.
             // `searchDocumentsCountGateByKeyForTesting` keeps the joined key test it replaced.
-            let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+            let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch,
+                                                           userSource: filters.userSource)
             sql = """
                 \(matchCTE)
                 SELECT COUNT(*) FROM merged m
@@ -4039,7 +4144,8 @@ public actor IndexingPipeline {
                 """
             binds = matchBinds + clause.binds
         } else {
-            let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+            let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch,
+                                                           userSource: filters.userSource)
             sql = """
                 \(matchCTE)
                 SELECT COUNT(*)
@@ -4085,7 +4191,8 @@ public actor IndexingPipeline {
     /// 1.0 to 1.1 s and about 0.4 s. A tag and an exact word read columns no index holds, so with
     /// either each matched row is joined, as the count joins it (`government` with a tag 6.6 s and
     /// 0.42 s; `=government`, which reads every matched document's text, 72 s and 58 s, where its
-    /// count took 59 s).
+    /// count took 59 s). From an attached store (S17a) a tag, and an exact word in notes and summaries
+    /// alone, are read by the row's key, so they are tested on the index's entries as the others are.
     ///
     /// - Parameters:
     ///   - corpusMatch: The MATCH expression for `frus_documents`, or `nil`.
@@ -4142,12 +4249,13 @@ public actor IndexingPipeline {
                 """
             return (sql, clause.binds)
         }
-        let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+        let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch,
+                                                       userSource: filters.userSource)
         // The gate is tested against the match's own rowid, as in the search and the count (decision 53).
         let clause = Self.filterConditions(filters, gateRowid: "m.docrowid")
         if clause.readsUnindexedColumns {
             // A tag or an exact word reads a column no index holds: each matched row is joined, as the
-            // count's statement joins it.
+            // count's statement joins it. (From an attached store, only an exact word in the corpus does.)
             let sql = """
                 \(matchCTE)
                 SELECT dc.volume_id || '/' || dc.document_id
@@ -4186,19 +4294,56 @@ public actor IndexingPipeline {
     ///
     /// One scope yields a single MATCH subquery; both scopes yield a `UNION ALL`
     /// grouped by rowid taking the better (minimum) BM25 score.
+    ///
+    /// The user half is `userSource`'s (S17a). The index's `user_content` is keyed by `document_cache`'s
+    /// rowid, as the corpus table is. An attached store's `user_search` holds a user's text by key, so its
+    /// matches are the user's rows, each joined to its `document_cache` row on `(volume_id, document_id)`
+    /// for the rowid, which drops a row of a document the index does not hold. A store keeps one row of
+    /// a user's text for a document (`SearchUserSource.attachedStore(userId:)`), as `user_content` keeps
+    /// one for each, and then the same documents match; nothing in its schema says so, so that half is
+    /// grouped by rowid when it runs alone, as the two halves are together, and a document comes once
+    /// even if a store breaks it. Its score is BM25 over `user_search`, whose statistics (its rows, their
+    /// lengths, how many hold a term) are every user's rows, where `user_content`'s are every document of
+    /// the index, most of them empty, so a note's or a summary's score, and its place among the other
+    /// matches, is not the app's.
     private static func matchCTE(
         corpusMatch: String?,
-        userContentMatch: String?
+        userContentMatch: String?,
+        userSource: SearchUserSource
     ) throws -> (sql: String, binds: [String]) {
         let corpusSelect = "SELECT rowid AS docrowid, bm25(frus_documents) AS score FROM frus_documents WHERE frus_documents MATCH ?"
-        let userSelect = "SELECT rowid AS docrowid, bm25(user_content) AS score FROM user_content WHERE user_content MATCH ?"
+        let userSelect: String
+        // The user half's binds after its MATCH expression's.
+        let userBinds: [String]
+        switch userSource {
+        case .index:
+            userSelect = "SELECT rowid AS docrowid, bm25(user_content) AS score FROM user_content WHERE user_content MATCH ?"
+            userBinds = []
+        case .attachedStore(let userId):
+            userSelect = """
+                SELECT dc.rowid AS docrowid, bm25(us.user_search) AS score \
+                FROM \(attachedUserStoreSchema).user_search us \
+                JOIN document_cache dc ON dc.volume_id = us.volume_id AND dc.document_id = us.document_id \
+                WHERE us.user_search MATCH ? AND us.user_id = ?
+                """
+            userBinds = [userId]
+        }
         switch (corpusMatch, userContentMatch) {
         case (nil, nil):
             throw FTS5Error.emptyQuery
         case (let corpus?, nil):
             return ("WITH merged(docrowid, score) AS (\(corpusSelect))", [corpus])
-        case (nil, let user?):
+        case (nil, let user?) where userSource == .index:
             return ("WITH merged(docrowid, score) AS (\(userSelect))", [user])
+        case (nil, let user?):
+            // Materialized, so that `bm25` is computed where its table is matched: SQLite would
+            // otherwise flatten the select into the grouping, and FTS5 refuses `bm25` inside an
+            // aggregate ("unable to use function bm25 in the requested context"). The two halves'
+            // `UNION ALL` below is never flattened so.
+            return ("""
+                WITH user_matches AS MATERIALIZED (\(userSelect)),
+                merged(docrowid, score) AS (SELECT docrowid, MIN(score) FROM user_matches GROUP BY docrowid)
+                """, [user] + userBinds)
         case (let corpus?, let user?):
             let sql = """
                 WITH merged(docrowid, score) AS (
@@ -4209,9 +4354,46 @@ public actor IndexingPipeline {
                   ) GROUP BY docrowid
                 )
                 """
-            return (sql, [corpus, user])
+            return (sql, [corpus, user] + userBinds)
         }
     }
+
+    /// The select-list expression a row's tags are read by, and its binds (S17a).
+    ///
+    /// From the index, `document_cache.user_tag_ids`, as the column holds them. From an attached store,
+    /// the user's assignments of the row's document, each tag once, its id in uppercase, sorted and
+    /// joined by a space, or NULL for none: the column's value as `DocumentTagAssignment`'s reconcile
+    /// writes it from the same assignments.
+    private static func rowTagsColumn(_ userSource: SearchUserSource) -> (sql: String, binds: [String]) {
+        switch userSource {
+        case .index:
+            return ("dc.user_tag_ids", [])
+        case .attachedStore(let userId):
+            return ("""
+                (SELECT group_concat(id, ' ') FROM (\
+                SELECT DISTINCT upper(ta.tag_id) AS id FROM \(attachedUserStoreSchema).tag_assignments ta \
+                WHERE ta.user_id = ? AND ta.volume_id = dc.volume_id AND ta.document_id = dc.document_id \
+                ORDER BY id)) AS user_tag_ids
+                """, [userId])
+        }
+    }
+
+    /// The key set an attached store's assignments of one tag make, for a condition on a `document_cache`
+    /// row: `(dc.volume_id, dc.document_id) IN (…)`, whose binds are the user and the tag (S17a).
+    ///
+    /// A tag matches an assignment whatever the case of either id's ASCII letters, as the index's
+    /// condition, a `LIKE`, matches its column. The subquery reads nothing of the row, so SQLite runs it
+    /// once a statement and tests each row's key against its answer.
+    private static let attachedTagKeysCondition = """
+        (dc.volume_id, dc.document_id) IN (\
+        SELECT ta.volume_id, ta.document_id FROM \(attachedUserStoreSchema).tag_assignments ta \
+        WHERE ta.user_id = ? AND ta.tag_id = ? COLLATE NOCASE)
+        """
+
+    /// The exact-word filter's columns that hold a researcher's text, `SearchService.exactColumns(for:)`'s
+    /// two besides the corpus's four: `document_cache`'s in the index, and `user_search`'s, of the same
+    /// names, in an attached store.
+    private static let userTextColumns: Set<String> = ["summary_text", "note_text"]
 
     // MARK: - Facet Aggregation (R-1a)
 
@@ -4495,6 +4677,10 @@ public actor IndexingPipeline {
     /// Keys come from the caller's live `UserTag` list, not from the column, so a stale id
     /// left in `user_tag_ids` can never produce a phantom row.
     ///
+    /// The tags are read where `filters.userSource` says (S17a), on either route, the result keys' too,
+    /// which applies none of the other filters: the index's column, or the user's assignments in an
+    /// attached store (`userTagCountsStatement(tagCount:userSource:)`).
+    ///
     /// - Returns: counts keyed by tag-id string. Tags matching nothing are omitted.
     func userTagCounts(
         corpusMatch: String?,
@@ -4522,20 +4708,11 @@ public actor IndexingPipeline {
         defer { try? auxExec("DROP TABLE IF EXISTS temp.facet_mset") }
         guard matchCount > 0 else { return [:] }
 
-        let values = tagIds.map { _ in "(?)" }.joined(separator: ",")
-        let sql = """
-            WITH tv(id) AS (VALUES \(values))
-            SELECT tv.id AS k, COUNT(DISTINCT ms.docrowid) AS c
-            FROM temp.facet_mset ms
-            CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
-            JOIN tv ON (' ' || dc.user_tag_ids || ' ') LIKE ('% ' || tv.id || ' %')
-            WHERE dc.user_tag_ids IS NOT NULL AND dc.user_tag_ids <> ''
-            GROUP BY k
-            """
+        let (sql, sourceBinds) = Self.userTagCountsStatement(tagCount: tagIds.count, userSource: filters.userSource)
         let stmt = try auxPrepare(sql)
         defer { sqlite3_finalize(stmt) }
-        for (index, id) in tagIds.enumerated() {
-            sqlite3_bind_text(stmt, Int32(index + 1), id, -1, SQLITE_TRANSIENT_IP)
+        for (index, value) in (tagIds + sourceBinds).enumerated() {
+            sqlite3_bind_text(stmt, Int32(index + 1), value, -1, SQLITE_TRANSIENT_IP)
         }
         var counts: [String: Int] = [:]
         while try auxStep(stmt) {
@@ -4545,23 +4722,52 @@ public actor IndexingPipeline {
         return counts
     }
 
+    /// The tag-count aggregate over `temp.facet_mset` for `tagCount` tags, whose ids are its first binds,
+    /// and the binds that follow them (S17a).
+    ///
+    /// From the index, each matched row's `user_tag_ids`, driven from the match. From an attached store,
+    /// the user's assignments of the tags, driven from them, each joined to its document's row and then
+    /// to the match: a user's assignments are a few, where a match can be most of the index. An
+    /// assignment counts for a tag whatever the case of either id's ASCII letters, as the column's
+    /// `LIKE` counts it, and `COUNT(DISTINCT)` counts a document once however many of its assignments
+    /// name the tag.
+    private static func userTagCountsStatement(
+        tagCount: Int, userSource: SearchUserSource
+    ) -> (sql: String, binds: [String]) {
+        let values = (0..<tagCount).map { _ in "(?)" }.joined(separator: ",")
+        switch userSource {
+        case .index:
+            return ("""
+                WITH tv(id) AS (VALUES \(values))
+                SELECT tv.id AS k, COUNT(DISTINCT ms.docrowid) AS c
+                FROM temp.facet_mset ms
+                CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
+                JOIN tv ON (' ' || dc.user_tag_ids || ' ') LIKE ('% ' || tv.id || ' %')
+                WHERE dc.user_tag_ids IS NOT NULL AND dc.user_tag_ids <> ''
+                GROUP BY k
+                """, [])
+        case .attachedStore(let userId):
+            return ("""
+                WITH tv(id) AS (VALUES \(values))
+                SELECT tv.id AS k, COUNT(DISTINCT ms.docrowid) AS c
+                FROM \(attachedUserStoreSchema).tag_assignments ta
+                JOIN tv ON ta.tag_id = tv.id COLLATE NOCASE
+                CROSS JOIN document_cache dc ON dc.volume_id = ta.volume_id AND dc.document_id = ta.document_id
+                CROSS JOIN temp.facet_mset ms ON ms.docrowid = dc.rowid
+                WHERE ta.user_id = ?
+                GROUP BY k
+                """, [userId])
+        }
+    }
+
     /// `EXPLAIN QUERY PLAN` for the tag-count aggregate, so a test can assert its drive order
     /// against the same three rules the facet sections are held to.
-    func userTagCountPlanForTesting(tagIds: [String]) throws -> String {
-        let values = tagIds.map { _ in "(?)" }.joined(separator: ",")
+    func userTagCountPlanForTesting(tagIds: [String], userSource: SearchUserSource = .index) throws -> String {
         // The plan does not depend on the bound values, so a scratch match set is enough.
         try auxExec("DROP TABLE IF EXISTS temp.facet_mset")
         try auxExec("CREATE TEMP TABLE facet_mset (docrowid INTEGER PRIMARY KEY)")
         defer { try? auxExec("DROP TABLE IF EXISTS temp.facet_mset") }
-        return try queryPlanForTesting("""
-            WITH tv(id) AS (VALUES \(values))
-            SELECT tv.id AS k, COUNT(DISTINCT ms.docrowid) AS c
-            FROM temp.facet_mset ms
-            CROSS JOIN document_cache dc ON dc.rowid = ms.docrowid
-            JOIN tv ON (' ' || dc.user_tag_ids || ' ') LIKE ('% ' || tv.id || ' %')
-            WHERE dc.user_tag_ids IS NOT NULL AND dc.user_tag_ids <> ''
-            GROUP BY k
-            """)
+        return try queryPlanForTesting(Self.userTagCountsStatement(tagCount: tagIds.count, userSource: userSource).sql)
     }
 
     /// Materialises an explicit set of document keys into `temp.facet_mset`, for a result set that
@@ -4696,7 +4902,7 @@ public actor IndexingPipeline {
             // facet over a keyword search inside a working corpus is not one row lookup for each row
             // the words match across the corpus.
             let (matchCTE, matchBinds) = try Self.matchCTE(
-                corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+                corpusMatch: corpusMatch, userContentMatch: userContentMatch, userSource: filters.userSource)
             sql = """
                 \(matchCTE)
                 INSERT INTO temp.facet_mset(docrowid)
@@ -4706,7 +4912,7 @@ public actor IndexingPipeline {
             binds = matchBinds + filterBinds
         } else {
             let (matchCTE, matchBinds) = try Self.matchCTE(
-                corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+                corpusMatch: corpusMatch, userContentMatch: userContentMatch, userSource: filters.userSource)
             // The filters live here, in phase one, exactly as in `searchDocuments` — a facet
             // must describe the set the researcher is actually looking at.
             //
@@ -4988,7 +5194,7 @@ public actor IndexingPipeline {
         corpusMatch: String?, userContentMatch: String?
     ) throws -> Int {
         let (matchCTE, matchBinds) = try Self.matchCTE(
-            corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+            corpusMatch: corpusMatch, userContentMatch: userContentMatch, userSource: .index)
         let sql = """
             \(matchCTE)
             SELECT COUNT(*)
@@ -5204,6 +5410,8 @@ public actor IndexingPipeline {
         let readsRowColumns: Bool
         /// Whether a condition reads a column of `document_cache` that none of the table's indexes holds
         /// (#1577 lane 6): a user tag's `user_tag_ids`, and the text columns of the exact-word filter.
+        /// From an attached store (S17a), a tag and a note's or a summary's text are read by the row's
+        /// key, so only the corpus's text columns do.
         ///
         /// Every other condition reads the row's key, its front-matter or editorial-note flag, its date
         /// in `document_dates`, or a table keyed by the row's key, and an index of `document_cache`
@@ -5218,6 +5426,19 @@ public actor IndexingPipeline {
     /// Tag conditions wrap the space-separated tag-ID columns in spaces and use
     /// `LIKE '% <id> %'` so each ID matches as a whole token; multiple IDs are
     /// ANDed, mirroring the previous Swift-side `allSatisfy` semantics.
+    ///
+    /// ## The user half's source (S17a)
+    ///
+    /// A tag, and a note's or a summary's text under the exact-word filter, are read where
+    /// `filters.userSource` says: the index's `document_cache` columns, the text above, or one user's rows
+    /// of an attached store, whose key sets the row's key is tested against
+    /// (`(dc.volume_id, dc.document_id) IN (…)`): the documents the user's assignments of the tag are on
+    /// (`attachedTagKeysCondition`), and the documents whose row of `user_search` holds the word. Each
+    /// subquery reads nothing of the row, so SQLite runs it once a statement: the tags' through
+    /// `tag_assignments`' rows of the user, the words' over every row of `user_search`, whose `user_id`,
+    /// like each unindexed column of an FTS5 table, no index holds, testing the word only in the user's.
+    /// A condition tied to each row would scan `user_search` once a row. The corpus's columns are read
+    /// as before.
     ///
     /// ## The document gate is a set of rowids (#1577 lane 4, decision 53)
     ///
@@ -5408,9 +5629,15 @@ public actor IndexingPipeline {
         // Conditions that read a column no index of `document_cache` holds: a tag, and the exact word.
         var unindexedConditions = 0
         for tagId in filters.userTagIds {
-            conditions.append("(' ' || COALESCE(dc.user_tag_ids, '') || ' ') LIKE ('% ' || ? || ' %')")
-            binds.append(tagId)
-            unindexedConditions += 1
+            switch filters.userSource {
+            case .index:
+                conditions.append("(' ' || COALESCE(dc.user_tag_ids, '') || ' ') LIKE ('% ' || ? || ' %')")
+                binds.append(tagId)
+                unindexedConditions += 1
+            case .attachedStore(let userId):
+                conditions.append(attachedTagKeysCondition)
+                binds.append(contentsOf: [userId, tagId])
+            }
         }
 
         switch filters.documentTypeFilter {
@@ -5437,10 +5664,31 @@ public actor IndexingPipeline {
         // filter-only path, where there is no MATCH and therefore nothing to refine.
         if !filters.exactTerms.isEmpty, !filters.exactColumns.isEmpty {
             for term in filters.exactTerms {
-                let checks = filters.exactColumns.map { "frus_exact_word(dc.\($0), ?) = 1" }
-                conditions.append("(" + checks.joined(separator: " OR ") + ")")
-                binds.append(contentsOf: Array(repeating: term, count: filters.exactColumns.count))
-                unindexedConditions += 1
+                switch filters.userSource {
+                case .index:
+                    let checks = filters.exactColumns.map { "frus_exact_word(dc.\($0), ?) = 1" }
+                    conditions.append("(" + checks.joined(separator: " OR ") + ")")
+                    binds.append(contentsOf: Array(repeating: term, count: filters.exactColumns.count))
+                    unindexedConditions += 1
+                case .attachedStore(let userId):
+                    // The corpus's columns on the row, then the user's texts in the store, by the row's key.
+                    let corpus = filters.exactColumns.filter { !Self.userTextColumns.contains($0) }
+                    let user = filters.exactColumns.filter { Self.userTextColumns.contains($0) }
+                    var checks = corpus.map { "frus_exact_word(dc.\($0), ?) = 1" }
+                    binds.append(contentsOf: Array(repeating: term, count: corpus.count))
+                    if !user.isEmpty {
+                        let userChecks = user.map { "frus_exact_word(us.\($0), ?) = 1" }.joined(separator: " OR ")
+                        checks.append("""
+                            (dc.volume_id, dc.document_id) IN (\
+                            SELECT us.volume_id, us.document_id FROM \(attachedUserStoreSchema).user_search us \
+                            WHERE us.user_id = ? AND (\(userChecks)))
+                            """)
+                        binds.append(userId)
+                        binds.append(contentsOf: Array(repeating: term, count: user.count))
+                    }
+                    conditions.append("(" + checks.joined(separator: " OR ") + ")")
+                    if !corpus.isEmpty { unindexedConditions += 1 }
+                }
             }
         }
 
@@ -10556,16 +10804,21 @@ public actor IndexingPipeline {
     /// characters — ten times the snippet budget — is already generous. And `score` is 0: the
     /// semantic score arrives from the vector funnel, not from SQL, and a zero here is never read.
     ///
-    /// - Parameter keys: The hits to resolve; a key with no `document_cache` row is absent from
-    ///   the result (the caller renders those as beyond-library rows from the manifest).
+    /// - Parameters:
+    ///   - keys: The hits to resolve; a key with no `document_cache` row is absent from the result
+    ///     (the caller renders those as beyond-library rows from the manifest).
+    ///   - userSource: Where a row's tags are read (S17a): the index's column, as the app reads them,
+    ///     or the user's assignments in an attached store.
     /// - Returns: `"volumeId/documentId"` → row.
     func semanticResultRows(
-        forKeys keys: [(volumeId: String, documentId: String)]
+        forKeys keys: [(volumeId: String, documentId: String)],
+        userSource: SearchUserSource = .index
     ) throws -> [String: IndexedSearchRow] {
         guard !keys.isEmpty else { return [:] }
         var result: [String: IndexedSearchRow] = [:]
         let chunkSize = 400
         var index = 0
+        let rowTags = Self.rowTagsColumn(userSource)
         while index < keys.count {
             let chunk = Array(keys[index..<min(index + chunkSize, keys.count)])
             index += chunkSize
@@ -10574,7 +10827,7 @@ public actor IndexingPipeline {
                 WITH wanted(v, d) AS (VALUES \(values))
                 SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header,
                        dc.dateline, dc.source_note, substr(dc.body_text, 1, 3000),
-                       dc.subject_tag_ids, dc.user_tag_ids,
+                       dc.subject_tag_ids, \(rowTags.sql),
                        dc.is_editorial_note, dc.is_front_matter, dd.date_iso,
                        dd.date_iso_max, dd.date_precision
                 FROM document_cache dc
@@ -10588,6 +10841,10 @@ public actor IndexingPipeline {
             for key in chunk {
                 sqlite3_bind_text(stmt, bind, key.volumeId, -1, SQLITE_TRANSIENT_IP); bind += 1
                 sqlite3_bind_text(stmt, bind, key.documentId, -1, SQLITE_TRANSIENT_IP); bind += 1
+            }
+            // The row's tags' binds follow the keys', as its text follows theirs.
+            for value in rowTags.binds {
+                sqlite3_bind_text(stmt, bind, value, -1, SQLITE_TRANSIENT_IP); bind += 1
             }
             while try auxStep(stmt) {
                 let row = IndexedSearchRow(
@@ -10708,16 +10965,34 @@ public actor IndexingPipeline {
     /// space-delimited `LIKE` mirrors the user-tag filter used by search so a tag
     /// resolves to exactly the documents the rest of the app considers tagged.
     ///
-    /// - Parameter tagId: The user-tag UUID string.
+    /// From an attached store (S17a), the documents of the index that the user's assignments of the
+    /// tag are on, by the condition the search's tag filter tests (`attachedTagKeysCondition`).
+    ///
+    /// - Parameters:
+    ///   - tagId: The user-tag UUID string.
+    ///   - userSource: Where the tags are read: the index's column, as the app reads them, or one
+    ///     user's assignments in an attached store.
     /// - Returns: The keys of documents carrying that tag.
-    func documentKeys(forUserTagId tagId: String) throws -> [WordCloudDocumentKey] {
-        let sql = """
-            SELECT volume_id, document_id FROM document_cache
-            WHERE (' ' || COALESCE(user_tag_ids, '') || ' ') LIKE ('% ' || ? || ' %')
-            """
+    func documentKeys(forUserTagId tagId: String,
+                      userSource: SearchUserSource = .index) throws -> [WordCloudDocumentKey] {
+        let sql: String
+        let binds: [String]
+        switch userSource {
+        case .index:
+            sql = """
+                SELECT volume_id, document_id FROM document_cache
+                WHERE (' ' || COALESCE(user_tag_ids, '') || ' ') LIKE ('% ' || ? || ' %')
+                """
+            binds = [tagId]
+        case .attachedStore(let userId):
+            sql = "SELECT dc.volume_id, dc.document_id FROM document_cache dc WHERE \(Self.attachedTagKeysCondition)"
+            binds = [userId, tagId]
+        }
         let stmt = try auxPrepare(sql)
         defer { sqlite3_finalize(stmt) }
-        sqlite3_bind_text(stmt, 1, tagId, -1, SQLITE_TRANSIENT_IP)
+        for (index, value) in binds.enumerated() {
+            sqlite3_bind_text(stmt, Int32(index + 1), value, -1, SQLITE_TRANSIENT_IP)
+        }
         var keys: [WordCloudDocumentKey] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
             if let v = auxColumnString(stmt, 0), let d = auxColumnString(stmt, 1) {
@@ -13127,6 +13402,7 @@ public actor IndexingPipeline {
             let msg = auxDb.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
             throw IndexingError.sqliteError(code: rc, message: msg)
         }
+        if let statementTrace, let text = sqlite3_sql(s) { statementTrace.prepared(String(cString: text)) }
         return s
     }
 
@@ -13350,6 +13626,68 @@ enum SearchStatementStop {
     }
 }
 
+/// The statements a pipeline prepared and ran while a test traced it
+/// (`IndexingPipeline.setStatementTraceForTesting(_:)`, S17a): each as SQLite expanded it with its bound
+/// values, in the order they began. A statement SQLite runs inside another, as FTS5 runs its own, was not
+/// prepared by the pipeline, and is left out.
+final class StatementTraceForTesting: @unchecked Sendable {
+    private let lock = NSLock()
+    private var preparedText: Set<String> = []
+    private var ran: [String] = []
+
+    /// The statements, as they ran.
+    var statements: [String] {
+        lock.lock()
+        defer { lock.unlock() }
+        return ran
+    }
+
+    /// Notes a statement the pipeline prepared, by its text.
+    func prepared(_ sql: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        preparedText.insert(sql)
+    }
+
+    /// Records a statement that began, if the pipeline prepared one of its text.
+    func began(_ sql: String, expanded: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        if preparedText.contains(sql) { ran.append(expanded) }
+    }
+}
+
+// MARK: - SearchUserSource
+
+/// Where a search reads its user half (FRUS Explorer Light, S17a): the notes and summaries its words
+/// match, the tags its filter, its rows and its tag counts read, and the notes' and summaries' text its
+/// exact-word filter reads.
+///
+/// The app keeps that half in the index beside the corpus, in `user_content` and in `document_cache`'s
+/// `summary_text`, `note_text` and `user_tag_ids`, which its writers keep level with its store. A host
+/// that serves one index to many researchers keeps each one's half in a store of its own and attaches
+/// it to the index's connection (`IndexingPipeline(readingIndexAt:fts5Store:resources:volumesDirectory:userStore:)`),
+/// where each search reads one user's rows of it. Either way the corpus half is the index's.
+///
+/// Version history:
+///   1.0 — FRUS Explorer Light S17a: initial implementation
+public enum SearchUserSource: Sendable, Hashable {
+
+    /// The index's own `user_content` table and `document_cache` columns: the app's search, whose
+    /// statements are the same text as before this type existed. The default everywhere.
+    case index
+
+    /// One user's rows of the store attached as `IndexingPipeline.attachedUserStoreSchema`, each joined
+    /// to the index's row of the same `(volume_id, document_id)`:
+    /// - `user_search`, an FTS5 table whose indexed columns are `user_content`'s, `summary_text` and
+    ///   `note_text`, with the corpus's tokenizer, beside `user_id`, `volume_id` and `document_id`,
+    ///   unindexed: one row of a user's text for each document, the text the app's writers put in the
+    ///   index's columns;
+    /// - `tag_assignments`, a table of `user_id`, `volume_id`, `document_id` and `tag_id`: one row for
+    ///   each tag a user put on a document, as the app's `DocumentTagAssignment`.
+    case attachedStore(userId: String)
+}
+
 public struct SearchSQLFilters: Sendable {
     /// Restrict results to these volume IDs. `nil` (or empty) = all volumes.
     public var volumeIds: [String]?
@@ -13416,6 +13754,11 @@ public struct SearchSQLFilters: Sendable {
     /// match inside a summary the query never looked at.
     public var exactColumns: [String]
 
+    /// Where the user half is read: the notes and summaries the search's words match, the tags
+    /// `userTagIds` and a row name, and the user's columns among `exactColumns` (S17a). Not a filter
+    /// itself: it decides where the filters on the user half look. `.index` by default, as the app reads.
+    public var userSource: SearchUserSource
+
     public init(
         volumeIds: [String]? = nil,
         documentIds: [String]? = nil,
@@ -13431,7 +13774,8 @@ public struct SearchSQLFilters: Sendable {
         userTagIds: [String] = [],
         documentTypeFilter: DocumentTypeFilter = .all,
         exactTerms: [String] = [],
-        exactColumns: [String] = []
+        exactColumns: [String] = [],
+        userSource: SearchUserSource = .index
     ) {
         self.volumeIds = volumeIds
         self.documentIds = documentIds
@@ -13448,6 +13792,7 @@ public struct SearchSQLFilters: Sendable {
         self.documentTypeFilter = documentTypeFilter
         self.exactTerms = exactTerms
         self.exactColumns = exactColumns
+        self.userSource = userSource
     }
 }
 
