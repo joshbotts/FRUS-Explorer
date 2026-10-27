@@ -7,7 +7,6 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
-import SwiftData
 
 // MARK: - ResearchItemCounts
 
@@ -35,67 +34,76 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — S-3a: initial implementation
-///   1.1 — #1791: a note stored as several copies under one id is counted once
-struct ResearchItemCounts: Equatable, Sendable {
+///   1.1 — #1791: a note stored as several copies under one id is counted once (in the fetch, which
+///          stays in the app)
+///   1.2 — Session 2026-10-25 (FRUS Explorer Light, S17b): moved into FRUSCoreKit, public, with ``tally(noteProjectIds:noteTagIds:collectionProjectIds:assignmentTagIds:)``
+///          and the rows' summaries unchanged, for the web edition's Settings ▸ Tags and Research page;
+///          `fetch(from:)`, the three fetches, stays in the app's `ResearchItemCounts+App.swift`
+public struct ResearchItemCounts: Equatable, Sendable {
 
     /// What a single project row reports.
-    struct ProjectTally: Equatable, Sendable {
+    public struct ProjectTally: Equatable, Sendable {
         /// Research notes carrying this project's id.
-        var notes: Int = 0
+        public var notes: Int = 0
         /// Collections carrying this project's id.
-        var collections: Int = 0
+        public var collections: Int = 0
+
+        /// Creates a tally, zero unless given.
+        public init(notes: Int = 0, collections: Int = 0) {
+            self.notes = notes
+            self.collections = collections
+        }
     }
 
     /// What a single tag row reports.
-    struct TagTally: Equatable, Sendable {
+    public struct TagTally: Equatable, Sendable {
         /// Research notes carrying this tag's id.
-        var notes: Int = 0
+        public var notes: Int = 0
         /// Documents tagged directly with this tag.
-        var documents: Int = 0
+        public var documents: Int = 0
+
+        /// Creates a tally, zero unless given.
+        public init(notes: Int = 0, documents: Int = 0) {
+            self.notes = notes
+            self.documents = documents
+        }
     }
 
     /// Per-project tallies, keyed by project id. A project with nothing attached is absent.
-    let projects: [UUID: ProjectTally]
+    public let projects: [UUID: ProjectTally]
     /// Per-tag tallies, keyed by tag id. A tag applied to nothing is absent.
-    let tags: [UUID: TagTally]
+    public let tags: [UUID: TagTally]
+
+    /// Creates a tally set from its two maps, as ``tally(noteProjectIds:noteTagIds:collectionProjectIds:assignmentTagIds:)``
+    /// counts them.
+    public init(projects: [UUID: ProjectTally], tags: [UUID: TagTally]) {
+        self.projects = projects
+        self.tags = tags
+    }
 
     /// An empty tally set, for the state before the first fetch.
-    static let empty = ResearchItemCounts(projects: [:], tags: [:])
+    public static let empty = ResearchItemCounts(projects: [:], tags: [:])
 
     /// The tally for `projectId`, or a zeroed one when nothing hangs off it.
-    func project(_ projectId: UUID) -> ProjectTally { projects[projectId] ?? ProjectTally() }
+    public func project(_ projectId: UUID) -> ProjectTally { projects[projectId] ?? ProjectTally() }
 
     /// The tally for `tagId`, or a zeroed one when nothing carries it.
-    func tag(_ tagId: UUID) -> TagTally { tags[tagId] ?? TagTally() }
+    public func tag(_ tagId: UUID) -> TagTally { tags[tagId] ?? TagTally() }
 
     // MARK: - Building
 
-    /// Tallies every project and tag reference in three fetches.
-    ///
-    /// - Parameter context: The SwiftData context to read.
-    @MainActor
-    static func fetch(from context: ModelContext) -> ResearchItemCounts {
-        // One copy of each note, so a note stored twice is counted once (#1791).
-        let notes = ResearchNote.oneCopyEach((try? context.fetch(FetchDescriptor<ResearchNote>())) ?? [])
-        let collections = (try? context.fetch(FetchDescriptor<Collection>())) ?? []
-        let assignments = (try? context.fetch(FetchDescriptor<DocumentTagAssignment>())) ?? []
-        return tally(noteProjectIds: notes.map(\.projectIds),
-                     noteTagIds: notes.map(\.userTagIds),
-                     collectionProjectIds: collections.map(\.projectIds),
-                     assignmentTagIds: assignments.map(\.tagId))
-    }
-
-    /// The pure counting step, separated from the fetch so it can be tested without a container.
+    /// The pure counting step, separated from the fetch (the app's `fetch(from:)`) so it can be tested
+    /// without a container, and so a host with its own store counts as the app does.
     ///
     /// - Parameters:
     ///   - noteProjectIds: Each note's project ids.
     ///   - noteTagIds: Each note's user-tag ids, in the same order as `noteProjectIds`.
     ///   - collectionProjectIds: Each collection's project ids.
     ///   - assignmentTagIds: One tag id per direct document-tag assignment.
-    static func tally(noteProjectIds: [[UUID]],
-                      noteTagIds: [[UUID]],
-                      collectionProjectIds: [[UUID]],
-                      assignmentTagIds: [UUID]) -> ResearchItemCounts {
+    public static func tally(noteProjectIds: [[UUID]],
+                             noteTagIds: [[UUID]],
+                             collectionProjectIds: [[UUID]],
+                             assignmentTagIds: [UUID]) -> ResearchItemCounts {
         var projects: [UUID: ProjectTally] = [:]
         var tags: [UUID: TagTally] = [:]
 
@@ -131,7 +139,7 @@ extension ResearchItemCounts.ProjectTally {
     ///
     /// An empty project says so in words rather than showing "0 notes · 0 collections", which reads
     /// as a broken counter rather than a new project.
-    var summary: String {
+    public var summary: String {
         guard notes > 0 || collections > 0 else {
             return String(localized: "settings.list.project.empty", defaultValue: "Nothing filed yet")
         }
@@ -158,7 +166,7 @@ extension ResearchItemCounts {
     ///
     /// - Parameter count: How many research notes.
     /// - Returns: The phrase.
-    static func notesPhrase(_ count: Int) -> String {
+    public static func notesPhrase(_ count: Int) -> String {
         CountCopy.phrase(count,
                          one: String(localized: "settings.list.count.note.one", defaultValue: "%@ note"),
                          many: String(localized: "settings.list.count.note.many", defaultValue: "%@ notes"))
@@ -171,7 +179,7 @@ extension ResearchItemCounts.TagTally {
     ///
     /// An unused tag is worth naming plainly: it is the one a reader is most likely to be deciding
     /// whether to delete.
-    var summary: String {
+    public var summary: String {
         guard notes > 0 || documents > 0 else {
             return String(localized: "settings.list.tag.unused", defaultValue: "Not applied to anything")
         }

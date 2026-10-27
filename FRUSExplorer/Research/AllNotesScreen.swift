@@ -40,6 +40,8 @@ import SwiftData
 ///   1.0 — S-5b: the Notes pane's one door
 ///   1.1 — #1275: moved out of `NotesSettingsView` into Research; gained ``Presentation``
 ///   1.2 — #1791: a delete removes every stored copy of the note
+///   1.3 — Session 2026-10-25 (FRUS Explorer Light, S17b): the search field's filter is FRUSCoreKit's,
+///          beside the snapshot's other filters (`NotesPaneSnapshot.filtered(project:tagId:query:)`)
 struct AllNotesScreen: View {
 
     /// Where this screen is being shown, which decides only its chrome.
@@ -75,15 +77,10 @@ struct AllNotesScreen: View {
     /// otherwise the one handed in.
     private var current: NotesPaneSnapshot { localSnapshot ?? snapshot }
 
+    /// The rows the filters and the search field leave, by FRUSCoreKit's rule
+    /// (`NotesPaneSnapshot.filtered(project:tagId:query:)`).
     private var filtered: [NotesPaneSnapshot.Row] {
-        let matches = current.filtered(project: projectFilter, tagId: tagFilter)
-        let trimmed = query.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return matches }
-        return matches.filter {
-            $0.bodyText.localizedCaseInsensitiveContains(trimmed)
-                || $0.volumeId.localizedCaseInsensitiveContains(trimmed)
-                || $0.documentId.localizedCaseInsensitiveContains(trimmed)
-        }
+        current.filtered(project: projectFilter, tagId: tagFilter, query: query)
     }
 
     var body: some View {

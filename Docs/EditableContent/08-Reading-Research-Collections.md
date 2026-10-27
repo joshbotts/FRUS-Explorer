@@ -150,21 +150,21 @@ Changed by an update
 <!-- END SOURCE: research.sidebar.updated -->
 
 #### Row line — text changed
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1677–1678 | key: research.row.changed.body -->
+<!-- SOURCE: FRUSCoreKit/Research/ResearchDocumentAggregation.swift | lines: 147–148 | key: research.row.changed.body -->
 
 Text changed in an update — highlight positions may have moved
 
 <!-- END SOURCE: research.row.changed.body -->
 
 #### Row line — apparatus changed
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1680–1681 | key: research.row.changed.apparatus -->
+<!-- SOURCE: FRUSCoreKit/Research/ResearchDocumentAggregation.swift | lines: 150–151 | key: research.row.changed.apparatus -->
 
 Footnotes, source note, or heading changed in an update — the text did not
 
 <!-- END SOURCE: research.row.changed.apparatus -->
 
 #### Row line — gone
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1667–1667 | key: research.row.changed.vanished -->
+<!-- SOURCE: FRUSCoreKit/Research/ResearchDocumentAggregation.swift | lines: 137–137 | key: research.row.changed.vanished -->
 
 No longer in the volume
 
@@ -1368,126 +1368,126 @@ travel into a PDF somebody else opens. Each names a source the exported material
 prints only the ones that apply to its own contents.
 
 #### provenance.source.frusText
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 108–108 | key: provenance.source.frusText | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 111–111 | key: provenance.source.frusText | shared: iOS+macOS (single edit point) -->
 
 FRUS text
 
 <!-- END SOURCE: provenance.source.frusText -->
 
 #### provenance.source.nara
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 110–110 | key: provenance.source.nara | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 113–113 | key: provenance.source.nara | shared: iOS+macOS (single edit point) -->
 
 FRUS + NARA catalog
 
 <!-- END SOURCE: provenance.source.nara -->
 
 #### provenance.source.ohPeople
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 112–113 | key: provenance.source.ohPeople | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 115–116 | key: provenance.source.ohPeople | shared: iOS+macOS (single edit point) -->
 
 FRUS + OH people register
 
 <!-- END SOURCE: provenance.source.ohPeople -->
 
 #### provenance.source.ohSubjects
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 115–116 | key: provenance.source.ohSubjects | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 118–119 | key: provenance.source.ohSubjects | shared: iOS+macOS (single edit point) -->
 
 FRUS + OH subjects
 
 <!-- END SOURCE: provenance.source.ohSubjects -->
 
 #### provenance.source.stateSchedule
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 118–119 | key: provenance.source.stateSchedule | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 121–122 | key: provenance.source.stateSchedule | shared: iOS+macOS (single edit point) -->
 
 FRUS + State Dept. schedule
 
 <!-- END SOURCE: provenance.source.stateSchedule -->
 
 #### provenance.source.wordLists
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 121–122 | key: provenance.source.wordLists | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 124–125 | key: provenance.source.wordLists | shared: iOS+macOS (single edit point) -->
 
 FRUS + this app's word lists
 
 <!-- END SOURCE: provenance.source.wordLists -->
 
 #### provenance.source.model
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 124–124 | key: provenance.source.model | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 127–127 | key: provenance.source.model | shared: iOS+macOS (single edit point) -->
 
 This app's model
 
 <!-- END SOURCE: provenance.source.model -->
 
 #### provenance.source.yourReading
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 126–126 | key: provenance.source.yourReading | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 129–129 | key: provenance.source.yourReading | shared: iOS+macOS (single edit point) -->
 
 Your reading
 
 <!-- END SOURCE: provenance.source.yourReading -->
 
 #### provenance.method.frusText
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 138–139 | key: provenance.method.frusText | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 141–142 | key: provenance.method.frusText | shared: iOS+macOS (single edit point) -->
 
 Read from the text and editorial apparatus of the FRUS volumes, and from no other source. Where a value was parsed out of printed prose, this app did the reading.
 
 <!-- END SOURCE: provenance.method.frusText -->
 
 #### provenance.method.joined %@
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 141–142 | key: provenance.method.joined %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 144–145 | key: provenance.method.joined %@ | shared: iOS+macOS (single edit point) -->
 
 Produced by joining the FRUS volumes to %@. The join is this app's; a record it could not match is absent rather than wrong.
 
 <!-- END SOURCE: provenance.method.joined %@ -->
 
 #### provenance.method.computed
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 145–146 | key: provenance.method.computed | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 148–149 | key: provenance.method.computed | shared: iOS+macOS (single edit point) -->
 
 Computed by this app rather than read from a source — a model or a scoring rule stands between the volumes and this figure. Cite it as the app's output, not the record's.
 
 <!-- END SOURCE: provenance.method.computed -->
 
 #### provenance.method.yourReading
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 148–149 | key: provenance.method.yourReading | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 151–152 | key: provenance.method.yourReading | shared: iOS+macOS (single edit point) -->
 
 Your own notes, tags and highlights. The app never mixes them into the published text.
 
 <!-- END SOURCE: provenance.method.yourReading -->
 
 #### provenance.partner.nara
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 157–158 | key: provenance.partner.nara | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 160–161 | key: provenance.partner.nara | shared: iOS+macOS (single edit point) -->
 
 the National Archives catalog
 
 <!-- END SOURCE: provenance.partner.nara -->
 
 #### provenance.partner.ohPeople
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 160–161 | key: provenance.partner.ohPeople | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 163–164 | key: provenance.partner.ohPeople | shared: iOS+macOS (single edit point) -->
 
 the Office of the Historian's people register
 
 <!-- END SOURCE: provenance.partner.ohPeople -->
 
 #### provenance.partner.ohSubjects
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 163–164 | key: provenance.partner.ohSubjects | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 166–167 | key: provenance.partner.ohSubjects | shared: iOS+macOS (single edit point) -->
 
 the Office of the Historian's subject taxonomy
 
 <!-- END SOURCE: provenance.partner.ohSubjects -->
 
 #### provenance.partner.stateSchedule
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 166–167 | key: provenance.partner.stateSchedule | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 169–170 | key: provenance.partner.stateSchedule | shared: iOS+macOS (single edit point) -->
 
 the State Department's decimal classification schedule
 
 <!-- END SOURCE: provenance.partner.stateSchedule -->
 
 #### provenance.curated.disclosure
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 181–182 | key: provenance.curated.disclosure | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 184–185 | key: provenance.curated.disclosure | shared: iOS+macOS (single edit point) -->
 
 Some archival identifiers in this material were matched by hand rather than found in the catalog, because NARA publishes no control number for them.
 
 <!-- END SOURCE: provenance.curated.disclosure -->
 
 #### provenance.parseResidual.disclosure
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 206–207 | key: provenance.parseResidual.disclosure | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 209–210 | key: provenance.parseResidual.disclosure | shared: iOS+macOS (single edit point) -->
 
 Archival units are read from the volumes' own source notes by a parser, which leaves 2.0% of notes unrecognized across the series — but the rate is very uneven: about 7% for 1952–1954, and effectively every note before 1906. A unit missing from this list may be one the parser could not read rather than one the editors did not cite.
 
@@ -1496,7 +1496,7 @@ Archival units are read from the volumes' own source notes by a parser, which le
 Printed only in an export that actually contains an archival-sources block, since that block is the parse. The figures come from `SourceNoteKit/eval-baseline.txt`, the maintained generator output (5,465 of 267,663 notes since #1514, 5,469 after #1489; 7.2% for 1952–1954, the worst post-1906 band; 2,033 of 2,034 before 1906) — not from the older `eval-report.txt` beside it.
 
 #### provenance.block.heading
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceStatement.swift | lines: 35–35 | key: provenance.block.heading | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceStatement.swift | lines: 37–37 | key: provenance.block.heading | shared: iOS+macOS (single edit point) -->
 
 Where this came from
 
@@ -1607,7 +1607,7 @@ Denominator: the era’s volumes carry %1$@ in all, and this table — every uni
 <!-- END SOURCE: archival.export.caveat.denominator.uncapped %@ %@ -->
 
 #### ranked by meaning (on-device model), not by keywords — the…
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 247–248 | key: appendix.scope.semantic -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 267–268 | key: appendix.scope.semantic -->
 
 ranked by meaning (on-device model), not by keywords — the query’s words were not required to appear
 
@@ -1617,13 +1617,13 @@ ranked by meaning (on-device model), not by keywords — the query’s words wer
 <!-- #1577 lane 1 (2026-10-10): the method appendix's second phrase for a Meaning search that ran inside
      a document set, after the phrase above. %@ is the set's size with its noun ("212 documents").
      The second text is for a set that held no documents. -->
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.rankedInsidePhrase | lines: 422–423 | key: appendix.scope.semantic.within %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchScopeSignature.swift | SearchScopeSignature.rankedInsidePhrase | lines: 446–447 | key: appendix.scope.semantic.within %@ -->
 
 ranked inside a set of %@, not across the whole series
 
 <!-- END SOURCE: appendix.scope.semantic.within %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 256–257 | key: appendix.scope.semantic.within.empty -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 276–277 | key: appendix.scope.semantic.within.empty -->
 
 ranked inside a set that held no documents
 
@@ -1631,7 +1631,7 @@ ranked inside a set that held no documents
 
 
 #### inside the closest matches of a Meaning search for…
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.basePhrase | key: appendix.scope.base.meaning %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchScopeSignature.swift | SearchScopeSignature.basePhrase | key: appendix.scope.base.meaning %@ %@ -->
 
 *The method appendix's phrase for a search run inside a held Meaning list (#1577 lane 4), from the trail row's `base=` part: %2$@ is the list's question and %1$@ its size with its noun ("100 documents"). %2$@ is quoted as the row quoted it, so a question or words typed as one phrase in quotation marks fill it without their own marks; the trail still records them as typed (plan of record §6g, 2026-10-19). The same holds for the keyword list's phrase below.*
 
@@ -1639,7 +1639,7 @@ inside the closest matches of a Meaning search for “%2$@” (%1$@)
 
 <!-- END SOURCE: appendix.scope.base.meaning %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.basePhrase | key: appendix.scope.base.keywords %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchScopeSignature.swift | SearchScopeSignature.basePhrase | key: appendix.scope.base.keywords %@ %@ -->
 
 *The same for a ranking of a held keyword list.*
 
@@ -1647,7 +1647,7 @@ inside the results of a keyword search for “%2$@” (%1$@)
 
 <!-- END SOURCE: appendix.scope.base.keywords %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.basePhrase | key: appendix.scope.base.browse %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchScopeSignature.swift | SearchScopeSignature.basePhrase | key: appendix.scope.base.browse %@ %@ -->
 
 *The same for a ranking of a held browse, by its filter's name. A browse writes no trail row of its own, so this phrase is the only record of it.*
 
@@ -1655,7 +1655,7 @@ inside the results of a browse of %2$@ (%1$@)
 
 <!-- END SOURCE: appendix.scope.base.browse %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.basePhrase | key: appendix.scope.base.browse.unnamed %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchScopeSignature.swift | SearchScopeSignature.basePhrase | key: appendix.scope.base.browse.unnamed %@ -->
 
 *The same for a browse with no name to give.*
 
@@ -2323,7 +2323,7 @@ A collection can belong to more than one project. Attaching it here doesn’t re
      this one key through `CollectionEditorNaming.listName`, trimmed. The two Project Home keys
      (`project.home.collections.untitled`, `project.collections.manage.untitled`) are gone, so their
      two blocks are this one, the one place the wording lives. -->
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.navigationTitle | lines: 970–970 | key: collection.untitled.name | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.navigationTitle | lines: 937–937 | key: collection.untitled.name | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Untitled Collection
@@ -2440,7 +2440,7 @@ This is a smart collection. Its documents are resolved from the linked saved sea
 <!-- END SOURCE: collection.editor.docs.smartEmpty -->
 
 #### Smart collection. Its documents come from its saved search.
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.sentence | lines: 1137–1138 | key: collection.picker.smart -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.sentence | lines: 1104–1105 | key: collection.picker.smart -->
 
 *The line under a smart collection's name in Add to Collection and Add Excerpt to Collection, on iPhone, iPad and Mac, where an ordinary collection's row prints its document count; the row is listed and does not take a tap (#1593). Since #1619 it is also the first row of a smart collection's Contents, in the iPhone and iPad editor and in the Mac's Collections window, whose Add menus then take no hand-added document, section heading, note block or passage.*
 
@@ -2449,7 +2449,7 @@ Smart collection. Its documents come from its saved search.
 <!-- END SOURCE: collection.picker.smart -->
 
 #### Smart collection
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1145–1145 | key: collection.smart.listLabel -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1112–1112 | key: collection.smart.listLabel -->
 
 *What a smart collection's row prints where an ordinary collection's prints its document count (#1619): in the Collections list on iPhone and iPad, in the Mac Collections window's collection picker and its Manage Collections sheet, and since #1687 in Project Home's Collections sheet (**Manage**), on every platform. On the Mac's toolbar the picker shows a bolt in its place, which VoiceOver reads as these words.*
 
@@ -2458,7 +2458,7 @@ Smart collection
 <!-- END SOURCE: collection.smart.listLabel -->
 
 #### Not part of the smart collection: added before it was…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.entriesFromBeforeLinkHeading | lines: 1100–1101 | key: collection.smart.earlier.heading -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.entriesFromBeforeLinkHeading | lines: 1067–1068 | key: collection.smart.earlier.heading -->
 
 *The dimmed heading over a smart collection's entries from before its link (#1619; decision 22 of the 2026-10-14 plan of record), in a section of its own under the collection's Contents: in the iPhone and iPad editor, which is also the Mac's New Collection sheet, and in the Mac's Collections window. A smart collection takes no hand-added document, section heading, note block or passage, so an entry of those kinds is one it held before it was linked, and every export, the preview and the Archives Visit list leave it out. The section shows only while there is such an entry; each is listed dimmed, by its title or its words.*
 
@@ -2467,7 +2467,7 @@ Not part of the smart collection: added before it was linked to its saved search
 <!-- END SOURCE: collection.smart.earlier.heading -->
 
 #### Remove These Entries
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLink | lines: 1106–1106 | key: collection.smart.earlier.remove -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLink | lines: 1073–1073 | key: collection.smart.earlier.remove -->
 
 *The button under those entries, on iPhone, iPad and Mac, and the destructive button of the dialog it opens. It removes nothing itself: the dialog asks first, and only its button removes them. Nothing else removes them; unlinked, the collection counts them again.*
 
@@ -2476,7 +2476,7 @@ Remove These Entries
 <!-- END SOURCE: collection.smart.earlier.remove -->
 
 #### Remove These Entries?
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkTitle | lines: 1111–1111 | key: collection.smart.earlier.remove.confirm.title -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkTitle | lines: 1078–1078 | key: collection.smart.earlier.remove.confirm.title -->
 
 *The title of the dialog that asks before the entries from before the link are removed. Its message is the next block, or the one after it for more than one entry.*
 
@@ -2485,7 +2485,7 @@ Remove These Entries?
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.title -->
 
 #### Removes the entry added before this collection was linked…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1122–1123 | key: collection.smart.earlier.remove.confirm.message.one -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1089–1090 | key: collection.smart.earlier.remove.confirm.message.one -->
 
 *The dialog's message when one entry would go.*
 
@@ -2494,7 +2494,7 @@ Removes the entry added before this collection was linked to its saved search.
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.message.one -->
 
 #### Removes the %@ entries added before this collection was…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1124–1125 | key: collection.smart.earlier.remove.confirm.message.many -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1091–1092 | key: collection.smart.earlier.remove.confirm.message.many -->
 
 *The dialog's message when more than one entry would go. `%@` is the count, grouped: "Removes the 1,204 entries added before…".*
 
@@ -2503,7 +2503,7 @@ Removes the %@ entries added before this collection was linked to its saved sear
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.message.many -->
 
 #### Empty note block
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.emptyNoteBlock | lines: 1131–1131 | key: collection.smart.earlier.emptyNote -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.emptyNoteBlock | lines: 1098–1098 | key: collection.smart.earlier.emptyNote -->
 
 *What a row in that section prints for a note block that holds no text. A section heading with none reads "Untitled section", as it does in the entry inspector.*
 
@@ -2742,7 +2742,7 @@ FRUS Explorer Collection - %@
      name, in its body and its Contents, set apart in grey italics; every export leaves the heading
      out, and the editor's own row keeps its "Section heading" prompt. The inspector's identity row
      has always used it. -->
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.untitledSection | lines: 1017–1017 | key: collection.inspector.section.untitled -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.untitledSection | lines: 984–984 | key: collection.inspector.section.untitled -->
 
 Untitled section
 

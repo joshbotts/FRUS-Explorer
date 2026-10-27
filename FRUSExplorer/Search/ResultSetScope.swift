@@ -247,6 +247,8 @@ struct SearchRunLedger: Equatable, Sendable {
 ///         cut, and its capture's warning and record, each counted from the rows the ranking ranked
 ///   1.6 — #1758: ``narrowing``, what narrowed the list beyond its words, which the capture sheet shows and
 ///         ``captureProvenanceDescription`` records ("Search results (years 1945)")
+///   1.7 — Session 2026-10-25 (FRUS Explorer Light, S17b): the Meaning search's provenance sentence and the rule
+///         that reads it back (`isMeaningCaptureProvenance(_:)`) are FRUSCoreKit's `WorkingCorpusProvenance`
 struct ResultSetScope: Equatable, Sendable {
 
     // MARK: - The sets
@@ -914,10 +916,10 @@ struct ResultSetScope: Equatable, Sendable {
         return phrases
     }
 
-    /// A Meaning search's provenance sentence, with `%@` where the count of its closest matches goes.
+    /// A Meaning search's provenance sentence, with `%@` where the count of its closest matches goes: FRUSCoreKit's
+    /// `WorkingCorpusProvenance.meaningSearch` since S17b (FRUS Explorer Light), which reads it back.
     private static var meaningProvenance: String {
-        String(localized: "corpus.save.source.meaning %@",
-               defaultValue: "Meaning search — the %@ closest matches")
+        WorkingCorpusProvenance.meaningSearch
     }
 
     /// Whether `description` is the provenance ``captureProvenanceDescription`` stores for a Meaning search (#1688).
@@ -930,13 +932,13 @@ struct ResultSetScope: Equatable, Sendable {
     /// before #1598 was recorded as "Search results" and is not recognised, since nothing on its record tells it
     /// from a keyword capture.
     ///
+    /// FRUSCoreKit's `WorkingCorpusProvenance.isMeaningCapture(_:)` since S17b (FRUS Explorer Light), so the web
+    /// edition's method appendix reads a corpus's provenance by the same rule.
+    ///
     /// - Parameter description: `WorkingCorpus.sourceDescription`.
     /// - Returns: `true` for a Meaning search's provenance.
     static func isMeaningCaptureProvenance(_ description: String?) -> Bool {
-        guard let description,
-              let stem = meaningProvenance.components(separatedBy: "%@").first,
-              !stem.isEmpty else { return false }
-        return description.hasPrefix(stem)
+        WorkingCorpusProvenance.isMeaningCapture(description)
     }
 
     /// What a capture of these results stores as `WorkingCorpus.wasTruncatedAtCapture`.

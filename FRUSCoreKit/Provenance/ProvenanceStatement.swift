@@ -28,10 +28,12 @@ import Foundation
 /// Version history:
 ///   1.0 — PV-1: initial implementation
 ///   1.1 — PV §5 / Q-1: the parse residual, conditional on an archival-sources block
-enum ProvenanceStatement {
+///   1.2 — Session 2026-10-25 (FRUS Explorer Light, S17b and S18a): moved into FRUSCoreKit, public, unchanged, for the
+///          sources blocks of the web edition's method appendix and collection colophon
+public enum ProvenanceStatement {
 
     /// The heading the sources block sits under, in every format that has headings.
-    static var heading: String {
+    public static var heading: String {
         String(localized: "provenance.block.heading", defaultValue: "Where this came from")
     }
 
@@ -46,9 +48,9 @@ enum ProvenanceStatement {
     ///   - includesCuratedResolutions: Whether any archival identifier in it was matched by hand.
     /// - Returns: One sentence per source, plus the curated disclosure when it applies. Empty when
     ///   `sources` is empty, so a caller need not guard.
-    static func lines(for sources: Set<ProvenanceSource>,
-                      includesCuratedResolutions: Bool = false,
-                      restsOnSourceNoteParse: Bool = false) -> [String] {
+    public static func lines(for sources: Set<ProvenanceSource>,
+                             includesCuratedResolutions: Bool = false,
+                             restsOnSourceNoteParse: Bool = false) -> [String] {
         guard !sources.isEmpty else { return [] }
         var out = sources
             .sorted { a, b in
@@ -66,9 +68,9 @@ enum ProvenanceStatement {
     }
 
     /// The block with its heading, for a format that wants one.
-    static func block(for sources: Set<ProvenanceSource>,
-                      includesCuratedResolutions: Bool = false,
-                      restsOnSourceNoteParse: Bool = false) -> [String] {
+    public static func block(for sources: Set<ProvenanceSource>,
+                             includesCuratedResolutions: Bool = false,
+                             restsOnSourceNoteParse: Bool = false) -> [String] {
         let body = lines(for: sources, includesCuratedResolutions: includesCuratedResolutions,
                          restsOnSourceNoteParse: restsOnSourceNoteParse)
         return body.isEmpty ? [] : [heading] + body

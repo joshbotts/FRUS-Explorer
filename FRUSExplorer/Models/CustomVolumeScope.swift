@@ -40,6 +40,9 @@ import SwiftData
 ///   1.1 — #258 Phase 4: `ScopeFacets` pure facet→volume-set helpers (subject / manifest
 ///          tag / coverage+editor); #332 review: subject-catalog name derivation made
 ///          order-deterministic
+///   1.2 — Session 2026-10-25 (FRUS Explorer Light, S17b): `IndexedResolution` and the resolver's two
+///          grains are FRUSCoreKit's; `resolve(scopeId:context:indexed:)` stays here, in an extension.
+///          No stored property changed
 @Model final class CustomVolumeScope {
 
     // MARK: - Identity
@@ -79,61 +82,14 @@ import SwiftData
     }
 }
 
-// MARK: - IndexedResolution
+// MARK: - CustomScopeResolver + the store
 
-/// The FTS-grain resolution contract (#258, review finding — HIGH, found independently by
-/// two lenses): **never a bare, possibly-empty set.**
-///
-/// Every pre-existing scope consumer in the app treats an empty/`nil` volume set as
-/// "no filter" (e.g. `SearchViewModel` maps empty → `nil` → whole corpus) — so a custom
-/// scope whose members are not yet downloaded would silently *invert* into a whole-corpus
-/// query under the scope's own label. This enum makes that state unrepresentable: an FTS
-/// surface either gets a non-empty set, or an explicit outcome it must render as an empty
-/// state / warning — never pass through as unscoped.
-enum IndexedResolution: Equatable {
-    /// The scope resolves to these indexed volumes. Non-empty by construction.
-    case resolved(Set<String>)
-    /// The scope has members, but none are indexed yet — show "no volumes of this scope
-    /// are indexed" (or warn in the picker); NEVER fall back to unscoped.
-    case noIndexedMembers
-    /// The scope reference did not resolve (deleted on another device; dangling
-    /// `.custom(UUID)`) — show "this scope is no longer available"; NEVER unscoped.
-    case scopeUnavailable
-}
+// `IndexedResolution` and the two grains of `CustomScopeResolver` (`indexedResolution` and
+// `manifestVolumeIds`) moved to FRUSCoreKit for FRUS Explorer Light (S17b):
+// `FRUSCoreKit/Models/CustomScopeResolver.swift`. The identity-based resolution reads the store, so it
+// stays here.
 
-// MARK: - CustomScopeResolver
-
-/// Resolves a `CustomVolumeScope` to a volume-id set at one of the two grains the scope
-/// census identified (sketch §2): **indexed** (FTS surfaces — search, analytics) and
-/// **manifest** (the Series dashboards, which render undownloaded volumes).
-///
-/// The grain methods are pure static functions over plain values so the `IndexedResolution`
-/// invariant is unit-testable without a SwiftData container.
-enum CustomScopeResolver {
-
-    /// FTS-grain resolution: intersect membership with the indexed set, with
-    /// empty-after-intersection as an **explicit, non-passthrough outcome**.
-    ///
-    /// - Parameters:
-    ///   - memberVolumeIds: The scope's raw membership (may include un-downloaded ids).
-    ///   - indexed: The currently indexed volume ids (`AppState.indexedVolumeIds`).
-    /// - Returns: `.resolved` (non-empty) or `.noIndexedMembers`. (`.scopeUnavailable` is
-    ///   produced by identity-based lookups — `resolve(scopeId:context:indexed:)` — when
-    ///   the referenced record no longer exists.)
-    static func indexedResolution(memberVolumeIds: [String],
-                                  indexed: Set<String>) -> IndexedResolution {
-        let hits = Set(memberVolumeIds).intersection(indexed)
-        return hits.isEmpty ? .noIndexedMembers : .resolved(hits)
-    }
-
-    /// Series/manifest-grain resolution: raw membership filtered to ids the current
-    /// manifest actually knows, so a dangling id (manifest churn — measured byte-stable
-    /// across all six historical revisions, tolerated anyway) is skipped rather than
-    /// silently counted.
-    static func manifestVolumeIds(memberVolumeIds: [String],
-                                  manifestIds: Set<String>) -> Set<String> {
-        Set(memberVolumeIds).intersection(manifestIds)
-    }
+extension CustomScopeResolver {
 
     /// Identity-based FTS-grain resolution for adopters that persist a scope *reference*
     /// (`.custom(UUID)` cases — word cloud signatures, future bars): dereferences the id
