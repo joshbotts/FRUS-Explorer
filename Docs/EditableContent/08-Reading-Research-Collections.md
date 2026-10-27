@@ -1759,7 +1759,7 @@ Artifact: drawn from the bundled source-provenance aggregate generated %@. Every
 *Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, the notice for a link that only works inside a document, and the line a volume's page in Browse shows when a page link opened it.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3185–3186 | key: deepLink.inAppOnly %@ -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3186–3187 | key: deepLink.inAppOnly %@ -->
 
 This is a “%@” link from inside a FRUS document. It works while reading that document in the app, not on its own.
 
@@ -2111,21 +2111,21 @@ Volume identified — downloaded but not yet indexed; look it up again once it i
 <!-- END SOURCE: citation.match.notYetIndexed -->
 
 #### Tooltip — Find other FRUS documents drawn from the same archival…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.nodeContextMenuItems | lines: 959–960 | key: graph.contextMenu.archivalNeighbors.help -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.nodeContextMenuItems | lines: 961–962 | key: graph.contextMenu.archivalNeighbors.help -->
 
 Find other FRUS documents drawn from the same archival source — lot file, central file, collection, or library
 
 <!-- END SOURCE: graph.contextMenu.archivalNeighbors.help -->
 
 #### Tooltip — Timeline arranges documents chronologically along a date…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.filterToolbar | lines: 1404–1405 | key: graph.layout.help -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.filterToolbar | lines: 1407–1408 | key: graph.layout.help -->
 
 Timeline arranges documents chronologically along a date axis; Network uses the spring layout. Timeline is unavailable when too few documents have dates.
 
 <!-- END SOURCE: graph.layout.help -->
 
 #### %1$lld documents in %2$lld volumes you have not downloaded…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.undownloadedBanner | lines: 1617–1618 | key: graph.banner.undownloaded.v2 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.undownloadedBanner | lines: 1620–1621 | key: graph.banner.undownloaded.v2 %lld %lld -->
 
 %1$lld documents in %2$lld volumes you have not downloaded also cite this one. They are shown without titles until you download them.
 

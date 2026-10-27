@@ -34,6 +34,17 @@ typealias WordCloudProgress = @Sendable (Int, Int) -> Void
 /// computation can be long-running; callers should invoke it from a cancellable
 /// background `Task` and show progress.
 ///
+/// ## Memory (#1798)
+/// Each document is tagged inside an autorelease pool of its own, as `CloudVectorsRunner` tags
+/// the corpus. The tagger hands back autoreleased objects, and nothing drained them between
+/// chunks, the `await` for each chunk's text included: measured in the test host on an iPhone 17
+/// simulator (iOS 27.0) over a full index of 553 volumes, the count kept 70 to 100 KB a
+/// document, in every lens, and released none of it when it ended. The default lens held 2.1 GB after
+/// 20,000 documents and 4.5 GB after 60,000, so a corpus count would have needed about 25 GB, and
+/// the corpus cloud crashed an M1 iPad Pro (#1798). With the pools a count of 5,000 documents
+/// peaks 13 MB over its start in the default lens and at nothing in the others, in the same time,
+/// and the whole corpus in the default lens peaked at 158 MB, 19 MB over its start, in 17 minutes.
+///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
 ///   1.1 — Word Cloud fixes: `invalidateCache()` is now actually wired to indexing
@@ -50,6 +61,7 @@ typealias WordCloudProgress = @Sendable (Int, Int) -> Void
 ///          was counted under (`isReusableInMemory`), since a re-check can now replace the verdict
 ///   1.5 — #1608: the tokenizer counts in the form of the verdict the result is stamped with, so a
 ///          result stamped "no lemmatiser" is a count of printed forms throughout
+///   1.6 — #1798: an autorelease pool for each document (see "Memory")
 actor WordFrequencyService {
 
     // MARK: - Dependencies
@@ -213,7 +225,12 @@ actor WordFrequencyService {
             index += chunkSize
             let texts = try await pipeline.documentBodyTexts(forKeys: chunk)
             documentCount += texts.count
-            for text in texts { tokenTotal += tokenizer.accumulate(from: text, into: &counts) }
+            // A pool for each document (#1798): the tagger hands back autoreleased objects, and
+            // nothing drains them between chunks, the `await` above included. Without one, the
+            // count kept 70 to 100 KB a document until the process ended; see the type's doc.
+            for text in texts {
+                tokenTotal += autoreleasepool { tokenizer.accumulate(from: text, into: &counts) }
+            }
             progress?(min(index, total), total)
         }
 

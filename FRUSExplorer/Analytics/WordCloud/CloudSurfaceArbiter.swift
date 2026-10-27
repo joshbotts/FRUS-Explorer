@@ -46,6 +46,8 @@ enum CloudSurface: Hashable, Sendable {
 /// Version history:
 ///   1.0 — O-3: initial implementation
 ///   1.1 — #1759: `firstFrameSplash`, the splash a host draws before it has resolved
+///   1.2 — #1796: no CloudKit splash while the device is offline, and
+///          `cloudKitImportSplashLift`, which lets a launch through whatever sync does
 @MainActor
 enum CloudSurfaceArbiter {
 
@@ -61,15 +63,19 @@ enum CloudSurfaceArbiter {
         var isCloudKitImporting: Bool
         /// `FRUS_UI_TEST_MODE`.
         var isUITestMode: Bool
+        /// Whether the device has a network path (`AppState.isOnline`). With none, no import can
+        /// arrive, so there is nothing for a CloudKit splash to wait for (#1796).
+        var isOnline: Bool
 
         /// Creates an input set.
         init(isCoreReady: Bool, hasPendingCorpusWork: Bool, hasCompletedOnboarding: Bool,
-             isCloudKitImporting: Bool, isUITestMode: Bool) {
+             isCloudKitImporting: Bool, isUITestMode: Bool, isOnline: Bool = true) {
             self.isCoreReady = isCoreReady
             self.hasPendingCorpusWork = hasPendingCorpusWork
             self.hasCompletedOnboarding = hasCompletedOnboarding
             self.isCloudKitImporting = isCloudKitImporting
             self.isUITestMode = isUITestMode
+            self.isOnline = isOnline
         }
     }
 
@@ -116,8 +122,61 @@ enum CloudSurfaceArbiter {
         // splash — the precedence from O-0-1 survives the move.
         if inputs.hasPendingCorpusWork { return inputs.isCoreReady ? .indexingBackdrop : .none }
         if !inputs.hasCompletedOnboarding { return .splash(.freshInstall) }
-        if inputs.isCloudKitImporting { return .splash(.cloudKitImport) }
+        if inputs.isCloudKitImporting && inputs.isOnline { return .splash(.cloudKitImport) }
         return .none
+    }
+
+    // MARK: - When a CloudKit splash lifts (#1796)
+
+    /// The longest a `.cloudKitImport` splash holds the window, whatever sync does.
+    static let cloudKitImportSplashBound: Duration = .seconds(15)
+
+    /// How long sync may sit idle after an event ends before the splash stops waiting for an import
+    /// to begin. A launch's setup ended about a second before its import began on the Mac (the
+    /// owner's sync log of 2026-10-26), and its exports and import began two seconds after setup.
+    static let cloudKitImportSplashGrace: Duration = .seconds(3)
+
+    /// Why a `.cloudKitImport` splash lifts now, or `nil` while it still has an import to wait for,
+    /// which `ContentViewWithSplash` asks while it shows one, and logs (#1796).
+    ///
+    /// It used to lift only when an import ENDED. A launch whose resolve came while some event was in
+    /// flight, and that then saw no import end, kept the splash over the window for as long as the
+    /// app ran — and with no network an import never ends: the owner's Mac launch of 2026-10-26 at
+    /// 09:40 met "network unavailable" (CloudKit error 3) at every zone check and ended no import in
+    /// the two minutes before it was quit, and its relaunch's import ran 50 seconds. Now the splash
+    /// lifts at the first of these:
+    /// - an import ends (`AppState.hasInitialProjectSyncSettled`), as before;
+    /// - the device has no network path, so no import can arrive;
+    /// - the sync has been idle for ``cloudKitImportSplashGrace``: the event the splash waited on
+    ///   ended, setup or export, failed or not, and no import began after it;
+    /// - the splash has held for ``cloudKitImportSplashBound``.
+    ///
+    /// - Parameters:
+    ///   - importSettled: Whether an import has ended this launch.
+    ///   - isSyncing: Whether a sync event is in flight now.
+    ///   - isOnline: Whether the device has a network path.
+    ///   - quietFor: How long the sync has been idle, or `nil` while an event is in flight.
+    ///   - shownFor: How long the splash has been up.
+    /// - Returns: The first reason that holds, in the order above, or `nil`.
+    static func cloudKitImportSplashLift(importSettled: Bool, isSyncing: Bool, isOnline: Bool,
+                                         quietFor: Duration?, shownFor: Duration) -> CloudKitSplashLift? {
+        if importSettled { return .importSettled }
+        if !isOnline { return .offline }
+        if !isSyncing, let quietFor, quietFor >= cloudKitImportSplashGrace { return .idle }
+        if shownFor >= cloudKitImportSplashBound { return .bound }
+        return nil
+    }
+
+    /// Why a `.cloudKitImport` splash lifted (#1796).
+    enum CloudKitSplashLift: String, Sendable {
+        /// An import ended, the wait the splash is raised for.
+        case importSettled
+        /// The device has no network path, so no import can arrive.
+        case offline
+        /// The sync went idle and no import began: the event the splash waited on ended alone.
+        case idle
+        /// The splash held for ``CloudSurfaceArbiter/cloudKitImportSplashBound``.
+        case bound
     }
 
     /// The splash a host draws before it has resolved — a fresh install's, and no other.
@@ -164,7 +223,8 @@ enum CloudSurfaceArbiter {
             // waiting for something that is never going to arrive.
             isCloudKitImporting: !appState.hasInitialProjectSyncSettled
                 && Self.isSyncing(appState.cloudKitSyncState),
-            isUITestMode: ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1"
+            isUITestMode: ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1",
+            isOnline: appState.isOnline
         )
     }
 
@@ -173,8 +233,8 @@ enum CloudSurfaceArbiter {
     /// Pattern-matched rather than compared: `CloudKitSyncState` carries associated values
     /// (`.succeeded(Date)`, `.failed(String)`) and is deliberately not `Equatable`. Adding
     /// that conformance to satisfy one call site here would widen a shared type for a
-    /// caller's convenience.
-    private static func isSyncing(_ state: CloudKitSyncState) -> Bool {
+    /// caller's convenience. `ContentViewWithSplash` asks it too, while it holds a CloudKit splash.
+    static func isSyncing(_ state: CloudKitSyncState) -> Bool {
         if case .syncing = state { return true }
         return false
     }

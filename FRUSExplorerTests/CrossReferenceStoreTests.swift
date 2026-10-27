@@ -1114,3 +1114,253 @@ struct WholeVolumeReferenceRowTests {
         #expect(cited.inboundEdges.map { "\($0.sourceVolumeId)=\($0.count)" } == ["volA=3"])
     }
 }
+
+// MARK: - Graph nodes the device holds no row for (#1799)
+
+/// A graph node the device holds no row for is dated by what the app does hold, and a page is titled.
+///
+/// The screenshot on #1799 is the Long Telegram, `frus1946v06` d475 of 22 February 1946. Its note 45
+/// cites 1943 vol. III, pp. 531–532 and 542–543: two ranges across documents of 19 May to 11 June
+/// 1943, which the index leaves on the volume as four pages. The graph drew each as an outbound node
+/// with no title and no date, and the timeline parked all four in its Undated column, so its axis ran
+/// from the telegram to the last document citing it. The fixture is that note: the four pages, the
+/// documents the device's page index puts on them with their dates (read from a full index of build
+/// 1776), and one document citing the telegram.
+///
+/// Version history:
+///   1.0 — #1799: initial implementation
+@Suite("Graph nodes the device holds no row for are dated, and a page is titled (#1799)")
+@MainActor
+struct UndatedEndpointTests {
+
+    /// The telegram's volume and 1943 vol. III, from the bundled catalogue.
+    private var volumes: [VolumeManifestEntry] {
+        get throws {
+            let entries = ManifestStore().bundledEntries.filter { ["frus1946v06", "frus1943v03"].contains($0.volumeId) }
+            try #require(entries.count == 2, "the bundled catalogue must hold both fixture volumes")
+            return entries
+        }
+    }
+
+    /// The pages note 45 cites, and the documents on each with their days (`page_ranges` and
+    /// `document_dates` of build 1776's index).
+    private let pages: [(page: Int, documents: [(id: String, date: String)])] = [
+        (531, [("d398", "1943-05-19"), ("d399", "1943-05-23")]),
+        (532, [("d399", "1943-05-23"), ("d400", "1943-05-24")]),
+        (542, [("d408", "1943-06-09"), ("d409", "1943-06-11")]),
+        (543, [("d409", "1943-06-11"), ("d410", "1943-06-11")]),
+    ]
+
+    /// A store holding the telegram, the document citing it, and note 45's four page references,
+    /// with 1943 vol. III's page index when `withCitedVolume`.
+    private func makeStore(withCitedVolume: Bool) throws -> (dir: URL, store: CrossReferenceStore) {
+        let (dir, dbURL, _) = try makeTempStore()
+        try insertDocumentCache(dbURL: dbURL, volumeId: "frus1946v06", documentId: "d475",
+                                documentNumber: "475", header: "The Chargé in the Soviet Union (Kennan) to the Secretary of State")
+        try insertDocumentDate(dbURL: dbURL, volumeId: "frus1946v06", documentId: "d475", dateISO: "1946-02-22")
+        try insertDocumentCache(dbURL: dbURL, volumeId: "frus1946v06", documentId: "d710", documentNumber: "710")
+        try insertDocumentDate(dbURL: dbURL, volumeId: "frus1946v06", documentId: "d710", dateISO: "1946-03-01")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "frus1946v06", sourceDocumentId: "d710",
+                       targetVolumeId: nil, targetDocumentId: "d475")
+        for (page, _) in pages {
+            try insertEdge(dbURL: dbURL, sourceVolumeId: "frus1946v06", sourceDocumentId: "d475",
+                           targetVolumeId: "frus1943v03", targetDocumentId: "pg_\(page)",
+                           context: "see Foreign Relations, 1943, vol. III, pp. 531–532 and 542–543.")
+        }
+        if withCitedVolume {
+            var db: OpaquePointer?
+            try #require(sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK)
+            defer { sqlite3_close_v2(db) }
+            for (page, documents) in pages {
+                for (index, document) in documents.enumerated() {
+                    let sql = """
+                        INSERT INTO page_ranges (volume_id, document_id, section_id, page_number_type,
+                                                 page_number_int, page_number_raw, is_start)
+                        VALUES ('frus1943v03', '\(document.id)', '\(document.id)', 'arabic', \(page), '\(page)', \(index))
+                        """
+                    try #require(sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK,
+                                 "fixture: \(String(cString: sqlite3_errmsg(db)))")
+                    try insertDocumentDate(dbURL: dbURL, volumeId: "frus1943v03", documentId: document.id,
+                                           dateISO: document.date)
+                }
+            }
+        }
+        // The whole catalogue, as the app passes it: the bundled edge index adds the telegram's
+        // citations from volumes the fixture does not hold, and each is dated by its volume.
+        return (dir, try CrossReferenceStore(databaseURL: dbURL, volumes: ManifestStore().bundledEntries))
+    }
+
+    /// The nodes the layout parked as Undated: those with no date to place.
+    private func parked(_ nodes: [DisplayNode]) -> [String] {
+        let dated = CrossReferenceGraphViewModel.buildDateValues(for: nodes)
+        return nodes.map(\.id).filter { dated[$0] == nil }.sorted()
+    }
+
+    /// The graph's display nodes and their timeline layout, as the view model builds them.
+    private func timeline(of graph: CrossReferenceGraph)
+        -> (nodes: [DisplayNode], layout: (positions: [String: CGPoint], ticks: [TimelineTick], axisY: CGFloat, hasParkedNodes: Bool)) {
+        let centralKey = "frus1946v06/d475"
+        let (nodes, _) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+            graph: graph, centralKey: centralKey, expandedClusterKeys: [],
+            downloadedVolumeIds: ["frus1946v06", "frus1943v03"])
+        let layout = CrossReferenceGraphViewModel.timelineLayout(
+            nodes: nodes, dateValues: CrossReferenceGraphViewModel.buildDateValues(for: nodes),
+            centralKey: centralKey, canvasSize: CGSize(width: 800, height: 600))
+        return (nodes, layout)
+    }
+
+    @Test("With 1943 vol. III on the device, each page is dated by its documents, titled, and placed on the axis before the telegram")
+    func pagesOnTheDeviceAreDatedByTheirDocuments() async throws {
+        let (dir, store) = try makeStore(withCitedVolume: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let graph = try await store.graph(forDocumentId: "d475", volumeId: "frus1946v06",
+                                          downloadedVolumeIds: ["frus1946v06", "frus1943v03"])
+        for (page, documents) in pages {
+            let node = try #require(graph.nodeMetadata["frus1943v03/pg_\(page)"])
+            #expect(node.header == "1943, vol. III, p. \(page)")
+            #expect(node.citedPage == page)
+            #expect(node.dating == .pageIndex)
+            #expect(node.dateISO == documents.map(\.date).min())
+            let last = documents.map(\.date).max()
+            #expect(node.dateISOMax == (last == node.dateISO ? nil : last))
+        }
+        let (nodes, layout) = timeline(of: graph)
+        #expect(!layout.hasParkedNodes, "these park as Undated: \(parked(nodes))")
+        let central = try #require(layout.positions["frus1946v06/d475"]?.x)
+        for (page, _) in pages {
+            let x = try #require(layout.positions["frus1943v03/pg_\(page)"]?.x)
+            #expect(x < central, "p. \(page) of 1943 must sit left of the telegram of 1946")
+        }
+    }
+
+    @Test("With 1943 vol. III off the device, each page is dated by its volume's span, 30 May 1942 to 24 March 1944")
+    func pagesOffTheDeviceAreDatedByTheirVolume() async throws {
+        let (dir, store) = try makeStore(withCitedVolume: false)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let graph = try await store.graph(forDocumentId: "d475", volumeId: "frus1946v06",
+                                          downloadedVolumeIds: ["frus1946v06"])
+        for (page, _) in pages {
+            let node = try #require(graph.nodeMetadata["frus1943v03/pg_\(page)"])
+            #expect(node.header == "1943, vol. III, p. \(page)")
+            // The bundled map lists none of the four: each is an end of a range across documents.
+            #expect(node.dating == .volume)
+            #expect(node.dateISO == "1942-05-30")
+            #expect(node.dateISOMax == "1944-03-24")
+        }
+        let (nodes, layout) = timeline(of: graph)
+        #expect(!layout.hasParkedNodes, "these park as Undated: \(parked(nodes))")
+    }
+
+    @Test("A page node opens nothing: its id names a page, not a document")
+    func pageNodeHasNoEntry() async throws {
+        let (dir, store) = try makeStore(withCitedVolume: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let vm = CrossReferenceGraphViewModel(centralDocumentId: "d475", centralVolumeId: "frus1946v06",
+                                              downloadedVolumeIds: ["frus1946v06", "frus1943v03"])
+        vm.graph = try await store.graph(forDocumentId: "d475", volumeId: "frus1946v06",
+                                         downloadedVolumeIds: ["frus1946v06", "frus1943v03"])
+        #expect(vm.makeEntry(for: "frus1943v03/pg_531") == nil)
+        #expect(vm.makeEntry(for: "frus1946v06/d710") != nil)
+    }
+
+    @Test("The page map dates a page by its documents' days and a document by its own; with neither, the volume")
+    func pageMapAndVolumeFallbacks() throws {
+        let map = try CitedPageMap(
+            schemaVersion: 1, generated: "2026-10-26", indexVersion: 71, volumes: ["frus1943v03"],
+            documents: [["d1", "d2", "d3"]], pages: [[[10, 0, 0, 1]]],
+            facts: [[.init(document: 0, printedNumber: "1", day: "1943-01-02"),
+                     .init(document: 1, printedNumber: "2", day: "1943-01-05")]])
+        let volume = try #require(try volumes.first { $0.volumeId == "frus1943v03" })
+
+        let page = CrossReferenceStore.undatedEndpoint(volumeId: "frus1943v03", documentId: "pg_10",
+                                                       pageSpan: nil, map: map, volume: volume)
+        #expect(page.dating == .pageMap && page.dateISO == "1943-01-02" && page.dateISOMax == "1943-01-05")
+        #expect(page.header == "1943, vol. III, p. 10")
+
+        // The device's page index is nearer than the map, and wins over it.
+        let indexed = CrossReferenceStore.undatedEndpoint(volumeId: "frus1943v03", documentId: "pg_10",
+                                                          pageSpan: "1943-02-01"..."1943-02-01", map: map, volume: volume)
+        #expect(indexed.dating == .pageIndex && indexed.dateISO == "1943-02-01" && indexed.dateISOMax == nil)
+
+        let document = CrossReferenceStore.undatedEndpoint(volumeId: "frus1943v03", documentId: "d2",
+                                                           pageSpan: nil, map: map, volume: volume)
+        #expect(document.dating == .pageMap && document.dateISO == "1943-01-05" && document.dateISOMax == nil)
+        #expect(document.header == nil && document.citedPage == nil)
+
+        let unlisted = CrossReferenceStore.undatedEndpoint(volumeId: "frus1943v03", documentId: "d3",
+                                                           pageSpan: nil, map: map, volume: volume)
+        #expect(unlisted.dating == .volume && unlisted.dateISO == "1942-05-30" && unlisted.dateISOMax == "1944-03-24")
+
+        // Outside the catalogue nothing dates it, and it stays undated.
+        let sideloaded = CrossReferenceStore.undatedEndpoint(volumeId: "sideloaded", documentId: "pg_4",
+                                                             pageSpan: nil, map: map, volume: nil)
+        #expect(sideloaded.dating == nil && sideloaded.dateISO == nil)
+        #expect(sideloaded.header == "sideloaded, p. 4")
+    }
+
+    @Test("A page is cited as a footnote cites it, and a volume a citation's form would blur reads as its tag")
+    func pageTitles() throws {
+        let catalogue = Dictionary(uniqueKeysWithValues: ManifestStore().bundledEntries.map { ($0.volumeId, $0.subseries) })
+        let expected = [
+            "frus1943v03": "1943, vol. III",
+            "frus1952-54v02p1": "1952–54, vol. II, pt. 1",
+            "frus1969-76ve05p1": "1969–76, vol. E–5, pt. 1",
+            "frus1864p1": "1864, pt. 1",
+            "frus1919Parisv01": "1919 Paris v1",
+            "frus1961-63v10-12mSupp": "1961-63 v10–12 fiche",
+        ]
+        for (volumeId, citation) in expected {
+            let subseries = try #require(catalogue[volumeId], "\(volumeId) is not bundled")
+            #expect(CrossReferenceStore.volumeCitation(volumeId: volumeId, subseries: subseries) == citation)
+        }
+        #expect(CrossReferenceStore.pageTitle(volumeId: "frus1943v03", subseries: "1943", page: 531)
+                == "1943, vol. III, p. 531")
+        #expect(CrossReferenceStore.citedPage(in: "pg_531") == 531)
+        for notAPage in ["d531", "pg_III", "pg_fm12", "pg_", "pg_5a"] {
+            #expect(CrossReferenceStore.citedPage(in: notAPage) == nil, "\(notAPage)")
+        }
+    }
+
+    /// At its span's start, a node dated by its volume sat at the volume's first day: the Mac check
+    /// copy drew the Long Telegram's two citers from volumes it lacked in 1945, months before the
+    /// telegram they cite. The middle is the nearest the app can say.
+    @Test("A node dated by a span sits at its middle; a document the index dates, at its date")
+    func spanNodesSitAtTheirMiddle() throws {
+        let calendar = Calendar(identifier: .gregorian)
+        func t(_ iso: String) throws -> TimeInterval {
+            try #require(CrossReferenceGraphViewModel.date(fromISO: iso, calendar: calendar)).timeIntervalSinceReferenceDate
+        }
+        let spanned = DisplayNode(id: "volume", kind: .inbound,
+                                  metadata: CrossReferenceNodeMetadata(documentId: "d591", volumeId: "v", documentNumber: nil,
+                                                                       header: nil, dateline: nil, dateISO: "1945-06-01",
+                                                                       dateISOMax: "1946-12-31", dating: .volume),
+                                  isDownloaded: false)
+        let indexed = DisplayNode(id: "indexed", kind: .inbound,
+                                  metadata: CrossReferenceNodeMetadata(documentId: "d710", volumeId: "v", documentNumber: "710",
+                                                                       header: "Kennan", dateline: nil, dateISO: "1946-03-01"),
+                                  isDownloaded: true)
+        let values = CrossReferenceGraphViewModel.buildDateValues(for: [spanned, indexed])
+        #expect(values["volume"] == (try t("1945-06-01") + t("1946-12-31")) / 2)
+        #expect(values["indexed"] == (try t("1946-03-01")))
+    }
+
+    @Test("A span is labelled at its precision: a page's documents by the day, a volume's span by the year")
+    func spanLabels() {
+        func node(_ id: String, _ start: String, _ end: String?, _ dating: CrossReferenceNodeMetadata.Dating) -> DisplayNode {
+            DisplayNode(id: id, kind: .outbound,
+                        metadata: CrossReferenceNodeMetadata(documentId: id, volumeId: "v", documentNumber: nil,
+                                                             header: nil, dateline: nil, dateISO: start,
+                                                             dateISOMax: end, dating: dating),
+                        isDownloaded: false)
+        }
+        let labels = CrossReferenceGraphViewModel.buildDateLabels(for: [
+            node("page", "1943-05-19", "1943-05-23", .pageIndex),
+            node("volume", "1942-05-30", "1944-03-24", .volume),
+            node("day", "1943-06-11", nil, .pageMap),
+        ])
+        let page = labels["page"] ?? "", volume = labels["volume"] ?? "", day = labels["day"] ?? ""
+        #expect(page.contains("19") && page.contains("23") && page.contains("1943"), "\(page)")
+        #expect(volume.contains("1942") && volume.contains("1944") && !volume.contains("30"), "\(volume)")
+        #expect(day.contains("11") && day.contains("1943") && !day.contains("–"), "\(day)")
+    }
+}

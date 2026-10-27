@@ -34,6 +34,7 @@ import SwiftUI
 ///   1.3 — 2026-10-01: #1481 (lane GRAPH review round 1) — a row menu's open item takes the node
 ///          menu's name, `CrossReferenceGraphView.openDocumentActionName`: "View Document" on
 ///          iPhone and iPad, where it read "Open in Main Window"
+///   1.4 — #1799: a row's open button is drawn as disabled whenever it is, as for a page node
 struct ReferenceListPanel: View {
 
     @Bindable var vm: CrossReferenceGraphViewModel
@@ -179,16 +180,20 @@ struct ReferenceListPanel: View {
 
             Spacer(minLength: 0)
 
+            // One test for both the state and the look: the explicit colour overrides the dimming a
+            // disabled button would get, so a page node's button (#1799), which opens nothing, was
+            // drawn in the accent colour whenever its volume was on the device.
+            let opens = node.isDownloaded && vm.makeEntry(for: node.id) != nil
             Button {
                 if let entry = vm.makeEntry(for: node.id) {
                     openDocument(entry)
                 }
             } label: {
                 Image(systemName: "arrow.up.right.square")
-                    .foregroundStyle(node.isDownloaded ? Color.accentColor : Color.secondary)
+                    .foregroundStyle(opens ? Color.accentColor : Color.secondary)
             }
             .buttonStyle(.borderless)
-            .disabled(!node.isDownloaded || vm.makeEntry(for: node.id) == nil)
+            .disabled(!opens)
             .controlHelp(
                 String(localized: "graph.list.open.a11y", defaultValue: "Open document"),
                 detail: String(localized: "graph.list.open.help",

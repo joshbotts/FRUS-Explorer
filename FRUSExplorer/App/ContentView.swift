@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import OSLog
 import SwiftUI
 
 /// Root routing view for FRUS Explorer.
@@ -150,6 +151,10 @@ enum AppRootRouter {
 ///         was the first thing a new reader saw: drawn under the fading launch screen for a quarter
 ///         of a second on an iPad (5.44 to 5.69 s into S2's first launch), and in the Mac window's
 ///         first two frames (S4), before the splash covered it.
+///   1.3 — a CloudKit splash lets the launch through whatever sync does (#1796): it lifts when an
+///         import ends, as before, and also when the device goes offline, when the event it waited
+///         on ends with no import begun, or after a bound (`holdCloudKitImportSplash`), and logs
+///         why. It used to lift only when an import ended, so a launch with no network kept it for good.
 struct ContentViewWithSplash: View {
 
     @Environment(AppState.self) private var appState
@@ -167,10 +172,6 @@ struct ContentViewWithSplash: View {
             }
             .animation(.easeInOut(duration: 0.25), value: reason == nil)
             .task { await resolveSplash() }
-            .onChange(of: appState.hasInitialProjectSyncSettled) { _, settled in
-                // A CloudKit splash dismisses when its wait actually ends, not on a timer.
-                if settled, splashReason == .cloudKitImport { splashReason = nil }
-            }
     }
 
     /// The splash this frame shows: the resolved reason once ``resolveSplash()`` has run, and before
@@ -208,11 +209,51 @@ struct ContentViewWithSplash: View {
                 // in the launches measured.
                 try? await Task.sleep(for: .seconds(1.6))
                 splashReason = nil
+            } else {
+                // Logged, so a launch the splash held can be read from the unified log (#1796).
+                Self.splashLog.notice("CloudKit splash raised")
+                let (lift, held) = await holdCloudKitImportSplash()
+                Self.splashLog.notice("CloudKit splash lifted: \(lift?.rawValue ?? "cancelled", privacy: .public) after \(held, format: .fixed(precision: 1), privacy: .public) s")
+                splashReason = nil
             }
         case .indexingBackdrop, .none:
             // (c) owns the screen, or nothing does. Either way, no splash — the precedence
             // lives in the arbiter, not here.
             splashReason = nil
         }
+    }
+
+    /// The launch splash's log: when a CloudKit splash is raised and why it lifted (#1796).
+    private static let splashLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "LaunchSplash")
+
+    /// Returns when a CloudKit splash may lift, with why and how long it held: when
+    /// `CloudSurfaceArbiter.cloudKitImportSplashLift` names a reason, asked four times a second
+    /// (#1796). The reason is `nil` only when the task was cancelled.
+    ///
+    /// The sync state is the most recent event's, so "idle" is measured from the first ask that
+    /// finds no event in flight, and an event beginning again restarts it: a setup's end and the
+    /// import that follows it a second later read as one wait, and a setup that fails with nothing
+    /// after it lifts the splash a few seconds later rather than never.
+    private func holdCloudKitImportSplash() async -> (CloudSurfaceArbiter.CloudKitSplashLift?, Double) {
+        let clock = ContinuousClock()
+        let raised = clock.now
+        var idleSince: ContinuousClock.Instant?
+        while !Task.isCancelled {
+            let syncing = CloudSurfaceArbiter.isSyncing(appState.cloudKitSyncState)
+            if syncing { idleSince = nil } else if idleSince == nil { idleSince = clock.now }
+            if let lift = CloudSurfaceArbiter.cloudKitImportSplashLift(
+                importSettled: appState.hasInitialProjectSyncSettled, isSyncing: syncing,
+                isOnline: appState.isOnline, quietFor: idleSince.map { clock.now - $0 },
+                shownFor: clock.now - raised) {
+                return (lift, Self.seconds(clock.now - raised))
+            }
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        return (nil, Self.seconds(clock.now - raised))
+    }
+
+    /// A duration in seconds, for the log.
+    private static func seconds(_ duration: Duration) -> Double {
+        Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
     }
 }

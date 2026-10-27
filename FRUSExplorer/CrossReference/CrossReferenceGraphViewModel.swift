@@ -358,6 +358,9 @@ struct NavigationHistoryEntry: Sendable {
 ///          pinned click selection so the macOS info panel survives the pointer
 ///          travelling to its buttons; cumulative pan/zoom (`steadyScale`/
 ///          `steadyPanOffset`) so consecutive gestures no longer snap back
+///   1.6 — #1799: a node dated by a span is labelled with it, its volume's at the precision of
+///          years, and placed at its middle; `makeEntry` gives a page node no entry, since its id
+///          names a page
 @Observable
 @MainActor
 final class CrossReferenceGraphViewModel {
@@ -1062,8 +1065,10 @@ final class CrossReferenceGraphViewModel {
         rebuildDisplay()
     }
 
+    /// The entry that opens a node's document, or `nil` for a node with no document to open: one
+    /// with no header, and a page node (#1799), whose header is its title and whose id names a page.
     func makeEntry(for nodeKey: String) -> DocumentBrowserEntry? {
-        guard let meta = graph?.nodeMetadata[nodeKey],
+        guard let meta = graph?.nodeMetadata[nodeKey], meta.citedPage == nil,
               let header = meta.header else { return nil }
         return DocumentBrowserEntry(
             documentId: meta.documentId,
@@ -1189,6 +1194,10 @@ final class CrossReferenceGraphViewModel {
 
     /// Formats each node's `dateISO` into a short localized label, handling full
     /// dates, year-month, and year-only values. Runs once per rebuild.
+    ///
+    /// A node the device holds no row for is dated by a span (#1799) and labelled with it: the days
+    /// of the documents on its page ("May 19 – 23, 1943"), or its volume's years ("1942 – 1944"),
+    /// which is all the precision a volume's span has.
     static func buildDateLabels(for nodes: [DisplayNode]) -> [String: String] {
         let calendar = Calendar(identifier: .gregorian)
         let dayFormatter = DateFormatter()
@@ -1197,10 +1206,23 @@ final class CrossReferenceGraphViewModel {
         let monthFormatter = DateFormatter()
         monthFormatter.calendar = calendar
         monthFormatter.setLocalizedDateFormatFromTemplate("MMM y")
+        let daySpanFormatter = DateIntervalFormatter()
+        daySpanFormatter.calendar = calendar
+        daySpanFormatter.dateTemplate = "MMM d y"
+        let yearSpanFormatter = DateIntervalFormatter()
+        yearSpanFormatter.calendar = calendar
+        yearSpanFormatter.dateTemplate = "y"
 
         var labels: [String: String] = [:]
         for node in nodes {
             guard let iso = node.metadata?.dateISO, !iso.isEmpty else { continue }
+            if let dating = node.metadata?.dating,
+               let start = Self.date(fromISO: iso, calendar: calendar) {
+                let end = node.metadata?.dateISOMax.flatMap { Self.date(fromISO: $0, calendar: calendar) } ?? start
+                let formatter = dating == .volume ? yearSpanFormatter : daySpanFormatter
+                labels[node.id] = formatter.string(from: start, to: max(start, end))
+                continue
+            }
             let parts = iso.split(separator: "-").map(String.init)
             guard let yearText = parts.first, let year = Int(yearText) else { continue }
             var comps = DateComponents()
@@ -1455,6 +1477,12 @@ final class CrossReferenceGraphViewModel {
 
     /// Parses each node's `dateISO` into a numeric value for the timeline layout.
     /// Year-only and year-month dates resolve to the start of their period.
+    ///
+    /// A node dated by a span (#1799) sits at its middle: the nearest the app can say where in a
+    /// volume's span a page or document falls, and a day or two either way for the documents on a
+    /// page. At the span's start, the Mac check copy drew the Long Telegram's two citers from
+    /// volumes it lacked in 1945, months before the February 1946 telegram they cite, and dated
+    /// March and April 1946; at the middle they fall in 1946.
     static func buildDateValues(for nodes: [DisplayNode]) -> [String: TimeInterval] {
         let calendar = Calendar(identifier: .gregorian)
         var values: [String: TimeInterval] = [:]
@@ -1462,7 +1490,15 @@ final class CrossReferenceGraphViewModel {
             guard !node.isCluster,
                   let iso = node.metadata?.dateISO,
                   let date = Self.date(fromISO: iso, calendar: calendar) else { continue }
-            values[node.id] = date.timeIntervalSinceReferenceDate
+            let start = date.timeIntervalSinceReferenceDate
+            if node.metadata?.dating != nil,
+               let endISO = node.metadata?.dateISOMax,
+               let end = Self.date(fromISO: endISO, calendar: calendar)?.timeIntervalSinceReferenceDate,
+               end > start {
+                values[node.id] = (start + end) / 2
+            } else {
+                values[node.id] = start
+            }
         }
         return values
     }

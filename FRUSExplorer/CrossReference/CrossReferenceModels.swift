@@ -102,19 +102,48 @@ public struct RelatedCitationCandidate: Sendable {
 /// `CrossReferenceGraph`. Fields may be nil for documents whose volumes have not
 /// been downloaded and indexed.
 ///
+/// A node the device holds no row for — a page the index left on its volume (`pg_N`), or a document
+/// of a volume that is not on the device — is dated by what the app does hold
+/// (`CrossReferenceStore.endpointMetadata`, #1799): ``dateISO`` opens the span it is dated by,
+/// ``dateISOMax`` closes it, and ``dating`` says where the span came from.
+///
 /// Version history:
 ///   1.0 — Session 17: initial implementation
 ///   1.1 — Session 161: `dateISO` (timeline layout, node date labels) and `summary`
 ///          (on-device summary surfaced in the node info panel)
+///   1.2 — #1799: `dateISOMax`, `dating` and `citedPage`, for a node dated by the documents on its
+///          page or by its volume
 public struct CrossReferenceNodeMetadata: Sendable {
+
+    /// What dated a node the device holds no row for (#1799).
+    public enum Dating: Sendable, Equatable {
+        /// The documents on its page, from the device's page index: the volume is on the device.
+        case pageIndex
+        /// The bundled page map's facts: the days of the documents on its page, or of the
+        /// document itself, where the map lists them (`cited-page-map.json`).
+        case pageMap
+        /// Its volume's span in the bundled manifest, the only date the app has for it.
+        case volume
+    }
+
     public let documentId: String
     public let volumeId: String
     public let documentNumber: String?
     public let header: String?
     public let dateline: String?
     /// ISO-8601 document date from `document_dates.date_iso` (`yyyy-MM-dd`, possibly
-    /// truncated to `yyyy-MM` or `yyyy`). `nil` for unindexed or undated documents.
+    /// truncated to `yyyy-MM` or `yyyy`). `nil` for unindexed or undated documents. For a node
+    /// dated by ``dating``, the first day of the span it is dated by; the timeline places it at the
+    /// span's middle.
     public let dateISO: String?
+    /// The last day of the span a node dated by ``dating`` is dated by, when the span is more than
+    /// one date; `nil` otherwise.
+    public let dateISOMax: String?
+    /// What dated a node the device holds no row for, or `nil` for a document it holds (#1799).
+    public let dating: Dating?
+    /// The page a node keyed `volume/pg_N` stands for: the index left a cross-volume page reference
+    /// on its volume, so the node is a page and not a document (#1799).
+    public let citedPage: Int?
     /// On-device generated summary from `document_cache.summary_text`, if the user
     /// has summarized this document. `nil` otherwise.
     public let summary: String?
@@ -129,7 +158,10 @@ public struct CrossReferenceNodeMetadata: Sendable {
         header: String?,
         dateline: String?,
         dateISO: String? = nil,
-        summary: String? = nil
+        summary: String? = nil,
+        dateISOMax: String? = nil,
+        dating: Dating? = nil,
+        citedPage: Int? = nil
     ) {
         self.documentId = documentId
         self.volumeId = volumeId
@@ -138,6 +170,9 @@ public struct CrossReferenceNodeMetadata: Sendable {
         self.dateline = dateline
         self.dateISO = dateISO
         self.summary = summary
+        self.dateISOMax = dateISOMax
+        self.dating = dating
+        self.citedPage = citedPage
     }
 }
 
