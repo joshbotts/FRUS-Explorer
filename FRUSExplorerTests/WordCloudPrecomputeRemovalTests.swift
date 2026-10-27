@@ -33,6 +33,7 @@ import Testing
 /// Version history:
 ///   1.0 — removal of the precompute
 ///   1.1 — #1604: the scan reads every directory the app compiles, where it read `FRUSExplorer/`
+///   1.2 — #1798: the corpus message's cost is the measured one, and it says closing stops the count
 @Suite("The word-cloud precompute is removed")
 struct WordCloudPrecomputeRemovalTests {
 
@@ -129,8 +130,13 @@ struct WordCloudPrecomputeRemovalTests {
             job that reads every indexed document, and the precompute that was supposed to make that
             true no longer exists.
             """)
-        #expect(view.contains("several minutes"),
+        // "several minutes" until #1798, whose measurement over a full index (553 volumes, 321,749
+        // documents, an iPhone 17 simulator on an M5 Mac) put a corpus count at about twenty, and
+        // found that closing the cloud stops it: the message now says both (decision 9's rule).
+        #expect(view.contains("about twenty minutes"),
                 "the corpus message does not say how long it actually takes")
+        #expect(view.contains("closing this screen before then stops it"),
+                "the corpus message does not say that closing the cloud stops the count")
         #expect(!view.contains("this can take a moment"),
                 "the understated copy is still present")
     }

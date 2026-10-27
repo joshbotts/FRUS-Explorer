@@ -1826,7 +1826,7 @@ The meaningful terms in the chosen scope — a document, volume, subseries, coll
 #### Reading every indexed document. On a full library this ta…
 <!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1599–1600 | key: wordcloud.loading.corpus.v2 -->
 
-Reading every indexed document. On a full library this takes several minutes — you can leave this screen and come back.
+Reading every indexed document. On a full library this takes about twenty minutes, and longer on an older device; the finished cloud is kept, but closing this screen before then stops it.
 
 <!-- END SOURCE: wordcloud.loading.corpus.v2 -->
 
