@@ -1011,7 +1011,8 @@ final class CrossReferenceMatrixScrollTests: XCTestCase {
 
 // MARK: - CrossReferenceRankingChartTests
 
-/// Cross-Reference Analytics' Most-Referenced Documents chart draws its bars in the window (#1473).
+/// Cross-Reference Analytics' Most-Referenced Documents chart draws its bars in the window (#1473), and a
+/// bar or its title opens its document (#1797).
 ///
 /// ## What was wrong
 /// Each bar's y-axis label was its document's whole title, which Swift Charts laid out at its full
@@ -1042,10 +1043,20 @@ final class CrossReferenceMatrixScrollTests: XCTestCase {
 /// this one failed. `v2`'s chart fails both, and the fix passes. No iPad was run. The Mac, where
 /// #1473 was found, has no UI-test target; the unit suite and the owner's by-eye check cover it.
 ///
+/// ## A bar and its title open the document (#1797)
+/// The section's subtitle says "Select a document to open it", and until #1797 only the list's rows
+/// could: the chart had no tap target. Two tests tap the ranking's first bar and its title, and find
+/// the document open. The fixture's documents are in volumes the simulator has not downloaded, so the
+/// document opens on its *Volume Not Downloaded* page, which names the volume, as the list's row
+/// opens it. Each bar is a button over its row across the plot, so its element is still the row
+/// #1473's test measures; its identifier ends with the document's id (``barIdentifierPrefix``). On
+/// `v2` the chart had no buttons, and neither tap opened anything.
+///
 /// Version history:
 ///   1.0 — #1473: initial implementation
 ///   1.1 — #1473 review round 1: the floor is ``minimumBarRowWidth``, 150 pt, not 20 pt, so the
 ///          suite guards on a portrait iPad too, where `v2`'s plot is 31–39 pt
+///   1.2 — #1797: a bar and its title open the document
 @MainActor
 final class CrossReferenceRankingChartTests: XCTestCase {
 
@@ -1064,6 +1075,11 @@ final class CrossReferenceRankingChartTests: XCTestCase {
     /// This suite cannot import the app, so it spells the figure, and
     /// `RankingChartAxisTests.uiSuiteFloorIsThePlotMinimum` reads it from here.
     private static let minimumBarRowWidth: CGFloat = 150
+
+    /// The start of each bar button's identifier, which ends with its document's
+    /// `volumeId/documentId`: `CrossReferenceRankingChart.barIdentifierPrefix`, spelled here because
+    /// this suite cannot import the app (`RankingChartAxisTests` reads this spelling).
+    private static let barIdentifierPrefix = "crossRefAnalytics.ranking.bar."
 
     override func setUp() async throws {
         continueAfterFailure = false
@@ -1160,6 +1176,58 @@ final class CrossReferenceRankingChartTests: XCTestCase {
         XCTAssertTrue(outside.isEmpty, """
             These bars lie outside the \(window.width) pt window: \
             \(outside.map { "\($0.value) at \($0.frame)" }) — #1473.
+            """)
+    }
+
+    /// Tapping a bar opens its document, as its row in the list does (#1797).
+    func testTappingABarOpensItsDocument() throws {
+        let (bar, documentId) = try firstBar()
+        bar.tap()
+        try assertOpened(documentId)
+    }
+
+    /// Tapping a bar's title, in the label column beside its row, opens its document too (#1797).
+    func testTappingABarsTitleOpensItsDocument() throws {
+        let (bar, documentId) = try firstBar()
+        // The title's trailing end sits a few points left of the bar's row; 40 pt in is on its text.
+        let frame = bar.frame
+        XCTAssertGreaterThan(frame.minX, 60, "No label column left of the bar's row at \(frame).")
+        app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: frame.minX - 40, dy: frame.midY))
+            .tap()
+        try assertOpened(documentId)
+    }
+
+    /// Launches, opens Cross-Reference Analytics, and returns the ranking's first bar with the id of
+    /// the document it names (`volumeId/documentId`).
+    private func firstBar() throws -> (XCUIElement, String) {
+        app.launch()
+        try AnalysisToolsMenu.open("Cross-Reference Analytics", in: app, through: navigator)
+        let bar = app.buttons
+            .matching(NSPredicate(format: "identifier BEGINSWITH %@", Self.barIdentifierPrefix))
+            .firstMatch
+        XCTAssertTrue(bar.waitForExistence(timeout: 30), """
+            The ranking's chart shows no bar button (\(Self.barIdentifierPrefix)…) — a bar cannot \
+            open its document (#1797).\n\(app.debugDescription)
+            """)
+        XCTAssertTrue(bar.isHittable, "The first bar is not on screen: \(bar.frame).")
+        return (bar, String(bar.identifier.dropFirst(Self.barIdentifierPrefix.count)))
+    }
+
+    /// The document `documentId` (`volumeId/documentId`) is open: its volume is not on the simulator,
+    /// so the reader shows the *Volume Not Downloaded* page naming that volume.
+    private func assertOpened(_ documentId: String) throws {
+        let volumeId = try XCTUnwrap(documentId.split(separator: "/").first.map(String.init),
+                                     "No volume in the bar's id '\(documentId)'.")
+        XCTAssertTrue(app.staticTexts["Volume Not Downloaded"].waitForExistence(timeout: 20), """
+            The tap opened no document: no Volume Not Downloaded page for \(documentId) (#1797).\
+            \n\(app.debugDescription)
+            """)
+        let detail = app.staticTexts
+            .matching(NSPredicate(format: "label CONTAINS %@", "This document is in \(volumeId),"))
+            .firstMatch
+        XCTAssertTrue(detail.waitForExistence(timeout: 5), """
+            The page opened is not \(documentId)'s: none names \(volumeId).\n\(app.debugDescription)
             """)
     }
 }
