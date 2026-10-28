@@ -182,31 +182,17 @@ import SwiftData
         set { writeFootnoteFlags(footnotes: effectiveIncludeFootnotes, sourceNote: newValue) }
     }
 
-    /// Maps a legacy `footnoteStyle` raw value to the Bool pair it always meant:
-    /// `all` → (true, false), `sourceNoteOnly` → (false, true), `none` → (false, false).
-    /// An unknown raw value falls back to `all`, matching every pre-Phase-5 read site's
-    /// `CollectionFootnoteStyle(rawValue:) ?? .all`.
+    /// Maps a legacy `footnoteStyle` raw value to the Bool pair it always meant: FRUSCoreKit's
+    /// `CollectionFootnoteStyle.derivedFlags(fromStyleRawValue:)` since FRUS Explorer Light's S18b, which a
+    /// collection's values read too.
     static func derivedFootnoteFlags(fromStyleRawValue raw: String) -> (footnotes: Bool, sourceNote: Bool) {
-        switch raw {
-        case "sourceNoteOnly": return (false, true)
-        case "none":           return (false, false)
-        default:               return (true, false)   // "all" + unknown values (legacy fallback)
-        }
+        CollectionFootnoteStyle.derivedFlags(fromStyleRawValue: raw)
     }
 
-    /// The best-fit legacy `footnoteStyle` raw value for a Bool pair, written alongside
-    /// the pair so old readers/devices keep behaving sensibly: (true, false) → `all`,
-    /// (false, true) → `sourceNoteOnly`, (false, false) → `none`. The one combination the
-    /// tri-state cannot express — footnotes **and** the source note — writes `all`
-    /// (documented lossy mapping: an old build shows the footnotes and drops the source
-    /// note, which is the closer of the two degradations to the author's intent).
+    /// The best-fit legacy `footnoteStyle` raw value for a Bool pair: FRUSCoreKit's
+    /// `CollectionFootnoteStyle.bestFitRawValue(footnotes:sourceNote:)` since FRUS Explorer Light's S18b.
     static func bestFitFootnoteStyleRawValue(footnotes: Bool, sourceNote: Bool) -> String {
-        switch (footnotes, sourceNote) {
-        case (true, false):  return "all"
-        case (false, true):  return "sourceNoteOnly"
-        case (false, false): return "none"
-        case (true, true):   return "all"   // inexpressible in the tri-state; see doc
-        }
+        CollectionFootnoteStyle.bestFitRawValue(footnotes: footnotes, sourceNote: sourceNote)
     }
 
     /// Writes the Bool pair and the best-fit legacy `footnoteStyle` in one step — the
@@ -1014,5 +1000,91 @@ enum SmartCollectionRule {
     /// sheet, on every platform.
     static var listLabel: String {
         String(localized: "collection.smart.listLabel", defaultValue: "Smart collection")
+    }
+}
+
+// MARK: - The values a collection maps to (FRUS Explorer Light, S18b)
+
+extension CollectionEntryExport {
+
+    /// The entry's values, every stored field as stored: what the research data export writes
+    /// (`ResearchDataExporter.makeEnvelope`) and what FRUSCoreKit resolves a collection from
+    /// (`CollectionContentAssembly`), writes a `.fruscollection` file from and snapshots a smart
+    /// collection into. `kind` is the stored raw value, so a kind a newer build wrote travels as written
+    /// rather than as `.unrecognized`.
+    init(_ entry: CollectionEntry) {
+        self.init(
+            id: entry.id,
+            documentId: entry.documentId,
+            volumeId: entry.volumeId,
+            sortOrder: entry.sortOrder,
+            researchNoteId: entry.researchNoteId,
+            selectedNoteIds: entry.selectedNoteIds,
+            createdAt: entry.createdAt,
+            lastModified: entry.lastModified,
+            kind: entry.kind,
+            level: entry.level,
+            text: entry.text,
+            richText: entry.richText,
+            excerptStart: entry.excerptStart,
+            excerptEnd: entry.excerptEnd,
+            excerptRenderingVersion: entry.excerptRenderingVersion,
+            excerptColorTag: entry.excerptColorTag,
+            generatedBlockType: entry.generatedBlockType,
+            titleOverride: entry.titleOverride,
+            bodyDepthOverride: entry.bodyDepthOverride,
+            applyHighlightsOverride: entry.applyHighlightsOverride,
+            includeNotesOverride: entry.includeNotesOverride,
+            includeSourceNoteOverride: entry.includeSourceNoteOverride,
+            includeFootnotesOverride: entry.includeFootnotesOverride,
+            summaryPromptIdOverride: entry.summaryPromptIdOverride,
+            selectedHighlightIds: entry.selectedHighlightIds,
+            includeRelatedDocuments: entry.includeRelatedDocuments,
+            includeHeadnote: entry.includeHeadnote,
+            headnoteSummaryId: entry.headnoteSummaryId
+        )
+    }
+}
+
+extension CollectionExport {
+
+    /// The collection's values with `entries`, its front matter, composition and settings each as
+    /// stored, the two footnote flags `nil` where the collection has not set them: what the research data
+    /// export writes and FRUSCoreKit reads a collection from.
+    init(_ collection: Collection, entries: [CollectionEntryExport]) {
+        self.init(
+            id: collection.id,
+            name: collection.name,
+            note: collection.note,
+            projectIds: collection.projectIds,
+            savedSearchId: collection.savedSearchId,
+            entries: entries,
+            createdAt: collection.createdAt,
+            lastModified: collection.lastModified,
+            subtitle: collection.subtitle,
+            authorLine: collection.authorLine,
+            introductionText: collection.introductionText,
+            introductionRichText: collection.introductionRichText,
+            includeColophon: collection.includeColophon,
+            includeProjectProvenance: collection.includeProjectProvenance,
+            includeMethodAppendix: collection.includeMethodAppendix,
+            defaultBodyDepth: collection.defaultBodyDepth,
+            footnoteStyle: collection.footnoteStyle,
+            includeFootnotes: collection.includeFootnotes,
+            includeSourceNote: collection.includeSourceNote,
+            tocStyle: collection.tocStyle,
+            applyHighlights: collection.applyHighlights,
+            includeNotes: collection.includeNotes,
+            includeWordCloud: collection.includeWordCloud,
+            defaultIncludeHeadnote: collection.defaultIncludeHeadnote,
+            summaryPromptId: collection.summaryPromptId
+        )
+    }
+
+    /// The collection's values with its own entries, in `sortOrder`.
+    init(_ collection: Collection) {
+        self.init(collection, entries: (collection.documentEntries ?? [])
+            .sorted { $0.sortOrder < $1.sortOrder }
+            .map(CollectionEntryExport.init))
     }
 }

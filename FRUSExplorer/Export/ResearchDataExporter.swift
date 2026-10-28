@@ -41,6 +41,9 @@ import SQLite3
 ///   1.5 — #1791: `makeEnvelope` writes each record once, however many copies of it are stored, a
 ///          collection and an archive visit plan with every copy's children; the Markdown export
 ///          and the method appendix likewise; `trailCounts` and `inventoryCounts` count distinct ids
+///   1.6 — 2026-10-27 (FRUS Explorer Light, S18b): a collection and its entries map to their records through
+///          `CollectionExport.init(_:entries:)` and `CollectionEntryExport.init(_:)`, which FRUSCoreKit's
+///          collection code reads the same values through; the records written are unchanged
 @MainActor
 enum ResearchDataExporter {
 
@@ -204,70 +207,12 @@ enum ResearchDataExporter {
                 )
             },
             collections: collections.map { collection in
-                CollectionExport(
-                    id: collection.id,
-                    name: collection.name,
-                    note: collection.note,
-                    projectIds: collection.projectIds,
-                    savedSearchId: collection.savedSearchId,
-                    entries: (entriesByCollection[collection.id] ?? [])
-                        .sorted { $0.sortOrder < $1.sortOrder }
-                        .map { entry in
-                            CollectionEntryExport(
-                                id: entry.id,
-                                documentId: entry.documentId,
-                                volumeId: entry.volumeId,
-                                sortOrder: entry.sortOrder,
-                                researchNoteId: entry.researchNoteId,
-                                selectedNoteIds: entry.selectedNoteIds,
-                                createdAt: entry.createdAt,
-                                lastModified: entry.lastModified,
-                                // Format version 7: the whole entry. `kind` as stored, so a kind a
-                                // newer build wrote travels as written rather than as `.unrecognized`.
-                                kind: entry.kind,
-                                level: entry.level,
-                                text: entry.text,
-                                richText: entry.richText,
-                                excerptStart: entry.excerptStart,
-                                excerptEnd: entry.excerptEnd,
-                                excerptRenderingVersion: entry.excerptRenderingVersion,
-                                excerptColorTag: entry.excerptColorTag,
-                                generatedBlockType: entry.generatedBlockType,
-                                titleOverride: entry.titleOverride,
-                                bodyDepthOverride: entry.bodyDepthOverride,
-                                applyHighlightsOverride: entry.applyHighlightsOverride,
-                                includeNotesOverride: entry.includeNotesOverride,
-                                includeSourceNoteOverride: entry.includeSourceNoteOverride,
-                                includeFootnotesOverride: entry.includeFootnotesOverride,
-                                summaryPromptIdOverride: entry.summaryPromptIdOverride,
-                                selectedHighlightIds: entry.selectedHighlightIds,
-                                includeRelatedDocuments: entry.includeRelatedDocuments,
-                                includeHeadnote: entry.includeHeadnote,
-                                headnoteSummaryId: entry.headnoteSummaryId
-                            )
-                        },
-                    createdAt: collection.createdAt,
-                    lastModified: collection.lastModified,
-                    // Format version 7: the front matter, the composition and the settings, each
-                    // as stored, the two footnote flags `nil` where the collection has not set them.
-                    subtitle: collection.subtitle,
-                    authorLine: collection.authorLine,
-                    introductionText: collection.introductionText,
-                    introductionRichText: collection.introductionRichText,
-                    includeColophon: collection.includeColophon,
-                    includeProjectProvenance: collection.includeProjectProvenance,
-                    includeMethodAppendix: collection.includeMethodAppendix,
-                    defaultBodyDepth: collection.defaultBodyDepth,
-                    footnoteStyle: collection.footnoteStyle,
-                    includeFootnotes: collection.includeFootnotes,
-                    includeSourceNote: collection.includeSourceNote,
-                    tocStyle: collection.tocStyle,
-                    applyHighlights: collection.applyHighlights,
-                    includeNotes: collection.includeNotes,
-                    includeWordCloud: collection.includeWordCloud,
-                    defaultIncludeHeadnote: collection.defaultIncludeHeadnote,
-                    summaryPromptId: collection.summaryPromptId
-                )
+                // Format version 7: the whole collection and the whole of each entry, as stored
+                // (`CollectionExport.init(_:entries:)` and `CollectionEntryExport.init(_:)`, which
+                // FRUSCoreKit's collection code reads the same values through).
+                CollectionExport(collection, entries: (entriesByCollection[collection.id] ?? [])
+                    .sorted { $0.sortOrder < $1.sortOrder }
+                    .map(CollectionEntryExport.init))
             },
             prompts: prompts.filter { !$0.isStandard }.map { prompt in
                 SummarizationPromptExport(
