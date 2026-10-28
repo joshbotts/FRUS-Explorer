@@ -7,12 +7,15 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - CollectionGeneratedBlockDataSource
 
-/// Everything the real block resolvers read, injected by `CollectionContentResolver`
-/// (the production implementation is its `LiveGeneratedBlockDataSource`, wired to the
-/// FTS5 index, the person rollup, the bundled NARA resolution index, and SwiftData).
+/// Everything the real block resolvers read, injected by `CollectionContentAssembly`
+/// (the production implementation is its `AssembledBlockDataSource`, wired to the
+/// FTS5 index, the person rollup, the archival indexes the host passes in, and its store).
 /// Tests supply a fixture implementation, so per-block resolution logic stays hermetic —
 /// no SQLite, no SwiftData, no bundle resources.
 ///
@@ -21,8 +24,10 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 6 (blocks): initial implementation
+///   1.1 — 2026-10-27 (FRUS Explorer Light, S18b): moved into FRUSCoreKit with the blocks, public, so a host
+///          outside the app supplies its own index and store
 @MainActor
-protocol CollectionGeneratedBlockDataSource {
+public protocol CollectionGeneratedBlockDataSource {
 
     /// The history.state.gov-style citation for one document — the same manifest +
     /// formatter path document items use (header-independent: the formatter reads only
@@ -57,8 +62,8 @@ protocol CollectionGeneratedBlockDataSource {
         for documents: [(volumeId: String, documentId: String)]
     ) async -> [CollectionGeneratedBlocks.SourceRecord]
 
-    /// The bundled NARA Catalog resolution for an archival collection
-    /// (`VolumeSourcesIndexStore` — lot file first, else record group), or `nil`.
+    /// The NARA Catalog resolution for an archival collection, or `nil`: the document resolution
+    /// (`ArchivalResolver.documentResolution`), through its lot alone, over the indexes the host loaded.
     func archivalResolution(recordGroup: String?, lotFile: String?)
         -> CollectionGeneratedBlocks.ArchivalLink?
 
@@ -71,7 +76,7 @@ protocol CollectionGeneratedBlockDataSource {
 
     /// Every user tag with the documents it reaches — the Phase 3 union of
     /// `ResearchNote.userTagIds` and `DocumentTagAssignment`
-    /// (`CollectionDocumentDiscovery.tagDocumentRefs`). The thematic block intersects
+    /// (`CollectionGeneratedBlocks.tagDocumentRefs`). The thematic block intersects
     /// each tag's reach with the collection membership itself.
     func tagRecords() async -> [CollectionGeneratedBlocks.TagRecord]
 }
@@ -80,10 +85,11 @@ protocol CollectionGeneratedBlockDataSource {
 
 /// The block-resolution seam (Authoring Phase 6): turns a generated entry's block type
 /// plus the collection's resolved document membership into the pre-resolved
-/// `CollectionGeneratedBlock` payload exporters render. Called only by
-/// `CollectionContentResolver` — the single resolve pipeline — so `.preview` and
-/// `.export` produce identical blocks by construction (block resolution is read-only:
-/// it never downloads volumes and never generates content).
+/// `CollectionGeneratedBlock` payload exporters render. Called by
+/// `CollectionContentAssembly` — the single resolve pipeline, which the app's
+/// `CollectionContentResolver` runs — so `.preview` and `.export` produce identical blocks
+/// by construction (block resolution is read-only: it never downloads volumes and never
+/// generates content).
 ///
 /// ## Per-block data paths (all read-only, all already-indexed data)
 /// - **Bibliography** — the same citation path document items use, deduplicated by
@@ -122,7 +128,12 @@ protocol CollectionGeneratedBlockDataSource {
 ///   1.4 — 2026-10-25 (FRUS Explorer Light, S18a): the block types' vocabulary, `CollectionGeneratedBlockType`, is
 ///          FRUSCoreKit's (`FRUSCoreKit/Collections/CollectionGeneratedBlockType.swift`), with the export payloads
 ///          that name it; resolution stays here
-enum CollectionGeneratedBlocks {
+///   1.5 — 2026-10-27 (FRUS Explorer Light, S18b): moved into FRUSCoreKit, public with its data source and records,
+///          so a host outside the app resolves the five blocks over its own index and store; the chronology's
+///          dates print in the locale the caller passes, `.autoupdatingCurrent` by default, which they always did;
+///          `tagDocumentRefs`, the tag union the Thematic Index reads, over values, which the app's
+///          `CollectionDocumentDiscovery.tagDocumentRefs` reads too
+public enum CollectionGeneratedBlocks {
 
     /// Resolves one generated block from the collection's resolved document membership.
     ///
@@ -134,13 +145,16 @@ enum CollectionGeneratedBlocks {
     ///     result set, so blocks work there identically).
     ///   - dataSource: The read-only data seam (see
     ///     `CollectionGeneratedBlockDataSource`).
+    ///   - locale: The locale the chronology's dates print in: the device's, which the app passes by
+    ///     default, or a host's own, so a host on another platform prints the app's dates.
     /// - Returns: The pre-resolved block payload; never empty — a block with nothing to
     ///   list carries one localized explanatory row.
     @MainActor
-    static func resolve(
+    public static func resolve(
         type: CollectionGeneratedBlockType,
         documents: [(volumeId: String, documentId: String)],
-        dataSource: some CollectionGeneratedBlockDataSource
+        dataSource: some CollectionGeneratedBlockDataSource,
+        locale: Locale = .autoupdatingCurrent
     ) async -> CollectionGeneratedBlock {
         // Every block names documents by number — in a citation or a "Document N" token — so the
         // printed numbers are read once, here, for all of them (#1406).
@@ -151,7 +165,7 @@ enum CollectionGeneratedBlocks {
             rows = bibliographyRows(documents: documents, numbers: numbers, dataSource: dataSource)
         case .chronology:
             rows = await chronologyRows(documents: documents, numbers: numbers,
-                                        dataSource: dataSource)
+                                        dataSource: dataSource, locale: locale)
         case .archivalSources:
             rows = await archivalSourceRows(documents: documents, numbers: numbers,
                                             dataSource: dataSource)
@@ -170,7 +184,7 @@ enum CollectionGeneratedBlocks {
 
     /// The "nothing to list" row every block falls back to — a block never renders as
     /// a bare title over an empty list.
-    static var emptyRowText: String {
+    public static var emptyRowText: String {
         String(localized: "collection.generated.emptyRow",
                defaultValue: "Nothing to list — this collection’s documents provided no entries for this block.")
     }
@@ -180,28 +194,28 @@ enum CollectionGeneratedBlocks {
     /// One parsed `document_sources` row: the structured archival-provenance fields the
     /// indexer extracted from a document's source note, plus the raw note text as the
     /// grouping fallback when nothing structured was recognized.
-    struct SourceRecord: Sendable {
+    public struct SourceRecord: Sendable {
         /// The document's volume.
-        let volumeId: String
+        public let volumeId: String
         /// The document's id within the volume.
-        let documentId: String
+        public let documentId: String
         /// The holding repository (e.g. "National Archives"), when parsed.
-        let repository: String?
+        public let repository: String?
         /// The NARA record-group number (e.g. `"59"`), when parsed.
-        let recordGroup: String?
+        public let recordGroup: String?
         /// The lot-file citation (e.g. `"64 D 199"`), when parsed.
-        let lotFile: String?
+        public let lotFile: String?
         /// The series/collection name, when parsed.
-        let seriesName: String?
+        public let seriesName: String?
         /// The raw source-note text (grouping fallback for unrecognized citations).
-        let rawText: String
+        public let rawText: String
         /// The parser's classification of the citation form — see
         /// `DocumentArchivalSource.citationEra`. Carried so the trip packet can reach
         /// `SourceProvenanceCategory` without a second classifier (#830 T-2).
-        let citationEra: String?
+        public let citationEra: String?
 
         /// Creates a source record.
-        init(volumeId: String, documentId: String, repository: String?,
+        public init(volumeId: String, documentId: String, repository: String?,
              recordGroup: String?, lotFile: String?, seriesName: String?, rawText: String,
              citationEra: String? = nil) {
             self.volumeId = volumeId
@@ -217,37 +231,37 @@ enum CollectionGeneratedBlocks {
 
     /// A resolved NARA Catalog link for an archival collection: the authority title and
     /// the `catalog.archives.gov` URL string (rows carry URL strings, not `URL`).
-    struct ArchivalLink: Sendable {
+    public struct ArchivalLink: Sendable {
         /// The catalog record's authority title.
-        let title: String
+        public let title: String
         /// The canonical catalog URL string.
-        let urlString: String
+        public let urlString: String
 
         /// Creates an archival link.
-        init(title: String, urlString: String) {
+        public init(title: String, urlString: String) {
             self.title = title
             self.urlString = urlString
         }
     }
 
     /// One person identity × mentioning document pair from the People-browser rollup.
-    struct PersonMention: Sendable {
+    public struct PersonMention: Sendable {
         /// Stable identity key (the rollup id, stringified) — mentions with the same
         /// key are the same person.
-        let identityKey: String
+        public let identityKey: String
         /// The rollup's canonical display name.
-        let name: String
+        public let name: String
         /// The rollup's description (front-matter role text), when available.
-        let description: String?
+        public let description: String?
         /// The rollup's role classification, when available.
-        let role: String?
+        public let role: String?
         /// The mentioning document's volume.
-        let volumeId: String
+        public let volumeId: String
         /// The mentioning document's id.
-        let documentId: String
+        public let documentId: String
 
         /// Creates a person-mention record.
-        init(identityKey: String, name: String, description: String?, role: String?,
+        public init(identityKey: String, name: String, description: String?, role: String?,
              volumeId: String, documentId: String) {
             self.identityKey = identityKey
             self.name = name
@@ -260,14 +274,14 @@ enum CollectionGeneratedBlocks {
 
     /// One user tag with every document it reaches (union of note tags and direct
     /// assignments), before intersection with the collection membership.
-    struct TagRecord: Sendable {
+    public struct TagRecord: Sendable {
         /// The tag's display name.
-        let name: String
+        public let name: String
         /// The documents the tag reaches, deduplicated.
-        let documents: [(volumeId: String, documentId: String)]
+        public let documents: [(volumeId: String, documentId: String)]
 
         /// Creates a tag record.
-        init(name: String, documents: [(volumeId: String, documentId: String)]) {
+        public init(name: String, documents: [(volumeId: String, documentId: String)]) {
             self.name = name
             self.documents = documents
         }
@@ -326,7 +340,8 @@ enum CollectionGeneratedBlocks {
     private static func chronologyRows(
         documents: [(volumeId: String, documentId: String)],
         numbers: [String: String],
-        dataSource: some CollectionGeneratedBlockDataSource
+        dataSource: some CollectionGeneratedBlockDataSource,
+        locale: Locale
     ) async -> [CollectionGeneratedRow] {
         let metadata = await dataSource.dateMetadata(for: documents)
 
@@ -347,7 +362,7 @@ enum CollectionGeneratedBlocks {
 
         var rows: [CollectionGeneratedRow] = dated.map { item in
             CollectionGeneratedRow(
-                text: dateLabel(for: item.meta),
+                text: dateLabel(for: item.meta, locale: locale),
                 secondaryText: dataSource.citation(volumeId: item.doc.volumeId,
                                                    documentId: item.doc.documentId,
                                                    printedNumber: numbers[documentKey(item.doc)]))
@@ -369,18 +384,19 @@ enum CollectionGeneratedBlocks {
     /// Formats a date at its true stored precision — "1969", "February 1969", or the
     /// long day form — honest to the source TEI rather than the padded ISO value.
     /// A range (`dateISOMax` differing from `dateISO`) renders as "start – end".
-    private static func dateLabel(for meta: DocumentDateMetadata) -> String {
-        let start = dateLabel(iso: meta.dateISO, precision: meta.precision)
+    private static func dateLabel(for meta: DocumentDateMetadata, locale: Locale) -> String {
+        let start = dateLabel(iso: meta.dateISO, precision: meta.precision, locale: locale)
         if let maxISO = meta.dateISOMax, maxISO != meta.dateISO {
-            return "\(start) – \(dateLabel(iso: maxISO, precision: meta.precision))"
+            return "\(start) – \(dateLabel(iso: maxISO, precision: meta.precision, locale: locale))"
         }
         return start
     }
 
     /// Formats one padded ISO date string (`yyyy-MM-dd`) at the given precision.
     /// `nil` precision (legacy rows) formats at day granularity, matching the stored
-    /// normalized value. Falls back to the raw string when it cannot be parsed.
-    private static func dateLabel(iso: String, precision: DatePrecision?) -> String {
+    /// normalized value. Falls back to the raw string when it cannot be parsed. `locale` is the
+    /// caller's (`resolve`'s), the device's by default.
+    private static func dateLabel(iso: String, precision: DatePrecision?, locale: Locale) -> String {
         let parts = iso.split(separator: "-").compactMap { Int($0) }
         guard let year = parts.first else { return iso }
         var comps = DateComponents()
@@ -389,7 +405,7 @@ enum CollectionGeneratedBlocks {
         comps.day = parts.count > 2 ? parts[2] : 1
         guard let date = Calendar(identifier: .gregorian).date(from: comps) else { return iso }
         let formatter = DateFormatter()
-        formatter.locale = .autoupdatingCurrent
+        formatter.locale = locale
         switch precision ?? .day {
         case .year:  formatter.dateFormat = "yyyy"
         case .month: formatter.setLocalizedDateFormatFromTemplate("MMMM yyyy")
@@ -584,6 +600,33 @@ enum CollectionGeneratedBlocks {
             })
         }
         return rows
+    }
+
+    // MARK: - The tag union
+
+    /// Every document carrying `tagId`, from BOTH annotation types — research notes tagged with it
+    /// (`noteTags`, each note's document and its tags) and direct document tag assignments
+    /// (`assignments`) — deduplicated, note-derived documents first, each source in its own stable
+    /// order. The Phase 3 union the Thematic Index reads, and the Add Documents sheet gathers by
+    /// (`CollectionDocumentDiscovery.tagDocumentRefs`, the app's, over its models).
+    static func tagDocumentRefs(
+        tagId: UUID,
+        noteTags: [(volumeId: String, documentId: String, tagIds: [UUID])],
+        assignments: [(volumeId: String, documentId: String, tagId: UUID)]
+    ) -> [(documentId: String, volumeId: String)] {
+        var seen: Set<String> = []
+        var refs: [(documentId: String, volumeId: String)] = []
+        for note in noteTags where note.tagIds.contains(tagId) {
+            if seen.insert(documentKey((note.volumeId, note.documentId))).inserted {
+                refs.append((documentId: note.documentId, volumeId: note.volumeId))
+            }
+        }
+        for assignment in assignments where assignment.tagId == tagId {
+            if seen.insert(documentKey((assignment.volumeId, assignment.documentId))).inserted {
+                refs.append((documentId: assignment.documentId, volumeId: assignment.volumeId))
+            }
+        }
+        return refs
     }
 
     // MARK: - Shared helpers
