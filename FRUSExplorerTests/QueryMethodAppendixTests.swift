@@ -497,12 +497,18 @@ struct MethodAppendixRenderingTests {
     }
 
     /// A `.frusco` file that loses the flag would silently turn the appendix off on re-import.
+    ///
+    /// Since FRUS Explorer Light's S18b the writer and the importer work on a collection's values in
+    /// FRUSCoreKit (`NativeCollectionFormat.swift` there), where the flag is a `Bool?`, and the app's half
+    /// (`NativeCollectionFormat+App.swift`) inserts what the importer read.
     @Test("The native format round-trips the flag")
     func nativeFormatRoundTrips() throws {
-        let native = try Self.source("FRUSExplorer/Collections/NativeCollectionFormat.swift")
-        #expect(native.contains("includeMethodAppendix: collection.includeMethodAppendix ? true : nil"))
-        #expect(native.contains("collection.includeMethodAppendix = file.includeMethodAppendix ?? false"))
+        let native = try Self.source("FRUSCoreKit/Collections/NativeCollectionFormat.swift")
+        #expect(native.contains("includeMethodAppendix: collection.includeMethodAppendix == true ? true : nil"))
+        #expect(native.contains("includeMethodAppendix: file.includeMethodAppendix ?? false"))
         // v2-only, like its two siblings — a v1 reader must not see a field it cannot represent.
-        #expect(native.contains("|| collection.includeMethodAppendix"))
+        #expect(native.contains("|| collection.includeMethodAppendix == true"))
+        let app = try Self.source("FRUSExplorer/Collections/NativeCollectionFormat+App.swift")
+        #expect(app.contains("collection.includeMethodAppendix = values.includeMethodAppendix ?? collection.includeMethodAppendix"))
     }
 }
