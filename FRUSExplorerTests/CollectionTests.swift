@@ -11877,6 +11877,9 @@ struct SmartCollectionEntriesFromBeforeLinkTests {
 ///          where `textDidChange` and an undo or redo both arrive
 ///   1.4 — MACCOL (#1448, #1477, #1449): a change at rest recounts; an edited block is measured at its text's width;
 ///          a block rests once focus has moved; the plain-text mode, read from the Mac's source and hosted on iOS
+///   1.5 — Session 2026-10-28 (FRUS Explorer Light): the host gives UIKit 15 s, not 3, to put up or take down what
+///          it presents, and the link-alert test waits for the alert to finish appearing; the link-alert and
+///          colour-picker tests had failed at random on those waits, at `v2` as at #1785's, #1807's and #1809's heads
 @MainActor
 @Suite("A capped rich-text editor rests on its opening lines and lifts the cap to edit (#1360)", .serialized)
 struct RichTextRestingCapTests {
@@ -12146,6 +12149,8 @@ struct RichTextRestingCapTests {
         #expect(RestingCapEditorHost.sendFormattingAction("Link selected text to a URL", of: textView),
                 "The bar has no Link")
         let alert = try #require(await host.presented(UIAlertController.self), "Link presented no alert")
+        // A reader taps the alert once it is up: the hold and the Cancel come after UIKit has finished presenting it.
+        #expect(await host.finishedPresenting(alert), "The link alert never finished appearing")
         let tookFocus = await RestingCapEditorHost.settle { !textView.isFirstResponder }
         #expect(tookFocus, "The link alert did not take focus, so this test exercises nothing")
         let keptOpen = await RestingCapEditorHost.holds(for: .milliseconds(500)) { host.isOpen(textView) }
@@ -12587,22 +12592,44 @@ private final class RestingCapEditorHost {
             && abs(textView.frame.height - RichTextRestingCapTests.cap.editingMaxHeight) < 1
     }
 
-    /// The view controller this window's root presents, once it is a `T` — `nil` if none appears within 3 s.
+    /// How long the host waits for UIKit to put up, or take down, what this window's root presents: a bound on a hang,
+    /// not a pace, since each wait ends as soon as UIKit is done. Timed in this suite run alone (iPhone 18 Pro Max,
+    /// iOS 27.0, on a Mac running other work), a non-animated dismissal of the link alert took 2.1 to 4.4 s to finish
+    /// over 30 runs, while the keyboard went back from the alert's field to the text view and its formatting bar, and
+    /// the 3 s that ``settle(timeout:until:)`` allows by default ran out first in 4 of them.
+    static let presentationTimeout: Duration = .seconds(15)
+
+    /// The view controller this window's root presents, once it is a `T` — `nil` if none appears within
+    /// ``presentationTimeout``.
     func presented<T: UIViewController>(_ type: T.Type) async -> T? {
         var found: T?
-        _ = await Self.settle {
+        _ = await Self.settle(timeout: Self.presentationTimeout) {
             found = window?.rootViewController?.presentedViewController as? T
             return found != nil
         }
         return found
     }
 
+    /// Whether UIKit has finished putting `controller` up — in a window and no longer being presented, as it is when
+    /// a reader can tap it — within ``presentationTimeout``. Timed as above, the link alert's presentation took 0.9 to
+    /// 1.4 s, and in 16 runs of 16 the link-alert test asked for the alert's dismissal before it had ended.
+    func finishedPresenting(_ controller: UIViewController) async -> Bool {
+        await Self.settle(timeout: Self.presentationTimeout) {
+            controller.viewIfLoaded?.window != nil && !controller.isBeingPresented
+        }
+    }
+
     /// Dismisses what this window's root presents, as a tap on an alert action does before running its handler, and
-    /// waits for it to go. Returns whether it went.
+    /// waits, up to ``presentationTimeout``, for it to go. Returns whether it went, and logs how long it took.
     func dismissPresented() async -> Bool {
-        guard let root = window?.rootViewController, root.presentedViewController != nil else { return false }
+        guard let root = window?.rootViewController, let presented = root.presentedViewController else { return false }
+        let clock = ContinuousClock()
+        let asked = clock.now
         root.dismiss(animated: false)
-        return await Self.settle { root.presentedViewController == nil }
+        let went = await Self.settle(timeout: Self.presentationTimeout) { root.presentedViewController == nil }
+        print("[RichTextRestingCapTests] \(type(of: presented)) \(went ? "went" : "had not gone") "
+              + "\(clock.now - asked) after its dismissal was asked")
+        return went
     }
 
     /// The handler a tap on `action` runs, read off the action — UIKit offers no public way to run one — or `nil` when
