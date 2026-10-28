@@ -8092,3 +8092,23 @@ Nothing in the app, its kits or its resources changes.
 - **The Mac app's symbols** are `v2`'s: 251,932 normalized names on each, none removed or added.
 
 This entry was added after the runs.
+
+## Session 2026-10-28 — #1767, the person authority's deferred work: the planning a cloud session could do, and the lane the Mac runs
+
+**What was asked.** Assess #1767 (plan of record decision 96, P2), find the best way to resolve its reconciliation items, and say what a cloud session can do against what needs the Mac; then do the cloud session's part and comment on the issue. Based on `v2` at `32e295e`, in a cloud container: Ubuntu 24.04, no Swift toolchain, and download.swift.org, www.wikidata.org, query.wikidata.org, viaf.org and static.history.state.gov denied by the environment's network policy.
+
+**Done.** `Planning/Person-Authority-Lane-Design-2026-10-28.md`, and a comment on #1767 that summarises it. Nothing in the generator, the kit, the bundle or any version changed.
+
+**Read, from what the container could reach:** the shipped `person-authority-index.json` and the corrections file; `HistoryAtState/people` at `63b537ad`, cloned shallow (80 MB, 16,312 records, 3,476 with no FRUS source-url), the memos' commit and still master; the 1981-1988 volumes of `HistoryAtState/frus` at `6170e4b`, a sparse clone; and the generator's and the clusterer's code.
+
+**Found.**
+- **Item 5 is done**: A4c's correction for 113302 holds 1981-1988 vol. V's `p_TWHIV_1` apart and joins it to 113304, and the bundle sends it there; vol. I's Richard V. Allen goes to 100308.
+- **Items 3 and 4 are one mechanism**: an *apart* mark in the bundle (every held-apart anchor with no `joins` that no source answered: 81 today) that the clusterer never unites with a covered component, refusing as the cannot-link does; #1658's tie rule sets the same mark when an uncovered member would join two reconciled people directly (T1), with a propagated variant (T2) for the census to count. Rollup v13.
+- **The Wright tie is data**: the registry's 114825 *Wright, Oliver* holds his vol. XIII entry, and his vol. XLIV Part 1 and vol. I entries are uncovered and sit in Jerauld Wright's block, whose 1951-1968 rows sort first. An `assigned` list in the corrections file, with a kept record for an id it names (106238, the John Hughes the 106247 correction could not join, is a record the builder drops for having no FRUS anchor), fixes both with no clusterer change.
+- **Item 2's rule is exact**: the registry ties each remark to the anchor it came from; `parseRecord` keeps none today.
+- **Item 1** stands as designed; the 300 read verdicts behind its precision figures are uncommitted on the Mac and should be committed with the snapshot.
+- **Where it runs**: the Mac. Even with a toolchain the package does not build on Linux (FRUSCoreKit needs the web edition's `CSQLite` and swift-crypto; the generator core needs `FoundationXML` behind `canImport`), and the three owed runs, the Mac build and the full-library census are Mac runs. The memo's §6 lists the environment changes that would let a cloud session fetch the snapshot and run the generator.
+
+**For the owner** (the memo's §8): the apart mark or a synthetic record for item 3; T1 or T2 for item 4; the anchor assignments and the two Wright anchors upstream; committing the reads; the environment changes; one build for both lanes.
+
+**Not done**: the overlay was not attached, so nothing was measured through the generator; nothing was fetched from Wikidata or VIAF; no code was written, since nothing here could compile it.
