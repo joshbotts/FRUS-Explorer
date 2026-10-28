@@ -796,6 +796,7 @@
 		7BC08DD9CCEFB1E88A615D20 /* SubseriesDirectoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D4A80D4E24FBC57A0E986C5 /* SubseriesDirectoryView.swift */; };
 		7C06E0AA5DFAFBE40871024E /* NotesEnhancementsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 114C7B05F3AF872FCB494930 /* NotesEnhancementsTests.swift */; };
 		7C2BED68389A2708CD7EB416 /* ReaderRendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = A343DB4A2169CD0183BF1B43 /* ReaderRendering.swift */; };
+		7C37B057FD1F103CC6121DD7 /* ProjectHomeHostTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E31DF0FE523AA6AB234F0E6B /* ProjectHomeHostTests.swift */; };
 		7C9CD0BDD088EE9F496A1193 /* ResearchDatabaseStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61C456350DFFE9C717A37DCE /* ResearchDatabaseStrip.swift */; };
 		7CCCA249D6A5B86E87215175 /* SemanticFollowUpTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48A8F19AC70D1794EE9D3ED5 /* SemanticFollowUpTests.swift */; };
 		7CEA59AB871FEB6ABFF180D3 /* WordCloudLexiconSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6568CE099F61DF20CEB537BE /* WordCloudLexiconSet.swift */; };
@@ -2773,6 +2774,7 @@
 		E20EBCC5C43266E5F61AD21B /* ResearchLayerRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchLayerRulesTests.swift; sourceTree = "<group>"; };
 		E2954EC9092B41F11D5D846E /* CrossReferenceGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrossReferenceGraphView.swift; sourceTree = "<group>"; };
 		E2A2B94D97D7EDE34FFBFFFA /* CentralFilesClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralFilesClassifier.swift; sourceTree = "<group>"; };
+		E31DF0FE523AA6AB234F0E6B /* ProjectHomeHostTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectHomeHostTests.swift; sourceTree = "<group>"; };
 		E397EA1B5396DF3D17C221D9 /* BrokenRefsIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokenRefsIndexTests.swift; sourceTree = "<group>"; };
 		E3AD3271C2B3EB9F603BF99A /* FacetPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FacetPanelView.swift; sourceTree = "<group>"; };
 		E3F9CF0EF9D564D2CE21729A /* KWICLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KWICLine.swift; sourceTree = "<group>"; };
@@ -4100,6 +4102,7 @@
 				9E0B66CA89FF81C407919333 /* PersonClustererTests.swift */,
 				D5B3773657FA1332EFB5160E /* PersonMentionStoreTests.swift */,
 				E5B15ACE85C1EE1A23692424 /* PersonsListEncodingTests.swift */,
+				E31DF0FE523AA6AB234F0E6B /* ProjectHomeHostTests.swift */,
 				7D2FC6AB9A5EDBA784E33A0F /* ProseSnippetTests.swift */,
 				A06F0A7CFA0C6364B754F1C2 /* QueryInspectionTests.swift */,
 				26AB0DF500A1D9B51C520CE3 /* QueryMethodAppendixFixtureTests.swift */,
@@ -6475,6 +6478,7 @@
 				B78ECD58EA453D397B3D1808 /* ProjectAdminServiceTests.swift in Sources */,
 				E53C5727E7ABEE6F54A55308 /* ProjectContextTests.swift in Sources */,
 				74AB68F00384EE6C5C128666 /* ProjectEngagedDocumentsTests.swift in Sources */,
+				7C37B057FD1F103CC6121DD7 /* ProjectHomeHostTests.swift in Sources */,
 				42157C64CC18CA076697FDB1 /* ProjectLeadSnippetTests.swift in Sources */,
 				5AB2C8F3B5C6077355531466 /* ProjectLeadsTests.swift in Sources */,
 				F8994677EDFB6B751A37B0A3 /* PromptDuplicateCollapseTests.swift in Sources */,
