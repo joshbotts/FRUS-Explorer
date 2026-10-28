@@ -17,7 +17,16 @@ import Foundation
 /// those volumes' most-characteristic subjects (from `VolumeSubjectProfiles`) are a strong
 /// zero-config starting point for "what is this project about?" — which then resolves back
 /// to a *wider* set of volumes for discovery. Pure and deterministic.
-enum ProjectFocusSuggestions {
+///
+/// In the kit, and public, since FRUS Explorer Light's S17f: a host's focus-subjects editor
+/// suggests what `ProjectFocusSubjectsEditor` suggests. The engaged volumes are the host's to
+/// gather; the app's `ProjectEngagedDocuments` gathers them from SwiftData.
+///
+/// Version history:
+///   1.0 — #377 Phase 2b: initial implementation
+///   1.1 — FRUS Explorer Light S17f: moved from `FRUSExplorer/ProjectContext/` into FRUSCoreKit,
+///          public, unchanged
+public enum ProjectFocusSuggestions {
 
     /// Ranks subjects to suggest, drawn from the top subjects of the project's engaged
     /// volumes.
@@ -33,10 +42,10 @@ enum ProjectFocusSuggestions {
     ///   - chosen: Refs already in the project's focus (excluded from suggestions).
     ///   - limit: Maximum suggestions to return.
     /// - Returns: Up to `limit` suggested subjects, best first.
-    static func suggestions(engagedVolumeIds: Set<String>,
-                            profiles: VolumeSubjectProfiles,
-                            excluding chosen: Set<String>,
-                            limit: Int = 8) -> [VolumeSubjectProfiles.SubjectOption] {
+    public static func suggestions(engagedVolumeIds: Set<String>,
+                                   profiles: VolumeSubjectProfiles,
+                                   excluding chosen: Set<String>,
+                                   limit: Int = 8) -> [VolumeSubjectProfiles.SubjectOption] {
         var count: [String: Int] = [:]
         var scoreSum: [String: Double] = [:]
         for volumeId in engagedVolumeIds {
