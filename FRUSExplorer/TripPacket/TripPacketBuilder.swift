@@ -35,7 +35,8 @@ import Foundation
 /// (`targetKey(for:category:)`), because a target is the thing a researcher asks an archivist
 /// about.
 ///
-/// What is NOT shared is the data-source *instance*. `LiveGeneratedBlockDataSource` is built around
+/// What is NOT shared is the data-source *instance*. The collection blocks' data source
+/// (`CollectionContentAssembly`'s, in FRUSCoreKit since FRUS Explorer Light's S18b) is built around
 /// a collection's `BatchContext`, and the Project Home entry point has no collection — it works
 /// over a project's engaged set. So the packet supplies its own thin conformance
 /// (``TripPacketDataSource``) over the same pipeline calls. The parts that could drift are shared;
@@ -81,6 +82,8 @@ import Foundation
 ///   1.11 — decision 62 (A15): a central file worded through the Department keys on the class the
 ///          index stores for it (`CollectionKeying.centralFilesClass(parsed:note:)` where the scan
 ///          reads none), so 688 notes keyed on their text key on their file
+///   1.12 — 2026-10-27 (FRUS Explorer Light, S18b): the comments name the collection blocks' data source and
+///          citation path where they now are, FRUSCoreKit's `CollectionContentAssembly`; no code changes
 @MainActor
 enum TripPacketBuilder {
 
@@ -697,8 +700,8 @@ protocol TripPacketReferenceDataSource: CollectionGeneratedBlockDataSource {
 
 /// The packet's own conformance to ``TripPacketReferenceDataSource`` (#830 T-2, refs Phase 1).
 ///
-/// Exists because `LiveGeneratedBlockDataSource` is built around a collection's `BatchContext`, and
-/// the Project Home entry point has no collection. It calls the **same pipeline methods**, so the
+/// Exists because the collection blocks' data source (`CollectionContentAssembly`'s) is built around a
+/// collection's `BatchContext`, and the Project Home entry point has no collection. It calls the **same pipeline methods**, so the
 /// two cannot see different source notes; only the batch plumbing differs.
 ///
 /// The three members the packet never reads return empty rather than trapping: this type conforms
@@ -711,7 +714,7 @@ struct TripPacketDataSource: TripPacketReferenceDataSource {
     let pipeline: IndexingPipeline
 
     /// The manifest entries the citation formatter reads — the same
-    /// `diffResult?.known ?? bundledEntries` set `CollectionContentResolver` batches.
+    /// `diffResult?.known ?? bundledEntries` set `CollectionContentResolver` hands the assembly.
     let manifestMap: [String: VolumeManifestEntry]
 
     /// The house citation style — a pure struct, so held rather than re-made per call.
@@ -723,7 +726,7 @@ struct TripPacketDataSource: TripPacketReferenceDataSource {
     }
 
     /// The history.state.gov-style citation — the exact mirror of
-    /// `CollectionContentResolver.shortCitation`, header-independent by the same design:
+    /// `CollectionContentAssembly.shortCitation`, header-independent by the same design:
     /// the formatter reads only volume metadata and the document number, so no volume XML
     /// is ever needed. This used to return the protocol's documented UNKNOWN-VOLUME
     /// fallback unconditionally, so the first chapter to print a citation would have

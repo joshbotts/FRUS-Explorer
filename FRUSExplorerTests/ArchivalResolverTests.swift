@@ -468,7 +468,9 @@ struct ArchivalResolverTests {
         let expected = [
             "FRUSExplorer/Browser/VolumeSourcesView.swift":
                 ("ArchivalResolver.frontMatterResolution(", "ArchivalResolver.documentResolution("),
-            "FRUSExplorer/Collections/CollectionContentResolver.swift":
+            // The Collections block's resolution moved with the content assembly into FRUSCoreKit (FRUS
+            // Explorer Light, S18b), where it reads the archival indexes the host passes in.
+            "FRUSCoreKit/Collections/CollectionContentAssembly.swift":
                 ("ArchivalResolver.documentResolution(", "ArchivalResolver.frontMatterResolution("),
         ]
         for (path, calls) in expected {
