@@ -312,7 +312,8 @@ struct ResearchNoteMarkdownExportTests {
 // MARK: - ResearchDatabaseStripTests
 
 /// The strip Export Research Database… runs on its copy, as FRUSCoreKit holds it: its statements
-/// in their order, and what they leave of a copy of a real index.
+/// in their order, and what they leave of a copy of a real index, in its rows, its indexes and its
+/// bytes.
 ///
 /// The app's `IndexDatabaseExporterTests` runs the strip through the export; this runs the steps
 /// alone, on a copy made with `sqlite3_backup` as the export makes one, so a host that strips with
@@ -320,24 +321,32 @@ struct ResearchNoteMarkdownExportTests {
 ///
 /// Version history:
 ///   1.0 — FRUS Explorer Light: initial implementation, with the steps moved into the kit
+///   1.1 — FRUS Explorer Light: `secure_delete` first and your-content index emptied before
+///          `VACUUM`, and a stripped copy's bytes searched for the words of its notes and summaries,
+///          against the strip as it was, at `FAST`
 @Suite("Research database strip")
 struct ResearchDatabaseStripTests {
 
     private let noteText = "Zebrafish marginalia — a phrase that occurs nowhere in the corpus."
     private let summaryText = "Kumquat synopsis, likewise unique."
 
-    @Test("The steps are the export's five statements, in their order")
+    @Test("The steps are the export's seven statements, in their order")
     func stepsInOrder() {
         #expect(ResearchDatabaseStrip.steps.map(\.action) == [
+            "preparing to overwrite freed space",
             "removing your notes and summaries",
             "removing your tag names",
+            "emptying your-content index",
             "reclaiming freed pages",
             "rebuilding the document index",
             "rebuilding your-content index",
         ])
-        #expect(ResearchDatabaseStrip.steps.first?.sql
+        #expect(ResearchDatabaseStrip.steps.first?.sql == "PRAGMA secure_delete = ON")
+        #expect(ResearchDatabaseStrip.steps[1].sql
                     == "UPDATE document_cache SET summary_text = NULL, note_text = NULL, user_tag_ids = NULL")
         #expect(Array(ResearchDatabaseStrip.steps.map(\.sql)[2...]) == [
+            "DELETE FROM user_tags",
+            "INSERT INTO user_content(user_content) VALUES('delete-all')",
             "VACUUM",
             "INSERT INTO frus_documents(frus_documents) VALUES('rebuild')",
             "INSERT INTO user_content(user_content) VALUES('rebuild')",
@@ -406,6 +415,160 @@ struct ResearchDatabaseStripTests {
         #expect(Self.rows(db, "PRAGMA quick_check") == ["ok"])
     }
 
+    /// No word of the notes and summaries is anywhere in a stripped copy's bytes, free pages
+    /// included. The control runs the strip as it was, without the two statements this test came
+    /// with, and finds words of both: the rebuild of `user_content` after the `VACUUM` freed the
+    /// pages that held the index's terms, and at `FAST`, the default of macOS's SQLite, a freed page
+    /// keeps what it held, though the copy's rows and indexes hold none. Every strip here starts
+    /// from `FAST`, so the steps are all that differ on every platform: Ubuntu's SQLite starts on.
+    ///
+    /// Each of the two keeps the words out alone, and each is held to what it does: with the pragma
+    /// alone the pages the rebuild freed are there, written over; with the index emptied alone the
+    /// `VACUUM` reclaims its pages, and the copy is smaller than the control's.
+    ///
+    /// The notes and summaries name 1,000 words each, so that the index outgrows one page.
+    /// `stepsStripACopy`'s one note and one summary fit in its root page, which a rebuild clears
+    /// rather than frees, and `FAST` zeroes what it deletes inside a page.
+    @Test("A stripped copy's bytes hold no word of the notes and summaries, where the strip as it was left some")
+    func strippedCopyKeepsNoWordInFreedPages() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSStripPages-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let written = try await Self.indexWithWriting(in: dir)
+        let held = (notes: try Self.occurrences(of: "zqnote", in: written),
+                    summaries: try Self.occurrences(of: "xvsumm", in: written))
+        #expect(held.notes >= 1_000 && held.summaries >= 1_000, "precondition: the copy holds the writing: \(held)")
+
+        let pragma = "PRAGMA secure_delete = ON"
+        let emptying = "INSERT INTO user_content(user_content) VALUES('delete-all')"
+        let steps = ResearchDatabaseStrip.steps
+        let asItWas = try Self.strip(written, as: "as-it-was", with: steps.filter { $0.sql != pragma && $0.sql != emptying })
+        let stripped = try Self.strip(written, as: "stripped", with: steps)
+        let pragmaAlone = try Self.strip(written, as: "pragma-alone", with: steps.filter { $0.sql != emptying })
+        let emptiedAlone = try Self.strip(written, as: "emptied-alone", with: steps.filter { $0.sql != pragma })
+
+        #expect(asItWas.notes > 0 && asItWas.summaries > 0 && asItWas.freeLeavesHoldingData > 0,
+                "control: the strip as it was, at FAST, leaves words of both in the pages it frees: \(asItWas)")
+        for copy in [stripped, pragmaAlone, emptiedAlone] {
+            #expect(copy.notes == 0 && copy.summaries == 0 && copy.freeLeavesHoldingData == 0,
+                    "the writing's words are still in the copy: \(copy)")
+        }
+        #expect(stripped.secureDelete == "1" && stripped.pages < asItWas.pages, "\(stripped), against \(asItWas)")
+        #expect(pragmaAlone.secureDelete == "1" && pragmaAlone.freePages > 0,
+                "the pages the rebuild freed are there, written over with zeros: \(pragmaAlone)")
+        #expect(emptiedAlone.secureDelete == "2" && emptiedAlone.pages < asItWas.pages,
+                "the VACUUM reclaims the index's pages: \(emptiedAlone), against \(asItWas)")
+    }
+
+    /// What one strip left of a copy, read when its steps were done.
+    private struct Stripped: CustomStringConvertible {
+        /// The copy's name.
+        let name: String
+        /// How many times its bytes hold `zqnote`, which begins each of the notes' own words.
+        let notes: Int
+        /// How many times its bytes hold `xvsumm`, which begins each of the summaries' own words.
+        let summaries: Int
+        /// Its size in pages.
+        let pages: Int
+        /// How many of its pages are free.
+        let freePages: Int
+        /// How many of the freelist's leaf pages hold a byte that is not zero.
+        let freeLeavesHoldingData: Int
+        /// What `PRAGMA secure_delete` answered on its connection after the steps.
+        let secureDelete: String
+
+        var description: String {
+            "\(name): \(notes) and \(summaries) of the words, \(pages) pages, \(freePages) free, "
+                + "\(freeLeavesHoldingData) free leaves holding data, secure_delete \(secureDelete)"
+        }
+    }
+
+    /// An index of one volume of 40 documents, copied as the export copies one, whose notes and
+    /// summaries name 25 words each that the corpus lacks, written in one statement: `zqnote00000`
+    /// to `zqnote00999` in the notes, and `xvsumm00000` to `xvsumm00999` in the summaries. Returns
+    /// the copy, closed.
+    private static func indexWithWriting(in dir: URL) async throws -> URL {
+        let volumes = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        var xml = "<?xml version=\"1.0\"?>\n<TEI><text><body>\n"
+        for index in 0..<40 {
+            xml += """
+            <div type="document" xml:id="d\(index)"><head>\(index + 1). Item</head>
+            <p>Document number \(index) discusses containment.</p></div>
+
+            """
+        }
+        xml += "</body></text></TEI>"
+        try Data(xml.utf8).write(to: volumes.appendingPathComponent("vol1.xml"))
+        let live = dir.appendingPathComponent("live.sqlite")
+        let fts5 = try FTS5Store(databaseURL: live)
+        let pipeline = try IndexingPipeline(fts5Store: fts5, databaseURL: live,
+                                            volumesDirectory: volumes, concurrencyLimit: 1)
+        try await pipeline.indexVolume("vol1")
+
+        let written = dir.appendingPathComponent("written.sqlite")
+        let writer = try backup(live, to: written)
+        let refused = exec(writer, """
+            WITH RECURSIVE k(j) AS (SELECT 0 UNION ALL SELECT j + 1 FROM k WHERE j < 24)
+            UPDATE document_cache SET
+                note_text = (SELECT 'A note naming ' || group_concat(printf('zqnote%05d',
+                    CAST(substr(document_id, 2) AS INTEGER) * 25 + j), ' ') FROM k),
+                summary_text = (SELECT 'A summary naming ' || group_concat(printf('xvsumm%05d',
+                    CAST(substr(document_id, 2) AS INTEGER) * 25 + j), ' ') FROM k)
+            """)
+        sqlite3_close(writer)
+        #expect(refused == nil, "writing the notes and summaries: \(refused ?? "")")
+        return written
+    }
+
+    /// Strips a copy of `written` with `steps`, all on one connection, from `FAST`; checks that its
+    /// rows and its index hold none of the writing; and reads what the strip left.
+    private static func strip(_ written: URL, as name: String,
+                              with steps: [ResearchDatabaseStrip.Step]) throws -> Stripped {
+        let url = written.deletingLastPathComponent().appendingPathComponent("\(name).sqlite")
+        let db = try backup(written, to: url)
+        #expect(exec(db, "PRAGMA secure_delete = FAST") == nil)
+        for step in steps {
+            let failure = exec(db, step.sql)
+            #expect(failure == nil, "\(name), \(step.action): \(failure ?? "")")
+        }
+        #expect(rows(db, """
+            SELECT count(*) FROM document_cache WHERE note_text IS NOT NULL OR summary_text IS NOT NULL
+            """) == ["0"], "\(name): the rows kept the writing")
+        #expect(rows(db, "SELECT count(*) FROM user_content WHERE user_content MATCH 'zqnote00999 OR xvsumm00999'")
+                    == ["0"], "\(name): the index kept the writing")
+        #expect(rows(db, "PRAGMA quick_check") == ["ok"])
+        let pages = Int(rows(db, "PRAGMA page_count").first ?? "") ?? 0
+        let freePages = Int(rows(db, "PRAGMA freelist_count").first ?? "") ?? 0
+        let secureDelete = rows(db, "PRAGMA secure_delete").first ?? ""
+        sqlite3_close(db)
+        return Stripped(name: name, notes: try occurrences(of: "zqnote", in: url),
+                        summaries: try occurrences(of: "xvsumm", in: url),
+                        pages: pages, freePages: freePages,
+                        freeLeavesHoldingData: try freeLeavesHoldingData(in: url), secureDelete: secureDelete)
+    }
+
+    /// How many of the freelist's leaf pages in the file at `url` hold a byte that is not zero, read
+    /// from the file's header and the freelist's trunk pages, as SQLite's file format lays them out.
+    private static func freeLeavesHoldingData(in url: URL) throws -> Int {
+        let bytes = [UInt8](try Data(contentsOf: url))
+        func number(at offset: Int) -> Int { bytes[offset..<offset + 4].reduce(0) { $0 << 8 | Int($1) } }
+        let size = Int(bytes[16]) << 8 | Int(bytes[17])
+        let pageSize = size == 1 ? 65_536 : size
+        var holding = 0
+        var trunk = number(at: 32)
+        while trunk != 0 {
+            let base = (trunk - 1) * pageSize
+            for index in 0..<number(at: base + 4) {
+                let leaf = (number(at: base + 8 + 4 * index) - 1) * pageSize
+                if bytes[leaf..<leaf + pageSize].contains(where: { $0 != 0 }) { holding += 1 }
+            }
+            trunk = number(at: base)
+        }
+        return holding
+    }
+
     /// Copies `source` to a new file with `sqlite3_backup`, as Export Research Database… does, and
     /// returns a writing connection to the copy, in rollback-journal mode as the export's is.
     private static func backup(_ source: URL, to destination: URL) throws -> OpaquePointer {
@@ -437,5 +600,27 @@ struct ResearchDatabaseStripTests {
             rows.append(sqlite3_column_text(statement, 0).map { String(cString: $0) } ?? "")
         }
         return rows
+    }
+
+    /// Runs `sql` with `sqlite3_exec`, as the app's export runs each step, and returns SQLite's
+    /// message when it fails.
+    private static func exec(_ db: OpaquePointer, _ sql: String) -> String? {
+        var message: UnsafeMutablePointer<CChar>?
+        defer { sqlite3_free(message) }
+        guard sqlite3_exec(db, sql, nil, nil, &message) != SQLITE_OK else { return nil }
+        return message.map { String(cString: $0) } ?? "no message"
+    }
+
+    /// How many times the file at `url` holds `needle` in its bytes, free pages included.
+    private static func occurrences(of needle: String, in url: URL) throws -> Int {
+        let bytes = try Data(contentsOf: url)
+        let pattern = Data(needle.utf8)
+        var count = 0
+        var start = bytes.startIndex
+        while let found = bytes.range(of: pattern, in: start..<bytes.endIndex) {
+            count += 1
+            start = found.upperBound
+        }
+        return count
     }
 }
