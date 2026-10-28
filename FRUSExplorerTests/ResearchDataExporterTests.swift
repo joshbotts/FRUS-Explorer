@@ -641,6 +641,8 @@ struct ResearchDataExporterTests {
 ///   1.0 — W-19 L-2: initial implementation
 ///   1.1 — #1538: the destination tests; review round 1 observes every step of the copy and the
 ///          hand-over
+///   1.2 — FRUS Explorer Light: a stripped copy's bytes searched for the words of its notes and
+///          summaries, free pages included
 @Suite("Index database export")
 struct IndexDatabaseExporterTests {
 
@@ -805,6 +807,77 @@ struct IndexDatabaseExporterTests {
         }
     }
 
+    /// The words themselves, not only the rows and the index: through the export's own path, at
+    /// the platform's own `secure_delete`, a copy made without the writing holds no word of its notes
+    /// and summaries anywhere in its bytes, free pages included. The copy made with the writing holds
+    /// every one, so the search reads the right bytes. The control, the strip as it was at `FAST`,
+    /// is in FRUSCoreKit's `ResearchDatabaseStripTests`, which run on every platform; this test
+    /// fails on the export as it was only where SQLite's default is `FAST`, as macOS's is.
+    ///
+    /// The notes and summaries name 1,000 words each that the corpus lacks, so that `user_content`'s
+    /// index outgrows one page. `makeIndexed`'s one note and one summary fit in its root page, which
+    /// a rebuild clears rather than frees, and `FAST` zeroes what it deletes inside a page.
+    @Test("A stripped copy holds no word of the notes and summaries, not even in its free pages")
+    func strippedCopyKeepsNoWordInFreedPages() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSDbPages-\(UUID().uuidString)", isDirectory: true)
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        var xml = "<?xml version=\"1.0\"?>\n<TEI><text><body>\n"
+        for index in 0..<40 {
+            xml += """
+            <div type="document" xml:id="d\(index)">
+              <head>\(index + 1). Item</head>
+              <p>Document number \(index) discusses containment and the marshall plan.</p>
+            </div>
+
+            """
+        }
+        xml += "</body></text></TEI>"
+        try xml.data(using: .utf8)!.write(to: volDir.appendingPathComponent("vol1.xml"))
+        let live = dir.appendingPathComponent("live.sqlite")
+        let fts5 = try FTS5Store(databaseURL: live)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: live, volumesDirectory: volDir, concurrencyLimit: 1)
+        try await pipeline.indexVolume("vol1")
+        // zqnote00000 to zqnote00999, and xvsumm00000 to xvsumm00999: 25 to each note and summary.
+        #expect(exec(live, """
+            WITH RECURSIVE k(j) AS (SELECT 0 UNION ALL SELECT j + 1 FROM k WHERE j < 24)
+            UPDATE document_cache SET
+                note_text = (SELECT 'A note naming ' || group_concat(printf('zqnote%05d',
+                    CAST(substr(document_id, 2) AS INTEGER) * 25 + j), ' ') FROM k),
+                summary_text = (SELECT 'A summary naming ' || group_concat(printf('xvsumm%05d',
+                    CAST(substr(document_id, 2) AS INTEGER) * 25 + j), ' ') FROM k)
+            """), "the notes and summaries were not written")
+
+        let stripped = dir.appendingPathComponent("stripped.sqlite")
+        let kept = dir.appendingPathComponent("kept.sqlite")
+        let report = try IndexDatabaseExporter.export(from: live, to: stripped, includeMyWriting: false,
+                                                      stamp: stamp(pipeline))
+        #expect(report.integrityProblems.isEmpty, "\(report.integrityProblems)")
+        _ = try IndexDatabaseExporter.export(from: live, to: kept, includeMyWriting: true,
+                                             stamp: stamp(pipeline))
+
+        let held = (notes: try occurrences(of: "zqnote", in: kept), summaries: try occurrences(of: "xvsumm", in: kept))
+        #expect(held.notes >= 1_000 && held.summaries >= 1_000, "the copy with the writing holds it: \(held)")
+        #expect(try occurrences(of: "zqnote", in: stripped) == 0, "a note's words are still in the stripped copy")
+        #expect(try occurrences(of: "xvsumm", in: stripped) == 0, "a summary's words are still in the stripped copy")
+    }
+
+    /// How many times the file at `url` holds `needle` in its bytes, free pages included.
+    private func occurrences(of needle: String, in url: URL) throws -> Int {
+        let bytes = try Data(contentsOf: url)
+        let pattern = Data(needle.utf8)
+        var count = 0
+        var start = bytes.startIndex
+        while let found = bytes.range(of: pattern, in: start..<bytes.endIndex) {
+            count += 1
+            start = found.upperBound
+        }
+        return count
+    }
+
     // MARK: - Provenance stamp and research views (W-19 L-8 residue)
 
     /// A fixture shaped like the places the views have to make a decision: a second edition whose
@@ -864,7 +937,8 @@ struct IndexDatabaseExporterTests {
     ///
     /// Used only to put a fixture into a state its own XML cannot reach: `is_broken` is written
     /// from the bundled exclusion index, not derived from the volume being parsed, so a fixture
-    /// volume has no way to produce a broken reference.
+    /// volume has no way to produce a broken reference; and a thousand words of notes and
+    /// summaries, written in one statement where the pipeline writes them a document at a time.
     @discardableResult
     private func exec(_ url: URL, _ sql: String) -> Bool {
         var db: OpaquePointer?
