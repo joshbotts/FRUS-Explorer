@@ -196,22 +196,8 @@ class CollectionContentResolver {
     // MARK: - SmartDocumentRef
 
     /// Lightweight document reference used for smart-collection resolution — one search
-    /// result to resolve. Avoids creating SwiftData model instances outside a context.
-    struct SmartDocumentRef: Sendable {
-        /// The FRUS document identifier (e.g. `"d12"`).
-        let documentId: String
-        /// The containing volume identifier.
-        let volumeId: String
-        /// Position within the result set (ascending).
-        let sortOrder: Int
-
-        /// Creates a smart-collection document reference.
-        init(documentId: String, volumeId: String, sortOrder: Int) {
-            self.documentId = documentId
-            self.volumeId = volumeId
-            self.sortOrder = sortOrder
-        }
-    }
+    /// result to resolve: FRUSCoreKit's `SmartCollectionDocumentRef` since FRUS Explorer Light's S18b.
+    typealias SmartDocumentRef = SmartCollectionDocumentRef
 
     // MARK: - Dependencies
 
@@ -543,14 +529,10 @@ class CollectionContentResolver {
         }
         // Resolve the full result set (not just the first page) — the default `search`
         // limit is `defaultPageSize` (20), which silently truncated smart-collection
-        // exports. Mirror the live saved search's hard limit.
-        let results = try await searchService.search(
-            parameters: savedSearch.searchParameters,
-            limit: SearchViewModel.searchHardLimit
-        )
-        return results.enumerated().map { i, r in
-            SmartDocumentRef(documentId: r.documentId, volumeId: r.volumeId, sortOrder: i)
-        }
+        // exports. Mirror the live saved search's hard limit, through FRUSCoreKit's run (S18b).
+        return try await SmartCollectionSnapshot.documentRefs(
+            parameters: savedSearch.searchParameters, searchService: searchService,
+            limit: SearchViewModel.searchHardLimit)
     }
 
     /// Resolves smart-collection references through the unified per-document pipeline.

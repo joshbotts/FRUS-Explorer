@@ -141,6 +141,8 @@ import UniformTypeIdentifiers
 ///          could be linked only while Add to Collection's New Collection created it
 ///   1.26 — 2026-10-25: #1791 — the window reads one copy of each note and saved search, however many are stored
 ///          under one id, so an entry's notes, the exports and Link to Saved Search… list each once
+///   1.27 — 2026-10-27 (FRUS Explorer Light, S18b): Snapshot runs the saved search through FRUSCoreKit's
+///          `SmartCollectionSnapshot.documentRefs`, at the same ceiling
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -403,10 +405,11 @@ struct MacCollectionManagerView: View {
             return
         }
         do {
-            let results = try await searchService.search(
-                parameters: savedSearch.searchParameters,
+            // The saved search's run is FRUSCoreKit's (FRUS Explorer Light, S18b), at the iOS search's ceiling.
+            let refs = try await SmartCollectionSnapshot.documentRefs(
+                parameters: savedSearch.searchParameters, searchService: searchService,
                 limit: SearchViewModel.searchHardLimit)
-            let refs = results.map { (documentId: $0.documentId, volumeId: $0.volumeId) }
+                .map { (documentId: $0.documentId, volumeId: $0.volumeId) }
             let snapshot = SmartCollectionSnapshot.create(from: collection, results: refs, into: modelContext)
             if let pid = appState.activeProjectId, !snapshot.projectIds.contains(pid) {
                 snapshot.projectIds.append(pid)
