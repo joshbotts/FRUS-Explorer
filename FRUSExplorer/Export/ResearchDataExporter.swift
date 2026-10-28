@@ -738,11 +738,20 @@ enum ResearchDataExporter {
 ///    the guarantee is SQLite's to withdraw and the cost here is one statement on a file the reader
 ///    is already waiting on — but no test in this suite can prove it necessary, and none pretends
 ///    to. Do not let a green suite be read as evidence that removing it is safe.
-/// 3. **The strip is only an erase because of the `VACUUM`.** Nulling the columns removes the words
-///    from the live rows and the rebuild removes them from the index — but they remain in pages
-///    SQLite has freed and not reused, and a page-level backup copies those faithfully. On the
-///    author's own store 56.2% of the file is freelist. Offering a consent checkbox over a file that
-///    still contains the text would be worse than offering no checkbox at all.
+/// 3. **The strip is only an erase because of the `VACUUM`, so everything that held the writing
+///    is freed before it.** Nulling the columns removes the words from the live rows and emptying
+///    `user_content` removes them from the index — but they remain in pages SQLite has freed and
+///    not reused, and a page-level backup copies those faithfully. On the author's own store 56.2%
+///    of the file is freelist. `VACUUM` drops every page that is free when it runs, the live
+///    index's own among them, and nothing drops a page freed after it. Until 2026-10-27 the strip
+///    left `user_content` to the rebuild after the `VACUUM` (note 2), which then freed the pages
+///    that held its terms, the stems of the notes' and summaries' words with the documents and
+///    positions they were at, and a stripped copy kept them: macOS's SQLite defaults to `FAST`
+///    (measured on macOS 27.2, SQLite 3.54.0), which zeroes what it deletes inside a page but
+///    writes nothing over a page it frees. So the index is now emptied before the `VACUUM`, and
+///    the strip's first statement turns `secure_delete` on, so that SQLite writes zeros over
+///    whatever is freed after it as well. Offering a consent checkbox over a file that still
+///    contains the text would be worse than offering no checkbox at all.
 /// 4. **The copy says what it is.** A bare `.sqlite` cannot be told from any other, and the two
 ///    facts that decide whether a number from it is usable — which index generation wrote the rows,
 ///    and whether the reader's own writing is in there — are invisible from inside the file. So the
@@ -779,6 +788,9 @@ enum ResearchDataExporter {
 ///   1.3 — #1538 review: an existing file is replaced in one step; the tests observe every step
 ///   1.4 — FRUS Explorer Light: the strip's statements moved to FRUSCoreKit
 ///          (`ResearchDatabaseStrip.steps`), unchanged and in their order; `strip(_:)` runs them
+///   1.5 — FRUS Explorer Light: the strip turns `secure_delete` on first and empties your-content
+///          index before `VACUUM` (note 3), so a stripped copy's free pages keep no word of the
+///          notes and summaries
 enum IndexDatabaseExporter {
 
     /// What an export produced, for the surface to report honestly.
@@ -1026,10 +1038,11 @@ enum IndexDatabaseExporter {
 
     /// Removes the reader's own writing from an already-copied database.
     ///
-    /// The order is the whole correctness argument: null the columns, drop the tag names, reclaim
-    /// the freed pages, and only then rebuild both external-content indexes against the rowids
-    /// `VACUUM` may have renumbered. The statements are FRUSCoreKit's `ResearchDatabaseStrip.steps`,
-    /// in that order, so a host outside the app strips an export with this sequence.
+    /// The order is the whole correctness argument: have SQLite write zeros over whatever it frees,
+    /// null the columns, drop the tag names, empty your-content index, reclaim the freed pages, and
+    /// only then rebuild both external-content indexes against the rowids `VACUUM` may have
+    /// renumbered. The statements are FRUSCoreKit's `ResearchDatabaseStrip.steps`, in that order and
+    /// all on `db`, so a host outside the app strips an export with this sequence.
     private static func strip(_ db: OpaquePointer) throws {
         for step in ResearchDatabaseStrip.steps {
             try exec(db, step: step.action, sql: step.sql)
