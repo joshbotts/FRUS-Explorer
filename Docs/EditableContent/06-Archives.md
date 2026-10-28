@@ -1347,7 +1347,7 @@ NARA did not accession this lot as a single series, so no one record is the answ
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/LotClaimantsIndex.swift | lines: 143–144 | key: source.explorer.dividedLot.rationale %lld -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/LotClaimantsIndexStore.swift | lines: 64–65 | key: source.explorer.dividedLot.rationale %lld -->
 
 NARA divided this lot file across %lld series. Each series lists the lot among its own control numbers, so each holds part of the records this citation names. The citation alone does not say which one. Consult with NARA archivist staff for further assistance.
 

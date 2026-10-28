@@ -61,12 +61,11 @@ extension CollectionPreset {
 extension CollectionBodyDepth {
 
     /// The body depths a user can choose given the device / AI configuration.
-    /// `.summaryOnly` is gated on Apple Intelligence being available.
+    /// `.summaryOnly` is gated on Apple Intelligence being available, which is passed to
+    /// FRUSCoreKit's rule (`available(summariesAvailable:)`, FRUS Explorer Light's S18b).
     @MainActor
     static var available: [CollectionBodyDepth] {
-        AppleIntelligenceProvider.shared.isAvailable
-            ? allCases
-            : allCases.filter { $0 != .summaryOnly }
+        available(summariesAvailable: AppleIntelligenceProvider.shared.isAvailable)
     }
 }
 
@@ -82,18 +81,13 @@ extension CollectionExportOptions {
     /// `resolutionOptions(for:)`. The sheet's copy had grown a format test on the word cloud that
     /// the resolver's never had, which is how the Word export lost its cloud (#1585).
     ///
+    /// Since FRUS Explorer Light's S18b it is FRUSCoreKit's `init(composing:)` over the collection's
+    /// values, which the content assembly reads: one rule for the sheet, the resolver and a host outside
+    /// the app. It reads the same eight fields, the footnote pair as the model's effective accessors do.
+    ///
     /// - Parameter collection: The collection being exported.
     init(composing collection: Collection) {
-        self.init(
-            tocStyle:          CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
-            includeFootnotes:  collection.effectiveIncludeFootnotes,
-            includeSourceNote: collection.effectiveIncludeSourceNote,
-            applyHighlights:   collection.applyHighlights,
-            includeNotes:      collection.includeNotes,
-            summaryPromptId:   collection.summaryPromptId,
-            includeWordCloud:  collection.includeWordCloud,
-            includeHeadnoteDefault: collection.defaultIncludeHeadnote
-        )
+        self.init(composing: CollectionExport(collection, entries: []))
     }
 }
 

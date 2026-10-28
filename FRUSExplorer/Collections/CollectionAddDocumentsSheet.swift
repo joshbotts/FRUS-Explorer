@@ -70,6 +70,8 @@ struct CollectionDocumentPick: Identifiable, Hashable, Sendable {
 ///   1.1 — #1416: both appends take their position from `CollectionEntryOrdering.nextSortOrder`;
 ///          `appendEntries` took the outline's count, which the picker's append could already hold
 ///   1.2 — #1619: `appendEntries` writes nothing to a smart collection, and says whether it wrote
+///   1.3 — 2026-10-27 (FRUS Explorer Light, S18b): `tagDocumentRefs` reads FRUSCoreKit's union over values,
+///          `CollectionGeneratedBlocks.tagDocumentRefs`, which the Thematic Index reads in the kit
 enum CollectionDocumentDiscovery {
 
     /// The canonical `"volumeId/documentId"` key used across the collection editors.
@@ -80,28 +82,18 @@ enum CollectionDocumentDiscovery {
     /// Gathers every document carrying `tagId`, from BOTH annotation types — research
     /// notes tagged with it (`ResearchNote.userTagIds`) and direct document tag
     /// assignments (`DocumentTagAssignment`) — deduplicated, note-derived documents
-    /// first, each source in its own stable order.
+    /// first, each source in its own stable order: FRUSCoreKit's union
+    /// (`CollectionGeneratedBlocks.tagDocumentRefs`), which the Thematic Index reads.
     @MainActor
     static func tagDocumentRefs(
         tagId: UUID,
         notes: [ResearchNote],
         assignments: [DocumentTagAssignment]
     ) -> [(documentId: String, volumeId: String)] {
-        var seen: Set<String> = []
-        var refs: [(documentId: String, volumeId: String)] = []
-        for note in notes where note.userTagIds.contains(tagId) {
-            let key = documentKey(volumeId: note.volumeId, documentId: note.documentId)
-            if seen.insert(key).inserted {
-                refs.append((documentId: note.documentId, volumeId: note.volumeId))
-            }
-        }
-        for assignment in assignments where assignment.tagId == tagId {
-            let key = documentKey(volumeId: assignment.volumeId, documentId: assignment.documentId)
-            if seen.insert(key).inserted {
-                refs.append((documentId: assignment.documentId, volumeId: assignment.volumeId))
-            }
-        }
-        return refs
+        CollectionGeneratedBlocks.tagDocumentRefs(
+            tagId: tagId,
+            noteTags: notes.map { (volumeId: $0.volumeId, documentId: $0.documentId, tagIds: $0.userTagIds) },
+            assignments: assignments.map { (volumeId: $0.volumeId, documentId: $0.documentId, tagId: $0.tagId) })
     }
 
     /// Returns the document keys that appear on MORE than one document entry — the

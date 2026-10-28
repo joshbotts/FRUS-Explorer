@@ -7,21 +7,6 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
-import SwiftData
-import UniformTypeIdentifiers
-
-// MARK: - UTType.fruscollection
-
-extension UTType {
-    /// The exported `.fruscollection` document type, matching the
-    /// `UTExportedTypeDeclarations` entry in both platforms' Info.plists (Phase 4, D6/D9
-    /// OS file-association work). Used by the in-app import `fileImporter`s so the open
-    /// panel only offers native collection files rather than any `.data` file
-    /// (Authoring Phase 1 housekeeping).
-    static var fruscollection: UTType {
-        UTType(exportedAs: "bottsywattsy.FRUS-Explorer.fruscollection")
-    }
-}
 
 // MARK: - FRUSCollectionFile
 
@@ -86,15 +71,17 @@ extension UTType {
 ///          the key when empty (byte-identical to pre-M3), a non-empty value forces v2
 ///          (`usesV2Features`), and a reader ignoring it degrades to the derived title —
 ///          floor stays 1
-struct FRUSCollectionFile: Codable, Sendable, Equatable {
+///   2.6 — 2026-10-27 (FRUS Explorer Light, S18b): moved into FRUSCoreKit, public with its initialisers, so a
+///          host outside the app reads and writes the same files; no schema or format change
+public struct FRUSCollectionFile: Codable, Sendable, Equatable {
 
     /// Format discriminator; always `NativeCollectionSerializer.formatIdentifier`. Checked on
     /// decode so an unrelated JSON file is rejected rather than silently imported as empty.
-    var format: String
+    public var format: String
     /// Monotonic schema version — what the *writer* understood. Readers gate on
     /// `minimumReaderVersion` (falling back to this when absent), so a v2-aware reader
     /// accepts any newer file whose features are merely degradable (tolerant-reader rule).
-    var formatVersion: Int
+    public var formatVersion: Int
     /// The oldest reader version that can open this file without corrupting meaning.
     /// Carried by v2+ files. When absent the gate falls back to **`formatVersion`**, not to 1 —
     /// so a `formatVersion 3` file with no floor is *rejected* by a v2 reader, while the same
@@ -104,31 +91,53 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
     /// Writers raise it
     /// only when *ignoring* a field would corrupt meaning, never for degradable features
     /// (ignored `level` → flat headings and ignored front matter are degraded, not raised).
-    var minimumReaderVersion: Int?
+    public var minimumReaderVersion: Int?
     /// The collection title.
-    var name: String
+    public var name: String
     /// The optional collection-level note/description (the one-line title-page description).
-    var note: String?
+    public var note: String?
     /// Optional title-page subtitle (v2 front matter; absent in write-minimum files).
-    var subtitle: String?
+    public var subtitle: String?
     /// Optional title-page author/byline (v2 front matter; absent in write-minimum files).
-    var authorLine: String?
+    public var authorLine: String?
     /// Optional introduction, plain-text projection (v2 front matter).
-    var introductionText: String?
+    public var introductionText: String?
     /// Optional introduction rich text, RTF `Data` (base64 in JSON; v2 front matter).
-    var introductionRichText: Data?
+    public var introductionRichText: Data?
     /// Whether exports append a colophon. Emitted only when `true`; `nil` means `false`.
-    var includeColophon: Bool?
+    public var includeColophon: Bool?
     /// Whether exports stamp the active project's provenance on the title page (#377 Phase 4).
     /// Emitted only when `true`; `nil` means `false`.
-    var includeProjectProvenance: Bool?
+    public var includeProjectProvenance: Bool?
     /// Whether exports append the M-2 method appendix — the project's query log. Emitted only
     /// when `true`; `nil` means `false`, so a file written before M-2 round-trips to "off".
-    var includeMethodAppendix: Bool?
+    public var includeMethodAppendix: Bool?
     /// The persisted composition settings (what an export of this collection contains).
-    var composition: Composition
+    public var composition: Composition
     /// The ordered structural entries. Array order *is* the collection order.
-    var entries: [Entry]
+    public var entries: [Entry]
+
+    /// Creates a file; every optional key defaults to absent, as a write-minimum file leaves it.
+    public init(format: String, formatVersion: Int, minimumReaderVersion: Int? = nil, name: String,
+                note: String? = nil, subtitle: String? = nil, authorLine: String? = nil,
+                introductionText: String? = nil, introductionRichText: Data? = nil,
+                includeColophon: Bool? = nil, includeProjectProvenance: Bool? = nil,
+                includeMethodAppendix: Bool? = nil, composition: Composition, entries: [Entry]) {
+        self.format = format
+        self.formatVersion = formatVersion
+        self.minimumReaderVersion = minimumReaderVersion
+        self.name = name
+        self.note = note
+        self.subtitle = subtitle
+        self.authorLine = authorLine
+        self.introductionText = introductionText
+        self.introductionRichText = introductionRichText
+        self.includeColophon = includeColophon
+        self.includeProjectProvenance = includeProjectProvenance
+        self.includeMethodAppendix = includeMethodAppendix
+        self.composition = composition
+        self.entries = entries
+    }
 
     // MARK: - Composition
 
@@ -136,31 +145,46 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
     /// `Collection` composition fields). Enum-backed values are raw strings, matching the model.
     /// Device-local `summaryPromptId` is intentionally omitted — a `.summaryOnly` collection
     /// regenerates summaries with the recipient's own prompt.
-    struct Composition: Codable, Sendable, Equatable {
+    public struct Composition: Codable, Sendable, Equatable {
         /// `CollectionBodyDepth` raw value (`"full"` / `"summaryOnly"` / `"index"`).
-        var defaultBodyDepth: String
+        public var defaultBodyDepth: String
         /// `CollectionFootnoteStyle` raw value (`"none"` / `"sourceNoteOnly"` / `"all"`).
         /// Legacy tri-state, always written — v1 readers and untouched collections keep
         /// composing from it; the Phase 5 Bool pair below supersedes it when present.
-        var footnoteStyle: String
+        public var footnoteStyle: String
         /// Phase 5 footnote pair: whether footnotes render (v2 optional key; `nil` in
         /// write-minimum files and files from pre-Phase-5 writers = derive from
         /// `footnoteStyle`).
-        var includeFootnotes: Bool?
+        public var includeFootnotes: Bool?
         /// Phase 5 footnote pair: whether the archival source note renders (v2 optional
         /// key; `nil` = derive from `footnoteStyle`).
-        var includeSourceNote: Bool?
+        public var includeSourceNote: Bool?
         /// `CollectionToCStyle` raw value (`"citation"` / `"headerAndDateline"`).
-        var tocStyle: String
+        public var tocStyle: String
         /// Whether user highlights annotate exported bodies.
-        var applyHighlights: Bool
+        public var applyHighlights: Bool
         /// Whether attached research notes appear in exports.
-        var includeNotes: Bool
+        public var includeNotes: Bool
         /// Whether a word-cloud overview is prepended to PDF, HTML and Word exports.
-        var includeWordCloud: Bool
+        public var includeWordCloud: Bool
         /// The collection-level headnote default (Composer redesign; v2 optional key). `nil` (its
         /// default `false`) is omitted so collections without a headnote default stay byte-identical.
-        var defaultIncludeHeadnote: Bool?
+        public var defaultIncludeHeadnote: Bool?
+
+        /// Creates a composition block; the Phase 5 pair and the headnote default default to absent.
+        public init(defaultBodyDepth: String, footnoteStyle: String, includeFootnotes: Bool? = nil,
+                    includeSourceNote: Bool? = nil, tocStyle: String, applyHighlights: Bool,
+                    includeNotes: Bool, includeWordCloud: Bool, defaultIncludeHeadnote: Bool? = nil) {
+            self.defaultBodyDepth = defaultBodyDepth
+            self.footnoteStyle = footnoteStyle
+            self.includeFootnotes = includeFootnotes
+            self.includeSourceNote = includeSourceNote
+            self.tocStyle = tocStyle
+            self.applyHighlights = applyHighlights
+            self.includeNotes = includeNotes
+            self.includeWordCloud = includeWordCloud
+            self.defaultIncludeHeadnote = defaultIncludeHeadnote
+        }
     }
 
     // MARK: - Entry
@@ -171,96 +195,130 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
     /// `prose` uses `text` and optional `richText` (RTF); `excerpt` uses `text` (the
     /// frozen passage) + `documentId`/`volumeId` (provenance) + the `excerpt*` anchors;
     /// `generated` uses only `generatedBlockType`.
-    struct Entry: Codable, Sendable, Equatable {
+    public struct Entry: Codable, Sendable, Equatable {
         /// `CollectionEntryKind` raw value (`"document"` / `"heading"` / `"prose"` /
         /// `"excerpt"` / `"generated"`).
-        var kind: String
+        public var kind: String
         /// FRUS document id (document entries only).
-        var documentId: String?
+        public var documentId: String?
         /// FRUS volume id (document entries only).
-        var volumeId: String?
+        public var volumeId: String?
         /// `CollectionBodyDepth` raw value overriding the collection default — per-document
         /// (document entries) or per-section (heading entries). `nil` = use the default.
-        var bodyDepthOverride: String?
+        public var bodyDepthOverride: String?
         /// Per-document title override (M3, D4; document entries only; v2 optional key).
         /// Plain text replacing the derived ToC label + export heading. **This is portable
         /// content** — unlike `selectedHighlightIds`/`selectedNoteIds` it carries no
         /// device-local UUIDs, so it travels with the file. Emitted only when non-empty; a
         /// non-empty value makes the file `formatVersion 2` (`usesV2Features`). A v1 reader
         /// ignoring the key degrades to the derived title (no `minimumReaderVersion` bump).
-        var titleOverride: String?
+        public var titleOverride: String?
         /// Heading nesting level (heading entries only; v2). `nil` = 1. Written as the
         /// outline-resolved level, so files never carry orphan jumps; readers clamp
         /// defensively anyway. Absent from write-minimum files (all headings level 1).
-        var level: Int?
+        public var level: Int?
         /// Section title (heading) or plain-text body (prose).
-        var text: String?
+        public var text: String?
         /// RTF rich-text prose body (prose entries only); base64 in JSON.
-        var richText: Data?
+        public var richText: Data?
         /// Whether this document entry renders a headnote (Phase 5; v2 optional key).
         /// Emitted only when `true`; `nil`/absent = `false`.
-        var includeHeadnote: Bool?
+        public var includeHeadnote: Bool?
         /// The chosen `GeneratedSummary.id` for the headnote (Phase 5; v2 optional key).
         /// Summary ids are meaningful across the author's own CloudKit-synced devices;
         /// on another user's device the id simply won't resolve and the resolver falls
         /// back to any stored summary (or the placeholder).
-        var headnoteSummaryId: UUID?
+        public var headnoteSummaryId: UUID?
         /// Excerpt anchor: UTF-16 start offset in the source document's flat
         /// text (excerpt entries only; v2 optional key). Anchors travel so precision
         /// rendering (A9) stays possible on the recipient's device; the frozen `text`
         /// remains the rendering source of truth. **Never a highlight UUID.**
-        var excerptStart: Int?
+        public var excerptStart: Int?
         /// Excerpt anchor: UTF-16 end offset (exclusive) — see `excerptStart`.
-        var excerptEnd: Int?
+        public var excerptEnd: Int?
         /// Excerpt anchor: the source document's `renderingVersion` at excerpt creation
         /// (excerpt entries only; v2 optional key).
-        var excerptRenderingVersion: String?
+        public var excerptRenderingVersion: String?
         /// The source highlight's colour raw value (`"yellow"`/`"green"`/`"blue"`/
         /// `"pink"`; excerpt entries only; v2 optional key) — the quote's accent colour.
-        var excerptColorTag: String?
+        public var excerptColorTag: String?
         /// Per-entry highlight override (Phase 5 overrides; v2 optional key; document
         /// and heading entries — a heading's is its section default). `nil` = inherit.
-        var applyHighlightsOverride: Bool?
+        public var applyHighlightsOverride: Bool?
         /// Per-entry research-notes override (Phase 5 overrides; v2 optional key).
-        var includeNotesOverride: Bool?
+        public var includeNotesOverride: Bool?
         /// Per-entry source-note override (Phase 5 overrides; v2 optional key).
-        var includeSourceNoteOverride: Bool?
+        public var includeSourceNoteOverride: Bool?
         /// Per-entry footnote override (Phase 5 overrides; v2 optional key).
-        var includeFootnotesOverride: Bool?
+        public var includeFootnotesOverride: Bool?
         /// Per-entry summary-prompt override (Phase 5 overrides; v2 optional key).
         /// Like `headnoteSummaryId`, prompt ids are meaningful across the author's own
         /// CloudKit-synced devices; on another user's device the id simply won't
         /// resolve and the collection-level prompt behavior applies.
-        var summaryPromptIdOverride: UUID?
+        public var summaryPromptIdOverride: UUID?
         /// Per-entry related-documents opt-in (A10; v2 optional key). `nil` = inherit
         /// (ultimately off). NOTE: `selectedHighlightIds` has **no** key here by design
         /// — device-local highlight UUIDs never serialize (see the 2.3 version note).
-        var includeRelatedDocuments: Bool?
+        public var includeRelatedDocuments: Bool?
         /// The apparatus block type raw value (generated entries only; v2 optional key,
         /// Phase 6). The block's rows are **never** serialized — they re-resolve from
         /// the recipient's data. An unknown raw value imports as an inert generated
         /// entry (see the 2.4 version note).
-        var generatedBlockType: String?
+        public var generatedBlockType: String?
         /// Inline research-note texts for this document (opt-in — populated only when the
         /// exporter's "include my research notes" toggle is on). `nil`/absent otherwise.
         /// These are the *resolved* note texts the entry's `selectedNoteIds` filter chose
         /// (empty = all of the document's notes, D5); the device-local `selectedNoteIds`
         /// ids themselves are **never** serialized — like `selectedHighlightIds` they
         /// reference records the recipient lacks (see the 2.7 version note).
-        var notes: [String]?
+        public var notes: [String]?
+
+        /// Creates an entry; every key but `kind` defaults to absent.
+        public init(kind: String, documentId: String? = nil, volumeId: String? = nil,
+                    bodyDepthOverride: String? = nil, titleOverride: String? = nil, level: Int? = nil,
+                    text: String? = nil, richText: Data? = nil, includeHeadnote: Bool? = nil,
+                    headnoteSummaryId: UUID? = nil, excerptStart: Int? = nil, excerptEnd: Int? = nil,
+                    excerptRenderingVersion: String? = nil, excerptColorTag: String? = nil,
+                    applyHighlightsOverride: Bool? = nil, includeNotesOverride: Bool? = nil,
+                    includeSourceNoteOverride: Bool? = nil, includeFootnotesOverride: Bool? = nil,
+                    summaryPromptIdOverride: UUID? = nil, includeRelatedDocuments: Bool? = nil,
+                    generatedBlockType: String? = nil, notes: [String]? = nil) {
+            self.kind = kind
+            self.documentId = documentId
+            self.volumeId = volumeId
+            self.bodyDepthOverride = bodyDepthOverride
+            self.titleOverride = titleOverride
+            self.level = level
+            self.text = text
+            self.richText = richText
+            self.includeHeadnote = includeHeadnote
+            self.headnoteSummaryId = headnoteSummaryId
+            self.excerptStart = excerptStart
+            self.excerptEnd = excerptEnd
+            self.excerptRenderingVersion = excerptRenderingVersion
+            self.excerptColorTag = excerptColorTag
+            self.applyHighlightsOverride = applyHighlightsOverride
+            self.includeNotesOverride = includeNotesOverride
+            self.includeSourceNoteOverride = includeSourceNoteOverride
+            self.includeFootnotesOverride = includeFootnotesOverride
+            self.summaryPromptIdOverride = summaryPromptIdOverride
+            self.includeRelatedDocuments = includeRelatedDocuments
+            self.generatedBlockType = generatedBlockType
+            self.notes = notes
+        }
     }
 }
 
 // MARK: - NativeCollectionError
 
 /// Errors surfaced when decoding or importing a `.fruscollection` file.
-enum NativeCollectionError: Error, LocalizedError {
+public enum NativeCollectionError: Error, LocalizedError {
     /// The file is valid JSON but not a FRUS collection file (wrong `format`).
     case notACollectionFile
     /// The file's `formatVersion` is newer than this app understands.
     case unsupportedVersion(Int)
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .notACollectionFile:
             return String(localized: "collection.import.error.notACollection",
@@ -337,21 +395,28 @@ enum NativeCollectionError: Error, LocalizedError {
 ///   1.10 — #1497: `apply` trims the name it imports; #1498: a file name too long for the file system
 ///          is cut; and `indexImportedNotes`, which all three import paths call, puts an import's notes
 ///          into the search index at once (the 2026-09-28 audit). No schema or format change
-enum NativeCollectionSerializer {
+///   1.11 — 2026-10-27 (FRUS Explorer Light, S18b): the writer and the importer work on values in FRUSCoreKit —
+///          `makeFile(from:includeNotes:resolveNoteTexts:)` over a `CollectionExport`, `importedValues(from:)` into a
+///          `NativeCollectionImport` — with `encode` and `decode`, so a host outside the app reads and writes the same
+///          files. What reads or writes SwiftData, the file system or the index stays in the app
+///          (`NativeCollectionFormat+App.swift`): `makeFile(from:)` over a `Collection`, which heals a legacy prose
+///          blob first, `apply(_:into:)`, which inserts the values, `importCollection(from:into:)`,
+///          `writeTemporaryFile(_:)` and `indexImportedNotes`, with `UTType.fruscollection`. No schema or format change
+public enum NativeCollectionSerializer {
 
     /// The `FRUSCollectionFile.format` discriminator.
-    static let formatIdentifier = "fruscollection"
+    public static let formatIdentifier = "fruscollection"
     /// The newest schema version this build understands. `makeFile` emits the *minimum*
     /// version the content needs (v1 when no v2 feature is used), never this constant
     /// unconditionally.
-    static let currentVersion = 2
+    public static let currentVersion = 2
     /// The file extension for exported collection files.
-    static let fileExtension = "fruscollection"
+    public static let fileExtension = "fruscollection"
 
     // MARK: - Encode / Decode
 
     /// Encodes a file DTO to pretty-printed, key-sorted JSON `Data` (stable and diff-friendly).
-    static func encode(_ file: FRUSCollectionFile) throws -> Data {
+    public static func encode(_ file: FRUSCollectionFile) throws -> Data {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         return try encoder.encode(file)
@@ -361,12 +426,12 @@ enum NativeCollectionSerializer {
     /// the gate is `minimumReaderVersion` (defaulted 1 when absent, i.e. every v1 file),
     /// **not** `formatVersion` — a newer file whose features merely degrade here (e.g. a
     /// v3 writer that kept `minimumReaderVersion: 1`) still opens; unknown JSON keys are
-    /// ignored by decoding and unknown entry kinds are skipped-with-warning by `apply`.
+    /// ignored by decoding and unknown entry kinds are skipped-with-warning on import.
     ///
     /// - Throws: `NativeCollectionError.notACollectionFile` if `format` doesn't match, or
     ///   `.unsupportedVersion` if the file *requires* a newer reader than this build; a
     ///   `DecodingError` if the data isn't the expected JSON shape.
-    static func decode(_ data: Data) throws -> FRUSCollectionFile {
+    public static func decode(_ data: Data) throws -> FRUSCollectionFile {
         let file = try JSONDecoder().decode(FRUSCollectionFile.self, from: data)
         guard file.format == formatIdentifier else {
             throw NativeCollectionError.notACollectionFile
@@ -378,25 +443,9 @@ enum NativeCollectionSerializer {
         return file
     }
 
-    // MARK: - Write to a temporary file
+    // MARK: - Build the DTO from a collection's values
 
-    /// Encodes `file` and writes it to a temporary `.fruscollection` file named after the collection, returning its
-    /// URL — the export sheet's native path.
-    ///
-    /// The file is named the way every rendered export is (`CollectionExportNaming`, #1463): a collection with no name
-    /// writes `Untitled Collection.fruscollection`, where this path used to fall back to `collection.fruscollection`,
-    /// and a name opening with a dot no longer hides the file. The file's own `name` is left as it was saved, so an
-    /// import restores the collection as it was.
-    static func writeTemporaryFile(_ file: FRUSCollectionFile) throws -> URL {
-        let data = try encode(file)
-        let url = CollectionExportNaming.temporaryFileURL(savedName: file.name, suffix: "." + fileExtension)
-        try data.write(to: url, options: .atomic)
-        return url
-    }
-
-    // MARK: - Build the DTO from a live Collection
-
-    /// Builds the portable file DTO from a live `Collection`, **writing the minimum
+    /// Builds the portable file DTO from a collection's values, **writing the minimum
     /// version the content needs**: when the collection uses no v2 feature (no front
     /// matter, no colophon, every heading at level 1), the DTO is `formatVersion: 1`
     /// with no v2 keys — byte-identical to a pre-Phase-4 file, so already-fielded
@@ -407,37 +456,48 @@ enum NativeCollectionSerializer {
     /// Heading levels are emitted as `CollectionOutline`-resolved depths (single-
     /// linearizer discipline), so files never carry clamp violations or orphan jumps.
     ///
+    /// A field the values leave out (a research data export before format version 7) is written at
+    /// the model's default. A prose entry's `richText` is written as given: the file schema promises
+    /// RTF, so a host heals a legacy Phase 3b blob before it builds the values (the app's
+    /// `makeFile(from:includeNotes:resolveNoteTexts:)` over a `Collection` does).
+    ///
     /// - Parameters:
-    ///   - collection: The collection to serialize. Its entries are emitted in `sortOrder`.
+    ///   - collection: The collection's values, `entries` every one of its entries; they are emitted
+    ///     in `sortOrder`.
     ///   - includeNotes: When `true`, each document entry carries the inline note texts from
     ///     `resolveNoteTexts`; when `false` (the D9a default), notes are omitted entirely.
     ///   - resolveNoteTexts: Supplies the research-note bodies for a document entry (the caller
     ///     resolves `selectedNoteIds`/`researchNoteId` against its store). Only invoked when
-    ///     `includeNotes` is `true`.
-    static func makeFile(
-        from collection: Collection,
+    ///     `includeNotes` is `true`, once for each document entry, in order.
+    public static func makeFile(
+        from collection: CollectionExport,
         includeNotes: Bool,
-        resolveNoteTexts: (CollectionEntry) -> [String]
+        resolveNoteTexts: (CollectionEntryExport) -> [String]
     ) -> FRUSCollectionFile {
         let composition = FRUSCollectionFile.Composition(
-            defaultBodyDepth: collection.defaultBodyDepth,
-            footnoteStyle: collection.footnoteStyle,
+            defaultBodyDepth: collection.defaultBodyDepth ?? CollectionBodyDepth.full.rawValue,
+            footnoteStyle: collection.footnoteStyle ?? CollectionFootnoteStyle.all.rawValue,
             // Phase 5 pair: carried verbatim — a nil pair stays nil so untouched
             // collections keep emitting the byte-identical legacy composition block.
             includeFootnotes: collection.includeFootnotes,
             includeSourceNote: collection.includeSourceNote,
-            tocStyle: collection.tocStyle,
-            applyHighlights: collection.applyHighlights,
-            includeNotes: collection.includeNotes,
-            includeWordCloud: collection.includeWordCloud,
+            tocStyle: collection.tocStyle ?? CollectionToCStyle.citation.rawValue,
+            applyHighlights: collection.applyHighlights ?? false,
+            includeNotes: collection.includeNotes ?? true,
+            includeWordCloud: collection.includeWordCloud ?? false,
             // Only a set (true) headnote default serializes; false omits, keeping byte-compat.
-            defaultIncludeHeadnote: collection.defaultIncludeHeadnote ? true : nil
+            defaultIncludeHeadnote: collection.defaultIncludeHeadnote == true ? true : nil
         )
 
-        let entries: [FRUSCollectionFile.Entry] = CollectionOutline
-            .linearize(collection.documentEntries ?? [])
-            .compactMap { item in
-                let entry = item.entry
+        // The outline's linearization over values: entries in `sortOrder`, each heading at its
+        // resolved depth (`CollectionOutline.resolvedDepths`).
+        let sorted = collection.entries.sorted { $0.sortOrder < $1.sortOrder }
+        let depths = CollectionOutline.resolvedDepths(sorted.map {
+            CollectionOutline.StructuralRef(isHeading: $0.entryKind == .heading, level: $0.level ?? 1,
+                                            bodyDepthOverride: $0.bodyDepthOverride)
+        })
+        let entries: [FRUSCollectionFile.Entry] = zip(sorted, depths)
+            .compactMap { entry, depth in
                 switch entry.entryKind {
                 case .document:
                     let notes = includeNotes
@@ -478,7 +538,7 @@ enum NativeCollectionSerializer {
                         bodyDepthOverride: entry.bodyDepthOverride,
                         // The outline-resolved level; the default (1) is omitted so a
                         // flat collection's entries carry no v2 key at all.
-                        level: item.depth == 1 ? nil : item.depth,
+                        level: depth == 1 ? nil : depth,
                         text: entry.text,
                         richText: nil,
                         // Phase 5 override keys — a heading's are its section defaults.
@@ -491,10 +551,8 @@ enum NativeCollectionSerializer {
                         notes: nil
                     )
                 case .prose:
-                    // The file schema promises RTF, but a pre-RTF (Phase 3b) entry still
-                    // holds a JSON-encoded AttributedString — heal it before emitting so
-                    // shared files never propagate the legacy encoding.
-                    ProseRichText.migrateLegacyJSONIfNeeded(entry)
+                    // The file schema promises RTF; the host healed a pre-RTF (Phase 3b) blob
+                    // before it built the values, so shared files never propagate the legacy encoding.
                     return FRUSCollectionFile.Entry(
                         kind: CollectionEntryKind.prose.rawValue,
                         documentId: nil,
@@ -558,9 +616,9 @@ enum NativeCollectionSerializer {
             || authorLine != nil
             || introductionText != nil
             || introductionRichText != nil
-            || collection.includeColophon
-            || collection.includeProjectProvenance
-            || collection.includeMethodAppendix
+            || collection.includeColophon == true
+            || collection.includeProjectProvenance == true
+            || collection.includeMethodAppendix == true
             || entries.contains { $0.level != nil }
             || composition.includeFootnotes != nil
             || composition.includeSourceNote != nil
@@ -605,184 +663,154 @@ enum NativeCollectionSerializer {
             authorLine: authorLine,
             introductionText: introductionText,
             introductionRichText: introductionRichText,
-            includeColophon: collection.includeColophon ? true : nil,
-            includeProjectProvenance: collection.includeProjectProvenance ? true : nil,
-            includeMethodAppendix: collection.includeMethodAppendix ? true : nil,
+            includeColophon: collection.includeColophon == true ? true : nil,
+            includeProjectProvenance: collection.includeProjectProvenance == true ? true : nil,
+            includeMethodAppendix: collection.includeMethodAppendix == true ? true : nil,
             composition: composition,
             entries: entries
         )
     }
 
-    // MARK: - Apply the DTO into a context (import)
+    // MARK: - Read the DTO into values (import)
 
-    /// Reconstructs a new `Collection` (plus its entries and any inline notes) from a decoded
-    /// file, inserting everything into `context`.
+    /// The values a decoded file imports as: a new collection, its entries and any inline notes, for a
+    /// host to insert (the app's `apply(_:into:)`).
     ///
-    /// The imported collection gets fresh identity: new `id`/timestamps, no `projectIds`
-    /// (device-local), and entry order normalized to `0..<n`. Inline notes are recreated as new
-    /// `ResearchNote` records in the recipient's store and linked via `selectedNoteIds`.
+    /// The imported collection gets fresh identity: new ids from `makeId` (the collection's, then for
+    /// each entry its notes' and its own, in file order), no timestamps (the host stamps them), no
+    /// `projectIds` (device-local), no saved search or summary prompt, and entry order normalized to
+    /// the file's positions. Inline notes are recreated as new research notes and linked via
+    /// `selectedNoteIds`.
     ///
-    /// - Returns: The newly inserted `Collection` (the caller saves the context).
-    @discardableResult
-    static func apply(_ file: FRUSCollectionFile, into context: ModelContext) -> Collection {
-        // Trimmed, as both editors save a name (#1497): a file names its collection as it was, and a name of
-        // spaces, or one padded with them, came in verbatim.
-        let collection = Collection(name: file.name.trimmingCharacters(in: .whitespacesAndNewlines),
-                                    note: file.note)
-        collection.defaultBodyDepth = file.composition.defaultBodyDepth
-        collection.footnoteStyle = file.composition.footnoteStyle
-        // Phase 5 pair (absent in v1 / pre-Phase-5 files → nil, i.e. derive from the
-        // legacy footnoteStyle just applied above).
-        collection.includeFootnotes = file.composition.includeFootnotes
-        collection.includeSourceNote = file.composition.includeSourceNote
-        collection.tocStyle = file.composition.tocStyle
-        collection.applyHighlights = file.composition.applyHighlights
-        collection.includeNotes = file.composition.includeNotes
-        collection.includeWordCloud = file.composition.includeWordCloud
-        // Absent (older files / no headnote default) → false, unchanged behavior.
-        collection.defaultIncludeHeadnote = file.composition.defaultIncludeHeadnote ?? false
-        // v2 front matter (all absent in v1 files → the model defaults, i.e. today's behavior).
-        collection.subtitle = file.subtitle
-        collection.authorLine = file.authorLine
-        collection.introductionText = file.introductionText
-        collection.introductionRichText = file.introductionRichText
-        collection.includeColophon = file.includeColophon ?? false
-        collection.includeProjectProvenance = file.includeProjectProvenance ?? false
-        collection.includeMethodAppendix = file.includeMethodAppendix ?? false
-        context.insert(collection)
-
+    /// Skip-with-warning, never misdecode: an entry kind this build doesn't know (a file from a newer
+    /// app version) is omitted rather than imported as a junk document entry (Authoring Phase 1
+    /// guard), and `sortOrder` keeps the file's position, so relative order of the imported entries
+    /// is preserved.
+    ///
+    /// - Parameters:
+    ///   - file: The decoded file (`decode(_:)`).
+    ///   - makeId: Makes each new id; a random one by default.
+    public static func importedValues(from file: FRUSCollectionFile,
+                                      makeId: () -> UUID = { UUID() }) -> NativeCollectionImport {
+        let collectionId = makeId()
+        var entries: [CollectionEntryExport] = []
+        var notes: [ResearchNoteExport] = []
         for (index, dto) in file.entries.enumerated() {
-            // Skip-with-warning, never misdecode: an entry kind this build doesn't know
-            // (a file from a newer app version) is omitted rather than imported as a
-            // junk document entry (Authoring Phase 1 guard). `sortOrder` keeps the
-            // enumeration index, so relative order of the imported entries is preserved.
             guard let kind = CollectionEntryKind(rawValue: dto.kind), kind != .unrecognized else {
                 #if DEBUG
                 print("[NativeCollectionSerializer] Skipping entry with unrecognized kind '\(dto.kind)'")
                 #endif
                 continue
             }
-            let entry = CollectionEntry(
-                collectionId: collection.id,
+            var noteIds: [UUID] = []
+            if kind == .document, let noteTexts = dto.notes {
+                for body in noteTexts where !body.isEmpty {
+                    let note = ResearchNoteExport(
+                        id: makeId(), documentId: dto.documentId ?? "", volumeId: dto.volumeId ?? "",
+                        bodyText: body, projectIds: [], userTagIds: [], selectedSummaryIds: [],
+                        linkedHighlightIds: [])
+                    notes.append(note)
+                    noteIds.append(note.id)
+                }
+            }
+            let isDocument = kind == .document
+            // Phase 5 override keys travel on document and heading entries (a heading's are its
+            // section defaults); absent → nil, i.e. inherit. selectedHighlightIds has no file key:
+            // the imported entry keeps the empty set, which means "all of the recipient's highlights"
+            // when highlights apply.
+            let takesOverrides = kind == .document || kind == .heading
+            entries.append(CollectionEntryExport(
+                id: makeId(),
                 documentId: dto.documentId ?? "",
                 volumeId: dto.volumeId ?? "",
-                sortOrder: index
-            )
-            entry.entryKind = kind
-            entry.bodyDepthOverride = dto.bodyDepthOverride
-            entry.text = dto.text
-            entry.richText = dto.richText
-            if kind == .document {
-                // Phase 5 headnote keys (absent in older files → nil = Default, which resolves to
-                // the collection default — false for imported collections, so unchanged behavior).
-                entry.includeHeadnote = dto.includeHeadnote
-                entry.headnoteSummaryId = dto.headnoteSummaryId
-                // M3 title override (absent in pre-M3 files → nil → derived title).
-                entry.titleOverride = dto.titleOverride
-            }
-            if kind == .document || kind == .heading {
-                // Phase 5 override keys (absent → nil, i.e. inherit — the model
-                // defaults). A heading's are its section defaults. selectedHighlightIds
-                // has no file key: the imported entry keeps the default empty set,
-                // which means "all of the recipient's highlights" when highlights apply.
-                entry.applyHighlightsOverride = dto.applyHighlightsOverride
-                entry.includeNotesOverride = dto.includeNotesOverride
-                entry.includeSourceNoteOverride = dto.includeSourceNoteOverride
-                entry.includeFootnotesOverride = dto.includeFootnotesOverride
-                entry.summaryPromptIdOverride = dto.summaryPromptIdOverride
-                entry.includeRelatedDocuments = dto.includeRelatedDocuments
-            }
-            if kind == .excerpt {
+                sortOrder: index,
+                selectedNoteIds: noteIds,
+                kind: kind.rawValue,
+                // Defensive clamp on import: a level outside 1...maxLevel (a hand-edited
+                // or future-writer file) degrades to the nearest valid depth, never
+                // corrupts. Non-heading levels are ignored (tolerant reader).
+                level: kind == .heading ? min(max(dto.level ?? 1, 1), CollectionOutline.maxLevel) : 1,
+                text: dto.text,
+                richText: dto.richText,
                 // Phase 5 excerpt anchors (content + provenance travel on the shared
                 // fields above; anchors keep precision rendering possible per A9).
-                entry.excerptStart = dto.excerptStart
-                entry.excerptEnd = dto.excerptEnd
-                entry.excerptRenderingVersion = dto.excerptRenderingVersion
-                entry.excerptColorTag = dto.excerptColorTag
-            }
-            if kind == .generated {
+                excerptStart: kind == .excerpt ? dto.excerptStart : nil,
+                excerptEnd: kind == .excerpt ? dto.excerptEnd : nil,
+                excerptRenderingVersion: kind == .excerpt ? dto.excerptRenderingVersion : nil,
+                excerptColorTag: kind == .excerpt ? dto.excerptColorTag : nil,
                 // Phase 6: the block TYPE reconstructs verbatim — including a raw
                 // value this build doesn't know (a newer writer's vocabulary), which
                 // stays an inert generated entry: placement preserved, skipped at
                 // resolve/render, re-exported intact. Rows never travel; they
                 // re-resolve from the recipient's own data.
-                entry.generatedBlockType = dto.generatedBlockType
-            }
-            if kind == .heading {
-                // Defensive clamp on import: a level outside 1...maxLevel (a hand-edited
-                // or future-writer file) degrades to the nearest valid depth, never
-                // corrupts. Non-heading levels are ignored (tolerant reader).
-                entry.level = min(max(dto.level ?? 1, 1), CollectionOutline.maxLevel)
-            }
-            entry.collection = collection
-
-            if kind == .document, let noteTexts = dto.notes {
-                var noteIds: [UUID] = []
-                for body in noteTexts where !body.isEmpty {
-                    let note = ResearchNote(
-                        documentId: dto.documentId ?? "",
-                        volumeId: dto.volumeId ?? "",
-                        bodyText: body
-                    )
-                    context.insert(note)
-                    noteIds.append(note.id)
-                }
-                entry.selectedNoteIds = noteIds
-            }
-
-            context.insert(entry)
+                generatedBlockType: kind == .generated ? dto.generatedBlockType : nil,
+                // M3 title override (absent in pre-M3 files → nil → derived title).
+                titleOverride: isDocument ? dto.titleOverride : nil,
+                bodyDepthOverride: dto.bodyDepthOverride,
+                applyHighlightsOverride: takesOverrides ? dto.applyHighlightsOverride : nil,
+                includeNotesOverride: takesOverrides ? dto.includeNotesOverride : nil,
+                includeSourceNoteOverride: takesOverrides ? dto.includeSourceNoteOverride : nil,
+                includeFootnotesOverride: takesOverrides ? dto.includeFootnotesOverride : nil,
+                summaryPromptIdOverride: takesOverrides ? dto.summaryPromptIdOverride : nil,
+                selectedHighlightIds: [],
+                includeRelatedDocuments: takesOverrides ? dto.includeRelatedDocuments : nil,
+                // Phase 5 headnote keys (absent in older files → nil = Default, which resolves to
+                // the collection default — false for imported collections, so unchanged behavior).
+                includeHeadnote: isDocument ? dto.includeHeadnote : nil,
+                headnoteSummaryId: isDocument ? dto.headnoteSummaryId : nil
+            ))
         }
-
-        return collection
+        let collection = CollectionExport(
+            id: collectionId,
+            // Trimmed, as both editors save a name (#1497): a file names its collection as it was, and a name of
+            // spaces, or one padded with them, came in verbatim.
+            name: file.name.trimmingCharacters(in: .whitespacesAndNewlines),
+            note: file.note,
+            projectIds: [],
+            entries: entries,
+            // v2 front matter (all absent in v1 files → the model defaults, i.e. today's behavior).
+            subtitle: file.subtitle,
+            authorLine: file.authorLine,
+            introductionText: file.introductionText,
+            introductionRichText: file.introductionRichText,
+            includeColophon: file.includeColophon ?? false,
+            includeProjectProvenance: file.includeProjectProvenance ?? false,
+            includeMethodAppendix: file.includeMethodAppendix ?? false,
+            defaultBodyDepth: file.composition.defaultBodyDepth,
+            footnoteStyle: file.composition.footnoteStyle,
+            // Phase 5 pair (absent in v1 / pre-Phase-5 files → nil, i.e. derive from the
+            // legacy footnoteStyle just applied above).
+            includeFootnotes: file.composition.includeFootnotes,
+            includeSourceNote: file.composition.includeSourceNote,
+            tocStyle: file.composition.tocStyle,
+            applyHighlights: file.composition.applyHighlights,
+            includeNotes: file.composition.includeNotes,
+            includeWordCloud: file.composition.includeWordCloud,
+            // Absent (older files / no headnote default) → false, unchanged behavior.
+            defaultIncludeHeadnote: file.composition.defaultIncludeHeadnote ?? false
+        )
+        return NativeCollectionImport(collection: collection, notes: notes)
     }
+}
 
-    // MARK: - Import a file from disk
+// MARK: - NativeCollectionImport
 
-    /// Reads a `.fruscollection` file at `url`, decodes + validates it, and reconstructs the
-    /// collection into `context`. Handles security-scoped access for a user-picked URL. The
-    /// caller is responsible for saving the context and presenting/selecting the result.
-    ///
-    /// - Throws: `NativeCollectionError` for a non-collection/unsupported file, a `DecodingError`
-    ///   for malformed JSON, or a file-read error.
-    @discardableResult
-    static func importCollection(from url: URL, into context: ModelContext) throws -> Collection {
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        let data = try Data(contentsOf: url)
-        let file = try decode(data)
-        return apply(file, into: context)
-    }
+/// What a `.fruscollection` file imports as (`NativeCollectionSerializer.importedValues(from:)`): a new
+/// collection's values and the research notes its document entries carry, for a host to insert.
+///
+/// Version history:
+///   1.0 — 2026-10-27 (FRUS Explorer Light, S18b): initial implementation, the values the app's
+///          `apply(_:into:)` inserted directly before
+public struct NativeCollectionImport: Sendable {
+    /// The new collection: its composition, front matter and settings, and every entry the file carried
+    /// that this build knows, each at the file's position and pinned to the notes it brought.
+    public var collection: CollectionExport
+    /// The research notes the file's document entries carried, recreated, in file order.
+    public var notes: [ResearchNoteExport]
 
-    // MARK: - Index an import's notes
-
-    /// Puts the notes an import brought into the search index, so they are findable at once rather than
-    /// at the next launch's replay (the 2026-09-28 audit, from #1280's session log).
-    ///
-    /// `apply` recreates each note a file carries as a new `ResearchNote` linked to its entry, and every
-    /// import path only saved, so search could not see an imported note until the app relaunched. Each
-    /// document an imported note sits on is rewritten through the column's one writer,
-    /// `ResearchNote.reindexNoteText`, which reads every note on the document — the reader's own as well
-    /// as the imported ones — so an import never narrows what the column held. All three import paths
-    /// call it after they save, since that save is what the writer's read sees: Import Collection… in
-    /// `CollectionListView` and in the Mac collection window, and a file opened from Files, Mail, AirDrop
-    /// or Finder (`FRUSExplorerApp.importOpenedCollection`). `ImportedNoteIndexTests.everyImportPathIndexes`
-    /// finds the paths by their call to `apply` or `importCollection(from:into:)`, not from a list.
-    ///
-    /// - Parameters:
-    ///   - collection: The collection `apply` made.
-    ///   - context: The context it was saved in.
-    ///   - pipeline: The index to write through.
-    @MainActor
-    static func indexImportedNotes(of collection: Collection, in context: ModelContext,
-                                   pipeline: IndexingPipeline) async {
-        var indexed = Set<String>()
-        let entries = (collection.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
-        for entry in entries where entry.entryKind == .document && !entry.selectedNoteIds.isEmpty {
-            let (volumeId, documentId) = (entry.volumeId, entry.documentId)
-            guard !volumeId.isEmpty, !documentId.isEmpty,
-                  indexed.insert("\(volumeId)/\(documentId)").inserted else { continue }
-            await ResearchNote.reindexNoteText(volumeId: volumeId, documentId: documentId,
-                                               in: context, pipeline: pipeline)
-        }
+    /// Creates an import's values.
+    public init(collection: CollectionExport, notes: [ResearchNoteExport]) {
+        self.collection = collection
+        self.notes = notes
     }
 }

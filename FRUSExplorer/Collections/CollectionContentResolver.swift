@@ -9,55 +9,30 @@
 import Foundation
 import SwiftData
 
-// MARK: - CollectionResolveError
-
-/// Errors thrown while resolving a collection into export items. Each case carries the
-/// same user-facing message the export sheet showed before the resolver extraction, so
-/// `error.localizedDescription` presents identically in the UI.
-///
-/// Version history:
-///   1.0 — Session 2026-07-02 (Collections Authoring Phase 2a): extracted from the
-///          inline `exportError` assignments in `ExportSheetView.runExport()`
-enum CollectionResolveError: Error, LocalizedError {
-    /// The FTS5-backed `SearchService` was unavailable while resolving a smart collection.
-    case searchServiceUnavailable
-    /// The smart collection's linked `SavedSearch` no longer exists.
-    case savedSearchMissing
-    /// An `.export` resolve found `.summaryOnly` documents but the collection has no
-    /// summarization prompt configured.
-    case summaryPromptMissing
-
-    /// User-facing description — the exact strings the export sheet showed pre-extraction.
-    var errorDescription: String? {
-        switch self {
-        case .searchServiceUnavailable:
-            return String(localized: "export.smart.noSearchService.v2",
-                          defaultValue: "Search is not ready yet. Try again in a moment.")
-        case .savedSearchMissing:
-            return String(localized: "export.smart.missingSearch",
-                          defaultValue: "The linked saved search could not be found. It may have been deleted.")
-        case .summaryPromptMissing:
-            return String(localized: "export.summaryNoPrompt",
-                          defaultValue: "Choose a summarization prompt in the collection’s Composition section to export summaries.")
-        }
-    }
-}
-
 // MARK: - CollectionContentResolver
+
+// `CollectionResolveError` moved to FRUSCoreKit for FRUS Explorer Light (S18b), unchanged but public, with the
+// assembly that throws it: `FRUSCoreKit/Collections/CollectionContentAssembly.swift`.
 
 /// Resolves a `Collection` (static or smart) into the ordered `[CollectionExportItem]`
 /// that exporters — and, from Phase 2b, the live preview — consume. This is the single
 /// resolution pipeline for collection content: the export sheet keeps only UI and file
 /// delivery, and every format (PDF/HTML/DOCX/Zotero/BibTeX) sees identical resolved items.
 ///
-/// ## Unified smart path (Phase 2a behavior change)
-/// Smart (saved-search) collections previously resolved through a near-clone that dropped
-/// research notes, highlights, and source notes. They now run through the same per-document
-/// pipeline as static entries, so **collection-level composition is honored**: `includeNotes`
-/// (every research note attached to the document travels on `noteTexts`), `applyHighlights`,
-/// `effectiveIncludeSourceNote`, and the collection's default body depth (including
-/// `.summaryOnly`). *Per-entry* overrides still don't apply to smart collections — their
-/// entries are synthesized from search results and carry no overrides or note selections.
+/// ## The assembly is FRUSCoreKit's
+/// Since FRUS Explorer Light's S18b the resolution itself — which notes and highlights an entry
+/// takes, the overrides cascaded through sections, body depth, headnotes, excerpts, the
+/// related-documents line, the apparatus blocks, the Zotero items, the summary phase — is
+/// `CollectionContentAssembly`, over values. This class keeps its API and builds one per resolve:
+/// the collection and its entries as their values (`CollectionExport`, `CollectionContentAssembly.Entry`,
+/// each prose block decoded by `CollectionProse.paragraphs(fromRTF:)`), the notes as
+/// `ResearchNoteExport`, and itself as the `CollectionContentDataSource`, reading SwiftData through
+/// `modelContext` and the library through `appState`. What the app's services do stays here: the
+/// saved search's run (`smartRefs(for:)`), and the three things only an export does, the volumes'
+/// download (`prepareVolumesForExport`), the figure images' fetch and Apple Intelligence's
+/// summaries. A static export downloads its missing volumes before it reads the collection's values,
+/// as it always read them after, and a smart collection's own entries are not read at all. See the
+/// assembly's doc for the smart path, the purposes and cancellation.
 ///
 /// ## Render-model cache
 /// Parsed documents are served from the app-wide `DocumentASTCache` actor
@@ -69,23 +44,6 @@ enum CollectionResolveError: Error, LocalizedError {
 /// be served. `ASTToRenderNodeConverter.renderingVersion(for:)` is *not* used for validation
 /// here: that hash detects staleness across converter-version bumps (i.e. across app builds)
 /// for *persisted* highlights, which cannot occur inside a purely in-memory, per-launch cache.
-///
-/// ## Purpose
-/// `.export` behaves as the pre-extraction export flow did: missing volumes are downloaded
-/// and indexed first, and `.summaryOnly` documents get on-demand AI summary generation.
-/// `.preview` **never downloads volumes and never generates summaries** — documents from
-/// un-downloaded volumes resolve to citation-only items (empty body, no render model), and
-/// `.summaryOnly` documents keep a `nil` summary unless one is already stored (the preview
-/// renders placeholders for those, Phase 2b).
-///
-/// ## Cooperative cancellation (v1.1)
-/// The per-document loops — the batch-context load and the per-entry resolve pass — check
-/// `Task.isCancelled` and stop early, so a superseded preview resolve does not SAX-parse
-/// documents nobody will render. The loops themselves stay non-throwing and return a
-/// *partial-safe* result (fewer loaded contexts / fewer items — never junk); the throwing
-/// entry points (`resolve`, `resolve(smartRefs:…)`, `resolveDocuments`) then convert the
-/// cancellation into a thrown `CancellationError` so no caller can mistake a truncated
-/// result for a complete one.
 ///
 /// Version history:
 ///   1.0 — Session 2026-07-02 (Collections Authoring Phase 2a): extracted from
@@ -177,41 +135,28 @@ enum CollectionResolveError: Error, LocalizedError {
 ///   1.14 — 2026-10-25 (FRUS Explorer Light, S18a): a prose block and the introduction resolve to the spans every
 ///          format renders (`CollectionProse.paragraphs(fromRTF:)`, the decoder each exporter called before), since the
 ///          exporters' payloads are FRUSCoreKit's and take spans, not RTF
+///   1.15 — 2026-10-27 (FRUS Explorer Light, S18b): the assembly is FRUSCoreKit's `CollectionContentAssembly`, over the
+///          collection's values and a `CollectionContentDataSource`, which this class implements with SwiftData and
+///          `AppState`; every entry point keeps its signature and forwards. What the app's services do stays here, as
+///          the data source's last four methods: the saved search's run and, for an export only, the volumes'
+///          download, the figure images' fetch and Apple Intelligence's summaries; a static export still downloads
+///          its volumes before the collection is read. `CollectionResolveError` moved with the assembly, the generated
+///          blocks' live data source is the assembly's, and `ResolvePurpose` and `SmartDocumentRef` name the kit's
+///          types
 @MainActor
 class CollectionContentResolver {
 
     // MARK: - ResolvePurpose
 
-    /// What the resolved items are for. Gates the side-effecting phases of a resolve.
-    enum ResolvePurpose {
-        /// Full export behavior: missing volumes are downloaded and indexed before
-        /// resolution, and `.summaryOnly` documents generate summaries on demand.
-        case export
-        /// Read-only resolution for the live preview: never downloads volumes and never
-        /// triggers AI generation. Un-downloaded volumes yield citation-only items;
-        /// `.summaryOnly` documents attach a stored summary when one exists, else `nil`.
-        case preview
-    }
+    /// What the resolved items are for, which gates the side-effecting phases of a resolve:
+    /// FRUSCoreKit's `CollectionContentAssembly.Purpose` since FRUS Explorer Light's S18b.
+    typealias ResolvePurpose = CollectionContentAssembly.Purpose
 
     // MARK: - SmartDocumentRef
 
     /// Lightweight document reference used for smart-collection resolution — one search
-    /// result to resolve. Avoids creating SwiftData model instances outside a context.
-    struct SmartDocumentRef: Sendable {
-        /// The FRUS document identifier (e.g. `"d12"`).
-        let documentId: String
-        /// The containing volume identifier.
-        let volumeId: String
-        /// Position within the result set (ascending).
-        let sortOrder: Int
-
-        /// Creates a smart-collection document reference.
-        init(documentId: String, volumeId: String, sortOrder: Int) {
-            self.documentId = documentId
-            self.volumeId = volumeId
-            self.sortOrder = sortOrder
-        }
-    }
+    /// result to resolve: FRUSCoreKit's `SmartCollectionDocumentRef` since FRUS Explorer Light's S18b.
+    typealias SmartDocumentRef = SmartCollectionDocumentRef
 
     // MARK: - Dependencies
 
@@ -263,13 +208,15 @@ class CollectionContentResolver {
 
     // MARK: - Public API
 
-    /// Resolves a collection's content into ordered export items.
+    /// Resolves a collection's content into ordered export items: FRUSCoreKit's
+    /// `CollectionContentAssembly.resolve(entries:introduction:purpose:printsFigureImages:)` over the
+    /// collection's values, with this resolver as its data source.
     ///
-    /// Smart collections (non-nil `savedSearchId`) execute their linked saved search and
-    /// resolve every result through the unified per-document pipeline (see the type doc for
-    /// the composition semantics). Static collections resolve their `entries`, preserving
-    /// authored structure: headings and prose pass through, and the Phase 3c body-depth
-    /// cascade (entry override → section override → collection default) applies per document.
+    /// Smart collections (non-nil `savedSearchId`) execute their linked saved search
+    /// (`smartRefs(for:)`) and resolve every result through the unified per-document pipeline.
+    /// Static collections resolve their `entries`, preserving authored structure: headings and
+    /// prose pass through, and the Phase 3c body-depth cascade (entry override → section override →
+    /// collection default) applies per document.
     ///
     /// For `.export`, missing volumes are downloaded/indexed first (static collections only —
     /// smart results come from the index, so their volumes are present by construction) and
@@ -297,19 +244,16 @@ class CollectionContentResolver {
         purpose: ResolvePurpose,
         printsFigureImages: Bool = false
     ) async throws -> [CollectionExportItem] {
-        let items = try await resolveWithoutSummaries(
-            collection: collection, entries: entries, allNotes: allNotes, purpose: purpose,
-            fetchesAbsentFigures: purpose == .export && printsFigureImages)
-        // A cancelled pass returned partial-safe items — surface the cancellation instead
-        // of handing a truncated result to a caller that expected the whole collection.
-        try Task.checkCancellation()
-        let framed = introductionItems(for: collection) + items
-        return try await applySummaryPhase(to: framed, collection: collection, purpose: purpose)
+        let volumesReady = await readyVolumes(of: collection, entries: entries, purpose: purpose)
+        return try await assembly(for: collection, allNotes: allNotes, volumesReady: volumesReady)
+            .resolve(entries: Self.entries(entries, of: collection), introduction: Self.introduction(of: collection),
+                     purpose: purpose, printsFigureImages: printsFigureImages)
     }
 
     /// Resolves a pre-fetched (and possibly capped) smart-reference list into export items,
-    /// including the summary phase — the preview's smart path (v1.1). The preview fetches
-    /// the lightweight refs with `smartRefs(for:)`, caps them to its render limit, and only
+    /// including the summary phase — the preview's smart path (v1.1): FRUSCoreKit's
+    /// `CollectionContentAssembly.resolve(smartRefs:introduction:purpose:fullRefs:)`. The preview
+    /// fetches the lightweight refs with `smartRefs(for:)`, caps them to its render limit, and only
     /// then pays per-document resolution here, so at most the cap is ever parsed.
     ///
     /// - Parameters:
@@ -322,9 +266,9 @@ class CollectionContentResolver {
     ///     A10 related-documents universe — use this list, so a capped preview's blocks
     ///     match the export's. `nil` (default) means `refs` IS the full result set.
     /// - Returns: Ordered export items for exactly the given refs (plus the collection's
-    ///   generated apparatus blocks — see `resolveSmartItems`).
+    ///   generated apparatus blocks).
     /// - Throws: `CancellationError` when the surrounding task was cancelled mid-resolve;
-    ///   summary-phase errors for `.export` (see `applySummaryPhase`).
+    ///   summary-phase errors for `.export`.
     func resolve(
         smartRefs refs: [SmartDocumentRef],
         collection: Collection,
@@ -332,37 +276,16 @@ class CollectionContentResolver {
         purpose: ResolvePurpose,
         fullRefs: [SmartDocumentRef]? = nil
     ) async throws -> [CollectionExportItem] {
-        let items = await resolveSmartItems(refs, collection: collection, allNotes: allNotes,
-                                            fullRefs: fullRefs)
-        try Task.checkCancellation()
-        let framed = introductionItems(for: collection) + items
-        return try await applySummaryPhase(to: framed, collection: collection, purpose: purpose)
-    }
-
-    /// The collection's front-matter items (Authoring Phase 4): the introduction as a
-    /// leading `.prose` item when set, else nothing. Reuses the entry-prose RTF path
-    /// (`ProseRichText`/`CollectionProse`), so introduction formatting survives HTML,
-    /// PDF, DOCX, and the live preview through the exact same code every prose block
-    /// takes. Title page and colophon are metadata-driven instead (see
-    /// `CollectionExportMetadata`), keeping the item stream pure content.
-    ///
-    /// - Parameter collection: The collection whose introduction to snapshot.
-    /// - Returns: `[.prose(spans)]`, the introduction's RTF decoded by
-    ///   `CollectionProse.paragraphs(fromRTF:)`, or `[]` when no introduction is set —
-    ///   so a collection without one resolves to exactly the pre-Phase-4 item list.
-    private func introductionItems(for collection: Collection) -> [CollectionExportItem] {
-        guard let rtf = ProseRichText.exportRTF(richText: collection.introductionRichText,
-                                                plainText: collection.introductionText) else {
-            return []
-        }
-        return [.prose(CollectionProse.paragraphs(fromRTF: rtf))]
+        try await assembly(for: collection, allNotes: allNotes)
+            .resolve(smartRefs: refs, introduction: Self.introduction(of: collection), purpose: purpose,
+                     fullRefs: fullRefs)
     }
 
     /// Documents-only resolution — for callers that need a flat document list and no
     /// summary phase (e.g. the Zotero RIS/Web-API send paths, which render citations and
-    /// notes, never body content). Matches the pre-extraction `resolvedZoteroDocuments()`
-    /// behavior: headings and prose are dropped, and `.summaryOnly` depths pass through
-    /// without triggering generation. No figure image is fetched (#1516): a citation prints none.
+    /// notes, never body content): FRUSCoreKit's `CollectionContentAssembly.resolveDocuments`.
+    /// Headings and prose are dropped, and `.summaryOnly` depths pass through without triggering
+    /// generation. No figure image is fetched (#1516): a citation prints none.
     ///
     /// - Parameters: See `resolve(collection:entries:allNotes:purpose:)`.
     /// - Returns: The resolved `.document` payloads, in collection order.
@@ -374,18 +297,15 @@ class CollectionContentResolver {
         allNotes: [ResearchNote],
         purpose: ResolvePurpose
     ) async throws -> [CollectionExportDocument] {
-        let documents = try await resolveWithoutSummaries(
-            collection: collection, entries: entries, allNotes: allNotes, purpose: purpose,
-            fetchesAbsentFigures: false)
-            .documents
-        // Same discipline as `resolve`: never hand back a cancellation-truncated list.
-        try Task.checkCancellation()
-        return documents
+        let volumesReady = await readyVolumes(of: collection, entries: entries, purpose: purpose)
+        return try await assembly(for: collection, allNotes: allNotes, volumesReady: volumesReady)
+            .resolveDocuments(entries: Self.entries(entries, of: collection), purpose: purpose)
     }
 
     /// Resolves a single entry into its export item — the incremental API for the Phase 2b
-    /// preview's refresh path. Shares the per-entry pipeline with the batch resolve, so a
-    /// re-resolved row is guaranteed to match what a full resolve would produce.
+    /// preview's refresh path: FRUSCoreKit's `CollectionContentAssembly.resolveItem`, which shares the
+    /// per-entry pipeline with the batch resolve, so a re-resolved row is guaranteed to match what a
+    /// full resolve would produce.
     ///
     /// This path is inherently preview-safe: it never downloads volumes and never generates
     /// summaries. A `.summaryOnly` document attaches a stored summary when one exists for
@@ -413,118 +333,38 @@ class CollectionContentResolver {
         sectionBodyDepth: String? = nil,
         headingLevel: Int? = nil
     ) async -> CollectionExportItem? {
-        let ref = EntryRef(entry)
-        let level = headingLevel ?? min(max(ref.level, 1), CollectionOutline.maxLevel)
-        // Related-documents membership (A10) comes from the owning collection's entry
-        // list, so a single-entry resolve matches what a full resolve would compute.
-        let batch = await loadBatchContext(
-            for: [ref], collection: collection, allNotes: allNotes,
-            collectionDocuments: Self.collectionDocumentRefs(of: collection))
-        guard let item = await resolveEntry(ref,
-                                            section: SectionOverrides(bodyDepth: sectionBodyDepth),
-                                            headingLevel: level, batch: batch) else {
-            return nil
-        }
-        // Attach a stored summary when available; never generate (preview semantics).
-        // The entry's effective prompt (override, else the collection's) picks it.
-        if case .document(let doc) = item, doc.bodyDepth == .summaryOnly,
-           let promptId = doc.summaryPromptIdOverride ?? collection.summaryPromptId,
-           let stored = storedSummary(volumeId: doc.volumeId, documentId: doc.documentId,
-                                      promptId: promptId) {
-            return .document(doc.withSummary(stored))
-        }
-        return item
+        await assembly(for: collection, allNotes: allNotes)
+            .resolveItem(Self.entry(entry), sectionBodyDepth: sectionBodyDepth, headingLevel: headingLevel)
     }
 
-    // MARK: - Core resolution (shared by both public entry points)
-
-    /// Runs the full resolution *except* the summary phase — the shared body of
-    /// `resolve` (which adds summaries) and `resolveDocuments` (which must not).
+    /// Resolves smart-collection references through the unified per-document pipeline, with the
+    /// collection's generated apparatus blocks around them: FRUSCoreKit's
+    /// `CollectionContentAssembly.resolveSmartItems`.
     ///
-    /// - Parameter fetchesAbsentFigures: Whether to fetch, once the items are resolved, the
-    ///   figure images they print that are not on the device (#1516). One place for both the
-    ///   smart and the static path, so neither can be wired without the other.
-    private func resolveWithoutSummaries(
+    /// Internal (not private) so tests can exercise the unified pipeline without standing
+    /// up a live FTS5 search service.
+    ///
+    /// - Parameter fullRefs: The uncapped result set when `refs` is a capped prefix
+    ///   (see `resolve(smartRefs:…)`); `nil` means `refs` is the full set.
+    func resolveSmartItems(
+        _ refs: [SmartDocumentRef],
         collection: Collection,
-        entries: [CollectionEntry],
         allNotes: [ResearchNote],
-        purpose: ResolvePurpose,
-        fetchesAbsentFigures: Bool
-    ) async throws -> [CollectionExportItem] {
-        let items = try await resolveItemsWithoutSummaries(
-            collection: collection, entries: entries, allNotes: allNotes, purpose: purpose)
-        if fetchesAbsentFigures { await fetchAbsentFigureImages(printedBy: items) }
-        return items
-    }
-
-    /// Fetches the figure images `items` print that are not on the device (#1516): those of the
-    /// documents resolved at full body depth. A summary-only or index entry prints no body, so
-    /// none of its document's images is asked for. An image that cannot be fetched prints its
-    /// placeholder. Reports `fetchingFiguresStatus` through `onPreparingStatus` while it asks,
-    /// and nothing when every image is on the device; stops when the task is cancelled.
-    private func fetchAbsentFigureImages(printedBy items: [CollectionExportItem]) async {
-        let absent = Self.printedFigureImages(in: items).filter { figureImages.data(for: $0) == nil }
-        guard !absent.isEmpty, !Task.isCancelled else { return }
-        onPreparingStatus?(Self.fetchingFiguresStatus)
-        await figureImages.fetchAbsent(absent)
-        onPreparingStatus?(nil)
-    }
-
-    /// The figure images `items` print, each once, in reading order: those in the render model
-    /// of each document resolved at `.full` body depth (#1516).
-    nonisolated static func printedFigureImages(in items: [CollectionExportItem]) -> [FigureImageName] {
-        var seen = Set<FigureImageName>()
-        return items.documents
-            .filter { $0.bodyDepth == .full }
-            .flatMap { $0.renderModel?.figureImages ?? [] }
-            .filter { seen.insert($0).inserted }
-    }
-
-    /// The items of a collection, smart or static, before the summary phase and before any
-    /// figure image is fetched: see ``resolveWithoutSummaries``.
-    private func resolveItemsWithoutSummaries(
-        collection: Collection,
-        entries: [CollectionEntry],
-        allNotes: [ResearchNote],
-        purpose: ResolvePurpose
-    ) async throws -> [CollectionExportItem] {
-        // Smart collection path: resolve documents via the linked SavedSearch, then run
-        // them through the unified per-document pipeline.
-        if collection.savedSearchId != nil {
-            let refs = try await smartRefs(for: collection)
-            return await resolveSmartItems(refs, collection: collection, allNotes: allNotes)
-        }
-
-        // Static collection path.
-        // Export only: ensure every referenced volume is downloaded and indexed first.
-        // Preview must never trigger downloads — un-downloaded volumes resolve to
-        // citation-only items instead.
-        if purpose == .export {
-            // Document entries only: excerpts carry a real volumeId as provenance but
-            // render from their frozen text (A9), so they never require the volume.
-            await prepareVolumesForExport(Set(
-                entries.filter { $0.entryKind == .document }.map(\.volumeId)))
-        }
-
-        let refs = entries.map(EntryRef.init)
-        // Related-documents membership (A10) comes from the owning collection's full
-        // entry list, NOT the passed entries — the preview passes a capped prefix, and
-        // computing the universe from it would silently drop "See also:" targets past
-        // the cap that the export (full list) shows. Matches `resolveItem`'s sourcing.
-        let batch = await loadBatchContext(
-            for: refs, collection: collection, allNotes: allNotes,
-            collectionDocuments: Self.collectionDocumentRefs(of: collection))
-        // #1465: an export leaves out every heading saved with no text; the preview shows it ("Untitled section").
-        return await resolveItems(from: refs, batch: batch, dropsUntitledHeadings: purpose == .export)
+        fullRefs: [SmartDocumentRef]? = nil
+    ) async -> [CollectionExportItem] {
+        await assembly(for: collection, allNotes: allNotes).resolveSmartItems(refs, fullRefs: fullRefs)
     }
 
     /// Executes a smart collection's linked saved search and returns one reference per
     /// result, in relevance order. Mirrors the pre-extraction smart export flow, including
-    /// the full-result-set fetch (`SearchViewModel.searchHardLimit`, not the default page).
+    /// the full-result-set fetch (`SearchViewModel.searchHardLimit`, not the default page), through
+    /// FRUSCoreKit's `SmartCollectionSnapshot.documentRefs`.
     ///
     /// Internal (v1.1) so the live preview can fetch the *lightweight* result list, cap it
     /// to its render limit, and resolve only the capped refs via `resolve(smartRefs:…)` —
-    /// the refs are cheap (an FTS5 query); per-document resolution is what parses XML.
+    /// the refs are cheap (an FTS5 query); per-document resolution is what parses XML. A full
+    /// resolve of a smart collection asks for them here too, through the data source, so a test's
+    /// override stands in for the search.
     ///
     /// - Parameter collection: The smart collection whose saved search to execute.
     /// - Returns: One reference per search result, `sortOrder` ascending.
@@ -543,449 +383,259 @@ class CollectionContentResolver {
         }
         // Resolve the full result set (not just the first page) — the default `search`
         // limit is `defaultPageSize` (20), which silently truncated smart-collection
-        // exports. Mirror the live saved search's hard limit.
-        let results = try await searchService.search(
-            parameters: savedSearch.searchParameters,
-            limit: SearchViewModel.searchHardLimit
-        )
-        return results.enumerated().map { i, r in
-            SmartDocumentRef(documentId: r.documentId, volumeId: r.volumeId, sortOrder: i)
-        }
+        // exports. Mirror the live saved search's hard limit, through FRUSCoreKit's run (S18b).
+        return try await SmartCollectionSnapshot.documentRefs(
+            parameters: savedSearch.searchParameters, searchService: searchService,
+            limit: SearchViewModel.searchHardLimit)
     }
 
-    /// Resolves smart-collection references through the unified per-document pipeline.
+    /// The figure images `items` print, each once, in reading order: FRUSCoreKit's
+    /// `CollectionContentAssembly.printedFigureImages(in:)` (#1516).
+    nonisolated static func printedFigureImages(in items: [CollectionExportItem]) -> [FigureImageName] {
+        CollectionContentAssembly.printedFigureImages(in: items)
+    }
+
+    /// Composition options derived from the collection's persisted settings, used to gate
+    /// resolution work (highlights, source notes, summary prompt). The word-cloud flag is
+    /// format-dependent and irrelevant to resolution; exporters receive the options the export
+    /// sheet takes from `ExportFormat.exportOptions(for:)`, which applies that gate. The model's
+    /// `init(composing:)` reads FRUSCoreKit's over the collection's values, which the assembly reads,
+    /// so the two cannot differ.
     ///
-    /// This replaces the former `resolveSmartDocuments` near-clone: the same per-entry
-    /// body now serves both paths, so smart documents carry composition-driven content
-    /// (notes, highlights, source notes) they previously dropped. Synthetic entries have
-    /// no per-entry overrides or note selections, so the collection default body depth
-    /// applies and note attachment falls back to *every* research note on the document
-    /// (matching what the smart Zotero items already carried).
-    ///
-    /// Generated apparatus blocks (v1.10): the collection's static `.generated` entries
-    /// resolve here too, fed the smart result set as their membership — front-matter
-    /// blocks (per `CollectionGeneratedBlockType.defaultPosition`) before the smart
-    /// items, back-matter blocks after, each group in `sortOrder` order. Smart documents
-    /// come from the saved search, so a hand-authored position *between* them cannot
-    /// exist; the default position is the only meaningful placement.
-    ///
-    /// Internal (not private) so tests can exercise the unified pipeline without standing
-    /// up a live FTS5 search service.
-    ///
-    /// - Parameter fullRefs: The uncapped result set when `refs` is a capped prefix
-    ///   (see `resolve(smartRefs:…)`); `nil` means `refs` is the full set.
-    func resolveSmartItems(
-        _ refs: [SmartDocumentRef],
-        collection: Collection,
-        allNotes: [ResearchNote],
-        fullRefs: [SmartDocumentRef]? = nil
-    ) async -> [CollectionExportItem] {
-        let entryRefs = refs.map(EntryRef.init)
-        // Membership-wide computations (generated blocks, A10 universe) see the FULL
-        // result set even when per-document resolution was capped by the preview.
-        let membership = Self.documentRefs(in: (fullRefs ?? refs).map(EntryRef.init))
-        let batch = await loadBatchContext(
-            for: entryRefs, collection: collection, allNotes: allNotes,
-            collectionDocuments: membership)
-        // A smart collection's entries are search results, never headings, so there is nothing to drop.
-        let items = await resolveItems(from: entryRefs, batch: batch, dropsUntitledHeadings: false)
-        let (front, back) = await generatedItems(for: collection, batch: batch)
-        return front + items + back
+    /// Internal (not private) so tests can assert the legacy `footnoteStyle` → Bool-pair
+    /// mapping end-to-end without standing up a full resolve.
+    func resolutionOptions(for collection: Collection) -> CollectionExportOptions {
+        CollectionExportOptions(composing: collection)
     }
 
-    /// Resolves the collection's `.generated` entries for the smart path (v1.10),
-    /// partitioned by their type's `defaultPosition` — `(front matter, back matter)`,
-    /// each in `sortOrder` order. Unknown block types are skipped (the same
-    /// newer-version guard as `resolveEntry`); a cancelled task returns the blocks
-    /// resolved so far (partial-safe, matching the per-entry loops).
-    private func generatedItems(
-        for collection: Collection,
-        batch: BatchContext
-    ) async -> (front: [CollectionExportItem], back: [CollectionExportItem]) {
-        var front: [CollectionExportItem] = []
-        var back: [CollectionExportItem] = []
-        let generatedEntries = (collection.documentEntries ?? [])
-            .filter { $0.entryKind == .generated }
-            .sorted { $0.sortOrder < $1.sortOrder }
-        for entry in generatedEntries {
-            if Task.isCancelled { break }
-            guard let raw = entry.generatedBlockType,
-                  let blockType = CollectionGeneratedBlockType(rawValue: raw) else { continue }
-            let block = await CollectionGeneratedBlocks.resolve(
-                type: blockType, documents: batch.collectionDocuments,
-                dataSource: LiveGeneratedBlockDataSource(resolver: self, batch: batch))
-            switch blockType.defaultPosition {
-            case .frontMatter: front.append(.generated(block))
-            case .backMatter:  back.append(.generated(block))
-            }
-        }
-        return (front, back)
-    }
-
-    /// Runs the ordered per-entry loop: sorts by `sortOrder`, resolves each position's
-    /// effective section body-depth override via `CollectionOutline` (the nearest
-    /// *ancestor* heading's override by level — Phase 4's extension of the Phase 3c
-    /// "nearest preceding heading" rule, identical for all-level-1 collections), and
-    /// delegates each entry to `resolveEntry`. Out-of-range heading levels are clamped
-    /// inside the outline resolution, never persisted back.
-    ///
-    /// Cooperative cancellation (v1.1): a cancelled task stops the loop early and returns
-    /// the items resolved so far (partial-safe — every returned item is complete); the
-    /// throwing entry points convert the truncation into a thrown `CancellationError`.
-    ///
-    /// - Parameter dropsUntitledHeadings: Whether to leave out each heading saved with no text, lifting the named
-    ///   headings under it a level (`CollectionOutline.exportLevels`) — `true` for an export, `false` for the preview,
-    ///   which shows the heading as "Untitled section" (#1465, decision D4). The section cascades run over the whole
-    ///   outline either way, so the documents under a dropped heading keep its Section defaults.
-    private func resolveItems(from refs: [EntryRef], batch: BatchContext,
-                              dropsUntitledHeadings: Bool) async -> [CollectionExportItem] {
-        let ordered = refs.sorted { $0.sortOrder < $1.sortOrder }
-        // Single-linearizer discipline: the ancestor cascade AND the emitted heading
-        // levels are computed by CollectionOutline, never re-derived here — so items
-        // always carry clamped, orphan-corrected depths, whatever the synced raw levels.
-        let structuralRefs = ordered.map {
-            CollectionOutline.StructuralRef(isHeading: $0.kind == .heading,
-                                            level: $0.level,
-                                            bodyDepthOverride: $0.bodyDepthOverride)
-        }
-        let sectionDepths = CollectionOutline.sectionBodyDepthOverrides(structuralRefs)
-        // #1465: the levels the items carry — an untitled heading's is nil in an export, which leaves it out.
-        let emittedLevels: [Int?] = dropsUntitledHeadings
-            ? CollectionOutline.exportLevels(structuralRefs, untitled: ordered.map {
-                $0.kind == .heading
-                    && ($0.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            })
-            : CollectionOutline.resolvedDepths(structuralRefs).map(Optional.init)
-        // Phase 5 override cascades: one generic outline walk per field, heading values
-        // only (a document's own override never leaks into the section defaults).
-        func headingValues<Value>(_ value: (EntryRef) -> Value?) -> [Value?] {
-            ordered.map { $0.kind == .heading ? value($0) : nil }
-        }
-        let secHighlights = CollectionOutline.sectionOverrideValues(
-            structuralRefs, headingValues: headingValues { $0.applyHighlightsOverride })
-        let secNotes = CollectionOutline.sectionOverrideValues(
-            structuralRefs, headingValues: headingValues { $0.includeNotesOverride })
-        let secSourceNote = CollectionOutline.sectionOverrideValues(
-            structuralRefs, headingValues: headingValues { $0.includeSourceNoteOverride })
-        let secFootnotes = CollectionOutline.sectionOverrideValues(
-            structuralRefs, headingValues: headingValues { $0.includeFootnotesOverride })
-        let secPrompt = CollectionOutline.sectionOverrideValues(
-            structuralRefs, headingValues: headingValues { $0.summaryPromptIdOverride })
-        let secRelated = CollectionOutline.sectionOverrideValues(
-            structuralRefs, headingValues: headingValues { $0.includeRelatedDocuments })
-        var items: [CollectionExportItem] = []
-        for (i, ref) in ordered.enumerated() {
-            if Task.isCancelled { break }
-            // A heading the export leaves out (#1465): its Section defaults are already in the cascades above.
-            guard let level = emittedLevels[i] else { continue }
-            let section = SectionOverrides(
-                bodyDepth: sectionDepths[i],
-                applyHighlights: secHighlights[i],
-                includeNotes: secNotes[i],
-                includeSourceNote: secSourceNote[i],
-                includeFootnotes: secFootnotes[i],
-                summaryPromptId: secPrompt[i],
-                includeRelatedDocuments: secRelated[i])
-            if let item = await resolveEntry(ref, section: section,
-                                             headingLevel: max(level, 1),
-                                             batch: batch) {
-                items.append(item)
-            }
-        }
-        return items
-    }
-
-    // MARK: - EntryRef
-
-    /// How a resolved document's research-note texts are determined.
-    private enum NoteResolution {
-        /// Static entries: the entry's own selection — `selectedNoteIds`, falling back to
-        /// the legacy single `researchNoteId` link.
-        case entrySelection(selectedNoteIds: [UUID], legacyNoteId: UUID?)
-        /// Synthetic smart-collection entries carry no selection: every research note
-        /// attached to the document travels (the pre-unification smart Zotero behavior).
-        case allDocumentNotes
-    }
-
-    /// Value snapshot of one entry — real (`CollectionEntry`) or synthetic (smart search
-    /// result) — fed to the shared per-entry pipeline, so the pipeline itself never
-    /// touches SwiftData model instances it didn't fetch.
-    private struct EntryRef {
-        /// The entry kind (document/heading/prose/unrecognized).
-        let kind: CollectionEntryKind
-        /// The FRUS document identifier; empty for heading/prose entries.
-        let documentId: String
-        /// The containing volume identifier; empty for heading/prose entries.
-        let volumeId: String
-        /// Position within the collection (ascending).
-        let sortOrder: Int
-        /// Heading title text (`.heading` entries only).
-        let text: String?
-        /// Heading nesting level (`.heading` entries only; raw model value — clamped by
-        /// `CollectionOutline` during resolution, never trusted directly).
-        let level: Int
-        /// Prose body as export-ready RTF (`.prose` entries only), produced by
-        /// `ProseRichText.exportRTF(from:)` at snapshot time.
-        let proseRTF: Data?
-        /// The entry's own body-depth override raw value, if any.
-        let bodyDepthOverride: String?
-        /// The entry's per-document title override (M3, D4; document entries only; `nil`
-        /// on smart refs). Drives both the ToC label and the export heading.
-        let titleOverride: String?
-        /// Per-entry headnote opt-in (`nil` = Default = inherit the collection default). Resolved
-        /// against `CollectionExportOptions.includeHeadnoteDefault` at pack time (Composer redesign).
-        let includeHeadnote: Bool?
-        /// The chosen `GeneratedSummary.id` for the headnote; `nil` = fallback pick.
-        let headnoteSummaryId: UUID?
-        /// The source highlight's colour raw value (`.excerpt` entries only, Phase 5).
-        let excerptColorTag: String?
-        /// The apparatus block type raw value (`.generated` entries only, Phase 6).
-        let generatedBlockType: String?
-        /// Per-entry highlight override (Phase 5; `nil` = inherit; section default on
-        /// headings). See `CollectionEntry.applyHighlightsOverride`.
-        let applyHighlightsOverride: Bool?
-        /// Per-entry research-notes override (Phase 5; `nil` = inherit).
-        let includeNotesOverride: Bool?
-        /// Per-entry source-note override (Phase 5; `nil` = inherit).
-        let includeSourceNoteOverride: Bool?
-        /// Per-entry footnote override (Phase 5; `nil` = inherit).
-        let includeFootnotesOverride: Bool?
-        /// Per-entry summary-prompt override (Phase 5; `nil` = inherit).
-        let summaryPromptIdOverride: UUID?
-        /// The highlights to include when highlights apply (A8; empty = all).
-        let selectedHighlightIds: [UUID]
-        /// Per-entry related-documents opt-in (A10; `nil` = inherit, ultimately off).
-        let includeRelatedDocuments: Bool?
-        /// How research-note texts are resolved for this entry.
-        let noteResolution: NoteResolution
-
-        /// Snapshots a real collection entry. Prose entries are converted to export RTF
-        /// here (which also heals legacy Phase 3b blobs in place — see `ProseRichText`).
-        init(_ entry: CollectionEntry) {
-            kind = entry.entryKind
-            documentId = entry.documentId
-            volumeId = entry.volumeId
-            sortOrder = entry.sortOrder
-            text = entry.text
-            level = entry.level
-            proseRTF = entry.entryKind == .prose ? ProseRichText.exportRTF(from: entry) : nil
-            bodyDepthOverride = entry.bodyDepthOverride
-            titleOverride = entry.titleOverride
-            includeHeadnote = entry.includeHeadnote
-            headnoteSummaryId = entry.headnoteSummaryId
-            excerptColorTag = entry.entryKind == .excerpt ? entry.excerptColorTag : nil
-            generatedBlockType = entry.entryKind == .generated ? entry.generatedBlockType : nil
-            applyHighlightsOverride = entry.applyHighlightsOverride
-            includeNotesOverride = entry.includeNotesOverride
-            includeSourceNoteOverride = entry.includeSourceNoteOverride
-            includeFootnotesOverride = entry.includeFootnotesOverride
-            summaryPromptIdOverride = entry.summaryPromptIdOverride
-            selectedHighlightIds = entry.selectedHighlightIds
-            includeRelatedDocuments = entry.includeRelatedDocuments
-            noteResolution = .entrySelection(selectedNoteIds: entry.selectedNoteIds,
-                                             legacyNoteId: entry.researchNoteId)
-        }
-
-        /// Synthesizes an entry for one smart-collection search result: always a
-        /// `.document`, with no overrides and all-document note resolution — smart
-        /// collections keep collection-level behavior by construction.
-        init(_ ref: SmartDocumentRef) {
-            kind = .document
-            documentId = ref.documentId
-            volumeId = ref.volumeId
-            sortOrder = ref.sortOrder
-            text = nil
-            level = 1
-            proseRTF = nil
-            bodyDepthOverride = nil
-            titleOverride = nil
-            includeHeadnote = nil
-            headnoteSummaryId = nil
-            excerptColorTag = nil
-            generatedBlockType = nil
-            applyHighlightsOverride = nil
-            includeNotesOverride = nil
-            includeSourceNoteOverride = nil
-            includeFootnotesOverride = nil
-            summaryPromptIdOverride = nil
-            selectedHighlightIds = []
-            includeRelatedDocuments = nil
-            noteResolution = .allDocumentNotes
-        }
-    }
-
-    // MARK: - SectionOverrides
-
-    /// The section-level defaults in effect at one position — each field the value of
-    /// the nearest ancestor heading that sets it (`CollectionOutline`'s generic
-    /// ancestor cascade, one walk per field), `nil` when no ancestor does. The per-entry
-    /// resolution rule everywhere is `entry override ?? section value ?? collection
-    /// default` — computed only in this resolver (Authoring Phase 5).
-    private struct SectionOverrides {
-        /// Section body depth (the Phase 3c/4 cascade, unchanged).
-        var bodyDepth: String? = nil
-        /// Section highlight default (Phase 5).
-        var applyHighlights: Bool? = nil
-        /// Section research-notes default (Phase 5).
-        var includeNotes: Bool? = nil
-        /// Section source-note default (Phase 5).
-        var includeSourceNote: Bool? = nil
-        /// Section footnote default (Phase 5).
-        var includeFootnotes: Bool? = nil
-        /// Section summary-prompt default (Phase 5).
-        var summaryPromptId: UUID? = nil
-        /// Section related-documents default (A10, Phase 5).
-        var includeRelatedDocuments: Bool? = nil
-    }
-
-    // MARK: - BatchContext
-
-    /// Per-resolve immutable inputs shared by every entry in one pass: composition
-    /// options, manifest lookups, pre-loaded body texts and render models, editorial-note
-    /// flags, and the note pool.
-    private struct BatchContext {
-        /// Composition options derived from the collection (highlights, footnote style,
-        /// summary prompt). Used for resolution gating only — exporters receive the export
-        /// sheet's own options, which add the format-dependent word-cloud gate.
-        let options: CollectionExportOptions
-        /// Manifest entries keyed by volume id, for citations and volume titles.
-        let manifestMap: [String: VolumeManifestEntry]
-        /// Formats history.state.gov-style citations.
-        let formatter: HistoryAtStateCitationFormatter
-        /// Pre-loaded plain body texts keyed `"volumeId/documentId"`.
-        let bodyTexts: [String: String]
-        /// Pre-loaded render models keyed `"volumeId/documentId"`.
-        let renderModels: [String: FRUSDocumentRenderModel]
-        /// `true` per key for documents that are editorial notes (Zotero `extra` line).
-        let editorialNoteFlags: [String: Bool]
-        /// The collection's default body depth raw value (cascade fallback).
-        let collectionDefaultBodyDepth: String
-        /// All research notes, for entry note-link resolution.
-        let allNotes: [ResearchNote]
-        /// The collection's document membership — `(volumeId, documentId)` in collection
-        /// order, deduplicated — the A10 universe for the related-documents line (only
-        /// cross-reference targets in this list ever appear on it).
-        let collectionDocuments: [(volumeId: String, documentId: String)]
-        /// The printed document numbers the index stores (`document_cache.document_number`),
-        /// keyed `"volumeId/documentId"`, for every document this batch can cite — its document
-        /// and excerpt entries and the whole membership (#1406). Read through
-        /// `CitableDocumentNumber.resolve`, never directly.
-        let documentNumbers: [String: String]
-    }
-
-    /// The ordered, deduplicated `(volumeId, documentId)` list of a batch's document
-    /// entries — the related-documents membership for smart resolves, where the passed
-    /// refs ARE the true membership. Static resolves use `collectionDocumentRefs(of:)`
-    /// instead: their refs may be a capped preview prefix of the real membership.
-    private static func documentRefs(in refs: [EntryRef]) -> [(volumeId: String, documentId: String)] {
-        var seen = Set<String>()
-        return refs.sorted { $0.sortOrder < $1.sortOrder }
-            .filter { $0.kind == .document && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
-            .compactMap { ref in
-                seen.insert("\(ref.volumeId)/\(ref.documentId)").inserted
-                    ? (ref.volumeId, ref.documentId) : nil
-            }
-    }
-
-    /// The ordered, deduplicated document membership of a live collection — the
-    /// related-documents membership for static resolves (full, capped-preview, and
-    /// single-entry `resolveItem`), so every static pass agrees on the A10 universe
-    /// regardless of how its entry list was capped.
-    private static func collectionDocumentRefs(of collection: Collection) -> [(volumeId: String, documentId: String)] {
-        var seen = Set<String>()
-        return (collection.documentEntries ?? [])
-            .sorted { $0.sortOrder < $1.sortOrder }
-            .filter { $0.entryKind == .document && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
-            .compactMap { entry in
-                seen.insert("\(entry.volumeId)/\(entry.documentId)").inserted
-                    ? (entry.volumeId, entry.documentId) : nil
-            }
-    }
-
-    /// Pre-loads everything the per-entry pipeline needs for a batch of refs: body texts
-    /// (SQLite document cache first, cached-AST extraction as the XML fallback), render
-    /// models (via the shared `DocumentASTCache` — see the type doc for the cache design),
-    /// editorial-note flags, and the manifest map.
-    ///
-    /// Cooperative cancellation (v1.1): the per-document load loop — where each miss costs
-    /// a SAX parse — stops early when the task is cancelled. The partially loaded context
-    /// is safe (unloaded documents would merely resolve with empty bodies), and the
-    /// throwing entry points surface `CancellationError` before any such result escapes.
-    ///
-    /// Figure images (#1516): each render model names its figures' images by this document's
-    /// volume, so the exporters find them on the device. Nothing is fetched here; an export that
-    /// prints images fetches the ones it lacks once its items are resolved
-    /// (`fetchAbsentFigureImages(printedBy:)`).
-    private func loadBatchContext(
-        for refs: [EntryRef],
-        collection: Collection,
-        allNotes: [ResearchNote],
+    /// The A10 pure core, internal for tests: FRUSCoreKit's
+    /// `CollectionContentAssembly.relatedDocumentTargets`.
+    nonisolated static func relatedDocumentTargets(
+        outboundTargets: [(volumeId: String, documentId: String)],
+        selfVolumeId: String,
+        selfDocumentId: String,
         collectionDocuments: [(volumeId: String, documentId: String)]
-    ) async -> BatchContext {
-        let manifest = appState.manifestStore.diffResult?.known
-            ?? appState.manifestStore.bundledEntries
-        let manifestMap = Dictionary(manifest.map { ($0.volumeId, $0) },
-                                     uniquingKeysWith: { first, _ in first })
-
-        var bodyTexts: [String: String] = [:]
-        var renderModels: [String: FRUSDocumentRenderModel] = [:]
-
-        let docRefs = refs.filter {
-            $0.kind == .document && !$0.volumeId.isEmpty && !$0.documentId.isEmpty
-        }
-        for ref in docRefs {
-            if Task.isCancelled { break }
-            let key = "\(ref.volumeId)/\(ref.documentId)"
-
-            // SQLite cache path (fast) for the plain body text.
-            if bodyTexts[key] == nil, let pipeline = appState.indexingPipeline,
-               let text = try? await pipeline.fetchDocumentBodyText(
-                   volumeId: ref.volumeId, documentId: ref.documentId) {
-                bodyTexts[key] = text
-            }
-
-            // One AST per document — LRU cache hit, else a single parse — feeds both the
-            // structured render model and the XML body-text fallback.
-            if renderModels[key] == nil,
-               let ast = await cachedAST(volumeId: ref.volumeId, documentId: ref.documentId) {
-                var converter = ASTToRenderNodeConverter(volumeId: ref.volumeId)
-                renderModels[key] = converter.convert(ast)
-                if bodyTexts[key] == nil {
-                    bodyTexts[key] = IndexingPipeline.extractBodyText(from: ast.nodes)
-                }
-            }
-        }
-
-        // Editorial-note flags from the index, so collection-level Zotero items
-        // carry the same "Editorial note" extra line as document-level exports.
-        let editorialNoteFlags = await ZoteroJSONExporter.editorialNoteFlags(
-            volumeIds: Set(docRefs.map(\.volumeId)), pipeline: appState.indexingPipeline)
-
-        // The printed numbers every citation in this batch names (#1406): the document entries,
-        // the excerpts (their source line cites the excerpted document) and the membership (the
-        // "See also:" line cites its members). One batched read; an unindexed document is absent
-        // and falls back to its id where the id spells a number.
-        var citable = refs
-            .filter { ($0.kind == .document || $0.kind == .excerpt)
-                && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
-            .map { (volumeId: $0.volumeId, documentId: $0.documentId) }
-        citable += collectionDocuments
-        let documentNumbers = (try? await appState.indexingPipeline?
-            .documentNumbersByKey(citable)) ?? [:]
-
-        return BatchContext(
-            options: resolutionOptions(for: collection),
-            manifestMap: manifestMap,
-            formatter: HistoryAtStateCitationFormatter(),
-            bodyTexts: bodyTexts,
-            renderModels: renderModels,
-            editorialNoteFlags: editorialNoteFlags,
-            collectionDefaultBodyDepth: collection.defaultBodyDepth,
-            allNotes: allNotes,
-            collectionDocuments: collectionDocuments,
-            documentNumbers: documentNumbers
-        )
+    ) -> [(volumeId: String, documentId: String)] {
+        CollectionContentAssembly.relatedDocumentTargets(
+            outboundTargets: outboundTargets, selfVolumeId: selfVolumeId, selfDocumentId: selfDocumentId,
+            collectionDocuments: collectionDocuments)
     }
+
+    /// Recursively extracts plain text from an array of `FRUSRenderNode` values: FRUSCoreKit's
+    /// `CollectionContentAssembly.renderNodePlainText`.
+    ///
+    /// `nonisolated static` since #1371 so a test can pin the list branch; it reads no
+    /// resolver state.
+    nonisolated static func renderNodePlainText(_ nodes: [FRUSRenderNode]) -> String {
+        CollectionContentAssembly.renderNodePlainText(nodes)
+    }
+
+    /// Recursively extracts plain text from a single `FRUSRenderNode`: FRUSCoreKit's
+    /// `CollectionContentAssembly.renderNodePlainText`.
+    nonisolated static func renderNodePlainText(_ node: FRUSRenderNode) -> String {
+        CollectionContentAssembly.renderNodePlainText(node)
+    }
+
+    // MARK: - The values the assembly reads
+
+    /// The assembly for one resolve of `collection`: its values with every entry, `allNotes` as
+    /// their records, and this resolver, over `collection`, as the data source.
+    ///
+    /// - Parameter volumesReady: Whether this resolve already readied the volumes an export needs
+    ///   (`readyVolumes(of:entries:purpose:)`), so the assembly's own ask has nothing left to do.
+    private func assembly(for collection: Collection, allNotes: [ResearchNote],
+                          volumesReady: Bool = false) -> CollectionContentAssembly {
+        CollectionContentAssembly(
+            collection: CollectionExport(collection),
+            notes: allNotes.map(Self.noteValues),
+            source: AppContentSource(resolver: self, collection: collection, volumesReady: volumesReady))
+    }
+
+    /// Readies a static collection's volumes for an export before anything of the collection is read:
+    /// the volumes of its document entries, as the assembly would ask for them, downloaded and indexed
+    /// where they are missing. The resolver always read the collection after this step, which can wait
+    /// minutes, so an edit synced in meanwhile still reaches the export. Returns whether it ran; a
+    /// preview and a smart collection ready nothing.
+    private func readyVolumes(of collection: Collection, entries: [CollectionEntry],
+                              purpose: ResolvePurpose) async -> Bool {
+        guard collection.savedSearchId == nil, purpose == .export else { return false }
+        // Document entries only: excerpts carry a real volumeId as provenance but render from their
+        // frozen text (A9), so they never require the volume.
+        await prepareVolumesForExport(Set(entries.filter { $0.entryKind == .document }.map(\.volumeId)))
+        return true
+    }
+
+    /// The entries the assembly resolves: each one's values, for a static collection. A smart
+    /// collection resolves its saved search's results and none of its own entries, so none is read,
+    /// and no legacy prose blob of one is healed.
+    private static func entries(_ entries: [CollectionEntry],
+                                of collection: Collection) -> [CollectionContentAssembly.Entry] {
+        collection.savedSearchId == nil ? entries.map(entry) : []
+    }
+
+    /// A collection entry as the assembly reads it: its values, and a prose block's paragraphs, decoded
+    /// from its export RTF (which also heals a legacy Phase 3b blob in place — see `ProseRichText`).
+    private static func entry(_ entry: CollectionEntry) -> CollectionContentAssembly.Entry {
+        let paragraphs = entry.entryKind == .prose
+            ? CollectionProse.paragraphs(fromRTF: ProseRichText.exportRTF(from: entry)) : nil
+        return CollectionContentAssembly.Entry(CollectionEntryExport(entry), proseParagraphs: paragraphs)
+    }
+
+    /// The collection's introduction (Authoring Phase 4) as the paragraphs the assembly leads with:
+    /// its RTF (`ProseRichText.exportRTF(richText:plainText:)`) decoded by `CollectionProse`, through
+    /// the exact path every prose block takes, or `nil` when no introduction is set — so a collection
+    /// without one resolves to exactly the pre-Phase-4 item list.
+    private static func introduction(of collection: Collection) -> [[ProseFormattedSpan]]? {
+        ProseRichText.exportRTF(richText: collection.introductionRichText,
+                                plainText: collection.introductionText)
+            .map { CollectionProse.paragraphs(fromRTF: $0) }
+    }
+
+    /// The fields of a research note the assembly reads: its identity, its document, its text and its
+    /// tags (for the Thematic Index). The rest of the record is left empty.
+    private static func noteValues(_ note: ResearchNote) -> ResearchNoteExport {
+        ResearchNoteExport(id: note.id, documentId: note.documentId, volumeId: note.volumeId,
+                           bodyText: note.bodyText, projectIds: [], userTagIds: note.userTagIds,
+                           selectedSummaryIds: [], linkedHighlightIds: [])
+    }
+
+    // MARK: - The data source
+
+    /// The app's `CollectionContentDataSource`: the library through `AppState` (the manifest store,
+    /// the indexing pipeline, the AST cache over the download manager's volumes, the cross-reference
+    /// and person-mention stores, the bundled archival indexes) and the researcher's store through the
+    /// resolver's SwiftData context. Every read answers what the resolver read before the assembly
+    /// moved into FRUSCoreKit, from the same fetch; the export steps forward to the resolver, so a test
+    /// subclass's `smartRefs(for:)` and `prepareVolumesForExport(_:)` stand in for them.
+    private struct AppContentSource: CollectionContentDataSource {
+        /// The resolver whose services and context answer.
+        let resolver: CollectionContentResolver
+        /// The collection being resolved, whose saved search a smart resolve runs.
+        let collection: Collection
+        /// Whether the resolver readied this export's volumes before the collection was read.
+        let volumesReady: Bool
+
+        var manifestEntries: [VolumeManifestEntry] {
+            resolver.appState.manifestStore.diffResult?.known
+                ?? resolver.appState.manifestStore.bundledEntries
+        }
+
+        var indexingPipeline: IndexingPipeline? { resolver.appState.indexingPipeline }
+
+        func documentAST(volumeId: String, documentId: String) async -> FRUSDocumentAST? {
+            await resolver.cachedAST(volumeId: volumeId, documentId: documentId)
+        }
+
+        func crossReferenceTargets(volumeId: String, documentId: String) async
+            -> [(volumeId: String, documentId: String)]? {
+            guard let store = resolver.appState.crossReferenceStore else { return nil }
+            let edges = (try? await store.outboundEdges(forDocumentId: documentId, volumeId: volumeId)) ?? []
+            return edges.map { (volumeId: $0.targetVolumeId, documentId: $0.targetDocumentId) }
+        }
+
+        var personMentionStore: PersonMentionStore? { resolver.appState.personMentionStore }
+
+        var archivalIndexes: ArchivalIndexes { .bundled }
+
+        func highlights(volumeId: String, documentId: String) -> [DocumentHighlightExport] {
+            let all = (try? resolver.modelContext.fetch(FetchDescriptor<DocumentHighlight>())) ?? []
+            return all
+                .filter { $0.volumeId == volumeId && $0.documentId == documentId }
+                .map {
+                    DocumentHighlightExport(id: $0.id, volumeId: $0.volumeId, documentId: $0.documentId,
+                                            startOffset: $0.startOffset, endOffset: $0.endOffset,
+                                            colorTag: $0.colorTag, noteId: $0.noteId,
+                                            selectedText: $0.selectedText,
+                                            renderingVersion: $0.renderingVersion, createdAt: $0.createdAt)
+                }
+        }
+
+        func summary(id: UUID) -> GeneratedSummaryExport? {
+            let descriptor = FetchDescriptor<GeneratedSummary>(
+                predicate: #Predicate<GeneratedSummary> { $0.id == id }
+            )
+            return (try? resolver.modelContext.fetch(descriptor).first).map(Self.values)
+        }
+
+        func headnoteSummaries(volumeId: String, documentId: String) -> [GeneratedSummaryExport] {
+            // Capture scalars — #Predicate can't use struct fields.
+            let vid = volumeId
+            let did = documentId
+            let descriptor = FetchDescriptor<GeneratedSummary>(
+                predicate: #Predicate<GeneratedSummary> { s in
+                    s.volumeId == vid && s.documentId == did && s.isHeadnoteDraft == false
+                }
+            )
+            return ((try? resolver.modelContext.fetch(descriptor)) ?? []).map(Self.values)
+        }
+
+        func summary(volumeId: String, documentId: String, promptId: UUID) -> GeneratedSummaryExport? {
+            resolver.storedSummaryRecord(volumeId: volumeId, documentId: documentId, promptId: promptId)
+                .map(Self.values)
+        }
+
+        func zoteroTags(volumeId: String, documentId: String) -> [String] {
+            ZoteroJSONExporter.fetchTagsAndNotes(documentId: documentId, volumeId: volumeId,
+                                                 context: resolver.modelContext).tags
+        }
+
+        func userTags() -> [UserTagExport] {
+            ((try? resolver.modelContext.fetch(FetchDescriptor<UserTag>())) ?? [])
+                .map { UserTagExport(id: $0.id, name: $0.name) }
+        }
+
+        func tagAssignments() -> [DocumentTagAssignmentExport] {
+            ((try? resolver.modelContext.fetch(FetchDescriptor<DocumentTagAssignment>())) ?? [])
+                .map { DocumentTagAssignmentExport(id: $0.id, volumeId: $0.volumeId,
+                                                   documentId: $0.documentId, tagId: $0.tagId) }
+        }
+
+        func smartDocumentRefs() async throws -> [SmartCollectionDocumentRef] {
+            try await resolver.smartRefs(for: collection)
+        }
+
+        func prepareVolumesForExport(_ volumeIds: Set<String>) async {
+            // The resolver readied these before it read the collection (`readyVolumes`), the same set.
+            guard !volumesReady else { return }
+            await resolver.prepareVolumesForExport(volumeIds)
+        }
+
+        func fetchAbsentFigureImages(_ images: [FigureImageName]) async {
+            await resolver.fetchAbsentFigureImages(images)
+        }
+
+        func generateSummaries(for documents: [CollectionExportDocument], promptId: UUID,
+                               bodyTexts: [String: String]) async throws -> [String: String] {
+            try await resolver.resolveSummaries(for: documents, promptId: promptId, bodyTexts: bodyTexts)
+        }
+
+        /// A stored summary's values: what the assembly reads of it is its text, its prompt and its
+        /// authorship; the rest is carried as stored.
+        private static func values(_ summary: GeneratedSummary) -> GeneratedSummaryExport {
+            GeneratedSummaryExport(id: summary.id, documentId: summary.documentId, volumeId: summary.volumeId,
+                                   promptId: summary.promptId, responseText: summary.responseText,
+                                   responseFormat: summary.responseFormat, wasChunked: summary.wasChunked,
+                                   projectId: summary.projectId, createdAt: summary.createdAt,
+                                   lastModified: summary.lastModified, authorship: summary.authorship,
+                                   isHeadnoteDraft: summary.isHeadnoteDraft)
+        }
+    }
+
+    // MARK: - Figure images (export only)
+
+    /// Fetches those of `images` that are not on the device (#1516), each printed by a document
+    /// resolved at full body depth. An image that cannot be fetched prints its placeholder. Reports
+    /// `fetchingFiguresStatus` through `onPreparingStatus` while it asks, and nothing when every image
+    /// is on the device; stops when the task is cancelled.
+    private func fetchAbsentFigureImages(_ images: [FigureImageName]) async {
+        let absent = images.filter { figureImages.data(for: $0) == nil }
+        guard !absent.isEmpty, !Task.isCancelled else { return }
+        onPreparingStatus?(Self.fetchingFiguresStatus)
+        await figureImages.fetchAbsent(absent)
+        onPreparingStatus?(nil)
+    }
+
+    // MARK: - Parsed documents
 
     /// Returns the parsed AST for a document — shared `DocumentASTCache` hit when
     /// available, else a fresh parse that is stored back into the cache. Returns `nil`
@@ -1005,480 +655,6 @@ class CollectionContentResolver {
         print("[CollectionContentResolver] Parsed and cached \(volumeId)/\(documentId)")
         #endif
         return ast
-    }
-
-    /// Composition options derived from the collection's persisted settings, used to gate
-    /// resolution work (highlights, source notes, summary prompt). The word-cloud flag is
-    /// format-dependent and irrelevant to resolution; exporters receive the options the export
-    /// sheet takes from `ExportFormat.exportOptions(for:)`, which applies that gate.
-    ///
-    /// Internal (not private) so tests can assert the legacy `footnoteStyle` → Bool-pair
-    /// mapping end-to-end without standing up a full resolve.
-    func resolutionOptions(for collection: Collection) -> CollectionExportOptions {
-        CollectionExportOptions(composing: collection)
-    }
-
-    // MARK: - Per-entry pipeline
-
-    /// Resolves one entry into its export item — the shared per-entry body used by both
-    /// the batch loop and the incremental `resolveItem` API. A heading passes through as a
-    /// structural item, and a prose entry as the spans its RTF decodes to (`CollectionProse`);
-    /// document entries are fully resolved (citation,
-    /// body, notes, highlights, source note, related documents, Zotero item) per the
-    /// override cascade: entry override → `section` value → collection default.
-    ///
-    /// - Parameters:
-    ///   - section: The section-level defaults in effect at this position (the outline
-    ///     ancestor cascade's output — see `SectionOverrides`).
-    ///   - headingLevel: The outline-resolved level emitted on `.heading` items
-    ///     (already clamped/orphan-corrected by the caller via `CollectionOutline`).
-    /// - Returns: `nil` for `.unrecognized` kinds (written by a newer app version — this
-    ///   build cannot render them), for `.generated` entries whose block type this build
-    ///   doesn't know (same newer-version guard), and for document entries with empty
-    ///   ids (malformed sync payloads) — all skipped rather than emitted as junk items.
-    private func resolveEntry(
-        _ ref: EntryRef,
-        section: SectionOverrides,
-        headingLevel: Int,
-        batch: BatchContext
-    ) async -> CollectionExportItem? {
-        switch ref.kind {
-        case .heading:
-            return .heading(ref.text ?? "", level: headingLevel)
-        case .prose:
-            return .prose(CollectionProse.paragraphs(fromRTF: ref.proseRTF ?? Data()))
-        case .excerpt:
-            return excerptItem(for: ref, batch: batch)
-        case .generated:
-            // Generated apparatus (Phase 6): resolve the block from the collection's
-            // resolved document membership via the single block-resolution seam,
-            // fed by the live data source (index, rollup, NARA index, SwiftData).
-            // Read-only in both purposes — preview and export render identical blocks.
-            // An unknown block type (a newer build's vocabulary) is skipped, mirroring
-            // the `.unrecognized` kind guard: degraded, never corrupted.
-            guard let raw = ref.generatedBlockType,
-                  let blockType = CollectionGeneratedBlockType(rawValue: raw) else { return nil }
-            return await .generated(CollectionGeneratedBlocks.resolve(
-                type: blockType, documents: batch.collectionDocuments,
-                dataSource: LiveGeneratedBlockDataSource(resolver: self, batch: batch)))
-        case .unrecognized:
-            // Written by a newer app version — this build cannot render it.
-            // Skip rather than emit a junk document item (Authoring Phase 1 guard).
-            return nil
-        case .document:
-            break
-        }
-        // Defensive: a document entry without ids (e.g. malformed sync payload from a
-        // future build) can produce nothing useful downstream.
-        guard !ref.volumeId.isEmpty, !ref.documentId.isEmpty else { return nil }
-
-        let manifestEntry = batch.manifestMap[ref.volumeId]
-        let volMeta = manifestEntry.map { FRUSVolumeMetadata($0) }
-        let key = "\(ref.volumeId)/\(ref.documentId)"
-        let renderModel = batch.renderModels[key]
-
-        // Extract header and dateline from the render model when available.
-        let (header, dateline) = renderModelHeadAndDateline(renderModel)
-
-        // The volume's printed number (#1406) — `373a`, `ETA–1` — not the id's integer, which
-        // `d373a` does not have.
-        let docNum = CitableDocumentNumber.resolve(printed: batch.documentNumbers[key],
-                                                   documentId: ref.documentId)
-        let docMeta = FRUSDocumentMetadata(
-            documentId: ref.documentId, documentNumber: docNum,
-            header: header, dateline: dateline)
-        let citation = volMeta.map { batch.formatter.format(document: docMeta, volume: $0) }
-            ?? "\(ref.volumeId)/\(ref.documentId)"
-        let urlString = "https://history.state.gov/historicaldocuments/\(ref.volumeId)/\(ref.documentId)"
-        let volumeTitle = manifestEntry?.title ?? ref.volumeId
-        let bodyText = batch.bodyTexts[key] ?? ""
-
-        // Resolve note texts per the entry's note-resolution mode.
-        let resolvedNoteTexts: [String]
-        switch ref.noteResolution {
-        case .entrySelection(let selectedNoteIds, let legacyNoteId):
-            // selectedNoteIds takes precedence over the legacy researchNoteId link.
-            if !selectedNoteIds.isEmpty {
-                resolvedNoteTexts = selectedNoteIds.compactMap { nid in
-                    batch.allNotes.first { $0.id == nid }?.bodyText
-                }.filter { !$0.isEmpty }
-            } else if let legacyNote = legacyNoteId.flatMap({ nid in
-                batch.allNotes.first { $0.id == nid }
-            }) {
-                // Un-migrated legacy single-note link: honored only while no multi-note
-                // selection exists (write paths migrate legacy → array on first edit).
-                resolvedNoteTexts = legacyNote.bodyText.isEmpty ? [] : [legacyNote.bodyText]
-            } else {
-                // D5: an empty selection with no legacy link means **all** of the
-                // document's notes (mirroring `selectedHighlightIds` and `.allDocumentNotes`),
-                // so future notes auto-flow in and enabling notes on an untouched entry
-                // actually exports them. Populated only on the first inspector deselect.
-                resolvedNoteTexts = batch.allNotes
-                    .filter { $0.documentId == ref.documentId && $0.volumeId == ref.volumeId }
-                    .map(\.bodyText)
-                    .filter { !$0.isEmpty }
-            }
-        case .allDocumentNotes:
-            // Smart entries: every research note on the document travels, matching what
-            // the pre-unification smart Zotero items carried.
-            resolvedNoteTexts = batch.allNotes
-                .filter { $0.documentId == ref.documentId && $0.volumeId == ref.volumeId }
-                .map(\.bodyText)
-                .filter { !$0.isEmpty }
-        }
-
-        // Effective body depth cascade (Phase 3c): the entry's own override, else the
-        // section override (nearest ancestor heading), else the collection default.
-        // Drives per-document rendering and gates inline highlights.
-        let effectiveDepth = CollectionBodyDepth.resolve(
-            entryOverride: ref.bodyDepthOverride,
-            sectionOverride: section.bodyDepth,
-            collectionDefault: batch.collectionDefaultBodyDepth)
-
-        // Phase 5 cascaded overrides: entry ?? section (nil = inherit the collection
-        // default, which renderers read from `options`). The entry-or-section value —
-        // not the fully-collapsed Bool — travels on the payload so renderers apply
-        // `doc.x ?? options.x` and untouched documents keep collection behavior.
-        let highlightsOverride = ref.applyHighlightsOverride ?? section.applyHighlights
-        let notesOverride = ref.includeNotesOverride ?? section.includeNotes
-        let sourceNoteOverride = ref.includeSourceNoteOverride ?? section.includeSourceNote
-        let footnotesOverride = ref.includeFootnotesOverride ?? section.includeFootnotes
-        let promptOverride = ref.summaryPromptIdOverride ?? section.summaryPromptId
-
-        // Highlights (when highlights apply here and body is full). The entry's
-        // selectedHighlightIds filter the set (A8): empty means all.
-        let resolvedHighlights: [ExportHighlight]
-        if (highlightsOverride ?? batch.options.applyHighlights) && effectiveDepth == .full {
-            let allHL = (try? modelContext.fetch(FetchDescriptor<DocumentHighlight>())) ?? []
-            resolvedHighlights = allHL
-                .filter { $0.volumeId == ref.volumeId && $0.documentId == ref.documentId }
-                .filter { ref.selectedHighlightIds.isEmpty
-                    || ref.selectedHighlightIds.contains($0.id) }
-                .map { ExportHighlight(startOffset: $0.startOffset,
-                                      endOffset:   $0.endOffset,
-                                      color:       $0.color) }
-        } else {
-            resolvedHighlights = []
-        }
-
-        // Source note — resolved whenever the cascaded include-source-note flag is on
-        // (Authoring Phase 5; the collection default previously gated on the legacy
-        // tri-state's `.sourceNoteOnly`, which the nil-pair derivation reproduces).
-        let resolvedSourceNote: String?
-        if sourceNoteOverride ?? batch.options.includeSourceNote {
-            resolvedSourceNote = try? await appState.indexingPipeline?
-                .fetchDocumentSourceNote(volumeId: ref.volumeId,
-                                         documentId: ref.documentId)
-        } else {
-            resolvedSourceNote = nil
-        }
-
-        // Headnote (Authoring Phase 5): a stored GeneratedSummary rendered above the
-        // body. Stored summaries only — never generated, in either purpose; renderers
-        // show a placeholder when the entry asked for one and none is stored. The
-        // fallback pick prefers the entry's effective prompt.
-        // Headnote resolves through the two-tier cascade (Composer redesign): the entry's own
-        // opt-in, else the collection default. Headings do not carry a headnote section default.
-        let effectiveHeadnote = ref.includeHeadnote ?? batch.options.includeHeadnoteDefault
-        let resolvedHeadnotePair = effectiveHeadnote
-            ? headnoteText(volumeId: ref.volumeId, documentId: ref.documentId,
-                           summaryId: ref.headnoteSummaryId,
-                           preferredPromptId: promptOverride ?? batch.options.summaryPromptId)
-            : nil
-        let resolvedHeadnote = resolvedHeadnotePair?.text
-        // The headnote's provenance drives its export attribution (a user-edited/-written headnote
-        // is not labeled AI). Absent a stored summary, .aiGenerated is inert (no attribution shows).
-        let resolvedHeadnoteAuthorship = resolvedHeadnotePair?.authorship ?? .aiGenerated
-
-        // Related documents (A10): outbound cross-reference targets that are also in
-        // this collection, rendered as a "See also:" citation line. Off unless the
-        // cascade turns it on; empty when the store is unavailable (e.g. tests).
-        let relatedCitations: [String]
-        if ref.includeRelatedDocuments ?? section.includeRelatedDocuments ?? false,
-           let store = appState.crossReferenceStore {
-            let edges = (try? await store.outboundEdges(
-                forDocumentId: ref.documentId, volumeId: ref.volumeId)) ?? []
-            let targets = Self.relatedDocumentTargets(
-                outboundTargets: edges.map { (volumeId: $0.targetVolumeId,
-                                              documentId: $0.targetDocumentId) },
-                selfVolumeId: ref.volumeId, selfDocumentId: ref.documentId,
-                collectionDocuments: batch.collectionDocuments)
-            relatedCitations = targets.map {
-                shortCitation(volumeId: $0.volumeId, documentId: $0.documentId,
-                              printedNumber: batch.documentNumbers["\($0.volumeId)/\($0.documentId)"],
-                              batch: batch)
-            }
-        } else {
-            relatedCitations = []
-        }
-
-        // Zotero JSON item (for ExportFormat.zoteroJSON)
-        let zoteroItem: ZoteroJSONExporter.Item?
-        if let volMeta {
-            let year = FRUSVolumeMetadata.firstYear(in: volMeta.publicationDate).map(String.init) ?? "n.d."
-            let (tags, _) = ZoteroJSONExporter.fetchTagsAndNotes(
-                documentId: ref.documentId, volumeId: ref.volumeId, context: modelContext)
-            zoteroItem = ZoteroJSONExporter.makeItem(
-                document: docMeta,
-                volume: volMeta,
-                year: year,
-                url: urlString,
-                isEditorialNote: batch.editorialNoteFlags[key] ?? false,
-                tags: tags,
-                notes: resolvedNoteTexts
-            )
-        } else {
-            zoteroItem = nil
-        }
-
-        return .document(CollectionExportDocument(
-            documentId: ref.documentId,
-            volumeId: ref.volumeId,
-            sortOrder: ref.sortOrder,
-            bodyDepth: effectiveDepth,
-            title: "\(volumeTitle) — \(ref.documentId)",
-            titleOverride: ref.titleOverride,
-            date: manifestEntry?.dateRange.earliest,
-            bodyText: bodyText,
-            noteTexts: resolvedNoteTexts,
-            citation: citation,
-            historyStateGovURL: urlString,
-            renderModel: renderModel,
-            header: header,
-            dateline: dateline,
-            highlights: resolvedHighlights,
-            sourceNoteText: resolvedSourceNote,
-            includeHeadnote: effectiveHeadnote,
-            headnoteText: resolvedHeadnote,
-            headnoteAuthorship: resolvedHeadnoteAuthorship,
-            applyHighlightsOverride: highlightsOverride,
-            includeNotesOverride: notesOverride,
-            includeFootnotesOverride: footnotesOverride,
-            summaryPromptIdOverride: promptOverride,
-            relatedDocumentCitations: relatedCitations,
-            zoteroItem: zoteroItem
-        ))
-    }
-
-    // MARK: - Related documents (A10)
-
-    /// The A10 pure core, internal for tests: of a document's outbound cross-reference
-    /// targets, keep only those **also in the collection**, returned in collection
-    /// order, deduplicated, with the document itself excluded. `collectionDocuments`
-    /// (ordered, deduped) is the single membership universe, so the line is bounded by
-    /// the artifact's own contents — never the full cross-reference fan-out.
-    ///
-    /// - Parameters:
-    ///   - outboundTargets: The targets of the document's outbound edges (any order,
-    ///     duplicates allowed).
-    ///   - selfVolumeId: The referencing document's volume id (self-references dropped).
-    ///   - selfDocumentId: The referencing document's document id.
-    ///   - collectionDocuments: The collection's document membership in collection order.
-    /// - Returns: The in-collection targets, in collection order.
-    nonisolated static func relatedDocumentTargets(
-        outboundTargets: [(volumeId: String, documentId: String)],
-        selfVolumeId: String,
-        selfDocumentId: String,
-        collectionDocuments: [(volumeId: String, documentId: String)]
-    ) -> [(volumeId: String, documentId: String)] {
-        let selfKey = "\(selfVolumeId)/\(selfDocumentId)"
-        let targetKeys = Set(outboundTargets.map { "\($0.volumeId)/\($0.documentId)" })
-        return collectionDocuments.filter {
-            let key = "\($0.volumeId)/\($0.documentId)"
-            return key != selfKey && targetKeys.contains(key)
-        }
-    }
-
-    /// Resolves an `.excerpt` entry into its export item (Authoring Phase 5): the frozen
-    /// verbatim passage plus a source citation built through the exact citation path
-    /// document items use (`manifestMap` + `HistoryAtStateCitationFormatter`). No volume
-    /// XML is touched — the passage was frozen at creation — so an excerpt renders fully
-    /// even when its source volume isn't downloaded (in exports and the preview alike).
-    ///
-    /// - Returns: The `.excerpt` item, or `nil` when the entry carries no passage text
-    ///   (a malformed sync payload — nothing to quote, so it is skipped defensively,
-    ///   matching the empty-ids document guard).
-    private func excerptItem(for ref: EntryRef, batch: BatchContext) -> CollectionExportItem? {
-        guard let passage = ref.text, !passage.isEmpty else { return nil }
-        let citation: String
-        if !ref.volumeId.isEmpty, !ref.documentId.isEmpty {
-            citation = shortCitation(volumeId: ref.volumeId, documentId: ref.documentId,
-                                     printedNumber: batch.documentNumbers[
-                                        "\(ref.volumeId)/\(ref.documentId)"],
-                                     batch: batch)
-        } else {
-            // No provenance (defensive): renderers omit the source line for an
-            // empty citation rather than printing a junk reference.
-            citation = ""
-        }
-        return .excerpt(CollectionExportExcerpt(
-            text: passage,
-            documentId: ref.documentId,
-            volumeId: ref.volumeId,
-            citation: citation,
-            colorTag: ref.excerptColorTag))
-    }
-
-    /// The history.state.gov-style citation for a document reference — the same
-    /// manifest + formatter path document items use, without needing the volume XML
-    /// (`HistoryAtStateCitationFormatter` reads only volume metadata and the document
-    /// number, never the document header/dateline, so this IS the full citation).
-    /// Shared by the excerpt source line, the related-documents "See also:" line, and
-    /// the generated-blocks data source; falls back to `"volumeId/documentId"` when
-    /// the manifest doesn't know the volume.
-    ///
-    /// `printedNumber` is what the index stores for the document (`batch.documentNumbers`, or the
-    /// block's own `documentNumbers(for:)` read), resolved through `CitableDocumentNumber` (#1406).
-    private func shortCitation(volumeId: String, documentId: String, printedNumber: String?,
-                               batch: BatchContext) -> String {
-        let docNum = CitableDocumentNumber.resolve(printed: printedNumber, documentId: documentId)
-        let docMeta = FRUSDocumentMetadata(
-            documentId: documentId, documentNumber: docNum,
-            header: "", dateline: nil)
-        return batch.manifestMap[volumeId]
-            .map { batch.formatter.format(document: docMeta, volume: FRUSVolumeMetadata($0)) }
-            ?? "\(volumeId)/\(documentId)"
-    }
-
-    // MARK: - Live generated-block data source (Phase 6)
-
-    /// The production `CollectionGeneratedBlockDataSource`: wires the block resolvers to
-    /// the FTS5 index (`document_dates`, `document_sources`), the materialised People-
-    /// browser rollup (`PersonMentionStore`), the bundled NARA resolution index
-    /// (`VolumeSourcesIndexStore`), and SwiftData tags — all read-only, so blocks answer
-    /// identically for `.preview` and `.export`. Every accessor degrades to empty when
-    /// its backing service is unavailable (e.g. tests without a pipeline), which the
-    /// blocks render as their localized "nothing to list" row.
-    private struct LiveGeneratedBlockDataSource: CollectionGeneratedBlockDataSource {
-        /// The owning resolver — supplies the citation path and the shared services.
-        let resolver: CollectionContentResolver
-        /// The batch whose manifest map / formatter / render models serve citations.
-        let batch: BatchContext
-
-        func citation(volumeId: String, documentId: String, printedNumber: String?) -> String {
-            // The single citation path: header-independent (the formatter never reads
-            // header/dateline), so block rows match the document items' citations and
-            // capped previews match exports by construction (v1.10).
-            resolver.shortCitation(volumeId: volumeId, documentId: documentId,
-                                   printedNumber: printedNumber, batch: batch)
-        }
-
-        /// Read from the batch rather than the index a second time: both block call sites resolve
-        /// over `batch.collectionDocuments`, whose numbers `loadBatchContext` already fetched.
-        func documentNumbers(
-            for documents: [(volumeId: String, documentId: String)]
-        ) async -> [String: String] {
-            let requested = Set(documents.map { "\($0.volumeId)/\($0.documentId)" })
-            return batch.documentNumbers.filter { requested.contains($0.key) }
-        }
-
-        func dateMetadata(
-            for documents: [(volumeId: String, documentId: String)]
-        ) async -> [String: DocumentDateMetadata] {
-            guard let pipeline = resolver.appState.indexingPipeline else { return [:] }
-            return (try? await pipeline.dateMetadataByDocumentKey(documents)) ?? [:]
-        }
-
-        func documentSources(
-            for documents: [(volumeId: String, documentId: String)]
-        ) async -> [CollectionGeneratedBlocks.SourceRecord] {
-            guard let pipeline = resolver.appState.indexingPipeline else { return [] }
-            let rows = (try? await pipeline.documentSourcesByKey(documents)) ?? [:]
-            return rows.values.map {
-                CollectionGeneratedBlocks.SourceRecord(
-                    volumeId: $0.volumeId, documentId: $0.documentId,
-                    repository: $0.repository, recordGroup: $0.recordGroup,
-                    lotFile: $0.lotFile, seriesName: $0.seriesName, rawText: $0.rawText,
-                    citationEra: $0.citationEra)
-            }
-        }
-
-        // #372/N-5: a document citation resolves through its LOT and nothing else —
-        // `documentResolution` does not take a record group, so this block can no longer
-        // answer "740.00119 (Potsdam)/5-2446" with a link to the whole of RG 59. The record
-        // group still appears in the row's label; only the hyperlink is withheld. The lot half
-        // is central-files first, volume-sources second. See `ArchivalResolver`.
-        //
-        // `recordGroup` stays in the signature because `CollectionGeneratedBlocks` groups and
-        // labels by it — it is simply not part of the resolution any more.
-        func archivalResolution(recordGroup: String?, lotFile: String?)
-            -> CollectionGeneratedBlocks.ArchivalLink? {
-            ArchivalResolver.documentResolution(lotFile: lotFile)
-                .map { CollectionGeneratedBlocks.ArchivalLink(title: $0.title,
-                                                              urlString: $0.catalogURL) }
-        }
-
-        func personMentions(
-            for documents: [(volumeId: String, documentId: String)]
-        ) async -> [CollectionGeneratedBlocks.PersonMention] {
-            guard let store = resolver.appState.personMentionStore else { return [] }
-            let mentions = (try? await store.rollupMentions(forDocuments: documents)) ?? []
-            return mentions.map {
-                CollectionGeneratedBlocks.PersonMention(
-                    identityKey: "r\($0.rollupId)", name: $0.canonicalName,
-                    description: $0.description, role: $0.role,
-                    volumeId: $0.volumeId, documentId: $0.documentId)
-            }
-        }
-
-        func tagRecords() async -> [CollectionGeneratedBlocks.TagRecord] {
-            let tags = (try? resolver.modelContext.fetch(FetchDescriptor<UserTag>())) ?? []
-            guard !tags.isEmpty else { return [] }
-            let assignments = (try? resolver.modelContext.fetch(
-                FetchDescriptor<DocumentTagAssignment>())) ?? []
-            // The batch already carries every research note — the same pool entry
-            // note-links resolve against — so no second fetch is needed.
-            return tags.map { tag in
-                let refs = CollectionDocumentDiscovery.tagDocumentRefs(
-                    tagId: tag.id, notes: batch.allNotes, assignments: assignments)
-                return CollectionGeneratedBlocks.TagRecord(
-                    name: tag.name,
-                    documents: refs.map { (volumeId: $0.volumeId, documentId: $0.documentId) })
-            }
-        }
-    }
-
-    /// Resolves the stored `GeneratedSummary` text for a headnote: the explicitly chosen
-    /// `summaryId` when set (and non-empty), else the document's summary for
-    /// `preferredPromptId` (the collection's prompt), else any non-empty stored summary.
-    /// Returns `nil` when nothing is stored — headnote resolution **never** generates
-    /// (renderers emit a placeholder note instead; see the type doc, v1.4).
-    private func headnoteText(
-        volumeId: String,
-        documentId: String,
-        summaryId: UUID?,
-        preferredPromptId: UUID?
-    ) -> (text: String, authorship: SummaryAuthorship)? {
-        // Capture scalars — #Predicate can't use struct fields.
-        let vid = volumeId
-        let did = documentId
-        if let sid = summaryId {
-            let descriptor = FetchDescriptor<GeneratedSummary>(
-                predicate: #Predicate<GeneratedSummary> { $0.id == sid }
-            )
-            if let chosen = try? modelContext.fetch(descriptor).first,
-               !chosen.responseText.isEmpty {
-                return (chosen.responseText, chosen.authorship ?? .aiGenerated)
-            }
-            // The chosen summary no longer exists (deleted / not yet synced): fall
-            // through to the stored-summary fallback rather than silently dropping
-            // the requested headnote.
-        }
-        // Exclude headnote drafts from the fallback: a draft is a per-entry private summary reachable
-        // ONLY via its owning entry's explicit `headnoteSummaryId` (handled above). Without this,
-        // a second entry for the same document with no headnote of its own could fall back onto the
-        // first entry's private draft.
-        let descriptor = FetchDescriptor<GeneratedSummary>(
-            predicate: #Predicate<GeneratedSummary> { s in
-                s.volumeId == vid && s.documentId == did && s.isHeadnoteDraft == false
-            }
-        )
-        let stored = ((try? modelContext.fetch(descriptor)) ?? [])
-            .filter { !$0.responseText.isEmpty }
-        if let pid = preferredPromptId, let preferred = stored.first(where: { $0.promptId == pid }) {
-            return (preferred.responseText, preferred.authorship ?? .aiGenerated)
-        }
-        return stored.first.map { ($0.responseText, $0.authorship ?? .aiGenerated) }
     }
 
     // MARK: - Volume preparation (export only)
@@ -1554,82 +730,12 @@ class CollectionContentResolver {
         onPreparingStatus?(nil)
     }
 
-    // MARK: - Summary phase
+    // MARK: - Summary generation (export only)
 
-    /// Applies the summary phase to resolved items: for every document whose effective
-    /// body depth is `.summaryOnly`, attaches summary text per the purpose — `.export`
-    /// generates on demand (pre-extraction behavior, error-for-error), `.preview` attaches
-    /// stored summaries only and leaves the rest `nil` for placeholder rendering.
-    ///
-    /// Documents are grouped by their **effective prompt** (the cascaded
-    /// `summaryPromptIdOverride`, else the collection's `summaryPromptId` — Phase 5), so
-    /// one collection can mix prompts; a collection with no overrides forms exactly one
-    /// group under the collection prompt, reproducing the prior behavior including the
-    /// `summaryPromptMissing` error when none is configured.
-    private func applySummaryPhase(
-        to items: [CollectionExportItem],
-        collection: Collection,
-        purpose: ResolvePurpose
-    ) async throws -> [CollectionExportItem] {
-        let summaryDocs = items.documents.filter { $0.bodyDepth == .summaryOnly }
-        guard !summaryDocs.isEmpty else { return items }
-
-        /// The prompt that supplies this document's summary (cascade, else collection).
-        func effectivePrompt(_ doc: CollectionExportDocument) -> UUID? {
-            doc.summaryPromptIdOverride ?? collection.summaryPromptId
-        }
-        /// Summary lookup key: document identity + effective prompt, so the same
-        /// document under two different prompts attaches two different summaries.
-        func summaryKey(_ doc: CollectionExportDocument) -> String {
-            "\(doc.volumeId)/\(doc.documentId)|\(effectivePrompt(doc)?.uuidString ?? "")"
-        }
-
-        var summaries: [String: String] = [:]
-        switch purpose {
-        case .export:
-            // Deterministic group order (by prompt id) so progress and failures are stable.
-            let groups = Dictionary(grouping: summaryDocs, by: { effectivePrompt($0) })
-                .sorted { ($0.key?.uuidString ?? "") < ($1.key?.uuidString ?? "") }
-            for (promptId, docs) in groups {
-                guard let promptId else {
-                    throw CollectionResolveError.summaryPromptMissing
-                }
-                // uniquingKeysWith: the same document may legitimately appear in a
-                // collection more than once; the duplicate pairs are identical.
-                let bodyTexts = Dictionary(
-                    docs.map { ("\($0.volumeId)/\($0.documentId)", $0.bodyText) },
-                    uniquingKeysWith: { first, _ in first })
-                let generated = try await resolveSummaries(for: docs, promptId: promptId,
-                                                           bodyTexts: bodyTexts)
-                for (docKey, text) in generated {
-                    summaries["\(docKey)|\(promptId.uuidString)"] = text
-                }
-            }
-        case .preview:
-            // Never generate: attach stored summaries where they exist; a summary-depth
-            // document without one — or with no effective prompt — keeps a nil summary
-            // (the preview renders a placeholder).
-            for doc in summaryDocs {
-                guard let promptId = effectivePrompt(doc) else { continue }
-                let key = summaryKey(doc)
-                if summaries[key] == nil,
-                   let text = storedSummary(volumeId: doc.volumeId, documentId: doc.documentId,
-                                            promptId: promptId) {
-                    summaries[key] = text
-                }
-            }
-        }
-
-        return items.map { item in
-            guard case .document(let doc) = item, doc.bodyDepth == .summaryOnly,
-                  let text = summaries[summaryKey(doc)] else { return item }
-            return .document(doc.withSummary(text))
-        }
-    }
-
-    /// Returns the stored `GeneratedSummary` text for a document under `promptId`, or
-    /// `nil` when none exists (or it is empty). Never generates.
-    private func storedSummary(volumeId: String, documentId: String, promptId: UUID) -> String? {
+    /// The first `GeneratedSummary` stored for a document under `promptId`, a headnote draft included,
+    /// or `nil` when none exists — the record the data source's `summary(volumeId:documentId:promptId:)`
+    /// answers with and `storedSummary` reads.
+    private func storedSummaryRecord(volumeId: String, documentId: String, promptId: UUID) -> GeneratedSummary? {
         // Capture scalars — #Predicate can't use struct fields.
         let vid = volumeId
         let did = documentId
@@ -1639,14 +745,22 @@ class CollectionContentResolver {
                 s.volumeId == vid && s.documentId == did && s.promptId == pid
             }
         )
-        guard let existing = try? modelContext.fetch(descriptor).first,
+        return try? modelContext.fetch(descriptor).first
+    }
+
+    /// Returns the stored `GeneratedSummary` text for a document under `promptId`, or
+    /// `nil` when none exists (or it is empty). Never generates.
+    private func storedSummary(volumeId: String, documentId: String, promptId: UUID) -> String? {
+        guard let existing = storedSummaryRecord(volumeId: volumeId, documentId: documentId, promptId: promptId),
               !existing.responseText.isEmpty else { return nil }
         return existing.responseText
     }
 
     /// Generates or fetches summaries for all entries when bodyDepth == .summaryOnly.
     /// Returns a [key: summaryText] map. Throws if any generation fails. Export only —
-    /// `.preview` uses `storedSummary` and never reaches this path.
+    /// `.preview` uses `storedSummary` and never reaches this path. The data source's
+    /// `generateSummaries(for:promptId:bodyTexts:)`, which the assembly's summary phase calls for each
+    /// group of documents under one prompt.
     private func resolveSummaries(
         for docs: [CollectionExportDocument],
         promptId: UUID,
@@ -1699,92 +813,5 @@ class CollectionContentResolver {
         }
         onSummaryStatus?(nil)
         return result
-    }
-
-    // MARK: - Render Model Extraction Helpers
-
-    /// Extracts the first heading and first dateline from a render model's body nodes.
-    private func renderModelHeadAndDateline(_ model: FRUSDocumentRenderModel?) -> (header: String, dateline: String?) {
-        guard let model else { return ("", nil) }
-        var header = ""
-        var dateline: String? = nil
-        for node in model.bodyNodes {
-            if case .heading(let c) = node, header.isEmpty {
-                header = Self.renderNodePlainText(c).trimmingCharacters(in: .whitespacesAndNewlines)
-            } else if case .dateline(let c) = node, dateline == nil {
-                let text = Self.renderNodePlainText(c).trimmingCharacters(in: .whitespacesAndNewlines)
-                if !text.isEmpty { dateline = text }
-            }
-            if !header.isEmpty && dateline != nil { break }
-        }
-        return (header, dateline)
-    }
-
-    /// Recursively extracts plain text from an array of `FRUSRenderNode` values.
-    ///
-    /// `nonisolated static` since #1371 so a test can pin the list branch below; it reads no
-    /// resolver state.
-    nonisolated static func renderNodePlainText(_ nodes: [FRUSRenderNode]) -> String {
-        nodes.map { renderNodePlainText($0) }.joined()
-    }
-
-    /// Recursively extracts plain text from a single `FRUSRenderNode`.
-    nonisolated static func renderNodePlainText(_ node: FRUSRenderNode) -> String {
-        switch node {
-        case .plainText(let s):
-            return s
-        case .boldText(let c), .italicText(let c), .smallCapsText(let c),
-             .underlineText(let c), .termText(let c), .corrText(let c),
-             .suppliedText(let c), .sicText(let c):
-            return renderNodePlainText(c)
-        case .heading(let c), .dateline(let c), .salutation(let c),
-             .paragraph(let c), .attachmentHeading(let c):
-            return renderNodePlainText(c)
-        case .letterOpener(let c), .letterCloser(let c),
-             .editorialNoteBlock(let c), .titlePageBlock(let c):
-            return renderNodePlainText(c)
-        case .attachmentBlock(_, let c), .unknown(_, let c):
-            return renderNodePlainText(c)
-        case .persNameLink(_, let c, _), .glossLink(_, let c, _),
-             .crossRefLink(_, _, _, _, let c):
-            return renderNodePlainText(c)
-        case .formulaText(let s):
-            return s
-        case .lineBreak, .elementSpace:
-            // `.elementSpace` (#1516 fold-in): the space between two inline elements, so an
-            // exported dateline reads "Washington, February 28, 1861" as the reader draws it.
-            return " "
-        case .footnoteMarker(_, _, _, let label):
-            // #985: an unnumbered note contributes nothing to plain text. This walk reaches
-            // document heads and datelines, where a head-nested source note previously emitted a
-            // fabricated "[1]" into the exported title.
-            return label.map { "[\($0)]" } ?? ""
-        case .listBlock(_, let heading, let items, let trailing):
-            // #1371: the printed text in order — heading, then each item after its label and any
-            // other list child — as the reader draws it. Plain text, so no offset space to keep.
-            // Defensive today: no document head or dateline in the corpus holds a list outside a
-            // footnote (measured 0 at `550a8c5c5`), and a footnote's body is not walked here.
-            let lead = { (parts: [ListLead]) -> [String] in
-                parts.map { part in
-                    switch part {
-                    case .label(let c), .other(let c): return renderNodePlainText(c)
-                    }
-                }
-            }
-            let pieces = [heading.map { renderNodePlainText($0) } ?? ""]
-                + items.flatMap { lead($0.lead) + [renderNodePlainText($0.children)] }
-                + lead(trailing)
-            return pieces.filter { !$0.isEmpty }.joined(separator: " ")
-        case .tableBlock(let caption, let rows):
-            let body = rows.map { row in row.map { renderNodePlainText($0.children) }.joined(separator: " | ") }
-                .joined(separator: "\n")
-            // #1495: the caption the volume printed, on a line of its own above the rows, as the
-            // reader draws it. Defensive, as the list branch is: no document head or dateline in
-            // the corpus holds a table outside a footnote (measured 0 at `550a8c5c5`).
-            guard let caption else { return body }
-            return renderNodePlainText(caption) + "\n" + body
-        case .footnoteBody, .pageBreak, .figureBlock:
-            return ""
-        }
     }
 }

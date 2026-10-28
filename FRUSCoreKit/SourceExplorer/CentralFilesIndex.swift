@@ -25,7 +25,11 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-15: Phase 1 — Numerical File
-struct CentralFilesIndex: Codable, Sendable, Equatable {
+///   1.1 — 2026-10-27 (FRUS Explorer Light, S18b): moved into FRUSCoreKit with the two other indexes
+///          `ArchivalResolver` reads, public with its decoder, so a host outside the app decodes the bundled
+///          file and passes it in (`ArchivalIndexes`); `CentralFilesIndexStore`, which reads the app's bundle,
+///          stays in the app (`CentralFilesIndexStore.swift`)
+public struct CentralFilesIndex: Codable, Sendable, Equatable {
 
     /// Index schema version. Phase 1 emits `1`.
     var schemaVersion: Int
@@ -53,7 +57,7 @@ struct CentralFilesIndex: Codable, Sendable, Equatable {
     private let lotFilesByNumber: [String: LotFileEntry]
 
     // The generator defaults newer fields; tolerate their absence for forward safety.
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
         generated = try container.decodeIfPresent(String.self, forKey: .generated) ?? ""
@@ -518,49 +522,5 @@ extension CentralFilesIndex {
             }
         }
         return false
-    }
-}
-
-// MARK: - CentralFilesIndexStore
-
-/// Loads and caches the bundled `central-files-index.json`.
-///
-/// The index is decoded once, lazily, on first access. `shared` is `nil` only when the
-/// resource is missing or cannot be decoded (logged in DEBUG).
-///
-/// ## Static catalog links (no API key)
-/// `numericalFileSeriesURL` and `cardIndexURL` are the fallbacks shown when a case falls
-/// in a coverage gap or on the name/place-filed rolls that carry no case number.
-///
-/// Version history:
-///   1.0 — Session 2026-06-15: initial implementation
-enum CentralFilesIndexStore {
-
-    /// The bundled Central Files index, or `nil` if unavailable. Loaded once.
-    static let shared: CentralFilesIndex? = load()
-
-    /// NARA Catalog record for the Numerical File series (M862, NAID 654171).
-    static let numericalFileSeriesURL = URL(string: "https://catalog.archives.gov/id/654171")!
-
-    /// NARA Catalog record for the Card Index to the Numerical File (M1889, NAID 656824),
-    /// the finding aid that resolves names/subjects to case numbers.
-    static let cardIndexURL = URL(string: "https://catalog.archives.gov/id/656824")!
-
-    private static func load() -> CentralFilesIndex? {
-        guard let url = Bundle.main.url(forResource: "central-files-index", withExtension: "json") else {
-            #if DEBUG
-            print("[SourceExplorer] CentralFilesIndexStore: central-files-index.json not found in bundle.")
-            #endif
-            return nil
-        }
-        do {
-            let data = try Data(contentsOf: url)
-            return try JSONDecoder().decode(CentralFilesIndex.self, from: data)
-        } catch {
-            #if DEBUG
-            print("[SourceExplorer] CentralFilesIndexStore: failed to decode central-files-index.json — \(error)")
-            #endif
-            return nil
-        }
     }
 }

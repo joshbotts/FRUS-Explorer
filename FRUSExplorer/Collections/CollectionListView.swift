@@ -55,6 +55,8 @@ import UniformTypeIdentifiers
 ///          (`SmartCollectionRule.listLabel`) where it printed its count of ignored entries
 ///   1.10 — 2026-10-21: #1761 — at an accessibility text size a row puts what the collection holds
 ///          above its date, so "Smart collection" no longer breaks inside a word at the largest size
+///   1.11 — 2026-10-27 (FRUS Explorer Light, S18b): Snapshot runs the saved search through FRUSCoreKit's
+///          `SmartCollectionSnapshot.documentRefs`, at the same ceiling
 struct CollectionListView: View {
 
     /// Pass `false` when this view is the root content of a `Window` scene; in that
@@ -223,10 +225,11 @@ struct CollectionListView: View {
             return
         }
         do {
-            let results = try await searchService.search(
-                parameters: savedSearch.searchParameters,
+            // The saved search's run is FRUSCoreKit's (FRUS Explorer Light, S18b), at the iOS search's ceiling.
+            let refs = try await SmartCollectionSnapshot.documentRefs(
+                parameters: savedSearch.searchParameters, searchService: searchService,
                 limit: SearchViewModel.searchHardLimit)
-            let refs = results.map { (documentId: $0.documentId, volumeId: $0.volumeId) }
+                .map { (documentId: $0.documentId, volumeId: $0.volumeId) }
             let snapshot = SmartCollectionSnapshot.create(from: collection, results: refs, into: modelContext)
             if let pid = appState.activeProjectId, !snapshot.projectIds.contains(pid) {
                 snapshot.projectIds.append(pid)

@@ -199,6 +199,8 @@ public enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
 ///   1.0 — Session 153: introduced alongside `CollectionFootnoteStyle`
 ///   1.1 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public; `available`, which
 ///          asks Apple Intelligence, stays in the app (`CollectionExporter+App.swift`)
+///   1.2 — 2026-10-27 (FRUS Explorer Light, S18b): `available(summariesAvailable:)`, the rule `available`
+///          reads, with whether summaries can be had passed in
 public enum CollectionBodyDepth: String, CaseIterable, Identifiable, Sendable {
     /// Full document body — current default. Respects the document as written.
     case full
@@ -244,6 +246,13 @@ public enum CollectionBodyDepth: String, CaseIterable, Identifiable, Sendable {
                                collectionDefault: String) -> CollectionBodyDepth {
         CollectionBodyDepth(rawValue: entryOverride ?? sectionOverride ?? collectionDefault) ?? .full
     }
+
+    /// The body depths a user can choose: every one when summaries can be had, else all but
+    /// `.summaryOnly`. The app passes whether Apple Intelligence is available (`available`); a host
+    /// without a summarizer passes whether it has summaries to show.
+    public static func available(summariesAvailable: Bool) -> [CollectionBodyDepth] {
+        summariesAvailable ? allCases : allCases.filter { $0 != .summaryOnly }
+    }
 }
 
 // MARK: - CollectionFootnoteStyle
@@ -261,6 +270,9 @@ public enum CollectionBodyDepth: String, CaseIterable, Identifiable, Sendable {
 ///   1.0 — Session 153: initial implementation
 ///   1.1 — Authoring Phase 5: demoted to the legacy raw-value vocabulary (see above)
 ///   1.2 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public
+///   1.3 — 2026-10-27 (FRUS Explorer Light, S18b): `derivedFlags(fromStyleRawValue:)` and
+///          `bestFitRawValue(footnotes:sourceNote:)`, the two mappings between the raw value and the Bool
+///          pair, moved from the app's `Collection`, whose statics of the same meaning forward to them
 public enum CollectionFootnoteStyle: String, CaseIterable, Identifiable, Sendable {
     /// No footnotes — body text only.
     case none
@@ -280,6 +292,33 @@ public enum CollectionFootnoteStyle: String, CaseIterable, Identifiable, Sendabl
                                             defaultValue: "Source note only")
         case .all:            return String(localized: "export.footnoteStyle.all",
                                             defaultValue: "All footnotes")
+        }
+    }
+
+    /// Maps a legacy `footnoteStyle` raw value to the Bool pair it always meant:
+    /// `all` → (true, false), `sourceNoteOnly` → (false, true), `none` → (false, false).
+    /// An unknown raw value falls back to `all`, matching every pre-Phase-5 read site's
+    /// `CollectionFootnoteStyle(rawValue:) ?? .all`.
+    public static func derivedFlags(fromStyleRawValue raw: String) -> (footnotes: Bool, sourceNote: Bool) {
+        switch raw {
+        case "sourceNoteOnly": return (false, true)
+        case "none":           return (false, false)
+        default:               return (true, false)   // "all" + unknown values (legacy fallback)
+        }
+    }
+
+    /// The best-fit legacy `footnoteStyle` raw value for a Bool pair, written alongside
+    /// the pair so old readers/devices keep behaving sensibly: (true, false) → `all`,
+    /// (false, true) → `sourceNoteOnly`, (false, false) → `none`. The one combination the
+    /// tri-state cannot express — footnotes **and** the source note — writes `all`
+    /// (documented lossy mapping: an old build shows the footnotes and drops the source
+    /// note, which is the closer of the two degradations to the author's intent).
+    public static func bestFitRawValue(footnotes: Bool, sourceNote: Bool) -> String {
+        switch (footnotes, sourceNote) {
+        case (true, false):  return "all"
+        case (false, true):  return "sourceNoteOnly"
+        case (false, false): return "none"
+        case (true, true):   return "all"   // inexpressible in the tri-state; see doc
         }
     }
 }
@@ -428,6 +467,9 @@ final class HighlightPaintTracker {
 ///   1.5 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, with its
 ///          initialiser spelled out with the same defaults; `init(composing:)`, which reads a
 ///          SwiftData `Collection`, stays in the app (`CollectionExporter+App.swift`)
+///   1.6 — 2026-10-27 (FRUS Explorer Light, S18b): `init(composing:)` over a collection's values
+///          (`CollectionExport`), the same eight fields, each absent one at the model's default, which the
+///          content assembly reads and a host outside the app builds its options with
 public struct CollectionExportOptions: Sendable {
     /// Which label style to use in the table of contents.
     public var tocStyle: CollectionToCStyle = .citation
@@ -476,6 +518,26 @@ public struct CollectionExportOptions: Sendable {
         self.summaryPromptId = summaryPromptId
         self.includeWordCloud = includeWordCloud
         self.includeHeadnoteDefault = includeHeadnoteDefault
+    }
+
+    /// The options a collection's own composition gives, read from its values: what the app's
+    /// `init(composing:)` reads from the model, with each field the values leave out (a file written
+    /// before format version 7) at the model's default, and the two footnote flags derived from the
+    /// legacy `footnoteStyle` where they are unset, as the model's effective accessors derive them.
+    ///
+    /// - Parameter collection: The collection's values.
+    public init(composing collection: CollectionExport) {
+        let legacy = CollectionFootnoteStyle.derivedFlags(fromStyleRawValue: collection.footnoteStyle ?? "all")
+        self.init(
+            tocStyle:          CollectionToCStyle(rawValue: collection.tocStyle ?? "citation") ?? .citation,
+            includeFootnotes:  collection.includeFootnotes ?? legacy.footnotes,
+            includeSourceNote: collection.includeSourceNote ?? legacy.sourceNote,
+            applyHighlights:   collection.applyHighlights ?? false,
+            includeNotes:      collection.includeNotes ?? true,
+            summaryPromptId:   collection.summaryPromptId,
+            includeWordCloud:  collection.includeWordCloud ?? false,
+            includeHeadnoteDefault: collection.defaultIncludeHeadnote ?? false
+        )
     }
 }
 

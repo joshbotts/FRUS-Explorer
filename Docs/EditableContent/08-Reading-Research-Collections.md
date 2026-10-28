@@ -1327,7 +1327,7 @@ This volume was indexed before the app recorded details about people. To add the
 ### Collections and Zotero
 
 #### Search is not ready yet. Try again in a moment.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionContentResolver.swift | lines: 34–35 | key: export.smart.noSearchService.v2 -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionContentAssembly.swift | lines: 35–36 | key: export.smart.noSearchService.v2 -->
 
 Search is not ready yet. Try again in a moment.
 
@@ -2393,14 +2393,14 @@ Choose a tag or All Research Documents from the sidebar.
 *The collection editor and inspector captions, the add-documents sheet, the export sheet's Zotero captions, the headnote and colophon printed in exports, and the trip packet's topic placeholder and footnote citation.*
 
 #### This volume is downloaded but not yet indexed. Indexing…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.browseDocumentLevel | lines: 822–823 | key: collection.addDocs.browse.notIndexed -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.browseDocumentLevel | lines: 814–815 | key: collection.addDocs.browse.notIndexed -->
 
 This volume is downloaded but not yet indexed. Indexing normally starts right after download — give it a moment, or check Settings if it doesn’t.
 
 <!-- END SOURCE: collection.addDocs.browse.notIndexed -->
 
 #### Each line is resolved against the FRUS manifest and your…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.citationsTab | lines: 971–972 | key: collection.addDocs.citations.hint -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.citationsTab | lines: 963–964 | key: collection.addDocs.citations.hint -->
 
 Each line is resolved against the FRUS manifest and your local index — footnotes, bibliography entries, and document links all work.
 
@@ -2414,7 +2414,7 @@ Summaries are generated on demand for documents that don’t already have one fo
 <!-- END SOURCE: composition.summaryPrompt.hint -->
 
 #### Choose a summarization prompt in the collection’s…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionContentResolver.swift | CollectionResolveError.errorDescription | lines: 40–41 | key: export.summaryNoPrompt -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionContentAssembly.swift | CollectionResolveError.errorDescription | lines: 41–42 | key: export.summaryNoPrompt -->
 
 Choose a summarization prompt in the collection’s Composition section to export summaries.
 
@@ -2440,7 +2440,7 @@ This is a smart collection. Its documents are resolved from the linked saved sea
 <!-- END SOURCE: collection.editor.docs.smartEmpty -->
 
 #### Smart collection. Its documents come from its saved search.
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.sentence | lines: 1008–1009 | key: collection.picker.smart -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.sentence | lines: 994–995 | key: collection.picker.smart -->
 
 *The line under a smart collection's name in Add to Collection and Add Excerpt to Collection, on iPhone, iPad and Mac, where an ordinary collection's row prints its document count; the row is listed and does not take a tap (#1593). Since #1619 it is also the first row of a smart collection's Contents, in the iPhone and iPad editor and in the Mac's Collections window, whose Add menus then take no hand-added document, section heading, note block or passage.*
 
@@ -2449,7 +2449,7 @@ Smart collection. Its documents come from its saved search.
 <!-- END SOURCE: collection.picker.smart -->
 
 #### Smart collection
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1016–1016 | key: collection.smart.listLabel -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1002–1002 | key: collection.smart.listLabel -->
 
 *What a smart collection's row prints where an ordinary collection's prints its document count (#1619): in the Collections list on iPhone and iPad, in the Mac Collections window's collection picker and its Manage Collections sheet, and since #1687 in Project Home's Collections sheet (**Manage**), on every platform. On the Mac's toolbar the picker shows a bolt in its place, which VoiceOver reads as these words.*
 
@@ -2458,7 +2458,7 @@ Smart collection
 <!-- END SOURCE: collection.smart.listLabel -->
 
 #### Not part of the smart collection: added before it was…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.entriesFromBeforeLinkHeading | lines: 971–972 | key: collection.smart.earlier.heading -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.entriesFromBeforeLinkHeading | lines: 957–958 | key: collection.smart.earlier.heading -->
 
 *The dimmed heading over a smart collection's entries from before its link (#1619; decision 22 of the 2026-10-14 plan of record), in a section of its own under the collection's Contents: in the iPhone and iPad editor, which is also the Mac's New Collection sheet, and in the Mac's Collections window. A smart collection takes no hand-added document, section heading, note block or passage, so an entry of those kinds is one it held before it was linked, and every export, the preview and the Archives Visit list leave it out. The section shows only while there is such an entry; each is listed dimmed, by its title or its words.*
 
@@ -2467,7 +2467,7 @@ Not part of the smart collection: added before it was linked to its saved search
 <!-- END SOURCE: collection.smart.earlier.heading -->
 
 #### Remove These Entries
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLink | lines: 977–977 | key: collection.smart.earlier.remove -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLink | lines: 963–963 | key: collection.smart.earlier.remove -->
 
 *The button under those entries, on iPhone, iPad and Mac, and the destructive button of the dialog it opens. It removes nothing itself: the dialog asks first, and only its button removes them. Nothing else removes them; unlinked, the collection counts them again.*
 
@@ -2476,7 +2476,7 @@ Remove These Entries
 <!-- END SOURCE: collection.smart.earlier.remove -->
 
 #### Remove These Entries?
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkTitle | lines: 982–982 | key: collection.smart.earlier.remove.confirm.title -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkTitle | lines: 968–968 | key: collection.smart.earlier.remove.confirm.title -->
 
 *The title of the dialog that asks before the entries from before the link are removed. Its message is the next block, or the one after it for more than one entry.*
 
@@ -2485,7 +2485,7 @@ Remove These Entries?
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.title -->
 
 #### Removes the entry added before this collection was linked…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 993–994 | key: collection.smart.earlier.remove.confirm.message.one -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 979–980 | key: collection.smart.earlier.remove.confirm.message.one -->
 
 *The dialog's message when one entry would go.*
 
@@ -2494,7 +2494,7 @@ Removes the entry added before this collection was linked to its saved search.
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.message.one -->
 
 #### Removes the %@ entries added before this collection was…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 995–996 | key: collection.smart.earlier.remove.confirm.message.many -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 981–982 | key: collection.smart.earlier.remove.confirm.message.many -->
 
 *The dialog's message when more than one entry would go. `%@` is the count, grouped: "Removes the 1,204 entries added before…".*
 
@@ -2503,7 +2503,7 @@ Removes the %@ entries added before this collection was linked to its saved sear
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.message.many -->
 
 #### Empty note block
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.emptyNoteBlock | lines: 1002–1002 | key: collection.smart.earlier.emptyNote -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.emptyNoteBlock | lines: 988–988 | key: collection.smart.earlier.emptyNote -->
 
 *What a row in that section prints for a note block that holds no text. A section heading with none reads "Untitled section", as it does in the entry inspector.*
 
@@ -2729,7 +2729,7 @@ Connect a Zotero account to send with your tags & research notes. Without one th
 #### Send to Zotero Library — the Zotero collection made for a collection with no name
 <!-- #1497, your decision D16 (2026-09-28): new in lane EXPORT. Only the Zotero send uses it; a file
      export of the same collection keeps "Untitled Collection". -->
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1464–1465 | key: export.zotero.collection.untitled %@ -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1526–1527 | key: export.zotero.collection.untitled %@ -->
 
 FRUS Explorer Collection - %@
 
@@ -2749,7 +2749,7 @@ Untitled section
 <!-- END SOURCE: collection.inspector.section.untitled -->
 
 #### Compiled with FRUS Explorer · \(…) document\(…) from \(…)…
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 886–887 | key: export.colophon.line -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 948–949 | key: export.colophon.line -->
 
 Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") from \(volCount) volume\(volCount == 1 ? "" : "s") · \(df.string(from: date))
 
@@ -2764,7 +2764,7 @@ No stored summary for this document — generate one in the document view to fil
 <!-- END SOURCE: collection.headnote.missing -->
 
 #### Showing collections from every project, including ones…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 390–391 | key: collections.filterBanner.showingAll | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 393–394 | key: collections.filterBanner.showingAll | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Showing collections from every project, including ones outside “\(activeProjectDisplayName)”.
@@ -2772,7 +2772,7 @@ Showing collections from every project, including ones outside “\(activeProjec
 <!-- END SOURCE: collections.filterBanner.showingAll -->
 
 #### Showing collections for “\(…)” — \(…) other collection\(…)…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 403–404 | key: collections.filterBanner.filtered.withHidden | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 406–407 | key: collections.filterBanner.filtered.withHidden | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Showing collections for “\(activeProjectDisplayName)” — \(hidden) other collection\(hidden == 1 ? "" : "s") hidden.
@@ -2780,28 +2780,28 @@ Showing collections for “\(activeProjectDisplayName)” — \(hidden) other co
 <!-- END SOURCE: collections.filterBanner.filtered.withHidden -->
 
 #### No content yet. Use the Add menu in the toolbar to add…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1182–1183 | key: collection.documents.empty | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1185–1186 | key: collection.documents.empty | shared: macOS only -->
 
 No content yet. Use the Add menu in the toolbar to add documents, headings, notes, and apparatus.
 
 <!-- END SOURCE: collection.documents.empty -->
 
 #### Tooltip — Export this collection as a PDF, HTML page, or Word…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1617–1618 | key: collection.toolbar.export.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1620–1621 | key: collection.toolbar.export.help | shared: macOS only -->
 
 Export this collection as a PDF, HTML page, or Word document — includes document text and any attached research notes
 
 <!-- END SOURCE: collection.toolbar.export.help -->
 
 #### Tooltip — Show this document’s notes, highlights, tags, and…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 1915–1916 | key: collection.entry.inspect.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 1918–1919 | key: collection.entry.inspect.help | shared: macOS only -->
 
 Show this document’s notes, highlights, tags, and provenance in the inspector panel — click again to close it
 
 <!-- END SOURCE: collection.entry.inspect.help -->
 
 #### Error message — This collection was made with a newer version of FRUS…
-<!-- SOURCE: FRUSExplorer/Collections/NativeCollectionFormat.swift | NativeCollectionError.errorDescription | lines: 269–270 | key: collection.import.error.version -->
+<!-- SOURCE: FRUSCoreKit/Collections/NativeCollectionFormat.swift | NativeCollectionError.errorDescription | lines: 327–328 | key: collection.import.error.version -->
 
 This collection was made with a newer version of FRUS Explorer (format \(version)). Update the app to open it.
 

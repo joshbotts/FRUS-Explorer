@@ -25,7 +25,10 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-07-01: initial implementation (corpus-browser rework, item 3b)
-struct VolumeSourcesIndex: Decodable, Sendable {
+///   1.1 — 2026-10-27 (FRUS Explorer Light, S18b): moved into FRUSCoreKit with `CentralFilesIndex` and
+///          `LotClaimantsIndex`, public with its decoder, for the Sources & Archives block a host outside the
+///          app resolves; `VolumeSourcesIndexStore` stays in the app (`VolumeSourcesIndexStore.swift`)
+public struct VolumeSourcesIndex: Decodable, Sendable {
 
     /// Record-group headers → their resolved record, keyed by record-group **number** (`"59"`).
     let recordGroups: [String: ArchivalResolution]
@@ -52,7 +55,7 @@ struct VolumeSourcesIndex: Decodable, Sendable {
         case recordGroups, lots, majorCollections
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         recordGroups = try c.decode([String: ArchivalResolution].self, forKey: .recordGroups)
         lots = try c.decode([String: ArchivalResolution].self, forKey: .lots)
@@ -176,38 +179,4 @@ struct MajorCollectionRecord: Decodable, Sendable, Equatable {
     let volumeIds: [String]
     /// Total citing nodes across all volumes.
     let occurrences: Int
-}
-
-// MARK: - VolumeSourcesIndexStore
-
-/// Loads and caches the bundled `volume-sources-index.json`.
-///
-/// The index is decoded once, lazily, on first access. `shared` is `nil` only when the
-/// resource is missing or cannot be decoded (logged in DEBUG). Mirrors
-/// ``CentralFilesIndexStore``.
-///
-/// Version history:
-///   1.0 — Session 2026-07-01: initial implementation
-enum VolumeSourcesIndexStore {
-
-    /// The bundled volume-sources resolution index, or `nil` if unavailable. Loaded once.
-    static let shared: VolumeSourcesIndex? = load()
-
-    private static func load() -> VolumeSourcesIndex? {
-        guard let url = Bundle.main.url(forResource: "volume-sources-index", withExtension: "json") else {
-            #if DEBUG
-            print("[Browser] VolumeSourcesIndexStore: volume-sources-index.json not found in bundle.")
-            #endif
-            return nil
-        }
-        do {
-            let data = try Data(contentsOf: url)
-            return try JSONDecoder().decode(VolumeSourcesIndex.self, from: data)
-        } catch {
-            #if DEBUG
-            print("[Browser] VolumeSourcesIndexStore: failed to decode volume-sources-index.json — \(error)")
-            #endif
-            return nil
-        }
-    }
 }

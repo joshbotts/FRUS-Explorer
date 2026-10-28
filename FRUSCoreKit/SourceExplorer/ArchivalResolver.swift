@@ -85,86 +85,12 @@ import Foundation
 ///   1.2 — Session 2026-08-19: #372 item 1b — +87 lots from the offline harvest supplement
 ///   1.3 — Session 2026-09-05: #1205 — a divided lot resolves to nothing rather than to one
 ///         of its claimants
+///   1.4 — 2026-10-27 (FRUS Explorer Light, S18b): moved into FRUSCoreKit with the three indexes it reads
+///         (`ArchivalIndexes`), for the Sources & Archives block a host outside the app resolves; the
+///         front-matter resolution, which also reads the presidential-library catalogue, the divided-lot
+///         claimants and the overloads over the app's bundled indexes stay in the app
+///         (`ArchivalResolver+App.swift`), and `lotResolution` is internal so they can call it
 enum ArchivalResolver {
-
-    /// The resolution for a **volume front-matter Sources node**: its lot, else its
-    /// record-group header.
-    ///
-    /// The record-group branch belongs here and only here. A front-matter node *is* a
-    /// collection — "General Records of the Department of State" is a fair answer to a row
-    /// that names nothing more specific — and this is the surface volume-sources' 31 headers
-    /// were harvested from in the first place.
-    ///
-    /// - Parameters:
-    ///   - recordGroup: The node's record group. `volume_sources` stores these bare (measured:
-    ///     0 of 7,374 rows carry the parser's `"RG-"` prefix), which is the form the map is
-    ///     keyed by; `bareRG` normalizes anyway so the entry point cannot be form-sensitive.
-    ///   - lotFile: The raw lot citation (`"63 D 135"`, `"Lot 61–D 146"`); normalized by the
-    ///     indexes themselves.
-    ///   - centralFiles: The central-files index. Injected so tests drive the real precedence.
-    ///   - volumeSources: The volume-sources index, supplying both the lot fallback and the
-    ///     record-group branch.
-    static func frontMatterResolution(recordGroup: String?,
-                                      lotFile: String?,
-                                      entryText: String,
-                                      repository: String? = nil,
-                                      centralFiles: CentralFilesIndex?,
-                                      volumeSources: VolumeSourcesIndex?,
-                                      claimants: LotClaimantsIndex? = nil) -> ArchivalResolution? {
-        if let lotHit = lotResolution(lotFile, centralFiles, volumeSources, claimants) {
-            return lotHit
-        }
-        guard (lotFile?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "").isEmpty else {
-            return nil   // the lot-only rule
-        }
-        // #668: a presidential-library collection, from the catalogue #681 harvested. This
-        // surface never asked it — the bundle was wired into Source Explorer's *document*
-        // route in #710 and nowhere else — so `John Foster Dulles Papers` and `James C.
-        // Hagerty Papers` sat unresolved under `Dwight D. Eisenhower Library` while their
-        // records (NAIDs 580942 and 581740) were sitting in the shipped bundle. Tried before
-        // the record-group branch because it answers the row itself, where that branch answers
-        // the record group the row sits in.
-        if let libraryHit = libraryResolution(repository: repository, entryText: entryText) {
-            return libraryHit
-        }
-        // The row must NAME the record group, not merely sit under one. `volume_sources`
-        // stores the inherited value on every descendant, so without this a descriptive line
-        // like "Reference works, visual materials, transcripts of oral histories…" borrows its
-        // ancestor's link — and where the ancestor is the wrong record group, so is the link.
-        guard let named = CollectionKeying.recordGroupNamedIn(entryText),
-              let stored = CollectionKeying.bareRG(recordGroup),
-              CollectionKeying.bareRG(named) == stored
-        else { return nil }
-        return volumeSources?.resolution(recordGroup: stored, lotFile: nil)
-    }
-
-    /// The bundled presidential-library catalogue's answer for a front-matter row, or `nil`.
-    ///
-    /// Routed through `PresidentialLibraryIndex.match`, the same matcher #710 uses, rather
-    /// than a title comparison written here — and the reason is a real case in the corpus.
-    /// frus1952-54Guat cites `Ann Whitman File`, the common name for the Eisenhower Papers as
-    /// President; the catalogue separately holds `Ann C. Whitman Papers`, a different body of
-    /// records. `titlesAgree` requires equality after normalisation or a segment-boundary tail
-    /// match, so it refuses that pair — and a looser rule written for this surface would have
-    /// handed a researcher a real NARA record for the wrong papers.
-    ///
-    /// Only a **collection-level** hit resolves. The row names a collection, so a series
-    /// candidate list is not an answer to it, and `match` returns `.none` when more than one
-    /// collection answers to the name.
-    static func libraryResolution(repository: String?, entryText: String,
-                                  index: PresidentialLibraryIndex?
-                                    = PresidentialLibraryIndexStore.shared) -> ArchivalResolution? {
-        guard let index, let repository, !repository.isEmpty,
-              case .collection(let hit, _) = index.match(repository: repository,
-                                                         collection: entryText, series: nil),
-              let url = hit.catalogURL
-        else { return nil }
-        return ArchivalResolution(naId: String(hit.naId), catalogURL: url.absoluteString,
-                                  title: hit.title, recordGroup: nil, matchType: "library",
-                                  hmsMlrEntryNumbers: nil, levelOfDescription: "collection",
-                                  seriesNaId: nil, seriesTitle: nil,
-                                  seriesHmsMlrEntryNumbers: nil)
-    }
 
     /// The resolution for a **document's own source citation**: its lot, and nothing else.
     ///
@@ -221,10 +147,10 @@ enum ArchivalResolver {
     ///
     /// `claimants(forRawLot:)` folds the citation itself and already returns `nil` for a lot with
     /// a single claimant, so this is exactly the divided case and never a lot NARA kept whole.
-    private static func lotResolution(_ lotFile: String?,
-                                      _ centralFiles: CentralFilesIndex?,
-                                      _ volumeSources: VolumeSourcesIndex?,
-                                      _ claimants: LotClaimantsIndex?) -> ArchivalResolution? {
+    static func lotResolution(_ lotFile: String?,
+                              _ centralFiles: CentralFilesIndex?,
+                              _ volumeSources: VolumeSourcesIndex?,
+                              _ claimants: LotClaimantsIndex?) -> ArchivalResolution? {
         let lot = lotFile?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !lot.isEmpty else { return nil }
         // Ahead of BOTH bundles: volume-sources stores one naId per lot for the same reason
@@ -236,40 +162,42 @@ enum ArchivalResolver {
         // `recordGroup: nil` on purpose — see the note on the lot-only rule above.
         return volumeSources?.resolution(recordGroup: nil, lotFile: lot)
     }
+}
 
-    /// Whether the bundled claimants index says NARA divided this lot across several series.
-    ///
-    /// Exposed so a surface can say *why* a lot carries no catalogue link — "NARA divides this
-    /// lot across N series" is a fact worth printing, and without this the only signal is the
-    /// same `nil` an unresolvable lot produces. The trip packet reaches the claimants directly
-    /// for its restriction line and does not need this; the Collections export block does.
-    static func dividedLotClaimants(lotFile: String?,
-                                    claimants: LotClaimantsIndex?
-                                      = LotClaimantsIndexStore.shared) -> [LotClaimant]? {
-        let lot = lotFile?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard !lot.isEmpty else { return nil }
-        return claimants?.claimants(forRawLot: lot)
+// MARK: - ArchivalIndexes
+
+/// The three bundled indexes ``ArchivalResolver`` answers a document's lot from, as a host loaded them:
+/// `central-files-index.json`, `volume-sources-index.json` and `lot-claimants-index.json`, each `nil` when
+/// it could not be read, which resolves nothing through it.
+///
+/// The app passes its bundle's (`ArchivalIndexes.bundled`, which reads the three stores); a host outside
+/// the app decodes the same files and passes them in, so the Sources & Archives block links the same lots.
+///
+/// Version history:
+///   1.0 — 2026-10-27 (FRUS Explorer Light, S18b): initial implementation
+public struct ArchivalIndexes: Sendable {
+    /// The central-files index: lot files first, as `ArchivalResolver` reads them.
+    public var centralFiles: CentralFilesIndex?
+    /// The volume-sources index: the lots central-files cannot answer.
+    public var volumeSources: VolumeSourcesIndex?
+    /// The lots NARA divided across several series, which resolve to nothing.
+    public var claimants: LotClaimantsIndex?
+
+    /// Creates the set; every index defaults to none.
+    public init(centralFiles: CentralFilesIndex? = nil, volumeSources: VolumeSourcesIndex? = nil,
+                claimants: LotClaimantsIndex? = nil) {
+        self.centralFiles = centralFiles
+        self.volumeSources = volumeSources
+        self.claimants = claimants
     }
+}
 
-    /// ``frontMatterResolution(recordGroup:lotFile:centralFiles:volumeSources:)`` against the
-    /// app's bundled indexes.
-    static func frontMatterResolution(recordGroup: String?, lotFile: String?,
-                                      entryText: String,
-                                      repository: String? = nil) -> ArchivalResolution? {
-        frontMatterResolution(recordGroup: recordGroup, lotFile: lotFile, entryText: entryText,
-                              repository: repository,
-                              centralFiles: CentralFilesIndexStore.shared,
-                              volumeSources: VolumeSourcesIndexStore.shared,
-                              claimants: LotClaimantsIndexStore.shared)
-    }
+extension ArchivalResolver {
 
-    /// ``documentResolution(lotFile:centralFiles:volumeSources:)`` against the app's bundled
-    /// indexes.
-    static func documentResolution(lotFile: String?) -> ArchivalResolution? {
-        documentResolution(lotFile: lotFile,
-                           centralFiles: CentralFilesIndexStore.shared,
-                           volumeSources: VolumeSourcesIndexStore.shared,
-                           claimants: LotClaimantsIndexStore.shared)
+    /// ``documentResolution(lotFile:centralFiles:volumeSources:claimants:)`` against `indexes`.
+    static func documentResolution(lotFile: String?, indexes: ArchivalIndexes) -> ArchivalResolution? {
+        documentResolution(lotFile: lotFile, centralFiles: indexes.centralFiles,
+                           volumeSources: indexes.volumeSources, claimants: indexes.claimants)
     }
 }
 
