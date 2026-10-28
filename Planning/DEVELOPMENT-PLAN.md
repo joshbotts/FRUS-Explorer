@@ -8025,7 +8025,7 @@ FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) compiles FRUSCoreKit on 
 
 FRUS Explorer Light's session, in a pull request of its own. `RichTextRestingCapTests`' link-alert test (#1360) failed at random in the Mac checks of #1785, #1807 and #1809, at `v2` as at each branch. Its colour-picker test failed in #1785's and #1809's. A4c and A4d (17 October) saw the pair fail on freshly created simulators and left why for later. Each failure cost a check a re-run and an explanation.
 
-**Why.** `RestingCapEditorHost`, the suite's host, gave UIKit its `settle`'s default of 3 s to take the link alert down, and to put the colour picker up. (The entries for #1807 and #1809 say 5 s.) A millisecond timeline of the test, in a diagnostic build never committed, followed 30 runs of the suite alone:
+**Why.** `RestingCapEditorHost`, the suite's host, gave UIKit its `settle`'s default of 3 s to take the link alert down, and to put the colour picker up. (#1809's entry, and #1807's and #1809's pull requests, say 5 s.) A millisecond timeline of the test, in a diagnostic build never committed, followed 30 runs of the suite alone:
 - a non-animated dismissal of the alert took 2.1 to 4.4 s to finish, while the keyboard went back from the alert's field to the text view and its formatting bar;
 - in the first 16 runs, the 4 dismissals over 3 s were the 4 failures;
 - the alert always went, and focus always came back;
