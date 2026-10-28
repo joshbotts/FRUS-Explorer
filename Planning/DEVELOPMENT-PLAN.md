@@ -8020,3 +8020,32 @@ FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) compiles FRUSCoreKit on 
 **Owed by the owner:** Mac check 14 (FRUS Explorer Light's plan) for this pull request, with the collection UI suites the runbook names; then the merge. FRUS Explorer Light's pin move past it (its S18c) follows.
 
 **Not done:** the PDF exporter, the editors and the preview stay the app's; the UI suites, iOS 26.x, a device and a signed run were not run here.
+
+## Session 2026-10-28 — The capped editor's link-alert test waits for UIKit to finish with the alert, so it no longer fails at random
+
+FRUS Explorer Light's session, in a pull request of its own. `RichTextRestingCapTests`' link-alert test (#1360) failed at random in the Mac checks of #1785, #1807 and #1809, at `v2` as at each branch. Its colour-picker test failed in #1785's and #1809's. A4c and A4d (17 October) saw the pair fail on freshly created simulators and left why for later. Each failure cost a check a re-run and an explanation.
+
+**Why.** `RestingCapEditorHost`, the suite's host, gave UIKit its `settle`'s default of 3 s to take the link alert down, and to put the colour picker up. (The entries for #1807 and #1809 say 5 s.) A millisecond timeline of the test, in a diagnostic build never committed, followed 30 runs of the suite alone:
+- a non-animated dismissal of the alert took 2.1 to 4.4 s to finish, while the keyboard went back from the alert's field to the text view and its formatting bar;
+- in the first 16 runs, the 4 dismissals over 3 s were the 4 failures;
+- the alert always went, and focus always came back;
+- the test asked for the dismissal while UIKit was still presenting the alert, in all 16 of those runs, but a dismissal asked for once the presentation had ended took about as long.
+
+**The fix**, in the test host and the link-alert test alone (`FRUSExplorerTests/CollectionTests.swift`):
+- `presentationTimeout`, 15 s, for `presented(_:)` and `dismissPresented()`. It bounds a hang: each wait ends as soon as UIKit is done. `settle`'s 3 s stays for the suite's waits on SwiftUI's sizing.
+- A new `finishedPresenting(_:)`, which the link-alert test waits for before it holds over the alert and cancels it.
+- A log line with each dismissal's time.
+- The suite's version history.
+
+Nothing in the app, its kits or its resources changes.
+
+**Checked.** Xcode 27.1 (27A9275) on macOS 27.2, an iPhone 18 Pro Max simulator on iOS 27.0, each heavy job through `Scripts/heavy.sh`, beside `v2` at `fef96201` built and run the same way the same day:
+- **The suite alone, 30 rounds alternating with `v2` within one hold of the lock:** the branch passed 30 runs of 30, and so did `v2`, the Mac being quiet then (load average 4 to 8). The branch's dismissals took 1.7 to 2.4 s.
+- **On two simulators created for the run,** with their first boot's work loading the Mac: `v2` failed 6 runs of 6 on the dismissal. The branch passed 5 of 6, its dismissals taking 3.0 to 6.1 s. Its sixth was the colour picker, which did not appear in the first run on a simulator just created.
+- **That picker is not this bound's.** A variant of the host that allowed it 60 s, never committed, found that on a new simulator's first run, and after one cold boot in three of the long-used one, the picker never appeared, though Text Color's action was delivered; in the next run on each new simulator it appeared within 2 s. That is filed, not fixed.
+- **Both app builds,** with `v2`'s five and seven warning lines.
+- **The full unit target:** "✘ Test run with 7752 tests in 929 suites failed after 544.278 seconds with 14 issues (including 6 known issues).", against `v2`'s "✘ Test run with 7752 tests in 929 suites failed after 553.940 seconds with 14 issues (including 6 known issues)." The 14 are the 8 Keychain tests an unsigned build fails (-34018) and the 6 known issues of #1606, on both; both skip the same 17 tests and 2 suites.
+- **`swift test`:** 38 runs and 3,191 tests in 389 suites, all passed, none skipped, as at `v2`; `FRUSCoreKitTests` 1,298 tests in 177 suites.
+- **The Mac app's symbols** are `v2`'s: 251,932 normalized names on each, none removed or added.
+
+This entry was added after the runs.
