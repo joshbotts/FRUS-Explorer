@@ -8066,7 +8066,7 @@ FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) imports a file from Expo
 
 ## Session 2026-10-28 — The capped editor's link-alert test waits for UIKit to finish with the alert, so it no longer fails at random
 
-FRUS Explorer Light's session, in a pull request of its own. `RichTextRestingCapTests`' link-alert test (#1360) failed at random in the Mac checks of #1785, #1807 and #1809, at `v2` as at each branch. Its colour-picker test failed in #1785's and #1809's. A4c and A4d (17 October) saw the pair fail on freshly created simulators and left why for later. Each failure cost a check a re-run and an explanation.
+FRUS Explorer Light's session, in a pull request of its own. `RichTextRestingCapTests`' link-alert test (#1360) failed at random in the Mac checks of #1785, #1807, #1809 and #1810, at `v2` as at each branch. Its colour-picker test failed in #1785's, #1809's and #1810's. A4c and A4d (17 October) saw the pair fail on freshly created simulators and left why for later. Each failure cost a check a re-run and an explanation.
 
 **Why.** `RestingCapEditorHost`, the suite's host, gave UIKit its `settle`'s default of 3 s to take the link alert down, and to put the colour picker up. (#1809's entry, and #1807's and #1809's pull requests, say 5 s.) A millisecond timeline of the test, in a diagnostic build never committed, followed 30 runs of the suite alone:
 - a non-animated dismissal of the alert took 2.1 to 4.4 s to finish, while the keyboard went back from the alert's field to the text view and its formatting bar;
@@ -8090,5 +8090,11 @@ Nothing in the app, its kits or its resources changes.
 - **The full unit target:** "✘ Test run with 7752 tests in 929 suites failed after 544.278 seconds with 14 issues (including 6 known issues).", against `v2`'s "✘ Test run with 7752 tests in 929 suites failed after 553.940 seconds with 14 issues (including 6 known issues)." The 14 are the 8 Keychain tests an unsigned build fails (-34018) and the 6 known issues of #1606, on both; both skip the same 17 tests and 2 suites.
 - **`swift test`:** 38 runs and 3,191 tests in 389 suites, all passed, none skipped, as at `v2`; `FRUSCoreKitTests` 1,298 tests in 177 suites.
 - **The Mac app's symbols** are `v2`'s: 251,932 normalized names on each, none removed or added.
+
+**Checked again once #1810 had merged.** `v2` moved to `e1d68919` while this was open, and the branch took it in a merge, with #1810's entry before this one. Against `e1d68919` the branch changes the same lines as against `fef96201`, and #1810 changes export code and its tests, nothing this suite exercises, so the runs of the suite alone above stand. The whole check ran again, at the merge and then at `e1d68919`, the same way:
+- **Both app builds,** with the same five and seven warning lines on each.
+- **The full unit target:** "✘ Test run with 7754 tests in 929 suites failed after 562.366 seconds with 14 issues (including 6 known issues).", against `e1d68919`'s "✘ Test run with 7754 tests in 929 suites failed after 562.398 seconds with 14 issues (including 6 known issues)." The 14 are the same 8 and 6 on both, both skip the same 17 tests and 2 suites, and the editor suite passed on both.
+- **`swift test`:** 38 runs and 3,192 tests in 389 suites on each, all passed, none skipped; `FRUSCoreKitTests` 1,299 tests in 177 suites.
+- **The Mac app's symbols** are `e1d68919`'s, name for name, and the very names it had at `fef96201`.
 
 This entry was added after the runs.
