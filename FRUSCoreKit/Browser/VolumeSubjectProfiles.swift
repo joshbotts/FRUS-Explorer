@@ -27,13 +27,20 @@ import Foundation
 /// Decoding is optional-tolerant: a missing field degrades to an empty/neutral value
 /// rather than trapping, matching the store's never-crash contract.
 ///
+/// Public since FRUS Explorer Light's S17f: a host decodes the bundled file itself, as the app's
+/// `VolumeSubjectProfilesStore` does, and reads `allSubjects`, the vocabulary Project Home's Focus
+/// subjects and their editor list (`ProjectHomeView`, `ProjectFocusSubjectsEditor`). The rest of
+/// the type stays internal.
+///
 /// Version history:
 ///   1.0 — Session 9: initial implementation
 ///   1.1 — Session 9 review: surfaces `provenance` (source-drop MD5 pin) for the
 ///         bundled-artifact integrity test; `generated` doc corrected (it is the
 ///         artifact's own stamp, not the source drop's)
 ///   1.2 — FRUSCoreKit, part 2: moved into the kit; `VolumeSubjectProfilesStore` stays in the app
-struct VolumeSubjectProfiles: Decodable, Sendable {
+///   1.3 — FRUS Explorer Light S17f: the type, its decoding, `allSubjects` and `SubjectOption` are
+///         public, unchanged, for a host's Project Home
+public struct VolumeSubjectProfiles: Decodable, Sendable {
 
     /// One subject characteristic of a volume, fully resolved (name/category/score).
     struct ResolvedSubject: Sendable, Equatable, Identifiable {
@@ -102,19 +109,20 @@ struct VolumeSubjectProfiles: Decodable, Sendable {
     /// One entry in the corpus-wide subject vocabulary — a subject a project can adopt as a
     /// discovery focus (#377 Phase 2b). Unlike ``ResolvedSubject`` it carries no per-volume
     /// score; `volumeCount` is how many volumes' profiles rank the subject (its reach).
-    struct SubjectOption: Sendable, Equatable, Identifiable {
+    public struct SubjectOption: Sendable, Equatable, Identifiable {
         /// The stable subject ref (matches `Project.defaultSubjectTagIds`).
-        let ref: String
+        public let ref: String
         /// Display name.
-        let name: String
+        public let name: String
         /// Top-level category.
-        let category: String
+        public let category: String
         /// Second-level subcategory.
-        let subcategory: String
+        public let subcategory: String
         /// How many volumes' profiles carry this subject.
-        let volumeCount: Int
+        public let volumeCount: Int
 
-        var id: String { ref }
+        /// The ref, as `Identifiable`'s identity.
+        public var id: String { ref }
     }
 
     /// The artifact's own `yyyy-MM-dd` generation stamp (when the bundled index was
@@ -136,7 +144,7 @@ struct VolumeSubjectProfiles: Decodable, Sendable {
     /// The corpus-wide subject vocabulary (subjects that carry at least one volume),
     /// de-duplicated by ref and ordered by category → subcategory → name (#377 Phase 2b).
     /// This is the picker vocabulary a project's discovery focus is chosen from.
-    let allSubjects: [SubjectOption]
+    public let allSubjects: [SubjectOption]
 
     // MARK: Decoding
 
@@ -164,7 +172,7 @@ struct VolumeSubjectProfiles: Decodable, Sendable {
         private enum CodingKeys: String, CodingKey { case volumeId = "v", entries = "e" }
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         generated = (try? container.decode(String.self, forKey: .generated)) ?? ""
         provenance = (try? container.decode(String.self, forKey: .provenance)) ?? ""
