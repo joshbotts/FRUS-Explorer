@@ -496,6 +496,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.48 — 2026-10-25 (FRUS Explorer Light S18a): `documentBodyTextsByKey(forKeys:)` is public, with
 ///         `WordCloudDocumentKey`, for a host's check of a collection's quotations before an export. A read
 ///         that only an export runs; nothing it indexes or stores changes. No index version
+///  4.49 — 2026-10-28 (FRUS Explorer Light S17f): `documentSnippets(forKeys:maxLength:)` is public, for a
+///         host's Project Home, which shows the line it returns under each lead in Suggested Next. A read
+///         that only a view runs; nothing it indexes or stores changes. No index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -10760,12 +10763,15 @@ public actor IndexingPipeline {
     /// point-looked-up through the composite primary key in 400-pair chunks, so this is bounded to
     /// the (small) set of shown rows — never a scan.
     ///
+    /// Public since FRUS Explorer Light's S17f: a host's Project Home reads it as the app's
+    /// `ProjectHomeView.loadLeadSnippets()` does, for the line under each lead in Suggested Next.
+    ///
     /// - Parameters:
     ///   - keys: The document keys to fetch snippets for.
     ///   - maxLength: Maximum snippet length in characters.
     /// - Returns: `"volumeId/documentId" → snippet` for the documents that have text.
-    func documentSnippets(forKeys keys: [(volumeId: String, documentId: String)],
-                          maxLength: Int = 240) throws -> [String: String] {
+    public func documentSnippets(forKeys keys: [(volumeId: String, documentId: String)],
+                                 maxLength: Int = 240) throws -> [String: String] {
         guard !keys.isEmpty else { return [:] }
         var result: [String: String] = [:]
         let chunkSize = 400
