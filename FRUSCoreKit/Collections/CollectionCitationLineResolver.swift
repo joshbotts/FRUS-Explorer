@@ -42,6 +42,12 @@ import Foundation
 ///    document exactly. So does one in a volume that is downloaded and not yet indexed (#1522),
 ///    which cannot be searched yet either: the entry resolves once the volume is indexed.
 ///
+/// Public since FRUS Explorer Light's S18d: a host resolves its own Add Documents' Citations tab as
+/// the app's `CollectionAddDocumentsSheet` does, building the resolver over the two stages and
+/// resolving a paste with `resolve(text:)`, or splitting it with `lines(from:)` and resolving each
+/// line with `resolve(line:)` when it bounds a paste or answers it line by line.
+/// `unsearchableLinkDocument(_:volumeOnly:)`, a step of `resolve(line:)`, stays internal.
+///
 /// Version history:
 ///   1.0 — Authoring Phase 3: initial implementation
 ///   1.1 — Authoring Phase 3 review: never bucket a line "resolved" when the engine's
@@ -60,12 +66,16 @@ import Foundation
 ///   1.5 — #1522: a link to a numbered document in a volume downloaded and not yet indexed is
 ///          added by its id too (`unsearchableLinkDocument`, was `undownloadedLinkDocument`); it
 ///          stayed unresolved under "no document the citation names was found in it"
-struct CollectionCitationLineResolver: Sendable {
+///   1.6 — 2026-10-28 (FRUS Explorer Light, S18d): the type, its initialiser, `lines(from:)`,
+///          `resolve(text:)`, `resolve(line:)`, `Outcome` and `LineResult` with its initialiser are
+///          public, unchanged, for a host's Add Documents; the two initialisers are spelled out as
+///          the compiler made them
+public struct CollectionCitationLineResolver: Sendable {
 
     // MARK: - Outcome
 
     /// The bucket a single pasted line landed in.
-    enum Outcome: Equatable, Sendable {
+    public enum Outcome: Equatable, Sendable {
         /// Confident match: the line maps to exactly this document.
         case resolved(volumeId: String, documentId: String, note: String?)
         /// A plausible top match with competition or a correction applied; `note`
@@ -78,13 +88,21 @@ struct CollectionCitationLineResolver: Sendable {
     // MARK: - LineResult
 
     /// One pasted line together with its classification.
-    struct LineResult: Identifiable, Sendable {
-        /// Stable row identity for SwiftUI lists.
-        let id = UUID()
+    public struct LineResult: Identifiable, Sendable {
+        /// Stable row identity for SwiftUI lists: a new one for each result, so it names a row
+        /// of one resolution, never a line across two.
+        public let id = UUID()
         /// The original (trimmed) input line.
-        let line: String
+        public let line: String
         /// The bucket the line resolved into.
-        let outcome: Outcome
+        public let outcome: Outcome
+
+        /// One line and its bucket, with a new `id`: what `resolve(text:)` makes for each line,
+        /// and what the sheet makes for every line when it has no matcher to ask.
+        public init(line: String, outcome: Outcome) {
+            self.line = line
+            self.outcome = outcome
+        }
     }
 
     // MARK: - Injected stages
@@ -97,10 +115,20 @@ struct CollectionCitationLineResolver: Sendable {
     /// production; a stub in tests).
     let match: @Sendable (CitationInput) async throws -> [CitationMatch]
 
+    /// A resolver over the two stages: the sheet passes `CitationParser.parse` and the matching
+    /// engine's `match(input:)`.
+    public init(
+        parse: @escaping @Sendable (String) -> CitationInput,
+        match: @escaping @Sendable (CitationInput) async throws -> [CitationMatch]
+    ) {
+        self.parse = parse
+        self.match = match
+    }
+
     // MARK: - Line splitting
 
     /// Splits pasted text into trimmed, non-empty lines.
-    static func lines(from text: String) -> [String] {
+    public static func lines(from text: String) -> [String] {
         text.components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
@@ -145,7 +173,7 @@ struct CollectionCitationLineResolver: Sendable {
     // MARK: - Resolution
 
     /// Resolves every non-empty line of `text`, preserving input order.
-    func resolve(text: String) async -> [LineResult] {
+    public func resolve(text: String) async -> [LineResult] {
         var results: [LineResult] = []
         for line in Self.lines(from: text) {
             results.append(LineResult(line: line, outcome: await resolve(line: line)))
@@ -154,7 +182,7 @@ struct CollectionCitationLineResolver: Sendable {
     }
 
     /// Classifies a single line (see the type doc comment for the bucketing rules).
-    func resolve(line: String) async -> Outcome {
+    public func resolve(line: String) async -> Outcome {
         // 1. Parse; a line with no usable fields can't be matched. A history.state.gov link
         //    parses to its exact reference, and the matcher resolves it (#1502).
         let input = parse(line)
