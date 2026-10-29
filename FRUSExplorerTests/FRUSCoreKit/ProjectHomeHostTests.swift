@@ -29,15 +29,16 @@ import CSQLite
 // MARK: - ProjectHomeHostTests
 
 /// What Project Home's focus subjects, their editor's suggestions and the line under each lead read
-/// of the kit, called as a host outside the app calls it (FRUS Explorer Light's S17f): the subject
-/// vocabulary decoded from the bundled file, the suggestions over it (`ProjectFocusSuggestions`), and
-/// `IndexingPipeline.documentSnippets(forKeys:maxLength:)` over the app's own index and over a copy
-/// stripped of the writing and opened read-only, as such a host serves one. The suite imports the kit
+/// of the kit, and the head a visit is titled by, called as a host outside the app calls them (FRUS
+/// Explorer Light's S17f): the subject vocabulary decoded from the bundled file, the suggestions over
+/// it (`ProjectFocusSuggestions`), `IndexingPipeline.documentSnippets(forKeys:maxLength:)` over the
+/// app's own index and over a copy stripped of the writing and opened read-only, as such a host serves
+/// one, and `IndexingPipeline.extractHeader(from:)` over the parsed TEI. The suite imports the kit
 /// `@testable`, so it cannot show that these are public; a host's own build does.
 ///
 /// Version history:
 ///   1.0 — 2026-10-28 (FRUS Explorer Light S17f): initial implementation
-@Suite("FRUSCoreKit — Project Home's subjects and lead lines, as a host calls them")
+@Suite("FRUSCoreKit — Project Home's subjects and lead lines, and a visit's head, as a host calls them")
 struct ProjectHomeHostTests {
 
     // MARK: The subject vocabulary
@@ -304,6 +305,67 @@ struct ProjectHomeHostTests {
             #expect(lines.keys.sorted() == ["d1", "d2", "d3", "d4"].map(Self.key))
 
             #expect(try await pipeline.documentSnippets(forKeys: []).isEmpty)
+        }
+    }
+
+    // MARK: A visit's head
+
+    private static let headsVolumeId = "frus1971v03"
+
+    /// Writes a volume with a preface in its front matter, a document whose head carries a source
+    /// note, and an editorial note.
+    private func writeHeadsVolume(in volumes: URL) throws -> URL {
+        let xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <TEI xmlns="http://www.tei-c.org/ns/1.0">
+              <teiHeader><fileDesc><titleStmt><title>\(Self.headsVolumeId)</title></titleStmt>
+              <publicationStmt><date>1971</date></publicationStmt>
+              <sourceDesc><p>Test fixture</p></sourceDesc></fileDesc></teiHeader>
+              <text>
+                <front><div type="section" subtype="preface" xml:id="preface"><head>Preface</head>
+                  <p>The volume's preface.</p></div></front>
+                <body><div type="compilation" xml:id="comp1">
+                  <div type="document" xml:id="d1" n="1"><head>1. Telegram From the Embassy in Bonn<note n="1"
+                      xml:id="d1fn1">Source: Department of State, Central Files.</note></head>
+                    <p>Text one.</p></div>
+                  <div type="document" xml:id="d2" n="2" subtype="editorial-note"><head>2. Editorial Note</head>
+                    <p>Text two.</p></div>
+                </div></body>
+              </text>
+            </TEI>
+            """
+        let url = volumes.appendingPathComponent("\(Self.headsVolumeId).xml")
+        try Data(xml.utf8).write(to: url)
+        return url
+    }
+
+    @Test("A visit's head, taken from the parsed TEI as a host titles a document its index lacks, is the head the index stores for one it holds")
+    func aVisitsHeadIsTheIndexsHeader() async throws {
+        try await withTempDir { dir in
+            let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+            try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+            let url = try writeHeadsVolume(in: volumes)
+
+            // The host's path: the kit's parser over the volume's TEI, then the head. The source note
+            // stays out of it, and an editorial note's head is read through its wrapper.
+            var heads: [String: String] = [:]
+            for documentId in ["preface", "d1", "d2"] {
+                let parsed = try await FRUSDocumentParser().parseDocument(documentId: documentId, volumeURL: url)
+                let document = try #require(parsed, "\(documentId) not parsed")
+                heads[documentId] = IndexingPipeline.extractHeader(from: document.nodes)
+            }
+            #expect(heads == ["preface": "Preface", "d1": "1. Telegram From the Embassy in Bonn", "d2": "2. Editorial Note"])
+
+            // The index's path: the same volume indexed, and the head it stores for each.
+            let database = dir.appendingPathComponent("built.db")
+            let pipeline = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: database), databaseURL: database,
+                                                volumesDirectory: volumes, resources: .none,
+                                                defaults: InMemoryIndexingStampStore())
+            try await pipeline.indexVolume(Self.headsVolumeId)
+            for (documentId, head) in heads {
+                #expect(try await pipeline.document(forDocumentId: documentId, inVolume: Self.headsVolumeId)?.header == head,
+                        "\(documentId)")
+            }
         }
     }
 }
