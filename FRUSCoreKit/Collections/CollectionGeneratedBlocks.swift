@@ -133,6 +133,8 @@ public protocol CollectionGeneratedBlockDataSource {
 ///          dates print in the locale the caller passes, `.autoupdatingCurrent` by default, which they always did;
 ///          `tagDocumentRefs`, the tag union the Thematic Index reads, over values, which the app's
 ///          `CollectionDocumentDiscovery.tagDocumentRefs` reads too
+///   1.6 — 2026-10-28 (FRUS Explorer Light, S18d): `tagDocumentRefs` is public, unchanged, for the Tags tab of
+///          a host's Add Documents
 public enum CollectionGeneratedBlocks {
 
     /// Resolves one generated block from the collection's resolved document membership.
@@ -609,7 +611,12 @@ public enum CollectionGeneratedBlocks {
     /// (`assignments`) — deduplicated, note-derived documents first, each source in its own stable
     /// order. The Phase 3 union the Thematic Index reads, and the Add Documents sheet gathers by
     /// (`CollectionDocumentDiscovery.tagDocumentRefs`, the app's, over its models).
-    static func tagDocumentRefs(
+    ///
+    /// Public since FRUS Explorer Light's S18d: a host's Add Documents counts and gathers each tag's
+    /// documents for its Tags tab as the app's sheet does, from its own notes and assignments. It takes
+    /// each document as `(volumeId, documentId)` and answers `(documentId, volumeId)`, the order the
+    /// app's appends take, so read the answer by its labels.
+    public static func tagDocumentRefs(
         tagId: UUID,
         noteTags: [(volumeId: String, documentId: String, tagIds: [UUID])],
         assignments: [(volumeId: String, documentId: String, tagId: UUID)]
