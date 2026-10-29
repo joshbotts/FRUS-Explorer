@@ -141,8 +141,9 @@ public struct VolumeSubjectProfiles: Decodable, Sendable {
     /// sorted, for the cross-volume "other volumes covering this subject" pivot.
     let volumesBySubjectRef: [String: [String]]
 
-    /// The corpus-wide subject vocabulary (subjects that carry at least one volume),
-    /// de-duplicated by ref and ordered by category → subcategory → name (#377 Phase 2b).
+    /// The corpus-wide subject vocabulary (subjects that carry at least one volume), one entry
+    /// for each vocabulary row a profile names, ordered by category → subcategory → name (#377
+    /// Phase 2b). The generator writes each ref once, so each subject is listed once.
     /// This is the picker vocabulary a project's discovery focus is chosen from.
     public let allSubjects: [SubjectOption]
 

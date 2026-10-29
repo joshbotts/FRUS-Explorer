@@ -28,16 +28,16 @@ import CSQLite
 
 // MARK: - ProjectHomeHostTests
 
-/// Project Home's focus subjects and the line under each of its leads, read through the kit as a
-/// host outside the app reads them (FRUS Explorer Light's S17f): the subject vocabulary decoded from
-/// the bundled file, a project's focus subjects taken from it as `ProjectHomeView` takes them, the
-/// subjects their editor suggests (`ProjectFocusSuggestions`), and each lead's line from
-/// `IndexingPipeline.documentSnippets(forKeys:maxLength:)` over an index opened read-only, as such a
-/// host serves the app's exported index.
+/// What Project Home's focus subjects, their editor's suggestions and the line under each lead read
+/// of the kit, called as a host outside the app calls it (FRUS Explorer Light's S17f): the subject
+/// vocabulary decoded from the bundled file, the suggestions over it (`ProjectFocusSuggestions`), and
+/// `IndexingPipeline.documentSnippets(forKeys:maxLength:)` over the app's own index and over a copy
+/// stripped of the writing and opened read-only, as such a host serves one. The suite imports the kit
+/// `@testable`, so it cannot show that these are public; a host's own build does.
 ///
 /// Version history:
 ///   1.0 — 2026-10-28 (FRUS Explorer Light S17f): initial implementation
-@Suite("FRUSCoreKit — Project Home's subjects and lead lines, read as a host reads them")
+@Suite("FRUSCoreKit — Project Home's subjects and lead lines, as a host calls them")
 struct ProjectHomeHostTests {
 
     // MARK: The subject vocabulary
@@ -62,18 +62,13 @@ struct ProjectHomeHostTests {
         }
         """
 
-    /// The bundled file, read from the repository as a host reads its own copy of it.
-    private static func bundledProfiles() throws -> VolumeSubjectProfiles {
-        let url = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("FRUSExplorer/Resources/volume-subject-profiles-index.json")
-        return try JSONDecoder().decode(VolumeSubjectProfiles.self, from: Data(contentsOf: url))
+    private static func decode(_ json: String) throws -> VolumeSubjectProfiles {
+        try JSONDecoder().decode(VolumeSubjectProfiles.self, from: Data(json.utf8))
     }
 
     @Test("The vocabulary lists each profiled subject once, by category, subcategory and name, with the volumes it reaches")
     func theVocabularyIsEachProfiledSubjectOnce() throws {
-        let profiles = try JSONDecoder().decode(VolumeSubjectProfiles.self, from: Data(Self.fixtureJSON.utf8))
-        let subjects = profiles.allSubjects
+        let subjects = try Self.decode(Self.fixtureJSON).allSubjects
         #expect(subjects.map(\.ref) == ["diplomacy", "armistice", "blockade"])
         #expect(subjects.map(\.id) == subjects.map(\.ref))
         #expect(subjects.map(\.name) == ["Diplomacy", "Armistice", "Naval Blockade"])
@@ -86,61 +81,87 @@ struct ProjectHomeHostTests {
 
     @Test("A file that holds nothing decodes to an empty vocabulary")
     func anEmptyFileDecodesToNoSubjects() throws {
-        let profiles = try JSONDecoder().decode(VolumeSubjectProfiles.self, from: Data("{}".utf8))
-        #expect(profiles.allSubjects.isEmpty)
+        #expect(try Self.decode("{}").allSubjects.isEmpty)
     }
 
-    @Test("A project's focus subjects are the vocabulary's that it chose, in the vocabulary's order, a ref it no longer names left out")
-    func aProjectsFocusSubjectsAreTheVocabularys() throws {
-        let profiles = try JSONDecoder().decode(VolumeSubjectProfiles.self, from: Data(Self.fixtureJSON.utf8))
-        // `ProjectHomeView.focusSubjectsSection`'s filter, over a project's `defaultSubjectTagIds`.
-        let chosen = ["blockade", "retired-ref", "diplomacy"]
-        let subjects = profiles.allSubjects.filter { chosen.contains($0.ref) }
-        #expect(subjects.map(\.name) == ["Diplomacy", "Naval Blockade"])
-    }
-
-    @Test("The editor suggests the subjects of the volumes a project engages: the most recurrent first, then the highest scored, then by name, none it chose")
+    @Test("The editor suggests the subjects of the volumes a project engages: the most recurrent first, then the highest scored, then by name, none it chose, eight at most")
     func theEditorsSuggestions() throws {
-        let profiles = try JSONDecoder().decode(VolumeSubjectProfiles.self, from: Data(Self.fixtureJSON.utf8))
-        func suggested(_ volumes: Set<String>, excluding chosen: Set<String> = [], limit: Int = 8) -> [String] {
-            ProjectFocusSuggestions.suggestions(engagedVolumeIds: volumes, profiles: profiles, excluding: chosen,
-                                                limit: limit).map(\.ref)
+        let profiles = try Self.decode(Self.fixtureJSON)
+        func suggested(_ volumes: Set<String>, excluding chosen: Set<String> = []) -> [String] {
+            ProjectFocusSuggestions.suggestions(engagedVolumeIds: volumes, profiles: profiles, excluding: chosen)
+                .map(\.ref)
         }
         // "diplomacy" is on both volumes' profiles; then armistice's 0.94 before the blockade's 0.83.
         #expect(suggested(["frus_v1", "frus_v2"]) == ["diplomacy", "armistice", "blockade"])
         #expect(suggested(["frus_v1"]) == ["blockade", "diplomacy"])
         #expect(suggested(["frus_v1", "frus_v2"], excluding: ["diplomacy"]) == ["armistice", "blockade"])
-        #expect(suggested(["frus_v1", "frus_v2"], limit: 1) == ["diplomacy"])
+        #expect(ProjectFocusSuggestions.suggestions(engagedVolumeIds: ["frus_v1", "frus_v2"], profiles: profiles,
+                                                    excluding: [], limit: 1).map(\.ref) == ["diplomacy"])
         // A volume with no profile suggests nothing.
         #expect(suggested(["frus_v9"]).isEmpty)
 
-        let tied = try JSONDecoder().decode(VolumeSubjectProfiles.self, from: Data("""
+        let tied = try Self.decode("""
             {"vocab": [{"r": "b", "n": "Beta", "c": "X", "s": "Y"}, {"r": "a", "n": "Alpha", "c": "X", "s": "Y"}],
              "profiles": [{"v": "v1", "e": [{"i": 0, "w": 0.5}, {"i": 1, "w": 0.5}]}]}
-            """.utf8))
+            """)
         #expect(ProjectFocusSuggestions.suggestions(engagedVolumeIds: ["v1"], profiles: tied, excluding: [])
                     .map(\.name) == ["Alpha", "Beta"])
+
+        // The editor passes no limit: of a volume's ten subjects, the eight highest scored.
+        let vocabulary = (0..<10).map { #"{"r": "s\#($0)", "n": "Subject \#($0)", "c": "X", "s": "Y"}"# }
+        let entries = (0..<10).map { #"{"i": \#($0), "w": \#(Double(10 - $0) / 10)}"# }
+        let ten = try Self.decode(#"{"vocab": [\#(vocabulary.joined(separator: ","))], "#
+            + #""profiles": [{"v": "v1", "e": [\#(entries.joined(separator: ","))]}]}"#)
+        #expect(ProjectFocusSuggestions.suggestions(engagedVolumeIds: ["v1"], profiles: ten, excluding: [])
+                    .map(\.ref) == (0..<8).map { "s\($0)" })
     }
 
-    @Test("The bundled vocabulary decodes from its file, each subject once and in order, each reaching a volume")
+    /// The bundled file as its generator writes it, read without the kit: each vocabulary row's ref
+    /// and name, and each profile's volume and the rows it names.
+    private struct RawFile: Decodable {
+        struct Vocab: Decodable { let r: String; let n: String; let c: String; let s: String }
+        struct Profile: Decodable {
+            struct Entry: Decodable { let i: Int }
+            let v: String
+            let e: [Entry]
+        }
+        let vocab: [Vocab]
+        let profiles: [Profile]
+    }
+
+    @Test("The bundled vocabulary decodes from its file: each subject its profiles name, once, in order, with the volumes it reaches")
     func theBundledVocabularyDecodes() throws {
-        let profiles = try Self.bundledProfiles()
-        let subjects = profiles.allSubjects
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Resources/volume-subject-profiles-index.json")
+        let data = try Data(contentsOf: url)
+        let subjects = try JSONDecoder().decode(VolumeSubjectProfiles.self, from: data).allSubjects
+
+        // What the file itself says, counted here: the volumes whose profile names each ref.
+        let raw = try JSONDecoder().decode(RawFile.self, from: data)
+        var volumes: [String: Set<String>] = [:]
+        for profile in raw.profiles {
+            for entry in profile.e where raw.vocab.indices.contains(entry.i) {
+                volumes[raw.vocab[entry.i].r, default: []].insert(profile.v)
+            }
+        }
         #expect(subjects.count > 100, "\(subjects.count) subjects")
+        // Each ref once, which `ProjectFocusSuggestions` relies on: it keys the vocabulary by ref.
         #expect(Set(subjects.map(\.ref)).count == subjects.count, "a ref is listed twice")
-        #expect(subjects.allSatisfy { !$0.ref.isEmpty && !$0.name.isEmpty && !$0.category.isEmpty })
-        let keys = subjects.map { [$0.category, $0.subcategory, $0.name] }
-        #expect(keys == keys.sorted { $0.lexicographicallyPrecedes($1) })
+        #expect(Set(subjects.map(\.ref)) == Set(volumes.keys))
+        #expect(subjects.allSatisfy { !$0.name.isEmpty && !$0.category.isEmpty })
+        let order = subjects.map { [$0.category, $0.subcategory, $0.name] }
+        #expect(order == order.sorted { $0.lexicographicallyPrecedes($1) })
         for subject in subjects {
-            #expect(subject.volumeCount >= 1
-                    && subject.volumeCount == Set(profiles.volumesBySubjectRef[subject.ref] ?? []).count,
-                    "\(subject.ref): \(subject.volumeCount)")
+            #expect(subject.volumeCount == volumes[subject.ref]?.count, "\(subject.ref): \(subject.volumeCount)")
         }
     }
 
     // MARK: A lead's line
 
     private static let volumeId = "frus1971v01"
+
+    private static func key(_ documentId: String) -> String { "\(volumeId)/\(documentId)" }
 
     /// d1's two paragraphs, which together run past a lead's 240 characters.
     private static let longParagraphs = [
@@ -150,6 +171,12 @@ struct ProjectHomeHostTests {
         "The Minister replied that his government shared that concern, but asked for time to consult "
             + "its allies before the ministers met in Brussels next week.",
     ]
+
+    /// d1's line: its text, which the index stores from the head on and which runs to 397 characters,
+    /// stopped at the last word within 240.
+    private static let d1Line = "1. Telegram The Ambassador called on the Foreign Minister this morning to convey "
+        + "the President's views on the forthcoming conference, and stressed that the United States would not "
+        + "accept any arrangement that left the question of access…"
 
     /// A temporary directory for `body`, removed after it.
     private func withTempDir<T>(_ body: (URL) async throws -> T) async throws -> T {
@@ -184,22 +211,28 @@ struct ProjectHomeHostTests {
         try Data(xml.utf8).write(to: volumes.appendingPathComponent("\(Self.volumeId).xml"))
     }
 
-    /// Indexes the volume read-write and writes d3's summary and d4's empty one, then copies the index
-    /// page for page with SQLite's backup API, out of write-ahead-log mode, as an export is made, and
-    /// opens the copy read-only, as a host serves it.
-    private func servedPipeline(in dir: URL) async throws -> IndexingPipeline {
-        let built = dir.appendingPathComponent("built.db")
+    /// Indexes the volume read-write, as the app's index is built, and writes d3's summary and d4's
+    /// empty one into it, as the app writes a summary into its index.
+    private func appIndex(in dir: URL) async throws -> (pipeline: IndexingPipeline, database: URL, volumes: URL) {
+        let database = dir.appendingPathComponent("built.db")
         let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
         try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
         try writeVolume(in: volumes)
-        let writer = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: built), databaseURL: built,
-                                          volumesDirectory: volumes, resources: .none,
-                                          defaults: InMemoryIndexingStampStore())
-        try await writer.indexVolume(Self.volumeId)
-        try await writer.updateSummaryText(volumeId: Self.volumeId, documentId: "d3",
-                                           responseText: "  A summary,\n  in its own   words.  ")
-        try await writer.updateSummaryText(volumeId: Self.volumeId, documentId: "d4", responseText: "")
+        let pipeline = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: database), databaseURL: database,
+                                            volumesDirectory: volumes, resources: .none,
+                                            defaults: InMemoryIndexingStampStore())
+        try await pipeline.indexVolume(Self.volumeId)
+        try await pipeline.updateSummaryText(volumeId: Self.volumeId, documentId: "d3",
+                                             responseText: "  A summary,\n  in its own   words.  ")
+        try await pipeline.updateSummaryText(volumeId: Self.volumeId, documentId: "d4", responseText: "")
+        return (pipeline, database, volumes)
+    }
 
+    /// Copies the app's index page for page with SQLite's backup API, out of write-ahead-log mode,
+    /// strips the copy with `ResearchDatabaseStrip.steps` on one connection, as an export made without
+    /// the writing is stripped and as FRUS Explorer Light strips one made with it, and opens it
+    /// read-only, as such a host serves it.
+    private func servedCopy(of built: URL, volumes: URL, in dir: URL) throws -> IndexingPipeline {
         let served = dir.appendingPathComponent("served", isDirectory: true)
         try FileManager.default.createDirectory(at: served, withIntermediateDirectories: true)
         let database = served.appendingPathComponent("frus.db")
@@ -210,6 +243,9 @@ struct ProjectHomeHostTests {
         #expect(sqlite3_backup_step(backup, -1) == SQLITE_DONE)
         sqlite3_backup_finish(backup)
         #expect(sqlite3_exec(target, "PRAGMA journal_mode=DELETE", nil, nil, nil) == SQLITE_OK)
+        for step in ResearchDatabaseStrip.steps {
+            #expect(sqlite3_exec(target, step.sql, nil, nil, nil) == SQLITE_OK, "\(step.action)")
+        }
         #expect(sqlite3_close(target) == SQLITE_OK && sqlite3_close(source) == SQLITE_OK)
         try? FileManager.default.removeItem(at: served.appendingPathComponent("frus.db-shm"))
 
@@ -219,42 +255,53 @@ struct ProjectHomeHostTests {
         return pipeline
     }
 
-    @Test("A lead's line is its summary, or else its opening text, whitespace folded and cut at a word, keyed volume/document")
-    func aLeadsLineIsItsSummaryOrItsOpeningText() async throws {
+    @Test("On the app's index a lead's line is its summary, folded, or else its text from the head on, cut at a word; a document the index lacks has none")
+    func onTheAppsIndexALeadsLineIsItsSummaryOrItsText() async throws {
         try await withTempDir { dir in
-            let pipeline = try await servedPipeline(in: dir)
+            let pipeline = try await appIndex(in: dir).pipeline
             let keys = ["d1", "d2", "d3", "d4", "d99"].map { (volumeId: Self.volumeId, documentId: $0) }
                 + [(volumeId: "frus1971v02", documentId: "d1")]
-            let lines = try await pipeline.documentSnippets(forKeys: keys)
+            // Neither the document the volume lacks nor the volume the index lacks has a line, and an
+            // empty summary is none, so d4's line is its text.
+            #expect(try await pipeline.documentSnippets(forKeys: keys) == [
+                Self.key("d1"): Self.d1Line,
+                Self.key("d2"): "2. Memorandum Short text, on two lines.",
+                Self.key("d3"): "A summary, in its own words.",
+                Self.key("d4"): "4. Note Text four.",
+            ])
+        }
+    }
 
-            // Neither the document the volume lacks nor the volume the index lacks has a line.
-            #expect(lines.keys.sorted() == ["d1", "d2", "d3", "d4"].map { "\(Self.volumeId)/\($0)" })
-            // A summary, folded; an empty one is no summary, so d4's line is its text, which the index
-            // stores from its head on, as the page prints it.
-            #expect(lines["\(Self.volumeId)/d3"] == "A summary, in its own words.")
-            #expect(lines["\(Self.volumeId)/d4"] == "4. Note Text four.")
-            #expect(lines["\(Self.volumeId)/d2"] == "2. Memorandum Short text, on two lines.")
-            // d1's text runs to 397 characters: its line stops at the last word within 240.
-            #expect(lines["\(Self.volumeId)/d1"] == "1. Telegram The Ambassador called on the Foreign Minister "
-                        + "this morning to convey the President's views on the forthcoming conference, and stressed "
-                        + "that the United States would not accept any arrangement that left the question of access…")
+    @Test("On a host's copy, stripped of the writing and opened read-only, every lead's line is its text: the summary went with the writing")
+    func onAServedCopyEveryLeadsLineIsItsText() async throws {
+        try await withTempDir { dir in
+            let built = try await appIndex(in: dir)
+            let pipeline = try servedCopy(of: built.database, volumes: built.volumes, in: dir)
+            let keys = ["d1", "d2", "d3", "d4", "d99"].map { (volumeId: Self.volumeId, documentId: $0) }
+            #expect(try await pipeline.documentSnippets(forKeys: keys) == [
+                Self.key("d1"): Self.d1Line,
+                Self.key("d2"): "2. Memorandum Short text, on two lines.",
+                Self.key("d3"): "3. Letter The letter's own text.",
+                Self.key("d4"): "4. Note Text four.",
+            ])
         }
     }
 
     @Test("A shorter line stops at a word too, keys past the first 400 are read, and no keys read nothing")
     func aShorterLineAndManyKeys() async throws {
         try await withTempDir { dir in
-            let pipeline = try await servedPipeline(in: dir)
+            let built = try await appIndex(in: dir)
+            let pipeline = try servedCopy(of: built.database, volumes: built.volumes, in: dir)
             let short = try await pipeline.documentSnippets(forKeys: [(volumeId: Self.volumeId, documentId: "d2")],
                                                             maxLength: 20)
-            #expect(short == ["\(Self.volumeId)/d2": "2. Memorandum Short…"])
+            #expect(short == [Self.key("d2"): "2. Memorandum Short…"])
 
             // 446 documents the index lacks, then the four it has: the statement reads 400 keys at a
             // time, so the four are in its second read.
             let keys = (1...446).map { (volumeId: Self.volumeId, documentId: "missing\($0)") }
                 + ["d1", "d2", "d3", "d4"].map { (volumeId: Self.volumeId, documentId: $0) }
             let lines = try await pipeline.documentSnippets(forKeys: keys)
-            #expect(lines.keys.sorted() == ["d1", "d2", "d3", "d4"].map { "\(Self.volumeId)/\($0)" })
+            #expect(lines.keys.sorted() == ["d1", "d2", "d3", "d4"].map(Self.key))
 
             #expect(try await pipeline.documentSnippets(forKeys: []).isEmpty)
         }

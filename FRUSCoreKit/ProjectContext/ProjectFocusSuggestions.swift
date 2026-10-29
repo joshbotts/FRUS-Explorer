@@ -20,12 +20,15 @@ import Foundation
 ///
 /// In the kit, and public, since FRUS Explorer Light's S17f: a host's focus-subjects editor
 /// suggests what `ProjectFocusSubjectsEditor` suggests. The engaged volumes are the host's to
-/// gather; the app's `ProjectEngagedDocuments` gathers them from SwiftData.
+/// gather. The app's, `ProjectEngagedDocuments.engagedVolumeIds`, read from SwiftData, are the
+/// volumes of the project's notes on a document, of the documents read while it was active and of
+/// its collections' document entries: not of its highlights, which
+/// `DocumentEngagementService.gather(among:forProject:)` counts as well.
 ///
 /// Version history:
 ///   1.0 — #377 Phase 2b: initial implementation
 ///   1.1 — FRUS Explorer Light S17f: moved from `FRUSExplorer/ProjectContext/` into FRUSCoreKit,
-///          public, unchanged
+///         public, unchanged
 public enum ProjectFocusSuggestions {
 
     /// Ranks subjects to suggest, drawn from the top subjects of the project's engaged

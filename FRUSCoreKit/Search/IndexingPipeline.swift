@@ -498,7 +498,8 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         that only an export runs; nothing it indexes or stores changes. No index version
 ///  4.49 — 2026-10-28 (FRUS Explorer Light S17f): `documentSnippets(forKeys:maxLength:)` is public, for a
 ///         host's Project Home, which shows the line it returns under each lead in Suggested Next. A read
-///         that only a view runs; nothing it indexes or stores changes. No index version
+///         for rows on screen, as the Related panel's are; nothing it indexes or stores changes. No index
+///         version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -10763,8 +10764,11 @@ public actor IndexingPipeline {
     /// point-looked-up through the composite primary key in 400-pair chunks, so this is bounded to
     /// the (small) set of shown rows — never a scan.
     ///
-    /// Public since FRUS Explorer Light's S17f: a host's Project Home reads it as the app's
-    /// `ProjectHomeView.loadLeadSnippets()` does, for the line under each lead in Suggested Next.
+    /// Public since FRUS Explorer Light's S17f: a host's Project Home calls it as the app's
+    /// `ProjectHomeView.loadLeadSnippets()` does, for the line under each lead in Suggested Next. The
+    /// summary it prefers is this index's own `summary_text`, which a copy exported without the
+    /// reader's writing, or stripped of it by `ResearchDatabaseStrip`, does not hold: over such a copy
+    /// every line is the document's opening text.
     ///
     /// - Parameters:
     ///   - keys: The document keys to fetch snippets for.
