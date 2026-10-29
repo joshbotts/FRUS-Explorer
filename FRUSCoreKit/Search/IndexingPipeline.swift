@@ -497,9 +497,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         `WordCloudDocumentKey`, for a host's check of a collection's quotations before an export. A read
 ///         that only an export runs; nothing it indexes or stores changes. No index version
 ///  4.49 — 2026-10-28 (FRUS Explorer Light S17f): `documentSnippets(forKeys:maxLength:)` is public, for a
-///         host's Project Home, which shows the line it returns under each lead in Suggested Next. A read
-///         for rows on screen, as the Related panel's are; nothing it indexes or stores changes. No index
-///         version
+///         host's Project Home, which shows the line it returns under each lead in Suggested Next, and so
+///         is `extractHeader(from:)`, for the title a host gives a visit to a document its index does not
+///         hold. Access and docs alone: what the indexer stores and what either returns are unchanged. No
+///         index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -6808,7 +6809,13 @@ public actor IndexingPipeline {
         return dated
     }
 
-    nonisolated static func extractHeader(from nodes: [FRUSASTNode]) -> String {
+    /// A document's head, as `document_cache.header` stores it and the reader titles the document:
+    /// the printed text of its first `<head>`, its footnotes left out and its whitespace folded,
+    /// read through an editorial note's wrapper; empty when it has none.
+    ///
+    /// Public since FRUS Explorer Light's S17f: a host titles a visit to a document its index does not
+    /// hold as the app's `DocumentViewModel.load` titles one, from the head of the parsed TEI.
+    public nonisolated static func extractHeader(from nodes: [FRUSASTNode]) -> String {
         if case .editorialNote(let children)? = nodes.first {
             return extractHeader(from: children)
         }
