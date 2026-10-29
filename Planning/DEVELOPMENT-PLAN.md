@@ -8112,3 +8112,36 @@ This entry was added after the runs.
 **For the owner** (the memo's §8): the apart mark or a synthetic record for item 3; T1 or T2 for item 4; the anchor assignments and the two Wright anchors upstream; committing the reads; the environment changes; one build for both lanes.
 
 **Not done**: the overlay was not attached, so nothing was measured through the generator; nothing was fetched from Wikidata or VIAF; no code was written, since nothing here could compile it.
+
+## Session 2026-10-28 — Project Home's focus subjects, the subjects their editor suggests and a lead's line are public in FRUSCoreKit, so FRUS Explorer Light's Project Home can show them
+
+FRUS Explorer Light's session, in a pull request of its own. Its S17f gives each user the Mac's Project Home over the server's rows, and leaves out two parts the app makes with code a host cannot reach: the Focus subjects, with the editor they open, and the line under each lead in Suggested Next. FRUS Explorer Light copies none of the app's code, so it asked for that code to be public. Cut from `v2` at `d7130e9b`.
+
+**Changed**, with no change of behaviour:
+- **`VolumeSubjectProfiles`** (`FRUSCoreKit/Browser/`): the type, its decoding, `allSubjects` and `SubjectOption` (its five fields and `id`) are public. `ResolvedSubject`, the per-volume queries and the reverse index stay internal; so does the loader, `VolumeSubjectProfilesStore`, which reads the bundle. `allSubjects`' doc said "de-duplicated by ref" and now says what is so: one entry for each vocabulary row a profile names, each ref once because the generator writes it once.
+- **`ProjectFocusSuggestions`** moves from `FRUSExplorer/ProjectContext/` into `FRUSCoreKit/ProjectContext/`, public, its body unchanged, so a host's focus editor suggests what `ProjectFocusSubjectsEditor` suggests. It keeps its file name, which `SubjectMeaningTests.arithmeticConsumersAreEnumerated` names. `ProjectEngagedDocuments`, which gathers the engaged volumes from SwiftData, stays in the app, and the moved file's doc names what it counts.
+- **`IndexingPipeline.documentSnippets(forKeys:maxLength:)`** is public. Its doc says that the summary it prefers is the index's own `summary_text`, which a copy exported without the writing, or stripped of it, does not hold. `ProjectLeadSnippetTests`' check of its key's line finds it as before.
+- **Docs:** `CLAUDE.md`'s FRUSCoreKit entry and its list of the kit's folders; version-history lines in the three kit files (`VolumeSubjectProfiles` 1.3, `ProjectFocusSuggestions` 1.1, `IndexingPipeline` 4.49).
+- `xcodegen generate` for the moved file and for the new suite, with the schemes restored.
+
+**Tests:** `ProjectHomeHostTests` (new, FRUSCoreKit) calls the three as a host does: the vocabulary from a fixture and from the bundled file in the repository, its reach per subject counted from the file; the editor's suggestions, with the default of eight the editor relies on; and a lead's line over an index the pipeline builds, where it is the summary or else the text, and over a copy of it stripped with `ResearchDatabaseStrip.steps` and opened read-only, where it is the text. `FRUSCoreKitTests` goes from 1,299 tests in 177 suites to 1,306 in 178; the iOS unit target from 7,754 tests in 929 suites to 7,761 in 930. On `v2`'s code, with the suite's file copied alone into a `v2` worktree, Xcode ran its 7 tests and passed them, and `swift test` could not build it: "cannot find 'ProjectFocusSuggestions' in scope".
+
+**A cold review,** given the diff and no conclusions, found no change of behaviour, no scan the move breaks and the project file byte for byte what XcodeGen writes. It found that the docs and the suite said a host gets the app's lead line, which it does not; that the default limit and the bundled file's counts were not held by the suite itself; and a test that checked its own copy of `ProjectHomeView`'s filter. The fifth commit fixes them, and every run below is at it.
+
+**Apple platforms, and how that was checked.** Each heavy job through `Scripts/heavy.sh`, one at a time, with Xcode 27.1 (27A9275) on macOS 27.2, clean and unsigned, beside `v2` @ `d7130e9b` built and run the same way from a worktree. This entry was added after the runs.
+- **`FRUSExplorerMac`**, Debug: "** BUILD SUCCEEDED **" both, with the same five warning lines.
+- **The symbol diff,** normalized as before: 251,932 names on `v2` and 251,932 here, none removed and none added; unnormalized the same.
+- **iOS 27.0,** iPhone Air (`CC402E64`):
+  - a clean `build-for-testing` of `FRUSExplorer`, "** TEST BUILD SUCCEEDED **" both, with the same 7 warning lines;
+  - the full unit target (`test-without-building -collect-test-diagnostics never -only-testing FRUSExplorerTests`, `TEST_RUNNER_FRUS_TEI_MIRROR` set, the app removed first): "✘ Test run with 7761 tests in 930 suites failed after 537.584 seconds with 14 issues (including 6 known issues).", and on `v2` "✘ Test run with 7754 tests in 929 suites failed after 593.733 seconds with 14 issues (including 6 known issues).";
+  - on both, the 8 Keychain tests an unsigned build fails with -34018 (KeychainStoreTests 5, SettingsTests 2, SourceExplorerTests 1), and the 6 known issues `SyncDiagnosticsEntryTests` declares; both runs skip the same 17 tests and 2 suites.
+- **`swift build --target FRUSCoreKit`:** "Build complete!", at the head and at each of the first three commits.
+- **`swift test`, whole, on the macOS host:** exit 0; 38 runs and 3,199 tests in 390 suites, all passed, none skipped, against 3,192 in 389 on `v2`. `FRUSCoreKitTests`: "✔ Test run with 1306 tests in 178 suites passed".
+
+**Linux** (Docker Desktop, `swift:6.4-noble` on arm64, SQLite 3.45.1): FRUS Explorer Light's package at its `main` (`3cef58e`, pinned to `32e295e5`), with `v2` and then this branch copied over its submodule, its own targets built clean. At `v2`, 2,565 tests, all passed. At the branch, 2,572: `FRUSCoreKitTests` 1,306, the new suite passing, and every other target as at `v2` but its parity suites, whose 21 issues are the golden files' staleness, since their source digest covers the kit's folders. Skipped at both: its one named skip and its PostgreSQL store's seven tests, which need a database the run did not give them. A file of its server's, never committed, that imports FRUSCoreKit without `@testable` and names every declaration made public here built over the branch; over `v2` it did not ("cannot find type 'VolumeSubjectProfiles' in scope", "cannot find 'ProjectFocusSuggestions' in scope", "'documentSnippets' is inaccessible due to 'internal' protection level").
+
+**Owed by the owner:** the Mac check listed in the pull request, from a clone at a real path; then the merge. FRUS Explorer Light's next pin move takes it.
+
+**Filed in the pull request, not fixed:** a host's lead line is the opening text where the app shows a summary, since the summary is the index's own column; a repeated ref in a profiles file would trap `ProjectFocusSuggestions`' dictionary; a vocabulary or profile row missing a key empties its whole array; a summary of only white space leaves a lead with no line.
+
+**Not done:** the UI suites, iOS 26.x, a device and a signed run; the Mac app was built and not run.
