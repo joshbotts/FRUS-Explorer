@@ -8240,4 +8240,6 @@ Five move by the tie rule: the two "Dick" Allen entries, George E. Brown, Leslie
 
 After the Speaker's assignments regenerated the bundle, all four were run again on the final code, after the last edit to any file a test reads: the same counts, `swift test` 3,224 and the unit target 7,742 passed with 37 skipped, none failed, and the Mac build with no warning lines.
 
-**Not done:** the UI suites, iOS 26.x, a device; the Mac app was built and not run. No library's rollup was rebuilt by the app at launch; the census rebuilt S1's through the kit. Nothing is committed or pushed.
+**Opened as #1815** on the owner's word of 2026-10-29 ("Commit and open PR"), against `v2` at `fb542514`, which had not moved since the branch was cut; not merged.
+
+**Not done:** the UI suites, iOS 26.x, a device; the Mac app was built and not run. No library's rollup was rebuilt by the app at launch; the census rebuilt S1's through the kit.
