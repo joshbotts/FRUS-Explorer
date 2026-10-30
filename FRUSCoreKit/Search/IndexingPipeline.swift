@@ -506,6 +506,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         never joins a member standing apart to a reconciled person; one whose name fits two reconciled
 ///         people in its block joins the one its exact name fits, or neither (see the v13 note). The
 ///         loader is internal, for the suites. No index version
+///  4.51 — 2026-10-29 (#1767 lane B): `currentPersonRollupVersion` → 14 — the bundled authority index
+///         takes the overlay's VIAF ids where an identifier rule corroborates them, and the rebuild
+///         writes each rollup's `viaf_id` from it; no member moves (see the v14 note). No index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1696,7 +1699,17 @@ public actor IndexingPipeline {
     /// Kirkpatrick's seven 1981–1988 entries reach her through the crosswalk where v12 reached her by
     /// name, and her rollup is unchanged. A rebuild took 13.7 s in a debug package test, against
     /// 13.1 s for v12's. A rollup rebuild only; no index version.
-    public static let currentPersonRollupVersion: Int = 13
+    /// v14 (#1767 lane B): the bundled `person-authority-index.json` takes the overlay's Wikidata and
+    /// VIAF ids where an identifier rule corroborates them (`PersonAuthorityIndexGenerator`'s
+    /// `PersonIdentifierRule`, over a committed Wikidata snapshot), where since decision 55 it took
+    /// none: 1,468 VIAF ids beside the register's 142, and 1,859 Wikidata ids. The rollup stores
+    /// `viaf_id` and nothing else of these, so the rebuild is what puts the new VIAF links on the
+    /// person sheet; the Wikidata link and the role line are read from the bundle and need none. No
+    /// member moves: the crosswalk and `apart` are unchanged, and the clusterer reads no identifier.
+    /// Its own bump, though lane A's v13 had not shipped, so that a library a development build
+    /// already rebuilt at v13 takes the VIAF ids too (the owner's choice, 2026-10-29). A rollup
+    /// rebuild only; no index version.
+    public static let currentPersonRollupVersion: Int = 14
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
     /// UserDefaults key holding the fingerprint of the override set the rollup was last built with,
