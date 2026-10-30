@@ -1,7 +1,24 @@
 # Agentic Analysis Guide — steering one agent to the full-text and the vector strategies together: recommendations from the two C-3 tiers
 
 **Status:** REVIEW, 2026-10-27. Recommendations only; nothing in the guide is changed by this
-document. Written against `Docs/Agentic-Analysis-Guide.md` v1.36 (3,574 lines, `v2` @ `e85cef7`),
+document.
+
+**Applied in part, 2026-10-29 (guide v1.37).** The recommendations that leave the §12 block and the
+deliverable as measured are in the guide: R1 (§14.16, §13), R2 with R3's naming and R4 (a new
+§14.17), R5's §14.9 paragraph, R12 (§14.16, §15.1a) and R14 (Appendix A, §9). Four things here
+were corrected on the way, from the records and a measurement at the 2026-10-15 generation:
+- R5's rule: "the random-pair mean less nine sd" is 34 at this digest (167.1 less 9 × 14.8), not
+  "about 20". The guide gives the measured lines instead: copies under about 25, copies and
+  distinct documents of one exchange both from 25 to 39.
+- R2: `v4`'s join flagged `frus1874/d552` as OTHER-DECADE; it had no scope column. The document
+  lay outside its scope set, as the refuter found.
+- R12: `v4`'s sentence claims two documents found by no word search where the strict reading
+  holds one, so the guide's model sentence is its own.
+- §2's R5 evidence: `v2`'s pair at 19 is `frus1969-76v12/d212` with `frus1969-76ve10/d225` (its
+  `vec_dups.tsv`); the memo printed `d211`, which sits at 80.
+
+Still waiting: R3's deliverable sentence, R5's clause on the block's Ed2 line, R6 to R11, R13 and
+R15, which are R16's treatment arm. §9's five questions are still open. Written against `Docs/Agentic-Analysis-Guide.md` v1.36 (3,574 lines, `v2` @ `e85cef7`),
 the two results files (`C-3-Results-2026-10-26.md`, twelve runs of the §12 block on the
 recognition question; `C-3-Vectors-Tier-Results-2026-10-27.md`, four runs with Appendix A and the
 artifacts on the owner's Cuba question) and their records (`c3-reader-test/`, `c3-vectors-tier/`:

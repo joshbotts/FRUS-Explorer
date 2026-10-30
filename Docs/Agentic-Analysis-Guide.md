@@ -279,12 +279,17 @@ the artifacts of §A.1 by path, with no embedder and no helper script, two runs 
 (`Planning/C-3-Vectors-Tier-Results-2026-10-27.md`). Every run ran all five of §A.5's operations,
 compared the digests first and calibrated against both baselines; two runs of four cited and
 quoted a document that no full-text or heading query they ran returns, reached through a
-neighbour list; compliance on the 35 items above fell by one item in three runs of four (0.941 to
-1.000 against four perfect runs without the appendix), and wall clock and usage did not rise. So
-on a question whose vocabulary drifts across the series, hand these cells the artifacts and this
-appendix, paste §A.8's addendum into the §12 block, and expect about one cited document in twenty
-to be reachable no other way. The one rule all four runs missed was §A.7's last paragraph, the
-calibration offsets on a cosine the reader sees, which the addendum now states.
+neighbour list; compliance on the 35 items above fell by one or two items in three runs of four
+(0.941 to 1.000 against four perfect runs without the appendix), and wall clock and usage did not
+rise. So on a question whose vocabulary drifts across the series, hand these cells the artifacts
+and this appendix, paste §A.8's addendum into the §12 block, and expect few cited documents to be
+reachable no other way: two of the 77 the four collections cited, one in each of two runs, by the
+strict reading of [§14.17](#1417-the-second-finding-aid-when-the-vectors-enter-the-pass), where the
+sessions claimed five, three of them inside their own chapter-heading scope. §14.17 states the
+method the four runs converged on as a rule: where the vector work enters the scoping pass, which
+operations are required, and what the memo owes for it. The one rule all four runs missed was
+§A.7's last paragraph, the calibration offsets on a cosine the reader sees, which the addendum now
+states.
 
 ---
 
@@ -1249,9 +1254,13 @@ A protocol that catches most of it:
    more than once (one eight-volume set carried twenty-four proportions and was never listed; one
    "18 volumes" listed 16), and for any statistic that varies by era — unclustered share, footnote
    density, headings per volume — compare against an **era-matched** baseline, not the corpus (the
-   map's unclustered share is 47% before 1900 and 22% in 1945–64; FRUS's sectioning granularity
-   quadruples in 1894, so a raw 0 → 18 commercial headings overstates the editorial turn 3.4×). A
-   table headed "ranked" or "top N" that omits rows is a selection; say so.
+   map's unclustered share by era is a property of the layout: in the 2026-10-15 layout, the one
+   that ships, 8,436 of the 34,046 documents of volumes centred in 1861–1899 are unclustered
+   against 26,875 of the 100,373 of volumes centred in 1945–64, where the 2026-08-16 layout had put
+   nearly half against about a fifth, [§A.5](#a5-what-an-agent-can-do-with-no-model); FRUS's
+   sectioning granularity quadruples in 1894, so a raw 0 → 18 commercial headings overstates the
+   editorial turn 3.4×). A table headed "ranked" or "top N" that omits rows is a selection; say
+   so.
 4. **Spot-check five rows in the app.** Take the extremes and three at random, open them in FRUS
    Explorer, and confirm the document is what the query claimed. This catches join-level errors that
    no amount of SQL reading will.
@@ -1636,6 +1645,7 @@ self-describe, so capture these alongside your results:
 | Index format version | Settings ▸ Library ▸ Volumes & Storage ▸ Advanced, the index's status line (*Format version N*) — this is the parser generation that built your rows, and it changes what is extracted. |
 | Indexed volume list | `SELECT DISTINCT volume_id FROM document_cache ORDER BY 1;` — save the full list, not the count. |
 | Subject vocabulary digest | `SELECT DISTINCT digest FROM document_subject_volumes;` if you used subjects. |
+| The vector artifacts' generation, if the brief handed them over | `provenanceDigest` and `generated` in `semantic-vectors-index.json`, and `generated` in `semantic-map-index.json`. The Research-State Record below carries the digest, and an app export's `research_provenance` carries it as `semantic_provenance_digest`. A regeneration moves every neighbour list ([§A.8](#a8-what-the-vectors-cannot-tell-you)). |
 | The queries themselves | Verbatim, in a file, with their result counts — **the pattern actually executed**, every disjunct included; a TEI, heading or JSON regex is a query for this purpose. Keep the log per agent session; a reading claim with no retrieval line in it is unverified. |
 | Whether the copy contains your own writing, and how many rows | On an app export, `SELECT value FROM research_provenance WHERE key='my_writing_included'`. On a hand-made `.backup` nothing records it: if you did not strip them ([§11](#11-safety-privacy-and-what-leaves-your-machine)), count them — `SELECT COUNT(summary_text), COUNT(note_text), COUNT(user_tag_ids) FROM document_cache` — and state that no agent read those columns. |
 | The agent model(s), the number of sessions including the ones that died, the run identifier your harness assigns, and what it cost | Your harness's log and usage accounting. If the model changed mid-run, say which agents ran on which. |
@@ -2007,11 +2017,30 @@ number too and the two available surfaces disagree:
 | `document_cache`, apparatus excluded | 358 / 358 | 343 / 382 | **701** |
 
 **The two editions are not interchangeable, which is why the choice of which to drop is not
-neutral.** Measured over a full 552-volume index: the Iran pair shares **377 document ids** but only
-**277** of them carry identical text, and the `ve15p2` pair shares 345 ids with 335 identical. In
-both pairs the `Ed2` is the *later* publication (2018 over 2017; 2021 over 2014). So the conventional
-fold — suppress the `Ed2` — keeps the earlier text, which is right for a count and wrong for a quote.
-If a claim turns on the wording of a document in either pair, read the volume.
+neutral.** Measured over a full 553-volume index at index version 71: the Iran pair shares **377
+document ids** and **350** of them carry identical `body_text`, and the `ve15p2` pair shares 346
+ids with 335 identical. In both pairs the `Ed2` is the *later* publication (2018 over 2017; 2021
+over 2014). So the conventional fold — suppress the `Ed2` — keeps the earlier text, which is right
+for a count and wrong for a quote. If a claim turns on the wording of a document in either pair,
+read the volume.
+
+**The vectors find the copies the ids do not.** The second editions are the only copies that share
+an id. Elsewhere one document is printed twice under two ids: an annual volume's despatch again in
+an appendix volume (`frus1881/d405` is `frus1894app2/d394`), Litvinov's letter to Roosevelt of 16
+November 1933 in both `frus1933v02` and `frus1933-39`, one memorandum in two subject volumes of the
+1969–1976, 1977–1980 and 1981–1988 subseries, each copy with its own source note. Measured at the
+2026-10-15 generation: the second editions' shared documents whose text is identical sit at
+Hamming 0 to 15 of 512 (618 of 684 at 0). Of a seeded sample of 2,000 documents, the second
+editions left out on both sides, the 6 whose nearest neighbour in the corpus sat under 25 were each
+the same document printed in another volume under the same date; of the 29 more between 25 and 39,
+about two in three were copies and the rest distinct documents of one exchange — a note and its
+reply of the same day (`frus1926v02/d231`, `d232`), a draft report and the report (`frus1943/d147`,
+`d150`), two meetings of one group five days apart (`frus1969-76v08/d145`, `d149`). So before any
+count over a set you built, take each member's nearest neighbour within the set. A pair under about
+25 is a copy until you have read both, and a pair under about 40 with the same date and
+correspondents is one to read before you count it; cite one copy, say which, and count it once.
+The lines are this generation's distances: recompute the random-pair baseline at the digest in use
+([§A.5](#a5-what-an-agent-can-do-with-no-model)) and expect them to move with it.
 
 Related, and worth stating once: the semantic artifacts count **314,616** documents, while this
 project's own settled corpus figure from its query work is **316,839**. The two count different
@@ -2041,8 +2070,9 @@ the profiles is by construction; rank it from `document_subject_refs` instead. S
 never a subcategory — *Trade and Commercial Policy/Agreements* has 17 members, eight of them prices,
 wages and credit.
 
-**`semantic-map-index.json`** carries 172 unsupervised cluster labels — read `len(clusters)` from
-the file rather than trusting this number.
+**`semantic-map-index.json`** carries 140 unsupervised cluster labels in the 2026-10-15 layout, the
+one that ships (the 2026-10-10 layout before it had 172) — read `len(clusters)` from the file rather
+than trusting this number.
 
 **A cluster id is a row number, not a name.** Ids are assigned when the layout is built, and a
 rebuild RE-PARTITIONS the corpus rather than renumbering it, so an id quoted in prose survives into
@@ -2062,16 +2092,26 @@ your subject forms a region of the corpus at all — and the answer differs shar
 | Foreign Service reform | **0** of 171 in the 2026-09-09 layout (controls pass: 13 match `soviet`, 3 match `nuclear`). The 2026-10-10 layout has not been put to the same test; its controls read 11 and 3 of 172, and one of its labels now carries Foreign Service terms: `human, fso, eeo, fsr`, 313 documents, 134 of them in `frus1977-80v02` and 92 in `frus1977-80v28` | This institution did not form a labelled region in the layout tested — but read the claim narrowly, and as a claim about that layout: a relayout that added 47 documents on another subject produced a label the zero would not have survived. Some institutions do cluster in both: `nsc, cig, cia, intelligence` is the thirtieth-largest region at 1,733 documents (`cia, nsc, dci, intelligence` was the seventeenth at 2,441). |
 | Commercial diplomacy, 1930s | label test: **1** of 179 in the 2026-08-16 layout (controls pass). Cluster-purity harvest: 4 clusters at 25–59% RTAA-stratum share held 1,030 non-stratum documents, 776 of 1,030 (75.3%) commercial by the editors' own headings after a refuter fixed an unanchored `tin` (it matched *PanamaContinued*), 284 of 849 unreachable by all twenty of the project's phrase families; corpus-wide they sized a third editorial stratum of 1,228 documents, 878 outside every prior stratum | A label test is a test of labelling. When a subject is filed by counterpart, the map labels by counterpart (in the 2026-08-16 layout the cluster labelled `chalkley · australian · australia · sydney`, 363 documents, was 59% reciprocal-trade). **That reading is now void, and it shows exactly why an id must never be quoted:** the 2026-09-09 layout has no such cluster, its `chalkley` cluster reads `chalkley, rubber, tin, todd` at 477 documents, and id 92 there is `bulgarian, rumania, rumanian, soviet` at 2,830 — a subject with no relation to the reading. |
 
+Each row is a reading of the layouts it names. The 2026-10-15 layout, the one that ships, reads
+differently again on the same labels: `wolfram` labels one cluster (`wolfram, tangier, barcelona,
+spanish`, 2,065 documents), `rubber` one (`ababa, addis, engert, rubber`, 1,528), `salazar` one
+(`spanish, salazar, spain, lagen`, 698), and `chrome` and `tin` none; no label carries `fso`, `eeo`
+or `fsr`, with the controls at 10 of 140 for `soviet` and 3 for `nuclear`. Run the label test on
+the file you hold.
+
 The map's twenty largest clusters are overwhelmingly places and crises — but not without exception,
 and the exceptions matter to the row above. In the 2026-09-09 layout `nato, edc, ger, wld` (3,999),
 `pasvolsky, trusteeship, gromyko, soviet` (3,291), `cia, nsc, dci, intelligence` (2,441) and
 `winant, eito, irish, igc` (2,054) are institutions and negotiating bodies rather than countries.
 In the 2026-10-10 layout three of the twenty are: `shevardnadze, missile, soviet, abm` (4,113),
 `gibson, craigie, kato, disarmament` (2,630) and `pasvolsky, gildersleeve, stassen, eec` (2,379).
-Places and crises are still what it is mostly organised around, and that constrains what it can find
-for you. Note also the asymmetry *within* a
-question: the wartime *denial* operations clustered; the hemispheric *acquisition* program did not,
-because it is distributed across many country files rather than concentrated in a few negotiations.
+In the 2026-10-15 layout `edc, nato, nuclear, soviet` (10,914), `pasvolsky, soviet, austin,
+trusteeship` (3,683) and `cia, nsc, usia, inglis` (2,189) are among the twenty, and
+`gorbachev, shevardnadze, abm, soviet` (1,774) is the twenty-first. Places and crises are still
+what it is mostly organised around, and that constrains what it can find for you. Note also the
+asymmetry *within* a question: the wartime *denial* operations clustered; the hemispheric
+*acquisition* program did not, because it is distributed across many country files rather than
+concentrated in a few negotiations.
 
 A 0-of-N label test rules out a *labelled* region, not the map. Before closing the route, harvest
 the clusters where a heading-defined stratum concentrates (≥25% purity) and triage the non-stratum
@@ -2118,10 +2158,10 @@ The stack, and the question each artifact answers:
 
 | Artifact | Answers | Scale |
 |---|---|---|
-| `collection-usage-index.json` | how many documents in volume X came from archival unit Y — **the join that turns any volume scope into a ranked archival target list** | 264,598 notes; 1,834 collections reached; 11,027 class keys |
+| `collection-usage-index.json` | how many documents in volume X came from archival unit Y — **the join that turns any volume scope into a ranked archival target list** | 264,598 notes; 1,834 collections reached; 11,041 class keys |
 | `external-citation-index.json` | what the editors cited and did **not** print | 19,616 lot/library refs + 30,527 class refs, 441 volumes |
 | `central-files-index.json` | cited lot number → record group, series NAID, HMS/MLR entry number — as a **candidate**. The key is a folded control number, and a match is an identity claim only when both sides mean a lot by it: a Federal Records Center accession (`65 A 987`) and a file label fold the same way and are not lots. Two cheap screens before the date-span rule: does the series' extent hold the box FRUS cites (five inches cannot hold a Box 104), and does its title fit the document type. **One answer in this file does not mean one answer at NARA**: it stores a single NAID per lot, so a divided lot arrives here looking settled. `72 D 192` resolves to a series titled *Speeches and Statements*, which fits almost nothing a Rusk Files citation names — and the reason is that NARA divides that lot across **six** series, including *General Correspondence of Dean Rusk* and *Transcripts of Telephone Calls*. Check `lot-claimants-index.json` before treating any single answer as unchallenged; 123 lots are divided and this file conceals every one of them. | 1,070 lot files, all carrying a NAID |
-| `collection-authority.json` | which collection is this note naming, under every spelling | 3,985 collections, 1,014 with a NAID |
+| `collection-authority.json` | which collection is this note naming, under every spelling | 3,977 collections, 1,014 with a NAID |
 | `series-facts-index.json` | the pre-travel facts: creator, extent, date span, access status, facility. **Schema 3 (#1202) carries BOTH of NARA's date pairs** — `y0`/`y1` inclusive and `cy0`/`cy1` coverage, the latter on 174 of 698 rows — and a top-level **`legend`** giving, per wire key, its field name and the vocabulary it dereferences through. Read the legend rather than inferring: the pairing is asymmetric, `as` and `us` both resolving through `statuses` while `ar` uses `restrictions` and `ur` uses `useRestrictions`, and reading `as` through `restrictions` reproduces a plausible wrong value on every row. **Neither date pair contains the other** (naId 604801 is inclusive 1963–1973, coverage 1947–1964), so a date screen takes the UNION — see rule 3 below. | 698 series, 398 creator headings, 174 with a coverage pair |
 | `lot-claimants-index.json` | when a lot has several correct NARA answers, which — and, run the other way over your resolved set, which NAIDs several lots converge on | 123 divided lots, up to 13 claimants |
 | `presidential-library-catalog.json` | the collections that sit outside every record group | 11 libraries, 3,837 collections, 14,656 series |
@@ -2410,7 +2450,16 @@ read 616.
 **1 — the memo, unchanged.** The raw record of methodology and findings, including the numbers
 that were refuted and by what. It is the audit trail, and nothing below replaces it. Every number
 and quotation in the three artifacts below traces to a line in it (§8's two forms), and the memo
-carries that trace as a table.
+carries that trace as a table. When the brief hands over the vector artifacts, the memo also
+carries a section headed **VECTORS**: each of [§A.5](#a5-what-an-agent-can-do-with-no-model)'s
+five operations (nearest neighbours of a document, a semantic join into the database, centroid
+similarity, the map, near-duplicates), named as run or as not run and why; for each one run, its
+anchor, the file it ran over, the baseline it was read against and what it found; which cited
+documents were vector-reached, in both of
+[§14.17](#1417-the-second-finding-aid-when-the-vectors-enter-the-pass)'s readings; and the
+provenance digest, with the index's `generated` stamp. With no artifacts in hand the section is
+the word "none". In the 2026-10-27 measurement all four sessions filled such a section because the
+harness's deliverable asked for one, and each refuter checked the vector work from it.
 
 **2 — the overview, which answers the question.** It opens with **the bottom line, three
 paragraphs in a fixed order, each carrying its evidence**, before any finding:
@@ -2443,11 +2492,14 @@ paragraph and one to three quoted documents, placed in the narrative the corpus 
 given as a list of counts; **how this was done**, one paragraph a methods section would accept —
 what was searched, in words; over what, with the exclusions; with what checks (the positive and
 negative control, the literal-share reading, the five documents opened in the app); what was not
-done; and where the full record is, with the query log summarised into the shape of the app's own
-method appendix (manual §17.6: one row per search, its scope, the volumes indexed at the time,
-what it returned, and whether a count is a floor), the raw log beside it; and **read next**: the
-collection, by name, what the historian's additions would unlock, and what they can do next in the
-app.
+done; if the vector artifacts were used, one sentence in the historian's words, with no distance,
+cosine or cluster in it, saying which documents were found by their similarity to another and by
+no word search (§14.17's strict reading), that a similarity is a lead for reading and not
+evidence, and that each was read before it was cited; and where the full record is, with the
+query log summarised into the shape of the app's own method appendix (manual §17.6: one row per
+search, its scope, the volumes indexed at the time, what it returned, and whether a count is a
+floor), the raw log beside it; and **read next**: the collection, by name, what the historian's
+additions would unlock, and what they can do next in the app.
 
 Three rules hold throughout the overview, and the §12 block states them to the agent. **No SQL,
 no table or column name, no `volume_id/document_id` string, no file path and no issue number
@@ -2477,7 +2529,11 @@ of 229 tolerant.* Reader's form: *The search for "clearing agreement" returned 2
 index treats "clear agreement" as the same words, so we read a sample; about seven in ten used the
 phrase. Take 229 as an upper bound, and the memo lists the sample.* Audit form (§14.13): *"all 24
 dated 1961–63" (nine were 1964–67).* Reader's form: *Of the 24 documents on this thread, 15 date
-from 1961 to 1963 and nine from 1964 to 1967.*
+from 1961 to 1963 and nine from 1964 to 1967.* Audit form (§14.17): *`frus1874/d552`, Hamming 61
+to the anchor `frus1898/d490`; no logged query returns it (strict).* Reader's form: *One document,
+Fish's instruction to Cushing of February 1874, was found by its similarity to a later instruction
+already in hand and by no word search. A similarity of this kind is a lead for reading, not
+evidence, and the instruction was read in full before it was cited.*
 
 **3 — a `.fruscollection` the historian opens in the app** (§15 is the format; §15.1a is what a
 reading round's file carries). **Scope it by a rule, not by a number.** The rule that works is
@@ -2519,6 +2575,73 @@ the app, read twenty to forty of the documents the collection groups under the f
 tag the ones that are really about a channel to Havana; give a second tag to the documents where
 an option to talk was put to a decision and declined*, not *tag them `cuba-talks-seed`; your tags
 land in `document_cache.user_tag_ids`*.
+
+### 14.17 The second finding aid: when the vectors enter the pass
+
+Appendix A says what the vector artifacts are, and §A.8 what they cannot tell you. This section
+says when a session uses them, on what, and what it owes for having done so. It is the method four
+sessions converged on without being told, in the 2026-10-27 measurement
+(`Planning/C-3-Vectors-Tier-Results-2026-10-27.md`: Opus 5.5 at `medium` and Sonnet 5.5 at `high`,
+two runs each, handed Appendix A and the artifacts on a question about Cuba), stated as a rule.
+The vectors are a **second finding aid**, anchored on documents the first one found, and a
+neighbour is a reading suggestion until the document has been read.
+
+**They enter after the heading scope and the first anchors, and before the scope closes.** The
+full-text pass (§§14.1–14.9) chooses the volumes and the eras' key documents, and those are the
+anchors: a neighbour pass run before there is an anchor has nothing to anchor on, and one run
+after the collection is written can add nothing to it. All four sessions put it there. The first
+vector command came at lines 23 to 117 of logs of 62 to 192 lines, after the full-text scoping and
+the first reads, and every anchor was a document the full-text or heading pass had found.
+
+**What to run, when the brief hands over the artifacts:**
+
+1. **First, the digests and both baselines** (§A.2, §A.5): the digest compared across every file
+   you touch, then random pairs and the k-th-neighbour distribution over a random sample, computed
+   at the digest in use. Every figure in Appendix A is one generation's.
+2. **Required: the nearest neighbours of one anchor per era or per finding**, ten to twenty-five by
+   Hamming over the corpus binary, each joined on both keys into `document_dates` and
+   `document_cache` and **flagged three ways**: in your scope set or outside it; the anchor's
+   decade or another; the question's own word present in its text or absent. A neighbour flagged
+   *outside* or *absent* is the candidate the vectors exist to find (§A.5's vocabulary drift).
+   Read it whole, and if it bears on the question add it to the scope and the collection. Both
+   documents the 2026-10-27 sessions reached this way and no other came out of a flagged join: a
+   Dulles memorandum of March 1959 that never uses the word Cuba (`frus1958-60v05/d112`, flagged
+   absent, at Hamming 106 to Mallory's memorandum of April 1960), and Fish's instruction to
+   Cushing of February 1874 (`frus1874/d552`, flagged another decade, at 61 to Sherman's
+   instruction to Woodford of July 1897), which lay outside that session's scope set as well.
+   Neither came from the map or the centroids.
+3. **Judge a neighbour against the k-th-neighbour baseline, and a set's cohesion against random
+   pairs.** The Dulles memorandum sat at about the median distance of a document's 25th-nearest
+   neighbour: a lead that reading justified, not the distance, as its session said.
+4. **Required: near-duplicates before any count over a set you built**, by
+   [§14.9](#149-where-the-corpus-double-counts-itself)'s recipe. Three of the four sessions found
+   the same reprint, at Hamming 4.
+5. **The map only to test whether the subject forms a region of the corpus**, which is
+   [§14.10](#1410-two-bundled-artifacts-that-scope-the-corpus)'s label test, and any cluster figure
+   with the set's unclustered share, N of M, against an era-matched baseline on the layout in
+   use, or no cluster figure.
+6. **Centroid similarity is optional.** In all four sessions it found what §A.5 says it finds,
+   adjacent annual volumes nearest one another, and changed no answer; and its cosines were the
+   figures every session printed with neither the calibration offsets nor the word *raw*
+   ([§A.7](#a7-free-text-queries-require-the-embedder)'s last paragraph). If you run it, say the
+   cosines are raw.
+
+**Vector-reached, in two readings.** A cited document is vector-reached when a vector operation
+surfaced it, and the term needs both of its readings. The four sessions claimed five such
+documents; their refuters, re-running every query each session logged, counted two, and all three
+they discounted sat inside the session's own chapter-heading scope.
+
+- **Strict:** no full-text or heading query you logged returns it. Before you claim it, re-run your
+  logged queries against the pair and show the result, as a refuter will.
+- **Practical:** it was in no result set you had read when the neighbour list surfaced it.
+
+A document inside your own heading scope is practical at most. The strict count also depends on
+how wide the full-text scope was drawn: the session whose scope was every dated document matching
+*cuba* or *cuban*, 12,256 of them, ran the most anchors of the four, eight, and counted none,
+because every neighbour that names the subject was already inside its scope. The memo reports each
+cited document under both readings, in its VECTORS section (§14.16); the overview's sentence uses
+the strict reading alone, and the collection's note on such a document says *Found by its
+similarity to* the document it was found from, *by no word search; read in full* (§15.1a).
 
 ---
 
@@ -2594,6 +2717,12 @@ app does something with each of them (`NativeCollectionFormat.swift`, `ExcerptVe
 | `excerpt` (`text` + the document pair) | A block quote with an automatic citation, **checked against the document before every export and again when a corrected volume arrives**: presentation forgiven, wording not, elided fragments in order | Every quotation the overview relies on, as §8's check verified it |
 | `generated` with `generatedBlockType` | Apparatus built from the app's own data at every export: `archivalSources` (Sources & Archives, with NARA links where resolved), `chronology`, `bibliography`, `personsIndex`, `thematicIndex` | `archivalSources` at the end; `chronology` at the top for a question about a crisis |
 | `titleOverride` on a `document` entry | The document's label in the table of contents and export heading | A plain label where the printed header is unreadable |
+
+A note on a document the vectors found says so in the reader's words, after its attribution line:
+*Found by its similarity to* the edition citation of the document it was found from, *by no word
+search; read in full.* No distance, cosine or cluster goes into it, and it is written only for a
+document [§14.17](#1417-the-second-finding-aid-when-the-vectors-enter-the-pass)'s strict reading
+counts.
 
 The example below opens in the app; like §15.1's, it is a test fixture and not an illustration.
 The ids are §15.1's, the texts are placeholders, and an excerpt whose text is not in its document
@@ -2736,6 +2865,10 @@ say "the app itself never embeds free text." Build 44's Search by Meaning falsif
 now embeds queries on-device — and the query-side prompt it uses is named in §A.7 rather than left
 to you.)*
 
+This appendix is the reference. When a session should use the artifacts, on which documents, and
+what its memo and overview owe for them is
+[§14.17](#1417-the-second-finding-aid-when-the-vectors-enter-the-pass).
+
 ### A.1 What ships, and where
 
 | Artifact | Contents | Where |
@@ -2838,6 +2971,10 @@ subseries in the index's `subseries` order. Dequantize any int8 vector as `code 
 
 ### A.5 What an agent can do with no model
 
+Every figure in this appendix is one generation's reading. An agent recomputes the ones it relies
+on at the digest in use, and the appendix is re-taken after each regeneration, as it was on
+2026-10-26.
+
 **Nearest neighbors of a document, corpus-wide.** XOR-and-popcount over the sign bits. Executed
 against the shipped binary (EmbeddingGemma 2, digest `89481b18…`, re-taken 2026-10-26), the ten
 nearest neighbors of `frus1861/d111` are:
@@ -2918,23 +3055,28 @@ despatch is unclustered in this one, and so is `frus1913/d1028`. Before that the
 `frus1881/d625` in `shah, iran, iranian, mosadeq`, true of the 2026-08-16 layout alone. An example
 is a reading of one layout, like an id.) 88,059 of 314,616 placements (28.0%) are unclustered
 (`0xFFFF`); that share is a property of the corpus, not an error, and any figure built on clusters
-owes the reader the number. Its era dependence is a property of the layout, not a constant: over
-all placements, by the midpoint of each volume's date range in the manifest, 24.8% of 1861–1899
-documents are unclustered against 26.9% of 1945–1964 in this layout, where the 2026-10-10 layout
-gave 37.5% against 24.4% and the 2026-08-16 layout, over a narrower working scope with apparatus
-excluded and Ed2 folded, 46.7% against 22.3%. Compare any set's unclustered share to an
-era-matched baseline computed on the layout in use, never to the corpus figure.
+owes the reader the number. Its era dependence is a property of the layout, not a constant. Over
+all placements, with each volume dated by the mean of the first and last years of its range in the
+manifest, rounded down, 8,436 of the 34,046 documents of volumes dated 1861–1899 are unclustered in
+this layout (24.8%), against 26,875 of the 100,373 of volumes dated 1945–1964 (26.8%). By the same
+rule the 2026-10-10 layout left 12,776 of the 34,046 unclustered (37.5%) against 24,514 of the
+100,373 (24.4%); the 2026-08-16 layout, over a narrower working scope with apparatus excluded and
+Ed2 folded, gave 46.7% against 22.3%. Compare any set's unclustered share to an era-matched
+baseline computed on the layout in use, never to the corpus figure.
 
-**Near-duplicate detection.** FRUS reprints some documents across volumes. Very small Hamming
-distances flag reprints — worth running over any sample before counting anything, so a document
-printed twice is not counted twice.
+**Near-duplicate detection.** FRUS reprints some documents across volumes, each copy under its own
+id. Very small Hamming distances flag reprints — worth running over any sample before counting
+anything, so a document printed twice is not counted twice. §14.9 gives the distances measured at
+this generation and the recipe.
 
 ### A.6 Reranking with Tier-2 shards
 
 The bundled sign bits are the recall stage; the shards are precision. The app's measured funnel —
-take the ~800 best Hamming candidates, rerank by int8 cosine — reaches **recall@10 of 0.851**
-against exact float-768 neighbors (the figure is stated in the index's `retrieval` block, with the
-measurement's citation). Scoring against a shard: for documents *a* and *b* with codes and scales,
+take the ~800 best Hamming candidates, rerank by int8 cosine — reaches the recall@10 the index
+states as `retrieval.measuredRecallAt10`, with the measurement cited in `retrieval.measuredBy`:
+**0.902** at the 2026-10-15 generation, where the 300m before it reached 0.851. Read the index's
+figure, which changes with the generation. Scoring against a shard: for documents *a* and *b* with
+codes and scales,
 
 ```
 cosine(a, b) ≈ scale_a · scale_b · dot(codes_a, codes_b)
@@ -3017,18 +3159,20 @@ The database caveats in §7 all still apply — and the semantic layer adds its 
   app update — a regeneration changes every neighbor list.
 - **The map is a projection.** Clustering ran on the 2-D embedding, not the 512-dim space — the
   layout's input was the 256-dim cut (`layout.sourceDims`), not the shipped 512-bit sign block; map
-  neighbours and Hamming neighbours are two measurements. 28% of documents are unclustered; the
-  28.0% is corpus-wide, and how it falls by era depends on the layout — 24.8% of 1861–1899
-  documents against 26.9% of 1945–1964 in the 2026-10-15 layout, where earlier layouts had put
-  the nineteenth century far higher (46.7% against 22.3% in 2026-08-16's, over a narrower working
-  scope). Compare any set's unclustered share to an era-matched baseline computed on the layout
-  in use, never to 28%. Labels are c-TF-IDF over a *sample* of
-  each cluster's members. Use clusters to explore and to sample, not to measure.
-- **Recall 0.851 means misses.** Roughly one to two of any document's ten true nearest neighbors
-  are absent from the shipped funnel's answer. Fine for discovery; fatal for any claim of the form
-  "no similar document exists."
+  neighbours and Hamming neighbours are two measurements. 88,059 of the 314,616 placements are
+  unclustered in the 2026-10-15 layout; that share is corpus-wide, and how it falls by era depends
+  on the layout (§A.5: 8,436 of 34,046 documents of volumes dated 1861–1899 against 26,875 of
+  100,373 of 1945–1964 in this one, where earlier layouts put the nineteenth century far higher).
+  Compare any set's unclustered share to an era-matched baseline computed on the layout in use,
+  never to the corpus figure. Labels are c-TF-IDF over a *sample* of each cluster's members. Use
+  clusters to explore and to sample, not to measure.
+- **A recall below 1 means misses.** At the index's `retrieval.measuredRecallAt10`, 0.902 at the
+  2026-10-15 generation, about one of any document's ten true nearest neighbors is absent from the
+  shipped funnel's answer. Fine for discovery; fatal for any claim of the form "no similar
+  document exists."
 
-A short addendum for the §12 house-rules block, when a session touches the vectors:
+A short addendum for the §12 house-rules block, when a session touches the vectors. It states
+rules, not a method: what to run, and when, is §14.17.
 
 ```text
 SEMANTIC VECTORS
@@ -3038,11 +3182,12 @@ SEMANTIC VECTORS
   mismatch, stop and say so. Never mix generations.
 - Report semantic neighbors as suggestions with their distances, never as evidence of a
   relationship. Similarity claims require reading the documents — and say which baseline each
-  distance is measured against (random-pair mean 193 / sd 17, or the k-th-neighbour distribution)
+  distance is measured against (random pairs, or the k-th-neighbour distribution), both computed
   at the digest in use.
 - Tier-1 covers all 553 volumes even when the SQLite index does not: flag any neighbor whose
   volume is absent from document_cache, and cite it by its canonical URL.
-- Absence of a neighbor is not evidence of absence: the funnel's measured recall@10 is 0.851.
+- Absence of a neighbor is not evidence of absence: the funnel's measured recall@10, the index's
+  retrieval.measuredRecallAt10, is below 1.
 - A cosine the reader sees goes through the index's `retrieval.scoreCalibration` offsets
   (§A.7), or is labelled raw. Four runs of four skipped this in the 2026-10-27 measurement.
 ```
@@ -3074,6 +3219,7 @@ terms are here because they appear in the outputs.
 | person cluster | The app's grouping of one name across volumes, which prefers to leave two entries apart; a person's count is a floor. | §7.5 |
 | subject tag | A label assigned by matching words, useful for finding and unreliable for counting. | §7.7 |
 | semantic neighbour, map | Documents placed by the language they share; a lead to read, not evidence of a relation. | Appendix A |
+| vector-reached | A cited document found by its similarity to another that no word search the run logged returns (the strict reading), or that no search result already read held when it surfaced (the practical one). | §14.17 |
 | scoping, scope memo | The pass that decides which volumes and which words a question lives in, before anything is read. | §14 |
 | round, thread | One pass of agents over the question; one line of inquiry within it. | §14.12 |
 | refuter, critic | A second agent told to find the wrong number; a third told to say whether another round would learn anything. | §14.12, §14.15 |
@@ -3096,6 +3242,40 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.37 — 2026-10-29: **the steering review's recommendations that leave the §12 block as
+  measured** (`Planning/Agentic-Guide-Steering-Review-2026-10-27.md`, R1, R2, R4, R5, R12 and
+  R14, read against both C-3 tiers' records). A new **§14.17** says when a session uses the vector
+  artifacts (after the heading scope and the first anchors, before the scope closes), which
+  operations are required (one anchor per era's nearest neighbours, joined into the database and
+  flagged three ways; near-duplicates before a count), which is conditional (the map, as §14.10's
+  label test) and which optional (centroid similarity), and defines *vector-reached* in a strict
+  and a practical reading, since the four 2026-10-27 sessions claimed five such documents where
+  their refuters counted two. §14.16's memo owes a VECTORS section when the artifacts were handed
+  over, and its *how this was done* one sentence on them in the reader's form, with an audit and a
+  reader's pair beside the others; §15.1a gives the note on a document they found; §13's table
+  records their digest and stamps; the Glossary gains *vector-reached*; §3a and Appendix A point to
+  §14.17. §14.9 gains the near-duplicate recipe, from a measurement at the 2026-10-15 generation:
+  the second editions' identical documents at Hamming 0 to 15 (618 of 684 at 0), and of a seeded
+  sample of 2,000 documents, the 6 with a neighbour under 25 each a copy in another volume, and
+  copies and distinct documents of one exchange both between 25 and 39. The review's rule, "the
+  random-pair mean less nine sd (under about 20)", was two rules that disagree at this digest
+  (a mean of 167.1 less nine sd of 14.8 is 34). **Figures re-taken:** §14.9's second-edition
+  overlap at index version 71 (the Iran pair's 377 shared ids, 350 with identical text, where the
+  guide said 277; `ve15p2`'s 346 and 335, where it said 345); §14.10's cluster count (140 in the
+  shipped layout, 172 in the one before), with the shipped layout's label readings; §14.11's rows
+  for `collection-authority.json` (3,977 collections, where it gave version 69's 3,985) and
+  `collection-usage-index.json` (11,041 class keys, 11,027); and every share in Appendix A,
+  printed N of M first. The era shares now follow one band rule, a volume dated by the mean of its
+  first and last years rounded down: the two layouts' figures had been taken by two, so the
+  shipped layout's 1945–1964 share is 26,875 of 100,373 (26.8%), where the guide said 26.9%.
+  §A.6 and §A.8 read the recall from the index (0.902), and the addendum carries no generation's
+  baseline or recall, where it gave the 300m generation's 193 / 17 and 0.851; §9 item 3's example
+  is the shipped layout's. §3a: compliance fell by one or two items in three runs of four, and
+  two of the 77 documents the four collections cited were reachable no other way, where it said
+  one item and "about one in twenty". §14.17 also corrects the review on one record: the 1874
+  instruction's session flagged it by decade, not as outside its scope. **The §12 block is
+  unchanged**: the review's R3, R6 to R11 and R13 change it or the deliverable, and they wait for
+  its R16, the two-arm tier that measures them. The §15.1 and §15.1a blocks are unchanged.
 - 1.36 — 2026-10-27: **§3a's paragraph on the vector artifacts**, from the C-3 vectors tier
   (`Planning/C-3-Vectors-Tier-Results-2026-10-27.md`: Opus 5.5 at `medium` and Sonnet 5.5 at
   `high`, two runs each, handed Appendix A and the artifacts on a second question): every run ran
