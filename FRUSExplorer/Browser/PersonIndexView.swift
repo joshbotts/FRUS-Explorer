@@ -859,9 +859,9 @@ struct PersonIndexDetailSheet: View {
                         .accessibilityHint(String(localized: "people.detail.viaf.a11y",
                                                   defaultValue: "Opens in your browser"))
                     }
-                    // Wikidata (#736). Coverage jumped from 142 VIAF ids to 3,198 VIAF and 3,825
-                    // Wikidata when the overlay landed, so this is a link most reconciled people
-                    // now have.
+                    // Wikidata (#736). The overlay's ids are taken only where the identifier rule
+                    // corroborates them (#1767): 1,859 of the bundle's 12,839 records carry one,
+                    // about one reconciled person in seven.
                     if let url = authorityEntry?.wikidataURL {
                         Link(destination: url) {
                             Label(String(localized: "people.detail.wikidata",

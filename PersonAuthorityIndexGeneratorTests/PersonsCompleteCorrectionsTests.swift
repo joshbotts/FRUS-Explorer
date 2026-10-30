@@ -740,27 +740,38 @@ struct PersonsCompleteCorrectionsTests {
         // Where the sources do name the other person, the index follows them.
         #expect(index.crosswalk["frus1981-88v01"]?["p_KJJ_1"] == 107237, "FRUS-14668, Jeane Kirkpatrick's own entry")
         #expect(index.crosswalk["frus1981-88v03"]?["p_KJJ_1"] == 107237, "the registry")
-        // 88036173 is Ruhollah Khomeini's own VIAF id, but only the overlay gives it (his registry
-        // record holds none), and since decision 55 the overlay's VIAF ids are not taken.
-        #expect(index.authority["107120"]?.v == nil)
+        // 88036173 is Ruhollah Khomeini's own VIAF id, which only the overlay gives (his registry record
+        // holds none). Decision 55 took none of the overlay's VIAF ids; the identifier rule (#1767) takes
+        // it, since his own item holds it and fits his record. The correction keeps Ahmad's item off him.
+        #expect(index.authority["107120"]?.v == "88036173")
+        #expect(index.authority["107120"]?.q == nil)
         #expect(index.source.contains("held apart"), "the provenance names the corrections")
     }
 
-    /// Decision 55 (2026-10-17), in the shipped file: about 1,600 of the 3,769 Wikidata ids the
-    /// overlay gave the bundle named someone else, and so did about 580 of the 2,186 of its VIAF ids
-    /// that could be checked (`Planning/Person-Authority-Identifier-Assessment-2026-10-17.md`), so a
-    /// run takes none. No record carries a Wikidata id, and the VIAF ids left are the registry's own:
-    /// 142 at people `63b537ad`. A regeneration against a newer registry may move that count.
-    @Test("The bundled index takes no Wikidata or VIAF id from the overlay")
-    func bundledIndexTakesNoOverlayIdentifier() throws {
+    /// The identifier rule (#1767), in the shipped file. Decision 55 (2026-10-17) took none of the
+    /// overlay's identifiers: about 1,600 of the 3,769 Wikidata ids it gave the bundle named someone
+    /// else, and so did about 580 of the 2,186 of its VIAF ids that could be checked
+    /// (`Planning/Person-Authority-Identifier-Assessment-2026-10-17.md`). The rule takes back an id only
+    /// where its item, in the committed Wikidata snapshot, fits the record and something independent
+    /// agrees: 1,859 Wikidata ids of the 3,769, and 1,468 of the overlay's 3,010 VIAF ids beside the
+    /// registry's own 142, at people `63b537ad` and the snapshot fetched 2026-10-30. Every Wikidata id
+    /// is an item of the snapshot's that is a person. A regeneration against a newer registry or a
+    /// refreshed snapshot may move the counts; the generator prints every id the rule withheld, and why.
+    @Test("The bundled index takes the overlay's Wikidata and VIAF ids only through the rule")
+    func bundledIndexTakesOverlayIdentifiersThroughTheRule() throws {
         let data = try Data(contentsOf: Self.repoRoot
             .appendingPathComponent("FRUSExplorer/Resources/person-authority-index.json"))
         let index = try JSONDecoder().decode(PersonAuthorityIndex.self, from: data)
+        let snapshot = try WikidataSnapshot.load(
+            path: Self.repoRoot.appendingPathComponent(WikidataSnapshot.defaultPath).path)
         #expect(index.authority.count == 12_839, "the registry's 12,836 records, and three a join keeps (#1767)")
-        #expect(index.authority.values.allSatisfy { $0.q == nil }, "every Wikidata id came from the overlay")
-        #expect(index.authority.values.count { $0.v != nil } == 142, "the registry's own VIAF ids")
-        #expect(index.authority.values.count { $0.r != nil } == 12_787, "the overlay's role texts still apply")
-        #expect(index.source.contains("the overlay's Wikidata and VIAF ids are not taken"),
-                "the provenance says so")
+        let wikidata = index.authority.values.compactMap(\.q)
+        #expect(wikidata.count == 1_859)
+        #expect(wikidata.allSatisfy { snapshot.items[$0]?.human == true }, "each is a person in the snapshot")
+        #expect(index.authority.values.count { $0.v != nil } == 1_610, "the registry's 142, and 1,468 of the overlay's")
+        #expect(index.authority.values.count { $0.r != nil } == 12_754,
+                "the overlay's role texts, less the 33 an entry carrying several people gave to the wrong ones")
+        #expect(index.source.contains("the overlay's Wikidata and VIAF ids are taken only where the Wikidata snapshot of \(snapshot.fetched)"),
+                "the provenance names the snapshot")
     }
 }

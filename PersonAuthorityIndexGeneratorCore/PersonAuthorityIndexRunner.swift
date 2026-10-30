@@ -32,6 +32,12 @@ import Foundation
 /// people, and what of each to hold apart, and the anchors no source answers with the records they
 /// belong to (#1767). A file it cannot read, or a correction or assignment that no longer fits the
 /// registry or the overlay, stops the run before anything is written.
+///
+/// It reads `PersonAuthorityIndexGenerator/wikidata-snapshot.json` as well (`WikidataSnapshot`, #1767),
+/// and takes the overlay's Wikidata and VIAF ids through `PersonIdentifierRule`, which stamps one only
+/// where its item fits the record and something independent agrees. A snapshot it cannot read, or an
+/// overlay id the rule would test that the snapshot has no facts for, stops the run as a misfit does:
+/// refresh it with `tools/person-authority-facts/refresh_wikidata_snapshot.py`.
 public enum PersonAuthorityIndexRunner {
 
     /// Current schema version of the generated index.
@@ -108,9 +114,12 @@ public enum PersonAuthorityIndexRunner {
                     path: PersonsCompleteCorrections.defaultPath)
                 let assigned = try PersonsCompleteCorrections.loadAssignments(
                     path: PersonsCompleteCorrections.defaultPath)
+                // The facts each overlay identifier is tested against (#1767), read offline.
+                let snapshot = try WikidataSnapshot.load(path: WikidataSnapshot.defaultPath)
                 overlay = PersonAuthorityIndexBuilder.Overlay(
                     entries: entries, flaggedPeopleIds: flagged, roleCharacterLimit: limit,
-                    corrections: corrections, assigned: assigned)
+                    corrections: corrections, takesIdentifiers: true, assigned: assigned,
+                    identifierRule: PersonIdentifierRule(snapshot: snapshot))
                 // Pinned in provenance because it CANNOT be recomputed later: after the planned
                 // upstream xml:id re-mint, the same CSV rows name different people.
                 source += "; overlay frus-name-authority persons-complete.xml"
@@ -124,14 +133,17 @@ public enum PersonAuthorityIndexRunner {
                     source += "; assigned, by the same file: "
                         + assigned.map { "\($0.anchor) to \($0.peopleId)" }.sorted().joined(separator: ",")
                 }
-                // Decision 55: about 1,600 of the 3,769 Wikidata ids the overlay gave the bundle, and
-                // about 580 of the 2,186 of its VIAF ids that could be checked, named someone else.
-                source += "; the overlay's Wikidata and VIAF ids are not taken"
+                // Decision 55 took none: about 1,600 of the 3,769 Wikidata ids the overlay gave the
+                // bundle, and about 580 of the 2,186 of its VIAF ids that could be checked, named
+                // someone else. Since #1767 an id is taken where its item fits the record and agrees.
+                source += "; the overlay's Wikidata and VIAF ids are taken only where the Wikidata "
+                    + "snapshot of \(snapshot.fetched) fits the record and corroborates them"
                 print("Overlay: \(entries.count) entries; audit guard resolved "
                     + "\(flagged.count) people-ids to skip; \(corrections.count) corrections "
                     + "hold apart what is not an entry's keyed person's, and \(assigned.count) "
                     + "assignments place anchors no source answers; its Wikidata and VIAF ids "
-                    + "are not taken.")
+                    + "are tested against the Wikidata snapshot of \(snapshot.fetched) "
+                    + "(\(snapshot.items.count) items).")
             } catch {
                 FileHandle.standardError.write(Data("error reading overlay inputs: \(error)\n".utf8))
                 exit(1)
@@ -174,6 +186,8 @@ public enum PersonAuthorityIndexRunner {
                       identifiers withheld:      \(stats.overlayIdentifiersWithheld)
                       role texts withheld:       \(stats.overlayRolesWithheld)
                       identifiers not taken:     \(stats.overlayIdentifiersNotTaken)
+                      withheld by the rule:      \(stats.identifiersWithheldByRule.count { $0.kind == .wikidata }) Wikidata, \(stats.identifiersWithheldByRule.count { $0.kind == .viaf }) VIAF
+                      roles kept to their person:\(stats.multiPersonRolesKeptOff)
                       held apart, then joined:   \(stats.overlayAnchorsJoined)
                       anchors assigned:          \(stats.anchorsAssigned)
                       records kept for a join:   \(stats.recordsKeptForAJoin)
@@ -192,6 +206,17 @@ public enum PersonAuthorityIndexRunner {
                         ($0.volumeId, $0.ref) < ($1.volumeId, $1.ref)
                     }) {
                         print("    \(c.volumeId)#\(c.ref)  registry=\(c.registry)  overlay=\(c.overlay)")
+                    }
+                }
+                // Printed in full as well: the rule's word lists and thresholds decide these, and a
+                // change to either is read here (#1767).
+                if !stats.identifiersWithheldByRule.isEmpty {
+                    print("\n  --- identifiers the rule withheld (people-id, name, id: why) ---")
+                    for w in stats.identifiersWithheldByRule.sorted(by: {
+                        (Int($0.peopleId) ?? 0, $0.kind.rawValue, $0.identifier)
+                            < (Int($1.peopleId) ?? 0, $1.kind.rawValue, $1.identifier)
+                    }) {
+                        print("    \(w.peopleId)  \(w.name)  \(w.kind.rawValue) \(w.identifier): \(w.reason)")
                     }
                 }
             }
