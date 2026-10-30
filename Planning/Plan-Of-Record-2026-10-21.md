@@ -72,6 +72,12 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
     - The drafts are in `Planning/website-drafts/`: the home page and the tour, each in a coming-soon version for the weeks of App Review and a launch version, and plain-language drafts of the Support and Privacy pages. Its `README.md` says what each owes.
     - §2's website step is unchanged: at submission the Privacy Policy and Support pages go up as `Docs/` holds them, since App Store Connect requires both addresses. This work follows it (§3).
 
+**The owner's instructions of 2026-10-29**, in the session that built #1767's lane A:
+
+102. **#1767's lane A is started now**: "start the person authority lane". It is built from `Person-Authority-Lane-Design-2026-10-28.md` §7, items 3 and 4 with §4.6. Its rollup version (v13) rebuilds every library's people at launch, so when it merges, before or after R3, is the owner's call at the merge.
+103. **#1658's tie: a member that fits two reconciled people joins the one its exact name fits, when only one does, and neither otherwise** (`exactFirst`). The owner chose it over the memo's T1 and T2 after the census of one full library. T1 moved three entries away from the one person their exact name fits; T2 moved seven of Jimmy Carter's own entries.
+104. **Speaker Jim Wright's four entries are fixed in lane A**: "Address the Jim Wright finding in this PR." The census found them in Sir Oliver Wright's rollup, joined by name ("James" fits "J.", and the role check counts "from"); four assignments give them to his own record, 114818. The role check itself is unchanged: leaving its function words out would also break three right career rollups.
+
 **Rules carried from the earlier plans and `CLAUDE.md`.** Each is the owner's.
 - **The queue is serial.** The next pull request is pushed when the owner has merged the one before. Auto-merge is never enabled.
 - **One fresh session per pull request**, started from this plan and the issue numbers, and ended at the merge.
@@ -241,6 +247,7 @@ The repository holds drafts for each.
 ### P2 — later
 
 - **#1767, the person authority's deferred work** (decision 96): the identifier rule (b4), the role text of overlay entries that carry several people, the nine held-apart members who rejoin by name, and #1658's undecided tie.
+  - **Lane A built on 2026-10-29** (decisions 102 to 104) from `v2` at `fb542514`, on `claude/person-authority-lane-c64504`, and **opened as #1815** on the owner's word of 2026-10-29: the nine and #1658's tie, with the design's §4.6. Kit and generator code, rollup v13, no index version, no CloudKit change; `person-authority-index.json` and `pocom-index.json` regenerated. Over S1's full library, 22 of 63,667 people entries change person. The nine stand apart (John Hughes and William G. Miller join their own records instead), five ties stand apart, Speaker Jim Wright's four entries leave Sir Oliver Wright for his own record, and Sir Oliver's vol. XLIV Part 1 entry leaves Jerauld Wright. The design memo's header has what the build corrected in it. **Lane B** (the identifier rule and the multi-id role text) is not started.
 - **Generators:** provenance flows count no page reference (`RefDestination.citedDocument` is nil for a page).
 - **Section vectors**, at the next vectors generation (decision 61).
 - **Smaller app items:**

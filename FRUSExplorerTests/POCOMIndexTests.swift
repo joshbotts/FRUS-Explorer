@@ -179,7 +179,7 @@ struct POCOMIndexTests {
 
     @Test("Two posts sharing a role title are still two rows")
     func repeatedRoleTitlesKeepDistinctIdentities() throws {
-        // Not hypothetical: **394 of the shipped index's 1,240 careers (32%) repeat a role
+        // Not hypothetical: **394 of the shipped index's 1,243 careers (32%) repeat a role
         // title**, because an ambassador is an ambassador wherever they are sent. Abramowitz is
         // one — Thailand 1978, Turkey 1989 — and an id keyed on the title alone collapses a third
         // of everyone's career to a single row.

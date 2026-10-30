@@ -378,6 +378,191 @@ struct PersonsCompleteCorrectionsTests {
         }
     }
 
+    // MARK: - A record with no anchor of its own, assignments, and what stands apart (#1767)
+
+    /// The registry's records for the John Hughes case: John Chambers Hughes with an anchor, and
+    /// (Robert) John Hughes, known from his POCOM page alone, so in the full registry and not the bundle.
+    private func hughesRegistry() -> (crosswalk: [String: [String: Int]], authority: [String: AuthorityEntry],
+                                      registry: [String: AuthorityEntry]) {
+        let chambers = AuthorityEntry(n: "Hughes, John Chambers", b: 1891, d: 1971, v: nil)
+        let robert = AuthorityEntry(n: "Hughes, (Robert) John", b: 1930, d: nil, v: nil, s: "hughes-robert-john")
+        return (["frus1952-54v05p1": ["p_HJC1": 106247]], ["106247": chambers],
+                ["106247": chambers, "106238": robert])
+    }
+
+    /// `FRUS-12709`, cut down: three people-ids, and 1981–1988 vol. X's "Hughes, John".
+    private func hughesEntry() -> PersonsCompleteOverlay.Entry {
+        PersonsCompleteOverlay.parseEntry("""
+            <person xml:id="FRUS-12709"><persName type="main">Hughes, John Chambers</persName>
+            <idno type="people-id">106247</idno><idno type="people-id">106248</idno><idno type="people-id">106238</idno>
+            <idno type="frus-ref">frus1952-54v05p1/persons#p_HJC1</idno>
+            <idno type="frus-ref">frus1981-88v10/persons#p_HJ_3</idno></person>
+            """)
+    }
+
+    @Test("A join may name a record with no anchor of its own, and the bundle keeps it")
+    func joinKeepsAnAnchorlessRecord() throws {
+        var (crosswalk, authority, registry) = hughesRegistry()
+        var stats = BuildStats()
+        let hughes = PersonsCompleteCorrections.HeldApart(
+            peopleId: "106247", registryName: "Hughes, John Chambers", otherPerson: "Hughes, (Robert) John",
+            anchors: ["frus1981-88v10/persons#p_HJ_3"],
+            joins: .init(peopleId: "106238", registryName: "Hughes, (Robert) John"),
+            wikidata: nil, viaf: nil, reason: "#1767")
+        #expect(PersonsCompleteCorrections.misfit(of: [hughes], entries: [hughesEntry()],
+                                                  registryName: { registry[$0]?.n }) == nil,
+                "the join is checked against the whole registry")
+        PersonAuthorityIndexBuilder.applyOverlay(
+            .init(entries: [hughesEntry()], flaggedPeopleIds: [], corrections: [hughes]),
+            crosswalk: &crosswalk, authority: &authority, keepVolume: nil, stats: &stats, registry: registry)
+        #expect(crosswalk["frus1981-88v10"]?["p_HJ_3"] == 106238)
+        let kept = try #require(authority["106238"])
+        #expect(kept.n == "Hughes, (Robert) John" && kept.s == "hughes-robert-john")
+        #expect(stats.recordsKeptForAJoin == 1)
+        // The other half: checked against the bundle's records alone, as before #1767, the join does
+        // not fit, so the correction could only hold the anchor apart.
+        let bundled = hughesRegistry().authority
+        #expect(PersonsCompleteCorrections.misfit(of: [hughes], entries: [hughesEntry()],
+                                                  registryName: { bundled[$0]?.n })
+                == .joinNameDiffers(peopleId: "106247", joins: "106238", expected: "Hughes, (Robert) John", found: nil))
+    }
+
+    /// The two Wrights of #1658's tie: Sir Oliver with his vol. XIII entry, and Admiral Jerauld.
+    private func wrightRegistry() -> (crosswalk: [String: [String: Int]], authority: [String: AuthorityEntry]) {
+        (["frus1981-88v13": ["p_WSJO_1": 114825], "frus1951v05": ["p_WJ1": 114817]],
+         ["114825": AuthorityEntry(n: "Wright, Oliver", b: nil, d: nil, v: nil),
+          "114817": AuthorityEntry(n: "Wright, Jerauld", b: nil, d: nil, v: nil)])
+    }
+
+    private let sirOliver = PersonsCompleteCorrections.Assigned(
+        anchor: "frus1981-88v44p1/persons#p_WSJO_1", peopleId: "114825", registryName: "Wright, Oliver",
+        reason: "#1767")
+
+    private func assign(_ assigned: [PersonsCompleteCorrections.Assigned],
+                        registryCrosswalk: [String: [String: Int]]? = nil,
+                        overlayCrosswalk: [String: [String: Int]]? = nil,
+                        registry extra: [String: AuthorityEntry] = [:],
+                        keepVolume: ((String) -> Bool)? = nil) throws
+        -> (crosswalk: [String: [String: Int]], authority: [String: AuthorityEntry], stats: BuildStats) {
+        var (crosswalk, authority) = wrightRegistry()
+        let registryCrosswalk = registryCrosswalk ?? crosswalk
+        if let overlayCrosswalk { crosswalk = overlayCrosswalk }
+        var stats = BuildStats()
+        try PersonAuthorityIndexBuilder.applyAssignments(
+            assigned, registryCrosswalk: registryCrosswalk, crosswalk: &crosswalk, authority: &authority,
+            registry: authority.merging(extra) { a, _ in a }, keepVolume: keepVolume, stats: &stats)
+        return (crosswalk, authority, stats)
+    }
+
+    @Test("An assignment places an anchor no source answers on the record it names")
+    func assignmentPlacesTheAnchor() throws {
+        let (crosswalk, _, stats) = try assign([sirOliver])
+        #expect(crosswalk["frus1981-88v44p1"]?["p_WSJO_1"] == 114825)
+        #expect(stats.anchorsAssigned == 1)
+        // A volume the run does not keep: nothing written.
+        let (dropped, _, droppedStats) = try assign([sirOliver], keepVolume: { $0 != "frus1981-88v44p1" })
+        #expect(dropped["frus1981-88v44p1"] == nil && droppedStats.anchorsAssigned == 0)
+        // An overlay entry that gives the anchor to the same record: no second write, no refusal.
+        var agreeing = wrightRegistry().crosswalk
+        agreeing["frus1981-88v44p1"] = ["p_WSJO_1": 114825]
+        let (_, _, agreeingStats) = try assign([sirOliver], overlayCrosswalk: agreeing)
+        #expect(agreeingStats.anchorsAssigned == 0)
+        // A record with no anchor of its own is kept for the anchor, as for a join.
+        let miller = PersonsCompleteCorrections.Assigned(
+            anchor: "frus1977-80v11p1/persons#p_MWG_1", peopleId: "109170", registryName: "Miller, William Green",
+            reason: "#1767")
+        let (withMiller, authority, millerStats) = try assign(
+            [miller], registry: ["109170": AuthorityEntry(n: "Miller, William Green", b: 1931, d: nil, v: nil,
+                                                          s: "miller-william-green")])
+        #expect(withMiller["frus1977-80v11p1"]?["p_MWG_1"] == 109170)
+        #expect(authority["109170"]?.s == "miller-william-green" && millerStats.recordsKeptForAJoin == 1)
+    }
+
+    @Test("An assignment that no longer fits is refused, not left to do nothing")
+    func staleAssignmentsAreRefused() throws {
+        let typo = PersonsCompleteCorrections.Assigned(
+            anchor: sirOliver.anchor, peopleId: "114817", registryName: "Wright, Oliver", reason: "x")
+        #expect(throws: PersonsCompleteCorrections.Problem.assignedNameDiffers(
+            anchor: sirOliver.anchor, peopleId: "114817", expected: "Wright, Oliver", found: "Wright, Jerauld")) {
+            try assign([typo])
+        }
+        // Upstream took the anchor: the assignment is now the registry's answer, and goes.
+        var adopted = wrightRegistry().crosswalk
+        adopted["frus1981-88v44p1"] = ["p_WSJO_1": 114825]
+        #expect(throws: PersonsCompleteCorrections.Problem.assignmentAnsweredByRegistry(
+            anchor: sirOliver.anchor, peopleId: "114825", registry: 114825)) {
+            try assign([sirOliver], registryCrosswalk: adopted)
+        }
+        #expect(PersonsCompleteCorrections.Problem.assignmentAnsweredByRegistry(
+            anchor: sirOliver.anchor, peopleId: "114825", registry: 114825).description.contains("remove the assignment"))
+        // The registry gives it to someone else.
+        var otherwise = wrightRegistry().crosswalk
+        otherwise["frus1981-88v44p1"] = ["p_WSJO_1": 114817]
+        #expect(throws: PersonsCompleteCorrections.Problem.assignmentAnsweredByRegistry(
+            anchor: sirOliver.anchor, peopleId: "114825", registry: 114817)) {
+            try assign([sirOliver], registryCrosswalk: otherwise)
+        }
+        // An overlay entry gives it to someone else.
+        #expect(throws: PersonsCompleteCorrections.Problem.assignmentAnsweredByOverlay(
+            anchor: sirOliver.anchor, peopleId: "114825", overlay: 114817)) {
+            try assign([sirOliver], overlayCrosswalk: otherwise)
+        }
+    }
+
+    @Test("The anchors that stand apart are the held-apart anchors nothing answered, in kept volumes")
+    func apartAnchorsAreTheUnanswered() {
+        let corrections = [
+            PersonsCompleteCorrections.HeldApart(
+                peopleId: "113000", registryName: "Stevenson, Adlai Ewing, II", otherPerson: "Stevenson, Adlai E., III",
+                anchors: ["frus1977-80v23/persons#p_SAE_1", "frus1969-76v01/persons#p_SAE2"],
+                wikidata: nil, viaf: nil, reason: "x"),
+            PersonsCompleteCorrections.HeldApart(
+                peopleId: "104298", registryName: "Fish, Hamilton", otherPerson: "Fish, Hamilton, III",
+                anchors: ["frus1933-39/persons#p_FH2", "frus1977-80v23/persons#p_FH_1"],
+                wikidata: nil, viaf: nil, reason: "x"),
+        ]
+        let crosswalk = ["frus1969-76v01": ["p_SAE2": 113001]]
+        let apart = PersonAuthorityIndexBuilder.apartAnchors(of: corrections, crosswalk: crosswalk,
+                                                             keepVolume: { $0 != "frus1933-39" })
+        #expect(apart == ["frus1977-80v23": ["p_FH_1", "p_SAE_1"]],
+                "answered anchors and volumes the run does not keep are left out, and refs are sorted")
+    }
+
+    @Test("A file's assignments that are incomplete, malformed, repeated or also joined are refused")
+    func loadAssignmentsRefusesBadFiles() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("paig-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        func load(heldApart: String = "", _ assigned: String?) throws -> [PersonsCompleteCorrections.Assigned] {
+            let url = dir.appendingPathComponent("\(UUID().uuidString).json")
+            let tail = assigned.map { #","assigned":[\#($0)]"# } ?? ""
+            try #"{"heldApart":[\#(heldApart)]\#(tail)}"#.write(to: url, atomically: true, encoding: .utf8)
+            return try PersonsCompleteCorrections.loadAssignments(path: url.path)
+        }
+        func assignment(_ anchor: String = "frus1981-88v44p1/persons#p_WSJO_1", reason: String = "r") -> String {
+            #"{"anchor":"\#(anchor)","peopleId":"114825","registryName":"Wright, Oliver","reason":"\#(reason)"}"#
+        }
+        #expect(try load(nil).isEmpty, "a file written before #1767 has none")
+        #expect(try load(assignment()).count == 1)
+        #expect(throws: PersonsCompleteCorrections.Problem.assignmentIncomplete(anchor: "frus1981-88v44p1/persons#p_WSJO_1")) {
+            try load(assignment(reason: " "))
+        }
+        #expect(throws: PersonsCompleteCorrections.Problem.badAssignedAnchor(anchor: "frus1981-88v44p1#p_WSJO_1")) {
+            try load(assignment("frus1981-88v44p1#p_WSJO_1"))
+        }
+        #expect(throws: PersonsCompleteCorrections.Problem.duplicateAssignment(anchor: "frus1981-88v44p1/persons#p_WSJO_1")) {
+            try load(assignment() + "," + assignment())
+        }
+        // A held-apart anchor may be assigned when its correction joins none, and not when it joins one.
+        let unjoined = #"{"peopleId":"108262","registryName":"n","otherPerson":"o","anchors":["frus1981-88v44p1/persons#p_WSJO_1"],"wikidata":null,"viaf":null,"reason":"r"}"#
+        #expect(try load(heldApart: unjoined, assignment()).count == 1)
+        let joined = #"{"peopleId":"108262","registryName":"n","otherPerson":"o","anchors":["frus1981-88v44p1/persons#p_WSJO_1"],"joins":{"peopleId":"2","registryName":"m"},"wikidata":null,"viaf":null,"reason":"r"}"#
+        #expect(throws: PersonsCompleteCorrections.Problem.assignmentAlsoJoined(anchor: "frus1981-88v44p1/persons#p_WSJO_1")) {
+            try load(heldApart: joined, assignment())
+        }
+    }
+
     // MARK: - The file
 
     @Test("A corrections file that is incomplete, has a malformed anchor, repeats an id or misplaces a join is refused")
@@ -436,7 +621,13 @@ struct PersonsCompleteCorrectionsTests {
         #expect(Array(corrections.map(\.peopleId).prefix(2)) == ["107235", "107120"])
         #expect(corrections.count == 82, "#1657's two and A4c's eighty")
         #expect(corrections.reduce(0) { $0 + $1.anchors.count } == 156)
-        #expect(corrections.count { $0.joins != nil } == 16)
+        #expect(corrections.count { $0.joins != nil } == 21,
+                "A4c's sixteen, and five #1767 found a record for: Jeane Kirkpatrick's, Mueller's, and three with no FRUS anchor")
+        let joined = Dictionary(uniqueKeysWithValues: corrections.compactMap { c in c.joins.map { (c.peopleId, $0.peopleId) } })
+        #expect(joined["107235"] == "107237", "Jeane J. Kirkpatrick's entries are Jeane Jordan Kirkpatrick's")
+        #expect(joined["106247"] == "106238" && joined["108798"] == "108802" && joined["109156"] == "109170",
+                "John Hughes, Richard T. McCormack and William G. Miller, known to the registry from POCOM alone")
+        #expect(joined["109500"] == "109501")
         #expect(corrections.count { $0.role != nil } == 23)
         #expect(corrections.count { $0.wikidata != nil } == 55)
         #expect(corrections.count { $0.viaf != nil } == 45)
@@ -457,6 +648,15 @@ struct PersonsCompleteCorrectionsTests {
         #expect(ruhollah.anchors == ["frus1977-80v11p1/persons#p_KA_1"])
         #expect(ruhollah.wikidata == "Q400619")
         #expect(ruhollah.viaf == nil, "88036173 is Ruhollah Khomeini's own VIAF id")
+
+        let assigned = try PersonsCompleteCorrections.loadAssignments(
+            path: Self.repoRoot.appendingPathComponent(PersonsCompleteCorrections.defaultPath).path)
+        #expect(assigned.map(\.anchor) == ["frus1977-80v15/persons#p_MDG_1", "frus1981-88v44p1/persons#p_WSJO_1",
+                                           "frus1981-88v01/persons#p_WJO_1", "frus1917-72PubDipv08/persons#p_WJ_1",
+                                           "frus1977-80v15/persons#p_WJC_1", "frus1981-88v01/persons#p_WJC_2",
+                                           "frus1981-88v44p1/persons#p_WJ_3"])
+        #expect(assigned.map(\.peopleId) == ["108264", "114825", "114825", "114818", "114818", "114818", "114818"],
+                "Donald G. MacDonald of AID, Sir Oliver Wright twice, and Speaker Jim Wright four times")
     }
 
     /// The shipped file, read from the repository: regenerated with the corrections, it gives none of
@@ -496,6 +696,41 @@ struct PersonsCompleteCorrectionsTests {
             }
         }
         #expect(checked == 156, "every held-apart anchor was looked up")
+        // Every held-apart anchor is answered or stands apart, never both (#1767): the 69 that no source,
+        // join or assignment answers, people no record could be shown to be.
+        var standingApart = 0
+        for correction in corrections {
+            for anchor in correction.parsedAnchors {
+                let listed = index.apart?[anchor.volumeId]?.contains(anchor.ref) ?? false
+                #expect(listed == (index.crosswalk[anchor.volumeId]?[anchor.ref] == nil),
+                        "\(anchor.volumeId)#\(anchor.ref)")
+                if listed {
+                    #expect(correction.joins == nil, "a joined anchor never stands apart")
+                    standingApart += 1
+                }
+            }
+        }
+        #expect(standingApart == 69)
+        #expect(index.apart?.values.reduce(0) { $0 + $1.count } == 69, "the list holds nothing a correction does not")
+        #expect(index.apart?.values.allSatisfy { $0 == $0.sorted() } == true)
+        #expect(index.apart?["frus1977-80v23"]?.contains("p_SAE_1") == true, "Adlai E. Stevenson III")
+        #expect(index.apart?["frus1981-88v41"]?.contains("p_MDS_1") == true,
+                "Donald S. MacDonald of INR, whom 108265's 1962 entry cannot be shown to be")
+        // The assignments, and the records three joins keep though they have no FRUS anchor.
+        #expect(index.crosswalk["frus1981-88v44p1"]?["p_WSJO_1"] == 114825, "Sir Oliver Wright")
+        #expect(index.crosswalk["frus1981-88v01"]?["p_WJO_1"] == 114825)
+        #expect(index.crosswalk["frus1977-80v15"]?["p_MDG_1"] == 108264)
+        // Speaker Jim Wright's four entries, which the rollup joined by name to Sir Oliver Wright.
+        for (volumeId, ref) in [("frus1917-72PubDipv08", "p_WJ_1"), ("frus1977-80v15", "p_WJC_1"),
+                                ("frus1981-88v01", "p_WJC_2"), ("frus1981-88v44p1", "p_WJ_3")] {
+            #expect(index.crosswalk[volumeId]?[ref] == 114818, "\(volumeId)#\(ref) is Speaker Jim Wright's")
+        }
+        #expect(index.authority["114818"]?.n == "Wright, Jim")
+        #expect(index.crosswalk["frus1981-88v10"]?["p_HJ_3"] == 106238)
+        #expect(index.authority["106238"]?.s == "hughes-robert-john")
+        #expect(index.authority["108802"]?.s == "mccormack-richard-t")
+        #expect(index.authority["109170"]?.s == "miller-william-green")
+        #expect(index.source.contains("assigned, by the same file"), "the provenance names the assignments")
         // Richard V. Allen's 1981-1988 entries are his, and Richard F. Allen keeps his own three.
         #expect(index.crosswalk["frus1981-88v38"]?["p_ARV_1"] == 100308)
         #expect(index.crosswalk["frus1952-54v08"]?["p_AR1"] == 100307)
@@ -521,7 +756,7 @@ struct PersonsCompleteCorrectionsTests {
         let data = try Data(contentsOf: Self.repoRoot
             .appendingPathComponent("FRUSExplorer/Resources/person-authority-index.json"))
         let index = try JSONDecoder().decode(PersonAuthorityIndex.self, from: data)
-        #expect(index.authority.count == 12_836, "the registry's records, as before")
+        #expect(index.authority.count == 12_839, "the registry's 12,836 records, and three a join keeps (#1767)")
         #expect(index.authority.values.allSatisfy { $0.q == nil }, "every Wikidata id came from the overlay")
         #expect(index.authority.values.count { $0.v != nil } == 142, "the registry's own VIAF ids")
         #expect(index.authority.values.count { $0.r != nil } == 12_787, "the overlay's role texts still apply")

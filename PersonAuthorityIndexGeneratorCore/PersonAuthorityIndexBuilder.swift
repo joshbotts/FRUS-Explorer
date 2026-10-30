@@ -38,6 +38,14 @@ public enum PersonAuthorityIndexBuilder {
     /// Parses one record's XML. Returns `nil` when the record has no numeric id or no FRUS anchor
     /// (e.g. a person known only from Visits/Principals, outside the app's corpus).
     public static func parseRecord(xml: String) throws -> PersonAuthorityRecord? {
+        guard let record = try parseRegistryRecord(xml: xml), !record.frusAnchors.isEmpty else { return nil }
+        return record
+    }
+
+    /// Parses one record's XML whether or not it has a FRUS anchor, for the registry's names and the
+    /// records a join or an assignment may keep (#1767). Returns `nil` when the record has no
+    /// numeric id.
+    static func parseRegistryRecord(xml: String) throws -> PersonAuthorityRecord? {
         let doc = try XMLDocument(xmlString: xml, options: [])
         guard let root = doc.rootElement() else { return nil }
 
@@ -45,7 +53,6 @@ public enum PersonAuthorityIndexBuilder {
 
         let sourceURLs = root.descendantTexts("source-url")
         let anchors = sourceURLs.compactMap(parseAnchor(_:))
-        guard !anchors.isEmpty else { return nil }
         let slug = sourceURLs.compactMap(parsePOCOMSlug(_:)).first
 
         let name = root.elements(forName: "names").first?
@@ -111,17 +118,22 @@ public enum PersonAuthorityIndexBuilder {
         /// and anchors still apply, and the registry's own VIAF ids are the registry's. The path stays
         /// for the rule that is to check each id against its record before it is taken.
         public let takesIdentifiers: Bool
+        /// Anchors no source answers, and the registry records they belong to (#1767):
+        /// `PersonsCompleteCorrections.Assigned`.
+        public let assigned: [PersonsCompleteCorrections.Assigned]
 
         public init(entries: [PersonsCompleteOverlay.Entry],
                     flaggedPeopleIds: Set<String>,
                     roleCharacterLimit: Int = 120,
                     corrections: [PersonsCompleteCorrections.HeldApart] = [],
-                    takesIdentifiers: Bool = false) {
+                    takesIdentifiers: Bool = false,
+                    assigned: [PersonsCompleteCorrections.Assigned] = []) {
             self.entries = entries
             self.flaggedPeopleIds = flaggedPeopleIds
             self.roleCharacterLimit = roleCharacterLimit
             self.corrections = corrections
             self.takesIdentifiers = takesIdentifiers
+            self.assigned = assigned
         }
     }
 
@@ -135,9 +147,12 @@ public enum PersonAuthorityIndexBuilder {
     /// decision 55), and additional crosswalk anchors. It runs **after** the registry pass, so
     /// the registry always wins a disagreement — the overlay is a different pipeline carrying
     /// 1,662 unreviewed auto-merges, and it fills gaps rather than overwriting reconciled answers.
+    /// The overlay's assignments are written after it (`applyAssignments`), and the anchors its
+    /// corrections hold apart that nothing answered are the index's `apart` (#1767).
     ///
     /// - Throws: `PersonsCompleteCorrections.Problem` when one of the overlay's corrections does not
-    ///   fit the registry or the overlay (#1657), before anything is applied; or a read error.
+    ///   fit the registry or the overlay (#1657), before anything is applied, or when an assignment
+    ///   does not fit them (#1767); or a read error.
     public static func build(dataDirectory: URL, version: Int, generated: String,
                              source: String, keepVolume: ((String) -> Bool)? = nil,
                              overlay: Overlay? = nil)
@@ -145,6 +160,9 @@ public enum PersonAuthorityIndexBuilder {
         var stats = BuildStats()
         var crosswalk: [String: [String: Int]] = [:]
         var authority: [String: AuthorityEntry] = [:]
+        // Every record, with or without an anchor in a kept volume: the names a correction is
+        // checked against, and the records a join or an assignment may keep (#1767).
+        var registry: [String: AuthorityEntry] = [:]
 
         let fm = FileManager.default
         let enumerator = fm.enumerator(at: dataDirectory, includingPropertiesForKeys: nil)
@@ -153,7 +171,11 @@ public enum PersonAuthorityIndexBuilder {
             guard let data = try? Data(contentsOf: url),
                   let xml = String(data: data, encoding: .utf8) else { continue }
             stats.recordsParsed += 1
-            guard let record = try? parseRecord(xml: xml) else { continue }
+            guard let record = try? parseRegistryRecord(xml: xml) else { continue }
+            let entry = AuthorityEntry(
+                n: record.name, b: record.birthYear, d: record.deathYear, v: record.viaf,
+                s: record.pocomSlug)
+            registry[String(record.canonicalId)] = entry
 
             let kept = record.frusAnchors.filter { keepVolume?($0.volumeId) ?? true }
             guard !kept.isEmpty else { continue }
@@ -162,21 +184,27 @@ public enum PersonAuthorityIndexBuilder {
             for anchor in kept {
                 crosswalk[anchor.volumeId, default: [:]][anchor.ref] = record.canonicalId
             }
-            authority[String(record.canonicalId)] = AuthorityEntry(
-                n: record.name, b: record.birthYear, d: record.deathYear, v: record.viaf,
-                s: record.pocomSlug)
+            authority[String(record.canonicalId)] = entry
         }
 
+        var apart: [String: [String]] = [:]
         if let overlay {
             // A stale or mistyped correction would do nothing, silently; it is checked against the
-            // registry this pass built and the overlay it is about to change (#1657).
+            // registry and the overlay it is about to change (#1657). A join may name a record
+            // with no anchor of its own, so the names are the whole registry's (#1767).
             if let misfit = PersonsCompleteCorrections.misfit(
                 of: overlay.corrections, entries: overlay.entries,
-                registryName: { authority[$0]?.n }) {
+                registryName: { registry[$0]?.n }) {
                 throw misfit
             }
+            let registryCrosswalk = crosswalk
             applyOverlay(overlay, crosswalk: &crosswalk, authority: &authority,
-                         keepVolume: keepVolume, stats: &stats)
+                         keepVolume: keepVolume, stats: &stats, registry: registry)
+            try applyAssignments(overlay.assigned, registryCrosswalk: registryCrosswalk,
+                                 crosswalk: &crosswalk, authority: &authority, registry: registry,
+                                 keepVolume: keepVolume, stats: &stats)
+            apart = apartAnchors(of: overlay.corrections, crosswalk: crosswalk, keepVolume: keepVolume)
+            stats.anchorsStandingApart = apart.values.reduce(0) { $0 + $1.count }
         }
 
         stats.crosswalkEntries = crosswalk.values.reduce(0) { $0 + $1.count }
@@ -187,7 +215,8 @@ public enum PersonAuthorityIndexBuilder {
         stats.withRole = authority.values.count { $0.r?.isEmpty == false }
 
         let index = PersonAuthorityIndex(version: version, generated: generated, source: source,
-                                         crosswalk: crosswalk, authority: authority)
+                                         crosswalk: crosswalk, authority: authority,
+                                         apart: apart.isEmpty ? nil : apart)
         return (index, stats)
     }
 
@@ -203,12 +232,13 @@ public enum PersonAuthorityIndexBuilder {
     /// identifiers and role text the correction lists are not the keyed person's, and reach none of
     /// the entry's people-ids. The rest of the entry applies as any entry does. After every entry,
     /// the anchors of a correction that names the record they belong to join it where no source
-    /// answered for them.
+    /// answered for them, and a joined record `authority` lacks is taken from `registry` (#1767).
     static func applyOverlay(_ overlay: Overlay,
                              crosswalk: inout [String: [String: Int]],
                              authority: inout [String: AuthorityEntry],
                              keepVolume: ((String) -> Bool)?,
-                             stats: inout BuildStats) {
+                             stats: inout BuildStats,
+                             registry: [String: AuthorityEntry] = [:]) {
         let volumesBefore = Set(crosswalk.keys)
         stats.overlayEntriesRead = overlay.entries.count
         var correctionsByPeopleId: [String: PersonsCompleteCorrections.HeldApart] = [:]
@@ -298,9 +328,91 @@ public enum PersonAuthorityIndexBuilder {
                 guard crosswalk[anchor.volumeId]?[anchor.ref] == nil else { continue }
                 crosswalk[anchor.volumeId, default: [:]][anchor.ref] = joinedId
                 stats.overlayAnchorsJoined += 1
+                keepRecord(joins.peopleId, from: registry, in: &authority, stats: &stats)
             }
         }
         stats.crosswalkVolumesAdded = Set(crosswalk.keys).subtracting(volumesBefore).count
+    }
+
+    /// Writes the corrections file's assignments (#1767): each anchor no source answered goes to the
+    /// registry record its assignment names, which is taken from `registry` when `authority` lacks it.
+    ///
+    /// Run after the overlay, so that `crosswalk` holds every source's answer, and checked as a join
+    /// is, so that a stale assignment never does nothing silently. An assignment in a volume the run
+    /// does not keep writes nothing.
+    ///
+    /// - Parameters:
+    ///   - registryCrosswalk: The crosswalk the registry alone gave, before the overlay.
+    ///   - registry: Every registry record, with or without an anchor in a kept volume.
+    /// - Throws: `PersonsCompleteCorrections.Problem` when the registry names an assignment's record
+    ///   otherwise than the assignment does, or has no such record; when the registry answers for its
+    ///   anchor, with that record or another; or when an overlay entry gives the anchor to another.
+    static func applyAssignments(_ assigned: [PersonsCompleteCorrections.Assigned],
+                                 registryCrosswalk: [String: [String: Int]],
+                                 crosswalk: inout [String: [String: Int]],
+                                 authority: inout [String: AuthorityEntry],
+                                 registry: [String: AuthorityEntry],
+                                 keepVolume: ((String) -> Bool)?,
+                                 stats: inout BuildStats) throws {
+        for assignment in assigned {
+            let found = registry[assignment.peopleId]?.n
+            guard found == assignment.registryName else {
+                throw PersonsCompleteCorrections.Problem.assignedNameDiffers(
+                    anchor: assignment.anchor, peopleId: assignment.peopleId,
+                    expected: assignment.registryName, found: found)
+            }
+            // `loadAssignments` refuses an anchor that does not parse, and a registry key is numeric.
+            guard let anchor = assignment.parsedAnchor, let id = Int(assignment.peopleId),
+                  keepVolume?(anchor.volumeId) ?? true else { continue }
+            if let answer = registryCrosswalk[anchor.volumeId]?[anchor.ref] {
+                throw PersonsCompleteCorrections.Problem.assignmentAnsweredByRegistry(
+                    anchor: assignment.anchor, peopleId: assignment.peopleId, registry: answer)
+            }
+            if let answer = crosswalk[anchor.volumeId]?[anchor.ref] {
+                guard answer == id else {
+                    throw PersonsCompleteCorrections.Problem.assignmentAnsweredByOverlay(
+                        anchor: assignment.anchor, peopleId: assignment.peopleId, overlay: answer)
+                }
+                continue
+            }
+            crosswalk[anchor.volumeId, default: [:]][anchor.ref] = id
+            stats.anchorsAssigned += 1
+            keepRecord(assignment.peopleId, from: registry, in: &authority, stats: &stats)
+        }
+    }
+
+    /// The anchors that belong to no reconciled person (#1767): each anchor a correction holds apart,
+    /// in a kept volume, that no source answered and no join or assignment placed. No record could be
+    /// shown to be their person's: where one is, the correction joins it or an assignment names it.
+    ///
+    /// Left uncovered and unmarked, the app's clusterer can join such an anchor by name to the person
+    /// it was held apart from: nine did, among them Hamilton Fish III and IV under the Secretary of
+    /// State. The index lists them as `apart`, and the clusterer never joins one to a reconciled
+    /// person (`PersonClusterInput.standsApart`).
+    ///
+    /// - Returns: `volumeId → [ref]`, refs sorted; empty when every held-apart anchor is answered.
+    static func apartAnchors(of corrections: [PersonsCompleteCorrections.HeldApart],
+                             crosswalk: [String: [String: Int]],
+                             keepVolume: ((String) -> Bool)?) -> [String: [String]] {
+        var apart: [String: Set<String>] = [:]
+        for correction in corrections {
+            for anchor in correction.parsedAnchors
+            where (keepVolume?(anchor.volumeId) ?? true) && crosswalk[anchor.volumeId]?[anchor.ref] == nil {
+                apart[anchor.volumeId, default: []].insert(anchor.ref)
+            }
+        }
+        return apart.mapValues { $0.sorted() }
+    }
+
+    /// Puts the registry's record for `peopleId` in `authority` when a join or an assignment has
+    /// just placed an anchor on it and it is not there: a record with no anchor in a kept volume of
+    /// its own, which the registry pass leaves out (#1767).
+    private static func keepRecord(_ peopleId: String, from registry: [String: AuthorityEntry],
+                                   in authority: inout [String: AuthorityEntry],
+                                   stats: inout BuildStats) {
+        guard authority[peopleId] == nil, let entry = registry[peopleId] else { return }
+        authority[peopleId] = entry
+        stats.recordsKeptForAJoin += 1
     }
 }
 

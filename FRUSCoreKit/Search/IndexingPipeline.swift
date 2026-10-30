@@ -501,6 +501,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         is `extractHeader(from:)`, for the title a host gives a visit to a document its index does not
 ///         hold. Access and docs alone: what the indexer stores and what either returns are unchanged. No
 ///         index version
+///  4.50 — 2026-10-29 (#1767): `currentPersonRollupVersion` → 13 — `loadPersonClusterInputs` reads the
+///         bundled authority index's `apart` list into `PersonClusterInput.standsApart`, and the clusterer
+///         never joins a member standing apart to a reconciled person; one whose name fits two reconciled
+///         people in its block joins the one its exact name fits, or neither (see the v13 note). The
+///         loader is internal, for the suites. No index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1667,7 +1672,31 @@ public actor IndexingPipeline {
     /// Nine held-apart members still rejoin the person they were held apart from, by name, where the
     /// other person has no record in the bundle (Hamilton Fish III and IV under the Secretary of
     /// State, for two). A rollup rebuild only; no index version.
-    public static let currentPersonRollupVersion: Int = 12
+    /// v13 (#1767): two rules keep a member out of a reconciled person's rollup. The bundled
+    /// `person-authority-index.json` lists as `apart` the 69 anchors its corrections hold apart that
+    /// no source, join or assignment answers, people no record could be shown to be, and such a member
+    /// never joins a covered component, where v12 rejoined nine of them by name to the person they
+    /// were held apart from. And a member with no authority id whose own merges in its name block
+    /// reach two reconciled people joins the one its exact name fits, when only one does, and neither
+    /// otherwise (#1658's tie, which the order of `persons` decided; the owner chose the rule from
+    /// this census). Either refusal is a candidate pair. The same file joins five corrections' anchors
+    /// to their own records (three of them records with no FRUS anchor, which the bundle now keeps:
+    /// John Hughes, Richard T. McCormack, William G. Miller) and assigns seven uncovered anchors:
+    /// Sir Oliver Wright's two, Donald G. MacDonald's, and four of House Speaker Jim Wright's, which
+    /// the rollup had joined by name to Sir Oliver ("James" fits his "J.", and the role check counted
+    /// "from" as a word their roles share). Measured over a full library (553 volumes at index v71,
+    /// 63,667 members, S1's, 2026-10-29): 22 members change person and the rollups go from 18,009 to
+    /// 18,024, with 171 candidate pairs where there were 164. Seventeen move by the file: the nine
+    /// stand apart (Hamilton Fish III and IV's three entries, Adlai E. Stevenson III and Charlie
+    /// Wilson among them), John Hughes and William G. Miller join their own records, Speaker Jim
+    /// Wright's four entries leave Sir Oliver Wright for his, Sir Oliver's 1981–1988 vol. XLIV Part 1
+    /// entry leaves Jerauld Wright for his, and Donald S. MacDonald of INR stands apart from the
+    /// Korea desk officer of 1962. Five move by the tie rule, each fitting two reconciled people by
+    /// name: the two "Dick" Allen entries, George E. Brown, Leslie Rowan and Tran Buu Kiem. Jeane
+    /// Kirkpatrick's seven 1981–1988 entries reach her through the crosswalk where v12 reached her by
+    /// name, and her rollup is unchanged. A rebuild took 13.7 s in a debug package test, against
+    /// 13.1 s for v12's. A rollup rebuild only; no index version.
+    public static let currentPersonRollupVersion: Int = 13
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
     /// UserDefaults key holding the fingerprint of the override set the rollup was last built with,
@@ -1961,7 +1990,11 @@ public actor IndexingPipeline {
     /// upgraded from build 49 and under Jeane Jordan Kirkpatrick in a fresh index of the same files.
     /// Which component such a member joins is still the order's choice, and now every library
     /// makes the same one.
-    private func loadPersonClusterInputs() throws -> [PersonClusterInput] {
+    ///
+    /// **A member the bundled index lists as belonging to no reconciled person stands apart**
+    /// (`PersonClusterInput.standsApart`, rollup v13), and a borrowed row stands apart when its
+    /// source's entry does, as it takes the source's authority id.
+    func loadPersonClusterInputs() throws -> [PersonClusterInput] {
         // Mention-derived era per (volume_id, ref). GLOB guards against malformed date strings.
         var mentionEra: [String: (Int, Int)] = [:]
         let eraStmt = try auxPrepare("""
@@ -2026,6 +2059,7 @@ public actor IndexingPipeline {
             let name = auxColumnString(pStmt, 2) ?? ""
             guard !name.isEmpty else { continue }
             let era = mentionEra["\(vol)||\(ref)"]
+            let sources = listSources[vol] ?? []
             inputs.append(PersonClusterInput(
                 volumeId: vol, ref: ref, name: name,
                 description: auxColumnString(pStmt, 3),
@@ -2035,8 +2069,11 @@ public actor IndexingPipeline {
                 mentionStartYear: era?.0,
                 mentionEndYear: era?.1,
                 authorityId: authIndex?.canonicalId(volumeId: vol, ref: ref)
-                    ?? listSources[vol]?.compactMap { authIndex?.canonicalId(volumeId: $0, ref: ref) }.first,
-                mentionCount: mentionCounts["\(vol)||\(ref)"] ?? 0
+                    ?? sources.compactMap { authIndex?.canonicalId(volumeId: $0, ref: ref) }.first,
+                mentionCount: mentionCounts["\(vol)||\(ref)"] ?? 0,
+                standsApart: authIndex.map { index in
+                    ([vol] + sources).contains { index.standsApart(volumeId: $0, ref: ref) }
+                } ?? false
             ))
         }
         return inputs

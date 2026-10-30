@@ -22,6 +22,9 @@ import Foundation
 ///
 /// Schema v2 (#736) adds the POCOM slug, Wikidata QID and role text, and expands the crosswalk
 /// from the `frus-name-authority` drop.
+///
+/// `apart` (#1767) lists the anchors that belong to no reconciled person, so that the app's
+/// clusterer never joins them to one by name. A file without the key reads as one listing none.
 public struct PersonAuthorityIndex: Codable, Sendable, Equatable {
     /// Schema version of this index file.
     public let version: Int
@@ -33,14 +36,20 @@ public struct PersonAuthorityIndex: Codable, Sendable, Equatable {
     public let crosswalk: [String: [String: Int]]
     /// `"canonicalId" → entry` for every canonical person referenced by the crosswalk.
     public let authority: [String: AuthorityEntry]
+    /// `volumeId → [ref]`, refs sorted: the anchors a correction holds apart that no source, join or
+    /// assignment answered (`PersonAuthorityIndexBuilder.apartAnchors`), or `nil` when there are none,
+    /// so that a run without the overlay writes the file it always did.
+    public let apart: [String: [String]]?
 
     public init(version: Int, generated: String, source: String,
-                crosswalk: [String: [String: Int]], authority: [String: AuthorityEntry]) {
+                crosswalk: [String: [String: Int]], authority: [String: AuthorityEntry],
+                apart: [String: [String]]? = nil) {
         self.version = version
         self.generated = generated
         self.source = source
         self.crosswalk = crosswalk
         self.authority = authority
+        self.apart = apart
     }
 }
 
@@ -194,6 +203,13 @@ public struct BuildStats: Sendable, Equatable {
     public var overlayIdentifiersNotTaken = 0
     /// Held-apart anchors that joined the registry record their correction names.
     public var overlayAnchorsJoined = 0
+    /// Anchors the corrections file assigns to a registry record, written where no source answered.
+    public var anchorsAssigned = 0
+    /// Registry records with no anchor in a kept volume, kept because a join or an assignment named
+    /// them and placed an anchor (#1767).
+    public var recordsKeptForAJoin = 0
+    /// Held-apart anchors in kept volumes that nothing answered, written to the index's `apart`.
+    public var anchorsStandingApart = 0
     public init() {}
 }
 

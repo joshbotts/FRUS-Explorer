@@ -256,7 +256,9 @@ struct PersonClustererTests {
     func uncoveredBridgeBetweenAuthorityIdsBlocked() {
         // The live-DB r10139 mechanism: Raúl Castro and Raul Hector Castro (AZ governor) are both
         // covered, contemporaries, and share a block; an uncovered "Castro, Raul" record decides
-        // `.merge` against BOTH. Pre-v8 that union-found all three into one rollup.
+        // `.merge` against BOTH. Pre-v8 that union-found all three into one rollup; from v8 to v12
+        // it joined whichever its block reached first, and since v13 it joins the one whose name it
+        // fits exactly (the tie rule).
         let people = [
             input("v1", "p1", "Castro, Raul", listStart: 1959, listEnd: 1975, authorityId: 201),
             input("v2", "p2", "Castro, Raul Hector", listStart: 1959, listEnd: 1977, authorityId: 202),
@@ -268,6 +270,7 @@ struct PersonClustererTests {
             #expect(authorityIds(in: cluster, of: people).count <= 1,
                     "no cluster may carry two different authority ids")
         }
+        #expect(out.clusters.contains { Set($0) == [0, 2] }, "\"Castro, Raul\" is Raúl Castro's exact name")
         #expect(out.candidates.contains { $0.reason.contains("reconciled") },
                 "the blocked bridge is surfaced as a candidate (under-merge bias)")
     }
@@ -292,6 +295,163 @@ struct PersonClustererTests {
         #expect(out.clusters.contains { cluster in
             authorityIds(in: cluster, of: people) == [300] && cluster.count >= 2
         })
+    }
+
+    // MARK: Standing apart (rollup v13, #1767)
+
+    /// An uncovered record the bundled index lists as belonging to no reconciled person.
+    private func apart(_ vol: String, _ ref: String, _ name: String,
+                       listStart: Int? = nil, listEnd: Int? = nil) -> PersonClusterInput {
+        PersonClusterInput(volumeId: vol, ref: ref, name: name, listStartYear: listStart,
+                           listEndYear: listEnd, standsApart: true)
+    }
+
+    /// The members of the cluster holding `vol/ref`, as `vol/ref` strings.
+    private func cluster(of vol: String, _ ref: String, in out: PersonClusterOutput,
+                         inputs: [PersonClusterInput]) -> Set<String> {
+        let members = out.clusters.first { $0.contains { inputs[$0].volumeId == vol && inputs[$0].ref == ref } } ?? []
+        return Set(members.map { "\(inputs[$0].volumeId)/\(inputs[$0].ref)" })
+    }
+
+    @Test("A member the bundle holds apart never joins a reconciled namesake (Hamilton Fish III)")
+    func heldApartMemberStaysOutOfTheCoveredIdentity() {
+        // v12's census: Hamilton Fish III's entries, held apart from the Secretary of State's record
+        // by a correction and in no record of their own, rejoined him by name.
+        let secretary = input("v1", "p_FH1", "Fish, Hamilton", listStart: 1925, listEnd: 1945, authorityId: 104298)
+        let flagged = apart("v2", "p_FH_3", "Fish, Hamilton", listStart: 1933, listEnd: 1945)
+        let out = PersonClusterer.cluster([secretary, flagged])
+        #expect(out.clusters.count == 2)
+        #expect(out.candidates == [PersonClusterCandidate(clusterA: 0, clusterB: 1,
+                                                          reason: PersonClusterer.heldApartReason)])
+        // The other half: without the flag the same two records merge by name and era, as in v12.
+        let unflagged = input("v2", "p_FH_3", "Fish, Hamilton", listStart: 1933, listEnd: 1945)
+        #expect(PersonClusterer.cluster([secretary, unflagged]).clusters.count == 1)
+    }
+
+    @Test("Entries of one unrecorded person still roll up together, apart from their namesake")
+    func heldApartMembersUniteWithEachOther() {
+        let people = [
+            input("v1", "p_SA1", "Stevenson, Adlai E.", listStart: 1952, listEnd: 1965, authorityId: 113000),
+            apart("v2", "p_SAE_3", "Stevenson, Adlai E.", listStart: 1971, listEnd: 1975),
+            apart("v3", "p_SAE_2", "Stevenson, Adlai E.", listStart: 1975, listEnd: 1980),
+        ]
+        let out = PersonClusterer.cluster(people)
+        #expect(out.clusters.count == 2)
+        #expect(cluster(of: "v2", "p_SAE_3", in: out, inputs: people) == ["v2/p_SAE_3", "v3/p_SAE_2"])
+        #expect(cluster(of: "v1", "p_SA1", in: out, inputs: people) == ["v1/p_SA1"])
+    }
+
+    @Test("What has joined a member standing apart joins no reconciled person through it")
+    func memberJoinedToAnApartOneStandsApartToo() {
+        // The block reaches the pair with the held-apart member first, so the uncovered member is
+        // joined to it, and the covered namesake's union is then refused for both.
+        let people = [
+            apart("v1", "p_WC_1", "Wilson, Charles", listStart: 1973, listEnd: 1988),
+            input("v2", "p_WC_2", "Wilson, Charles", listStart: 1980, listEnd: 1985),
+            input("v3", "p_WCE1", "Wilson, Charles", listStart: 1953, listEnd: 1957, authorityId: 114659),
+        ]
+        let out = PersonClusterer.cluster(people)
+        #expect(cluster(of: "v1", "p_WC_1", in: out, inputs: people) == ["v1/p_WC_1", "v2/p_WC_2"])
+        #expect(cluster(of: "v3", "p_WCE1", in: out, inputs: people) == ["v3/p_WCE1"])
+        #expect(out.candidates.allSatisfy { $0.reason == PersonClusterer.heldApartReason })
+    }
+
+    @Test("A user's must-link over a member standing apart has the final say")
+    func mustLinkOverridesStandingApart() {
+        let people = [
+            input("v1", "p_FH1", "Fish, Hamilton", listStart: 1925, listEnd: 1945, authorityId: 104298),
+            apart("v2", "p_FH_3", "Fish, Hamilton", listStart: 1933, listEnd: 1945),
+        ]
+        let out = PersonClusterer.cluster(people, mustLink: [(.init(volumeId: "v1", ref: "p_FH1"),
+                                                             .init(volumeId: "v2", ref: "p_FH_3"))])
+        #expect(out.clusters.count == 1)
+        #expect(out.candidates.isEmpty)
+    }
+
+    @Test("A covered member's apart flag is not read")
+    func coveredMemberIgnoresTheFlag() {
+        let flaggedButCovered = PersonClusterInput(volumeId: "v2", ref: "p_KJJ_1", name: "Kirkpatrick, Jeane J.",
+                                                   listStartYear: 1981, authorityId: 107237, standsApart: true)
+        let people = [input("v1", "p_KJJ_1", "Kirkpatrick, Jeane J.", listStart: 1983, authorityId: 107237),
+                      flaggedButCovered,
+                      input("v3", "p_KJJ_1", "Kirkpatrick, Jeane J.", listStart: 1984)]
+        let out = PersonClusterer.cluster(people)
+        #expect(out.clusters.count == 1, "one id unites the covered pair, and the uncovered entry joins it")
+    }
+
+    // MARK: The tie rule (rollup v13, #1658's undecided tie)
+
+    /// Every ordering of `items`.
+    private func orderings<T>(of items: [T]) -> [[T]] {
+        guard items.count > 1 else { return [items] }
+        return items.indices.flatMap { i -> [[T]] in
+            var rest = items
+            let head = rest.remove(at: i)
+            return orderings(of: rest).map { [head] + $0 }
+        }
+    }
+
+    /// The partition `out` makes of `inputs`, as sets of `vol/ref`, whatever order they came in.
+    private func partition(_ out: PersonClusterOutput, of inputs: [PersonClusterInput]) -> Set<Set<String>> {
+        Set(out.clusters.map { Set($0.map { "\(inputs[$0].volumeId)/\(inputs[$0].ref)" }) })
+    }
+
+    @Test("An uncovered member whose name fits two reconciled people joins neither, in any order")
+    func tieMemberJoinsNeitherIdentity() {
+        // #1658: 1981–1988 vol. XVI's "Kirkpatrick, Jeane J." merges by name with entries under two
+        // ids, and until v13 the first pair its block reached decided which person it joined.
+        let people = [
+            input("volA", "p_KJJ_1", "Kirkpatrick, Jeane J.", listStart: 1981, authorityId: 107235),
+            input("volB", "p_KJJ_1", "Kirkpatrick, Jeane J.", listStart: 1983, authorityId: 107237),
+            input("volU", "p_KJJ_1", "Kirkpatrick, Jeane J.", listStart: 1985),
+        ]
+        let alone: Set<Set<String>> = [["volA/p_KJJ_1"], ["volB/p_KJJ_1"], ["volU/p_KJJ_1"]]
+        for order in orderings(of: people) {
+            let out = PersonClusterer.cluster(order)
+            #expect(partition(out, of: order) == alone)
+            #expect(out.candidates.count == 2 && out.candidates.allSatisfy { $0.reason == PersonClusterer.tieReason },
+                    "both refused unions are candidates: \(out.candidates)")
+        }
+        // The other half: with the rule off, the first pair decides, and the orders disagree.
+        let partitions = Set(orderings(of: people).map { partition(PersonClusterer.cluster($0, tieRule: .off), of: $0) })
+        #expect(partitions.count == 2, "v12 put the uncovered entry with one person or the other by order")
+    }
+
+    @Test("A member that fits two reconciled people joins the one its exact name fits, in any order")
+    func tieMemberJoinsItsExactName() {
+        // The census of 2026-10-29: 1969–1976 vol. XIX Part 2's "Peterson, Peter G." fits 110613,
+        // Peter G. Peterson, by its exact name, and 110612, a Peter Peterson of the same years, by a
+        // variant.
+        let people = [
+            input("v1", "p_PP1", "Peterson, Peter", listStart: 1971, listEnd: 1974, authorityId: 110612),
+            input("v2", "p_PPG1", "Peterson, Peter G.", listStart: 1971, listEnd: 1973, authorityId: 110613),
+            input("v3", "p_PPG_1", "Peterson, Peter G.", listStart: 1972, listEnd: 1974),
+        ]
+        let joined: Set<Set<String>> = [["v1/p_PP1"], ["v2/p_PPG1", "v3/p_PPG_1"]]
+        for order in orderings(of: people) {
+            let out = PersonClusterer.cluster(order)
+            #expect(partition(out, of: order) == joined)
+            #expect(out.candidates.count == 1 && out.candidates.allSatisfy { $0.reason.contains("bridge") },
+                    "the refused union with the other Peterson is a candidate: \(out.candidates)")
+        }
+        // With the rule off, an order that reaches the variant first gives the entry to the other man.
+        let partitions = Set(orderings(of: people).map { partition(PersonClusterer.cluster($0, tieRule: .off), of: $0) })
+        #expect(partitions.count == 2)
+    }
+
+    @Test("An uncovered member that fits one reconciled person still joins it")
+    func singleReachStillMerges() {
+        let people = [
+            input("v1", "p_WSJO_1", "Wright, Sir J. Oliver", role: "British Ambassador to the United States",
+                  listStart: 1982, listEnd: 1986, authorityId: 114825),
+            input("v2", "p_WJ1", "Wright, Jerauld", role: "Commander in Chief, Atlantic",
+                  listStart: 1954, listEnd: 1960, authorityId: 114817),
+            input("v3", "p_WJO_1", "Wright, John Oliver", role: "British Ambassador to the United States",
+                  listStart: 1982, listEnd: 1986),
+        ]
+        let out = PersonClusterer.cluster(people)
+        #expect(cluster(of: "v3", "p_WJO_1", in: out, inputs: people) == ["v1/p_WSJO_1", "v3/p_WJO_1"],
+                "\"John\" does not fit Jerauld, so the entry reaches Sir Oliver alone")
     }
 
     // MARK: "Mrs." is a distinguishing token (rollup v8, people-eval finding B)

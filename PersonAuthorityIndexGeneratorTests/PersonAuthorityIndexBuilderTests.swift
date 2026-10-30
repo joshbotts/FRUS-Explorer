@@ -79,6 +79,50 @@ struct PersonAuthorityIndexBuilderTests {
         #expect(try PersonAuthorityIndexBuilder.parseRecord(xml: xml) == nil)
     }
 
+    @Test("A record with no FRUS anchor still parses for the registry's names and the records a join keeps")
+    func parseRegistryRecordKeepsAnchorlessRecords() throws {
+        // 106238 as the registry has it: known only from his POCOM page (#1767).
+        let xml = """
+        <person><id>106238</id>
+            <names><preferred><name>Hughes, (Robert) John</name></preferred></names>
+            <birth-year>1930</birth-year><death-year/>
+            <remarks><remark><p>Non-career appointee. Assistant Secretary of State for Public Affairs.</p>
+              <source-url>https://history.state.gov/departmenthistory/people/hughes-robert-john</source-url>
+            </remark></remarks>
+        </person>
+        """
+        #expect(try PersonAuthorityIndexBuilder.parseRecord(xml: xml) == nil, "the crosswalk's records are unchanged")
+        let record = try #require(try PersonAuthorityIndexBuilder.parseRegistryRecord(xml: xml))
+        #expect(record.canonicalId == 106238)
+        #expect(record.name == "Hughes, (Robert) John")
+        #expect(record.birthYear == 1930)
+        #expect(record.pocomSlug == "hughes-robert-john")
+        #expect(record.frusAnchors.isEmpty)
+    }
+
+    @Test("A run without the overlay lists nothing apart and writes no apart key")
+    func noOverlayWritesNoApartKey() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("paig-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try """
+        <person><id>1</id><names><preferred><name>X</name></preferred></names>
+          <names><originals><original>
+            <source-url>https://history.state.gov/historicaldocuments/frusKEEP/persons#p_1</source-url>
+          </original></originals></names>
+        </person>
+        """.write(to: dir.appendingPathComponent("1.xml"), atomically: true, encoding: .utf8)
+        let (index, stats) = try PersonAuthorityIndexBuilder.build(
+            dataDirectory: dir, version: 2, generated: "2026-10-29", source: "test")
+        #expect(index.apart == nil)
+        #expect(stats.anchorsStandingApart == 0)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let json = try #require(String(data: try encoder.encode(index), encoding: .utf8))
+        #expect(!json.contains("\"apart\""), "a file without the key is the file a registry-only run always wrote")
+    }
+
     @Test("build aggregates records under a directory into a crosswalk + authority index")
     func buildAggregates() throws {
         let dir = FileManager.default.temporaryDirectory

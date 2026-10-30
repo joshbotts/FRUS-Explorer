@@ -46,11 +46,17 @@ public struct PersonClusterInput: Sendable {
     /// used by the rollup consolidation (v8) to pick a cluster's canonical authority id by
     /// majority-of-mentions instead of input order.
     public let mentionCount: Int
+    /// Whether the bundled authority index lists this record as belonging to no reconciled person
+    /// (`PersonAuthorityIndex.standsApart(volumeId:ref:)`, rollup v13): an entry the generator's
+    /// corrections hold apart from the person an overlay entry wrongly gave it to, and that no
+    /// registry record could be shown to be. The clusterer never joins it, or what it has joined, to
+    /// a covered component. Read only when `authorityId` is `nil`.
+    public let standsApart: Bool
 
     public init(volumeId: String, ref: String, name: String, description: String? = nil,
                 role: String? = nil, listStartYear: Int? = nil, listEndYear: Int? = nil,
                 mentionStartYear: Int? = nil, mentionEndYear: Int? = nil, authorityId: Int? = nil,
-                mentionCount: Int = 0) {
+                mentionCount: Int = 0, standsApart: Bool = false) {
         self.volumeId = volumeId
         self.ref = ref
         self.name = name
@@ -62,6 +68,7 @@ public struct PersonClusterInput: Sendable {
         self.mentionStartYear = mentionStartYear
         self.mentionEndYear = mentionEndYear
         self.mentionCount = mentionCount
+        self.standsApart = standsApart
     }
 
     /// Effective start year, for the rollup's active span: the EARLIEST of every year this record
@@ -172,7 +179,44 @@ public struct PersonClusterOutput: Sendable {
 ///     carries (list and mentions alike), so it can no longer run backwards; the era guardrail
 ///     reads the list's years first and the mentions only without them (`eraStartYear`), which
 ///     changes no record's cluster against v9
+///   Rollup v13 (#1767) — a member **stands apart** when the bundled index lists it as belonging
+///     to no reconciled person (`PersonClusterInput.standsApart`), or when its own merges in its
+///     block reach two reconciled identities and its exact name does not fit just one of them (the
+///     tie rule, #1658's undecided tie); one whose exact name does joins that one. A component
+///     holding a member standing apart never unites with a covered component; the refused pair is a
+///     candidate. It may still unite with uncovered members, so one unrecorded person's entries
+///     roll up together
 public enum PersonClusterer {
+
+    /// The reason recorded for a pair refused because one side was held apart by the bundled index.
+    static let heldApartReason = "held apart from reconciled identities; possibly the same person"
+    /// The reason recorded for a pair refused because one side fits two reconciled identities.
+    static let tieReason = "possible match; fits two reconciled identities"
+
+    /// Whether the tie rule runs (rollup v13, #1767). The rollup always runs it; `.off` is the
+    /// clusterer of v12 with the bundle's apart members honoured, which the suites compare with.
+    ///
+    /// The owner chose the rule on 2026-10-29 from a census of one full library: of the uncovered
+    /// members whose own merges reach two reconciled identities, holding every one apart moved eight,
+    /// three of them away from the one person their exact name fits (Peter G. Peterson's 1969–1976
+    /// entry among them); propagating the reach along chains of uncovered members moved sixteen,
+    /// seven of them Jimmy Carter's own entries.
+    enum TieRule {
+        /// No member is held apart for a tie.
+        case off
+        /// A member whose own merges reach two reconciled identities in its block joins the one its
+        /// exact name fits, when only one does, and stands apart otherwise.
+        case exactFirst
+    }
+
+    /// What the tie rule decides before any pair is visited: the members it holds apart, and the
+    /// members it joins to a covered member, by input index.
+    struct TieDecisions {
+        /// Uncovered members held apart.
+        var held: [Int] = []
+        /// An uncovered member, and the covered member whose exact name it fits.
+        var joins: [(member: Int, covered: Int)] = []
+    }
 
     /// Years apart (between two records' era spans, `eraStartYear`…`eraEndYear`) beyond which they
     /// are treated as different people. ~one generation; chosen to split same-name figures across
@@ -196,13 +240,24 @@ public enum PersonClusterer {
     /// anchored member out of whatever cluster it landed in, into its own identity. Detaches are
     /// applied before must-links, so a member can be detached and then re-merged elsewhere.
     ///
-    /// The result depends on the order of `inputs` where a member with no authority id would
-    /// merge into two components carrying different ids: it joins the first one its block reaches.
-    /// A caller that needs one answer for one set of records passes them in a fixed order, as
-    /// `IndexingPipeline` does (`volume_id`, then `ref`; #1658).
+    /// A member with no authority id whose own merges in its block reach two components carrying
+    /// different ids joins the one its exact name fits, when only one does, and neither otherwise
+    /// (the tie rule, rollup v13), whatever the order of `inputs`. The result still depends on that
+    /// order where a chain of such members links two components, or links one to a member standing
+    /// apart: the first pair to reach the chain decides. A caller that needs one answer for one set
+    /// of records passes them in a fixed order, as `IndexingPipeline` does (`volume_id`, then
+    /// `ref`; #1658).
     public static func cluster(_ inputs: [PersonClusterInput],
                                mustLink: [(MemberKey, MemberKey)] = [],
                                detach: [MemberKey] = []) -> PersonClusterOutput {
+        cluster(inputs, mustLink: mustLink, detach: detach, tieRule: .exactFirst)
+    }
+
+    /// `cluster(_:mustLink:detach:)` with the tie rule on or off, for the suites (#1767).
+    static func cluster(_ inputs: [PersonClusterInput],
+                        mustLink: [(MemberKey, MemberKey)] = [],
+                        detach: [MemberKey] = [],
+                        tieRule: TieRule) -> PersonClusterOutput {
         let n = inputs.count
         guard n > 0 else { return PersonClusterOutput(clusters: [], candidates: []) }
 
@@ -237,16 +292,39 @@ public enum PersonClusterer {
             if let id = inputs[i].authorityId { authorityOfRoot[uf.find(i)] = id }
         }
 
+        // Components standing apart (rollup v13): each root maps to the reason a pair it is refused
+        // is recorded under. An uncovered member is still its own root here, since only covered
+        // members have been united. Maintained across every union below, like `authorityOfRoot`;
+        // no root carries both.
+        var apartReasonOfRoot: [Int: String] = [:]
+        for i in 0..<n where inputs[i].authorityId == nil && inputs[i].standsApart {
+            apartReasonOfRoot[i] = heldApartReason
+        }
+        // The tie rule (#1658): decided before any pair is visited, so the order of the pairs no
+        // longer chooses for a member whose own merges reach two reconciled identities. A member it
+        // joins to the identity its exact name fits is united here, as the authority groups were, and
+        // the cannot-link below refuses its other unions.
+        let ties = tieDecisions(inputs, normalized: normalized, blocks: blocks, rule: tieRule)
+        for i in ties.held {
+            apartReasonOfRoot[i] = tieReason
+        }
+        for (member, covered) in ties.joins {
+            let id = authorityOfRoot.removeValue(forKey: uf.find(covered))
+            uf.union(member, covered)
+            authorityOfRoot[uf.find(member)] = id
+        }
+
         // Raw candidate pairs by input index; resolved to cluster indices after union-find.
         var rawCandidates: [(Int, Int, String)] = []
 
         // Blocks are visited in sorted-key order: with the component-level guardrail a merge in
         // one block can influence decisions in another (components span blocks through authority
         // pre-merges), and Dictionary iteration order would make the outcome nondeterministic.
-        // Inside a block the pairs go in input order, which still decides where an uncovered
-        // member that would join two reconciled identities goes: the first pair to reach it wins
-        // and the cannot-link refuses the second. `IndexingPipeline` passes `persons` in key order
-        // so that this is the same choice in every library (#1658).
+        // Inside a block the pairs go in input order. Where an uncovered member's own merges reach
+        // two reconciled identities the tie rule has already decided, but where a chain of
+        // uncovered members links two, or links one to a member standing apart, the first pair to
+        // reach the chain still wins. `IndexingPipeline` passes `persons` in key order so that this
+        // is the same choice in every library (#1658).
         for blockKey in blocks.keys.sorted() {
             let indices = blocks[blockKey]!
             guard indices.count > 1 else { continue }
@@ -264,11 +342,25 @@ public enum PersonClusterer {
                             rawCandidates.append((i, j, "possible match; would bridge two reconciled identities"))
                             break
                         }
+                        // Apart (rollup v13): never union a component standing apart with a
+                        // covered one, by the same under-merge rule.
+                        if let reason = apartReasonOfRoot[ri], authorityOfRoot[rj] != nil {
+                            rawCandidates.append((i, j, reason))
+                            break
+                        }
+                        if let reason = apartReasonOfRoot[rj], authorityOfRoot[ri] != nil {
+                            rawCandidates.append((i, j, reason))
+                            break
+                        }
                         let carried = authorityOfRoot[ri] ?? authorityOfRoot[rj]
+                        let apartReason = apartReasonOfRoot[ri] ?? apartReasonOfRoot[rj]
                         authorityOfRoot.removeValue(forKey: ri)
                         authorityOfRoot.removeValue(forKey: rj)
+                        apartReasonOfRoot.removeValue(forKey: ri)
+                        apartReasonOfRoot.removeValue(forKey: rj)
                         uf.union(i, j)
                         if let carried { authorityOfRoot[uf.find(i)] = carried }
+                        if let apartReason { apartReasonOfRoot[uf.find(i)] = apartReason }
                     case .candidate(let reason):
                         rawCandidates.append((i, j, reason))
                     case .none:
@@ -360,9 +452,54 @@ public enum PersonClusterer {
         }
     }
 
+    // MARK: - The tie rule (rollup v13)
+
+    /// What the tie rule decides for the uncovered members, by input index (#1658's undecided tie,
+    /// #1767).
+    ///
+    /// A member's reach is the set of authority ids of the covered members of its block it would
+    /// merge with directly. Only members of one block are ever compared, so the reach is exactly the
+    /// set of reconciled people the member could join through one pair. A member whose reach holds
+    /// two or more ids joins the one it fits by its exact name, when only one does: an exact name is
+    /// the stronger of `decide`'s two grounds for a merge, since a variant also needs its era and role
+    /// to agree. Otherwise it stands apart. A member already standing apart has no reach, since it
+    /// never joins a covered component. `decide` is symmetric, so the answer does not depend on the
+    /// order of `inputs`.
+    static func tieDecisions(_ inputs: [PersonClusterInput], normalized: [NormalizedName],
+                             blocks: [String: [Int]], rule: TieRule) -> TieDecisions {
+        var decisions = TieDecisions()
+        guard rule == .exactFirst else { return decisions }
+        for blockKey in blocks.keys.sorted() {
+            let indices = blocks[blockKey]!
+            let covered = indices.filter { inputs[$0].authorityId != nil }
+            let uncovered = indices.filter { inputs[$0].authorityId == nil && !inputs[$0].standsApart }
+            guard !covered.isEmpty, !uncovered.isEmpty else { continue }
+            for u in uncovered {
+                var reach = Set<Int>()
+                // The first covered member, in the block's order, of each id the member fits by its
+                // exact name.
+                var exact: [Int: Int] = [:]
+                for c in covered where decide(inputs[u], normalized[u], inputs[c], normalized[c]) == .merge {
+                    let id = inputs[c].authorityId!
+                    reach.insert(id)
+                    if nameRelation(normalized[u].given, normalized[c].given) == .exact, exact[id] == nil {
+                        exact[id] = c
+                    }
+                }
+                guard reach.count >= 2 else { continue }
+                if exact.count == 1, let c = exact.values.first {
+                    decisions.joins.append((u, c))
+                } else {
+                    decisions.held.append(u)
+                }
+            }
+        }
+        return decisions
+    }
+
     // MARK: - Pairwise decision
 
-    private enum Decision {
+    private enum Decision: Equatable {
         case merge
         case candidate(String)
         case none
