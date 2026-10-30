@@ -1,5 +1,5 @@
 {
-  "about" : "Entries of frus-name-authority's persons-complete.xml that merge two people, and what of each belongs to someone other than the person the entry is keyed to. PersonAuthorityIndexGenerator reads this file whenever it applies the overlay: for an entry carrying peopleId, the listed anchors join none of the entry's people-ids, and the listed Wikidata or VIAF id, and the listed role text, are stamped on none of them; the rest of the entry applies as before. Where joins names the other person's registry record, the listed anchors join it wherever no source answers for them. An identifier or role text is listed when it is not the keyed person's: the other person's, or someone else's that the reconciliation matched by name (each read on wikidata.org or viaf.org). A run refuses to write when the registry names peopleId otherwise than registryName or names joins.peopleId otherwise than joins.registryName, or when no entry carrying peopleId lists an anchor, identifier or role text given here. See PersonsCompleteCorrections.swift and Planning/Generators-Runbook.md.",
+  "about" : "Entries of frus-name-authority's persons-complete.xml that merge two people, and what of each belongs to someone other than the person the entry is keyed to. PersonAuthorityIndexGenerator reads this file whenever it applies the overlay: for an entry carrying peopleId, the listed anchors join none of the entry's people-ids, and the listed Wikidata or VIAF id, and the listed role text, are stamped on none of them; the rest of the entry applies as before. Where joins names the other person's registry record, the listed anchors join it wherever no source answers for them. An identifier or role text is listed when it is not the keyed person's: the other person's, or someone else's that the reconciliation matched by name (each read on wikidata.org or viaf.org). A run refuses to write when the registry names peopleId otherwise than registryName or names joins.peopleId otherwise than joins.registryName, or when no entry carrying peopleId lists an anchor, identifier or role text given here. A listed anchor that no source answers and no join places belongs to no reconciled person, and the bundle lists it as apart, so the app never joins it to one by name. A join may name a registry record with no FRUS anchor of its own, which the bundle then keeps for the anchors it receives. assigned names anchors that no source gives to anyone, each with the registry record it belongs to, and each is written there; a run refuses to write when the registry names peopleId otherwise than registryName, when the registry answers for the anchor, or when an overlay entry gives it to another record. See PersonsCompleteCorrections.swift and Planning/Generators-Runbook.md.",
   "heldApart" : [
     {
       "peopleId" : "107235",
@@ -17,11 +17,14 @@
         "frus1981-88v41/persons#p_KJJ_1",
         "frus1981-88v44p1/persons#p_KJJ_1"
       ],
-      "joins" : null,
+      "joins" : {
+        "peopleId" : "107237",
+        "registryName" : "Kirkpatrick, Jeane Jordan"
+      },
       "wikidata" : "Q240534",
       "viaf" : "71474039",
       "role" : null,
-      "reason" : "Entry FRUS-14666 carries people-id 107235, Kirkpatrick, Helen P. (Public Affairs Adviser, Bureau of European Affairs; 1952-1954 vol. XI, Parts 1 and 2), and ten anchors whose own entries read \"Kirkpatrick, Jeane J.\" in 1981-1988 volumes, with Jeane Kirkpatrick's Wikidata and VIAF ids (Q240534 gives VIAF 71474039; she lived 1926-2006). The registry gives 107235 Helen P.'s two anchors and no identifier, and gives Jeane Jordan Kirkpatrick 107237 (vols. III and XIII); FRUS-14668, her own overlay entry, carries 107237, the same two ids and vol. I's anchor. The merge audit has no row for either entry. #1657."
+      "reason" : "Entry FRUS-14666 carries people-id 107235, Kirkpatrick, Helen P. (Public Affairs Adviser, Bureau of European Affairs; 1952-1954 vol. XI, Parts 1 and 2), and ten anchors whose own entries read \"Kirkpatrick, Jeane J.\" in 1981-1988 volumes, with Jeane Kirkpatrick's Wikidata and VIAF ids (Q240534 gives VIAF 71474039; she lived 1926-2006). The registry gives 107235 Helen P.'s two anchors and no identifier, and gives Jeane Jordan Kirkpatrick 107237 (vols. III and XIII); FRUS-14668, her own overlay entry, carries 107237, the same two ids and vol. I's anchor. The merge audit has no row for either entry. #1657. The anchors join 107237 (#1767): this correction was written before joins existed, and her other seven entries rejoined her in the app's rollup by name only."
     },
     {
       "peopleId" : "107120",
@@ -114,11 +117,14 @@
       "anchors" : [
         "frus1981-88v38/persons#p_MCRT_1"
       ],
-      "joins" : null,
+      "joins" : {
+        "peopleId" : "108802",
+        "registryName" : "McCormack, Richard T."
+      },
       "wikidata" : "Q91470077",
       "viaf" : "70291291",
       "role" : null,
-      "reason" : "Entry FRUS-17959 carries people-id 108798, McCormack, Alfred (Special Assistant for Intelligence and Research, 1945-1946), and 1981-1988 vol. XXXVIII's \"McCormack, Richard T.\", Assistant Secretary for Economic and Business Affairs from 1982. VIAF 70291291 is Richard T. McCormack (born 1941); Q91470077 is Richard McCormack, a Vermont politician born 1947. The role text is Alfred McCormack's own."
+      "reason" : "Entry FRUS-17959 carries people-id 108798, McCormack, Alfred (Special Assistant for Intelligence and Research, 1945-1946), and 1981-1988 vol. XXXVIII's \"McCormack, Richard T.\", Assistant Secretary for Economic and Business Affairs from 1982. VIAF 70291291 is Richard T. McCormack (born 1941); Q91470077 is Richard McCormack, a Vermont politician born 1947. The role text is Alfred McCormack's own. The anchor joins 108802, whom the registry knows from his POCOM page alone (mccormack-richard-t) and the bundle keeps for it (#1767)."
     },
     {
       "peopleId" : "105915",
@@ -958,11 +964,14 @@
       "anchors" : [
         "frus1981-88v10/persons#p_HJ_3"
       ],
-      "joins" : null,
+      "joins" : {
+        "peopleId" : "106238",
+        "registryName" : "Hughes, (Robert) John"
+      },
       "wikidata" : "Q112942102",
       "viaf" : "73923391",
       "role" : "Assistant Secretary of State for Public Affairs from August 1982 until January 1985",
-      "reason" : "Entry FRUS-12709 carries people-ids 106247, Hughes, John Chambers (1891-1971, NATO Permanent Representative), 106248, Hughes, John T. (Intelligence Board), and 106238, and 1981-1988 vol. X's \"Hughes, John\", Assistant Secretary for Public Affairs 1982-1985, with his role text. He is 106238, Hughes, (Robert) John, born 1930, a registry record with no FRUS anchor and so none in the bundle; the anchor went to 106247. Q112942102 is James Hughes, a professor born 1959; VIAF 73923391 is Donald J. Hughes, a physicist (1915-1960)."
+      "reason" : "Entry FRUS-12709 carries people-ids 106247, Hughes, John Chambers (1891-1971, NATO Permanent Representative), 106248, Hughes, John T. (Intelligence Board), and 106238, and 1981-1988 vol. X's \"Hughes, John\", Assistant Secretary for Public Affairs 1982-1985, with his role text. He is 106238, Hughes, (Robert) John, born 1930, whom the registry knows only from his POCOM page (hughes-robert-john: \"Non-career appointee. Assistant Secretary of State for Public Affairs.\"); the anchor went to 106247. It joins 106238, which the bundle keeps for it though the record has no FRUS anchor of its own (#1767). Q112942102 is James Hughes, a professor born 1959; VIAF 73923391 is Donald J. Hughes, a physicist (1915-1960)."
     },
     {
       "peopleId" : "113613",
@@ -1032,15 +1041,18 @@
     {
       "peopleId" : "109156",
       "registryName" : "Miller, G. William",
-      "otherPerson" : "Miller, William G. (Senate intelligence committee staff; emissary to Iran)",
+      "otherPerson" : "Miller, William G. (Senate intelligence committee staff; emissary to Iran; registry 109170, Miller, William Green, which has no FRUS anchor)",
       "anchors" : [
         "frus1977-80v11p1/persons#p_MWG_1"
       ],
-      "joins" : null,
+      "joins" : {
+        "peopleId" : "109170",
+        "registryName" : "Miller, William Green"
+      },
       "wikidata" : "Q102137191",
       "viaf" : "57347785",
       "role" : "U.S. Ambassador to Ukraine (1993-10-21-1998-01-06; Clinton)",
-      "reason" : "Entry FRUS-18722 carries people-id 109156, Miller, G. William (Federal Reserve Chairman; Secretary of the Treasury), and 1977-1980 vol. XI Part 1's \"Miller, William G.\", emissary to Iran in 1979, with his role text (Ambassador to Ukraine, 1993-1998). The registry's own 109156 holds one of his anchors (1969-1976 vol. XXXVIII Part 2), which stays. Q102137191 is a William G. Miller, Ph.D. 1951; VIAF 57347785 is William John Miller (1880-1965)."
+      "reason" : "Entry FRUS-18722 carries people-id 109156, Miller, G. William (Federal Reserve Chairman; Secretary of the Treasury), and 1977-1980 vol. XI Part 1's \"Miller, William G.\", emissary to Iran in 1979, with his role text (Ambassador to Ukraine, 1993-1998). The registry's own 109156 holds one of his anchors (1969-1976 vol. XXXVIII Part 2), which stays. Q102137191 is a William G. Miller, Ph.D. 1951; VIAF 57347785 is William John Miller (1880-1965). The anchor joins 109170, Miller, William Green, Ambassador to Ukraine, whom the registry knows from his POCOM page alone (miller-william-green) and the bundle keeps for it (#1767)."
     },
     {
       "peopleId" : "113288",
@@ -1109,20 +1121,23 @@
       "wikidata" : null,
       "viaf" : null,
       "role" : null,
-      "reason" : "Entry FRUS-16858 carries four people-ids for four Donald MacDonalds, first 108262, Macdonald, Donald (Canadian Minister of Finance). Two overlay anchors went to it: 1977-1980 vol. XV's \"Macdonald, Donald G.\", AID Assistant Administrator, and 1981-1988 vol. XLI's \"MacDonald, Donald S.\", INR. Held apart, they join none of the four; the entry's role text and identifiers are not divided here."
+      "reason" : "Entry FRUS-16858 carries four people-ids for four Donald MacDonalds, first 108262, Macdonald, Donald (Canadian Minister of Finance). Two overlay anchors went to it: 1977-1980 vol. XV's \"Macdonald, Donald G.\", AID Assistant Administrator, and 1981-1988 vol. XLI's \"MacDonald, Donald S.\", INR. Held apart, they join none of the four; the entry's role text and identifiers are not divided here. Vol. XV's is assigned to 108264, MacDonald, Donald G., whose registry entries name him AID's Assistant Administrator for Near East and South Asia; vol. XLI's stands apart, since 108265's one entry, the Officer in Charge of Korean Affairs until 1962, cannot be shown to be him (#1767)."
     },
     {
       "peopleId" : "109500",
       "registryName" : "Mueller, Richard B.",
-      "otherPerson" : "Mueller, Richard (Department of State, Office of the Executive Secretary)",
+      "otherPerson" : "Mueller, Richard (Department of State, Office of the Executive Secretary; registry 109501, Mueller, Richard W.)",
       "anchors" : [
         "frus1981-88v41/persons#p_MR_1"
       ],
-      "joins" : null,
+      "joins" : {
+        "peopleId" : "109501",
+        "registryName" : "Mueller, Richard W."
+      },
       "wikidata" : null,
       "viaf" : null,
       "role" : null,
-      "reason" : "Entry FRUS-19452 carries people-ids 109500, Mueller, Richard B. (Second Secretary, Finnish Mission to the United Nations), and 109501, Mueller, Richard W. (Department of State). Its 1981-1988 vol. XLI anchor, \"Mueller, Richard, Office of the Executive Secretary, Department of State\", went to 109500. Held apart, it joins neither; the entry's role text and identifiers are not divided here."
+      "reason" : "Entry FRUS-19452 carries people-ids 109500, Mueller, Richard B. (Second Secretary, Finnish Mission to the United Nations), and 109501, Mueller, Richard W. (Department of State). Its 1981-1988 vol. XLI anchor, \"Mueller, Richard, Office of the Executive Secretary, Department of State\", went to 109500. The entry's role text and identifiers are not divided here. The anchor joins 109501 (#1767): his registry entry, 1969-1976 vol. V's \"Mueller, Richard W., Secretariat Staff, Department of State, from 1972\", names the same office."
     },
     {
       "peopleId" : "111889",
@@ -1187,7 +1202,51 @@
       "wikidata" : null,
       "viaf" : null,
       "role" : null,
-      "reason" : "Entry FRUS-07370 carries people-ids 115397, Donovan, James (Colonel, USAF, Center for Defense Information), and 103588, Donovan, James B. Its 1961-1963 microfiche supplement anchor, \"Donovan, James B., New York lawyer\" of the Bay of Pigs prisoner release, went to 115397. Held apart from both, it joins 103588; the entry's role text and identifiers are not divided here."
+      "reason" : "Entry FRUS-07370 carries people-ids 115397, Donovan, James (Colonel, USAF, Center for Defense Information), and 103588, Donovan, James B. Its 1961-1963 microfiche supplement anchor,\"Donovan, James B., New York lawyer\" of the Bay of Pigs prisoner release, went to 115397. Held apart from both, it joins 103588; the entry's role text and identifiers are not divided here."
+    }
+  ],
+  "assigned" : [
+    {
+      "anchor" : "frus1977-80v15/persons#p_MDG_1",
+      "peopleId" : "108264",
+      "registryName" : "MacDonald, Donald G.",
+      "reason" : "1977-1980 vol. XV's \"Macdonald, Donald G., Assistant Administrator for Program Management, Agency for International Development, from June 1977\", held apart from 108262, the Canadian Minister of Finance, by that correction, which also holds apart another Donald MacDonald and so joins neither. Registry 108264, MacDonald, Donald G., holds 1969-1976 vols. XI, XXIX and E-7's \"Assistant Administrator for Near East and South Asia, Agency for International Development\" (#1767)."
+    },
+    {
+      "anchor" : "frus1981-88v44p1/persons#p_WSJO_1",
+      "peopleId" : "114825",
+      "registryName" : "Wright, Oliver",
+      "reason" : "1981-1988 vol. XLIV Part 1's \"Wright, Sir J. Oliver, U.K. Ambassador to the United States until 1986\". No source gives the anchor to anyone, and it sits in Admiral Jerauld Wright's name block, whose 1951-1968 entries sort first, so the app's rollup gave it to him (#1658). Registry 114825, Wright, Oliver, holds 1969-1976 vol. XXXVI's \"Wright, Sir Oliver, Under Secretary, Foreign and Commonwealth Office\" and 1981-1988 vol. XIII's \"Wright, Sir J. Oliver, British Ambassador to the United States from September 1982\" (#1767)."
+    },
+    {
+      "anchor" : "frus1981-88v01/persons#p_WJO_1",
+      "peopleId" : "114825",
+      "registryName" : "Wright, Oliver",
+      "reason" : "1981-1988 vol. I's \"Wright, John Oliver, British Ambassador to the United States from 1982 until 1986\". No source gives the anchor to anyone. The app's rollup already joins it to 114825 by name and role, since \"John\" does not fit Jerauld Wright, and the assignment makes that the bundle's answer. Registry 114825, Wright, Oliver, holds 1981-1988 vol. XIII's \"Wright, Sir J. Oliver, British Ambassador to the United States from September 1982\" (#1767)."
+    },
+    {
+      "anchor" : "frus1917-72PubDipv08/persons#p_WJ_1",
+      "peopleId" : "114818",
+      "registryName" : "Wright, Jim",
+      "reason" : "1917-1972 Public Diplomacy vol. VIII's \"Wright, James (Jim), member, U.S. House of Representatives (D-Texas)\", Speaker Jim Wright. No source gives the anchor to anyone, and the app's rollup joined it by name, through his other unrecorded entries, to Sir Oliver Wright (114825). Registry 114818, Wright, Jim, holds 1977-1980 vol. XXI's \"Wright, Jim, member, U.S. House of Representatives (D-Texas); House Majority Leader\", which \"James\" never fits, since the clusterer folds no nickname (#1767)."
+    },
+    {
+      "anchor" : "frus1977-80v15/persons#p_WJC_1",
+      "peopleId" : "114818",
+      "registryName" : "Wright, Jim",
+      "reason" : "1977-1980 vol. XV's \"Wright, James Claude Jr. “Jim,” member, U.S. House of Representatives (D-Texas)\", Speaker Jim Wright. No source gives the anchor to anyone, and the app's rollup joined it by name, through his other unrecorded entries, to Sir Oliver Wright (114825). Registry 114818, Wright, Jim, holds 1977-1980 vol. XXI's \"Wright, Jim, member, U.S. House of Representatives (D-Texas); House Majority Leader\" (#1767)."
+    },
+    {
+      "anchor" : "frus1981-88v01/persons#p_WJC_2",
+      "peopleId" : "114818",
+      "registryName" : "Wright, Jim",
+      "reason" : "1981-1988 vol. I's \"Wright, James C., Jr. “Jim,” member, U.S. House of Representatives (D–Texas) and House Majority Leader until 1986; Speaker of the House of Representatives from January 3, 1987\". No source gives the anchor to anyone, and the app's rollup joined it by name, through his other unrecorded entries, to Sir Oliver Wright (114825). Registry 114818, Wright, Jim, holds 1977-1980 vol. XXI's \"Wright, Jim, member, U.S. House of Representatives (D-Texas); House Majority Leader\" (#1767)."
+    },
+    {
+      "anchor" : "frus1981-88v44p1/persons#p_WJ_3",
+      "peopleId" : "114818",
+      "registryName" : "Wright, Jim",
+      "reason" : "1981-1988 vol. XLIV Part 1's \"Wright, James, member, U.S. House of Representatives (D–Texas); Speaker of the House from January 6, 1987\". No source gives the anchor to anyone, and the app's rollup joined it by name to Sir Oliver Wright (114825): \"James\" fits his \"J.\", and the role check counted \"from\" as a word this role shares with 1981-1988 vol. XIII's \"Wright, Sir J. Oliver, British Ambassador to the United States from September 1982\". Registry 114818, Wright, Jim, holds 1977-1980 vol. XXI's \"Wright, Jim, member, U.S. House of Representatives (D-Texas); House Majority Leader\", which \"James\" never fits, since the clusterer folds no nickname (#1767)."
     }
   ]
 }

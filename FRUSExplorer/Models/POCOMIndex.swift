@@ -19,7 +19,7 @@ import Foundation
 /// POCOM carries no FRUS anchor, so the only route in is
 /// `PersonAuthorityIndex.pocomSlug(for:)` — meaning career data can appear **only** for people the
 /// app already knows from a volume's editor-published person list. Measured on the shipped
-/// artifacts: 1,242 of the app's 12,836 authority people carry a slug, **1,240 of them have at
+/// artifacts: 1,245 of the app's 12,839 authority people carry a slug, **1,243 of them have at
 /// least one appointment**, and those surface a Career section on roughly 12,500 of 62,818 live
 /// person rows — high relative to the people count because chiefs of mission recur across many
 /// volumes.
