@@ -8182,3 +8182,62 @@ FRUS Explorer Light's session, in a pull request of its own. Its S18d gives each
 **Filed in the pull request, not fixed:** a citation naming a subseries and a document but no volume resolves to the first volume of the subseries that holds the number, since the engine stops at its first hit that meets every cited field and the resolver demotes only a line naming neither; the union takes `(volumeId, documentId)` and answers `(documentId, volumeId)`; a paste is resolved line by line with no bound, which a host sets itself.
 
 **Not done:** the UI suites, iOS 26.x, a device and a signed run; the Mac app was built and not run.
+
+## Session 2026-10-29 — #1767 lane A: an entry held apart that no record answers stands apart, and an entry that fits two reconciled people joins the one its exact name fits
+
+Lane A of `Person-Authority-Lane-Design-2026-10-28.md` (items 3 and 4, with §4.6), on the owner's word of 2026-10-29: "start the person authority lane" (plan of record decisions 102 to 104). From `v2` at `fb542514`, on `claude/person-authority-lane-c64504`. Kit and generator code, rollup v13, no index version, no CloudKit change. `person-authority-index.json` and `pocom-index.json` are regenerated. Built in the session.
+
+**The controls.** The generator at the base, run with `GENERATED_DATE=2026-10-17`, reproduced the shipped file byte for byte (SHA-256 `d417c2ec…`). Its inputs were people `63b537ad` and name-authority `cb8b0a5`, whose `persons-complete.xml` and merge audit main at `51aa742` holds unchanged. The POCOM generator at pocom `ccc1f033`, stamped 2026-09-13, reproduced its file too. The owner's pocom checkout is at `f072f913`, which moved only `package.json` and its lock; the runs used a shared clone in the scratchpad.
+
+**The generator.** The file gains `apart`, `volumeId → [ref]`: every anchor a correction holds apart, in a kept volume, that no source answered and no join or assignment placed. It is written only when one stands, so a registry-only run writes the file it always did. A join or an assignment may name a registry record with no anchor in a kept volume, which the run then keeps; the names a correction is checked against are the whole registry's (`parseRegistryRecord`). `assigned` in the corrections file writes an anchor no source answers to its record. It may name a held-apart anchor whose correction joins none, and the run refuses to write when the registry names the record otherwise, answers for the anchor, or an overlay entry gives the anchor to another record (`PersonsCompleteCorrections` 1.2). The runner prints the assigned, kept and standing-apart counts, and the provenance names the assignments.
+
+**The data, read before the apart list was written.** The design took `"joins": null` to mean the other person has no record. Every apart anchor's printed name was looked up in all 16,312 registry records, with or without a FRUS anchor:
+- 56 of the 80 left after the Hughes join match no record.
+- 12 match only the person they were held apart from, or other namesakes. Each was read: Hamilton Fish twice, Frank Murphy, Richard J. Davis, the hostage James Hughes, the Desert One colonel Charles Pittman, Myles Greene, Kurleigh King, Adlai E. Stevenson III, Charlie Wilson, and two 1981–1988 entries for William Martin, Deputy Secretary of Energy, against William McChesney Martin.
+- 11 have a record of their own:
+  - seven of Jeane Kirkpatrick's entries (107237): #1657's correction was written before `joins` existed, and v12 placed them with her by name;
+  - Richard T. McCormack (108802) and William G. Miller (109170, *Miller, William Green*), known to the registry from POCOM alone; Miller's correction already named his Ukraine post;
+  - Richard Mueller (109501: "Secretariat Staff, from 1972" against "Office of the Executive Secretary");
+  - Donald G. MacDonald of AID (108264: Assistant Administrator in both entries).
+- 1 cannot be shown: Donald S. MacDonald of INR against 108265, the Korea desk officer of 1962. It stands apart, and its candidate offers the merge.
+
+So four corrections gain a `joins` beside the design's Hughes join, and one held-apart anchor (Donald G. MacDonald) gains an assignment beside the design's two for Sir Oliver Wright. Vol. I's Wright entry already reached him by name and role; only vol. XLIV Part 1's went to Jerauld Wright. Four more assignments, for Speaker Jim Wright, follow below. The file adds 18 crosswalk pairs (56,029 → 56,047), 3 kept records (12,836 → 12,839, each with a POCOM slug: 1,242 → 1,245) and 69 anchors standing apart in 17 volumes, and nothing else; 2,427,304 bytes. POCOM gains the three people's careers and nothing else (1,240 → 1,243 careers; 531,509 bytes).
+
+**The kit.** `PersonAuthorityIndex.apart` with `standsApart(volumeId:ref:)`, decoded only when present. `PersonClusterInput.standsApart`, which `loadPersonClusterInputs` sets from the index, a borrowed row's through its source as its authority id is. The loader is now internal, for the suites. In the clusterer, a root standing apart never unites with a covered root; the refused pair is a candidate, "held apart from reconciled identities; possibly the same person". It may unite with uncovered members. Before any pair is visited, an uncovered member whose own merges reach two reconciled ids joins the one its exact name fits, when only one does, and otherwise stands apart ("possible match; fits two reconciled identities"). `TieRule.off` stays for the suites' other halves.
+
+**The census.** A4's clone `8BE32D39` no longer exists, so the census ran over S1's library (`~/Library/Caches/FRUS-Explorer/s1/snapshot-A`): 553 volumes at index v71, 63,667 members, its stored v12 rollup 18,009 rollups with 164 candidate pairs. A throwaway package test, not committed, rebuilt it through the kit on `cp -c` copies. The base checkout with the shipped file reproduced the stored rollup member for member, and so did this branch with the shipped file and the rule off. Members changing person against the base, each base rollup matched to the rollup that holds most of it:
+
+| Variant | Moved | Order-dependent |
+|---|---|---|
+| The base | 0 | 129 |
+| The new file alone | 13 | 104 |
+| T1, as designed | 21 | 54 |
+| `exactFirst` (chosen) | 18 | 54 |
+| T2 | 29 | 0 |
+
+"Order-dependent" counts entries placed differently when the input order is reversed. T1 moved Peter G. Peterson's, Ayub Khan's and Donald T. Regan's entries away from the one person their exact name fits. T2 also pulled seven of Jimmy Carter's entries and Chip Carter's into one uncovered rollup. The owner chose `exactFirst`. The final rebuild matched its trial run exactly; with the Speaker's assignments below, 22 members change person, rollups go 18,009 → 18,024 and candidate pairs 164 → 171. Seventeen move by the file:
+- the nine stand apart (Hamilton Fish III and IV's three entries, Adlai E. Stevenson III, Charlie Wilson, Frank Murphy, Richard J. Davis, the hostage James Hughes, Myles Greene);
+- John Hughes and William G. Miller join their own records;
+- Speaker Jim Wright's four entries leave Sir Oliver Wright for his own record;
+- Sir Oliver Wright's vol. XLIV Part 1 entry leaves Jerauld Wright;
+- Donald S. MacDonald stands apart.
+
+Five move by the tie rule: the two "Dick" Allen entries, George E. Brown, Leslie Rowan and Tran Buu Kiem. Jeane Kirkpatrick keeps all eleven of her entries. A rebuild took 13.7 s against 13.1 s.
+
+**Speaker Jim Wright**, on the owner's word of 2026-10-29 ("Address the Jim Wright finding in this PR"). The census found his four entries (Public Diplomacy vol. VIII, 1977–1980 vol. XV, 1981–1988 vols. I and XLIV Part 1) in Sir Oliver Wright's rollup (114825), at the base and after the rest of this lane. "James" fits Sir Oliver's "J.", the years overlap, and the role check finds a shared significant word in "from" ("…Speaker of the House from January 6, 1987" against "…Ambassador to the United States from September 1982"); the others joined through those. The clusterer folds no nickname, so they never reached his own record, 114818 *Wright, Jim* (1977–1980 vol. XXI). No source answers any of the four, so four assignments give them to 114818. Measured, they and nothing else move: his rollup holds five entries, Sir Oliver keeps his four, and Jerauld Wright his eleven. POCOM does not move (114818 is already in the bundle). The cause was measured too, and left alone. With 31 function words ("from", "until", "with" among them) left out of the role check's significant words, a temporary edit run through the same census and then reverted, six entries of the library move. One wrong merge is undone: E. Romney Wheeler of USIA's television service sits in Earle G. Wheeler's rollup, and the registry has no record of his to assign him to. Three right ones are broken, each a career whose roles share only such a word: William B. Jones from William Bowdoin Jones, Lyle "Francis" Lane from Lyle Franklin Lane, John Scanlan from John D. Scanlan. A sixth, David J. Smith, is unclear.
+
+**Found, not fixed.** E. Romney Wheeler, above, sits in Earle G. Wheeler's rollup; nothing in the bundle can hold an entry apart that no correction lists. Leslie Rowan (116055 and 111676), Donald Regan (116022 and 116023) and Tran Buu Kiem (113344 and 113686) are each one man under two registry records, which is upstream's.
+
+**Docs.** The generator's runbook entry and POCOM's; the design memo's header, with what the build corrected; the plan of record (decisions 102 and 103, and the #1767 line in §5); the version notes (`IndexingPipeline` 4.50 and v13, `PersonClusterer` v13, `PersonAuthorityIndex` 1.4, `PersonsCompleteCorrections` 1.2); `POCOMIndex`'s counts. The manuals are not owed: their People sections describe the cautious grouping in general, and the VIAF ratio is unchanged (142 of 12,839).
+
+**For the web edition.** The kit's `PersonAuthorityIndex` gains `apart`, `standsApart(volumeId:ref:)` and an `apart:` initialiser parameter with a default. `PersonClusterInput` gains `standsApart`, with a defaulted initialiser parameter. `PersonClusterer.cluster`'s signature is unchanged and its result is not. The bundle gains `apart`; a file without it decodes as before.
+
+**Checks.**
+- `swift build --target FRUSCoreKit`: clean.
+- `swift test`: exit 0; 38 runs, 3,224 tests in 391 suites, none failed.
+- The full unit target on the iPhone 17 (iOS 27.0): 7,742 tests passed, 37 skipped, none failed; the new suites' tests are in its log.
+- The Mac build: succeeded, with no warning lines.
+
+After the Speaker's assignments regenerated the bundle, all four were run again on the final code, after the last edit to any file a test reads: the same counts, `swift test` 3,224 and the unit target 7,742 passed with 37 skipped, none failed, and the Mac build with no warning lines.
+
+**Not done:** the UI suites, iOS 26.x, a device; the Mac app was built and not run. No library's rollup was rebuilt by the app at launch; the census rebuilt S1's through the kit. Nothing is committed or pushed.
