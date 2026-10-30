@@ -8,7 +8,11 @@
 - **Only vol. XLIV Part 1's Wright entry went to Jerauld Wright** (§4.6). Vol. I's "Wright, John Oliver" already reached Sir Oliver by name and role; its assignment makes that the bundle's answer. Sir Oliver's rollup also held four of House Speaker Jim Wright's entries, joined by name ("James" fits "J.", and the role check counts "from"). On the owner's word, four more assignments give them to the Speaker's own record, 114818.
 - **The census ran over S1's v71 library** (§7), since A4's clone `8BE32D39` no longer exists. And `pocom-index.json` was owed: the three kept records each carry a POCOM slug.
 
-Lane B (items 1 and 2) is not started.
+**Lane B built, 2026-10-29** (items 1 and 2, on the parent session's brief; branch `claude/strange-cohen-3a0b0b`). The rule is the assessment's (b4) and its §7.2 rule, as §5 says. It moves the person rollup to v14 rather than riding on lane A's unshipped v13 (decision 106). What the build found that corrects this memo or the assessment:
+- **The 2026-10-17 notes folder is gone from the Mac**: the facts, the scripts and `identifier-assessment-reads.tsv` with it (§5's second point). The scripts were recovered from that session's transcript, every write and patch replayed, and run unchanged over a new snapshot they give the assessment's own figures, 1,857 Wikidata and 1,609 VIAF ids. The verdicts are recorded in the same transcript, and on the owner's word (plan of record decision 105) the reads are rebuilt from it and committed beside the snapshot; the rule's tests re-score the shipped file against them (95.9% of the links it keeps are right).
+- **The port departs from the scripts on three records, each where the scripts were wrong**: they tested an item against a VIAF id a correction withholds (President Taft lost his own item to Taft IV's VIAF id, and Brigadier General James D. Hughes his to a physicist's), and compared a redirected id without following it (Ephraim Evron's VIAF id). The port gives 1,859 and 1,610.
+- **Luigi R. Einaudi does not keep his own item** under (b4), as the assessment's §7.2 says he does: his entry carries his grandfather's VIAF id, so the soft test withholds it. Only rule (b1) keeps it.
+- **The snapshot holds 4,331 items** (the assessment counted 4,306) and is 1,321,834 bytes (1.24 MB estimated), fetched 2026-10-30 UTC in about ten minutes: three SPARQL queries, 109 `wbgetentities` calls for the items and 127 for their labels.
 
 ## 1. In brief
 
