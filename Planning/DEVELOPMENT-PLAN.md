@@ -8295,4 +8295,6 @@ Lane B of `Person-Authority-Lane-Design-2026-10-28.md` §7, items 1 and 2 of #17
 - The nationality list holds adjectives and no country names, so a country in a remark corroborates a relative's item (Dahrendorf, *Germany*). Adding the names is a rule change, measured against this control.
 - A correction could hold Q11613 off Truman's nephew (116214); it is the owner's to want.
 
-**Not done:** the UI suites, iOS 26.x, a device. The Mac app was built and not run, and no library's rollup was rebuilt by the app, so the sheet's new links were not seen on screen. Not pushed; the pull request's body is drafted in the session group's notes folder (`lane-B-pr-draft.md`) and waits for the owner's word.
+**Not done:** the UI suites, iOS 26.x, a device. The Mac app was built and not run, and no library's rollup was rebuilt by the app, so the sheet's new links were not seen on screen.
+
+**Opened as #1816** on the owner's word of 2026-10-29 ("Push and open pr"), against `v2` at `5c185a71`, which had not moved since the branch was cut; not merged. Its body is the draft kept in the session group's notes folder (`lane-B-pr-draft.md`).
