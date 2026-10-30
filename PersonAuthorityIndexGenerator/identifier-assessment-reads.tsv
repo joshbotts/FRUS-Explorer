@@ -3,12 +3,30 @@
 # identifier as person-authority-index.json carried it at b3272d86, read against its record:
 # R the record's person, W someone else, ? could not tell.
 #
-# REBUILT 2026-10-29 from that session's transcript. The original went from the Mac with its notes folder.
-# The session recorded each sample's verdicts as a string, in the order its reading sheet printed the sample,
-# and both are in the transcript; this file pairs them again. Every stratum's counts are the assessment's.
-# record_as_read and identifier_as_read are the sheet's own lines as read that day, cut where the sheet cut
-# them. record, registry_years and identifier are the bundle's at b3272d86, and volumes the registry's
+# REBUILT ON 2026-10-29 FROM THAT SESSION'S TRANSCRIPT (the Claude Code session in worktree dazzling-payne-2fc193,
+# 2026-10-17, 11:32 to 14:47 UTC), on the owner's word (plan of record decision 105). The original file was lost
+# from the Mac: it lived in that session group's notes folder, which no longer exists, and no copy was found.
+# How each verdict is tied to its record: the session printed a reading sheet for each sample, one record to an
+# entry, and recorded that sample's verdicts as one string in the sheet's order (the strings for the 190 at 12:09,
+# the 60 at 12:18, the 50 VIAF ids in the file's own writer at 12:27 UTC). This file pairs each string with its
+# sheet again. Where a sheet printed the people-id, it is taken as printed; where it printed the record's name and
+# the identifier, they are looked up in the bundle at b3272d86, and two records of one entry with one name and id
+# (the two John Donovans) are told apart by the volume years the sheet printed. Every stratum's counts are the
+# assessment's. record_as_read and identifier_as_read are the sheet's own lines as read that day, cut where the
+# sheet cut them; record, registry_years and identifier are the bundle's at b3272d86, and volumes the registry's
 # (HistoryAtState/people at 63b537ad).
+#
+# CHECKED AGAINST THE ASSESSMENT'S FIGURES with its own estimator (final_scores.py, recovered from the same
+# transcript), over its rule (b4) run on the 2026-10-30 Wikidata snapshot, which keeps the same 1,857 Wikidata and
+# 1,467 overlay VIAF ids:
+# - Wikidata: 95.9% of 1,857 right (about 75 wrong), the assessment's "about 96%", and what the estimator printed
+#   on 2026-10-17.
+# - VIAF: 95.8% of 1,467 right (about 62 wrong). That is what the estimator printed on 2026-10-17 too ("~96%,
+#   ~62 wrong"), and NOT the assessment's stated "about 97% (about 40 wrong)". The stated figure also counts 20
+#   reads of the VIAF-holder step, printed at 12:29 UTC, after the original file was written at 12:27, and judged
+#   in the session's own text, not recorded as verdicts; the assessment reports 28 of those 29 (with the 9 of this
+#   file's viaf-held-by-another-item sample that the step keeps) right. They were never in the file and are not
+#   added here. Counted as the assessment reports them, the estimate would be 97.4% (about 37 wrong).
 #
 # Samples: wikidata-stratified:pass, :soft and :hard (190, drawn from the first pass of the tests; the
 # assessment weights them 2461/100, 502/50 and 806/40); wikidata-fresh:kept-corroborated (30 that rule (b3)

@@ -1706,9 +1706,15 @@ public actor IndexingPipeline {
     /// `viaf_id` and nothing else of these, so the rebuild is what puts the new VIAF links on the
     /// person sheet; the Wikidata link and the role line are read from the bundle and need none. No
     /// member moves: the crosswalk and `apart` are unchanged, and the clusterer reads no identifier.
-    /// Its own bump, though lane A's v13 had not shipped, so that a library a development build
-    /// already rebuilt at v13 takes the VIAF ids too (the owner's choice, 2026-10-29). A rollup
-    /// rebuild only; no index version.
+    /// The same file takes 33 role texts off records whose remarks do not hold them, which reach no
+    /// rollup, since the rollup stores none. Measured over a full library (553 volumes at index v71,
+    /// 63,667 members, S1's, 2026-10-29), rebuilt with lane A's file and with this one: every member is
+    /// in the same rollup under the same id, authority id, name and mention count, the 171 candidate
+    /// pairs are the same, and 1,468 rollups gain a `viaf_id` (142 → 1,610) while none loses or
+    /// changes one; the members in a rollup with one go from 1,650 to 17,095. A rebuild took 12.9 s,
+    /// against 13.0 s. Its own bump, though lane A's v13 had not shipped, so that a library a
+    /// development build already rebuilt at v13 takes the VIAF ids too (the owner's choice,
+    /// 2026-10-29). A rollup rebuild only; no index version.
     public static let currentPersonRollupVersion: Int = 14
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
