@@ -6638,7 +6638,8 @@ struct PersonRollupConsolidationTests {
     /// #1657), so the uncovered member merges by name with both, the cannot-link refuses the second
     /// union, and the pair its block reaches first decides. The block was in the order the
     /// volumes had been indexed. Here the three volumes are indexed in every order, and each
-    /// library must roll them up alike.
+    /// library must roll them up alike. Since v13 the tie rule decides before any pair: the entry's
+    /// exact name fits both, so it joins neither (#1767).
     @Test("Every order of indexing the same volumes builds the same rollup (#1658)")
     func rollupIsTheSameWhateverTheIndexingOrder() async throws {
         let orders = Self.orderings(of: ["volA", "volB", "volU"])
@@ -6668,13 +6669,13 @@ struct PersonRollupConsolidationTests {
 
                 let rows = try rollupRows(dbURL: dir.appendingPathComponent("test.sqlite"))
                 // The tie is real in every order, or the comparison below proves nothing: the
-                // uncovered member joined exactly one of the two covered ones, and the cannot-link
-                // refused the other union and recorded it as a candidate.
+                // uncovered member fits both covered ones by name, so it stands apart, and both
+                // refused unions are recorded as candidates.
                 let uncovered = try #require(rows.partition.first { $0.contains("volU/p_KJJ_1") })
-                #expect(uncovered.count == 2, "order \(order): volU joined \(uncovered.sorted())")
-                #expect(rows.partition.count == 2, "order \(order): \(rows.partition)")
-                #expect(rows.candidateReasons.contains { $0.contains("would bridge two reconciled identities") },
-                        "order \(order): the second union must have been refused")
+                #expect(uncovered == ["volU/p_KJJ_1"], "order \(order): volU joined \(uncovered.sorted())")
+                #expect(rows.partition.count == 3, "order \(order): \(rows.partition)")
+                #expect(rows.candidateReasons.filter { $0 == PersonClusterer.tieReason }.count == 2,
+                        "order \(order): both unions must have been refused: \(rows.candidateReasons)")
                 builds.append((order, rows.partition, rows.numbered))
             }
         }
@@ -6701,6 +6702,48 @@ struct PersonRollupConsolidationTests {
     @Test("The person-rollup version is at least 12 (A4c)")
     func rollupVersionCoversTheOverlayCorrections() {
         #expect(IndexingPipeline.currentPersonRollupVersion >= 12)
+    }
+
+    /// #1767 changed the clusterer (members standing apart, the tie rule) and the bundled authority
+    /// index (its `apart` list, five more joins and three assignments); v13 rebuilds every library's
+    /// rollup once for both.
+    @Test("The person-rollup version is at least 13 (#1767)")
+    func rollupVersionCoversStandingApart() {
+        #expect(IndexingPipeline.currentPersonRollupVersion >= 13)
+    }
+
+    /// v12's census found entries held apart from a person who then rejoined that person by name,
+    /// where their own person has no record: Hamilton Fish III under the Secretary of State, for one.
+    @Test("A member the bundled index lists as apart is not rolled up with a reconciled namesake (#1767)")
+    func apartMemberStaysOutOfTheReconciledRollup() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            for (volumeId, year) in [("volS", "1873"), ("volR", "1877")] {
+                try writeVolume(
+                    to: volDir.appendingPathComponent("\(volumeId).xml"), volumeId: volumeId, year: year,
+                    documents: [("d1", "p_FH1", "Fish")],
+                    persons: [("p_FH1", "Fish, Hamilton: Secretary of State")])
+            }
+            for volumeId in ["volS", "volR"] { try await pipeline.indexVolume(volumeId) }
+            func index(apart: [String: [String]]) -> PersonAuthorityIndex {
+                PersonAuthorityIndex(version: 2, generated: "test", source: "test",
+                                     crosswalk: ["volS": ["p_FH1": 104298]],
+                                     authority: ["104298": .init(n: "Fish, Hamilton", b: 1808, d: 1893, v: nil)],
+                                     apart: apart)
+            }
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            // The other half: unlisted, the uncovered entry joins the reconciled one by name.
+            await pipeline.setAuthorityIndexForTesting(index(apart: [:]))
+            try await pipeline.consolidatePersonRollup()
+            #expect(try rollupRows(dbURL: dbURL).partition == [["volS/p_FH1", "volR/p_FH1"]])
+
+            await pipeline.setAuthorityIndexForTesting(index(apart: ["volR": ["p_FH1"]]))
+            try await pipeline.consolidatePersonRollup()
+            let rows = try rollupRows(dbURL: dbURL)
+            #expect(rows.partition == [["volS/p_FH1"], ["volR/p_FH1"]])
+            #expect(rows.candidateReasons == [PersonClusterer.heldApartReason])
+        }
     }
 
     // MARK: Active years come from the volumes (#1370)
@@ -7305,6 +7348,29 @@ struct BorrowedPersonListTests {
             let joinedS = try #require(try await rollup(dir, source, "p_HS1"))
             #expect(joinedB.rollupId == joinedS.rollupId)
             #expect(joinedB.authorityId == 4242)
+        }
+    }
+
+    @Test("A borrowed row stands apart when the source row's entry does (#1767)")
+    func borrowedRowStandsApartWithItsSource() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            try writeSource(in: dir)
+            try writeBorrower(in: dir)
+            try await pipeline.indexVolume(source)
+            try await pipeline.indexVolume(borrower)
+            // The index lists only the SOURCE's (volume, ref), as it lists a crosswalk anchor.
+            await pipeline.setAuthorityIndexForTesting(PersonAuthorityIndex(
+                version: 2, generated: "test", source: "test", crosswalk: [:], authority: [:],
+                apart: [source: ["p_HS1"]]))
+            let inputs = try await pipeline.loadPersonClusterInputs()
+            func standsApart(_ volumeId: String, _ ref: String) throws -> Bool {
+                try #require(inputs.first { $0.volumeId == volumeId && $0.ref == ref }).standsApart
+            }
+            #expect(try standsApart(source, "p_HS1"))
+            #expect(try standsApart(borrower, "p_HS1"), "the borrowed row is the source's entry")
+            #expect(try !standsApart(borrower, "p_WC1"))
+            #expect(try !standsApart(source, "p_JG1"))
         }
     }
 

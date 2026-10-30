@@ -28,6 +28,7 @@ import Foundation
 ///         longer takes its active span from them
 ///   1.3 — FRUSCoreKit, part 2: moved into the kit; `loadBundled(bundle:)` and
 ///         `PersonAuthorityIndexStore` stay in the app, in `PersonAuthorityIndexStore.swift`
+///   1.4 — #1767: `apart`, the anchors that belong to no reconciled person (`standsApart(volumeId:ref:)`)
 public struct PersonAuthorityIndex: Codable, Sendable {
 
     /// Index schema version.
@@ -40,6 +41,11 @@ public struct PersonAuthorityIndex: Codable, Sendable {
     public let crosswalk: [String: [String: Int]]
     /// `"canonicalId" → entry` for every canonical person referenced by the crosswalk.
     public let authority: [String: AuthorityEntry]
+    /// `volumeId → [ref]`: the anchors that belong to no reconciled person (#1767). Each is an anchor
+    /// the generator's corrections hold apart from the person an overlay entry wrongly gave it to,
+    /// and that no registry record could be shown to be. The rollup never joins one to a covered
+    /// person (`PersonClusterInput.standsApart`). Empty for a file generated before the key.
+    public let apart: [String: [String]]
 
     /// A canonical person: preferred name, life years, and reconciled external identifiers.
     ///
@@ -83,12 +89,14 @@ public struct PersonAuthorityIndex: Codable, Sendable {
     }
 
     public init(version: Int, generated: String, source: String,
-                crosswalk: [String: [String: Int]], authority: [String: AuthorityEntry]) {
+                crosswalk: [String: [String: Int]], authority: [String: AuthorityEntry],
+                apart: [String: [String]] = [:]) {
         self.version = version
         self.generated = generated
         self.source = source
         self.crosswalk = crosswalk
         self.authority = authority
+        self.apart = apart
     }
 
     // Tolerate older/newer files: default missing fields rather than failing to decode.
@@ -99,6 +107,7 @@ public struct PersonAuthorityIndex: Codable, Sendable {
         source = try c.decodeIfPresent(String.self, forKey: .source) ?? ""
         crosswalk = try c.decodeIfPresent([String: [String: Int]].self, forKey: .crosswalk) ?? [:]
         authority = try c.decodeIfPresent([String: AuthorityEntry].self, forKey: .authority) ?? [:]
+        apart = try c.decodeIfPresent([String: [String]].self, forKey: .apart) ?? [:]
     }
 
     // MARK: - Lookups
@@ -106,6 +115,11 @@ public struct PersonAuthorityIndex: Codable, Sendable {
     /// The canonical id reconciled for a per-volume person, or `nil` if not covered.
     public func canonicalId(volumeId: String, ref: String) -> Int? {
         crosswalk[volumeId]?[ref]
+    }
+
+    /// Whether a per-volume person belongs to no reconciled person (`apart`, #1767).
+    public func standsApart(volumeId: String, ref: String) -> Bool {
+        apart[volumeId]?.contains(ref) ?? false
     }
 
     /// The canonical record for an id, or `nil`.
