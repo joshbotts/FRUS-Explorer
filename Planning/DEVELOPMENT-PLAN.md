@@ -8326,3 +8326,5 @@ Lane B of `Person-Authority-Lane-Design-2026-10-28.md` §7, items 1 and 2 of #17
 **Docs.** The steering review's status line (what is applied, the four corrections, what waits). The plan of record: the C-3 line in §3 and the hygiene item. This entry.
 
 **Checks.** `CollectionTests` reads two blocks of the guide, the JSON examples of §15.1 and §15.1a, by the test's own extraction rule. Both are byte-identical to `v2`'s (SHA-256 `7bd77ebe865d743e…` and `e0937da4f809cfce…`), and so is the §12 block. Every in-page anchor resolves, and no added prose line runs past 100 characters. `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` reads the plan of record's status and its §7 line, neither touched. No build, unit run or `swift test` was owed: no file a target compiles changed, and no test reads a changed line.
+
+**Opened as #1817** on the owner's word of 2026-10-30 ("Commit and open PR"), against `v2` at `cb463e33`, which had not moved since the branch was cut; not merged, auto-merge off.
