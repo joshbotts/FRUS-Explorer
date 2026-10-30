@@ -396,12 +396,15 @@ let package = Package(
         ),
 
         /// Thin entry point — calls PersonAuthorityIndexRunner.run() and exits. Beside it are the
-        /// corrections the run reads with the overlay, by path from the project root (#1657).
+        /// corrections the run reads with the overlay (#1657) and the Wikidata snapshot its
+        /// identifier rule reads (#1767), both by path from the project root, and the identifier
+        /// assessment's reads, which the rule's tests re-score.
         .executableTarget(
             name: "PersonAuthorityIndexGenerator",
             dependencies: [.target(name: "PersonAuthorityIndexGeneratorCore")],
             path: "PersonAuthorityIndexGenerator",
-            exclude: ["persons-complete-corrections.json"],
+            exclude: ["persons-complete-corrections.json", "wikidata-snapshot.json",
+                      "identifier-assessment-reads.tsv"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 

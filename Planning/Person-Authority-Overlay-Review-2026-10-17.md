@@ -332,6 +332,8 @@ another spelling or with no English label read (Dick Cheney, Americo Tomas), and
 VIAF was not sized. A correction can withhold an id, but at this scale the owner may prefer a rule in the
 generator (accept the overlay's id only when the item's name and years fit the record).
 
+**Since #1767's lane B (2026-10-29) the generator has that rule**: the identifier assessment's (b4), measured in `Planning/Person-Authority-Identifier-Assessment-2026-10-17.md` and built over a committed Wikidata snapshot. The bundle keeps 1,859 of the 3,769 Wikidata ids and 1,468 of the overlay's 3,010 VIAF ids; John F. Kennedy's and McKee's wrong ids are withheld.
+
 ### 6.2 An entry carrying several people-ids gives one person's role text and identifiers to all of them
 
 31 overlay entries carry two or more people-ids the registry knows. The enrichment stamps the entry's role text
@@ -344,6 +346,8 @@ interim*, the John Graham of 1817. At least 12 of the 31 carry different people'
 Mueller, Graham, two Donovans, Sanders, Walsh, Hughes, Simmons, Peterson); the rest are one person the registry
 holds twice. A correction holds apart from every id of an entry, so it cannot divide this: it needs a rule that
 says which id an entry's enrichment is for.
+
+**Since #1767's lane B (2026-10-29)** an entry's role text goes only to the ids whose own registry remarks hold it, and its identifiers are tested against each record: Raul H. Castro and three of the four Donald MacDonalds read no other man's role, and Raul H. Castro wears no Wikidata id.
 
 ### 6.3 The registry's own merges, which win by design
 

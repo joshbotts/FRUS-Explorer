@@ -6712,6 +6712,14 @@ struct PersonRollupConsolidationTests {
         #expect(IndexingPipeline.currentPersonRollupVersion >= 13)
     }
 
+    /// #1767's lane B regenerated the bundled authority index with the overlay's VIAF ids an identifier
+    /// rule corroborates (142 → 1,610). The rollup stores `viaf_id`, so the person sheet's VIAF link
+    /// changes only when the rollup rebuilds, and v14 rebuilds it, for a library already at v13 as well.
+    @Test("The person-rollup version is at least 14 (#1767 lane B)")
+    func rollupVersionCoversTheCorroboratedIdentifiers() {
+        #expect(IndexingPipeline.currentPersonRollupVersion >= 14)
+    }
+
     /// v12's census found entries held apart from a person who then rejoined that person by name,
     /// where their own person has no record: Hamilton Fish III under the Secretary of State, for one.
     @Test("A member the bundled index lists as apart is not rolled up with a reconciled namesake (#1767)")

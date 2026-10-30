@@ -147,9 +147,15 @@ public struct PersonAuthorityRecord: Sendable, Equatable {
     public let pocomSlug: String?
     /// FRUS person anchors mapping to this identity, as `(volumeId, ref)` pairs.
     public let frusAnchors: [FRUSAnchor]
+    /// The text of each of the record's remarks, its whitespace collapsed, in the record's order (#1767).
+    /// The registry writes a remark with the anchors it came from, so these are this person's own roles.
+    public let remarks: [String]
+    /// The record's alternate names (`names/alternates/name`), its whitespace collapsed (#1767).
+    public let alternateNames: [String]
 
     public init(canonicalId: Int, name: String, birthYear: Int?, deathYear: Int?,
-                viaf: String?, pocomSlug: String? = nil, frusAnchors: [FRUSAnchor]) {
+                viaf: String?, pocomSlug: String? = nil, frusAnchors: [FRUSAnchor],
+                remarks: [String] = [], alternateNames: [String] = []) {
         self.canonicalId = canonicalId
         self.name = name
         self.birthYear = birthYear
@@ -157,6 +163,76 @@ public struct PersonAuthorityRecord: Sendable, Equatable {
         self.viaf = viaf
         self.pocomSlug = pocomSlug
         self.frusAnchors = frusAnchors
+        self.remarks = remarks
+        self.alternateNames = alternateNames
+    }
+}
+
+// MARK: - RegistryFacts
+
+/// What the overlay pass reads of a registry record beyond its ``AuthorityEntry`` (#1767): its remarks and
+/// alternate names, which the bundle does not carry, and the year of its earliest FRUS volume.
+///
+/// The identifier rule tests an item against all three (``PersonIdentifierRule/Record``), and a role text
+/// of an entry carrying several people goes only to the records whose remarks hold it
+/// (``remarksHold(_:)``).
+public struct RegistryFacts: Sendable, Equatable {
+    /// The record's remarks.
+    public let remarks: [String]
+    /// The record's alternate names.
+    public let alternateNames: [String]
+    /// The year of the record's earliest FRUS volume, every anchor of the registry's counted, a volume
+    /// that is not a year's (Public Diplomacy) not; `nil` when it has none.
+    public let firstVolumeYear: Int?
+
+    /// Creates the facts.
+    public init(remarks: [String], alternateNames: [String] = [], firstVolumeYear: Int? = nil) {
+        self.remarks = remarks
+        self.alternateNames = alternateNames
+        self.firstVolumeYear = firstVolumeYear
+    }
+
+    /// A registry record's facts.
+    public init(record: PersonAuthorityRecord) {
+        self.init(remarks: record.remarks, alternateNames: record.alternateNames,
+                  firstVolumeYear: record.frusAnchors.compactMap { Self.year(ofVolume: $0.volumeId) }.min())
+    }
+
+    /// Whether one of the remarks holds `role`, the entry's role text as
+    /// ``PersonsCompleteOverlay/roleText(from:)`` takes it, with case, accents, dashes and runs of spaces
+    /// folded, and the full stops, commas and semicolons that open or close it set aside (#1767, item 2).
+    public func remarksHold(_ role: String) -> Bool {
+        let wanted = Self.folded(role)
+        guard !wanted.isEmpty else { return false }
+        return remarks.contains { Self.folded($0).contains(wanted) }
+    }
+
+    /// The year a volume id opens with (`frus1961-63v14` → 1961), or `nil` for a Public Diplomacy volume.
+    static func year(ofVolume volumeId: String) -> Int? {
+        guard !volumeId.contains("PubDip"), volumeId.hasPrefix("frus") else { return nil }
+        let digits = volumeId.dropFirst(4).prefix(4)
+        guard digits.count == 4, digits.allSatisfy({ $0.isASCII && $0.isNumber }) else { return nil }
+        return Int(digits)
+    }
+
+    /// `text` folded, each run of spaces and dashes one space, and " .;," trimmed from its ends.
+    static func folded(_ text: String) -> String {
+        var out = String.UnicodeScalarView()
+        var inGap = false
+        for scalar in AuthorityText.fold(text).unicodeScalars {
+            if scalar.properties.isWhitespace || scalar == "-" || ("\u{2010}"..."\u{2015}").contains(scalar) {
+                if !inGap { out.append(" ") }
+                inGap = true
+            } else {
+                out.append(scalar)
+                inGap = false
+            }
+        }
+        let trimmed = Set<Unicode.Scalar>([" ", ".", ";", ","])
+        var scalars = Array(out)
+        while let first = scalars.first, trimmed.contains(first) { scalars.removeFirst() }
+        while let last = scalars.last, trimmed.contains(last) { scalars.removeLast() }
+        return String(String.UnicodeScalarView(scalars))
     }
 }
 
@@ -201,6 +277,11 @@ public struct BuildStats: Sendable, Equatable {
     /// Wikidata and VIAF ids of entries reaching a registry record that were not stamped, because the
     /// run takes none of the overlay's identifiers (decision 55, `Overlay.takesIdentifiers`).
     public var overlayIdentifiersNotTaken = 0
+    /// Overlay ids the identifier rule kept off a record (#1767), each with why: one a record and id.
+    public var identifiersWithheldByRule: [WithheldIdentifier] = []
+    /// Role texts of entries carrying several people kept off a record whose remarks do not hold them
+    /// (#1767, item 2): one an entry and record.
+    public var multiPersonRolesKeptOff = 0
     /// Held-apart anchors that joined the registry record their correction names.
     public var overlayAnchorsJoined = 0
     /// Anchors the corrections file assigns to a registry record, written where no source answered.
@@ -233,5 +314,38 @@ public struct CrosswalkConflict: Sendable, Equatable {
         self.ref = ref
         self.registry = registry
         self.overlay = overlay
+    }
+}
+
+// MARK: - WithheldIdentifier
+
+/// An overlay Wikidata or VIAF id the identifier rule kept off a registry record (#1767), and why.
+///
+/// The runner prints every one, as it prints the crosswalk's disagreements: the rule's word lists and
+/// thresholds decide them, and a change to either is read in this list.
+public struct WithheldIdentifier: Sendable, Equatable {
+    /// Which kind of id.
+    public enum Kind: String, Sendable, Equatable {
+        case wikidata = "Wikidata"
+        case viaf = "VIAF"
+    }
+
+    /// The record's people-id.
+    public let peopleId: String
+    /// The record's name in the registry.
+    public let name: String
+    /// Which kind of id.
+    public let kind: Kind
+    /// The id.
+    public let identifier: String
+    /// The tests it failed, or what it lacked (``PersonIdentifierRule/Decision/reason``).
+    public let reason: String
+
+    public init(peopleId: String, name: String, kind: Kind, identifier: String, reason: String) {
+        self.peopleId = peopleId
+        self.name = name
+        self.kind = kind
+        self.identifier = identifier
+        self.reason = reason
     }
 }
