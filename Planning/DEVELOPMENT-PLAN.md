@@ -8382,3 +8382,49 @@ They set the plan ("Plan is set"), gave five candidates and chose the fifth, on 
 **Checks.** `CollectionTests` reads two blocks of the guide, the JSON examples of §15.1 and §15.1a, by the test's own extraction rule. Both are byte-identical to `v2`'s at `cb2011a7` (SHA-256 `7bd77ebe865d743e…` and `e0937da4f809cfce…`), and so is §12. Every in-page anchor and file link resolves, and no added line runs past 100 characters. `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` reads the plan of record's status and its §7 line, neither touched. `brokenSqliteInvocationsAreMarked` reads every workflow script under `Planning/`, and the three new ones (`c3-steering-tier/workflow.mjs` and `canary.mjs`, `reader-facing-style/pilot/pilot.mjs`) do not print `sqlite3 … -uri`. A scan of the new and changed files for the four other candidates' subjects matched only volume titles and the documents' own text. No build, unit run or `swift test` was owed: no file a target compiles changed.
 
 **Opened as #1818** on the owner's word of 2026-10-30 ("Commit and push"), against `v2` at `cb2011a7`; not merged, auto-merge off. #1817 had been merged that day while the session worked on, so the work went on a new branch, `claude/agentic-guide-v1.38-steering-tier`, cut from `v2`, whose tree the old branch's matched byte for byte.
+
+## Session 2026-10-30 — The next C-3 tier is designed: R1's wording while the agent does the research, and R7, R8 and R10 without the rest of arm B (a draft; nothing run)
+
+**What was asked.** The steering tier's session started this one to draft the next full C-3 tier as a plan for the owner to set. The tier carries what the owner decided on 2026-10-30:
+- the style review's revised R1, R2's template and J3's rewording, tested while the agent also does the research;
+- the measurement of R7, R8 and R10 that R16's rule owes, without the rest of its arm B.
+
+Three harness fixes come with it: V4 exempts `frus1977-80v09Ed2`; the card gets a spot check if it goes; and O2' is checked by a script. Docs and planning only: nothing was run.
+
+**What changed.** `Planning/C-3-Reader-Facing-Tier-Design.md`, status DRAFT, in the steering design's form:
+- **Arms:** A, the guide as it stands; W, with R1, R2's skeleton and R6's vocabulary bullet; K, with R7, R8 and R10.
+- **Runs:** two of each arm in each of O-med and S-high, twelve in four blocks.
+- **Instruments:** the rubric with V4 and O1 reworded; O2' by script; one judge a block, with J3 and J5 in the pilot's wording; three refuter steps for R7's, R8's and R10's occasions.
+- **Readings and adoption**, pre-registered, with a guard on the 35 items that tolerates one item.
+- **Budget lines**, proposed for the owner to set.
+
+**The owner's answers, 2026-10-30.** Asked once, with the design otherwise ready:
+1. "Bullet in W, no card": R6's bullet goes at the end of §A.8's addendum in W. The card waits; its spot check is designed and measured in the design's §5.2.
+2. "Three arms, 12 runs".
+3. "One-item tolerance": a treatment arm loses at most one more of the 35 than A, and no run of it loses two.
+4. The question: one of the four unused candidates, its text given in chat. It is in no file and named nowhere here.
+
+**Measured for the design**, read-only, from the bundle, the index copy and the records:
+- **Arm A:** its three guide texts at v1.38 (`848f3781`) are byte-identical to R16's arm A: the block (`c2f5511d…`), the addendum (`e8117cb8…`) and Appendix A (`4e11cc17…`). R1 there is 30 lines (`d08e51eb…`).
+- **The card's spot check:**
+  - `frus1881/d405` and `frus1894app2/d394`, one letter printed twice, are each other's nearest neighbour, at Hamming 4.
+  - A decode that derives ids from ordinals puts `d394` on `d393`'s row, at 85, because `frus1894app2` holds `d2a` at its third row.
+  - 42 of the 553 volumes hold such an id; `frus1861`, the appendix's worked anchor, is not one of them.
+- **The guard:** an arm exactly as good as A fails R16's guard 27% to 40% of the time, at the loss rates the two earlier tiers saw, taken as a Poisson count. It fails the one-item guard 6% to 22% of the time.
+- **The occasions:**
+  - MATCH prefixes appear in the logs or scripts of 18 of the 25 runs.
+  - The block's "11 of 695" is printed in three of R16's four A runs, two of them as the session's own finding, and the scorer faulted neither under P6.
+  - R16's one T1 loss was a bare stem cut by hand (`MATCH 'misappropriat'`), so the term check tests bare terms too.
+- **The meters:** at about 23:20 they read 29% weekly and 44% Fable, both resetting on 2026-11-04.
+
+**Not done.**
+- **The lines and the date:** open, for the owner. Recommended: after the 2026-11-04 reset, at the starting reading plus 32 weekly and plus 54 Fable.
+- **Nothing in the design's §11 is built:** the two guide candidates, the generator, the five scripts and the working folder.
+- **The question's properties** are checked by the session that runs the tier, before the first cell, and nowhere before.
+- **The runbook's §7 cost table** still stops at the vectors tier. The design's record step adds rows for R16, the pilot and this tier.
+
+**Checks.**
+- No prose line of the design runs past 100 characters.
+- A scan of the design and this entry finds none of the chosen question's terms.
+- No test reads a changed file: `CodingStandardsAuditTests` reads the plan of record, the visual marketing plan and the `workflow.mjs` files under `Planning/`, and none of them changed.
+- No build, unit run or `swift test` was owed: no file a target compiles changed.
