@@ -24,9 +24,9 @@ not printed here** (§1).
    run of it loses two (§8).
 4. **The question:** the owner chose one of the four unused candidates and gave its text in chat.
    It is in no file (§1).
-5. *"Set as recommended"*: the lines are the starting reading plus 32 points of the weekly
-   all-models meter and plus 54 of the weekly Fable meter, and the tier starts after the meters
-   reset on 2026-11-04 (§7).
+5. *"Set as recommended"*, then *"change start date to now"*: the lines are the starting reading
+   plus 32 points of the weekly all-models meter and plus 54 of the weekly Fable meter, and the
+   tier starts now, before the meters reset on 2026-11-04 (§7).
 
 **Numbering.** R1 to R3 are the style review's (§4). R6 to R10 are the steering review's
 (`Agentic-Guide-Steering-Review-2026-10-27.md` §3). The two documents number independently, and
@@ -425,12 +425,16 @@ them dearer. A run with its instruments is taken at R16's figures.
 | **the lines** (the owner's answer 5), above the starting reading | **plus 32** | **plus 54** |
 
 **When.**
-- **The meters now.** At about 23:20 on 2026-10-30 they read 29% weekly and 44% Fable, both
-  resetting on 2026-11-04 at 15:59 UTC (10:59 local, the clocks having gone back).
-- **Before the reset**, the tier would take the Fable meter to about 90%. So it starts after the
-  reset (the owner's answer 5), when the lines sit near 32% and 54%.
+- **The meters.** At 23:52 on 2026-10-30 they read 29% weekly and 44% Fable, both resetting on
+  2026-11-04 at 16:00 UTC (11:00 local, the clocks having gone back).
+- **The tier starts now**, before the reset (the owner's answer 5). From those readings the lines
+  sit at 61% weekly and 98% Fable, and the estimate ends the tier at 53% to 57% weekly and 86% to
+  92% Fable.
+- **The Fable line is two points under the meter's cap.** A tier that overruns its estimate meets
+  the stop rule before it reaches the line. What the tier spends of the Fable meter is gone for
+  every session until the reset, and at 100% the plan allows no more Fable work until then.
 - **Elapsed:** R16's runs took 26 to 45 minutes each with their instruments, so twelve take about
-  seven to eight hours from the calibration to the last judge. Start in the morning.
+  seven to eight hours from the calibration to the last judge.
 
 ## 8. The readings, pre-registered
 
@@ -515,7 +519,7 @@ reading 4. That tier's verdict stands: its rule was set before it ran.
 ## 10. What setting this plan confirms
 
 **Answered on 2026-10-30** (at the head): R6's bullet in W and no card; three arms; the one-item
-guard; the question, given in chat; and the lines and the date, as recommended (§7).
+guard; the question, given in chat; the lines, as recommended; and the start, now (§7).
 
 **Setting the plan also confirms these:**
 - A is v1.38's text, which is R16's arm A (§2.1);

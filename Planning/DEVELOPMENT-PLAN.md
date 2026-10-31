@@ -8403,7 +8403,7 @@ Three harness fixes come with it: V4 exempts `frus1977-80v09Ed2`; the card gets 
 2. "Three arms, 12 runs".
 3. "One-item tolerance": a treatment arm loses at most one more of the 35 than A, and no run of it loses two.
 4. The question: one of the four unused candidates, its text given in chat. It is in no file and named nowhere here.
-5. "Set as recommended": the lines are the starting reading plus 32 weekly and plus 54 Fable points, and the tier starts after the meters reset on 2026-11-04.
+5. "Set as recommended", then "change start date to now": the lines are the starting reading plus 32 weekly and plus 54 Fable points, and the tier starts now, before the meters reset on 2026-11-04. From the readings at 23:52 (29% weekly, 44% Fable), the lines sit at 61% and 98%, and the estimate ends the tier at 86% to 92% Fable.
 
 **Measured for the design**, read-only, from the bundle, the index copy and the records:
 - **Arm A:** its three guide texts at v1.38 (`848f3781`) are byte-identical to R16's arm A: the block (`c2f5511d…`), the addendum (`e8117cb8…`) and Appendix A (`4e11cc17…`). R1 there is 30 lines (`d08e51eb…`).
