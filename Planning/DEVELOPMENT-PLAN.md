@@ -8428,3 +8428,5 @@ Three harness fixes come with it: V4 exempts `frus1977-80v09Ed2`; the card gets 
 - A scan of the design and this entry finds none of the chosen question's terms.
 - No test reads a changed file: `CodingStandardsAuditTests` reads the plan of record, the visual marketing plan and the `workflow.mjs` files under `Planning/`, and none of them changed.
 - No build, unit run or `swift test` was owed: no file a target compiles changed.
+
+**Opened as #1819** on the owner's word of 2026-10-30 ("Open the PR"), against `v2` at `848f3781`, which had not moved since the branch was brought up to it; not merged, auto-merge off.
