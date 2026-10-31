@@ -246,9 +246,9 @@ actor SummarizationService {
     /// Starts from the provider's window limit, then subtracts the template's own
     /// tokens (everything except the `{{DOCUMENT}}` placeholder), a proportional
     /// safety margin for token-estimate drift, and — for structured prompts — an
-    /// allowance for the runtime `GenerationSchema` field descriptions, which aren't
-    /// part of `promptText`. Floored so a pathologically long template still leaves a
-    /// usable budget.
+    /// allowance for the fields' headings and descriptions in the session's instructions
+    /// (`StructuredSectionAnswer`), which aren't part of `promptText`. Floored so a
+    /// pathologically long template still leaves a usable budget.
     func documentBudget(promptText: String, responseFormat: ResponseFormat, limit: Int) -> Int {
         let templateTokens = estimateTokens(
             promptText.replacingOccurrences(of: "{{DOCUMENT}}", with: ""))

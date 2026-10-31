@@ -260,7 +260,7 @@ struct SummaryBlockView: View {
                         .font(.body).foregroundStyle(.secondary)
                 }
             } else if let summary = vm.activeSummary {
-                Text(summary.responseText)
+                Text(summary.readerText)
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .lineSpacing(4)
