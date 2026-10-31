@@ -1,0 +1,938 @@
+{
+ "run": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w11",
+ "traceSource": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w11/trace.md",
+ "traceTableLine": 7,
+ "traceRows": 65,
+ "mentions": 84,
+ "counts": {
+  "traced": 32,
+  "weak": 27,
+  "untraced": 25
+ },
+ "list": [
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "25 documents in the collection | Bottom line 1; How this was done; Read next | [M16], [M14] | \"25 documents in the collection\"; \"61 documents retrieved whole, 25 quoted\"",
+   "sentence": "The collection holds 25 documents, chosen from about 2,000 in scope that use the information programmes' vocabulary."
+  },
+  {
+   "text": "2,000",
+   "values": [
+    "2000"
+   ],
+   "next": "scope",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "about 2,000 documents in scope use the information programmes' vocabulary (2,009) | Bottom line 1 | [M5] | \"about 2,000 documents use the information-programme vocabulary\"; \"25 documents, about 2,000 ",
+   "sentence": "The collection holds 25 documents, chosen from about 2,000 in scope that use the information programmes' vocabulary."
+  },
+  {
+   "text": "62 D 430",
+   "values": [
+    "62d430"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "State Department, Executive Secretariat, Subject and Special Files (the Operations Coordinating Board papers, Lot 62 D 430):"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "A1 1586C",
+   "values": [
+    "a11586c"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "State Department, Executive Secretariat, Records Relating to NSC Policy Papers (Lot 63 D 351):"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "67 D 54",
+   "values": [
+    "67d54"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "State Department, Bureau of East Asian and Pacific Affairs, Subject Files of the Vietnam Working Group (Lot 67 D 54):"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "A1 5305",
+   "values": [
+    "a15305"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "A1 5414",
+   "values": [
+    "a15414"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "631403",
+   "values": [
+    "631403"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "72 D 192",
+   "values": [
+    "72d192"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "State Department, Office of the Secretary, Speeches and Statements (Lot 72 D 192):"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entries A1 5376 and 5376A, NARA identifier 631695, , unrestricted, though use may be restricted."
+  },
+  {
+   "text": "A1 5376",
+   "values": [
+    "a15376"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entries A1 5376 and 5376A, NARA identifier 631695, , unrestricted, though use may be restricted."
+  },
+  {
+   "text": "631695",
+   "values": [
+    "631695"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "Record Group 59, Entries A1 5376 and 5376A, NARA identifier 631695, , unrestricted, though use may be restricted."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 Entries A1–42, A1–31, P–207, UD WW 257 with no identifier | Bottom line 2 | [M13], [M16] | \"RG 306 Director's Subject Files A1–42, JUSPAO A1–31 etc. have no identifier in the bundled data\"",
+   "sentence": "Record Group 306, Entry A1–42; no NARA identifier in the app's data; access not established."
+  },
+  {
+   "text": "42",
+   "values": [
+    "42"
+   ],
+   "next": "no",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "RG 306 Entries A1–42, A1–31, P–207, UD WW 257 with no identifier | Bottom line 2 | [M13], [M16] | \"RG 306 Director's Subject Files A1–42, JUSPAO A1–31 etc. have no identifier in the bundled data\"",
+   "sentence": "Record Group 306, Entry A1–42; no NARA identifier in the app's data; access not established."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 Entries A1–42, A1–31, P–207, UD WW 257 with no identifier | Bottom line 2 | [M13], [M16] | \"RG 306 Director's Subject Files A1–42, JUSPAO A1–31 etc. have no identifier in the bundled data\"",
+   "sentence": "Record Group 306, Entry A1–31; no NARA identifier in the app's data; access not established."
+  },
+  {
+   "text": "31",
+   "values": [
+    "31"
+   ],
+   "next": "no",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "RG 306 Entries A1–42, A1–31, P–207, UD WW 257 with no identifier | Bottom line 2 | [M13], [M16] | \"RG 306 Director's Subject Files A1–42, JUSPAO A1–31 etc. have no identifier in the bundled data\"",
+   "sentence": "Record Group 306, Entry A1–31; no NARA identifier in the app's data; access not established."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 Entries A1–42, A1–31, P–207, UD WW 257 with no identifier | Bottom line 2 | [M13], [M16] | \"RG 306 Director's Subject Files A1–42, JUSPAO A1–31 etc. have no identifier in the bundled data\"",
+   "sentence": "Record Group 306, Entry P–207; no NARA identifier in the app's data; access not established."
+  },
+  {
+   "text": "207",
+   "values": [
+    "207"
+   ],
+   "next": "no",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "RG 306 Entries A1–42, A1–31, P–207, UD WW 257 with no identifier | Bottom line 2 | [M13], [M16] | \"RG 306 Director's Subject Files A1–42, JUSPAO A1–31 etc. have no identifier in the bundled data\"",
+   "sentence": "Record Group 306, Entry P–207; no NARA identifier in the app's data; access not established."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 Entries A1–42, A1–31, P–207, UD WW 257 with no identifier | Bottom line 2 | [M13], [M16] | \"RG 306 Director's Subject Files A1–42, JUSPAO A1–31 etc. have no identifier in the bundled data\"",
+   "sentence": "Record Group 306, Entry UD WW 257; no NARA identifier in the app's data; access not established."
+  },
+  {
+   "text": "WW 257",
+   "values": [
+    "ww257"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 Entries A1–42, A1–31, P–207, UD WW 257 with no identifier | Bottom line 2 | [M13], [M16] | \"RG 306 Director's Subject Files A1–42, JUSPAO A1–31 etc. have no identifier in the bundled data\"",
+   "sentence": "Record Group 306, Entry UD WW 257; no NARA identifier in the app's data; access not established."
+  },
+  {
+   "text": "62 D 430",
+   "values": [
+    "62d430"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "State Department, Executive Secretariat, Subject and Special Files (Lot 62 D 430):"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "A1 1586C",
+   "values": [
+    "a11586c"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "66 D 95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "State Department, Executive Secretariat, Records Relating to NSC Policy Papers (Lot 66 D 95):"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "59 D 260",
+   "values": [
+    "59d260"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "Information Agency, Office of Policy and Plans, Subject Files (Lot 59 D 260):"
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 Entries A1–42, A1–31, P–207, UD WW 257 with no identifier | Bottom line 2 | [M13], [M16] | \"RG 306 Director's Subject Files A1–42, JUSPAO A1–31 etc. have no identifier in the bundled data\"",
+   "sentence": "Record Group 306, Entries UD-WW 151 and others, NARA identifier 1257679, , partly restricted."
+  },
+  {
+   "text": "WW 151",
+   "values": [
+    "ww151"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 306, Entries UD-WW 151 and others, NARA identifier 1257679, , partly restricted."
+  },
+  {
+   "text": "1257679",
+   "values": [
+    "1257679"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "Record Group 306, Entries UD-WW 151 and others, NARA identifier 1257679, , partly restricted."
+  },
+  {
+   "text": "65 D 101",
+   "values": [
+    "65d101"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "State Department, Policy Planning Council, Chronological Files (Lot 65 D 101):"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entry A1 558-D, NARA identifier 1136548, , unrestricted."
+  },
+  {
+   "text": "A1 558",
+   "values": [
+    "a1558"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entry A1 558-D, NARA identifier 1136548, , unrestricted."
+  },
+  {
+   "text": "1136548",
+   "values": [
+    "1136548"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "Record Group 59, Entry A1 558-D, NARA identifier 1136548, , unrestricted."
+  },
+  {
+   "text": "71 D 273",
+   "values": [
+    "71d273"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lindley (Lot 71 D 273):"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entry A1 5441, NARA identifier 2131139, , unrestricted."
+  },
+  {
+   "text": "A1 5441",
+   "values": [
+    "a15441"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entry A1 5441, NARA identifier 2131139, , unrestricted."
+  },
+  {
+   "text": "2131139",
+   "values": [
+    "2131139"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "Record Group 59, Entry A1 5441, NARA identifier 2131139, , unrestricted."
+  },
+  {
+   "text": "67 D 54",
+   "values": [
+    "67d54"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "State Department, Bureau of East Asian and Pacific Affairs, Subject Files of the Vietnam Working Group (Lot 67 D 54):"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "A1 5305",
+   "values": [
+    "a15305"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "A1 5414",
+   "values": [
+    "a15414"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "631403",
+   "values": [
+    "631403"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | \"Lot 62 D 430, Lot 63 D 351, Lot 6",
+   "sentence": "Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "84",
+   "values": [
+    "84"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "84 volumes in scope | Bottom line 3; Scope; How this was done | [M3] | \"84 volumes, about 39,000 documents in scope\"",
+   "sentence": "I searched for *soft power* across the 84 volumes in scope and found no document."
+  },
+  {
+   "text": "350",
+   "values": [
+    "350"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "plain word *soft*: about 350 documents (349) | Bottom line 3 | [M9] | \"the plain word 'soft' in about 350\"",
+   "sentence": "The plain word *soft* turns up in about 350 documents, in senses such as going \"soft\" on Chinese Communism."
+  },
+  {
+   "text": "160",
+   "values": [
+    "160"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "poll/survey with USIA/USIS: about 160 documents (157) | Bottom line 3 | [M9] | \"polls/surveys with USIA/USIS: about 160 documents\"",
+   "sentence": "I searched the same volumes for *poll* or *survey* alongside *USIA* or *USIS* and found about 160 documents; about 40 of them also mention Japan."
+  },
+  {
+   "text": "40",
+   "values": [
+    "40"
+   ],
+   "next": "them",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "about 40 of them also mention Japan (38) | Bottom line 3 | [M9] | \"about 40 also mention Japan\"",
+   "sentence": "I searched the same volumes for *poll* or *survey* alongside *USIA* or *USIS* and found about 160 documents; about 40 of them also mention Japan."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 Entries A1–42, A1–31, P–207, UD WW 257 with no identifier | Bottom line 2 | [M13], [M16] | \"RG 306 Director's Subject Files A1–42, JUSPAO A1–31 etc. have no identifier in the bundled data\"",
+   "sentence": "The shelf to search is the information agency's records in Record Group 306, though the app's data names no East Asia area-office series among them."
+  },
+  {
+   "text": "6",
+   "values": [
+    "6"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Pacific islands: 6 documents | Bottom line 3 | [M9] | \"Pacific islands with USIA/USIS: 6 documents\"",
+   "sentence": "The Pacific islands are nearly absent: the agency names together with *Micronesia*, *Fiji*, *Trust Territory*, *Samoa* or *Guam* found 6 documents."
+  },
+  {
+   "text": "70",
+   "values": [
+    "70"
+   ],
+   "next": "which",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Australia/New Zealand: about 70 (69) | Bottom line 3 | [M9] | \"Australia/New Zealand: about 70\"",
+   "sentence": "Australia and New Zealand, with the same agency names, found about 70, which I did not read."
+  },
+  {
+   "text": "84",
+   "values": [
+    "84"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "84 volumes in scope | Bottom line 3; Scope; How this was done | [M3] | \"84 volumes, about 39,000 documents in scope\"",
+   "sentence": "I also found but did not read the documents on evaluating the Fulbright and other exchanges, so this overview makes no claim about how exchanges were judged. **Scope.** The search covered the regional volumes for East Asia and the Pacific from to together with the information and public-diplomacy volumes: 84 volumes, about 39,000 documents."
+  },
+  {
+   "text": "39,000",
+   "values": [
+    "39000"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "about 39,000 documents (39,015) | Scope | [M3] | same row",
+   "sentence": "I also found but did not read the documents on evaluating the Fulbright and other exchanges, so this overview makes no claim about how exchanges were judged. **Scope.** The search covered the regional volumes for East Asia and the Pacific from to together with the information and public-diplomacy volumes: 84 volumes, about 39,000 documents."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "judgement",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the collection | Bottom line 1; How this was done; Read next | [M16], [M14] | \"25 documents in the collection\"; \"61 documents retrieved whole, 25 quoted\"",
+   "sentence": "I kept the documents the argument rests on. ## Findings The image followed the credibility of American commitments The officials returned repeatedly to one judgement:"
+  },
+  {
+   "text": "8,000",
+   "values": [
+    "8000"
+   ],
+   "next": "column",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "8,000 column inches a month (the agency's measure) | Finding 3, in Q11 | [M15] Q11 and note | \"Quotations Q1–Q34\"",
+   "sentence": "A status report on the information programme for the National Security Council measured Japan in column inches. > Major Japanese newspapers continued to reprint from a translated wireless bulletin prepared by USIA in Japan an average of 8,000 column inches a month."
+  },
+  {
+   "text": "thirteen",
+   "values": [
+    "13"
+   ],
+   "next": "saigon",
+   "kind": "word",
+   "class": "traced",
+   "row": "thirteen Saigon surveys; Saigon survey of 1970 | Finding 3, in Q12 | [M15] Q12 and note | \"Saigon 1970 survey figure (in Q12)\"",
+   "sentence": "Measurement, when it came, could be unwelcome; a Saigon survey of found that the \"Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys\" ."
+  },
+  {
+   "text": "quarter",
+   "values": [
+    "0.25"
+   ],
+   "next": "collection",
+   "kind": "word",
+   "class": "traced",
+   "row": "Vietnam about a quarter of the collection (7 of 25) | Finding 4 | [M16] | \"Vietnam about a quarter of the collection: 7 of 25\"",
+   "sentence": "Vietnam accounts for about a quarter of the collection."
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "30 documents in 22 volumes, most from 1949 to 1963 (26 of 30) | Finding 5 | [M10] | \"'Oriental/Asian mind' phrases: 30 documents in 22 volumes ... 'most of them from 1949 to 1963'\"",
+   "sentence": "Phrases of that kind, such as *Asian mind* or *Oriental mentality*, appear in 30 documents in 22 volumes of the scope, most of them from to ."
+  },
+  {
+   "text": "22",
+   "values": [
+    "22"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "30 documents in 22 volumes, most from 1949 to 1963 (26 of 30) | Finding 5 | [M10] | \"'Oriental/Asian mind' phrases: 30 documents in 22 volumes ... 'most of them from 1949 to 1963'\"",
+   "sentence": "Phrases of that kind, such as *Asian mind* or *Oriental mentality*, appear in 30 documents in 22 volumes of the scope, most of them from to ."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "memorandum",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the collection | Bottom line 1; How this was done; Read next | [M16], [M14] | \"25 documents in the collection\"; \"61 documents retrieved whole, 25 quoted\"",
+   "sentence": "One memorandum put the balance this way:"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "",
+   "kind": "word",
+   "class": "traced",
+   "row": "control phrase in every one of the 84 volumes; nonsense string in none | Bottom line 3; How this was done | [M9], [M5] | (controls; [M9] POS 84 volumes, NEG 0)",
+   "sentence": "An agency proposal saw the President's trip as a chance. > The President’s projected visit to Peking presents us with opportunities to build what is now a temporary psychological asset into a long-range one."
+  },
+  {
+   "text": "84",
+   "values": [
+    "84"
+   ],
+   "next": "all",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "84 volumes in scope | Bottom line 3; Scope; How this was done | [M3] | \"84 volumes, about 39,000 documents in scope\"",
+   "sentence": "I then searched the regional and information volumes, 84 in all, for that vocabulary, with a phrase every volume contains and a nonsense string as checks on each pass."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "traced",
+   "row": "two volumes (1948, 1949 Indonesia) left out of the decade counts | How this was done | [M6], [M7] | \"'USI' for United States of Indonesia trap\"",
+   "sentence": "The search treats different endings of a word as the same word, so I re-tested its finds with an exact pattern match; that showed that in the and Indonesia records the abbreviation *USI* stands for the United States of Indonesia, not the information service, and I left those two volumes out of the counts by decade."
+  },
+  {
+   "text": "18",
+   "values": [
+    "18"
+   ],
+   "next": "to",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "about 18 per 1,000 (1940s), about 52 (1960s), about 32 (1970s) | How this was done | [M7] | \"rate rises from about 18 per 1,000 ... falls to about 32\"",
+   "sentence": "The share of regional documents using the vocabulary rises from about 18 per 1,000 in the to about 52 in the and falls to about 32 in the ; the figure leans on one volume, the China volume on the closing of the information offices."
+  },
+  {
+   "text": "1,000",
+   "values": [
+    "1000"
+   ],
+   "next": "to",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "about 18 per 1,000 (1940s), about 52 (1960s), about 32 (1970s) | How this was done | [M7] | \"rate rises from about 18 per 1,000 ... falls to about 32\"",
+   "sentence": "The share of regional documents using the vocabulary rises from about 18 per 1,000 in the to about 52 in the and falls to about 32 in the ; the figure leans on one volume, the China volume on the closing of the information offices."
+  },
+  {
+   "text": "52",
+   "values": [
+    "52"
+   ],
+   "next": "fall",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "about 18 per 1,000 (1940s), about 52 (1960s), about 32 (1970s) | How this was done | [M7] | \"rate rises from about 18 per 1,000 ... falls to about 32\"",
+   "sentence": "The share of regional documents using the vocabulary rises from about 18 per 1,000 in the to about 52 in the and falls to about 32 in the ; the figure leans on one volume, the China volume on the closing of the information offices."
+  },
+  {
+   "text": "32",
+   "values": [
+    "32"
+   ],
+   "next": "figure",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "about 18 per 1,000 (1940s), about 52 (1960s), about 32 (1970s) | How this was done | [M7] | \"rate rises from about 18 per 1,000 ... falls to about 32\"",
+   "sentence": "The share of regional documents using the vocabulary rises from about 18 per 1,000 in the to about 52 in the and falls to about 32 in the ; the figure leans on one volume, the China volume on the closing of the information offices."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "traced",
+   "row": "1940s figure leans on one volume, the 1949 China volume | How this was done | [M7] | \"1940s lean on 1949 China volume\"",
+   "sentence": "The share of regional documents using the vocabulary rises from about 18 per 1,000 in the to about 52 in the and falls to about 32 in the ; the figure leans on one volume, the China volume on the closing of the information offices."
+  },
+  {
+   "text": "141",
+   "values": [
+    "141"
+   ],
+   "next": "candidate",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "141 candidates | How this was done | [M3], [M4], [M11] | \"141 documents whose headings name the information agencies\"",
+   "sentence": "I drew 141 candidates whose headings named the information agencies or the region, plus documents a ranked search surfaced."
+  },
+  {
+   "text": "141",
+   "values": [
+    "141"
+   ],
+   "next": "nearly",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "141 candidates | How this was done | [M3], [M4], [M11] | \"141 documents whose headings name the information agencies\"",
+   "sentence": "Of the 141, nearly half came from State Department files and more than a quarter from the information agency's."
+  },
+  {
+   "text": "half",
+   "values": [
+    "0.5"
+   ],
+   "next": "came",
+   "kind": "word",
+   "class": "weak",
+   "row": "nearly half from State (66), more than a quarter from the information agency (40) | How this was done | [M11] | \"nearly half of the 141 from State (66), more than a quarter from USIA (40)\"",
+   "sentence": "Of the 141, nearly half came from State Department files and more than a quarter from the information agency's."
+  },
+  {
+   "text": "quarter",
+   "values": [
+    "0.25"
+   ],
+   "next": "from",
+   "kind": "word",
+   "class": "traced",
+   "row": "nearly half from State (66), more than a quarter from the information agency (40) | How this was done | [M11] | \"nearly half of the 141 from State (66), more than a quarter from USIA (40)\"",
+   "sentence": "Of the 141, nearly half came from State Department files and more than a quarter from the information agency's."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the collection | Bottom line 1; How this was done; Read next | [M16], [M14] | \"25 documents in the collection\"; \"61 documents retrieved whole, 25 quoted\"",
+   "sentence": "One document, the Saigon report of , I reached only through a comparison of documents by overall similarity of wording, which no word search found."
+  },
+  {
+   "text": "61",
+   "values": [
+    "61"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "61 documents read whole; 25 quoted | How this was done | [M14] | \"61 documents retrieved whole, 25 quoted\"",
+   "sentence": "I read 61 documents whole and quote 25."
+  },
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "25 documents in the collection | Bottom line 1; How this was done; Read next | [M16], [M14] | \"25 documents in the collection\"; \"61 documents retrieved whole, 25 quoted\"",
+   "sentence": "I read 61 documents whole and quote 25."
+  },
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "25 documents in the collection | Bottom line 1; How this was done; Read next | [M16], [M14] | \"25 documents in the collection\"; \"61 documents retrieved whole, 25 quoted\"",
+   "sentence": "I checked every quotation here word for word against its document, and checked that every document cited here is in the collection. ## Read next Open the collection \"American soft power in East Asia and the Pacific — run f9\", which holds the 25 documents in sections that follow these findings, with each quotation marked."
+  }
+ ]
+}

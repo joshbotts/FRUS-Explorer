@@ -1,0 +1,1313 @@
+{
+ "run": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w4",
+ "traceSource": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w4/trace.md",
+ "traceTableLine": 7,
+ "traceRows": 64,
+ "mentions": 118,
+ "counts": {
+  "traced": 70,
+  "weak": 48,
+  "untraced": 0
+ },
+ "list": [
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "printed",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "Public Diplomacy, , The programmes were aimed chiefly at elites ( , with the villages argued for in Vietnam ( , Success was judged mostly by outputs — press reprints, column inches, a successful visit — and rarely by measurement; the one printed opinion survey in the set, from Saigon, recorded confidence in the United States at its lowest in thirteen surveys ( , And the messages rested on stated beliefs about a race-conscious, nationalist audience, sometimes called the \"oriental mind\" ( , The answer rests on 25 documents, chosen from about 2,000 documents in 84 volumes that use the information programme's vocabulary."
+  },
+  {
+   "text": "thirteen",
+   "values": [
+    "13"
+   ],
+   "next": "survey",
+   "kind": "word",
+   "class": "weak",
+   "row": "No USIA series for an East Asian area office in the bundled data (14 USIA series) | Bottom line 3 | 126 [M13]",
+   "sentence": "Public Diplomacy, , The programmes were aimed chiefly at elites ( , with the villages argued for in Vietnam ( , Success was judged mostly by outputs — press reprints, column inches, a successful visit — and rarely by measurement; the one printed opinion survey in the set, from Saigon, recorded confidence in the United States at its lowest in thirteen surveys ( , And the messages rested on stated beliefs about a race-conscious, nationalist audience, sometimes called the \"oriental mind\" ( , The answer rests on 25 documents, chosen from about 2,000 documents in 84 volumes that use the information programme's vocabulary."
+  },
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "Public Diplomacy, , The programmes were aimed chiefly at elites ( , with the villages argued for in Vietnam ( , Success was judged mostly by outputs — press reprints, column inches, a successful visit — and rarely by measurement; the one printed opinion survey in the set, from Saigon, recorded confidence in the United States at its lowest in thirteen surveys ( , And the messages rested on stated beliefs about a race-conscious, nationalist audience, sometimes called the \"oriental mind\" ( , The answer rests on 25 documents, chosen from about 2,000 documents in 84 volumes that use the information programme's vocabulary."
+  },
+  {
+   "text": "2,000",
+   "values": [
+    "2000"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "about 2,000 documents in 84 volumes use the programme's vocabulary (2,009) | Bottom line 1, Scope | 53 [M5]",
+   "sentence": "Public Diplomacy, , The programmes were aimed chiefly at elites ( , with the villages argued for in Vietnam ( , Success was judged mostly by outputs — press reprints, column inches, a successful visit — and rarely by measurement; the one printed opinion survey in the set, from Saigon, recorded confidence in the United States at its lowest in thirteen surveys ( , And the messages rested on stated beliefs about a race-conscious, nationalist audience, sometimes called the \"oriental mind\" ( , The answer rests on 25 documents, chosen from about 2,000 documents in 84 volumes that use the information programme's vocabulary."
+  },
+  {
+   "text": "84",
+   "values": [
+    "84"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "about 2,000 documents in 84 volumes use the programme's vocabulary (2,009) | Bottom line 1, Scope | 53 [M5]",
+   "sentence": "Public Diplomacy, , The programmes were aimed chiefly at elites ( , with the villages argued for in Vietnam ( , Success was judged mostly by outputs — press reprints, column inches, a successful visit — and rarely by measurement; the one printed opinion survey in the set, from Saigon, recorded confidence in the United States at its lowest in thirteen surveys ( , And the messages rested on stated beliefs about a race-conscious, nationalist audience, sometimes called the \"oriental mind\" ( , The answer rests on 25 documents, chosen from about 2,000 documents in 84 volumes that use the information programme's vocabulary."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "channel",
+   "kind": "word",
+   "class": "weak",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "Where FRUS points for the rest.** The archives reach the historian through two channels: the series a printed document *came from* (its source note), and the series the editors *pointed at* in footnotes without printing them."
+  },
+  {
+   "text": "62 D 430",
+   "values": [
+    "62d430"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "Executive Secretariat, Subject and Special Files (Lot 62 D 430), Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "Executive Secretariat, Subject and Special Files (Lot 62 D 430), Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "A1 1586C",
+   "values": [
+    "a11586c"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "Executive Secretariat, Subject and Special Files (Lot 62 D 430), Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "Executive Secretariat, Subject and Special Files (Lot 62 D 430), Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351: RG 59, A1 1586E, NAID 2839192, 1947–1979, partly restricted | Bottom line 2 | 117 [M13]",
+   "sentence": "Executive Secretariat, Records Relating to NSC Policy Papers (Lot 63 D 351), Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "Executive Secretariat, Records Relating to NSC Policy Papers (Lot 63 D 351), Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351: RG 59, A1 1586E, NAID 2839192, 1947–1979, partly restricted | Bottom line 2 | 117 [M13]",
+   "sentence": "Executive Secretariat, Records Relating to NSC Policy Papers (Lot 63 D 351), Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 63 D 351: RG 59, A1 1586E, NAID 2839192, 1947–1979, partly restricted | Bottom line 2 | 117 [M13]",
+   "sentence": "Executive Secretariat, Records Relating to NSC Policy Papers (Lot 63 D 351), Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "67 D 54",
+   "values": [
+    "67d54"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 67 D 54: RG 59, A1 5305/A1 5414, NAID 631403, 1963–1974, unrestricted; both channels | Bottom line 2 | 119 [M13]",
+   "sentence": "Bureau of East Asian and Pacific Affairs, Subject Files of the Vietnam Working Group (Lot 67 D 54), Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "Bureau of East Asian and Pacific Affairs, Subject Files of the Vietnam Working Group (Lot 67 D 54), Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "A1 5305",
+   "values": [
+    "a15305"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 67 D 54: RG 59, A1 5305/A1 5414, NAID 631403, 1963–1974, unrestricted; both channels | Bottom line 2 | 119 [M13]",
+   "sentence": "Bureau of East Asian and Pacific Affairs, Subject Files of the Vietnam Working Group (Lot 67 D 54), Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "A1 5414",
+   "values": [
+    "a15414"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 67 D 54: RG 59, A1 5305/A1 5414, NAID 631403, 1963–1974, unrestricted; both channels | Bottom line 2 | 119 [M13]",
+   "sentence": "Bureau of East Asian and Pacific Affairs, Subject Files of the Vietnam Working Group (Lot 67 D 54), Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "631403",
+   "values": [
+    "631403"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 67 D 54: RG 59, A1 5305/A1 5414, NAID 631403, 1963–1974, unrestricted; both channels | Bottom line 2 | 119 [M13]",
+   "sentence": "Bureau of East Asian and Pacific Affairs, Subject Files of the Vietnam Working Group (Lot 67 D 54), Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "72 D 192",
+   "values": [
+    "72d192"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 72 D 192: RG 59, A1 5376/5376A, NAID 631695, 1961–1969, unrestricted (use possibly restricted) | Bottom line 2 | 120 [M13]",
+   "sentence": "Office of the Secretary, Speeches and Statements (Lot 72 D 192), Record Group 59, Entries A1 5376 and 5376A, NARA identifier 631695, , unrestricted (use possibly restricted)."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "Office of the Secretary, Speeches and Statements (Lot 72 D 192), Record Group 59, Entries A1 5376 and 5376A, NARA identifier 631695, , unrestricted (use possibly restricted)."
+  },
+  {
+   "text": "A1 5376",
+   "values": [
+    "a15376"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 72 D 192: RG 59, A1 5376/5376A, NAID 631695, 1961–1969, unrestricted (use possibly restricted) | Bottom line 2 | 120 [M13]",
+   "sentence": "Office of the Secretary, Speeches and Statements (Lot 72 D 192), Record Group 59, Entries A1 5376 and 5376A, NARA identifier 631695, , unrestricted (use possibly restricted)."
+  },
+  {
+   "text": "631695",
+   "values": [
+    "631695"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 72 D 192: RG 59, A1 5376/5376A, NAID 631695, 1961–1969, unrestricted (use possibly restricted) | Bottom line 2 | 120 [M13]",
+   "sentence": "Office of the Secretary, Speeches and Statements (Lot 72 D 192), Record Group 59, Entries A1 5376 and 5376A, NARA identifier 631695, , unrestricted (use possibly restricted)."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 59 D 260: RG 306, UD-WW 151 and ten others, NAID 1257679, 1953–1971, partly restricted, 47 linear feet; cited from an NSC status report | Bottom line 2 | 123 [M13]; 93 [M8]",
+   "sentence": "Information Agency, Director's Subject Files, , Record Group 306, Entry A1–42;"
+  },
+  {
+   "text": "42",
+   "values": [
+    "42"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "RG 306 Director's Subject Files 1968–1972 A1–42; JUSPAO 1966–1975 A1–31; Office of Policy and Plans P–207; Director's Subject Files 1963–69 UD WW 257; no NAID | Bottom line 2, Read next | 126 [M13]",
+   "sentence": "Information Agency, Director's Subject Files, , Record Group 306, Entry A1–42;"
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 59 D 260: RG 306, UD-WW 151 and ten others, NAID 1257679, 1953–1971, partly restricted, 47 linear feet; cited from an NSC status report | Bottom line 2 | 123 [M13]; 93 [M8]",
+   "sentence": "Public Affairs Office (JUSPAO), , Record Group 306, Entry A1–31;"
+  },
+  {
+   "text": "31",
+   "values": [
+    "31"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "RG 306 Director's Subject Files 1968–1972 A1–42; JUSPAO 1966–1975 A1–31; Office of Policy and Plans P–207; Director's Subject Files 1963–69 UD WW 257; no NAID | Bottom line 2, Read next | 126 [M13]",
+   "sentence": "Public Affairs Office (JUSPAO), , Record Group 306, Entry A1–31;"
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 59 D 260: RG 306, UD-WW 151 and ten others, NAID 1257679, 1953–1971, partly restricted, 47 linear feet; cited from an NSC status report | Bottom line 2 | 123 [M13]; 93 [M8]",
+   "sentence": "Office of Policy and Plans Subject Files, Record Group 306, Entry P–207;"
+  },
+  {
+   "text": "207",
+   "values": [
+    "207"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "RG 306 Director's Subject Files 1968–1972 A1–42; JUSPAO 1966–1975 A1–31; Office of Policy and Plans P–207; Director's Subject Files 1963–69 UD WW 257; no NAID | Bottom line 2, Read next | 126 [M13]",
+   "sentence": "Office of Policy and Plans Subject Files, Record Group 306, Entry P–207;"
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 59 D 260: RG 306, UD-WW 151 and ten others, NAID 1257679, 1953–1971, partly restricted, 47 linear feet; cited from an NSC status report | Bottom line 2 | 123 [M13]; 93 [M8]",
+   "sentence": "Director's Subject Files, , Record Group 306, Entry UD WW 257."
+  },
+  {
+   "text": "WW 257",
+   "values": [
+    "ww257"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 Director's Subject Files 1968–1972 A1–42; JUSPAO 1966–1975 A1–31; Office of Policy and Plans P–207; Director's Subject Files 1963–69 UD WW 257; no NAID | Bottom line 2, Read next | 126 [M13]",
+   "sentence": "Director's Subject Files, , Record Group 306, Entry UD WW 257."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "did",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "For none of these four did the app's bundled archival data give a NARA identifier or an access status, so each must be confirmed with NARA's reference staff."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "The Department of State's Central Decimal File and Central Foreign Policy File, Record Group 59; this run did not resolve their entries or identifiers. *Pointed at* (cited by the editors, not printed):"
+  },
+  {
+   "text": "62 D 430",
+   "values": [
+    "62d430"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "Executive Secretariat, Subject and Special Files (Lot 62 D 430), as above — the one series in both channels."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "serie",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "Executive Secretariat, Subject and Special Files (Lot 62 D 430), as above — the one series in both channels."
+  },
+  {
+   "text": "66 D 95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 66 D 95: same series, NAID 2839192, pointed-at | Bottom line 2 | 118 [M13]; 110 [M12]",
+   "sentence": "Records Relating to NSC Policy Papers, under its other lot number (Lot 66 D 95), Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "Records Relating to NSC Policy Papers, under its other lot number (Lot 66 D 95), Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351: RG 59, A1 1586E, NAID 2839192, 1947–1979, partly restricted | Bottom line 2 | 117 [M13]",
+   "sentence": "Records Relating to NSC Policy Papers, under its other lot number (Lot 66 D 95), Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 63 D 351: RG 59, A1 1586E, NAID 2839192, 1947–1979, partly restricted | Bottom line 2 | 117 [M13]",
+   "sentence": "Records Relating to NSC Policy Papers, under its other lot number (Lot 66 D 95), Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "67 D 54",
+   "values": [
+    "67d54"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 67 D 54: RG 59, A1 5305/A1 5414, NAID 631403, 1963–1974, unrestricted; both channels | Bottom line 2 | 119 [M13]",
+   "sentence": "Subject Files of the Vietnam Working Group (Lot 67 D 54), as above."
+  },
+  {
+   "text": "59 D 260",
+   "values": [
+    "59d260"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 59 D 260: RG 306, UD-WW 151 and ten others, NAID 1257679, 1953–1971, partly restricted, 47 linear feet; cited from an NSC status report | Bottom line 2 | 123 [M13]; 93 [M8]",
+   "sentence": "Information Agency, Office of Policy and Plans, Subject Files (Lot 59 D 260), Record Group 306, Entries UD-WW 151 and ten others, NARA identifier 1257679, , partly restricted, 47 linear feet — cited from one of the National Security Council's status reports on the information programme."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 59 D 260: RG 306, UD-WW 151 and ten others, NAID 1257679, 1953–1971, partly restricted, 47 linear feet; cited from an NSC status report | Bottom line 2 | 123 [M13]; 93 [M8]",
+   "sentence": "Information Agency, Office of Policy and Plans, Subject Files (Lot 59 D 260), Record Group 306, Entries UD-WW 151 and ten others, NARA identifier 1257679, , partly restricted, 47 linear feet — cited from one of the National Security Council's status reports on the information programme."
+  },
+  {
+   "text": "WW 151",
+   "values": [
+    "ww151"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 59 D 260: RG 306, UD-WW 151 and ten others, NAID 1257679, 1953–1971, partly restricted, 47 linear feet; cited from an NSC status report | Bottom line 2 | 123 [M13]; 93 [M8]",
+   "sentence": "Information Agency, Office of Policy and Plans, Subject Files (Lot 59 D 260), Record Group 306, Entries UD-WW 151 and ten others, NARA identifier 1257679, , partly restricted, 47 linear feet — cited from one of the National Security Council's status reports on the information programme."
+  },
+  {
+   "text": "ten",
+   "values": [
+    "10"
+   ],
+   "next": "other",
+   "kind": "word",
+   "class": "weak",
+   "row": "Lot 59 D 260: RG 306, UD-WW 151 and ten others, NAID 1257679, 1953–1971, partly restricted, 47 linear feet; cited from an NSC status report | Bottom line 2 | 123 [M13]; 93 [M8]",
+   "sentence": "Information Agency, Office of Policy and Plans, Subject Files (Lot 59 D 260), Record Group 306, Entries UD-WW 151 and ten others, NARA identifier 1257679, , partly restricted, 47 linear feet — cited from one of the National Security Council's status reports on the information programme."
+  },
+  {
+   "text": "1257679",
+   "values": [
+    "1257679"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 59 D 260: RG 306, UD-WW 151 and ten others, NAID 1257679, 1953–1971, partly restricted, 47 linear feet; cited from an NSC status report | Bottom line 2 | 123 [M13]; 93 [M8]",
+   "sentence": "Information Agency, Office of Policy and Plans, Subject Files (Lot 59 D 260), Record Group 306, Entries UD-WW 151 and ten others, NARA identifier 1257679, , partly restricted, 47 linear feet — cited from one of the National Security Council's status reports on the information programme."
+  },
+  {
+   "text": "47",
+   "values": [
+    "47"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 59 D 260: RG 306, UD-WW 151 and ten others, NAID 1257679, 1953–1971, partly restricted, 47 linear feet; cited from an NSC status report | Bottom line 2 | 123 [M13]; 93 [M8]",
+   "sentence": "Information Agency, Office of Policy and Plans, Subject Files (Lot 59 D 260), Record Group 306, Entries UD-WW 151 and ten others, NARA identifier 1257679, , partly restricted, 47 linear feet — cited from one of the National Security Council's status reports on the information programme."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "national",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "Information Agency, Office of Policy and Plans, Subject Files (Lot 59 D 260), Record Group 306, Entries UD-WW 151 and ten others, NARA identifier 1257679, , partly restricted, 47 linear feet — cited from one of the National Security Council's status reports on the information programme."
+  },
+  {
+   "text": "65 D 101",
+   "values": [
+    "65d101"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 65 D 101: RG 59, A1 558-D, NAID 1136548, 1947–1962, unrestricted | Bottom line 2 | 121 [M13]",
+   "sentence": "Policy Planning Council, Chronological Files (Lot 65 D 101), Record Group 59, Entry A1 558-D, NARA identifier 1136548, , unrestricted."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "Policy Planning Council, Chronological Files (Lot 65 D 101), Record Group 59, Entry A1 558-D, NARA identifier 1136548, , unrestricted."
+  },
+  {
+   "text": "A1 558",
+   "values": [
+    "a1558"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 65 D 101: RG 59, A1 558-D, NAID 1136548, 1947–1962, unrestricted | Bottom line 2 | 121 [M13]",
+   "sentence": "Policy Planning Council, Chronological Files (Lot 65 D 101), Record Group 59, Entry A1 558-D, NARA identifier 1136548, , unrestricted."
+  },
+  {
+   "text": "1136548",
+   "values": [
+    "1136548"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 65 D 101: RG 59, A1 558-D, NAID 1136548, 1947–1962, unrestricted | Bottom line 2 | 121 [M13]",
+   "sentence": "Policy Planning Council, Chronological Files (Lot 65 D 101), Record Group 59, Entry A1 558-D, NARA identifier 1136548, , unrestricted."
+  },
+  {
+   "text": "71 D 273",
+   "values": [
+    "71d273"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 71 D 273: RG 59, A1 5441, NAID 2131139, 1961–1969, unrestricted | Bottom line 2 | 122 [M13]",
+   "sentence": "Lindley (Lot 71 D 273), Record Group 59, Entry A1 5441, NARA identifier 2131139, , unrestricted."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "Lindley (Lot 71 D 273), Record Group 59, Entry A1 5441, NARA identifier 2131139, , unrestricted."
+  },
+  {
+   "text": "A1 5441",
+   "values": [
+    "a15441"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 71 D 273: RG 59, A1 5441, NAID 2131139, 1961–1969, unrestricted | Bottom line 2 | 122 [M13]",
+   "sentence": "Lindley (Lot 71 D 273), Record Group 59, Entry A1 5441, NARA identifier 2131139, , unrestricted."
+  },
+  {
+   "text": "2131139",
+   "values": [
+    "2131139"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 71 D 273: RG 59, A1 5441, NAID 2131139, 1961–1969, unrestricted | Bottom line 2 | 122 [M13]",
+   "sentence": "Lindley (Lot 71 D 273), Record Group 59, Entry A1 5441, NARA identifier 2131139, , unrestricted."
+  },
+  {
+   "text": "Four",
+   "values": [
+    "4"
+   ],
+   "next": "part",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "What this request cannot get from FRUS.** Four parts of the question are not in the printed series, each established by a search of the 84 volumes in scope, run with two controls in the same pass — the phrase *Department of State*, which was found in all 84 volumes, and a nonsense string, which was found in none."
+  },
+  {
+   "text": "84",
+   "values": [
+    "84"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "about 2,000 documents in 84 volumes use the programme's vocabulary (2,009) | Bottom line 1, Scope | 53 [M5]",
+   "sentence": "What this request cannot get from FRUS.** Four parts of the question are not in the printed series, each established by a search of the 84 volumes in scope, run with two controls in the same pass — the phrase *Department of State*, which was found in all 84 volumes, and a nonsense string, which was found in none."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "control",
+   "kind": "word",
+   "class": "weak",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "What this request cannot get from FRUS.** Four parts of the question are not in the printed series, each established by a search of the 84 volumes in scope, run with two controls in the same pass — the phrase *Department of State*, which was found in all 84 volumes, and a nonsense string, which was found in none."
+  },
+  {
+   "text": "84",
+   "values": [
+    "84"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "about 2,000 documents in 84 volumes use the programme's vocabulary (2,009) | Bottom line 1, Scope | 53 [M5]",
+   "sentence": "What this request cannot get from FRUS.** Four parts of the question are not in the printed series, each established by a search of the 84 volumes in scope, run with two controls in the same pass — the phrase *Department of State*, which was found in all 84 volumes, and a nonsense string, which was found in none."
+  },
+  {
+   "text": "350",
+   "values": [
+    "350"
+   ],
+   "next": "sense",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "*soft* in about 350 documents (349, 76 volumes) | Bottom line 3 | 98 [M9]",
+   "sentence": "(a) The term itself: *soft power* occurs in no document; the plain word *soft* occurs in about 350, in other senses (being \"soft\" on Communism)."
+  },
+  {
+   "text": "160",
+   "values": [
+    "160"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "polls/surveys with the agency: about 160 documents in 36 volumes (157) | Bottom line 3 | 99 [M9]",
+   "sentence": "(b) USIA's own audience research: about 160 documents in 36 volumes mention a poll or survey together with the information agency (about 40 of them also mention Japan), but FRUS prints the agency's summaries, not the surveys; the bundled archival data name no USIA series for an East Asian area office, so no shelf for the surveys was found."
+  },
+  {
+   "text": "36",
+   "values": [
+    "36"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "polls/surveys with the agency: about 160 documents in 36 volumes (157) | Bottom line 3 | 99 [M9]",
+   "sentence": "(b) USIA's own audience research: about 160 documents in 36 volumes mention a poll or survey together with the information agency (about 40 of them also mention Japan), but FRUS prints the agency's summaries, not the surveys; the bundled archival data name no USIA series for an East Asian area office, so no shelf for the surveys was found."
+  },
+  {
+   "text": "40",
+   "values": [
+    "40"
+   ],
+   "next": "them",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "about 40 also mention Japan (38 in 17) | Bottom line 3 | 99 [M9]",
+   "sentence": "(b) USIA's own audience research: about 160 documents in 36 volumes mention a poll or survey together with the information agency (about 40 of them also mention Japan), but FRUS prints the agency's summaries, not the surveys; the bundled archival data name no USIA series for an East Asian area office, so no shelf for the surveys was found."
+  },
+  {
+   "text": "6",
+   "values": [
+    "6"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Pacific islands: 6 documents in 5 volumes | Bottom line 3, Decisions, Read next | 100 [M9]",
+   "sentence": "(c) The Pacific islands: only 6 documents in 5 volumes mention the information agency with Micronesia, Fiji, the Trust Territory, Samoa or Guam — too few to say anything."
+  },
+  {
+   "text": "5",
+   "values": [
+    "5"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "about 2,000 documents in 84 volumes use the programme's vocabulary (2,009) | Bottom line 1, Scope | 53 [M5]",
+   "sentence": "(c) The Pacific islands: only 6 documents in 5 volumes mention the information agency with Micronesia, Fiji, the Trust Territory, Samoa or Guam — too few to say anything."
+  },
+  {
+   "text": "380",
+   "values": [
+    "380"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Fulbright: about 380 in 59 volumes (381); about 230 with evaluation words (229 in 50); none read | Bottom line 3, Decisions, Read next | 101 [M9]",
+   "sentence": "(d) The measured results of exchanges: about 380 documents in 59 volumes mention Fulbright, about 230 of them with words of evaluation or effect, but none was read, so this overview makes no claim about them."
+  },
+  {
+   "text": "59",
+   "values": [
+    "59"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Fulbright: about 380 in 59 volumes (381); about 230 with evaluation words (229 in 50); none read | Bottom line 3, Decisions, Read next | 101 [M9]",
+   "sentence": "(d) The measured results of exchanges: about 380 documents in 59 volumes mention Fulbright, about 230 of them with words of evaluation or effect, but none was read, so this overview makes no claim about them."
+  },
+  {
+   "text": "230",
+   "values": [
+    "230"
+   ],
+   "next": "them",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Fulbright: about 380 in 59 volumes (381); about 230 with evaluation words (229 in 50); none read | Bottom line 3, Decisions, Read next | 101 [M9]",
+   "sentence": "(d) The measured results of exchanges: about 380 documents in 59 volumes mention Fulbright, about 230 of them with words of evaluation or effect, but none was read, so this overview makes no claim about them."
+  },
+  {
+   "text": "70",
+   "values": [
+    "70"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Australia/New Zealand: about 70 (69 in 36 volumes) | Bottom line 3, Decisions, Read next | 100 [M9]",
+   "sentence": "Australia and New Zealand as audiences (about 70 documents) were likewise found and not read. **Scope.** The run searched 84 volumes — 76 regional East Asia and Pacific volumes covering and the eight volumes on the information programme and public diplomacy — holding about 39,000 documents, with front matter and editorial notes excluded throughout."
+  },
+  {
+   "text": "84",
+   "values": [
+    "84"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "about 2,000 documents in 84 volumes use the programme's vocabulary (2,009) | Bottom line 1, Scope | 53 [M5]",
+   "sentence": "Australia and New Zealand as audiences (about 70 documents) were likewise found and not read. **Scope.** The run searched 84 volumes — 76 regional East Asia and Pacific volumes covering and the eight volumes on the information programme and public diplomacy — holding about 39,000 documents, with front matter and editorial notes excluded throughout."
+  },
+  {
+   "text": "76",
+   "values": [
+    "76"
+   ],
+   "next": "regional",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "84 volumes = 76 regional + 8 information/public-diplomacy | Bottom line 3, Scope, Methods | 22–24 [M3]",
+   "sentence": "Australia and New Zealand as audiences (about 70 documents) were likewise found and not read. **Scope.** The run searched 84 volumes — 76 regional East Asia and Pacific volumes covering and the eight volumes on the information programme and public diplomacy — holding about 39,000 documents, with front matter and editorial notes excluded throughout."
+  },
+  {
+   "text": "eight",
+   "values": [
+    "8"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "84 volumes = 76 regional + 8 information/public-diplomacy | Bottom line 3, Scope, Methods | 22–24 [M3]",
+   "sentence": "Australia and New Zealand as audiences (about 70 documents) were likewise found and not read. **Scope.** The run searched 84 volumes — 76 regional East Asia and Pacific volumes covering and the eight volumes on the information programme and public diplomacy — holding about 39,000 documents, with front matter and editorial notes excluded throughout."
+  },
+  {
+   "text": "39,000",
+   "values": [
+    "39000"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "about 39,000 documents in scope (39,015), apparatus excluded | Scope | 24 [M3]",
+   "sentence": "Australia and New Zealand as audiences (about 70 documents) were likewise found and not read. **Scope.** The run searched 84 volumes — 76 regional East Asia and Pacific volumes covering and the eight volumes on the information programme and public diplomacy — holding about 39,000 documents, with front matter and editorial notes excluded throughout."
+  },
+  {
+   "text": "2,000",
+   "values": [
+    "2000"
+   ],
+   "next": "use",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "about 2,000 documents in 84 volumes use the programme's vocabulary (2,009) | Bottom line 1, Scope | 53 [M5]",
+   "sentence": "Of those, about 2,000 use the information programme's vocabulary, 141 name an information agency or function in their headings, 61 were retrieved and read, and 25 are kept in the collection; the wartime cultural relations programme with China ( ) falls outside the period and was excluded. ## Decisions this needs from you **What counts as *soft power*.** If it means the information and cultural programmes only, this set is close to complete for the printed record; if it also takes in aid, military civic action and exchanges as instruments of attraction, the reading set must grow by hundreds of documents (the Fulbright documents alone number about 380)."
+  },
+  {
+   "text": "141",
+   "values": [
+    "141"
+   ],
+   "next": "name",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "141 candidate documents named by headings | Scope, Methods | 28 [M3]; 108 [M11]",
+   "sentence": "Of those, about 2,000 use the information programme's vocabulary, 141 name an information agency or function in their headings, 61 were retrieved and read, and 25 are kept in the collection; the wartime cultural relations programme with China ( ) falls outside the period and was excluded. ## Decisions this needs from you **What counts as *soft power*.** If it means the information and cultural programmes only, this set is close to complete for the printed record; if it also takes in aid, military civic action and exchanges as instruments of attraction, the reading set must grow by hundreds of documents (the Fulbright documents alone number about 380)."
+  },
+  {
+   "text": "61",
+   "values": [
+    "61"
+   ],
+   "next": "were",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "61 documents retrieved whole; one an editorial note | Scope, Methods | 130 [M14]",
+   "sentence": "Of those, about 2,000 use the information programme's vocabulary, 141 name an information agency or function in their headings, 61 were retrieved and read, and 25 are kept in the collection; the wartime cultural relations programme with China ( ) falls outside the period and was excluded. ## Decisions this needs from you **What counts as *soft power*.** If it means the information and cultural programmes only, this set is close to complete for the printed record; if it also takes in aid, military civic action and exchanges as instruments of attraction, the reading set must grow by hundreds of documents (the Fulbright documents alone number about 380)."
+  },
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "are",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "Of those, about 2,000 use the information programme's vocabulary, 141 name an information agency or function in their headings, 61 were retrieved and read, and 25 are kept in the collection; the wartime cultural relations programme with China ( ) falls outside the period and was excluded. ## Decisions this needs from you **What counts as *soft power*.** If it means the information and cultural programmes only, this set is close to complete for the printed record; if it also takes in aid, military civic action and exchanges as instruments of attraction, the reading set must grow by hundreds of documents (the Fulbright documents alone number about 380)."
+  },
+  {
+   "text": "hundreds",
+   "values": [
+    "100"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "Pacific islands: 6 documents in 5 volumes | Bottom line 3, Decisions, Read next | 100 [M9]",
+   "sentence": "Of those, about 2,000 use the information programme's vocabulary, 141 name an information agency or function in their headings, 61 were retrieved and read, and 25 are kept in the collection; the wartime cultural relations programme with China ( ) falls outside the period and was excluded. ## Decisions this needs from you **What counts as *soft power*.** If it means the information and cultural programmes only, this set is close to complete for the printed record; if it also takes in aid, military civic action and exchanges as instruments of attraction, the reading set must grow by hundreds of documents (the Fulbright documents alone number about 380)."
+  },
+  {
+   "text": "380",
+   "values": [
+    "380"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Fulbright: about 380 in 59 volumes (381); about 230 with evaluation words (229 in 50); none read | Bottom line 3, Decisions, Read next | 101 [M9]",
+   "sentence": "Of those, about 2,000 use the information programme's vocabulary, 141 name an information agency or function in their headings, 61 were retrieved and read, and 25 are kept in the collection; the wartime cultural relations programme with China ( ) falls outside the period and was excluded. ## Decisions this needs from you **What counts as *soft power*.** If it means the information and cultural programmes only, this set is close to complete for the printed record; if it also takes in aid, military civic action and exchanges as instruments of attraction, the reading set must grow by hundreds of documents (the Fulbright documents alone number about 380)."
+  },
+  {
+   "text": "70",
+   "values": [
+    "70"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Australia/New Zealand: about 70 (69 in 36 volumes) | Bottom line 3, Decisions, Read next | 100 [M9]",
+   "sentence": "Meanwhile the run included a document only when it named an information agency, a psychological or propaganda function, public affairs or the coordinating boards, or reached the same matter by a ranked search or a similarity search. **Which region.** Counting Australia, New Zealand and the Pacific islands as audiences adds about 70 and 6 documents respectively, not yet read; leaving them out keeps the answer to East and Southeast Asia, which is what the 25 documents cover."
+  },
+  {
+   "text": "6",
+   "values": [
+    "6"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Pacific islands: 6 documents in 5 volumes | Bottom line 3, Decisions, Read next | 100 [M9]",
+   "sentence": "Meanwhile the run included a document only when it named an information agency, a psychological or propaganda function, public affairs or the coordinating boards, or reached the same matter by a ranked search or a similarity search. **Which region.** Counting Australia, New Zealand and the Pacific islands as audiences adds about 70 and 6 documents respectively, not yet read; leaving them out keeps the answer to East and Southeast Asia, which is what the 25 documents cover."
+  },
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "Meanwhile the run included a document only when it named an information agency, a psychological or propaganda function, public affairs or the coordinating boards, or reached the same matter by a ranked search or a similarity search. **Which region.** Counting Australia, New Zealand and the Pacific islands as audiences adds about 70 and 6 documents respectively, not yet read; leaving them out keeps the answer to East and Southeast Asia, which is what the 25 documents cover."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "survey",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "Meanwhile the run counted any American official, and noted the few passages where an Asian speaker uses the stereotyped phrases. **What *effective* means.** If it means what officials claimed, FRUS answers it; if it means what audiences actually thought, FRUS gives one survey series and the rest lies in the agency's research files."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "decade",
+   "kind": "word",
+   "class": "weak",
+   "row": "84 volumes = 76 regional + 8 information/public-diplomacy | Bottom line 3, Scope, Methods | 22–24 [M3]",
+   "sentence": "Meanwhile the run reports officials' own judgements and says on what evidence each rested. ## Findings The image followed the credibility of American commitments Across three decades the documents locate America's standing less in its culture or its domestic life than in the reliability of its policy."
+  },
+  {
+   "text": "8,000",
+   "values": [
+    "8000"
+   ],
+   "next": "column",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "8,000 column inches a month (the agency's own figure, inside Q11) | Findings 3 | 154 [M15] Q11; 179",
+   "sentence": "Foreign Information Program, , , Effectiveness was asserted from outputs, and seldom measured When officials said a programme worked, their evidence was what went out and was taken up: local press using American material in , Japanese newspapers reprinting about 8,000 column inches a month in the , John Glenn's visit to Japan."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "survey",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "The one survey the set prints, from Saigon in , found 26 per cent of 637 people interviewed rating the United States very or rather dependable — the agency's own figure, not a measurement of this run. > Major Japanese newspapers continued to reprint from a translated wireless bulletin prepared by USIA in Japan an average of 8,000 column inches a month. — Foreign Relations of the United States, , Foreign Economic Policy;"
+  },
+  {
+   "text": "26 per cent",
+   "values": [
+    "26"
+   ],
+   "next": "people",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "1945–1980 period | Scope, Methods | 22, 26 [M3]",
+   "sentence": "The one survey the set prints, from Saigon in , found 26 per cent of 637 people interviewed rating the United States very or rather dependable — the agency's own figure, not a measurement of this run. > Major Japanese newspapers continued to reprint from a translated wireless bulletin prepared by USIA in Japan an average of 8,000 column inches a month. — Foreign Relations of the United States, , Foreign Economic Policy;"
+  },
+  {
+   "text": "637",
+   "values": [
+    "637"
+   ],
+   "next": "people",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Saigon 1970 survey: 26 per cent of 637 interviewed very or rather dependable; thirteen surveys | Findings 3 | 179; 247; 155 Q12",
+   "sentence": "The one survey the set prints, from Saigon in , found 26 per cent of 637 people interviewed rating the United States very or rather dependable — the agency's own figure, not a measurement of this run. > Major Japanese newspapers continued to reprint from a translated wireless bulletin prepared by USIA in Japan an average of 8,000 column inches a month. — Foreign Relations of the United States, , Foreign Economic Policy;"
+  },
+  {
+   "text": "8,000",
+   "values": [
+    "8000"
+   ],
+   "next": "column",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "8,000 column inches a month (the agency's own figure, inside Q11) | Findings 3 | 154 [M15] Q11; 179",
+   "sentence": "The one survey the set prints, from Saigon in , found 26 per cent of 637 people interviewed rating the United States very or rather dependable — the agency's own figure, not a measurement of this run. > Major Japanese newspapers continued to reprint from a translated wireless bulletin prepared by USIA in Japan an average of 8,000 column inches a month. — Foreign Relations of the United States, , Foreign Economic Policy;"
+  },
+  {
+   "text": "thirteen",
+   "values": [
+    "13"
+   ],
+   "next": "saigon",
+   "kind": "word",
+   "class": "weak",
+   "row": "No USIA series for an East Asian area office in the bundled data (14 USIA series) | Bottom line 3 | 126 [M13]",
+   "sentence": "Foreign Information Program, , , > All factors recited must be viewed as effective though degree cannot be accurately measured. — , > Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys — , The other documents behind this finding are the programme for Southeast Asia ( , the later status report that judges Indonesia (Foreign Relations of the United States, , Foreign Economic Policy;"
+  },
+  {
+   "text": "Seven",
+   "values": [
+    "7"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "Foreign Information Program, , , and the report of Glenn's visit ( , Vietnam: the American presence as the message's liability Seven of the 25 documents concern Vietnam, about a quarter of the set."
+  },
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "Foreign Information Program, , , and the report of Glenn's visit ( , Vietnam: the American presence as the message's liability Seven of the 25 documents concern Vietnam, about a quarter of the set."
+  },
+  {
+   "text": "quarter",
+   "values": [
+    "0.25"
+   ],
+   "next": "set",
+   "kind": "word",
+   "class": "weak",
+   "row": "Seven of the 25 documents on Vietnam, about a quarter | Findings 4 | 235",
+   "sentence": "Foreign Information Program, , , and the report of Glenn's visit ( , Vietnam: the American presence as the message's liability Seven of the 25 documents concern Vietnam, about a quarter of the set."
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "*Oriental/Asian mind* phrases: 30 documents in 22 regional volumes; most from 1949 to 1963 (26 of 30); large majority American officials; a few Asian speakers | Findings 5, Decisions | 104 [M10]; 234",
+   "sentence": "Phrases such as *Oriental mind*, *Asian mind* and *Asian mentality* appear in 30 documents in 22 of the regional volumes, most of them from to , and in most of them it is an American official characterising Asians."
+  },
+  {
+   "text": "22",
+   "values": [
+    "22"
+   ],
+   "next": "regional",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "*Oriental/Asian mind* phrases: 30 documents in 22 regional volumes; most from 1949 to 1963 (26 of 30); large majority American officials; a few Asian speakers | Findings 5, Decisions | 104 [M10]; 234",
+   "sentence": "Phrases such as *Oriental mind*, *Asian mind* and *Asian mentality* appear in 30 documents in 22 of the regional volumes, most of them from to , and in most of them it is an American official characterising Asians."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "by",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "Foreign Information Program, , , > But American policy toward China, which they conceive to be the product of a stupid or wicked government rather than the will of the American people, is heartily condemned by all student liberals. — , The overseas Chinese analysis is , China, : restraint and exchange The opening to Peking made the information agencies weigh what not to say as well as what to show: before the President's visit officials wanted to seem neither soft on Communism nor hostile to Peking, and proposed to turn a temporary psychological asset into a lasting one; by the the American mission in Peking saw a real, if revocable, chance to widen communication. > While we do not want to appear as having gone “soft” on Chinese Communism neither do we want to appear anti-Chinese or anti-Peking. — , > The President’s projected visit to Peking presents us with opportunities to build what is now a temporary psychological asset into a long-range one. — , > But the Chinese appear to be determined to go down this road, and until the line changes—which it can do although at considerable cost—we have an opportunity to enhance the communication process to a significant degree. — , ## How this was done Because *soft power* is a term of , the run first read the FRUS editors' own chapter headings (about 25,000 of them, of which about 150 bore on the subject) to learn the period's words — information policy, the foreign information programme, public diplomacy, cultural relations — and then searched the full text of all 553 FRUS volumes, of which it used 84: the regional East Asia and Pacific volumes for and the eight volumes on the information programme and public diplomacy."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "but",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "Foreign Information Program, , , > But American policy toward China, which they conceive to be the product of a stupid or wicked government rather than the will of the American people, is heartily condemned by all student liberals. — , The overseas Chinese analysis is , China, : restraint and exchange The opening to Peking made the information agencies weigh what not to say as well as what to show: before the President's visit officials wanted to seem neither soft on Communism nor hostile to Peking, and proposed to turn a temporary psychological asset into a lasting one; by the the American mission in Peking saw a real, if revocable, chance to widen communication. > While we do not want to appear as having gone “soft” on Chinese Communism neither do we want to appear anti-Chinese or anti-Peking. — , > The President’s projected visit to Peking presents us with opportunities to build what is now a temporary psychological asset into a long-range one. — , > But the Chinese appear to be determined to go down this road, and until the line changes—which it can do although at considerable cost—we have an opportunity to enhance the communication process to a significant degree. — , ## How this was done Because *soft power* is a term of , the run first read the FRUS editors' own chapter headings (about 25,000 of them, of which about 150 bore on the subject) to learn the period's words — information policy, the foreign information programme, public diplomacy, cultural relations — and then searched the full text of all 553 FRUS volumes, of which it used 84: the regional East Asia and Pacific volumes for and the eight volumes on the information programme and public diplomacy."
+  },
+  {
+   "text": "25,000",
+   "values": [
+    "25000"
+   ],
+   "next": "them",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "About 25,000 heading rows, about 150 relevant (25,115; 151) | Methods | 19",
+   "sentence": "Foreign Information Program, , , > But American policy toward China, which they conceive to be the product of a stupid or wicked government rather than the will of the American people, is heartily condemned by all student liberals. — , The overseas Chinese analysis is , China, : restraint and exchange The opening to Peking made the information agencies weigh what not to say as well as what to show: before the President's visit officials wanted to seem neither soft on Communism nor hostile to Peking, and proposed to turn a temporary psychological asset into a lasting one; by the the American mission in Peking saw a real, if revocable, chance to widen communication. > While we do not want to appear as having gone “soft” on Chinese Communism neither do we want to appear anti-Chinese or anti-Peking. — , > The President’s projected visit to Peking presents us with opportunities to build what is now a temporary psychological asset into a long-range one. — , > But the Chinese appear to be determined to go down this road, and until the line changes—which it can do although at considerable cost—we have an opportunity to enhance the communication process to a significant degree. — , ## How this was done Because *soft power* is a term of , the run first read the FRUS editors' own chapter headings (about 25,000 of them, of which about 150 bore on the subject) to learn the period's words — information policy, the foreign information programme, public diplomacy, cultural relations — and then searched the full text of all 553 FRUS volumes, of which it used 84: the regional East Asia and Pacific volumes for and the eight volumes on the information programme and public diplomacy."
+  },
+  {
+   "text": "150",
+   "values": [
+    "150"
+   ],
+   "next": "bore",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "About 25,000 heading rows, about 150 relevant (25,115; 151) | Methods | 19",
+   "sentence": "Foreign Information Program, , , > But American policy toward China, which they conceive to be the product of a stupid or wicked government rather than the will of the American people, is heartily condemned by all student liberals. — , The overseas Chinese analysis is , China, : restraint and exchange The opening to Peking made the information agencies weigh what not to say as well as what to show: before the President's visit officials wanted to seem neither soft on Communism nor hostile to Peking, and proposed to turn a temporary psychological asset into a lasting one; by the the American mission in Peking saw a real, if revocable, chance to widen communication. > While we do not want to appear as having gone “soft” on Chinese Communism neither do we want to appear anti-Chinese or anti-Peking. — , > The President’s projected visit to Peking presents us with opportunities to build what is now a temporary psychological asset into a long-range one. — , > But the Chinese appear to be determined to go down this road, and until the line changes—which it can do although at considerable cost—we have an opportunity to enhance the communication process to a significant degree. — , ## How this was done Because *soft power* is a term of , the run first read the FRUS editors' own chapter headings (about 25,000 of them, of which about 150 bore on the subject) to learn the period's words — information policy, the foreign information programme, public diplomacy, cultural relations — and then searched the full text of all 553 FRUS volumes, of which it used 84: the regional East Asia and Pacific volumes for and the eight volumes on the information programme and public diplomacy."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "fru",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "553 volumes in the index | Methods | 13 [M1]",
+   "sentence": "Foreign Information Program, , , > But American policy toward China, which they conceive to be the product of a stupid or wicked government rather than the will of the American people, is heartily condemned by all student liberals. — , The overseas Chinese analysis is , China, : restraint and exchange The opening to Peking made the information agencies weigh what not to say as well as what to show: before the President's visit officials wanted to seem neither soft on Communism nor hostile to Peking, and proposed to turn a temporary psychological asset into a lasting one; by the the American mission in Peking saw a real, if revocable, chance to widen communication. > While we do not want to appear as having gone “soft” on Chinese Communism neither do we want to appear anti-Chinese or anti-Peking. — , > The President’s projected visit to Peking presents us with opportunities to build what is now a temporary psychological asset into a long-range one. — , > But the Chinese appear to be determined to go down this road, and until the line changes—which it can do although at considerable cost—we have an opportunity to enhance the communication process to a significant degree. — , ## How this was done Because *soft power* is a term of , the run first read the FRUS editors' own chapter headings (about 25,000 of them, of which about 150 bore on the subject) to learn the period's words — information policy, the foreign information programme, public diplomacy, cultural relations — and then searched the full text of all 553 FRUS volumes, of which it used 84: the regional East Asia and Pacific volumes for and the eight volumes on the information programme and public diplomacy."
+  },
+  {
+   "text": "84",
+   "values": [
+    "84"
+   ],
+   "next": "regional",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "84 volumes = 76 regional + 8 information/public-diplomacy | Bottom line 3, Scope, Methods | 22–24 [M3]",
+   "sentence": "Foreign Information Program, , , > But American policy toward China, which they conceive to be the product of a stupid or wicked government rather than the will of the American people, is heartily condemned by all student liberals. — , The overseas Chinese analysis is , China, : restraint and exchange The opening to Peking made the information agencies weigh what not to say as well as what to show: before the President's visit officials wanted to seem neither soft on Communism nor hostile to Peking, and proposed to turn a temporary psychological asset into a lasting one; by the the American mission in Peking saw a real, if revocable, chance to widen communication. > While we do not want to appear as having gone “soft” on Chinese Communism neither do we want to appear anti-Chinese or anti-Peking. — , > The President’s projected visit to Peking presents us with opportunities to build what is now a temporary psychological asset into a long-range one. — , > But the Chinese appear to be determined to go down this road, and until the line changes—which it can do although at considerable cost—we have an opportunity to enhance the communication process to a significant degree. — , ## How this was done Because *soft power* is a term of , the run first read the FRUS editors' own chapter headings (about 25,000 of them, of which about 150 bore on the subject) to learn the period's words — information policy, the foreign information programme, public diplomacy, cultural relations — and then searched the full text of all 553 FRUS volumes, of which it used 84: the regional East Asia and Pacific volumes for and the eight volumes on the information programme and public diplomacy."
+  },
+  {
+   "text": "eight",
+   "values": [
+    "8"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "84 volumes = 76 regional + 8 information/public-diplomacy | Bottom line 3, Scope, Methods | 22–24 [M3]",
+   "sentence": "Foreign Information Program, , , > But American policy toward China, which they conceive to be the product of a stupid or wicked government rather than the will of the American people, is heartily condemned by all student liberals. — , The overseas Chinese analysis is , China, : restraint and exchange The opening to Peking made the information agencies weigh what not to say as well as what to show: before the President's visit officials wanted to seem neither soft on Communism nor hostile to Peking, and proposed to turn a temporary psychological asset into a lasting one; by the the American mission in Peking saw a real, if revocable, chance to widen communication. > While we do not want to appear as having gone “soft” on Chinese Communism neither do we want to appear anti-Chinese or anti-Peking. — , > The President’s projected visit to Peking presents us with opportunities to build what is now a temporary psychological asset into a long-range one. — , > But the Chinese appear to be determined to go down this road, and until the line changes—which it can do although at considerable cost—we have an opportunity to enhance the communication process to a significant degree. — , ## How this was done Because *soft power* is a term of , the run first read the FRUS editors' own chapter headings (about 25,000 of them, of which about 150 bore on the subject) to learn the period's words — information policy, the foreign information programme, public diplomacy, cultural relations — and then searched the full text of all 553 FRUS volumes, of which it used 84: the regional East Asia and Pacific volumes for and the eight volumes on the information programme and public diplomacy."
+  },
+  {
+   "text": "about 18 in every 1,000",
+   "values": [
+    "18",
+    "1000"
+   ],
+   "next": "figure",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "Rate per 1,000 regional documents: about 18 (1940s), 52 (1960s), 32 (1970s); 1940s carried by the 1949 volume (79 of 219) | Methods | 77–83 [M7]; 230",
+   "sentence": "The share of regional documents using the programme's vocabulary rose from about 18 in every 1,000 in the (a figure carried largely by one volume on the closing of the information offices in Communist China) to about 52 in the , and fell to about 32 in the ."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "The share of regional documents using the programme's vocabulary rose from about 18 in every 1,000 in the (a figure carried largely by one volume on the closing of the information offices in Communist China) to about 52 in the , and fell to about 32 in the ."
+  },
+  {
+   "text": "52",
+   "values": [
+    "52"
+   ],
+   "next": "fell",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "*soft power* in no document | Bottom line 3 | 52 [M5]; 98 [M9]",
+   "sentence": "The share of regional documents using the programme's vocabulary rose from about 18 in every 1,000 in the (a figure carried largely by one volume on the closing of the information offices in Communist China) to about 52 in the , and fell to about 32 in the ."
+  },
+  {
+   "text": "32",
+   "values": [
+    "32"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Rate per 1,000 regional documents: about 18 (1940s), 52 (1960s), 32 (1970s); 1940s carried by the 1949 volume (79 of 219) | Methods | 77–83 [M7]; 230",
+   "sentence": "The share of regional documents using the programme's vocabulary rose from about 18 in every 1,000 in the (a figure carried largely by one volume on the closing of the information offices in Communist China) to about 52 in the , and fell to about 32 in the ."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "Lot 62 D 430: RG 59, A1 1586C, NAID 2839191, 1953–1961, partly restricted; came-from 16 (largest unit), pointed-at 7 | Bottom line 2 | 108 [M11]; 116 [M13]",
+   "sentence": "Hits were read in samples to check that the words meant what was searched for; this caught *USI*, which in means the United States of Indonesia, not the information service, so two volumes of those years were left out of the decade count, and one *Informant Program* counted as an information programme."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "informant",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "Hits were read in samples to check that the words meant what was searched for; this caught *USI*, which in means the United States of Indonesia, not the information service, so two volumes of those years were left out of the decade count, and one *Informant Program* counted as an information programme."
+  },
+  {
+   "text": "141",
+   "values": [
+    "141"
+   ],
+   "next": "candidate",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "141 candidate documents named by headings | Scope, Methods | 28 [M3]; 108 [M11]",
+   "sentence": "Documents were gathered by their headings (141 candidates), by a ranked full-text search, and by a measure of similarity in wording between whole documents, which put forward Heath's report from Saigon of that no keyword search had found; such neighbours were treated as suggestions to be read, not as evidence."
+  },
+  {
+   "text": "Sixty-one",
+   "values": [
+    "61"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "61 documents retrieved whole; one an editorial note | Scope, Methods | 130 [M14]",
+   "sentence": "Sixty-one documents were retrieved whole and read, the long ones through the passages around the search words (one proved to be an editorial note and was dropped), and 25 were kept."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "proved",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "Sixty-one documents were retrieved whole and read, the long ones through the passages around the search words (one proved to be an editorial note and was dropped), and 25 were kept."
+  },
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "were",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "Sixty-one documents were retrieved whole and read, the long ones through the passages around the search words (one proved to be an editorial note and was dropped), and 25 were kept."
+  },
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "The exact counts, searches and denominators behind each figure are in the memo. ## Read next The collection **American soft power in East Asia and the Pacific — run f9** holds the 25 documents in the order of the findings above, with each quoted passage marked and a note on why it is there, and ends with a list of their archival sources."
+  },
+  {
+   "text": "380",
+   "values": [
+    "380"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Fulbright: about 380 in 59 volumes (381); about 230 with evaluation words (229 in 50); none read | Bottom line 3, Decisions, Read next | 101 [M9]",
+   "sentence": "Your decisions above would unlock the next steps: a broader definition of soft power opens the exchange programmes (about 380 documents mentioning Fulbright, none yet read) and aid as an instrument of attraction; a wider region opens Australia and New Zealand (about 70 documents) and the six Pacific-island documents; and an interest in measured opinion means a request to NARA for the U.S."
+  },
+  {
+   "text": "70",
+   "values": [
+    "70"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Australia/New Zealand: about 70 (69 in 36 volumes) | Bottom line 3, Decisions, Read next | 100 [M9]",
+   "sentence": "Your decisions above would unlock the next steps: a broader definition of soft power opens the exchange programmes (about 380 documents mentioning Fulbright, none yet read) and aid as an instrument of attraction; a wider region opens Australia and New Zealand (about 70 documents) and the six Pacific-island documents; and an interest in measured opinion means a request to NARA for the U.S."
+  },
+  {
+   "text": "six",
+   "values": [
+    "6"
+   ],
+   "next": "pacific-island",
+   "kind": "word",
+   "class": "weak",
+   "row": "Pacific islands: 6 documents in 5 volumes | Bottom line 3, Decisions, Read next | 100 [M9]",
+   "sentence": "Your decisions above would unlock the next steps: a broader definition of soft power opens the exchange programmes (about 380 documents mentioning Fulbright, none yet read) and aid as an instrument of attraction; a wider region opens Australia and New Zealand (about 70 documents) and the six Pacific-island documents; and an interest in measured opinion means a request to NARA for the U.S."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 59 D 260: RG 306, UD-WW 151 and ten others, NAID 1257679, 1953–1971, partly restricted, 47 linear feet; cited from an NSC status report | Bottom line 2 | 123 [M13]; 93 [M8]",
+   "sentence": "Information Agency's research and area files in Record Group 306, beginning with the four USIA series above for which the run found no NARA identifier."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "usia",
+   "kind": "word",
+   "class": "weak",
+   "row": "25 documents in the answer / collection | Bottom line 1, Scope, Findings 4, Methods, Read next | 183 [M16]; 136 [M14]",
+   "sentence": "Information Agency's research and area files in Record Group 306, beginning with the four USIA series above for which the run found no NARA identifier."
+  }
+ ]
+}

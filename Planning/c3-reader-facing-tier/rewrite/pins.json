@@ -1,0 +1,134 @@
+{
+  "section_old": {
+    "lines": 17,
+    "sha256": "8fbf4c7a6efa4c2378eca0a76d2099b0ca51d4db66ecd557aae1b9ee5094ec14"
+  },
+  "section_new": {
+    "lines": 30,
+    "sha256": "d08e51ebe4742eb879a307873f3b83657a4d40fb71bbb31458100c187ee6166f"
+  },
+  "skeleton_old_sha256": "46de1abf0856eb57b8387b06e44918c630916aa9fa76fa52fb60568ea16f9da7",
+  "skeleton_new_sha256": "c46b274672d5a07adc0863d0936236c1b9fd392f20d556577bbe813388fd45db",
+  "pairs": [
+    {
+      "pair": "P1",
+      "source": "f12",
+      "sourceRun": "O-med A (1)",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "A": {
+        "label": "w10",
+        "wording": "old"
+      },
+      "B": {
+        "label": "w8",
+        "wording": "new"
+      }
+    },
+    {
+      "pair": "P2",
+      "source": "f3",
+      "sourceRun": "O-med K (1)",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "A": {
+        "label": "w14",
+        "wording": "new"
+      },
+      "B": {
+        "label": "w9",
+        "wording": "old"
+      }
+    },
+    {
+      "pair": "P3",
+      "source": "f11",
+      "sourceRun": "S-high K (1)",
+      "model": "claude-sonnet-5-5",
+      "effort": "high",
+      "A": {
+        "label": "w6",
+        "wording": "old"
+      },
+      "B": {
+        "label": "w15",
+        "wording": "new"
+      }
+    },
+    {
+      "pair": "P4",
+      "source": "f10",
+      "sourceRun": "S-high A (1)",
+      "model": "claude-sonnet-5-5",
+      "effort": "high",
+      "A": {
+        "label": "w16",
+        "wording": "old"
+      },
+      "B": {
+        "label": "w5",
+        "wording": "new"
+      }
+    },
+    {
+      "pair": "P5",
+      "source": "f9",
+      "sourceRun": "O-med K (2)",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "A": {
+        "label": "w4",
+        "wording": "old"
+      },
+      "B": {
+        "label": "w11",
+        "wording": "new"
+      }
+    },
+    {
+      "pair": "P6",
+      "source": "f1",
+      "sourceRun": "O-med A (2)",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "A": {
+        "label": "w13",
+        "wording": "old"
+      },
+      "B": {
+        "label": "w12",
+        "wording": "new"
+      }
+    },
+    {
+      "pair": "P7",
+      "source": "f7",
+      "sourceRun": "S-high A (2)",
+      "model": "claude-sonnet-5-5",
+      "effort": "high",
+      "A": {
+        "label": "w1",
+        "wording": "new"
+      },
+      "B": {
+        "label": "w7",
+        "wording": "old"
+      }
+    },
+    {
+      "pair": "P8",
+      "source": "f5",
+      "sourceRun": "S-high K (2)",
+      "model": "claude-sonnet-5-5",
+      "effort": "high",
+      "A": {
+        "label": "w2",
+        "wording": "new"
+      },
+      "B": {
+        "label": "w3",
+        "wording": "old"
+      }
+    }
+  ]
+}

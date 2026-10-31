@@ -1,0 +1,146 @@
+{
+  "w10": {
+    "pair": "P1",
+    "source": "f12",
+    "sourceRun": "O-med A (1)",
+    "wording": "old",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "slot": "A"
+  },
+  "w8": {
+    "pair": "P1",
+    "source": "f12",
+    "sourceRun": "O-med A (1)",
+    "wording": "new",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "slot": "B"
+  },
+  "w14": {
+    "pair": "P2",
+    "source": "f3",
+    "sourceRun": "O-med K (1)",
+    "wording": "new",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "slot": "A"
+  },
+  "w9": {
+    "pair": "P2",
+    "source": "f3",
+    "sourceRun": "O-med K (1)",
+    "wording": "old",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "slot": "B"
+  },
+  "w6": {
+    "pair": "P3",
+    "source": "f11",
+    "sourceRun": "S-high K (1)",
+    "wording": "old",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "slot": "A"
+  },
+  "w15": {
+    "pair": "P3",
+    "source": "f11",
+    "sourceRun": "S-high K (1)",
+    "wording": "new",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "slot": "B"
+  },
+  "w16": {
+    "pair": "P4",
+    "source": "f10",
+    "sourceRun": "S-high A (1)",
+    "wording": "old",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "slot": "A"
+  },
+  "w5": {
+    "pair": "P4",
+    "source": "f10",
+    "sourceRun": "S-high A (1)",
+    "wording": "new",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "slot": "B"
+  },
+  "w4": {
+    "pair": "P5",
+    "source": "f9",
+    "sourceRun": "O-med K (2)",
+    "wording": "old",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "slot": "A"
+  },
+  "w11": {
+    "pair": "P5",
+    "source": "f9",
+    "sourceRun": "O-med K (2)",
+    "wording": "new",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "slot": "B"
+  },
+  "w13": {
+    "pair": "P6",
+    "source": "f1",
+    "sourceRun": "O-med A (2)",
+    "wording": "old",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "slot": "A"
+  },
+  "w12": {
+    "pair": "P6",
+    "source": "f1",
+    "sourceRun": "O-med A (2)",
+    "wording": "new",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "slot": "B"
+  },
+  "w1": {
+    "pair": "P7",
+    "source": "f7",
+    "sourceRun": "S-high A (2)",
+    "wording": "new",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "slot": "A"
+  },
+  "w7": {
+    "pair": "P7",
+    "source": "f7",
+    "sourceRun": "S-high A (2)",
+    "wording": "old",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "slot": "B"
+  },
+  "w2": {
+    "pair": "P8",
+    "source": "f5",
+    "sourceRun": "S-high K (2)",
+    "wording": "new",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "slot": "A"
+  },
+  "w3": {
+    "pair": "P8",
+    "source": "f5",
+    "sourceRun": "S-high K (2)",
+    "wording": "old",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "slot": "B"
+  }
+}

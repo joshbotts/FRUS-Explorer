@@ -1,0 +1,1448 @@
+{
+ "run": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w2",
+ "traceSource": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w2/trace.md",
+ "traceTableLine": 7,
+ "traceRows": 84,
+ "mentions": 130,
+ "counts": {
+  "traced": 74,
+  "weak": 49,
+  "untraced": 7
+ },
+ "list": [
+  {
+   "text": "thirty-one",
+   "values": [
+    "31"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "thirty-one documents (bottom line, Scope) | line 121 (section 5); TT line 178",
+   "sentence": "On that vocabulary FRUS answers directly, in thirty-one documents from to ."
+  },
+  {
+   "text": "59",
+   "values": [
+    "59"
+   ],
+   "next": "lot",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Alphabetical Files of the Policy Planning Council (record group 59), lot 61 D 167, entries A1 1583A and A1 1583B, National Archives identifier 2198167, , partly restricted."
+  },
+  {
+   "text": "61 D 167",
+   "values": [
+    "61d167"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Alphabetical Files of the Policy Planning Council (record group 59), lot 61 D 167, entries A1 1583A and A1 1583B, National Archives identifier 2198167, , partly restricted."
+  },
+  {
+   "text": "A1 1583A",
+   "values": [
+    "a11583a"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 61 D 167, entries A1 1583A / A1 1583B, identifier 2198167, 1948-1961, partly restricted | line 55 (M8); TT line 185",
+   "sentence": "Alphabetical Files of the Policy Planning Council (record group 59), lot 61 D 167, entries A1 1583A and A1 1583B, National Archives identifier 2198167, , partly restricted."
+  },
+  {
+   "text": "A1 1583B",
+   "values": [
+    "a11583b"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 61 D 167, entries A1 1583A / A1 1583B, identifier 2198167, 1948-1961, partly restricted | line 55 (M8); TT line 185",
+   "sentence": "Alphabetical Files of the Policy Planning Council (record group 59), lot 61 D 167, entries A1 1583A and A1 1583B, National Archives identifier 2198167, , partly restricted."
+  },
+  {
+   "text": "2198167",
+   "values": [
+    "2198167"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "lot 61 D 167, entries A1 1583A / A1 1583B, identifier 2198167, 1948-1961, partly restricted | line 55 (M8); TT line 185",
+   "sentence": "Alphabetical Files of the Policy Planning Council (record group 59), lot 61 D 167, entries A1 1583A and A1 1583B, National Archives identifier 2198167, , partly restricted."
+  },
+  {
+   "text": "Two",
+   "values": [
+    "2"
+   ],
+   "next": "printed",
+   "kind": "word",
+   "class": "weak",
+   "row": "211 documents \"public diplomacy\"; 175 from 1977 on; only two of the 38,059 | line 39 (M4), line 31 (M3); TT line 181",
+   "sentence": "Two printed documents ( )."
+  },
+  {
+   "text": "59",
+   "values": [
+    "59"
+   ],
+   "next": "lot",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Records Relating to National Security Council Policy Papers, Executive Secretariat (record group 59), lot 63 D 351, entry A1 1586E, identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Records Relating to National Security Council Policy Papers, Executive Secretariat (record group 59), lot 63 D 351, entry A1 1586E, identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 63 D 351, entry A1 1586E, identifier 2839192, 1947-1979, partly restricted | line 55 (M8); TT line 185",
+   "sentence": "Records Relating to National Security Council Policy Papers, Executive Secretariat (record group 59), lot 63 D 351, entry A1 1586E, identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "lot 63 D 351, entry A1 1586E, identifier 2839192, 1947-1979, partly restricted | line 55 (M8); TT line 185",
+   "sentence": "Records Relating to National Security Council Policy Papers, Executive Secretariat (record group 59), lot 63 D 351, entry A1 1586E, identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "printed",
+   "kind": "word",
+   "class": "weak",
+   "row": "38,059 documents in the 77 volumes | line 15 (section 1); TT line 182",
+   "sentence": "One printed document ."
+  },
+  {
+   "text": "59",
+   "values": [
+    "59"
+   ],
+   "next": "lot",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Subject and Special Files (record group 59), lot 62 D 430, entry A1 1586C, identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "62 D 430",
+   "values": [
+    "62d430"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Subject and Special Files (record group 59), lot 62 D 430, entry A1 1586C, identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "A1 1586C",
+   "values": [
+    "a11586c"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 62 D 430, entry A1 1586C, identifier 2839191, 1953-1961, partly restricted | line 55 (M8); TT line 185",
+   "sentence": "Subject and Special Files (record group 59), lot 62 D 430, entry A1 1586C, identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "lot 62 D 430, entry A1 1586C, identifier 2839191, 1953-1961, partly restricted | line 55 (M8); TT line 185",
+   "sentence": "Subject and Special Files (record group 59), lot 62 D 430, entry A1 1586C, identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "Two",
+   "values": [
+    "2"
+   ],
+   "next": "printed",
+   "kind": "word",
+   "class": "weak",
+   "row": "211 documents \"public diplomacy\"; 175 from 1977 on; only two of the 38,059 | line 39 (M4), line 31 (M3); TT line 181",
+   "sentence": "Two printed documents ."
+  },
+  {
+   "text": "61 D 385",
+   "values": [
+    "61d385"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "State Department lot 61 D 385."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "printed",
+   "kind": "word",
+   "class": "weak",
+   "row": "38,059 documents in the 77 volumes | line 15 (section 1); TT line 182",
+   "sentence": "One printed document ."
+  },
+  {
+   "text": "59",
+   "values": [
+    "59"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "State Department central files (record group 59)."
+  },
+  {
+   "text": "Eight",
+   "values": [
+    "8"
+   ],
+   "next": "printed",
+   "kind": "word",
+   "class": "weak",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Eight printed documents; their source notes give file numbers rather than a series."
+  },
+  {
+   "text": "306",
+   "values": [
+    "306"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "United States Information Agency records (record group 306)."
+  },
+  {
+   "text": "Eight",
+   "values": [
+    "8"
+   ],
+   "next": "printed",
+   "kind": "word",
+   "class": "weak",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Eight printed documents."
+  },
+  {
+   "text": "WW 257",
+   "values": [
+    "ww257"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "USIA entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; \"five entries\" unresolved; an accession holds many series | line 57 (M8); TT line 186",
+   "sentence": "The source notes give entries (UD WW 257, UD WW 193, A1 42, P 104, P 207) and accessions (72 A 5121, 68 A 4933, 67 A 222, 69 A 3445)."
+  },
+  {
+   "text": "WW 193",
+   "values": [
+    "ww193"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "USIA entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; \"five entries\" unresolved; an accession holds many series | line 57 (M8); TT line 186",
+   "sentence": "The source notes give entries (UD WW 257, UD WW 193, A1 42, P 104, P 207) and accessions (72 A 5121, 68 A 4933, 67 A 222, 69 A 3445)."
+  },
+  {
+   "text": "A1 42",
+   "values": [
+    "a142"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "USIA entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; \"five entries\" unresolved; an accession holds many series | line 57 (M8); TT line 186",
+   "sentence": "The source notes give entries (UD WW 257, UD WW 193, A1 42, P 104, P 207) and accessions (72 A 5121, 68 A 4933, 67 A 222, 69 A 3445)."
+  },
+  {
+   "text": "P 104",
+   "values": [
+    "p104"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "USIA entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; \"five entries\" unresolved; an accession holds many series | line 57 (M8); TT line 186",
+   "sentence": "The source notes give entries (UD WW 257, UD WW 193, A1 42, P 104, P 207) and accessions (72 A 5121, 68 A 4933, 67 A 222, 69 A 3445)."
+  },
+  {
+   "text": "P 207",
+   "values": [
+    "p207"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "USIA entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; \"five entries\" unresolved; an accession holds many series | line 57 (M8); TT line 186",
+   "sentence": "The source notes give entries (UD WW 257, UD WW 193, A1 42, P 104, P 207) and accessions (72 A 5121, 68 A 4933, 67 A 222, 69 A 3445)."
+  },
+  {
+   "text": "72 A 5121",
+   "values": [
+    "72a5121"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "USIA entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; \"five entries\" unresolved; an accession holds many series | line 57 (M8); TT line 186",
+   "sentence": "The source notes give entries (UD WW 257, UD WW 193, A1 42, P 104, P 207) and accessions (72 A 5121, 68 A 4933, 67 A 222, 69 A 3445)."
+  },
+  {
+   "text": "68 A 4933",
+   "values": [
+    "68a4933"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "USIA entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; \"five entries\" unresolved; an accession holds many series | line 57 (M8); TT line 186",
+   "sentence": "The source notes give entries (UD WW 257, UD WW 193, A1 42, P 104, P 207) and accessions (72 A 5121, 68 A 4933, 67 A 222, 69 A 3445)."
+  },
+  {
+   "text": "67 A 222",
+   "values": [
+    "67a222"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "USIA entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; \"five entries\" unresolved; an accession holds many series | line 57 (M8); TT line 186",
+   "sentence": "The source notes give entries (UD WW 257, UD WW 193, A1 42, P 104, P 207) and accessions (72 A 5121, 68 A 4933, 67 A 222, 69 A 3445)."
+  },
+  {
+   "text": "69 A 3445",
+   "values": [
+    "69a3445"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "USIA entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; \"five entries\" unresolved; an accession holds many series | line 57 (M8); TT line 186",
+   "sentence": "The source notes give entries (UD WW 257, UD WW 193, A1 42, P 104, P 207) and accessions (72 A 5121, 68 A 4933, 67 A 222, 69 A 3445)."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "entrie",
+   "kind": "word",
+   "class": "weak",
+   "row": "thirty-one documents (bottom line, Scope) | line 121 (section 5); TT line 178",
+   "sentence": "None of the five entries appears in the finding aids I had, and one accession holds many series, so I could not name the exact series."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "accession",
+   "kind": "word",
+   "class": "weak",
+   "row": "38,059 documents in the 77 volumes | line 15 (section 1); TT line 182",
+   "sentence": "None of the five entries appears in the finding aids I had, and one accession holds many series, so I could not name the exact series."
+  },
+  {
+   "text": "40967285",
+   "values": [
+    "40967285"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Subject Files of the Director, 40967285, 1956-1972, 103 linear feet 1 inch, partly restricted | line 57 (M8); TT line 187",
+   "sentence": "Subject Files of the Director, identifier 40967285, , 103 linear feet 1 inch, partly restricted."
+  },
+  {
+   "text": "103",
+   "values": [
+    "103"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Subject Files of the Director, 40967285, 1956-1972, 103 linear feet 1 inch, partly restricted | line 57 (M8); TT line 187",
+   "sentence": "Subject Files of the Director, identifier 40967285, , 103 linear feet 1 inch, partly restricted."
+  },
+  {
+   "text": "1",
+   "values": [
+    "1"
+   ],
+   "next": "inch",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Subject Files of the Director, 40967285, 1956-1972, 103 linear feet 1 inch, partly restricted | line 57 (M8); TT line 187",
+   "sentence": "Subject Files of the Director, identifier 40967285, , 103 linear feet 1 inch, partly restricted."
+  },
+  {
+   "text": "1257679",
+   "values": [
+    "1257679"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Subject Files (Office of Policy and Plans), 1257679, 1953-1971, 47 linear feet, partly restricted | line 57 (M8); TT line 187",
+   "sentence": "Subject Files of the Office of Policy and Plans, identifier 1257679, , 47 linear feet, partly restricted."
+  },
+  {
+   "text": "47",
+   "values": [
+    "47"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Subject Files (Office of Policy and Plans), 1257679, 1953-1971, 47 linear feet, partly restricted | line 57 (M8); TT line 187",
+   "sentence": "Subject Files of the Office of Policy and Plans, identifier 1257679, , 47 linear feet, partly restricted."
+  },
+  {
+   "text": "40967113",
+   "values": [
+    "40967113"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Chronological Files, 40967113, 1961-1966, 10 linear feet 6 inches, partly restricted | line 57 (M8); TT line 187",
+   "sentence": "Chronological Files, identifier 40967113, , 10 linear feet 6 inches, partly restricted."
+  },
+  {
+   "text": "10",
+   "values": [
+    "10"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Chronological Files, 40967113, 1961-1966, 10 linear feet 6 inches, partly restricted | line 57 (M8); TT line 187",
+   "sentence": "Chronological Files, identifier 40967113, , 10 linear feet 6 inches, partly restricted."
+  },
+  {
+   "text": "6",
+   "values": [
+    "6"
+   ],
+   "next": "inche",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Chronological Files, 40967113, 1961-1966, 10 linear feet 6 inches, partly restricted | line 57 (M8); TT line 187",
+   "sentence": "Chronological Files, identifier 40967113, , 10 linear feet 6 inches, partly restricted."
+  },
+  {
+   "text": "Five",
+   "values": [
+    "5"
+   ],
+   "next": "printed",
+   "kind": "word",
+   "class": "weak",
+   "row": "thirty-one documents (bottom line, Scope) | line 121 (section 5); TT line 178",
+   "sentence": "Five printed documents;"
+  },
+  {
+   "text": "Four",
+   "values": [
+    "4"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "785 documents with both words, none as the phrase | line 39 (M4); TT line 179",
+   "sentence": "Four more documents, one each from the Nixon Presidential Materials, a Saigon embassy file (record group 84), and two record groups as printed in the source notes (305 and 34)."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "each",
+   "kind": "word",
+   "class": "weak",
+   "row": "38,059 documents in the 77 volumes | line 15 (section 1); TT line 182",
+   "sentence": "Four more documents, one each from the Nixon Presidential Materials, a Saigon embassy file (record group 84), and two record groups as printed in the source notes (305 and 34)."
+  },
+  {
+   "text": "84",
+   "values": [
+    "84"
+   ],
+   "next": "two",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Four more documents, one each from the Nixon Presidential Materials, a Saigon embassy file (record group 84), and two record groups as printed in the source notes (305 and 34)."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "record",
+   "kind": "word",
+   "class": "weak",
+   "row": "211 documents \"public diplomacy\"; 175 from 1977 on; only two of the 38,059 | line 39 (M4), line 31 (M3); TT line 181",
+   "sentence": "Four more documents, one each from the Nixon Presidential Materials, a Saigon embassy file (record group 84), and two record groups as printed in the source notes (305 and 34)."
+  },
+  {
+   "text": "305",
+   "values": [
+    "305"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Four more documents, one each from the Nixon Presidential Materials, a Saigon embassy file (record group 84), and two record groups as printed in the source notes (305 and 34)."
+  },
+  {
+   "text": "34",
+   "values": [
+    "34"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Four more documents, one each from the Nixon Presidential Materials, a Saigon embassy file (record group 84), and two record groups as printed in the source notes (305 and 34)."
+  },
+  {
+   "text": "711",
+   "values": [
+    "711"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "711 documents; 392 pointers on 200 documents | line 61 (M9); TT line 188",
+   "sentence": "Among 711 documents that pair information-program language with East Asian place names, the footnotes carry 392 pointers to archives, on 200 documents:"
+  },
+  {
+   "text": "392",
+   "values": [
+    "392"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "711 documents; 392 pointers on 200 documents | line 61 (M9); TT line 188",
+   "sentence": "Among 711 documents that pair information-program language with East Asian place names, the footnotes carry 392 pointers to archives, on 200 documents:"
+  },
+  {
+   "text": "200",
+   "values": [
+    "200"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "711 documents; 392 pointers on 200 documents | line 61 (M9); TT line 188",
+   "sentence": "Among 711 documents that pair information-program language with East Asian place names, the footnotes carry 392 pointers to archives, on 200 documents:"
+  },
+  {
+   "text": "181",
+   "values": [
+    "181"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "State Department no lot: 181 pointers on 95 documents | line 61 (M9); TT line 188",
+   "sentence": "State Department files with no lot named: 181 pointers on 95 documents."
+  },
+  {
+   "text": "95",
+   "values": [
+    "95"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "State Department no lot: 181 pointers on 95 documents | line 61 (M9); TT line 188",
+   "sentence": "State Department files with no lot named: 181 pointers on 95 documents."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "about one in seventy / forty-four / twenty-four / seventy-five (1940s, 1950s, 1960s, 1970s) | line 33 (14.3, 22.6, 41.9, 13.4 per 1,000); TT line 183",
+   "sentence": "Nixon Presidential Materials, National Security Council Files: 33 pointers on 17 documents."
+  },
+  {
+   "text": "17",
+   "values": [
+    "17"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "20 more volumes (information and national-security policy) | line 17 (functional scope)",
+   "sentence": "Nixon Presidential Materials, National Security Council Files: 33 pointers on 17 documents."
+  },
+  {
+   "text": "19",
+   "values": [
+    "19"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "from 1948 to 1977 | line 19 (date span); TT line 178",
+   "sentence": "Johnson Library, National Security File: 19 pointers on 13 documents."
+  },
+  {
+   "text": "13",
+   "values": [
+    "13"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "about one in seventy / forty-four / twenty-four / seventy-five (1940s, 1950s, 1960s, 1970s) | line 33 (14.3, 22.6, 41.9, 13.4 per 1,000); TT line 183",
+   "sentence": "Johnson Library, National Security File: 19 pointers on 13 documents."
+  },
+  {
+   "text": "9",
+   "values": [
+    "9"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "553 volumes | line 9 (M0.1); TT line 182",
+   "sentence": "Kennedy Library, National Security Files: 9 pointers on 7 documents."
+  },
+  {
+   "text": "7",
+   "values": [
+    "7"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Kennedy Library, National Security Files: 9 pointers on 7 documents."
+  },
+  {
+   "text": "59",
+   "values": [
+    "59"
+   ],
+   "next": "cited",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Records Relating to National Security Council Policy Papers (record group 59), cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "66 D 95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 66 D 95: 24 on 19; lot 63 D 351: 12 on 8; identifier 2839192, 1947-1979 | line 61 (M9); line 55 (M8); TT line 188",
+   "sentence": "Records Relating to National Security Council Policy Papers (record group 59), cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "24",
+   "values": [
+    "24"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "about one in seventy / forty-four / twenty-four / seventy-five (1940s, 1950s, 1960s, 1970s) | line 33 (14.3, 22.6, 41.9, 13.4 per 1,000); TT line 183",
+   "sentence": "Records Relating to National Security Council Policy Papers (record group 59), cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "19",
+   "values": [
+    "19"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "from 1948 to 1977 | line 19 (date span); TT line 178",
+   "sentence": "Records Relating to National Security Council Policy Papers (record group 59), cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Records Relating to National Security Council Policy Papers (record group 59), cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "12",
+   "values": [
+    "12"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Records Relating to National Security Council Policy Papers (record group 59), cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "8",
+   "values": [
+    "8"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Records Relating to National Security Council Policy Papers (record group 59), cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "lot 63 D 351, entry A1 1586E, identifier 2839192, 1947-1979, partly restricted | line 55 (M8); TT line 185",
+   "sentence": "Records Relating to National Security Council Policy Papers (record group 59), cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "62 D 430",
+   "values": [
+    "62d430"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Subject and Special Files, lot 62 D 430: 9 pointers on 8 documents; identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "9",
+   "values": [
+    "9"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "553 volumes | line 9 (M0.1); TT line 182",
+   "sentence": "Subject and Special Files, lot 62 D 430: 9 pointers on 8 documents; identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "8",
+   "values": [
+    "8"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Subject and Special Files, lot 62 D 430: 9 pointers on 8 documents; identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "lot 62 D 430, entry A1 1586C, identifier 2839191, 1953-1961, partly restricted | line 55 (M8); TT line 185",
+   "sentence": "Subject and Special Files, lot 62 D 430: 9 pointers on 8 documents; identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "59",
+   "values": [
+    "59"
+   ],
+   "next": "lot",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Records Relating to Activities with the National Security Council (record group 59), lot 62 D 1, entries A1 1583E and A1 1583F, identifier 2838992, , partly restricted: 8 pointers on 7 documents."
+  },
+  {
+   "text": "62 D 1",
+   "values": [
+    "62d1"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 62 D 1: 8 on 7; entries A1 1583E / A1 1583F; identifier 2838992; 1948-1961; partly restricted | line 61 (M9); line 55 (M8); TT line 188",
+   "sentence": "Records Relating to Activities with the National Security Council (record group 59), lot 62 D 1, entries A1 1583E and A1 1583F, identifier 2838992, , partly restricted: 8 pointers on 7 documents."
+  },
+  {
+   "text": "A1 1583E",
+   "values": [
+    "a11583e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 62 D 1: 8 on 7; entries A1 1583E / A1 1583F; identifier 2838992; 1948-1961; partly restricted | line 61 (M9); line 55 (M8); TT line 188",
+   "sentence": "Records Relating to Activities with the National Security Council (record group 59), lot 62 D 1, entries A1 1583E and A1 1583F, identifier 2838992, , partly restricted: 8 pointers on 7 documents."
+  },
+  {
+   "text": "A1 1583F",
+   "values": [
+    "a11583f"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 62 D 1: 8 on 7; entries A1 1583E / A1 1583F; identifier 2838992; 1948-1961; partly restricted | line 61 (M9); line 55 (M8); TT line 188",
+   "sentence": "Records Relating to Activities with the National Security Council (record group 59), lot 62 D 1, entries A1 1583E and A1 1583F, identifier 2838992, , partly restricted: 8 pointers on 7 documents."
+  },
+  {
+   "text": "2838992",
+   "values": [
+    "2838992"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "lot 62 D 1: 8 on 7; entries A1 1583E / A1 1583F; identifier 2838992; 1948-1961; partly restricted | line 61 (M9); line 55 (M8); TT line 188",
+   "sentence": "Records Relating to Activities with the National Security Council (record group 59), lot 62 D 1, entries A1 1583E and A1 1583F, identifier 2838992, , partly restricted: 8 pointers on 7 documents."
+  },
+  {
+   "text": "8",
+   "values": [
+    "8"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Records Relating to Activities with the National Security Council (record group 59), lot 62 D 1, entries A1 1583E and A1 1583F, identifier 2838992, , partly restricted: 8 pointers on 7 documents."
+  },
+  {
+   "text": "7",
+   "values": [
+    "7"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Records Relating to Activities with the National Security Council (record group 59), lot 62 D 1, entries A1 1583E and A1 1583F, identifier 2838992, , partly restricted: 8 pointers on 7 documents."
+  },
+  {
+   "text": "62 D 181",
+   "values": [
+    "62d181"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 62 D 181: 8 on 3, series not identified | line 61 (M9)",
+   "sentence": "State Department lot 62 D 181: 8 pointers on 3 documents."
+  },
+  {
+   "text": "8",
+   "values": [
+    "8"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "State Department lot 62 D 181: 8 pointers on 3 documents."
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "211 documents \"public diplomacy\"; 175 from 1977 on; only two of the 38,059 | line 39 (M4), line 31 (M3); TT line 181",
+   "sentence": "State Department lot 62 D 181: 8 pointers on 3 documents."
+  },
+  {
+   "text": "84",
+   "values": [
+    "84"
+   ],
+   "next": "lot",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "Files of Ambassador Ellsworth Bunker (record group 84), lot 74 D 417, identifier 588795, unrestricted: 5 pointers."
+  },
+  {
+   "text": "74 D 417",
+   "values": [
+    "74d417"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 74 D 417, Files of Ambassador Ellsworth Bunker, record group 84, identifier 588795, unrestricted; 5 pointers | line 61 (M9)",
+   "sentence": "Files of Ambassador Ellsworth Bunker (record group 84), lot 74 D 417, identifier 588795, unrestricted: 5 pointers."
+  },
+  {
+   "text": "588795",
+   "values": [
+    "588795"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "lot 74 D 417, Files of Ambassador Ellsworth Bunker, record group 84, identifier 588795, unrestricted; 5 pointers | line 61 (M9)",
+   "sentence": "Files of Ambassador Ellsworth Bunker (record group 84), lot 74 D 417, identifier 588795, unrestricted: 5 pointers."
+  },
+  {
+   "text": "5",
+   "values": [
+    "5"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "lot 74 D 417, Files of Ambassador Ellsworth Bunker, record group 84, identifier 588795, unrestricted; 5 pointers | line 61 (M9)",
+   "sentence": "Files of Ambassador Ellsworth Bunker (record group 84), lot 74 D 417, identifier 588795, unrestricted: 5 pointers."
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "211 documents \"public diplomacy\"; 175 from 1977 on; only two of the 38,059 | line 39 (M4), line 31 (M3); TT line 181",
+   "sentence": "Nixon White House Central Files: 3 pointers on 3 documents."
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "211 documents \"public diplomacy\"; 175 from 1977 on; only two of the 38,059 | line 39 (M4), line 31 (M3); TT line 181",
+   "sentence": "Nixon White House Central Files: 3 pointers on 3 documents."
+  },
+  {
+   "text": "59",
+   "values": [
+    "59"
+   ],
+   "next": "lot",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Subject Files of the Office of the Officer in Charge for Malaya Affairs (record group 59), lot 58 D 726, identifier 2544398, , possibly restricted."
+  },
+  {
+   "text": "58 D 726",
+   "values": [
+    "58d726"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 58 D 726, Subject Files, Office of the Officer in Charge for Malaya Affairs, identifier 2544398, 1955-1956, possibly restricted, cited by 1955-57v22 d447 | line 55 (M8)",
+   "sentence": "Subject Files of the Office of the Officer in Charge for Malaya Affairs (record group 59), lot 58 D 726, identifier 2544398, , possibly restricted."
+  },
+  {
+   "text": "2544398",
+   "values": [
+    "2544398"
+   ],
+   "next": "possibly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "lot 58 D 726, Subject Files, Office of the Officer in Charge for Malaya Affairs, identifier 2544398, 1955-1956, possibly restricted, cited by 1955-57v22 d447 | line 55 (M8)",
+   "sentence": "Subject Files of the Office of the Officer in Charge for Malaya Affairs (record group 59), lot 58 D 726, identifier 2544398, , possibly restricted."
+  },
+  {
+   "text": "427",
+   "values": [
+    "427"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "427 documents whose source notes name USIA records (record group 306), whole edition | line 65 (M11)",
+   "sentence": "Source notes name its records for 427 documents in the whole edition, but footnotes point to its files only 11 times."
+  },
+  {
+   "text": "11",
+   "values": [
+    "11"
+   ],
+   "next": "time",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "427 documents whose source notes name USIA records (record group 306), whole edition | line 65 (M11)",
+   "sentence": "Source notes name its records for 427 documents in the whole edition, but footnotes point to its files only 11 times."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "553 volumes | line 9 (M0.1); TT line 182",
+   "sentence": "I searched for the exact phrase soft power across all 553 volumes and found no document."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "word",
+   "kind": "word",
+   "class": "weak",
+   "row": "211 documents \"public diplomacy\"; 175 from 1977 on; only two of the 38,059 | line 39 (M4), line 31 (M3); TT line 181",
+   "sentence": "I then searched for the two words anywhere in one document and found 785 documents, none in which they stand together as the phrase."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "38,059 documents in the 77 volumes | line 15 (section 1); TT line 182",
+   "sentence": "I then searched for the two words anywhere in one document and found 785 documents, none in which they stand together as the phrase."
+  },
+  {
+   "text": "785",
+   "values": [
+    "785"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "785 documents with both words, none as the phrase | line 39 (M4); TT line 179",
+   "sentence": "I then searched for the two words anywhere in one document and found 785 documents, none in which they stand together as the phrase."
+  },
+  {
+   "text": "211",
+   "values": [
+    "211"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "211 documents \"public diplomacy\"; 175 from 1977 on; only two of the 38,059 | line 39 (M4), line 31 (M3); TT line 181",
+   "sentence": "The phrase public diplomacy appears in 211 documents, 175 of them in volumes of and later, and in only two of the 38,059 documents in the 77 regional volumes."
+  },
+  {
+   "text": "175",
+   "values": [
+    "175"
+   ],
+   "next": "them",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "211 documents \"public diplomacy\"; 175 from 1977 on; only two of the 38,059 | line 39 (M4), line 31 (M3); TT line 181",
+   "sentence": "The phrase public diplomacy appears in 211 documents, 175 of them in volumes of and later, and in only two of the 38,059 documents in the 77 regional volumes."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "211 documents \"public diplomacy\"; 175 from 1977 on; only two of the 38,059 | line 39 (M4), line 31 (M3); TT line 181",
+   "sentence": "The phrase public diplomacy appears in 211 documents, 175 of them in volumes of and later, and in only two of the 38,059 documents in the 77 regional volumes."
+  },
+  {
+   "text": "38,059",
+   "values": [
+    "38059"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "38,059 documents in the 77 volumes | line 15 (section 1); TT line 182",
+   "sentence": "The phrase public diplomacy appears in 211 documents, 175 of them in volumes of and later, and in only two of the 38,059 documents in the 77 regional volumes."
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "regional",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "38,059 documents in the 77 volumes | line 15 (section 1); TT line 182",
+   "sentence": "The phrase public diplomacy appears in 211 documents, 175 of them in volumes of and later, and in only two of the 38,059 documents in the 77 regional volumes."
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "38,059 documents in the 77 volumes | line 15 (section 1); TT line 182",
+   "sentence": "As controls, the phrase Department of State occurs in documents of every one of the 77 volumes, and a nonsense string finds nothing."
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "38,059 documents in the 77 volumes | line 15 (section 1); TT line 182",
+   "sentence": "I scanned the 77 volumes, and 20 more on information and national-security policy, for audience and effect language."
+  },
+  {
+   "text": "20",
+   "values": [
+    "20"
+   ],
+   "next": "on",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "20 more volumes (information and national-security policy) | line 17 (functional scope)",
+   "sentence": "I scanned the 77 volumes, and 20 more on information and national-security policy, for audience and effect language."
+  },
+  {
+   "text": "306",
+   "values": [
+    "306"
+   ],
+   "next": "at",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Section 2 lists: Two (lot 61 D 167: 1952-54v12p2 d251 and d359); One (lot 63 D 351); Two (lot 62 D 430); One (lot 61 D 385); Eight (central files); Eight (record group 306); Five (Johnson Library); Fo",
+   "sentence": "The shelf that holds more is the Agency's own record group 306 at the National Archives:"
+  },
+  {
+   "text": "1254251",
+   "values": [
+    "1254251"
+   ],
+   "next": "subject",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "research shelf: Program Files 1254251 (1954-1958), Subject Files 1257679 (1953-1971), Records Relating to the Voice of America 7542975 (1948-1959), partly restricted | line 57 (M8); TT line 190",
+   "sentence": "Program Files of the Office of Research and Intelligence (identifier 1254251, ), Subject Files of the Office of Policy and Plans (1257679, ) and Records Relating to the Voice of America (7542975, ), each partly restricted."
+  },
+  {
+   "text": "1257679",
+   "values": [
+    "1257679"
+   ],
+   "next": "record",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "research shelf: Program Files 1254251 (1954-1958), Subject Files 1257679 (1953-1971), Records Relating to the Voice of America 7542975 (1948-1959), partly restricted | line 57 (M8); TT line 190",
+   "sentence": "Program Files of the Office of Research and Intelligence (identifier 1254251, ), Subject Files of the Office of Policy and Plans (1257679, ) and Records Relating to the Voice of America (7542975, ), each partly restricted."
+  },
+  {
+   "text": "7542975",
+   "values": [
+    "7542975"
+   ],
+   "next": "each",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "research shelf: Program Files 1254251 (1954-1958), Subject Files 1257679 (1953-1971), Records Relating to the Voice of America 7542975 (1948-1959), partly restricted | line 57 (M8); TT line 190",
+   "sentence": "Program Files of the Office of Research and Intelligence (identifier 1254251, ), Subject Files of the Office of Policy and Plans (1257679, ) and Records Relating to the Voice of America (7542975, ), each partly restricted."
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "east",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "77 East Asia and Pacific volumes (Scope, methods, part 3, finding 3) | line 15; TT line 182",
+   "sentence": "Exchange programs were scanned, but the documents found describe exchanges without assessing them. **Scope** — I searched the 77 East Asia and Pacific volumes (38,059 documents once front matter and editors' notes are set aside), plus 20 volumes on information and national-security policy and three volumes of public diplomacy, leaving out South Asia and the Near East."
+  },
+  {
+   "text": "38,059",
+   "values": [
+    "38059"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "38,059 documents in the 77 volumes | line 15 (section 1); TT line 182",
+   "sentence": "Exchange programs were scanned, but the documents found describe exchanges without assessing them. **Scope** — I searched the 77 East Asia and Pacific volumes (38,059 documents once front matter and editors' notes are set aside), plus 20 volumes on information and national-security policy and three volumes of public diplomacy, leaving out South Asia and the Near East."
+  },
+  {
+   "text": "20",
+   "values": [
+    "20"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "20 more volumes (information and national-security policy) | line 17 (functional scope)",
+   "sentence": "Exchange programs were scanned, but the documents found describe exchanges without assessing them. **Scope** — I searched the 77 East Asia and Pacific volumes (38,059 documents once front matter and editors' notes are set aside), plus 20 volumes on information and national-security policy and three volumes of public diplomacy, leaving out South Asia and the Near East."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "traced",
+   "row": "three public diplomacy volumes (Scope, decisions, methods) | line 17; TT line 193",
+   "sentence": "Exchange programs were scanned, but the documents found describe exchanges without assessing them. **Scope** — I searched the 77 East Asia and Pacific volumes (38,059 documents once front matter and editors' notes are set aside), plus 20 volumes on information and national-security policy and three volumes of public diplomacy, leaving out South Asia and the Near East."
+  },
+  {
+   "text": "thirty-one",
+   "values": [
+    "31"
+   ],
+   "next": "these",
+   "kind": "word",
+   "class": "weak",
+   "row": "thirty-one documents (bottom line, Scope) | line 121 (section 5); TT line 178",
+   "sentence": "The collection holds thirty-one of these documents, from to , with each reprinted memorandum counted once. ## Decisions this needs from you **What counts as soft power.** The term does not occur, so I used the officials' own vocabulary of information programs, the Agency's overseas offices, the Voice of America and psychological operations."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "public",
+   "kind": "word",
+   "class": "traced",
+   "row": "three public diplomacy volumes (Scope, decisions, methods) | line 17; TT line 193",
+   "sentence": "My inclusion rule meanwhile: a document that states an intended message, channel or audience belief for East Asia or the Pacific, or assesses the effect of such messaging. **Where the region ends.** I took China, Japan, Korea, Indochina, Southeast Asia and Australasia; adding South Asia would bring India and Pakistan in as audiences, and mainland China as an audience is a thread I did not follow. **Who counts as a policymaker.** I included field officers and Agency staff as well as Washington principals; limiting the set to Presidents and Secretaries would remove most of the effectiveness assessments, since the Agency's officers wrote them. **Volumes whose titles do not name the region.** I included three public diplomacy volumes, which hold the Manila conference, the program memorandum and the Vietnam field reviews; leaving them out would thin the account of the and . ## Findings ### The message was a contrast with Soviet imperialism, aimed at leaders The earliest documents describe the task as counter-propaganda for educated and influential people."
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "38,059 documents in the 77 volumes | line 15 (section 1); TT line 182",
+   "sentence": "These are officials' beliefs, not findings about Asian peoples. ### Effect was asserted, then judged weak, always by the program's own officers Among the dated documents in the 77 volumes, those naming the Agency, its overseas offices or the Voice of America were about one in seventy in the ."
+  },
+  {
+   "text": "about one in seventy",
+   "values": [
+    "1",
+    "70"
+   ],
+   "next": "",
+   "kind": "ratio",
+   "class": "traced",
+   "row": "about one in seventy / forty-four / twenty-four / seventy-five (1940s, 1950s, 1960s, 1970s) | line 33 (14.3, 22.6, 41.9, 13.4 per 1,000); TT line 183",
+   "sentence": "These are officials' beliefs, not findings about Asian peoples. ### Effect was asserted, then judged weak, always by the program's own officers Among the dated documents in the 77 volumes, those naming the Agency, its overseas offices or the Voice of America were about one in seventy in the ."
+  },
+  {
+   "text": "one in forty-four",
+   "values": [
+    "1",
+    "44"
+   ],
+   "next": "one",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "about one in seventy / forty-four / twenty-four / seventy-five (1940s, 1950s, 1960s, 1970s) | line 33 (14.3, 22.6, 41.9, 13.4 per 1,000); TT line 183",
+   "sentence": "They were one in forty-four in the , one in twenty-four in the and one in seventy-five in the ."
+  },
+  {
+   "text": "one in twenty-four",
+   "values": [
+    "1",
+    "24"
+   ],
+   "next": "one",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "about one in seventy / forty-four / twenty-four / seventy-five (1940s, 1950s, 1960s, 1970s) | line 33 (14.3, 22.6, 41.9, 13.4 per 1,000); TT line 183",
+   "sentence": "They were one in forty-four in the , one in twenty-four in the and one in seventy-five in the ."
+  },
+  {
+   "text": "one in seventy-five",
+   "values": [
+    "1",
+    "75"
+   ],
+   "next": "",
+   "kind": "ratio",
+   "class": "traced",
+   "row": "about one in seventy / forty-four / twenty-four / seventy-five (1940s, 1950s, 1960s, 1970s) | line 33 (14.3, 22.6, 41.9, 13.4 per 1,000); TT line 183",
+   "sentence": "They were one in forty-four in the , one in twenty-four in the and one in seventy-five in the ."
+  },
+  {
+   "text": "half",
+   "values": [
+    "0.5"
+   ],
+   "next": "those",
+   "kind": "word",
+   "class": "weak",
+   "row": "1949 China volume supplies close to half of the 1940s documents | line 33 (88 of 196)",
+   "sentence": "The figure is not a regional rate, because the China volume supplies close to half of those documents."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "third",
+   "kind": "word",
+   "class": "traced",
+   "row": "about two-thirds (Philippines services cut in fiscal 1954) | line 86 (Q10: approximately 65%); TT line 195",
+   "sentence": "The Agency's services in the Philippines were cut by about two-thirds in fiscal ."
+  },
+  {
+   "text": "fourteen",
+   "values": [
+    "14"
+   ],
+   "next": "step",
+   "kind": "word",
+   "class": "traced",
+   "row": "fourteen steps (Rowan, May 1964) | line 115 (Q39 document); TT line 194",
+   "sentence": "In Rowan listed fourteen steps."
+  },
+  {
+   "text": "twenty",
+   "values": [
+    "20"
+   ],
+   "next": "year",
+   "kind": "word",
+   "class": "weak",
+   "row": "20 more volumes (information and national-security policy) | line 17 (functional scope)",
+   "sentence": "After the fall of Saigon the East Asia office abstracted the posts' view: > During this waiting period, programs on U.S. security relations in Asia lack credibility and may in fact do damage to our relations. > In the Consulate in Hong Kong judged that the public position of had failed to reassure the Association of Southeast Asian Nations (ASEAN) or Japan: > Rather than being reassured, the ASEAN countries and Japan interpreted our apparent unwillingness to come to grips with the “new realities” as another indication that the United States, after twenty years of exaggerating the extent of its interests in Southeast Asia, might now decide it had no interest there at all. > By the Agency's East Asia office described the task as shoring up East Asians' confidence in America's staying power . ## How this was done I worked from the text of the printed documents as the library indexes it, with the editors' footnotes included in the body."
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "east",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "77 East Asia and Pacific volumes (Scope, methods, part 3, finding 3) | line 15; TT line 182",
+   "sentence": "I chose the 77 East Asia and Pacific volumes from their printed titles."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "public",
+   "kind": "word",
+   "class": "traced",
+   "row": "three public diplomacy volumes (Scope, decisions, methods) | line 17; TT line 193",
+   "sentence": "It showed that I had missed three public diplomacy volumes whose titles do not name the region, and I then searched those in the same way."
+  },
+  {
+   "text": "95",
+   "values": [
+    "95"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "State Department no lot: 181 pointers on 95 documents | line 61 (M9); TT line 188",
+   "sentence": "I retrieved 95 documents whole, read passages from them, and quoted from 31."
+  },
+  {
+   "text": "31",
+   "values": [
+    "31"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "thirty-one documents (bottom line, Scope) | line 121 (section 5); TT line 178",
+   "sentence": "I retrieved 95 documents whole, read passages from them, and quoted from 31."
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "ten",
+   "kind": "word",
+   "class": "weak",
+   "row": "553 volumes | line 9 (M0.1); TT line 182",
+   "sentence": "The similarity search finds about nine in ten of a document's true nearest neighbors, so I make no claim that no similar document exists."
+  },
+  {
+   "text": "ten",
+   "values": [
+    "10"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "Chronological Files, 40967113, 1961-1966, 10 linear feet 6 inches, partly restricted | line 57 (M8); TT line 187",
+   "sentence": "The similarity search finds about nine in ten of a document's true nearest neighbors, so I make no claim that no similar document exists."
+  }
+ ]
+}

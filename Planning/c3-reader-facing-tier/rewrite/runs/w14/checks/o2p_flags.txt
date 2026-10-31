@@ -1,0 +1,60 @@
+O2' check of w14: 71 numbers in overview.md; 43 traced, 28 weak, 0 untraced.
+TRACE TABLE: 55 rows, from line 7 of trace.md.
+Each flagged number is WEAK (a row holds the value without the word after it) or UNTRACED (no row holds the value). Decide each: TRACED (name the row), NOT A NUMBER, or UNTRACED.
+
+[WEAK] 'half' (value 0.5, next word 'document'); nearest row: more than half from State Department records (731 + 57 of 1,401) | Bottom line 2 | 133–135 [M11]; trace 301, 309
+    sentence: Where FRUS points for the rest.** More than half of the 1,400 documents came from the State Department's records, and about one in eight from the Information Agency's own. *The series the printed documents came from:* Records Relating to National Security Council Policy Papers, Executive Secretariat — Record Group 59, entry A1 1586E, National Archives identifier 2839192, ; partly restricted under 
+[WEAK] '2839191' (value 2839191, next word 'partly'); nearest row: Subject and Special Files: RG 59, A1 1586C, 2839191, 1953–1961 | Bottom line 2 | 151; trace 303
+    sentence: Subject and Special Files, Executive Secretariat — Record Group 59, entry A1 1586C, identifier 2839191, ; partly restricted.
+[WEAK] '40943515' (value 40943515, next word 'partly'); nearest row: Alphabetical Subject Files ... Policy Guidance: RG 306, P 311, 40943515, 1953–1969, volume level | Bottom line 2 | 155; trace 303
+    sentence: Alphabetical Subject Files Containing Policy Guidance Records, Information Agency Office of Policy — Record Group 306, entry P 311, identifier 40943515, ; partly restricted.
+[WEAK] '622' (value 622, next word 'at'); nearest row: RG 306 identifier 622 | Bottom line 2 | 158
+    sentence: Information Agency — Record Group 306, identifier 622, at the level of the whole record group.
+[WEAK] 'three' (value 3, next word 'to'); nearest row: "soft power" found nowhere in 553 volumes | Bottom line 3 | 5, 13 [M0]; 20 [M1]; trace 293, 295
+    sentence: The Director's and area office files the public-diplomacy volumes print from were transferred in accessions that the National Archives has since split across three to eighteen series each.
+[WEAK] 'eighteen' (value 18, next word 'serie'); nearest row: accessions split across three to eighteen series; identifiers 48349732, 1102141, 42125423, no dates/access | Bottom line 2 | 156; trace 313
+    sentence: The Director's and area office files the public-diplomacy volumes print from were transferred in accessions that the National Archives has since split across three to eighteen series each.
+[WEAK] '2839191' (value 2839191, next word 'partly'); nearest row: Subject and Special Files: RG 59, A1 1586C, 2839191, 1953–1961 | Bottom line 2 | 151; trace 303
+    sentence: Subject and Special Files, Executive Secretariat — Record Group 59, entry A1 1586C, identifier 2839191, ; partly restricted.
+[WEAK] '2838992' (value 2838992, next word 'partly'); nearest row: Activities with the NSC: RG 59, A1 1583E/F, 2838992, 1948–1961 | Bottom line 2 | 153; trace 303
+    sentence: Records Relating to Activities with the National Security Council, Policy Planning Council — Record Group 59, entries A1 1583E and 1583F, identifier 2838992, ; partly restricted.
+[WEAK] '382' (value 382, next word 'identifier'); nearest row: Office of Policy and Plans Subject Files: RG 306, UD-WW 151 to 382, 1257679, 1953–1971, cited behind 1955–57 Vol. IX Doc. 207 | Bottom line 2 | 154; trace 303
+    sentence: Subject Files, Information Agency Office of Policy and Plans — Record Group 306, entries UD-WW 151 to 382, identifier 1257679, ; partly restricted.
+[WEAK] '1257679' (value 1257679, next word 'partly'); nearest row: Office of Policy and Plans Subject Files: RG 306, UD-WW 151 to 382, 1257679, 1953–1971, cited behind 1955–57 Vol. IX Doc. 207 | Bottom line 2 | 154; trace 303
+    sentence: Subject Files, Information Agency Office of Policy and Plans — Record Group 306, entries UD-WW 151 to 382, identifier 1257679, ; partly restricted.
+[WEAK] '511' (value 511, next word 'whose'); nearest row: decimal file 511, class 5 label; 1950s manual | Bottom line 2, 3 | 160–163; trace 304
+    sentence: The State Department's decimal files, Record Group 59, chiefly file 511, whose leading digit is the class the filing manual labels "International Informational and Educational Relations, Cultural Affairs and Programs";
+[WEAK] 'one' (value 1, next word 'document'); nearest row: about 1,400 documents (1,401 after cleaning) | Bottom line 1, 2; Decisions; Methods | 61–62 [M5]; trace 296
+    sentence: Only about one document in four of the 1,400 carries such a citation, so the second list is thin.
+[WEAK] '1,400' (value 1400, next word 'carrie'); nearest row: about 1,400 documents (1,401 after cleaning) | Bottom line 1, 2; Decisions; Methods | 61–62 [M5]; trace 296
+    sentence: Only about one document in four of the 1,400 carries such a citation, so the second list is thin.
+[WEAK] '208' (value 208, next word 'department'); nearest row: circular telegram 208: one printed reply (Saigon, 1952–54 Vol. XIII Pt 1 Doc 116); rest in 1950–1954 decimal file | Bottom line 3 | 280–282; trace 305
+    sentence: I searched for the phrase "circular telegram 208", the Department's circular asking posts for those replies and found one printed reply, Saigon's .
+[WEAK] '511' (value 511, next word 'scope'); nearest row: decimal file 511, class 5 label; 1950s manual | Bottom line 2, 3 | 160–163; trace 304
+    sentence: The rest are in the State Department's decimal file, Record Group 59, class 511. **Scope.** I read the postwar volumes on East Asia, the Pacific, China, Japan, Korea, Indochina and Southeast Asia through the series, plus the public-diplomacy and information volumes, where a document counted only if it named an Asian place: 81 volumes holding about 35,000 documents.
+[WEAK] 'one' (value 1, next word 'document'); nearest row: about 1,400 documents (1,401 after cleaning) | Bottom line 1, 2; Decisions; Methods | 61–62 [M5]; trace 296
+    sentence: The phrase is concentrated in the region: 14 of the 25 documents that use it in the whole series fall in the scope, which holds only about one document in nine.
+[WEAK] 'one' (value 1, next word 'warned'); nearest row: about 1,400 documents (1,401 after cleaning) | Bottom line 1, 2; Decisions; Methods | 61–62 [M5]; trace 296
+    sentence: Aid given freely, one warned, looked like weakness: > "In Asia give-away programs are too frequently mistaken in the oriental mind as meaning that the donor not only has a soft heart but also a soft head." Another writer urged that "we must by word and deed do everything within our power to overcome any feeling in the Oriental mind that our interest in Asia is casual, temporary or overshadowed by 
+[WEAK] 'One' (value 1, next word 'official'); nearest row: about 1,400 documents (1,401 after cleaning) | Bottom line 1, 2; Decisions; Methods | 61–62 [M5]; trace 296
+    sentence: One official feared the cost to the American image across Asia:
+[WEAK] 'one' (value 1, next word 'post'); nearest row: about 1,400 documents (1,401 after cleaning) | Bottom line 1, 2; Decisions; Methods | 61–62 [M5]; trace 296
+    sentence: After one post in Singapore proposed programming on "the benefits accruing from the end of our involvement" .
+[WEAK] '172' (value 172, next word 'document'); nearest row: "USI" = United States of Indonesia removed; 172 dropped | Scope; Methods | 55–62 [M4], [M5]; trace 297
+    sentence: "USI" often meant the United States of Indonesia, and I removed the 172 documents that failed it, leaving about 1,400.
+[WEAK] 'Two' (value 2, next word 'control'); nearest row: about 1,400 documents (1,401 after cleaning) | Bottom line 1, 2; Decisions; Methods | 61–62 [M5]; trace 296
+    sentence: Two controls ran in the same pass: a common phrase found in every scope volume and an impossible word found nowhere.
+[WEAK] 'about one in sixty' (value 1/60, next word 'one'); nearest row: about one in sixty (1940s), thirty (1950s), twenty (1960s), thirty (1970s); footnotes included | Methods | 115–125 [M10]; trace 299
+    sentence: Among dated documents in the regional volumes, the vocabulary appears in about one in sixty in the , one in thirty in the , one in twenty in the and one in thirty in the ; these rates include the editors' footnotes.
+[WEAK] 'one in thirty' (value 1/30, next word 'one'); nearest row: about one in sixty (1940s), thirty (1950s), twenty (1960s), thirty (1970s); footnotes included | Methods | 115–125 [M10]; trace 299
+    sentence: Among dated documents in the regional volumes, the vocabulary appears in about one in sixty in the , one in thirty in the , one in twenty in the and one in thirty in the ; these rates include the editors' footnotes.
+[WEAK] 'one in twenty' (value 1/20, next word 'one'); nearest row: "soft power" found nowhere in 553 volumes | Bottom line 3 | 5, 13 [M0]; 20 [M1]; trace 293, 295
+    sentence: Among dated documents in the regional volumes, the vocabulary appears in about one in sixty in the , one in thirty in the , one in twenty in the and one in thirty in the ; these rates include the editors' footnotes.
+[WEAK] 'one in thirty' (value 1/30, next word 'these'); nearest row: about one in sixty (1940s), thirty (1950s), twenty (1960s), thirty (1970s); footnotes included | Methods | 115–125 [M10]; trace 299
+    sentence: Among dated documents in the regional volumes, the vocabulary appears in about one in sixty in the , one in thirty in the , one in twenty in the and one in thirty in the ; these rates include the editors' footnotes.
+[WEAK] '121' (value 121, next word 'document'); nearest row: 121 read whole, 23 quoted, every quotation verified | Methods | 175–185 [M13], [M14]; 318; trace 306, 314
+    sentence: I read 121 documents whole and quoted from 23, and I checked every quotation word for word against its document.
+[WEAK] '23' (value 23, next word 'i'); nearest row: 121 read whole, 23 quoted, every quotation verified | Methods | 175–185 [M13], [M14]; 318; trace 306, 314
+    sentence: I read 121 documents whole and quoted from 23, and I checked every quotation word for word against its document.
+[WEAK] 'One' (value 1, next word 'document'); nearest row: about 1,400 documents (1,401 after cleaning) | Bottom line 1, 2; Decisions; Methods | 61–62 [M5]; trace 296
+    sentence: One document, Saigon's reply, I first met as a close textual neighbour of the Manila summary, measured by a comparison of whole documents; it was also in the full-text set, and what I say of it rests on reading it. ## Read next The collection "Information programs and the American image in East Asia, " holds every document cited here, with the quoted passages marked, arranged in the same order as 

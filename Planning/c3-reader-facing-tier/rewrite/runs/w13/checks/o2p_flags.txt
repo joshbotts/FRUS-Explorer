@@ -1,0 +1,84 @@
+O2' check of w13: 96 numbers in overview.md; 56 traced, 25 weak, 15 untraced.
+TRACE TABLE: 69 rows, from line 7 of trace.md.
+Each flagged number is WEAK (a row holds the value without the word after it) or UNTRACED (no row holds the value). Decide each: TRACED (name the row), NOT A NUMBER, or UNTRACED.
+
+[WEAK] 'three' (value 3, next word 'part'); nearest row: "soft power" found nothing in all 553 volumes | ¶3 | M1.1, 24; M1.2, 44; M0.1, 9 (553 volumes)
+    sentence: What beliefs about the regional audience contributed to those strategies? ## The bottom line What FRUS answers directly.** The printed record answers all three parts of the question, though never in the words "soft power" or "messaging".
+[WEAK] 'two' (value 2, next word 'separate'); nearest row: "about 2,700 documents in 273 volumes" | ¶1, Scope, ¶2 | M1.7, 69 (2692 documents, 273 volumes)
+    sentence: Where FRUS points for the rest.** The archive reaches the historian through two separate channels, which this overview never adds together: the series the printed documents came from (named in each document's source note), and the series the editors cited in footnotes without printing.
+[WEAK] '42' (value 42, next word 'source'); nearest row: RG 306 Director's Subject Files, Entry A1–42, no NAID/dates/access | ¶2 | M4.4, 213; M7, 302
+    sentence: Information Agency (USIA, "the Agency" below), Record Group 306, the Director's Subject Files (Entry A1–42 in the source notes) and earlier directors' files.
+[WEAK] 'one' (value 1, next word 'document'); nearest row: documents "from 1950 to 1977" | ¶1 | M8, 318 (1950s and 1973–1980 documents); dates of d50 (1950) and frus1977-80v30/d79 (1977) from the collection notes
+    sentence: Across the full set of about 2,700 documents these are the largest single sources: the Nixon files supply about one document in seventeen, and the Johnson and Eisenhower files about one in twenty-five each.
+[WEAK] 'seventeen' (value 17, next word 'johnson'); nearest row: Nixon files "about one document in seventeen" | ¶2 | M4.1, 152 (161 of 2692)
+    sentence: Across the full set of about 2,700 documents these are the largest single sources: the Nixon files supply about one document in seventeen, and the Johnson and Eisenhower files about one in twenty-five each.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Records Relating to National Security Council Policy Papers, Executive Secretariat, Department of State, Record Group 59, Entry A1 1586E (Lots 63 D 351 and 66 D 95), NAID 2839192, , partly restricted.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Subject and Special Files, Executive Secretariat, Record Group 59, Entry A1 1586C (Lot 62 D 430), NAID 2839191, , partly restricted.
+[UNTRACED] '62 D 430' (value 62d430, next word '')
+    sentence: Subject and Special Files, Executive Secretariat, Record Group 59, Entry A1 1586C (Lot 62 D 430), NAID 2839191, , partly restricted.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Psychological Strategy Board Working Files, Executive Secretariat, Record Group 59, Entry A1 1462 (Lot 62 D 333), NAID 2124692, , possibly restricted.
+[UNTRACED] '62 D 333' (value 62d333, next word '')
+    sentence: Psychological Strategy Board Working Files, Executive Secretariat, Record Group 59, Entry A1 1462 (Lot 62 D 333), NAID 2124692, , possibly restricted.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Subject Files of the Vietnam Working Group, Bureau of East Asian and Pacific Affairs, Record Group 59, Entries A1 5305 and A1 5414 (Lot 67 D 54), NAID 631403, , unrestricted.
+[UNTRACED] '67 D 54' (value 67d54, next word '')
+    sentence: Subject Files of the Vietnam Working Group, Bureau of East Asian and Pacific Affairs, Record Group 59, Entries A1 5305 and A1 5414 (Lot 67 D 54), NAID 631403, , unrestricted.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: The Operations Coordinating Board files (Lot 61 D 385), which the run could not place in any National Archives series, so no NAID, dates or access can be given. *Series the editors cited without printing:* The Department of State's Central Decimal File, Record Group 59, class 511, which the decimal schedule glosses as "International Informational and Educational Relations": 511.90 is U.S. informat
+[WEAK] '511' (value 511, next word 'which'); nearest row: class 511, 511.90 / 511.00 / 511.51G gloss | ¶2 | M4.4, 215; pointed-at rows 194–196
+    sentence: The Operations Coordinating Board files (Lot 61 D 385), which the run could not place in any National Archives series, so no NAID, dates or access can be given. *Series the editors cited without printing:* The Department of State's Central Decimal File, Record Group 59, class 511, which the decimal schedule glosses as "International Informational and Educational Relations": 511.90 is U.S. informat
+[WEAK] 'one' (value 1, next word 'document'); nearest row: documents "from 1950 to 1977" | ¶1 | M8, 318 (1950s and 1973–1980 documents); dates of d50 (1950) and frus1977-80v30/d79 (1977) from the collection notes
+    sentence: The decimal file is the most-cited source in this channel, in about one document in nine of the set.
+[WEAK] 'nine' (value 9, next word 'set'); nearest row: decimal file "about one document in nine" | ¶2 | M4.2, 175 (302 of 2692)
+    sentence: The decimal file is the most-cited source in this channel, in about one document in nine of the set.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Records Relating to National Security Council Policy Papers, Record Group 59, Entry A1 1586E (Lots 66 D 95 and 63 D 351), NAID 2839192, , partly restricted.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Subject and Special Files, Record Group 59, Entry A1 1586C (Lot 62 D 430), NAID 2839191, , partly restricted.
+[UNTRACED] '62 D 430' (value 62d430, next word '')
+    sentence: Subject and Special Files, Record Group 59, Entry A1 1586C (Lot 62 D 430), NAID 2839191, , partly restricted.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Records Relating to Activities with the NSC, Policy Planning Council, Record Group 59, Entries A1 1583E and A1 1583F (Lot 62 D 1), NAID 2838992, , partly restricted.
+[UNTRACED] 'A1 1583F' (value a11583f, next word '')
+    sentence: Records Relating to Activities with the NSC, Policy Planning Council, Record Group 59, Entries A1 1583E and A1 1583F (Lot 62 D 1), NAID 2838992, , partly restricted.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Subject Files of the Officer in Charge for Malaya Affairs, Record Group 59, Entry UD 53 (Lot 58 D 726), NAID 2544398, , possibly restricted.
+[WEAK] 'Four' (value 4, next word 'part'); nearest row: "thirteen Saigon surveys" | ¶1, Finding 4 | Q21, 129
+    sentence: What this request cannot get from FRUS.** Four parts of the question lie outside the printed record.
+[WEAK] 'one' (value 1, next word 'document'); nearest row: documents "from 1950 to 1977" | ¶1 | M8, 318 (1950s and 1973–1980 documents); dates of d50 (1950) and frus1977-80v30/d79 (1977) from the collection notes
+    sentence: In the four public-diplomacy volumes for and it matched about one document in six, against about one in ten in the series as a whole, while the control phrase "Department of State" ran at almost the same rate in both.
+[WEAK] 'six' (value 6, next word 'against'); nearest row: "about one document in six" vs "about one in ten" | ¶3 | M1.2, 45, 49 (125 of 721; 32754 of 312169)
+    sentence: In the four public-diplomacy volumes for and it matched about one document in six, against about one in ten in the series as a whole, while the control phrase "Department of State" ran at almost the same rate in both.
+[WEAK] 'about one in ten' (value 1/10, next word 'serie'); nearest row: "about one document in six" vs "about one in ten" | ¶3 | M1.2, 45, 49 (125 of 721; 32754 of 312169)
+    sentence: In the four public-diplomacy volumes for and it matched about one document in six, against about one in ten in the series as a whole, while the control phrase "Department of State" ran at almost the same rate in both.
+[WEAK] 'three' (value 3, next word 'document'); nearest row: "soft power" found nothing in all 553 volumes | ¶3 | M1.1, 24; M1.2, 44; M0.1, 9 (553 volumes)
+    sentence: The literal word "messaging" appears in three documents in the whole series.
+[WEAK] 'two' (value 2, next word 'volume'); nearest row: "about 2,700 documents in 273 volumes" | ¶1, Scope, ¶2 | M1.7, 69 (2692 documents, 273 volumes)
+    sentence: Asian audiences' own records lie outside FRUS altogether. **Scope.** The whole 553-volume series was searched, and the scope set is about 2,700 documents in 273 volumes, dated through , that pair an information, cultural or psychological-program term with an East Asian or Pacific place; front matter, editorial notes and the second editions of two volumes were left out.
+[UNTRACED] 'half' (value 0.5, next word 'which')
+    sentence: Meanwhile the rule was: a document in the scope set in which an official assesses, plans or measures the American image or the information, cultural or psychological program toward an audience in East Asia or the Pacific. **Whether wartime psychological operations belong.** Including tactical leaflet and broadcast operations in Vietnam would swell the set with operational detail; excluding them, a
+[WEAK] 'five' (value 5, next word 'year'); nearest row: "two more documents" added through wording similarity, both in the scope set | How | M2, 90; M5, 262, 264
+    sentence: Meanwhile the rule was: a document in the scope set in which an official assesses, plans or measures the American image or the information, cultural or psychological program toward an audience in East Asia or the Pacific. **Whether wartime psychological operations belong.** Including tactical leaflet and broadcast operations in Vietnam would swell the set with operational detail; excluding them, a
+[WEAK] 'Two' (value 2, next word 'further'); nearest row: "about 2,700 documents in 273 volumes" | ¶1, Scope, ¶2 | M1.7, 69 (2692 documents, 273 volumes)
+    sentence: "In almost every country of the area, our programs are directed at elite groups", and "In all cases, however, the image of American strength, reliability and friendship is basic to our objectives." ( , The conference of the region's public affairs officers concluded that "Asians are, to varying degrees, America watchers", and its officers "emphasized that the image of the US usually depended more 
+[WEAK] '553' (value 553, next word 'printed'); nearest row: "soft power" found nothing in all 553 volumes | ¶3 | M1.1, 24; M1.2, 44; M0.1, 9 (553 volumes)
+    sentence: Public Diplomacy, , and a USIA East Asia memorandum held that "shoring up the confidence of East Asians in America’s long-term staying power and positive involvement in the area is real and necessary" ( , ## How this was done The run searched a full-text index of all 553 printed volumes of Foreign Relations of the United States, left out front matter and editorial notes, and confirmed that the sea
+[WEAK] '40' (value 40, next word 'then'); nearest row: "a sample of 40" | How | M1.6, 60
+    sentence: A sample of 40 and then a check of the literal text of every match removed the matches the index made on the Indonesian abbreviation "USI".
+[WEAK] 'two' (value 2, next word 'document'); nearest row: "about 2,700 documents in 273 volumes" | ¶1, Scope, ¶2 | M1.7, 69 (2692 documents, 273 volumes)
+    sentence: From that set a reading list was drawn by searching document headings and by ranking documents in the East Asian regional volumes by how strongly they matched; two more documents were added from a list of documents whose overall wording most resembled the public affairs officers' conference, and both were already in the scope set.
+[WEAK] 'forty' (value 40, next word 'not'); nearest row: "a sample of 40" | How | M1.6, 60
+    sentence: All 48 documents on the list were retrieved whole; eight were read entire, eleven more from their openings, and all forty not read entire in the passages around the search terms, each quoted passage with its context.
+[WEAK] 'twice' (value 2, next word 'different'); nearest row: "about 2,700 documents in 273 volumes" | ¶1, Scope, ¶2 | M1.7, 69 (2692 documents, 273 volumes)
+    sentence: A comparison of overall wording also showed three documents printed twice in different volumes, and each is counted once.
+[WEAK] 'Twenty-two' (value 22, next word 'document'); nearest row: "22 documents, each retrieved in full" | ¶1, How, Read next | 95–97 (22 quoted, argument set); 93 (48 retrieved whole, of which the 22); 269 (22 entries)
+    sentence: Twenty-two documents met the inclusion rule above, and every quotation was checked by script to be an exact passage of its document.
+[WEAK] '22' (value 22, next word 'come'); nearest row: "22 documents, each retrieved in full" | ¶1, How, Read next | 95–97 (22 quoted, argument set); 93 (48 retrieved whole, of which the 22); 269 (22 entries)
+    sentence: The argument rests on a reading selection, not a sample: most of the 22 come from the three public-diplomacy volumes for , the rest on five documents and on two.
+[WEAK] 'one' (value 1, next word 'memo'); nearest row: documents "from 1950 to 1977" | ¶1 | M8, 318 (1950s and 1973–1980 documents); dates of d50 (1950) and frus1977-80v30/d79 (1977) from the collection notes
+    sentence: I checked before finishing that every quotation here is one the memo verified against its document and every document cited is in the collection. ## Read next The collection "American soft power in East Asia and the Pacific: how policymakers assessed it" holds the 22 documents with their verified passages, under five headings that follow the findings above, and closes with a list of their archival
+[WEAK] 'five' (value 5, next word 'heading'); nearest row: "two more documents" added through wording similarity, both in the scope set | How | M2, 90; M5, 262, 264
+    sentence: I checked before finishing that every quotation here is one the memo verified against its document and every document cited is in the collection. ## Read next The collection "American soft power in East Asia and the Pacific: how policymakers assessed it" holds the 22 documents with their verified passages, under five headings that follow the findings above, and closes with a list of their archival

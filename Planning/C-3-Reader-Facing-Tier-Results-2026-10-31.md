@@ -204,7 +204,9 @@ Things that bear on that decision, none of which changes the rule's verdict:
   in §3a and the version history.
 - **The owner's choices:**
   - whether W's writing measurements, which held in every run, warrant a smaller test of R1 and R2
-    alone, judged on the same research (the pilot's design) rather than across sessions;
+    alone, judged on the same research (the pilot's design) rather than across sessions. *Run the
+    same day on the owner's word (`C-3-Reader-Facing-Rewrite-Test-2026-10-31.md`): all six readings
+    hold, and the blind judge preferred R1 and R2 in 7 of 8 pairs;*
   - whether the guard's per-run clause stays, given that the control breached it.
 - **The soft-power question is now used.** It joins the ten used before, by the rule that a test
   question appears in no planning document before its run. Three of the owner's candidates remain

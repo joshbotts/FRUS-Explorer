@@ -1,0 +1,2118 @@
+{
+ "run": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w3",
+ "traceSource": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w3/trace.md",
+ "traceTableLine": 7,
+ "traceRows": 78,
+ "mentions": 191,
+ "counts": {
+  "traced": 123,
+  "weak": 67,
+  "untraced": 1
+ },
+ "list": [
+  {
+   "text": "Thirty-one",
+   "values": [
+    "31"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "Thirty-one documents; 39 passages; 95 documents retrieved whole, quoted from 31 | line 69 (section 3); line 121 (section 5)",
+   "sentence": "Thirty-one documents, dated to and chosen from some 38,000 documents in the 77 East Asia and Pacific volumes plus three volumes titled Public Diplomacy, carry that argument."
+  },
+  {
+   "text": "38,000",
+   "values": [
+    "38000"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "Thirty-one documents, dated to and chosen from some 38,000 documents in the 77 East Asia and Pacific volumes plus three volumes titled Public Diplomacy, carry that argument."
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "east",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "Thirty-one documents, dated to and chosen from some 38,000 documents in the 77 East Asia and Pacific volumes plus three volumes titled Public Diplomacy, carry that argument."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "20 further volumes on information policy and national security; three Public Diplomacy volumes whose titles do not name the region | line 17 (functional scope)",
+   "sentence": "Thirty-one documents, dated to and chosen from some 38,000 documents in the 77 East Asia and Pacific volumes plus three volumes titled Public Diplomacy, carry that argument."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "channel",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"Public diplomacy\" in 211 documents; 175 in volumes covering 1977 to 1988; two among the 38,000 regional documents; 210 of 211 exact, 211 of 211 looser | line 39 (M4); line 31",
+   "sentence": "Where FRUS points for the rest.** FRUS reaches the archives by two channels, and they are different."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "are",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"Public diplomacy\" in 211 documents; 175 in volumes covering 1977 to 1988; two among the 38,000 regional documents; 210 of 211 exact, 211 of 211 looser | line 39 (M4); line 31",
+   "sentence": "The two are counted separately and are not added together."
+  },
+  {
+   "text": "31",
+   "values": [
+    "31"
+   ],
+   "next": "printed",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Thirty-one documents; 39 passages; 95 documents retrieved whole, quoted from 31 | line 69 (section 3); line 121 (section 5)",
+   "sentence": "\"partly restricted\" is their wording. *Series the 31 printed documents came from:* State Department, Policy Planning Council, Alphabetical Files (State Department record group 59, lot 61 D 167; entries A1 1583A and A1 1583B;"
+  },
+  {
+   "text": "59",
+   "values": [
+    "59"
+   ],
+   "next": "lot",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Of 82 documents nearest four key documents: 25 from State Department files (record group 59), 23 from the Agency's (record group 306); read as a pointer, not a measure | line 164 (Operation 2)",
+   "sentence": "\"partly restricted\" is their wording. *Series the 31 printed documents came from:* State Department, Policy Planning Council, Alphabetical Files (State Department record group 59, lot 61 D 167; entries A1 1583A and A1 1583B;"
+  },
+  {
+   "text": "61 D 167",
+   "values": [
+    "61d167"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 61 D 167: Alphabetical Files, entries A1 1583A and A1 1583B, identifier 2198167, 1948 to 1961, partly restricted, Policy Planning Council | line 55 (M8)",
+   "sentence": "\"partly restricted\" is their wording. *Series the 31 printed documents came from:* State Department, Policy Planning Council, Alphabetical Files (State Department record group 59, lot 61 D 167; entries A1 1583A and A1 1583B;"
+  },
+  {
+   "text": "A1 1583A",
+   "values": [
+    "a11583a"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 61 D 167: Alphabetical Files, entries A1 1583A and A1 1583B, identifier 2198167, 1948 to 1961, partly restricted, Policy Planning Council | line 55 (M8)",
+   "sentence": "\"partly restricted\" is their wording. *Series the 31 printed documents came from:* State Department, Policy Planning Council, Alphabetical Files (State Department record group 59, lot 61 D 167; entries A1 1583A and A1 1583B;"
+  },
+  {
+   "text": "A1 1583B",
+   "values": [
+    "a11583b"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 61 D 167: Alphabetical Files, entries A1 1583A and A1 1583B, identifier 2198167, 1948 to 1961, partly restricted, Policy Planning Council | line 55 (M8)",
+   "sentence": "\"partly restricted\" is their wording. *Series the 31 printed documents came from:* State Department, Policy Planning Council, Alphabetical Files (State Department record group 59, lot 61 D 167; entries A1 1583A and A1 1583B;"
+  },
+  {
+   "text": "2198167",
+   "values": [
+    "2198167"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 61 D 167: Alphabetical Files, entries A1 1583A and A1 1583B, identifier 2198167, 1948 to 1961, partly restricted, Policy Planning Council | line 55 (M8)",
+   "sentence": "National Archives identifier 2198167; to ; partly restricted): two documents."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"Public diplomacy\" in 211 documents; 175 in volumes covering 1977 to 1988; two among the 38,000 regional documents; 210 of 211 exact, 211 of 211 looser | line 39 (M4); line 31",
+   "sentence": "National Archives identifier 2198167; to ; partly restricted): two documents."
+  },
+  {
+   "text": "59",
+   "values": [
+    "59"
+   ],
+   "next": "lot",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Of 82 documents nearest four key documents: 25 from State Department files (record group 59), 23 from the Agency's (record group 306); read as a pointer, not a measure | line 164 (Operation 2)",
+   "sentence": "State Department, Executive Secretariat, Records Relating to National Security Council Policy Papers (record group 59, lot 63 D 351; entry A1 1586E; identifier 2839192; to ; partly restricted; 26 linear feet 3 inches): one document."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 and lot 66 D 95: Records Relating to National Security Council Policy Papers, identifier 2839192, entry A1 1586E, Executive Secretariat, 1947 to 1979, partly restricted, 26 linear feet 3 ",
+   "sentence": "State Department, Executive Secretariat, Records Relating to National Security Council Policy Papers (record group 59, lot 63 D 351; entry A1 1586E; identifier 2839192; to ; partly restricted; 26 linear feet 3 inches): one document."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 and lot 66 D 95: Records Relating to National Security Council Policy Papers, identifier 2839192, entry A1 1586E, Executive Secretariat, 1947 to 1979, partly restricted, 26 linear feet 3 ",
+   "sentence": "State Department, Executive Secretariat, Records Relating to National Security Council Policy Papers (record group 59, lot 63 D 351; entry A1 1586E; identifier 2839192; to ; partly restricted; 26 linear feet 3 inches): one document."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 and lot 66 D 95: Records Relating to National Security Council Policy Papers, identifier 2839192, entry A1 1586E, Executive Secretariat, 1947 to 1979, partly restricted, 26 linear feet 3 ",
+   "sentence": "State Department, Executive Secretariat, Records Relating to National Security Council Policy Papers (record group 59, lot 63 D 351; entry A1 1586E; identifier 2839192; to ; partly restricted; 26 linear feet 3 inches): one document."
+  },
+  {
+   "text": "26",
+   "values": [
+    "26"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 63 D 351 and lot 66 D 95: Records Relating to National Security Council Policy Papers, identifier 2839192, entry A1 1586E, Executive Secretariat, 1947 to 1979, partly restricted, 26 linear feet 3 ",
+   "sentence": "State Department, Executive Secretariat, Records Relating to National Security Council Policy Papers (record group 59, lot 63 D 351; entry A1 1586E; identifier 2839192; to ; partly restricted; 26 linear feet 3 inches): one document."
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "inche",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "20 further volumes on information policy and national security; three Public Diplomacy volumes whose titles do not name the region | line 17 (functional scope)",
+   "sentence": "State Department, Executive Secretariat, Records Relating to National Security Council Policy Papers (record group 59, lot 63 D 351; entry A1 1586E; identifier 2839192; to ; partly restricted; 26 linear feet 3 inches): one document."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "Lot 58 D 726: Subject Files, identifier 2544398, Office of the Officer in Charge for Malaya Affairs, 1955 to 1956, \"Restricted - Possibly\", cited without printing by one document in the set | line 55 ",
+   "sentence": "State Department, Executive Secretariat, Records Relating to National Security Council Policy Papers (record group 59, lot 63 D 351; entry A1 1586E; identifier 2839192; to ; partly restricted; 26 linear feet 3 inches): one document."
+  },
+  {
+   "text": "59",
+   "values": [
+    "59"
+   ],
+   "next": "lot",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Of 82 documents nearest four key documents: 25 from State Department files (record group 59), 23 from the Agency's (record group 306); read as a pointer, not a measure | line 164 (Operation 2)",
+   "sentence": "State Department, Subject and Special Files (record group 59, lot 62 D 430; entry A1 1586C; identifier 2839191; to ; partly restricted; 4 linear feet 5 inches): two documents."
+  },
+  {
+   "text": "62 D 430",
+   "values": [
+    "62d430"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: Subject and Special Files, identifier 2839191, entry A1 1586C, 1953 to 1961, partly restricted, 4 linear feet 5 inches | line 55 (M8)",
+   "sentence": "State Department, Subject and Special Files (record group 59, lot 62 D 430; entry A1 1586C; identifier 2839191; to ; partly restricted; 4 linear feet 5 inches): two documents."
+  },
+  {
+   "text": "A1 1586C",
+   "values": [
+    "a11586c"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: Subject and Special Files, identifier 2839191, entry A1 1586C, 1953 to 1961, partly restricted, 4 linear feet 5 inches | line 55 (M8)",
+   "sentence": "State Department, Subject and Special Files (record group 59, lot 62 D 430; entry A1 1586C; identifier 2839191; to ; partly restricted; 4 linear feet 5 inches): two documents."
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: Subject and Special Files, identifier 2839191, entry A1 1586C, 1953 to 1961, partly restricted, 4 linear feet 5 inches | line 55 (M8)",
+   "sentence": "State Department, Subject and Special Files (record group 59, lot 62 D 430; entry A1 1586C; identifier 2839191; to ; partly restricted; 4 linear feet 5 inches): two documents."
+  },
+  {
+   "text": "4",
+   "values": [
+    "4"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 62 D 430: Subject and Special Files, identifier 2839191, entry A1 1586C, 1953 to 1961, partly restricted, 4 linear feet 5 inches | line 55 (M8)",
+   "sentence": "State Department, Subject and Special Files (record group 59, lot 62 D 430; entry A1 1586C; identifier 2839191; to ; partly restricted; 4 linear feet 5 inches): two documents."
+  },
+  {
+   "text": "5",
+   "values": [
+    "5"
+   ],
+   "next": "inche",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Thirty-one documents; 39 passages; 95 documents retrieved whole, quoted from 31 | line 69 (section 3); line 121 (section 5)",
+   "sentence": "State Department, Subject and Special Files (record group 59, lot 62 D 430; entry A1 1586C; identifier 2839191; to ; partly restricted; 4 linear feet 5 inches): two documents."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"Public diplomacy\" in 211 documents; 175 in volumes covering 1977 to 1988; two among the 38,000 regional documents; 210 of 211 exact, 211 of 211 looser | line 39 (M4); line 31",
+   "sentence": "State Department, Subject and Special Files (record group 59, lot 62 D 430; entry A1 1586C; identifier 2839191; to ; partly restricted; 4 linear feet 5 inches): two documents."
+  },
+  {
+   "text": "61 D 385",
+   "values": [
+    "61d385"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 61 D 385 unidentified in the bundled lists; lot 62 D 181 unidentified (8 pointers on 3 documents) | line 55 (M8); line 61 (M9)",
+   "sentence": "State Department lot 61 D 385: one document; the bundled lists do not identify this lot, so I can give no series, dates or access for it."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "State Department lot 61 D 385: one document; the bundled lists do not identify this lot, so I can give no series, dates or access for it."
+  },
+  {
+   "text": "59",
+   "values": [
+    "59"
+   ],
+   "next": "decimal",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Of 82 documents nearest four key documents: 25 from State Department files (record group 59), 23 from the Agency's (record group 306); read as a pointer, not a measure | line 164 (Operation 2)",
+   "sentence": "State Department central files (record group 59), the decimal files and the central foreign policy file: eight documents."
+  },
+  {
+   "text": "eight",
+   "values": [
+    "8"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "Eight documents from State central files; six lot files (two, one, two, one); eight from the Agency (record group 306); five Johnson Library; one Nixon Presidential Materials; one Saigon embassy (reco",
+   "sentence": "State Department central files (record group 59), the decimal files and the central foreign policy file: eight documents."
+  },
+  {
+   "text": "306",
+   "values": [
+    "306"
+   ],
+   "next": "eight",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Eight documents from State central files; six lot files (two, one, two, one); eight from the Agency (record group 306); five Johnson Library; one Nixon Presidential Materials; one Saigon embassy (reco",
+   "sentence": "United States Information Agency (USIA; its overseas posts were the United States Information Service, USIS), record group 306: eight documents."
+  },
+  {
+   "text": "eight",
+   "values": [
+    "8"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "Eight documents from State central files; six lot files (two, one, two, one); eight from the Agency (record group 306); five Johnson Library; one Nixon Presidential Materials; one Saigon embassy (reco",
+   "sentence": "United States Information Agency (USIA; its overseas posts were the United States Information Service, USIS), record group 306: eight documents."
+  },
+  {
+   "text": "WW 257",
+   "values": [
+    "ww257"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Agency entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; not resolved; 18 series named for 72 A 5121 and 15 for 68 A 4933 | line 57 (M8)",
+   "sentence": "The printed entries are UD WW 257, UD WW 193, A1 42, P 104 and P 207, and the accessions are 72 A 5121, 68 A 4933, 67 A 222 and 69 A 3445."
+  },
+  {
+   "text": "WW 193",
+   "values": [
+    "ww193"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Agency entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; not resolved; 18 series named for 72 A 5121 and 15 for 68 A 4933 | line 57 (M8)",
+   "sentence": "The printed entries are UD WW 257, UD WW 193, A1 42, P 104 and P 207, and the accessions are 72 A 5121, 68 A 4933, 67 A 222 and 69 A 3445."
+  },
+  {
+   "text": "A1 42",
+   "values": [
+    "a142"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Agency entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; not resolved; 18 series named for 72 A 5121 and 15 for 68 A 4933 | line 57 (M8)",
+   "sentence": "The printed entries are UD WW 257, UD WW 193, A1 42, P 104 and P 207, and the accessions are 72 A 5121, 68 A 4933, 67 A 222 and 69 A 3445."
+  },
+  {
+   "text": "P 104",
+   "values": [
+    "p104"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Agency entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; not resolved; 18 series named for 72 A 5121 and 15 for 68 A 4933 | line 57 (M8)",
+   "sentence": "The printed entries are UD WW 257, UD WW 193, A1 42, P 104 and P 207, and the accessions are 72 A 5121, 68 A 4933, 67 A 222 and 69 A 3445."
+  },
+  {
+   "text": "P 207",
+   "values": [
+    "p207"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Agency entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; not resolved; 18 series named for 72 A 5121 and 15 for 68 A 4933 | line 57 (M8)",
+   "sentence": "The printed entries are UD WW 257, UD WW 193, A1 42, P 104 and P 207, and the accessions are 72 A 5121, 68 A 4933, 67 A 222 and 69 A 3445."
+  },
+  {
+   "text": "72 A 5121",
+   "values": [
+    "72a5121"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Agency entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; not resolved; 18 series named for 72 A 5121 and 15 for 68 A 4933 | line 57 (M8)",
+   "sentence": "The printed entries are UD WW 257, UD WW 193, A1 42, P 104 and P 207, and the accessions are 72 A 5121, 68 A 4933, 67 A 222 and 69 A 3445."
+  },
+  {
+   "text": "68 A 4933",
+   "values": [
+    "68a4933"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Agency entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; not resolved; 18 series named for 72 A 5121 and 15 for 68 A 4933 | line 57 (M8)",
+   "sentence": "The printed entries are UD WW 257, UD WW 193, A1 42, P 104 and P 207, and the accessions are 72 A 5121, 68 A 4933, 67 A 222 and 69 A 3445."
+  },
+  {
+   "text": "67 A 222",
+   "values": [
+    "67a222"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Agency entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; not resolved; 18 series named for 72 A 5121 and 15 for 68 A 4933 | line 57 (M8)",
+   "sentence": "The printed entries are UD WW 257, UD WW 193, A1 42, P 104 and P 207, and the accessions are 72 A 5121, 68 A 4933, 67 A 222 and 69 A 3445."
+  },
+  {
+   "text": "69 A 3445",
+   "values": [
+    "69a3445"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Agency entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; not resolved; 18 series named for 72 A 5121 and 15 for 68 A 4933 | line 57 (M8)",
+   "sentence": "The printed entries are UD WW 257, UD WW 193, A1 42, P 104 and P 207, and the accessions are 72 A 5121, 68 A 4933, 67 A 222 and 69 A 3445."
+  },
+  {
+   "text": "18",
+   "values": [
+    "18"
+   ],
+   "next": "for",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Agency entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; not resolved; 18 series named for 72 A 5121 and 15 for 68 A 4933 | line 57 (M8)",
+   "sentence": "The bundled lists do not resolve any of them, and an accession can hold many series (the list names 18 for 72 A 5121 and 15 for 68 A 4933), so I cannot say which series each document came from."
+  },
+  {
+   "text": "72 A 5121",
+   "values": [
+    "72a5121"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Agency entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; not resolved; 18 series named for 72 A 5121 and 15 for 68 A 4933 | line 57 (M8)",
+   "sentence": "The bundled lists do not resolve any of them, and an accession can hold many series (the list names 18 for 72 A 5121 and 15 for 68 A 4933), so I cannot say which series each document came from."
+  },
+  {
+   "text": "15",
+   "values": [
+    "15"
+   ],
+   "next": "for",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Agency entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; not resolved; 18 series named for 72 A 5121 and 15 for 68 A 4933 | line 57 (M8)",
+   "sentence": "The bundled lists do not resolve any of them, and an accession can hold many series (the list names 18 for 72 A 5121 and 15 for 68 A 4933), so I cannot say which series each document came from."
+  },
+  {
+   "text": "68 A 4933",
+   "values": [
+    "68a4933"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Agency entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; not resolved; 18 series named for 72 A 5121 and 15 for 68 A 4933 | line 57 (M8)",
+   "sentence": "The bundled lists do not resolve any of them, and an accession can hold many series (the list names 18 for 72 A 5121 and 15 for 68 A 4933), so I cannot say which series each document came from."
+  },
+  {
+   "text": "40967285",
+   "values": [
+    "40967285"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Nearest Agency series: Director's Subject Files 40967285 (1956 to 1972, 103 linear feet 1 inch, partly restricted); Office of Policy and Plans Subject Files 1257679 (1953 to 1971, 47 linear feet, part",
+   "sentence": "The nearest series the lists do describe are the Director's Subject Files (identifier 40967285; to ; 103 linear feet 1 inch; partly restricted), the Office of Policy and Plans Subject Files (identifier 1257679; to ; 47 linear feet; partly restricted) and the Chronological Files (identifier 40967113; to ; 10 linear feet 6 inches; partly restricted)."
+  },
+  {
+   "text": "103",
+   "values": [
+    "103"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Nearest Agency series: Director's Subject Files 40967285 (1956 to 1972, 103 linear feet 1 inch, partly restricted); Office of Policy and Plans Subject Files 1257679 (1953 to 1971, 47 linear feet, part",
+   "sentence": "The nearest series the lists do describe are the Director's Subject Files (identifier 40967285; to ; 103 linear feet 1 inch; partly restricted), the Office of Policy and Plans Subject Files (identifier 1257679; to ; 47 linear feet; partly restricted) and the Chronological Files (identifier 40967113; to ; 10 linear feet 6 inches; partly restricted)."
+  },
+  {
+   "text": "1",
+   "values": [
+    "1"
+   ],
+   "next": "inch",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Nearest Agency series: Director's Subject Files 40967285 (1956 to 1972, 103 linear feet 1 inch, partly restricted); Office of Policy and Plans Subject Files 1257679 (1953 to 1971, 47 linear feet, part",
+   "sentence": "The nearest series the lists do describe are the Director's Subject Files (identifier 40967285; to ; 103 linear feet 1 inch; partly restricted), the Office of Policy and Plans Subject Files (identifier 1257679; to ; 47 linear feet; partly restricted) and the Chronological Files (identifier 40967113; to ; 10 linear feet 6 inches; partly restricted)."
+  },
+  {
+   "text": "1257679",
+   "values": [
+    "1257679"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Nearest Agency series: Director's Subject Files 40967285 (1956 to 1972, 103 linear feet 1 inch, partly restricted); Office of Policy and Plans Subject Files 1257679 (1953 to 1971, 47 linear feet, part",
+   "sentence": "The nearest series the lists do describe are the Director's Subject Files (identifier 40967285; to ; 103 linear feet 1 inch; partly restricted), the Office of Policy and Plans Subject Files (identifier 1257679; to ; 47 linear feet; partly restricted) and the Chronological Files (identifier 40967113; to ; 10 linear feet 6 inches; partly restricted)."
+  },
+  {
+   "text": "47",
+   "values": [
+    "47"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Nearest Agency series: Director's Subject Files 40967285 (1956 to 1972, 103 linear feet 1 inch, partly restricted); Office of Policy and Plans Subject Files 1257679 (1953 to 1971, 47 linear feet, part",
+   "sentence": "The nearest series the lists do describe are the Director's Subject Files (identifier 40967285; to ; 103 linear feet 1 inch; partly restricted), the Office of Policy and Plans Subject Files (identifier 1257679; to ; 47 linear feet; partly restricted) and the Chronological Files (identifier 40967113; to ; 10 linear feet 6 inches; partly restricted)."
+  },
+  {
+   "text": "40967113",
+   "values": [
+    "40967113"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Nearest Agency series: Director's Subject Files 40967285 (1956 to 1972, 103 linear feet 1 inch, partly restricted); Office of Policy and Plans Subject Files 1257679 (1953 to 1971, 47 linear feet, part",
+   "sentence": "The nearest series the lists do describe are the Director's Subject Files (identifier 40967285; to ; 103 linear feet 1 inch; partly restricted), the Office of Policy and Plans Subject Files (identifier 1257679; to ; 47 linear feet; partly restricted) and the Chronological Files (identifier 40967113; to ; 10 linear feet 6 inches; partly restricted)."
+  },
+  {
+   "text": "10",
+   "values": [
+    "10"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Nearest Agency series: Director's Subject Files 40967285 (1956 to 1972, 103 linear feet 1 inch, partly restricted); Office of Policy and Plans Subject Files 1257679 (1953 to 1971, 47 linear feet, part",
+   "sentence": "The nearest series the lists do describe are the Director's Subject Files (identifier 40967285; to ; 103 linear feet 1 inch; partly restricted), the Office of Policy and Plans Subject Files (identifier 1257679; to ; 47 linear feet; partly restricted) and the Chronological Files (identifier 40967113; to ; 10 linear feet 6 inches; partly restricted)."
+  },
+  {
+   "text": "6",
+   "values": [
+    "6"
+   ],
+   "next": "inche",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Nearest Agency series: Director's Subject Files 40967285 (1956 to 1972, 103 linear feet 1 inch, partly restricted); Office of Policy and Plans Subject Files 1257679 (1953 to 1971, 47 linear feet, part",
+   "sentence": "The nearest series the lists do describe are the Director's Subject Files (identifier 40967285; to ; 103 linear feet 1 inch; partly restricted), the Office of Policy and Plans Subject Files (identifier 1257679; to ; 47 linear feet; partly restricted) and the Chronological Files (identifier 40967113; to ; 10 linear feet 6 inches; partly restricted)."
+  },
+  {
+   "text": "68 A 4933",
+   "values": [
+    "68a4933"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Agency entries UD WW 257, UD WW 193, A1 42, P 104, P 207; accessions 72 A 5121, 68 A 4933, 67 A 222, 69 A 3445; not resolved; 18 series named for 72 A 5121 and 15 for 68 A 4933 | line 57 (M8)",
+   "sentence": "The list for 68 A 4933 also names the Director's Subject Files (identifier 1102141) and the Vietnam Working Group Subject Files (identifier 42125423), for which it gives no dates or access."
+  },
+  {
+   "text": "1102141",
+   "values": [
+    "1102141"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "68 A 4933 also names Director's Subject Files 1102141 and Vietnam Working Group Subject Files 42125423, no dates or access in the bundled lists | line 57 (M8)",
+   "sentence": "The list for 68 A 4933 also names the Director's Subject Files (identifier 1102141) and the Vietnam Working Group Subject Files (identifier 42125423), for which it gives no dates or access."
+  },
+  {
+   "text": "42125423",
+   "values": [
+    "42125423"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "68 A 4933 also names Director's Subject Files 1102141 and Vietnam Working Group Subject Files 42125423, no dates or access in the bundled lists | line 57 (M8)",
+   "sentence": "The list for 68 A 4933 also names the Director's Subject Files (identifier 1102141) and the Vietnam Working Group Subject Files (identifier 42125423), for which it gives no dates or access."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "Thirty-one documents; 39 passages; 95 documents retrieved whole, quoted from 31 | line 69 (section 3); line 121 (section 5)",
+   "sentence": "Presidential libraries and others: five documents from the Johnson Library and one from the Nixon Presidential Materials, whose series I did not resolve; one from the Saigon embassy's files (record group 84); one printed under record group 34 and one under record group 305, both as printed. *Series the footnotes cite without printing* (counted over 711 documents, those of the regional volumes and of the Public Diplomacy volumes that deal most with information work in the region; roughly 400 pointers on about 200 of them):"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "from",
+   "kind": "word",
+   "class": "traced",
+   "row": "Eight documents from State central files; six lot files (two, one, two, one); eight from the Agency (record group 306); five Johnson Library; one Nixon Presidential Materials; one Saigon embassy (reco",
+   "sentence": "Presidential libraries and others: five documents from the Johnson Library and one from the Nixon Presidential Materials, whose series I did not resolve; one from the Saigon embassy's files (record group 84); one printed under record group 34 and one under record group 305, both as printed. *Series the footnotes cite without printing* (counted over 711 documents, those of the regional volumes and of the Public Diplomacy volumes that deal most with information work in the region; roughly 400 pointers on about 200 of them):"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "from",
+   "kind": "word",
+   "class": "weak",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "Presidential libraries and others: five documents from the Johnson Library and one from the Nixon Presidential Materials, whose series I did not resolve; one from the Saigon embassy's files (record group 84); one printed under record group 34 and one under record group 305, both as printed. *Series the footnotes cite without printing* (counted over 711 documents, those of the regional volumes and of the Public Diplomacy volumes that deal most with information work in the region; roughly 400 pointers on about 200 of them):"
+  },
+  {
+   "text": "84",
+   "values": [
+    "84"
+   ],
+   "next": "one",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Eight documents from State central files; six lot files (two, one, two, one); eight from the Agency (record group 306); five Johnson Library; one Nixon Presidential Materials; one Saigon embassy (reco",
+   "sentence": "Presidential libraries and others: five documents from the Johnson Library and one from the Nixon Presidential Materials, whose series I did not resolve; one from the Saigon embassy's files (record group 84); one printed under record group 34 and one under record group 305, both as printed. *Series the footnotes cite without printing* (counted over 711 documents, those of the regional volumes and of the Public Diplomacy volumes that deal most with information work in the region; roughly 400 pointers on about 200 of them):"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "printed",
+   "kind": "word",
+   "class": "traced",
+   "row": "Eight documents from State central files; six lot files (two, one, two, one); eight from the Agency (record group 306); five Johnson Library; one Nixon Presidential Materials; one Saigon embassy (reco",
+   "sentence": "Presidential libraries and others: five documents from the Johnson Library and one from the Nixon Presidential Materials, whose series I did not resolve; one from the Saigon embassy's files (record group 84); one printed under record group 34 and one under record group 305, both as printed. *Series the footnotes cite without printing* (counted over 711 documents, those of the regional volumes and of the Public Diplomacy volumes that deal most with information work in the region; roughly 400 pointers on about 200 of them):"
+  },
+  {
+   "text": "34",
+   "values": [
+    "34"
+   ],
+   "next": "one",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Eight documents from State central files; six lot files (two, one, two, one); eight from the Agency (record group 306); five Johnson Library; one Nixon Presidential Materials; one Saigon embassy (reco",
+   "sentence": "Presidential libraries and others: five documents from the Johnson Library and one from the Nixon Presidential Materials, whose series I did not resolve; one from the Saigon embassy's files (record group 84); one printed under record group 34 and one under record group 305, both as printed. *Series the footnotes cite without printing* (counted over 711 documents, those of the regional volumes and of the Public Diplomacy volumes that deal most with information work in the region; roughly 400 pointers on about 200 of them):"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "under",
+   "kind": "word",
+   "class": "weak",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "Presidential libraries and others: five documents from the Johnson Library and one from the Nixon Presidential Materials, whose series I did not resolve; one from the Saigon embassy's files (record group 84); one printed under record group 34 and one under record group 305, both as printed. *Series the footnotes cite without printing* (counted over 711 documents, those of the regional volumes and of the Public Diplomacy volumes that deal most with information work in the region; roughly 400 pointers on about 200 of them):"
+  },
+  {
+   "text": "305",
+   "values": [
+    "305"
+   ],
+   "next": "both",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Eight documents from State central files; six lot files (two, one, two, one); eight from the Agency (record group 306); five Johnson Library; one Nixon Presidential Materials; one Saigon embassy (reco",
+   "sentence": "Presidential libraries and others: five documents from the Johnson Library and one from the Nixon Presidential Materials, whose series I did not resolve; one from the Saigon embassy's files (record group 84); one printed under record group 34 and one under record group 305, both as printed. *Series the footnotes cite without printing* (counted over 711 documents, those of the regional volumes and of the Public Diplomacy volumes that deal most with information work in the region; roughly 400 pointers on about 200 of them):"
+  },
+  {
+   "text": "711",
+   "values": [
+    "711"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "711 documents; roughly 400 pointers (392) on about 200 documents (200) | line 43 (M5 topic slice, 711); line 61 (M9, 392 and 200)",
+   "sentence": "Presidential libraries and others: five documents from the Johnson Library and one from the Nixon Presidential Materials, whose series I did not resolve; one from the Saigon embassy's files (record group 84); one printed under record group 34 and one under record group 305, both as printed. *Series the footnotes cite without printing* (counted over 711 documents, those of the regional volumes and of the Public Diplomacy volumes that deal most with information work in the region; roughly 400 pointers on about 200 of them):"
+  },
+  {
+   "text": "400",
+   "values": [
+    "400"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "711 documents; roughly 400 pointers (392) on about 200 documents (200) | line 43 (M5 topic slice, 711); line 61 (M9, 392 and 200)",
+   "sentence": "Presidential libraries and others: five documents from the Johnson Library and one from the Nixon Presidential Materials, whose series I did not resolve; one from the Saigon embassy's files (record group 84); one printed under record group 34 and one under record group 305, both as printed. *Series the footnotes cite without printing* (counted over 711 documents, those of the regional volumes and of the Public Diplomacy volumes that deal most with information work in the region; roughly 400 pointers on about 200 of them):"
+  },
+  {
+   "text": "200",
+   "values": [
+    "200"
+   ],
+   "next": "them",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "711 documents; roughly 400 pointers (392) on about 200 documents (200) | line 43 (M5 topic slice, 711); line 61 (M9, 392 and 200)",
+   "sentence": "Presidential libraries and others: five documents from the Johnson Library and one from the Nixon Presidential Materials, whose series I did not resolve; one from the Saigon embassy's files (record group 84); one printed under record group 34 and one under record group 305, both as printed. *Series the footnotes cite without printing* (counted over 711 documents, those of the regional volumes and of the Public Diplomacy volumes that deal most with information work in the region; roughly 400 pointers on about 200 of them):"
+  },
+  {
+   "text": "180",
+   "values": [
+    "180"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "State Department, no lot: about 180 pointers (181) on about 95 (95) documents | line 61 (M9)",
+   "sentence": "State Department files cited with no lot number: about 180 pointers on about 95 documents."
+  },
+  {
+   "text": "95",
+   "values": [
+    "95"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Thirty-one documents; 39 passages; 95 documents retrieved whole, quoted from 31 | line 69 (section 3); line 121 (section 5)",
+   "sentence": "State Department files cited with no lot number: about 180 pointers on about 95 documents."
+  },
+  {
+   "text": "66 D 95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 and lot 66 D 95: Records Relating to National Security Council Policy Papers, identifier 2839192, entry A1 1586E, Executive Secretariat, 1947 to 1979, partly restricted, 26 linear feet 3 ",
+   "sentence": "Executive Secretariat, Records Relating to National Security Council Policy Papers, cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); both are the series with identifier 2839192, entry A1 1586E, to , partly restricted."
+  },
+  {
+   "text": "24",
+   "values": [
+    "24"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 66 D 95: 24 pointers on 19 documents; lot 63 D 351: 12 on 8 | line 61 (M9)",
+   "sentence": "Executive Secretariat, Records Relating to National Security Council Policy Papers, cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); both are the series with identifier 2839192, entry A1 1586E, to , partly restricted."
+  },
+  {
+   "text": "19",
+   "values": [
+    "19"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 66 D 95: 24 pointers on 19 documents; lot 63 D 351: 12 on 8 | line 61 (M9)",
+   "sentence": "Executive Secretariat, Records Relating to National Security Council Policy Papers, cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); both are the series with identifier 2839192, entry A1 1586E, to , partly restricted."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 and lot 66 D 95: Records Relating to National Security Council Policy Papers, identifier 2839192, entry A1 1586E, Executive Secretariat, 1947 to 1979, partly restricted, 26 linear feet 3 ",
+   "sentence": "Executive Secretariat, Records Relating to National Security Council Policy Papers, cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); both are the series with identifier 2839192, entry A1 1586E, to , partly restricted."
+  },
+  {
+   "text": "12",
+   "values": [
+    "12"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Lot 66 D 95: 24 pointers on 19 documents; lot 63 D 351: 12 on 8 | line 61 (M9)",
+   "sentence": "Executive Secretariat, Records Relating to National Security Council Policy Papers, cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); both are the series with identifier 2839192, entry A1 1586E, to , partly restricted."
+  },
+  {
+   "text": "8",
+   "values": [
+    "8"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Eight documents from State central files; six lot files (two, one, two, one); eight from the Agency (record group 306); five Johnson Library; one Nixon Presidential Materials; one Saigon embassy (reco",
+   "sentence": "Executive Secretariat, Records Relating to National Security Council Policy Papers, cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); both are the series with identifier 2839192, entry A1 1586E, to , partly restricted."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "entry",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 63 D 351 and lot 66 D 95: Records Relating to National Security Council Policy Papers, identifier 2839192, entry A1 1586E, Executive Secretariat, 1947 to 1979, partly restricted, 26 linear feet 3 ",
+   "sentence": "Executive Secretariat, Records Relating to National Security Council Policy Papers, cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); both are the series with identifier 2839192, entry A1 1586E, to , partly restricted."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 and lot 66 D 95: Records Relating to National Security Council Policy Papers, identifier 2839192, entry A1 1586E, Executive Secretariat, 1947 to 1979, partly restricted, 26 linear feet 3 ",
+   "sentence": "Executive Secretariat, Records Relating to National Security Council Policy Papers, cited as lot 66 D 95 (24 pointers on 19 documents) and as lot 63 D 351 (12 pointers on 8 documents); both are the series with identifier 2839192, entry A1 1586E, to , partly restricted."
+  },
+  {
+   "text": "62 D 430",
+   "values": [
+    "62d430"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: Subject and Special Files, identifier 2839191, entry A1 1586C, 1953 to 1961, partly restricted, 4 linear feet 5 inches | line 55 (M8)",
+   "sentence": "Subject and Special Files, lot 62 D 430 (9 pointers on 8 documents; identifier 2839191, entry A1 1586C, to , partly restricted)."
+  },
+  {
+   "text": "9",
+   "values": [
+    "9"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 62 D 430: 9 pointers on 8 documents; lot 62 D 1: 8 on 7 | line 61 (M9)",
+   "sentence": "Subject and Special Files, lot 62 D 430 (9 pointers on 8 documents; identifier 2839191, entry A1 1586C, to , partly restricted)."
+  },
+  {
+   "text": "8",
+   "values": [
+    "8"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Eight documents from State central files; six lot files (two, one, two, one); eight from the Agency (record group 306); five Johnson Library; one Nixon Presidential Materials; one Saigon embassy (reco",
+   "sentence": "Subject and Special Files, lot 62 D 430 (9 pointers on 8 documents; identifier 2839191, entry A1 1586C, to , partly restricted)."
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "entry",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 62 D 430: Subject and Special Files, identifier 2839191, entry A1 1586C, 1953 to 1961, partly restricted, 4 linear feet 5 inches | line 55 (M8)",
+   "sentence": "Subject and Special Files, lot 62 D 430 (9 pointers on 8 documents; identifier 2839191, entry A1 1586C, to , partly restricted)."
+  },
+  {
+   "text": "A1 1586C",
+   "values": [
+    "a11586c"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430: Subject and Special Files, identifier 2839191, entry A1 1586C, 1953 to 1961, partly restricted, 4 linear feet 5 inches | line 55 (M8)",
+   "sentence": "Subject and Special Files, lot 62 D 430 (9 pointers on 8 documents; identifier 2839191, entry A1 1586C, to , partly restricted)."
+  },
+  {
+   "text": "62 D 1",
+   "values": [
+    "62d1"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 1: Records Relating to Activities with the National Security Council, identifier 2838992, entries A1 1583E and A1 1583F, 1948 to 1961, partly restricted | line 55 (M8)",
+   "sentence": "Records Relating to Activities with the National Security Council, lot 62 D 1 (8 pointers on 7 documents; record group 59, entries A1 1583E and A1 1583F, identifier 2838992, to , partly restricted)."
+  },
+  {
+   "text": "8",
+   "values": [
+    "8"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 61 D 385 unidentified in the bundled lists; lot 62 D 181 unidentified (8 pointers on 3 documents) | line 55 (M8); line 61 (M9)",
+   "sentence": "Records Relating to Activities with the National Security Council, lot 62 D 1 (8 pointers on 7 documents; record group 59, entries A1 1583E and A1 1583F, identifier 2838992, to , partly restricted)."
+  },
+  {
+   "text": "7",
+   "values": [
+    "7"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Eight documents from State central files; six lot files (two, one, two, one); eight from the Agency (record group 306); five Johnson Library; one Nixon Presidential Materials; one Saigon embassy (reco",
+   "sentence": "Records Relating to Activities with the National Security Council, lot 62 D 1 (8 pointers on 7 documents; record group 59, entries A1 1583E and A1 1583F, identifier 2838992, to , partly restricted)."
+  },
+  {
+   "text": "59",
+   "values": [
+    "59"
+   ],
+   "next": "entrie",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Of 82 documents nearest four key documents: 25 from State Department files (record group 59), 23 from the Agency's (record group 306); read as a pointer, not a measure | line 164 (Operation 2)",
+   "sentence": "Records Relating to Activities with the National Security Council, lot 62 D 1 (8 pointers on 7 documents; record group 59, entries A1 1583E and A1 1583F, identifier 2838992, to , partly restricted)."
+  },
+  {
+   "text": "A1 1583E",
+   "values": [
+    "a11583e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 1: Records Relating to Activities with the National Security Council, identifier 2838992, entries A1 1583E and A1 1583F, 1948 to 1961, partly restricted | line 55 (M8)",
+   "sentence": "Records Relating to Activities with the National Security Council, lot 62 D 1 (8 pointers on 7 documents; record group 59, entries A1 1583E and A1 1583F, identifier 2838992, to , partly restricted)."
+  },
+  {
+   "text": "A1 1583F",
+   "values": [
+    "a11583f"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 1: Records Relating to Activities with the National Security Council, identifier 2838992, entries A1 1583E and A1 1583F, 1948 to 1961, partly restricted | line 55 (M8)",
+   "sentence": "Records Relating to Activities with the National Security Council, lot 62 D 1 (8 pointers on 7 documents; record group 59, entries A1 1583E and A1 1583F, identifier 2838992, to , partly restricted)."
+  },
+  {
+   "text": "2838992",
+   "values": [
+    "2838992"
+   ],
+   "next": "to",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 62 D 1: Records Relating to Activities with the National Security Council, identifier 2838992, entries A1 1583E and A1 1583F, 1948 to 1961, partly restricted | line 55 (M8)",
+   "sentence": "Records Relating to Activities with the National Security Council, lot 62 D 1 (8 pointers on 7 documents; record group 59, entries A1 1583E and A1 1583F, identifier 2838992, to , partly restricted)."
+  },
+  {
+   "text": "74 D 417",
+   "values": [
+    "74d417"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 74 D 417: 5 pointers; Files of Ambassador Ellsworth Bunker, record group 84, identifier 588795, unrestricted | line 61 (M9)",
+   "sentence": "Files of Ambassador Ellsworth Bunker, lot 74 D 417 (5 pointers; record group 84, identifier 588795, unrestricted)."
+  },
+  {
+   "text": "5",
+   "values": [
+    "5"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Thirty-one documents; 39 passages; 95 documents retrieved whole, quoted from 31 | line 69 (section 3); line 121 (section 5)",
+   "sentence": "Files of Ambassador Ellsworth Bunker, lot 74 D 417 (5 pointers; record group 84, identifier 588795, unrestricted)."
+  },
+  {
+   "text": "84",
+   "values": [
+    "84"
+   ],
+   "next": "identifier",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 74 D 417: 5 pointers; Files of Ambassador Ellsworth Bunker, record group 84, identifier 588795, unrestricted | line 61 (M9)",
+   "sentence": "Files of Ambassador Ellsworth Bunker, lot 74 D 417 (5 pointers; record group 84, identifier 588795, unrestricted)."
+  },
+  {
+   "text": "588795",
+   "values": [
+    "588795"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 74 D 417: 5 pointers; Files of Ambassador Ellsworth Bunker, record group 84, identifier 588795, unrestricted | line 61 (M9)",
+   "sentence": "Files of Ambassador Ellsworth Bunker, lot 74 D 417 (5 pointers; record group 84, identifier 588795, unrestricted)."
+  },
+  {
+   "text": "58 D 726",
+   "values": [
+    "58d726"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 58 D 726: Subject Files, identifier 2544398, Office of the Officer in Charge for Malaya Affairs, 1955 to 1956, \"Restricted - Possibly\", cited without printing by one document in the set | line 55 ",
+   "sentence": "Subject Files of the Office of the Officer in Charge for Malaya Affairs, lot 58 D 726 (identifier 2544398; to ; possibly restricted), cited without printing by one document in the set."
+  },
+  {
+   "text": "2544398",
+   "values": [
+    "2544398"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 58 D 726: Subject Files, identifier 2544398, Office of the Officer in Charge for Malaya Affairs, 1955 to 1956, \"Restricted - Possibly\", cited without printing by one document in the set | line 55 ",
+   "sentence": "Subject Files of the Office of the Officer in Charge for Malaya Affairs, lot 58 D 726 (identifier 2544398; to ; possibly restricted), cited without printing by one document in the set."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "Lot 58 D 726: Subject Files, identifier 2544398, Office of the Officer in Charge for Malaya Affairs, 1955 to 1956, \"Restricted - Possibly\", cited without printing by one document in the set | line 55 ",
+   "sentence": "Subject Files of the Office of the Officer in Charge for Malaya Affairs, lot 58 D 726 (identifier 2544398; to ; possibly restricted), cited without printing by one document in the set."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Nixon Presidential Materials, NSC Files: 33 pointers on 17 documents; Johnson Library National Security File: 19 on 13; Kennedy Library National Security Files: 9 on 7; Nixon White House Central Files",
+   "sentence": "Presidential libraries: the Nixon Presidential Materials, National Security Council Files (33 pointers on 17 documents); the Johnson Library, National Security File (19 pointers on 13 documents); the Kennedy Library, National Security Files (9 pointers on 7 documents); the Nixon White House Central Files (3 pointers on 3 documents)."
+  },
+  {
+   "text": "17",
+   "values": [
+    "17"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Nixon Presidential Materials, NSC Files: 33 pointers on 17 documents; Johnson Library National Security File: 19 on 13; Kennedy Library National Security Files: 9 on 7; Nixon White House Central Files",
+   "sentence": "Presidential libraries: the Nixon Presidential Materials, National Security Council Files (33 pointers on 17 documents); the Johnson Library, National Security File (19 pointers on 13 documents); the Kennedy Library, National Security Files (9 pointers on 7 documents); the Nixon White House Central Files (3 pointers on 3 documents)."
+  },
+  {
+   "text": "19",
+   "values": [
+    "19"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Documents of 1948 to 1977 | line 19 (date span)",
+   "sentence": "Presidential libraries: the Nixon Presidential Materials, National Security Council Files (33 pointers on 17 documents); the Johnson Library, National Security File (19 pointers on 13 documents); the Kennedy Library, National Security Files (9 pointers on 7 documents); the Nixon White House Central Files (3 pointers on 3 documents)."
+  },
+  {
+   "text": "13",
+   "values": [
+    "13"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Agency's names by decade: about one in seventy (1940s), forty-four (1950s), twenty-four (1960s), seventy-five (1970s); 45 percent of the 1940s count from one volume | line 33 (M3 decade table: 14.3, 2",
+   "sentence": "Presidential libraries: the Nixon Presidential Materials, National Security Council Files (33 pointers on 17 documents); the Johnson Library, National Security File (19 pointers on 13 documents); the Kennedy Library, National Security Files (9 pointers on 7 documents); the Nixon White House Central Files (3 pointers on 3 documents)."
+  },
+  {
+   "text": "9",
+   "values": [
+    "9"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 62 D 430: 9 pointers on 8 documents; lot 62 D 1: 8 on 7 | line 61 (M9)",
+   "sentence": "Presidential libraries: the Nixon Presidential Materials, National Security Council Files (33 pointers on 17 documents); the Johnson Library, National Security File (19 pointers on 13 documents); the Kennedy Library, National Security Files (9 pointers on 7 documents); the Nixon White House Central Files (3 pointers on 3 documents)."
+  },
+  {
+   "text": "7",
+   "values": [
+    "7"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Eight documents from State central files; six lot files (two, one, two, one); eight from the Agency (record group 306); five Johnson Library; one Nixon Presidential Materials; one Saigon embassy (reco",
+   "sentence": "Presidential libraries: the Nixon Presidential Materials, National Security Council Files (33 pointers on 17 documents); the Johnson Library, National Security File (19 pointers on 13 documents); the Kennedy Library, National Security Files (9 pointers on 7 documents); the Nixon White House Central Files (3 pointers on 3 documents)."
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "20 further volumes on information policy and national security; three Public Diplomacy volumes whose titles do not name the region | line 17 (functional scope)",
+   "sentence": "Presidential libraries: the Nixon Presidential Materials, National Security Council Files (33 pointers on 17 documents); the Johnson Library, National Security File (19 pointers on 13 documents); the Kennedy Library, National Security Files (9 pointers on 7 documents); the Nixon White House Central Files (3 pointers on 3 documents)."
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Japan, Korea and Australasia supply three or four documents each; argument rests on Vietnam, Thailand, Indonesia and the Agency's East Asia office | line 228 (flags)",
+   "sentence": "Presidential libraries: the Nixon Presidential Materials, National Security Council Files (33 pointers on 17 documents); the Johnson Library, National Security File (19 pointers on 13 documents); the Kennedy Library, National Security Files (9 pointers on 7 documents); the Nixon White House Central Files (3 pointers on 3 documents)."
+  },
+  {
+   "text": "62 D 181",
+   "values": [
+    "62d181"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 61 D 385 unidentified in the bundled lists; lot 62 D 181 unidentified (8 pointers on 3 documents) | line 55 (M8); line 61 (M9)",
+   "sentence": "A further lot, 62 D 181 (8 pointers on 3 documents), is not identified in the bundled lists."
+  },
+  {
+   "text": "8",
+   "values": [
+    "8"
+   ],
+   "next": "pointer",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 61 D 385 unidentified in the bundled lists; lot 62 D 181 unidentified (8 pointers on 3 documents) | line 55 (M8); line 61 (M9)",
+   "sentence": "A further lot, 62 D 181 (8 pointers on 3 documents), is not identified in the bundled lists."
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "20 further volumes on information policy and national security; three Public Diplomacy volumes whose titles do not name the region | line 17 (functional scope)",
+   "sentence": "A further lot, 62 D 181 (8 pointers on 3 documents), is not identified in the bundled lists."
+  },
+  {
+   "text": "427",
+   "values": [
+    "427"
+   ],
+   "next": "printed",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "427 printed documents from the Agency's files across the whole series; 11 footnote pointers naming its files | line 65 (M11)",
+   "sentence": "Across the whole series 427 printed documents came from its files, but only 11 footnote pointers name its files, so the Agency's papers reach a reader through the printed page and almost never through a citation."
+  },
+  {
+   "text": "11",
+   "values": [
+    "11"
+   ],
+   "next": "footnote",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "427 printed documents from the Agency's files across the whole series; 11 footnote pointers naming its files | line 65 (M11)",
+   "sentence": "Across the whole series 427 printed documents came from its files, but only 11 footnote pointers name its files, so the Agency's papers reach a reader through the printed page and almost never through a citation."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "key",
+   "kind": "word",
+   "class": "traced",
+   "row": "Of 82 documents nearest four key documents: 25 from State Department files (record group 59), 23 from the Agency's (record group 306); read as a pointer, not a measure | line 164 (Operation 2)",
+   "sentence": "A search for the documents nearest in meaning to four of the key documents points the same way: of the 82 it returned, 25 came from State Department files (record group 59) and 23 from the Agency's (record group 306)."
+  },
+  {
+   "text": "82",
+   "values": [
+    "82"
+   ],
+   "next": "it",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Of 82 documents nearest four key documents: 25 from State Department files (record group 59), 23 from the Agency's (record group 306); read as a pointer, not a measure | line 164 (Operation 2)",
+   "sentence": "A search for the documents nearest in meaning to four of the key documents points the same way: of the 82 it returned, 25 came from State Department files (record group 59) and 23 from the Agency's (record group 306)."
+  },
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "came",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Of 82 documents nearest four key documents: 25 from State Department files (record group 59), 23 from the Agency's (record group 306); read as a pointer, not a measure | line 164 (Operation 2)",
+   "sentence": "A search for the documents nearest in meaning to four of the key documents points the same way: of the 82 it returned, 25 came from State Department files (record group 59) and 23 from the Agency's (record group 306)."
+  },
+  {
+   "text": "59",
+   "values": [
+    "59"
+   ],
+   "next": "from",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Of 82 documents nearest four key documents: 25 from State Department files (record group 59), 23 from the Agency's (record group 306); read as a pointer, not a measure | line 164 (Operation 2)",
+   "sentence": "A search for the documents nearest in meaning to four of the key documents points the same way: of the 82 it returned, 25 came from State Department files (record group 59) and 23 from the Agency's (record group 306)."
+  },
+  {
+   "text": "23",
+   "values": [
+    "23"
+   ],
+   "next": "from",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Of 82 documents nearest four key documents: 25 from State Department files (record group 59), 23 from the Agency's (record group 306); read as a pointer, not a measure | line 164 (Operation 2)",
+   "sentence": "A search for the documents nearest in meaning to four of the key documents points the same way: of the 82 it returned, 25 came from State Department files (record group 59) and 23 from the Agency's (record group 306)."
+  },
+  {
+   "text": "306",
+   "values": [
+    "306"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Eight documents from State central files; six lot files (two, one, two, one); eight from the Agency (record group 306); five Johnson Library; one Nixon Presidential Materials; one Saigon embassy (reco",
+   "sentence": "A search for the documents nearest in meaning to four of the key documents points the same way: of the 82 it returned, 25 came from State Department files (record group 59) and 23 from the Agency's (record group 306)."
+  },
+  {
+   "text": "Four",
+   "values": [
+    "4"
+   ],
+   "next": "part",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"Soft power\" occurs in no document of all 553 volumes | line 39 (M4); line 31",
+   "sentence": "What this request cannot get from FRUS.** Four parts of the question are not in the corpus, each established by a search. *The term itself.* I searched all 553 volumes for the exact phrase \"soft power\" and found no document."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "553 volumes; read-only copy that could not be written | line 9 (M0.1); line 11 (M0.2)",
+   "sentence": "What this request cannot get from FRUS.** Four parts of the question are not in the corpus, each established by a search. *The term itself.* I searched all 553 volumes for the exact phrase \"soft power\" and found no document."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "word",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"Public diplomacy\" in 211 documents; 175 in volumes covering 1977 to 1988; two among the 38,000 regional documents; 210 of 211 exact, 211 of 211 looser | line 39 (M4); line 31",
+   "sentence": "Because the search tool treats words with different endings as the same word, I also searched for the two words anywhere in a document: 785 documents contain both, and none uses the phrase."
+  },
+  {
+   "text": "785",
+   "values": [
+    "785"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "785 documents contain both words, none the phrase | line 39 (M4)",
+   "sentence": "Because the search tool treats words with different endings as the same word, I also searched for the two words anywhere in a document: 785 documents contain both, and none uses the phrase."
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "regional",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "The cases check the tool: the phrase \"Department of State\" turns up in documents of every one of the 77 regional volumes, and a nonsense string finds nothing."
+  },
+  {
+   "text": "211",
+   "values": [
+    "211"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Public diplomacy\" in 211 documents; 175 in volumes covering 1977 to 1988; two among the 38,000 regional documents; 210 of 211 exact, 211 of 211 looser | line 39 (M4); line 31",
+   "sentence": "\"Public diplomacy\" appears in 211 documents, but 175 are in volumes covering to and only two fall among the 38,000 regional documents; an exact-spelling check confirmed 210 of those 211 and a looser check all 211."
+  },
+  {
+   "text": "175",
+   "values": [
+    "175"
+   ],
+   "next": "are",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"Public diplomacy\" in 211 documents; 175 in volumes covering 1977 to 1988; two among the 38,000 regional documents; 210 of 211 exact, 211 of 211 looser | line 39 (M4); line 31",
+   "sentence": "\"Public diplomacy\" appears in 211 documents, but 175 are in volumes covering to and only two fall among the 38,000 regional documents; an exact-spelling check confirmed 210 of those 211 and a looser check all 211."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "fall",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"Public diplomacy\" in 211 documents; 175 in volumes covering 1977 to 1988; two among the 38,000 regional documents; 210 of 211 exact, 211 of 211 looser | line 39 (M4); line 31",
+   "sentence": "\"Public diplomacy\" appears in 211 documents, but 175 are in volumes covering to and only two fall among the 38,000 regional documents; an exact-spelling check confirmed 210 of those 211 and a looser check all 211."
+  },
+  {
+   "text": "38,000",
+   "values": [
+    "38000"
+   ],
+   "next": "regional",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Public diplomacy\" in 211 documents; 175 in volumes covering 1977 to 1988; two among the 38,000 regional documents; 210 of 211 exact, 211 of 211 looser | line 39 (M4); line 31",
+   "sentence": "\"Public diplomacy\" appears in 211 documents, but 175 are in volumes covering to and only two fall among the 38,000 regional documents; an exact-spelling check confirmed 210 of those 211 and a looser check all 211."
+  },
+  {
+   "text": "210",
+   "values": [
+    "210"
+   ],
+   "next": "those",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"Public diplomacy\" in 211 documents; 175 in volumes covering 1977 to 1988; two among the 38,000 regional documents; 210 of 211 exact, 211 of 211 looser | line 39 (M4); line 31",
+   "sentence": "\"Public diplomacy\" appears in 211 documents, but 175 are in volumes covering to and only two fall among the 38,000 regional documents; an exact-spelling check confirmed 210 of those 211 and a looser check all 211."
+  },
+  {
+   "text": "211",
+   "values": [
+    "211"
+   ],
+   "next": "looser",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Public diplomacy\" in 211 documents; 175 in volumes covering 1977 to 1988; two among the 38,000 regional documents; 210 of 211 exact, 211 of 211 looser | line 39 (M4); line 31",
+   "sentence": "\"Public diplomacy\" appears in 211 documents, but 175 are in volumes covering to and only two fall among the 38,000 regional documents; an exact-spelling check confirmed 210 of those 211 and a looser check all 211."
+  },
+  {
+   "text": "211",
+   "values": [
+    "211"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Public diplomacy\" in 211 documents; 175 in volumes covering 1977 to 1988; two among the 38,000 regional documents; 210 of 211 exact, 211 of 211 looser | line 39 (M4); line 31",
+   "sentence": "\"Public diplomacy\" appears in 211 documents, but 175 are in volumes covering to and only two fall among the 38,000 regional documents; an exact-spelling check confirmed 210 of those 211 and a looser check all 211."
+  },
+  {
+   "text": "381",
+   "values": [
+    "381"
+   ],
+   "next": "sentence",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "381 sentences; 1,608 candidate documents; 33 with an effect word; 145 of the 381 name Asians, Orientals or face (\"somewhat more than a third\") | line 47 (M6)",
+   "sentence": "So in the regional volumes the officials did not call their effort soft power or public diplomacy; they called it information and psychological work. *Measured reception.* I scanned 381 sentences that join an audience belief to an information term, in 1,608 candidate documents; 33 of them also contained a word of effect."
+  },
+  {
+   "text": "1,608",
+   "values": [
+    "1608"
+   ],
+   "next": "candidate",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "381 sentences; 1,608 candidate documents; 33 with an effect word; 145 of the 381 name Asians, Orientals or face (\"somewhat more than a third\") | line 47 (M6)",
+   "sentence": "So in the regional volumes the officials did not call their effort soft power or public diplomacy; they called it information and psychological work. *Measured reception.* I scanned 381 sentences that join an audience belief to an information term, in 1,608 candidate documents; 33 of them also contained a word of effect."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "them",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "381 sentences; 1,608 candidate documents; 33 with an effect word; 145 of the 381 name Asians, Orientals or face (\"somewhat more than a third\") | line 47 (M6)",
+   "sentence": "So in the regional volumes the officials did not call their effort soft power or public diplomacy; they called it information and psychological work. *Measured reception.* I scanned 381 sentences that join an audience belief to an information term, in 1,608 candidate documents; 33 of them also contained a word of effect."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "memorandum",
+   "kind": "word",
+   "class": "weak",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "One memorandum says opinion surveys of Japanese attitudes confirmed strains, but the surveys themselves are not among the documents I selected."
+  },
+  {
+   "text": "306",
+   "values": [
+    "306"
+   ],
+   "next": "are",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Eight documents from State central files; six lot files (two, one, two, one); eight from the Agency (record group 306); five Johnson Library; one Nixon Presidential Materials; one Saigon embassy (reco",
+   "sentence": "The nearest described shelves, all in the Agency's record group 306, are the Office of Research and Intelligence Program Files (identifier 1254251; to ; 9 linear feet 2 inches; partly restricted), the Records Relating to the Voice of America (identifier 7542975; to ; 6 linear feet 6 inches; partly restricted) and the Office of Policy and Plans Subject Files named above. *Soft power as attraction.* I searched for the vocabulary of cultural and educational exchange, which appears in 329 of the 38,000 regional documents, and read the ones that looked relevant."
+  },
+  {
+   "text": "1254251",
+   "values": [
+    "1254251"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Research shelf: Program Files 1254251 (Office of Research and Intelligence, 1954 to 1958, 9 linear feet 2 inches, partly restricted); Records Relating to the Voice of America 7542975 (1948 to 1959, 6 ",
+   "sentence": "The nearest described shelves, all in the Agency's record group 306, are the Office of Research and Intelligence Program Files (identifier 1254251; to ; 9 linear feet 2 inches; partly restricted), the Records Relating to the Voice of America (identifier 7542975; to ; 6 linear feet 6 inches; partly restricted) and the Office of Policy and Plans Subject Files named above. *Soft power as attraction.* I searched for the vocabulary of cultural and educational exchange, which appears in 329 of the 38,000 regional documents, and read the ones that looked relevant."
+  },
+  {
+   "text": "9",
+   "values": [
+    "9"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Research shelf: Program Files 1254251 (Office of Research and Intelligence, 1954 to 1958, 9 linear feet 2 inches, partly restricted); Records Relating to the Voice of America 7542975 (1948 to 1959, 6 ",
+   "sentence": "The nearest described shelves, all in the Agency's record group 306, are the Office of Research and Intelligence Program Files (identifier 1254251; to ; 9 linear feet 2 inches; partly restricted), the Records Relating to the Voice of America (identifier 7542975; to ; 6 linear feet 6 inches; partly restricted) and the Office of Policy and Plans Subject Files named above. *Soft power as attraction.* I searched for the vocabulary of cultural and educational exchange, which appears in 329 of the 38,000 regional documents, and read the ones that looked relevant."
+  },
+  {
+   "text": "2",
+   "values": [
+    "2"
+   ],
+   "next": "inche",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Research shelf: Program Files 1254251 (Office of Research and Intelligence, 1954 to 1958, 9 linear feet 2 inches, partly restricted); Records Relating to the Voice of America 7542975 (1948 to 1959, 6 ",
+   "sentence": "The nearest described shelves, all in the Agency's record group 306, are the Office of Research and Intelligence Program Files (identifier 1254251; to ; 9 linear feet 2 inches; partly restricted), the Records Relating to the Voice of America (identifier 7542975; to ; 6 linear feet 6 inches; partly restricted) and the Office of Policy and Plans Subject Files named above. *Soft power as attraction.* I searched for the vocabulary of cultural and educational exchange, which appears in 329 of the 38,000 regional documents, and read the ones that looked relevant."
+  },
+  {
+   "text": "7542975",
+   "values": [
+    "7542975"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Research shelf: Program Files 1254251 (Office of Research and Intelligence, 1954 to 1958, 9 linear feet 2 inches, partly restricted); Records Relating to the Voice of America 7542975 (1948 to 1959, 6 ",
+   "sentence": "The nearest described shelves, all in the Agency's record group 306, are the Office of Research and Intelligence Program Files (identifier 1254251; to ; 9 linear feet 2 inches; partly restricted), the Records Relating to the Voice of America (identifier 7542975; to ; 6 linear feet 6 inches; partly restricted) and the Office of Policy and Plans Subject Files named above. *Soft power as attraction.* I searched for the vocabulary of cultural and educational exchange, which appears in 329 of the 38,000 regional documents, and read the ones that looked relevant."
+  },
+  {
+   "text": "6",
+   "values": [
+    "6"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Research shelf: Program Files 1254251 (Office of Research and Intelligence, 1954 to 1958, 9 linear feet 2 inches, partly restricted); Records Relating to the Voice of America 7542975 (1948 to 1959, 6 ",
+   "sentence": "The nearest described shelves, all in the Agency's record group 306, are the Office of Research and Intelligence Program Files (identifier 1254251; to ; 9 linear feet 2 inches; partly restricted), the Records Relating to the Voice of America (identifier 7542975; to ; 6 linear feet 6 inches; partly restricted) and the Office of Policy and Plans Subject Files named above. *Soft power as attraction.* I searched for the vocabulary of cultural and educational exchange, which appears in 329 of the 38,000 regional documents, and read the ones that looked relevant."
+  },
+  {
+   "text": "6",
+   "values": [
+    "6"
+   ],
+   "next": "inche",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Nearest Agency series: Director's Subject Files 40967285 (1956 to 1972, 103 linear feet 1 inch, partly restricted); Office of Policy and Plans Subject Files 1257679 (1953 to 1971, 47 linear feet, part",
+   "sentence": "The nearest described shelves, all in the Agency's record group 306, are the Office of Research and Intelligence Program Files (identifier 1254251; to ; 9 linear feet 2 inches; partly restricted), the Records Relating to the Voice of America (identifier 7542975; to ; 6 linear feet 6 inches; partly restricted) and the Office of Policy and Plans Subject Files named above. *Soft power as attraction.* I searched for the vocabulary of cultural and educational exchange, which appears in 329 of the 38,000 regional documents, and read the ones that looked relevant."
+  },
+  {
+   "text": "329",
+   "values": [
+    "329"
+   ],
+   "next": "regional",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Exchange vocabulary in 329 of the 38,000 regional documents; exchange documents found are descriptive | line 31; line 228 (flags)",
+   "sentence": "The nearest described shelves, all in the Agency's record group 306, are the Office of Research and Intelligence Program Files (identifier 1254251; to ; 9 linear feet 2 inches; partly restricted), the Records Relating to the Voice of America (identifier 7542975; to ; 6 linear feet 6 inches; partly restricted) and the Office of Policy and Plans Subject Files named above. *Soft power as attraction.* I searched for the vocabulary of cultural and educational exchange, which appears in 329 of the 38,000 regional documents, and read the ones that looked relevant."
+  },
+  {
+   "text": "38,000",
+   "values": [
+    "38000"
+   ],
+   "next": "regional",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Public diplomacy\" in 211 documents; 175 in volumes covering 1977 to 1988; two among the 38,000 regional documents; 210 of 211 exact, 211 of 211 looser | line 39 (M4); line 31",
+   "sentence": "The nearest described shelves, all in the Agency's record group 306, are the Office of Research and Intelligence Program Files (identifier 1254251; to ; 9 linear feet 2 inches; partly restricted), the Records Relating to the Voice of America (identifier 7542975; to ; 6 linear feet 6 inches; partly restricted) and the Office of Policy and Plans Subject Files named above. *Soft power as attraction.* I searched for the vocabulary of cultural and educational exchange, which appears in 329 of the 38,000 regional documents, and read the ones that looked relevant."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "four",
+   "kind": "word",
+   "class": "weak",
+   "row": "20 further volumes on information policy and national security; three Public Diplomacy volumes whose titles do not name the region | line 17 (functional scope)",
+   "sentence": "I did not identify a shelf for this part. *Even coverage of the region.* Japan, Korea and Australasia supply only three or four documents each; the argument rests mostly on Vietnam, Thailand and Indonesia and on the Agency's own East Asia office."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "Japan, Korea and Australasia supply three or four documents each; argument rests on Vietnam, Thailand, Indonesia and the Agency's East Asia office | line 228 (flags)",
+   "sentence": "I did not identify a shelf for this part. *Even coverage of the region.* Japan, Korea and Australasia supply only three or four documents each; the argument rests mostly on Vietnam, Thailand and Indonesia and on the Agency's own East Asia office."
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "The Chinese mainland as an audience, what the Voice of America actually broadcast (beyond the Vietnamese expansion of ), and the volumes of to , where I found nothing to select, were not followed. **Scope.** The main set is the 77 volumes on East Asia and the Pacific ( to ), which hold about 38,000 documents once front matter and editors' notes are set aside;"
+  },
+  {
+   "text": "38,000",
+   "values": [
+    "38000"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "The Chinese mainland as an audience, what the Voice of America actually broadcast (beyond the Vietnamese expansion of ), and the volumes of to , where I found nothing to select, were not followed. **Scope.** The main set is the 77 volumes on East Asia and the Pacific ( to ), which hold about 38,000 documents once front matter and editors' notes are set aside;"
+  },
+  {
+   "text": "20",
+   "values": [
+    "20"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "20 further volumes on information policy and national security; three Public Diplomacy volumes whose titles do not name the region | line 17 (functional scope)",
+   "sentence": "I added 20 volumes on information policy and national security, and three Public Diplomacy volumes whose titles do not name the region, and drew the argument from documents of to . ## Decisions this needs from you **What counts as soft power.** I read it as the information, propaganda, psychological and exchange programs the officials themselves named, because the phrase itself is absent; if you want only attraction (culture, exchange, libraries), the set shrinks to a few descriptive documents, and if you count every mention of propaganda, the pool of candidates grows from fewer than 900 documents that name the information agencies to more than 4,000. **Which region.** I kept the 77 volumes for East Asia and the Pacific and one South and Southeast Asia volume that carries the Thailand report;"
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "public",
+   "kind": "word",
+   "class": "traced",
+   "row": "20 further volumes on information policy and national security; three Public Diplomacy volumes whose titles do not name the region | line 17 (functional scope)",
+   "sentence": "I added 20 volumes on information policy and national security, and three Public Diplomacy volumes whose titles do not name the region, and drew the argument from documents of to . ## Decisions this needs from you **What counts as soft power.** I read it as the information, propaganda, psychological and exchange programs the officials themselves named, because the phrase itself is absent; if you want only attraction (culture, exchange, libraries), the set shrinks to a few descriptive documents, and if you count every mention of propaganda, the pool of candidates grows from fewer than 900 documents that name the information agencies to more than 4,000. **Which region.** I kept the 77 volumes for East Asia and the Pacific and one South and Southeast Asia volume that carries the Thailand report;"
+  },
+  {
+   "text": "900",
+   "values": [
+    "900"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Fewer than 900 documents naming the information agencies (864) versus more than 4,000 mentioning propaganda (4,085) | line 31 (CORE 864); line 43 (M5, A>=1 in 4,085)",
+   "sentence": "I added 20 volumes on information policy and national security, and three Public Diplomacy volumes whose titles do not name the region, and drew the argument from documents of to . ## Decisions this needs from you **What counts as soft power.** I read it as the information, propaganda, psychological and exchange programs the officials themselves named, because the phrase itself is absent; if you want only attraction (culture, exchange, libraries), the set shrinks to a few descriptive documents, and if you count every mention of propaganda, the pool of candidates grows from fewer than 900 documents that name the information agencies to more than 4,000. **Which region.** I kept the 77 volumes for East Asia and the Pacific and one South and Southeast Asia volume that carries the Thailand report;"
+  },
+  {
+   "text": "4,000",
+   "values": [
+    "4000"
+   ],
+   "next": "which",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Fewer than 900 documents naming the information agencies (864) versus more than 4,000 mentioning propaganda (4,085) | line 31 (CORE 864); line 43 (M5, A>=1 in 4,085)",
+   "sentence": "I added 20 volumes on information policy and national security, and three Public Diplomacy volumes whose titles do not name the region, and drew the argument from documents of to . ## Decisions this needs from you **What counts as soft power.** I read it as the information, propaganda, psychological and exchange programs the officials themselves named, because the phrase itself is absent; if you want only attraction (culture, exchange, libraries), the set shrinks to a few descriptive documents, and if you count every mention of propaganda, the pool of candidates grows from fewer than 900 documents that name the information agencies to more than 4,000. **Which region.** I kept the 77 volumes for East Asia and the Pacific and one South and Southeast Asia volume that carries the Thailand report;"
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "I added 20 volumes on information policy and national security, and three Public Diplomacy volumes whose titles do not name the region, and drew the argument from documents of to . ## Decisions this needs from you **What counts as soft power.** I read it as the information, propaganda, psychological and exchange programs the officials themselves named, because the phrase itself is absent; if you want only attraction (culture, exchange, libraries), the set shrinks to a few descriptive documents, and if you count every mention of propaganda, the pool of candidates grows from fewer than 900 documents that name the information agencies to more than 4,000. **Which region.** I kept the 77 volumes for East Asia and the Pacific and one South and Southeast Asia volume that carries the Thailand report;"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "south",
+   "kind": "word",
+   "class": "traced",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "I added 20 volumes on information policy and national security, and three Public Diplomacy volumes whose titles do not name the region, and drew the argument from documents of to . ## Decisions this needs from you **What counts as soft power.** I read it as the information, propaganda, psychological and exchange programs the officials themselves named, because the phrase itself is absent; if you want only attraction (culture, exchange, libraries), the set shrinks to a few descriptive documents, and if you count every mention of propaganda, the pool of candidates grows from fewer than 900 documents that name the information agencies to more than 4,000. **Which region.** I kept the 77 volumes for East Asia and the Pacific and one South and Southeast Asia volume that carries the Thailand report;"
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "become",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "20 further volumes on information policy and national security; three Public Diplomacy volumes whose titles do not name the region | line 17 (functional scope)",
+   "sentence": "South Asia and the Near East were not read for this question, and the Chinese mainland as an audience has not been followed, so including either is further work. **Who is a policymaker.** I counted both the officials who set policy (Secretary of State, National Security Council, ambassadors) and the Agency officers and embassy public affairs officers who ran programs, labelled by author; if you take only the first group, the section on effect largely disappears, because those judgments are the officers'. **What counts as an assessment of effect.** I accepted an officer's own judgment, labelled as such, since no independent measure was found; if you require independent measures, the answer to \"how effective\" becomes \"not shown in FRUS\" and the shelf in part 3 becomes the next step. **How to date a document.** I periodised on the document's own date, not the volume's; counting by volume year would move the rate, which is almost half one volume."
+  },
+  {
+   "text": "half",
+   "values": [
+    "0.5"
+   ],
+   "next": "one",
+   "kind": "word",
+   "class": "untraced",
+   "row": null,
+   "sentence": "South Asia and the Near East were not read for this question, and the Chinese mainland as an audience has not been followed, so including either is further work. **Who is a policymaker.** I counted both the officials who set policy (Secretary of State, National Security Council, ambassadors) and the Agency officers and embassy public affairs officers who ran programs, labelled by author; if you take only the first group, the section on effect largely disappears, because those judgments are the officers'. **What counts as an assessment of effect.** I accepted an officer's own judgment, labelled as such, since no independent measure was found; if you require independent measures, the answer to \"how effective\" becomes \"not shown in FRUS\" and the shelf in part 3 becomes the next step. **How to date a document.** I periodised on the document's own date, not the volume's; counting by volume year would move the rate, which is almost half one volume."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "traced",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "South Asia and the Near East were not read for this question, and the Chinese mainland as an audience has not been followed, so including either is further work. **Who is a policymaker.** I counted both the officials who set policy (Secretary of State, National Security Council, ambassadors) and the Agency officers and embassy public affairs officers who ran programs, labelled by author; if you take only the first group, the section on effect largely disappears, because those judgments are the officers'. **What counts as an assessment of effect.** I accepted an officer's own judgment, labelled as such, since no independent measure was found; if you require independent measures, the answer to \"how effective\" becomes \"not shown in FRUS\" and the shelf in part 3 becomes the next step. **How to date a document.** I periodised on the document's own date, not the volume's; counting by volume year would move the rate, which is almost half one volume."
+  },
+  {
+   "text": "80",
+   "values": [
+    "80"
+   ],
+   "next": "million",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Opinion figure in the Indonesia report is the public affairs officer's estimate; 80 million | collection note on that document (input file); line 197 (trace table, \"80 million\" in the same sentence of",
+   "sentence": "In the same report the public affairs officer guessed at the spread of opinion among 80 million people, and his guess was that nearly all were undecided."
+  },
+  {
+   "text": "million",
+   "values": [
+    "1000000"
+   ],
+   "next": "people",
+   "kind": "word",
+   "class": "weak",
+   "row": "Opinion figure in the Indonesia report is the public affairs officer's estimate; 80 million | collection note on that document (input file); line 197 (trace table, \"80 million\" in the same sentence of",
+   "sentence": "In the same report the public affairs officer guessed at the spread of opinion among 80 million people, and his guess was that nearly all were undecided."
+  },
+  {
+   "text": "2.5 percent",
+   "values": [
+    "2.5"
+   ],
+   "next": "may",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Block quotation \"2.5 percent may be opposed to United States aims, 1.5 percent favorabl...\" | memo line 84 (section 4, Q8, frus1952-54v12p2/d251)",
+   "sentence": "These are officials' beliefs, and in the Indonesian case a single officer's estimate; they are not measurements of what Indonesians thought. > which is more affected by our actions than our words and which is hostile to propaganda from any source, especially non-Asian. > 2.5 percent may be opposed to United States aims, 1.5 percent favorable, and 96 percent “unsure” ( memorandum by the Secretary of State and the Acting Secretary of Defense, . > widespread use in Philippines and elsewhere of slogan “Asia for Asians” would be most unfortunate."
+  },
+  {
+   "text": "1.5 percent",
+   "values": [
+    "1.5"
+   ],
+   "next": "favorable",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Block quotation \"2.5 percent may be opposed to United States aims, 1.5 percent favorabl...\" | memo line 84 (section 4, Q8, frus1952-54v12p2/d251)",
+   "sentence": "These are officials' beliefs, and in the Indonesian case a single officer's estimate; they are not measurements of what Indonesians thought. > which is more affected by our actions than our words and which is hostile to propaganda from any source, especially non-Asian. > 2.5 percent may be opposed to United States aims, 1.5 percent favorable, and 96 percent “unsure” ( memorandum by the Secretary of State and the Acting Secretary of Defense, . > widespread use in Philippines and elsewhere of slogan “Asia for Asians” would be most unfortunate."
+  },
+  {
+   "text": "96 percent",
+   "values": [
+    "96"
+   ],
+   "next": "unsure",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Block quotation \"the weakest part of the war operation, both on our part and that of th...\" | memo line 96 (section 4, Q20, frus1964-68v01/d122)",
+   "sentence": "These are officials' beliefs, and in the Indonesian case a single officer's estimate; they are not measurements of what Indonesians thought. > which is more affected by our actions than our words and which is hostile to propaganda from any source, especially non-Asian. > 2.5 percent may be opposed to United States aims, 1.5 percent favorable, and 96 percent “unsure” ( memorandum by the Secretary of State and the Acting Secretary of Defense, . > widespread use in Philippines and elsewhere of slogan “Asia for Asians” would be most unfortunate."
+  },
+  {
+   "text": "381",
+   "values": [
+    "381"
+   ],
+   "next": "sentence",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "381 sentences; 1,608 candidate documents; 33 with an effect word; 145 of the 381 name Asians, Orientals or face (\"somewhat more than a third\") | line 47 (M6)",
+   "sentence": "In my reading of the 381 sentences described in part 3, somewhat more than a third (145) named Asians, 'Orientals' or 'face'."
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "somewhat",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "20 further volumes on information policy and national security; three Public Diplomacy volumes whose titles do not name the region | line 17 (functional scope)",
+   "sentence": "In my reading of the 381 sentences described in part 3, somewhat more than a third (145) named Asians, 'Orientals' or 'face'."
+  },
+  {
+   "text": "145",
+   "values": [
+    "145"
+   ],
+   "next": "named",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "381 sentences; 1,608 candidate documents; 33 with an effect word; 145 of the 381 name Asians, Orientals or face (\"somewhat more than a third\") | line 47 (M6)",
+   "sentence": "In my reading of the 381 sentences described in part 3, somewhat more than a third (145) named Asians, 'Orientals' or 'face'."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "third",
+   "kind": "word",
+   "class": "traced",
+   "row": "Philippines tools (libraries, press, anti-communist films, radio); services cut by about two-thirds in fiscal 1954 for lack of funds | collection note on that document; line 195 (Q10, \"approximately 6",
+   "sentence": "In a National Security Council paper recorded that the information services in the Philippines had been cut by about two-thirds in fiscal for lack of funds ( ( In the public affairs officer in Saigon asked the psychological operations committee whether anyone had a hard reading of how well Vietnamese government propaganda worked in the rural areas, after hearing that its content was poor ( ( In the Agency's Director told the President that information and psychological warfare was the weakest part of the war effort; in he told President Johnson that efforts to build national unity among the South Vietnamese had not progressed to his satisfaction ( ( and the same month he wrote that the Agency would soon have nothing worthwhile left in Indonesia."
+  },
+  {
+   "text": "fourteen",
+   "values": [
+    "14"
+   ],
+   "next": "step",
+   "kind": "word",
+   "class": "weak",
+   "row": "Agency's names by decade: about one in seventy (1940s), forty-four (1950s), twenty-four (1960s), seventy-five (1970s); 45 percent of the 1940s count from one volume | line 33 (M3 decade table: 14.3, 2",
+   "sentence": "Washington's answer was to put advisers and money inside the host service, as in the Director's fourteen-step list of , which included more Agency staff in Vietnam and a large expansion of Voice of America broadcasts to the North ( ( > the image of the GVN in the world press can be no better than the face the GVN presents to the public ( memorandum from the Assistant Director for East Asian and Pacific Affairs, United States Information Agency, . > Vietnamese peasants are, in the main, going to be persuaded by other Vietnamese. > The number one problem in Vietnam is motivation."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "problem",
+   "kind": "word",
+   "class": "traced",
+   "row": "Block quotation \"The number one problem in Vietnam is motivation.\" | memo line 100 (section 4, Q24, frus1917-72PubDipv07/d32)",
+   "sentence": "Washington's answer was to put advisers and money inside the host service, as in the Director's fourteen-step list of , which included more Agency staff in Vietnam and a large expansion of Voice of America broadcasts to the North ( ( > the image of the GVN in the world press can be no better than the face the GVN presents to the public ( memorandum from the Assistant Director for East Asian and Pacific Affairs, United States Information Agency, . > Vietnamese peasants are, in the main, going to be persuaded by other Vietnamese. > The number one problem in Vietnam is motivation."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "The Agency's names appear in documents at a rate that rose and then fell: roughly one document in seventy in the , one in forty-four in the , one in twenty-four in the and one in seventy-five in the (the figure is not a regional rate, since 45 percent of it comes from the volume on China for )."
+  },
+  {
+   "text": "seventy",
+   "values": [
+    "70"
+   ],
+   "next": "one",
+   "kind": "word",
+   "class": "weak",
+   "row": "Agency's names by decade: about one in seventy (1940s), forty-four (1950s), twenty-four (1960s), seventy-five (1970s); 45 percent of the 1940s count from one volume | line 33 (M3 decade table: 14.3, 2",
+   "sentence": "The Agency's names appear in documents at a rate that rose and then fell: roughly one document in seventy in the , one in forty-four in the , one in twenty-four in the and one in seventy-five in the (the figure is not a regional rate, since 45 percent of it comes from the volume on China for )."
+  },
+  {
+   "text": "one in forty-four",
+   "values": [
+    "1",
+    "44"
+   ],
+   "next": "one",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "Agency's names by decade: about one in seventy (1940s), forty-four (1950s), twenty-four (1960s), seventy-five (1970s); 45 percent of the 1940s count from one volume | line 33 (M3 decade table: 14.3, 2",
+   "sentence": "The Agency's names appear in documents at a rate that rose and then fell: roughly one document in seventy in the , one in forty-four in the , one in twenty-four in the and one in seventy-five in the (the figure is not a regional rate, since 45 percent of it comes from the volume on China for )."
+  },
+  {
+   "text": "one in twenty-four",
+   "values": [
+    "1",
+    "24"
+   ],
+   "next": "one",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "Agency's names by decade: about one in seventy (1940s), forty-four (1950s), twenty-four (1960s), seventy-five (1970s); 45 percent of the 1940s count from one volume | line 33 (M3 decade table: 14.3, 2",
+   "sentence": "The Agency's names appear in documents at a rate that rose and then fell: roughly one document in seventy in the , one in forty-four in the , one in twenty-four in the and one in seventy-five in the (the figure is not a regional rate, since 45 percent of it comes from the volume on China for )."
+  },
+  {
+   "text": "one in seventy-five",
+   "values": [
+    "1",
+    "75"
+   ],
+   "next": "figure",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "Agency's names by decade: about one in seventy (1940s), forty-four (1950s), twenty-four (1960s), seventy-five (1970s); 45 percent of the 1940s count from one volume | line 33 (M3 decade table: 14.3, 2",
+   "sentence": "The Agency's names appear in documents at a rate that rose and then fell: roughly one document in seventy in the , one in forty-four in the , one in twenty-four in the and one in seventy-five in the (the figure is not a regional rate, since 45 percent of it comes from the volume on China for )."
+  },
+  {
+   "text": "45 percent",
+   "values": [
+    "45"
+   ],
+   "next": "it",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Agency's names by decade: about one in seventy (1940s), forty-four (1950s), twenty-four (1960s), seventy-five (1970s); 45 percent of the 1940s count from one volume | line 33 (M3 decade table: 14.3, 2",
+   "sentence": "The Agency's names appear in documents at a rate that rose and then fell: roughly one document in seventy in the , one in forty-four in the , one in twenty-four in the and one in seventy-five in the (the figure is not a regional rate, since 45 percent of it comes from the volume on China for )."
+  },
+  {
+   "text": "Two",
+   "values": [
+    "2"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"Public diplomacy\" in 211 documents; 175 in volumes covering 1977 to 1988; two among the 38,000 regional documents; 210 of 211 exact, 211 of 211 looser | line 39 (M4); line 31",
+   "sentence": "In the Agency's first program memorandum said partnership meant the United States would have to lower its voice ( ( in the Director described strains in Japan that opinion surveys confirmed ( ( and in the Agency's East Asia office spoke of shoring up East Asians' confidence in American staying power ( ( Two documents in this section, the memorandum and the telegram from Hong Kong (the telegram is quoted below), reached me through the search on similarity of meaning and through no keyword search. > PAOs emphasized that the image of the US usually depended more on the state of bi-lateral relations (security treaty, Okinawa, Korean military modernization, trade restrictions) than on developments within the US."
+  },
+  {
+   "text": "twenty",
+   "values": [
+    "20"
+   ],
+   "next": "year",
+   "kind": "word",
+   "class": "weak",
+   "row": "20 further volumes on information policy and national security; three Public Diplomacy volumes whose titles do not name the region | line 17 (functional scope)",
+   "sentence": "Public Diplomacy, ( memorandum from the Assistant Director for East Asia and the Pacific, United States Information Agency, . > Rather than being reassured, the ASEAN countries and Japan interpreted our apparent unwillingness to come to grips with the “new realities” as another indication that the United States, after twenty years of exaggerating the extent of its interests in Southeast Asia, might now decide it had no interest there at all."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "553 volumes; read-only copy that could not be written | line 9 (M0.1); line 11 (M0.2)",
+   "sentence": "( telegram from the Consulate in Hong Kong to the Department of State, . ## How this was done I worked in a read-only copy of the searchable index of all 553 volumes, and confirmed it could not be written to."
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "east",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "I took the 77 East Asia and Pacific volumes from the printed volume titles and counted terms in their roughly 38,000 documents by exact spelling (the Agency's name, its overseas posts' name, the Voice of America, psychological warfare, exchange, information program, public diplomacy and soft power), with the \"Department of State\" and nonsense-string controls described above, and I periodised each document by its own date."
+  },
+  {
+   "text": "38,000",
+   "values": [
+    "38000"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "I took the 77 East Asia and Pacific volumes from the printed volume titles and counted terms in their roughly 38,000 documents by exact spelling (the Agency's name, its overseas posts' name, the Voice of America, psychological warfare, exchange, information program, public diplomacy and soft power), with the \"Department of State\" and nonsense-string controls described above, and I periodised each document by its own date."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "word",
+   "kind": "word",
+   "class": "weak",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "Counting by exact spelling avoids a tool habit that treats different word endings as one word, so the counts are of defined spellings."
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "77 East Asia and Pacific volumes; some 38,000 documents (38,059) after front matter and editors' notes set aside; South Asia and Near East excluded; one South and Southeast Asia volume kept for the Th",
+   "sentence": "I then scanned the 77 volumes and 20 further information-policy volumes for candidate documents, scanned their sentences for audience beliefs and for words of effect, and used a measure of similarity in meaning between documents to find neighbours of the key memoranda; that search showed me I had missed the three Public Diplomacy volumes, and I then scanned them with ordinary text searches and selected documents from them."
+  },
+  {
+   "text": "20",
+   "values": [
+    "20"
+   ],
+   "next": "further",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "20 further volumes on information policy and national security; three Public Diplomacy volumes whose titles do not name the region | line 17 (functional scope)",
+   "sentence": "I then scanned the 77 volumes and 20 further information-policy volumes for candidate documents, scanned their sentences for audience beliefs and for words of effect, and used a measure of similarity in meaning between documents to find neighbours of the key memoranda; that search showed me I had missed the three Public Diplomacy volumes, and I then scanned them with ordinary text searches and selected documents from them."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "public",
+   "kind": "word",
+   "class": "traced",
+   "row": "20 further volumes on information policy and national security; three Public Diplomacy volumes whose titles do not name the region | line 17 (functional scope)",
+   "sentence": "I then scanned the 77 volumes and 20 further information-policy volumes for candidate documents, scanned their sentences for audience beliefs and for words of effect, and used a measure of similarity in meaning between documents to find neighbours of the key memoranda; that search showed me I had missed the three Public Diplomacy volumes, and I then scanned them with ordinary text searches and selected documents from them."
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "ten",
+   "kind": "word",
+   "class": "weak",
+   "row": "553 volumes; read-only copy that could not be written | line 9 (M0.1); line 11 (M0.2)",
+   "sentence": "The meaning search finds about nine in ten of a document's true neighbours, so I treated its results as leads and read every document I used."
+  },
+  {
+   "text": "ten",
+   "values": [
+    "10"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "Meaning search finds about nine in ten of a document's true neighbours (0.9021) | line 158",
+   "sentence": "The meaning search finds about nine in ten of a document's true neighbours, so I treated its results as leads and read every document I used."
+  },
+  {
+   "text": "95",
+   "values": [
+    "95"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Thirty-one documents; 39 passages; 95 documents retrieved whole, quoted from 31 | line 69 (section 3); line 121 (section 5)",
+   "sentence": "I retrieved 95 documents whole and quoted from 31; every one of the 39 quotations was checked to be an exact passage of its document."
+  },
+  {
+   "text": "31",
+   "values": [
+    "31"
+   ],
+   "next": "every",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Thirty-one documents; 39 passages; 95 documents retrieved whole, quoted from 31 | line 69 (section 3); line 121 (section 5)",
+   "sentence": "I retrieved 95 documents whole and quoted from 31; every one of the 39 quotations was checked to be an exact passage of its document."
+  },
+  {
+   "text": "39",
+   "values": [
+    "39"
+   ],
+   "next": "quotation",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Thirty-one documents; 39 passages; 95 documents retrieved whole, quoted from 31 | line 69 (section 3); line 121 (section 5)",
+   "sentence": "I retrieved 95 documents whole and quoted from 31; every one of the 39 quotations was checked to be an exact passage of its document."
+  },
+  {
+   "text": "Three",
+   "values": [
+    "3"
+   ],
+   "next": "memoranda",
+   "kind": "word",
+   "class": "traced",
+   "row": "Three memoranda appear in two volumes with different annotation; counted once, regional copy cited | line 170 (Operation 5); line 231",
+   "sentence": "Three memoranda appear in two volumes, a regional volume and a Public Diplomacy volume, with different annotation;"
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"Public diplomacy\" in 211 documents; 175 in volumes covering 1977 to 1988; two among the 38,000 regional documents; 210 of 211 exact, 211 of 211 looser | line 39 (M4); line 31",
+   "sentence": "Three memoranda appear in two volumes, a regional volume and a Public Diplomacy volume, with different annotation;"
+  },
+  {
+   "text": "31",
+   "values": [
+    "31"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Thirty-one documents; 39 passages; 95 documents retrieved whole, quoted from 31 | line 69 (section 3); line 121 (section 5)",
+   "sentence": "The exact counts, rates and denominators are in the memo; see the memo. ## Read next The collection \"Soft power in East Asia and the Pacific: messaging and its limits, \" holds the 31 documents and 39 passages in five sections:"
+  },
+  {
+   "text": "39",
+   "values": [
+    "39"
+   ],
+   "next": "passage",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Thirty-one documents; 39 passages; 95 documents retrieved whole, quoted from 31 | line 69 (section 3); line 121 (section 5)",
+   "sentence": "The exact counts, rates and denominators are in the memo; see the memo. ## Read next The collection \"Soft power in East Asia and the Pacific: messaging and its limits, \" holds the 31 documents and 39 passages in five sections:"
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "section",
+   "kind": "word",
+   "class": "weak",
+   "row": "Thirty-one documents; 39 passages; 95 documents retrieved whole, quoted from 31 | line 69 (section 3); line 121 (section 5)",
+   "sentence": "The exact counts, rates and denominators are in the memo; see the memo. ## Read next The collection \"Soft power in East Asia and the Pacific: messaging and its limits, \" holds the 31 documents and 39 passages in five sections:"
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "check",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "20 further volumes on information policy and national security; three Public Diplomacy volumes whose titles do not name the region | line 17 (functional scope)",
+   "sentence": "Your additions would unlock the parts I could not reach: documents on Japan, Korea or Australasia, on exchange programs, on the Voice of America's content, or on the Chinese mainland as an audience; a ruling on who counts as a policymaker, which would let me re-cut the section on effect; and the National Archives reading-room work on the Agency's research and post files named in part 3. *Checks done before finishing: every passage in quotation marks was compared with the passages the memo verified against their documents, and every document cited was compared with the collection's list.*"
+  }
+ ]
+}

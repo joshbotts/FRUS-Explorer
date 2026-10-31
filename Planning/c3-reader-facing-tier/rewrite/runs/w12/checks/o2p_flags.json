@@ -1,0 +1,620 @@
+{
+ "run": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w12",
+ "traceSource": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w12/trace.md",
+ "traceTableLine": 7,
+ "traceRows": 53,
+ "mentions": 55,
+ "counts": {
+  "traced": 45,
+  "weak": 10,
+  "untraced": 0
+ },
+ "list": [
+  {
+   "text": "thirteen",
+   "values": [
+    "13"
+   ],
+   "next": "round",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"thirteen\" (Saigon surveys) | 129 (Q21) | 306",
+   "sentence": "Saigon surveys rated the United States lowest as a dependable ally in thirteen rounds ."
+  },
+  {
+   "text": "22",
+   "values": [
+    "22"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"22 documents I read closely\"; \"quoted 22\"; \"holds the 22 documents\" | 95, 96, 269 | 285",
+   "sentence": "This rests on 22 documents I read closely, among about 2,700 the search found."
+  },
+  {
+   "text": "2,700",
+   "values": [
+    "2700"
+   ],
+   "next": "search",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"about 2,700\" found | 66, 69 (2692) | 284",
+   "sentence": "This rests on 22 documents I read closely, among about 2,700 the search found."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 306; Entry A1–42; FRC accessions 67 A 222 and 68 A 4933 | 188, 213 | 302",
+   "sentence": "Record Group 306, Entry A1–42; no NARA identifier, dates or access status in the reference lists I used."
+  },
+  {
+   "text": "42",
+   "values": [
+    "42"
+   ],
+   "next": "no",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Record Group 306; Entry A1–42; FRC accessions 67 A 222 and 68 A 4933 | 188, 213 | 302",
+   "sentence": "Record Group 306, Entry A1–42; no NARA identifier, dates or access status in the reference lists I used."
+  },
+  {
+   "text": "67 A 222",
+   "values": [
+    "67a222"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 306; Entry A1–42; FRC accessions 67 A 222 and 68 A 4933 | 188, 213 | 302",
+   "sentence": "United States Information Agency, other office files (Office of Policy and Plans, Office of the Director, and Federal Records Center accessions 67 A 222 and 68 A 4933):"
+  },
+  {
+   "text": "68 A 4933",
+   "values": [
+    "68a4933"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 306; Entry A1–42; FRC accessions 67 A 222 and 68 A 4933 | 188, 213 | 302",
+   "sentence": "United States Information Agency, other office files (Office of Policy and Plans, Office of the Director, and Federal Records Center accessions 67 A 222 and 68 A 4933):"
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 306; Entry A1–42; FRC accessions 67 A 222 and 68 A 4933 | 188, 213 | 302",
+   "sentence": "Record Group 306; not matched to a NARA identifier."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 / 66 D 95: RG 59, Entry A1 1586E, NAID 2839192, 1947–1979, partly restricted; \"appears most often in both\" | 155, 176, 177, 205 | 296, 303",
+   "sentence": "Executive Secretariat, Records Relating to National Security Council Policy Papers (Lot 63 D 351, also cited as Lot 66 D 95):"
+  },
+  {
+   "text": "66 D 95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 / 66 D 95: RG 59, Entry A1 1586E, NAID 2839192, 1947–1979, partly restricted; \"appears most often in both\" | 155, 176, 177, 205 | 296, 303",
+   "sentence": "Executive Secretariat, Records Relating to National Security Council Policy Papers (Lot 63 D 351, also cited as Lot 66 D 95):"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 / 66 D 95: RG 59, Entry A1 1586E, NAID 2839192, 1947–1979, partly restricted; \"appears most often in both\" | 155, 176, 177, 205 | 296, 303",
+   "sentence": "Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 / 66 D 95: RG 59, Entry A1 1586E, NAID 2839192, 1947–1979, partly restricted; \"appears most often in both\" | 155, 176, 177, 205 | 296, 303",
+   "sentence": "Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 63 D 351 / 66 D 95: RG 59, Entry A1 1586E, NAID 2839192, 1947–1979, partly restricted; \"appears most often in both\" | 155, 176, 177, 205 | 296, 303",
+   "sentence": "Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "62 D 333",
+   "values": [
+    "62d333"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 333 PSB Working Files: RG 59, Entry A1 1462, NAID 2124692, 1951–1953, possibly restricted | 165, 207 | 297",
+   "sentence": "Executive Secretariat, Psychological Strategy Board Working Files (Lot 62 D 333):"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 / 66 D 95: RG 59, Entry A1 1586E, NAID 2839192, 1947–1979, partly restricted; \"appears most often in both\" | 155, 176, 177, 205 | 296, 303",
+   "sentence": "Record Group 59, Entry A1 1462, NARA identifier 2124692, , possibly restricted."
+  },
+  {
+   "text": "A1 1462",
+   "values": [
+    "a11462"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 333 PSB Working Files: RG 59, Entry A1 1462, NAID 2124692, 1951–1953, possibly restricted | 165, 207 | 297",
+   "sentence": "Record Group 59, Entry A1 1462, NARA identifier 2124692, , possibly restricted."
+  },
+  {
+   "text": "2124692",
+   "values": [
+    "2124692"
+   ],
+   "next": "possibly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 62 D 333 PSB Working Files: RG 59, Entry A1 1462, NAID 2124692, 1951–1953, possibly restricted | 165, 207 | 297",
+   "sentence": "Record Group 59, Entry A1 1462, NARA identifier 2124692, , possibly restricted."
+  },
+  {
+   "text": "67 D 54",
+   "values": [
+    "67d54"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 67 D 54 Vietnam Working Group: RG 59, Entries A1 5305 and A1 5414, NAID 631403, 1963–1974, unrestricted | 166, 208 | 298",
+   "sentence": "Bureau of East Asian and Pacific Affairs, Subject Files of the Vietnam Working Group (Lot 67 D 54):"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 / 66 D 95: RG 59, Entry A1 1586E, NAID 2839192, 1947–1979, partly restricted; \"appears most often in both\" | 155, 176, 177, 205 | 296, 303",
+   "sentence": "Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "A1 5305",
+   "values": [
+    "a15305"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 67 D 54 Vietnam Working Group: RG 59, Entries A1 5305 and A1 5414, NAID 631403, 1963–1974, unrestricted | 166, 208 | 298",
+   "sentence": "Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "A1 5414",
+   "values": [
+    "a15414"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 67 D 54 Vietnam Working Group: RG 59, Entries A1 5305 and A1 5414, NAID 631403, 1963–1974, unrestricted | 166, 208 | 298",
+   "sentence": "Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "631403",
+   "values": [
+    "631403"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 67 D 54 Vietnam Working Group: RG 59, Entries A1 5305 and A1 5414, NAID 631403, 1963–1974, unrestricted | 166, 208 | 298",
+   "sentence": "Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted."
+  },
+  {
+   "text": "61 D 385",
+   "values": [
+    "61d385"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 61 D 385 (OCB) not placed | 163, 189, 197, 211 | 300",
+   "sentence": "Operations Coordinating Board files (Lot 61 D 385): not placed in a record group, entry or NARA series by the reference lists I used."
+  },
+  {
+   "text": "511",
+   "values": [
+    "511"
+   ],
+   "next": "which",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Central Decimal File class 511; files 511.90 (Asia), 511.00 (world); came-from 511.90, 511.51G; no NAID for the 1950s file | 189, 194–196, 215, 216 | 301",
+   "sentence": "Central Decimal File, class 511, which the Department's filing scheme for the labels \"International Informational and Educational Relations\":"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 / 66 D 95: RG 59, Entry A1 1586E, NAID 2839192, 1947–1979, partly restricted; \"appears most often in both\" | 155, 176, 177, 205 | 296, 303",
+   "sentence": "Record Group 59; files 511.90 (Asia) and 511.00 (the world); no NARA identifier for the decimal file."
+  },
+  {
+   "text": "511.90",
+   "values": [
+    "511.90"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Central Decimal File class 511; files 511.90 (Asia), 511.00 (world); came-from 511.90, 511.51G; no NAID for the 1950s file | 189, 194–196, 215, 216 | 301",
+   "sentence": "Record Group 59; files 511.90 (Asia) and 511.00 (the world); no NARA identifier for the decimal file."
+  },
+  {
+   "text": "511.00",
+   "values": [
+    "511.00"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Central Decimal File class 511; files 511.90 (Asia), 511.00 (world); came-from 511.90, 511.51G; no NAID for the 1950s file | 189, 194–196, 215, 216 | 301",
+   "sentence": "Record Group 59; files 511.90 (Asia) and 511.00 (the world); no NARA identifier for the decimal file."
+  },
+  {
+   "text": "58 D 726",
+   "values": [
+    "58d726"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 58 D 726: RG 59, Entry UD 53, NAID 2544398, 1955–1956, possibly restricted | 198, 210 | 299",
+   "sentence": "Officer in Charge for Malaya Affairs, Subject Files (Lot 58 D 726):"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 / 66 D 95: RG 59, Entry A1 1586E, NAID 2839192, 1947–1979, partly restricted; \"appears most often in both\" | 155, 176, 177, 205 | 296, 303",
+   "sentence": "Record Group 59, Entry UD 53, NARA identifier 2544398, , possibly restricted."
+  },
+  {
+   "text": "UD 53",
+   "values": [
+    "ud53"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 58 D 726: RG 59, Entry UD 53, NAID 2544398, 1955–1956, possibly restricted | 198, 210 | 299",
+   "sentence": "Record Group 59, Entry UD 53, NARA identifier 2544398, , possibly restricted."
+  },
+  {
+   "text": "2544398",
+   "values": [
+    "2544398"
+   ],
+   "next": "possibly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 58 D 726: RG 59, Entry UD 53, NAID 2544398, 1955–1956, possibly restricted | 198, 210 | 299",
+   "sentence": "Record Group 59, Entry UD 53, NARA identifier 2544398, , possibly restricted."
+  },
+  {
+   "text": "66 D 95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 / 66 D 95: RG 59, Entry A1 1586E, NAID 2839192, 1947–1979, partly restricted; \"appears most often in both\" | 155, 176, 177, 205 | 296, 303",
+   "sentence": "Executive Secretariat, Records Relating to National Security Council Policy Papers (Lot 66 D 95 and Lot 63 D 351):"
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 / 66 D 95: RG 59, Entry A1 1586E, NAID 2839192, 1947–1979, partly restricted; \"appears most often in both\" | 155, 176, 177, 205 | 296, 303",
+   "sentence": "Executive Secretariat, Records Relating to National Security Council Policy Papers (Lot 66 D 95 and Lot 63 D 351):"
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "as",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Lot 63 D 351 / 66 D 95: RG 59, Entry A1 1586E, NAID 2839192, 1947–1979, partly restricted; \"appears most often in both\" | 155, 176, 177, 205 | 296, 303",
+   "sentence": "NARA identifier 2839192, as above."
+  },
+  {
+   "text": "61 D 385",
+   "values": [
+    "61d385"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 61 D 385 (OCB) not placed | 163, 189, 197, 211 | 300",
+   "sentence": "Operations Coordinating Board files (Lot 61 D 385), as above."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"all 553 volumes\"; \"every volume of the series\" | 9 | 289",
+   "sentence": "I searched all 553 volumes of the series and found nothing."
+  },
+  {
+   "text": "552",
+   "values": [
+    "552"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Department of State\" in \"552 of the 553 volumes\"; nonsense string \"in none\" | 12, 13, 14 | 289",
+   "sentence": "The same search found \"Department of State\" in 552 of the 553 volumes and a nonsense string in none, so the search itself worked."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"all 553 volumes\"; \"every volume of the series\" | 9 | 289",
+   "sentence": "The same search found \"Department of State\" in 552 of the 553 volumes and a nonsense string in none, so the search itself worked."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"messaging\" in \"only three documents\" | 50 | 290",
+   "sentence": "\"Messaging\" cannot be searched either: the search treats \"messaging\" and \"message\" as the same word, and \"messaging\" itself appears in only three documents."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 306; Entry A1–42; FRC accessions 67 A 222 and 68 A 4933 | 188, 213 | 302",
+   "sentence": "FRUS has no public-diplomacy volume for or for the , which I established from the list of volumes in the series; for those years the shelf is the Record Group 306 and Record Group 59 series above."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351 / 66 D 95: RG 59, Entry A1 1586E, NAID 2839192, 1947–1979, partly restricted; \"appears most often in both\" | 155, 176, 177, 205 | 296, 303",
+   "sentence": "FRUS has no public-diplomacy volume for or for the , which I established from the list of volumes in the series; for those years the shelf is the Record Group 306 and Record Group 59 series above."
+  },
+  {
+   "text": "2,700",
+   "values": [
+    "2700"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"about 2,700\" found | 66, 69 (2692) | 284",
+   "sentence": "I ran scoping searches pairing the information terms with \"survey,\" \"poll\" and \"office of research\" near Asian place names, but did not audit them. **Scope.** I searched every volume of the series and kept about 2,700 documents in 273 volumes, dated through , that pair an information-program term with an East Asian or Pacific place."
+  },
+  {
+   "text": "273",
+   "values": [
+    "273"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"273 volumes\" | 69 | 284",
+   "sentence": "I ran scoping searches pairing the information terms with \"survey,\" \"poll\" and \"office of research\" near Asian place names, but did not audit them. **Scope.** I searched every volume of the series and kept about 2,700 documents in 273 volumes, dated through , that pair an information-program term with an East Asian or Pacific place."
+  },
+  {
+   "text": "161",
+   "values": [
+    "161"
+   ],
+   "next": "that",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"161\" matched \"USI\" (United States of Indonesia) | 64, 67, 68 | 287",
+   "sentence": "I left out editorial notes, front matter and second editions, and dropped documents that matched only on the search's word forms, among them 161 that matched \"USI,\" the period's abbreviation for the United States of Indonesia. ## Decisions this needs from you **Information only, or exchange too.** Counting only the information program and the American image keeps the answer on the United States Information Agency (USIA) and psychological strategy, while counting cultural and educational exchange would add programs I did not separate out. **Wartime psychological operations.** Counting Vietnam's battlefield operations would weight the answer heavily toward the war, while leaving them out, as I did, keeps it on how officials addressed civilian and elite opinion. **The region's edges.** My place list ran from Japan, Korea and China through Southeast Asia to Australia and the Pacific; narrowing it to Northeast Asia would drop the Vietnam, Thailand and Malaya documents that carry several findings. **The period.** I set the span at through ; reaching into the would add documents but no public-diplomacy volume. **Meanwhile, my inclusion rule:** a document in the found set in which an official assesses, plans or measures the American image, or the information, cultural or psychological program, toward an audience in East Asia or the Pacific;"
+  },
+  {
+   "text": "thirteen",
+   "values": [
+    "13"
+   ],
+   "next": "saigon",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"thirteen\" (Saigon surveys) | 129 (Q21) | 306",
+   "sentence": "\"Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys\" ."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"all 553 volumes\"; \"every volume of the series\" | 9 | 289",
+   "sentence": "\"shoring up the confidence of East Asians in America’s long-term staying power and positive involvement in the area is real and necessary\" . ## How this was done I searched the full text of all 553 volumes for documents dated through that pair an information-program term (among them USIA, USIS, \"information program,\" \"psychological warfare,\" \"psychological strategy,\" \"Voice of America,\" \"public diplomacy,\" \"cultural exchange\" and \"American image\") with an East Asian or Pacific place name, leaving out editorial notes, front matter and second editions."
+  },
+  {
+   "text": "about 94 in every 100",
+   "values": [
+    "94",
+    "100"
+   ],
+   "next": "contain",
+   "kind": "ratio",
+   "class": "traced",
+   "row": "\"about 94 in every 100\" contain the literal words | 69 (2692 of 2860) | 286",
+   "sentence": "The search treats inflected forms as the same word, so I checked every found document for the literal words: about 94 in every 100 contain them, and most misses were the 161 \"USI\" documents for Indonesia."
+  },
+  {
+   "text": "161",
+   "values": [
+    "161"
+   ],
+   "next": "usi",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"161\" matched \"USI\" (United States of Indonesia) | 64, 67, 68 | 287",
+   "sentence": "The search treats inflected forms as the same word, so I checked every found document for the literal words: about 94 in every 100 contain them, and most misses were the 161 \"USI\" documents for Indonesia."
+  },
+  {
+   "text": "48",
+   "values": [
+    "48"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"retrieved 48 documents in full\" | 93 | 291",
+   "sentence": "I retrieved 48 documents in full and quoted 22, and I checked every quotation word for word against its document's text."
+  },
+  {
+   "text": "22",
+   "values": [
+    "22"
+   ],
+   "next": "i",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"22 documents I read closely\"; \"quoted 22\"; \"holds the 22 documents\" | 95, 96, 269 | 285",
+   "sentence": "I retrieved 48 documents in full and quoted 22, and I checked every quotation word for word against its document's text."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"added two documents\"; \"both were already in the found set\" | 90, 264 | 293",
+   "sentence": "A measure of how alike documents are in content added two documents near the conference summary; both were already in the found set."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "pair",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"three pairs of documents printed twice\"; \"cite each only once\" | 233–237, 240 | 292",
+   "sentence": "The same measure showed three pairs of documents printed twice in different volumes, and I cite each only once."
+  },
+  {
+   "text": "twice",
+   "values": [
+    "2"
+   ],
+   "next": "different",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"added two documents\"; \"both were already in the found set\" | 90, 264 | 293",
+   "sentence": "The same measure showed three pairs of documents printed twice in different volumes, and I cite each only once."
+  },
+  {
+   "text": "22",
+   "values": [
+    "22"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"22 documents I read closely\"; \"quoted 22\"; \"holds the 22 documents\" | 95, 96, 269 | 285",
+   "sentence": "Before finishing I checked that every quotation in this overview matches its document word for word, and that every document it cites is in the collection. ## Read next The collection \"American soft power in East Asia and the Pacific: how policymakers assessed it\" holds the 22 documents, each with its verified passages, arranged by theme and in date order within each, with a closing list of the archival series."
+  },
+  {
+   "text": "forty",
+   "values": [
+    "40"
+   ],
+   "next": "matching",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"the 1949 China volume and the 1955–1957 China microfiche supplement each hold more than forty\" | 295, 313 (57 and 43) | 295",
+   "sentence": "Adding exchange programs would answer the cultural side of \"soft power,\" and the China volume and the China microfiche supplement each hold more than forty matching documents that I did not read."
+  }
+ ]
+}

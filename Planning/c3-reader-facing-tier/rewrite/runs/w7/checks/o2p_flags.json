@@ -1,0 +1,1701 @@
+{
+ "run": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w7",
+ "traceSource": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w7/trace.md",
+ "traceTableLine": 7,
+ "traceRows": 81,
+ "mentions": 153,
+ "counts": {
+  "traced": 63,
+  "weak": 90,
+  "untraced": 0
+ },
+ "list": [
+  {
+   "text": "35,900",
+   "values": [
+    "35900"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "soft power absent: roughly 35,900 documents, 79 volumes | 0 of 35,874 | line 63; line 16",
+   "sentence": "What beliefs about the regional audience contributed to those strategies? ## The bottom line What FRUS answers directly.** The series never uses the phrase *soft power*: it does not occur in any of the roughly 35,900 documents of the 79 volumes I read, nor in any of the roughly 83,700 documents of a comparison set of 220 other postwar volumes (the search treats inflected forms such as *soft powers* as the same words)."
+  },
+  {
+   "text": "79",
+   "values": [
+    "79"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "soft power absent: roughly 35,900 documents, 79 volumes | 0 of 35,874 | line 63; line 16",
+   "sentence": "What beliefs about the regional audience contributed to those strategies? ## The bottom line What FRUS answers directly.** The series never uses the phrase *soft power*: it does not occur in any of the roughly 35,900 documents of the 79 volumes I read, nor in any of the roughly 83,700 documents of a comparison set of 220 other postwar volumes (the search treats inflected forms such as *soft powers* as the same words)."
+  },
+  {
+   "text": "83,700",
+   "values": [
+    "83700"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "soft power absent: roughly 83,700 documents, 220 other postwar volumes | 0 of 83,746 | line 63; line 54",
+   "sentence": "What beliefs about the regional audience contributed to those strategies? ## The bottom line What FRUS answers directly.** The series never uses the phrase *soft power*: it does not occur in any of the roughly 35,900 documents of the 79 volumes I read, nor in any of the roughly 83,700 documents of a comparison set of 220 other postwar volumes (the search treats inflected forms such as *soft powers* as the same words)."
+  },
+  {
+   "text": "220",
+   "values": [
+    "220"
+   ],
+   "next": "postwar",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "soft power absent: roughly 83,700 documents, 220 other postwar volumes | 0 of 83,746 | line 63; line 54",
+   "sentence": "What beliefs about the regional audience contributed to those strategies? ## The bottom line What FRUS answers directly.** The series never uses the phrase *soft power*: it does not occur in any of the roughly 35,900 documents of the 79 volumes I read, nor in any of the roughly 83,700 documents of a comparison set of 220 other postwar volumes (the search treats inflected forms such as *soft powers* as the same words)."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "Read under those names, 33 documents, chosen by reading from the 79 volumes (about one in 1,100), carry the answer."
+  },
+  {
+   "text": "79",
+   "values": [
+    "79"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "soft power absent: roughly 35,900 documents, 79 volumes | 0 of 35,874 | line 63; line 16",
+   "sentence": "Read under those names, 33 documents, chosen by reading from the 79 volumes (about one in 1,100), carry the answer."
+  },
+  {
+   "text": "about one in 1,100",
+   "values": [
+    "1",
+    "1100"
+   ],
+   "next": "carry",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "Read under those names, 33 documents, chosen by reading from the 79 volumes (about one in 1,100), carry the answer."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "measurement",
+   "kind": "word",
+   "class": "weak",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "Public Diplomacy, ( The officials' own verdicts on effectiveness are few and mostly anecdotal; the one measurement the agency printed shows trust in the United States falling in Saigon, and in a post called the new administration's public diplomacy effective while reporting that the belief in American withdrawal persisted ( ( The 33 documents are a reading choice, not a random sample."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "Public Diplomacy, ( The officials' own verdicts on effectiveness are few and mostly anecdotal; the one measurement the agency printed shows trust in the United States falling in Saigon, and in a post called the new administration's public diplomacy effective while reporting that the belief in American withdrawal persisted ( ( The 33 documents are a reading choice, not a random sample."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "Japan, Korea and the Philippines are thinner, and Korea and Australia and New Zealand are not represented among the 33."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "channel",
+   "kind": "word",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "Where FRUS points for the rest.** FRUS reaches the archives through two channels, and I report them separately and do not add them together. *The series the printed documents came from* (the editors' source notes, for the 33 documents): the State Department's central decimal files (Record Group 59, the Department's subject-numbered filing system), 15 documents, 11 of them from to and the others from the central files of to and the central foreign policy file of ; the records of the U.S."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "Where FRUS points for the rest.** FRUS reaches the archives through two channels, and I report them separately and do not add them together. *The series the printed documents came from* (the editors' source notes, for the 33 documents): the State Department's central decimal files (Record Group 59, the Department's subject-numbered filing system), 15 documents, 11 of them from to and the others from the central files of to and the central foreign policy file of ; the records of the U.S."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "Where FRUS points for the rest.** FRUS reaches the archives through two channels, and I report them separately and do not add them together. *The series the printed documents came from* (the editors' source notes, for the 33 documents): the State Department's central decimal files (Record Group 59, the Department's subject-numbered filing system), 15 documents, 11 of them from to and the others from the central files of to and the central foreign policy file of ; the records of the U.S."
+  },
+  {
+   "text": "15",
+   "values": [
+    "15"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "Where FRUS points for the rest.** FRUS reaches the archives through two channels, and I report them separately and do not add them together. *The series the printed documents came from* (the editors' source notes, for the 33 documents): the State Department's central decimal files (Record Group 59, the Department's subject-numbered filing system), 15 documents, 11 of them from to and the others from the central files of to and the central foreign policy file of ; the records of the U.S."
+  },
+  {
+   "text": "11",
+   "values": [
+    "11"
+   ],
+   "next": "them",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "Where FRUS points for the rest.** FRUS reaches the archives through two channels, and I report them separately and do not add them together. *The series the printed documents came from* (the editors' source notes, for the 33 documents): the State Department's central decimal files (Record Group 59, the Department's subject-numbered filing system), 15 documents, 11 of them from to and the others from the central files of to and the central foreign policy file of ; the records of the U.S."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "USIA records, ten documents RG 306, one RG 305; no identifier or access | 10 + 1; no identifier or access stated | lines 150, 155",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "ten",
+   "values": [
+    "10"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "USIA records, ten documents RG 306, one RG 305; no identifier or access | 10 + 1; no identifier or access stated | lines 150, 155",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "from",
+   "kind": "word",
+   "class": "weak",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "Record Group 305",
+   "values": [
+    "rg305"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "USIA records, ten documents RG 306, one RG 305; no identifier or access | 10 + 1; no identifier or access stated | lines 150, 155",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "state",
+   "kind": "word",
+   "class": "weak",
+   "row": "three State lots; one resolves (61 D 167) | 3; NAID 2198167, RG 59, Alphabetical Files, Policy Planning Council, 1948-1961, Restricted - Partly, 48 ft 7 in, entry A1 1583A/B | lines 150, 153",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "resolve",
+   "kind": "word",
+   "class": "weak",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "61 D 167",
+   "values": [
+    "61d167"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "three State lots; one resolves (61 D 167) | 3; NAID 2198167, RG 59, Alphabetical Files, Policy Planning Council, 1948-1961, Restricted - Partly, 48 ft 7 in, entry A1 1583A/B | lines 150, 153",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "A1 1583A",
+   "values": [
+    "a11583a"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "three State lots; one resolves (61 D 167) | 3; NAID 2198167, RG 59, Alphabetical Files, Policy Planning Council, 1948-1961, Restricted - Partly, 48 ft 7 in, entry A1 1583A/B | lines 150, 153",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "2198167",
+   "values": [
+    "2198167"
+   ],
+   "next": "to",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "three State lots; one resolves (61 D 167) | 3; NAID 2198167, RG 59, Alphabetical Files, Policy Planning Council, 1948-1961, Restricted - Partly, 48 ft 7 in, entry A1 1583A/B | lines 150, 153",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "48",
+   "values": [
+    "48"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "three State lots; one resolves (61 D 167) | 3; NAID 2198167, RG 59, Alphabetical Files, Policy Planning Council, 1948-1961, Restricted - Partly, 48 ft 7 in, entry A1 1583A/B | lines 150, 153",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "7",
+   "values": [
+    "7"
+   ],
+   "next": "inche",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "three State lots; one resolves (61 D 167) | 3; NAID 2198167, RG 59, Alphabetical Files, Policy Planning Council, 1948-1961, Restricted - Partly, 48 ft 7 in, entry A1 1583A/B | lines 150, 153",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "lot",
+   "kind": "word",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "61 D 385",
+   "values": [
+    "61d385"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 61 D 385 and 65 F 98 do not resolve; 65 F 98 is Record Group 84 | no row in central-files-index.json | lines 150, 154",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "65 F 98",
+   "values": [
+    "65f98"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 61 D 385 and 65 F 98 do not resolve; 65 F 98 is Record Group 84 | no row in central-files-index.json | lines 150, 154",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "Record Group 84",
+   "values": [
+    "rg84"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 61 D 385 and 65 F 98 do not resolve; 65 F 98 is Record Group 84 | no row in central-files-index.json | lines 150, 154",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "presidential-library",
+   "kind": "word",
+   "class": "traced",
+   "row": "four presidential-library series | 4: Kennedy Library RFK papers; Johnson NSF; Johnson Marks Papers; Nixon NSC Files | line 150",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "public",
+   "kind": "word",
+   "class": "weak",
+   "row": "79 volumes (74 + 5) | 79 volumes; 35,874 documents | lines 16, 20",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "202",
+   "values": [
+    "202"
+   ],
+   "next": "unprinted",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "public diplomacy volumes: 202 unprinted citations in 143 documents | 202 rows in 143 documents | line 159",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "143",
+   "values": [
+    "143"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "public diplomacy volumes: 202 unprinted citations in 143 documents | 202 rows in 143 documents | line 159",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "84 D 204",
+   "values": [
+    "84d204"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 84 D 204 not in bundled index | 7 rows, 5 documents; not in the bundled index | line 159",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "78 D 295",
+   "values": [
+    "78d295"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 78 D 295 details | NAID 27022973, RG 59, UD-UP 80, 1968-1975, Restricted - Partly, 7 ft 2 in | line 159",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "27022973",
+   "values": [
+    "27022973"
+   ],
+   "next": "record",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "lot 78 D 295 details | NAID 27022973, RG 59, UD-UP 80, 1968-1975, Restricted - Partly, 7 ft 2 in | line 159",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "UP 80",
+   "values": [
+    "up80"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "lot 78 D 295 details | NAID 27022973, RG 59, UD-UP 80, 1968-1975, Restricted - Partly, 7 ft 2 in | line 159",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "7",
+   "values": [
+    "7"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "three State lots; one resolves (61 D 167) | 3; NAID 2198167, RG 59, Alphabetical Files, Policy Planning Council, 1948-1961, Restricted - Partly, 48 ft 7 in, entry A1 1583A/B | lines 150, 153",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "2",
+   "values": [
+    "2"
+   ],
+   "next": "inche",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "78 D 184",
+   "values": [
+    "78d184"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 78 D 184 details | NAID 5038052, Bureau of Educational and Cultural Affairs, P 242, 1968-1976, Restricted - Partly, 4 ft 8 in | line 159",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "5038052",
+   "values": [
+    "5038052"
+   ],
+   "next": "entry",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "lot 78 D 184 details | NAID 5038052, Bureau of Educational and Cultural Affairs, P 242, 1968-1976, Restricted - Partly, 4 ft 8 in | line 159",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "P 242",
+   "values": [
+    "p242"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "lot 78 D 184 details | NAID 5038052, Bureau of Educational and Cultural Affairs, P 242, 1968-1976, Restricted - Partly, 4 ft 8 in | line 159",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "4",
+   "values": [
+    "4"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "four presidential-library series | 4: Kennedy Library RFK papers; Johnson NSF; Johnson Marks Papers; Nixon NSC Files | line 150",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "8",
+   "values": [
+    "8"
+   ],
+   "next": "inche",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "lot 78 D 184 details | NAID 5038052, Bureau of Educational and Cultural Affairs, P 242, 1968-1976, Restricted - Partly, 4 ft 8 in | line 159",
+   "sentence": "Information Agency (Record Group 306, chiefly the Director's Subject Files and the Office of the Director, ten documents, plus one from Record Group 305), for which I could not tie a series to a NARA (National Archives) identifier, an entry or an access status; three State Department lot files (office files held as separate lots), of which one resolves, lot 61 D 167: the Alphabetical Files of the Policy Planning Council, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, to , 48 linear feet 7 inches, access \"Restricted - Partly\" (FRUS labels this lot the planning staff's National Security Council files, so the match is the bundled finding aid's, not mine), while the other two, lot 61 D 385 and lot 65 F 98 (Record Group 84), did not resolve; and four presidential-library series (the Robert Kennedy papers at the Kennedy Library, the National Security File and the Marks papers at the Johnson Library, and the Nixon National Security Council Files). *The series the editors' footnotes cite without printing:* in the five public diplomacy volumes, 202 unprinted citations in 143 documents, led by lot 84 D 204 (whose finding aid is not in the bundled set), then lot 78 D 295, the Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management (NARA identifier 27022973, Record Group 59, entry UD-UP 80, to , 7 linear feet 2 inches, \"Restricted - Partly\"), and lot 78 D 184, the Subject Files of Assistant Secretary John Richardson of the Bureau of Educational and Cultural Affairs (identifier 5038052, entry P 242, to , 4 linear feet 8 inches, \"Restricted - Partly\"), and library series:"
+  },
+  {
+   "text": "27",
+   "values": [
+    "27"
+   ],
+   "next": "citation",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Nixon NSC Files 27, Carter National Security Affairs 21, Ford National Security Adviser 21 | as stated | line 159",
+   "sentence": "Nixon National Security Council Files (27 citations), Carter Library National Security Affairs (21) and Ford Library National Security Adviser files (21); in the 74 East Asia volumes, about 12,800 unprinted citations in about 7,900 documents, led by lots 66 D 95 and 63 D 351, which both resolve to the Records Relating to National Security Council Policy Papers of the Executive Secretariat (identifier 2839192, entry A1 1586E, to , 26 linear feet 3 inches, \"Restricted - Partly\"); none of the top lots I resolved was created by the information agency."
+  },
+  {
+   "text": "21",
+   "values": [
+    "21"
+   ],
+   "next": "ford",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Nixon NSC Files 27, Carter National Security Affairs 21, Ford National Security Adviser 21 | as stated | line 159",
+   "sentence": "Nixon National Security Council Files (27 citations), Carter Library National Security Affairs (21) and Ford Library National Security Adviser files (21); in the 74 East Asia volumes, about 12,800 unprinted citations in about 7,900 documents, led by lots 66 D 95 and 63 D 351, which both resolve to the Records Relating to National Security Council Policy Papers of the Executive Secretariat (identifier 2839192, entry A1 1586E, to , 26 linear feet 3 inches, \"Restricted - Partly\"); none of the top lots I resolved was created by the information agency."
+  },
+  {
+   "text": "21",
+   "values": [
+    "21"
+   ],
+   "next": "east",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Nixon NSC Files 27, Carter National Security Affairs 21, Ford National Security Adviser 21 | as stated | line 159",
+   "sentence": "Nixon National Security Council Files (27 citations), Carter Library National Security Affairs (21) and Ford Library National Security Adviser files (21); in the 74 East Asia volumes, about 12,800 unprinted citations in about 7,900 documents, led by lots 66 D 95 and 63 D 351, which both resolve to the Records Relating to National Security Council Policy Papers of the Executive Secretariat (identifier 2839192, entry A1 1586E, to , 26 linear feet 3 inches, \"Restricted - Partly\"); none of the top lots I resolved was created by the information agency."
+  },
+  {
+   "text": "74",
+   "values": [
+    "74"
+   ],
+   "next": "east",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "74 East Asia volumes: about 12,800 citations in about 7,900 documents | 12,830 rows in 7,905 documents | line 160",
+   "sentence": "Nixon National Security Council Files (27 citations), Carter Library National Security Affairs (21) and Ford Library National Security Adviser files (21); in the 74 East Asia volumes, about 12,800 unprinted citations in about 7,900 documents, led by lots 66 D 95 and 63 D 351, which both resolve to the Records Relating to National Security Council Policy Papers of the Executive Secretariat (identifier 2839192, entry A1 1586E, to , 26 linear feet 3 inches, \"Restricted - Partly\"); none of the top lots I resolved was created by the information agency."
+  },
+  {
+   "text": "12,800",
+   "values": [
+    "12800"
+   ],
+   "next": "unprinted",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "74 East Asia volumes: about 12,800 citations in about 7,900 documents | 12,830 rows in 7,905 documents | line 160",
+   "sentence": "Nixon National Security Council Files (27 citations), Carter Library National Security Affairs (21) and Ford Library National Security Adviser files (21); in the 74 East Asia volumes, about 12,800 unprinted citations in about 7,900 documents, led by lots 66 D 95 and 63 D 351, which both resolve to the Records Relating to National Security Council Policy Papers of the Executive Secretariat (identifier 2839192, entry A1 1586E, to , 26 linear feet 3 inches, \"Restricted - Partly\"); none of the top lots I resolved was created by the information agency."
+  },
+  {
+   "text": "7,900",
+   "values": [
+    "7900"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "74 East Asia volumes: about 12,800 citations in about 7,900 documents | 12,830 rows in 7,905 documents | line 160",
+   "sentence": "Nixon National Security Council Files (27 citations), Carter Library National Security Affairs (21) and Ford Library National Security Adviser files (21); in the 74 East Asia volumes, about 12,800 unprinted citations in about 7,900 documents, led by lots 66 D 95 and 63 D 351, which both resolve to the Records Relating to National Security Council Policy Papers of the Executive Secretariat (identifier 2839192, entry A1 1586E, to , 26 linear feet 3 inches, \"Restricted - Partly\"); none of the top lots I resolved was created by the information agency."
+  },
+  {
+   "text": "66 D 95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 66 D 95 and 63 D 351 resolve to NAID 2839192 | Records Relating to NSC Policy Papers, Executive Secretariat, A1 1586E, 1947-1979, Restricted - Partly, 26 ft 3 in | line 160",
+   "sentence": "Nixon National Security Council Files (27 citations), Carter Library National Security Affairs (21) and Ford Library National Security Adviser files (21); in the 74 East Asia volumes, about 12,800 unprinted citations in about 7,900 documents, led by lots 66 D 95 and 63 D 351, which both resolve to the Records Relating to National Security Council Policy Papers of the Executive Secretariat (identifier 2839192, entry A1 1586E, to , 26 linear feet 3 inches, \"Restricted - Partly\"); none of the top lots I resolved was created by the information agency."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 66 D 95 and 63 D 351 resolve to NAID 2839192 | Records Relating to NSC Policy Papers, Executive Secretariat, A1 1586E, 1947-1979, Restricted - Partly, 26 ft 3 in | line 160",
+   "sentence": "Nixon National Security Council Files (27 citations), Carter Library National Security Affairs (21) and Ford Library National Security Adviser files (21); in the 74 East Asia volumes, about 12,800 unprinted citations in about 7,900 documents, led by lots 66 D 95 and 63 D 351, which both resolve to the Records Relating to National Security Council Policy Papers of the Executive Secretariat (identifier 2839192, entry A1 1586E, to , 26 linear feet 3 inches, \"Restricted - Partly\"); none of the top lots I resolved was created by the information agency."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "entry",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "lots 66 D 95 and 63 D 351 resolve to NAID 2839192 | Records Relating to NSC Policy Papers, Executive Secretariat, A1 1586E, 1947-1979, Restricted - Partly, 26 ft 3 in | line 160",
+   "sentence": "Nixon National Security Council Files (27 citations), Carter Library National Security Affairs (21) and Ford Library National Security Adviser files (21); in the 74 East Asia volumes, about 12,800 unprinted citations in about 7,900 documents, led by lots 66 D 95 and 63 D 351, which both resolve to the Records Relating to National Security Council Policy Papers of the Executive Secretariat (identifier 2839192, entry A1 1586E, to , 26 linear feet 3 inches, \"Restricted - Partly\"); none of the top lots I resolved was created by the information agency."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "lots 66 D 95 and 63 D 351 resolve to NAID 2839192 | Records Relating to NSC Policy Papers, Executive Secretariat, A1 1586E, 1947-1979, Restricted - Partly, 26 ft 3 in | line 160",
+   "sentence": "Nixon National Security Council Files (27 citations), Carter Library National Security Affairs (21) and Ford Library National Security Adviser files (21); in the 74 East Asia volumes, about 12,800 unprinted citations in about 7,900 documents, led by lots 66 D 95 and 63 D 351, which both resolve to the Records Relating to National Security Council Policy Papers of the Executive Secretariat (identifier 2839192, entry A1 1586E, to , 26 linear feet 3 inches, \"Restricted - Partly\"); none of the top lots I resolved was created by the information agency."
+  },
+  {
+   "text": "26",
+   "values": [
+    "26"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "lots 66 D 95 and 63 D 351 resolve to NAID 2839192 | Records Relating to NSC Policy Papers, Executive Secretariat, A1 1586E, 1947-1979, Restricted - Partly, 26 ft 3 in | line 160",
+   "sentence": "Nixon National Security Council Files (27 citations), Carter Library National Security Affairs (21) and Ford Library National Security Adviser files (21); in the 74 East Asia volumes, about 12,800 unprinted citations in about 7,900 documents, led by lots 66 D 95 and 63 D 351, which both resolve to the Records Relating to National Security Council Policy Papers of the Executive Secretariat (identifier 2839192, entry A1 1586E, to , 26 linear feet 3 inches, \"Restricted - Partly\"); none of the top lots I resolved was created by the information agency."
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "inche",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "three State lots; one resolves (61 D 167) | 3; NAID 2198167, RG 59, Alphabetical Files, Policy Planning Council, 1948-1961, Restricted - Partly, 48 ft 7 in, entry A1 1583A/B | lines 150, 153",
+   "sentence": "Nixon National Security Council Files (27 citations), Carter Library National Security Affairs (21) and Ford Library National Security Adviser files (21); in the 74 East Asia volumes, about 12,800 unprinted citations in about 7,900 documents, led by lots 66 D 95 and 63 D 351, which both resolve to the Records Relating to National Security Council Policy Papers of the Executive Secretariat (identifier 2839192, entry A1 1586E, to , 26 linear feet 3 inches, \"Restricted - Partly\"); none of the top lots I resolved was created by the information agency."
+  },
+  {
+   "text": "58 D 726",
+   "values": [
+    "58d726"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 58 D 726 NAID 2544398, 1955-1956, Restricted - Possibly | as stated; cited, not printed, in frus1955-57v22/d447 | line 154",
+   "sentence": "For the collection's own documents the editors also cite, unprinted, lot 58 D 726, the Subject Files of the Officer in Charge for Malaya Affairs (identifier 2544398, to , \"Restricted - Possibly\"), Eisenhower Library papers, the Johnson Library National Security File and the Nixon Kissinger Office Files."
+  },
+  {
+   "text": "2544398",
+   "values": [
+    "2544398"
+   ],
+   "next": "to",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "lot 58 D 726 NAID 2544398, 1955-1956, Restricted - Possibly | as stated; cited, not printed, in frus1955-57v22/d447 | line 154",
+   "sentence": "For the collection's own documents the editors also cite, unprinted, lot 58 D 726, the Subject Files of the Officer in Charge for Malaya Affairs (identifier 2544398, to , \"Restricted - Possibly\"), Eisenhower Library papers, the Johnson Library National Security File and the Nixon Kissinger Office Files."
+  },
+  {
+   "text": "74",
+   "values": [
+    "74"
+   ],
+   "next": "east",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "74 East Asia volumes: about 12,800 citations in about 7,900 documents | 12,830 rows in 7,905 documents | line 160",
+   "sentence": "What this request cannot get from FRUS.** *Independent measurement of how audiences received the messages.* I searched the 74 East Asia volumes and the three public diplomacy volumes for to (77 volumes, about 35,500 documents) for opinion polls and surveys: 31 documents use the wording, and they print the agency's findings in fragments."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "public",
+   "kind": "word",
+   "class": "weak",
+   "row": "three State lots; one resolves (61 D 167) | 3; NAID 2198167, RG 59, Alphabetical Files, Policy Planning Council, 1948-1961, Restricted - Partly, 48 ft 7 in, entry A1 1583A/B | lines 150, 153",
+   "sentence": "What this request cannot get from FRUS.** *Independent measurement of how audiences received the messages.* I searched the 74 East Asia volumes and the three public diplomacy volumes for to (77 volumes, about 35,500 documents) for opinion polls and surveys: 31 documents use the wording, and they print the agency's findings in fragments."
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "opinion polls: 77 volumes, about 35,500 documents; 31 documents | 31 of 35,453 | line 91",
+   "sentence": "What this request cannot get from FRUS.** *Independent measurement of how audiences received the messages.* I searched the 74 East Asia volumes and the three public diplomacy volumes for to (77 volumes, about 35,500 documents) for opinion polls and surveys: 31 documents use the wording, and they print the agency's findings in fragments."
+  },
+  {
+   "text": "35,500",
+   "values": [
+    "35500"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "opinion polls: 77 volumes, about 35,500 documents; 31 documents | 31 of 35,453 | line 91",
+   "sentence": "What this request cannot get from FRUS.** *Independent measurement of how audiences received the messages.* I searched the 74 East Asia volumes and the three public diplomacy volumes for to (77 volumes, about 35,500 documents) for opinion polls and surveys: 31 documents use the wording, and they print the agency's findings in fragments."
+  },
+  {
+   "text": "31",
+   "values": [
+    "31"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "opinion polls: 77 volumes, about 35,500 documents; 31 documents | 31 of 35,453 | line 91",
+   "sentence": "What this request cannot get from FRUS.** *Independent measurement of how audiences received the messages.* I searched the 74 East Asia volumes and the three public diplomacy volumes for to (77 volumes, about 35,500 documents) for opinion polls and surveys: 31 documents use the wording, and they print the agency's findings in fragments."
+  },
+  {
+   "text": "Two",
+   "values": [
+    "2"
+   ],
+   "next": "control",
+   "kind": "word",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "Two controls ran in the same pass: a word that cannot occur found nothing, and the phrase *department of state* was found in 14,090 documents in all 77 volumes, so the search itself works."
+  },
+  {
+   "text": "14,090",
+   "values": [
+    "14090"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "control: impossible word 0; department of state 14,090 documents in 77 of 77 volumes | 14,090; 77 of 77 | lines 61, 73",
+   "sentence": "Two controls ran in the same pass: a word that cannot occur found nothing, and the phrase *department of state* was found in 14,090 documents in all 77 volumes, so the search itself works."
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "opinion polls: 77 volumes, about 35,500 documents; 31 documents | 31 of 35,453 | line 91",
+   "sentence": "Two controls ran in the same pass: a word that cannot occur found nothing, and the phrase *department of state* was found in 14,090 documents in all 77 volumes, so the search itself works."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "usia",
+   "kind": "word",
+   "class": "weak",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "The shelf that might hold the research itself is a candidate, not a verified one: the USIA Office of Research and Intelligence's Program Files (identifier 1254251, inclusive to , coverage to , 9 linear feet 2 inches, \"Restricted - Partly\"), and the Office of Policy and Plans Subject Files (identifier 1257679, to , 47 linear feet, \"Restricted - Partly\")."
+  },
+  {
+   "text": "1254251",
+   "values": [
+    "1254251"
+   ],
+   "next": "inclusive",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Program Files NAID 1254251, 1954-1958 inclusive, coverage 1951-1958, 9 ft 2 in, Restricted - Partly | as stated | line 163",
+   "sentence": "The shelf that might hold the research itself is a candidate, not a verified one: the USIA Office of Research and Intelligence's Program Files (identifier 1254251, inclusive to , coverage to , 9 linear feet 2 inches, \"Restricted - Partly\"), and the Office of Policy and Plans Subject Files (identifier 1257679, to , 47 linear feet, \"Restricted - Partly\")."
+  },
+  {
+   "text": "9",
+   "values": [
+    "9"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Program Files NAID 1254251, 1954-1958 inclusive, coverage 1951-1958, 9 ft 2 in, Restricted - Partly | as stated | line 163",
+   "sentence": "The shelf that might hold the research itself is a candidate, not a verified one: the USIA Office of Research and Intelligence's Program Files (identifier 1254251, inclusive to , coverage to , 9 linear feet 2 inches, \"Restricted - Partly\"), and the Office of Policy and Plans Subject Files (identifier 1257679, to , 47 linear feet, \"Restricted - Partly\")."
+  },
+  {
+   "text": "2",
+   "values": [
+    "2"
+   ],
+   "next": "inche",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "The shelf that might hold the research itself is a candidate, not a verified one: the USIA Office of Research and Intelligence's Program Files (identifier 1254251, inclusive to , coverage to , 9 linear feet 2 inches, \"Restricted - Partly\"), and the Office of Policy and Plans Subject Files (identifier 1257679, to , 47 linear feet, \"Restricted - Partly\")."
+  },
+  {
+   "text": "1257679",
+   "values": [
+    "1257679"
+   ],
+   "next": "to",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Subject Files NAID 1257679, 1953-1971, 47 ft, Restricted - Partly | as stated | line 163",
+   "sentence": "The shelf that might hold the research itself is a candidate, not a verified one: the USIA Office of Research and Intelligence's Program Files (identifier 1254251, inclusive to , coverage to , 9 linear feet 2 inches, \"Restricted - Partly\"), and the Office of Policy and Plans Subject Files (identifier 1257679, to , 47 linear feet, \"Restricted - Partly\")."
+  },
+  {
+   "text": "47",
+   "values": [
+    "47"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Subject Files NAID 1257679, 1953-1971, 47 ft, Restricted - Partly | as stated | line 163",
+   "sentence": "The shelf that might hold the research itself is a candidate, not a verified one: the USIA Office of Research and Intelligence's Program Files (identifier 1254251, inclusive to , coverage to , 9 linear feet 2 inches, \"Restricted - Partly\"), and the Office of Policy and Plans Subject Files (identifier 1257679, to , 47 linear feet, \"Restricted - Partly\")."
+  },
+  {
+   "text": "56 percent",
+   "values": [
+    "56"
+   ],
+   "next": "time",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "creator heading right about 56 percent elsewhere | about 56% precision elsewhere | line 163",
+   "sentence": "Both rest on NARA's creator heading, which has been right about subject only about 56 percent of the time in other checks. *The content of the broadcasts, films and publications themselves.* I ran no search for them;"
+  },
+  {
+   "text": "7542975",
+   "values": [
+    "7542975"
+   ],
+   "next": "to",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "VOA records NAID 7542975, 1948-1959, 6 ft 6 in | as stated | line 163",
+   "sentence": "Candidate shelf: the Voice of America records (identifier 7542975, to , 6 linear feet 6 inches, \"Restricted - Partly\"); no series in the bundled finding aids belongs to the agency's East Asia and Pacific area office. *The Asian side of the exchange.* The series prints American reports of what Asian leaders and audiences said;"
+  },
+  {
+   "text": "6",
+   "values": [
+    "6"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "VOA records NAID 7542975, 1948-1959, 6 ft 6 in | as stated | line 163",
+   "sentence": "Candidate shelf: the Voice of America records (identifier 7542975, to , 6 linear feet 6 inches, \"Restricted - Partly\"); no series in the bundled finding aids belongs to the agency's East Asia and Pacific area office. *The Asian side of the exchange.* The series prints American reports of what Asian leaders and audiences said;"
+  },
+  {
+   "text": "6",
+   "values": [
+    "6"
+   ],
+   "next": "inche",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "VOA records NAID 7542975, 1948-1959, 6 ft 6 in | as stated | line 163",
+   "sentence": "Candidate shelf: the Voice of America records (identifier 7542975, to , 6 linear feet 6 inches, \"Restricted - Partly\"); no series in the bundled finding aids belongs to the agency's East Asia and Pacific area office. *The Asian side of the exchange.* The series prints American reports of what Asian leaders and audiences said;"
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "traced",
+   "row": "wartime: nine volumes, about 8,700 documents, 50 mention OWI | 9 volumes; 8,704; 50 of 8,704 | line 93",
+   "sentence": "I searched no non-U.S. sources. *The wartime and occupation-era work.* Starting in would add nine volumes and about 8,700 documents, 50 of which mention the Office of War Information;"
+  },
+  {
+   "text": "8,700",
+   "values": [
+    "8700"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "wartime: nine volumes, about 8,700 documents, 50 mention OWI | 9 volumes; 8,704; 50 of 8,704 | line 93",
+   "sentence": "I searched no non-U.S. sources. *The wartime and occupation-era work.* Starting in would add nine volumes and about 8,700 documents, 50 of which mention the Office of War Information;"
+  },
+  {
+   "text": "50",
+   "values": [
+    "50"
+   ],
+   "next": "which",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "wartime: nine volumes, about 8,700 documents, 50 mention OWI | 9 volumes; 8,704; 50 of 8,704 | line 93",
+   "sentence": "I searched no non-U.S. sources. *The wartime and occupation-era work.* Starting in would add nine volumes and about 8,700 documents, 50 of which mention the Office of War Information;"
+  },
+  {
+   "text": "79",
+   "values": [
+    "79"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "soft power absent: roughly 35,900 documents, 79 volumes | 0 of 35,874 | line 63; line 16",
+   "sentence": "The bundled finding aids barely reach shelves from before . **Scope.** I read 79 volumes, about 35,900 documents: the 74 volumes of the series' East Asia, Pacific, China, Japan, Korea, Southeast Asia and Indochina compilations for to , plus five public diplomacy volumes ( to , to and to )."
+  },
+  {
+   "text": "35,900",
+   "values": [
+    "35900"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "soft power absent: roughly 35,900 documents, 79 volumes | 0 of 35,874 | line 63; line 16",
+   "sentence": "The bundled finding aids barely reach shelves from before . **Scope.** I read 79 volumes, about 35,900 documents: the 74 volumes of the series' East Asia, Pacific, China, Japan, Korea, Southeast Asia and Indochina compilations for to , plus five public diplomacy volumes ( to , to and to )."
+  },
+  {
+   "text": "74",
+   "values": [
+    "74"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "74 East Asia volumes: about 12,800 citations in about 7,900 documents | 12,830 rows in 7,905 documents | line 160",
+   "sentence": "The bundled finding aids barely reach shelves from before . **Scope.** I read 79 volumes, about 35,900 documents: the 74 volumes of the series' East Asia, Pacific, China, Japan, Korea, Southeast Asia and Indochina compilations for to , plus five public diplomacy volumes ( to , to and to )."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "public",
+   "kind": "word",
+   "class": "weak",
+   "row": "79 volumes (74 + 5) | 79 volumes; 35,874 documents | lines 16, 20",
+   "sentence": "The bundled finding aids barely reach shelves from before . **Scope.** I read 79 volumes, about 35,900 documents: the 74 volumes of the series' East Asia, Pacific, China, Japan, Korea, Southeast Asia and Indochina compilations for to , plus five public diplomacy volumes ( to , to and to )."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "second",
+   "kind": "word",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "Front matter and editors' notes were excluded from every count, the two second editions are not in the scope, and every figure is conditional on the searchable copy of all 553 volumes as taken on . ## Decisions this needs from you **What counts as soft power.** I took it as American persuasion, information, exchange or psychological work addressed to an East Asian or Pacific audience, in the editors' own vocabulary; if you also want aid, military assistance and diplomacy itself treated as attraction, the set grows well beyond the information agency. **Who counts as a policymaker.** I counted any U.S. official, including ambassadors, public affairs officers and the agency itself, describing the audience, message or effect; if you mean only Washington decision-makers, the post-level reports that carry most of the effectiveness judgments drop out. **Where the region ends.** I included China, Japan, Korea, Southeast Asia and Indochina, the Pacific compilations and overseas Chinese audiences; adding South Asia or the Pacific islands means new searches, and leaving out Vietnam would remove the largest cluster. **How far back to start.** I started in , and the collection's earliest document is from ; if you want the wartime Office of War Information and the occupation of Japan, the nine to volumes (about 8,700 documents) must be read. **How to count the *Oriental mind* wording.** I found 32 documents using it and split them, by my own reading, into 17 that apply it to how American policy or messaging would be received and 15 that do not; a stricter or looser reading of the margin moves that split."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "553 volumes; searchable copy taken 25 October 2026 | 553; index as taken 2026-10-25 | lines 8-14",
+   "sentence": "Front matter and editors' notes were excluded from every count, the two second editions are not in the scope, and every figure is conditional on the searchable copy of all 553 volumes as taken on . ## Decisions this needs from you **What counts as soft power.** I took it as American persuasion, information, exchange or psychological work addressed to an East Asian or Pacific audience, in the editors' own vocabulary; if you also want aid, military assistance and diplomacy itself treated as attraction, the set grows well beyond the information agency. **Who counts as a policymaker.** I counted any U.S. official, including ambassadors, public affairs officers and the agency itself, describing the audience, message or effect; if you mean only Washington decision-makers, the post-level reports that carry most of the effectiveness judgments drop out. **Where the region ends.** I included China, Japan, Korea, Southeast Asia and Indochina, the Pacific compilations and overseas Chinese audiences; adding South Asia or the Pacific islands means new searches, and leaving out Vietnam would remove the largest cluster. **How far back to start.** I started in , and the collection's earliest document is from ; if you want the wartime Office of War Information and the occupation of Japan, the nine to volumes (about 8,700 documents) must be read. **How to count the *Oriental mind* wording.** I found 32 documents using it and split them, by my own reading, into 17 that apply it to how American policy or messaging would be received and 15 that do not; a stricter or looser reading of the margin moves that split."
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "to",
+   "kind": "word",
+   "class": "weak",
+   "row": "Program Files NAID 1254251, 1954-1958 inclusive, coverage 1951-1958, 9 ft 2 in, Restricted - Partly | as stated | line 163",
+   "sentence": "Front matter and editors' notes were excluded from every count, the two second editions are not in the scope, and every figure is conditional on the searchable copy of all 553 volumes as taken on . ## Decisions this needs from you **What counts as soft power.** I took it as American persuasion, information, exchange or psychological work addressed to an East Asian or Pacific audience, in the editors' own vocabulary; if you also want aid, military assistance and diplomacy itself treated as attraction, the set grows well beyond the information agency. **Who counts as a policymaker.** I counted any U.S. official, including ambassadors, public affairs officers and the agency itself, describing the audience, message or effect; if you mean only Washington decision-makers, the post-level reports that carry most of the effectiveness judgments drop out. **Where the region ends.** I included China, Japan, Korea, Southeast Asia and Indochina, the Pacific compilations and overseas Chinese audiences; adding South Asia or the Pacific islands means new searches, and leaving out Vietnam would remove the largest cluster. **How far back to start.** I started in , and the collection's earliest document is from ; if you want the wartime Office of War Information and the occupation of Japan, the nine to volumes (about 8,700 documents) must be read. **How to count the *Oriental mind* wording.** I found 32 documents using it and split them, by my own reading, into 17 that apply it to how American policy or messaging would be received and 15 that do not; a stricter or looser reading of the margin moves that split."
+  },
+  {
+   "text": "8,700",
+   "values": [
+    "8700"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "wartime: nine volumes, about 8,700 documents, 50 mention OWI | 9 volumes; 8,704; 50 of 8,704 | line 93",
+   "sentence": "Front matter and editors' notes were excluded from every count, the two second editions are not in the scope, and every figure is conditional on the searchable copy of all 553 volumes as taken on . ## Decisions this needs from you **What counts as soft power.** I took it as American persuasion, information, exchange or psychological work addressed to an East Asian or Pacific audience, in the editors' own vocabulary; if you also want aid, military assistance and diplomacy itself treated as attraction, the set grows well beyond the information agency. **Who counts as a policymaker.** I counted any U.S. official, including ambassadors, public affairs officers and the agency itself, describing the audience, message or effect; if you mean only Washington decision-makers, the post-level reports that carry most of the effectiveness judgments drop out. **Where the region ends.** I included China, Japan, Korea, Southeast Asia and Indochina, the Pacific compilations and overseas Chinese audiences; adding South Asia or the Pacific islands means new searches, and leaving out Vietnam would remove the largest cluster. **How far back to start.** I started in , and the collection's earliest document is from ; if you want the wartime Office of War Information and the occupation of Japan, the nine to volumes (about 8,700 documents) must be read. **How to count the *Oriental mind* wording.** I found 32 documents using it and split them, by my own reading, into 17 that apply it to how American policy or messaging would be received and 15 that do not; a stricter or looser reading of the margin moves that split."
+  },
+  {
+   "text": "32",
+   "values": [
+    "32"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "32 documents with the Oriental mind wording | 32 | lines 85-87",
+   "sentence": "Front matter and editors' notes were excluded from every count, the two second editions are not in the scope, and every figure is conditional on the searchable copy of all 553 volumes as taken on . ## Decisions this needs from you **What counts as soft power.** I took it as American persuasion, information, exchange or psychological work addressed to an East Asian or Pacific audience, in the editors' own vocabulary; if you also want aid, military assistance and diplomacy itself treated as attraction, the set grows well beyond the information agency. **Who counts as a policymaker.** I counted any U.S. official, including ambassadors, public affairs officers and the agency itself, describing the audience, message or effect; if you mean only Washington decision-makers, the post-level reports that carry most of the effectiveness judgments drop out. **Where the region ends.** I included China, Japan, Korea, Southeast Asia and Indochina, the Pacific compilations and overseas Chinese audiences; adding South Asia or the Pacific islands means new searches, and leaving out Vietnam would remove the largest cluster. **How far back to start.** I started in , and the collection's earliest document is from ; if you want the wartime Office of War Information and the occupation of Japan, the nine to volumes (about 8,700 documents) must be read. **How to count the *Oriental mind* wording.** I found 32 documents using it and split them, by my own reading, into 17 that apply it to how American policy or messaging would be received and 15 that do not; a stricter or looser reading of the margin moves that split."
+  },
+  {
+   "text": "17",
+   "values": [
+    "17"
+   ],
+   "next": "that",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "17 apply to reception, 15 other uses | 17 / 15 of 32 | line 88",
+   "sentence": "Front matter and editors' notes were excluded from every count, the two second editions are not in the scope, and every figure is conditional on the searchable copy of all 553 volumes as taken on . ## Decisions this needs from you **What counts as soft power.** I took it as American persuasion, information, exchange or psychological work addressed to an East Asian or Pacific audience, in the editors' own vocabulary; if you also want aid, military assistance and diplomacy itself treated as attraction, the set grows well beyond the information agency. **Who counts as a policymaker.** I counted any U.S. official, including ambassadors, public affairs officers and the agency itself, describing the audience, message or effect; if you mean only Washington decision-makers, the post-level reports that carry most of the effectiveness judgments drop out. **Where the region ends.** I included China, Japan, Korea, Southeast Asia and Indochina, the Pacific compilations and overseas Chinese audiences; adding South Asia or the Pacific islands means new searches, and leaving out Vietnam would remove the largest cluster. **How far back to start.** I started in , and the collection's earliest document is from ; if you want the wartime Office of War Information and the occupation of Japan, the nine to volumes (about 8,700 documents) must be read. **How to count the *Oriental mind* wording.** I found 32 documents using it and split them, by my own reading, into 17 that apply it to how American policy or messaging would be received and 15 that do not; a stricter or looser reading of the margin moves that split."
+  },
+  {
+   "text": "15",
+   "values": [
+    "15"
+   ],
+   "next": "that",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "Front matter and editors' notes were excluded from every count, the two second editions are not in the scope, and every figure is conditional on the searchable copy of all 553 volumes as taken on . ## Decisions this needs from you **What counts as soft power.** I took it as American persuasion, information, exchange or psychological work addressed to an East Asian or Pacific audience, in the editors' own vocabulary; if you also want aid, military assistance and diplomacy itself treated as attraction, the set grows well beyond the information agency. **Who counts as a policymaker.** I counted any U.S. official, including ambassadors, public affairs officers and the agency itself, describing the audience, message or effect; if you mean only Washington decision-makers, the post-level reports that carry most of the effectiveness judgments drop out. **Where the region ends.** I included China, Japan, Korea, Southeast Asia and Indochina, the Pacific compilations and overseas Chinese audiences; adding South Asia or the Pacific islands means new searches, and leaving out Vietnam would remove the largest cluster. **How far back to start.** I started in , and the collection's earliest document is from ; if you want the wartime Office of War Information and the occupation of Japan, the nine to volumes (about 8,700 documents) must be read. **How to count the *Oriental mind* wording.** I found 32 documents using it and split them, by my own reading, into 17 that apply it to how American policy or messaging would be received and 15 that do not; a stricter or looser reading of the margin moves that split."
+  },
+  {
+   "text": "79",
+   "values": [
+    "79"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "soft power absent: roughly 35,900 documents, 79 volumes | 0 of 35,874 | line 63; line 16",
+   "sentence": "Meanwhile my inclusion rule was: a document in the 79 volumes in which a U.S. official or the information agency describes the audience, the message or method, or the effect of American persuasion, information, exchange or psychological work directed at an East Asian or Pacific audience, chosen by reading. ## Findings In officials judged their own information work weak and aimed at no one in particular At the conference of chiefs of mission in Bangkok, the participants recorded:"
+  },
+  {
+   "text": "14",
+   "values": [
+    "14"
+   ],
+   "next": "nation",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "14-nation tour | 14-nation fact-finding tour (frus1950v06/d32 source note, via trace row) | line 205",
+   "sentence": "The report of Ambassador Jessup's 14-nation tour reads:"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "sign",
+   "kind": "word",
+   "class": "weak",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "He raised the question of whom we are trying to reach and recommended that more thought be given to methods of reaching our audience and to the themes we are trying to put across.\" ( ( In the Department's Far Eastern public affairs officer described a stepped-up programme for Southeast Asia, with a regional production centre planned at Manila; the one sign of effect he offered was more use of the material in the local press ( ( By the programme appears as a thin inventory: an account of the Philippines lists four information centres with 13 American and 111 local staff, alongside figures for 122 newspapers and magazines and 18 radio stations, and it states:"
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "information",
+   "kind": "word",
+   "class": "weak",
+   "row": "four presidential-library series | 4: Kennedy Library RFK papers; Johnson NSF; Johnson Marks Papers; Nixon NSC Files | line 150",
+   "sentence": "He raised the question of whom we are trying to reach and recommended that more thought be given to methods of reaching our audience and to the themes we are trying to put across.\" ( ( In the Department's Far Eastern public affairs officer described a stepped-up programme for Southeast Asia, with a regional production centre planned at Manila; the one sign of effect he offered was more use of the material in the local press ( ( By the programme appears as a thin inventory: an account of the Philippines lists four information centres with 13 American and 111 local staff, alongside figures for 122 newspapers and magazines and 18 radio stations, and it states:"
+  },
+  {
+   "text": "13",
+   "values": [
+    "13"
+   ],
+   "next": "american",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "four centres, 13 American and 111 local staff; 122 newspapers and magazines; 18 radio stations | passage of frus1952-54v12p2/d359 | line 207",
+   "sentence": "He raised the question of whom we are trying to reach and recommended that more thought be given to methods of reaching our audience and to the themes we are trying to put across.\" ( ( In the Department's Far Eastern public affairs officer described a stepped-up programme for Southeast Asia, with a regional production centre planned at Manila; the one sign of effect he offered was more use of the material in the local press ( ( By the programme appears as a thin inventory: an account of the Philippines lists four information centres with 13 American and 111 local staff, alongside figures for 122 newspapers and magazines and 18 radio stations, and it states:"
+  },
+  {
+   "text": "111",
+   "values": [
+    "111"
+   ],
+   "next": "local",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "four centres, 13 American and 111 local staff; 122 newspapers and magazines; 18 radio stations | passage of frus1952-54v12p2/d359 | line 207",
+   "sentence": "He raised the question of whom we are trying to reach and recommended that more thought be given to methods of reaching our audience and to the themes we are trying to put across.\" ( ( In the Department's Far Eastern public affairs officer described a stepped-up programme for Southeast Asia, with a regional production centre planned at Manila; the one sign of effect he offered was more use of the material in the local press ( ( By the programme appears as a thin inventory: an account of the Philippines lists four information centres with 13 American and 111 local staff, alongside figures for 122 newspapers and magazines and 18 radio stations, and it states:"
+  },
+  {
+   "text": "122",
+   "values": [
+    "122"
+   ],
+   "next": "newspaper",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "four centres, 13 American and 111 local staff; 122 newspapers and magazines; 18 radio stations | passage of frus1952-54v12p2/d359 | line 207",
+   "sentence": "He raised the question of whom we are trying to reach and recommended that more thought be given to methods of reaching our audience and to the themes we are trying to put across.\" ( ( In the Department's Far Eastern public affairs officer described a stepped-up programme for Southeast Asia, with a regional production centre planned at Manila; the one sign of effect he offered was more use of the material in the local press ( ( By the programme appears as a thin inventory: an account of the Philippines lists four information centres with 13 American and 111 local staff, alongside figures for 122 newspapers and magazines and 18 radio stations, and it states:"
+  },
+  {
+   "text": "18",
+   "values": [
+    "18"
+   ],
+   "next": "radio",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "four centres, 13 American and 111 local staff; 122 newspapers and magazines; 18 radio stations | passage of frus1952-54v12p2/d359 | line 207",
+   "sentence": "He raised the question of whom we are trying to reach and recommended that more thought be given to methods of reaching our audience and to the themes we are trying to put across.\" ( ( In the Department's Far Eastern public affairs officer described a stepped-up programme for Southeast Asia, with a regional production centre planned at Manila; the one sign of effect he offered was more use of the material in the local press ( ( By the programme appears as a thin inventory: an account of the Philippines lists four information centres with 13 American and 111 local staff, alongside figures for 122 newspapers and magazines and 18 radio stations, and it states:"
+  },
+  {
+   "text": "50%",
+   "values": [
+    "50"
+   ],
+   "next": "will",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "wartime: nine volumes, about 8,700 documents, 50 mention OWI | 9 volumes; 8,704; 50 of 8,704 | line 93",
+   "sentence": "\"During FY a reduction in the USIS film program by 50% will be necessary because of lack of funds.\" ( ( A Psychological Strategy Board paper on Thailand treated overt information as one arm of a wider psychological strategy, to be run through local outlets ( ( Officials assumed an audience that follows the winner, respects resolve and reads generosity as softness Thirty-two documents in the 79 volumes use some form of the *Oriental mind* or *Asian psychology* wording; 25 use one of the six exact phrases and the other seven use inflected forms such as *Southeast Asian minds*."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "arm",
+   "kind": "word",
+   "class": "weak",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "\"During FY a reduction in the USIS film program by 50% will be necessary because of lack of funds.\" ( ( A Psychological Strategy Board paper on Thailand treated overt information as one arm of a wider psychological strategy, to be run through local outlets ( ( Officials assumed an audience that follows the winner, respects resolve and reads generosity as softness Thirty-two documents in the 79 volumes use some form of the *Oriental mind* or *Asian psychology* wording; 25 use one of the six exact phrases and the other seven use inflected forms such as *Southeast Asian minds*."
+  },
+  {
+   "text": "Thirty-two",
+   "values": [
+    "32"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "32 documents with the Oriental mind wording | 32 | lines 85-87",
+   "sentence": "\"During FY a reduction in the USIS film program by 50% will be necessary because of lack of funds.\" ( ( A Psychological Strategy Board paper on Thailand treated overt information as one arm of a wider psychological strategy, to be run through local outlets ( ( Officials assumed an audience that follows the winner, respects resolve and reads generosity as softness Thirty-two documents in the 79 volumes use some form of the *Oriental mind* or *Asian psychology* wording; 25 use one of the six exact phrases and the other seven use inflected forms such as *Southeast Asian minds*."
+  },
+  {
+   "text": "79",
+   "values": [
+    "79"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "soft power absent: roughly 35,900 documents, 79 volumes | 0 of 35,874 | line 63; line 16",
+   "sentence": "\"During FY a reduction in the USIS film program by 50% will be necessary because of lack of funds.\" ( ( A Psychological Strategy Board paper on Thailand treated overt information as one arm of a wider psychological strategy, to be run through local outlets ( ( Officials assumed an audience that follows the winner, respects resolve and reads generosity as softness Thirty-two documents in the 79 volumes use some form of the *Oriental mind* or *Asian psychology* wording; 25 use one of the six exact phrases and the other seven use inflected forms such as *Southeast Asian minds*."
+  },
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "use",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "25 use the six exact phrases; seven inflected | STRICT 25 of 32; seven strict misses are inflections | line 86-87",
+   "sentence": "\"During FY a reduction in the USIS film program by 50% will be necessary because of lack of funds.\" ( ( A Psychological Strategy Board paper on Thailand treated overt information as one arm of a wider psychological strategy, to be run through local outlets ( ( Officials assumed an audience that follows the winner, respects resolve and reads generosity as softness Thirty-two documents in the 79 volumes use some form of the *Oriental mind* or *Asian psychology* wording; 25 use one of the six exact phrases and the other seven use inflected forms such as *Southeast Asian minds*."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "six",
+   "kind": "word",
+   "class": "weak",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "\"During FY a reduction in the USIS film program by 50% will be necessary because of lack of funds.\" ( ( A Psychological Strategy Board paper on Thailand treated overt information as one arm of a wider psychological strategy, to be run through local outlets ( ( Officials assumed an audience that follows the winner, respects resolve and reads generosity as softness Thirty-two documents in the 79 volumes use some form of the *Oriental mind* or *Asian psychology* wording; 25 use one of the six exact phrases and the other seven use inflected forms such as *Southeast Asian minds*."
+  },
+  {
+   "text": "six",
+   "values": [
+    "6"
+   ],
+   "next": "exact",
+   "kind": "word",
+   "class": "traced",
+   "row": "25 use the six exact phrases; seven inflected | STRICT 25 of 32; seven strict misses are inflections | line 86-87",
+   "sentence": "\"During FY a reduction in the USIS film program by 50% will be necessary because of lack of funds.\" ( ( A Psychological Strategy Board paper on Thailand treated overt information as one arm of a wider psychological strategy, to be run through local outlets ( ( Officials assumed an audience that follows the winner, respects resolve and reads generosity as softness Thirty-two documents in the 79 volumes use some form of the *Oriental mind* or *Asian psychology* wording; 25 use one of the six exact phrases and the other seven use inflected forms such as *Southeast Asian minds*."
+  },
+  {
+   "text": "seven",
+   "values": [
+    "7"
+   ],
+   "next": "use",
+   "kind": "word",
+   "class": "weak",
+   "row": "three State lots; one resolves (61 D 167) | 3; NAID 2198167, RG 59, Alphabetical Files, Policy Planning Council, 1948-1961, Restricted - Partly, 48 ft 7 in, entry A1 1583A/B | lines 150, 153",
+   "sentence": "\"During FY a reduction in the USIS film program by 50% will be necessary because of lack of funds.\" ( ( A Psychological Strategy Board paper on Thailand treated overt information as one arm of a wider psychological strategy, to be run through local outlets ( ( Officials assumed an audience that follows the winner, respects resolve and reads generosity as softness Thirty-two documents in the 79 volumes use some form of the *Oriental mind* or *Asian psychology* wording; 25 use one of the six exact phrases and the other seven use inflected forms such as *Southeast Asian minds*."
+  },
+  {
+   "text": "17",
+   "values": [
+    "17"
+   ],
+   "next": "apply",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "17 apply to reception, 15 other uses | 17 / 15 of 32 | line 88",
+   "sentence": "By my reading, 17 apply the wording to how U.S. policy, aid or messaging would be received, and 15 are other uses, such as an Asian leader's own claim."
+  },
+  {
+   "text": "15",
+   "values": [
+    "15"
+   ],
+   "next": "are",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "By my reading, 17 apply the wording to how U.S. policy, aid or messaging would be received, and 15 are other uses, such as an Asian leader's own claim."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "country",
+   "kind": "word",
+   "class": "weak",
+   "row": "three State lots; one resolves (61 D 167) | 3; NAID 2198167, RG 59, Alphabetical Files, Policy Planning Council, 1948-1961, Restricted - Partly, 48 ft 7 in, entry A1 1583A/B | lines 150, 153",
+   "sentence": "\"These three country operations absorb nearly fifteen percent of the Agency’s resources available for overseas programming.\" ( ( The agency's Saigon survey of found:"
+  },
+  {
+   "text": "fifteen",
+   "values": [
+    "15"
+   ],
+   "next": "percent",
+   "kind": "word",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "\"These three country operations absorb nearly fifteen percent of the Agency’s resources available for overseas programming.\" ( ( The agency's Saigon survey of found:"
+  },
+  {
+   "text": "thirteen",
+   "values": [
+    "13"
+   ],
+   "next": "saigon",
+   "kind": "word",
+   "class": "weak",
+   "row": "four centres, 13 American and 111 local staff; 122 newspapers and magazines; 18 radio stations | passage of frus1952-54v12p2/d359 | line 207",
+   "sentence": "\"Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys, with only 26 percent of the general public and 23 percent of the college-educated thinking of U.S. as “very dependable” or “rather dependable.”\" ( ( In Washington, the agency's account of Senator Church's bill quoted his charge that the agency \"is now engaged in a massive campaign, using every tool of the communication arts, to sell the Thieu Government to the people of Vietnam.\" ( ( The agency also described its psychological operations support in Vietnam as short-term, with a plan to hand it to the Vietnamese government ( ( and described an information vacuum in Cambodia after the coup ( ( After Vietnam and the opening to China, reassurance became the message, and posts reported that it was not credited In the agency's guidance to its media read:"
+  },
+  {
+   "text": "26 percent",
+   "values": [
+    "26"
+   ],
+   "next": "general",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "lots 66 D 95 and 63 D 351 resolve to NAID 2839192 | Records Relating to NSC Policy Papers, Executive Secretariat, A1 1586E, 1947-1979, Restricted - Partly, 26 ft 3 in | line 160",
+   "sentence": "\"Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys, with only 26 percent of the general public and 23 percent of the college-educated thinking of U.S. as “very dependable” or “rather dependable.”\" ( ( In Washington, the agency's account of Senator Church's bill quoted his charge that the agency \"is now engaged in a massive campaign, using every tool of the communication arts, to sell the Thieu Government to the people of Vietnam.\" ( ( The agency also described its psychological operations support in Vietnam as short-term, with a plan to hand it to the Vietnamese government ( ( and described an information vacuum in Cambodia after the coup ( ( After Vietnam and the opening to China, reassurance became the message, and posts reported that it was not credited In the agency's guidance to its media read:"
+  },
+  {
+   "text": "23 percent",
+   "values": [
+    "23"
+   ],
+   "next": "college-educated",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "23 read in full, ten in part | 23 and 10 of 33 | lines 121-122",
+   "sentence": "\"Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys, with only 26 percent of the general public and 23 percent of the college-educated thinking of U.S. as “very dependable” or “rather dependable.”\" ( ( In Washington, the agency's account of Senator Church's bill quoted his charge that the agency \"is now engaged in a massive campaign, using every tool of the communication arts, to sell the Thieu Government to the people of Vietnam.\" ( ( The agency also described its psychological operations support in Vietnam as short-term, with a plan to hand it to the Vietnamese government ( ( and described an information vacuum in Cambodia after the coup ( ( After Vietnam and the opening to China, reassurance became the message, and posts reported that it was not credited In the agency's guidance to its media read:"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "while",
+   "kind": "word",
+   "class": "weak",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "\"Peace in Asia—which is a precondition to peace in the world—cannot result primarily from American conceptions but has to involve Asian initiatives and regional and sub-regional arrangements that have an Asian origin.\" ( ( Before the President's trip to Peking the agency proposed to turn a temporary psychological asset into a lasting one ( ( while State objected to releasing a film that might send the wrong signal to Peking ( ( In , after the fall of South Vietnam, the agency's East Asia office abstracted its posts' reassessments."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "553 volumes; searchable copy taken 25 October 2026 | 553; index as taken 2026-10-25 | lines 8-14",
+   "sentence": "\"We still face deeply implanted and persistent feeling that new administration is “withdrawing” or, at least, “reducing priority” in East Asia.\" ( ( ## How this was done I searched the full text of all 553 volumes, which the searchable copy holds, and read within 79: the 74 East Asia and neighbouring compilations found from their printed titles, and five public diplomacy volumes found by counting the agency's own vocabulary (information agency, information service, information program, psychological strategy, Voice of America, propaganda) volume by volume, then by scanning document headings."
+  },
+  {
+   "text": "79",
+   "values": [
+    "79"
+   ],
+   "next": "east",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "soft power absent: roughly 35,900 documents, 79 volumes | 0 of 35,874 | line 63; line 16",
+   "sentence": "\"We still face deeply implanted and persistent feeling that new administration is “withdrawing” or, at least, “reducing priority” in East Asia.\" ( ( ## How this was done I searched the full text of all 553 volumes, which the searchable copy holds, and read within 79: the 74 East Asia and neighbouring compilations found from their printed titles, and five public diplomacy volumes found by counting the agency's own vocabulary (information agency, information service, information program, psychological strategy, Voice of America, propaganda) volume by volume, then by scanning document headings."
+  },
+  {
+   "text": "74",
+   "values": [
+    "74"
+   ],
+   "next": "east",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "74 East Asia volumes: about 12,800 citations in about 7,900 documents | 12,830 rows in 7,905 documents | line 160",
+   "sentence": "\"We still face deeply implanted and persistent feeling that new administration is “withdrawing” or, at least, “reducing priority” in East Asia.\" ( ( ## How this was done I searched the full text of all 553 volumes, which the searchable copy holds, and read within 79: the 74 East Asia and neighbouring compilations found from their printed titles, and five public diplomacy volumes found by counting the agency's own vocabulary (information agency, information service, information program, psychological strategy, Voice of America, propaganda) volume by volume, then by scanning document headings."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "public",
+   "kind": "word",
+   "class": "weak",
+   "row": "79 volumes (74 + 5) | 79 volumes; 35,874 documents | lines 16, 20",
+   "sentence": "\"We still face deeply implanted and persistent feeling that new administration is “withdrawing” or, at least, “reducing priority” in East Asia.\" ( ( ## How this was done I searched the full text of all 553 volumes, which the searchable copy holds, and read within 79: the 74 East Asia and neighbouring compilations found from their printed titles, and five public diplomacy volumes found by counting the agency's own vocabulary (information agency, information service, information program, psychological strategy, Voice of America, propaganda) volume by volume, then by scanning document headings."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "control",
+   "kind": "word",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "Because the series does not use *soft power*, I queried in the editors' vocabulary and tested each search against two controls in the same pass: a word that cannot occur (found 0) and *department of state* (found in 14,251 of 35,874 documents in the reading set)."
+  },
+  {
+   "text": "0",
+   "values": [
+    "0"
+   ],
+   "next": "department",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "control: impossible word 0; department of state 14,090 documents in 77 of 77 volumes | 14,090; 77 of 77 | lines 61, 73",
+   "sentence": "Because the series does not use *soft power*, I queried in the editors' vocabulary and tested each search against two controls in the same pass: a word that cannot occur (found 0) and *department of state* (found in 14,251 of 35,874 documents in the reading set)."
+  },
+  {
+   "text": "14,251",
+   "values": [
+    "14251"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "department of state 14,251 of 35,874 | 14,251 of 35,874 | line 62",
+   "sentence": "Because the series does not use *soft power*, I queried in the editors' vocabulary and tested each search against two controls in the same pass: a word that cannot occur (found 0) and *department of state* (found in 14,251 of 35,874 documents in the reading set)."
+  },
+  {
+   "text": "35,874",
+   "values": [
+    "35874"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "soft power absent: roughly 35,900 documents, 79 volumes | 0 of 35,874 | line 63; line 16",
+   "sentence": "Because the series does not use *soft power*, I queried in the editors' vocabulary and tested each search against two controls in the same pass: a word that cannot occur (found 0) and *department of state* (found in 14,251 of 35,874 documents in the reading set)."
+  },
+  {
+   "text": "79",
+   "values": [
+    "79"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "soft power absent: roughly 35,900 documents, 79 volumes | 0 of 35,874 | line 63; line 16",
+   "sentence": "I compared the 79 volumes with 220 other postwar volumes."
+  },
+  {
+   "text": "220",
+   "values": [
+    "220"
+   ],
+   "next": "postwar",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "soft power absent: roughly 83,700 documents, 220 other postwar volumes | 0 of 83,746 | line 63; line 54",
+   "sentence": "I compared the 79 volumes with 220 other postwar volumes."
+  },
+  {
+   "text": "78",
+   "values": [
+    "78"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "lot 78 D 295 details | NAID 27022973, RG 59, UD-UP 80, 1968-1975, Restricted - Partly, 7 ft 2 in | line 159",
+   "sentence": "That showed that *prestige*, *image*, *propaganda* and *oriental* occur at about the same rate in both sets (for example *propaganda* in about 78 documents per thousand against about 70), so they measure the series and not this question, and I did not scope on them; the agency's acronym for its overseas posts (USIS) does discriminate, appearing in about one document in fifty against about one in 180."
+  },
+  {
+   "text": "thousand",
+   "values": [
+    "1000"
+   ],
+   "next": "against",
+   "kind": "word",
+   "class": "weak",
+   "row": "1960s one in twelve; 1950s one in thirty-six | 84.5 and 27.8 per 1,000 | lines 111-112, 116",
+   "sentence": "That showed that *prestige*, *image*, *propaganda* and *oriental* occur at about the same rate in both sets (for example *propaganda* in about 78 documents per thousand against about 70), so they measure the series and not this question, and I did not scope on them; the agency's acronym for its overseas posts (USIS) does discriminate, appearing in about one document in fifty against about one in 180."
+  },
+  {
+   "text": "70",
+   "values": [
+    "70"
+   ],
+   "next": "so",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "prestige, image, propaganda, oriental at control rates; propaganda 78 vs 70 per thousand | 47.4/43.9; 14.4/18.2; 78.3/69.8; 29.5/34.7 | lines 66-71, 73",
+   "sentence": "That showed that *prestige*, *image*, *propaganda* and *oriental* occur at about the same rate in both sets (for example *propaganda* in about 78 documents per thousand against about 70), so they measure the series and not this question, and I did not scope on them; the agency's acronym for its overseas posts (USIS) does discriminate, appearing in about one document in fifty against about one in 180."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "That showed that *prestige*, *image*, *propaganda* and *oriental* occur at about the same rate in both sets (for example *propaganda* in about 78 documents per thousand against about 70), so they measure the series and not this question, and I did not scope on them; the agency's acronym for its overseas posts (USIS) does discriminate, appearing in about one document in fifty against about one in 180."
+  },
+  {
+   "text": "fifty",
+   "values": [
+    "50"
+   ],
+   "next": "against",
+   "kind": "word",
+   "class": "weak",
+   "row": "wartime: nine volumes, about 8,700 documents, 50 mention OWI | 9 volumes; 8,704; 50 of 8,704 | line 93",
+   "sentence": "That showed that *prestige*, *image*, *propaganda* and *oriental* occur at about the same rate in both sets (for example *propaganda* in about 78 documents per thousand against about 70), so they measure the series and not this question, and I did not scope on them; the agency's acronym for its overseas posts (USIS) does discriminate, appearing in about one document in fifty against about one in 180."
+  },
+  {
+   "text": "about one in 180",
+   "values": [
+    "1",
+    "180"
+   ],
+   "next": "",
+   "kind": "ratio",
+   "class": "traced",
+   "row": "USIS about one in fifty vs one in 180 | 20.9 vs 5.5 per 1,000 | line 65, 73",
+   "sentence": "That showed that *prestige*, *image*, *propaganda* and *oriental* occur at about the same rate in both sets (for example *propaganda* in about 78 documents per thousand against about 70), so they measure the series and not this question, and I did not scope on them; the agency's acronym for its overseas posts (USIS) does discriminate, appearing in about one document in fifty against about one in 180."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "dated",
+   "kind": "word",
+   "class": "weak",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "By decade, the agency's vocabulary appears in about one dated document in thirty-six in the and about one in twelve in the ; the rate is nearly as high, about one in thirteen, but nearly half of it comes from one volume and the public diplomacy volumes are inside the set, so the rise is partly built in."
+  },
+  {
+   "text": "thirty-six",
+   "values": [
+    "36"
+   ],
+   "next": "one",
+   "kind": "word",
+   "class": "weak",
+   "row": "1960s one in twelve; 1950s one in thirty-six | 84.5 and 27.8 per 1,000 | lines 111-112, 116",
+   "sentence": "By decade, the agency's vocabulary appears in about one dated document in thirty-six in the and about one in twelve in the ; the rate is nearly as high, about one in thirteen, but nearly half of it comes from one volume and the public diplomacy volumes are inside the set, so the rise is partly built in."
+  },
+  {
+   "text": "about one in twelve",
+   "values": [
+    "1",
+    "12"
+   ],
+   "next": "rate",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "1960s one in twelve; 1950s one in thirty-six | 84.5 and 27.8 per 1,000 | lines 111-112, 116",
+   "sentence": "By decade, the agency's vocabulary appears in about one dated document in thirty-six in the and about one in twelve in the ; the rate is nearly as high, about one in thirteen, but nearly half of it comes from one volume and the public diplomacy volumes are inside the set, so the rise is partly built in."
+  },
+  {
+   "text": "about one in thirteen",
+   "values": [
+    "1",
+    "13"
+   ],
+   "next": "but",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "1970s about one in thirteen; nearly half from one volume | 78.1 per 1,000; 138 of 304 (45%) | line 113, 116",
+   "sentence": "By decade, the agency's vocabulary appears in about one dated document in thirty-six in the and about one in twelve in the ; the rate is nearly as high, about one in thirteen, but nearly half of it comes from one volume and the public diplomacy volumes are inside the set, so the rise is partly built in."
+  },
+  {
+   "text": "half",
+   "values": [
+    "0.5"
+   ],
+   "next": "it",
+   "kind": "word",
+   "class": "weak",
+   "row": "1970s about one in thirteen; nearly half from one volume | 78.1 per 1,000; 138 of 304 (45%) | line 113, 116",
+   "sentence": "By decade, the agency's vocabulary appears in about one dated document in thirty-six in the and about one in twelve in the ; the rate is nearly as high, about one in thirteen, but nearly half of it comes from one volume and the public diplomacy volumes are inside the set, so the rise is partly built in."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "By decade, the agency's vocabulary appears in about one dated document in thirty-six in the and about one in twelve in the ; the rate is nearly as high, about one in thirteen, but nearly half of it comes from one volume and the public diplomacy volumes are inside the set, so the rise is partly built in."
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "ten",
+   "kind": "word",
+   "class": "weak",
+   "row": "Program Files NAID 1254251, 1954-1958 inclusive, coverage 1951-1958, 9 ft 2 in, Restricted - Partly | as stated | line 163",
+   "sentence": "I also used semantic search (which finds documents whose meaning resembles a document given to it; it finds roughly nine in ten of the true neighbours, so a missing neighbour is not evidence of absence) on four anchor documents."
+  },
+  {
+   "text": "ten",
+   "values": [
+    "10"
+   ],
+   "next": "true",
+   "kind": "word",
+   "class": "traced",
+   "row": "semantic search finds roughly nine in ten of true neighbours | measuredRecallAt10 = 0.9021 | line 134",
+   "sentence": "I also used semantic search (which finds documents whose meaning resembles a document given to it; it finds roughly nine in ten of the true neighbours, so a missing neighbour is not evidence of absence) on four anchor documents."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "anchor",
+   "kind": "word",
+   "class": "traced",
+   "row": "four anchor documents | as stated | line 140",
+   "sentence": "I also used semantic search (which finds documents whose meaning resembles a document given to it; it finds roughly nine in ten of the true neighbours, so a missing neighbour is not evidence of absence) on four anchor documents."
+  },
+  {
+   "text": "23",
+   "values": [
+    "23"
+   ],
+   "next": "collection",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "23 read in full, ten in part | 23 and 10 of 33 | lines 121-122",
+   "sentence": "I read 23 of the 33 collection documents in full and ten in part (a passage window or a leading span), so my reading of those ten is partial."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "collection",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "I read 23 of the 33 collection documents in full and ten in part (a passage window or a leading span), so my reading of those ten is partial."
+  },
+  {
+   "text": "ten",
+   "values": [
+    "10"
+   ],
+   "next": "part",
+   "kind": "word",
+   "class": "weak",
+   "row": "USIA records, ten documents RG 306, one RG 305; no identifier or access | 10 + 1; no identifier or access stated | lines 150, 155",
+   "sentence": "I read 23 of the 33 collection documents in full and ten in part (a passage window or a leading span), so my reading of those ten is partial."
+  },
+  {
+   "text": "ten",
+   "values": [
+    "10"
+   ],
+   "next": "is",
+   "kind": "word",
+   "class": "weak",
+   "row": "USIA records, ten documents RG 306, one RG 305; no identifier or access | 10 + 1; no identifier or access stated | lines 150, 155",
+   "sentence": "I read 23 of the 33 collection documents in full and ten in part (a passage window or a leading span), so my reading of those ten is partial."
+  },
+  {
+   "text": "Two",
+   "values": [
+    "2"
+   ],
+   "next": "covert-rumour",
+   "kind": "word",
+   "class": "traced",
+   "row": "two covert-rumour Korea documents left out | as stated | line 126",
+   "sentence": "Two covert-rumour documents on Korea were left out as tactics, not soft power."
+  },
+  {
+   "text": "17",
+   "values": [
+    "17"
+   ],
+   "next": "is",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "17 apply to reception, 15 other uses | 17 / 15 of 32 | line 88",
+   "sentence": "The split of 17 and 15 is my own reading; the exact counts, rates and denominators are in the memo (see the memo). ## Read next Open the collection \"East Asia and the Pacific: how U.S. officials judged their persuasion, \" (33 documents under six headings, with a closing list of archival sources)."
+  },
+  {
+   "text": "15",
+   "values": [
+    "15"
+   ],
+   "next": "is",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "The split of 17 and 15 is my own reading; the exact counts, rates and denominators are in the memo (see the memo). ## Read next Open the collection \"East Asia and the Pacific: how U.S. officials judged their persuasion, \" (33 documents under six headings, with a closing list of archival sources)."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "33 documents, about one in 1,100 | 33 collection documents of 35,874 (1 in 1,087) | lines 20, 120, 186",
+   "sentence": "The split of 17 and 15 is my own reading; the exact counts, rates and denominators are in the memo (see the memo). ## Read next Open the collection \"East Asia and the Pacific: how U.S. officials judged their persuasion, \" (33 documents under six headings, with a closing list of archival sources)."
+  },
+  {
+   "text": "six",
+   "values": [
+    "6"
+   ],
+   "next": "heading",
+   "kind": "word",
+   "class": "weak",
+   "row": "VOA records NAID 7542975, 1948-1959, 6 ft 6 in | as stated | line 163",
+   "sentence": "The split of 17 and 15 is my own reading; the exact counts, rates and denominators are in the memo (see the memo). ## Read next Open the collection \"East Asia and the Pacific: how U.S. officials judged their persuasion, \" (33 documents under six headings, with a closing list of archival sources)."
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "to",
+   "kind": "word",
+   "class": "weak",
+   "row": "Program Files NAID 1254251, 1954-1958 inclusive, coverage 1951-1958, 9 ft 2 in, Restricted - Partly | as stated | line 163",
+   "sentence": "Additions that would unlock the most: the nine to Far East volumes for the Office of War Information and the occupation of Japan;"
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "State central decimal files, 15 documents, 11 from 1950-57, others 1967-73 and 1977 | RG 59 central files: decimal 1950-1957 11; 1967-69 1; 1970-73 1; 1977 2 = 15 | line 150",
+   "sentence": "Korea's information programme, which I reached only through two documents I left out;"
+  }
+ ]
+}

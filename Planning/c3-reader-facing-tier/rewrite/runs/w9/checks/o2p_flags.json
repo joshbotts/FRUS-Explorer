@@ -1,0 +1,1086 @@
+{
+ "run": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w9",
+ "traceSource": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w9/trace.md",
+ "traceTableLine": 8,
+ "traceRows": 97,
+ "mentions": 97,
+ "counts": {
+  "traced": 49,
+  "weak": 48,
+  "untraced": 0
+ },
+ "list": [
+  {
+   "text": "1,400",
+   "values": [
+    "1400"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "documents on the information program (bottom line 1, 2) | about 1,400 | 59–62 | C = 1,401 documents [M5]",
+   "sentence": "In that vocabulary, about 1,400 documents in 80 of the 81 volumes searched discuss the effort, and they show one assessment held from to the : the information program could win attention among educated elites, but it rarely moved Asian opinion against what American policy itself was doing."
+  },
+  {
+   "text": "80",
+   "values": [
+    "80"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "volumes holding them (bottom line 1) | 80 of the 81 volumes | 41, 62 | 81 scope volumes [M2]; C in 80 volumes [M5]",
+   "sentence": "In that vocabulary, about 1,400 documents in 80 of the 81 volumes searched discuss the effort, and they show one assessment held from to the : the information program could win attention among educated elites, but it rarely moved Asian opinion against what American policy itself was doing."
+  },
+  {
+   "text": "81",
+   "values": [
+    "81"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "control \"Department of State\" in every one of 81 volumes (bottom line 3) | 81 of 81 | 70 | 14,755 documents, 81 of 81 volumes [M7]",
+   "sentence": "In that vocabulary, about 1,400 documents in 80 of the 81 volumes searched discuss the effort, and they show one assessment held from to the : the information program could win attention among educated elites, but it rarely moved Asian opinion against what American policy itself was doing."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "assessment",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"soft power\" coined 1990 (bottom line 1) | 1990 | 23 | Joseph Nye's (1990)",
+   "sentence": "In that vocabulary, about 1,400 documents in 80 of the 81 volumes searched discuss the effort, and they show one assessment held from to the : the information program could win attention among educated elites, but it rarely moved Asian opinion against what American policy itself was doing."
+  },
+  {
+   "text": "Twenty-three",
+   "values": [
+    "23"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"soft power\" coined 1990 (bottom line 1) | 1990 | 23 | Joseph Nye's (1990)",
+   "sentence": "Foreign Information Program, , , Ambassador Reischauer judged in that in Japan \"Intellectually we have met with some success\" while \"the basic emotional response remains unchanged\" ( , and the agency's conference of public affairs officers in Manila reported that \"the image of the US usually depended more on the state of bi-lateral relations (security treaty, Okinawa, Korean military modernization, trade restrictions) than on developments within the US\" ( , Twenty-three documents, all in the collection named at the end, carry the findings below; the research retrieved 121 whole and read about 35 at length."
+  },
+  {
+   "text": "121",
+   "values": [
+    "121"
+   ],
+   "next": "whole",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "retrieved whole / read at length (bottom line 1, methods) | 121; about 35 | 175–177 | 121 documents retrieved whole; about 35 read at length",
+   "sentence": "Foreign Information Program, , , Ambassador Reischauer judged in that in Japan \"Intellectually we have met with some success\" while \"the basic emotional response remains unchanged\" ( , and the agency's conference of public affairs officers in Manila reported that \"the image of the US usually depended more on the state of bi-lateral relations (security treaty, Okinawa, Korean military modernization, trade restrictions) than on developments within the US\" ( , Twenty-three documents, all in the collection named at the end, carry the findings below; the research retrieved 121 whole and read about 35 at length."
+  },
+  {
+   "text": "35",
+   "values": [
+    "35"
+   ],
+   "next": "at",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "retrieved whole / read at length (bottom line 1, methods) | 121; about 35 | 175–177 | 121 documents retrieved whole; about 35 read at length",
+   "sentence": "Foreign Information Program, , , Ambassador Reischauer judged in that in Japan \"Intellectually we have met with some success\" while \"the basic emotional response remains unchanged\" ( , and the agency's conference of public affairs officers in Manila reported that \"the image of the US usually depended more on the state of bi-lateral relations (security treaty, Okinawa, Korean military modernization, trade restrictions) than on developments within the US\" ( , Twenty-three documents, all in the collection named at the end, carry the findings below; the research retrieved 121 whole and read about 35 at length."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "separate",
+   "kind": "word",
+   "class": "weak",
+   "row": "documents on the information program (bottom line 1, 2) | about 1,400 | 59–62 | C = 1,401 documents [M5]",
+   "sentence": "Where FRUS points for the rest.** The archives reach the historian through two separate channels, which this overview never adds together: the series the printed documents were taken from, and the series the editors cited in footnotes without printing."
+  },
+  {
+   "text": "1,400",
+   "values": [
+    "1400"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "documents on the information program (bottom line 1, 2) | about 1,400 | 59–62 | C = 1,401 documents [M5]",
+   "sentence": "Of the 1,400 documents, more than half were taken from the State Department's own files and about one in eight from the Information Agency's; only a little more than one in four carries a footnote citation to an unprinted source at all, so the second list is thin."
+  },
+  {
+   "text": "half",
+   "values": [
+    "0.5"
+   ],
+   "next": "were",
+   "kind": "word",
+   "class": "weak",
+   "row": "came-from: State Department files (bottom line 2) | more than half | 133, 309 | RG 59 731 + National Archives RG 59 57 = 788 of 1,401 [M11]",
+   "sentence": "Of the 1,400 documents, more than half were taken from the State Department's own files and about one in eight from the Information Agency's; only a little more than one in four carries a footnote citation to an unprinted source at all, so the second list is thin."
+  },
+  {
+   "text": "about one in eight",
+   "values": [
+    "1",
+    "8"
+   ],
+   "next": "from",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "came-from: Information Agency (bottom line 2) | about one in eight | 133–134, 310 | RG 306 (USIA) 177 of 1,401 [M11]",
+   "sentence": "Of the 1,400 documents, more than half were taken from the State Department's own files and about one in eight from the Information Agency's; only a little more than one in four carries a footnote citation to an unprinted source at all, so the second list is thin."
+  },
+  {
+   "text": "one in four",
+   "values": [
+    "1",
+    "4"
+   ],
+   "next": "carrie",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "Reischauer 1965 (bottom line 1, finding 4) | 1965 | 235, 261 | Reischauer 1965 (Q18, Q19)",
+   "sentence": "Of the 1,400 documents, more than half were taken from the State Department's own files and about one in eight from the Information Agency's; only a little more than one in four carries a footnote citation to an unprinted source at all, so the second list is thin."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 63 D 351, 66 D 95 -> RG 59, A1 1586E, NAID 2839192, 1947–1979, (b)(1), College Park | as given | 150 | resolution table",
+   "sentence": "(The exact counts, rates and denominators for every figure in this overview are in the memo; see the memo.) *Series the printed documents came from:* The State Department's central decimal files (Record Group 59), the largest single source."
+  },
+  {
+   "text": "5",
+   "values": [
+    "5"
+   ],
+   "next": "which",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "documents on the information program (bottom line 1, 2) | about 1,400 | 59–62 | C = 1,401 documents [M5]",
+   "sentence": "The information-program reports are filed under class 5, which the filing manual labels \"International Informational and Educational Relations, Cultural Affairs and Programs\"."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 63 D 351, 66 D 95 -> RG 59, A1 1586E, NAID 2839192, 1947–1979, (b)(1), College Park | as given | 150 | resolution table",
+   "sentence": "\"Records Relating to National Security Council Policy Papers\", Executive Secretariat (Record Group 59, entry A1 1586E, National Archives identifier 2839192), , partly restricted under the Freedom of Information Act's exemption (b)(1), at College Park."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 63 D 351, 66 D 95 -> RG 59, A1 1586E, NAID 2839192, 1947–1979, (b)(1), College Park | as given | 150 | resolution table",
+   "sentence": "\"Records Relating to National Security Council Policy Papers\", Executive Secretariat (Record Group 59, entry A1 1586E, National Archives identifier 2839192), , partly restricted under the Freedom of Information Act's exemption (b)(1), at College Park."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 63 D 351, 66 D 95 -> RG 59, A1 1586E, NAID 2839192, 1947–1979, (b)(1), College Park | as given | 150 | resolution table",
+   "sentence": "\"Records Relating to National Security Council Policy Papers\", Executive Secretariat (Record Group 59, entry A1 1586E, National Archives identifier 2839192), , partly restricted under the Freedom of Information Act's exemption (b)(1), at College Park."
+  },
+  {
+   "text": "1",
+   "values": [
+    "1"
+   ],
+   "next": "at",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"soft power\" coined 1990 (bottom line 1) | 1990 | 23 | Joseph Nye's (1990)",
+   "sentence": "\"Records Relating to National Security Council Policy Papers\", Executive Secretariat (Record Group 59, entry A1 1586E, National Archives identifier 2839192), , partly restricted under the Freedom of Information Act's exemption (b)(1), at College Park."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"source of three documents quoted below\" | three | 221 | RG 59 lot 63D351 (v09/d190, v09/d207, v14p2/d820)",
+   "sentence": "It is the source of three documents quoted below (lots 63 D 351 and 66 D 95)."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 63 D 351, 66 D 95 -> RG 59, A1 1586E, NAID 2839192, 1947–1979, (b)(1), College Park | as given | 150 | resolution table",
+   "sentence": "It is the source of three documents quoted below (lots 63 D 351 and 66 D 95)."
+  },
+  {
+   "text": "66 D 95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 63 D 351, 66 D 95 -> RG 59, A1 1586E, NAID 2839192, 1947–1979, (b)(1), College Park | as given | 150 | resolution table",
+   "sentence": "It is the source of three documents quoted below (lots 63 D 351 and 66 D 95)."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 63 D 351, 66 D 95 -> RG 59, A1 1586E, NAID 2839192, 1947–1979, (b)(1), College Park | as given | 150 | resolution table",
+   "sentence": "\"Subject and Special Files\", Executive Secretariat (Record Group 59, entry A1 1586C, identifier 2839191), , partly restricted (lot 62 D 430)."
+  },
+  {
+   "text": "A1 1586C",
+   "values": [
+    "a11586c"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 62 D 430 -> RG 59, A1 1586C, NAID 2839191, 1953–1961 | as given | 151 | ",
+   "sentence": "\"Subject and Special Files\", Executive Secretariat (Record Group 59, entry A1 1586C, identifier 2839191), , partly restricted (lot 62 D 430)."
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 62 D 430 -> RG 59, A1 1586C, NAID 2839191, 1953–1961 | as given | 151 | ",
+   "sentence": "\"Subject and Special Files\", Executive Secretariat (Record Group 59, entry A1 1586C, identifier 2839191), , partly restricted (lot 62 D 430)."
+  },
+  {
+   "text": "62 D 430",
+   "values": [
+    "62d430"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 62 D 430 -> RG 59, A1 1586C, NAID 2839191, 1953–1961 | as given | 151 | ",
+   "sentence": "\"Subject and Special Files\", Executive Secretariat (Record Group 59, entry A1 1586C, identifier 2839191), , partly restricted (lot 62 D 430)."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 63 D 351, 66 D 95 -> RG 59, A1 1586E, NAID 2839192, 1947–1979, (b)(1), College Park | as given | 150 | resolution table",
+   "sentence": "\"Meeting Summaries and Project Files\" (Record Group 59, entry A1 1261, identifier 2103073), , unrestricted (lot 61 D 417)."
+  },
+  {
+   "text": "A1 1261",
+   "values": [
+    "a11261"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 61 D 417 -> RG 59, A1 1261, NAID 2103073, 1951–1959, unrestricted | as given | 152 | ",
+   "sentence": "\"Meeting Summaries and Project Files\" (Record Group 59, entry A1 1261, identifier 2103073), , unrestricted (lot 61 D 417)."
+  },
+  {
+   "text": "2103073",
+   "values": [
+    "2103073"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 61 D 417 -> RG 59, A1 1261, NAID 2103073, 1951–1959, unrestricted | as given | 152 | ",
+   "sentence": "\"Meeting Summaries and Project Files\" (Record Group 59, entry A1 1261, identifier 2103073), , unrestricted (lot 61 D 417)."
+  },
+  {
+   "text": "61 D 417",
+   "values": [
+    "61d417"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 61 D 417 -> RG 59, A1 1261, NAID 2103073, 1951–1959, unrestricted | as given | 152 | ",
+   "sentence": "\"Meeting Summaries and Project Files\" (Record Group 59, entry A1 1261, identifier 2103073), , unrestricted (lot 61 D 417)."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 identifier 622 (bottom line 2, 3) | 622 | 158 | recordGroups['306']: NAID 622",
+   "sentence": "Information Agency (Record Group 306, identifier 622): the Director's subject files and the area offices' files that the Public Diplomacy volumes print from."
+  },
+  {
+   "text": "622",
+   "values": [
+    "622"
+   ],
+   "next": "director",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "RG 306 identifier 622 (bottom line 2, 3) | 622 | 158 | recordGroups['306']: NAID 622",
+   "sentence": "Information Agency (Record Group 306, identifier 622): the Director's subject files and the area offices' files that the Public Diplomacy volumes print from."
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "to",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "accessions split \"3 to 18 series\" | 3 to 18 | 156, 313 | 18, 9, 3 and 15 series",
+   "sentence": "The finding aids that ship with FRUS Explorer trace these only to accessions that the National Archives has since split across 3 to 18 series each, so no one shelf can be named; among them are \"Regional Subject Files\" (identifier 48349732), \"Subject Files of the Director\" (identifier 1102141) and \"Vietnam Working Group Subject Files\" (identifier 42125423), for which those finding aids give no dates or access status."
+  },
+  {
+   "text": "18",
+   "values": [
+    "18"
+   ],
+   "next": "serie",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "accessions split \"3 to 18 series\" | 3 to 18 | 156, 313 | 18, 9, 3 and 15 series",
+   "sentence": "The finding aids that ship with FRUS Explorer trace these only to accessions that the National Archives has since split across 3 to 18 series each, so no one shelf can be named; among them are \"Regional Subject Files\" (identifier 48349732), \"Subject Files of the Director\" (identifier 1102141) and \"Vietnam Working Group Subject Files\" (identifier 42125423), for which those finding aids give no dates or access status."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "shelf",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"soft power\" coined 1990 (bottom line 1) | 1990 | 23 | Joseph Nye's (1990)",
+   "sentence": "The finding aids that ship with FRUS Explorer trace these only to accessions that the National Archives has since split across 3 to 18 series each, so no one shelf can be named; among them are \"Regional Subject Files\" (identifier 48349732), \"Subject Files of the Director\" (identifier 1102141) and \"Vietnam Working Group Subject Files\" (identifier 42125423), for which those finding aids give no dates or access status."
+  },
+  {
+   "text": "48349732",
+   "values": [
+    "48349732"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Regional Subject Files 48349732; Subject Files of the Director 1102141; Vietnam Working Group Subject Files 42125423; no dates/access | as given | 156 | \"none of those three has a series-facts row\"",
+   "sentence": "The finding aids that ship with FRUS Explorer trace these only to accessions that the National Archives has since split across 3 to 18 series each, so no one shelf can be named; among them are \"Regional Subject Files\" (identifier 48349732), \"Subject Files of the Director\" (identifier 1102141) and \"Vietnam Working Group Subject Files\" (identifier 42125423), for which those finding aids give no dates or access status."
+  },
+  {
+   "text": "1102141",
+   "values": [
+    "1102141"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Regional Subject Files 48349732; Subject Files of the Director 1102141; Vietnam Working Group Subject Files 42125423; no dates/access | as given | 156 | \"none of those three has a series-facts row\"",
+   "sentence": "The finding aids that ship with FRUS Explorer trace these only to accessions that the National Archives has since split across 3 to 18 series each, so no one shelf can be named; among them are \"Regional Subject Files\" (identifier 48349732), \"Subject Files of the Director\" (identifier 1102141) and \"Vietnam Working Group Subject Files\" (identifier 42125423), for which those finding aids give no dates or access status."
+  },
+  {
+   "text": "42125423",
+   "values": [
+    "42125423"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Regional Subject Files 48349732; Subject Files of the Director 1102141; Vietnam Working Group Subject Files 42125423; no dates/access | as given | 156 | \"none of those three has a series-facts row\"",
+   "sentence": "The finding aids that ship with FRUS Explorer trace these only to accessions that the National Archives has since split across 3 to 18 series each, so no one shelf can be named; among them are \"Regional Subject Files\" (identifier 48349732), \"Subject Files of the Director\" (identifier 1102141) and \"Vietnam Working Group Subject Files\" (identifier 42125423), for which those finding aids give no dates or access status."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 63 D 351, 66 D 95 -> RG 59, A1 1586E, NAID 2839192, 1947–1979, (b)(1), College Park | as given | 150 | resolution table",
+   "sentence": "The same \"Records Relating to National Security Council Policy Papers\" (entry A1 1586E, identifier 2839192) and \"Subject and Special Files\" (entry A1 1586C, identifier 2839191) named above."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 63 D 351, 66 D 95 -> RG 59, A1 1586E, NAID 2839192, 1947–1979, (b)(1), College Park | as given | 150 | resolution table",
+   "sentence": "The same \"Records Relating to National Security Council Policy Papers\" (entry A1 1586E, identifier 2839192) and \"Subject and Special Files\" (entry A1 1586C, identifier 2839191) named above."
+  },
+  {
+   "text": "A1 1586C",
+   "values": [
+    "a11586c"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 62 D 430 -> RG 59, A1 1586C, NAID 2839191, 1953–1961 | as given | 151 | ",
+   "sentence": "The same \"Records Relating to National Security Council Policy Papers\" (entry A1 1586E, identifier 2839192) and \"Subject and Special Files\" (entry A1 1586C, identifier 2839191) named above."
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lot 62 D 430 -> RG 59, A1 1586C, NAID 2839191, 1953–1961 | as given | 151 | ",
+   "sentence": "The same \"Records Relating to National Security Council Policy Papers\" (entry A1 1586E, identifier 2839192) and \"Subject and Special Files\" (entry A1 1586C, identifier 2839191) named above."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 63 D 351, 66 D 95 -> RG 59, A1 1586E, NAID 2839192, 1947–1979, (b)(1), College Park | as given | 150 | resolution table",
+   "sentence": "\"Records Relating to Activities with the National Security Council\", Policy Planning Council (Record Group 59, entries A1 1583E and 1583F, identifier 2838992), , partly restricted."
+  },
+  {
+   "text": "A1 1583E",
+   "values": [
+    "a11583e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Policy Planning Council, A1 1583E/F, NAID 2838992, 1948–1961 | as given | 153 | ",
+   "sentence": "\"Records Relating to Activities with the National Security Council\", Policy Planning Council (Record Group 59, entries A1 1583E and 1583F, identifier 2838992), , partly restricted."
+  },
+  {
+   "text": "2838992",
+   "values": [
+    "2838992"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Policy Planning Council, A1 1583E/F, NAID 2838992, 1948–1961 | as given | 153 | ",
+   "sentence": "\"Records Relating to Activities with the National Security Council\", Policy Planning Council (Record Group 59, entries A1 1583E and 1583F, identifier 2838992), , partly restricted."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 identifier 622 (bottom line 2, 3) | 622 | 158 | recordGroups['306']: NAID 622",
+   "sentence": "\"Subject Files\", Information Agency Office of Policy and Plans (Record Group 306, entries UD-WW 151 to 382, identifier 1257679), , 47 linear feet, partly restricted, cited unprinted in the report on the program quoted above ; the nearest named shelf to the program's own policy papers."
+  },
+  {
+   "text": "WW 151",
+   "values": [
+    "ww151"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "USIA Office of Policy and Plans Subject Files, UD-WW 151…382, NAID 1257679, 1953–1971, 47 linear feet; cited in Vol. IX Doc. 207 | as given | 154 | lot 59D260, cited unprinted in frus1955-57v09/d207",
+   "sentence": "\"Subject Files\", Information Agency Office of Policy and Plans (Record Group 306, entries UD-WW 151 to 382, identifier 1257679), , 47 linear feet, partly restricted, cited unprinted in the report on the program quoted above ; the nearest named shelf to the program's own policy papers."
+  },
+  {
+   "text": "382",
+   "values": [
+    "382"
+   ],
+   "next": "identifier",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "USIA Office of Policy and Plans Subject Files, UD-WW 151…382, NAID 1257679, 1953–1971, 47 linear feet; cited in Vol. IX Doc. 207 | as given | 154 | lot 59D260, cited unprinted in frus1955-57v09/d207",
+   "sentence": "\"Subject Files\", Information Agency Office of Policy and Plans (Record Group 306, entries UD-WW 151 to 382, identifier 1257679), , 47 linear feet, partly restricted, cited unprinted in the report on the program quoted above ; the nearest named shelf to the program's own policy papers."
+  },
+  {
+   "text": "1257679",
+   "values": [
+    "1257679"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "USIA Office of Policy and Plans Subject Files, UD-WW 151…382, NAID 1257679, 1953–1971, 47 linear feet; cited in Vol. IX Doc. 207 | as given | 154 | lot 59D260, cited unprinted in frus1955-57v09/d207",
+   "sentence": "\"Subject Files\", Information Agency Office of Policy and Plans (Record Group 306, entries UD-WW 151 to 382, identifier 1257679), , 47 linear feet, partly restricted, cited unprinted in the report on the program quoted above ; the nearest named shelf to the program's own policy papers."
+  },
+  {
+   "text": "47",
+   "values": [
+    "47"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "USIA Office of Policy and Plans Subject Files, UD-WW 151…382, NAID 1257679, 1953–1971, 47 linear feet; cited in Vol. IX Doc. 207 | as given | 154 | lot 59D260, cited unprinted in frus1955-57v09/d207",
+   "sentence": "\"Subject Files\", Information Agency Office of Policy and Plans (Record Group 306, entries UD-WW 151 to 382, identifier 1257679), , 47 linear feet, partly restricted, cited unprinted in the report on the program quoted above ; the nearest named shelf to the program's own policy papers."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 identifier 622 (bottom line 2, 3) | 622 | 158 | recordGroups['306']: NAID 622",
+   "sentence": "A related series, \"Alphabetical Subject Files Containing Policy Guidance Records\", Office of Policy (Record Group 306, entry P 311, identifier 40943515), , partly restricted, is named in the volumes' lists of sources, though no single document here is tied to it."
+  },
+  {
+   "text": "P 311",
+   "values": [
+    "p311"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "P 311, NAID 40943515, 1953–1969, volume-level only | as given | 155 | ",
+   "sentence": "A related series, \"Alphabetical Subject Files Containing Policy Guidance Records\", Office of Policy (Record Group 306, entry P 311, identifier 40943515), , partly restricted, is named in the volumes' lists of sources, though no single document here is tied to it."
+  },
+  {
+   "text": "40943515",
+   "values": [
+    "40943515"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "P 311, NAID 40943515, 1953–1969, volume-level only | as given | 155 | ",
+   "sentence": "A related series, \"Alphabetical Subject Files Containing Policy Guidance Records\", Office of Policy (Record Group 306, entry P 311, identifier 40943515), , partly restricted, is named in the volumes' lists of sources, though no single document here is tied to it."
+  },
+  {
+   "text": "Three",
+   "values": [
+    "3"
+   ],
+   "next": "part",
+   "kind": "word",
+   "class": "weak",
+   "row": "Manila conference 1969 (bottom line 1, finding 5, bottom line 3) | 1969 | 236, 256, 283 | the 1969 Manila PAO conference; Oleksiw 1969",
+   "sentence": "What this request cannot get from FRUS.** Three parts of the question are not in the printed series."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"soft power\" across all 553 volumes: none (bottom line 3) | 553; no document | 5–6, 20–21 | [M0]; \"soft power\" 0 corpus-wide, 0 in scope [M1]",
+   "sentence": "First, the term itself: a search for the exact phrase \"soft power\" across all 553 volumes found no document, while in the same pass the control phrase \"Department of State\" was found in every one of the 81 volumes searched and a deliberately impossible test word was found in none; no archive holds the term either, since it postdates the period, and the question has to be asked in the period's own words."
+  },
+  {
+   "text": "81",
+   "values": [
+    "81"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "control \"Department of State\" in every one of 81 volumes (bottom line 3) | 81 of 81 | 70 | 14,755 documents, 81 of 81 volumes [M7]",
+   "sentence": "First, the term itself: a search for the exact phrase \"soft power\" across all 553 volumes found no document, while in the same pass the control phrase \"Department of State\" was found in every one of the 81 volumes searched and a deliberately impossible test word was found in none; no archive holds the term either, since it postdates the period, and the question has to be asked in the period's own words."
+  },
+  {
+   "text": "sixty",
+   "values": [
+    "60"
+   ],
+   "next": "page",
+   "kind": "word",
+   "class": "weak",
+   "row": "Manila report sixty pages (bottom line 3) | sixty | 283 | the 60-page Manila 1969 report",
+   "sentence": "This was established by reading rather than by a count: the sixty-page report of the Manila conference is not printed, and the reassessments from the East Asian posts survive only as abstracts, the editors noting that the cables themselves were not found attached."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 identifier 622 (bottom line 2, 3) | 622 | 158 | recordGroups['306']: NAID 622",
+   "sentence": "Their shelf is the Information Agency's records (Record Group 306, identifier 622), which the bundled finding aids can name only to the accession, not to one series."
+  },
+  {
+   "text": "622",
+   "values": [
+    "622"
+   ],
+   "next": "which",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "RG 306 identifier 622 (bottom line 2, 3) | 622 | 158 | recordGroups['306']: NAID 622",
+   "sentence": "Their shelf is the Information Agency's records (Record Group 306, identifier 622), which the bundled finding aids can name only to the accession, not to one series."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "serie",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"soft power\" coined 1990 (bottom line 1) | 1990 | 23 | Joseph Nye's (1990)",
+   "sentence": "Their shelf is the Information Agency's records (Record Group 306, identifier 622), which the bundled finding aids can name only to the accession, not to one series."
+  },
+  {
+   "text": "208",
+   "values": [
+    "208"
+   ],
+   "next": "department",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "circular telegram 208, 1952 (bottom line 3) | one document; eleven | 280–282 | 1 document, d116; relaxed -> 11",
+   "sentence": "Third, the full round of embassy reports on how well the information program was working: a search for the exact phrase \"circular telegram 208\", the Department's request to the posts, found one document, Saigon's reply, and a looser search for \"circular telegram\" together with \"208\" found eleven, of which Saigon's is still the only reply printed."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"soft power\" coined 1990 (bottom line 1) | 1990 | 23 | Joseph Nye's (1990)",
+   "sentence": "Third, the full round of embassy reports on how well the information program was working: a search for the exact phrase \"circular telegram 208\", the Department's request to the posts, found one document, Saigon's reply, and a looser search for \"circular telegram\" together with \"208\" found eleven, of which Saigon's is still the only reply printed."
+  },
+  {
+   "text": "208",
+   "values": [
+    "208"
+   ],
+   "next": "found",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "circular telegram 208, 1952 (bottom line 3) | one document; eleven | 280–282 | 1 document, d116; relaxed -> 11",
+   "sentence": "Third, the full round of embassy reports on how well the information program was working: a search for the exact phrase \"circular telegram 208\", the Department's request to the posts, found one document, Saigon's reply, and a looser search for \"circular telegram\" together with \"208\" found eleven, of which Saigon's is still the only reply printed."
+  },
+  {
+   "text": "eleven",
+   "values": [
+    "11"
+   ],
+   "next": "which",
+   "kind": "word",
+   "class": "weak",
+   "row": "came-from: State Department files (bottom line 2) | more than half | 133, 309 | RG 59 731 + National Archives RG 59 57 = 788 of 1,401 [M11]",
+   "sentence": "Third, the full round of embassy reports on how well the information program was working: a search for the exact phrase \"circular telegram 208\", the Department's request to the posts, found one document, Saigon's reply, and a looser search for \"circular telegram\" together with \"208\" found eleven, of which Saigon's is still the only reply printed."
+  },
+  {
+   "text": "511.00",
+   "values": [
+    "511.00"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "decimal file 511.00, 1950–1954 (bottom line 3, Read next) | 511.00; 1950–1954 | 282 | RG 59 decimal file 511.00 (1950–54)",
+   "sentence": "The rest are in the State Department's decimal file 511.00 for (Record Group 59). **Scope.** The search covered 81 volumes holding about 35,000 documents: 72 volumes on the Far East, China, Japan, Korea, Indochina and Vietnam, Southeast Asia, Laos and Indonesia from to , and 9 worldwide volumes on information policy and public diplomacy, in which a document counted only if it also named an Asian or Pacific place."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 63 D 351, 66 D 95 -> RG 59, A1 1586E, NAID 2839192, 1947–1979, (b)(1), College Park | as given | 150 | resolution table",
+   "sentence": "The rest are in the State Department's decimal file 511.00 for (Record Group 59). **Scope.** The search covered 81 volumes holding about 35,000 documents: 72 volumes on the Far East, China, Japan, Korea, Indochina and Vietnam, Southeast Asia, Laos and Indonesia from to , and 9 worldwide volumes on information policy and public diplomacy, in which a document counted only if it also named an Asian or Pacific place."
+  },
+  {
+   "text": "81",
+   "values": [
+    "81"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "control \"Department of State\" in every one of 81 volumes (bottom line 3) | 81 of 81 | 70 | 14,755 documents, 81 of 81 volumes [M7]",
+   "sentence": "The rest are in the State Department's decimal file 511.00 for (Record Group 59). **Scope.** The search covered 81 volumes holding about 35,000 documents: 72 volumes on the Far East, China, Japan, Korea, Indochina and Vietnam, Southeast Asia, Laos and Indonesia from to , and 9 worldwide volumes on information policy and public diplomacy, in which a document counted only if it also named an Asian or Pacific place."
+  },
+  {
+   "text": "35,000",
+   "values": [
+    "35000"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "scope volumes / documents (Scope) | 81 volumes; about 35,000 | 41 | 81 | 35,214 [M2]",
+   "sentence": "The rest are in the State Department's decimal file 511.00 for (Record Group 59). **Scope.** The search covered 81 volumes holding about 35,000 documents: 72 volumes on the Far East, China, Japan, Korea, Indochina and Vietnam, Southeast Asia, Laos and Indonesia from to , and 9 worldwide volumes on information policy and public diplomacy, in which a document counted only if it also named an Asian or Pacific place."
+  },
+  {
+   "text": "72",
+   "values": [
+    "72"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "regional volumes 1946–1980 (Scope, decisions) | 72; 1946 to 1980 | 31–33 | 72 regional volumes, frus1946v08 to frus1977-80v22",
+   "sentence": "The rest are in the State Department's decimal file 511.00 for (Record Group 59). **Scope.** The search covered 81 volumes holding about 35,000 documents: 72 volumes on the Far East, China, Japan, Korea, Indochina and Vietnam, Southeast Asia, Laos and Indonesia from to , and 9 worldwide volumes on information policy and public diplomacy, in which a document counted only if it also named an Asian or Pacific place."
+  },
+  {
+   "text": "9",
+   "values": [
+    "9"
+   ],
+   "next": "worldwide",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "accessions split \"3 to 18 series\" | 3 to 18 | 156, 313 | 18, 9, 3 and 15 series",
+   "sentence": "The rest are in the State Department's decimal file 511.00 for (Record Group 59). **Scope.** The search covered 81 volumes holding about 35,000 documents: 72 volumes on the Far East, China, Japan, Korea, Indochina and Vietnam, Southeast Asia, Laos and Indonesia from to , and 9 worldwide volumes on information policy and public diplomacy, in which a document counted only if it also named an Asian or Pacific place."
+  },
+  {
+   "text": "170",
+   "values": [
+    "170"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "USI documents removed (Scope, methods) | about 170 | 61, 297 | dropped 172, of which 166 contain bare USI [M5]",
+   "sentence": "Excluded were the wartime volumes of , the volumes, the Public Diplomacy volume on the First World War, the volumes' editorial notes and front matter, and about 170 documents in which the abbreviation \"USI\" stood for the United States of Indonesia rather than the information program. ## Decisions this needs from you **What counts as \"soft power\".** I counted the information program's own vocabulary (the Information Agency and its posts, \"information program\", \"psychological strategy\", \"psychological warfare\", \"cultural exchange\"); widening it to economic aid, military display or \"prestige\" would bring in far more documents but weaker ones, and the \"prestige\" search could not be checked reliably, while keeping it narrow centres the answer on what the agency and its overseers said about persuasion. **Whether wartime psychological warfare is \"messaging\".** I included it, so Vietnam's propaganda war weighs heavily in the ; the phrase \"psychological warfare\" alone matches about 320 documents in the scope, and excluding it would leave a more purely civilian, cultural account. **Which years.** I took to ; adding the volumes, which hold matching documents (two of them were ranked when the scope was chosen), would carry the story into the Reagan years, and adding would bring in the wartime information agencies. **Which region.** I took the regional volumes whole and, from the worldwide volumes, only documents naming an East Asian or Pacific place, including Australia;"
+  },
+  {
+   "text": "320",
+   "values": [
+    "320"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"psychological warfare\" matches (decisions) | about 320 | 85 | 321 hits",
+   "sentence": "Excluded were the wartime volumes of , the volumes, the Public Diplomacy volume on the First World War, the volumes' editorial notes and front matter, and about 170 documents in which the abbreviation \"USI\" stood for the United States of Indonesia rather than the information program. ## Decisions this needs from you **What counts as \"soft power\".** I counted the information program's own vocabulary (the Information Agency and its posts, \"information program\", \"psychological strategy\", \"psychological warfare\", \"cultural exchange\"); widening it to economic aid, military display or \"prestige\" would bring in far more documents but weaker ones, and the \"prestige\" search could not be checked reliably, while keeping it narrow centres the answer on what the agency and its overseers said about persuasion. **Whether wartime psychological warfare is \"messaging\".** I included it, so Vietnam's propaganda war weighs heavily in the ; the phrase \"psychological warfare\" alone matches about 320 documents in the scope, and excluding it would leave a more purely civilian, cultural account. **Which years.** I took to ; adding the volumes, which hold matching documents (two of them were ranked when the scope was chosen), would carry the story into the Reagan years, and adding would bring in the wartime information agencies. **Which region.** I took the regional volumes whole and, from the worldwide volumes, only documents naming an East Asian or Pacific place, including Australia;"
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "them",
+   "kind": "word",
+   "class": "weak",
+   "row": "documents on the information program (bottom line 1, 2) | about 1,400 | 59–62 | C = 1,401 documents [M5]",
+   "sentence": "Excluded were the wartime volumes of , the volumes, the Public Diplomacy volume on the First World War, the volumes' editorial notes and front matter, and about 170 documents in which the abbreviation \"USI\" stood for the United States of Indonesia rather than the information program. ## Decisions this needs from you **What counts as \"soft power\".** I counted the information program's own vocabulary (the Information Agency and its posts, \"information program\", \"psychological strategy\", \"psychological warfare\", \"cultural exchange\"); widening it to economic aid, military display or \"prestige\" would bring in far more documents but weaker ones, and the \"prestige\" search could not be checked reliably, while keeping it narrow centres the answer on what the agency and its overseers said about persuasion. **Whether wartime psychological warfare is \"messaging\".** I included it, so Vietnam's propaganda war weighs heavily in the ; the phrase \"psychological warfare\" alone matches about 320 documents in the scope, and excluding it would leave a more purely civilian, cultural account. **Which years.** I took to ; adding the volumes, which hold matching documents (two of them were ranked when the scope was chosen), would carry the story into the Reagan years, and adding would bring in the wartime information agencies. **Which region.** I took the regional volumes whole and, from the worldwide volumes, only documents naming an East Asian or Pacific place, including Australia;"
+  },
+  {
+   "text": "14",
+   "values": [
+    "14"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Oriental mind\" in 14 scope documents (finding 2) | 14 | 95, 100, 312 | 14 of 14 [M8]; 14 of 25 [M9]",
+   "sentence": "\"the Oriental mind\" The beliefs behind the strategies were often stated in a stock phrase, \"the Oriental mind\", which appears in 14 documents of the scope."
+  },
+  {
+   "text": "half",
+   "values": [
+    "0.5"
+   ],
+   "next": "use",
+   "kind": "word",
+   "class": "weak",
+   "row": "came-from: State Department files (bottom line 2) | more than half | 133, 309 | RG 59 731 + National Archives RG 59 57 = 788 of 1,401 [M11]",
+   "sentence": "That is more than half of its uses in the whole series, though the scope holds only about one document in nine, so the phrase belongs to this region's reporting and not to the series at large."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"soft power\" coined 1990 (bottom line 1) | 1990 | 23 | Joseph Nye's (1990)",
+   "sentence": "That is more than half of its uses in the whole series, though the scope holds only about one document in nine, so the phrase belongs to this region's reporting and not to the series at large."
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "so",
+   "kind": "word",
+   "class": "weak",
+   "row": "accessions split \"3 to 18 series\" | 3 to 18 | 156, 313 | 18, 9, 3 and 15 series",
+   "sentence": "That is more than half of its uses in the whole series, though the scope holds only about one document in nine, so the phrase belongs to this region's reporting and not to the series at large."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"soft power\" coined 1990 (bottom line 1) | 1990 | 23 | Joseph Nye's (1990)",
+   "sentence": "Ambassador Durbrow reported Diem's conviction that \"Not being Asians, Americans do not understand the Oriental mind and point of view\" ( , and in Martin recorded the view of Diem and Thuan, as McGarr presented it, that American concepts, policies and capabilities did not always fit Asian ways of thinking ( , Vietnam: information as a weapon of the war, and a regional liability Attention to the information program in the regional volumes rose from about one document in sixty in the to about one in thirty in the and about one in twenty in the , then fell back to about one in thirty in the (these rates count the editors' footnotes with the documents)."
+  },
+  {
+   "text": "sixty",
+   "values": [
+    "60"
+   ],
+   "next": "to",
+   "kind": "word",
+   "class": "weak",
+   "row": "Manila report sixty pages (bottom line 3) | sixty | 283 | the 60-page Manila 1969 report",
+   "sentence": "Ambassador Durbrow reported Diem's conviction that \"Not being Asians, Americans do not understand the Oriental mind and point of view\" ( , and in Martin recorded the view of Diem and Thuan, as McGarr presented it, that American concepts, policies and capabilities did not always fit Asian ways of thinking ( , Vietnam: information as a weapon of the war, and a regional liability Attention to the information program in the regional volumes rose from about one document in sixty in the to about one in thirty in the and about one in twenty in the , then fell back to about one in thirty in the (these rates count the editors' footnotes with the documents)."
+  },
+  {
+   "text": "about one in thirty",
+   "values": [
+    "1",
+    "30"
+   ],
+   "next": "one",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "density 1950s about one in thirty | one in thirty | 118, 299 | 382 of 12,112 = 31.5 per 1,000",
+   "sentence": "Ambassador Durbrow reported Diem's conviction that \"Not being Asians, Americans do not understand the Oriental mind and point of view\" ( , and in Martin recorded the view of Diem and Thuan, as McGarr presented it, that American concepts, policies and capabilities did not always fit Asian ways of thinking ( , Vietnam: information as a weapon of the war, and a regional liability Attention to the information program in the regional volumes rose from about one document in sixty in the to about one in thirty in the and about one in twenty in the , then fell back to about one in thirty in the (these rates count the editors' footnotes with the documents)."
+  },
+  {
+   "text": "about one in twenty",
+   "values": [
+    "1",
+    "20"
+   ],
+   "next": "then",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "\"soft power\" across all 553 volumes: none (bottom line 3) | 553; no document | 5–6, 20–21 | [M0]; \"soft power\" 0 corpus-wide, 0 in scope [M1]",
+   "sentence": "Ambassador Durbrow reported Diem's conviction that \"Not being Asians, Americans do not understand the Oriental mind and point of view\" ( , and in Martin recorded the view of Diem and Thuan, as McGarr presented it, that American concepts, policies and capabilities did not always fit Asian ways of thinking ( , Vietnam: information as a weapon of the war, and a regional liability Attention to the information program in the regional volumes rose from about one document in sixty in the to about one in thirty in the and about one in twenty in the , then fell back to about one in thirty in the (these rates count the editors' footnotes with the documents)."
+  },
+  {
+   "text": "about one in thirty",
+   "values": [
+    "1",
+    "30"
+   ],
+   "next": "these",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "density 1950s about one in thirty | one in thirty | 118, 299 | 382 of 12,112 = 31.5 per 1,000",
+   "sentence": "Ambassador Durbrow reported Diem's conviction that \"Not being Asians, Americans do not understand the Oriental mind and point of view\" ( , and in Martin recorded the view of Diem and Thuan, as McGarr presented it, that American concepts, policies and capabilities did not always fit Asian ways of thinking ( , Vietnam: information as a weapon of the war, and a regional liability Attention to the information program in the regional volumes rose from about one document in sixty in the to about one in thirty in the and about one in twenty in the , then fell back to about one in thirty in the (these rates count the editors' footnotes with the documents)."
+  },
+  {
+   "text": "twenty",
+   "values": [
+    "20"
+   ],
+   "next": "year",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"soft power\" across all 553 volumes: none (bottom line 3) | 553; no document | 5–6, 20–21 | [M0]; \"soft power\" 0 corpus-wide, 0 in scope [M1]",
+   "sentence": "\"Such simplistic attitudes are possible in Japan because of the ostrich-like pacifism of the Japanese during the past twenty years\" ( , The area-wide model: elites, strength, and a low profile Across the area the strategy was to reach elites and to project strength."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "caveat",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"One caveat: US visibility should be low.\" (finding 5) | 212 | Q24, frus1917-72PubDipv08/d31",
+   "sentence": "\"One caveat:"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "another",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"soft power\" coined 1990 (bottom line 1) | 1990 | 23 | Joseph Nye's (1990)",
+   "sentence": "Planners saw that \"The President’s projected visit to Peking presents us with opportunities to build what is now a temporary psychological asset into a long-range one\" ( , and another document weighed the overseas Chinese as an audience for the agency's posts ( , After the fall of Saigon the posts reassessed; in the editors' abstracts of their cables, the post in Singapore proposed \"We should focus our programming on the benefits accruing from the end of our involvement; hoping that we have all learned the lesson that America is not omnipotent and that other nations cannot rely on Uncle Sam to do what they should be doing themselves\", and the post in Kuala Lumpur found that \"Confidence in US economic power, technological and scientific capability, and our leadership role in seeking solutions for world economic and social problems remains\" (Foreign Relations of the United States, , , , Organization and Management of Foreign Policy;"
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "published",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"soft power\" across all 553 volumes: none (bottom line 3) | 553; no document | 5–6, 20–21 | [M0]; \"soft power\" 0 corpus-wide, 0 in scope [M1]",
+   "sentence": "Public Diplomacy, , By the Carter years the agency was turning to Japan as a partner in communication among the industrial democracies, insisting that \"We are dealing here with gut issues rather than some of the frothier aspects of cultural exchange\" ( , ## How this was done The research searched a full-text index of all 553 published FRUS volumes, read-only, with the editors' notes and front matter set aside."
+  },
+  {
+   "text": "81",
+   "values": [
+    "81"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "control \"Department of State\" in every one of 81 volumes (bottom line 3) | 81 of 81 | 70 | 14,755 documents, 81 of 81 volumes [M7]",
+   "sentence": "Because \"soft power\" is anachronistic, the scope was built from the period's own words: 81 volumes were chosen by their printed titles and by how many matching documents each held, and a document was included when it used one of the information program's terms (in the worldwide volumes, only if it also named an Asian or Pacific place)."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "information",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"soft power\" coined 1990 (bottom line 1) | 1990 | 23 | Joseph Nye's (1990)",
+   "sentence": "Because \"soft power\" is anachronistic, the scope was built from the period's own words: 81 volumes were chosen by their printed titles and by how many matching documents each held, and a document was included when it used one of the information program's terms (in the worldwide volumes, only if it also named an Asian or Pacific place)."
+  },
+  {
+   "text": "170",
+   "values": [
+    "170"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "USI documents removed (Scope, methods) | about 170 | 61, 297 | dropped 172, of which 166 contain bare USI [M5]",
+   "sentence": "Because the index matches different forms of a word as the same word, samples of each phrase's matches were checked against the exact printed wording; that check found that \"USI\" often meant the United States of Indonesia, and about 170 such documents were removed, and it ruled out two phrase families (\"prestige\" and \"lose face\") whose counts could not be trusted."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "phrase",
+   "kind": "word",
+   "class": "weak",
+   "row": "documents on the information program (bottom line 1, 2) | about 1,400 | 59–62 | C = 1,401 documents [M5]",
+   "sentence": "Because the index matches different forms of a word as the same word, samples of each phrase's matches were checked against the exact printed wording; that check found that \"USI\" often meant the United States of Indonesia, and about 170 such documents were removed, and it ruled out two phrase families (\"prestige\" and \"lose face\") whose counts could not be trusted."
+  },
+  {
+   "text": "121",
+   "values": [
+    "121"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "retrieved whole / read at length (bottom line 1, methods) | 121; about 35 | 175–177 | 121 documents retrieved whole; about 35 read at length",
+   "sentence": "Saigon's report was found that way, as a close neighbour of the Manila summary, and then read, and it also met the inclusion rule. 121 documents were retrieved whole; about 35 were read at length and the rest at the relevant passages."
+  },
+  {
+   "text": "35",
+   "values": [
+    "35"
+   ],
+   "next": "were",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "retrieved whole / read at length (bottom line 1, methods) | 121; about 35 | 175–177 | 121 documents retrieved whole; about 35 read at length",
+   "sentence": "Saigon's report was found that way, as a close neighbour of the Manila summary, and then read, and it also met the inclusion rule. 121 documents were retrieved whole; about 35 were read at length and the rest at the relevant passages."
+  },
+  {
+   "text": "23",
+   "values": [
+    "23"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"soft power\" coined 1990 (bottom line 1) | 1990 | 23 | Joseph Nye's (1990)",
+   "sentence": "The 23 documents and the 29 passages the collection marks were each checked against the document's stored text, and every quotation was confirmed to be the document's own words rather than an editor's paraphrase."
+  },
+  {
+   "text": "29",
+   "values": [
+    "29"
+   ],
+   "next": "passage",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "29 passages checked (methods) | 29 | 185, 318, 321 | 29 of 29 [M13], 30 of 30 with Q30; collection 29 excerpts",
+   "sentence": "The 23 documents and the 29 passages the collection marks were each checked against the document's stored text, and every quotation was confirmed to be the document's own words rather than an editor's paraphrase."
+  },
+  {
+   "text": "23",
+   "values": [
+    "23"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"soft power\" coined 1990 (bottom line 1) | 1990 | 23 | Joseph Nye's (1990)",
+   "sentence": "Before finishing I checked that every quotation in this overview appears word for word in a passage the memo verified and the collection holds, and that every document cited here is in the collection. ## Read next The collection \"Information programs and the American image in East Asia, \" holds the 23 documents of this research, grouped under the findings, with the quoted passages marked; all but one (a Vietnam document) are cited above."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "vietnam",
+   "kind": "word",
+   "class": "traced",
+   "row": "collection: one document uncited, 1964 Vietnam (Read next) | one | 221, collection | frus1964-68v01/d197 (Johnson Library NSF; Q15 memo-only)",
+   "sentence": "Before finishing I checked that every quotation in this overview appears word for word in a passage the memo verified and the collection holds, and that every document cited here is in the collection. ## Read next The collection \"Information programs and the American image in East Asia, \" holds the 23 documents of this research, grouped under the findings, with the quoted passages marked; all but one (a Vietnam document) are cited above."
+  },
+  {
+   "text": "511.00",
+   "values": [
+    "511.00"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "decimal file 511.00, 1950–1954 (bottom line 3, Read next) | 511.00; 1950–1954 | 282 | RG 59 decimal file 511.00 (1950–54)",
+   "sentence": "What the historian could add would open what FRUS leaves out: the other embassies' replies on program effectiveness, in the State Department's decimal file 511.00, would show whether Saigon's mix of confidence and doubt was typical; the Information Agency's opinion research, country plans, the full Manila report of and the post cables, in Record Group 306, would let the agency's own measures of effectiveness be set beside the policymakers' impressions; the volumes for Korea, the Philippines, Indonesia, Australia and New Zealand, read on their own, would test whether the elite model and the \"Oriental mind\" held country by country; and the volumes would carry the question into the Reagan years."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 identifier 622 (bottom line 2, 3) | 622 | 158 | recordGroups['306']: NAID 622",
+   "sentence": "What the historian could add would open what FRUS leaves out: the other embassies' replies on program effectiveness, in the State Department's decimal file 511.00, would show whether Saigon's mix of confidence and doubt was typical; the Information Agency's opinion research, country plans, the full Manila report of and the post cables, in Record Group 306, would let the agency's own measures of effectiveness be set beside the policymakers' impressions; the volumes for Korea, the Philippines, Indonesia, Australia and New Zealand, read on their own, would test whether the elite model and the \"Oriental mind\" held country by country; and the volumes would carry the question into the Reagan years."
+  }
+ ]
+}

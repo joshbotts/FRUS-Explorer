@@ -1,0 +1,764 @@
+{
+ "run": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w8",
+ "traceSource": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w8/trace.md",
+ "traceTableLine": 7,
+ "traceRows": 71,
+ "mentions": 68,
+ "counts": {
+  "traced": 51,
+  "weak": 17,
+  "untraced": 0
+ },
+ "list": [
+  {
+   "text": "Twenty-six",
+   "values": [
+    "26"
+   ],
+   "next": "printed",
+   "kind": "word",
+   "class": "traced",
+   "row": "Twenty-six printed documents / kept twenty-six | M-8 line 257 (documents 26); trace table line 277",
+   "sentence": "What beliefs about the regional audience contributed to those strategies? ## The bottom line What FRUS answers directly.** Twenty-six printed documents, dated to , show State Department and Information Agency officials judging America's appeal in East Asia and the Pacific."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "channel",
+   "kind": "word",
+   "class": "weak",
+   "row": "1950 to 1977 (date span; collection title) | M-2 line 45 (1950-03-28 to 1977-08-01); trace table line 277",
+   "sentence": "Where FRUS points for the rest.** The editors name archives through two channels, and the two are kept apart here."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "are",
+   "kind": "word",
+   "class": "weak",
+   "row": "1950 to 1977 (date span; collection title) | M-2 line 45 (1950-03-28 to 1977-08-01); trace table line 277",
+   "sentence": "Where FRUS points for the rest.** The editors name archives through two channels, and the two are kept apart here."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "Record Group 306, U.S."
+  },
+  {
+   "text": "42",
+   "values": [
+    "42"
+   ],
+   "next": "director",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "Information Agency, Entry A1–42, Director's Subject Files, ."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "Record Group 306, Entry UD WW 257."
+  },
+  {
+   "text": "WW 257",
+   "values": [
+    "ww257"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "Record Group 306, Entry UD WW 257."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "Record Group 306, Entry UD WW 193."
+  },
+  {
+   "text": "WW 193",
+   "values": [
+    "ww193"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "Record Group 306, Entry UD WW 193."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "Record Group 306, Entry P–207."
+  },
+  {
+   "text": "207",
+   "values": [
+    "207"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "Record Group 306, Entry P–207."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "Record Group 306, Entry P–104."
+  },
+  {
+   "text": "104",
+   "values": [
+    "104"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "Record Group 306, Entry P–104."
+  },
+  {
+   "text": "7",
+   "values": [
+    "7"
+   ],
+   "next": "which",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "two channels | M-7 lines 161, 182 (came-from and pointed-at, never summed); trace table line 280",
+   "sentence": "Entry UD–UP 7, which the edition prints as \"RG 305\"; its accession number points to Record Group 306."
+  },
+  {
+   "text": "RG 305",
+   "values": [
+    "rg305"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Entry UD–UP 7, printed as \"RG 305\"; accession number points to 306 | M-7 line 175; trace table line 280",
+   "sentence": "Entry UD–UP 7, which the edition prints as \"RG 305\"; its accession number points to Record Group 306."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "Entry UD–UP 7, which the edition prints as \"RG 305\"; its accession number points to Record Group 306."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59 decimal files 511.90 (1950), 511.51G (1952), 790.5 (1953), 792.5 (1953), 611.98 (1962), with glosses | M-7 lines 176, 209-215; trace table line 281",
+   "sentence": "Record Group 59, Department of State central files, decimal file 511.90 ( ): informational and cultural relations of the United States with Asia."
+  },
+  {
+   "text": "511.90",
+   "values": [
+    "511.90"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59 decimal files 511.90 (1950), 511.51G (1952), 790.5 (1953), 792.5 (1953), 611.98 (1962), with glosses | M-7 lines 176, 209-215; trace table line 281",
+   "sentence": "Record Group 59, Department of State central files, decimal file 511.90 ( ): informational and cultural relations of the United States with Asia."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59 decimal files 511.90 (1950), 511.51G (1952), 790.5 (1953), 792.5 (1953), 611.98 (1962), with glosses | M-7 lines 176, 209-215; trace table line 281",
+   "sentence": "Record Group 59, decimal file 511.51G ( ): informational and cultural relations of the United States with Indochina."
+  },
+  {
+   "text": "511",
+   "values": [
+    "511"
+   ],
+   "next": "g",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Record Group 59 decimal files 511.90 (1950), 511.51G (1952), 790.5 (1953), 792.5 (1953), 611.98 (1962), with glosses | M-7 lines 176, 209-215; trace table line 281",
+   "sentence": "Record Group 59, decimal file 511.51G ( ): informational and cultural relations of the United States with Indochina."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59 decimal files 511.90 (1950), 511.51G (1952), 790.5 (1953), 792.5 (1953), 611.98 (1962), with glosses | M-7 lines 176, 209-215; trace table line 281",
+   "sentence": "Record Group 59, decimal file 790.5 ( ): internal political and national defense affairs of Asia; the subdivision itself carries no label."
+  },
+  {
+   "text": "790.5",
+   "values": [
+    "790.5"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59 decimal files 511.90 (1950), 511.51G (1952), 790.5 (1953), 792.5 (1953), 611.98 (1962), with glosses | M-7 lines 176, 209-215; trace table line 281",
+   "sentence": "Record Group 59, decimal file 790.5 ( ): internal political and national defense affairs of Asia; the subdivision itself carries no label."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59 decimal files 511.90 (1950), 511.51G (1952), 790.5 (1953), 792.5 (1953), 611.98 (1962), with glosses | M-7 lines 176, 209-215; trace table line 281",
+   "sentence": "Record Group 59, decimal file 792.5 ( ): the same class, for Siam."
+  },
+  {
+   "text": "792.5",
+   "values": [
+    "792.5"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59 decimal files 511.90 (1950), 511.51G (1952), 790.5 (1953), 792.5 (1953), 611.98 (1962), with glosses | M-7 lines 176, 209-215; trace table line 281",
+   "sentence": "Record Group 59, decimal file 792.5 ( ): the same class, for Siam."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59 decimal files 511.90 (1950), 511.51G (1952), 790.5 (1953), 792.5 (1953), 611.98 (1962), with glosses | M-7 lines 176, 209-215; trace table line 281",
+   "sentence": "Record Group 59, decimal file 611.98 ( ): political relations of the United States with Java, that is, Indonesia."
+  },
+  {
+   "text": "611.98",
+   "values": [
+    "611.98"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59 decimal files 511.90 (1950), 511.51G (1952), 790.5 (1953), 792.5 (1953), 611.98 (1962), with glosses | M-7 lines 176, 209-215; trace table line 281",
+   "sentence": "Record Group 59, decimal file 611.98 ( ): political relations of the United States with Java, that is, Indonesia."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59 decimal files 511.90 (1950), 511.51G (1952), 790.5 (1953), 792.5 (1953), 611.98 (1962), with glosses | M-7 lines 176, 209-215; trace table line 281",
+   "sentence": "Record Group 59, Central Foreign Policy File."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59 decimal files 511.90 (1950), 511.51G (1952), 790.5 (1953), 792.5 (1953), 611.98 (1962), with glosses | M-7 lines 176, 209-215; trace table line 281",
+   "sentence": "Record Group 59, Lot 61 D 385, Operations Coordinating Board files."
+  },
+  {
+   "text": "61 D 385",
+   "values": [
+    "61d385"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 61 D 385, Operations Coordinating Board files, no identifier | M-7 lines 177, 202; trace table line 282",
+   "sentence": "Record Group 59, Lot 61 D 385, Operations Coordinating Board files."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59 decimal files 511.90 (1950), 511.51G (1952), 790.5 (1953), 792.5 (1953), 611.98 (1962), with glosses | M-7 lines 176, 209-215; trace table line 281",
+   "sentence": "Record Group 59, Lot 58 D 726, Subject Files of the Office of Southeast Asian Affairs (Office of the Officer in Charge for Malaya Affairs), entry UD 53, , National Archives identifier 2544398, five linear inches; access \"Restricted - Possibly\"."
+  },
+  {
+   "text": "58 D 726",
+   "values": [
+    "58d726"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 58 D 726, entry UD 53, 1955–1956, identifier 2544398, five linear inches, \"Restricted - Possibly\" | M-7 lines 202-208; trace table line 283",
+   "sentence": "Record Group 59, Lot 58 D 726, Subject Files of the Office of Southeast Asian Affairs (Office of the Officer in Charge for Malaya Affairs), entry UD 53, , National Archives identifier 2544398, five linear inches; access \"Restricted - Possibly\"."
+  },
+  {
+   "text": "UD 53",
+   "values": [
+    "ud53"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 58 D 726, entry UD 53, 1955–1956, identifier 2544398, five linear inches, \"Restricted - Possibly\" | M-7 lines 202-208; trace table line 283",
+   "sentence": "Record Group 59, Lot 58 D 726, Subject Files of the Office of Southeast Asian Affairs (Office of the Officer in Charge for Malaya Affairs), entry UD 53, , National Archives identifier 2544398, five linear inches; access \"Restricted - Possibly\"."
+  },
+  {
+   "text": "2544398",
+   "values": [
+    "2544398"
+   ],
+   "next": "five",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Lot 58 D 726, entry UD 53, 1955–1956, identifier 2544398, five linear inches, \"Restricted - Possibly\" | M-7 lines 202-208; trace table line 283",
+   "sentence": "Record Group 59, Lot 58 D 726, Subject Files of the Office of Southeast Asian Affairs (Office of the Officer in Charge for Malaya Affairs), entry UD 53, , National Archives identifier 2544398, five linear inches; access \"Restricted - Possibly\"."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "linear",
+   "kind": "word",
+   "class": "traced",
+   "row": "Lot 58 D 726, entry UD 53, 1955–1956, identifier 2544398, five linear inches, \"Restricted - Possibly\" | M-7 lines 202-208; trace table line 283",
+   "sentence": "Record Group 59, Lot 58 D 726, Subject Files of the Office of Southeast Asian Affairs (Office of the Officer in Charge for Malaya Affairs), entry UD 53, , National Archives identifier 2544398, five linear inches; access \"Restricted - Possibly\"."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59 decimal files 511.90 (1950), 511.51G (1952), 790.5 (1953), 792.5 (1953), 611.98 (1962), with glosses | M-7 lines 176, 209-215; trace table line 281",
+   "sentence": "Record Group 59, Lot 61 D 385, Operations Coordinating Board files, also a source above; no identifier in the app's indexes."
+  },
+  {
+   "text": "61 D 385",
+   "values": [
+    "61d385"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 61 D 385, Operations Coordinating Board files, no identifier | M-7 lines 177, 202; trace table line 282",
+   "sentence": "Record Group 59, Lot 61 D 385, Operations Coordinating Board files, also a source above; no identifier in the app's indexes."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "among",
+   "kind": "word",
+   "class": "weak",
+   "row": "Lot 58 D 726, entry UD 53, 1955–1956, identifier 2544398, five linear inches, \"Restricted - Possibly\" | M-7 lines 202-208; trace table line 283",
+   "sentence": "These footnote citations are only five among the collection's documents, and this channel records only lot, library and decimal-file citations."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "citation",
+   "kind": "word",
+   "class": "traced",
+   "row": "One more citation, in the 1952 Saigon assessment, not read | M-7 line 192",
+   "sentence": "One more citation, in the Saigon assessment, I did not read."
+  },
+  {
+   "text": "21",
+   "values": [
+    "21"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "21 volumes (twice) | M-5 lines 131-133; trace table line 285",
+   "sentence": "I searched the full text of 21 volumes, the seven information volumes and fourteen East Asia volumes, for \"soft power\" with or without a hyphen, and found it in none."
+  },
+  {
+   "text": "seven",
+   "values": [
+    "7"
+   ],
+   "next": "information",
+   "kind": "word",
+   "class": "traced",
+   "row": "seven information volumes (bottom line, scope, method) | M-2 line 19; M-5 line 132",
+   "sentence": "I searched the full text of 21 volumes, the seven information volumes and fourteen East Asia volumes, for \"soft power\" with or without a hyphen, and found it in none."
+  },
+  {
+   "text": "fourteen",
+   "values": [
+    "14"
+   ],
+   "next": "east",
+   "kind": "word",
+   "class": "traced",
+   "row": "fourteen East Asia volumes | M-5 line 133; trace table line 289",
+   "sentence": "I searched the full text of 21 volumes, the seven information volumes and fourteen East Asia volumes, for \"soft power\" with or without a hyphen, and found it in none."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "The surveys' shelf is the agency's own records in Record Group 306, where the Director's Subject Files hold a folder on \"Public Opinion Research\"."
+  },
+  {
+   "text": "fourteen",
+   "values": [
+    "14"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "traced",
+   "row": "none of fourteen volumes after 1980; the title search found matching volumes up to 1980 | M-6 line 154; M-2 line 20; trace table line 287",
+   "sentence": "Finally, none of fourteen volumes after is titled for public diplomacy, information, Asia, China, Japan or Korea."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "553 volumes (scope, method) | M-1 line 13; trace table line 288",
+   "sentence": "The same title search found the matching volumes up to , so the edition stops there for this question, and I found no shelf for the later years. **Scope.** I worked in all 553 volumes of the series, drawing on the seven volumes devoted to information and public diplomacy and on the East Asia volumes up to ."
+  },
+  {
+   "text": "seven",
+   "values": [
+    "7"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "two channels | M-7 lines 161, 182 (came-from and pointed-at, never summed); trace table line 280",
+   "sentence": "The same title search found the matching volumes up to , so the edition stops there for this question, and I found no shelf for the later years. **Scope.** I worked in all 553 volumes of the series, drawing on the seven volumes devoted to information and public diplomacy and on the East Asia volumes up to ."
+  },
+  {
+   "text": "forty",
+   "values": [
+    "40"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "forty documents retrieved whole | M-3 line 51; trace table line 292",
+   "sentence": "I retrieved forty documents whole and kept twenty-six, leaving out South Asia, the Near East, press relations in Washington, negotiation at the United Nations and internal reporting procedure. ## Decisions this needs from you **What stands for \"soft power.\"** The officials never used the term, so you must choose what counts: a narrower reading (culture and exchange only) drops most of the Vietnam and Thailand material, and a wider one (aid, trade or military posture as image) needs the area volumes' general policy papers, which I did not search for this. **Whether wartime information work belongs.** Keeping counterinsurgency information work in Indochina and Thailand lets Vietnam dominate, since about three in four of the area-volume headings found came from Vietnam volumes; leaving it out keeps the account to persuasion of elites in peacetime. **What \"the region\" covers.** Leaving out South Asia and the Near East removed nine headings that the word \"Asia\" matched; taking the Pacific to include Australia and New Zealand adds little, since they appear only in one round-up, as do Korea and Burma. **The .** Accepting the set as it stands leaves those years nearly empty, which may reflect my searches and not the edition; filling them needs a further search of those volumes."
+  },
+  {
+   "text": "twenty-six",
+   "values": [
+    "26"
+   ],
+   "next": "leaving",
+   "kind": "word",
+   "class": "weak",
+   "row": "Twenty-six printed documents / kept twenty-six | M-8 line 257 (documents 26); trace table line 277",
+   "sentence": "I retrieved forty documents whole and kept twenty-six, leaving out South Asia, the Near East, press relations in Washington, negotiation at the United Nations and internal reporting procedure. ## Decisions this needs from you **What stands for \"soft power.\"** The officials never used the term, so you must choose what counts: a narrower reading (culture and exchange only) drops most of the Vietnam and Thailand material, and a wider one (aid, trade or military posture as image) needs the area volumes' general policy papers, which I did not search for this. **Whether wartime information work belongs.** Keeping counterinsurgency information work in Indochina and Thailand lets Vietnam dominate, since about three in four of the area-volume headings found came from Vietnam volumes; leaving it out keeps the account to persuasion of elites in peacetime. **What \"the region\" covers.** Leaving out South Asia and the Near East removed nine headings that the word \"Asia\" matched; taking the Pacific to include Australia and New Zealand adds little, since they appear only in one round-up, as do Korea and Burma. **The .** Accepting the set as it stands leaves those years nearly empty, which may reflect my searches and not the edition; filling them needs a further search of those volumes."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "aid",
+   "kind": "word",
+   "class": "weak",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "I retrieved forty documents whole and kept twenty-six, leaving out South Asia, the Near East, press relations in Washington, negotiation at the United Nations and internal reporting procedure. ## Decisions this needs from you **What stands for \"soft power.\"** The officials never used the term, so you must choose what counts: a narrower reading (culture and exchange only) drops most of the Vietnam and Thailand material, and a wider one (aid, trade or military posture as image) needs the area volumes' general policy papers, which I did not search for this. **Whether wartime information work belongs.** Keeping counterinsurgency information work in Indochina and Thailand lets Vietnam dominate, since about three in four of the area-volume headings found came from Vietnam volumes; leaving it out keeps the account to persuasion of elites in peacetime. **What \"the region\" covers.** Leaving out South Asia and the Near East removed nine headings that the word \"Asia\" matched; taking the Pacific to include Australia and New Zealand adds little, since they appear only in one round-up, as do Korea and Burma. **The .** Accepting the set as it stands leaves those years nearly empty, which may reflect my searches and not the edition; filling them needs a further search of those volumes."
+  },
+  {
+   "text": "about three in four",
+   "values": [
+    "3",
+    "4"
+   ],
+   "next": "area-volume",
+   "kind": "ratio",
+   "class": "traced",
+   "row": "about three in four of the area-volume headings from Vietnam volumes (Decisions, method) | M-2 line 38 (40 of 55); trace table line 290",
+   "sentence": "I retrieved forty documents whole and kept twenty-six, leaving out South Asia, the Near East, press relations in Washington, negotiation at the United Nations and internal reporting procedure. ## Decisions this needs from you **What stands for \"soft power.\"** The officials never used the term, so you must choose what counts: a narrower reading (culture and exchange only) drops most of the Vietnam and Thailand material, and a wider one (aid, trade or military posture as image) needs the area volumes' general policy papers, which I did not search for this. **Whether wartime information work belongs.** Keeping counterinsurgency information work in Indochina and Thailand lets Vietnam dominate, since about three in four of the area-volume headings found came from Vietnam volumes; leaving it out keeps the account to persuasion of elites in peacetime. **What \"the region\" covers.** Leaving out South Asia and the Near East removed nine headings that the word \"Asia\" matched; taking the Pacific to include Australia and New Zealand adds little, since they appear only in one round-up, as do Korea and Burma. **The .** Accepting the set as it stands leaves those years nearly empty, which may reflect my searches and not the edition; filling them needs a further search of those volumes."
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "heading",
+   "kind": "word",
+   "class": "traced",
+   "row": "nine headings that the word \"Asia\" matched (Decisions) | M-2 lines 33, 35; trace table line 288",
+   "sentence": "I retrieved forty documents whole and kept twenty-six, leaving out South Asia, the Near East, press relations in Washington, negotiation at the United Nations and internal reporting procedure. ## Decisions this needs from you **What stands for \"soft power.\"** The officials never used the term, so you must choose what counts: a narrower reading (culture and exchange only) drops most of the Vietnam and Thailand material, and a wider one (aid, trade or military posture as image) needs the area volumes' general policy papers, which I did not search for this. **Whether wartime information work belongs.** Keeping counterinsurgency information work in Indochina and Thailand lets Vietnam dominate, since about three in four of the area-volume headings found came from Vietnam volumes; leaving it out keeps the account to persuasion of elites in peacetime. **What \"the region\" covers.** Leaving out South Asia and the Near East removed nine headings that the word \"Asia\" matched; taking the Pacific to include Australia and New Zealand adds little, since they appear only in one round-up, as do Korea and Burma. **The .** Accepting the set as it stands leaves those years nearly empty, which may reflect my searches and not the edition; filling them needs a further search of those volumes."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "round-up",
+   "kind": "word",
+   "class": "weak",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "I retrieved forty documents whole and kept twenty-six, leaving out South Asia, the Near East, press relations in Washington, negotiation at the United Nations and internal reporting procedure. ## Decisions this needs from you **What stands for \"soft power.\"** The officials never used the term, so you must choose what counts: a narrower reading (culture and exchange only) drops most of the Vietnam and Thailand material, and a wider one (aid, trade or military posture as image) needs the area volumes' general policy papers, which I did not search for this. **Whether wartime information work belongs.** Keeping counterinsurgency information work in Indochina and Thailand lets Vietnam dominate, since about three in four of the area-volume headings found came from Vietnam volumes; leaving it out keeps the account to persuasion of elites in peacetime. **What \"the region\" covers.** Leaving out South Asia and the Near East removed nine headings that the word \"Asia\" matched; taking the Pacific to include Australia and New Zealand adds little, since they appear only in one round-up, as do Korea and Burma. **The .** Accepting the set as it stands leaves those years nearly empty, which may reflect my searches and not the edition; filling them needs a further search of those volumes."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "arm",
+   "kind": "word",
+   "class": "weak",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "Meanwhile I included a document if it assessed, planned or instructed U.S. information, cultural, psychological or public-diplomacy work aimed at East Asian or Pacific audiences, and I had read it. ## Findings ### Information as anti-communist strategy, routed through local voices In the officials treated information work as one arm of a psychological strategy against communist expansion in Southeast Asia."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "report",
+   "kind": "word",
+   "class": "weak",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "One report called a visit \"probably the most successful visit by an American, from a public image standpoint\" ."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "caveat",
+   "kind": "word",
+   "class": "traced",
+   "row": "One caveat: US visibility should be low. | M-4 Q20, line 101; trace table",
+   "sentence": "Their advice on method was short: > One caveat:"
+  },
+  {
+   "text": "thirteen",
+   "values": [
+    "13"
+   ],
+   "next": "saigon",
+   "kind": "word",
+   "class": "traced",
+   "row": "Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys (includes the number-word thirteen) | M-4 Q22, line 103; trace table",
+   "sentence": "By the surveys gave a bleak verdict on the American role in South Vietnam: > Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys ### Respect for neutrality, and where the audience pushed back Planning for Indonesia in warned that \"we should refrain from glamorous, immediate-impact actions\" ."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "request",
+   "kind": "word",
+   "class": "weak",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "One request put the balance this way: > While we do not want to appear as having gone “soft” on Chinese Communism neither do we want to appear anti-Chinese or anti-Peking."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "553 volumes (scope, method) | M-1 line 13; trace table line 288",
+   "sentence": "An embassy telegram reported the doubt that remained: > We still face deeply implanted and persistent feeling that new administration is “withdrawing” or, at least, “reducing priority” in East Asia. ## How this was done I worked in a read-only full-text copy of all 553 volumes."
+  },
+  {
+   "text": "seven",
+   "values": [
+    "7"
+   ],
+   "next": "information",
+   "kind": "word",
+   "class": "weak",
+   "row": "two channels | M-7 lines 161, 182 (came-from and pointed-at, never summed); trace table line 280",
+   "sentence": "I searched the headings of the seven information and public-diplomacy volumes for East Asian and Pacific place names; of the 42 documents found, 33 concern the region, and the nine set aside belonged to South Asia or Near East offices that the word \"Asia\" also matched."
+  },
+  {
+   "text": "42",
+   "values": [
+    "42"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "42 documents found, 33 concern the region, nine set aside | M-2 lines 32-35; trace table line 288",
+   "sentence": "I searched the headings of the seven information and public-diplomacy volumes for East Asian and Pacific place names; of the 42 documents found, 33 concern the region, and the nine set aside belonged to South Asia or Near East offices that the word \"Asia\" also matched."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "concern",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "42 documents found, 33 concern the region, nine set aside | M-2 lines 32-35; trace table line 288",
+   "sentence": "I searched the headings of the seven information and public-diplomacy volumes for East Asian and Pacific place names; of the 42 documents found, 33 concern the region, and the nine set aside belonged to South Asia or Near East offices that the word \"Asia\" also matched."
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "set",
+   "kind": "word",
+   "class": "traced",
+   "row": "42 documents found, 33 concern the region, nine set aside | M-2 lines 32-35; trace table line 288",
+   "sentence": "I searched the headings of the seven information and public-diplomacy volumes for East Asian and Pacific place names; of the 42 documents found, 33 concern the region, and the nine set aside belonged to South Asia or Near East offices that the word \"Asia\" also matched."
+  },
+  {
+   "text": "About three in four",
+   "values": [
+    "3",
+    "4"
+   ],
+   "next": "document",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "about three in four of the area-volume headings from Vietnam volumes (Decisions, method) | M-2 line 38 (40 of 55); trace table line 290",
+   "sentence": "About three in four of the documents found came from Vietnam volumes, about thirty of them from the four Vietnam volumes."
+  },
+  {
+   "text": "thirty",
+   "values": [
+    "30"
+   ],
+   "next": "them",
+   "kind": "word",
+   "class": "weak",
+   "row": "about thirty from the four 1961–1963 Vietnam volumes | M-2 line 38 (31); trace table line 291",
+   "sentence": "About three in four of the documents found came from Vietnam volumes, about thirty of them from the four Vietnam volumes."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "vietnam",
+   "kind": "word",
+   "class": "traced",
+   "row": "about three in four of the area-volume headings from Vietnam volumes (Decisions, method) | M-2 line 38 (40 of 55); trace table line 290",
+   "sentence": "About three in four of the documents found came from Vietnam volumes, about thirty of them from the four Vietnam volumes."
+  },
+  {
+   "text": "forty",
+   "values": [
+    "40"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "forty documents retrieved whole | M-3 line 51; trace table line 292",
+   "sentence": "I retrieved forty documents whole and kept twenty-six after reading."
+  },
+  {
+   "text": "twenty-six",
+   "values": [
+    "26"
+   ],
+   "next": "after",
+   "kind": "word",
+   "class": "weak",
+   "row": "Twenty-six printed documents / kept twenty-six | M-8 line 257 (documents 26); trace table line 277",
+   "sentence": "I retrieved forty documents whole and kept twenty-six after reading."
+  },
+  {
+   "text": "21",
+   "values": [
+    "21"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "21 volumes (twice) | M-5 lines 131-133; trace table line 285",
+   "sentence": "I counted the question's vocabulary across 21 volumes, with a phrase every volume should hold and a made-up string none should hold as checks."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 306; Entries A1–42, UD WW 257, UD WW 193, P–207, P–104 | M-7 lines 169-174; trace table line 280",
+   "sentence": "Korea, Burma, Australia and New Zealand, which appear only in a regional round-up; and the opinion surveys themselves, which sit in the information agency's records in Record Group 306 and not in FRUS."
+  }
+ ]
+}
