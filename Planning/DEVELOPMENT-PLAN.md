@@ -8616,9 +8616,10 @@ Mutation, after a checkpoint commit: the synthesis budget taken from the reader'
 **Not done.**
 - **The app was not run with this build,** so no summary was made or shown through it. The harness drives the shipped parser and instructions; the readers' rendering is the unit tests'.
 - **iPhone and iPad hardware, and iOS 26.** Measured on one Mac under macOS 27.2.
-- **No push or pull request** without the owner's word.
 
 **Found, not fixed.**
 - **Other surfaces still show a structured summary's JSON as stored:** the collection inspector's headnote and its exports (HTML, Word), the note editor's Generated Summaries section and its Insert into note, and the Research rail's 80-character preview. The owner's decision covered the two readers.
 - **The on-device model's context is 8,192 tokens** on macOS 27.2 (the runaway answers state it), while `contextWindowTokenLimit` (3,072) assumes 4,096. A larger budget would mean fewer chunks.
 - **Guided generation could run away** (one chunk of `frus1964-68v04/d77`: 199 s, then the context limit). Plain text did not in 713 answers, but one JSON-as-text answer did (165 s); no answer length is capped.
+
+**Pushed and opened as #1822** against `v2` on the owner's word ("Yes", 2026-10-31), as a pull request of its own; the follow-ups stay separate.
