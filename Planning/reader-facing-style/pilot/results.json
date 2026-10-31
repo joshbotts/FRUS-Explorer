@@ -1,0 +1,382 @@
+{
+ "P2": {
+  "judge": {
+   "pair": "P2",
+   "A": {
+    "label": "Overview A (/Users/jbotts/frus-analysis/c3r/runs/w6/overview.md)",
+    "items": [
+     {
+      "id": "J1",
+      "verdict": "yes",
+      "evidence": "Opens under \"## The bottom line\" with \"**1. What FRUS answers directly.** The series prints, in chapters the editors themselves titled for the recognition of a government...\", then \"**2. Where FRUS points for the rest.** Two channels lead out of the printed page, and they were never added together.\", then \"**3. What this request cannot get from FRUS.** The 1950s are almost missing...\", all before \"## Scope\", \"## Decisions this needs from you\" and \"## Findings\"."
+     },
+     {
+      "id": "J2",
+      "verdict": "yes",
+      "evidence": "Every figure names its set: \"about three and a half thousand documents in fifty-two volumes, dated 1895 to 1980; the word \\\"recognition\\\" appears in roughly one document in four of them, against about one in twenty across the whole index\"; \"All but about a hundred of the core documents carry a source line, and more than nine in ten of those cite the Department of State's Central Decimal File\"; \"a hundred and sixty citations over a hundred and eighteen core documents\"; \"'international obligations' appears in about one core document in twenty-seven, 'de facto' in about one in sixteen, and 'free elections' in fifty-four documents, each phrase five to nine times more common in the set than across the index as a whole\"; \"the phrase 'withhold recognition' ... occurs in only about forty documents\" (of \"the whole set\"). The loosest is \"Decades before 1895 show hits in the hundreds each\", which still names its set (each decade before 1895). No bare percentage anywhere."
+     },
+     {
+      "id": "J3",
+      "verdict": "yes",
+      "evidence": "Every document is cited inline in full with its link, e.g. \"(*Papers Relating to the Foreign Relations of the United States, 1930, Volume I*, Document 375, https://history.state.gov/historicaldocuments/frus1930v01/d375)\" and \"(*Foreign Relations of the United States, 1958–1960, Volume V, Microfiche Supplement, American Republics*, El Salvador, Document 43, https://history.state.gov/historicaldocuments/frus1958-60v05mSupp/es_d43)\". Three documents appear only in shorthand after a full citation two or three sentences earlier in the same paragraph — \"(Document 1029, https://history.state.gov/historicaldocuments/frus1913/d1029)\", \"(same volume, Document 89, https://history.state.gov/historicaldocuments/frus1948v09/d89)\", \"(same volume, Document 512, https://history.state.gov/historicaldocuments/frus1964-68v31/d512)\" — each resolvable and each with its link. There is no closing list; nothing is cited by a bare id pair or by title, date or correspondent alone."
+     },
+     {
+      "id": "J4",
+      "verdict": "yes",
+      "evidence": "\"A full-text search for \\\"recognize\\\", \\\"recognition\\\" and their other forms within six words of \\\"government\\\", \\\"regime\\\" or \\\"junta\\\", run over the two hundred and thirty-three Latin American volumes (with \\\"department of state\\\" as a positive control, found in all but one volume, and a nonsense string as a negative control, found nowhere), does find hits inside the country chapters of the 1952–1957 volumes ... but none was read, so this is a limit of the scope and not a finding that the series is silent\"; the Acheson gap likewise: \"a search of the 1949 volume's editorial notes for \\\"recogn*\\\" with \\\"Acheson\\\" and \\\"September\\\" returned nothing.\" The unprinted Estrada and resolution texts are stated as a reading observation (\"cited by the editors but not printed\"), not a search, but the principal gap is a search with terms, volumes and controls."
+     },
+     {
+      "id": "J5",
+      "verdict": "yes",
+      "evidence": "No SQL, no table or column name, no file path. Volume/document id strings occur only inside the history.state.gov links (e.g. \".../frus1961-63v12/d359\", \".../frus1958-60v05mSupp/es_d43\"); the printed titles are used in the prose. The nearest thing to a file is \"both were checked against the collection file before this overview was finished\" (How this was done), which names no path."
+     }
+    ],
+    "citations": {
+     "verdict": "yes",
+     "evidence": "One form throughout: the italic printed title, the document number and a bare link in parentheses after the sentence — \"(*Foreign Relations of the United States, 1969–1976, Volume XXI, Chile, 1969–1973*, Document 349, https://history.state.gov/historicaldocuments/frus1969-76v21/d349)\" — shortened to \"(same volume, Document N, link)\" for a second document from a volume just cited (Documents 1028, 1029, 486, 89, 359, 512 in the findings). All 28 cited documents carry a link and resolve to a full printed title; the shorthand ones only by the \"same volume\" chain, since there is no list of documents cited."
+    },
+    "toolWords": "\"index\" — §1 \"against about one in twenty across the whole index\" (unexplained at first use; explained only in How this was done as \"FRUS Explorer's full-text index of five hundred and fifty-three volumes\"); also Scope \"this copy of the index holds five hundred and fifty-three volumes in all\", Decisions \"the earlier decades are in the index and were not read\", Findings/Stimson \"across the index as a whole\", and three times in How this was done (\"counted by the index\", \"the index treats ... as the same words\"). \"hits\" — §3 three times: \"does find hits inside the country chapters\", \"which have hits that were not read\", \"Decades before 1895 show hits in the hundreds each\". \"returned nothing\" — §3, the Acheson search. \"recogn*\" — §3, a search wildcard never explained. \"bundled\" — §2 \"no bundled series record, identifier or access status exists for the Central Decimal File itself\"; How this was done \"the bundled National Archives series and presidential-library catalogues\". \"matches 'withhold' and 'recognition' in either order\" — How this was done. \"subject tags\" — How this was done \"taken as Latin American by their titles and subject tags\". \"the memo\" — §1 \"(the exact counts, rates and denominators are in the memo)\" and Findings/Stimson \"(see the memo)\": an artifact the reader is not given and the overview never describes. \"the collection file\" — How this was done. \"core\"/\"core documents\" — used in §2 (\"All but about a hundred of the core documents\") and §3 (\"the core holds four documents\") before How this was done defines it (\"the core so defined holds about three and a half thousand documents\"). \"positive control\"/\"negative control\" (§3, How this was done) are explained by what each found and are not counted."
+   },
+   "B": {
+    "label": "Overview B (/Users/jbotts/frus-analysis/c3r/runs/w1/overview.md)",
+    "items": [
+     {
+      "id": "J1",
+      "verdict": "yes",
+      "evidence": "Opens under \"## The bottom line\" with \"**1. What FRUS answers directly.** The series prints, in the editors' own chapters on recognition and revolution, the tests Washington applied to Latin American governments that took power by force between 1895 and 1980, and what it asked of them first.\", then \"**2. Where FRUS points for the rest.** The two channels are different things and I never add them together.\", then \"**3. What this request cannot get from FRUS.** The 1950s are almost absent...\", all before \"## Scope\", \"## Decisions this needs from you\" and \"## Findings\"."
+     },
+     {
+      "id": "J2",
+      "verdict": "yes",
+      "evidence": "Every figure names its set: \"four documents dated 1950–1959 out of about twelve and a half thousand Latin American documents of that decade\"; \"the editors' footnotes cite an unprinted archival location in only 118 of the core documents, about one in thirty\"; \"the largest group, 138 citations in 102 documents\"; \"'international obligations' appears in about one core document in twenty-seven, and the phrase 'de facto' in about one in sixteen, against one in two hundred and fifty and one in ninety across the whole series\"; \"The words 'free election' or 'free elections' appear in 54 of the core documents\"; \"about three and a half thousand documents in 52 volumes, dated 1895 to 1980, out of the 553 volumes indexed\"; \"the phrase 'department of state' found about ninety-four thousand documents across the whole series\". No bare percentage anywhere."
+     },
+     {
+      "id": "J3",
+      "verdict": "yes",
+      "evidence": "Inline short forms such as \"(1930, Volume I, Document 375)\" and \"(1958–1960, Volume V, Microfiche Supplement, El Salvador, Document 43)\" each resolve to a numbered entry in \"## Documents cited\", e.g. \"6. Papers Relating to the Foreign Relations of the United States, 1930, Volume I, Document 375. https://history.state.gov/historicaldocuments/frus1930v01/d375\" and \"24. Foreign Relations of the United States, 1958–1960, Volume V, Microfiche Supplement, American Republics, El Salvador, Document 43. https://history.state.gov/historicaldocuments/frus1958-60v05mSupp/es_d43\". All 28 documents cited inline (including \"(1950, Volume II, Document 477)\" for Truman and \"(1913, Document 1029)\" for Huerta's foreign secretary) have a list entry with the printed title and link, and the list holds no entry that is not cited; nothing is cited by a bare id pair or by title, date or correspondent alone."
+     },
+     {
+      "id": "J4",
+      "verdict": "yes",
+      "evidence": "\"My search was for \\\"recognize\\\", \\\"recognition\\\" and their other forms within six words of \\\"government\\\", \\\"regime\\\" or \\\"junta\\\", over the 233 volumes whose titles or subject tags mark them as Latin American; as controls, the phrase \\\"department of state\\\" found about ninety-four thousand documents across the whole series and an impossible string found none.\" The Acheson zero is stated more thinly — \"A search of the 1949 volume's editorial notes for Acheson's recognition speech of September 1949 found no note, though a printed document refers the reader to one\" names the volume but not the terms — and the positive control is counted across the whole series rather than the 233 volumes searched; the principal gap is still a search with terms, volumes and controls, not an assertion."
+     },
+     {
+      "id": "J5",
+      "verdict": "yes",
+      "evidence": "No SQL, no table or column name, no file path. Volume/document id strings occur only inside the links of the \"Documents cited\" list; the prose uses \"(1964–1968, Volume XXXI, Document 132)\" forms. The nearest are \"I did not read the volumes' source files\" and \"each creator and access status read from its row and none inferred\" (How this was done), neither of which names a table, column or path."
+     }
+    ],
+    "citations": {
+     "verdict": "yes",
+     "evidence": "One form throughout: a short parenthetical of years, volume and document number in the text — \"(1948, Volume IX, Document 89)\", \"(1964–1968, Volume XXXI, Document 512)\" — and a numbered \"## Documents cited\" list giving each printed title and link, e.g. \"21. Foreign Relations of the United States, 1948, The Western Hemisphere, Volume IX, Document 89. https://history.state.gov/historicaldocuments/frus1948v09/d89\". 28 documents cited inline, 28 listed, every one matched with its link."
+    },
+    "toolWords": "\"string\" — §3 \"an impossible string found none\" and How this was done \"an impossible string as a negative one\". \"subject tags\" — §3 and How this was done \"whose titles or subject tags mark them as Latin American\". \"indexed\"/\"search index\" — Scope \"out of the 553 volumes indexed\"; How this was done \"a read-only copy of the app's search index of all 553 volumes\". \"source files\" — How this was done \"I did not read the volumes' source files\", never explained. \"folds\" — How this was done \"the search folds it with \\\"constituted government\\\"\". \"row\" — How this was done \"each creator and access status read from its row and none inferred\". \"bundled\" — §2 bullets (\"The catalogue data bundled with the app\", \"No bundled series entry, identifier or access status\", \"Access status not in the bundled catalogue\" three times, \"I could not match this collection in the bundled catalogue\") and How this was done (\"the catalogue data bundled with the app\"); plain enough as \"bundled with the app\". \"core documents\" — §2 \"in only 118 of the core documents\" and Findings/Stimson \"about one core document in twenty-seven\", \"54 of the core documents\" before How this was done defines it (\"took the documents in them as the core\"). \"the national-security exemption\" — §2, lot 64D16 bullet, an archival term not spelled out. Explained rather than left bare: \"the search treats inflected forms of a word as the same word\" (How this was done), \"A de facto government is one in actual control whether or not lawfully constituted\" (Findings/Wilson), \"the Mexican doctrine of recognizing states rather than governments\" (Findings/Kennedy), \"which the editors give in each document's source line\" (§2). No \"hits\", \"returned\", \"matched\", \"query\" or wildcard syntax appears."
+   },
+   "preference": "B",
+   "reason": "B keeps the citations short in the text and complete in a closing list, sets the four decisive passages (Wilson's declaration, Lind's four proposals, Stimson's three questions, Haiti's three assurances) as block quotations, and lays the archival series out one to a line under each channel, so the historian can read the argument and scan the shelves; A runs every full title and link into the prose and packs ten series with their identifiers into a single paragraph of several hundred words. B also explains what it touches (\"A de facto government is one in actual control...\", \"the Mexican doctrine of recognizing states rather than governments\", \"the search treats inflected forms of a word as the same word\") and owns its scope choices in the first person, while A defers to \"the memo\" twice and leaves \"hits\", \"index\" and the wildcard \"recogn*\" for the reader to decode. The evidence and the five tests come out the same for both, so the writing decides it."
+  },
+  "o2p": {
+   "pair": "P2",
+   "A": {
+    "label": "w6 (Overview A)",
+    "numbers": 66,
+    "traced": 60,
+    "misses": "(1) \"three questions\" (Stimson's) in Bottom line 1, twice in Finding 3 and in Read next: no row names it; memo line 99 (\"Stimson's three tests\") would have served but the table never cites it for the prose. (2) \"forty years\" (Finding 3, \"The three questions recur for forty years\"): no row; no memo line holds it. (3) \"the five republics\" in prose (Bottom line 1 \"the five republics' own treaty\"; the Finding 2 heading): no row; the Q6 quotation row covers only the quoted \"any of the five Republics\" and its memo line 95 does not hold \"five\". (4) \"four demands\" (Finding 1): no row; the Q30 quotation row traces the quoted (a)-(d) list to memo line 89, not the prose count (memo line 149, \"four Lind proposals\", is never cited). (5) \"three assurances\" (Finding 5 heading) and \"a fixed list of three\" (Finding 5): no row; the Q15 and Q26 quotation rows trace the quotes only (memo lines 108-109 hold the figure). (6) \"six sections\" (Read next): the row cites memo line 83, which holds 52 and 30 but no section count, and otherwise the collection file, which is not a memo line.",
+    "verdict": "violated"
+   },
+   "B": {
+    "label": "w1 (Overview B)",
+    "numbers": 58,
+    "traced": 56,
+    "misses": "(1) \"the one count that fell short on checking\" (How this was done): no row for it; the nearest row (the constitutional/constituted folding) cites memo line 56, which describes M8's 12 tolerant misses AND M11's 5 misses, and the memo's section 2 table shows two families short on the tolerant test and five on the strict, so no memo line holds \"one\". (2) \"six sections\" (Read next): the row cites \"collection: six level-1 headings\", not a memo line; no memo line holds a section count.",
+    "verdict": "violated"
+   },
+   "notes": "Method. Counted distinct figures (a figure repeated in several sections counted once; both tables cover repeats by listing sections). Counted NARA identifiers as numerals (Record Group 59 once per overview, 8 lot entry numbers, 8 lot NAIDs, 6 library NAIDs, and A's POL 15 HOND); every identifier in both overviews matches memo lines 62 and 70-79 exactly. Excluded, per the task or as labels rather than figures: years, dates and decades; document, volume and part numbers; everything inside citations, URLs and B's Documents cited list; the section labels 1./2./3.; the enumeration labels (1)(2)(3) and (a)-(d) inside quotations; Article II and Resolution XXVI/XXII; lot-file labels such as 66D149; ordinals; the pronoun uses of \"one\"; \"both\", \"a few\", \"several\". B's \"count as one case\" (Decisions) was treated as rhetorical and not counted; if counted it has no row. Leniencies applied to both: a row's memo line holds a figure when it holds the numbers and the row states the rounding or arithmetic (A's \"one in four\" = 959/3,541, \"all but about a hundred\" = 3,541-3,450; B's \"one in thirty\" = 118/3,541); a count that is only the length of a list the rows trace member by member (A's three libraries, two office files, six lot files; both overviews' \"two channels\" against memo section 3's two subsections) is traced; a quotation row traces the numbers inside its quoted words through the memo's Q row (A's quoted \"five Republics\" and \"seven man Junta\"; B's \"these three governments\"), and B's explicit row for the Finding 2 heading's \"five republics\" was accepted on the same basis although memo line 95 itself holds no \"five\". B's rows give M-numbers, Q-numbers and section names rather than line numbers; accepted as memo lines because the memo labels them, and every \"trace table row N\" reference was checked against memo lines 134-150. Flags that are not misses: B's \"one in two hundred and fifty\" matches the memo's printed share 0.004 on line 58, though the raw 1,301 of 312,169 is 1 in 240; A's \"five to nine times more common\" is traced to line 58 but A applies it to \"each phrase\" including \"free elections\", which line 58 did not measure corpus-wide. Robustness: A is violated under any reading because \"forty years\" appears in no memo line; B is violated on \"six sections\" (traced only to the collection file, the same defect A has) and on \"the one count that fell short\", which the memo contradicts; the difference in counts between the two is that B's table carries explicit rows for the quotation-derived counts (four proposals, five republics, three questions, three assurances) and A's does not."
+  }
+ },
+ "P1": {
+  "judge": {
+   "pair": "P1",
+   "preference": "A",
+   "reason": "A reads as an essay: its short keyed citations (\"1934, Volume V, Document 199\") are resolved by a full \"Documents cited\" list, its quotations sit inside the paragraphs that discuss them, and its method is told in plain words (\"The search treats \"recognize\" and \"recognition\" as the same word\"), so a historian can follow the argument and still find every document. B buries every sentence under full inline citations with URLs (one findings paragraph carries fourteen of them), stacks its quotations after each paragraph away from the sentences they support, and its method section leaks the machinery (\"hits\", \"returned\", \"XML\", \"read-only\", \"substring\", \"see the memo\"), while leaving one document it read findable only by date. B's glosses of \"record group\", \"lot\" and the Estrada Doctrine and its if/then \"Decisions\" section are the better pieces and A would gain from them, but they do not outweigh the readability gap.",
+   "A": {
+    "label": "Overview A — /Users/jbotts/frus-analysis/c3r/runs/w7/overview.md",
+    "items": [
+     {
+      "id": "J1",
+      "verdict": "yes",
+      "evidence": "The overview opens with \"## The bottom line\" and then, in order, \"**1. What FRUS answers directly.** From 1877 to 1973 the State Department applied three tests…\", \"**2. Where FRUS points for the rest.** The editors name archival sources for the documents they print…\", and \"**3. What this request cannot get from FRUS.** **The Estrada Doctrine.** I searched that phrase across all 553 volumes…\". \"## Findings\" comes only after \"## Decisions this needs from you\"."
+     },
+     {
+      "id": "J2",
+      "verdict": "yes",
+      "evidence": "No percentage sign or bare rate appears; every rate names its set: \"More than nine in ten of the chapter documents cite a file number from this file\"; \"The phrase \\\"de facto\\\", meaning in fact, appears in about one chapter document in fifteen\"; \"About three of every eight chapter documents contain a word starting \\\"recogn\\\". So do about one in ten of the other documents in the same volumes\"; \"nearly 94,000 documents in 552 of the 553 volumes\"; \"twelve citations to seven collections in 33 of the 41 volumes\"; \"about 450 documents in 55 of the 57 volumes for those years\"."
+     },
+     {
+      "id": "J3",
+      "verdict": "yes",
+      "evidence": "The text cites by a short key, e.g. \"(1900, Document 530)\", \"(1964–1968, Volume XXXI, Document 139)\", and the closing \"## Documents cited\" list resolves every key in full with a link, e.g. \"1. Papers Relating to the Foreign Relations of the United States, With the Annual Message of the President Transmitted to Congress December 3, 1900, Document 530. https://history.state.gov/historicaldocuments/frus1900/d530\". I matched all 44 distinct keys in the text to the 44 list entries and found none missing; even the two Estrada mentions read are keyed: \"(1943, Volume V, Document 334; 1948, Volume IX, Document 7)\"."
+     },
+     {
+      "id": "J4",
+      "verdict": "yes",
+      "evidence": "\"**The Estrada Doctrine.** I searched that phrase across all 553 volumes. It turns up in about thirty documents in eighteen volumes, from 1931 to 1977. … As controls, the phrase \\\"Department of State\\\" turned up in nearly 94,000 documents in 552 of the 553 volumes, and a nonsense string turned up in none.\"; \"Searches for the full names Raoul Cedras and Jean Bertrand Aristide found nothing, under the same two controls, which describes this library and not the world.\"; \"A loose search for recognition together with revolution, \\\"provisional government\\\" or \\\"de facto\\\", near the name of a Latin American country, found about 450 documents in 55 of the 57 volumes for those years.\" The pledges item is stated as a search not run (\"I did not search for what followed\"), not as an assertion about FRUS."
+     },
+     {
+      "id": "J5",
+      "verdict": "yes",
+      "evidence": "No SQL, table or column name, or file path appears. The only id strings of the frus1900/d530 kind sit inside the history.state.gov links of the \"Documents cited\" list; the body's identifiers are archival ones (\"class 812.00\", \"lot 64 D 563\", \"roll 188967467 (file-unit identifier 177380736)\")."
+     }
+    ],
+    "citations": {
+     "verdict": "yes",
+     "evidence": "One form throughout: a key of the form \"(1931, Volume II, Document 232)\" or \"(1911, Document 933)\" in the text, resolved by the numbered \"Documents cited\" list, each entry a full printed-edition title with document number and a history.state.gov link (e.g. \"4. Papers Relating to the Foreign Relations of the United States, 1931, Volume II, Document 232. https://history.state.gov/historicaldocuments/frus1931v02/d232\"). Every key in the text has an entry."
+    },
+    "toolWords": "\"nonsense string\" (part 3: \"a nonsense string turned up in none\"; How this was done: \"a nonsense string, which was found nowhere\") — \"string\" is a programmer's word. \"controls\" (part 3: \"As controls, the phrase \\\"Department of State\\\" turned up…\"; How this was done: \"Controls were a phrase every volume should contain…\") — what a control is for is never explained. \"index\" (How this was done: \"I searched an index of the 553 volumes' documents, a searchable copy that sets aside editors' notes and front matter\") — used but glossed in the same sentence. \"the volumes' source files\" and \"scan for spelling variants\" (How this was done: \"All figures come from the index, not from the volumes' source files, so I ran no scan for spelling variants\") — what a source file is, and why the index cannot see spelling variants, is unexplained. \"near the name of a Latin American country\" (part 3) — a proximity search described by a bare \"near\". \"the data I had\" (part 2, repeated eight times) — never says what data. Archival terms left unexplained in part 2: \"Record Group 59\", \"lot 64 D 563\", \"twelve series claim this lot\", \"entry A1 558-D\", \"roll 188967467 (file-unit identifier 177380736)\", \"shelf\" — a historian of US foreign relations would know record group and lot, less surely the NARA roll and file-unit identifiers. Two sentences in part 3 also begin lowercase after their bold label (\"**Any coup after 1980.** only fourteen volumes…\", \"**Whether the pledges were kept.** the documents show…\"), a copy flaw rather than a tool word."
+   },
+   "B": {
+    "label": "Overview B — /Users/jbotts/frus-analysis/c3r/runs/w2/overview.md",
+    "items": [
+     {
+      "id": "J1",
+      "verdict": "yes",
+      "evidence": "The overview opens with \"## The bottom line\" and then, in order, \"**1. What FRUS answers directly.** From 1877 to 1973 the Department of State wrote down, case by case, a short test…\", \"**2. Where FRUS points for the rest.** The printed documents came mostly from State Department files…\", and \"**3. What this request cannot get from FRUS.**\" with its four bullets. \"## Findings\" comes only after \"## Decisions this needs from you\"."
+     },
+     {
+      "id": "J2",
+      "verdict": "yes",
+      "evidence": "No percentage appears; every rate names its set: \"More than nine in ten of the roughly 2,700 chapter documents cite a file number from it\"; \"About ninety chapter documents have no source citation, and most of them (79) sit in the volumes for 1895 to 1904\"; \"It occurs in 28 documents in 18 volumes dated 1931 to 1977 (27 of the 28 hits show the phrase in exactly that form)\"; \"a word starting with recogn in about three of every eight chapter documents against about one in ten of the others, while the control phrase \\\"Department of State\\\" was less common in the chapter documents (about one in eight) than elsewhere (about one in five)\"; \"(about 350 for Mexico and about 300 for Cuba)\" of \"the chapter set\"."
+     },
+     {
+      "id": "J3",
+      "verdict": "no",
+      "evidence": "Every document behind a finding is cited in full inline with its link and there is no list, e.g. \"(Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, With the Annual Message of the President, December 3, 1877, Document 222, <https://history.state.gov/historicaldocuments/frus1877/d222>, 16 May 1877)\". The one lapse is in part 3, where two documents read are given by date alone: \"I read two of the 28 mentions (a footnote of 1943 and a document of 1948)\". The 1943 one can be inferred from Finding 4 (\"noted that some governments favored the Estrada Doctrine … 1943, The American Republics, Volume V, Document 334\"), but no 1948 document cited anywhere is tied to the Estrada Doctrine, so the reader cannot find it. It is the only citation that fails."
+     },
+     {
+      "id": "J4",
+      "verdict": "yes",
+      "evidence": "\"I searched the phrase \\\"Estrada Doctrine\\\" across the whole library of 553 volumes. It occurs in 28 documents in 18 volumes dated 1931 to 1977 (27 of the 28 hits show the phrase in exactly that form). The control phrase \\\"Department of State\\\" returned nearly 94,000 documents in 552 of the 553 volumes, and a nonsense string returned none, as it should.\"; \"Searches for the full names \\\"Raoul Cedras\\\" and \\\"Jean Bertrand Aristide\\\", and for Cedras's name in reversed order, each returned no documents. The control above was met. These zeros describe this library, not the world.\"; \"A loose search (recognition or recognize, together with revolution, provisional government or de facto, together with the name of any of a list of Latin American countries) returned about 450 documents in 55 of the 57 volumes.\"; the pledges item is a search not run: \"I did not search for outcomes, so I make no claim about them.\""
+     },
+     {
+      "id": "J5",
+      "verdict": "yes",
+      "evidence": "No SQL, table or column name, or file path appears. Every frus…/d… string sits inside an angle-bracketed history.state.gov link; \"the underlying XML\" and \"the memo\" are named in How this was done but no path or table is given, and the body's identifiers are archival (\"lot 53 D 26\", \"entry A1 1130\", \"NARA identifier 2108774\")."
+     }
+    ],
+    "citations": {
+     "verdict": "no",
+     "evidence": "One form is used throughout: the full printed title, document number and link in angle brackets, inline, sometimes followed by the document's date (\"…frus1878/d344>, 23 March 1878)\") or a note (\"…frus1964-68v31/d72>, in an editors' footnote)\"); there is no list. But one cited document cannot be found in full: \"I read two of the 28 mentions (a footnote of 1943 and a document of 1948)\" — the 1948 document is identified by its year alone and no full citation anywhere matches it. Every other cited document is complete with its link."
+    },
+    "toolWords": "\"hits\" (part 3: \"27 of the 28 hits show the phrase in exactly that form\"; How this was done: \"every phrase count is a count of search hits, including footnote text\", \"whose hits I treat as candidates\"; Read next: \"about 450 hits, two read\"). \"returned\" (part 3: \"The control phrase \\\"Department of State\\\" returned nearly 94,000 documents\", \"a nonsense string returned none\", \"each returned no documents\", \"returned about 450 documents\"). \"control phrase\" / \"control\" (part 3: \"The control phrase\", \"The control above was met\"; How this was done: \"the control phrase\") — never explained. \"nonsense string\" (part 3). \"the bundled glossary\" (part 2, Central Decimal File), \"the bundled archival index\" (part 2, lot 64 D 563), \"the bundled index\" (part 2, lot files) — bundled with what is never said. \"The offline data\" (part 2: \"The offline data barely reaches back before 1940\"). \"opened read-only and checked first against the expected counts\" (How this was done). \"the index of the volumes' text, not the underlying XML\" (How this was done) — \"XML\" unexplained; \"The search index reduces words to a root\" is explained in plain words. \"I retrieved 124 documents whole\" (How this was done). \"cut from the stored document text and checked to be an exact character-for-character substring of it\" (How this was done) — \"substring\". \"the exact figures, rates and denominators are in the memo (see the memo)\" and \"one the memo verified against its document\" (How this was done) — a memo the historian has not been given, cross-referenced to itself. \"no second-edition volume is among the documents used\" (Scope) — unexplained. Raw catalogue labels \"*Restricted - Possibly*\" and \"*Restricted - Partly*\" (part 2, lot files). NARA catalogue identifiers \"roll identifier 188967467, file unit identifier 177380736\", \"NARA identifier\", \"entry A1 558-D\" (part 2) — unexplained, though \"record group\" (\"the National Archives' unit for one agency's records\"), \"lot\" (\"a numbered batch of Department files transferred to the Archives together\"), \"de facto\" (\"one that actually holds power\") and the Estrada Doctrine are glossed."
+   }
+  },
+  "o2p": {
+   "pair": "P1",
+   "A": {
+    "label": "w7",
+    "numbers": 92,
+    "traced": 91,
+    "misses": "1. 'I keep the two channels apart' (Bottom line 2, overview line 7): trace row (trace line 15) cites memo line 70, which is the bare heading '## 4. Archival scope (channels never summed)' and holds no number; the two channels are that section's items at memo lines 72 ('[N11a] Channel one') and 74 ('[N11c] Channel two'), which the row does not cite. Soft miss: the count is implied by the cited section, not held on the cited line.",
+    "verdict": "violated"
+   },
+   "B": {
+    "label": "w2",
+    "numbers": 132,
+    "traced": 116,
+    "misses": "1. 'almost half a century' (line 5): row (trace line 42) cites memo 175, the 1900-09-08 dateline only; the 1948-03-15 dateline is at 208 and the memo computes no such interval. 2. 'two separate channels' (line 7): no row; the memo never states 'two' (Channel one at 72, Channel two at 74). 3. 'about one in ten of the other documents' (line 34, Decisions): row (trace 25) cites memo 42, the [N07] tag's first line, which holds only the description and SQL; the figure (3,928 of 38,789, 0.101) is at 46 and '10%' at 50. 4. 'Meanwhile I counted all three' (line 35): no row. 5. 'assured of three things' (line 42): no row; the d222 row cites 171 and 163, neither holding 'three'; Q02 at 113 lists items but states no count, and the overview attributes them to the 1877 instruction. 6. 'two claims installments paid' (line 42): absent from the memo ('installment' occurs nowhere); the d344 row cites 172 and 164. 7. 'about one chapter document in fifteen' (line 42): row (trace 27) cites memo 61, the [N08] tag's first line, which holds no figure; it is at 64 (M=178) and 68 ('about one in fifteen: 178 of 2,729'). 8. 'within six months' (line 68): absent from the memo; the d232 row cites the dateline at 191. 9. 'the other nineteen were unanimous' (line 81): absent from the memo; the d254 row cites 206 and 8b 144, neither holding it. 10-13. 'about three of every eight', 'about one in ten', 'about one in eight', 'about one in five' (line 120, How): row (trace 34) cites memo 42; the figures are at 46-47 and 50. 14. 'about a hundred chapter documents' (line 120): row (trace 35) cites memo 61; the figure is at 63 (M=95, STRICT 94 of 95) and 68. 15. 'six sections' (line 124): no row; the memo states no section count (its section 9 'in heading' column runs 1-6). 16. 'hundreds of documents' (line 124): no row; rows 38/39 cite 38 and 284, neither holds it (memo 72's '812.00 Mexico ... 356' would support it but is not cited).",
+    "verdict": "violated"
+   },
+   "notes": "Counting conventions, applied to both: each numeral is one item; a worded ratio ('nine in ten', 'three of every eight', 'one in fifteen') is one item; an identifier such as 'A1 558-D', 'lot 53 D 26' or 'roll 188967467' is one item; 'five linear feet three inches' is two. Excluded as the task directs: years, dates and decades ('in the 1950s', 'nineteenth century'), every number inside a parenthetical citation, blockquote attribution or URL, and A's 'Documents cited' list. Also excluded as structural, not figures: section numbers ('### 1.', '**3.**'), the list numbering inside quotations Q11/Q16, the (a)(b)(c) letters, the labels 'Channel one'/'Channel two', 'Article II' (a part number), ordinals that count nothing ('first digits', 'among the first', 'second-edition'), and 'one'/'both'/'none'/'nothing' used as pronouns or determiners. Included: numbers inside verified quotations ('five Republics' Q07, 'a fourth' Q12, 'three following factors' Q13), traced through the quotation rows whose memo lines hold the text; B's 'zeros' (line 24, memo 80 'returned 0 documents'). A rounded figure counts as held when the overview says about/nearly/roughly and the cited line holds the exact figure it rounds (2,729 -> about 2,700; 448 -> about 450; 91 -> about ninety; 28 -> about thirty; 94,049 -> nearly 94,000; 356/305 -> about 350/300; 0.372 -> three of every eight). A count counts as held when the cited line enumerates exactly that set ('two of those mentions' and 'two controls' at 79, 'one of them' at 80, 'two read' at 38, B's 'Four resolve' at 75). Every archival identifier in both overviews (six roll/file-unit numbers, five NAIDs, five entry numbers, six lot numbers, the file classes, 'volume 19', 'volumes 1 and 2') matches memo lines 72-75 digit for digit. Verdict sensitivity: A's only miss is a section-heading citation; read a heading as holding its items' count and A obeys. B's seven 'tag-first-line' misses (rows citing 42 and 61 under the declared 'line at which the audit form begins' convention, which the memo's own section 10 also uses) would be waived under the same leniency, but B still has nine misses, three of them document facts the memo never records at all ('two claims installments', 'within six months', 'the other nineteen'), so B is violated on any reading. Two row oddities that did not become misses: A's row for 'three tests' also cites Q15 (memo 126) as 'three criteria' though Q15 holds no 'three' (124 does); B's row for 'three weeks' puts the dateline 219 in its line column but names 8b line 156 in its source column, which holds the figure."
+  }
+ },
+ "P4": {
+  "judge": {
+   "pair": "P4",
+   "A": {
+    "label": "Overview A (w5/overview.md)",
+    "items": [
+     {
+      "id": "J1",
+      "verdict": "yes",
+      "evidence": "Opens with '## The bottom line' and, in order, '**1. What FRUS answers directly.** The printed record shows corruption entering U.S. policy in three ways…', '**2. Where FRUS points for the rest.** The archives reach the historian by two channels…', '**3. What this request cannot get from FRUS.** Each of these was established by a search…'. '## Findings' comes only after 'Scope' and 'Decisions this needs from you'."
+     },
+     {
+      "id": "J2",
+      "verdict": "yes",
+      "evidence": "Every figure names its set: 'about one document in a hundred across all 553 volumes of the series, about three thousand documents spread over some four hundred and fifty volumes'; 'about five matching documents in six carry such a source line'; 'the law's name appears in only four documents in two volumes'; 'Of the series the reference tools describe with dates, only about one in sixty begins before 1940'; the decade ratios are tied to their decades ('about one document in three hundred in the 1930s', 'commonest in the 1960s and 1970s (about one in fifty)'). No bare percentage anywhere."
+     },
+     {
+      "id": "J3",
+      "verdict": "yes",
+      "evidence": "Each of the twelve documents is cited in full with its link at every mention, e.g. '— Papers Relating to the Foreign Relations of the United States, 1922, Volume I, Document 841, https://history.state.gov/historicaldocuments/frus1922v01/d841' and 'Foreign Relations of the United States, 1969–1976, Volume E–15, Part 2, Documents on Western Europe, 1973–1976, Document 292, https://history.state.gov/historicaldocuments/frus1969-76ve15p2/d292'. None is cited by an id pair or by title, date or correspondent alone."
+     },
+     {
+      "id": "J4",
+      "verdict": "yes",
+      "evidence": "Part 3 opens: 'Each of these was established by a search of the full text of all 553 volumes, front matter, editorial notes and the two second editions excluded, with two controls run the same session: the phrase \"Department of State\" was found in every volume but one (a volume of Paris Peace Conference minutes, which is itself searchable), and a nonsense string was found nowhere, so the search was working and was not matching everything.' Each limit then names its terms and count: 'the corruption words in any form matched none of the documents dated in the 1990s, against about a hundred in the 1980s'; 'the index holds no word beginning \"klepto\" at all'; 'the law's name appears in only four documents in two volumes'; 'this second set of phrases matched only twenty-seven documents, and fewer than three in four of them actually contain the phrase, so it cannot be counted'."
+     },
+     {
+      "id": "J5",
+      "verdict": "yes",
+      "evidence": "The only 'frus1944v06/d292'-shaped strings sit inside history.state.gov links; there is no SQL, no table or column name and no file path. 'file 837.51/764' and 'Lot 63D351; entry A1 1586E; NARA identifier 2839192' are archival numbers, and 'the memo' and 'the collection' are named with no path."
+     }
+    ],
+    "citations": {
+     "verdict": "yes",
+     "evidence": "One form throughout: the full printed citation followed by its link, inline at every mention, including inside the bottom line ('Foreign Relations of the United States, 1947, The Far East: China, Volume VII, Document 583, https://history.state.gov/historicaldocuments/frus1947v07/d583'). All twelve cited documents can be found in full with their links; the 1922 volume is given its printed title, 'Papers Relating to the Foreign Relations of the United States, 1922, Volume I'."
+    },
+    "toolWords": "'matched / matching / matches' — part 2 ('about five matching documents in six', 'about one matching document in seven'), part 3 ('matched none of the documents dated in the 1990s', 'of the matching documents dated from January 1969', 'matched only twenty-seven documents'), How this was done ('forty matching documents', 'the eighty documents that matched most strongly'), Read next ('among the five with the most matches'); 'index / indexed' — part 3 ('the index holds no word beginning \"klepto\" at all'), Scope ('every document in the 553 volumes indexed'); 'returned' — How this was done ('one cited document that no word search returned'); 'string' — part 3 ('a nonsense string was found nowhere'); 'session' — part 3 ('two controls run the same session'), How this was done ('Controls were run in the same session'); 'surfaced' — How this was done ('which surfaced one cited document'); 'bundled with the research tools' — How this was done ('NARA catalogue data bundled with the research tools'); 'reference tools' — part 2 ('the reference tools used here give no NARA series identifier', 'the series the reference tools describe with dates') and part 3 ('no reference tool used here names their shelf'), never said what they are; 'the memo' — part 1 ('Exact counts, rates and denominators for every figure here are in the memo') and the closing line ('one of the thirteen the memo verified against its document'), a document she is never shown or told how to get; 'scope run' — Read next, in the collection's title 'Corruption and U.S. foreign policy: scope run'. 'Controls' (part 3, How this was done) is explained in place ('a phrase every volume should contain, and a nonsense string none could') and is not counted."
+   },
+   "B": {
+    "label": "Overview B (w4/overview.md)",
+    "items": [
+     {
+      "id": "J1",
+      "verdict": "yes",
+      "evidence": "Opens with '## The bottom line' and, in order, '**1. What FRUS answers directly.** In the printed record, corruption enters U.S. diplomacy first as a judgment on other governments, and from 1974 as a liability that American firms created…', '**2. Where FRUS points for the rest.** The editors name two kinds of archival source…', '**3. What this request cannot get from FRUS.** FRUS cannot answer for the years after the series ends…'. '## Findings' follows 'Scope' and 'Decisions this needs from you'."
+     },
+     {
+      "id": "J2",
+      "verdict": "yes",
+      "evidence": "'The language of corruption appears in about one document in a hundred across all 553 volumes'; 'about one matching document in six from 1969 on carries a \"not declassified\" mark'; 'a search for \"foreign corrupt practices\" found it named in only four documents'; 'My reference files describe only about eleven of nearly seven hundred catalogued series that begin before 1940'; 'about a quarter of the matching documents fall away, because only about three in four of a sample I read use the word in that sense'; 'The share rose from about one in three hundred in the 1930s to about one in fifty in the 1960s and 1970s'. No bare percentage anywhere."
+     },
+     {
+      "id": "J3",
+      "verdict": "yes",
+      "evidence": "Inline citations are short, e.g. '(1922, Volume I, Document 841)' and '(1969–1976, Volume E–9, Part 2, Document 155)', and each of the twelve is given in full with its link in the closing 'Documents cited' list, e.g. '7. Foreign Relations of the United States, 1969–1976, Volume E–9, Part 2, Documents on the Middle East Region, 1973–1976, Document 122. https://history.state.gov/historicaldocuments/frus1969-76ve09p2/d122'. Every inline citation (841, 292, 583, 471, 244, 356, 122, 155, 159, 248, 43, E–15 292) has a list entry. The list's entry 1 gives the 1922 volume as 'Foreign Relations of the United States, 1922, Volume I' where the printed title begins 'Papers Relating to…'; the elements the item asks for are all there."
+     },
+     {
+      "id": "J4",
+      "verdict": "yes",
+      "evidence": "Each limit is a search with its terms and count: 'no document dated in the 1990s matched the corruption words, while the 1980s still hold about a hundred'; 'a search for \"foreign corrupt practices\" found it named in only four documents'; 'no document in any volume uses a word beginning \"klepto\"'; and the controls close the paragraph: 'Controls ran beside every search: \"Department of State\" is found in every volume but one, and that one is searchable; a nonsense word is found nowhere.' The volumes are the Scope line that follows at once: 'I searched all 553 volumes, leaving out front matter, editorial notes and the second editions of reissued volumes.'"
+     },
+     {
+      "id": "J5",
+      "verdict": "yes",
+      "evidence": "'frus…/d…' strings appear only inside the twelve links of 'Documents cited'; there is no SQL, no table or column name and no file path. 'Reference files' is named with no path, '837.51/764' is an archival file number, and 'the collection' is named by its title."
+     }
+    ],
+    "citations": {
+     "verdict": "yes",
+     "evidence": "One form throughout: a short inline citation of years, volume, part and document number ('(1948, Volume VII, Document 43)', '(1977–1980, Volume III, Document 248)') resolved by the numbered 'Documents cited' list, where each of the twelve appears in full with its history.state.gov link ('11. Foreign Relations of the United States, 1948, The Far East: China, Volume VII, Document 43. https://history.state.gov/historicaldocuments/frus1948v07/d43'). The one blemish is entry 1's 'Foreign Relations of the United States, 1922' for the volume printed as 'Papers Relating to the Foreign Relations of the United States, 1922'."
+    },
+    "toolWords": "'matched / matching' — part 3 ('no document dated in the 1990s matched the corruption words', 'about one matching document in six from 1969 on'), Decisions ('about a quarter of the matching documents fall away', 'covert payments to foreign politicians, which the matching documents hold'), How this was done ('About eighteen of the matching documents are printed twice'); 'reference files / my reference files' — part 2's first list ('no NARA series identifier in the reference files I used', 'no NARA identifier in the reference files', twice more) and its second list ('no series identifier in the reference files'), part 3 ('none of my reference files names a shelf for them', 'My reference files describe only about eleven…'), never said what they are; 'surfaced' and 'run from' — How this was done ('A search by similarity of content, run from some of those documents, surfaced one more'); 'ranked as most relevant' — How this was done ('From the documents the search ranked as most relevant I chose threads'), left unexplained though plain enough; 'scope run' — Read next, in the collection's title 'Corruption and U.S. foreign policy: scope run'. 'Controls' (part 3) and 'a search by similarity of content' (Findings, Cuba: 'which compares each document's subject matter rather than its words') are explained in place and are not counted. No 'index', 'returned', 'string', 'session', 'bundled' or 'memo'."
+   },
+   "preference": "B",
+   "reason": "B serves her better: it reads as an argument first and a dossier second, with a short bottom line whose citations are gathered in a numbered list she can take to the shelf, the archival series set out as two scannable lists rather than A's single lettered paragraph, findings written as prose that explains its one unfamiliar method where it is used, and almost no machinery showing through. A is the more exact of the two (it gives the sample's size of forty, the eighty-document shortlist, the unreliable \"improper payments\" search and the 1922 volume's printed title) and ties each limit to its search more explicitly, but its opening paragraph is eight full URLs deep, its shelf list is nearly unreadable as a block, and \"index\", \"returned\", \"string\", \"session\" and a \"memo\" she was never given leak the terminal she will never open."
+  },
+  "o2p": {
+   "pair": "P4",
+   "A": {
+    "label": "w5 (Overview A: /Users/jbotts/frus-analysis/c3r/runs/w5/overview.md)",
+    "numbers": 62,
+    "traced": 57,
+    "misses": "(1) \"three ways\" (bottom line 1): no trace row, and no memo line holds the count; it is the overview's own grouping. (2) \"about one document in three hundred in the 1930s\" (bottom line 1): trace row cites memo line 61, which is the 1940s row (477 hits, 6.3 per 1,000); the 1930s figure, 3.0 per 1,000, is at line 60, which no row cites. The row's 'memo figure' column is right, its line is not. (3) \"two channels\" (bottom line 2): no trace row; memo line 103 says \"two channels\" but is not cited by any row. (4) \"these three not resolved\" (bottom line 2): no row for the count; rows 25-26 cover Carter and Eisenhower (memo 130-131) and Ford (memo 113) singly, and no memo line holds \"three\". (5) \"two controls\" (bottom line 3): no row for the count; rows 38-39 cover each control singly (memo 71, 72), and no memo line holds \"two\".",
+    "verdict": "violated"
+   },
+   "B": {
+    "label": "w4 (Overview B: /Users/jbotts/frus-analysis/c3r/runs/w4/overview.md)",
+    "numbers": 42,
+    "traced": 41,
+    "misses": "(1) \"two kinds of archival source\" (bottom line 2): no trace row; memo line 103 says \"two channels\" but no row cites it (row 30 cites 113, 116 and 121-132 for the paragraph's identifiers only).",
+    "verdict": "violated"
+   },
+   "notes": "Counting unit: distinct figures (a number with its referent); a figure repeated in the overview (553 appears four times in A, Record Group 59 eight times in B) is counted once, and one row covers all its occurrences. A ratio (\"one in a hundred\", \"11 of 698\") is one figure; \"four documents in two volumes\" is two. Left out as the task directs: years, decades and date ranges (1964-66 etc.), document/volume/part numbers, every number in a citation or URL, and B's Documents-cited list. Also left out, as formatting or non-quantities: section and heading numbers (\"**1.**\", \"### 1.\"), ordinals used as names (\"second editions\", \"second set of phrases\", \"the first list\", \"first as a judgment\"), determiners and pronouns (\"both\", \"single\", \"the two governments\", \"one province\", \"One Korean report\", \"this one\", \"one of the things\", \"one day\" inside Q9), and \"none\"/\"nowhere\" (which both traces trace to the memo's 0s anyway). Counted as number-words, hard: structural enumeration counts the overview makes itself (\"three ways\", \"two channels\", \"two kinds\", \"two controls\", \"these three\"); these are the only misses in B and four of the five in A. If the parent sets structural counts aside, A still has one miss (the 1930s rate traced to the wrong memo line, 61 for 60) and B has none, so under that reading A is violated and B obeyed. Archive identifiers (record groups, lots, entries, NARA ids, file 837.51/764, \"ten series\", Memorandum No. 8) were counted as numerals; every one in both overviews is held by the memo line its row cites (A rows 22-24, 27-35, 43; B row 30 to 113, 116, 121-132). Further findings, not counted as misses: B's rows 14 and 15 cite memo body lines 62 and 64-65 (the 1950s, 1970s and 1980s rows: 13.0; 19.5, 17.2) for the 1930s and 1960s-70s rates, but each row also cites the memo's own trace-table lines 194 and 180, which hold 3.0 and 20.2/19.5, so both are counted as traced. B's \"about twenty\" Crowder telegrams that do not use the words (row 29) is held only by memo line 192, the memo's trace table (\"20 of the 25 nearest ... are OUTSIDE/ABSENT\"); the V3 body it cites, line 162, says \"24 more Crowder telegrams 1921-23\" and gives no outside/absent count; counted as traced on line 192 and flagged. A's row 17 (\"rarest in the 1920s and 1930s\", no number-word, so not a counted item) cites lines 60-61 for 3.9 and 3.0, which are at 59-60: a second wrong line among A's decade rows, while its 1960s-70s, 1980s and 1990s rows (63-64, 65, 66) are right. A's \"two dozen\" Crowder telegrams is held exactly by line 162 (24). All thirteen quotations in each overview have a row to memo lines 87-99, and no quotation carries a numeral beyond Q9's idiom."
+  }
+ },
+ "P3": {
+  "judge": {
+   "pair": "P3",
+   "A": {
+    "label": "Overview A — /Users/jbotts/frus-analysis/c3r/runs/w8/overview.md",
+    "items": [
+     {
+      "id": "J1",
+      "verdict": "yes",
+      "evidence": "Opens with '## The bottom line' and then, in order and before '## Findings': '**1. What FRUS answers directly.** The printed record answers, in officials' own words, what Cuba was said to mean...'; '**2. Where FRUS points for the rest.** The editors name the archives behind their documents in two different ways...'; '**3. What this request cannot get from FRUS.** (a) The words 'national security' as a description of Cuba's importance before the 1940s...'. Scope, Decisions and Findings follow."
+     },
+     {
+      "id": "J2",
+      "verdict": "yes",
+      "evidence": "Every figure is a count of a named set in words: 'about one document in thirteen mentions Cuba in the 1890s ... about two in five of those come from the 1898 volume alone'; 'In Cuba-mentioning documents of the 1900s, about one in seven use the words of intervention ... against about one in twenty-five of all documents of that decade'; 'about one in twenty of the chapter documents of the 1930s, one in three of the 1950s and nearly two in three of the 1960s'; 'none of the 44 documents of the 1980s'. The two closest calls pass: 'about 700 footnote citations in about 500 chapter documents, roughly one in ten, from 28 of the 62 volumes' (the base, the chapter documents, is named in the clause before), and the Treasury's quoted 'the usual 30%' sits beside its base ('claims of about $2 billion might be settled for at least $600 million'). The quoted '95 per cent, of the sugar exported from Cuba' and 'one-tenth of the sugar we consume' are the documents' own words with their bases."
+     },
+     {
+      "id": "J3",
+      "verdict": "yes",
+      "evidence": "All 23 documents are cited inline in full with a link, e.g. '(*Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, With the Annual Message of the President, December 7, 1874*, Document 550 (index number 552), https://history.state.gov/historicaldocuments/frus1874/d552)' and '(*Foreign Relations of the United States, 1961–1963, Volumes X/XI/XII, Microfiche Supplement, American Republics; Cuba 1961–1962; Cuban Missile Crisis and Aftermath*, Document 729, https://history.state.gov/historicaldocuments/frus1961-63v10-12mSupp/d729)'. The one document without a number is cited as the printed edition: '(*Papers Relating ... December 5, 1898*, the President's message on Cuba, https://history.state.gov/historicaldocuments/frus1898/ch83)'. The shorthand in Decisions 4 ('the 1897 despatch, the 1960 sugar plan, the 1962 transcript') refers to documents already cited in full in Findings 2 and 5. No bare id pair appears outside a link."
+     },
+     {
+      "id": "J4",
+      "verdict": "yes",
+      "evidence": "§3(a): 'I searched all 553 volumes for any document mentioning Cuba or Havana together with the phrase. Of the nine documents returned from before 1940, eight print the phrase and none is about Cuba's bearing on American security (they concern a legal code, wartime bond and agriculture acts, the Paris peace conference, arms reduction and armaments, and a Colombian coast guard; the ninth is returned by the index's word matching but does not print the phrase). ... Two controls ran in the same pass: a search for 'department of state' returned documents in every decade, and a search for a nonsense string returned none in any decade; both were decade-level controls, not volume by volume.' Terms, volumes and both controls are stated; §3(c) likewise rests on a search ('The last two documents that mention Cuba are dated January 1989')."
+     },
+     {
+      "id": "J5",
+      "verdict": "yes",
+      "evidence": "No SQL, no table or column name and no file path anywhere; the only volume/document strings ('frus1874/d552', 'frus1961-63v11/d21') occur inside history.state.gov links. The method paragraph names the tooling only in prose: 'I worked from a working copy of the app's search index taken on 25 October 2026' and 'The underlying XML text of the volumes was not consulted'."
+     }
+    ],
+    "citations": {
+     "verdict": "yes",
+     "evidence": "One form throughout: the full printed title in italics, the document number and the link, repeated inline at every citation, e.g. '(*Foreign Relations of the United States, Diplomatic Papers, 1934, The American Republics, Volume V*, Document 127, https://history.state.gov/historicaldocuments/frus1934v05/d127)'. Every one of the 23 cited documents can be found in full with its link from the sentence that cites it; there is no separate list, and none is needed. The cost is that the form is forty words long and recurs after nearly every sentence."
+    },
+    "toolWords": "'returned' — §3(a), four times ('Of the nine documents returned from before 1940', 'the ninth is returned by the index's word matching', 'a search for \"department of state\" returned documents in every decade', 'a search for a nonsense string returned none'); 'index' / 'search index' — §3(a) 'the index's word matching'; How this was done 'a working copy of the app's search index', 'The index matches on word stems', 'Document numbers follow the library's index', 'Dates are the index's own'; 'word matching' — §3(a); 'string' — §3(a) 'a nonsense string'; 'stems' — How this was done 'The index matches on word stems' (glossed by 'so a search for \"tariff\" also finds \"tariffs\"', but the word is still used); 'matched' — How this was done 'of the documents matched in each of the three groups'; 'XML' — How this was done 'The underlying XML text of the volumes was not consulted', unexplained; 'bundled' — §2 'NARA's as bundled in the app', §3(d) 'The bundled data gives their NARA identifiers', unexplained; 'run' as a noun for the machinery's pass — §3(e) 'This run extracted no trade statistics', How this was done 'all 35 passages the run kept', Read next 'the threads the run left unread' and the collection title '(agent run, 2026-10-27)'; 'the memo' — §1 'see the memo for every exact count', How this was done 'the one case where the memo records a difference from the printed number' and 'every quotation in this overview is one the memo verified': a document the historian is never given or described; 'controls' / 'control searches' — §3(a) 'both were decade-level controls, not volume by volume', How this was done 'Positive and negative control searches ran in every decade' (explained by the two examples in §3(a), but 'positive and negative' is not); 'first-ranked results' — How this was done 'with the first-ranked results of searches by era read', unexplained."
+   },
+   "B": {
+    "label": "Overview B — /Users/jbotts/frus-analysis/c3r/runs/w3/overview.md",
+    "items": [
+     {
+      "id": "J1",
+      "verdict": "yes",
+      "evidence": "Opens with '## The bottom line' and then, in order and before '## Findings': '**1. What FRUS answers directly.** The printed record shows Cuba's value and danger being redefined in each generation...'; '**2. Where FRUS points for the rest.** The first list gives the archival series that the printed documents came from, and the second gives series the editors cite in footnotes without printing...'; '**3. What this request cannot get from FRUS.** The phrase \"national security\" cannot carry this question, because it enters the Cuba record late...'. Scope, Decisions and Findings follow."
+     },
+     {
+      "id": "J2",
+      "verdict": "yes",
+      "evidence": "Every figure names its set in words: 'About one document in fifteen among those indexed for the 1870s mentions Cuba, but nearly three in ten of those fall in the single volume for 1874'; 'Sugar and tariff words are in about one in four Cuba documents of the 1940s but only about one in twenty-seven documents overall'; 'The words Communist, Soviet and missile are in nearly two in three of the editors' Cuba chapter documents of the 1960s, against one in twenty in the 1930s. About half of all documents of the 1960s use them'; 'about one document in twenty in the 1950s, one in three in the 1960s, two in three in the 1970s, and nearly nine in ten of the 44 documents of 1980'; 'I searched all the volumes for it together with Cuba or Havana and found about 2,600 documents, almost all after 1950. Before 1940 I found nine, and eight contain the words'; 'I searched all 553 volumes indexed, 311,429 documents once front matter, editors' notes and the two second editions of volumes are set aside'. The meaning search's figure is in the same form ('It finds about nine in ten of the closest passages'). The quoted 'about 95 per cent' is given with its base ('of Cuba's exported sugar') and 'about two billion dollars' is the Treasury's own figure."
+     },
+     {
+      "id": "J3",
+      "verdict": "yes",
+      "evidence": "Inline short citations ('(1874, Document 550)', '(1944, Volume VII, Document 878)', '(1961–1963, Volumes X/XI/XII, Microfiche Supplement, Document 729)', '(1898, the President's message of April 1898)') are each resolved by a numbered '## Documents cited' list of all 23, in full with links, e.g. '1. Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, With the Annual Message of the President, December 7, 1874, Document 550 (the edition's number is 550; the web address uses the index number, 552). https://history.state.gov/historicaldocuments/frus1874/d552' and '22. Foreign Relations of the United States, 1961–1963, Volumes X/XI/XII, Microfiche Supplement, American Republics; Cuba 1961–1962; Cuban Missile Crisis and Aftermath, Document 729. https://history.state.gov/historicaldocuments/frus1961-63v10-12mSupp/d729'. Every inline citation in the text maps to one list entry; none is a bare id pair, and none is left as a title, date or correspondent alone."
+     },
+     {
+      "id": "J4",
+      "verdict": "yes",
+      "evidence": "§3: 'I searched all the volumes for it together with Cuba or Havana and found about 2,600 documents, almost all after 1950. Before 1940 I found nine, and eight contain the words; none is about Cuba's bearing on American security. The phrase also appears in Cuba documents about as often as in the whole series, so it measures the decade's vocabulary, not Cuba. ... As controls, a search for \"department of state\" found documents in every decade and a nonsense word found none.' The terms, the volumes (all, and '553 volumes indexed' in Scope) and the positive and negative controls are stated, and what was not searched is stated too: 'I did not count \"defence\" or \"safety\" there.'"
+     },
+     {
+      "id": "J5",
+      "verdict": "yes",
+      "evidence": "No SQL, no table or column name and no file path anywhere; volume/document strings ('frus1898/d498', 'frus1977-80v23/d21') occur only inside the links of the Documents cited list. The method is told in prose: 'I worked in a copy of the app's index of all 553 volumes, taken on 25 October 2026, and I read it without changing it.'"
+     }
+    ],
+    "citations": {
+     "verdict": "yes",
+     "evidence": "One scheme throughout: a short parenthetical in the text ('(1934, Volume V, Document 127)', '(1958–1960, Volume VI, Document 499)') and a numbered '## Documents cited' list giving each of the 23 documents in full with its history.state.gov link, e.g. '14. Foreign Relations of the United States, Diplomatic Papers, 1934, The American Republics, Volume V, Document 127. https://history.state.gov/historicaldocuments/frus1934v05/d127'. Every cited document is findable in full from its short form, and the one unnumbered text is handled the same way ('10. ... the President's message on Cuba of April 1898 (a chapter-level text with no document number). https://history.state.gov/historicaldocuments/frus1898/ch83')."
+    },
+    "toolWords": "'indexed' — Scope 'I searched all 553 volumes indexed'; Findings 1 'among those indexed for the 1870s'; Findings 2 'among those indexed for the 1890s'; 'index' — How this was done 'a copy of the app's index of all 553 volumes'; Documents cited 1 'the web address uses the index number, 552'; 'matched' and 'term' — How this was done 'a first draft of one theme count, whose term matched nearly every document, was discarded'; 'theme count' — the same sentence, the overview's own label, not defined; 'controls' — §3 'As controls, a search for \"department of state\" found documents in every decade and a nonsense word found none' (explained by the two examples that follow it); 'ranks' — How this was done 'That search ranks passages by closeness of content rather than shared words' (explained in the sentence); 'agent run' — Read next, in the collection's title '(agent run, 2026-10-27)'. Stemming and the meaning search are otherwise put in plain words ('treat \"sugar\" and \"sugars\" as the same word'; 'a search by meaning, not through any word search')."
+   },
+   "preference": "B",
+   "reason": "B reads as a research report: its short inline citations with a full Documents cited list let the bottom line and the six findings run as prose while every document stays findable with its link, whereas A closes nearly every sentence with a forty-word full citation, so its opening paragraph and findings are hard to follow. B also explains its method in words a historian already has ('treat \"sugar\" and \"sugars\" as the same word', 'ranks passages by closeness of content'), where A writes 'the index matches on word stems', 'returned', 'XML' and 'bundled', and three times refers her to 'the memo', a document she is never given. A's second and third sections are better organised (the central decimal file named first, the (a)–(f) list of what FRUS cannot give), but over the whole overview B's writing serves her better."
+  },
+  "o2p": {
+   "pair": "P3",
+   "A": {
+    "label": "w8 (overview A)",
+    "numbers": 112,
+    "traced": 110,
+    "misses": "(1) 'six': 'six successive pictures' (overview line 5) and '23 documents in six sections' (line 71). Row N51 cites memo lines 184-218 and 284 plus the collection; neither cited line nor any other memo line states the collection's section count (the memo's only 'six' is 'five in six', lines 266 and 320). (2) 'the one case where the memo records a difference from the printed number is the 1874 instruction' (line 67). Row N50 sources it to the collection's note on the 1874 document (printed 550, index 552), not to a memo line; the memo contains no '550' and records no printed/index difference anywhere (grep), so the figure 'one case' has no memo line and the sentence misdescribes the memo. The trace's own header says no figure comes from a collection note, which N50 and N51 contradict.",
+    "verdict": "violated"
+   },
+   "B": {
+    "label": "w3 (overview B)",
+    "numbers": 71,
+    "traced": 70,
+    "misses": "'six sections' (overview line 73): row C54 gives 'Coll. (six level-1 headings; final prose entry)' and no memo line; the memo never states the collection's section count. Every other number has a row whose cited memo line holds the figure.",
+    "verdict": "violated"
+   },
+   "notes": "Counting conventions, applied identically to both: a figure repeated verbatim counts once; each figure in a list counts separately (67, 40, 22); archival numerals (record-group, entry, NARA identifier, extent, roll count, country/class number) are counted and are sub-tallied so a figures-only count is recoverable (A: 78 figures + 34 archival numerals; B: 44 figures + 27 archival numerals); numbers inside quoted document text count and are traced through the quotation rows (95 per cent, one-tenth, 1,500 million dollars, fifty planes, $2 billion / $600 million / 30%). Excluded as the task directs: dates, years, decades, document/volume/part numbers, numbers in parenthetical citations, B's 'Documents cited' list and URLs. Also not counted: ordinals (first, second, the ninth), vague quantifiers (nearly all, almost none, a handful, few), unity adjectives (single, only, 'one treaty system' in both headings) and rhetorical enumerations whose items are the very things listed beside them (A's 'two different ways'/'the two kept apart', 'the two kinds of reasons', 'the two aims', 'pairs the two'; B's 'same two channels', 'both channels'); each of those is enumerated on the memo lines the adjacent rows cite (149/171-172 for the two channels; 191-192, 193-194, 198-199 for the paired quotations), so counting them would change no verdict. A rounded figure is accepted when the cited line holds the exact figure it comes from (about 4,900 <- 4,897; about one in seven <- 61 of 408), and a structural count when the cited lines are the enumerated items (two scopes <- lines 24-25, with line 22 'Two scopes, never mixed'; two second editions <- line 16; two controls <- line 124; two vector-found documents <- M6.6 items 1-2). A's 'Four days later' (line 59) is taken as traced by derivation from the dates on lines 208 and 210, both cited. Verdict caveat: the one miss shared by both, the collection's 'six sections', is a fact about the collection that the memo cannot hold, and both traces say so honestly; under the rule as stated it is still a number with no memo line, so both are 'violated'. If the orchestrator exempts that figure, B is 'obeyed' (70 of 70) and A stays 'violated' on the 'one case' sentence, which is the only substantive miss in either overview: a figure the memo does not hold, in a sentence that claims the memo holds it. Smaller points, no miss: B's rows C10 and C12 point at the wrong table rows (line 51 is the 1880s, line 53 the 1900s) but also cite line 63, which holds 'one in fifteen' and 'one in thirteen' literally; B's 'one theme count ... discarded' rests on memo line 77, which discards the whole first pass while describing one group's defect; B's 'finds about nine in ten of the closest passages' is a loose gloss of recall@10 = 0.902 (line 277); B's 'about one in four' for 27.1% (line 103) is generous rounding; A's 'communism, the Soviet Union, missiles and subversion' figures come from the chapter regex on line 139, which has no subversion term, though the counts themselves are held."
+  }
+ }
+}
