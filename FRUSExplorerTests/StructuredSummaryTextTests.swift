@@ -123,6 +123,65 @@ struct StructuredSectionAnswerTests {
         #expect(values["Disagreements"] == "None recorded.")
     }
 
+    /// The shape of a synthesis answer measured on 2026-10-31, which read *paths:; Adoption…;;* before
+    /// the items' own semicolons were dropped.
+    @Test("A lead-in line and items that end in semicolons make one sentence")
+    func leadInAndSemicolons() throws {
+        let values = try #require(StructuredSectionAnswer.values(in: """
+            ## Key Participants
+            The Ambassador.
+            ## Topics
+            The document presents several paths:
+            - Restrictive measures by other nations;
+            - American leadership, which opinion opposes,
+            - Guidance from Washington
+            ## Agreements
+            None.
+            ## Disagreements
+            None.
+            """, schema: meeting))
+        #expect(values["Topics"] == "The document presents several paths: Restrictive measures by other nations; American leadership, which opinion opposes; Guidance from Washington")
+
+        let mixed = try #require(StructuredSectionAnswer.values(in: """
+            ## Key Participants
+            - The Ambassador.
+            - The Consul
+            - The Minister
+            ## Topics
+            T.
+            ## Agreements
+            A.
+            ## Disagreements
+            D.
+            """, schema: meeting))
+        #expect(mixed["KeyParticipants"] == "The Ambassador. The Consul; The Minister")
+    }
+
+    /// 19 of the 713 answers measured on 2026-10-31 wrote their sections a second time, or added a
+    /// heading of their own; until a section ended at every heading, the repeat landed in the last field.
+    @Test("A section ends at any heading: a repeated set or an added heading stays out")
+    func repeatedAndAddedHeadings() throws {
+        let values = try #require(StructuredSectionAnswer.values(in: """
+            ## Key Participants
+            The Ambassadors.
+            ## Topics
+            Shipping.
+            ## Agreements
+            None.
+            ## Disagreements
+            The convention's reach.
+            ## Key Participants
+            The Ambassadors again.
+            ## Topics
+            Shipping again.
+            ## Note
+            An aside.
+            """, schema: meeting))
+        #expect(values["KeyParticipants"] == "The Ambassadors.")
+        #expect(values["Topics"] == "Shipping.")
+        #expect(values["Disagreements"] == "The convention's reach.")
+    }
+
     @Test("A missing heading, or a refusal written as the answer, reads as no answer")
     func missingHeading() {
         #expect(StructuredSectionAnswer.values(

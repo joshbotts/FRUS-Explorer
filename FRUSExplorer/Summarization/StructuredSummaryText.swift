@@ -81,22 +81,31 @@ enum StructuredSectionAnswer {
     /// Each field's text in `answer`, keyed by the field's name, or `nil` when a field's heading is
     /// missing. A refusal written as the answer has none.
     ///
-    /// A field's text runs from its heading to the next field's, whatever order the model wrote them
-    /// in, and is made one paragraph (``paragraph(_:description:)``).
+    /// A field's text runs from its first heading to the next heading of any kind (a field's, again or
+    /// not, or any other Markdown heading), whatever order the model wrote them in, and is made one
+    /// paragraph (``paragraph(_:description:)``). So a heading the model added, or its sections
+    /// written a second time (19 of 713 answers measured), stays out of the field before it.
     static func values(in answer: String, schema: StructuredSummarySchema) -> [String: String]? {
         let text = answer as NSString
-        var headings: [(field: StructuredSummarySchema.Field, start: Int, textStart: Int)] = []
+        let whole = NSRange(location: 0, length: text.length)
+        var firsts: [(field: StructuredSummarySchema.Field, textStart: Int)] = []
+        var boundaries: [Int] = []
+        if let markdown = try? NSRegularExpression(pattern: #"^[ \t]*#{1,6}[ \t]+\S"#, options: [.anchorsMatchLines]) {
+            boundaries += markdown.matches(in: answer, range: whole).map(\.range.location)
+        }
         for field in schema.fields {
             guard let pattern = try? NSRegularExpression(pattern: headingPattern(for: field.name),
-                                                         options: [.caseInsensitive, .anchorsMatchLines]),
-                  let match = pattern.firstMatch(in: answer, range: NSRange(location: 0, length: text.length))
+                                                         options: [.caseInsensitive, .anchorsMatchLines])
             else { return nil }
-            headings.append((field, match.range.location, NSMaxRange(match.range)))
+            let matches = pattern.matches(in: answer, range: whole)
+            guard let first = matches.first else { return nil }
+            firsts.append((field, NSMaxRange(first.range)))
+            boundaries += matches.map(\.range.location)
         }
-        headings.sort { $0.start < $1.start }
+        boundaries.sort()
         var values: [String: String] = [:]
-        for (index, heading) in headings.enumerated() {
-            let end = index + 1 < headings.count ? headings[index + 1].start : text.length
+        for heading in firsts {
+            let end = boundaries.first { $0 >= heading.textStart } ?? text.length
             let section = text.substring(with: NSRange(location: heading.textStart,
                                                        length: max(0, end - heading.textStart)))
             values[heading.field.name] = paragraph(section, description: heading.field.description)
@@ -126,8 +135,9 @@ enum StructuredSectionAnswer {
     }
 
     /// A section made one paragraph: the field's description dropped where the model repeated it under
-    /// the heading, rules, list markers and bold removed, and the lines joined by spaces, or by
-    /// semicolons where they are list items that do not end as sentences.
+    /// the heading, rules, list markers and bold removed, a list item's own closing semicolon or comma
+    /// dropped, and the lines joined by a semicolon after a list item that ends without a stop, and
+    /// by a space otherwise (after a sentence, or a lead-in line ending in a colon).
     ///
     /// One paragraph because a structured summary is stored as JSON, and a line break inside a value
     /// would reach every surface that shows the stored text as it is (a collection's headnote, the
@@ -141,17 +151,25 @@ enum StructuredSectionAnswer {
            first.trimmingCharacters(in: CharacterSet(charactersIn: "()")).caseInsensitiveCompare(echo) == .orderedSame {
             lines.removeFirst()
         }
-        var isList = false
-        lines = lines.map { line in
-            var line = line
-            if let marker = line.range(of: #"^(?:[-*•]|\d+[.)])[ \t]+"#, options: .regularExpression) {
-                line.removeSubrange(marker)
-                isList = true
-            }
-            return line.replacingOccurrences(of: "**", with: "").replacingOccurrences(of: "__", with: "")
+        let entries = lines.map { line -> (text: String, isItem: Bool) in
+            var text = line
+            let marker = text.range(of: #"^(?:[-*•]|\d+[.)])[ \t]+"#, options: .regularExpression)
+            if let marker { text.removeSubrange(marker) }
+            text = text.replacingOccurrences(of: "**", with: "").replacingOccurrences(of: "__", with: "")
+            return (text, marker != nil)
         }
-        let sentences = lines.allSatisfy { $0.last.map { ".!?".contains($0) } ?? false }
-        return lines.joined(separator: isList && lines.count > 1 && !sentences ? "; " : " ")
+        var paragraph = ""
+        var previousWasOpenItem = false
+        for entry in entries {
+            var text = entry.text
+            if entry.isItem {
+                while let last = text.last, ";,".contains(last) { text.removeLast() }
+            }
+            if !paragraph.isEmpty { paragraph += previousWasOpenItem && entry.isItem ? "; " : " " }
+            paragraph += text
+            previousWasOpenItem = entry.isItem && !(text.last.map { ".!?:".contains($0) } ?? false)
+        }
+        return paragraph
     }
 
     /// `string` as a JSON string literal.
