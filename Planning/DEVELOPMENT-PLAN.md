@@ -8441,5 +8441,6 @@ Three harness fixes come with it: V4 exempts `frus1977-80v09Ed2`; the card gets 
   - **K's rules:** a relaxed query beside 5 of 61 zeros (the "soft power" zero in every run); a house-rules figure stated as the session's own in 3 of 4 runs; prefixes in one run only.
   - **O2'** failed in all twelve runs. No fabrication: 796 of 796 quotations, 59 of 60 headline numbers.
   - **Cost:** 25 weekly points and 43 Fable, inside the lines of 62% and 98%; an hour paused for the 5-hour window.
-- **By the rule, nothing is adopted:** W fails readings 1 and 5, K reading 12. The guide stays at v1.38; whether to follow the rule is the owner's.
+- **By the rule, nothing is adopted:** W fails readings 1 and 5, K reading 12.
+- **Decided.** The owner followed the rule ("Follow the rule"). Nothing is adopted; guide v1.39 records the tier in §3a and the version history, and the W and K candidates stay on local branches.
 - **Also changed:** `Planning/Agentic-Harness-Runbook.md` §7 gains rows for R16, the pilot and this tier.

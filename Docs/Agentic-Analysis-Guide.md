@@ -302,6 +302,18 @@ returns. The revision reached the same two and kept the vectors' vocabulary out 
 text in 4 of 4 runs, where this text did in none. It also lost one more of the 35 items above, so
 by the tier's rule it is not adopted and this text stands.
 
+**The reader-facing tier, 2026-10-31**, measured two more revisions against this text on the same
+two cells (`Planning/C-3-Reader-Facing-Tier-Results-2026-10-31.md`), on a question about how
+policymakers assessed American soft power in East Asia and the Pacific, and the messaging they used.
+Each cell had two runs of this text, two of a revised READER-FACING OUTPUT section that ends the
+overview with a list of the documents cited, and two of three revised rules: the prefix-on-stem
+trap, a zero printed beside a relaxed query that returns rows, and a figure from these rules
+re-derived or attributed. The revised section changed the writing in every run: the median sentence
+fell from 23 words to 19, and the bottom line's first paragraph stayed within 165 words. But the
+reader judge, weighing the evidence first, ranked it above this text in one block of four, and it
+lost two more of the 35 items above. One run under the revised rules lost two items. So by the
+tier's rule, and on the owner's word ("Follow the rule"), neither is adopted and this text stands.
+
 ---
 
 ## 4. Schema reference
@@ -3254,6 +3266,19 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.39 — 2026-10-31: **the reader-facing tier's measurement, adopting nothing**
+  (`Planning/C-3-Reader-Facing-Tier-Design.md`,
+  `Planning/C-3-Reader-Facing-Tier-Results-2026-10-31.md`). §3a records the tier: twelve runs on
+  2026-10-31, the same two cells, this text against a revised READER-FACING OUTPUT section with a
+  closing Documents cited list and the vocabulary bullet in §A.8's addendum (candidate W), and
+  against three revised §12 rules, the prefix-on-stem trap, the zero beside a relaxed query and a
+  guide figure re-derived or attributed (candidate K), on a question about American soft power in
+  East Asia and the Pacific. The revised section shortened the sentences and the bottom line in
+  every run, but the reader judge ranked it above this text in one block of four, and it lost two
+  more of the 35 items; one run under the revised rules lost two items. By the tier's rule, and on
+  the owner's word ("Follow the rule"), neither is adopted. Both stay on their branches, labelled
+  1.39 (candidate W) and 1.39 (candidate K), and the §12 block, §A.8's addendum and Appendix A are
+  unchanged. The §15.1 and §15.1a blocks are unchanged.
 - 1.38 — 2026-10-30: **the owner's answers to the steering review, and the measurement they set**
   (`Planning/C-3-Steering-Tier-Design.md`, `Planning/C-3-Steering-Tier-Results-2026-10-30.md`).
   §14.17 and §14.16 leave centroid similarity out of the pass, where v1.37 kept it optional (the

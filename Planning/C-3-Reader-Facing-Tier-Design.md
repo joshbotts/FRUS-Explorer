@@ -13,8 +13,9 @@ the text below:
 - each run's instruments ran while the next run worked, and runs 11 and 12 waited an hour for the
   5-hour usage window to reset.
 
-The question is printed in the record and the results. The design rests on two decisions of the
-owner's of 2026-10-30:
+The owner followed the rule (2026-10-31, "Follow the rule"), and the guide records the tier at
+v1.39. The question is printed in the record and the results. The design rests on two decisions of
+the owner's of 2026-10-30:
 - **"Skip the full pass."** The revised R1, R2's template and J3's rewording go to the next full
   tier, which tests the wording while the agent also does the research
   (`Agentic-Guide-Reader-Facing-Style-Review-2026-10-30.md` §8).

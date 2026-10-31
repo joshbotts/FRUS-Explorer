@@ -142,8 +142,10 @@ numbers reproduced, every collection opens.
 
 The design's rule (§8): W goes in if readings 1, 2, 5 and 6 hold; each of R7, R8 and R10 if reading
 12 and its own reading hold. Readings 1 and 5 fail, and so does 12. **Nothing from W or K is
-adopted.** The guide stays at v1.38, and the two candidate branches stay local and unmerged. The
-owner decides whether to follow the rule.
+adopted.** The guide stays at v1.38, and the two candidate branches stay local and unmerged.
+
+**The owner followed the rule, 2026-10-31** ("Follow the rule"). Nothing from W or K is adopted. The
+guide's §3a and its version history (v1.39) record the measurement.
 
 Things that bear on that decision, none of which changes the rule's verdict:
 - **The guard's per-run clause fails the control too.** A's run 6 lost three items. With this tier's
@@ -198,9 +200,9 @@ Things that bear on that decision, none of which changes the rule's verdict:
 
 ## 7. What follows
 
-- **The guide's text stays v1.38's**, by the rule, unless the owner decides otherwise.
+- **The guide's text stays v1.38's.** The owner followed the rule, and v1.39 records the measurement
+  in §3a and the version history.
 - **The owner's choices:**
-  - whether to follow the rule as R16's owner did;
   - whether W's writing measurements, which held in every run, warrant a smaller test of R1 and R2
     alone, judged on the same research (the pilot's design) rather than across sessions;
   - whether the guard's per-run clause stays, given that the control breached it.
