@@ -12960,3 +12960,118 @@ struct CollectionProseOutsideSRGBTests {
             "<w:rPr><w:color w:val=\"FF0000\"/></w:rPr><w:t xml:space=\"preserve\">Reddish</w:t>"))
     }
 }
+
+// MARK: - The preview's stored rows (#1765)
+
+/// The collection preview re-resolves when a row it draws but no entry holds is stored — a summary, a
+/// highlight, a note, a tag assignment — and not when a row of another document is (#1765). The
+/// observer's live `@Query` is SwiftUI's; what it hands on is these values' rules, tested here. The
+/// Mac's Collections window kept *No stored summary for this document* beside an inspector that listed
+/// the summary, because the page's fingerprint read none of these rows.
+@Suite("The collection preview follows the stored rows it draws (#1765)")
+struct CollectionPreviewUserDataTests {
+
+    private typealias Scope = CollectionPreviewUserDataScope
+
+    private static let telegram = Scope.Document(volumeId: "frus1946v06", documentId: "d475")
+
+    /// The digest of `scope` over the rows given, the rest empty.
+    private func digest(_ scope: Scope, summaries: [GeneratedSummary] = [],
+                        highlights: [DocumentHighlight] = [], notes: [ResearchNote] = [],
+                        assignments: [DocumentTagAssignment] = [], tags: [UserTag] = []) -> Int {
+        scope.digest(summaries: summaries, highlights: highlights, notes: notes,
+                     assignments: assignments, tags: tags)
+    }
+
+    @Test("A static collection's scope is its document entries and the notes its entries name")
+    func scopeFromEntries() {
+        let chosen = UUID(), linked = UUID()
+        let document = CollectionEntry(collectionId: UUID(), documentId: "d475", volumeId: "frus1946v06",
+                                       sortOrder: 0, researchNoteId: linked, selectedNoteIds: [chosen])
+        let heading = CollectionEntry(collectionId: UUID(), documentId: "", volumeId: "", sortOrder: 1)
+        heading.entryKind = .heading
+        let scope = Scope(entries: [document, heading])
+        #expect(scope.documents == [Self.telegram])
+        #expect(scope.noteIds == [chosen, linked])
+        #expect(scope.volumeIds == ["frus1946v06"])
+        #expect(scope.documentIds == ["d475"])
+    }
+
+    @Test("A smart collection's scope is every document its search returned")
+    func scopeFromRefs() {
+        let refs = [SmartCollectionDocumentRef(documentId: "d475", volumeId: "frus1946v06", sortOrder: 0),
+                    SmartCollectionDocumentRef(documentId: "d1", volumeId: "frus1950v01", sortOrder: 1)]
+        let scope = Scope(refs: refs)
+        #expect(scope.documents == [Self.telegram, .init(volumeId: "frus1950v01", documentId: "d1")])
+        #expect(scope.noteIds.isEmpty)
+    }
+
+    /// The issue's case: a summary made in the reader for a document the page shows.
+    @Test("A summary stored or edited for one of the page's documents moves the digest; one for the same number in another volume does not")
+    func summaryMovesTheDigest() {
+        let scope = Scope(documents: [Self.telegram], noteIds: [])
+        let empty = digest(scope)
+        let elsewhere = GeneratedSummary(documentId: "d475", volumeId: "frus1946v07",
+                                         promptId: UUID(), responseText: "Another volume's d475.")
+        #expect(digest(scope, summaries: [elsewhere]) == empty)
+
+        let summary = GeneratedSummary(documentId: "d475", volumeId: "frus1946v06",
+                                       promptId: UUID(), responseText: "Kennan's analysis.")
+        let stored = digest(scope, summaries: [elsewhere, summary])
+        #expect(stored != empty)
+        #expect(digest(scope, summaries: [summary, elsewhere]) == stored, "the order rows arrive in moved it")
+
+        summary.responseText = "Kennan's analysis, edited."
+        #expect(digest(scope, summaries: [elsewhere, summary]) != stored)
+    }
+
+    @Test("A highlight's colour and a tag assignment move the digest")
+    func highlightsAndTagsMoveTheDigest() {
+        let scope = Scope(documents: [Self.telegram], noteIds: [])
+        let highlight = DocumentHighlight(volumeId: "frus1946v06", documentId: "d475",
+                                          startOffset: 10, endOffset: 40, renderingVersion: "v1")
+        let yellow = digest(scope, highlights: [highlight])
+        #expect(yellow != digest(scope))
+        highlight.colorTag = "green"
+        #expect(digest(scope, highlights: [highlight]) != yellow)
+
+        let tag = UserTag(name: "Containment")
+        let untagged = digest(scope, tags: [tag])
+        let assignment = DocumentTagAssignment(volumeId: "frus1946v06", documentId: "d475", tagId: tag.id)
+        #expect(digest(scope, assignments: [assignment], tags: [tag]) != untagged)
+        let elsewhere = DocumentTagAssignment(volumeId: "frus1946v07", documentId: "d475", tagId: tag.id)
+        #expect(digest(scope, assignments: [elsewhere], tags: [tag]) == untagged)
+    }
+
+    @Test("A note counts when it is on one of the page's documents or an entry names it, and its edits move the digest")
+    func notesMoveTheDigest() {
+        let elsewhere = ResearchNote(documentId: "d9", volumeId: "frus1950v01", bodyText: "Unrelated.")
+        let named = ResearchNote(documentId: "d1", volumeId: "frus1950v01", bodyText: "Named by an entry.")
+        let scope = Scope(documents: [Self.telegram], noteIds: [named.id])
+        #expect(digest(scope, notes: [elsewhere]) == digest(scope))
+
+        let onTheDocument = ResearchNote(documentId: "d475", volumeId: "frus1946v06", bodyText: "Long.")
+        let withNote = digest(scope, notes: [onTheDocument])
+        #expect(withNote != digest(scope))
+        #expect(digest(scope, notes: [named]) != digest(scope))
+
+        onTheDocument.bodyText = "Long, and edited."
+        #expect(digest(scope, notes: [onTheDocument]) != withNote)
+    }
+
+    /// A new scope's first report is a baseline, since the resolve that moved the scope read the rows;
+    /// only a change within one scope re-resolves the page.
+    @Test("The watch re-resolves on a change within a scope, never on a new scope's first report")
+    func watchTellsAChangeFromABaseline() {
+        let first = Scope(documents: [Self.telegram], noteIds: [])
+        let second = Scope(documents: [Self.telegram, .init(volumeId: "frus1946v06", documentId: "d474")],
+                           noteIds: [])
+        var watch = CollectionPreviewUserDataWatch()
+        let reports = [watch.record(1, over: first), watch.record(1, over: first),
+                       watch.record(2, over: first), watch.record(3, over: second),
+                       watch.record(4, over: second), watch.record(4, over: .empty)]
+        // The first report is a baseline; an unchanged digest is no change; a summary stored for the
+        // page's document is one; a new scope's first report is a baseline, and so is an emptied one's.
+        #expect(reports == [false, false, true, false, true, false])
+    }
+}
