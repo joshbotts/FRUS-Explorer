@@ -1,0 +1,102 @@
+manifest top keys: <class 'list'>
+manifest volume sample keys: ['dateRange', 'editors', 'filename', 'publicationDate', 'sizeBytes', 'status', 'subseries', 'tags', 'title', 'volumeId']
+distinct (vol,doc,title) citations: 38 title mismatches after whitespace collapse: 0
+
+== dates, datelines, headers of the 38 cited pairs ==
+frus1944v06/d269: 1944-02-03 | 'Chungking, February 3, 1944. [Received Febru | The Ambassador in China (Gauss) to the Secretary of State
+frus1947v05/d23: 1947-02-21 | '[Washington,] February 21, 1947.'            | Memorandum by the Under Secretary of State (Acheson) to the Secretary of State
+frus1981-88v01/d247: 1985-09-04 | 'Washington, September 4, 1985'               | 247. Talking Points Prepared in the Policy Planning Staff
+frus1922v01/d864: 1922-10-10 | '[Washington,] October 10, 1922.'             | The Acting Chief of the Division of Latin American Affairs, Department of State (White) to the 
+frus1950v06/d802: 1950-02-02 | '[Washington,] February 2, 1950.'             | Memorandum from the Secretary of State to the President
+frus1955-57v22/d7: 1955-05-19 | 'Rangoon, May 19, 1955—noon.'                 | 7. Telegram From the Embassy in Burma to the Department of State
+frus1964-68v05/d258: 1967-07-27 | 'Saigon, July 27, 1967.'                      | 258. Memorandum From the Minister-Counselor for Political Affairs of the Embassy in Vietnam (Ca
+frus1969-76ve09p2/d155: 1975-08-19 | 'Washington, undated.'                        | 155. Briefing Memorandum From the Assistant Secretary of State for Near Eastern and South Asian
+frus1977-80v24/d337: 1977-06-29 | 'Washington, June 29, 1977, 10:05 a.m.–11:05  | 337. Memorandum of Conversation
+frus1947v07/d553: 1947-07-25 | '[Nanking,] 25 July 1947.'                    | Memorandum of Conversation, by Mr. Philip D. Sprouse
+frus1948v07/d440: 1948-11-06 | 'Nanking, November 6, 1948—10 a. m. [Received | The Ambassador in China (Stuart) to the Secretary of State
+frus1949v08/d576: 1949-08-23 | 'Canton, August 23, 1949—8 p. m. [Received Au | The Chargé in China (Clark) to the Secretary of State
+frus1981-88v01/d264: 1986-03-06 | 'Washington, March 6, 1986'                   | 264. Information Memorandum From the Director of the Bureau of Intelligence and Research (Abram
+frus1922v01/d841: 1922-04-21 | 'Habana, April 21, 1922. [Received April 25.] | The Representative on Special Mission in Cuba (Crowder) to the Secretary of State
+frus1922v01/d836: 1922-04-05 | 'Habana, April 5, 1922. [Received April 10.]' | The Representative on Special Mission in Cuba (Crowder) to the Secretary of State
+frus1922v01/d842: 1922-05-04 | 'Habana, May 4, 1922. [Received May 9.]'      | The Representative on Special Mission in Cuba (Crowder) to the Secretary of State
+frus1922v01/d862: 1922-09-14 | 'Washington, September 14, 1922—6 p.m.'       | The Acting Secretary of State to the Representative on Special Mission in Cuba (Crowder)
+frus1952-54v12p2/d324: 1952-12-15 | 'Manila, December 15, 1952—2 p.m.'            | No. 324 The Ambassador in the Philippines (Spruance) to the Department of State
+frus1964-68v32/d8: 1964-06-08 | 'Santo Domingo, June 8, 1964, noon.'          | 8. Telegram From the Embassy in the Dominican Republic to the Department of State
+frus1961-63v20/d422: 1963-05-29 | 'Washington, May 29, 1963, noon.'             | 422. Memorandum of Conversation
+frus1912/d1502: 1912-03-21 | 'Department of State, Washington, March 21, 1 | The Acting Secretary of State to the President.
+frus1958-60v01/d135: 1960-04-11 | 'Washington, April 11, 1960—8:07 p.m.'        | 135. Telegram From the Secretary of State to the Embassy in Vietnam
+frus1958-60v01/d156: 1960-05-09 | 'Washington, May 9, 1960'                     | 156. Memorandum of Discussion at the 444th Meeting of the National Security Council, Washington
+frus1958-60v01/d160: 1960-05-13 | 'Saigon, May 13, 1960—10 p.m.'                | 160. Telegram From the Ambassador in Vietnam (Durbrow) to the Department of State
+frus1961-63v01/d298: 1961-11-30 | 'Saigon, November 30, 1961.'                  | 298. Letter From the Ambassador in Viet-Nam (Nolting) to the Deputy Under Secretary of State fo
+frus1964-68v05/d301: 1967-08-31 | 'Washington, August 31, 1967, 0159Z.'         | 301. Telegram From the Department of State to the Embassy in Vietnam
+frus1969-76v08/d191: 1972-06-22 | 'Washington, June 22, 1972, 9:33–10:07 a.m.'  | 191. Minutes of a Washington Special Actions Group Meeting
+frus1981-88v41/d251: 1986-06-11 | 'Washington, June 11, 1986'                   | 251. Memorandum From the President’s Assistant for National Security Affairs (Poindexter) and t
+frus1949v06/d330: 1949-11-18 | '[Washington,] November 18, 1949.'            | Memorandum of Conversation, by the Secretary of State
+frus1950v05/d289: 1950-11-30 | 'Tehran, November 30, 1950—4 p. m.'           | The Chargé in Iran (Richards) to the Secretary of State
+frus1950v03/d728: 1950-12-05 | 'Washington, December 5, 1950, 2:45 p.m. to 4 | United States Minutes, Truman–Attlee Conversations, Second Meeting, The Presidential Yacht “Wil
+frus1961-63v22/d252: 1962-03-18 | 'Tokyo, March 18, 1962, 10 p.m.'              | 252. Telegram From the Embassy in Japan to the Department of State
+frus1977-80v03/d35: 1977-06-29 | 'Washington, June 29, 1977'                   | 35. Memorandum From the Special Representative for Economic Summits (Owen) to President Carter
+frus1977-80v03/d248: 1980-07-29 | 'Washington, July 29, 1980'                   | 248. Memorandum From Secretary of Commerce Klutznick and the United States Trade Representative
+frus1977-80v03/d65: 1977-10-01 | 'Washington, October 5, 1977'                 | 65. Memorandum From the Special Representative for Economic Summits (Owen) to President Carter
+frus1977-80v03/d230: 1980-01-18 | 'Washington, January 18, 1980'                | 230. Memorandum From the Special Representative for Economic Summits (Owen) to President Carter
+frus1893/d628: 1893-08-18 | 'Legation of the United States, Constantinopl | Mr. Terrell to Mr. Gresham.
+frus1921v01/d275: 1921-12-03 | 'Peking, December 3, 1921—5 p.m. [Received De | The Minister in China (Schurman) to the Secretary of State
+
+== window frus1958-60v15/d411 ==
+  ... ons; meanwhile pointing out the advantages which derived from strict separation of Church and State during the decades of U.S. tutelage in the Philippines.” Secretary Herter suggested the deletion of paragraph 32, on the grounds that the problem of the influence of the Roman Catholic Church in the Philippines was a very touchy subject. Moreover, in the last election the Church had on the whole exercised a beneficent influence in fighting against corruption. The President, agreeing with Secretary Herter’s point, said that we would be expecting our officials in the Philippines to be veritable Machiavellis if they were to carry out such a very difficult course of action successfully. General Cutler explained the reason which had induced the Planning Board to include paragraph 32, and suggested that while the second part of the paragraph might well be omitted, he thought that the first part was sou ...
+
+== window frus1964-68v02/d265 ==
+  ... l on the Defense Department for whatever specialized personnel are required for these three provinces. E. Point 7 The cable proposed an experimental program of food distribution direct to the families of military personnel. Ambassador Taylor and General Westmoreland said that there is no evidence that the regular and paramilitary forces or their families are short of food. They said that an earlier food-distribution plan was abandoned because of corruption and difficulties in administration. It was agreed, however, that the mission would undertake a study to improve the fringe benefits for the forces and their families. ...
+
+== attribution checks ==
+
+-- frus1949v08/d576 --
+  ... he anatagonized man who held purse strings, he would have no money for continued resistance Communists. He was therefore completely stymied and making best of it. He and Pai feel unless we make the best of a bad bargain and come to aid of existing government, corrupt as it is, Communist domination of all China is inevitable and liberalism will die. They desperately seek liberation from the dead hand of Gimo control through his control of Treasury and they hope as stated Cantel 886, August 6 repeated Shanghai 479, Nanking 584, in s ...
+
+-- frus1912/d1502 --
+  ... eir call for aid, and they most earnestly hope that the Senate of the United States may approve the loan convention, and thus confer upon them the full benefits of the reorganization of their political and financial system, which during the seventeen years of arbitrary and corrupt government under Zelaya were plunged into disorder bordering on anarchy. Reforms just enacted by the Nicaraguan Assembly have the general support of all classes, with the exception of the few persons identified with the Zelaya régime, of the speculators and o ...
+
+-- frus1977-80v03/d248 --
+  ... ur review indicates that U.S. exporters consider the Foreign Corrupt Practices Act (FCPA) to be the second most significant export disincentive. The Act has two consequences. The first, not unexpectedly, is that some exports are lost because foreign companies can bribe foreign officials while U.S. companies cannot. However, this prohibition was fully intended. As a nation we have decided that bribery in international trade is reprehensible and that American companies must forego exports that can be attained only by illicit payments ...
+
+-- frus1947v05/d23 --
+  ... f the Greek people as a whole when administered by the present impotent Greek Government services. The U.S. Economic Mission has urgently recommended, and the Greek Government has requested, the immediate dispatch to Greece of three American and three British experts in the field of government administration to reorganize the civil service. We are already in the process of recruiting suitable persons for this task. 3. Economic and Financial Aid. Credits to Greece from U.S. sources include $25,000,000 from the Export-Impor ...
+
+-- frus1964-68v05/d301 --
+  ...  “Impact” measures would include diverse appointments to the new government and a new political party law. The next priority was improvement of the ARVN, with “impact” reforms including merit promotion and the formation of an inspectorate. The third priority, corruption in the government, was to be reduced by a new government agency created to root out officials engaged in corrupt practices. A fourth priority was to revitalize national reconciliation and Chieu Hoi programs by extending political participation and civil right ...
+
+-- frus1961-63v01/d298 --
+  ... we are trying to do here. Starting from completely different premises, he naturally did not agree with our policy. His premises, as the Department doubtless knows, are: (1) that the Viet-Cong insurgency here is nothing but a manifestation of discontent with a corrupt regime; (2) that Communist expansionism from North VietNam, China and Russia has nothing to do with it; (3) that corruption in the regime is bred by US assistance, and that contention among factions for control of US assistance further corrupts and paralyzes  ...
+
+-- frus1969-76v08/d191 --
+  ... conclusions they reach, quite naturally, are that Vietnamization is a failure and that the enemy offensive was blunted only by U.S. air. On the political side, Moose and Lowenstein write that Thieu has no support, except for the U.S. They report that there is corruption throughout the country and that all U.S. officials wink at the corruption. I assume the report will be issued before Congress recesses on June 30. Mr. Nutter: That’s a safe assumption to make. Mr. Sullivan: I’ve asked our people to start getting all the st ...
+
+-- frus1961-63v20/d422 --
+  ... schild pointed out that the working group had agreed this morning on some such arrangement and Mr. Beaudry added that the representatives of the donor countries in Léopoldville would form a de facto committee. The Secretary asked what might be done to control corruption in Léopoldville and remarked that we would have considerable trouble with Congress over giving aid to the Congo if there was widespread corruption. Mr. Spaak replied that the EEC is planning to try to create an administrative infra-structure in the Congo w ...
+
+-- frus1964-68v32/d8 --
+  ... ns before meeting here. Reid took initiative yesterday to have lengthy conversation with [less than 1 line of source text not declassified], later joined by other two attachés. I consider this was a most useful encounter, since they got down to brass tacks on graft, corruption in armed forces and elsewhere. Reid asked for it and he got it in accord with lines worked out among us beforehand. Reid was in sober state of mind and his manner indicated realization his part things not going well lately. I believe our team made ...
+
+-- frus1952-54v12p2/d324 --
+  ... hich is indicated by many things that have been happening, I am strongly of opinion we must at suitable time inform Quirino privately that US will discontinue military and eocnomic aid if he fails to ensure free election in 1953 and is re-elected by force and corrupt practices. Another corrupt election will greatly strengthen Communists. I consider this of such vital importance to future welfare of Philippines that I plan to ask orders to return Washington to place situation here before Secretary of State and President. S ...
+
+-- frus1955-57v22/d7 --
+  ... that GUB request loan from US for continuing economic development program. Final decision however left to Prime Minister and he feels inclined cut back program to conform Burma’s own ability pay rather than seek outside help. He gave as reason that widespread corruption among rank and file politicians and officials makes it impossible insure that funds properly used. Nu said that contracts with American consultants (mentioned specifically Robert Nathan Associates A U.S. consulting firm providing economic advice to the Bur ...
+
+-- frus1958-60v01/d156 --
+  ... ar to that which characterized the last days of the French regime. Moreover, Diem’s own ranks had been crumbling. Critics of his one-man rule were becoming more vocal at all levels of government. This criticism asserted that Diem’s administration had fostered corruption, condoned maladministration, and permitted dictatorial practices with the result that communism in South Vietnam was being promoted. Criticism of Diem was so far uncoordinated outside government circles but was becoming stronger, as indicated by a recent m ...
+
+-- frus1958-60v01/d160 --
+  ... s in French and proceeded read them slowly to Diem (see Embassy despatch 396 Dated May 13, not printed. (Department of State, Central Files, 651H.51K/5–1360) going forward 14th for English and French texts my notes). 1. Until I referred in second paragraph to corruption in Can Lao party Diem remained grave but calm. When party mentioned he immediately became very serious and was obviously agitated but nevertheless he heard me through to the end. Still agitated he replied that he was deeply hurt that USG would believe such ...
+
+-- frus1950v03/d728 --
+  ... s not a satellite. The Russians have not given very much help to China. The Chinese do not owe them very much. There is a strong mixture of Chinese nationalism in their communist attitude. One had to recognize that the old Chinese regime had become rotten and corrupt. The President interposed to say that was true and that was what the Communists had built on. The Prime Minister said when you have such a regime the Chinese believed that communism offered them the only alternative to the old corruption. He had discussed thi ...
+
+-- frus1977-80v03/d35 --
+  ... at a high-level conference on youth unemployment should be held by the end of the year. —Negotiations regarding the IMF expansion are going forward. —We are now trying to get ECOSOC to convene a diplomatic conference this fall to conclude an agreement banning illicit payments in 1978. On the afternoon of May 8, during the Summit’s final session, Carter said in reference to the Joint Declaration: “I think we need something on irregular practices in trade to avoid bribery. I would like to have your support.” Giscard replied ...
+
+-- frus1981-88v01/d247 --
+  ... defend the system (church, business, honest politicians in Marcos’s own party as well as in moderate opposition parties) are alienated and frustrated by Marcos’s one-man rule. — Here, too, the status quo may be heading us toward disaster. Marcos may be more a liability than an asset—unless he makes a sharp turn toward military, economic, and political reform. The only way to avoid catastrophe may be to reform fast. — Marcos needs to hear from you—whom he trusts—that he really has a problem. I will shortly be coming to you  ...
+
+-- frus1981-88v01/d264 --
+  ...  overlapping fundamentals common to most transitions, which combined with other more singular factors to produce them. The Exhaustion of Legitimacy. The old order fails. Repression, corruption, and economic travail and mismanagement are the most usual causes, as in Manila. In Buenos Aires and Lisbon a bad war was added to the list. Often, as in Peru, economic failure helps persuade the military to leave voluntarily in order to preserve the military institution. In Franco’s Spain legitimacy was personal; it died with him. Howev ...

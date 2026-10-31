@@ -1,0 +1,47 @@
+index digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+binary digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+map digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+.generation 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+dims 512 docs 314616 centroids 660
+retrieval {"measuredBy": "Planning/semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md \u00a75, 3,600 era-stratified queries over the 314,616-document corpus; Hamming-800 over 512 sign bits \u2192 int8-512", "measuredRecallAt10": 0.9021, "rerankPool": 800, "scoreCalibration": {"documentOffset": 0.4, "measuredBy": "Planning/semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md \u00a71b, fitted to EmbeddingGemma 300m's scores over 90 typed queries and 600 anchor documents against the 314,616-document corpus", "queryOffset": 0.47}}
+generated 2026-10-15 harvestGenerated 2026-10-15T06:55:14
+round trip mismatches 0 of 553
+random pairs: n 20000 mean 167.1 sd 14.8 p1 132 min 95
+200-doc sample: 1st-NN median 82; 10th-NN median 102 quartiles 95 108; 25th-NN median 108 quartiles 101 114
+set rows resolved 27 of 27
+NN of frus1969-76ve09p2/d122
+    ('frus1977-80v18', 'd154', 81)
+    ('frus1977-80v18', 'd176', 88)
+    ('frus1969-76ve09p2', 'd107', 91)
+    ('frus1969-76v24', 'd169', 95)
+    ('frus1969-76v24', 'd133', 95)
+    ('frus1977-80v18', 'd144', 98)
+    ('frus1977-80v18', 'd143', 99)
+    ('frus1969-76ve09p2', 'd85', 102)
+    ('frus1969-76v36', 'd134', 103)
+    ('frus1969-76ve09p2', 'd155', 103)
+    ('frus1950v05', 'd636', 104)
+    ('frus1977-80v18', 'd179', 104)
+    ('frus1969-76ve09p2', 'd180', 104)
+    ('frus1977-80v18', 'd196', 105)
+    ('frus1977-80v18', 'd216', 106)
+NN of frus1947v07/d628
+    ('frus1947v07', 'd617', 52)
+    ('frus1947v07', 'd625', 55)
+    ('frus1948v07', 'd506', 60)
+    ('frus1947v07', 'd185', 63)
+    ('frus1945v07', 'd48', 64)
+    ('frus1945v07', 'd444', 66)
+    ('frus1948v08', 'd396', 67)
+    ('frus1948v08', 'd46', 68)
+    ('frus1947v07', 'd616', 68)
+    ('frus1949v09', 'd582', 69)
+    ('frus1949v09', 'd574', 69)
+    ('frus1948v07', 'd400', 69)
+    ('frus1948v08', 'd167', 70)
+    ('frus1948v08', 'd191', 70)
+    ('frus1948v08', 'd110', 70)
+near-dup scan (hamming<=20) for each set member against full corpus:
+    ('frus1969-76ve15p2', 'd292') [(('frus1969-76ve15p2Ed2', 'd292'), 0)]
+    ('frus1969-76ve15p2', 'd293') [(('frus1969-76ve15p2Ed2', 'd293'), 0)]
+within-set pairwise hamming: mean 153.7 min 52

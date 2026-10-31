@@ -1,0 +1,56 @@
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"   -> 553|321749|1103|8481
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "BEGIN; CREATE TABLE zz(x); ROLLBACK;"   -> Error: attempt to write a readonly database (rc=1)
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT term, doc, cnt FROM frus_documents_vocab WHERE term IN ('corrupt','corrupt','brib','briberi','bribe','graft','kickback','embezzl','embezzl','venal','peculat','payoff','extort','nepot','malfeas','misappropri','scandal','racket','squeeze','lockhe','kleptocraci') ORDER BY term;"
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT term, doc, cnt FROM frus_documents_vocab WHERE term LIKE 'brib%' OR term LIKE 'corrupt%' OR term LIKE 'graft%' OR term LIKE 'kickback%' OR term LIKE 'embezzl%' ORDER BY doc DESC;"
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "PRAGMA table_info(document_cache);"
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "PRAGMA table_info(document_dates);"
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT sql FROM sqlite_master WHERE name IN ('frus_documents','document_sources','external_citations','volume_structures');"
+python3 -u scope1.py > scope1.out  (MATCH family 'corrupt OR bribe OR briberi OR graft OR kickback OR embezzl', per-term, controls; SQL printed in scope1.out)
+python3 -u share1.py > share1.out  (SQL + regexes printed in share1.out)
+python3 -u heads.py > heads.out  (SELECT volume_id, structure_json FROM volume_structures; regex printed)
+python3 -c 'inspect manifest.json top keys and first volume'
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT c.volume_id, c.document_id, substr(c.header,1,140) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'header:(corrupt OR bribe OR briberi OR graft OR kickback OR embezzl)' AND c.is_front_matter=0 AND c.is_editorial_note=0 ORDER BY c.volume_id, c.document_id;"
+python3 (manifest.json -> voltitles.out: volume id | title | subseries | publicationDate)
+python3 -u probe.py p1.txt > p1.out  (probe template SQL printed in p1.out; p1.txt holds the five MATCH/volume specs)
+python3 -u probe.py p2.txt > p2.out
+python3 -u probe.py p3.txt > p3.out  (COUNT SQL: SELECT COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT LIKE '%Ed2')
+sed -i '' (probe.py: replace NOT LIKE '%Ed2' with NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2'), keeping frus1977-80v09Ed2)
+python3 -u readdocs.py frus1944v06/d148 frus1946v10/d373 frus1947v07/d908 frus1948v07/d43 frus1958-60v01/d131 frus1958-60v01/d135 frus1964-68v05/d395 frus1964-68v05/d258 frus1961-63v22/d202 >> read.out
+cat texts/{frus1944v06__d148,frus1946v10__d373,frus1947v07__d908,frus1948v07__d43}.txt
+cat texts/{frus1958-60v01__d131,frus1958-60v01__d135,frus1964-68v05__d395}.txt
+python3 -u readdocs.py frus1955-57v13/d16 frus1958-60v12/d168 frus1964-68v22/d79 frus1969-76ve12/d218 frus1969-76ve12/d219 frus1969-76ve09p2/d161 frus1969-76ve15p2/d293 frus1977-80v03/d248 frus1977-80v03/d308 frus1969-76ve09p2/d152 >> read.out
+cat texts/{frus1955-57v13__d16,frus1958-60v12__d168,frus1969-76ve12__d218,frus1969-76ve12__d219,frus1969-76ve15p2__d293}.txt
+python3 - (print 350/450-char contexts around family terms in texts/{d161,d248,d308,d79,d152,d202}.txt)
+python3 -u census.py > census.out
+python3 -u lockheed.py > lockheed.out
+python3 -u arch1.py > arch1.out  (cited.txt = the 18 pairs)
+python3 -c 'print top-level keys of collection-usage, central-files, series-facts, external-citation, presidential-library-catalog JSON'
+python3 -u arch2.py > arch2.out
+python3 -u arch3.py > arch3.out
+python3 -u arch4.py > arch4.out
+python3 -u arch5.py > arch5.out
+python3 -u arch6.py > arch6.out
+python3 - > arch7.out (decimal-class-labels schedules: look up country/class keys 893, 751K, 787, 811, 20, 51, 00, 5)
+python3 -u vec.py > vec.out  (digests, round trip, baselines seeds 1877/1878, 25 neighbours for 6 anchors, near-duplicates; SQL printed in vec.out)
+python3 -u readdocs.py frus1947v07/d900 frus1958-60v01/d176 frus1961-63v22/d204 frus1955-57v13/d321 frus1969-76ve09p2/d130 frus1977-80v03/d119 frus1958-60v01/d155 >> read.out   (vector-surfaced OUTSIDE/ABSENT neighbours)
+python3 - (scan texts of the 7 neighbours for related vocabulary: shady|irregular|squeeze|rake-off|payoff|commission|agents' fees|favoritism|nepotism|venal|misuse|diversion|black market|profiteer|graft|corrupt|brib|Khashoggi|integrity|honest; 200-char contexts)
+cat texts/frus1961-63v22__d204.txt; head -c 1500 texts/frus1958-60v01__d176.txt
+python3 -u dups.py > dups.out  (token SequenceMatcher ratio on first 3000 tokens; AGREE at >= 0.80)
+python3 - > dups_headers.out (headers + dates of each agreeing group)
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'corrupt OR bribe OR briberi OR graft OR kickback OR embezzl OR lockheed OR "corrupt practices" OR "illicit payments" OR "questionable payments"' AND c.volume_id='frus1961-63v22' AND c.document_id='d204';"   (re-run of every logged MATCH against the vector-reached pair)
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'farley' AND c.volume_id='frus1961-63v22' AND c.document_id='d204';"   (relaxed: a word the pair does hold)
+python3 -u verify.py > verify.out  (excerpts.json: 19 passages; exact substring test on body_text)
+python3 -u ff.py > ff.out
+python3 -u p4.py > p4.out
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT repository, record_group, series_name, citation_era, substr(raw_text,1,140) FROM document_sources WHERE volume_id='frus1961-63v22' AND document_id='d204'; SELECT anchor, repository, collection, decimal_class, raw_text FROM external_citations WHERE volume_id='frus1961-63v22' AND document_id='d204';"
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(*), COUNT(DISTINCT c.volume_id||'/'||c.document_id) FROM external_citations c WHERE c.volume_id IN ('frus1944v06','frus1946v10','frus1947v07','frus1948v07','frus1955-57v13','frus1958-60v01','frus1958-60v12','frus1961-63v22','frus1964-68v05','frus1964-68v22','frus1969-76ve09p2','frus1969-76ve12','frus1969-76ve15p2','frus1977-80v03'); SELECT MIN(t.date_iso) FROM external_citations e JOIN document_dates t ON t.volume_id=e.volume_id AND t.document_id=e.document_id;"
+grep voltitles.out for 6 volume titles
+python3 -c (flag summary per anchor from vec_neighbours.json) > vec_flagsummary.out
+python3 - (six wording edits to overview.md; check every double-quoted string in overview.md against excerpts.json)
+python3 - (pair every double-quoted string in overview.md and test it against excerpts.json)
+python3 - (four edits to overview.md: archival file titles italicised, withheld-names sentence reworded)
+python3 -u build_collection.py  (writes collection.fruscollection; asserts each pair exists, non-apparatus, no duplicate, no Ed2)
+sed -i '' build_collection.py (two note wordings: d152 speaker named; d308 G-77 timing) ; python3 -u build_collection.py
+sed -i '' build_collection.py (Carlyle Maw -> Maw, as the transcript names him); python3 -u build_collection.py
+python3 - (overview.md: three edits so the reading claim matches memo M6)
+ELIDED: the bodies of the Python scripts are not pasted into this log; each is kept whole in the run directory under the name the log gives (scope1.py, share1.py, heads.py, probe.py with p1.txt/p2.txt/p3.txt, readdocs.py, census.py, lockheed.py, arch1.py-arch6.py, vec.py, dups.py, ff.py, p4.py, verify.py, build_collection.py) and its SQL is printed at the head of its .out file. Not kept as files: the inline `python3 -c` / `python3 - <<EOF` bodies logged above as one-line descriptions (manifest inspection, voltitles.out, JSON top-level keys, arch7.out decimal-schedule look-up, the 350/450-character context printer over texts/, the neighbour vocabulary scan, dups_headers.out, vec_flagsummary.out, and the overview edit and quote-check scripts). The id lists passed to readdocs.py are given in full on their lines. Outputs were shortened on screen with cut -c and head; every .out file on disk is whole.

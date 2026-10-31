@@ -1,0 +1,29 @@
+index keys: ['documentCount', 'generated', 'harvestGenerated', 'harvestScriptSHA256', 'provenance', 'provenanceDigest', 'retrieval', 'schema', 'subseries', 'volumes']
+volume entry sample: {"n": 312, "r": 0, "seg": [{"i": "d1", "n": 312, "s": 0}], "v": "frus1861"}
+documentCount: 314616 provenanceDigest: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+decoded rows: 314616 contiguous 0..N-1: True
+decoded ids absent from document_cache: 0 []
+binary magic b'FRSV' ver 1 dims 512 docs 314616 centroids 660
+DIGESTS equal (index, binary, map, .generation): True | 89481b1869da1880 89481b1869da1880 89481b1869da1880 89481b1869da1880
+
+ANCHOR frus1964-68v05/d258 row 270457 (0.0s)
+ mine   : [(97, 'frus1958-60v01/d55'), (97, 'frus1964-68v05/d395'), (99, 'frus1964-68v04/d21'), (99, 'frus1964-68v05/d301'), (99, 'frus1969-76v06/d175'), (100, 'frus1964-68v04/d222'), (100, 'frus1964-68v04/d268'), (101, 'frus1917-72PubDipv07/d177'), (101, 'frus1961-63v02/d300'), (101, 'frus1961-63v02/d322')]
+ session: [(97, 'frus1958-60v01/d55'), (97, 'frus1964-68v05/d395'), (99, 'frus1964-68v04/d21'), (99, 'frus1964-68v05/d301'), (99, 'frus1969-76v06/d175'), (100, 'frus1964-68v04/d222'), (100, 'frus1964-68v04/d268'), (101, 'frus1917-72PubDipv07/d177'), (101, 'frus1961-63v02/d300'), (101, 'frus1961-63v02/d322')]
+ REPRODUCES (same pairs, same order, same distances): True
+ map: x=-28444 y=1745 cluster=29
+
+ANCHOR frus1922v01/d841 row 79603 (0.0s)
+ mine   : [(73, 'frus1922v01/d842'), (92, 'frus1922v01/d836'), (99, 'frus1922v01/d845'), (99, 'frus1922v01/d852'), (100, 'frus1921v01/d702'), (100, 'frus1922v01/d844'), (101, 'frus1922v01/d837'), (101, 'frus1922v01/d848'), (103, 'frus1921v01/d679'), (103, 'frus1921v01/d720')]
+ session: [(73, 'frus1922v01/d842'), (92, 'frus1922v01/d836'), (99, 'frus1922v01/d845'), (99, 'frus1922v01/d852'), (100, 'frus1921v01/d702'), (100, 'frus1922v01/d844'), (101, 'frus1922v01/d837'), (101, 'frus1922v01/d848'), (103, 'frus1921v01/d679'), (103, 'frus1921v01/d720')]
+ REPRODUCES (same pairs, same order, same distances): True
+ map: x=9360 y=-11838 cluster=43
+
+ANCHOR frus1969-76ve09p2/d155 row 298126 (0.0s)
+ mine   : [(69, 'frus1977-80v18/d151'), (72, 'frus1969-76v24/d133'), (74, 'frus1977-80v18/d17'), (76, 'frus1969-76ve09p2/d118'), (77, 'frus1977-80v18/d176'), (79, 'frus1969-76ve09p2/d85'), (79, 'frus1977-80v18/d216'), (80, 'frus1977-80v18/d96'), (80, 'frus1977-80v18/d143'), (81, 'frus1969-76ve09p2/d146')]
+ session: [(69, 'frus1977-80v18/d151'), (72, 'frus1969-76v24/d133'), (74, 'frus1977-80v18/d17'), (76, 'frus1969-76ve09p2/d118'), (77, 'frus1977-80v18/d176'), (79, 'frus1969-76ve09p2/d85'), (79, 'frus1977-80v18/d216'), (80, 'frus1977-80v18/d96'), (80, 'frus1977-80v18/d143'), (81, 'frus1969-76ve09p2/d146')]
+ REPRODUCES (same pairs, same order, same distances): True
+ map: x=-17844 y=-12675 cluster=unclustered
+
+near-duplicate: d728 vs frus1950v07/d977 Hamming = 13 | nearest other to d728: [(0, 'frus1950v03/d728'), (13, 'frus1950v07/d977'), (43, 'frus1950v03/d732')]
+d841 vs d836 Hamming: 92
+retrieval block: {"measuredBy": "Planning/semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md \u00a75, 3,600 era-stratified queries over the 314,616-document corpus; Hamming-800 over 512 sign bits \u2192 int8-512", "measuredRecallAt10": 0.9021, "rerankPool": 800, "scoreCalibration": {"documentOffset": 0.4, "measuredBy": "Planning/semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md \u00a71b, fitted to Embed

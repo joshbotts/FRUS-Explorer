@@ -1,0 +1,73 @@
+You are writing the overview for a historian from one research session that is already done. Its
+memo and its collection are in front of you, and nothing else is to be searched. Your label is
+w6; the label means nothing and you need not mention it.
+
+YOUR RUN DIRECTORY (yours alone; create it; write nothing outside it):
+     /Users/jbotts/frus-analysis/c3r/runs/w6
+
+INPUTS, read-only:
+- /Users/jbotts/frus-analysis/c3r/inputs/r8/memo.md: the operator's memo. It holds the scope, every figure in its audit form,
+  every quotation with the document it was verified against, and a trace table written for an
+  earlier overview of the same research.
+- /Users/jbotts/frus-analysis/c3r/inputs/r8/collection.fruscollection: the collection (JSON) that the overview's documents and
+  quotations belong to. Its excerpts are the verified passages.
+- "/Applications/FRUS Explorer.app/Contents/Resources/manifest.json": each volume's printed title, for the full citations.
+Do NOT read anything else: no other file under /Users/jbotts/ (nothing under /Users/jbotts/Development/,
+no other folder of /Users/jbotts/frus-analysis/), no database, no network.
+
+THE RULES
+- Every figure, quotation and claim in the overview comes from the memo. Quote only passages the
+  memo or the collection's excerpts give, word for word.
+- Every document the overview cites is in the collection.
+- Write two files in your run directory: overview.md, and trace.md, with one row per number and
+  per quotation in the overview, giving the memo line it comes from.
+
+READER-FACING OUTPUT — the rules the overview follows:
+READER-FACING OUTPUT — the overview and the collection are for a historian, not for me
+- Write the overview in plain prose. No SQL, no table or column name, no volume_id/document_id
+  string, no file path, no issue number. Those belong in the memo, which keeps every one.
+- Open with three paragraphs, in this order, before any finding: (1) what FRUS answers directly,
+  with the documents cited; (2) where FRUS points for the rest, the series the documents came
+  from and the series the footnotes cite unprinted, as two lists, each series by title, record
+  group and entry, NARA identifier, dates and access; (3) what this request cannot get from FRUS,
+  each as a search you ran, with its terms, volumes and controls, and the shelf if one exists.
+- Cite as the printed edition — "Foreign Relations of the United States, 1958–1960, Volume VII,
+  Part 1, Document 12" — then the history.state.gov URL. The id pair is for the memo and the log.
+- Give every number as a count of a named set in words ("about one document in seven among the
+  43 volumes indexed"), rounded to what the comparison needs; put the exact N of M, the rate and
+  the denominator in the memo and say "see the memo" once, not at every number.
+- Every quotation in the overview is one the memo verified against its document; every document
+  the overview cites is in the collection. Check both before you finish, and say you did.
+- Explain a technical term the first time it appears, in the sentence, or do not use it: "the
+  index treats 'clearing agreement' and 'clear agreement' as the same words", not "stem".
+
+THE QUESTION
+How did the United States decide whether to recognize governments that came to power by force in Latin America, and what did it ask of them before recognizing?
+
+THE OVERVIEW
+overview.md — for the historian, who commissioned the question and never opens a terminal.
+   Use this skeleton:
+     # <The question, as asked>
+     ## The bottom line
+     **1. What FRUS answers directly** — one paragraph: the finding, with the documents it rests
+        on cited as the edition, and the size of the set in words.
+     **2. Where FRUS points for the rest** — one paragraph: the archival series the printed
+        documents came from and the ones the editors cited without printing, each named as a
+        series with its record group, entry, identifier, dates and access status; and which of
+        the two channels each is.
+     **3. What this request cannot get from FRUS** — one paragraph: each part of the question the
+        corpus does not hold, with what was searched to establish it (the terms, the volumes, the
+        controls) and, where one exists, the shelf that holds it anyway.
+     **Scope** — two sentences: which volumes, how many documents, what was excluded, in words.
+     ## Decisions this needs from you — the definitional choices the question leaves open, each in
+        one sentence with the consequence of each choice, and the inclusion rule you used meanwhile.
+     ## Findings — three to six, each a heading, a paragraph, and one to three quoted documents
+        cited as the edition
+     ## How this was done — one paragraph a methods section would accept
+     ## Read next — the collection, by name, and what the historian's additions would unlock
+   Cite as the printed edition — "Foreign Relations of the United States, 1958–1960, Volume VII,
+   Part 1, Document 12" — followed by the history.state.gov URL
+   (https://history.state.gov/historicaldocuments/<volume_id>/<document_id>).
+
+When both files are written, return as your entire final message the single line:
+DONE /Users/jbotts/frus-analysis/c3r/runs/w6

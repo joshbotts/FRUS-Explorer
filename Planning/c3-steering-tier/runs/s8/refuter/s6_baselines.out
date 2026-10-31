@@ -1,0 +1,5 @@
+frus1969-76ve09p2/d122: 15th-nearest distance 106; documents at exactly that distance: 2; within <= 106: 16
+frus1947v07/d628: 15th-nearest distance 70; documents at exactly that distance: 4; within <= 70: 16
+random pairs: n 20000 mean 167.1 sd 14.8 p1 132 min 95
+200-doc sample: 1st-NN median 82; 10th-NN median 102 quartiles 95 108; 25th-NN median 108 quartiles 101 114
+within-set pairwise hamming: n pairs 378 mean 152.9 min 52

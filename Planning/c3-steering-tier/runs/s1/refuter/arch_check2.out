@@ -1,0 +1,16 @@
+legend: {'keys': {'ar': {'field': 'accessRestrictions', 'into': 'restrictions', 'kind': 'indexList'}, 'as': {'field': 'accessStatus', 'into': 'statuses', 'kind': 'index'}, 'c': {'field': 'creator', 'into': 'headings', 'kind': 'index'}, 'cy0': {'field': 'coverageStartYear', 'kind': 'year'}, 'cy1': {'field': 'coverageEndYear', 'kind': 'year'}, 'fa': {'field': 'findingAids', 'into': 'findingAidTypes', 'kind': 'indexList'}, 'p': {'field': 'predecessors', 'into': 'headings', 'kind': 'indexList'}, 'ru': {'field': 'referenceUnit', 'into': 'referenceUnits', 'kind': 'index'}, 'ur': {'field': 'useRestrictions', 'into': 'useRestrictions', 'kind': 'indexList'}, 'us': {'field': 'useStatus', 'into': 'statuses', 'kind': 'index'}, 'x': {'field': 'extent', 'kind': 'string'}, 'y0': {'field': 'inclusiveStartYear', 'kind': 'year'}, 'y1': {'field': 'inclusiveEndYear', 'kind': 'year'}}, 'note': "Each `byNaId` row uses one-letter keys. `kind: index`/`indexList` values are offsets into the TOP-LEVEL array named by `into` — note that `as` and `us` share `statuses`, while `ar` uses `restrictions` and `ur` uses `useRestrictions`; the names do not tell you that. `y0`/`y1` are NARA's INCLUSIVE dates and `cy0`/`cy1` its COVERAGE dates, which it publishes for some series only. NEITHER PAIR CONTAINS THE OTHER: naId 604801 is inclusive 1963-1973 and coverage 1947-1964, and across 1,155 RG 59 series carrying both, coverage starts earlier in 880, the same year in 274 and LATER in 1. So a date screen must take the UNION - min(y0,cy0) to max(y1,cy1) - not whichever pair looks wider and not coverage-in-preference-to-inclusive. Measured on the commercial-diplomacy run's 93 lot resolutions: the union fails 3, preferring coverage fails 4 (it invents a failure on 604801), and the inclusive pair alone fails 6."}
+statuses: ['Restricted - Fully', 'Unrestricted', 'Restricted - Partly', 'Restricted - Possibly', 'Undetermined']
+useRestrictions: ['Copyright', 'Other']
+1965953 | status: Restricted - Partly | heading: Department of State. Bureau of Far Eastern Affairs. Office of the Assistant Secretary. | years: 1960 1963
+603208 | status: Unrestricted | heading: Department of State. Office of the Ambassador at Large for Southeast Asian Affairs. | years: 1967 1968
+2602428 | status: Restricted - Partly | heading: Department of State. Bureau of Near Eastern and South Asian Affairs. Office of the Officer in Charge, Iranian Affairs. | years: 1965 1975
+('frus1958-60v01', 'd131') in corruption-vocabulary scope (scan1.csv): True fam= 5
+('frus1958-60v01', 'd63') in corruption-vocabulary scope (scan1.csv): True fam= 2
+('frus1958-60v01', 'd229') in corruption-vocabulary scope (scan1.csv): False fam= None
+('frus1964-68v05', 'd419') in corruption-vocabulary scope (scan1.csv): True fam= 2
+('frus1969-76v27', 'd47') in corruption-vocabulary scope (scan1.csv): True fam= 2
+('frus1969-76v27', 'd11') in corruption-vocabulary scope (scan1.csv): False fam= None
+('frus1969-76v27', 'd12') in corruption-vocabulary scope (scan1.csv): False fam= None
+('frus1969-76v27', 'd17') in corruption-vocabulary scope (scan1.csv): False fam= None
+('frus1958-60v01', 'd135') in corruption-vocabulary scope (scan1.csv): True fam= 5
+volumes in series-facts headings: 398

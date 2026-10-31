@@ -1,0 +1,8 @@
+run("lockheed_relaxed", "lockhe", k=5)
+run("lockheed_payoff", "lockhe AND (payoff OR scandal)", k=10)
+run("question_payments", '"question payment" AND (compani OR firm OR corpor)', k=10)
+run("korea", "corrupt", ["frus1958-60v18","frus1961-63v22","frus1964-68v29p1","frus1952-54v15p1"], k=10)
+run("iran", "corrupt OR bribe OR briberi", ["frus1951-54Iran","frus1958-60v12","frus1961-63v17","frus1964-68v22"], k=10)
+run("saudi_bribe", "bribe OR briberi", ["frus1955-57v13","frus1958-60v12","frus1958-60v13"], k=10)
+run("centam", "corrupt", ["frus1977-80v15","frus1969-76ve11p1"], k=10)
+run("zaire", "corrupt", ["frus1969-76ve05p1","frus1977-80v17p2","frus1964-68v23"], k=8)

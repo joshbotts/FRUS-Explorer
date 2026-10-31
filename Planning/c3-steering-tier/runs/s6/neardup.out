@@ -1,0 +1,36 @@
+pairwise Hamming among the 30 cited documents: 6 smallest
+  56 frus1947v07/d591 frus1948v07/d590
+  59 frus1943China/d202 frus1947v07/d591
+  62 frus1977-80v13/d92 frus1977-80v13/d94
+  67 frus1943China/d202 frus1948v07/d590
+  81 frus1969-76ve15p2/d292 frus1969-76ve15p2/d293
+  93 frus1894app2/d255 frus1894app2/d306
+min 56 median 154
+cited volumes ending Ed2: []
+d292 vs Ed2 twin: 0
+semantic join: 25 nearest neighbours of frus1969-76ve09p2/d122 -> document_dates.date_iso, document_sources.repository/record_group
+  81 frus1977-80v18/d154 ('1977-08-01', 'Carter Library', None)
+  88 frus1977-80v18/d176 ('1978-12-31', 'Carter Library', None)
+  91 frus1969-76ve09p2/d107 ('1974-04-10', 'Department of State', '59')
+  95 frus1969-76v24/d133 ('1969-11-21', 'Nixon Presidential Materials', None)
+  95 frus1969-76v24/d169 ('1972-12-14', 'Nixon Presidential Materials', None)
+  98 frus1977-80v18/d144 ('1977-01-14', 'Central Intelligence Agency', None)
+  99 frus1977-80v18/d143 ('1977-01-03', 'Carter Library', None)
+  102 frus1969-76ve09p2/d85 ('1973-04-18', 'Department of State', '59')
+  103 frus1969-76ve09p2/d155 ('1975-08-19', 'Library of Congress', None)
+  103 frus1969-76v36/d134 ('1972-07-26', 'National Archives', '59')
+  104 frus1950v05/d636 ('1950-03-19', 'Department of State', '59')
+  104 frus1969-76ve09p2/d180 ('1976-06-07', 'Ford Library', None)
+  104 frus1977-80v18/d179 ('1979-01-23', 'Department of State', '59')
+  105 frus1977-80v18/d196 ('1979-07-15', 'Carter Library', None)
+  106 frus1977-80v18/d186 ('1979-02-27', 'Department of State', '59')
+  106 frus1977-80v18/d216 ('1980-06-03', 'National Archives', '59')
+  107 frus1969-76ve09p2/d108 ('1974-04-24', 'National Archives', '330')
+  107 frus1951v05/d591 ('1951-02-05', 'Department of State', '59')
+  107 frus1969-76v24/d153 ('1971-07-15', 'Nixon Presidential Materials', None)
+  109 frus1969-76ve09p2/d83 ('1973-03-27', 'Department of State', '59')
+  109 frus1977-80v18/d206 ('1980-01-01', 'Carter Library', None)
+  110 frus1964-68v21/d287 ('1967-04-06', 'Johnson Library', None)
+  110 frus1969-76v36/d353 ('1974-06-05', 'Nixon Presidential Materials', None)
+  110 frus1969-76v37/d79 ('1975-08-28', 'Department of State', '59')
+  111 frus1969-76v24/d159 ('1972-05-22', 'National Archives', '59')

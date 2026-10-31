@@ -1,0 +1,67 @@
+4 | frus1933-39/d31 | frus1933v02/d593 | 1640 | 1640 | 1.0 | True | Statement by the Soviet Commissar for Foreign Affairs (Litvi | Statement by the Soviet Commissar for Foreign Affairs (Litvi
+7 | frus1894Nicaragua/d12 | frus1894app1/d263 | 23825 | 23768 | 0.992 | True | No. 12. Mr. Baker to Mr. Gresham. | Mr. Baker to Mr. Gresham.
+8 | frus1894app2/d70 | frus1894app2/d186 | 26665 | 27097 | 0.99 | True | Mr. Stevens to Mr. Foster. | Mr. Stevens to Mr. Foster.
+10 | frus1950v03/d732 | frus1950v07/d1002 | 34893 | 34749 | 0.974 | True | United States Minutes, Truman–Attlee Conversations, Fifth Me | United States Delegation Minutes of the Fifth Meeting of Pre
+12 | frus1894Nicaragua/d23 | frus1894app1/d274 | 20378 | 20351 | 0.996 | True | No. 23. Mr. Bayard to Mr. Gresham. | Mr. Bayard to Mr. Gresham.
+12 | frus1894app2/d73 | frus1894app2/d192 | 48142 | 48114 | 0.994 | True | No. 2. Mr. Stevens to Mr. Foster. | Mr. Stevens to Mr. Foster.
+13 | frus1950v03/d728 | frus1950v07/d977 | 42064 | 42091 | 0.863 | False | United States Minutes, Truman–Attlee Conversations, Second M | United States Delegation Minutes of the Second Meeting of Pr
+17 | frus1981-88v06/d32 | frus1981-88v41/d93 | 15814 | 16513 | 0.984 | True | 32. Information Memorandum From the Assistant Secretary of S | 93. Information Memorandum From the Assistant Secretary of S
+19 | frus1969-76v12/d212 | frus1969-76ve10/d225 | 21517 | 20525 | 0.916 | True | 212. Memorandum From the President’s Assistant for National  | 225. Memorandum From the President’s Assistant for National 
+21 | frus1894/d464 | frus1894Nicaragua/d45 | 3092 | 3106 | 0.991 | True | Mr. Baker to Mr. Gresham. | No. 45. Mr. Baker to Mr. Gresham.
+22 | frus1951-54Iran/d355 | frus1952-54v10/d403 | 65953 | 61595 | 0.906 | True | 355. Statement of Policy by the National Security Council | No. 403 Statement of Policy by the National Security Council
+23 | frus1950v03/d553 | frus1950v07/d480 | 12294 | 12194 | 0.897 | False | United States Delegation Minutes, Fourth Session, Preliminar | United States Delegation Minutes: SFM Pre 4
+23 | frus1958-60v03mSupp/d133 | frus1958-60v03mSupp/d134 | 220785 | 261734 | 0.333 | False | 133. National Intelligence Estimate | 134. National Intelligence Estimate
+25 | frus1894app2/d501 | frus1894app2/d506 | 66038 | 89453 | 0.585 | False | Mr. Willis to Mr. Gresham. | Mr. Willis to Mr. Gresham.
+29 | frus1949v06/d8 | frus1949v07p2/d320 | 10458 | 9730 | 0.935 | True | Memorandum of Conversation, by the Secretary of State | Memorandum of Conversation, by Mr. Jacob D. Beam, Acting Spe
+30 | frus1876/d164 | frus1876/d165 | 94347 | 109328 | 0.182 | False | No. 154. Mr. Pierrepont to Mr. Fish. | No. 155. Mr. Pierrepont to Mr. Fish.
+33 | frus1958-60v17/d177 | frus1958-60v17/d293 | 26247 | 37058 | 0.81 | False | 177. National Security Council Report | 293. National Security Council Report
+34 | frus1910/d435 | frus1912/d773 | 14828 | 14473 | 0.89 | False | By the President of the United States of America. | By the President of the United States of America.
+35 | frus1894/d471 | frus1894Nicaragua/d62 | 9101 | 13101 | 0.992 | True | Mr. Baker to Mr. Gresham. | No. 62. Mr. Baker to Mr. Gresham.
+35 | frus1894app2/d90 | frus1894app2/d198 | 6956 | 7408 | 0.902 | True | No. 19. Mr. Stevens to Mr. Foster. | Mr. Stevens to Mr. Foster.
+38 | frus1903/d565 | frus1907p2/d289 | 15344 | 15016 | 0.98 | True | By the President of the United States of America. | By the President of the United States of America.
+38 | frus1923v02/d467 | frus1924v02/d327 | 13301 | 13505 | 0.971 | True | Treaty between the United States of America and Latvia, Sign | Treaty between the United States of America and Lithuania, S
+38 | frus1925v01/d229 | frus1925v01/d231 | 15121 | 12450 | 0.567 | False | The Secretary of State to the Consul at Arica (Von Tresckow) | The Secretary of State to the Ambassador in Chile (Collier)
+39 | frus1908/d680 | frus1910/d435 | 16995 | 14828 | 0.909 | True | By the President of the United States of America. | By the President of the United States of America.
+40 | frus1868p2/d79 | frus1874/d42 | 10605 | 12306 | 0.621 | False | Mr. Sanford to Mr. Seward. | No. 40. Mr. Jones to Mr. Fish.
+40 | frus1919Parisv06/d44 | frus1919Parisv06/d93 | 71010 | 187060 | 0.138 | False | Notes of a Meeting Held at President Wilson’s House in the P | The President of the Peace Conference (Clemenceau) to the Pr
+41 | frus1908/d693 | frus1912/d773 | 16385 | 14473 | 0.861 | False | By the President of the United States of America. | By the President of the United States of America.
+41 | frus1961-63v17/d90 | frus1961-63v17/d168 | 19306 | 29395 | 0.208 | False | 90. Paper Prepared for the Iran Task Force | 168. Report of the Chairman of the Iran Task Force (Talbot)
+41 | frus1964-68v23/d579 | frus1969-76ve05p1/d233 | 23574 | 25337 | 0.17 | False | 579. National Intelligence Estimate | 233. National Intelligence Estimate 65–70
+42 | frus1907p2/d289 | frus1912/d773 | 15016 | 14473 | 0.72 | False | By the President of the United States of America. | By the President of the United States of America.
+43 | frus1908/d693 | frus1910/d435 | 16385 | 14828 | 0.826 | False | By the President of the United States of America. | By the President of the United States of America.
+43 | frus1950v03/d728 | frus1950v03/d732 | 42064 | 34893 | 0.2 | False | United States Minutes, Truman–Attlee Conversations, Second M | United States Minutes, Truman–Attlee Conversations, Fifth Me
+43 | frus1969-76ve05p1/d287 | frus1969-76ve05p1/d332 | 44857 | 48832 | 0.215 | False | 287. National Intelligence Estimate 75/76–70 | 332. National Intelligence Estimate 75/76–72
+43 | frus1977-80v20/d193 | frus1981-88v10/d155 | 24173 | 46969 | 0.168 | False | 193. Intelligence Information Cable | 155. Paper Prepared in the Bureau of Intelligence and Resear
+44 | frus1879/d132 | frus1880/d133 | 37649 | 106911 | 0.169 | False | No. 112. Mr. Seward to Mr. Evarts. | No. 133. Mr. Seward to Mr. Evarts.
+44 | frus1888p2/d454 | frus1888p2/d455 | 37595 | 12554 | 0.211 | False | No. 1. Mr. Phelps to Mr. Bayard. | No. 2. Mr. Phelps to Mr. Bayard.
+44 | frus1902/d111 | frus1905/d725 | 11192 | 11402 | 0.93 | True | By the President of the United States of America. | By the President of the United States of America.
+44 | frus1903/d565 | frus1912/d773 | 15344 | 14473 | 0.725 | False | By the President of the United States of America. | By the President of the United States of America.
+44 | frus1907p2/d289 | frus1910/d435 | 15016 | 14828 | 0.672 | False | By the President of the United States of America. | By the President of the United States of America.
+44 | frus1958-60v12/d257 | frus1958-60v12/d293 | 27497 | 19734 | 0.744 | False | 257. National Security Council Report | 293. National Security Council Report
+45 | frus1871/d189 | frus1877/d114 | 50539 | 235245 | 0.152 | False | Mr. Bancroft to Mr. Fish | No. 114. Mr. Davis to Mr. Evarts.
+45 | frus1889/d269 | frus1889/d273 | 675 | 2070 | 0.375 | False | Mr. Bayard to Mr. Romero. | Mr. Bayard to Mr. Romero.
+45 | frus1894app2/d254 | frus1894app2/d344 | 95674 | 86357 | 0.165 | False | No. 6. Mr. Blount to Mr. Gresham | No. 60. Statement of C. B. Wilson.
+45 | frus1908/d680 | frus1912/d773 | 16995 | 14473 | 0.869 | False | By the President of the United States of America. | By the President of the United States of America.
+45 | frus1977-80v11p1/d193 | frus1977-80v29/d261 | 3959 | 4228 | 0.825 | False | 193. Memorandum From the Special Assistant to the Secretary  | 261. Memorandum From the Special Assistant to the Secretary 
+46 | frus1894app2/d73 | frus1894app2/d265 | 48142 | 134589 | 0.109 | False | No. 2. Mr. Stevens to Mr. Foster. | No. 17. Mr. Blount to Mr. Gresham.
+46 | frus1895p2/d192 | frus1895p2/d195 | 12413 | 19183 | 0.077 | False | Mr. Butler to Mr. Olney. | Mr. Butler to Mr. Olney.
+46 | frus1903/d565 | frus1910/d435 | 15344 | 14828 | 0.677 | False | By the President of the United States of America. | By the President of the United States of America.
+46 | frus1923v01/d805 | frus1925v02/d24 | 12740 | 12550 | 0.83 | False | Treaty between the United States of America and Estonia, Sig | Treaty Between the United States of America and Czechoslovak
+46 | frus1945v07/d48 | frus1945v07/d444 | 13175 | 18933 | 0.106 | False | Memorandum Concerning United States Post-War Military Polici | Report by the State-War-Navy Coordinating Committee
+46 | frus1950v03/d732 | frus1950v07/d977 | 34893 | 42091 | 0.176 | False | United States Minutes, Truman–Attlee Conversations, Fifth Me | United States Delegation Minutes of the Second Meeting of Pr
+46 | frus1955-57v23p2/d40 | frus1955-57v23p2/d99 | 19019 | 11766 | 0.141 | False | 40. Despatch From the Embassy in Korea to the Department of  | 99. Staff Study Prepared by an Interdepartmental Working Gro
+46 | frus1969-76v15/d195 | frus1969-76ve14p2/d62 | 31822 | 12247 | 0.936 | True | 195. Memorandum of Conversation | 62. Memorandum of Conversation
+47 | frus1893/d585 | frus1893/d599 | 42025 | 12319 | 0.155 | False | Mr. Thompson to Mr. Gresham. | Mr. Thompson to Mr. Gresham.
+47 | frus1903/d565 | frus1908/d693 | 15344 | 16385 | 0.615 | False | By the President of the United States of America. | By the President of the United States of America.
+47 | frus1907p2/d289 | frus1908/d680 | 15016 | 16995 | 0.661 | False | By the President of the United States of America. | By the President of the United States of America.
+47 | frus1910/d435 | frus1914/d1789 | 14828 | 14814 | 0.889 | False | By the President of the United States of America. | By the President of the United States of America.
+47 | frus1919Parisv10/d10 | frus1919Parisv10/d23 | 123644 | 132355 | 0.245 | False | Supreme Economic Council: Eleventh Meeting Held at the Minis | Supreme Economic Council: Twenty-fourth Meeting Held at the 
+47 | frus1919Parisv10/d23 | frus1919Parisv10/d31 | 132355 | 225084 | 0.186 | False | Supreme Economic Council: Twenty-fourth Meeting Held at the  | [Supreme Economic Council: Thirty-second Meeting Held at Par
+47 | frus1950v03/d728 | frus1950v07/d1002 | 42064 | 34749 | 0.177 | False | United States Minutes, Truman–Attlee Conversations, Second M | United States Delegation Minutes of the Fifth Meeting of Pre
+48 | frus1868p2/d439 | frus1868p2/d449 | 41660 | 57186 | 0.169 | False | Señor Benitez to Mr. Washburn. | Señor Caminos to Mr. Washburn.
+48 | frus1894app2/d192 | frus1894app2/d265 | 48114 | 134589 | 0.108 | False | Mr. Stevens to Mr. Foster. | No. 17. Mr. Blount to Mr. Gresham.
+48 | frus1894app2/d254 | frus1894app2/d265 | 95674 | 134589 | 0.143 | False | No. 6. Mr. Blount to Mr. Gresham | No. 17. Mr. Blount to Mr. Gresham.
+48 | frus1905/d295 | frus1905/d725 | 13125 | 11402 | 0.709 | False | By the President of the United States of America. | By the President of the United States of America.
+48 | frus1923v01/d805 | frus1924v01/d275 | 12740 | 13421 | 0.847 | False | Treaty between the United States of America and Estonia, Sig | Treaty between the United States of America and Bulgaria, Si
+48 | frus1950v07/d977 | frus1950v07/d1002 | 42091 | 34749 | 0.194 | False | United States Delegation Minutes of the Second Meeting of Pr | United States Delegation Minutes of the Fifth Meeting of Pre
+pairs 66 texts agree (ratio>=0.90 over first 6000 chars): 18

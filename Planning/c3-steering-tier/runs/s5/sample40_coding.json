@@ -1,0 +1,322 @@
+[
+ {
+  "n": 1,
+  "pair": "frus1862/d176",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": true
+ },
+ {
+  "n": 2,
+  "pair": "frus1867p2/d115",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 3,
+  "pair": "frus1874/d109",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 4,
+  "pair": "frus1882/d8",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": false,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 5,
+  "pair": "frus1893/d475",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 6,
+  "pair": "frus1894app2/d506",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": false,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 7,
+  "pair": "frus1904/d578",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": false,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 8,
+  "pair": "frus1912/d1141",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 9,
+  "pair": "frus1917/d55",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 10,
+  "pair": "frus1919Parisv10/d31",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 11,
+  "pair": "frus1922v02/d576",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 12,
+  "pair": "frus1932v04/d463",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 13,
+  "pair": "frus1938v02/d364",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 14,
+  "pair": "frus1943China/d21",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 15,
+  "pair": "frus1944v06/d481",
+  "strict": false,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 16,
+  "pair": "frus1946v08/d320",
+  "strict": false,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 17,
+  "pair": "frus1947v07/d245",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 18,
+  "pair": "frus1948v07/d155",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 19,
+  "pair": "frus1949v08/d501",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 20,
+  "pair": "frus1950v06/d140",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 21,
+  "pair": "frus1951v05/d389",
+  "strict": false,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 22,
+  "pair": "frus1952-54v08/d27",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": false,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 23,
+  "pair": "frus1952-54v13p1/d60",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": true
+ },
+ {
+  "n": 24,
+  "pair": "frus1955-57v06/d328",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": true
+ },
+ {
+  "n": 25,
+  "pair": "frus1955-57v22/d14",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": true
+ },
+ {
+  "n": 26,
+  "pair": "frus1958-60v05mSupp/dr_d1",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": true
+ },
+ {
+  "n": 27,
+  "pair": "frus1958-60v15/d411",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": true
+ },
+ {
+  "n": 28,
+  "pair": "frus1961-63v03/d11",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 29,
+  "pair": "frus1961-63v18/d136",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 30,
+  "pair": "frus1964-68v02/d265",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": true
+ },
+ {
+  "n": 31,
+  "pair": "frus1964-68v06/d112",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 32,
+  "pair": "frus1964-68v24/d653",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": false,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 33,
+  "pair": "frus1964-68v31/d259",
+  "strict": false,
+  "tolerant": true,
+  "referent_ok": false,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 34,
+  "pair": "frus1969-76v20/d191",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 35,
+  "pair": "frus1969-76v42/d26",
+  "strict": false,
+  "tolerant": true,
+  "referent_ok": false,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 36,
+  "pair": "frus1969-76ve07/d1",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 37,
+  "pair": "frus1969-76ve11p1/d190",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 38,
+  "pair": "frus1977-80v02/d190",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": true
+ },
+ {
+  "n": 39,
+  "pair": "frus1977-80v17p3/d131",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ },
+ {
+  "n": 40,
+  "pair": "frus1977-80v24/d283",
+  "strict": true,
+  "tolerant": true,
+  "referent_ok": true,
+  "decision_or_conduct_link": false
+ }
+]

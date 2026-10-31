@@ -1,0 +1,1 @@
+SELECT volume_id||'/'||document_id, repository, record_group, series_name, citation_era, substr(raw_text,1,200) FROM document_sources WHERE (volume_id,document_id) IN (VALUES ('frus1977-80v13','d92'),('frus1977-80v13','d94'),('frus1977-80v13','d95'));

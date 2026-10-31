@@ -1,0 +1,428 @@
+{
+ "format": "fruscollection",
+ "formatVersion": 2,
+ "minimumReaderVersion": 1,
+ "name": "Corruption and U.S. diplomacy, 1947–1978",
+ "authorLine": "Agent run s8, 2026-10-30",
+ "introductionText": "What FRUS answers directly: corruption shaped U.S. policy in three ways — as a reason to withhold or condition aid (China 1947, Korea 1961), as a domestic political liability Washington tried to manage through its allies (South Vietnam 1966–68), and, in 1975–76, as American firms' own payments abroad, which diplomats had to contain or disclose (Lockheed in Germany, the Netherlands, Japan and Saudi Arabia). The argument rests on 28 documents from 12 volumes, 1947–1978, drawn from about 2,200 documents in the 553-volume series that mention corruption. Where FRUS points for the rest: the documents came from the State Department's Central Decimal File, Subject-Numeric files and Central Foreign Policy File (RG 59), the Jidda Embassy files (RG 84, Lot 79F80), Deputy Secretary Christopher's records (Lot 81D113, NAID 1487627), and the Kennedy, Johnson, Ford and Carter libraries; the editors cite, unprinted, the Far Eastern Affairs files of Lot 62D26 (NAID 1965953) and the NSC Policy Papers lots 63D351/66D95 (NAID 2839192). What this request cannot get from FRUS: the Church subcommittee's and SEC's own investigative files (24 FRUS documents in 15 volumes name the subcommittee; no bundled shelf); the making of the Foreign Corrupt Practices Act (4 documents, 1978–80, all after passage); and archival pointers before December 1910, where the citation data begins.",
+ "composition": {
+  "defaultBodyDepth": "full",
+  "footnoteStyle": "all",
+  "includeSourceNote": true,
+  "tocStyle": "citation",
+  "applyHighlights": false,
+  "includeNotes": true,
+  "includeWordCloud": false
+ },
+ "entries": [
+  {
+   "kind": "heading",
+   "text": "China: corruption as the argument for holding back military aid, 1947–48",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "The China volumes of 1947 and 1948 hold more corruption documents than any others. These six show the Department turning the Nationalist government's venality into a reason to vet, delay or withhold aid, and Chiang's reply that this was why he needed American help. Date order."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1947v07",
+   "documentId": "d617",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Vincent proposes that every aid project be examined for waste or corrupt management by officials seeking personal gain."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1947v07",
+   "documentId": "d617",
+   "text": "should be carefully examined to determine whether they will be made ineffectual by waste, or corrupt management on the part of Chinese officials seeking personal financial gain"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1947v07",
+   "documentId": "d628",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Marshall argues against premature military aid: it would tell reactionaries that support came regardless of party corruption, and prevent reform."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1947v07",
+   "documentId": "d628",
+   "text": "those reactionaries in the Chinese Government who have been counting on substantial American support regardless of their actions and party corruption would have cause to conclude that they were right"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1947v07",
+   "documentId": "d582",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Wedemeyer reports from Nanking that Shanghai, Formosa and Canton confirm corrupt and inept practices."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1947v07",
+   "documentId": "d582",
+   "text": "The information received in Shanghai serves to reaffirm earlier certainty of corrupt and inept practices, both political and economic."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1947v07",
+   "documentId": "d583",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Sprouse's reform list for Wedemeyer: police pay to prevent graft, a strengthened Control Yuan to eliminate corruption."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1948v07",
+   "documentId": "d322",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Stuart reports Chiang's retort that the Americans call his government corrupt yet do little to help it reform."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1948v07",
+   "documentId": "d322",
+   "text": "It is precisely because he knows the Government to be corrupt and inefficient, he says, that he has repeatedly asked for American aid"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1948v07",
+   "documentId": "d407",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: The Department's October 1948 review cites reports that Chiang appointed comrades regardless of their proven corruption."
+   ]
+  },
+  {
+   "kind": "heading",
+   "text": "South Vietnam: from private démarche to public-relations requirement, 1960–68",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Corruption is raised quietly with Diem's government in 1960, denied by Diem, and by 1966–68 has become a matter of U.S. domestic politics: Washington wants a visible anti-corruption drive in Saigon to answer critics at home. Date order."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d135",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: The Department reports that Parsons and Wood raised corruption with Thuan in April 1960."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d267",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Durbrow reports Diem rejecting press stories of corruption and family rule as propaganda."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d267",
+   "text": "no country Asia more diligent in prosecuting corruption than GVN"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v04",
+   "documentId": "d215",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Ky tells Lodge that two senior generals are corrupt; one opposed U.S. troops in IV Corps because they would interfere with his practices."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v05",
+   "documentId": "d395",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Katzenbach reports the senior advisers' unanimous view that a credible anti-corruption effort would help the Administration's position."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v05",
+   "documentId": "d395",
+   "text": "There was unanimous agreement that a visible and credible anti-corruption effort would help a great deal in improving the Administration’s position, and in building a more effective GVN."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v06",
+   "documentId": "d31",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Notes of meeting: Johnson, facing a Senate charge of corruption, says the U.S. has corruption too."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v06",
+   "documentId": "d31",
+   "text": "We cannot have perfection. We have corruption here."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v06",
+   "documentId": "d134",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: The embassy urges that Saigon's disciplining of 74 officials be used to meet criticism in the United States."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v06",
+   "documentId": "d134",
+   "text": "meet criticism in the U.S."
+  },
+  {
+   "kind": "heading",
+   "text": "South Korea: aid conditioned on reform, and the junta's charges distrusted, 1961–63",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "After the 1960 revolution Washington ties Korean aid to performance, anti-corruption measures included; when the military junta later uses 'corrupt' as a label to purge politicians, the Department questions it. Date order."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v22",
+   "documentId": "d202",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: An aid official warns that graft, corruption and fraud endanger the U.S. position and the aid program in Korea."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v22",
+   "documentId": "d202",
+   "text": "The extent and depth of graft, corruption and fraud in the major institutions of Korean society today"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v22",
+   "documentId": "d221",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: NSC staff recommend making aid above a maintenance level conditional on performance, with actions against corruption."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v22",
+   "documentId": "d221",
+   "text": "Make it absolutely clear that U.S. assistance in the future, above a minimum maintenance level, will be conditional upon Korean performance"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v22",
+   "documentId": "d297",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: The Department questions the junta's offer to compromise if 'corrupt' politicians withdraw."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v22",
+   "documentId": "d297",
+   "text": "Who is to decide who is corrupt?"
+  },
+  {
+   "kind": "heading",
+   "text": "American firms' payments abroad: managing allies and proposing rules, 1974–76",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Here the corruption is American companies'. The documents follow the Saudi agents' fees, the Senate revelations about Lockheed in Germany, the Netherlands and Japan, and three different diplomatic responses: discretion, disclosure with a proposal for international rules, and disclaiming executive control. Date order."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d122",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: The Jidda embassy's survey of Saudi corruption and its risk to the regime, to American firms and perhaps to the U.S. government."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d122",
+   "text": "At the same time we have concluded that corruption has been on the increase."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d152",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: At the Secretary's staff meeting, Mr. Maw describes the agents' fees stalling the Saudi air-force program and his position on disclosure."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d152",
+   "text": "I have taken the position that fees should not be paid to these intermediaries unless disclosed to and approved by the paying government"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d155",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Kissinger's briefing for Saudi Arabia lists the Church subcommittee's Khashoggi revelations among strains on the relationship. Found as a semantic neighbour of the Jidda airgram and in the Lockheed-payments search."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d155",
+   "text": "to pay large agents’ fees to a Saudi businessman, Adnan Khashoggi, who may have made improper payments to Saudi military officers"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d161",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Akins meets Sultan on the Lockheed bribery situation; the editors' note says the embassy was to say the matter lay outside executive control."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d161",
+   "text": "POL Northrop and Lockheed"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve15p2",
+   "documentId": "d292",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Hartman relays the subcommittee staff's findings: Lockheed bribes to Strauss and the CSU paved the way for the Starfighter sale."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve15p2",
+   "documentId": "d292",
+   "text": "Such payments coming when Strauss was Defense Minister paved the way for the sale of the Starfighter to the FRG."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve15p2",
+   "documentId": "d293",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: The editors' note quotes Kissinger telling Ford to keep the German and Dutch payments quiet."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve15p2",
+   "documentId": "d293",
+   "text": "We must do everything possible to keep this quiet."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d218",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Miki asks Ford for help in disclosing the names of Japanese officials in the Lockheed affair."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d219",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Ford offers to share the information and proposes an international agreement against corrupt practices."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d219",
+   "text": "I hope the Government of Japan can support the United States proposal for an international agreement to curtail such practices"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve09p1",
+   "documentId": "d50",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Libya's note after Qadhafi alleged a Lockheed bribe; the Department's reply on the company's questionable payments."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d227",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: The Tokyo embassy reports Tanaka's arrest over Lockheed funds as the ruling party's biggest scandal."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d227",
+   "text": "THIS IS THE BIGGEST POLITICAL SCANDAL FOR JAPAN’S RULING LIBERAL DEMOCRATIC PARTY SINCE ITS FORMATION TWENTY-ONE YEARS AGO."
+  },
+  {
+   "kind": "heading",
+   "text": "Nicaragua: a charge heard and set aside, 1978",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Corruption is charged against Somoza by Venezuela's president and by the opposition, and listed by the State Department; the Central America office director argues it is not the cause of Somoza's crisis. Date order."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v15",
+   "documentId": "d68",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: State's action memorandum lists government corruption among Nicaragua's remaining problems; the editors' note quotes Pérez."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v15",
+   "documentId": "d68",
+   "text": "corrupt dictatorship that has systemically violated human rights"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v15",
+   "documentId": "d80",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: The embassy transmits the opposition program, which begins its reforms with eradicating Somocista corruption."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v15",
+   "documentId": "d80",
+   "text": "Eradication of the corruption which has characterized the Somocist dictatorship"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v15",
+   "documentId": "d83",
+   "notes": [
+    "Agent finding, run s8, 2026-10-30: Matthews argues that regime fatigue, not corruption, is the cause of Somoza's difficulties."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v15",
+   "documentId": "d83",
+   "text": "It’s not primarily his corruption, his human rights record, or anything else he has done."
+  },
+  {
+   "kind": "prose",
+   "text": "Threads not followed in this run: corruption among U.S. aid and military personnel; the black market; the 1950s Indochina and 1951–54 Iran volumes; the 1973–76 Latin American documents; the Philippines and Indonesia, 1964–68; the nineteenth-century claims cases and the 1894 Hawaii appendix; the making of the Foreign Corrupt Practices Act; and the Church subcommittee's and SEC's own investigative files, which FRUS does not print."
+  },
+  {
+   "kind": "generated",
+   "generatedBlockType": "archivalSources"
+  }
+ ]
+}

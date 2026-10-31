@@ -1,0 +1,41 @@
+index top keys: ['documentCount', 'generated', 'harvestGenerated', 'harvestScriptSHA256', 'provenance', 'provenanceDigest', 'retrieval', 'schema', 'subseries', 'volumes']
+one volume entry (keys): {'n': 312, 'r': 0, 'seg': "list[1] first={'i': 'd1', 'n': 312, 's': 0}", 'v': 'frus1861'}
+provenanceDigest = 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+generated = 2026-10-15
+harvestGenerated = 2026-10-15T06:55:14
+documentCount = 314616
+retrieval: {'measuredBy': 'Planning/semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md §5, 3,600 era-stratified queries over the 314,616-document corpus; Hamming-800 over 512 sign bits → int8-512', 'measuredRecallAt10': 0.9021, 'rerankPool': 800}
+scoreCalibration: {'documentOffset': 0.4, 'queryOffset': 0.47}
+provenance: {'chunkChars': 3200, 'model': 'embeddinggemma-2-Q8_0', 'modelFileSHA256': '2188ac1deca4b77dffefd603c2776a9d76d9d74ec01841392982ebb840b09135', 'nativeDims': 768, 'overlapChars': 480, 'pooling': 'char-length-weighted mean of unit-norm chunk vectors, L2-renormalized', 'prefix': 'title: none | text: ', 'quantization': 'Matryoshka cut then L2-renormalize; int8 per-vector symmetric (scale = max|x|/127, rint half-to-even, clip ±127); binary = sign bit, MSB-first, zero packs as 1', 'queryPrefix': 'task: search result | query: ', 'shippingDims': 512}
+binary size: 20476048 magic: b'FRSV'
+header: version 1 dims 512 docs 314616 centroids 660
+64 + docs*dims/8 = 20135488 ; + centroids*dims/8 = 20177728
+digests: index 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+         binary 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+         map    89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+         shards manifest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+         .generation 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+all agree: True
+rows decoded: 314616 == header docs: True | rows are 0..docs-1 contiguous: True
+frus1950v06 index ids 859 db ids 869 | index-not-db: [] | db-not-index: ['ch1', 'ch3', 'ch4', 'ch5', 'ch6']
+frus1964-68v05 index ids 452 db ids 456 | index-not-db: [] | db-not-index: ['actionssatement', 'errata', 'preface', 'terms']
+frus1969-76ve12 index ids 425 db ids 430 | index-not-db: [] | db-not-index: ['actionsstatement', 'errata', 'preface', 'pressrelease', 'terms']
+
+PHIL-1950 frus1950v06/d832: exact same 25 in order: True; same distances: True
+  first three: [(74, ('frus1950v06', 'd830')), (83, ('frus1951v06p2', 'd5')), (85, ('frus1950v06', 'd839'))]
+
+HAITI-1978 frus1977-80v23/d252: exact same 25 in order: True; same distances: True
+  first three: [(72, ('frus1977-80v23', 'd253')), (77, ('frus1969-76ve11p1', 'd418')), (80, ('frus1977-80v23', 'd260'))]
+
+HOND-1975 frus1969-76ve11p1/d159: exact same 25 in order: True; same distances: True
+  first three: [(119, ('frus1958-60v05mSupp', 'ho_d20')), (124, ('frus1955-57v07', 'd89')), (130, ('frus1920v02', 'd780'))]
+
+CHINA-1943 frus1943China/d202: exact same 25 in order: True; same distances: True
+  first three: [(59, ('frus1947v07', 'd591')), (63, ('frus1945v07', 'd174')), (64, ('frus1945v07', 'd236'))]
+
+VIET-1967 frus1964-68v05/d258: exact same 25 in order: True; same distances: True
+  first three: [(97, ('frus1958-60v01', 'd55')), (97, ('frus1964-68v05', 'd395')), (99, ('frus1964-68v04', 'd21'))]
+
+d841 in PHIL-1950 top 25: [(15, 96)]
+Hamming d244-d249: 75 (memo: 75)
+random pairs (my seed): mean 166.94 sd 14.80 min 88 | memo: 167.14 / 14.77 / 95

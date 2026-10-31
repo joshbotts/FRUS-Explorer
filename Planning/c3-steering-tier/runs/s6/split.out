@@ -1,0 +1,11 @@
+corrupt*       occurrences   3369  documents  2176
+brib*          occurrences    917  documents   654
+graft          occurrences    375  documents   314
+embezzl*       occurrences    360  documents   169
+venal*         occurrences    180  documents   157
+malfeasance    occurrences     80  documents    69
+nepotism       occurrences     52  documents    47
+peculat*       occurrences     35  documents    33
+kickback*      occurrences     21  documents    18
+cronyism       occurrences      7  documents     6
+top surface forms: [('corruption', 2231), ('corrupt', 938), ('bribery', 392), ('graft', 375), ('embezzlement', 260), ('bribe', 205), ('bribes', 179), ('venal', 93), ('corrupted', 93), ('bribed', 92), ('venality', 86), ('malfeasance', 80), ('embezzled', 77), ('nepotism', 52)]

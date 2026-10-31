@@ -1,0 +1,77 @@
+binary magic b'FRSV' header <IIII at 4..20: (1, 512, 314616, 660) len 20476048
+index documentCount 314616 generated 2026-10-15 volumes 553
+digest index    89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+digest binary   89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+digest map      89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+digest manifest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+digest .generation 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+all equal: True
+map magic/header: b'FRSM' (1, 314616, 140, 30000)
+decoded rows: 314616 == header docs: True ; rows are 0..docs-1 contiguous: True
+file length 20476048 >= 64 + docs*dims/8 = 20135488 -> True ; remainder 340560 (centroids etc.)
+shard header bytes 0..16: b'FRSS\x01\x00\x00\x00\x00\x02\x00\x00\x81\x01\x00\x00' (1397969478, 1, 512, 385) len 198724
+frus1961-63v22 n 385 r 266875
+volume's first row bytes found in shard at offset: -1
+
+=== frus1961-63v22/d202: my nearest 25 vs the session's
+   same ids in the same order: True ; same set: True ; same distances: True
+     97 frus1961-63v22/d204          | session   97 frus1961-63v22/d204
+    105 frus1961-63v22/d203          | session  105 frus1961-63v22/d203
+    108 frus1961-63v22/d225          | session  108 frus1961-63v22/d225
+    108 frus1961-63v22/d249          | session  108 frus1961-63v22/d249
+    112 frus1955-57v23p2/d185        | session  112 frus1955-57v23p2/d185
+    112 frus1958-60v18/d266          | session  112 frus1958-60v18/d266
+    112 frus1961-63v22/d298          | session  112 frus1961-63v22/d298
+    113 frus1961-63v22/d246          | session  113 frus1961-63v22/d246
+    113 frus1961-63v22/d247          | session  113 frus1961-63v22/d247
+    115 frus1952-54v15p2/d632        | session  115 frus1952-54v15p2/d632
+    115 frus1955-57v23p2/d161        | session  115 frus1955-57v23p2/d161
+    115 frus1964-68v29p1/d201        | session  115 frus1964-68v29p1/d201
+    117 frus1952-54v15p1/d460        | session  117 frus1952-54v15p1/d460
+    117 frus1955-57v23p2/d180        | session  117 frus1955-57v23p2/d180
+    117 frus1961-63v22/d242          | session  117 frus1961-63v22/d242
+    117 frus1961-63v22/d302          | session  117 frus1961-63v22/d302
+    118 frus1952-54v15p1/d167        | session  118 frus1952-54v15p1/d167
+    118 frus1955-57v23p2/d103        | session  118 frus1955-57v23p2/d103
+    118 frus1961-63v22/d264          | session  118 frus1961-63v22/d264
+    119 frus1955-57v23p2/d169        | session  119 frus1955-57v23p2/d169
+    119 frus1958-60v18/d265          | session  119 frus1958-60v18/d265
+    119 frus1958-60v18/d316          | session  119 frus1958-60v18/d316
+    119 frus1961-63v22/d233          | session  119 frus1961-63v22/d233
+    119 frus1961-63v22/d244          | session  119 frus1961-63v22/d244
+    119 frus1961-63v22/d311          | session  119 frus1961-63v22/d311
+
+=== frus1958-60v01/d131: my nearest 25 vs the session's
+   same ids in the same order: True ; same set: True ; same distances: True
+     81 frus1958-60v01/d111          | session   81 frus1958-60v01/d111
+     85 frus1958-60v01/d160          | session   85 frus1958-60v01/d160
+     92 frus1955-57v01/d346          | session   92 frus1955-57v01/d346
+     92 frus1958-60v01/d176          | session   92 frus1958-60v01/d176
+     93 frus1958-60v01/d36           | session   93 frus1958-60v01/d36
+     94 frus1958-60v01/d150          | session   94 frus1958-60v01/d150
+     94 frus1958-60v01/d270          | session   94 frus1958-60v01/d270
+     95 frus1958-60v01/d155          | session   95 frus1958-60v01/d155
+     95 frus1958-60v16/d125          | session   95 frus1958-60v16/d125
+     96 frus1958-60v01/d85           | session   96 frus1958-60v01/d85
+     96 frus1958-60v01/d135          | session   96 frus1958-60v01/d135
+     96 frus1958-60v01/d267          | session   96 frus1958-60v01/d267
+     97 frus1958-60v01/d173          | session   97 frus1958-60v01/d173
+     98 frus1961-63v01/d20           | session   98 frus1961-63v01/d20
+     99 frus1958-60v01/d4            | session   99 frus1958-60v01/d4
+     99 frus1958-60v01/d164          | session   99 frus1958-60v01/d164
+     99 frus1958-60v01/d237          | session   99 frus1958-60v01/d237
+     99 frus1958-60v01/d249          | session   99 frus1958-60v01/d249
+    100 frus1958-60v01/d132          | session  100 frus1958-60v01/d132
+    100 frus1958-60v16/d122          | session  100 frus1958-60v16/d122
+    100 frus1961-63v03/d185          | session  100 frus1961-63v03/d185
+    100 frus1961-63v04/d202          | session  100 frus1961-63v04/d202
+    100 frus1964-68v06/d208          | session  100 frus1964-68v06/d208
+    101 frus1958-60v01/d35           | session  101 frus1958-60v01/d35
+    101 frus1958-60v01/d203          | session  101 frus1958-60v01/d203
+
+random pairs (20000, seed 1877): mean 167.1 sd 14.8 1st pct 132  line mean-8sd = 49.0
+25th-neighbour (self excluded) over 200 random docs (seed 1878): min 73 p10 93 median 107 p90 119
+session's form (index 24 of a sort that keeps self at 0): min 73 p10 93 median 107 p90 119
+Hamming d202-d204: 97
+cited pairs: 19 all have a vector row: True near-duplicates under the line among the 19: []
+d204 nearest in cited set: (97, 'frus1961-63v22/d202')

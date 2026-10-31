@@ -1,0 +1,5 @@
+SQL: SELECT volume_id, structure_json FROM volume_structures
+keys sample: ['sections', 'volumeId']
+frus1936v05 | Convention between the United States and Mexico for the recovery and return of stolen or embezzled motor vehicles, trailers, airplanes or component parts of any of them, signed October 6, 1936
+frus1958-60v01 | THE ROLE OF THE TEMPORARY EQUIPMENT RECOVERY MISSION; THE QUESTION OF THE MILITARY ASSISTANCE ADVISORY GROUP CEILING; THE CIVIL GUARD AND THE DEVELOPMENT OF PARAMILITARY FORCES; UPGRADING THE REPUBLIC
+volumes read 553

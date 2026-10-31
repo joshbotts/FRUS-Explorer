@@ -1,0 +1,146 @@
+[
+ {
+  "pair": "frus1947v05/d23",
+  "quote": "unprecedented corruption and ineffectiveness in the working of the Government",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1947v05' AND document_id='d23' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1949v08/d576",
+  "quote": "come to aid of existing government, corrupt as it is",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1949v08' AND document_id='d576' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1981-88v01/d247",
+  "quote": "The war against the Communist NPA is going badly, partly because the military are corrupt, politicized, and incompetent.",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1981-88v01' AND document_id='d247' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1944v06/d269",
+  "quote": "no part of the criticism of corruption and inefficiency attaches to the Generalissimo except in relation to his failure to rid the Government of corrupt and inefficient elements",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1944v06' AND document_id='d269' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1922v01/d864",
+  "quote": "General Crowder feels that the Department should not consent to a loan unless this amnesty bill is definitely killed.",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1922v01' AND document_id='d864' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1950v06/d802",
+  "quote": "Philippine performance must precede consideration of any additional American aid",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1950v06' AND document_id='d802' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1955-57v22/d7",
+  "quote": "He gave as reason that widespread corruption among rank and file politicians and officials makes it impossible insure that funds properly used.",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1955-57v22' AND document_id='d7' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1922v01/d841",
+  "quote": "I am utterly unable to obtain evidence which would satisfy beyond a reasonable doubt or to establish even a prima facie case",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1922v01' AND document_id='d841' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1958-60v01/d135",
+  "quote": "these reports had reached certain circles on Capitol Hill and certain business circles",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1958-60v01' AND document_id='d135' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1964-68v05/d258",
+  "quote": "it has become a key obstacle to pacification",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1964-68v05' AND document_id='d258' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1964-68v05/d258",
+  "quote": "an invasion of the sovereignty of the Republic of Viet-Nam",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1964-68v05' AND document_id='d258' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1981-88v41/d251",
+  "quote": "The government conduit weakens conditionality; when reform fails to occur, aid continues to flow for political reasons.",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1981-88v41' AND document_id='d251' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1949v06/d330",
+  "quote": "I pointed to Nationalist China as an example of the wrong policy.",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1949v06' AND document_id='d330' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1949v06/d330",
+  "quote": "the Shah observed that China’s downfall was largely due to corruption",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1949v06' AND document_id='d330' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1950v05/d289",
+  "quote": "What is the corruption in Persia in comparison with corruption elsewhere",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1950v05' AND document_id='d289' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1961-63v22/d252",
+  "quote": "Therefore, recommend we do not change for the present our aid policies on account of this latest political action.",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1961-63v22' AND document_id='d252' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1969-76ve09p2/d155",
+  "quote": "Problems arising from publicity over the enormous commissions being paid by American firms to promote sales of defense articles and services to the Saudi Government threaten to strain US-Saudi relations.",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1969-76ve09p2' AND document_id='d155' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1977-80v24/d337",
+  "quote": "President Carter placed high priority on the negotiation of an international treaty on illicit payments,",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1977-80v24' AND document_id='d337' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1977-80v03/d248",
+  "quote": "some exports are lost because foreign companies can bribe foreign officials while U.S. companies cannot",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1977-80v03' AND document_id='d248' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1893/d628",
+  "quote": "the officials at Amadia were corrupt men",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1893' AND document_id='d628' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1921v01/d275",
+  "quote": "delay, improper influence, squeeze and corruption all but universal today",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1921v01' AND document_id='d275' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1981-88v01/d264",
+  "quote": "as in Manila",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1981-88v01' AND document_id='d264' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1912/d1502",
+  "quote": "arbitrary and corrupt government",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1912' AND document_id='d1502' AND is_front_matter=0 AND is_editorial_note=0;"
+ },
+ {
+  "pair": "frus1947v07/d553",
+  "quote": "It is realized that U.S. aid to China must be accompanied by close supervision.",
+  "verified": true,
+  "select": "SELECT body_text FROM document_cache WHERE volume_id='frus1947v07' AND document_id='d553' AND is_front_matter=0 AND is_editorial_note=0;"
+ }
+]

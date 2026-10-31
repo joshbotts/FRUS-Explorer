@@ -1,0 +1,29 @@
+statuses: ['Restricted - Fully', 'Unrestricted', 'Restricted - Partly', 'Restricted - Possibly', 'Undetermined']
+restrictions: ['FOIA (b)(1) National Security', 'FOIA (b)(3) Statute', 'FOIA (b)(6) Personal Information', 'FOIA (b)(4) Trade Secrets and Commercial or Financial Information', 'FOIA (b)(7e) Law Enforcement', 'FOIA (b)(7) Law Enforcement', 'FOIA (b)(9) Geological or Geophysical Information and Data', 'FOIA (b)(2) Internal Personnel Rules and Practices']
+useRestrictions: ['Copyright', 'Other']
+referenceUnits: ['National Archives at College Park - Textual Reference', 'National Archives at College Park - Motion Pictures']
+
+NAID 602875: creator='Department of State. Office of the Secretary. Executive Secretariat.' | extent=238 linear feet | years 1949-1972 | accessStatus='Unrestricted' | useStatus='Unrestricted' | restrictions=[] | refUnit='National Archives at College Park - Textual Reference'
+
+NAID 2839192: creator='Department of State. Office of the Secretary. Executive Secretariat.' | extent=26 linear feet, 3 linear inches | years 1947-1979 | accessStatus='Restricted - Partly' | useStatus='Restricted - Possibly' | restrictions=['FOIA (b)(1) National Security'] | refUnit='National Archives at College Park - Textual Reference'
+
+entries with y0: 698 of 698 | y0 < 1940: 11 | y0 < 1900: 0 | y1 < 1940: 1
+
+volume-sources-index: {'generated': ('str', 10), 'lots': ('dict', 0), 'majorCollections': ('list', 2470), 'recordGroups': ('dict', 36), 'schemaVersion': ('int', 2)}
+  lots sample: []
+  majorCollections sample: [{"isHeading": true, "key": "txt:washington national records center, suitland, maryland", "occurrences": 131, "repository": "Washington National Records Center", "text": "Washington National Records Center, Suitland, Maryland", "volumeIds": ["frus1955-57v01", "frus1955-57v02", "frus1955-57v03", "frus1955-57v08", "frus1955-57v11", "frus1955-57v13", "frus1955-57v17", "frus1955-57v18", "frus1955-57v20", "frus1955-57v23p1", "frus1955-57v23p2", "frus1955-57v25", "frus1955-57v26", "frus1958-60v01", "f
+  recordGroups sample: [["107", {"catalogURL": "https://catalog.archives.gov/id/436", "matchType": "api", "naId": "436", "recordGroup": "107", "title": "Records of the Office of the Secretary of War"}]]
+  '59D95' occurs in volume-sources-index.json text: True | count: 1
+  '89D149' occurs in volume-sources-index.json text: True | count: 3
+  '602875' occurs in volume-sources-index.json text: False | count: 0
+  '2839192' occurs in volume-sources-index.json text: False | count: 0
+  '66D95' occurs in volume-sources-index.json text: True | count: 1
+  '63D351' occurs in volume-sources-index.json text: True | count: 1
+  '59D95' occurs in external-citation-index.json text: 2
+  '89D149' occurs in external-citation-index.json text: 2
+  '66D95' occurs in external-citation-index.json text: 2
+  '63D351' occurs in external-citation-index.json text: 2
+  'National Security Affairs' occurs in external-citation-index.json text: 0
+  'Rosenberg' occurs in external-citation-index.json text: 0
+  'Whitman' occurs in external-citation-index.json text: 0
+external-citation-index coverage: {"absenceClaimsRefused": 140, "authorityCollectionCount": 3977, "decimalNotComposingRefused": 3650, "decimalNotInSharedVocabularyRefused": 710, "decimalReferences": 30527, "decimalReferencesInherited": 514, "decimalReferencesWithBothEnds": 27409, "decimalSameClassReferences": 19144, "decimalSubjectNumericRefused": 7849, "decimalVocabulary": {"classes": 9, "countries": 287, "digest": "12b637f39964f

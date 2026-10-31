@@ -1,0 +1,5 @@
+Referent coding of s_corrupt.json (40 evenly spaced corrupt* hits, incl. Ed2 volumes, fm/ed excluded), read by the agent from the printed contexts:
+official/political corruption or bribery: 38 of 40
+off-referent: frus1969-76v13/d147 (metaphorical, "corrupt itself"), frus1961-63v14/d10 (loose epithet "a corrupt Eastern regime")
+Garbled-telegram sense ("text corrupt"): 0 of 40
+graft (s_graft.json, 40): on-topic 36 of 40; off (horticultural "grafted on"/"graft set upon"): frus1863p2/d4, frus1887/d383, frus1919Parisv03/d5, frus1950v04/d667

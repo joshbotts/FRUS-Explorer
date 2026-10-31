@@ -1,0 +1,5 @@
+for m in ["corrupt OR bribe OR briberi OR graft OR kickback OR embezzl", "corruption OR bribery OR bribe OR graft OR kickback OR embezzlement", "lockheed", "lockheed AND (bribe OR bribery OR payments OR scandal OR corruption)", '"questionable payments"', '"foreign corrupt practices"']:
+    n = con.execute("SELECT COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT LIKE '%Ed2'", (m,)).fetchone()[0]
+    print("COUNT", m, n)
+run("lockheed_bribe", "lockheed AND (bribe OR bribery OR payments OR scandal OR corruption)", k=25)
+run("questionable", '"questionable payments" OR "foreign corrupt practices"', k=30)

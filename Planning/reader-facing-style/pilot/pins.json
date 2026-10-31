@@ -1,0 +1,70 @@
+{
+  "section_old": {
+    "lines": 17,
+    "sha256": "8fbf4c7a6efa4c2378eca0a76d2099b0ca51d4db66ecd557aae1b9ee5094ec14"
+  },
+  "section_new": {
+    "lines": 28,
+    "sha256": "c6bc372357cbc16c1a68f9bb799c9be08cbfebf8127f424e0805f0f0b7283611"
+  },
+  "skeleton_old_sha256": "46de1abf0856eb57b8387b06e44918c630916aa9fa76fa52fb60568ea16f9da7",
+  "skeleton_new_sha256": "c46b274672d5a07adc0863d0936236c1b9fd392f20d556577bbe813388fd45db",
+  "pairs": [
+    {
+      "pair": "P1",
+      "source": "r12",
+      "model": "claude-sonnet-5-5",
+      "effort": "high",
+      "A": {
+        "label": "w7",
+        "wording": "new"
+      },
+      "B": {
+        "label": "w2",
+        "wording": "old"
+      }
+    },
+    {
+      "pair": "P2",
+      "source": "r8",
+      "model": "claude-fable-5-1",
+      "effort": "medium",
+      "A": {
+        "label": "w6",
+        "wording": "old"
+      },
+      "B": {
+        "label": "w1",
+        "wording": "new"
+      }
+    },
+    {
+      "pair": "P3",
+      "source": "v3",
+      "model": "claude-sonnet-5-5",
+      "effort": "high",
+      "A": {
+        "label": "w8",
+        "wording": "old"
+      },
+      "B": {
+        "label": "w3",
+        "wording": "new"
+      }
+    },
+    {
+      "pair": "P4",
+      "source": "s3",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "A": {
+        "label": "w5",
+        "wording": "old"
+      },
+      "B": {
+        "label": "w4",
+        "wording": "new"
+      }
+    }
+  ]
+}

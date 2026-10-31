@@ -1,0 +1,4 @@
+SQL hit list: SELECT c.volume_id,c.document_id,c.header,c.dateline,c.source_note,c.body_text FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'corrupt' AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ORDER BY c.volume_id,c.document_id
+N hits (Ed2 suppressed, apparatus excluded): 2175 volumes: 399
+STRICT (whole words 'corrupt'|'corruption', case-sensitive-lower): 34 of 40
+TOLERANT (\bcorrupt\w*, case-insens): 40 of 40

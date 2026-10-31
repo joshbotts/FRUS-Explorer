@@ -1,0 +1,15 @@
+1910-1949 893.00 ['Internal Affairs of States', 'China', 'Political affairs']
+1910-1949 861.00 ['Internal Affairs of States', 'Union of Soviet Socialist Republics', 'Political affairs']
+1950-1959 751G.00 ['Internal Political and National Defense Affairs', None, None]
+1950-1959 795B.00 ['Internal Political and National Defense Affairs', None, None]
+1950-1959 788.00 ['Internal Political and National Defense Affairs', 'Iran', None]
+1950-1959 751J.00 ['Internal Political and National Defense Affairs', None, None]
+51G None None
+51g Indo China ['Annam', 'Cambodia', 'Cochin China', 'Laos', 'Tongking/Tonkin', 'Vietnam']
+51J None None
+51j Laos None
+95B None None
+95b South Korea None
+1960-63 class 7: Internal Political and National Defense Affairs | 95b: South Korea | 51g: Indo China
+795B.00 [(0, 17), (1, 1)]
+751G.00 [(1, 16)]

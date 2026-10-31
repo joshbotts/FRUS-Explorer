@@ -1,0 +1,3 @@
+SQL: SELECT c.volume_id, c.document_id, c.header||' '||coalesce(c.dateline,'')||' '||coalesce(c.source_note,'')||' '||c.body_text FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ORDER BY c.volume_id, c.document_id param: brib*
+brib: N=658 strict=634 of 658 tolerant=658 of 658 garble_only=0 of 658 venality_or_other=658 of 658
+SAMPLE40 strict 40 of 40; tolerant 40 of 40; garble_only 0 of 40

@@ -1,0 +1,582 @@
+{
+ "format": "fruscollection",
+ "formatVersion": 2,
+ "minimumReaderVersion": 1,
+ "name": "Corruption and U.S. foreign policy — run s4",
+ "authorLine": "Agent run s4, 2026-10-30",
+ "introductionText": "What FRUS answers directly: The printed record shows a recurring pattern, not one story. Between 1892 and 1980 American officials wrote that a foreign government, or an American company, was corrupt, and that belief appears in five kinds of decision: it was given as a reason for someone to act against a government (Hawaii 1892–93, Korea 1894); it became a condition on loans and aid (Cuba 1922, Greece 1947, Korea 1961); it made officials hesitate over regimes they went on supporting (China 1947–49, Vietnam 1959–72); it reached policy through Congress (the Congo 1963, Colombia 1977, Haiti 1979–80); and in 1975–76 the bribes of American companies became a diplomatic problem in their own right (United Brands in Honduras, Lockheed in Saudi Arabia, West Germany, the Netherlands and Japan). This collection holds the 35 documents, from 20 of the 553 volumes indexed, on which that rests. Where FRUS points for the rest: the documents came mostly from the State Department's central decimal files (Record Group 59), the Kissinger-era records of the Secretary (Record Group 59, NARA identifier 2131131, 1973–77, partly restricted), and the Johnson, Kennedy, Carter and Ford presidential libraries; the footnotes of the same volumes point to unprinted Carter, Johnson and Kennedy library files and to State Department lot files such as the Deputy Secretary's records (identifier 1487627, 1975–81, partly restricted); the closing block lists them. What this request cannot get from FRUS: how much corruption weighed against the other reasons given in the same documents; the Senate subcommittee, SEC and foreign-government files on the Lockheed affair; domestic American corruption as a cause of diplomatic decisions (searches found only 2 documents on Teapot Dome, 9 on the spoils system and none on Abscam in all 553 volumes); and anything the editors did not print.",
+ "composition": {
+  "defaultBodyDepth": "full",
+  "footnoteStyle": "all",
+  "includeSourceNote": true,
+  "tocStyle": "citation",
+  "applyHighlights": false,
+  "includeNotes": true,
+  "includeWordCloud": false
+ },
+ "entries": [
+  {
+   "kind": "heading",
+   "text": "1. Corruption charged as a reason to act: Hawaii, 1892–93, and Korea, 1894",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These four documents show corruption being alleged, by an American minister and by a foreign government, as the ground for action against a third country's rulers. They matter because the allegation did the work of an argument, and because the printed record itself contains the counter-charge. Whether Washington acted because of the charge is not shown by them."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1894app2",
+   "documentId": "d172",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Stevens, the U.S. Minister in Honolulu, tells Blaine on 2 April 1892 that the palace has been 'the center of corruption and scandal' for twenty years and will stay so while the monarchy lasts, and presses the need for a U.S. vessel. Shows the charge arriving in Washington attached to a request for force."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1894app2",
+   "documentId": "d172",
+   "text": "For twenty years the palace has been the center of corruption and scandal, and is likely to remain so as long as the Hawaiian native monarchy exists."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1894app2",
+   "documentId": "d199",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Stevens to Foster, 1 February 1893: the petitions against annexation are the work of white men who 'thrived on the palace corruptions'. The charge is turned on the opponents of annexation."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1894app2",
+   "documentId": "d316",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: The Queen's own statement to the Blount inquiry: she says native legislators sold their votes, a practice 'taught them by the Thurston party'. The corruption charge was contested in the record Congress was given."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1894app2",
+   "documentId": "d316",
+   "text": "It was a practice among some of the native members to sell their votes for a consideration. This was taught them by the Thurston party."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1894app1",
+   "documentId": "d27",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Gresham to Bayard, 20 July 1894: the Japanese minister says the rebellion in Korea was caused by official corruption and Japan will not withdraw troops until reforms are made. Corruption as another power's stated ground for armed intervention; Gresham asks Japan to deal fairly with Korea."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1894app1",
+   "documentId": "d27",
+   "text": "The minister replied that the rebellion in Korea was caused by maladministration and official corruption, and that his Government would not withdraw its troops until needed reforms in the domestic administration of Korea had been made."
+  },
+  {
+   "kind": "heading",
+   "text": "2. Money with strings: loans and aid made conditional on honest government",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Four cases, 1922 to 1961, in which the United States tied money to a clean-government program: a bank loan to Cuba, aid to Greece, and aid to a military government in Korea. The thread is the lever: officials wrote that aid or consent to a loan could be given or withheld depending on action against corruption. The Cuban cases also show the lever's limit, since the amnesty bill the Department opposed became law in 1924."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1922v01",
+   "documentId": "d852",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Crowder, the President's representative in Cuba, reports 30 June 1922 that President Zayas signed the lottery-reform decree 'in the precise form in which I rewrote it', and that he told the Cubans he would not recommend U.S. support for Zayas unless Zayas pressed reform against graft and corruption. The U.S. drafting the target country's anti-corruption decree."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1922v01",
+   "documentId": "d852",
+   "text": "President Zayas signed this afternoon the decree reforming the lottery in the precise form in which I rewrote it."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1922v01",
+   "documentId": "d864",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: State Department memorandum of 10 October 1922: Crowder says an amnesty bill would free the men indicted in the lottery scandals and make it impossible to punish corruption, and that the Department should not consent to a loan unless the bill is killed. The loan as lever."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1922v01",
+   "documentId": "d864",
+   "text": "General Crowder feels that the Department should not consent to a loan unless this amnesty bill is definitely killed."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1922v01",
+   "documentId": "d872",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Acting Secretary Phillips to the Cuban chargé, 4 November 1922: the Department has no objection to the loan once revenue assurances are given, but orally voices great concern about the amnesty bill and cabinet changes; the editors add that the amnesty became law in 1924. Reached by similarity to the preceding document, not by any word search; it has no corruption word in it."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1922v01",
+   "documentId": "d872",
+   "text": "the Government of the United States viewed with great concern the pending amnesty bill as well as the possibility of any changes in the existing Cabinet."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1947v05",
+   "documentId": "d23",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Acheson to Marshall, 21 February 1947: Greek civil-service corruption means aid cannot be used well, so American and British administrative experts are to be sent. Corruption as the reason aid had to come with administrative reform."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1947v05",
+   "documentId": "d23",
+   "text": "Neither outside aid nor Greece’s own limited resources can be effectively utilized for the welfare of the Greek people as a whole when administered by the present impotent Greek Government services."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v22",
+   "documentId": "d221",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: NSC staff memorandum of 23 May 1961, after the Korean coup: future aid above a minimum to be conditional on performance, and the Koreans to be pressed for action on corruption (civil service, police, taxes, contracting)."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v22",
+   "documentId": "d221",
+   "text": "Make it absolutely clear that U.S. assistance in the future, above a minimum maintenance level, will be conditional upon Korean performance, in accordance with this Administration’s new aid concepts."
+  },
+  {
+   "kind": "heading",
+   "text": "3. China, 1947–1949: aiding a government the Americans called corrupt",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "The Nationalist government's corruption is the most frequent single judgment in the American reporting on China. These documents show it entering the decision about aid in three ways: as a reason for supervision, as Chiang Kai-shek's own argument for American advisers, and as the stated cost of backing the government anyway."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1947v07",
+   "documentId": "d553",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Sprouse's note of a conversation with Chiang Monlin (a Chinese State Council member), 25 July 1947: Chiang Monlin says U.S. aid must come with close supervision and that the greatest corruption is among military commanders in Manchuria. Supervision of aid proposed from the Chinese side."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1947v07",
+   "documentId": "d553",
+   "text": "It is realized that U.S. aid to China must be accompanied by close supervision."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1947v07",
+   "documentId": "d553",
+   "text": "The greatest corruption in China is that among the military commanders, all of whom in Manchuria are expecting a crash and are making the most of their opportunities."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1947v07",
+   "documentId": "d570",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Sprouse's note of a conversation with Vice President Sun Fo, 30 July 1947: aid should be matched by political reform 'through elimination of corruption'. The condition is stated by a senior Chinese official."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1947v07",
+   "documentId": "d582",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: General Wedemeyer's report from his fact-finding mission, 17 August 1947: Shanghai confirms 'corrupt and inept practices' and Formosa shows the Central Government wasting a chance to give honest administration. Corruption in the mission's own findings."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1947v07",
+   "documentId": "d582",
+   "text": "The information received in Shanghai serves to reaffirm earlier certainty of corrupt and inept practices, both political and economic."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1948v07",
+   "documentId": "d322",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Ambassador Stuart, 16 August 1948: Chiang complains that Americans charge his government with corruption yet do little to help, and says only with American advisers can reforms be made 'which alone would justify material assistance'. The argument turned round."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1948v07",
+   "documentId": "d322",
+   "text": "Only with such American help can the reforms be undertaken which alone would justify material assistance."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1949v08",
+   "documentId": "d131",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Stuart, 5 February 1949: a retrospective in which the Kuomintang system had become 'so corrupt and inefficient' that orderly reform from within was unlikely. The explanation of the regime's weakness that the Department then carried into its public account."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1949v08",
+   "documentId": "d131",
+   "text": "It had become so corrupt and inefficient, and had so completely lost all popular support, that there was but little hope of orderly reforms arising from within"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1949v08",
+   "documentId": "d576",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Chargé Clark, 23 August 1949: Li Tsung-jen and Pai Chung-hsi argue that unless the United States 'come to aid of existing government, corrupt as it is', Communist domination is inevitable. The last year's dilemma stated by those on the receiving end."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1949v08",
+   "documentId": "d576",
+   "text": "He and Pai feel unless we make the best of a bad bargain and come to aid of existing government, corrupt as it is, Communist domination of all China is inevitable and liberalism will die."
+  },
+  {
+   "kind": "heading",
+   "text": "4. Vietnam, 1959–1972: knowing about corruption and declining to take control",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Over thirteen years of reporting, American officials called corruption in the Saigon government a serious problem, built committees and aid-program reforms to deal with it, considered and rejected a veto over Vietnamese appointments on sovereignty grounds, and in 1967 valued an anti-corruption effort partly for its effect on opinion at home."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d63",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Ambassador Durbrow, 11 April 1959: Diem says the U.S. permitted corruption to rise after a devaluation in Laos and wants aid put into the military budget, which Durbrow reads as wanting fewer controls. Corruption entering the argument about what form aid should take."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d63",
+   "text": "principal reason he wants major proportion of US aid contributed to military budget is that there are less controls on GVN use of military funds"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d131",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Ambassador Durbrow, 7 April 1960: he tells Diem it might prove difficult to obtain adequate aid for FY 1961 if disturbing reports continue of corrupt practices by the Can Lao party, and cites congressional concern. The editors' chapter heading for this part of the volume names 'the Can Lao Party, corruption, and the use of U.S. aid'. Corruption allegations used in the aid conversation itself."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d131",
+   "text": "it might prove difficult obtain adequate aid FY 61 if disturbing reports continue re alleged corrupt practices Can Lao party"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d185",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Special National Intelligence Estimate, 23 August 1960: Diem has failed to take any major steps against corruption and arbitrary conduct by the Can Lao organization. The intelligence community's view of the same problem four months later."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d185",
+   "text": "Diem also has failed to take any major steps against corruption and arbitrary conduct on the part of the Can Lao organization."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v04",
+   "documentId": "d145",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Komer to President Johnson, 24 May 1966: the 'only credible stick' is to withhold economic aid, and the Commercial Import Program is being reformed because of criticism of windfall profits and corruption; the editors record Johnson's handwritten approval. A decision about aid mechanics taken because of corruption criticism."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v04",
+   "documentId": "d145",
+   "text": "The only credible stick we have is to withhold disbursement of economic aid till the GVN acts."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v04",
+   "documentId": "d145",
+   "text": "I am also pushing a set of major reforms in our chief aid instrument, the Commercial Import Program (CIP), to meet the rising tide of criticism over loose administration, windfall profits, corruption and the like."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v05",
+   "documentId": "d185",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Rostow to the President, 28 May 1967: Prime Minister Ky is 'utterly frank' that corruption is real, serious and a major source of discontent, and objects that Americans want him to move fast without proof."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v05",
+   "documentId": "d185",
+   "text": "He was utterly frank on problem of corruption. It is real; it is serious; it is major source of discontent."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v05",
+   "documentId": "d258",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Calhoun to Komer, 27 July 1967: corruption is a key obstacle to pacification, but a rapid reduction would need a U.S. veto over provincial and divisional appointments, an invasion of sovereignty he refuses to seek. The decision not to take control, with its reason."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v05",
+   "documentId": "d258",
+   "text": "The assumption of such sweeping prerogatives entails an invasion of the sovereignty of the Republic of Viet-Nam so great that it could and would be argued thereafter that United States is indeed the neo-colonialist power its critics and enemies allege it to be."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v05",
+   "documentId": "d395",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Katzenbach to President Johnson, 13 November 1967: the senior group agrees a visible anti-corruption effort would improve 'the Administration's position' and build a more effective government in Saigon. Corruption's effect on U.S. domestic opinion named as a reason to act."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v05",
+   "documentId": "d395",
+   "text": "There was unanimous agreement that a visible and credible anti-corruption effort would help a great deal in improving the Administration’s position, and in building a more effective GVN."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76v08",
+   "documentId": "d191",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Washington Special Actions Group, 22 June 1972: Sullivan summarises a Senate Foreign Relations Committee staff report that corruption is countrywide and that U.S. officials 'wink at the corruption'. The allegation arrives in Washington by way of Congress, to be rebutted before the report is issued."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v08",
+   "documentId": "d191",
+   "text": "They report that there is corruption throughout the country and that all U.S. officials wink at the corruption."
+  },
+  {
+   "kind": "heading",
+   "text": "5. Congress and the press as the channel, 1963–1980",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "In these four documents corruption reaches policy by way of the legislature: an expected congressional reaction, a Secretary of State holding back equipment because of it, and aid cuts voted by committees."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v20",
+   "documentId": "d422",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Rusk, 29 May 1963: asks how to control corruption in Léopoldville because there would be 'considerable trouble with Congress' over aid to the Congo if corruption were widespread. Anticipated congressional reaction as the stated reason."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v20",
+   "documentId": "d422",
+   "text": "The Secretary asked what might be done to control corruption in Léopoldville and remarked that we would have considerable trouble with Congress over giving aid to the Congo if there was widespread corruption."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v24",
+   "documentId": "d14",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Acting Secretary Christopher to President Carter, 19 May 1977: helicopters promised to Colombia in 1975 under the narcotics program are not delivered because of reported narcotics-related corruption in the Colombian government."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v24",
+   "documentId": "d14",
+   "text": "which we are hesitant to deliver because of reported narcotics-related corruption in the Colombian Government."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v23",
+   "documentId": "d257",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Habib with Haiti's foreign minister and ambassador, 26 July 1979: the editors record that the Senate Foreign Relations Committee proposed to cancel $18.4 million in aid to Haiti for failing to carry out reforms and end corruption; the U.S. officials sympathise with Haiti's difficulty."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v23",
+   "documentId": "d257",
+   "text": "The Committee cited Haitian failure to implement fiscal reforms and end corruption as reasons to cancel the President’s request for $18.4 million in aid to Haiti"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v23",
+   "documentId": "d264",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: State Department telegram, 1 August 1980: the House Appropriations Committee cut $2 million from Haiti's aid to 'demonstrate its concern for brutality and corruption'; Haiti's ambassador calls the symbolic effect 'devastating'."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v23",
+   "documentId": "d264",
+   "text": "On July 24, the House Appropriations Committee approved $5.2 million in foreign aid to Haiti in FY 1981, a reduction of $2 million to “demonstrate its concern for brutality and corruption.”"
+  },
+  {
+   "kind": "heading",
+   "text": "6. American companies' bribes abroad, 1975–1980",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "The other direction: the allegation was that Americans, not foreigners, were the corrupters. These eight documents show the State Department managing the diplomatic consequences of disclosures about United Brands and Lockheed, and then the cost debate after the Foreign Corrupt Practices Act."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve11p1",
+   "documentId": "d159",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Rogers to Kissinger, 28 March 1975: the SEC has found that United Brands promised a $2.5 million bribe to the President of Honduras; the Department is 'organizing ourselves for the crunch' and expects the revelation to damage the Honduran government and the image of U.S. firms."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve11p1",
+   "documentId": "d159",
+   "text": "the SEC has discovered that Eli Black of United Brands (formerly United Fruit) promised a $2.5 million bribe to the President of Honduras for his settlement of the company’s tax problem and an extension of its concession"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d135",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Embassy Jidda, 13 May 1975: if allegations of corruption and bribery of Saudi officials become widely public, bilateral relations and American business 'could be extremely damaged'."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d135",
+   "text": "If widespread publicity is given to allegations of corruption and bribery of Saudi officials the results could be extremely damaging."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d161",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Ambassador Akins, 11 September 1975: Prince Sultan says the Department or the President must make sure the names of Lockheed's Saudi payees are never divulged, or the special relationship ends; Akins relays that Congress, not the executive, controls disclosure."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d161",
+   "text": "Sultan said the Department or President Ford must do whatever is necessary to make sure the names are never divulged."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve15p2",
+   "documentId": "d292",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Hartman to Eagleburger, 30 September 1975: Senate subcommittee staff have evidence of Lockheed payments to Franz Josef Strauss's party and to Prince Bernhard of the Netherlands; Hartman sees nothing useful the Department can do."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve15p2",
+   "documentId": "d292",
+   "text": "I frankly do not believe that there is anything useful we can do at this point."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve15p2",
+   "documentId": "d293",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Lowenstein memorandum of 7 October 1975, the companion of the Hartman memorandum; the editors' footnote records Kissinger telling Ford on 8 October: 'We must do everything possible to keep this quiet.' The first edition is cited; the second edition reprints the same text and is not counted."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve15p2",
+   "documentId": "d293",
+   "text": "We must do everything possible to keep this quiet."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d218",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Prime Minister Miki to President Ford, 24 February 1976: asks for the United States to help disclose the names of Japanese officials in the Lockheed affair, in the interest of Japanese democracy."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d218",
+   "text": "The disclosure of all the relevant materials including the names of the officials involved, if any, would serve better the interest of Japanese politics and of the everlasting friendship between the United States and Japan."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d224",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Kissinger and Japan's special envoy, 14 May 1976: Kissinger says the Secretary of State cannot involve himself in a criminal investigation, hopes also 'to avoid any foreign policy embarrassment', and promises to expedite the exchange of documents."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d224",
+   "text": "Under our system it is not appropriate for the Secretary of State to be involved in what is essentially a criminal or administrative investigation."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d224",
+   "text": "We look forward to seeing justice done, but it would not be appropriate for the Department to be involved in a criminal investigation. We certainly hope for the fullest and most effective investigation, and we hope at the same time to avoid any foreign policy embarrassment."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v03",
+   "documentId": "d230",
+   "notes": [
+    "Agent finding, run s4, 2026-10-30: Memorandum to President Carter, 18 January 1980, on export disincentives: the Foreign Corrupt Practices Act, signed 20 December 1977, heads the list of five; the task force's estimate of export loss ($5–10 billion) 'cannot be supported by firm evidence'."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v03",
+   "documentId": "d230",
+   "text": "The task force conducting the study has estimated that all the indentified disincentives may result in a combined annual export loss of $5–10 billion, but these figures cannot be supported by firm evidence."
+  },
+  {
+   "kind": "heading",
+   "text": "What this run did not follow",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Threads not followed. (1) The files that FRUS cites but does not print on the Lockheed affair: the Senate subcommittee's hearings and the SEC and Justice Department investigation records. (2) The Japanese, German and Dutch sides of the Lockheed cases. (3) Domestic American corruption as a cause of diplomatic decisions (the spoils system in consular appointments, Teapot Dome): the index returns only a handful of documents, and none was read. (4) Whether corruption reports changed any decision against the other motives named in the same documents: FRUS selects its documents and cannot weigh them. (5) Corruption in the Nicaraguan, Iranian, Philippine, Guatemalan and Mexican files, which turned up in the searches and which this run did not read."
+  },
+  {
+   "kind": "generated",
+   "generatedBlockType": "archivalSources"
+  }
+ ]
+}

@@ -1,0 +1,16 @@
+You are scoring two overviews on one rule: every numeral and number-word in an overview has a row
+in its trace table, giving the memo line it comes from. Be exact and hard.
+
+THE FILES, read-only:
+  Overview A: /Users/jbotts/frus-analysis/c3r/runs/w8/overview.md, with its trace table /Users/jbotts/frus-analysis/c3r/runs/w8/trace.md
+  Overview B: /Users/jbotts/frus-analysis/c3r/runs/w3/overview.md, with its trace table /Users/jbotts/frus-analysis/c3r/runs/w3/trace.md
+  The memo both were written from: /Users/jbotts/frus-analysis/c3r/inputs/v3/memo.md
+Read nothing else, and ignore any mention of how or by what the files were made.
+
+For each overview, list every numeral and number-word in overview.md ("three", "about one in
+seven", "1,204", "twice", "half"). Leave out dates and years, document, volume and part numbers,
+and any number inside a citation or a URL. For each one, decide whether trace.md has a row for it
+whose memo line, checked in the memo, holds that figure. Count the numbers, count the traced ones,
+and name every miss. The verdict is `obeyed` when there is no miss and `violated` otherwise.
+
+`pair` is exactly: P3. Return the structured result.

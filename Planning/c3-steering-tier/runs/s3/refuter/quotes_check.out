@@ -1,0 +1,39 @@
+== OVERVIEW QUOTATIONS (14 quoted passages attributed to a document; the 6 search-term quotes and the 3 stemmer examples carry no citation and are listed in notes) ==
+OK | frus1922v01 d841 | printed: 1922, Volume I Doc 841 -> manifest candidates ['frus1922v01', 'frus1922v02'] -> pairs [('frus1922v01', 'd841'), ('frus1922v02', 'd841')] | offsets [1841] | I have not been able to present much in the way of
+MIS-CITATION | frus1944v06 d292 | printed: 1944, Volume VI Doc 292 -> manifest candidates [] -> pairs [] | offsets [669] | graft, bribery and corruption are standard practic
+MIS-CITATION | frus1947v07 d583 | printed: 1947, Volume VII Doc 583 -> manifest candidates [] -> pairs [] | offsets [5870] | A thorough investigation should be made into the c
+MIS-CITATION | frus1948v07 d43 | printed: 1948, Volume VII Doc 43 -> manifest candidates [] -> pairs [] | offsets [639] | many US reporters, when they come across any corru
+MIS-CITATION | frus1948v07 d471 | printed: 1948, Volume VII Doc 471 -> manifest candidates [] -> pairs [] | offsets [673] | Nationalist failures in suppression rebellion enti
+OK | frus1961-63v22 d244 | printed: 1961–1963, Volume XXII Doc 244 -> manifest candidates ['frus1961-63v22', 'frus1961-63v23'] -> pairs [('frus1961-63v22', 'd244'), ('frus1961-63v23', 'd244')] | offsets [2110] | Military government’s efforts to deal with wholesa
+OK | frus1961-63v23 d356 | printed: 1961–1963, Volume XXIII Doc 356 -> manifest candidates ['frus1961-63v23'] -> pairs [('frus1961-63v23', 'd356')] | offsets [1532] | the graft and corruption in the Garcia Administrat
+OK | frus1961-63v23 d356 | printed: 1961–1963, Volume XXIII Doc 356 -> manifest candidates ['frus1961-63v23'] -> pairs [('frus1961-63v23', 'd356')] | offsets [1592] | the principal cause for the low state of Garcia’s 
+OK | frus1969-76ve09p2 d122 | printed: 1969–1976, Volume E–9, Part 2 Doc 122 -> manifest candidates ['frus1969-76ve09p2'] -> pairs [('frus1969-76ve09p2', 'd122')] | offsets [19737] | As we have watched corruption mount we have asked 
+OK | frus1969-76ve09p2 d122 | printed: 1969–1976, Volume E–9, Part 2 Doc 122 -> manifest candidates ['frus1969-76ve09p2'] -> pairs [('frus1969-76ve09p2', 'd122')] | offsets [23289] | Our own U.S. government reputation for incorruptab
+OK | frus1969-76ve09p2 d155 | printed: 1969–1976, Volume E–9, Part 2 (same volume) Doc 155 -> manifest candidates ['frus1969-76ve09p2'] -> pairs [('frus1969-76ve09p2', 'd155')] | offsets [19740] | Problems arising from publicity over the enormous 
+OK | frus1969-76ve11p1 d159 | printed: 1969–1976, Volume E–11, Part 1 Doc 159 -> manifest candidates ['frus1969-76ve11p1'] -> pairs [('frus1969-76ve11p1', 'd159')] | offsets [3519] | The Department just learned of the bribe. It refus
+OK | frus1969-76ve15p2 d292 | printed: 1969–1976, Volume E–15, Part 2 Doc 292 -> manifest candidates ['frus1969-76ve15p2'] -> pairs [('frus1969-76ve15p2', 'd292')] | offsets [2445] | At that point apparently, Lockheed bribed Prince B
+OK | frus1977-80v03 d248 | printed: 1977–1980, Volume III Doc 248 -> manifest candidates ['frus1977-80v03'] -> pairs [('frus1977-80v03', 'd248')] | offsets [14430] | As a nation we have decided that bribery in intern
+overview: ok 10 fabrications 0 mis-citations 4 of 14
+
+== COLLECTION EXCERPTS ==
+OK | frus1922v01 d841 | offsets [1841] | I have not been able to present much in the way of
+OK | frus1944v06 d292 | offsets [669] | graft, bribery and corruption are standard practic
+OK | frus1947v07 d583 | offsets [5870] | A thorough investigation should be made into the c
+OK | frus1948v07 d43 | offsets [639] | many US reporters, when they come across any corru
+OK | frus1948v07 d471 | offsets [673] | Nationalist failures in suppression rebellion enti
+OK | frus1961-63v23 d356 | offsets [1532] | the graft and corruption in the Garcia Administrat
+OK | frus1961-63v22 d244 | offsets [2110] | Military government’s efforts to deal with wholesa
+OK | frus1969-76ve09p2 d122 | offsets [19737] | As we have watched corruption mount we have asked 
+OK | frus1969-76ve09p2 d122 | offsets [23289] | Our own U.S. government reputation for incorruptab
+OK | frus1969-76ve11p1 d159 | offsets [3519] | The Department just learned of the bribe. It refus
+OK | frus1969-76ve09p2 d155 | offsets [19740] | Problems arising from publicity over the enormous 
+OK | frus1969-76ve15p2 d292 | offsets [2445] | At that point apparently, Lockheed bribed Prince B
+OK | frus1977-80v03 d248 | offsets [14430] | As a nation we have decided that bribery in intern
+collection excerpts: ok 13 fabrications 0 of 13
+
+== memo's quotes.json against the overview's quoted passages ==
+quotes.json entries 13 | overview document quotations 14 | collection excerpts 13
+  overview passage not verbatim in quotes.json: 'the graft and corruption in the Garcia Administration' (memo Q7 is one longer quotation that the overview splits into two)
+  overview passage not verbatim in quotes.json: 'the principal cause for the low state of Garcia’s public image' (memo Q7 is one longer quotation that the overview splits into two)
+  overview passage not verbatim in quotes.json: 'Our own U.S. government reputation for incorruptability may one day pr' (memo Q7 is one longer quotation that the overview splits into two)
+  overview passage not verbatim in quotes.json: 'Problems arising from publicity over the enormous commissions being pa' (memo Q7 is one longer quotation that the overview splits into two)

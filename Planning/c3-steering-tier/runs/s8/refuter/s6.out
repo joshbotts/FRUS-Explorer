@@ -1,0 +1,41 @@
+binary layout consistent: header 64 + 314616 rows x 64 bytes + 660 centroids x (512 int8 + f32 scale) = 20476048 bytes
+decoded rows: 314616 volumes: 553
+
+NN of frus1969-76ve09p2/d122
+   mine ('frus1977-80v18', 'd154', 81)  session ('frus1977-80v18', 'd154', 81)  same
+   mine ('frus1977-80v18', 'd176', 88)  session ('frus1977-80v18', 'd176', 88)  same
+   mine ('frus1969-76ve09p2', 'd107', 91)  session ('frus1969-76ve09p2', 'd107', 91)  same
+   mine ('frus1969-76v24', 'd133', 95)  session ('frus1969-76v24', 'd169', 95)  DIFF
+   mine ('frus1969-76v24', 'd169', 95)  session ('frus1969-76v24', 'd133', 95)  DIFF
+   mine ('frus1977-80v18', 'd144', 98)  session ('frus1977-80v18', 'd144', 98)  same
+   mine ('frus1977-80v18', 'd143', 99)  session ('frus1977-80v18', 'd143', 99)  same
+   mine ('frus1969-76ve09p2', 'd85', 102)  session ('frus1969-76ve09p2', 'd85', 102)  same
+   mine ('frus1969-76v36', 'd134', 103)  session ('frus1969-76v36', 'd134', 103)  same
+   mine ('frus1969-76ve09p2', 'd155', 103)  session ('frus1969-76ve09p2', 'd155', 103)  same
+   mine ('frus1950v05', 'd636', 104)  session ('frus1950v05', 'd636', 104)  same
+   mine ('frus1969-76ve09p2', 'd180', 104)  session ('frus1977-80v18', 'd179', 104)  DIFF
+   mine ('frus1977-80v18', 'd179', 104)  session ('frus1969-76ve09p2', 'd180', 104)  DIFF
+   mine ('frus1977-80v18', 'd196', 105)  session ('frus1977-80v18', 'd196', 105)  same
+   mine ('frus1977-80v18', 'd186', 106)  session ('frus1977-80v18', 'd216', 106)  DIFF
+  reproduced: False | same set: False
+
+NN of frus1947v07/d628
+   mine ('frus1947v07', 'd617', 52)  session ('frus1947v07', 'd617', 52)  same
+   mine ('frus1947v07', 'd625', 55)  session ('frus1947v07', 'd625', 55)  same
+   mine ('frus1948v07', 'd506', 60)  session ('frus1948v07', 'd506', 60)  same
+   mine ('frus1947v07', 'd185', 63)  session ('frus1947v07', 'd185', 63)  same
+   mine ('frus1945v07', 'd48', 64)  session ('frus1945v07', 'd48', 64)  same
+   mine ('frus1945v07', 'd444', 66)  session ('frus1945v07', 'd444', 66)  same
+   mine ('frus1948v08', 'd396', 67)  session ('frus1948v08', 'd396', 67)  same
+   mine ('frus1947v07', 'd616', 68)  session ('frus1948v08', 'd46', 68)  DIFF
+   mine ('frus1948v08', 'd46', 68)  session ('frus1947v07', 'd616', 68)  DIFF
+   mine ('frus1948v07', 'd400', 69)  session ('frus1949v09', 'd582', 69)  DIFF
+   mine ('frus1949v09', 'd574', 69)  session ('frus1949v09', 'd574', 69)  same
+   mine ('frus1949v09', 'd582', 69)  session ('frus1948v07', 'd400', 69)  DIFF
+   mine ('frus1945v07', 'd463', 70)  session ('frus1948v08', 'd167', 70)  DIFF
+   mine ('frus1948v08', 'd110', 70)  session ('frus1948v08', 'd191', 70)  DIFF
+   mine ('frus1948v08', 'd167', 70)  session ('frus1948v08', 'd110', 70)  DIFF
+  reproduced: False | same set: False
+near-dup <=20 of frus1969-76ve15p2 d292 [(('frus1969-76ve15p2Ed2', 'd292'), 0)]
+near-dup <=20 of frus1969-76ve15p2 d293 [(('frus1969-76ve15p2Ed2', 'd293'), 0)]
+d155 rank in d122's list (0-based): [9] distance: [103]

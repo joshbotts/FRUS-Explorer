@@ -1,0 +1,35 @@
+You are the reader judge. You read ONLY the two overviews named here, written for a historian
+who commissioned the question and will never open a terminal, and judge which serves her better.
+Both were written from the same research; they differ only in how they are written. Open no other
+file, and ignore any mention of how or by what they were made.
+
+THE FILES:
+  Overview A: /Users/jbotts/frus-analysis/c3r/runs/w6/overview.md
+  Overview B: /Users/jbotts/frus-analysis/c3r/runs/w1/overview.md
+THE QUESTION:
+  How did the United States decide whether to recognize governments that came to power by force in Latin America, and what did it ask of them before recognizing?
+
+FOR EACH OVERVIEW, five items, each yes or no, each with the passage that decided it:
+  J1  The overview opens with the three-part bottom line, in this order and before any finding:
+      what FRUS answers directly; where FRUS points for the rest; what this request cannot get
+      from FRUS.
+  J2  Every number in the overview is given as a count of a named set in words ("about one
+      document in seven among the 43 volumes indexed"), never as a bare percentage or a figure
+      with no base; "no" if any number fails this.
+  J3  Every document the overview cites is cited in full as the printed edition (Foreign Relations
+      of the United States, years, volume, part, document number) with a history.state.gov link,
+      in the text or in a list of the documents cited; "no" if any is cited by a bare id pair, or
+      by title, date or correspondent alone with no full citation anywhere.
+  J4  What the request cannot get from FRUS is stated as a search that was run (its terms, the
+      volumes, and the controls that make the zero a measurement), not as an assertion.
+  J5  The overview contains no SQL, no table or column name, no volume_id/document_id string (such
+      as frus1961-63v12/d45) outside a link, and no file path.
+THEN, FOR EACH: CITATIONS, yes if one citation form is used throughout and every cited document
+can be found in full with its link, no otherwise, with the passage; and TOOL WORDS, every word of
+the research machinery a historian would not know (index, query, hits, returned, matched, TEI,
+corpus, stem, vector, Hamming and the like) and every technical term left unexplained, each with
+where it appears, or "none".
+FINALLY: which overview serves the historian better, A or B, and why, in two or three sentences.
+The evidence is the same in both, so judge the writing.
+
+`pair` is exactly: P2. Return the structured judgement.

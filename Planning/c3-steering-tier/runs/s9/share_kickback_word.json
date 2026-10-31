@@ -1,0 +1,12 @@
+{
+ "label": "kickback_word",
+ "match": "kickback*",
+ "strict": "\\bkickbacks?\\b",
+ "tolerant": "\\bkick[\\s\\-]?backs?\\b",
+ "M_hitlist_excl_fm_ed_Ed2": 18,
+ "mode": "census",
+ "n": 18,
+ "strict_hits": 18,
+ "tolerant_hits": 18,
+ "tolerant_misses": []
+}

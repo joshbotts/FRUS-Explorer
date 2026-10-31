@@ -1,0 +1,91 @@
+N1 coverage: [(553, 321749, 1103, 8481)]
+non-apparatus: [(312169,)]
+both flags set: [(4,)]
+Ed2 non-apparatus: [(740,)]
+N2 (Ed2 suppressed): docs, vols: [(311429, 551)]
+N3 family before Ed2: docs, vols: 3096 449
+N3 family after Ed2: docs, vols: 3058 447
+ratio hits/N2 = 0.9819%
+session core_hits.json n: 3096 == my pre-Ed2 set: True
+session core_hits_ed2suppressed.json n: 3058 == my post-Ed2 set: True
+corrupt-only before Ed2: 2200 401 after: 2175 399
+control "Department of State" [(94049, 552)]
+control "ZZZ_IMPOSSIBLE_ZZZ" [(0, 0)]
+volume(s) missing the positive control: [('frus1919Parisv05',)]
+sample 40 pairs equal to session's sample40.json: True
+STRICT 35 of 40; TOLERANT 40 of 40
+session coding: referent_ok 33 decision 8 | coding pairs == sample: True
+decision=Y pairs: ['frus1862/d176', 'frus1952-54v13p1/d60', 'frus1955-57v06/d328', 'frus1955-57v22/d14', 'frus1958-60v05mSupp/dr_d1', 'frus1958-60v15/d411', 'frus1964-68v02/d265', 'frus1977-80v02/d190']
+collection documents: 38 distinct: 38 volumes: 27
+collection volumes: ['frus1893', 'frus1912', 'frus1921v01', 'frus1922v01', 'frus1944v06', 'frus1947v05', 'frus1947v07', 'frus1948v07', 'frus1949v06', 'frus1949v08', 'frus1950v03', 'frus1950v05', 'frus1950v06', 'frus1952-54v12p2', 'frus1955-57v22', 'frus1958-60v01', 'frus1961-63v01', 'frus1961-63v20', 'frus1961-63v22', 'frus1964-68v05', 'frus1964-68v32', 'frus1969-76v08', 'frus1969-76ve09p2', 'frus1977-80v03', 'frus1977-80v24', 'frus1981-88v01', 'frus1981-88v41']
+date span of the 38: [('1893-08-18', '1986-06-11', 38)]
+undated among 38: []
+collection docs in family hit set: 37 not in: [('frus1922v01', 'd836')]
+A1 source rows:
+   ('Department of State', '59', 'decimal', 20, 'frus1944v06/d269 frus1947v05/d23 frus1947v07/d553 frus1948v07/d440 frus1949v08/d576 frus1912/d1502 frus1922v01/d836 frus1922v01/d841 frus1922v01/d842 frus1922v01/d862 frus1922v01/d864 frus1950v06/d802 frus1952-54v12p2/d324 frus1955-57v22/d7 frus1958-60v01/d135 frus1958-60v01/d160 frus1949v06/d330 frus1950v05/d289 frus1961-63v22/d252 frus1921v01/d275')
+   ('Carter Library', '-', 'structured', 5, 'frus1977-80v03/d35 frus1977-80v24/d337 frus1977-80v03/d65 frus1977-80v03/d230 frus1977-80v03/d248')
+   ('Department of State', '59', 'lot_file', 3, 'frus1981-88v01/d247 frus1981-88v01/d264 frus1950v03/d728')
+   ('Library of Congress', '-', 'structured', 2, 'frus1969-76v08/d191 frus1969-76ve09p2/d155')
+   ('National Archives', '59', 'subject_numeric', 2, 'frus1964-68v32/d8 frus1964-68v05/d301')
+   ('(no source row)', '-', '-', 1, 'frus1893/d628')
+   ('(no source row)', '-', 'named_series', 1, 'frus1961-63v01/d298')
+   ('(no source row)', '-', 'unrecognized', 1, 'frus1964-68v05/d258')
+   ('Department of State', '59', 'subject_numeric', 1, 'frus1961-63v20/d422')
+   ('Eisenhower Library', '-', 'structured', 1, 'frus1958-60v01/d156')
+   ('Reagan Library', '-', 'structured', 1, 'frus1981-88v41/d251')
+with a document_sources row: [(37,)]
+RG59 central files (decimal+subject_numeric): [(23,)]
+raw source lines of the non-Central-Files rows:
+   ('frus1981-88v01/d247', 'Department of State', '59', '89D149', '89D149', 'Files', 'lot_file', 'Source: Department of State, Executive Secretariat, S/P Files, Memoranda and Correspondence from the Director of the Policy Planning Staff to the Secretary and Other Seventh Floor Principals: Lot 89D149, S/P Chrons 9/1–30/85. Secret; Sensitive. Attached to a covering note written in an unknown hand, dated September 4, that reads “Looking Ahead, Spec. Paper for Charlie Hill.” In an August 20 memorandum to all S/P staff, entitled “Looking Ahead: Possible Diplomatic Initiatives,” Rodman indicated that Shultz had “tasked the Policy Planning Staff and the regional bureaus to look ahead to see in what areas of foreign policy we might make progress between now and Christmas if we chose to engage ourselves more.” (Reagan Library, Peter Rodman Files, Department of State Chronological File, Chron 08/09/1985–08/31/1985)')
+   ('frus1981-88v01/d264', 'Department of State', '59', '89D149', '89D149', None, 'lot_file', 'Source: Department of State, Executive Secretariat, S/P Files, Memoranda and Correspondence from the Director of the Policy Planning Staff to the Secretary and Other Seventh Floor Principals: Lot 89D149, S/P Chrons 3/1–31/86. Confidential. An unknown hand wrote “3/6/86 INR memo w/ RHS penciled comments” in the top right-hand corner of the memorandum. Solomon wrote in the top right-hand corner of the memorandum: “1. List of who became democratic. 2. fragility & west support (p.4).” Abramowitz signed “Mort A.” next to his last name in the “From” line.')
+   ('frus1958-60v01/d156', 'Eisenhower Library', None, None, None, 'Whitman File', 'structured', 'Source: Eisenhower Library, Whitman File, NSC Records. Top Secret. Drafted by Boggs on May 13.')
+   ('frus1961-63v01/d298', None, None, None, None, 'Department of State, Johnson Files', 'named_series', 'Source: Department of State, Johnson Files, Official and Classified Letters. Confidential; Official-Informal.')
+   ('frus1964-68v05/d258', None, None, None, None, None, 'unrecognized', 'Source: Center for Military History, Dep CORDS / MACV Files, GVN Corruption 1967. Secret; Noforn.')
+   ('frus1969-76v08/d191', 'Library of Congress', None, None, None, 'Manuscript Division', 'structured', 'Source: Library of Congress, Manuscript Division, Kissinger Papers, Box TS 80, National Security Council, Committees and Panels, Washington Special Actions Group, June 1972. Top Secret; Sensitive. The meeting took place in the White House Situation Room.')
+   ('frus1981-88v41/d251', 'Reagan Library', None, None, None, 'Rosenberg Files', 'structured', 'Source: Reagan Library, Rosenberg Files, Hunger Initiative (05/11/1986–06/18/1986). Secret. Sent for action. Drafted by Soos and Driggs. A copy was sent to Bush.')
+   ('frus1950v03/d728', 'Department of State', '59', '59 D 95', '59D95', None, 'lot_file', 'Conference Files: Lot 59 D 95: CF 49')
+   ('frus1969-76ve09p2/d155', 'Library of Congress', None, None, None, 'Manuscript Division', 'structured', 'Source: Library of Congress, Manuscript Division, Kissinger Papers, Box CL 209, Geopolitical File, Saudi Arabia, June 2–August 30, 1975. Secret; Nodis. Drafted on August 19 by Cecil, Molineaux, and Dickman; cleared by Special Assistant Roger Sorenson (E), Deputy Director of the Office of Fuels and Energy Lawrence Raich (EB/FSE), Fifer, Donald R. Niemi (PM/ISA), and Robert Barrett (AF/E). Two attachments are not published: a briefing memorandum drafted on August 14 by Dickman, entitled “Status of Saudi Arms Requests,” and an undated background paper entitled “Status Report on the Joint Economic Commission.”')
+   ('frus1977-80v03/d35', 'Carter Library', None, None, None, 'National Security Council', 'structured', 'Source: Carter Library, National Security Council, Institutional Files, Box 63, PRC 023, 7/9/77, Schmidt Visit. Confidential. Carter wrote at the top of the page: “Zbig—Include items on Schmidt agenda. J.”')
+   ('frus1977-80v24/d337', 'Carter Library', None, None, None, 'National Security Affairs', 'structured', 'Source: Carter Library, National Security Affairs, Brzezinski Material, Country File, Box 85, Venezuela, 1/77-12/78. Confidential. The meeting took place in the Cabinet Room at the White House.')
+   ('frus1977-80v03/d65', 'Carter Library', None, None, None, 'National Security Affairs', 'structured', 'Source: Carter Library, National Security Affairs, Brzezinski Material, Subject File, Box 64, Summits: 5–12/77. Confidential. Sent for information. Both Carter and Brzezinski initialed at the top of the page. Attached is an October 6 note to Carter from Brzezinski that reads: “Henry’s memo provides a good summary. No need to read Tab A.” (Ibid.)')
+   ('frus1977-80v03/d230', 'Carter Library', None, None, None, 'National Security Affairs', 'structured', 'Source: Carter Library, National Security Affairs, Brzezinski Material, Brzezinski Office File, Subject Chron File, Box 92, Export Controls: (National Export Policy): 1–6/80. Confidential. Sent for action. Carter wrote at the top of the page: “Henry. J.” An attached February 26 memorandum for the record by Denend notes that Owen’s memorandum “was forwarded to the President for decision prematurely. Thus, the decisions taken were not implemented. Subsequently, a fully coordinated recommendation (NSC 1137) was forwarded to the President on this subject which he approved.” The subsequent memorandum to Carter was not found.')
+   ('frus1977-80v03/d248', 'Carter Library', None, None, None, 'White House Central Files', 'structured', 'Source: Carter Library, White House Central Files, Subject File, Box TA–8, TA 3 7/31/80–8/31/80. For Official Use Only. A typed notation at the top of the memorandum reads: “Final Draft.” Neither Klutznick nor Askew initialed the memorandum.')
+   ('frus1893/d628', None, None, None, None, None, None, None)
+source_note column of frus1893/d628: [(None, 'Mr. Terrell to Mr. Gresham. [Extract.] Legation of the United States, Constantinople, August 18, 1893. (Received September 4.) No. 37.] Sir: I have the honor to acknowledge the receipt of your dispatc')]
+A2 came-from over hits (top 14):
+   ('Department of State', '59', 'decimal', 1251)
+   ('(none)', '-', None, 508)
+   ('Department of State', '59', 'lot_file', 184)
+   ('Department of State', '59', 'cfpf', 120)
+   ('National Archives', '59', 'subject_numeric', 118)
+   ('Central Intelligence Agency', '-', 'structured', 117)
+   ('Johnson Library', '-', 'structured', 104)
+   ('Nixon Presidential Materials', '-', 'structured', 103)
+   ('Carter Library', '-', 'structured', 78)
+   ('Department of State', '59', 'subject_numeric', 62)
+   ('(none)', '-', 'named_series', 59)
+   ('Eisenhower Library', '-', 'structured', 40)
+   ('Kennedy Library', '-', 'structured', 35)
+   ('(none)', '-', 'published', 34)
+A2 pointed-at by anchor: [('centralFileClass', 450, 259), ('presidentialLibrary', 176, 124), ('lotFile', 138, 93)]
+A2 pointed-at targets (top 14):
+   ('Carter Library', 'National Security Affairs', 53)
+   ('Johnson Library', 'National Security File', 28)
+   ('Nixon Presidential Materials', 'NSC Files', 27)
+   ('Department of State', '66D95', 17)
+   ('Department of State', '63D351', 12)
+   ('Eisenhower Library', 'Whitman File', 7)
+   ('Carter Library', 'Presidential Materials', 6)
+   ('Department of State', '62D1', 6)
+   ('Department of State', '62D430', 6)
+   ('Department of State', '89D149', 6)
+   ('Johnson Library', 'President’s Daily Diary', 6)
+   ('Department of State', '67D548', 5)
+   ('Department of State', '59D518', 4)
+   ('Kennedy Library', 'National Security Files', 4)
+earliest external_citations document date: [('1910-12-06',)]
+CIA came-from over hits: [(117,)]
+decade denominators 1840s,1850s,1990s: 143 158 177
+1990s volumes: [('frus1989-92v31', 177)]
+family hits dated >=1990: [(0,)]
+DoS dated >=1990: [(130,)]

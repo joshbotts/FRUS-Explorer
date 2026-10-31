@@ -1,0 +1,115 @@
+=== document_sources rows of the cited documents (CAME-FROM) ===
+frus1944v06/d148: ('Department of State', '59', None, None, '893.20/9–2244', 'decimal', '893.20', None) | 893.20/9–2244
+frus1947v07/d908: ('Department of State', '59', None, None, '893.51/5–847', 'decimal', '893.51', None) | 893.51/5–847: Telegram
+frus1948v07/d43: ('Department of State', '59', None, None, '811.20200(D)/1–2848', 'decimal', None, None) | 811.20200(D)/1–2848: Telegram
+frus1958-60v01/d131: ('Department of State', '59', None, None, '751K.00/4–760', 'decimal', '751K.00', None) | Source: Department of State, Central Files, 751K.00/4–760. Secret; Limit Distribution. Sent also to CINCPAC for PolAd; repeated for information to Vientiane, Phnom Penh, and Bangkok.
+frus1958-60v01/d135: ('Department of State', '59', None, None, '751K.5/4–1160', 'decimal', '751K.5', None) | Source: Department of State, Central Files, 751K.5/4–1160. Secret. Drafted by Parsons. Repeated for information to CINCPAC for PolAd.
+frus1958-60v12/d168: ('Department of State', '59', None, None, '787.00/3–2859', 'decimal', '787.00', None) | Source: Department of State, Central Files, 787.00/3–2859. Secret; Personal.
+frus1946v10/d373: ('Department of State', '59', '54–D270', '54D270', None, 'lot_file', None, None) | Marshall Mission Files, Lot 54–D270
+frus1955-57v13/d16: ('Department of State', '59', '62 D 181', '62D181', None, 'lot_file', None, None) | Source: Department of State, Conference Files: Lot 62 D 181, CF 648. Secret. Drafted on February 7; no other drafting information is on the source text. The conversation concluded at 4 p.m. and took p
+frus1969-76ve09p2/d152: ('National Archives', '59', None, None, 'Transcripts of Secretary of State Kissinger’s Staff Meetings', 'structured', None, None) | Source: National Archives, RG 59, Transcripts of Secretary of State Kissinger’s Staff Meetings, 1973–77, Entry 5177, Box 3, Secretary’s Analytical Staff Meetings. Secret. Kissinger chaired the meeting
+frus1969-76ve15p2/d293: ('National Archives', '59', None, None, 'Records of Secretary of State Henry Kissinger, Box 24', 'structured', None, None) | Source: National Archives, RG 59, Records of Secretary of State Henry Kissinger, Entry 5403, Box 24, Classified “C” Material. Secret; Eyes Only. Drafted by David Anderson in EUR/CE. Forwarded to Kissi
+frus1964-68v05/d395: ('Johnson Library', None, None, None, 'National Security File', 'structured', None, None) | Source: Johnson Library, National Security File, Country File, Vietnam, 1 C(2), Revolutionary Development Cadre. Top Secret.
+frus1961-63v22/d202: ('Kennedy Library', None, None, None, 'President’s Office Files', 'structured', None, None) | Source: Kennedy Library, President’s Office Files, Countries Series, Korea, Security 1961-1963. No classification marking. In a covering letter to Rostow, Farley explained that he was submitting this 
+frus1961-63v22/d204: ('Kennedy Library', None, None, None, 'National Security Affairs', 'structured', None, None) | Source: Kennedy Library, National Security Affairs, Countries Series, Korea, General, 1/61-3/61. Confidential. Rostow had asked Robert Johnson of the NSC Staff for advice on Korea in light of Farley’s
+frus1969-76ve09p2/d161: ('National Archives', '84', None, None, 'Jidda Embassy Files:, Box 30', 'structured', None, None) | Source: Ford Library, National Security Adviser, Presidential Country Files for the Middle East and South Asia, Box 30, Saudi Arabia—State Department Telegrams, To SecState - Nodis (8), 9/75–11/75. Se
+frus1969-76ve12/d218: ('Ford Library', None, None, None, 'National Security Adviser', 'structured', None, None) | Source: Ford Library, National Security Adviser, Presidential Correspondence with Foreign Leaders, Box 2, Japan, Prime Minister Miki (2). No classification marking. The Subcommittee on Multi-National 
+frus1969-76ve12/d219: ('Ford Library', None, None, None, 'National Security Adviser', 'structured', None, None) | Source: Ford Library, National Security Adviser, Presidential Correspondence with Foreign Leaders, Box 2, Japan, Prime Minister Miki (2). No classification marking. Ford received this letter under a c
+frus1977-80v03/d248: ('Carter Library', None, None, None, 'White House Central Files', 'structured', None, None) | Source: Carter Library, White House Central Files, Subject File, Box TA–8, TA 3 7/31/80–8/31/80. For Official Use Only. A typed notation at the top of the memorandum reads: “Final Draft.” Neither Klut
+frus1977-80v03/d308: ('Carter Library', None, None, None, 'National Security Affairs', 'structured', None, None) | Source: Carter Library, National Security Affairs, Brzezinski Material, Subject File, Box 19, Evening Reports (State): 7/78. No classification marking. Carter wrote at the top of the page: “Most of LD
+frus1964-68v22/d79: ('Central Intelligence Agency', None, '79–T00472A', None, None, 'structured', None, '79T00472A') | Source: Central Intelligence Agency Files: Job 79–T00472A, OCI Intelligence Memoranda, 1–30 Apr 1965. Secret. Prepared in the Office of Current Intelligence.
+
+=== external_citations rows (POINTED-AT) ===
+frus1958-60v01/d131: (3, 'centralFileClass', 'Department of State', None, None, None, '751K.00', 'Department of State, Central Files, 751K.00/4–1360')
+frus1958-60v01/d131: (5, 'lotFile', 'Department of State', None, '65 F 115', '65F115', None, 'Department of State, Saigon Embassy Files: Lot 65 F 115, 350.1 Political Parties—Can Lao')
+frus1958-60v01/d131: (8, 'centralFileClass', 'Department of State', None, None, None, '851K.392', 'Department of State, Central Files, 851K.392/4–460')
+frus1958-60v01/d135: (1, 'lotFile', 'Department of State', None, '62 D 26', '62D26', None, 'Department of State, FE Files: Lot 62 D 26, MC -Vietnam')
+frus1958-60v12/d168: (1, 'presidentialLibrary', 'Eisenhower Library', 'Herter Papers', None, None, None, 'Eisenhower Library, Herter Papers, Iraq')
+frus1961-63v22/d204: (1, 'centralFileClass', 'Department of State', None, None, None, '795B.00', 'Department of State, Central Files, 795B.00/3-1561')
+frus1977-80v03/d248: (9, 'presidentialLibrary', 'Carter Library', 'White House Central Files', None, None, None, 'Carter Library, White House Central Files, Subject File, TA–8, TA 3 7/31/80–8/31/80')
+frus1977-80v03/d248: (10, 'presidentialLibrary', 'Carter Library', 'White House Central Files', None, None, None, 'Carter Library, White House Central Files, Subject File, TA–8, TA 3 7/31/80–8/31/80')
+frus1977-80v03/d248: (12, 'presidentialLibrary', 'Carter Library', 'White House Central Files', None, None, None, 'Carter Library, White House Central Files, Subject File, TA–8, TA 3 7/31/80–8/31/80')
+
+=== d161 body_text: the Jidda embassy file footnote ===
+   … named by the Church Subcommittee. It instructed Akins to explain to Sa’ud and Sultan that the matter was outside executive branch control. (National Archives, RG 84, Jidda Embassy Files: Lot 79F80, POL Northrop and Lockheed) On August 13, Akins, Dickman, and Huffman had previously met in Washington with Lockheed representa…
+
+=== d131 body_text: the Saigon embassy file footnote (is RG 84 stated?) ===
+   …dy Memorandum from the Office of the Special Assistant to Durbrow, April 5, attachment to covering letter from Durbrow to Parsons, May 5. (Department of State, Saigon Embassy Files: Lot 65 F 115, 350.1 Political Parties—Can Lao) … on Can Lao financial activities giving several documented cases and some alarming allegations from responsibl…
+   'RG 84' anywhere in d131: False
+
+=== curated-lot-resolutions.json ===
+{"lotNumber": "54D270", "kind": "candidates", "displayName": "Marshall Mission Files", "recordGroup": "RG-59", "creatorName": "President (1945-1953 : Truman). Office of the Special Envoy to China.", "creatorNaId": "10481258", "rationale": "NARA did not accession this lot as one series. It arranged the Marshall Mission's records under the mission's own creator record, as ten series split by record type. Any of them may hold the cited document.", "seeAllURL": "https://catalog.archives.gov/search?maskedQ=record.creators.naId:10481258", "candidates": [{"naId": "871815", "title": "Background Materials", "catalogURL": "https://catalog.archives.gov/id/871815", "entryNumber": "A1-1095", "dateRange": "1944\u20131946"}, {"naId": "872082", "title": "Top Secret Documents", "catalogURL": "https://catalog.archives.gov/id/872082", "entryNumber": "A1-1096", "dateRange": "1946\u20131947"}, {"naId": "8720
+{"lotNumber": "62D181", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files"}
+curated series conferenceFiles: {"naId": "602875", "title": "Conference Files", "catalogURL": "https://catalog.archives.gov/id/602875", "hmsMlrEntryNumbers": ["A1 3051B"], "dateRange": "1949\u20131972", "recordGroup": "RG-59", "rationale": "Matched by collection name, not by control number. NARA's Conference Files series carries nine other lot numbers from this run of accessions but not this one, and its 1949\u20131972 span covers the citation."}
+
+=== series-facts-index.json rows ===
+602875 {'accessStatus': 'Unrestricted', 'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useStatus': 'Unrestricted', 'extent': '238 linear feet', 'inclusiveStartYear': 1949, 'inclusiveEndYear': 1972}
+1965953 {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Bureau of Far Eastern Affairs. Office of the Assistant Secretary.', 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useRestrictions': ['Copyright'], 'useStatus': 'Restricted - Possibly', 'extent': '10 linear feet, 1 linear inch', 'inclusiveStartYear': 1960, 'inclusiveEndYear': 1963}
+302021 None
+10481258 None
+872088 None
+872091 None
+series-facts rows: 698
+
+=== central-files-index.json ===
+top keys: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+   numericalFile keys: ['microfilm', 'rolls', 'seriesNaId']
+lotFiles count: 1070
+   {'catalogURL': 'https://catalog.archives.gov/id/1965953', 'hmsMlrEntryNumbers': ['A1 3113'], 'levelOfDescription': 'series', 'lotNumber': '62D26', 'matchType': 'control', 'naId': '1965953', 'recordGroup': '59', 'title': 'Subject, Personal Name, and Country Files'}
+other sections: {"generated": "2026-09-10", "schemaVersion": 3}
+  central-files-index.json: '302021' present=False; 'Central Decimal' present=False; '65F115' present=False; '79F80' present=False; '78D433' present=False; '5177' present=True; '5403' present=True
+  collection-authority.json: '302021' present=False; 'Central Decimal' present=True; '65F115' present=True; '79F80' present=True; '78D433' present=True; '5177' present=True; '5403' present=True
+  series-facts-index.json: '302021' present=False; 'Central Decimal' present=False; '65F115' present=False; '79F80' present=False; '78D433' present=False; '5177' present=False; '5403' present=False
+  accession-series-index.json: '302021' present=False; 'Central Decimal' present=True; '65F115' present=True; '79F80' present=False; '78D433' present=False; '5177' present=False; '5403' present=False
+  source-provenance-index.json: '302021' present=False; 'Central Decimal' present=False; '65F115' present=False; '79F80' present=False; '78D433' present=False; '5177' present=False; '5403' present=False
+  volume-sources-index.json: '302021' present=False; 'Central Decimal' present=False; '65F115' present=True; '79F80' present=True; '78D433' present=True; '5177' present=True; '5403' present=False
+
+=== collection-authority.json: lots 65F115, 79F80, 62D26, 54D270, 62D181; central decimal file record ===
+top keys: ['collections', 'generated', 'schemaVersion']
+records: 3977 sample keys: ['aliases', 'id', 'lotFileNorm', 'name', 'repository', 'volumeIds']
+   {"aliases": ["54\u2013D270", "Marshall Mission Files"], "id": "lot:54D270", "lotFileNorm": "54D270", "name": "Lot 54\u2013D270", "recordGroup": "59", "repository": "Department of State", "volumeIds": ["frus1944v06", "frus1945v07", "frus1946v09", "frus1946v10", "frus1947v07"]}
+   {"aliases": ["62 D 181", "62 D181", "Central Files", "Conference Files", "Conference Files, Lot 62 D 181", "Lot 62 D 181: Collection of documentation on official visits by heads of government and foreign ministers to the United States and on major international conferences attended by the Secretary of State for 1956\u20131958, as maintained by the Executive Secretariat.", "Lot 62 D 181: Collection of documentation on official visits by heads of government and foreign ministers to the United Stat
+   {"aliases": ["62 D 26", "FE Files", "FE Files, Lot 62 D 26", "Secretary\u2019s Memoranda of Conversation"], "catalogURL": "https://catalog.archives.gov/id/1965953", "children": [{"name": "Files maintained by the Bureau of Far Eastern Affairs for 1960", "volumeIds": ["frus1958-60v18"]}, {"name": "Files maintained by the Bureau of Far Eastern Affairs for the year 1960", "volumeIds": ["frus1958-60v01", "frus1958-60v16", "frus1958-60v19"]}, {"name": "Files of the Bureau of Far Eastern Affairs for 19
+   {"aliases": ["65 F 115", "Classified files of the Embassy in South Vietnam for the years 1959\u20131961", "Lot 65 F 115: Classified files of the Embassy in South Vietnam for the years 1959\u20131961.", "Saigon Embassy Files"], "id": "lot:65F115", "lotFileNorm": "65F115", "name": "Classified files of the Embassy at Saigon, 1959-1961, formerly Lot 65 F 115.", "recordGroup": "84", "repository": "Department of State", "volumeIds": ["frus1958-60v01", "frus1961-63v01"]}
+   {"aliases": ["79F80", "DEF 12\u20135 Agent\u2019s Fees", "DEF 12\u20135 Jordan January\u2013April", "DEF 12\u20135.13", "DEF 7 Visits", "Jidda Embassy Files", "Lot 79F80, DEF 12\u20135 Jordan", "Lot 79F80, DEF 12\u20135 Northrop/F\u20135", "Lot 79F80, DEF 12\u20135, Bahrain", "Lot 79F80, DEF 12\u20135, Lockheed", "POL Northrop & Lockheed", "POL Northrop & Lockheed 1975"], "id": "lot:79F80", "lotFileNorm": "79F80", "name": "Lot 79F80, DEF 12\u20135 Agent\u2019s Fees", "recordGroup": "84", "reposi
+   {"id": "txt:department of state|central decimal file 1910-1929", "name": "Central Decimal File 1910\u20131929", "recordGroup": "59", "repository": "Department of State", "volumeIds": ["frus1917-72PubDip"]}
+   {"children": [{"decimalClass": "788.00", "name": "788.00", "volumeIds": ["frus1951-54Iran", "frus1951-54IranEd2"]}, {"decimalClass": "788.11", "name": "788.11", "volumeIds": ["frus1951-54Iran", "frus1951-54IranEd2"]}, {"decimalClass": "788.13", "name": "788.13", "volumeIds": ["frus1951-54Iran", "frus1951-54IranEd2"]}, {"decimalClass": "788.21", "name": "788.21", "volumeIds": ["frus1951-54Iran", "frus1951-54IranEd2"]}, {"decimalClass": "788.5", "name": "788.5", "volumeIds": ["frus1951-54Iran", "f
+   {"children": [{"decimalClass": "POL 15-1 PORT", "name": "POL 15-1 PORT", "volumeIds": ["frus1969-76v28"]}, {"decimalClass": "POL 15-2 SAFR", "name": "POL 15-2 SAFR", "volumeIds": ["frus1969-76v28"]}, {"decimalClass": "POL 15-5 RHOD", "name": "POL 15-5 RHOD", "volumeIds": ["frus1969-76v28"]}, {"decimalClass": "POL 16 RHOD", "name": "POL 16 RHOD", "volumeIds": ["frus1969-76v28"]}, {"decimalClass": "POL 17 PORT-US", "name": "POL 17 PORT-US", "volumeIds": ["frus1969-76v28"]}, {"decimalClass": "POL 1
+   {"aliases": ["Decimal and Subject-Numeric Indexed Central Files . Until January 1963, the Department of State used a decimal file system for its central indexed records. For Berlin the most important numbers under this system are:"], "children": [{"decimalClass": "10.11-RU", "name": "10.11-RU", "volumeIds": ["frus1961-63v15"]}, {"decimalClass": "611.61", "name": "611.61", "volumeIds": ["frus1961-63v15"]}, {"decimalClass": "762.00", "name": "762.00", "volumeIds": ["frus1961-63v15"]}, {"decimalCla
+   {"aliases": ["White House Central File", "White House Central Files, National Defense"], "children": [{"name": "Cabinet Papers", "volumeIds": ["frus1964-68v31"]}, {"aliases": ["Confidential Files"], "name": "Confidential File", "volumeIds": ["frus1917-72PubDipv07", "frus1964-68v01", "frus1964-68v03", "frus1964-68v05", "frus1964-68v08", "frus1964-68v09", "frus1964-68v11", "frus1964-68v20", "frus1964-68v23", "frus1964-68v24", "frus1964-68v28", "frus1964-68v29p2", "frus1964-68v31", "frus1964-68v33"
+   {"children": [{"decimalClass": "FG 296", "name": "FG 296", "volumeIds": ["frus1917-72PubDipv06"]}, {"decimalClass": "FG 750", "name": "FG 750", "volumeIds": ["frus1917-72PubDipv06"]}, {"name": "Subject Files", "volumeIds": ["frus1917-72PubDipv06"]}], "id": "txt:kennedy library|white house central file", "name": "White House Central Files", "repository": "Kennedy Library", "volumeIds": ["frus1917-72PubDipv06"]}
+   {"aliases": ["Minnesota Historical Society"], "children": [{"decimalClass": "AG 8", "name": "AG 8", "volumeIds": ["frus1977-80v02"]}, {"name": "Central Files", "volumeIds": ["frus1977-80v02"]}, {"name": "Central Files: Trips", "volumeIds": ["frus1977-80v01"]}, {"name": "Counsel and Deputy Chief of Staff Files", "volumeIds": ["frus1977-80v01"]}, {"name": "Hubert H. Humphrey Papers", "volumeIds": ["frus1964-68v02", "frus1964-68v03", "frus1964-68v31"]}, {"name": "Senatorial Papers", "volumeIds": ["
+
+=== volume-sources-index.json: E5177 / 78D433 / 5403 ===
+   {"isHeading": false, "key": "lot:78D443", "lotFile": "78D443", "occurrences": 14, "text": "Lot File 78D443, Transcripts of Secretary of State Kissinger\u2019s Staff Meetings", "volumeIds": ["frus1969-76v16", "frus1969-76v22", "frus1969-76v25", "frus1969-76v26", "frus1969-76v30", "frus1969-76v31", "frus1969-76v35", "frus1969-76v37", "frus1969-76ve03", "frus1969-76ve11p1", "frus1969-76ve11p2", "frus
+   {"isHeading": false, "key": "lot:78D433", "lotFile": "78D433", "occurrences": 3, "text": "Transcripts of Secretary of State Kissinger\u2019s Staff Meetings, E5177 [formerly Lot 78D433]", "volumeIds": ["frus1969-76v18", "frus1969-76v27", "frus1969-76ve12"]}
+
+=== presidential-library-catalog.json: Johnson NSF Vietnam, Kennedy POF/NSF Korea, Ford NSA Presidential Correspondence, Carter WHCF / Brzezinski, Eisenhower Herter ===
+top keys: ['generated', 'libraries', 'schemaVersion', 'source']
+  'National Security File' present: True
+  'President’s Office Files' present: False
+  'President's Office Files' present: True
+  'Presidential Correspondence with Foreign Leaders' present: True
+  'White House Central Files' present: True
+  'Brzezinski' present: True
+  'Herter Papers' present: True
+  'Presidential Country Files' present: True
+  entries: 11
+  sample: {"citedAs": "Hoover Library", "collections": [{"identifier": "HH-AAB", "naId": 597033, "series": [{"inclusiveDates": "1903\u20131959", "naId": 597034, "title": "Articles and Speeches"}, {"inclusiveDates": "1901\u20131966", "naId": 603721, "title": "Subject Files"}, {"inclusiveDates": "1901\u20131961", "naId": 603727, "title": "Correspondence"}], "statedSeriesCount": 3, "title": "Arthur A. Ballanti
+
+=== external-citation-index.json: the decimal numbers 751K.00, 851K.392, 795B.00, 893.20, 893.51, 787.00, 811.20200(D) ===
+top keys: ['classPairs', 'classSourceKeys', 'classTargetKeys', 'classTargets', 'coverage', 'generated', 'pairs', 'schemaVersion', 'sourceIds', 'targetIds', 'targets', 'volumes']
+  '751K.00' present: True
+  '851K.392' present: True
+  '795B.00' present: True
+  '893.20' present: True
+  '893.51' present: True
+  '787.00' present: True
+  '811.20200' present: False
+  '65F115' present: True
+  '62D26' present: True
+  '54D270' present: False
+  '62D181' present: True
+  '79F80' present: False
+  'Herter Papers' present: False
+  'Lot 65 F 115' present: False

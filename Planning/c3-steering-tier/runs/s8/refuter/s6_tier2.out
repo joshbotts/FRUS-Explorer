@@ -1,0 +1,4 @@
+frus1969-76ve09p2 d122 d155 n=231 dims=512 raw cosine 0.882 calibrated 0.803 | norms 1.000 0.999
+frus1969-76ve09p2 d122 d107 n=231 dims=512 raw cosine 0.882 calibrated 0.803 | norms 1.000 1.000
+frus1947v07 d628 d617 n=1164 dims=512 raw cosine 0.972 calibrated 0.954 | norms 1.002 1.000
+frus1947v07 d628 d582 n=1164 dims=512 raw cosine 0.824 calibrated 0.707 | norms 1.002 1.000

@@ -1,0 +1,51 @@
+distinct cited pairs in overview: 29 from 20 volumes
+printed citations with a URL: 20
+manifest volumes: 553 sample keys: ['dateRange', 'editors', 'filename', 'publicationDate', 'sizeBytes', 'status', 'subseries', 'tags', 'title', 'volumeId']
+OK frus1950v06/d832 | printed: 1950, East Asia and the Pacific, Volume VI Doc 832 | manifest: Foreign Relations of the United States, 1950, East Asia and
+                    the Pacific, Volume VI | doc_number: 832 | missing tokens: [] | doc id matches printed number: True
+OK frus1964-68v05/d258 | printed: 1964–1968, Volume V, Vietnam, 1967 Doc 258 | manifest: Foreign Relations of the United States, 1964–1968, Volume V,
+                    Vietnam, 1967 | doc_number: 258 | missing tokens: [] | doc id matches printed number: True
+OK frus1969-76ve09p2/d122 | printed: 1969–1976, Volume E–9, Part 2, Documents on the Middle East Region, 1973–1976 Doc 122 | manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–9, Part 2, Documents on the Middle East Region, 1973–1976 | doc_number: 122 | missing tokens: [] | doc id matches printed number: True
+OK frus1969-76ve11p1/d159 | printed: 1969–1976, Volume E–11, Part 1, Documents on Mexico; Central America; and the Caribbean, 1973–1976 Doc 159 | manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–11, Part 1, Documents on Mexico; Central America; and the Caribbean,
+                    1973–1976 | doc_number: 159 | missing tokens: [] | doc id matches printed number: True
+OK frus1961-63v22/d249 | printed: 1961–1963, Volume XXII, Northeast Asia Doc 249 | manifest: Foreign Relations of the United States, 1961–1963, Volume
+                    XXII, Northeast Asia | doc_number: 249 | missing tokens: [] | doc id matches printed number: True
+OK frus1961-63v23/d358 | printed: 1961–1963, Volume XXIII, Southeast Asia Doc 358 | manifest: Foreign Relations of the United States, 1961–1963, Volume
+                    XXIII: Southeast Asia | doc_number: 358 | missing tokens: [] | doc id matches printed number: True
+OK frus1977-80v23/d252 | printed: 1977–1980, Volume XXIII, Mexico, Cuba, and the Caribbean Doc 252 | manifest: Foreign Relations of the United States, 1977–1980, Volume
+                    XXIII, Mexico, Cuba, and the Caribbean | doc_number: 252 | missing tokens: [] | doc id matches printed number: True
+OK frus1964-68v05/d197 | printed: 1964–1968, Volume V, Vietnam, 1967 Doc 197 | manifest: Foreign Relations of the United States, 1964–1968, Volume V,
+                    Vietnam, 1967 | doc_number: 197 | missing tokens: [] | doc id matches printed number: True
+OK frus1969-76v06/d175 | printed: 1969–1976, Volume VI, Vietnam, January 1969–July 1970 Doc 175 | manifest: Foreign Relations of the United States, 1969–1976, Volume VI,
+                    Vietnam, January 1969–July 1970 | doc_number: 175 | missing tokens: [] | doc id matches printed number: True
+OK frus1969-76v27/d45 | printed: 1969–1976, Volume XXVII, Iran; Iraq, 1973–1976 Doc 45 | manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    XXVII, Iran; Iraq, 1973–1976 | doc_number: 45 | missing tokens: [] | doc id matches printed number: True
+OK frus1977-80v18/d206 | printed: 1977–1980, Volume XVIII, Middle East Region; Arabian Peninsula Doc 206 | manifest: Foreign Relations of the United States, 1977–1980, Volume
+                    XVIII, Middle East Region; Arabian Peninsula | doc_number: 206 | missing tokens: [] | doc id matches printed number: True
+OK frus1969-76ve09p2/d161 | printed: 1969–1976, Volume E–9, Part 2, Documents on the Middle East Region, 1973–1976 Doc 161 | manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–9, Part 2, Documents on the Middle East Region, 1973–1976 | doc_number: 161 | missing tokens: [] | doc id matches printed number: True
+OK frus1969-76ve12/d219 | printed: 1969–1976, Volume E–12, Documents on East and Southeast Asia, 1973–1976 Doc 219 | manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–12, Documents on East and Southeast Asia, 1973–1976 | doc_number: 219 | missing tokens: [] | doc id matches printed number: True
+OK frus1943China/d202 | printed: Diplomatic Papers, 1943, China Doc 202 | manifest: Foreign Relations of the United States, Diplomatic Papers,
+                    1943, China | doc_number: 202 | missing tokens: [] | doc id matches printed number: True
+OK frus1961-63v22/d244 | printed: 1961–1963, Volume XXII, Northeast Asia Doc 244 | manifest: Foreign Relations of the United States, 1961–1963, Volume
+                    XXII, Northeast Asia | doc_number: 244 | missing tokens: [] | doc id matches printed number: True
+printed citations needing a look: 0 of 15
+
+Ed2 ids in manifest: ['frus1951-54IranEd2', 'frus1969-76ve15p2Ed2', 'frus1977-80v09Ed2']
+frus1969-76ve15p2 -> Foreign Relations of the United States, 1969–1976, Volume
+                    E–15, Part 2, Documents on Western Europe, 1973–1976
+frus1969-76ve15p2Ed2 -> Foreign Relations of the United States, 1969–1976, Volume
+                    E–15, Part 2, Documents on Western Europe, 1973–1976, Second, Revised
+                    Edition
+frus1951-54Iran -> Foreign Relations of the United States, 1952–1954, Iran,
+                    1951–1954
+frus1951-54IranEd2 -> Foreign Relations of the United States, 1952–1954, Iran,
+                    1951–1954, Second Edition
+
+cited pairs in collection: 29 of 29 | not in collection: [] | in collection but not cited: []
+entries by kind: {'heading': 6, 'prose': 6, 'document': 29, 'excerpt': 17, 'generated': 1} total 59
+documents with notes: 29
+documents with excerpts: 15

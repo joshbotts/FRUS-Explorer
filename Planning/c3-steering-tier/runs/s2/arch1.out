@@ -1,0 +1,48 @@
+CAME-FROM SQL: SELECT repository, record_group, lot_file_norm, series_name, citation_era, decimal_class, substr(raw_text,1,160) FROM document_sources WHERE volume_id=? AND document_id=?
+POINTED-AT SQL: SELECT note_ordinal, anchor, repository, collection, lot_file_norm, decimal_class, substr(raw_text,1,140) FROM external_citations WHERE volume_id=? AND document_id=?
+== frus1944v06 d148
+  FROM: ('Department of State', '59', None, '893.20/9–2244', 'decimal', '893.20', '893.20/9–2244')
+== frus1946v10 d373
+  FROM: ('Department of State', '59', '54D270', None, 'lot_file', None, 'Marshall Mission Files, Lot 54–D270')
+== frus1947v07 d908
+  FROM: ('Department of State', '59', None, '893.51/5–847', 'decimal', '893.51', '893.51/5–847: Telegram')
+== frus1948v07 d43
+  FROM: ('Department of State', '59', None, '811.20200(D)/1–2848', 'decimal', None, '811.20200(D)/1–2848: Telegram')
+== frus1958-60v01 d131
+  FROM: ('Department of State', '59', None, '751K.00/4–760', 'decimal', '751K.00', 'Source: Department of State, Central Files, 751K.00/4–760. Secret; Limit Distribution. Sent also to CINCPAC for PolAd; repeated for information to Vientiane, Ph')
+  CITES: (3, 'centralFileClass', 'Department of State', None, None, '751K.00', 'Department of State, Central Files, 751K.00/4–1360')
+  CITES: (5, 'lotFile', 'Department of State', None, '65F115', None, 'Department of State, Saigon Embassy Files: Lot 65 F 115, 350.1 Political Parties—Can Lao')
+  CITES: (8, 'centralFileClass', 'Department of State', None, None, '851K.392', 'Department of State, Central Files, 851K.392/4–460')
+== frus1958-60v01 d135
+  FROM: ('Department of State', '59', None, '751K.5/4–1160', 'decimal', '751K.5', 'Source: Department of State, Central Files, 751K.5/4–1160. Secret. Drafted by Parsons. Repeated for information to CINCPAC for PolAd.')
+  CITES: (1, 'lotFile', 'Department of State', None, '62D26', None, 'Department of State, FE Files: Lot 62 D 26, MC -Vietnam')
+== frus1964-68v05 d395
+  FROM: ('Johnson Library', None, None, 'National Security File', 'structured', None, 'Source: Johnson Library, National Security File, Country File, Vietnam, 1 C(2), Revolutionary Development Cadre. Top Secret.')
+  CITES: (1, 'presidentialLibrary', 'Johnson Library', 'President’s Daily Diary', None, None, 'Johnson Library, President’s Daily Diary')
+== frus1961-63v22 d202
+  FROM: ('Kennedy Library', None, None, 'President’s Office Files', 'structured', None, 'Source: Kennedy Library, President’s Office Files, Countries Series, Korea, Security 1961-1963. No classification marking. In a covering letter to Rostow, Farle')
+  CITES: (0, 'presidentialLibrary', 'Kennedy Library', 'President’s Office Files', None, None, 'Kennedy Library, President’s Office Files, Countries Series, Korea, Security 1961-1963')
+== frus1955-57v13 d16
+  FROM: ('Department of State', '59', '62D181', None, 'lot_file', None, 'Source: Department of State, Conference Files: Lot 62 D 181, CF 648. Secret. Drafted on February 7; no other drafting information is on the source text. The con')
+== frus1958-60v12 d168
+  FROM: ('Department of State', '59', None, '787.00/3–2859', 'decimal', '787.00', 'Source: Department of State, Central Files, 787.00/3–2859. Secret; Personal.')
+  CITES: (1, 'presidentialLibrary', 'Eisenhower Library', 'Herter Papers', None, None, 'Eisenhower Library, Herter Papers, Iraq')
+== frus1964-68v22 d79
+  FROM: ('Central Intelligence Agency', None, None, None, 'structured', None, 'Source: Central Intelligence Agency Files: Job 79–T00472A, OCI Intelligence Memoranda, 1–30 Apr 1965. Secret. Prepared in the Office of Current Intelligence.')
+== frus1969-76ve09p2 d152
+  FROM: ('National Archives', '59', None, 'Transcripts of Secretary of State Kissinger’s Staff Meetings', 'structured', None, 'Source: National Archives, RG 59, Transcripts of Secretary of State Kissinger’s Staff Meetings, 1973–77, Entry 5177, Box 3, Secretary’s Analytical Staff Meeting')
+== frus1969-76ve09p2 d161
+  FROM: ('National Archives', '84', None, 'Jidda Embassy Files:, Box 30', 'structured', None, 'Source: Ford Library, National Security Adviser, Presidential Country Files for the Middle East and South Asia, Box 30, Saudi Arabia—State Department Telegrams,')
+== frus1969-76ve15p2 d293
+  FROM: ('National Archives', '59', None, 'Records of Secretary of State Henry Kissinger, Box 24', 'structured', None, 'Source: National Archives, RG 59, Records of Secretary of State Henry Kissinger, Entry 5403, Box 24, Classified “C” Material. Secret; Eyes Only. Drafted by Davi')
+== frus1969-76ve12 d218
+  FROM: ('Ford Library', None, None, 'National Security Adviser', 'structured', None, 'Source: Ford Library, National Security Adviser, Presidential Correspondence with Foreign Leaders, Box 2, Japan, Prime Minister Miki (2). No classification mark')
+== frus1969-76ve12 d219
+  FROM: ('Ford Library', None, None, 'National Security Adviser', 'structured', None, 'Source: Ford Library, National Security Adviser, Presidential Correspondence with Foreign Leaders, Box 2, Japan, Prime Minister Miki (2). No classification mark')
+== frus1977-80v03 d248
+  FROM: ('Carter Library', None, None, 'White House Central Files', 'structured', None, 'Source: Carter Library, White House Central Files, Subject File, Box TA–8, TA 3 7/31/80–8/31/80. For Official Use Only. A typed notation at the top of the memor')
+  CITES: (9, 'presidentialLibrary', 'Carter Library', 'White House Central Files', None, None, 'Carter Library, White House Central Files, Subject File, TA–8, TA 3 7/31/80–8/31/80')
+  CITES: (10, 'presidentialLibrary', 'Carter Library', 'White House Central Files', None, None, 'Carter Library, White House Central Files, Subject File, TA–8, TA 3 7/31/80–8/31/80')
+  CITES: (12, 'presidentialLibrary', 'Carter Library', 'White House Central Files', None, None, 'Carter Library, White House Central Files, Subject File, TA–8, TA 3 7/31/80–8/31/80')
+== frus1977-80v03 d308
+  FROM: ('Carter Library', None, None, 'National Security Affairs', 'structured', None, 'Source: Carter Library, National Security Affairs, Brzezinski Material, Subject File, Box 19, Evening Reports (State): 7/78. No classification marking. Carter w')

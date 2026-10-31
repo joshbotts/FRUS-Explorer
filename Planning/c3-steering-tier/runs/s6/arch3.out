@@ -1,0 +1,37 @@
+CU coverage: {"authorityCollectionCount": 3977, "authorityCollectionsReached": 1834, "noteCount": 264598, "notesInACollection": 76140, "notesWithAClassKey": 193192, "volumesScanned": 553, "volumesWithNotes": 502}
+EC coverage: {"absenceClaimsRefused": 140, "authorityCollectionCount": 3977, "decimalNotComposingRefused": 3650, "decimalNotInSharedVocabularyRefused": 710, "decimalReferences": 30527, "decimalReferencesInherited": 514, "decimalReferencesWithBothEnds": 27409, "decimalSameClassReferences": 19144, "decimalSubjectNumericRefused": 7849, "decimalVocabulary": {"classes": 9, "countries": 287, "digest": "12b637f39964ff68d0ac298cb7efa0a3baffd09fa74699eb87b1c188f904e588"}, "documentsScanned": 314616, "footnotesExcluded": 299802, "footnotesScanned": 471131, "headNestedExcluded": 31326, "headNestedExcludedWithAnchor": 535, "libraryReferences": 11164, "lotReferences": 8452, "referencesFound": 19616, "referencesInherited": 1550, "referencesJoined": 18970, "referencesWithBothEnds": 16691, "sameUnitReferences": 6501, "volumesScanned": 553, "volumesWithReferences": 441}
+CU categories: ['centralDecimalFile', 'subjectNumericFile', 'centralForeignPolicyFile', 'lotFile', 'presidentialLibrary', 'naraCollection', 'intelligence', 'namedFileSeries', 'foreignArchive', 'previouslyPublished', 'unrecognized']
+scope volumes 19 ['frus1894app2', 'frus1943China', 'frus1944v06', 'frus1947v07', 'frus1948v07', 'frus1958-60v01', 'frus1961-63v17', 'frus1961-63v22', 'frus1961-63v23', 'frus1964-68v04', 'frus1964-68v05', 'frus1969-76v06', 'frus1969-76ve09p1', 'frus1969-76ve09p2', 'frus1969-76ve12', 'frus1969-76ve15p2', 'frus1977-80v03', 'frus1977-80v18', 'frus1977-80v23']
+== came-from (collection-usage-index) top 15 over scope
+  831 txt:department of state|central file | Central Files | RG 59 | Department of State
+  462 txt:carter library|national security affair | National Security Affairs | RG None | Carter Library
+  422 txt:nixon|nsc file | NSC Files | RG None | Nixon
+  245 txt:kennedy library|national security file | National Security Files | RG None | Kennedy Library
+  241 txt:ford library|national security advisor | National Security Adviser | RG None | Ford Library
+  239 txt:johnson library|national security file | National Security File | RG None | Johnson Library
+  178 txt:department of state|central files 1967-69 | Central Files 1967–69 | RG 59 | Department of State
+  100 txt:library of congress|manuscript division | Manuscript Division | RG None | Library of Congress
+  85 txt:carter library|national security council | National Security Council | RG None | Carter Library
+  57 txt:ford library|nsc institutional file | NSC Institutional Files | RG None | Ford Library
+  39 txt:roosevelt library|hyde park | Hyde Park | RG None | Roosevelt Library
+  37 txt:national archives|records of the office of the counselor | Records of the Office of the Counselor | RG 59 | National Archives
+  32 txt:national archives|transcripts of secretary of state kissinger's staff meeting | Transcripts of Secretary of State Kissinger’s Staff Meetings | RG 59 | National Archives
+  30 lot:66D193 | Vietnam Working Group Files: Lot 66 D 193 | RG 59 | Department of State
+  30 txt:johnson library|recordings and transcript | Recordings and Transcripts | RG None | Johnson Library
+scope volumes in ec.volumes: 14 of 19
+== pointed-at (external-citation-index) top 15 over scope
+  252 txt:carter library|national security affair | National Security Affairs | RG None | Carter Library
+  154 txt:johnson library|national security file | National Security File | RG None | Johnson Library
+  144 txt:nixon|nsc file | NSC Files | RG None | Nixon
+  113 txt:kennedy library|national security file | National Security Files | RG None | Kennedy Library
+  47 txt:carter library|presidential material | Presidential Materials | RG None | Carter Library
+  27 txt:johnson library|presidential daily diary | President’s Daily Diary | RG None | Johnson Library
+  25 txt:carter library|national security council | National Security Council | RG None | Carter Library
+  21 txt:carter library|staff office file | Staff Office Files | RG None | Carter Library
+  20 lot:65D330 | Secretary’s Memoranda of Conversation: Lot 65 D 330 | RG 59 | Department of State
+  20 lot:85D240 | Bundy Files: Lot 85 D 240 | RG 59 | Department of State
+  19 txt:kennedy library|presidential office file | President’s Office Files | RG None | Kennedy Library
+  16 lot:66D193 | Vietnam Working Group Files: Lot 66 D 193 | RG 59 | Department of State
+  14 lot:72D192 | Rusk Files: Lot 72 D 192 | RG 59 | Department of State
+  12 txt:carter library|records of the office of the staff secretary | Records of the Office of the Staff Secretary, Presidential File | RG None | Carter Library
+  11 lot:82D298 | S/P Files: Lot 82D298 (Entry P–9) | RG 59 | Department of State

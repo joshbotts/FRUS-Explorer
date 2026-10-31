@@ -1,0 +1,2 @@
+.timeout 100000
+SELECT c.volume_id,c.document_id,substr(c.header,1,100), d.date_iso FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid LEFT JOIN document_dates d ON d.volume_id=c.volume_id AND d.document_id=c.document_id WHERE frus_documents MATCH 'corrupt OR bribe OR briberi' AND c.volume_id='frus1894app2' AND c.is_front_matter=0 AND c.is_editorial_note=0 ORDER BY bm25(frus_documents) LIMIT 12;

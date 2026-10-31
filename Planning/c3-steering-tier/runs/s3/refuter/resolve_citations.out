@@ -1,0 +1,24 @@
+printed 1922, Volume I, Document 841 -> ['frus1922v01'] -> [('frus1922v01', 'd841')] | expected frus1922v01/d841 | RESOLVES
+      frus1922v01 | Papers Relating to the Foreign Relations of the United States, 1922, Volume I
+printed 1944, Volume VI, Document 292 -> ['frus1944v06'] -> [('frus1944v06', 'd292')] | expected frus1944v06/d292 | RESOLVES
+      frus1944v06 | Foreign Relations of the United States, Diplomatic Papers, 1944, China, Volume VI
+printed 1947, Volume VII, Document 583 -> ['frus1947v07'] -> [('frus1947v07', 'd583')] | expected frus1947v07/d583 | RESOLVES
+      frus1947v07 | Foreign Relations of the United States, 1947, The Far East: China, Volume VII
+printed 1948, Volume VII, Document 43 -> ['frus1948v07'] -> [('frus1948v07', 'd43')] | expected frus1948v07/d43 | RESOLVES
+      frus1948v07 | Foreign Relations of the United States, 1948, The Far East: China, Volume VII
+printed 1948, Volume VII, Document 471 -> ['frus1948v07'] -> [('frus1948v07', 'd471')] | expected frus1948v07/d471 | RESOLVES
+      frus1948v07 | Foreign Relations of the United States, 1948, The Far East: China, Volume VII
+printed 1961–1963, Volume XXII, Document 244 -> ['frus1961-63v22'] -> [('frus1961-63v22', 'd244')] | expected frus1961-63v22/d244 | RESOLVES
+      frus1961-63v22 | Foreign Relations of the United States, 1961–1963, Volume XXII, Northeast Asia
+printed 1961–1963, Volume XXIII, Document 356 -> ['frus1961-63v23'] -> [('frus1961-63v23', 'd356')] | expected frus1961-63v23/d356 | RESOLVES
+      frus1961-63v23 | Foreign Relations of the United States, 1961–1963, Volume XXIII: Southeast Asia
+printed 1969–1976, Volume E–9, Part 2, Document 122 -> ['frus1969-76ve09p2'] -> [('frus1969-76ve09p2', 'd122')] | expected frus1969-76ve09p2/d122 | RESOLVES
+      frus1969-76ve09p2 | Foreign Relations of the United States, 1969–1976, Volume E–9, Part 2, Documents on the Middle East Region, 19
+printed 1969–1976, Volume E–9, Part 2, Document 155 -> ['frus1969-76ve09p2'] -> [('frus1969-76ve09p2', 'd155')] | expected frus1969-76ve09p2/d155 | RESOLVES
+      frus1969-76ve09p2 | Foreign Relations of the United States, 1969–1976, Volume E–9, Part 2, Documents on the Middle East Region, 19
+printed 1969–1976, Volume E–11, Part 1, Document 159 -> ['frus1969-76ve11p1'] -> [('frus1969-76ve11p1', 'd159')] | expected frus1969-76ve11p1/d159 | RESOLVES
+      frus1969-76ve11p1 | Foreign Relations of the United States, 1969–1976, Volume E–11, Part 1, Documents on Mexico; Central America; 
+printed 1969–1976, Volume E–15, Part 2, Document 292 -> ['frus1969-76ve15p2'] -> [('frus1969-76ve15p2', 'd292')] | expected frus1969-76ve15p2/d292 | RESOLVES
+      frus1969-76ve15p2 | Foreign Relations of the United States, 1969–1976, Volume E–15, Part 2, Documents on Western Europe, 1973–1976
+printed 1977–1980, Volume III, Document 248 -> ['frus1977-80v03'] -> [('frus1977-80v03', 'd248')] | expected frus1977-80v03/d248 | RESOLVES
+      frus1977-80v03 | Foreign Relations of the United States, 1977–1980, Volume III, Foreign Economic Policy

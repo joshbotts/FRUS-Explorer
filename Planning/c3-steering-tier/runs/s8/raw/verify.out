@@ -1,0 +1,23 @@
+SQL: SELECT body_text, length(body_text) FROM document_cache WHERE volume_id=? AND document_id=? AND is_front_matter=0 AND is_editorial_note=0
+Q1 frus1947v07/d628 exact_count=1 offset=5666 of len=9576 OK
+Q2 frus1947v07/d617 exact_count=1 offset=4870 of len=10346 OK
+Q3 frus1947v07/d582 exact_count=1 offset=208 of len=3521 OK
+Q4 frus1948v07/d322 exact_count=1 offset=2176 of len=3815 OK
+Q5 frus1958-60v01/d267 exact_count=1 offset=4790 of len=6169 OK
+Q6 frus1964-68v05/d395 exact_count=1 offset=1836 of len=5952 OK
+Q7 frus1964-68v06/d31 exact_count=1 offset=3820 of len=4174 OK
+Q8 frus1961-63v22/d221 exact_count=1 offset=795 of len=1248 OK
+Q9 frus1961-63v22/d297 exact_count=1 offset=5417 of len=7981 OK
+Q10 frus1961-63v22/d202 exact_count=1 offset=2050 of len=4694 OK
+Q11 frus1969-76ve09p2/d122 exact_count=1 offset=1389 of len=28403 OK
+Q12 frus1969-76ve09p2/d152 exact_count=1 offset=4298 of len=9755 OK
+Q13 frus1969-76ve15p2/d293 exact_count=1 offset=881 of len=4361 OK
+Q14 frus1969-76ve15p2/d292 exact_count=1 offset=1055 of len=3590 OK
+Q15 frus1969-76ve12/d219 exact_count=1 offset=2963 of len=3402 OK
+Q16 frus1969-76ve12/d227 exact_count=1 offset=1067 of len=6206 OK
+Q17 frus1977-80v15/d83 exact_count=1 offset=1891 of len=4061 OK
+Q18 frus1977-80v15/d80 exact_count=1 offset=3087 of len=5998 OK
+Q19 frus1969-76ve09p2/d155 exact_count=1 offset=5752 of len=30108 OK
+Q20 frus1977-80v15/d68 exact_count=1 offset=4912 of len=8572 OK
+Q21 frus1964-68v06/d134 exact_count=1 offset=2019 of len=4564 OK
+Q22 frus1969-76ve09p2/d161 exact_count=1 offset=961 of len=7879 OK

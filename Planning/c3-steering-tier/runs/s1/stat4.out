@@ -1,0 +1,4 @@
+PHRASE "foreign corrupt practices": FTS docs 4 (census, all); STRICT literal 4 of 4; TOLERANT literal 4 of 4
+  docs: ['frus1977-80v03/d152', 'frus1977-80v03/d230', 'frus1977-80v03/d248', 'frus1977-80v18/d57']
+PHRASE "questionable payments": FTS docs 9 (census, all); STRICT literal 1 of 9; TOLERANT literal 1 of 9
+  docs: ['frus1919Parisv11/d76', 'frus1941v01/d479', 'frus1947v08/d338', 'frus1949v08/d1651', 'frus1952-54v04/d465', 'frus1955-57v03mSupp/d813', 'frus1955-57v16/d386', 'frus1955-57v26/d156', 'frus1969-76ve09p1/d50']

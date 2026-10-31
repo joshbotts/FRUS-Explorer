@@ -1,0 +1,18 @@
+Q1: SELECT substr(t.date_iso,1,3)||'0s', COUNT(*) FROM document_cache c JOIN document_dates t ON t.volume_id=c.volume_id AND t.document_id=c.document_id WHERE c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') AND t.date_iso IS NOT NULL GROUP BY 1
+Q2: SELECT substr(t.date_iso,1,3)||'0s', c.volume_id, COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid JOIN document_dates t ON t.volume_id=c.volume_id AND t.document_id=c.document_id WHERE frus_documents MATCH 'corrupt' AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') AND t.date_iso IS NOT NULL GROUP BY 1,2
+decade | dated non-apparatus docs | docs with stem 'corrupt' | per 1,000 | top volume (share of numerator)
+1840s | 143 | 1 | 7.0 | frus1902app2 1 of 1
+1850s | 158 | 1 | 6.3 | frus1894app2 1 of 1
+1860s | 11268 | 74 | 6.6 | frus1865p4 10 of 74
+1870s | 5821 | 64 | 11.0 | frus1875v01 8 of 64
+1880s | 6484 | 42 | 6.5 | frus1883 7 of 42
+1890s | 9845 | 71 | 7.2 | frus1894app2 37 of 71
+1900s | 10261 | 38 | 3.7 | frus1909 8 of 38
+1910s | 30842 | 128 | 4.2 | frus1913 11 of 128
+1920s | 20374 | 39 | 1.9 | frus1922v01 7 of 39
+1930s | 40073 | 60 | 1.5 | frus1930v02 7 of 60
+1940s | 75872 | 353 | 4.7 | frus1947v07 59 of 353
+1950s | 42801 | 407 | 9.5 | frus1952-54v13p2 22 of 407
+1960s | 27654 | 456 | 16.5 | frus1964-68v05 40 of 456
+1970s | 22258 | 354 | 15.9 | frus1969-76ve11p1 32 of 354
+1980s | 6038 | 85 | 14.1 | frus1981-88v01 10 of 85

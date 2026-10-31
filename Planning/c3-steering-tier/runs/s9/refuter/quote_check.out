@@ -1,0 +1,99 @@
+=== OVERVIEW straight-quoted spans: 38
+[1] cited=('frus1948v07', 'd506') ok=True (ok); also-in=[]
+     'incompetent and corrupt officials'
+[2] cited=('frus1947v07', 'd292') ok=True (ok); also-in=[]
+     'whenever the forces of reaction or of corruption assert themselves'
+[3] cited=('frus1943China', 'd202') ok=False (segment not found at increasing offset: illicitpayment); also-in=[('frus1969-76ve09p2', 'd155'), ('frus1977-80v03', 'd266'), ('frus1977-80v03', 'd310')]
+     'illicit payment'
+[4] cited=('frus1943China', 'd202') ok=False (segment not found at increasing offset: koreagate); also-in=[('frus1977-80v13', 'd94')]
+     'Koreagate'
+[5] cited=('frus1943China', 'd202') ok=False (segment not found at increasing offset: tongsunpark); also-in=[('frus1977-80v13', 'd84'), ('frus1977-80v13', 'd92'), ('frus1977-80v13', 'd94')]
+     'Tongsun Park'
+[6] cited=('frus1943China', 'd202') ok=False (segment not found at increasing offset: abscam); also-in=[]
+     'Abscam'
+[7] cited=('frus1943China', 'd202') ok=False (segment not found at increasing offset: illicitpayment); also-in=[('frus1969-76ve09p2', 'd155'), ('frus1977-80v03', 'd266'), ('frus1977-80v03', 'd310')]
+     'illicit payment'
+[8] cited=('frus1943China', 'd202') ok=False (segment not found at increasing offset: corruptpractices); also-in=[]
+     'corrupt practices'
+[9] cited=('frus1943China', 'd202') ok=False (segment not found at increasing offset: corruptpractices); also-in=[]
+     'corrupt practices'
+[10] cited=('frus1943China', 'd202') ok=False (segment not found at increasing offset: corruptionpractice); also-in=[]
+     'corruption practice'
+[11] cited=('frus1943China', 'd202') ok=True (ok); also-in=[('frus1948v07', 'd506'), ('frus1958-60v01', 'd179'), ('frus1969-76ve12', 'd222'), ('frus1969-76ve12', 'd224'), ('frus1969-76ve12', 'd227'), ('frus1969-76v31', 'd140')]
+     'Department of State'
+[12] cited=('frus1943China', 'd202') ok=True (ok); also-in=[('frus1947v07', 'd292'), ('frus1950v06', 'd831'), ('frus1958-60v01', 'd179'), ('frus1964-68v05', 'd258'), ('frus1964-68v06', 'd16'), ('frus1875v01', 'd199')]
+     'corruption'
+[13] cited=('frus1943China', 'd202') ok=True (ok); also-in=[]
+     'Graft and bribery are commonplace.'
+[14] cited=('frus1947v07', 'd292') ok=True (ok); also-in=[]
+     'would give us the strongest leverage in furnishing the desperately needed aid as at each stage there is eviden'
+[15] cited=('frus1948v07', 'd506') ok=True (ok); also-in=[]
+     'the administrative inefficiency of the National Government and the extent to which incompetent and corrupt off'
+[16] cited=('frus1950v06', 'd831') ok=True (ok); also-in=[]
+     'should institute a sweeping cleanup of the large number of corrupt and inefficient tax administrators and coll'
+[17] cited=('frus1958-60v01', 'd179') ok=True (ok); also-in=[]
+     'Diem knowingly tolerated corruption in his family and in high governmental circles though remaining personally'
+[18] cited=('frus1964-68v05', 'd258') ok=True (ok); also-in=[]
+     'has become a key obstacle to pacification'
+[19] cited=('frus1964-68v05', 'd258') ok=True (ok); also-in=[]
+     'The assumption of such sweeping prerogatives entails an invasion of the sovereignty of the Republic of Viet-Na'
+[20] cited=('frus1964-68v06', 'd16') ok=True (ok); also-in=[]
+     'The Junior Officers of the Army are increasingly restive in that nothing has been done about corruption in the'
+[21] cited=('frus1969-76ve15p2', 'd292') ok=True (ok); also-in=[]
+     'paved the way for the sale of the Starfighter to the FRG'
+[22] cited=('frus1969-76ve15p2', 'd293') ok=True (ok); also-in=[]
+     'We must do everything possible to keep this quiet. If the CSU is destroyed in Germany it will really shake Ger'
+[23] cited=('frus1969-76ve09p2', 'd155') ok=True (ok); also-in=[]
+     'full disclosure of Lockheed’s payments may prove far more damaging to Saudi-US relations'
+[24] cited=('frus1969-76ve12', 'd222') ok=True (ok); also-in=[]
+     'We have to follow our judicial procedures; it is not a foreign policy matter.'
+[25] cited=('frus1969-76ve12', 'd227') ok=True (ok); also-in=[]
+     'SHARPLY REDUCE ANY LINGERING SUSPICION THAT THE U.S. AND GOJ WERE SEEKING TO COVER UP THE LOCKHEED SCANDAL'
+[26] cited=('frus1969-76v31', 'd140') ok=True (ok); also-in=[]
+     'Two governments are in political difficulty on this issue. It could help, but we shouldn’t browbeat.'
+[27] cited=('frus1977-80v03', 'd266') ok=True (ok); also-in=[]
+     'proposal on illicit payments'
+[28] cited=('frus1977-80v03', 'd310') ok=True (ok); also-in=[]
+     'Illicit payments is one area where we have done so.'
+[29] cited=('frus1977-80v13', 'd84') ok=True (ok); also-in=[]
+     'Postponement of the first withdrawals—on grounds that the Congress cannot be expected to address the security '
+[30] cited=('frus1977-80v13', 'd94') ok=True (ok); also-in=[]
+     'The issue is not the withdrawal but the Tongsun Park affair. Because of “Koreagate,” Congressmen fear politica'
+[31] cited=('frus1875v01', 'd199') ok=True (ok); also-in=[]
+     'The alleged corruption of the arbitral commission which awarded those claims is Blanco’s pretext for the propo'
+[32] cited=None ok=None (no following URL); also-in=[('frus1969-76ve09p2', 'd155'), ('frus1977-80v03', 'd266'), ('frus1977-80v03', 'd310')]
+     'illicit payment'
+[33] cited=None ok=None (no following URL); also-in=[('frus1943China', 'd202'), ('frus1947v07', 'd292')]
+     'graft'
+[34] cited=None ok=None (no following URL); also-in=[]
+     'grafted'
+[35] cited=None ok=None (no following URL); also-in=[('frus1943China', 'd202'), ('frus1947v07', 'd292'), ('frus1948v07', 'd506'), ('frus1950v06', 'd831'), ('frus1958-60v01', 'd179'), ('frus1964-68v05', 'd258'), ('frus1964-68v06', 'd16'), ('frus1875v01', 'd199')]
+     'corrupt'
+[36] cited=None ok=None (no following URL); also-in=[('frus1943China', 'd202'), ('frus1947v07', 'd292')]
+     'graft'
+[37] cited=None ok=None (no following URL); also-in=[]
+     'grafted on'
+[38] cited=None ok=None (no following URL); also-in=[]
+     'Corruption and U.S. foreign policy: what FRUS prints'
+
+=== COLLECTION excerpts
+[E1] frus1943China/d202 ok=True (ok) 'Graft and bribery are commonplace.'
+[E2] frus1947v07/d292 ok=True (ok) 'would give us the strongest leverage in furnishing the desperately needed aid as'
+[E3] frus1948v07/d506 ok=True (ok) 'the administrative inefficiency of the National Government and the extent to whi'
+[E4] frus1950v06/d831 ok=True (ok) 'the Philippine Government should institute a sweeping cleanup of the large numbe'
+[E5] frus1958-60v01/d179 ok=True (ok) 'Diem knowingly tolerated corruption in his family and in high governmental circl'
+[E6] frus1964-68v05/d258 ok=True (ok) 'I agree that the level of corruption in Viet-Nam has reached a point where, as y'
+[E7] frus1964-68v05/d258 ok=True (ok) 'The assumption of such sweeping prerogatives entails an invasion of the sovereig'
+[E8] frus1964-68v06/d16 ok=True (ok) 'The Junior Officers of the Army are increasingly restive in that nothing has bee'
+[E9] frus1969-76ve15p2/d292 ok=True (ok) 'Such payments coming when Strauss was Defense Minister paved the way for the sal'
+[E10] frus1969-76ve15p2/d293 ok=True (ok) 'We must do everything possible to keep this quiet. If the CSU is destroyed in Ge'
+[E11] frus1969-76ve09p2/d155 ok=True (ok) 'full disclosure of Lockheed’s payments may prove far more damaging to Saudi-US r'
+[E12] frus1969-76ve12/d222 ok=True (ok) 'As you know, I have kept myself out of the Lockheed matter. I can tell him no mo'
+[E13] frus1969-76ve12/d224 ok=True (ok) 'My mission is under no circumstances to ask for any renegotiation of the agreeme'
+[E14] frus1969-76ve12/d227 ok=True (ok) 'WE EXPECT THAT THE ARREST WILL ALSO SHARPLY REDUCE ANY LINGERING SUSPICION THAT '
+[E15] frus1969-76v31/d140 ok=True (ok) 'Two governments are in political difficulty on this issue. It could help, but we'
+[E16] frus1977-80v03/d266 ok=True (ok) 'Our proposal on illicit payments is another example.'
+[E17] frus1977-80v03/d310 ok=True (ok) 'Illicit payments is one area where we have done so.'
+[E18] frus1977-80v13/d84 ok=True (ok) 'Postponement of the first withdrawals—on grounds that the Congress cannot be exp'
+[E19] frus1977-80v13/d94 ok=True (ok) 'The issue is not the withdrawal but the Tongsun Park affair. Because of “Koreaga'
+[E20] frus1875v01/d199 ok=True (ok) 'The alleged corruption of the arbitral commission which awarded those claims is '

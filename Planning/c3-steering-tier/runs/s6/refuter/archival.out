@@ -1,0 +1,88 @@
+== State lots named in the overview (central-files-index lotFiles + series-facts)
+  91D414 | NAID 2131131 | entry ['A1 5403'] | RG 59 | match control | title Records of Henry Kissinger
+      series facts: {'status': 'Restricted - Partly', 'restrictions': ['FOIA (b)(1) National Security'], 'years': (1973, 1977), 'creator': 'Department of State. Office of the Secretary.', 'extent': '11 linear feet, 5 linear inches'}
+  78D443 | NAID 619160 | entry ['A1 5177'] | RG 59 | match control | title Transcripts of Secretary of State Henry Kissinger's Staff Meetings
+      series facts: {'status': 'Unrestricted', 'restrictions': [], 'years': (1973, 1977), 'creator': 'Department of State. Office of the Secretary.', 'extent': '4 linear feet, 10 linear inches'}
+  79F80 -> NOT in central-files-index lotFiles
+  65D330 | NAID 602231 | entry ['A1 1566'] | RG 59 | match control | title The Secretary's and the Under Secretary's Memorandums of Conversation
+      series facts: {'status': 'Unrestricted', 'restrictions': [], 'years': (1953, 1964), 'creator': 'Department of State. Executive Secretariat.', 'extent': '13 linear feet, 2 linear inches'}
+  85D240 | NAID 2131132 | entry ['A1 5408'] | RG 59 | match control | title Subject Files
+      series facts: {'status': 'Unrestricted', 'restrictions': [], 'years': (1961, 1974), 'creator': 'Department of State. Bureau of East Asian and Pacific Affairs. Office of the Assistant Secretary.', 'extent': '14 linear feet, 9 linear inches'}
+  66D193 | NAID 2658382 | entry ['A1 5155'] | RG 59 | match control | title Subject Files Relating to Political, Military, Economic Aid, and Administrative Affairs
+      series facts: {'status': 'Restricted - Possibly', 'restrictions': [], 'years': (1955, 1962), 'creator': 'Department of State. Bureau of Far Eastern Affairs.', 'extent': '5 linear feet, 7 linear inches'}
+
+== collection-authority entries for lot 79F80 and the three pointed-at lots
+  lot:65D330 | name Secretary’s Memoranda of Conversation: Lot 65 D 330 | RG 59 | repo Department of State | naIds 602231 | aliases []
+  lot:66D193 | name Vietnam Working Group Files: Lot 66 D 193 | RG 59 | repo Department of State | naIds 2658382 | aliases []
+  lot:79F80 | name Lot 79F80, DEF 12–5 Agent’s Fees | RG 84 | repo Department of State | naIds None | aliases ['DEF 12–5 Agent’s Fees']
+  lot:85D240 | name Bundy Files: Lot 85 D 240 | RG 59 | repo Department of State | naIds 2131132 | aliases []
+
+== pointed-at index: cited volumes present, and the kinds of reference it holds
+  cited volumes: 20 | in ec.volumes: 15
+  ec.coverage keys with 'References': {'decimalReferences': 30527, 'decimalReferencesInherited': 514, 'decimalReferencesWithBothEnds': 27409, 'decimalSameClassReferences': 19144, 'libraryReferences': 11164, 'lotReferences': 8452, 'sameUnitReferences': 6501, 'volumesWithReferences': 441}
+  ec top-level keys: ['classPairs', 'classSourceKeys', 'classTargetKeys', 'classTargets', 'coverage', 'generated', 'pairs', 'schemaVersion', 'sourceIds', 'targetIds', 'targets', 'volumes']
+  ec volumes count: 441 | any pre-1910 volume: []
+  pointed-at top 8 over the cited volumes:
+     340 txt:carter library|national security affair | National Security Affairs
+     154 txt:johnson library|national security file | National Security File
+     144 txt:nixon|nsc file | NSC Files
+     113 txt:kennedy library|national security file | National Security Files
+     55 txt:carter library|presidential material | Presidential Materials
+     27 txt:johnson library|presidential daily diary | President’s Daily Diary
+     25 txt:carter library|national security council | National Security Council
+     21 txt:carter library|staff office file | Staff Office Files
+     lot:65D330 -> 20
+     lot:85D240 -> 20
+     lot:66D193 -> 16
+
+== came-from: document_sources rows of the cited documents
+   frus1969-76ve12/d222 | Department of State | 59 | None | CFPF | cfpf | None | Source: National Archives, RG 59, Central Foreign Policy Files, P –820117 – 1955. Confidential; Nodis. Drafted by Sherma
+   frus1969-76ve12/d224 | Department of State | 59 | None | CFPF | cfpf | None | Source: National Archives, RG 59, Central Foreign Policy Files, P –820117 – 2339. Secret; Nodis. Drafted by Sherman and 
+   frus1977-80v23/d252 | Department of State | 59 | None | CFPF P780122–1724 | cfpf | None | Source: National Archives, RG 59, Central Foreign Policy File, P780122–1724. Confidential. Drafted by Meade. Repeated to
+   frus1943China/d202 | Department of State | 59 | None | 711.93/533 | decimal | 711.93 | 711.93/533
+   frus1944v06/d269 | Department of State | 59 | None | 893.00/15273 | decimal | 893.00 | 893.00/15273
+   frus1947v07/d591 | Department of State | 59 | None | 121.893/9–1947 | decimal | 121.893 | 121.893/9–1947
+   frus1948v07/d590 | Department of State | 59 | None | 893.00/12–3048 | decimal | 893.00 | 893.00/12–3048
+   frus1958-60v01/d111 | Department of State | 59 | None | 751K.00/3–260 | decimal | 751K.00 | Source: Department of State, Central Files, 751K.00/3–260. Secret; Limit Distribution. Drafted by Grant and Durbrow. Sen
+   frus1958-60v01/d160 | Department of State | 59 | None | 651H.51K/5–1360 | decimal | 651H.51K | Source: Department of State, Central Files, 651H.51K/5–1360. Secret; Limited Distribution. Repeated for information to B
+   frus1961-63v22/d249 | Department of State | 59 | None | 795B.00/12-1561 | decimal | 795B.00 | Source: Department of State, Central Files, 795B.00/12-1561. Confidential; Official-Informal.
+   frus1969-76ve09p2/d122 | Department of State | 84 | 79F80 | File | lot_file | None | Source: National Archives, RG 84, Jidda Embassy Files: Lot 79F80, POL 15–4, Denmark File (corruption). Secret; Exdis; St
+   frus1961-63v17/d27 | Kennedy Library | None | None | National Security Files | structured | None | Source: Kennedy Library, National Security Files, Country Series, Iran, 3/21/61– 3/31/61. Secret.
+   frus1961-63v23/d355 | Kennedy Library | None | None | National Security Files | structured | None | Source: Kennedy Library, National Security Files, Countries Series, Philippines, General, 2/61–7/61. Secret
+   frus1964-68v04/d280 | Johnson Library | None | None | National Security File | structured | None | Source: Johnson Library, National Security File, Rostow Files, Asian Trip Memcons. Secret. Drafted by Rostow (identified
+   frus1964-68v05/d197 | Johnson Library | None | None | National Security File | structured | None | Source: Johnson Library, National Security File, Country File, Vietnam, Memos to the President, Walt Rostow, 6/1–8/2/67,
+   frus1969-76ve09p1/d49 | Ford Library | None | None | National Security Adviser | structured | None | Source: Ford Library, National Security Adviser, National Security Council Operations Staff for the Middle East and Sout
+   frus1969-76ve09p2/d152 | National Archives | 59 | None | Transcripts of Secretary of State Kissinger’s Staff Meetings | structured | None | Source: National Archives, RG 59, Transcripts of Secretary of State Kissinger’s Staff Meetings, 1973–77, Entry 5177, Box
+   frus1969-76ve09p2/d161 | National Archives | 84 | None | Jidda Embassy Files:, Box 30 | structured | None | Source: Ford Library, National Security Adviser, Presidential Country Files for the Middle East and South Asia, Box 30, 
+   frus1969-76ve12/d219 | Ford Library | None | None | National Security Adviser | structured | None | Source: Ford Library, National Security Adviser, Presidential Correspondence with Foreign Leaders, Box 2, Japan, Prime M
+   frus1969-76ve15p2/d292 | National Archives | 59 | None | Records of Secretary of State Henry Kissinger, Box 24 | structured | None | Source: National Archives, RG 59, Records of Secretary of State Henry Kissinger, Entry 5403, Box 24, Classified “C” Mate
+   frus1969-76ve15p2/d293 | National Archives | 59 | None | Records of Secretary of State Henry Kissinger, Box 24 | structured | None | Source: National Archives, RG 59, Records of Secretary of State Henry Kissinger, Entry 5403, Box 24, Classified “C” Mate
+   frus1977-80v03/d248 | Carter Library | None | None | White House Central Files | structured | None | Source: Carter Library, White House Central Files, Subject File, Box TA–8, TA 3 7/31/80–8/31/80. For Official Use Only. 
+   frus1977-80v13/d92 | Carter Library | None | None | National Security Affairs | structured | None | Source: Carter Library, National Security Affairs, Staff Material, Far East, Oksenberg Subject File, Box 56, Policy Proc
+   frus1977-80v13/d94 | Carter Library | None | None | National Security Affairs | structured | None | Source: Carter Library, National Security Affairs, Staff Material, Far East, Oksenberg Subject File, Box 43, Meetings: 1
+   frus1977-80v13/d95 | Carter Library | None | None | National Security Affairs | structured | None | Source: Carter Library, National Security Affairs, Staff Material, Far East, Oksenberg Subject File, Box 56, Policy Proc
+   frus1977-80v18/d206 | Carter Library | None | None | National Security Affairs | structured | None | Source: Carter Library, National Security Affairs, Brzezinski Material, Country File, Box 68, Saudi Arabia: 12/79–1/80. 
+   frus1969-76v06/d175 | National Archives | 59 | None | Central Files 1970–73, Box 142 | subject_numeric | POL 15-1 VIET S | Source: National Archives, RG 59, Central Files 1970–73, POL 15–1 VIET S. Secret; Nodis. On January 12 Nixon asked White
+   frus1964-68v05/d258 | None | None | None | None | unrecognized | None | Source: Center for Military History, Dep CORDS / MACV Files, GVN Corruption 1967. Secret; Noforn.
+  rows: 28
+  decimal classes cited: ['121.893', '651H.51K', '711.93', '751K.00', '795B.00', '893.00']
+
+== decimal central file: does any bundled artifact give a NARA series id / access status for the RG 59 decimal file?
+  central-files-index keys: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion'] (no decimalFile section)
+  lotFiles rows whose title names a decimal file: [('60D171', 'Decimal Files', '2561240'), ('60D648', 'Decimal Files', '2561240')]
+  volume-sources-index recordGroups 59/84: {'59': {'catalogURL': 'https://catalog.archives.gov/id/388', 'matchType': 'api', 'naId': '388', 'recordGroup': '59', 'title': 'General Records of the Department of State'}, '84': {'catalogURL': 'https://catalog.archives.gov/id/413', 'matchType': 'api', 'naId': '413', 'recordGroup': '84', 'title': 'Records of the Foreign Service Posts of the Department of State'}}
+  authority entries named like the central files: [('txt:department of state|central decimal file 1910-1929', 'Central Decimal File 1910–1929', None), ('txt:department of state|central file', 'Central Files', None), ('txt:department of state|decimal and subject-numeric indexed central file', 'Decimal and Subject-Numeric Indexed Central Files', None), ('txt:department of state|decimal central file', 'Decimal Central Files', None), ('txt:department of state|indexed central file', 'Indexed Central Files', None)]
+
+== presidential libraries named: the cited documents' source lines
+   frus1961-63v17/d27 | Kennedy Library | National Security Files | Source: Kennedy Library, National Security Files, Country Series, Iran, 3/21/61– 3/31/61. Secret.
+   frus1961-63v23/d355 | Kennedy Library | National Security Files | Source: Kennedy Library, National Security Files, Countries Series, Philippines, General, 2/61–7/61.
+   frus1964-68v04/d280 | Johnson Library | National Security File | Source: Johnson Library, National Security File, Rostow Files, Asian Trip Memcons. Secret. Drafted b
+   frus1964-68v05/d197 | Johnson Library | National Security File | Source: Johnson Library, National Security File, Country File, Vietnam, Memos to the President, Walt
+   frus1969-76ve09p1/d49 | Ford Library | National Security Adviser | Source: Ford Library, National Security Adviser, National Security Council Operations Staff for the 
+   frus1969-76ve12/d219 | Ford Library | National Security Adviser | Source: Ford Library, National Security Adviser, Presidential Correspondence with Foreign Leaders, B
+   frus1977-80v03/d248 | Carter Library | White House Central Files | Source: Carter Library, White House Central Files, Subject File, Box TA–8, TA 3 7/31/80–8/31/80. For
+   frus1977-80v13/d92 | Carter Library | National Security Affairs | Source: Carter Library, National Security Affairs, Staff Material, Far East, Oksenberg Subject File,
+   frus1977-80v13/d94 | Carter Library | National Security Affairs | Source: Carter Library, National Security Affairs, Staff Material, Far East, Oksenberg Subject File,
+   frus1977-80v13/d95 | Carter Library | National Security Affairs | Source: Carter Library, National Security Affairs, Staff Material, Far East, Oksenberg Subject File,
+   frus1977-80v18/d206 | Carter Library | National Security Affairs | Source: Carter Library, National Security Affairs, Brzezinski Material, Country File, Box 68, Saudi 
+  library catalog libraries: ['Hoover Library', 'Roosevelt Library', 'Truman Library', 'Eisenhower Library', 'Kennedy Library', 'Johnson Library', 'Nixon', 'Ford Library', 'Carter Library', 'Reagan Library', 'Bush Library']

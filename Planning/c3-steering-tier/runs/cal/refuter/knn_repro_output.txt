@@ -1,0 +1,45 @@
+magic b'FRSV' ver 1 dims 512 docs 314616 centroids 660 digest==index: True
+
+ANCHOR frus1969-76ve10/d205  (0.4s)
+   1 mine  52 frus1961-63v10-12mSupp/d729        session  52 frus1961-63v10-12mSupp/d729        OK
+   2 mine  54 frus1961-63v10-12mSupp/d670        session  54 frus1961-63v10-12mSupp/d670        OK
+   3 mine  56 frus1958-60v06/d620                session  56 frus1958-60v06/d620                OK
+   4 mine  57 frus1958-60v06/d616                session  57 frus1958-60v06/d616                OK
+   5 mine  60 frus1961-63v10/d202                session  60 frus1961-63v10/d202                OK
+   6 mine  61 frus1969-76ve11p1/d278             session  61 frus1969-76ve11p1/d278             OK
+   7 mine  63 frus1961-63v10-12mSupp/d543        session  63 frus1961-63v10-12mSupp/d543        OK
+   8 mine  64 frus1950v02/d440                   session  64 frus1950v02/d440                   OK
+   9 mine  64 frus1961-63v10-12mSupp/d665        session  64 frus1961-63v10-12mSupp/d665        OK
+  10 mine  65 frus1958-60v06/d475                session  65 frus1958-60v06/d475                OK
+  11 mine  66 frus1958-60v05/d126                session  66 frus1958-60v05/d126                OK
+  12 mine  66 frus1961-63v10-12mSupp/d725        session  66 frus1961-63v10-12mSupp/d725        OK
+  13 mine  67 frus1961-63v10-12mSupp/d687        session  67 frus1961-63v10-12mSupp/d687        OK
+  14 mine  67 frus1961-63v11/d349                session  67 frus1961-63v11/d349                OK
+  15 mine  67 frus1964-68v32/d300                session  67 frus1964-68v32/d300                OK
+  identical list and order: True
+
+ANCHOR frus1958-60v06/d499  (0.4s)
+   1 mine 101 frus1958-60v06/d594                session 101 frus1958-60v06/d594                OK
+   2 mine 103 frus1958-60v06/d555                session 103 frus1958-60v06/d555                OK
+   3 mine 103 frus1958-60v06/d579                session 103 frus1958-60v06/d579                OK
+   4 mine 104 frus1958-60v06/d527                session 104 frus1958-60v06/d527                OK
+   5 mine 106 frus1958-60v05/d112                session 106 frus1958-60v05/d112                OK
+   6 mine 106 frus1958-60v06/d423                session 106 frus1958-60v06/d423                OK
+   7 mine 106 frus1958-60v06/d570                session 106 frus1958-60v06/d570                OK
+   8 mine 107 frus1961-63v10/d179                session 107 frus1961-63v10/d179                OK
+   9 mine 108 frus1958-60v06/d328                session 108 frus1958-60v06/d328                OK
+  10 mine 108 frus1958-60v06/d536                session 108 frus1958-60v06/d536                OK
+  11 mine 108 frus1958-60v06/d616                session 108 frus1958-60v06/d616                OK
+  12 mine 108 frus1961-63v10/d432                session 108 frus1961-63v10/d432                OK
+  13 mine 109 frus1958-60v06/d387                session 109 frus1958-60v06/d387                OK
+  14 mine 109 frus1958-60v06/d409                session 109 frus1958-60v06/d409                OK
+  15 mine 109 frus1958-60v06/d535                session 109 frus1958-60v06/d535                OK
+  identical list and order: True
+
+Hamming frus1881/d405 vs frus1894app2/d394 = 4 (memo: 4)
+Hamming frus1969-76ve10/d205 vs frus1961-63v10-12mSupp/d729 = 52 (memo: 52)
+Hamming frus1958-60v06/d499 vs frus1958-60v05/d112 = 106 (memo: 106)
+Hamming frus1874/d552 vs frus1898/d498 = 80 (memo: 80)
+frus1898/ch83 in vector index: False (memo: not in it)
+map header digest==index: True map docs/clusters (314616, 140)
+shards: 553 with mismatched header digest: 0 ; .generation: ['89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101']

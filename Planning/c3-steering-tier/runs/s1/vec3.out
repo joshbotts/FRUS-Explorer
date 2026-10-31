@@ -1,0 +1,96 @@
+line 48.991319380152035
+lexical scope size 3242 all in vector index: False
+LEXICAL SCOPE near-dup pairs: 69
+4 ('frus1933-39', 'd31') ('frus1933v02', 'd593')
+7 ('frus1894Nicaragua', 'd12') ('frus1894app1', 'd263')
+8 ('frus1894app2', 'd70') ('frus1894app2', 'd186')
+10 ('frus1950v03', 'd732') ('frus1950v07', 'd1002')
+12 ('frus1894Nicaragua', 'd23') ('frus1894app1', 'd274')
+12 ('frus1894app2', 'd73') ('frus1894app2', 'd192')
+13 ('frus1950v03', 'd728') ('frus1950v07', 'd977')
+17 ('frus1981-88v06', 'd32') ('frus1981-88v41', 'd93')
+18 ('frus1867p1', 'd226') ('frus1868p1', 'd83')
+19 ('frus1969-76v12', 'd212') ('frus1969-76ve10', 'd225')
+21 ('frus1894', 'd464') ('frus1894Nicaragua', 'd45')
+22 ('frus1951-54Iran', 'd355') ('frus1952-54v10', 'd403')
+23 ('frus1950v03', 'd553') ('frus1950v07', 'd480')
+23 ('frus1958-60v03mSupp', 'd133') ('frus1958-60v03mSupp', 'd134')
+25 ('frus1894app2', 'd501') ('frus1894app2', 'd506')
+29 ('frus1949v06', 'd8') ('frus1949v07p2', 'd320')
+30 ('frus1876', 'd164') ('frus1876', 'd165')
+33 ('frus1958-60v17', 'd177') ('frus1958-60v17', 'd293')
+34 ('frus1910', 'd435') ('frus1912', 'd773')
+35 ('frus1894', 'd471') ('frus1894Nicaragua', 'd62')
+35 ('frus1894app2', 'd90') ('frus1894app2', 'd198')
+38 ('frus1903', 'd565') ('frus1907p2', 'd289')
+38 ('frus1923v02', 'd467') ('frus1924v02', 'd327')
+38 ('frus1925v01', 'd229') ('frus1925v01', 'd231')
+38 ('frus1969-76ve16', 'd78') ('frus1969-76ve16', 'd116')
+39 ('frus1908', 'd680') ('frus1910', 'd435')
+40 ('frus1868p2', 'd79') ('frus1874', 'd42')
+40 ('frus1919Parisv06', 'd44') ('frus1919Parisv06', 'd93')
+41 ('frus1908', 'd693') ('frus1912', 'd773')
+41 ('frus1961-63v17', 'd90') ('frus1961-63v17', 'd168')
+41 ('frus1964-68v23', 'd579') ('frus1969-76ve05p1', 'd233')
+42 ('frus1907p2', 'd289') ('frus1912', 'd773')
+43 ('frus1908', 'd693') ('frus1910', 'd435')
+43 ('frus1950v03', 'd728') ('frus1950v03', 'd732')
+43 ('frus1969-76ve05p1', 'd287') ('frus1969-76ve05p1', 'd332')
+43 ('frus1977-80v20', 'd193') ('frus1981-88v10', 'd155')
+44 ('frus1879', 'd132') ('frus1880', 'd133')
+44 ('frus1888p2', 'd454') ('frus1888p2', 'd455')
+44 ('frus1902', 'd111') ('frus1905', 'd725')
+44 ('frus1903', 'd565') ('frus1912', 'd773')
+44 ('frus1907p2', 'd289') ('frus1910', 'd435')
+44 ('frus1958-60v12', 'd257') ('frus1958-60v12', 'd293')
+45 ('frus1871', 'd189') ('frus1877', 'd114')
+45 ('frus1889', 'd269') ('frus1889', 'd273')
+45 ('frus1894app2', 'd254') ('frus1894app2', 'd344')
+45 ('frus1908', 'd680') ('frus1912', 'd773')
+45 ('frus1977-80v11p1', 'd193') ('frus1977-80v29', 'd261')
+46 ('frus1894app2', 'd73') ('frus1894app2', 'd265')
+46 ('frus1895p2', 'd192') ('frus1895p2', 'd195')
+46 ('frus1903', 'd565') ('frus1910', 'd435')
+46 ('frus1923v01', 'd805') ('frus1925v02', 'd24')
+46 ('frus1945v07', 'd48') ('frus1945v07', 'd444')
+46 ('frus1950v03', 'd732') ('frus1950v07', 'd977')
+46 ('frus1955-57v23p2', 'd40') ('frus1955-57v23p2', 'd99')
+46 ('frus1969-76v15', 'd195') ('frus1969-76ve14p2', 'd62')
+47 ('frus1893', 'd585') ('frus1893', 'd599')
+47 ('frus1903', 'd565') ('frus1908', 'd693')
+47 ('frus1907p2', 'd289') ('frus1908', 'd680')
+47 ('frus1910', 'd435') ('frus1914', 'd1789')
+47 ('frus1919Parisv10', 'd10') ('frus1919Parisv10', 'd23')
+47 ('frus1919Parisv10', 'd23') ('frus1919Parisv10', 'd31')
+47 ('frus1950v03', 'd728') ('frus1950v07', 'd1002')
+47 ('frus1952-54v04', 'd107') ('frus1955-57v06', 'd203')
+48 ('frus1868p2', 'd439') ('frus1868p2', 'd449')
+48 ('frus1894app2', 'd192') ('frus1894app2', 'd265')
+48 ('frus1894app2', 'd254') ('frus1894app2', 'd265')
+48 ('frus1905', 'd295') ('frus1905', 'd725')
+48 ('frus1923v01', 'd805') ('frus1924v01', 'd275')
+48 ('frus1950v07', 'd977') ('frus1950v07', 'd1002')
+FINAL near-dup pairs: []
+('frus1950v06', 'd832') nearest within final set: 125
+('frus1961-63v23', 'd356') nearest within final set: 104
+('frus1961-63v23', 'd358') nearest within final set: 104
+('frus1977-80v23', 'd252') nearest within final set: 128
+('frus1958-60v01', 'd111') nearest within final set: 98
+('frus1964-68v05', 'd197') nearest within final set: 88
+('frus1964-68v05', 'd258') nearest within final set: 97
+('frus1964-68v05', 'd395') nearest within final set: 94
+('frus1964-68v07', 'd91') nearest within final set: 98
+('frus1969-76v06', 'd175') nearest within final set: 98
+('frus1917-72PubDipv07', 'd177') nearest within final set: 88
+('frus1969-76ve09p2', 'd122') nearest within final set: 109
+('frus1969-76v27', 'd45') nearest within final set: 140
+('frus1969-76ve05p2', 'd119') nearest within final set: 128
+('frus1977-80v18', 'd206') nearest within final set: 109
+('frus1969-76ve11p1', 'd159') nearest within final set: 139
+('frus1969-76ve09p2', 'd161') nearest within final set: 127
+('frus1969-76v31', 'd149') nearest within final set: 123
+('frus1977-80v03', 'd248') nearest within final set: 128
+('frus1961-63v22', 'd244') nearest within final set: 75
+('frus1961-63v22', 'd249') nearest within final set: 75
+('frus1943China', 'd202') nearest within final set: 106
+('frus1944v06', 'd269') nearest within final set: 106

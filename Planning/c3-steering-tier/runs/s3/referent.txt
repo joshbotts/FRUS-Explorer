@@ -1,0 +1,7 @@
+Referent test, hand-classified from share_sample.json KWIC (40 evenly spaced of 3,057 hits; non-apparatus, Ed2 dropped).
+OFF-TOPIC (sense other than official/political corruption or bribery), 9 of 40:
+ frus1894app2/d59 (parcel contents' "corruption" = decay); frus1904/d578 (embezzlement as extradition offence);
+ frus1911/d1020 (extradition treaty list); frus1917/d387 (moral "corrupted"); frus1919Parisv07/d25 (territory "as a bribe" = inducement);
+ frus1948v06/d51 (cable text "corrupted"); frus1955-57v05/d164 ("bribe Adenauer" = inducement); frus1961-63v25/d24 ("grafted on");
+ frus1969-76v15/d55 (jocular "corrupted").
+ON-TOPIC: 31 of 40.

@@ -1,0 +1,66 @@
+{
+  "w7": {
+    "pair": "P1",
+    "source": "r12",
+    "wording": "new",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "slot": "A"
+  },
+  "w2": {
+    "pair": "P1",
+    "source": "r12",
+    "wording": "old",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "slot": "B"
+  },
+  "w6": {
+    "pair": "P2",
+    "source": "r8",
+    "wording": "old",
+    "model": "claude-fable-5-1",
+    "effort": "medium",
+    "slot": "A"
+  },
+  "w1": {
+    "pair": "P2",
+    "source": "r8",
+    "wording": "new",
+    "model": "claude-fable-5-1",
+    "effort": "medium",
+    "slot": "B"
+  },
+  "w8": {
+    "pair": "P3",
+    "source": "v3",
+    "wording": "old",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "slot": "A"
+  },
+  "w3": {
+    "pair": "P3",
+    "source": "v3",
+    "wording": "new",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "slot": "B"
+  },
+  "w5": {
+    "pair": "P4",
+    "source": "s3",
+    "wording": "old",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "slot": "A"
+  },
+  "w4": {
+    "pair": "P4",
+    "source": "s3",
+    "wording": "new",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "slot": "B"
+  }
+}

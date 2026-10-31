@@ -1,0 +1,66 @@
+decoded 314616 ids over 553 volumes; documentCount 314616
+binary: b'FRSV' version 1 dims 512 docs 314616 centroids 660 | digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+sign block bytes: 20135424 | file size 20476048 | centroid block expected at 20135488
+digests: index 89481b1869da1880 | binary 89481b1869da1880 | map 89481b1869da1880 | .generation 89481b1869da1880 | shards ['89481b1869da1880'] n shards 553
+all equal: True
+
+## anchor frus1943China/d202, top 10 by Hamming over the bundle's sign bits (ties by row order)
+   1. ham  59  frus1947v07/d591  raw_cos 0.954  calibrated 92%
+   2. ham  63  frus1945v07/d174  raw_cos 0.941  calibrated 90%
+   3. ham  64  frus1945v07/d236  raw_cos 0.957  calibrated 93%
+   4. ham  67  frus1948v07/d590  raw_cos 0.935  calibrated 89%
+   5. ham  68  frus1941v05/d589  raw_cos 0.910  calibrated 85%
+   6. ham  68  frus1944v06/d453  raw_cos 0.956  calibrated 93%
+   7. ham  69  frus1945v07/d307  raw_cos 0.949  calibrated 91%
+   8. ham  69  frus1947v07/d185  raw_cos 0.938  calibrated 90%
+   9. ham  70  frus1944v06/d428  raw_cos 0.931  calibrated 88%
+  10. ham  70  frus1949v09/d521  raw_cos 0.929  calibrated 88%
+
+## anchor frus1969-76ve12/d224, top 10 by Hamming over the bundle's sign bits (ties by row order)
+   1. ham  95  frus1969-76ve12/d219  raw_cos 0.877  calibrated 79%
+   2. ham  96  frus1969-76ve12/d222  raw_cos 0.905  calibrated 84%
+   3. ham 104  frus1969-76ve12/d220  raw_cos 0.889  calibrated 81%
+   4. ham 106  frus1969-76ve12/d201  raw_cos 0.881  calibrated 80%
+   5. ham 110  frus1969-76v19p2/d70  raw_cos 0.811  calibrated 69%
+   6. ham 111  frus1969-76v19p2/d24  raw_cos 0.842  calibrated 74%
+   7. ham 112  frus1917Supp02v01/d102  raw_cos 0.819  calibrated 70%
+   8. ham 112  frus1931-41v02/d190  raw_cos 0.823  calibrated 71%
+   9. ham 112  frus1964-68v29p2/d60  raw_cos 0.842  calibrated 74%
+  10. ham 112  frus1969-76ve12/d225  raw_cos 0.882  calibrated 80%
+
+## anchor frus1969-76ve09p2/d122, top 25 by Hamming over the bundle's sign bits (ties by row order)
+   1. ham  81  frus1977-80v18/d154  raw_cos 0.919  calibrated 86%
+   2. ham  88  frus1977-80v18/d176  raw_cos 0.901  calibrated 83%
+   3. ham  91  frus1969-76ve09p2/d107  raw_cos 0.881  calibrated 80%
+   4. ham  95  frus1969-76v24/d133  raw_cos 0.892  calibrated 82%
+   5. ham  95  frus1969-76v24/d169  raw_cos 0.875  calibrated 79%
+   6. ham  98  frus1977-80v18/d144  raw_cos 0.888  calibrated 81%
+   7. ham  99  frus1977-80v18/d143  raw_cos 0.888  calibrated 81%
+   8. ham 102  frus1969-76ve09p2/d85  raw_cos 0.877  calibrated 79%
+   9. ham 103  frus1969-76v36/d134  raw_cos 0.887  calibrated 81%
+  10. ham 103  frus1969-76ve09p2/d155  raw_cos 0.883  calibrated 81%
+  11. ham 104  frus1950v05/d636  raw_cos 0.880  calibrated 80%
+  12. ham 104  frus1969-76ve09p2/d180  raw_cos 0.866  calibrated 78%
+  13. ham 104  frus1977-80v18/d179  raw_cos 0.863  calibrated 77%
+  14. ham 105  frus1977-80v18/d196  raw_cos 0.888  calibrated 81%
+  15. ham 106  frus1977-80v18/d186  raw_cos 0.846  calibrated 74%
+  16. ham 106  frus1977-80v18/d216  raw_cos 0.873  calibrated 79%
+  17. ham 107  frus1951v05/d591  raw_cos 0.894  calibrated 82%
+  18. ham 107  frus1969-76v24/d153  raw_cos 0.861  calibrated 77%
+  19. ham 107  frus1969-76ve09p2/d108  raw_cos 0.867  calibrated 78%
+  20. ham 109  frus1969-76ve09p2/d83  raw_cos 0.857  calibrated 76%
+  21. ham 109  frus1977-80v18/d206  raw_cos 0.876  calibrated 79%
+  22. ham 110  frus1964-68v21/d287  raw_cos 0.863  calibrated 77%
+  23. ham 110  frus1969-76v36/d353  raw_cos 0.848  calibrated 75%
+  24. ham 110  frus1969-76v37/d79  raw_cos 0.826  calibrated 71%
+  25. ham 111  frus1955-57v13/d167  raw_cos 0.858  calibrated 76%
+
+## stated pairwise distances
+  frus1943China/d202 - frus1948v07/d590: Hamming 67 (memo 67) OK | raw cos 0.935
+  frus1969-76ve12/d224 - frus1969-76ve12/d222: Hamming 96 (memo 96) OK | raw cos 0.905
+  frus1969-76ve09p2/d122 - frus1977-80v18/d206: Hamming 109 (memo 109) OK | raw cos 0.876
+  frus1969-76ve15p2/d292 - frus1969-76ve15p2Ed2/d292: Hamming 0 (memo 0) OK | raw cos 1.000
+  frus1947v07/d591 - frus1948v07/d590: Hamming 56 (memo 56) OK | raw cos 0.954
+
+random pairs (seed 1877): n 20000 mean 167.1 sd 14.8 p1 132 min 95
+k-th neighbour over 200 docs (seed 7): 1st median 84 (q 74,94) | 10th median 102 | 25th median 108 (q 102,115)

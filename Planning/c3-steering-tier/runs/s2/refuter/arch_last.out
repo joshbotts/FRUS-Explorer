@@ -1,0 +1,53 @@
+== Marshall Mission candidates: dates / entry numbers in curated-lot-resolutions.json (overview: 'no dates or access status in the bundled data')
+   871815 Background Materials | entry A1-1095 | dateRange 1944–1946 | other keys []
+   872082 Top Secret Documents | entry A1-1096 | dateRange 1946–1947 | other keys []
+   872083 Reference Subject Files | entry A1-1097 | dateRange 1945–1947 | other keys []
+   872084 Cables Sent | entry A1-1098 | dateRange 1946–1947 | other keys []
+   872088 Cables Received | entry A1-1099 | dateRange 1946–1947 | other keys []
+   872089 Drafts of Telegrams, Letters, and Memorandums | entry A1-1100 | dateRange 1946–1947 | other keys []
+   872090 General George C. Marshall's Report on His Mission to China | entry A1-1101 | dateRange 1946–1947 | other keys []
+   872091 Records Relating to Political Affairs | entry A1-1102 | dateRange 1946–1947 | other keys []
+   872099 Records Relating to Military Affairs | entry A1-1103 | dateRange 1945–1948 | other keys []
+   872132 Ribbon Copy of General George C. Marshall's Report on His Mi | entry A1-1106 | dateRange 1946–1947 | other keys []
+
+== Kissinger transcripts (Entry 5177) and records (Entry 5403): any NAID in the bundle?
+   central-files lotFiles: {"catalogURL": "https://catalog.archives.gov/id/619160", "hmsMlrEntryNumbers": ["A1 5177"], "levelOfDescription": "series", "lotNumber": "78D443", "matchType": "control", "naId": "619160", "recordGroup": "59", "title": "Transcripts of Secretary of State Henry Kissinger's Staff Meetings"}
+   central-files lotFiles: {"catalogURL": "https://catalog.archives.gov/id/7543271", "hmsMlrEntryNumbers": ["UD-12D 1"], "levelOfDescription": "series", "lotNumber": "85D382", "matchType": "control", "naId": "7543271", "recordGroup": "59", "title": "Subject and Country Files of Secretaries of State Henry Kissinger, Cyrus Vanc
+   central-files lotFiles: {"catalogURL": "https://catalog.archives.gov/id/2131131", "hmsMlrEntryNumbers": ["A1 5403"], "levelOfDescription": "series", "lotNumber": "91D414", "matchType": "control", "naId": "2131131", "recordGroup": "59", "title": "Records of Henry Kissinger"}
+   collection-authority: lot:78D433 | naId None | catalogURL None | name Entry 5177, Lot 78D433, Secretary of State Kissinger’s Staff Meetings
+   collection-authority: lot:78D443 | naId 619160 | catalogURL https://catalog.archives.gov/id/619160 | name Lot 78D443, Transcripts of Secretary of State Kissinger’s Staff Meetings, 1973–1977
+   collection-authority: lot:91D414 | naId 2131131 | catalogURL https://catalog.archives.gov/id/2131131 | name Lot File 91D414, Records of Henry Kissinger, 1973–77
+   collection-authority: txt:department of state|records of henry kissinger | naId None | catalogURL None | name Records of Henry Kissinger , Entry 5403
+   collection-authority: txt:department of state|transcripts of kissinger staff meeting | naId None | catalogURL None | name Transcripts of Kissinger Staff Meetings, E5177
+   collection-authority: txt:department of state|transcripts of secretary of state kissinger 's staff meeting | naId None | catalogURL None | name Transcripts of Secretary of State Kissinger ’s Staff Meetings, 1973–1977
+   collection-authority: txt:national archives|records of secretary of state kissinger | naId None | catalogURL None | name Records of Secretary of State Kissinger, 1973–1977, Entry 5403
+   collection-authority: txt:national archives|secretary of state kissinger 's staff meeting | naId None | catalogURL None | name Secretary of State Kissinger ’s Staff Meetings, 1973–1977, Entry 5177
+   collection-authority: txt:national archives|transcripts of kissinger staff meeting | naId None | catalogURL None | name Transcripts of Kissinger Staff Meetings, Entry 5177
+   series-facts creators naming Kissinger: []
+   accession-series 'Kissinger': …n": "349838817", "t": "Subject Files"}], "286/940085": [{"a": "W286-94-0085", "n": "7543377", "t": "Subject Files"}], "286/940086": [{"a": "286-94-0086", "n": "6002640", "t": "Records Relating to the National Bipartisan Committee on Central America (Kissinger Commission)"}], "286/940087": [{"a": "W286-94-0087", "n": "345245273", "t": "Subject Files"}], "286/940092": [{"a": "286-94-0092", "n": "627…
+   accession-series 'Staff Meetings': … "Subject Files"}], "469/64A293": [{"a": "64A293", "i": true, "n": "2679434", "t": "Master Files of Minutes"}, {"a": "64A293", "i": true, "n": "2694422", "t": "Master Files of Notes"}, {"a": "64A293", "i": true, "n": "2694457", "t": "Master Files of Staff Meetings"}, {"a": "64A293", "i": true, "n": "2694725", "t": "Master Files of Biographies"}, {"a": "469-64A293", "n": "5819411", "t": "Congressio…
+
+== was d204 in any printed result set before vec.py? (grep of the .out files written before it)
+   p1.out: 'frus1961-63v22 d204' or 'frus1961-63v22/d204' present = False
+   p2.out: 'frus1961-63v22 d204' or 'frus1961-63v22/d204' present = False
+   p3.out: 'frus1961-63v22 d204' or 'frus1961-63v22/d204' present = False
+   scope1.out: 'frus1961-63v22 d204' or 'frus1961-63v22/d204' present = False
+   share1.out: 'frus1961-63v22 d204' or 'frus1961-63v22/d204' present = False
+   census.out: 'frus1961-63v22 d204' or 'frus1961-63v22/d204' present = False
+   lockheed.out: 'frus1961-63v22 d204' or 'frus1961-63v22/d204' present = False
+   heads.out: 'frus1961-63v22 d204' or 'frus1961-63v22/d204' present = False
+   header_hits.out: 'frus1961-63v22 d204' or 'frus1961-63v22/d204' present = False
+   arch1.out: 'frus1961-63v22 d204' or 'frus1961-63v22/d204' present = False
+   read.out: 'frus1961-63v22 d204' or 'frus1961-63v22/d204' present = True
+   p2.out korea block:
+   === korea | MATCH corrupt | vols ['frus1958-60v18', 'frus1961-63v22', 'frus1964-68v29p1', 'frus1952-54v15p1'] | total 57
+     frus1961-63v22 d252 1962-03-18 | 252. Telegram From the Embassy in Japan to the Department of State | …Was impressed by determination and present sincerity of group to eliminate [corruption] and raise moral tone of government and country in all fields. There is determination of revolutionary atmosphere which…
+     frus1961-63v22 d202 1961-03-06 | 202. Report by Hugh D. Farley of the International Cooperation Administration to the President’s Deputy Specia | …The extent and depth of graft, [corruption] and fraud in the major institutions of Korean society today and the consequent lack of confidence on the part of Koreans, high and…
+     frus1958-60v18 d240 1958-09-05 | 240. Telegram From the Embassy in Korea to the Department of State | …Acknowledging [corruption] in government, they argued living wage for government employees first step in program to correct situation. They promised Liberal Party would introduce in National Assembly anti-[corruption] law…
+     frus1961-63v22 d264 1962-06-15 | 264. Memorandum of Discussion at a Department of State-Joint Chiefs of Staff Meeting | …The ROK CIA is not acting properly; it is becoming involved in the economic field, and there are persistent reports that it is engaged in massive financial [corruption]. We had…
+     frus1961-6
+
+== date span of the index and of the cited set
+  index: ('1620-11-03', '2024-03-01')
+  cited: 1944-09-22 1980-07-29 ; volumes: ['frus1944v06', 'frus1946v10', 'frus1947v07', 'frus1948v07', 'frus1955-57v13', 'frus1958-60v01', 'frus1958-60v12', 'frus1961-63v22', 'frus1964-68v05', 'frus1964-68v22', 'frus1969-76ve09p2', 'frus1969-76ve12', 'frus1969-76ve15p2', 'frus1977-80v03'] 14
+  non-apparatus docs in the 14 cited volumes: (7361,)

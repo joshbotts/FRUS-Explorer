@@ -1,0 +1,47 @@
+1. CANARY
+553|321749|1103|8481
+
+2. READ-ONLY PROOF
+Error in 3rd command line argument: attempt to write a readonly database (rc=1)
+
+3-7. operating card (canary.py)
+volumes decoded to exactly n: 553 of 553
+header: version 1 dims 512 documents 314616 centroids 660
+digest index 89481b18
+digest binary 89481b18
+digest map 89481b18
+digest manifest 89481b18
+.generation: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+frus1861.vec magic b'FRSS' digest@16: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+all equal: True
+
+ten nearest of frus1861/d111:
+hamming 57 frus1861/d119
+hamming 62 frus1861/d39
+hamming 70 frus1863p1/d254
+hamming 75 frus1862/d130
+hamming 77 frus1861/d203
+hamming 77 frus1862/d262
+hamming 78 frus1861/d20
+hamming 78 frus1862/d111
+hamming 78 frus1862/d455
+hamming 79 frus1862/d72
+
+random pairs: mean 167.142 sd 14.769 1st pct 132
+median kth: 107.0
+line: 48.991
+
+flagged(frus1861/d111, scope=set(), /\bblockade/i, k=10):
+(57, ('frus1861', 'd119'), '1861-04-22', 'OUTSIDE', 'SAME-DECADE', 'LITERAL')
+(62, ('frus1861', 'd39'), '1861-04-10', 'OUTSIDE', 'SAME-DECADE', 'ABSENT')
+(70, ('frus1863p1', 'd254'), '1863-07-30', 'OUTSIDE', 'SAME-DECADE', 'ABSENT')
+(75, ('frus1862', 'd130'), '1862-08-18', 'OUTSIDE', 'SAME-DECADE', 'ABSENT')
+(77, ('frus1861', 'd203'), '1861-09-03', 'OUTSIDE', 'SAME-DECADE', 'ABSENT')
+(77, ('frus1862', 'd262'), '1862-03-26', 'OUTSIDE', 'SAME-DECADE', 'ABSENT')
+(78, ('frus1861', 'd20'), '1861-03-26', 'OUTSIDE', 'SAME-DECADE', 'ABSENT')
+(78, ('frus1862', 'd111'), '1862-07-28', 'OUTSIDE', 'SAME-DECADE', 'LITERAL')
+(78, ('frus1862', 'd455'), '1861-11-01', 'OUTSIDE', 'SAME-DECADE', 'LITERAL')
+(79, ('frus1862', 'd72'), '1862-05-28', 'OUTSIDE', 'SAME-DECADE', 'LITERAL')
+
+near_duplicates: [True, True, True]
+(4, ('frus1881', 'd405'), ('frus1894app2', 'd394'))

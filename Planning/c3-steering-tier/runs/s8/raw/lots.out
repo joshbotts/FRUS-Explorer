@@ -1,0 +1,29 @@
+central-files keys: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+series-facts keys: ['byNaId', 'findingAidTypes', 'generated', 'headings', 'legend', 'referenceUnits', 'restrictions', 'schemaVersion', 'statuses', 'useRestrictions']
+legend: {"keys": {"ar": {"field": "accessRestrictions", "into": "restrictions", "kind": "indexList"}, "as": {"field": "accessStatus", "into": "statuses", "kind": "index"}, "c": {"field": "creator", "into": "headings", "kind": "index"}, "cy0": {"field": "coverageStartYear", "kind": "year"}, "cy1": {"field": "coverageEndYear", "kind": "year"}, "fa": {"field": "findingAids", "into": "findingAidTypes", "kind": "indexList"}, "p": {"field": "predecessors", "into": "headings", "kind": "indexList"}, "ru": {"field": "referenceUnit", "into": "referenceUnits", "kind": "index"}, "ur": {"field": "useRestrictions", "into": "useRestrictions", "kind": "indexList"}, "us": {"field": "useStatus", "into": "statuses", "kind": "index"}, "x": {"field": "extent", "kind": "string"}, "y0": {"field": "inclusiveStartYear", "kind": "year"}, "y1": {"field": "inclusiveEndYear", "kind": "year"}}, "note": "Each `byNaId` row use
+lotFiles rows: 1070
+sample row: {"catalogURL": "https://catalog.archives.gov/id/2124670", "hmsMlrEntryNumbers": ["A1 1457"], "levelOfDescription": "series", "lotNumber": "428", "matchType": "control", "naId": "2124670", "recordGroup": "59", "title": "Subject Files Relating to Palestine, Political, Security, and Trusteeship Matters"}
+
+LOT 63D351 rows: 1
+   {"catalogURL": "https://catalog.archives.gov/id/2839192", "hmsMlrEntryNumbers": ["A1 1586E"], "levelOfDescription": "series", "lotNumber": "63D351", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}
+
+LOT 54D270 rows: 0
+
+LOT 59D95 rows: 0
+
+LOT 66D95 rows: 1
+   {"catalogURL": "https://catalog.archives.gov/id/2839192", "hmsMlrEntryNumbers": ["A1 1586E"], "levelOfDescription": "series", "lotNumber": "66D95", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}
+
+LOT 62D26 rows: 1
+   {"catalogURL": "https://catalog.archives.gov/id/1965953", "hmsMlrEntryNumbers": ["A1 3113"], "levelOfDescription": "series", "lotNumber": "62D26", "matchType": "control", "naId": "1965953", "recordGroup": "59", "title": "Subject, Personal Name, and Country Files"}
+
+LOT 81D113 rows: 1
+   {"catalogURL": "https://catalog.archives.gov/id/1487627", "hmsMlrEntryNumbers": ["P 14"], "levelOfDescription": "series", "lotNumber": "81D113", "matchType": "control", "naId": "1487627", "recordGroup": "59", "title": "Records of Deputy Secretary Warren Christopher"}
+
+LOT 79F80 rows: 0
+
+LOT 62D1 rows: 1
+   {"catalogURL": "https://catalog.archives.gov/id/2838992", "hmsMlrEntryNumbers": ["A1 1583E", "A1 1583F"], "levelOfDescription": "series", "lotNumber": "62D1", "matchType": "control", "naId": "2838992", "recordGroup": "59", "title": "Records Relating to Activities with the National Security Council"}
+
+LOT 69D121 rows: 1
+   {"catalogURL": "https://catalog.archives.gov/id/1136548", "hmsMlrEntryNumbers": ["A1 558-D"], "levelOfDescription": "series", "lotNumber": "69D121", "matchType": "control", "naId": "1136548", "recordGroup": "59", "title": "Chronological Files"}

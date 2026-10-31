@@ -1,0 +1,89 @@
+SQL: SELECT body_text, length(body_text) FROM document_cache WHERE volume_id=? AND document_id=?
+  4 frus1933-39/d31              frus1933v02/d593             len   1640   1640  jaccard 1.00  seqratio 1.00  AGREE
+  7 frus1894Nicaragua/d12        frus1894app1/d263            len  23825  23768  jaccard 0.97  seqratio 0.99  AGREE
+  8 frus1894app2/d70             frus1894app2/d186            len  26665  27097  jaccard 0.96  seqratio 0.99  AGREE
+ 10 frus1950v03/d732             frus1950v07/d1002            len  34893  34749  jaccard 0.97  seqratio 0.98  AGREE
+ 12 frus1894Nicaragua/d23        frus1894app1/d274            len  20378  20351  jaccard 0.97  seqratio 0.99  AGREE
+ 12 frus1894app2/d73             frus1894app2/d192            len  48142  48114  jaccard 0.98  seqratio 1.00  AGREE
+ 13 frus1950v03/d728             frus1950v07/d977             len  42064  42091  jaccard 0.95  seqratio 0.95  AGREE
+ 17 frus1981-88v06/d32           frus1981-88v41/d93           len  15814  16513  jaccard 0.96  seqratio 0.98  AGREE
+ 19 frus1969-76v12/d212          frus1969-76ve10/d225         len  21517  20525  jaccard 0.94  seqratio 0.94  AGREE
+ 21 frus1894/d464                frus1894Nicaragua/d45        len   3092   3106  jaccard 0.97  seqratio 0.98  AGREE
+ 22 frus1951-54Iran/d355         frus1952-54v10/d403          len  65953  61595  jaccard 0.92  seqratio 0.89  AGREE
+ 23 frus1950v03/d553             frus1950v07/d480             len  12294  12194  jaccard 0.90  seqratio 0.95  AGREE
+ 23 frus1958-60v03mSupp/d133     frus1958-60v03mSupp/d134     len 220785 261734  jaccard 0.51  seqratio 0.12  DIFFER
+ 25 frus1894app2/d501            frus1894app2/d506            len  66038  89453  jaccard 0.71  seqratio 0.73  DIFFER
+ 29 frus1949v06/d8               frus1949v07p2/d320           len  10458   9730  jaccard 0.94  seqratio 0.97  AGREE
+ 30 frus1876/d164                frus1876/d165                len  94347 109328  jaccard 0.41  seqratio 0.08  DIFFER
+ 33 frus1958-60v17/d177          frus1958-60v17/d293          len  26247  37058  jaccard 0.60  seqratio 0.43  DIFFER
+ 34 frus1910/d435                frus1912/d773                len  14828  14473  jaccard 0.87  seqratio 0.94  AGREE
+ 35 frus1894/d471                frus1894Nicaragua/d62        len   9101  13101  jaccard 0.79  seqratio 0.82  AGREE
+ 35 frus1894app2/d90             frus1894app2/d198            len   6956   7408  jaccard 0.88  seqratio 0.94  AGREE
+ 38 frus1903/d565                frus1907p2/d289              len  15344  15016  jaccard 0.92  seqratio 0.96  AGREE
+ 38 frus1923v02/d467             frus1924v02/d327             len  13301  13505  jaccard 0.94  seqratio 0.97  AGREE
+ 38 frus1925v01/d229             frus1925v01/d231             len  15121  12450  jaccard 0.43  seqratio 0.45  DIFFER
+ 39 frus1908/d680                frus1910/d435                len  16995  14828  jaccard 0.83  seqratio 0.88  AGREE
+ 40 frus1868p2/d79               frus1874/d42                 len  10605  12306  jaccard 0.45  seqratio 0.52  DIFFER
+ 40 frus1919Parisv06/d44         frus1919Parisv06/d93         len  71010 187060  jaccard 0.42  seqratio 0.05  DIFFER
+ 41 frus1908/d693                frus1912/d773                len  16385  14473  jaccard 0.86  seqratio 0.84  AGREE
+ 41 frus1961-63v17/d90           frus1961-63v17/d168          len  19306  29395  jaccard 0.28  seqratio 0.07  DIFFER
+ 41 frus1964-68v23/d579          frus1969-76ve05p1/d233       len  23574  25337  jaccard 0.31  seqratio 0.10  DIFFER
+ 42 frus1907p2/d289              frus1912/d773                len  15016  14473  jaccard 0.58  seqratio 0.48  DIFFER
+ 43 frus1908/d693                frus1910/d435                len  16385  14828  jaccard 0.83  seqratio 0.84  AGREE
+ 43 frus1950v03/d728             frus1950v03/d732             len  42064  34893  jaccard 0.38  seqratio 0.11  DIFFER
+ 43 frus1969-76ve05p1/d287       frus1969-76ve05p1/d332       len  44857  48832  jaccard 0.37  seqratio 0.08  DIFFER
+ 43 frus1977-80v20/d193          frus1981-88v10/d155          len  24173  46969  jaccard 0.24  seqratio 0.04  DIFFER
+ 44 frus1879/d132                frus1880/d133                len  37649 106911  jaccard 0.30  seqratio 0.06  DIFFER
+ 44 frus1888p2/d454              frus1888p2/d455              len  37595  12554  jaccard 0.33  seqratio 0.05  DIFFER
+ 44 frus1902/d111                frus1905/d725                len  11192  11402  jaccard 0.89  seqratio 0.95  AGREE
+ 44 frus1903/d565                frus1912/d773                len  15344  14473  jaccard 0.58  seqratio 0.48  DIFFER
+ 44 frus1907p2/d289              frus1910/d435                len  15016  14828  jaccard 0.55  seqratio 0.45  DIFFER
+ 44 frus1958-60v12/d257          frus1958-60v12/d293          len  27497  19734  jaccard 0.60  seqratio 0.70  DIFFER
+ 45 frus1871/d189                frus1877/d114                len  50539 235245  jaccard 0.37  seqratio 0.07  DIFFER
+ 45 frus1889/d269                frus1889/d273                len    675   2070  jaccard 0.32  seqratio 0.35  DIFFER
+ 45 frus1894app2/d254            frus1894app2/d344            len  95674  86357  jaccard 0.35  seqratio 0.05  DIFFER
+ 45 frus1908/d680                frus1912/d773                len  16995  14473  jaccard 0.82  seqratio 0.87  AGREE
+ 45 frus1977-80v11p1/d193        frus1977-80v29/d261          len   3959   4228  jaccard 0.74  seqratio 0.82  AGREE
+ 46 frus1894app2/d73             frus1894app2/d265            len  48142 134589  jaccard 0.27  seqratio 0.03  DIFFER
+ 46 frus1895p2/d192              frus1895p2/d195              len  12413  19183  jaccard 0.29  seqratio 0.09  DIFFER
+ 46 frus1903/d565                frus1910/d435                len  15344  14828  jaccard 0.55  seqratio 0.46  DIFFER
+ 46 frus1923v01/d805             frus1925v02/d24              len  12740  12550  jaccard 0.80  seqratio 0.81  AGREE
+ 46 frus1945v07/d48              frus1945v07/d444             len  13175  18933  jaccard 0.44  seqratio 0.29  DIFFER
+ 46 frus1950v03/d732             frus1950v07/d977             len  34893  42091  jaccard 0.38  seqratio 0.10  DIFFER
+ 46 frus1955-57v23p2/d40         frus1955-57v23p2/d99         len  19019  11766  jaccard 0.30  seqratio 0.12  DIFFER
+ 46 frus1969-76v15/d195          frus1969-76ve14p2/d62        len  31822  12247  jaccard 0.54  seqratio 0.78  DIFFER
+ 47 frus1893/d585                frus1893/d599                len  42025  12319  jaccard 0.23  seqratio 0.09  DIFFER
+ 47 frus1903/d565                frus1908/d693                len  15344  16385  jaccard 0.54  seqratio 0.42  DIFFER
+ 47 frus1907p2/d289              frus1908/d680                len  15016  16995  jaccard 0.54  seqratio 0.42  DIFFER
+ 47 frus1910/d435                frus1914/d1789               len  14828  14814  jaccard 0.85  seqratio 0.92  AGREE
+ 47 frus1919Parisv10/d10         frus1919Parisv10/d23         len 123644 132355  jaccard 0.38  seqratio 0.08  DIFFER
+ 47 frus1919Parisv10/d23         frus1919Parisv10/d31         len 132355 225084  jaccard 0.37  seqratio 0.09  DIFFER
+ 47 frus1950v03/d728             frus1950v07/d1002            len  42064  34749  jaccard 0.38  seqratio 0.10  DIFFER
+ 48 frus1868p2/d439              frus1868p2/d449              len  41660  57186  jaccard 0.32  seqratio 0.07  DIFFER
+ 48 frus1894app2/d192            frus1894app2/d265            len  48114 134589  jaccard 0.27  seqratio 0.03  DIFFER
+ 48 frus1894app2/d254            frus1894app2/d265            len  95674 134589  jaccard 0.34  seqratio 0.09  DIFFER
+ 48 frus1905/d295                frus1905/d725                len  13125  11402  jaccard 0.77  seqratio 0.82  AGREE
+ 48 frus1923v01/d805             frus1924v01/d275             len  12740  13421  jaccard 0.90  seqratio 0.93  AGREE
+ 48 frus1950v07/d977             frus1950v07/d1002            len  42091  34749  jaccard 0.39  seqratio 0.11  DIFFER
+pairs agreeing: 28 of 66; documents in agreeing groups 47 in 21 groups; copies to drop 26
+  group: ['frus1894app2/d198', 'frus1894app2/d90']
+  group: ['frus1908/d680', 'frus1908/d693', 'frus1910/d435', 'frus1912/d773', 'frus1914/d1789']
+  group: ['frus1977-80v11p1/d193', 'frus1977-80v29/d261']
+  group: ['frus1894Nicaragua/d12', 'frus1894app1/d263']
+  group: ['frus1902/d111', 'frus1905/d295', 'frus1905/d725']
+  group: ['frus1894Nicaragua/d23', 'frus1894app1/d274']
+  group: ['frus1969-76v12/d212', 'frus1969-76ve10/d225']
+  group: ['frus1933-39/d31', 'frus1933v02/d593']
+  group: ['frus1981-88v06/d32', 'frus1981-88v41/d93']
+  group: ['frus1951-54Iran/d355', 'frus1952-54v10/d403']
+  group: ['frus1903/d565', 'frus1907p2/d289']
+  group: ['frus1949v06/d8', 'frus1949v07p2/d320']
+  group: ['frus1923v01/d805', 'frus1924v01/d275', 'frus1925v02/d24']
+  group: ['frus1894app2/d186', 'frus1894app2/d70']
+  group: ['frus1950v03/d553', 'frus1950v07/d480']
+  group: ['frus1950v03/d728', 'frus1950v07/d977']
+  group: ['frus1894/d464', 'frus1894Nicaragua/d45']
+  group: ['frus1894/d471', 'frus1894Nicaragua/d62']
+  group: ['frus1950v03/d732', 'frus1950v07/d1002']
+  group: ['frus1894app2/d192', 'frus1894app2/d73']
+  group: ['frus1923v02/d467', 'frus1924v02/d327']

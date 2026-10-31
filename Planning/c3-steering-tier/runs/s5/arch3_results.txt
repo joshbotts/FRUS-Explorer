@@ -1,0 +1,10 @@
+602875 creator: Department of State. Office of the Secretary. Executive Secretariat. | extent: 238 linear feet | inclusive 1949 1972 | access: Unrestricted | use: Unrestricted | restrictions: [] | ref unit: National Archives at College Park - Textual Reference
+2658382 creator: Department of State. Bureau of Far Eastern Affairs. | extent: 5 linear feet, 7 linear inches | inclusive 1955 1962 | access: Restricted - Possibly | use: Restricted - Possibly | restrictions: [] | ref unit: National Archives at College Park - Textual Reference
+2839192 creator: Department of State. Office of the Secretary. Executive Secretariat. | extent: 26 linear feet, 3 linear inches | inclusive 1947 1979 | access: Restricted - Partly | use: Restricted - Possibly | restrictions: ['FOIA (b)(1) National Security'] | ref unit: National Archives at College Park - Textual Reference
+602231 creator: Department of State. Executive Secretariat. | extent: 13 linear feet, 2 linear inches | inclusive 1953 1964 | access: Unrestricted | use: Unrestricted | restrictions: [] | ref unit: National Archives at College Park - Textual Reference
+1487627 creator: Department of State. Office of the Deputy Secretary of State. | extent: 14 linear feet | inclusive 1975 1981 | access: Restricted - Partly | use: Restricted - Possibly | restrictions: ['FOIA (b)(1) National Security'] | ref unit: National Archives at College Park - Textual Reference
+66D193 2658382 59 ['A1 5155'] Subject Files Relating to Political, Military, Economic Aid, and Administrative Affairs control
+63D351 2839192 59 ['A1 1586E'] Records Relating to National Security Council Policy Papers control
+66D95 2839192 59 ['A1 1586E'] Records Relating to National Security Council Policy Papers control
+65D330 602231 59 ['A1 1566'] The Secretary's and the Under Secretary's Memorandums of Conversation control
+81D113 1487627 59 ['P 14'] Records of Deputy Secretary Warren Christopher control

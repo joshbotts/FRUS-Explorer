@@ -1,0 +1,64 @@
+overview cites 38 distinct documents; collection holds 38
+cited but not in collection: []
+in collection but not cited in overview: []
+q 1 literal= 914 generous= 914 memo= 914 | body_text:corrupt AND body_text:aid [None..None]
+q 2 literal=   5 generous=   5 memo=   5 | body_text:NEAR(corrupt aid, 10) [1944-01-01..1950-12-31]
+q 3 literal= 120 generous= 120 memo= 120 | body_text:corrupt AND body_text:(China OR Chinese OR Kuomintang) [1947-06-01..1949-12-31]
+q 4 literal=  56 generous=  70 memo=  70 | body_text:corrupt AND body_text:(Chiang OR Generalissimo) [1943..1946]
+q 5 literal=  14 generous=  21 memo=  21 | body_text:corrupt AND (Chiang OR Generalissimo OR Nationalist*) AND (aid OR assi [1949..1950]
+q 6 literal=  54 generous=  57 memo=  57 | body_text:NEAR(corrupt Diem, 40) OR NEAR(corrupt Vietnam, 30) [1954..1963]
+q 7 literal=   8 generous=   8 memo=   8 | body_text:corrupt AND (Marcos OR Philippine*) [1983..1990]
+q 8 literal=  30 generous=  30 memo=  30 | body_text:("questionable payments" OR "illicit payments" OR "foreign corrupt pra [None..None]
+q 9 literal= 342 generous= 343 memo= 343 | body_text:(brib* OR corrupt) AND (Minister OR Legation OR Department) [1860..1899]
+q10 literal=  92 generous=  92 memo=  92 | body_text:corrupt AND (loan OR receivership OR customs OR financial) AND (contro [1900..1925]
+q11 literal=  29 generous=  30 memo=  30 | body_text:corrupt AND (extraterritorial* OR "consular court*" OR capitulations) [1860..1935]
+q12 literal=   9 generous=   9 memo=   9 | body_text:NEAR(corrupt Congress, 25) AND (aid OR assistance) [1950..1980]
+q13 literal= 143 generous= 145 memo= 145 | body_text:(corrupt AND (suspend* OR terminat* OR cutoff OR "cut off" OR halt*) A [1953..1980]
+family (Ed2 suppressed): 3058
+
+== STRICT REACH, per cited document ==
+frus1944v06/d269: family=True section3_literal=[4] section3_generous=[4] -> FULLTEXT
+frus1947v05/d23: family=True section3_literal=[1, 2] section3_generous=[1, 2] -> FULLTEXT
+frus1981-88v01/d247: family=True section3_literal=[1, 7] section3_generous=[1, 7] -> FULLTEXT
+frus1922v01/d864: family=True section3_literal=[10] section3_generous=[10] -> FULLTEXT
+frus1950v06/d802: family=True section3_literal=[1] section3_generous=[1, 5] -> FULLTEXT
+frus1955-57v22/d7: family=True section3_literal=[] section3_generous=[] -> FULLTEXT
+frus1964-68v05/d258: family=True section3_literal=[1] section3_generous=[1] -> FULLTEXT
+frus1969-76ve09p2/d155: family=True section3_literal=[8] section3_generous=[8] -> FULLTEXT
+frus1977-80v24/d337: family=True section3_literal=[1, 8] section3_generous=[1, 8] -> FULLTEXT
+frus1947v07/d553: family=True section3_literal=[1, 2, 3] section3_generous=[1, 2, 3] -> FULLTEXT
+frus1948v07/d440: family=True section3_literal=[1, 2, 3] section3_generous=[1, 2, 3] -> FULLTEXT
+frus1949v08/d576: family=True section3_literal=[1, 2, 3] section3_generous=[1, 2, 3] -> FULLTEXT
+frus1981-88v01/d264: family=True section3_literal=[7] section3_generous=[7] -> FULLTEXT
+frus1922v01/d841: family=True section3_literal=[1] section3_generous=[1] -> FULLTEXT
+frus1922v01/d836: family=False section3_literal=[] section3_generous=[] -> NO-QUERY
+frus1922v01/d842: family=True section3_literal=[] section3_generous=[] -> FULLTEXT
+frus1922v01/d862: family=True section3_literal=[10] section3_generous=[10] -> FULLTEXT
+frus1952-54v12p2/d324: family=True section3_literal=[1] section3_generous=[1] -> FULLTEXT
+frus1964-68v32/d8: family=True section3_literal=[1] section3_generous=[1] -> FULLTEXT
+frus1961-63v20/d422: family=True section3_literal=[1, 12] section3_generous=[1, 12] -> FULLTEXT
+frus1912/d1502: family=True section3_literal=[1, 10] section3_generous=[1, 10] -> FULLTEXT
+frus1958-60v01/d135: family=True section3_literal=[1, 6] section3_generous=[1, 6] -> FULLTEXT
+frus1958-60v01/d156: family=True section3_literal=[6] section3_generous=[6] -> FULLTEXT
+frus1958-60v01/d160: family=True section3_literal=[6] section3_generous=[6] -> FULLTEXT
+frus1961-63v01/d298: family=True section3_literal=[6] section3_generous=[6] -> FULLTEXT
+frus1964-68v05/d301: family=True section3_literal=[1, 13] section3_generous=[1, 13] -> FULLTEXT
+frus1969-76v08/d191: family=True section3_literal=[12] section3_generous=[12] -> FULLTEXT
+frus1981-88v41/d251: family=True section3_literal=[1] section3_generous=[1] -> FULLTEXT
+frus1949v06/d330: family=True section3_literal=[1, 3, 5] section3_generous=[1, 3, 5] -> FULLTEXT
+frus1950v05/d289: family=True section3_literal=[1] section3_generous=[1] -> FULLTEXT
+frus1950v03/d728: family=True section3_literal=[1] section3_generous=[1, 5] -> FULLTEXT
+frus1961-63v22/d252: family=True section3_literal=[1] section3_generous=[1] -> FULLTEXT
+frus1977-80v03/d35: family=True section3_literal=[8] section3_generous=[8] -> FULLTEXT
+frus1977-80v03/d248: family=True section3_literal=[1, 8] section3_generous=[1, 8] -> FULLTEXT
+frus1977-80v03/d65: family=True section3_literal=[1, 8] section3_generous=[1, 8] -> FULLTEXT
+frus1977-80v03/d230: family=True section3_literal=[8] section3_generous=[8] -> FULLTEXT
+frus1893/d628: family=True section3_literal=[9] section3_generous=[9] -> FULLTEXT
+frus1921v01/d275: family=True section3_literal=[1, 10, 11] section3_generous=[1, 10, 11] -> FULLTEXT
+
+cited docs returned by no logged query and not in the family set: [('frus1922v01', 'd836')]
+cited docs returned by no literal-date section-3 query and not in the family set: [('frus1922v01', 'd836')]
+('frus1922v01', 'd836') in family: False in any section-3 query (generous): []
+('frus1964-68v05', 'd301') in family: True in any section-3 query (generous): [1, 13]
+d836 raw-text family words: []
+d836 header: ('The Representative on Special Mission in Cuba (Crowder) to the Secretary of State', 'Habana, April 5, 1922. [Received April 10.]')

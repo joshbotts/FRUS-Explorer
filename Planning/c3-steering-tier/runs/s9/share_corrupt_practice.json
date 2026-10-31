@@ -1,0 +1,12 @@
+{
+ "label": "corrupt_practice",
+ "match": "\"corrupt practic\"",
+ "strict": "\\bcorrupt practice\\b",
+ "tolerant": "\\bcorrupt\\w*[\\s\\-,().]+practic\\w*\\b",
+ "M_hitlist_excl_fm_ed_Ed2": 81,
+ "mode": "census",
+ "n": 81,
+ "strict_hits": 6,
+ "tolerant_hits": 81,
+ "tolerant_misses": []
+}

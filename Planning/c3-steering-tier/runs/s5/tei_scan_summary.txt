@@ -1,0 +1,26 @@
+files scanned: 551 (Ed2 duplicates suppressed). COUNTING SURFACE: tag-stripped, whitespace-collapsed raw TEI (front matter and apparatus NOT separated), case-insensitive, word-bounded regex per variant
+Department of State (POSITIVE control)                  occurrences= 178193 in 551 of 551 volumes
+ZZZ_IMPOSSIBLE_ZZZ (NEGATIVE control)                   occurrences=      0 in 0 of 551 volumes
+corruption                                              occurrences=   2384 in 329 of 551 volumes
+corrupt                                                 occurrences=    964 in 293 of 551 volumes
+corrupted                                               occurrences=     95 in 76 of 551 volumes
+corrupting                                              occurrences=     51 in 42 of 551 volumes
+corruptly                                               occurrences=     13 in 12 of 551 volumes
+bribery                                                 occurrences=    429 in 165 of 551 volumes
+bribe/bribes                                            occurrences=    401 in 191 of 551 volumes
+bribed/bribing                                          occurrences=    139 in 88 of 551 volumes
+graft                                                   occurrences=    389 in 139 of 551 volumes
+peculation                                              occurrences=     24 in 19 of 551 volumes
+defalcation(s)                                          occurrences=     23 in 13 of 551 volumes
+malversation                                            occurrences=     32 in 27 of 551 volumes
+embezzlement/embezzle*                                  occurrences=    381 in 88 of 551 volumes
+kickback(s)                                             occurrences=     27 in 22 of 551 volumes
+payoff(s)                                               occurrences=    240 in 105 of 551 volumes
+venal/venality                                          occurrences=    179 in 103 of 551 volumes
+squeeze (Chinese/Levantine sense not separated)         occurrences=    649 in 246 of 551 volumes
+illicit payment(s)                                      occurrences=     32 in 4 of 551 volumes
+questionable payment(s)                                 occurrences=      1 in 1 of 551 volumes
+Foreign Corrupt Practices Act                           occurrences=      9 in 2 of 551 volumes
+FCPA                                                    occurrences=     11 in 1 of 551 volumes
+anti-corruption / anticorruption                        occurrences=     70 in 29 of 551 volumes
+corrupt practices                                       occurrences=     93 in 55 of 551 volumes

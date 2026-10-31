@@ -1,0 +1,82 @@
+# queries.log — run s4, 2026-10-30. Commands in order run.
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"   -> 553|321749|1103|8481
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "BEGIN; CREATE TABLE zz(x); ROLLBACK;"   -> Error: attempt to write a readonly database
+sqlite3 -readonly $DB .schema document_cache / frus_documents / document_dates / document_sources / external_citations
+.timeout 100000
+SELECT 'corrupt', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'corrupt' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'positive: Department of State', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '"department of state"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'negative: ZZZ_IMPOSSIBLE_ZZZ', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'zzz_impossible_zzz' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'header corrupt', COUNT(*) FROM frus_documents WHERE frus_documents MATCH 'header:corrupt';
+-- run via: sqlite3 -readonly $DB < q1.sql
+.timeout 100000
+CREATE VIRTUAL TABLE IF NOT EXISTS temp.v USING fts5vocab(main, frus_documents, 'row');
+SELECT term, doc, cnt FROM temp.v WHERE term IN ('corrupt','bribe','briberi','graft','kickback','payoff','venal','embezzl','embezzel','peculat','malfeas','misappropri','scandal','nepot','cronyism','crooki','extort','racketeer','payola','malvers','illicit','impropri','gratuiti','venal','dishonest','smuggl','profiteer','pilfer','squander','misus','sleaz','crimin') ORDER BY doc DESC;
+.timeout 100000
+CREATE TEMP TABLE hits AS SELECT c.volume_id, c.document_id, c.rowid AS rid FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'corrupt OR bribe OR briberi OR kickback OR payoff OR venal OR embezzl OR malfeas OR misappropri OR nepot OR payola' AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');
+SELECT 'broad family docs', COUNT(*) FROM hits;
+SELECT substr(d.date_iso,1,3)||'0s' AS decade, COUNT(*) AS n, (SELECT COUNT(*) FROM document_cache c2 JOIN document_dates d2 ON d2.volume_id=c2.volume_id AND d2.document_id=c2.document_id WHERE c2.is_front_matter=0 AND c2.is_editorial_note=0 AND substr(d2.date_iso,1,3)=substr(d.date_iso,1,3) AND c2.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')) AS denom
+FROM hits h JOIN document_dates d ON d.volume_id=h.volume_id AND d.document_id=h.document_id GROUP BY 1 ORDER BY 1;
+SELECT 'undated', COUNT(*) FROM hits h LEFT JOIN document_dates d ON d.volume_id=h.volume_id AND d.document_id=h.document_id WHERE d.date_iso IS NULL;
+.timeout 100000
+CREATE TEMP TABLE hits AS SELECT c.volume_id, c.document_id, c.rowid AS rid FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'corrupt OR bribe OR briberi OR kickback OR payoff OR venal OR embezzl OR malfeas OR misappropri OR nepot OR payola' AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');
+SELECT h.volume_id, COUNT(*) n, (SELECT COUNT(*) FROM document_cache c WHERE c.volume_id=h.volume_id AND c.is_front_matter=0 AND c.is_editorial_note=0) tot FROM hits h GROUP BY 1 ORDER BY n DESC LIMIT 45;
+python3 (inline): inspect manifest.json keys
+python3 (inline): write work/titles.json from manifest.json {volumeId:title}; print titles for q4.out
+sqlite3 -readonly $DB .schema volume_structures
+SELECT c.volume_id, c.document_id, substr(c.header,1,140) FROM document_cache c WHERE (c.header LIKE '%corrupt%' OR c.header LIKE '%bribe%' OR c.header LIKE '%graft%' OR c.header LIKE '%scandal%' OR c.header LIKE '%kickback%' OR c.header LIKE '%payoff%' OR c.header LIKE '%embezzl%' OR c.header LIKE '%Foreign Corrupt%' OR c.header LIKE '%questionable payments%') AND c.is_front_matter=0 AND c.is_editorial_note=0 ORDER BY 1,2;
+python3 (inline): walk volume_structures.structure_json titles for corruption-ish words (work/ none saved); output to work/structure_titles.txt
+.timeout 100000
+SELECT c.volume_id,c.document_id,substr(c.header,1,100), d.date_iso FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid LEFT JOIN document_dates d ON d.volume_id=c.volume_id AND d.document_id=c.document_id WHERE frus_documents MATCH 'corrupt OR bribe OR briberi' AND c.volume_id='frus1894app2' AND c.is_front_matter=0 AND c.is_editorial_note=0 ORDER BY bm25(frus_documents) LIMIT 12;
+python3 q7.py <lo> <hi> <n> [match]  -- bm25-ranked snippets of corruption-family match within date range (script in run dir)
+.timeout 100000
+CREATE TEMP TABLE nx AS SELECT c.volume_id, c.document_id FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'NEAR(corrupt aid, 25) OR NEAR(corrupt assistance, 25) OR NEAR(corrupt support, 25) OR NEAR(corrupt withhold, 25) OR NEAR(corrupt condition, 25) OR NEAR(corrupt suspend, 25) OR NEAR(corrupt confidence, 25) OR NEAR(corrupt congress, 25) OR NEAR(corrupt reform, 25)' AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');
+SELECT 'nexus docs', COUNT(*) FROM nx;
+SELECT substr(d.date_iso,1,3)||'0s', COUNT(*) FROM nx JOIN document_dates d ON d.volume_id=nx.volume_id AND d.document_id=nx.document_id GROUP BY 1 ORDER BY 1;
+.timeout 100000
+SELECT 'FCPA phrase', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '"foreign corrupt practices"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'questionable payments', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '"questionable payments"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'lockheed', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'lockheed' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'lockheed AND bribe*', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'lockheed AND (bribe OR briberi OR corrupt OR payment)' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+(q7.py rewritten with VOL filter; usage: [VOL=v] python3 q7.py lo hi n [match])
+python3 getdoc.py vol/doc ...   (writes work/docs/<vol>__<doc>.txt = SELECT header,dateline,body_text,length(body_text) FROM document_cache WHERE volume_id=? AND document_id=?; prints captured==length)
+python3 ctx.py vol/doc [width]  (reads work/docs file; windows around corruption-family regex)
+python3 vec.py (module: provenance, round trip, nearest, flagged, near_duplicates); python3 vec_baseline.py
+cat SemanticVectors/.generation; python3 inline: print index keys and one shard header
+python3 arch1.py : SELECT repository,record_group,lot_file,series_name,citation_era,raw_text FROM document_sources WHERE volume_id=? AND document_id=?; SELECT count(*) FROM external_citations WHERE volume_id=? AND document_id=? (per collection document)
+python3 inline (saved work/pre1940.txt): count series-facts-index byNaId rows with y0<1940; arch2.py/arch3.py: usage + external-citation + authority + central-files + series-facts aggregation over the collection's 21 volumes
+python3 stats.py  (family count, decade table, 40-doc literal share; output stats.out)
+python3 stats2.py  (false-friend test with controls; nexus literal share; output stats2.out)
+.timeout 100000
+SELECT 'FCPA phrase', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '"foreign corrupt practices"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'teapot dome', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '"teapot dome"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'spoils system', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '"spoils system"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'watergate', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'watergate' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'abscam', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'abscam' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'transparency international', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '"transparency international"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'anticorruption OR anti-corruption phrase', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '"anti corruption"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'POSITIVE control department of state', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '"department of state"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'NEGATIVE control ZZZ_IMPOSSIBLE_ZZZ', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'zzz_impossible_zzz' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'RELAXED for negative: corrupt', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'corrupt' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'FCPA docs:', c.volume_id||'/'||c.document_id, d.date_iso FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid LEFT JOIN document_dates d ON d.volume_id=c.volume_id AND d.document_id=c.document_id WHERE frus_documents MATCH '"foreign corrupt practices"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'latest dated doc with corruption family', MAX(d.date_iso) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid JOIN document_dates d ON d.volume_id=c.volume_id AND d.document_id=c.document_id WHERE frus_documents MATCH 'corrupt' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+python3 reach.py (vector-reach table; reach.out)
+python3 build_collection.py  (builds collection.fruscollection; asserts every pair in document_cache non-apparatus, every excerpt a substring of whitespace-collapsed body_text)
+python3 vec_collection_dups.py (near-duplicate and nearest-neighbour check over the collection set; vec_collection_dups.out)
+python3 inline: compare len(work/docs file) with SELECT length(body_text) FROM document_cache WHERE volume_id=? AND document_id=? for every file (reading_accounting.txt)
+python3 headings.py (headings.out): SELECT volume_id,structure_json FROM volume_structures; regex over every section title
+# --- further commands, in the order run (long bodies are the files named; inline python summarised) ---
+python3 q7.py 1943 1950 14 ; python3 q7.py 1860 1930 20 "$(cat nexus.txt)" ; python3 q7.py 1940 1950 22 "$(cat nexus.txt)" ; python3 q7.py 1950 1962 22 "$(cat nexus.txt)" ; python3 q7.py 1963 1990 30 "$(cat nexus.txt)"   # bm25 snippet reads by era
+python3 q7.py 1970 1985 14 '"questionable payments" OR "foreign corrupt practices" OR (lockheed AND (bribe OR briberi OR corrupt))'
+python3 q7.py 1966 1969 14 'corrupt AND (vietnam OR saigon OR thieu OR ky)'   # returned name hits; replaced by the VOL form below
+VOL=frus1964-68v05 python3 q7.py 1966 1969 14 'corrupt'
+python3 q7.py 1888 1895 14 'corrupt OR bribe OR briberi' ; VOL=frus1894app2 python3 q7.py 1888 1895 14 'NEAR(corrupt queen, 30) OR NEAR(corrupt annex, 40) OR NEAR(bribe legislature, 30)'
+python3 q7.py 1946 1950 40 'NEAR(corrupt aid, 20) OR NEAR(corrupt assistance, 20) OR NEAR(corrupt loan, 20) OR NEAR(corrupt military, 12)' | grep -E "Secretary of State|Marshall|Acheson|Truman|Under Secretary|Department|Memorandum" | head -24
+VOL=frus1969-76ve11p1 python3 q7.py 1969 1977 12 'corrupt OR bribe OR briberi' ; VOL=frus1947v07 python3 q7.py 1947-09 1947-10 8 'wedemeyer AND (corrupt OR supervision)' ; VOL=frus1958-60v01 python3 q7.py 1958 1961 12 'corrupt OR "can lao"'
+python3 getdoc.py <vol>/<doc> ... and python3 ctx.py <vol>/<doc> <width>   # run for every document named in work/docs (69 documents; list = ls work/docs)
+python3 setdef.py ; python3 quotes.py-check (inline substring check) ; python3 arch1.py ; python3 arch2.py ; python3 arch3.py > arch3.out
+python3 vec_baseline.py ; python3 vec_neighbors.py ; python3 vec_neardup.py ; python3 vec_neardup_read.py ; python3 vec_collection_dups.py ; python3 reach.py
+python3 stats.py ; python3 stats2.py ; python3 headings.py ; python3 trace.py ; python3 build_collection.py ; python3 verify_overview.py ; python3 write_memo.py
+cat /Users/jbotts/frus-analysis/c3/SemanticVectors/.generation ; python3 inline: read one shard header (frus1964-68v05.vec bytes 0-64)
+python3 inline: read keys/shape of collection-usage-index.json, external-citation-index.json, collection-authority.json, series-facts-index.json, central-files-index.json, presidential-library-catalog.json, lot-claimants-index.json ; lookups of lots 55D36 66D193 81D113 85D240 65D330 72D192 80D177 85D366 79F80 91D414, numericalFile, countrySeries rolls for Hawaii/Korea
+python3 inline: Ed2 text identity of frus1969-76ve15p2 d292/d293 against frus1969-76ve15p2Ed2
+ELIDED: (1) the individual getdoc.py / ctx.py invocations (69 documents; the argument lists are the file names in work/docs) are summarised on one line above, not listed one by one; (2) the bodies of the heredoc scripts are the files in this directory (q7.py, getdoc.py, ctx.py, vec*.py, stats*.py, arch*.py, reach.py, headings.py, trace.py, build_collection.py, verify_overview.py, write_memo.py, quotes.py) and are not repeated here; (3) short inline python3 snippets that only printed the keys or one row of a JSON file, compared two strings, or counted lines are summarised, not reproduced; (4) the two nonsense-string and positive-control queries appear inside q1.sql and q10.sql as run; (5) a handful of mistyped or superseded invocations (a zsh '=====' echo that failed, a sed -i call that failed on macOS, one q7.py call with an AND query that returned name hits instead of corruption hits) are noted only in the case of the q7.py call above.

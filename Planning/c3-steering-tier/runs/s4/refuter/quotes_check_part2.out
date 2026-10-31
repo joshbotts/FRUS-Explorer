@@ -1,0 +1,163 @@
+single-word / short quotes: which collection documents hold them
+  [13] line 25 'official corruption': in ['frus1894app1/d27']
+  [22] line 35 'with great concern': in ['frus1922v01/d872']
+  [55] line 65 'devastating': in ['frus1949v08/d131', 'frus1977-80v23/d264']
+  [63] line 75 'never': in ['frus1894app2/d316', 'frus1948v07/d322', 'frus1969-76v08/d191', 'frus1977-80v23/d257', 'frus1969-76ve09p2/d135', 'frus1969-76ve09p2/d161', 'frus1969-76ve12/d224']
+
+excerpts: 36 failing: 0
+
+manifest volumes: 553 sample keys: ['dateRange', 'editors', 'filename', 'publicationDate', 'sizeBytes', 'status', 'subseries', 'tags', 'title', 'volumeId']
+URL citations in overview: 39 distinct pairs: 35
+line 5 frus1964-68v05/d258 | manifest: Foreign Relations of the United States, 1964–1968, Volume V,
+                    Vietnam,  | row header: 258. Memorandum From the Minister-Counselor for Political Affairs of the Embassy | date 1967-07-27 | Document number OK
+      printed: ...at are indexed here, which is the whole series; among them "Foreign Relations of the United States, 1964–1968, Volume V, Vietnam, 1967, Document 258" 
+line 5 frus1947v07/d582 | manifest: Foreign Relations of the United States, 1947, The Far East:
+                    China, Vol | row header: General Wedemeyer to the Secretary of State | date 1947-08-17 | no parse
+      printed: ..., "Foreign Relations of the United States, 1947, The Far East: China, Volume VII, General Wedemeyer to the Secretary of State, August 17, 1947" 
+line 5 frus1922v01/d864 | manifest: Papers Relating to the Foreign Relations of the United
+                    States, 1922, V | row header: The Acting Chief of the Division of Latin American Affairs, Department of State  | date 1922-10-10 | no parse
+      printed: ...of the United States, 1922, Volume I, the Acting Chief of the Division of Latin American Affairs (White) to the Secretary of State, October 10, 1922" 
+line 5 frus1969-76ve09p2/d161 | manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–9, Part 2, | row header: 161. Telegram From the Embassy in Saudi Arabia to the Department of State | date 1975-09-11 | Document number OK
+      printed: ... and "Foreign Relations of the United States, 1969–1976, Volume E–9, Part 2, Documents on the Middle East Region, 1973–1976, Document 161" 
+line 27 frus1894app2/d172 | manifest: Foreign Relations of the United States, 1894 | row header: Mr. Stevens to Mr. Blaine. | date 1892-04-02 | no parse
+      printed: ...or twenty years the palace has been the center of corruption and scandal, and is likely to remain so as long as the Hawaiian native monarchy exists." 
+line 28 frus1894app2/d316 | manifest: Foreign Relations of the United States, 1894 | row header: No. 33. Statement of Liliuokalani. | date 1893-04-11 | no parse
+      printed: ...iuokalani": "It was a practice among some of the native members to sell their votes for a consideration. This was taught them by the Thurston party." 
+line 29 frus1894app1/d27 | manifest: Foreign Relations of the United States, 1894, Appendix I,
+                    Chinese-Japa | row header: Mr. Gresham to Mr. Bayard. | date 1894-07-20 | no parse
+      printed: .... Gresham to Mr. Bayard, July 20, 1894": the Japanese minister said "the rebellion in Korea was caused by maladministration and official corruption". 
+line 31 frus1894app2/d199 | manifest: Foreign Relations of the United States, 1894 | row header: Mr. Stevens to Mr. Foster. | date 1893-02-01 | header match=True date match=True (row date 1893-02-01)
+      printed: ...Also cited in this finding: Foreign Relations of the United States, 1894, Appendix II, Mr. Stevens to Mr. Foster, February 1, 1893 
+line 37 frus1922v01/d864 | manifest: Papers Relating to the Foreign Relations of the United
+                    States, 1922, V | row header: The Acting Chief of the Division of Latin American Affairs, Department of State  | date 1922-10-10 | no parse
+      printed: ... of State, October 10, 1922": "General Crowder feels that the Department should not consent to a loan unless this amnesty bill is definitely killed." 
+line 38 frus1922v01/d872 | manifest: Papers Relating to the Foreign Relations of the United
+                    States, 1922, V | row header: The Acting Secretary of State to the Cuban Chargé (Padró) | date 1922-11-04 | no parse
+      printed: ...e pending amnesty bill". This document contains no corruption word; it was found by its similarity to the preceding one and read before it was cited. 
+line 39 frus1961-63v22/d221 | manifest: Foreign Relations of the United States, 1961–1963, Volume
+                    XXII, Northe | row header: 221. Memorandum From Robert H. Johnson of the National Security Council Staff to | date 1961-05-23 | Document number OK
+      printed: ...lations of the United States, 1961–1963, Volume XXII, Northeast Asia, Document 221": future assistance "will be conditional upon Korean performance". 
+line 41 frus1922v01/d852 | manifest: Papers Relating to the Foreign Relations of the United
+                    States, 1922, V | row header: The Representative on Special Mission in Cuba (Crowder) to the Secretary of Stat | date 1922-06-30 | header match=True date match=True (row date 1922-06-30)
+      printed: ...eign Relations of the United States, 1922, Volume I, the Representative on Special Mission in Cuba (Crowder) to the Secretary of State, June 30, 1922 
+line 41 frus1947v05/d23 | manifest: Foreign Relations of the United States, 1947, The Near East
+                    and Africa | row header: Memorandum by the Under Secretary of State (Acheson) to the Secretary of State | date 1947-02-21 | header match=True date match=True (row date 1947-02-21)
+      printed: ...d States, 1947, The Near East and Africa, Volume V, Memorandum by the Under Secretary of State (Acheson) to the Secretary of State, February 21, 1947 
+line 47 frus1947v07/d582 | manifest: Foreign Relations of the United States, 1947, The Far East:
+                    China, Vol | row header: General Wedemeyer to the Secretary of State | date 1947-08-17 | no parse
+      printed: ...t 17, 1947": "The information received in Shanghai serves to reaffirm earlier certainty of corrupt and inept practices, both political and economic." 
+line 48 frus1948v07/d322 | manifest: Foreign Relations of the United States, 1948, The Far East:
+                    China, Vol | row header: The Ambassador in China (Stuart) to the Secretary of State | date 1948-08-16 | no parse
+      printed: ...the Secretary of State, August 16, 1948": "Only with such American help can the reforms be undertaken which alone would justify material assistance." 
+line 49 frus1949v08/d576 | manifest: Foreign Relations of the United States, 1949, The Far East:
+                    China, Vol | row header: The Chargé in China (Clark) to the Secretary of State | date 1949-08-23 | no parse
+      printed: ..."unless we make the best of a bad bargain and come to aid of existing government, corrupt as it is, Communist domination of all China is inevitable". 
+line 51 frus1947v07/d553 | manifest: Foreign Relations of the United States, 1947, The Far East:
+                    China, Vol | row header: Memorandum of Conversation, by Mr. Philip D. Sprouse | date 1947-07-25 | header match=True date match=True (row date 1947-07-25)
+      printed: ...ng: Foreign Relations of the United States, 1947, The Far East: China, Volume VII, Memorandum of Conversation by Mr. Philip D. Sprouse, July 25, 1947 
+line 51 frus1947v07/d570 | manifest: Foreign Relations of the United States, 1947, The Far East:
+                    China, Vol | row header: Memorandum of Conversation, by Mr. Philip D. Sprouse | date 1947-07-31 | header match=True date match=True (row date 1947-07-31)
+      printed: ...; Foreign Relations of the United States, 1947, The Far East: China, Volume VII, Memorandum of Conversation by Mr. Philip D. Sprouse, July 31, 1947 
+line 51 frus1949v08/d131 | manifest: Foreign Relations of the United States, 1949, The Far East:
+                    China, Vol | row header: The Ambassador in China (Stuart) to the Secretary of State | date 1949-02-05 | header match=True date match=True (row date 1949-02-05)
+      printed: ... Relations of the United States, 1949, The Far East: China, Volume VIII, the Ambassador in China (Stuart) to the Secretary of State, February 5, 1949 
+line 57 frus1958-60v01/d131 | manifest: Foreign Relations of the United States, 1958–1960, Vietnam,
+                    Volume I | row header: 131. Telegram From the Ambassador in Vietnam (Durbrow) to the Department of Stat | date 1960-04-07 | no parse
+      printed: ...1": Durbrow told Diem "it might prove difficult obtain adequate aid FY 61 if disturbing reports continue re alleged corrupt practices Can Lao party". 
+line 58 frus1964-68v05/d258 | manifest: Foreign Relations of the United States, 1964–1968, Volume V,
+                    Vietnam,  | row header: 258. Memorandum From the Minister-Counselor for Political Affairs of the Embassy | date 1967-07-27 | Document number OK
+      printed: ... 1967, Document 258": it "would be argued thereafter that United States is indeed the neo-colonialist power its critics and enemies allege it to be." 
+line 59 frus1964-68v05/d395 | manifest: Foreign Relations of the United States, 1964–1968, Volume V,
+                    Vietnam,  | row header: 395. Memorandum From the Under Secretary of State (Katzenbach) to President John | date 1967-11-13 | Document number OK
+      printed: ...isible and credible anti-corruption effort would help a great deal in improving the Administration’s position, and in building a more effective GVN." 
+line 61 frus1958-60v01/d63 | manifest: Foreign Relations of the United States, 1958–1960, Vietnam,
+                    Volume I | row header: 63. Telegram From the Ambassador in Vietnam (Durbrow) to the Department of State | date 1959-04-11 | Document number OK
+      printed: ...Also cited in this finding: Foreign Relations of the United States, 1958–1960, Vietnam, Volume I, Document 63 
+line 61 frus1958-60v01/d185 | manifest: Foreign Relations of the United States, 1958–1960, Vietnam,
+                    Volume I | row header: 185. Special National Intelligence Estimate | date 1960-08-23 | Document number OK
+      printed: ...; Foreign Relations of the United States, 1958–1960, Vietnam, Volume I, Document 185 
+line 61 frus1964-68v04/d145 | manifest: Foreign Relations of the United States, 1964–1968, Volume IV,
+                    Vietnam, | row header: 145. Memorandum From the Presidentʼs Special Assistant (Komer) to President John | date 1966-05-24 | Document number OK
+      printed: ...; Foreign Relations of the United States, 1964–1968, Volume IV, Vietnam, 1966, Document 145 
+line 61 frus1964-68v05/d185 | manifest: Foreign Relations of the United States, 1964–1968, Volume V,
+                    Vietnam,  | row header: 185. Telegram From the President’s Special Assistant (Rostow) to President Johns | date 1967-05-28 | Document number OK
+      printed: ...; Foreign Relations of the United States, 1964–1968, Volume V, Vietnam, 1967, Document 185 
+line 61 frus1969-76v08/d191 | manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    VIII, Vietna | row header: 191. Minutes of a Washington Special Actions Group Meeting | date 1972-06-22 | Document number OK
+      printed: ...; Foreign Relations of the United States, 1969–1976, Volume VIII, Vietnam, January–October 1972, Document 191 
+line 67 frus1961-63v20/d422 | manifest: Foreign Relations of the United States, 1961–1963, Volume XX,
+                    Congo Cr | row header: 422. Memorandum of Conversation | date 1963-05-29 | Document number OK
+      printed: ... in Léopoldville and remarked that we would have considerable trouble with Congress over giving aid to the Congo if there was widespread corruption." 
+line 68 frus1977-80v24/d14 | manifest: Foreign Relations of the United States, 1977–1980, Volume
+                    XXIV, South  | row header: 14. Memorandum From Acting Secretary of State Christopher to President Carter | date 1977-05-19 | Document number OK
+      printed: ...ca Region, Document 14": helicopters "which we are hesitant to deliver because of reported narcotics-related corruption in the Colombian Government." 
+line 69 frus1977-80v23/d264 | manifest: Foreign Relations of the United States, 1977–1980, Volume
+                    XXIII, Mexic | row header: 264. Telegram From the Department of State to the Embassy in Haiti | date 1980-08-01 | no parse
+      printed: ...ico, Cuba, and the Caribbean, Document 264": the House committee approved a $2 million cut to "demonstrate its concern for brutality and corruption." 
+line 71 frus1977-80v23/d257 | manifest: Foreign Relations of the United States, 1977–1980, Volume
+                    XXIII, Mexic | row header: 257. Memorandum of Conversation | date 1979-07-26 | Document number OK
+      printed: ...Also cited in this finding: Foreign Relations of the United States, 1977–1980, Volume XXIII, Mexico, Cuba, and the Caribbean, Document 257 
+line 77 frus1969-76ve09p2/d161 | manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–9, Part 2, | row header: 161. Telegram From the Embassy in Saudi Arabia to the Department of State | date 1975-09-11 | Document number OK
+      printed: ...on, 1973–1976, Document 161": "Sultan said the Department or President Ford must do whatever is necessary to make sure the names are never divulged." 
+line 78 frus1969-76ve12/d224 | manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–12, Docume | row header: 224. Memorandum of Conversation, Washington, May 14, 1976. | date 1976-05-14 | Document number OK
+      printed: ...cument 224": "We look forward to seeing justice done, but it would not be appropriate for the Department to be involved in a criminal investigation." 
+line 79 frus1969-76ve15p2/d293 | manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–15, Part 2 | row header: 293. Memorandum From the Deputy Assistant Secretary of State for European and Ca | date 1975-10-07 | Document number OK
+      printed: ...art 2, Documents on Western Europe, 1973–1976, Document 293": "We must do everything possible to keep this quiet." (quoted in the editors' footnote). 
+line 81 frus1969-76ve11p1/d159 | manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–11, Part 1 | row header: 159. Briefing Memorandum From the Assistant Secretary of State for Inter-America | date 1975-03-28 | Document number OK
+      printed: ...eign Relations of the United States, 1969–1976, Volume E–11, Part 1, Documents on Mexico; Central America; and the Caribbean, 1973–1976, Document 159 
+line 81 frus1969-76ve09p2/d135 | manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–9, Part 2, | row header: 135. Telegram From the Embassy in Saudi Arabia to the Department of State | date 1975-05-13 | Document number OK
+      printed: ...; Foreign Relations of the United States, 1969–1976, Volume E–9, Part 2, Documents on the Middle East Region, 1973–1976, Document 135 
+line 81 frus1969-76ve15p2/d292 | manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–15, Part 2 | row header: 292. Memorandum From the Assistant Secretary of State for European and Canadian  | date 1975-09-30 | Document number OK
+      printed: ...; Foreign Relations of the United States, 1969–1976, Volume E–15, Part 2, Documents on Western Europe, 1973–1976, Document 292 
+line 81 frus1969-76ve12/d218 | manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–12, Docume | row header: 218. Letter From Japanese Prime Minister Miki to President Ford, Tokyo, February | date 1976-02-24 | Document number OK
+      printed: ...; Foreign Relations of the United States, 1969–1976, Volume E–12, Documents on East and Southeast Asia, 1973–1976, Document 218 
+line 81 frus1977-80v03/d230 | manifest: Foreign Relations of the United States, 1977–1980, Volume
+                    III, Foreign | row header: 230. Memorandum From the Special Representative for Economic Summits (Owen) to P | date 1980-01-18 | Document number OK
+      printed: ...; Foreign Relations of the United States, 1977–1980, Volume III, Foreign Economic Policy, Document 230 
+printed-citation problems: 0
+
+collection notes: stated date vs document_dates
+  frus1894app2/d172 note says 1892-04-02 index 1892-04-02 OK
+  frus1894app2/d199 note says 1893-02-01 index 1893-02-01 OK
+  frus1894app2/d316 note has no day date; index 1893-04-11 | Agent finding, run s4, 2026-10-30: The Queen's own statement to the Blount inqui
+  frus1894app1/d27 note says 1894-07-20 index 1894-07-20 OK
+  frus1922v01/d852 note says 1922-06-30 index 1922-06-30 OK
+  frus1922v01/d864 note says 1922-10-10 index 1922-10-10 OK
+  frus1922v01/d872 note says 1922-11-04 index 1922-11-04 OK
+  frus1947v05/d23 note says 1947-02-21 index 1947-02-21 OK
+  frus1961-63v22/d221 note says 1961-05-23 index 1961-05-23 OK
+  frus1947v07/d553 note says 1947-07-25 index 1947-07-25 OK
+  frus1947v07/d570 note says 1947-07-30 index 1947-07-31 MISMATCH
+  frus1947v07/d582 note says 1947-08-17 index 1947-08-17 OK
+  frus1948v07/d322 note says 1948-08-16 index 1948-08-16 OK
+  frus1949v08/d131 note says 1949-02-05 index 1949-02-05 OK
+  frus1949v08/d576 note says 1949-08-23 index 1949-08-23 OK
+  frus1958-60v01/d63 note says 1959-04-11 index 1959-04-11 OK
+  frus1958-60v01/d131 note says 1960-04-07 index 1960-04-07 OK
+  frus1958-60v01/d185 note says 1960-08-23 index 1960-08-23 OK
+  frus1964-68v04/d145 note says 1966-05-24 index 1966-05-24 OK
+  frus1964-68v05/d185 note says 1967-05-28 index 1967-05-28 OK
+  frus1964-68v05/d258 note says 1967-07-27 index 1967-07-27 OK
+  frus1964-68v05/d395 note says 1967-11-13 index 1967-11-13 OK
+  frus1969-76v08/d191 note says 1972-06-22 index 1972-06-22 OK
+  frus1961-63v20/d422 note says 1963-05-29 index 1963-05-29 OK
+  frus1977-80v24/d14 note says 1977-05-19 index 1977-05-19 OK
+  frus1977-80v23/d257 note says 1979-07-26 index 1979-07-26 OK
+  frus1977-80v23/d264 note says 1980-08-01 index 1980-08-01 OK
+  frus1969-76ve11p1/d159 note says 1975-03-28 index 1975-03-28 OK
+  frus1969-76ve09p2/d135 note says 1975-05-13 index 1975-05-13 OK
+  frus1969-76ve09p2/d161 note says 1975-09-11 index 1975-09-11 OK
+  frus1969-76ve15p2/d292 note says 1975-09-30 index 1975-09-30 OK
+  frus1969-76ve15p2/d293 note says 1975-10-07 index 1975-10-07 OK
+  frus1969-76ve12/d218 note says 1976-02-24 index 1976-02-24 OK
+  frus1969-76ve12/d224 note says 1976-05-14 index 1976-05-14 OK
+  frus1977-80v03/d230 note says 1980-01-18 index 1980-01-18 OK
+note-date mismatches: 1

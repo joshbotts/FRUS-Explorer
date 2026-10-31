@@ -1,0 +1,75 @@
+
+### ANCHOR frus1964-68v05/d258  (row 270457) in_core_vocab_hits=True
+-- Hamming top 10 (sign bits, 512)
+ ham= 97 frus1958-60v01/d55 date=1959-02-16 flags(fm,ed)=(0, 0) corevocab=False | 55. Letter From the Ambassador in Vietnam (Durbrow) to the Assistant S
+ ham= 97 frus1964-68v05/d395 date=1967-11-13 flags(fm,ed)=(0, 0) corevocab=True | 395. Memorandum From the Under Secretary of State (Katzenbach) to Pres
+ ham= 99 frus1964-68v04/d21 date=1966-01-13 flags(fm,ed)=(0, 0) corevocab=False | 21. Report Prepared by the Deputy Ambassador to Vietnam (Porter) and t
+ ham= 99 frus1964-68v05/d301 date=1967-08-31 flags(fm,ed)=(0, 0) corevocab=True | 301. Telegram From the Department of State to the Embassy in Vietnam
+ ham= 99 frus1969-76v06/d175 date=1970-01-31 flags(fm,ed)=(0, 0) corevocab=True | 175. Telegram From the Embassy in Vietnam to the Department of State
+ ham=100 frus1964-68v04/d222 date=1966-08-30 flags(fm,ed)=(0, 0) corevocab=False | 222. Memorandum From William Leonhart of the White House Staff to Pres
+ ham=100 frus1964-68v04/d268 date=1966-10-14 flags(fm,ed)=(0, 0) corevocab=True | 268. Memorandum From Secretary of Defense McNamara to President Johnso
+ ham=101 frus1917-72PubDipv07/d177 date=1968-02-23 flags(fm,ed)=(0, 0) corevocab=True | 177. Airgram From the Department of State to All American Diplomatic a
+ ham=101 frus1961-63v02/d300 date=1962-10-12 flags(fm,ed)=(0, 0) corevocab=False | 300. Letter From the Assistant Secretary of State for Far Eastern Affa
+ ham=101 frus1961-63v02/d322 date=1962-11-27 flags(fm,ed)=(0, 0) corevocab=False | 322. Memorandum From the Public Affairs Officer of the Embassy in Viet
+-- funnel: Hamming-800 pool -> int8 cosine, top 10 [raw cosine -> calibrated (cos-0.40)/0.60]
+ cos=0.895 cal=0.82 ham= 99 frus1969-76v06/d175 date=1970-01-31 flags=(0, 0) corevocab=True | 175. Telegram From the Embassy in Vietnam to the Department of State
+ cos=0.891 cal=0.82 ham=101 frus1964-68v06/d49 date=1968-02-03 flags=(0, 0) corevocab=True | 49. Memorandum From William J. Jorden of the National Security Council
+ cos=0.888 cal=0.81 ham=109 frus1961-63v03/d81 date=1963-04-05 flags=(0, 0) corevocab=True | 81. Telegram From the Embassy in Vietnam to the Department of State
+ cos=0.885 cal=0.81 ham=106 frus1961-63v04/d347 date=1963-12-05 flags=(0, 0) corevocab=False | 347. Memorandum From the Assistant Secretary of State for Far Eastern 
+ cos=0.884 cal=0.81 ham=105 frus1961-63v01/d210 date=1961-11-03 flags=(0, 0) corevocab=True | 210. Letter From the President’s Military Representative (Taylor) to t
+ cos=0.880 cal=0.80 ham=101 frus1917-72PubDipv07/d177 date=1968-02-23 flags=(0, 0) corevocab=True | 177. Airgram From the Department of State to All American Diplomatic a
+ cos=0.880 cal=0.80 ham= 99 frus1964-68v05/d301 date=1967-08-31 flags=(0, 0) corevocab=True | 301. Telegram From the Department of State to the Embassy in Vietnam
+ cos=0.880 cal=0.80 ham=104 frus1961-63v01/d42 date=1961-05-03 flags=(0, 0) corevocab=False | 42. Memorandum From the Deputy Secretary of Defense (Gilpatric) to the
+ cos=0.879 cal=0.80 ham=106 frus1964-68v01/d426 date=1964-11-01 flags=(0, 0) corevocab=False | 426. Paper Prepared by the Ambassador in Vietnam (Taylor)
+ cos=0.878 cal=0.80 ham= 97 frus1964-68v05/d395 date=1967-11-13 flags=(0, 0) corevocab=True | 395. Memorandum From the Under Secretary of State (Katzenbach) to Pres
+-- map placement: x=-28444 y=1745 cluster=29
+
+### ANCHOR frus1922v01/d841  (row 79603) in_core_vocab_hits=True
+-- Hamming top 10 (sign bits, 512)
+ ham= 73 frus1922v01/d842 date=1922-05-04 flags(fm,ed)=(0, 0) corevocab=True | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ ham= 92 frus1922v01/d836 date=1922-04-05 flags(fm,ed)=(0, 0) corevocab=False | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ ham= 99 frus1922v01/d845 date=1922-05-20 flags(fm,ed)=(0, 0) corevocab=False | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ ham= 99 frus1922v01/d852 date=1922-06-30 flags(fm,ed)=(0, 0) corevocab=True | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ ham=100 frus1921v01/d702 date=1921-09-11 flags(fm,ed)=(0, 0) corevocab=True | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ ham=100 frus1922v01/d844 date=1922-05-19 flags(fm,ed)=(0, 0) corevocab=False | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ ham=101 frus1922v01/d837 date=1922-04-08 flags(fm,ed)=(0, 0) corevocab=False | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ ham=101 frus1922v01/d848 date=1922-06-09 flags(fm,ed)=(0, 0) corevocab=True | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ ham=103 frus1921v01/d679 date=1921-06-20 flags(fm,ed)=(0, 0) corevocab=False | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ ham=103 frus1921v01/d720 date=1921-11-23 flags(fm,ed)=(0, 0) corevocab=False | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+-- funnel: Hamming-800 pool -> int8 cosine, top 10 [raw cosine -> calibrated (cos-0.40)/0.60]
+ cos=0.932 cal=0.89 ham= 73 frus1922v01/d842 date=1922-05-04 flags=(0, 0) corevocab=True | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ cos=0.930 cal=0.88 ham= 92 frus1922v01/d836 date=1922-04-05 flags=(0, 0) corevocab=False | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ cos=0.909 cal=0.85 ham=104 frus1922v01/d835 date=1922-03-25 flags=(0, 0) corevocab=False | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ cos=0.895 cal=0.83 ham=101 frus1922v01/d837 date=1922-04-08 flags=(0, 0) corevocab=False | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ cos=0.884 cal=0.81 ham=101 frus1922v01/d848 date=1922-06-09 flags=(0, 0) corevocab=True | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ cos=0.882 cal=0.80 ham= 99 frus1922v01/d845 date=1922-05-20 flags=(0, 0) corevocab=False | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ cos=0.882 cal=0.80 ham=109 frus1922v01/d838 date=1922-04-09 flags=(0, 0) corevocab=False | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ cos=0.881 cal=0.80 ham=115 frus1922v01/d849 date=1922-06-12 flags=(0, 0) corevocab=False | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ cos=0.880 cal=0.80 ham=103 frus1922v01/d831 date=1922-02-24 flags=(0, 0) corevocab=False | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+ cos=0.878 cal=0.80 ham=107 frus1922v01/d851 date=1922-06-26 flags=(0, 0) corevocab=True | The Representative on Special Mission in Cuba (Crowder) to the Secreta
+-- map placement: x=9360 y=-11838 cluster=43
+
+### ANCHOR frus1969-76ve09p2/d155  (row 298126) in_core_vocab_hits=True
+-- Hamming top 10 (sign bits, 512)
+ ham= 69 frus1977-80v18/d151 date=1977-05-24 flags(fm,ed)=(0, 0) corevocab=False | 151. Memorandum of Conversation
+ ham= 72 frus1969-76v24/d133 date=1969-11-21 flags(fm,ed)=(0, 0) corevocab=False | 133. Memorandum From the Chairman of the Interdepartmental Group for N
+ ham= 74 frus1977-80v18/d17 date=1979-02-01 flags(fm,ed)=(0, 0) corevocab=True | 17. Minutes of a Policy Review Committee Meeting
+ ham= 76 frus1969-76ve09p2/d118 date=1974-10-05 flags(fm,ed)=(0, 0) corevocab=False | 118. Information Memorandum From the Principal Deputy Assistant Secret
+ ham= 77 frus1977-80v18/d176 date=1978-12-31 flags(fm,ed)=(0, 0) corevocab=False | 176. Report Prepared by the Ambassador to Saudi Arabia (West)
+ ham= 79 frus1969-76ve09p2/d85 date=1973-04-18 flags(fm,ed)=(0, 0) corevocab=False | 85. Airgram From the Embassy in Saudi Arabia to the Department of Stat
+ ham= 79 frus1977-80v18/d216 date=1980-06-03 flags(fm,ed)=(0, 0) corevocab=False | 216. Letter From the Ambassador to Saudi Arabia (West) to President Ca
+ ham= 80 frus1977-80v18/d96 date=1980-11-21 flags(fm,ed)=(0, 0) corevocab=False | 96. Memorandum From Secretary of Defense Brown to the President’s Assi
+ ham= 80 frus1977-80v18/d143 date=1977-01-03 flags(fm,ed)=(0, 0) corevocab=True | 143. Briefing Paper Prepared in the Department of State
+ ham= 81 frus1969-76ve09p2/d146 date=1975-06-09 flags(fm,ed)=(0, 0) corevocab=True | 146. Telegram From the Embassy in Saudi Arabia to the Department of St
+-- funnel: Hamming-800 pool -> int8 cosine, top 10 [raw cosine -> calibrated (cos-0.40)/0.60]
+ cos=0.932 cal=0.89 ham= 88 frus1969-76ve09p2/d150 date=1975-06-24 flags=(0, 0) corevocab=True | 150. Memorandum of Conversation
+ cos=0.930 cal=0.88 ham= 76 frus1969-76ve09p2/d118 date=1974-10-05 flags=(0, 0) corevocab=False | 118. Information Memorandum From the Principal Deputy Assistant Secret
+ cos=0.930 cal=0.88 ham= 69 frus1977-80v18/d151 date=1977-05-24 flags=(0, 0) corevocab=False | 151. Memorandum of Conversation
+ cos=0.928 cal=0.88 ham= 87 frus1969-76ve09p2/d154 date=1975-08-11 flags=(0, 0) corevocab=False | 154. Telegram From the Embassy in Saudi Arabia to the Department of St
+ cos=0.925 cal=0.87 ham= 79 frus1977-80v18/d216 date=1980-06-03 flags=(0, 0) corevocab=False | 216. Letter From the Ambassador to Saudi Arabia (West) to President Ca
+ cos=0.924 cal=0.87 ham= 77 frus1977-80v18/d176 date=1978-12-31 flags=(0, 0) corevocab=False | 176. Report Prepared by the Ambassador to Saudi Arabia (West)
+ cos=0.923 cal=0.87 ham= 84 frus1969-76v24/d169 date=1972-12-14 flags=(0, 0) corevocab=False | 169. Briefing Paper Prepared by the National Security Council Staff
+ cos=0.923 cal=0.87 ham= 86 frus1969-76ve09p2/d112 date=1974-06-06 flags=(0, 0) corevocab=False | 112. Memorandum of Conversation
+ cos=0.922 cal=0.87 ham= 81 frus1977-80v18/d211 date=1980-04-09 flags=(0, 0) corevocab=False | 211. Paper Prepared in the Department of State
+ cos=0.921 cal=0.87 ham= 72 frus1969-76v24/d133 date=1969-11-21 flags=(0, 0) corevocab=False | 133. Memorandum From the Chairman of the Interdepartmental Group for N
+-- map placement: x=-17844 y=-12675 cluster=unclustered

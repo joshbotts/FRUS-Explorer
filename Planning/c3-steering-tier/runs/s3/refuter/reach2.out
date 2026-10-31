@@ -1,0 +1,10 @@
+family MATCH (M4/M5 scope set)                                    3163 rows    0.0s
+family MATCH without grafter (top_bm25 / header runs)             3151 rows    0.0s
+header: query                                                        2 rows    0.0s
+payments phrase MATCH (M7, logged after the neighbour list)         28 rows    0.0s
+d155 targeted plural phrases (logged after the neighbour list)      19 rows    0.0s
+foreign corrupt practic* (M17)                                       4 rows    0.0s
+oecd AND (bribe OR briberi) (M17)                                   12 rows    0.0s
+anti corrupt* (M18)                                                 54 rows    0.0s
+church subcommittee/committee (M19)                                113 rows    0.0s
+control "Department of State" (M9)                               98970 rows    0.5s

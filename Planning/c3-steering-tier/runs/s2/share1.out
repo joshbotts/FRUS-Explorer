@@ -1,0 +1,46 @@
+SQL: SELECT header, COALESCE(dateline,''), COALESCE(source_note,''), body_text FROM document_cache WHERE volume_id=? AND document_id=?
+STRICT: \b(corrupt|corruption|bribe|bribery|graft|kickback|embezzlement)\b
+TOLERANT: \b(corrupt\w*|brib\w*|graft(s|ing|er|ers|ed)?|kick[\s\-]?backs?|embezzl\w*)\b
+TELEGRAPHIC: (corrupt(ed)?\s+(group|text|word|passage|telegram|in transmission))|(group[s]?\s+corrupt)|(text\s+(is\s+)?corrupt)|garble
+hit list N = 3036
+STRICT share: 36 of 40; TOLERANT share: 40 of 40
+frus1862 d176 - T ['bribes']  | kade are known here to have been effected by connivance and bribes to the officers commanding United States vessels. I know no
+frus1867p2 d114 S T ['corrupt']  | ernment are peculiarly dangerous when the administration is corrupt, and equally harassing when the rulers are men of integrity
+frus1874 d147 S T ['corrupt']  | religion in the native pamphlet known as the “Death-blow to corrupt doctrines.” This pamphlet, it appears, was widely circulate
+frus1882 d8 S T ['corruption']  | June and its consequences. It involves the salvation or the corruption of infancy and our youth. It involves the peace or spoliati
+frus1893 d475 S T ['bribed', 'bribes', 'corrupt', 'bribed']  | ble to the agitation by the Armenian priests, and that they bribed the officials to induce them to close the church and school
+frus1894app2 d501 S T ['bribes', 'bribery']  | ll be expelled from the Legislature for giving or receiving bribes or being accessory thereto, and no person who, in due cours
+frus1904 d532 S T ['bribery']  | who are charged with or have been convicted of the crime of bribery, provided it be an extradition crime by the laws or regulat
+frus1911 d35 S T ['corrupt']  | e in damages. No suggestion is made that the decisions were corrupt, and with regard to one of them it has been stated that the
+frus1917 d540 - T ['bribed']  | e permitted himself with the consent of the President to be bribed with two thousand dollars place dynamite bomb. Location sti
+frus1919Parisv10 d10 S T ['corruption']  | ce between the various local Governments concerned, and the corruption and inefficiency of the local managements. No specific dema
+frus1922v02 d477 S T ['graft', 'graft']  | he Mayor of Port-au-Prince, who was unearthing evidences of graft covering a period of many years, together with the strong p
+frus1932v04 d170 S T ['corrupt', 'corrupt']  | so-lin and Chang Hsueh-liang, were undoubtedly personal and corrupt. The Young Marshal was sick with typhoid in Peking last sum
+frus1937v05 d474 S T ['corrupt']  | eign Minister. In view of the announced intention to remove corrupt elements which was the ostensible reason for the movement, 
+frus1943China d184 S T ['corruption']  | ngking and also, taken in conjunction with inefficiency and corruption of Central Government officials in Honan famine disaster, p
+frus1944v06 d453 S T ['corruption']  | t we are perfect. We still face problems of bureaucracy and corruption. But we do face them. And we are beating them. We welcome o
+frus1946v08 d264 S T ['corruption']  | ation of the occupying forces were remarkably free of major corruption or irregularity. As stated by the Chief of the govt section
+frus1947v07 d233 S T ['corruption', 'corruption', 'corruption']  | as established reputation as being unequivocally opposed to corruption among army and public officials. Several high ranking milit
+frus1948v07 d117 - T ['grafting']  | erest. Civil and military officials, both high and low, are grafting or are planning their escape. In the highest circles, Gener
+frus1949v08 d379 S T ['corrupt']  | fy their anxiety by saying Li would purge government of all corrupt elements, including Sun Fo, Wu Tieh-cheng and Chen Li-fu, b
+frus1950v05 d966 S T ['corruption', 'corruption']  | ty of the Tunisians, he dwelt on their asserted tendency to corruption in office. The nationalist leaders, he said, were really in
+frus1951v05 d200 S T ['corrupt', 'corruption']  | re order. Another factor is that the Wafd party is the most corrupt party that has ever been in power in recent Egyptian histor
+frus1952-54v06p2 d586 S T ['corruption']  | e said area composed series weak states dominated demagogy, corruption or both. In conclusion he agreed Secretary we must look car
+frus1952-54v13p1 d26 - T ['grafting']  | t that the Generalissimo still had too many of his old-time grafting generals around him and feared that under such leadership a
+frus1955-57v06 d245 S T ['Graft']  |  and bureaucratic reform, but little has been accomplished. Graft in Mexican governmental agencies is a widely accepted insti
+frus1955-57v21 d458 S T ['corrupt']  | on theme both Phoui and Katay regarded in Lao public eye as corrupt and reaping personal profit from United States aid program.
+frus1958-60v05 d278 S T ['graft']  | hat we do not adequately appreciate that, if there has been graft and waste, Brazil’s progress under Kubitschek has been very
+frus1958-60v15 d402 S T ['Corruption']  | w to the point of paralysis in acting on critical programs. Corruption is creeping back into the government to the extent that bus
+frus1961-63v02 d330 S T ['corruption']  |  In a situation of this kind there is a great danger of the corruption of unbridled power. This has implications far beyond the pe
+frus1961-63v17 d57 S T ['corruption', 'corruption']  | icult situation; while the people are monarchists, there is corruption and much difficulty. It would help if the U.S. could give t
+frus1964-68v01 d24 S T ['corrupt']  | ts which had been cleared, I hoped for reports showing that corrupt district officials who had been extorting and oppressing th
+frus1964-68v05 d424 S T ['corruption']  | equested slush fund would appear to run counter to the anti-corruption crusade, particularly if accomplished by individual handout
+frus1964-68v24 d230 S T ['corruption']  | the misdeeds and failures of incumbent regimes, e.g., their corruption, or economic mismanagement. Instability—the source of most 
+frus1964-68v31 d219 S T ['corruption']  | f pre-revolutionary elements associated with subversion and corruption. Governor Carlos Lacerda is in the forefront of the “hard l
+frus1969-76v19p1 d80 S T ['corruption', 'Corruption', 'corruption']  |  twin handicaps of ruinous inflation and pervasive official corruption. Political life has been no less troubled. The shortcomings
+frus1969-76v37 d249 S T ['bribery']  | , chaired by Senator Frank Church (D–ID), was investigating bribery payments by U.S. companies to foreign governments. Crude al
+frus1969-76ve06 d114 S T ['corruption', 'corruption']  | re aided by an accumulation of evidence of the ex-emperor’s corruption. The moderates favor a continuation of military rule until 
+frus1969-76ve11p1 d125 S T ['corrupt']  | st’s criticism of the Costa Rican courts as inefficient and corrupt. I asked that he send me a personal letter with the informa
+frus1969-76ve15p2 d338 S T ['corruption']  | Giscard: The Christian Democrats may lose, because of their corruption. But the Church is active now for the first time and there 
+frus1977-80v17p2 d92 S T ['corruption', 'corruption']  | d to point out that while Zaire’s critics always emphasized corruption, it was fair to say that no country was free from corruptio
+frus1977-80v24 d280 S T ['corrupt']  | at if the SET report showed that the July 16 elections were corrupt (viciadas) the GOE would have to protect the interests of t

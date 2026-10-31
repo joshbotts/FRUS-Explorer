@@ -1,0 +1,12 @@
+{
+ "label": "embezzl_word",
+ "match": "embezzl*",
+ "strict": "\\bembezzl\\w*",
+ "tolerant": "\\bembezzl\\w*",
+ "M_hitlist_excl_fm_ed_Ed2": 169,
+ "mode": "census",
+ "n": 169,
+ "strict_hits": 169,
+ "tolerant_hits": 169,
+ "tolerant_misses": []
+}

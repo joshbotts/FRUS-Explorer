@@ -1,0 +1,9 @@
+digests: {'index': '89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101', 'binary': '89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101', 'map': '89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101', 'manifest': '89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101'}
+all agree: True
+generated stamp: 2026-10-15
+version,dims,docs,cents: 1 512 314616 660
+round trip: volumes 553 sum n 314616 rows mapped 314616 == docs 314616
+random pairs n=20000 seed 1877: mean 167.14 sd 14.77 1st pct 132
+mean-8sd line: 48.99
+25th-neighbour distance over 200 random anchors (seed 1878): min 73 median 107 max 136
+retrieval keys: ['measuredBy', 'measuredRecallAt10', 'rerankPool', 'scoreCalibration']

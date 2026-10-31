@@ -1,0 +1,12 @@
+{
+ "label": "illicit_payment",
+ "match": "\"illicit payment\"",
+ "strict": "\\billicit payment\\b",
+ "tolerant": "\\billicit[\\s\\-,().]+payments?\\b",
+ "M_hitlist_excl_fm_ed_Ed2": 16,
+ "mode": "census",
+ "n": 16,
+ "strict_hits": 0,
+ "tolerant_hits": 16,
+ "tolerant_misses": []
+}

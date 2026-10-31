@@ -1,0 +1,25 @@
+structured|Central Intelligence Agency|-|-|-|92
+structured|Nixon Presidential Materials|-|NSC Files|-|78
+structured|Johnson Library|-|National Security File|-|65
+structured|Carter Library|-|National Security Affairs|-|47
+subject_numeric|National Archives|59|Central Files 1970–73|-|39
+subject_numeric|National Archives|59|Central Files 1967–69|-|35
+structured|Kennedy Library|-|National Security Files|-|23
+subject_numeric|National Archives|59|Central Files 1964–66|-|22
+lot_file|Department of State|59|-|63D351|16
+lot_file|Department of State|59|-|54D270|15
+structured|Ford Library|-|National Security Adviser|-|15
+structured|Eisenhower Library|-|Whitman File|-|14
+published|-|-|-|-|13
+unrecognized|-|-|-|-|13
+cfpf|Department of State|59|CFPF|-|9
+decimal|Department of State|59|121.893/9–1947|-|7
+decimal|National Archives|59|Central Files 1950–1954|-|7
+structured|Library of Congress|-|Manuscript Division|-|7
+subject_numeric|Department of State|59|POL 27 VIET S|-|7
+named_series|-|-|Department of State, INR – NIE Files|-|6
+structured|Johnson Library|-|Meeting Notes File|-|6
+lot_file|Department of State|59|-|59D95|5
+structured|Carter Library|-|National Security Council|-|5
+structured|Reagan Library|-|Executive Secretariat|-|5
+lot_file|Department of State|59|-|69D121|4
