@@ -8512,4 +8512,4 @@ The two `LanguageModelError` tests need iOS 27 (`.enabled(if:)`), and both ran.
 - **Apple's caveat for the permissive mode:** a model that declines may write its refusal as the answer, and it would be stored as the summary. It was seen in none of the 17 harness runs or the walk.
 - **The test that removed `lastModified` from the digest:** setting `responseText` or `bodyText` on a model no context holds left `lastModified` where it was. Whether the `didSet` runs on a model a context holds was not checked.
 
-**Not pushed, no pull request:** on the owner's word only (the merge queue is serial).
+**Pushed and opened as #1820** against `v2` on the owner's word ("Push and open PR", 2026-10-31).
