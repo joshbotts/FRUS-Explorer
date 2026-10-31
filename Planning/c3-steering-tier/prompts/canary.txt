@@ -1,0 +1,247 @@
+RESOURCES — identical for every cell of this experiment.
+
+1. A SQLite copy of the FRUS Explorer search index (a 553-volume index, taken 2026-10-25):
+     /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db
+   Open it READ-ONLY. Either of these works on this machine:
+     sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT ..."
+     sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT ..."
+   In Python: sqlite3.connect("file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro", uri=True)
+   Do NOT pass `-uri`: this sqlite3 build rejects it with "unknown option".
+   Never write to it. Tables: document_cache, frus_documents (FTS5 over the corpus text),
+   user_content (FTS5 over the reader's own notes/summaries), cross_references, document_dates,
+   persons, person_mentions, person_rollup, person_rollup_member, document_sources,
+   external_citations, document_subject_refs, document_subject_volumes, document_subjects,
+   volume_sources, volume_structures, page_ranges, user_tags, terms.
+
+2. The TEI XML corpus the index was built from, one file per volume (553 files):
+     /Users/jbotts/Library/Containers/bottsywattsy.FRUS-Explorer/Data/Library/Application Support/FRUSExplorer/volumes/*.xml
+   (the path has a space in it: quote it)
+
+3. The bundled JSON reference data shipped with the app, build 1.0 (1776):
+     "/Applications/FRUS Explorer.app/Contents/Resources"/*.json
+   including manifest.json (volume titles, coverage dates, publication dates, subseries),
+   document-subject-index.json, volume-subject-profiles-index.json, semantic-map-index.json,
+   collection-usage-index.json, external-citation-index.json, central-files-index.json,
+   collection-authority.json, series-facts-index.json, lot-claimants-index.json,
+   presidential-library-catalog.json, volume-sources-index.json, decimal-class-labels.json,
+   subject-numeric-labels.json, provenance-flow-index.json, source-provenance-index.json,
+   digitized-ranges-index.json, roll-scans-index.json, curated-lot-resolutions.json,
+   curated-library-resolutions.json, person-authority-index.json, administrations.json.
+
+4. The app's semantic vector artifacts, which the operating card below describes, read-only:
+     "/Applications/FRUS Explorer.app/Contents/Resources/semantic-vectors-index.json"     identity (run-length-encoded ids), provenance, calibration
+     "/Applications/FRUS Explorer.app/Contents/Resources/semantic-vectors-binary.bin"     Tier 1: 314,616 sign vectors of 512 bits, then 660 centroids
+     "/Applications/FRUS Explorer.app/Contents/Resources/semantic-map.bin"                the 2-D map placements
+     "/Applications/FRUS Explorer.app/Contents/Resources/semantic-map-index.json"         the map's cluster labels and era histograms
+     "/Applications/FRUS Explorer.app/Contents/Resources/semantic-shards-manifest.json"   one row per Tier-2 shard, with its SHA-256
+     /Users/jbotts/frus-analysis/c3/SemanticVectors/<volume>.vec          Tier 2: 553 int8 shards, one per volume (a copy of the
+                                              app's own folder; its .generation file holds the digest)
+   No embedder is available in this session: there is no way to turn words into a query vector,
+   so the vectors answer document-to-document questions only (Appendix A §A.5), never a free-text one.
+
+5. The guide the house rules and the card come from, as a file to consult, read-only:
+     /Users/jbotts/frus-analysis/c3s/guide/Agentic-Analysis-Guide.md
+   Appendix A there is the reference for the vector artifacts; the card below is its working part.
+
+CANARY — your FIRST tool call is exactly this command, and its output must be exactly
+553|321749|1103|8481
+     sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+Your SECOND is the read-only proof, which must FAIL with "attempt to write a readonly database":
+     sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "BEGIN; CREATE TABLE zz(x); ROLLBACK;"
+If either disagrees, stop and report it; do not improvise another way in.
+
+HARD CONSTRAINTS
+- Do NOT read anything under /Users/jbotts/Development/ (any folder in it), under
+  /Users/jbotts/Downloads/, or under any other folder of /Users/jbotts/frus-analysis/ than your
+  own run directory, the SemanticVectors folder and the guide folder named above. Those trees hold notes, memos and
+  kits about this corpus and about related questions, and reading one invalidates this run.
+- No network.
+- Write only inside your own run directory.
+
+TOOLING NOTES (this machine, measured on earlier runs; not under test)
+- A tool call that prints nothing for 180 seconds is killed, and a foreground call is killed at
+  about 120 seconds even while printing. Chunk long scans (one call per volume or per shard),
+  checkpoint to your run directory as you go, and flush (`python3 -u`). For anything longer, run it
+  in the background and poll a file.
+- `timeout` does not exist on macOS, and neither does `gtimeout`. Do not reach for either.
+- zsh does not word-split an unquoted $VAR; pass a file of ids, or an array.
+- `tee` buffers and `tee | head` SIGPIPEs the writer: poll the redirect target, not the tee.
+- Python is 3.9: no backslash inside an f-string expression; `csv.field_size_limit(10**9)`.
+- sqlite3 is 3.54.0. document_cache.body_text is large (about 1.8 GB over the corpus): aggregate
+  in SQL, read documents 5 to 15 at a time, keep the raw text you quote from on disk.
+- Python 3.9 has no `int.bit_count()` (it arrived in 3.10), so Appendix A's §A.5 loop fails as
+  printed; `bin(x).count("1")` is the 3.9 form. numpy 2.0.2 imports from the user's site
+  packages (so not under `python3 -I`), and its `np.bitwise_count` makes a full Hamming scan
+  of the 314,616 sign rows take milliseconds.
+
+
+THE TASK — this is the environment proof, not a research session. Do exactly these, in order,
+and nothing else, using the operating card's code as written (set RES and DB to the paths in
+RESOURCES). Write your run directory as /Users/jbotts/frus-analysis/c3s/runs/canary.
+1. The CANARY command above. Paste its output.
+2. The read-only proof above. Paste the error.
+3. Run the card's identity block: print how many of the 553 volumes decode to exactly their `n`,
+   and the four digests' first 8 characters; then print /Users/jbotts/frus-analysis/c3/SemanticVectors/.generation and the digest at
+   offset 16 of /Users/jbotts/frus-analysis/c3/SemanticVectors/frus1861.vec.
+4. Print the ten nearest neighbours of frus1861/d111 with the card's `nearest`, as
+   `hamming N volume/document`, nearest first.
+5. Print the random-pair mean, sd and 1st percentile, the median of `kth`, and `line`.
+6. Run the card's `flagged` on the anchor frus1861/d111 with an empty scope, the literal
+   re.compile(r"\bblockade", re.I) and k=10, and print its rows.
+7. Run the card's `near_duplicates` on the set {frus1881/d405, frus1894app2/d394, frus1861/d111}
+   and print what it returns.
+8. Write all of it to canary.txt in your run directory, and the commands to queries.log.
+Then return as your entire final message one line: DONE, the digests' first 8 characters, the
+volume count that decoded, the ten neighbours, and the near-duplicate pairs.
+
+APPENDIX A §A.9 OF THE GUIDE — the operating card.
+
+### A.9 The vectors operating card
+
+This is what a session's prompt carries of this appendix when the brief hands over the artifacts:
+the formats and the code, about a third of the appendix's length. The rules are the §12 block's
+SEMANTIC VECTORS section, and when to use them is [§14.17](#1417-the-second-finding-aid-when-the-vectors-enter-the-pass).
+The rest of this appendix is the reference, read from the guide when a question needs it. The card
+carries no figure, because every distance, share and baseline is one generation's: a session
+computes the ones it relies on.
+
+**The files.** `RES` is the bundle's `Resources/` folder and `DB` the index copy, as the brief
+names them.
+- `semantic-vectors-index.json`: identity, provenance and the retrieval block.
+- `semantic-vectors-binary.bin`: Tier 1, one sign vector per document, then the volume and
+  subseries centroids.
+- `semantic-map.bin` and `semantic-map-index.json`: the 2-D layout and its clusters.
+- `semantic-shards-manifest.json` and the shard folder's `<volume>.vec` files: Tier 2, int8
+  vectors for reranking (§A.6).
+
+**The one family rule** (§A.2). Every artifact carries the same 32-byte provenance digest:
+- the index's `provenanceDigest`, in hex;
+- bytes 20–51 of the corpus binary and of the map;
+- bytes 16–47 of each shard;
+- the shards manifest's `provenanceDigest`, and the shard folder's `.generation` file.
+
+Compare every one you touch before any scoring, and on a mismatch stop and say so.
+
+**The layouts** (§A.4). Each file is little-endian, with a 64-byte header. Read `dims` from the
+header rather than assuming it.
+
+```
+semantic-vectors-binary.bin  0 "FRSV" | 4 version | 8 dims | 12 documents | 16 centroids | 20 digest
+                             64: sign bits, documents x dims/8 B, MSB-first, a set bit when >= 0;
+                             then centroids x (dims + 4) B: int8 codes, then a Float32 scale
+<volume>.vec                 0 "FRSS" | 4 version | 8 dims | 12 documents | 16 digest
+                             64: int8 codes, documents x dims B; then Float32 scales, documents x 4 B
+semantic-map.bin             0 "FRSM" | 4 version | 8 documents | 12 clusters | 16 grid | 20 digest
+                             64: documents x 6 B (int16 x, int16 y, uint16 cluster; 0xFFFF unclustered)
+```
+
+**Identity is stored, never derived** (§A.3). An id guessed from a row's ordinal mis-keys every
+document behind a letter-suffixed id, and nothing fails: the scores stay plausible.
+
+```python
+import json, random, re, sqlite3, statistics, struct
+import numpy as np                                  # numpy 2: bitwise_count
+idx = json.load(open(RES + "/semantic-vectors-index.json"))
+
+def numeric_part(doc_id):
+    digits = doc_id[1:]
+    if not doc_id.startswith("d") or not digits.isdigit(): return None
+    if len(digits) > 1 and digits[0] == "0": return None
+    return int(digits)
+
+row_of, doc_of = {}, {}
+for v in idx["volumes"]:
+    ids = []
+    for seg in v["seg"]:
+        assert seg["s"] == len(ids)
+        ids.append(seg["i"])
+        if seg["n"] > 1:
+            base = numeric_part(seg["i"])
+            ids.extend(f"d{base + k}" for k in range(1, seg["n"]))
+    assert len(ids) == v["n"]                       # the round trip, for every volume
+    for k, d in enumerate(ids):
+        row_of[(v["v"], d)] = v["r"] + k
+        doc_of[v["r"] + k] = (v["v"], d)
+
+blob = open(RES + "/semantic-vectors-binary.bin", "rb").read()
+ver, dims, docs, cents = struct.unpack("<IIII", blob[4:20])
+digests = {"index": idx["provenanceDigest"], "binary": blob[20:52].hex(),
+           "map": open(RES + "/semantic-map.bin", "rb").read(52)[20:52].hex(),
+           "manifest": json.load(open(RES + "/semantic-shards-manifest.json"))["provenanceDigest"]}
+assert len(set(digests.values())) == 1, digests
+```
+
+**Neighbours, and the two baselines** (§A.5). A neighbour is read against the k-th-neighbour
+distribution, and a set's cohesion against random pairs. With numpy 2 a full Hamming scan takes
+milliseconds. Without numpy, `bin(x).count("1")` over `int.from_bytes(row, "big")` does the same
+on Python 3.9, which has no `int.bit_count()`, at a few seconds a scan.
+
+```python
+bits = np.frombuffer(blob, dtype=">u8", count=docs * dims // 64, offset=64).reshape(docs, dims // 64)
+ED2 = ("frus1951-54IranEd2", "frus1969-76ve15p2Ed2")   # their first editions are in the corpus
+skip = np.array([doc_of[r][0] in ED2 for r in range(docs)])
+
+def distances(row):
+    d = np.bitwise_count(bits ^ bits[row]).sum(axis=1).astype(np.int64)
+    d[skip] = 1 << 20
+    d[row] = 1 << 20
+    return d
+
+def nearest(key, k=25):                            # ties go by row, so a tie at the k-th place
+    d = distances(row_of[key])                      # can differ from §A.5's printed list
+    return [(int(d[r]), doc_of[int(r)]) for r in np.argsort(d, kind="stable")[:k]]
+
+rng = random.Random(1877)
+pairs = [int(np.bitwise_count(bits[rng.randrange(docs)] ^ bits[rng.randrange(docs)]).sum())
+         for _ in range(20000)]
+mean, sd = statistics.mean(pairs), statistics.pstdev(pairs)
+first_pct = sorted(pairs)[len(pairs) // 100]
+kth = sorted(int(np.sort(distances(r))[24]) for r in random.Random(1878).sample(range(docs), 200))
+```
+
+**The three-flag join** ([§14.17](#1417-the-second-finding-aid-when-the-vectors-enter-the-pass)
+step 2). `scope` is the set of `(volume_id, document_id)` pairs you have built, and `literal` a
+regex for the question's own word, compiled with `re.I`.
+
+```python
+con = sqlite3.connect("file:" + DB + "?mode=ro", uri=True)
+def joined(key):
+    return con.execute(
+        "SELECT c.header, c.body_text, t.date_iso FROM document_cache c LEFT JOIN document_dates t "
+        "ON t.volume_id = c.volume_id AND t.document_id = c.document_id "
+        "WHERE c.volume_id = ? AND c.document_id = ?", key).fetchone()
+
+def flagged(anchor, scope, literal, k=25):
+    a_date = (joined(anchor) or ("", "", ""))[2] or ""
+    rows = []
+    for h, key in nearest(anchor, k):
+        row = joined(key)
+        if row is None:                             # Tier 1 covers volumes this database lacks
+            rows.append((h, key, "NOT IN THIS DATABASE"))
+            continue
+        header, body, date = row
+        rows.append((h, key, date,
+                     "IN-SCOPE" if key in scope else "OUTSIDE",
+                     "SAME-DECADE" if date and date[:3] == a_date[:3] else "OTHER-DECADE",
+                     "LITERAL" if literal.search(header + " " + body) else "ABSENT"))
+    return rows
+```
+
+**Near-duplicates before any count** ([§14.9](#149-where-the-corpus-double-counts-itself)). Read
+both documents of every pair the check returns, and count a pair once only when the two texts agree.
+
+```python
+line = mean - 8 * sd
+def near_duplicates(scope):
+    rows = sorted(row_of[k] for k in scope if k in row_of)
+    found = []
+    for i, a in enumerate(rows[:-1]):
+        d = np.bitwise_count(bits[rows[i + 1:]] ^ bits[a]).sum(axis=1)
+        found += [(int(h), doc_of[a], doc_of[b]) for h, b in zip(d, rows[i + 1:]) if h < line]
+    return sorted(found)
+```
+
+**The map**, when §14.10's label test needs it. A document's cluster is the uint16 at byte
+`64 + 6 * row + 4` of `semantic-map.bin`. Its labels and era histogram are in
+`semantic-map-index.json`: read that file's top-level keys before writing the accessor. Tier-2
+reranking (§A.6) and free-text queries (§A.7) are in the guide.

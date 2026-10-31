@@ -1,0 +1,52 @@
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"  -> 553|321749|1103|8481
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "BEGIN; CREATE TABLE zz(x); ROLLBACK;" -> Error in 3rd command line argument: attempt to write a readonly database
+# schema inspection: sqlite3 $DB ".schema document_cache" etc.
+sqlite3 "$DB" < q1.sql   # (q1.sql in run dir; SQL is in that file)
+sqlite3 "$DB" < q2.sql
+python3 s.py "<expr>" N [dmin dmax]   # helper s.py in run dir: FTS MATCH on frus_documents joined to document_cache rowid, document_dates; front/editorial excluded; ordered by bm25 ASC
+python3 q3.py   # per-term doc counts (body_text MATCH, apparatus excluded) incl. controls
+python3 q4.py  # union core vocabulary by decade, per-1000, top-volume share; writes core_hits.json (all core hit pairs)
+python3 s.py (several NEAR queries; see q5 section of log)
+python3 dump.py vol/doc ...   # helper: writes full body_text to docs/ and records sql length vs captured length in docs/_retrieved.jsonl;  python3 kw.py vol/doc [regex] [width]  # KWIC over the dumped file
+python3 sample.py  # evenly spaced 40 of core_hits.json (sorted by (volume_id,document_id), Ed2 volumes suppressed); STRICT/TOLERANT regex share; writes sample40.json
+python3 vecsetup.py/v0.py/v1.py  # digest comparison, id round trip, baselines (random pairs Random(1877) x20000; 200-doc k-th neighbour sample Random(1877)); outputs saved in vec_*.txt
+python3 v2.py frus1964-68v05/d258 frus1922v01/d841 frus1969-76ve09p2/d155  # nearest neighbours (Hamming), funnel rerank with Tier-2 shards, map placement; output vec_v2.txt
+python3 verify_quotes.py  # checks every quotation/excerpt (quotes.py) as a whitespace-collapsed substring of the body_text selected by: SELECT body_text FROM document_cache WHERE volume_id=? AND document_id=? AND is_front_matter=0 AND is_editorial_note=0; writes quotes_verified.json
+python3 archival.py > archival_results.txt   # ranks archival targets over scope S (volumes of the 38 collection documents) from collection-usage-index.json (came-from) and external-citation-index.json (pointed-at); names via collection-authority.json, central-files-index.json, series-facts-index.json
+python3 arch2.py > arch2_results.txt   # came-from and pointed-at over the 3,058 core-vocabulary hit documents; SQL printed inside the output
+inline python over series-facts-index.json and central-files-index.json for NAIDs 602875, 2658382, 2839192, 602231, 1487627 -> arch3_results.txt
+python3 ctrl.py > ctrl_results.txt   # false-friend test, positive/negative controls, coverage, period vocabulary; SQL pattern printed in the output
+sqlite3 $DB 'SELECT COUNT(*) ... MATCH body_text:<pecul*|defalc*|malvers*|embezzl*>' (stem-variant check for zero rows in ctrl.py)
+python3 tei_scan.py  # [TEI] counting surface = tag-stripped + whitespace-collapsed raw TEI of 551 volumes (Ed2 duplicates suppressed), case-insensitive word-bounded regex per spelling variant; writes tei_scan.json
+python3 v3.py > vec_v3.txt   # centroid similarity, map placements of the 38 collection docs vs volume-matched baseline, near-duplicate check
+python3 q4b.py > q4b_results.txt   # q4.py with the two Ed2 volumes suppressed in numerators and denominators
+hand coding of sample40.json KWIC windows -> sample40_coding.json (referent_ok: sense of the question; decision_or_conduct_link: the passage ties corruption to a US decision or American conduct); judgement, not SQL
+python3 verify_ov.py  # verifies the quotations used in overview.md / collection excerpts (quotes_ov.py) as whitespace-collapsed substrings of body_text via: SELECT body_text FROM document_cache WHERE volume_id=? AND document_id=? AND is_front_matter=0 AND is_editorial_note=0
+python3 build_collection.py  # writes collection.fruscollection; validates each (volumeId,documentId) exists in document_cache via SELECT 1 FROM document_cache WHERE volume_id=? AND document_id=?, no duplicates, no Ed2, every excerpt a whitespace-collapsed substring of body_text
+python3 arch_collection.py > arch_collection_results.txt  # came-from channel for the 38 collection documents (SQL printed in output)
+sqlite3 $DB: core-family hits dated >=1990 and volumes of docs dated >=1990 (checks for memo N9)
+
+# ---- Ordered record of the shell commands run (written at the end from the session's own call sequence; the lines above were appended as I went and describe the helper scripts) ----
+# 1  sqlite3 "file:...frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"   -> 553|321749|1103|8481
+# 2  sqlite3 -readonly ...db "BEGIN; CREATE TABLE zz(x); ROLLBACK;"   -> Error ... attempt to write a readonly database
+# 3  mkdir -p /Users/jbotts/frus-analysis/c3s/runs/s5 ; (log created)
+# 4  sqlite3 "$DB" ".schema document_cache" ".schema frus_documents" ".schema document_dates" ".schema document_sources" ".schema external_citations" ".schema cross_references" ".schema terms"
+# 5  sqlite3 "$DB" < q1.sql   (statement 1 ran; statement 2 failed to parse: no such table hits)
+# 6  sqlite3 "$DB" < q2.sql
+# 7  python3 s.py 'body_text:corrupt AND body_text:aid' 12
+# 8  python3 q3.py ; python3 q4.py
+# 9  python3 s.py 'body_text:NEAR(corrupt aid, 10)' 14 1944-01-01 1950-12-31
+# 10 python3 dump.py frus1947v05/d23 frus1947v07/d553 frus1948v07/d440 frus1949v08/d576 ; python3 kw.py <each> 'corrupt' 450
+# 11 python3 s.py 'body_text:corrupt AND body_text:(China OR Chinese OR Kuomintang)' 14 1947-06-01 1949-12-31
+# 12 python3 dump.py (Vietnam/Congo/Iran/Philippines/Cuba/Nigeria/1986/Korea/DR candidates) ; python3 kw.py ...
+# 13 python3 s.py (questionable/illicit payments family, NEAR(corrupt Diem...), Marcos, loans/customs 1900-1925, extraterritoriality, NEAR(corrupt Congress), suspension query)  [expressions listed in memo section 3]
+# 14 python3 dump.py (Illicit-payments docs, Cuba 1922 docs, Vietnam 1960 docs, 1921/1898/1887/1927/1893 docs, Truman-Attlee, Gauss 1944, Burma 1955, Crowder neighbours) ; python3 kw.py ...
+# 15 python3 sample.py   (40-document share test)
+# 16 python3 quotes.py/verify_quotes.py ; python3 docs_list.py check ; python3 meta check (manifest titles, document_number)
+# 17 python3 v0.py ; python3 v1.py ; python3 v2.py frus1964-68v05/d258 frus1922v01/d841 frus1969-76ve09p2/d155 ; python3 v3.py
+# 18 python3 archival.py ; python3 arch2.py ; python3 arch_collection.py ; inline python over the bundled JSON (central-files-index, curated-lot-resolutions, collection-authority, series-facts-index, presidential-library-catalog, collection-usage-index, external-citation-index): structure inspection and NAID lookups
+# 19 python3 ctrl.py ; sqlite3 "$DB" stem-variant checks for 'pecul*' 'defalc*' 'malvers*' 'embezzl*' ; python3 -u tei_scan.py (background, 551 files)
+# 20 python3 q4b.py ; python3 verify_ov.py ; python3 gen_overview.py ; python3 build_collection.py ; python3 gen_memo.py
+# 21 sqlite3 "$DB" (core-family hits dated >=1990; volumes of documents dated >=1990)
+# Reads of local files only: /Applications/FRUS Explorer.app/Contents/Resources/*.json,*.bin ; /Users/jbotts/frus-analysis/c3/SemanticVectors/*.vec ; TEI XML volumes (tei_scan.py). No network. No path under /Users/jbotts/Development/, /Users/jbotts/Downloads/ or another frus-analysis folder was opened. (One string in the index's own retrieval.measuredBy field names a planning memo; it was quoted from the JSON and the memo was not opened.)
+ELIDED: Python heredoc and script bodies are kept as files in this directory (not repeated here); the lists of (volume_id, document_id) pairs passed to dump.py are summarised by family above (the 66 retrieved pairs are in docs/_retrieved.jsonl); ~150 intermediate snippet lines from s.py searches and the KWIC windows printed by kw.py were not copied into the memo; the 3,096 hit pairs are in core_hits.json and the 3,058 Ed2-suppressed pairs in core_hits_ed2suppressed.json.

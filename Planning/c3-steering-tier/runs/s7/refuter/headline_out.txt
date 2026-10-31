@@ -1,0 +1,62 @@
+--M1 coverage: vols,docs,front,ednote|553|321749|1103|8481
+--M1 nonapp denominator|312169
+--M1 nonapp denominator without Ed2|311429
+--M2 set h docs, vols|2699|435
+--M2 total volumes|553
+--M9 citation_era|decimal|1118
+--M9 citation_era|structured|600
+--M9 citation_era|lot_file|185
+--M9 citation_era|subject_numeric|175
+--M9 citation_era|cfpf|116
+--M9 citation_era|named_series|51
+--M9 citation_era|published|20
+--M9 citation_era|unrecognized|15
+--M9 citation_era|foreign|2
+--M9 decimal by repo/RG|Department of State|59|1078
+--M9 decimal by repo/RG|Department of State|256|29
+--M9 decimal by repo/RG|National Archives|59|11
+--M9 no document_sources row|417
+--M9 decimal_class|893.00|152
+--M9 decimal_class||63
+--M9 decimal_class|751G.00|33
+--M9 decimal_class|788.00|24
+--M9 decimal_class|861.00|22
+--M9 decimal_class|795B.00|22
+--M10 anchor rows/docs|centralFileClass|383|225
+--M10 anchor rows/docs|lotFile|121|83
+--M10 anchor rows/docs|presidentialLibrary|160|118
+--M10 pointed-at decimal class|751G.00|16|1952-05-10|1954-10-27
+--M10 pointed-at decimal class|795B.00|18|1952-06-13|1962-06-15
+--M10 pointed-at top|centralFileClass|Department of State|||225
+--M10 pointed-at top|presidentialLibrary|Carter Library|National Security Affairs||27
+--M10 pointed-at top|presidentialLibrary|Johnson Library|National Security File||22
+--M10 pointed-at top|presidentialLibrary|Nixon Presidential Materials|NSC Files||21
+--M10 pointed-at top|lotFile|Department of State||66D95|13
+--M10 pointed-at top|lotFile|Department of State||63D351|8
+--M10 pointed-at top|presidentialLibrary|Eisenhower Library|Whitman File||7
+--M10 pointed-at top|presidentialLibrary|Johnson Library|President’s Daily Diary||6
+--M10 pointed-at top|lotFile|Department of State||62D1|4
+--M10 pointed-at top|lotFile|Department of State||62D430|4
+--M10 pointed-at top|presidentialLibrary|Kennedy Library|National Security Files||4
+--M10 pointed-at top|lotFile|Department of State||62D181|3
+--M9 came-from top|Central Intelligence Agency||||110
+--M9 came-from top|Nixon Presidential Materials||NSC Files||93
+--M9 came-from top|Johnson Library||National Security File||71
+--M9 came-from top|Carter Library||National Security Affairs||55
+--M9 came-from top|National Archives|59|Central Files 1970–73||41
+--M9 came-from top|National Archives|59|Central Files 1967–69||39
+--M9 came-from top|||||35
+--M9 came-from top|Ford Library||National Security Adviser||26
+--M9 came-from top|Kennedy Library||National Security Files||25
+--M9 came-from top|Eisenhower Library||Whitman File||24
+--M9 came-from top|National Archives|59|Central Files 1964–66||23
+--M9 came-from top|Department of State|59||54D270|17
+--M9 came-from top|Department of State|59||63D351|16
+--M9 came-from top|Department of State|59|CFPF||16
+--M4 fcpa docs,vols|4|2
+--M4 illicit docs,vols|16|4
+--M4 qp docs,vols|9|9
+--M4 klepto|0
+--M4 dept of state docs,vols|94049|552
+--M4 corrupt* docs,vols|2211|401
+--M4 bribe docs,vols|670|282

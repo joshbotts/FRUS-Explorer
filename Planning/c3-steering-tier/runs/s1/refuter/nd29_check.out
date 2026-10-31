@@ -1,0 +1,33 @@
+== pairwise Hamming among the 29 ==
+minimum in-set distance: (54, (('frus1969-76ve12', 'd218'), ('frus1969-76ve12', 'd219')))
+
+== nearest corpus neighbour of each of the 29, Ed2 NOT masked (a twin would sit near 0) ==
+frus1950v06/d832: nearest 74 bits -> frus1950v06/d830 
+frus1950v06/d841: nearest 92 bits -> frus1950v06/d830 
+frus1961-63v23/d356: nearest 104 bits -> frus1961-63v23/d358 
+frus1961-63v23/d358: nearest 104 bits -> frus1961-63v23/d356 
+frus1977-80v23/d252: nearest 72 bits -> frus1977-80v23/d253 
+frus1958-60v01/d111: nearest 70 bits -> frus1955-57v01/d409 
+frus1958-60v01/d135: nearest 86 bits -> frus1958-60v01/d244 
+frus1964-68v05/d197: nearest 74 bits -> frus1964-68v01/d187 
+frus1964-68v05/d258: nearest 97 bits -> frus1958-60v01/d55 
+frus1964-68v05/d395: nearest 71 bits -> frus1964-68v04/d216 
+frus1964-68v07/d91: nearest 64 bits -> frus1964-68v07/d285 
+frus1969-76v06/d175: nearest 86 bits -> frus1964-68v06/d49 
+frus1917-72PubDipv07/d177: nearest 76 bits -> frus1917-72PubDipv07/d172 
+frus1969-76ve09p2/d122: nearest 81 bits -> frus1977-80v18/d154 
+frus1969-76v27/d45: nearest 102 bits -> frus1969-76v27/d35 
+frus1969-76ve05p2/d119: nearest 68 bits -> frus1969-76ve05p2/d125 
+frus1977-80v18/d206: nearest 70 bits -> frus1977-80v18/d143 
+frus1969-76ve11p1/d159: nearest 119 bits -> frus1958-60v05mSupp/ho_d20 
+frus1969-76ve09p2/d161: nearest 75 bits -> frus1969-76ve09p2/d162 
+frus1969-76ve12/d218: nearest 54 bits -> frus1969-76ve12/d219 
+frus1969-76ve12/d219: nearest 54 bits -> frus1969-76ve12/d218 
+frus1969-76ve12/d224: nearest 95 bits -> frus1969-76ve12/d219 
+frus1969-76ve15p2/d292: nearest 0 bits -> frus1969-76ve15p2Ed2/d292 <-- UNDER THE LINE
+frus1969-76v31/d149: nearest 52 bits -> frus1977-80v03/d28 
+frus1977-80v03/d248: nearest 72 bits -> frus1977-80v03/d230 
+frus1961-63v22/d244: nearest 65 bits -> frus1961-63v22/d268 
+frus1961-63v22/d249: nearest 75 bits -> frus1961-63v22/d244 
+frus1943China/d202: nearest 59 bits -> frus1947v07/d591 
+frus1944v06/d269: nearest 71 bits -> frus1944v06/d277 

@@ -1,0 +1,19 @@
+54D270 candidates: [('871815', 'Background Materials'), ('872082', 'Top Secret Documents'), ('872083', 'Reference Subject Files'), ('872084', 'Cables Sent'), ('872088', 'Cables Received'), ('872089', 'Drafts of Telegrams, Letters, and Memorandums'), ('872090', "General George C. Marshall's Report on His Mission to China"), ('872091', 'Records Relating to Political Affairs'), ('872099', 'Records Relating to Military Affairs'), ('872132', "Ribbon Copy of General George C. Marshall's Report on His Mission to China")]
+curated series conferenceFiles: {"naId": "602875", "title": "Conference Files", "catalogURL": "https://catalog.archives.gov/id/602875", "hmsMlrEntryNumbers": ["A1 3051B"], "dateRange": "1949\u20131972", "recordGroup": "RG-59", "rationale": "Matched by collection name, not by control number. NARA's Conference Files series carries nine other lot numbers from this run of accessions but not this one, and its 1949\u20131972 span covers the citation."}
+scope volumes (the cited documents' 12): ['frus1944v06', 'frus1946v10', 'frus1947v07', 'frus1948v07', 'frus1955-57v13', 'frus1958-60v01', 'frus1958-60v12', 'frus1961-63v22', 'frus1964-68v05', 'frus1964-68v22', 'frus1969-76ve09p2', 'frus1969-76ve12', 'frus1969-76ve15p2', 'frus1977-80v03']
+top pointed-at collections (footnote notes naming them), over those 12 volumes:
+   txt:department of state|central file 918
+   lot:54D270 439
+   txt:johnson library|national security file 214
+   txt:ford library|national security advisor 211
+   txt:nixon|nsc file 178
+   txt:department of state|central files 1967-69 171
+   txt:carter library|national security affair 150
+   txt:kennedy library|national security file 79
+   txt:eisenhower library|whitman file 73
+   txt:ford library|nsc institutional file 57
+   txt:national archives|records of the office of the counselor 37
+   txt:carter library|national security council 33
+   txt:library of congress|manuscript division 33
+   txt:national archives|transcripts of secretary of state kissinger's staff meeting 32
+   lot:66D193 30

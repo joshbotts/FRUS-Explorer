@@ -1,0 +1,1 @@
+NEAR(corrupt aid, 25) OR NEAR(corrupt assistance, 25) OR NEAR(corrupt support, 25) OR NEAR(corrupt withhold, 25) OR NEAR(corrupt condition, 25) OR NEAR(corrupt suspend, 25) OR NEAR(corrupt confidence, 25) OR NEAR(corrupt congress, 25) OR NEAR(corrupt reform, 25)

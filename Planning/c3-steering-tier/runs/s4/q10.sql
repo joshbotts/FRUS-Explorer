@@ -1,0 +1,13 @@
+.timeout 100000
+SELECT 'FCPA phrase', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '"foreign corrupt practices"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'teapot dome', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '"teapot dome"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'spoils system', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '"spoils system"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'watergate', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'watergate' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'abscam', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'abscam' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'transparency international', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '"transparency international"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'anticorruption OR anti-corruption phrase', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '"anti corruption"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'POSITIVE control department of state', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH '"department of state"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'NEGATIVE control ZZZ_IMPOSSIBLE_ZZZ', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'zzz_impossible_zzz' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'RELAXED for negative: corrupt', COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH 'corrupt' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'FCPA docs:', c.volume_id||'/'||c.document_id, d.date_iso FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid LEFT JOIN document_dates d ON d.volume_id=c.volume_id AND d.document_id=c.document_id WHERE frus_documents MATCH '"foreign corrupt practices"' AND c.is_front_matter=0 AND c.is_editorial_note=0;
+SELECT 'latest dated doc with corruption family', MAX(d.date_iso) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid JOIN document_dates d ON d.volume_id=c.volume_id AND d.document_id=c.document_id WHERE frus_documents MATCH 'corrupt' AND c.is_front_matter=0 AND c.is_editorial_note=0;

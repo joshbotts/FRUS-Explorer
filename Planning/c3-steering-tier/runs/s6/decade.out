@@ -1,0 +1,38 @@
+## any>=1
+1840s 1 of 143 7.0 per1000 top vol frus1902app2 1 of 1
+1850s 1 of 158 6.3 per1000 top vol frus1894app2 1 of 1
+1860s 121 of 11268 10.7 per1000 top vol frus1868p2 17 of 121
+1870s 114 of 5821 19.6 per1000 top vol frus1872p1 12 of 114
+1880s 82 of 6484 12.6 per1000 top vol frus1888p2 14 of 82
+1890s 127 of 9845 12.9 per1000 top vol frus1894app2 45 of 127
+1900s 113 of 10261 11.0 per1000 top vol frus1906p1 17 of 113
+1910s 197 of 30842 6.4 per1000 top vol frus1913 18 of 197
+1920s 85 of 20374 4.2 per1000 top vol frus1922v01 8 of 85
+1930s 130 of 40073 3.2 per1000 top vol frus1933v02 11 of 130
+1940s 497 of 75872 6.6 per1000 top vol frus1947v07 74 of 497
+1950s 587 of 42801 13.7 per1000 top vol frus1951-54Iran 33 of 587
+1960s 608 of 27654 22.0 per1000 top vol frus1964-68v05 44 of 608
+1970s 506 of 22258 22.7 per1000 top vol frus1969-76ve11p1 40 of 506
+1980s 133 of 6038 22.0 per1000 top vol frus1981-88v01 19 of 133
+1990s 1 of 177 5.6 per1000 top vol frus1989-92v31 1 of 1
+total dated 3303
+## core>=3
+1840s 0 of 143 0.0 per1000 
+1850s 0 of 158 0.0 per1000 
+1860s 13 of 11268 1.2 per1000 top vol frus1868p2 3 of 13
+1870s 18 of 5821 3.1 per1000 top vol frus1876 3 of 18
+1880s 19 of 6484 2.9 per1000 top vol frus1888p2 4 of 19
+1890s 28 of 9845 2.8 per1000 top vol frus1894app2 18 of 28
+1900s 36 of 10261 3.5 per1000 top vol frus1903 6 of 36
+1910s 26 of 30842 0.8 per1000 top vol frus1918 3 of 26
+1920s 20 of 20374 1.0 per1000 top vol frus1922v01 3 of 20
+1930s 13 of 40073 0.3 per1000 top vol frus1932v04 3 of 13
+1940s 48 of 75872 0.6 per1000 top vol frus1947v07 11 of 48
+1950s 66 of 42801 1.5 per1000 top vol frus1950v06 7 of 66
+1960s 94 of 27654 3.4 per1000 top vol frus1958-60v01 11 of 94
+1970s 81 of 22258 3.6 per1000 top vol frus1969-76ve04 6 of 81
+1980s 26 of 6038 4.3 per1000 top vol frus1977-80v15 4 of 26
+1990s 0 of 177 0.0 per1000 
+total dated 488
+core docs 488 volumes 207
+>=5 docs 143 volumes 86

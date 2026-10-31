@@ -1,0 +1,66 @@
+== 1. sample of forty (stat1.py's sampling, re-run) ==
+N 2175 STRICT 34 of 40 | TOLERANT 40 of 40
+  item  1 frus1862/d406: ...s necessary to the safety or prosperity of any State or section. It was carried on in defiance of our laws by corrupting the administration of justice. The treaty to which you refer contains no provisions that can embarrass an hon...
+  item  2 frus1867p1/d564: ...mpt against morals, by exciting, facilitating, or favoring, to satisfy the passions of others, debauchery, or corruption of minors of either sex. 20. For blows and wounds given wilfully with premeditation or ambush, or having caus...
+  item  7 frus1915Supp/d1325: ...hased large quantities of explosive materials, have incited strikes in the munition factories, have sought to corrupt the press, and have spread far-reaching agitation for the effecting of an embargo in the different American c...
+  item  8 frus1919Parisv04/d12: ... intimidation and bribery. They were dealing with a starving population, whose consciences it was not hard to corrupt. The Serbian Government considered that the time had come for the annexation it had premeditated. By means of...
+  item 22 frus1955-57v06/d315: ...no voice of opposition on the smallest matter is raised to Trujillo. Lord Acton’s dictum about absolute power corrupting absolutely applies in full force to Generalissimo Trujillo. Twenty-six years of absolute power, during which ...
+  item 40 frus1977-80v28/d41: ...ts have always assumed extraordinary powers. This makes such activities susceptible to abuses more grave than corruption or misuse of authority that any public or private enterprise must protect against. Prevention of such abuses ...
+sample identical to stat1_sample.txt: True
+
+== 2. TEI control sums from teiscan.csv ==
+rows: 553 columns: ['volume', 'corruption', 'corrupt(adj)', 'corrupted', 'corruptly', 'corrupting/corrupts', 'corruptionist', 'bribe', 'bribed/bribing', 'bribery', 'graft', 'kickback', 'embezzle*', 'venal*', 'malfeasance', 'nepotism', 'cronyism', 'payoff', 'peculation', 'squeeze', 'questionable payments', 'FCPA', 'Foreign Corrupt Practices', 'CONTROL+ Department of State', 'CONTROL- ZZZ_IMPOSSIBLE_ZZZ']
+   corruption (2427, 331)
+   corrupt(adj) (977, 294)
+   corrupted (95, 76)
+   corruptly (13, 12)
+   corrupting/corrupts (63, 51)
+   corruptionist (9, 7)
+   bribe (410, 193)
+   bribed/bribing (142, 90)
+   bribery (436, 167)
+   graft (397, 140)
+   kickback (27, 22)
+   embezzle* (381, 88)
+   venal* (185, 106)
+   malfeasance (85, 62)
+   nepotism (55, 37)
+   cronyism (7, 6)
+   payoff (244, 107)
+   peculation (36, 25)
+   squeeze (653, 248)
+   questionable payments (8, 8)
+   FCPA (11, 1)
+   Foreign Corrupt Practices (9, 2)
+   CONTROL+ Department of State (178538, 553)
+   CONTROL- ZZZ_IMPOSSIBLE_ZZZ (0, 0)
+
+== 3. reading.log ==
+dumps: 68 distinct: 63
+all 29 cited were dumped whole: True
+docs/ files: 63
+dumped length != stored length among the 29: []
+
+== 4. Lockheed census, the exact logged query ==
+rows: 46
+Ed2 rows: [('frus1969-76ve15p2Ed2/d292', '1975-09-30'), ('frus1969-76ve15p2Ed2/d293', '1975-10-07'), ('frus1969-76ve15p2Ed2/d377', '1976-09-11')]
+without Ed2: 43
+
+== 5. decade table re-run (Q1/Q2 of M3.3), 1930s and 1960s only ==
+   1870s 5821 64 per1000=11.0
+   1930s 40073 60 per1000=1.5
+   1940s 75872 353 per1000=4.7
+   1960s 27654 456 per1000=16.5
+  undated non-apparatus (Ed2 suppressed): (1178,)
+
+== 6. the 12 text-agreeing near-duplicate pairs vs the 'corrupt' hit set (M6.5: 4 pairs) ==
+pairs with both in the stem set: 4 [(('frus1894Nicaragua', 'd12'), ('frus1894app1', 'd263')), (('frus1894app2', 'd70'), ('frus1894app2', 'd186')), (('frus1950v03', 'd732'), ('frus1950v07', 'd1002')), (('frus1894app2', 'd73'), ('frus1894app2', 'd192'))]
+
+== 7. date spans ==
+index document_dates min/max: ('1620-11-03', '2024-03-01')
+cited 29 min/max: ('1943-06-24', '1980-07-29')
+overview says 'read 63 documents whole', 'kept 29', 'quoted 17 passages': True True True
+
+== 8. false-friend test re-run (M3.6), corrupt only ==
+   finding 252 of 5346 (47.1/1000)
+   other 994 of 89167 (11.1/1000)

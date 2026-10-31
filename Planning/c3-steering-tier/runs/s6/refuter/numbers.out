@@ -1,0 +1,72 @@
+== volumes
+distinct volumes in document_cache: 553
+volumes ending Ed2: ['frus1951-54IranEd2', 'frus1969-76ve15p2Ed2', 'frus1977-80v09Ed2']
+non-Ed2 volumes: 551
+== N2 denominator
+non-apparatus, non-Ed2 documents: 311429
+== N3/N4: FTS inventory + family regex (memo's stated predicate)
+FTS candidate rows: 3353
+>=1 family match: 3174 | per 100 = 1.02 | 1 in 98.1
+>=3 family matches: 479 in 203 volumes | 1 in 650.2
+>=5 family matches: 140 in 86 volumes
+== cited documents in overview.md (by URL)
+distinct cited pairs: 30 | URL mentions: 34
+cited volumes: 20
+scope_keys.txt pairs: 30 | same set as overview URLs: True
+cited pairs in core (>=3): 21 of 30
+cited pairs with >=1 family match: 26
+cited pairs NOT in FTS inventory at all: ['frus1948v07/d590', 'frus1969-76ve12/d222', 'frus1977-80v13/d95']
+cited pairs family counts: {'frus1969-76v06/d175': 18, 'frus1961-63v23/d355': 4, 'frus1969-76ve12/d219': 2, 'frus1977-80v13/d94': 1, 'frus1958-60v01/d111': 12, 'frus1958-60v01/d160': 8, 'frus1964-68v04/d280': 3, 'frus1964-68v05/d197': 16, 'frus1964-68v05/d258': 15, 'frus1943China/d202': 7, 'frus1944v06/d269': 7, 'frus1947v07/d591': 6, 'frus1948v07/d590': 0, 'frus1961-63v17/d27': 14, 'frus1961-63v22/d249': 10, 'frus1969-76ve09p2/d122': 56, 'frus1977-80v18/d206': 9, 'frus1977-80v23/d252': 10, 'frus1969-76ve09p2/d152': 1, 'frus1969-76ve09p2/d161': 7, 'frus1969-76ve15p2/d293': 1, 'frus1969-76ve15p2/d292': 3, 'frus1969-76ve12/d222': 0, 'frus1969-76ve12/d224': 1, 'frus1969-76ve09p1/d49': 3, 'frus1977-80v03/d248': 15, 'frus1977-80v13/d92': 0, 'frus1977-80v13/d95': 0, 'frus1894app2/d255': 6, 'frus1894app2/d306': 22}
+== N15: source lines and external citations for the cited pairs
+with a document_sources row: 28 of 30
+without: ['frus1894app2/d255', 'frus1894app2/d306']
+with external_citations rows: 5 of 30
+date_iso range of cited pairs: ('1893-05-04', '1980-07-29')
+== pointed-at index coverage of the cited volumes
+cited volumes: 20 | in external-citation-index volumes: 15 | missing: ['frus1894app2', 'frus1969-76ve09p1', 'frus1969-76ve09p2', 'frus1969-76ve12', 'frus1969-76ve15p2']
+== N13 and other FTS counts (non-apparatus, all volumes incl. Ed2 as the session ran them)
+  Church AND Subcommittee AND Multinational -> (13, 10)
+  Watergate -> (183, 51)
+  "Teapot Dome" -> (2, 2)
+  BCCI OR "Bank of Credit and Commerce" -> (1, 1)
+  "Iran-Contra" -> (11, 5)
+  "Tongsun Park" OR Koreagate -> (5, 2)
+  Lockheed -> (196, 79)
+  nepotism -> (50, 38)
+  cronyism -> (6, 6)
+== N11 pre-1860
+pre-1860 dated non-apparatus docs: 483 | volumes: 9
+  'Department of State' pre-1860: 97 | ZZZ: 0
+  wider vocabulary pre-1860: 49
+  family (>=1 regex) pre-1860: 2 ['frus1894app2/d42', 'frus1902app2/d77']
+== N12 after 1989
+dated non-apparatus non-Ed2 docs with date_iso >= '1990': 177
+  of which with >=1 family match: 0
+  max date_iso in index: 2024-03-01 | min: 1620-11-03
+== N9 decade shape (core >=3 per 1,000 dated docs)
+  1840s 0 of 143 = 0.0 per 1000 
+  1850s 0 of 158 = 0.0 per 1000 
+  1860s 13 of 11268 = 1.2 per 1000 top frus1868p2 3
+  1870s 18 of 5821 = 3.1 per 1000 top frus1876 3
+  1880s 19 of 6484 = 2.9 per 1000 top frus1888p2 4
+  1890s 28 of 9845 = 2.8 per 1000 top frus1894app2 18
+  1900s 36 of 10261 = 3.5 per 1000 top frus1903 6
+  1910s 26 of 30842 = 0.8 per 1000 top frus1918 3
+  1920s 20 of 20374 = 1.0 per 1000 top frus1925v02 3
+  1930s 13 of 40073 = 0.3 per 1000 top frus1932v04 3
+  1940s 48 of 75872 = 0.6 per 1000 top frus1947v07 11
+  1950s 65 of 42801 = 1.5 per 1000 top frus1950v06 7
+  1960s 93 of 27654 = 3.4 per 1000 top frus1958-60v01 11
+  1970s 76 of 22258 = 3.4 per 1000 top frus1969-76ve11p1 6
+  1980s 24 of 6038 = 4.0 per 1000 top frus1977-80v15 4
+  1990s 0 of 177 = 0.0 per 1000 
+== N8 controls: top-10 volumes by core count vs others
+top10: [('frus1894app2', 19), ('frus1958-60v01', 13), ('frus1947v07', 11), ('frus1961-63v22', 10), ('frus1964-68v05', 9), ('frus1950v06', 7), ('frus1951-54Iran', 7), ('frus1969-76ve04', 7), ('frus1969-76v06', 6), ('frus1945v07', 6)]
+  family>=1: top10 346 of 5715 = 6.1 per 100 | others 2828 of 305714 = 0.9 per 100
+  Department of State: top10 1684 of 5715 = 29.5 per 100 | others 92140 of 305714 = 30.1 per 100
+  ZZZ: top10 0 of 5715 = 0.0 per 100 | others 0 of 305714 = 0.0 per 100
+  volumes with zero 'Department of State': ['frus1919Parisv05']
+== N7 strict/tolerant over the core set (header+dateline+source_note+body_text, whitespace-collapsed)
+  tolerant 479 strict 419 of 479
+== N14 nepotism/cronyism documents among candidates (regex)
+  nepotism docs: 47 | cronyism docs: 6 | sum: 53

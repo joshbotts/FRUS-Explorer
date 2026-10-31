@@ -1,0 +1,5 @@
+run("china", "corrupt OR graft", ["frus1943China","frus1944v06","frus1945v07","frus1946v10","frus1947v07","frus1948v07","frus1948v08","frus1949v08","frus1949v09"])
+run("lockheed", "lockhe AND (bribe OR briberi OR payment OR scandal OR corrupt)")
+run("fcpa", '"corrupt practic" OR "question payment" OR "illicit payment" OR "improp payment"')
+run("vietnam5860", "corrupt", ["frus1958-60v01","frus1961-63v01","frus1961-63v02","frus1961-63v03","frus1961-63v04"])
+run("vietnam6468", "corrupt", ["frus1964-68v01","frus1964-68v02","frus1964-68v03","frus1964-68v04","frus1964-68v05","frus1964-68v06","frus1964-68v07"])

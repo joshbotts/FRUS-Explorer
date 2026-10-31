@@ -1,0 +1,19 @@
+2839192 {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Office of the Secretary. Executive Secretariat.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "26 linear feet, 3 linear inches", "inclusiveStartYear": 1947, "inclusiveEndYear": 1979}
+1965953 {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Bureau of Far Eastern Affairs. Office of the Assistant Secretary.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "10 linear feet, 1 linear inch", "inclusiveStartYear": 1960, "inclusiveEndYear": 1963}
+1487627 {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Office of the Deputy Secretary of State.", "coverageStartYear": 1975, "coverageEndYear": 1981, "findingAids": ["Folder List"], "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "14 linear feet", "inclusiveStartYear": 1975, "inclusiveEndYear": 1981}
+2838992 {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Policy Planning Council.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "3 linear feet, 1 linear inch", "inclusiveStartYear": 1948, "inclusiveEndYear": 1961}
+numericalFile type <class 'dict'> ['microfilm', 'rolls', 'seriesNaId']
+countrySeries type <class 'list'> 12
+numericalFile.seriesNaId 654171 "NOT IN series-facts-index"
+CS {"category": "diplomaticDespatches", "displayName": "Diplomatic Despatches", "seriesNaId": "603720"}
+CS {"category": "diplomaticInstructions", "displayName": "Diplomatic Instructions", "seriesNaId": "593313"}
+CS {"category": "notesFromForeignMissions", "displayName": "Notes from Foreign Missions", "seriesNaId": "594363"}
+CS {"category": "notesToForeignMissions", "displayName": "Notes to Foreign Missions", "seriesNaId": "597272"}
+CS {"category": "consularDespatches", "displayName": "Consular Despatches", "seriesNaId": "302031"}
+CS {"category": "consularInstructions", "displayName": "Consular Instructions", "seriesNaId": "604019"}
+CS {"category": "notesToForeignConsuls", "displayName": "Notes to Foreign Consuls", "seriesNaId": "1076611"}
+CS {"category": "notesFromForeignConsuls", "displayName": "Notes from Foreign Consuls", "seriesNaId": "1076629"}
+CS {"category": "domesticLetters", "displayName": "Domestic Letters", "seriesNaId": "568025"}
+CS {"category": "lettersReceived", "displayName": "Letters Received", "seriesNaId": "583574"}
+CS {"category": "specialAgentsDespatches", "displayName": "Despatches from Special Agents", "seriesNaId": "876974"}
+CS {"category": "specialAgentsInstructions", "displayName": "Instructions to Special Agents", "seriesNaId": "871874"}

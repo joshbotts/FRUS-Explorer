@@ -1,0 +1,5 @@
+pruned: Planning/c3-steering-tier/runs/s7/idmap.pkl (11M)
+pruned: Planning/c3-steering-tier/runs/s7/signs.npy (19M)
+pruned: Planning/c3-steering-tier/runs/s4/work/neardups.pkl (3.4K, a Python pickle)
+pruned: Planning/c3-steering-tier/runs/s4/work/neighbors.pkl (15K, a Python pickle)
+pruned: Planning/c3-steering-tier/runs/s4/work/neardup_read.pkl (9.4K, a Python pickle)

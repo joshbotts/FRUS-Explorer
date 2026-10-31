@@ -1,0 +1,46 @@
+pairs in raw/set.txt: 28 distinct: 28
+distinct volumes among the 28: [(12,)]
+date span of the 28: [('1947-02-07', '1978-08-26', 28)]
+apparatus flags of the 28: [(28, 0, 0)]
+coverage: [(553, 321749, 1103, 8481)]
+corrupt* set: [(2186, 399)]
+Ed2 suppressed hits: [(25,)]
+denominator: [(311429,)]
+  CAMEFROM frus1947v07|d582|decimal|Department of State|59|026 China/8–1747||026 China/8–1747: Telegram
+  CAMEFROM frus1947v07|d583|decimal|Department of State|59|121.893/9–1947||121.893/9–1947
+  CAMEFROM frus1947v07|d617|decimal|Department of State|59|711.93/2–747||711.93/2–747
+  CAMEFROM frus1947v07|d628|decimal|Department of State|59|711.93/2–2747||711.93/2–2747
+  CAMEFROM frus1948v07|d322|decimal|Department of State|59|893.24/8–1648||893.24/8–1648: Telegram
+  CAMEFROM frus1948v07|d407|decimal|Department of State|59|893.00/10–2648||893.00/10–2648: Telegram
+  CAMEFROM frus1958-60v01|d135|decimal|Department of State|59|751K.5/4–1160||Source: Department of State, Central Files, 751K.5/4–1160. Secret. Drafted by Parsons. Repeated for informatio
+  CAMEFROM frus1958-60v01|d267|decimal|Department of State|59|751K.00/12–1560||Source: Department of State, Central Files, 751K.00/12–1560. Secret. Repeated for information to CINCPAC PolAd
+  CAMEFROM frus1961-63v22|d202|structured|Kennedy Library||President’s Office Files||Source: Kennedy Library, President’s Office Files, Countries Series, Korea, Security 1961-1963. No classificat
+  CAMEFROM frus1961-63v22|d221|structured|Kennedy Library||National Security Files||Source: Kennedy Library, National Security Files, Countries Series, Korea, General, 4/1/61-5/25/61. Secret. A 
+  CAMEFROM frus1961-63v22|d297|subject_numeric|Department of State|59|POL 15 S KOR||Source: Department of State, Central Files, POL 15 S KOR. Secret; Operational Immediate; Limit Distribution. D
+  CAMEFROM frus1964-68v04|d215|structured|Johnson Library||National Security File||Source: Johnson Library, National Security File, Country File, Vietnam, vol. LVII. Secret; Sensitive. The sour
+  CAMEFROM frus1964-68v05|d395|structured|Johnson Library||National Security File||Source: Johnson Library, National Security File, Country File, Vietnam, 1 C(2), Revolutionary Development Cadr
+  CAMEFROM frus1964-68v06|d134|subject_numeric|National Archives|59|Central Files||Source: National Archives and Records Administration, RG 59, Central Files, POL 27 VIET S. Top Secret; Immedia
+  CAMEFROM frus1964-68v06|d31|structured|Johnson Library||Tom Johnson’s Notes of Meetings. Top Secret. The meeting was held in the Cabinet Room. Those in attendance were the President||Source: Johnson Library, Tom Johnson’s Notes of Meetings. Top Secret. The meeting was held in the Cabinet Room
+  CAMEFROM frus1969-76ve09p1|d50|cfpf|Department of State|59|CFPF||Source: Ford Library, National Security Adviser, National Security Council Operations Staff for the Middle Eas
+  CAMEFROM frus1969-76ve09p2|d122|lot_file|Department of State|84|File|79F80|Source: National Archives, RG 84, Jidda Embassy Files: Lot 79F80, POL 15–4, Denmark File (corruption). Secret;
+  CAMEFROM frus1969-76ve09p2|d152|structured|National Archives|59|Transcripts of Secretary of State Kissinger’s Staff Meetings||Source: National Archives, RG 59, Transcripts of Secretary of State Kissinger’s Staff Meetings, 1973–77, Entry
+  CAMEFROM frus1969-76ve09p2|d155|structured|Library of Congress||Manuscript Division||Source: Library of Congress, Manuscript Division, Kissinger Papers, Box CL 209, Geopolitical File, Saudi Arabi
+  CAMEFROM frus1969-76ve09p2|d161|structured|National Archives|84|Jidda Embassy Files:, Box 30||Source: Ford Library, National Security Adviser, Presidential Country Files for the Middle East and South Asia
+  CAMEFROM frus1969-76ve12|d218|structured|Ford Library||National Security Adviser||Source: Ford Library, National Security Adviser, Presidential Correspondence with Foreign Leaders, Box 2, Japa
+  CAMEFROM frus1969-76ve12|d219|structured|Ford Library||National Security Adviser||Source: Ford Library, National Security Adviser, Presidential Correspondence with Foreign Leaders, Box 2, Japa
+  CAMEFROM frus1969-76ve12|d227|cfpf|Department of State|59|CFPF||Source: National Archives, Record Group 59, Central Foreign Policy Files. Confidential; Immediate. Repeated fo
+  CAMEFROM frus1969-76ve15p2|d292|structured|National Archives|59|Records of Secretary of State Henry Kissinger, Box 24||Source: National Archives, RG 59, Records of Secretary of State Henry Kissinger, Entry 5403, Box 24, Classifie
+  CAMEFROM frus1969-76ve15p2|d293|structured|National Archives|59|Records of Secretary of State Henry Kissinger, Box 24||Source: National Archives, RG 59, Records of Secretary of State Henry Kissinger, Entry 5403, Box 24, Classifie
+  CAMEFROM frus1977-80v15|d68|structured|National Archives|59|Office of the Secretariat Staff, Box 17|81D113|Source: National Archives, RG 59, Office of the Secretariat Staff, Records of the Office of the Deputy Secreta
+  CAMEFROM frus1977-80v15|d80|cfpf|Department of State|59|CFPF D780341–0421||Source: National Archives, RG 59, Central Foreign Policy File, D780341–0421. Limited Official Use; Immediate. 
+  CAMEFROM frus1977-80v15|d83|structured|Carter Library||National Security Affairs||Source: Carter Library, National Security Affairs, Staff Material, North/South, Pastor Files, Country Files, B
+rows whose series_name holds 'Decimal': 0 []
+Lockheed family [(43, 20, '1957-04-23', '1983-04-19')]
+Church family [(24, 15, '1950-09-01', '1976-06-04')]
+FCPA family [(4, 2, '1978-07-28', '1980-07-29')]
+positive control vols [(553, 1)]
+Paris v05 United States [(89,)]
+negative control [(0,)]
+pointed-at min date [('1910-12-06',)]
+corrupt docs with sources row [(1904,)]
+pre-1911 corrupt hits (dated) [(297, 255, 2)]

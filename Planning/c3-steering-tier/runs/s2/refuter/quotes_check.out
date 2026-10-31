@@ -1,0 +1,250 @@
+SQL: SELECT header, COALESCE(dateline,''), COALESCE(source_note,''), body_text FROM document_cache WHERE volume_id=? AND document_id=?
+
+=== OVERVIEW QUOTATIONS ===
+
+L9 #1: "corrupt practices"
+   trace pair(s) by text: [('frus1958-60v01', 'd131'), ('frus1977-80v03', 'd308')]   printed-citation URL pair: None
+   segment-strict against ('frus1958-60v01', 'd131'): FOUND
+
+L9 #2: "Department of State"
+   trace pair(s) by text: []   printed-citation URL pair: None
+   -> not a document quotation (term, title or word); no citation applies
+
+L17 #3: "corruption"
+   trace pair(s) by text: [('frus1944v06', 'd148'), ('frus1946v10', 'd373'), ('frus1947v07', 'd908'), ('frus1948v07', 'd43'), ('frus1964-68v05', 'd395')]   printed-citation URL pair: None
+   segment-strict against ('frus1944v06', 'd148'): FOUND
+
+L27 #4: "the two departments in which mismanagement and corruption are most flagrant and most dange…"
+   trace pair(s) by text: [('frus1944v06', 'd148')]   printed-citation URL pair: ('frus1944v06', 'd148')
+   segment-strict against ('frus1944v06', 'd148'): FOUND
+
+L28 #5: "I referred to a widespread feeling in United States that the present Government is control…"
+   trace pair(s) by text: [('frus1947v07', 'd908')]   printed-citation URL pair: ('frus1947v07', 'd908')
+   segment-strict against ('frus1947v07', 'd908'): FOUND
+
+L29 #6: "wipe out graft, corruption and incompetence in the government and in the Kuomintang."
+   trace pair(s) by text: [('frus1946v10', 'd373')]   printed-citation URL pair: ('frus1946v10', 'd373')
+   segment-strict against ('frus1946v10', 'd373'): FOUND
+
+L29 #7: "play up the cases, making the US public believe that the entire Chinese Government is corr…"
+   trace pair(s) by text: [('frus1948v07', 'd43')]   printed-citation URL pair: ('frus1948v07', 'd43')
+   segment-strict against ('frus1948v07', 'd43'): FOUND
+
+L33 #8: "even if untrue"
+   trace pair(s) by text: [('frus1958-60v01', 'd135')]   printed-citation URL pair: None
+   segment-strict against ('frus1958-60v01', 'd135'): FOUND
+
+L34 #9: "it might prove difficult obtain adequate aid FY 61 if disturbing reports continue re alleg…"
+   trace pair(s) by text: [('frus1958-60v01', 'd131')]   printed-citation URL pair: ('frus1958-60v01', 'd131')
+   segment-strict against ('frus1958-60v01', 'd131'): FOUND
+
+L35 #10: "there is a risk that such rumors, even if untrue, might be picked up and exaggerated … par…"
+   trace pair(s) by text: []   printed-citation URL pair: ('frus1958-60v01', 'd135')
+   segment-strict against ('frus1958-60v01', 'd135'): FOUND
+   (no trace row; checked against the printed citation's pair)
+
+L36 #11: "There was unanimous agreement that a visible and credible anti-corruption effort would hel…"
+   trace pair(s) by text: [('frus1964-68v05', 'd395')]   printed-citation URL pair: ('frus1964-68v05', 'd395')
+   segment-strict against ('frus1964-68v05', 'd395'): FOUND
+
+L41 #12: "they seriously endanger the whole U.S. position in Korea, and threaten to discredit, not o…"
+   trace pair(s) by text: [('frus1961-63v22', 'd202')]   printed-citation URL pair: ('frus1961-63v22', 'd202')
+   segment-strict against ('frus1961-63v22', 'd202'): FOUND
+
+L42 #13: "The underlying fact is that all hands agree the situation in Korea is not good; and Americ…"
+   trace pair(s) by text: [('frus1961-63v22', 'd204')]   printed-citation URL pair: ('frus1961-63v22', 'd204')
+   segment-strict against ('frus1961-63v22', 'd204'): FOUND
+
+L47 #14: "The fact was, however, that high Government officials were being bribed by the Saudis and …"
+   trace pair(s) by text: [('frus1955-57v13', 'd16')]   printed-citation URL pair: ('frus1955-57v13', 'd16')
+   segment-strict against ('frus1955-57v13', 'd16'): FOUND
+
+L48 #15: "the possibility of raising the prices, if bribery is more useful than reduction of Kassem’…"
+   trace pair(s) by text: [('frus1958-60v12', 'd168')]   printed-citation URL pair: ('frus1958-60v12', 'd168')
+   segment-strict against ('frus1958-60v12', 'd168'): FOUND
+
+L49 #16: "rise to charges that Washington had bribed the Iranian Government to grant widespread immu…"
+   trace pair(s) by text: [('frus1964-68v22', 'd79')]   printed-citation URL pair: ('frus1964-68v22', 'd79')
+   segment-strict against ('frus1964-68v22', 'd79'): FOUND
+
+L54 #17: "Sultan said the Department or President Ford must do whatever is necessary to make sure th…"
+   trace pair(s) by text: [('frus1969-76ve09p2', 'd161')]   printed-citation URL pair: ('frus1969-76ve09p2', 'd161')
+   segment-strict against ('frus1969-76ve09p2', 'd161'): FOUND
+
+L54 #18: "They don’t want to change. They are being forced to change by us, and they are going to go…"
+   trace pair(s) by text: [('frus1969-76ve09p2', 'd152')]   printed-citation URL pair: ('frus1969-76ve09p2', 'd152')
+   segment-strict against ('frus1969-76ve09p2', 'd152'): FOUND
+
+L55 #19: "We must do everything possible to keep this quiet."
+   trace pair(s) by text: [('frus1969-76ve15p2', 'd293')]   printed-citation URL pair: ('frus1969-76ve15p2', 'd293')
+   segment-strict against ('frus1969-76ve15p2', 'd293'): FOUND
+
+L56 #20: "if the whole issue is kept unsolved with the names of the officials involved remaining in …"
+   trace pair(s) by text: [('frus1969-76ve12', 'd218')]   printed-citation URL pair: ('frus1969-76ve12', 'd218')
+   segment-strict against ('frus1969-76ve12', 'd218'): FOUND
+
+L61 #21: "I hope the Government of Japan can support the United States proposal for an international…"
+   trace pair(s) by text: [('frus1969-76ve12', 'd219')]   printed-citation URL pair: ('frus1969-76ve12', 'd219')
+   segment-strict against ('frus1969-76ve12', 'd219'): FOUND
+
+L62 #22: "Consensus for international agreement on illicit payments appears to be developing in UN w…"
+   trace pair(s) by text: [('frus1977-80v03', 'd308')]   printed-citation URL pair: ('frus1977-80v03', 'd308')
+   segment-strict against ('frus1977-80v03', 'd308'): FOUND
+
+L63 #23: "some exports are lost because foreign companies can bribe foreign officials while U.S. com…"
+   trace pair(s) by text: [('frus1977-80v03', 'd248')]   printed-citation URL pair: ('frus1977-80v03', 'd248')
+   segment-strict against ('frus1977-80v03', 'd248'): FOUND
+
+L67 #24: "corruption"
+   trace pair(s) by text: [('frus1944v06', 'd148'), ('frus1946v10', 'd373'), ('frus1947v07', 'd908'), ('frus1948v07', 'd43'), ('frus1964-68v05', 'd395')]   printed-citation URL pair: None
+   segment-strict against ('frus1944v06', 'd148'): FOUND
+
+L67 #25: "corrupt"
+   trace pair(s) by text: [('frus1944v06', 'd148'), ('frus1946v10', 'd373'), ('frus1947v07', 'd908'), ('frus1948v07', 'd43'), ('frus1958-60v01', 'd131'), ('frus1964-68v05', 'd395'), ('frus1977-80v03', 'd308')]   printed-citation URL pair: None
+   segment-strict against ('frus1944v06', 'd148'): FOUND
+
+L67 #26: "corrupted"
+   trace pair(s) by text: []   printed-citation URL pair: None
+   -> not a document quotation (term, title or word); no citation applies
+
+L67 #27: "Questionable payments"
+   trace pair(s) by text: []   printed-citation URL pair: None
+   -> not a document quotation (term, title or word); no citation applies
+
+L67 #28: "questionable"
+   trace pair(s) by text: []   printed-citation URL pair: None
+   -> not a document quotation (term, title or word); no citation applies
+
+L67 #29: "question"
+   trace pair(s) by text: []   printed-citation URL pair: None
+   -> not a document quotation (term, title or word); no citation applies
+
+L73 #30: "Corruption and U.S. foreign policy — FRUS, 1944–1980"
+   trace pair(s) by text: []   printed-citation URL pair: None
+   -> not a document quotation (term, title or word); no citation applies
+
+overview quoted passages: 30; non-document strings: 6; fabrications: 0; mis-citations: 0
+
+=== COLLECTION EXCERPTS ===
+frus1944v06/d148: FOUND
+frus1946v10/d373: FOUND
+frus1947v07/d908: FOUND
+frus1948v07/d43: FOUND
+frus1958-60v01/d131: FOUND
+frus1958-60v01/d135: FOUND
+frus1964-68v05/d395: FOUND
+frus1961-63v22/d202: FOUND
+frus1961-63v22/d204: FOUND
+frus1955-57v13/d16: FOUND
+frus1958-60v12/d168: FOUND
+frus1964-68v22/d79: FOUND
+frus1969-76ve09p2/d152: FOUND
+frus1969-76ve09p2/d161: FOUND
+frus1969-76ve15p2/d293: FOUND
+frus1969-76ve12/d218: FOUND
+frus1969-76ve12/d219: FOUND
+frus1977-80v03/d308: FOUND
+frus1977-80v03/d248: FOUND
+collection excerpts: 19; not found in their row: 0
+
+=== PRINTED CITATIONS vs manifest (every URL in the overview) ===
+L5 frus1947v07/d908: printed 'Document 908' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1947, The Far East: China, Volume VII
+      manifest: Foreign Relations of the United States, 1947, The Far East:
+                    China, Volume VII
+      words of the printed title absent from the manifest title: []
+L5 frus1958-60v01/d131: printed 'Document 131' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1958–1960, Vietnam, Volume I
+      manifest: Foreign Relations of the United States, 1958–1960, Vietnam,
+                    Volume I
+      words of the printed title absent from the manifest title: []
+L5 frus1961-63v22/d202: printed 'Document 202' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1961–1963, Volume XXII, Northeast Asia
+      manifest: Foreign Relations of the United States, 1961–1963, Volume
+                    XXII, Northeast Asia
+      words of the printed title absent from the manifest title: []
+L5 frus1969-76ve09p2/d161: printed 'Document 161' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1969–1976, Volume E–9, Part 2, Documents on the Middle East Region, 1973–1976
+      manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–9, Part 2, Documents on the Middle East Region, 1973–1976
+      words of the printed title absent from the manifest title: []
+L27 frus1944v06/d148: printed 'Document 148' matches id=True; row exists=True; same-volume phrase=False
+      printed: Diplomatic Papers, 1944, China, Volume VI
+      manifest: Foreign Relations of the United States, Diplomatic Papers,
+                    1944, China, Volume VI
+      words of the printed title absent from the manifest title: []
+L28 frus1947v07/d908: printed 'Document 908' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1947, The Far East: China, Volume VII
+      manifest: Foreign Relations of the United States, 1947, The Far East:
+                    China, Volume VII
+      words of the printed title absent from the manifest title: []
+L29 frus1946v10/d373: printed 'Document 373' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1946, The Far East: China, Volume X
+      manifest: Foreign Relations of the United States, 1946, The Far East:
+                    China, Volume X
+      words of the printed title absent from the manifest title: []
+L29 frus1948v07/d43: printed 'Document 43' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1948, The Far East: China, Volume VII
+      manifest: Foreign Relations of the United States, 1948, The Far East:
+                    China, Volume VII
+      words of the printed title absent from the manifest title: []
+L34 frus1958-60v01/d131: printed 'Document 131' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1958–1960, Vietnam, Volume I
+      manifest: Foreign Relations of the United States, 1958–1960, Vietnam,
+                    Volume I
+      words of the printed title absent from the manifest title: []
+L35 frus1958-60v01/d135: printed 'Document 135' matches id=True; row exists=True; same-volume phrase=True
+L36 frus1964-68v05/d395: printed 'Document 395' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1964–1968, Volume V, Vietnam, 1967
+      manifest: Foreign Relations of the United States, 1964–1968, Volume V,
+                    Vietnam, 1967
+      words of the printed title absent from the manifest title: []
+L41 frus1961-63v22/d202: printed 'Document 202' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1961–1963, Volume XXII, Northeast Asia
+      manifest: Foreign Relations of the United States, 1961–1963, Volume
+                    XXII, Northeast Asia
+      words of the printed title absent from the manifest title: []
+L42 frus1961-63v22/d204: printed 'Document 204' matches id=True; row exists=True; same-volume phrase=True
+L47 frus1955-57v13/d16: printed 'Document 16' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1955–1957, Near East: Jordan-Yemen, Volume XIII
+      manifest: Foreign Relations of the United States, 1955–1957, Near East:
+                    Jordan-Yemen, Volume XIII
+      words of the printed title absent from the manifest title: []
+L48 frus1958-60v12/d168: printed 'Document 168' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1958–1960, Near East Region; Iraq; Iran; Arabian Peninsula, Volume XII
+      manifest: Foreign Relations of the United States, 1958–1960, Near East
+                    Region; Iraq; Iran; Arabian Peninsula, Volume XII
+      words of the printed title absent from the manifest title: []
+L49 frus1964-68v22/d79: printed 'Document 79' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1964–1968, Volume XXII, Iran
+      manifest: Foreign Relations of the United States, 1964–1968, Volume
+                    XXII, Iran
+      words of the printed title absent from the manifest title: []
+L54 frus1969-76ve09p2/d161: printed 'Document 161' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1969–1976, Volume E–9, Part 2, Documents on the Middle East Region, 1973–1976
+      manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–9, Part 2, Documents on the Middle East Region, 1973–1976
+      words of the printed title absent from the manifest title: []
+L54 frus1969-76ve09p2/d152: printed 'Document 152' matches id=True; row exists=True; same-volume phrase=False
+L55 frus1969-76ve15p2/d293: printed 'Document 293' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1969–1976, Volume E–15, Part 2, Documents on Western Europe, 1973–1976
+      manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–15, Part 2, Documents on Western Europe, 1973–1976
+      words of the printed title absent from the manifest title: []
+L56 frus1969-76ve12/d218: printed 'Document 218' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1969–1976, Volume E–12, Documents on East and Southeast Asia, 1973–1976
+      manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–12, Documents on East and Southeast Asia, 1973–1976
+      words of the printed title absent from the manifest title: []
+L61 frus1969-76ve12/d219: printed 'Document 219' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1969–1976, Volume E–12, Documents on East and Southeast Asia, 1973–1976
+      manifest: Foreign Relations of the United States, 1969–1976, Volume
+                    E–12, Documents on East and Southeast Asia, 1973–1976
+      words of the printed title absent from the manifest title: []
+L62 frus1977-80v03/d308: printed 'Document 308' matches id=True; row exists=True; same-volume phrase=False
+      printed: 1977–1980, Volume III, Foreign Economic Policy
+      manifest: Foreign Relations of the United States, 1977–1980, Volume
+                    III, Foreign Economic Policy
+      words of the printed title absent from the manifest title: []
+L63 frus1977-80v03/d248: printed 'Document 248' matches id=True; row exists=True; same-volume phrase=True
+distinct cited pairs: 19 [('frus1944v06', 'd148'), ('frus1946v10', 'd373'), ('frus1947v07', 'd908'), ('frus1948v07', 'd43'), ('frus1955-57v13', 'd16'), ('frus1958-60v01', 'd131'), ('frus1958-60v01', 'd135'), ('frus1958-60v12', 'd168'), ('frus1961-63v22', 'd202'), ('frus1961-63v22', 'd204'), ('frus1964-68v05', 'd395'), ('frus1964-68v22', 'd79'), ('frus1969-76ve09p2', 'd152'), ('frus1969-76ve09p2', 'd161'), ('frus1969-76ve12', 'd218'), ('frus1969-76ve12', 'd219'), ('frus1969-76ve15p2', 'd293'), ('frus1977-80v03', 'd248'), ('frus1977-80v03', 'd308')]

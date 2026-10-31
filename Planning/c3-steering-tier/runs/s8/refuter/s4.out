@@ -1,0 +1,48 @@
+volume-sources-index keys: ['generated', 'lots', 'majorCollections', 'recordGroups', 'schemaVersion']
+external-citation-index keys: ['classPairs', 'classSourceKeys', 'classTargetKeys', 'classTargets', 'coverage', 'generated', 'pairs', 'schemaVersion', 'sourceIds', 'targetIds', 'targets', 'volumes']
+
+== LOTS in central-files-index.json lotFiles ==
+81D113 -> 1487627 59 ['P 14'] Records of Deputy Secretary Warren Christopher | facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Office of the Deputy Secretary of State.", "coverageStartYear": 1975, "coverageEndYear": 1981, "findingAids": ["Folder List"], "re
+62D26 -> 1965953 59 ['A1 3113'] Subject, Personal Name, and Country Files | facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Bureau of Far Eastern Affairs. Office of the Assistant Secretary.", "referenceUnit": "National Archives at College Park - Textual 
+63D351 -> 2839192 59 ['A1 1586E'] Records Relating to National Security Council Policy Papers | facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Office of the Secretary. Executive Secretariat.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRe
+66D95 -> 2839192 59 ['A1 1586E'] Records Relating to National Security Council Policy Papers | facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Office of the Secretary. Executive Secretariat.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRe
+62D1 -> 2838992 59 ['A1 1583E', 'A1 1583F'] Records Relating to Activities with the National Security Council | facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Policy Planning Council.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyrigh
+79F80 -> 0 rows
+
+== library NAIDs in presidential-library-catalog.json ==
+1166 JFK POF -> ('COLLECTION', 'Kennedy Library', 'JFK-3', "Papers of John F. Kennedy: Presidential Papers: President's Office Files", None) | series-facts: None
+1164 JFK NSF -> ('COLLECTION', 'Kennedy Library', 'JFK-4', 'Papers of John F. Kennedy: Presidential Papers: National Security Files', None) | series-facts: None
+591194 LBJ NSF Vietnam Country Files -> ('SERIES of 567979 National Security Files', 'Johnson Library', 'Vietnam Country Files', '1963–1969') | series-facts: None
+23657995 Tom Johnson Meeting Notes -> ('SERIES of 23652126 Papers of Tom Johnson', 'Johnson Library', 'Meeting Notes', '1966–1968') | series-facts: None
+572583 Ford Pres. Correspondence w/ Foreign Leaders -> ('SERIES of 572571 Presidential Correspondence with Foreign Leaders (Ford Administration)', 'Ford Library', 'Presidential Correspondence with Foreign Leaders', '1974–1977') | series-facts: None
+568224 Ford Pres. Country Files ME&SA -> ('SERIES of 568221 Presidential Country Files for Middle East and South Asia (Ford Administration)', 'Ford Library', 'Middle East and South Asia Country Files', '1974–1977') | series-facts: None
+560131 Carter NSA records -> ('COLLECTION', 'Carter Library', 'JC-NSA', 'Records of the Office of the National Security Advisor (Carter Administration)', None) | series-facts: None
+560151 Brzezinski Country Files -> ('SERIES of 560131 Records of the Office of the National Security Advisor (Carter Administration)', 'Carter Library', "Zbigniew Brzezinski's Country Files", '1977–1981') | series-facts: None
+LBJ-NSF series containing 'Vietnam': [(591194, 'Vietnam Country Files', '1963–1969')]
+JC-NSA series containing 'Staff' or 'Country' or 'North/South': [(560151, "Zbigniew Brzezinski's Country Files", '1977–1981'), (560156, "Zbigniew Brzezinski's Staff Evening Reports Files", '1977–1981'), (560166, 'Staff Office Files', '1977–1981'), (560176, "Staff Secretary's Files", '1977–1981'), (560184, 'North/South', '1977–1981')]
+FORD coll 600233 Memoranda of Conversations (Nixon and Ford Administrations) None [(186737, 'Ford Administration Memoranda of Conversations'), (602460, 'Nixon Administration Memoranda of Conversations')]
+
+== collection-authority.json: Central Decimal / Jidda / NSC Operations Staff ==
+AUTH {"id": "lot:64", "name": "Secretary’s Memoranda of Conversation: Lot 64 199", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "lot:64D199", "name": "Secretary’s Memoranda of Conversation: Lot 64 D 199", "repository": "Department of State", "naId": "602231", "recordGroup": "59"}
+AUTH {"id": "lot:65D238", "name": "Secretary’s Memoranda of Conversation, Lot 65 D 238", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "lot:65D330", "name": "Secretary’s Memoranda of Conversation: Lot 65 D 330", "repository": "Department of State", "naId": "602231", "recordGroup": "59"}
+AUTH {"id": "lot:65D355", "name": "Secretary’s Memoranda of Conversation: Lot 65 D 355", "repository": "National Archives", "naId": "2674944", "recordGroup": "59"}
+AUTH {"id": "lot:66D149", "name": "Presidential Memoranda of Conversation: Lot 66 D 149", "repository": "Department of State", "naId": "610077", "recordGroup": "59"}
+AUTH {"id": "lot:90D407", "name": "Files of U. Alexis Johnson , 1958–1973. This lot file combines lots 90 D 407, 408 and 410. Memoranda of conversation, correspondence files, personal files, and 12 audiotapes.", "repository": "Department of State", "recordGroup": "
+AUTH {"id": "txt:department of state|central decimal file 1910-1929", "name": "Central Decimal File 1910–1929", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|decimal central file", "name": "Decimal Central Files", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:ford library|memoranda of conversation", "name": "Memoranda of Conversations, 1973–1977", "repository": "Ford Library"}
+AUTH {"id": "txt:library of congress|henry a. kissinger paper", "name": "Henry A. Kissinger Papers", "repository": "Library of Congress"}
+AUTH {"id": "txt:library of congress|henry kissinger paper", "name": "Henry Kissinger Papers", "repository": "Library of Congress"}
+AUTH {"id": "txt:library of congress|kissinger paper", "name": "Kissinger Papers", "repository": "Library of Congress"}
+AUTH {"id": "txt:library of congress|manuscript division kissinger paper", "name": "Manuscript Division Kissinger Papers", "repository": "Library of Congress"}
+AUTH {"id": "txt:library of congress|memoranda of conversation", "name": "Memoranda of Conversation", "repository": "Library of Congress"}
+AUTH {"id": "txt:national archives|jidda embassy file", "name": "Jidda Embassy Files", "repository": "National Archives", "recordGroup": "84"}
+AUTH {"id": "txt:|henry a. kissinger paper", "name": "Henry A. Kissinger Papers"}
+AUTH {"id": "txt:|memoranda of conversation", "name": "Memoranda of Conversation, 1968–77"}
+authority records with a naId: 1014 of 3977
+authority rows naming 'Central' with naId: [('lot:64F16', '1703674', None), ('lot:69F42', '3955392', None)]
+central-files-index numericalFile.seriesNaId: 654171 facts: None
+'79F80' in volume-sources-index: 3 in external-citation-index: 0 in collection-authority: 8
+'Jidda' in volume-sources-index: 0

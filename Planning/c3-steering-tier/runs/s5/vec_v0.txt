@@ -1,0 +1,11 @@
+index digest  89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+binary digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+map digest    89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+.generation   89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+binary hdr: version 1 dims 512 docs 314616 centroids 660
+map hdr: (1, 314616, 140, 30000)
+round trip: volumes 553 all lengths match n; rows covered 314616 of 314616
+scoreCalibration {"documentOffset": 0.4, "measuredBy": "Planning/semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md \u00a71b, fitted to EmbeddingGemma 300m's scores over 90 typed queries and 600 anchor documents against the 314,616-document corpus", "queryOffset": 0.47}
+measuredRecallAt10 0.9021 generated 2026-10-15 harvestGenerated 2026-10-15T06:55:14
+volumes in index order sample: ['frus1861', 'frus1862', 'frus1863p1'] subseries count 107
+is frus1951-54IranEd2 in index: True

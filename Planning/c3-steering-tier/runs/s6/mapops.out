@@ -1,0 +1,31 @@
+/Users/jbotts/frus-analysis/c3s/runs/s6/mapops.py:38: RuntimeWarning: divide by zero encountered in matmul
+  i=vols.index(v); s=V[:553]@V[i]; o=np.argsort(-s)[1:6]
+/Users/jbotts/frus-analysis/c3s/runs/s6/mapops.py:38: RuntimeWarning: overflow encountered in matmul
+  i=vols.index(v); s=V[:553]@V[i]; o=np.argsort(-s)[1:6]
+/Users/jbotts/frus-analysis/c3s/runs/s6/mapops.py:38: RuntimeWarning: invalid value encountered in matmul
+  i=vols.index(v); s=V[:553]@V[i]; o=np.argsort(-s)[1:6]
+map docs 314616 unclustered 88059 of 314616 clusters 140
+frus1958-60v01/d111 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu'] docs 8631 era {'2': 8631}
+frus1969-76ve09p2/d122 UNCLUSTERED
+frus1943China/d202 cluster 3 ['nanking', 'shanghai', 'chinese', 'tientsin'] docs 37899 era {'0': 2633, '1': 26227, '2': 9039}
+frus1969-76ve15p2/d292 cluster 115 ['edc', 'nato', 'nuclear', 'soviet'] docs 10914 era {'1': 36, '2': 10878}
+frus1964-68v05/d197 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu'] docs 8631 era {'2': 8631}
+frus1894app2/d255 cluster 72 ['sanguily', 'inclosure', 'azcuy', 'inclose'] docs 15484 era {'0': 13949, '1': 1519, '2': 16}
+frus1961-63v22/d249 cluster 22 ['rok', 'korea', 'rhee', 'korean'] docs 3440 era {'1': 73, '2': 3367}
+core set placed 478 unclustered 142 of 478
+ cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu'] core docs 60 of cluster 8631 -> core share of cluster 0.0070
+ cluster 3 ['nanking', 'shanghai', 'chinese', 'tientsin'] core docs 55 of cluster 37899 -> core share of cluster 0.0015
+ cluster 72 ['sanguily', 'inclosure', 'azcuy', 'inclose'] core docs 44 of cluster 15484 -> core share of cluster 0.0028
+ cluster 42 ['castro', 'somoza', 'cuban', 'cuba'] core docs 32 of cluster 7650 -> core share of cluster 0.0042
+ cluster 37 ['shah', 'iran', 'iranian', 'zahedi'] core docs 20 of cluster 1097 -> core share of cluster 0.0182
+ cluster 5 ['philippine', 'philippines', 'quirino', 'magsaysay'] core docs 19 of cluster 615 -> core share of cluster 0.0309
+ cluster 22 ['rok', 'korea', 'rhee', 'korean'] core docs 15 of cluster 3440 -> core share of cluster 0.0044
+ cluster 74 ['namibia', 'swapo', 'mobutu', 'rhodesia'] core docs 9 of cluster 2055 -> core share of cluster 0.0044
+ cluster 73 ['constantinople', 'terrell', 'porte', 'sublime'] core docs 8 of cluster 1643 -> core share of cluster 0.0049
+ cluster 75 ['libyan', 'moroccan', 'sahara', 'hassan'] core docs 8 of cluster 1488 -> core share of cluster 0.0054
+ cluster 69 ['pichon', 'lansing', 'jugo', 'clemenceau'] core docs 7 of cluster 14228 -> core share of cluster 0.0005
+ cluster 38 ['mosadeq', 'zahedi', 'shah', 'tudeh'] core docs 7 of cluster 526 -> core share of cluster 0.0133
+corpus unclustered share 0.280
+centroid nearest to frus1958-60v01 [('frus1961-63v01', 0.985), ('frus1961-63v02', 0.983), ('frus1961-63v03', 0.98), ('frus1955-57v01', 0.979), ('frus1961-63v04', 0.977)]
+centroid nearest to frus1969-76ve09p2 [('frus1977-80v18', 0.982), ('frus1969-76v24', 0.979), ('frus1964-68v21', 0.973), ('frus1955-57v13', 0.966), ('frus1969-76v36', 0.964)]
+centroid nearest to frus1943China [('frus1942China', 0.986), ('frus1944v06', 0.986), ('frus1945v07', 0.979), ('frus1947v07', 0.971), ('frus1941v05', 0.969)]

@@ -1,0 +1,52 @@
+F01 n=  265 top25: frus1894app2/d394, frus1881/d405, frus1887/d609, frus1865p2/d586, frus1873p1v1/d131, frus1874/d540, frus1874/d552, frus1865p2/d635, frus1875v02/d242, frus1877/d288, frus1874/d560, frus1885/d581, frus1873p1v2/d94, frus1872p2v1/d337, frus1885/d567, frus1865p2/d629, frus1874/d693, frus1887/d612, frus1894/d583, frus1874/d550, frus1888p2/d266, frus1872p2v1/d336, frus1878/d468, frus1871/d383, frus1878/d467 | cuba AND (annex* OR possess* OR acquisition OR "key to the g [1865,1895)
+F02 n=  265 top12: frus1894app2/d394, frus1881/d405, frus1887/d609, frus1865p2/d586, frus1873p1v1/d131, frus1874/d540, frus1874/d552, frus1865p2/d635, frus1875v02/d242, frus1877/d288, frus1874/d560, frus1885/d581 | cuba AND (annex* OR possess* OR acquisition OR "key to the g [1865,1895)
+F03 n=   45 top22: frus1878/d422, frus1878/d472, frus1894/d651, frus1888p2/d273, frus1894/d628, frus1886/d357, frus1894/d644, frus1884/d341, frus1876/d261, frus1884/d360, frus1885/d565, frus1888p2/d266, frus1886/d352, frus1885/d566, frus1885/d553, frus1886/d384, frus1886/d414, frus1879/d476, frus1876/d23, frus1886/d406, frus1885/d535, frus1898/d498 | cuba AND sugar AND (reciprocity OR tariff OR duties OR comme [1875,1898)
+F04 ERROR fts5: syntax error near "." | cuba AND (insurrection OR belligerency) AND (...) AND ($ OR millions)
+F05 n=   25 top20: frus1911/d110, frus1904/d207, frus1903/d331, frus1902/d273, frus1911/d112, frus1902/d313, frus1911/d111, frus1898/d601, frus1898/d594, frus1911/d120, frus1898/d565, frus1903/d541, frus1898/ch83, frus1903/d333, frus1898/d545, frus1898/d831, frus1898/d717, frus1903/d334, frus1902/d294, frus1903/d310 | cuba AND ("naval stations" OR "coaling stations" OR platt OR [1898,1912)
+F06 n=   77 top15: frus1921v01/d758, frus1911/d111, frus1903/d332, frus1911/d110, frus1912/d420, frus1911/d112, frus1921v01/d760, frus1921v01/d756, frus1903/d331, frus1912/d421, frus1911/d154, frus1917/d537, frus1921v01/d759, frus1912/ch31, frus1913/ch35 | guantanamo AND (naval OR coaling) [1898,1925)
+F07 n=    3 top20: frus1929v02/d924, frus1934v05/d116, frus1919Parisv10/d10 | cuba AND ("american investments" OR "american capital" OR "a [1910,1935)
+F08 n=    6 top14: frus1930v02/d747, frus1930v02/d753, frus1933v05/d299, frus1930v02/d763, frus1934v05/d127, frus1927v01/d288 | cuba AND intervention AND (policy OR principle) AND ("platt  [1925,1936)
+F09 n=   13 top12: frus1944v07/d874, frus1945v09/d745, frus1944v07/d878, frus1945v09/d741, frus1944v07/d876, frus1944v07/d875, frus1941v07/d119, frus1942v06/d319, frus1942v06/d299, frus1946v11/d640, frus1947v01/d392, frus1941v07/d124 | cuba AND (bases OR "air bases") AND (strategic OR defense OR [1939,1950)
+F10 n=   21 top15: frus1961-63v10-12mSupp/d434, frus1961-63v11/d34, frus1961-63v11/d100, frus1961-63v10-12mSupp/d373, frus1961-63v11/d41, frus1961-63v11/d79, frus1961-63v11/d76, frus1961-63v10-12mSupp/d403, frus1961-63v10-12mSupp/d433, frus1961-63v10-12mSupp/d435, frus1961-63v11/d73, frus1961-63v11/d38, frus1961-63v10-12mSupp/d423, frus1961-63v05/d256, frus1961-63v11/d90 | cuba AND missiles AND ("balance of power" OR "strategic bala [1962-10-14,1962-10-30)
+F11 n=    7 top10: frus1961-63v10-12mSupp/d320, frus1961-63v10-12mSupp/d322, frus1961-63v10-12mSupp/d324, frus1961-63v11/d18, frus1961-63v11/d21, frus1961-63v10-12mSupp/d323, frus1961-63v11/d19 | cuba AND missiles [1962-10-16,1962-10-17)
+F12 n=   18 top6: frus1961-63v10-12mSupp/d330, frus1961-63v10-12mSupp/d335, frus1961-63v10-12mSupp/d333, frus1961-63v11/d22, frus1961-63v10-12mSupp/d334, frus1961-63v11/d23 | cuba AND ("a missile is a missile" OR "geopolitical" OR "pol [1962-10-16,1962-10-19)
+F13 n=   88 top14: frus1981-88v03/d5, frus1981-88v04/d93, frus1981-88v16/d477, frus1981-88v03/d127, frus1981-88v16/d399, frus1981-88v01/d53, frus1981-88v16/d469, frus1981-88v16/d462, frus1981-88v01/d36, frus1981-88v13/d426, frus1981-88v05/d21, frus1981-88v13/d416, frus1981-88v16/d478, frus1977-80v15/d345 | cuba AND cuban AND (threat OR subversion OR "national securi [1981,1989)
+F14 n=   45 top14: frus1952-54v04/d342, frus1952-54v04/d351, frus1952-54v04/d331, frus1950v02/d440, frus1955-57v06/d106, frus1951v02/d786, frus1955-57v06/d203, frus1958-60v06/d182, frus1958-60v06/d70, frus1955-57v06/d195, frus1952-54v04/d107, frus1955-57v06/d4, frus1952-54v04/d13, frus1951v02/d865 | cuba AND (investment* OR sugar) AND ("national security" OR  [1950,1959)
+F15 n=   66 top8: frus1958-60v06/d313, frus1958-60v06/d377, frus1958-60v06/d535, frus1958-60v06/d362, frus1958-60v06/d294, frus1958-60v06/d424, frus1958-60v06/d420, frus1958-60v06/d459 | cuba AND ("sugar act" OR "sugar quota") AND (castro OR revol [1959,1961)
+F16 n=  123 top12: frus1964-68v32/d300, frus1977-80v24/d49, frus1977-80v06/d194, frus1969-76ve11p1/d278, frus1969-76ve10/d205, frus1964-68v31/d6, frus1969-76ve10/d213, frus1964-68v14/d11, frus1977-80v23/d21, frus1969-76ve16/d136, frus1969-76ve10/d202, frus1964-68v26/d215 | cuba AND (burden OR liability OR drain) AND (soviet OR russi [1964,1981)
+F17 n=  133 top12: frus1977-80v23/d13, frus1977-80v23/d6, frus1977-80v23/d19, frus1977-80v23/d21, frus1977-80v23/d44, frus1977-80v23/d35, frus1977-80v23/d27, frus1977-80v23/d7, frus1977-80v23/d22, frus1977-80v23/d8, frus1977-80v22/d18, frus1977-80v23/d105 | cuba AND (normalization OR "normalizing") AND (embargo OR tr [1974,1981)
+F18 n=   57 top8: frus1944v07/d914, frus1943v06/d247, frus1944v07/d976, frus1942v06/d363, frus1942v06/d356, frus1943v06/d170, frus1943v06/d197, frus1942v06/d338 | cuba AND sugar AND (war OR defense OR submarines OR shipping [1941,1945)
+F19 n=   16 top6: frus1923v01/d683, frus1917/d595, frus1917/d516, frus1917/d471, frus1921v01/d690, frus1918/d326 | cuba AND (sugar OR investments) AND (intervention OR interve [1915,1925)
+F20 n=   12 top6: frus1933v05/d299, frus1933v05/d405, frus1933v05/d246, frus1933v05/d300, frus1933v05/d452, frus1933v05/d331 | cuba AND machado AND (sugar OR investments OR property) AND  [1933,1934)
+H1 header/dateline pre-1895 n= 43
+H2 header/dateline all dates n= 2911
+Scope B n= 13899
+per-volume 'cuba OR cuban OR havana' n= 13154
+
+=== per cited document: strict reach ===
+frus1874/d552   ScopeA=- unlimited=['F01', 'F02', 'ScopeB', 'V(count-only)'] within-limit=['F01', 'F02']  => REACHED
+frus1881/d405   ScopeA=- unlimited=['F01', 'F02', 'F03', 'ScopeB', 'V(count-only)'] within-limit=['F01', 'F02']  => REACHED
+frus1886/d414   ScopeA=- unlimited=['F03', 'ScopeB', 'V(count-only)'] within-limit=['F03']  => REACHED
+frus1898/d498   ScopeA=- unlimited=['F03', 'ScopeB', 'V(count-only)'] within-limit=['F03']  => REACHED
+frus1898/ch83   ScopeA=- unlimited=['F05', 'ScopeB', 'V(count-only)'] within-limit=['F05']  => REACHED
+frus1904/d207   ScopeA=Y unlimited=['F05', 'ScopeB', 'V(count-only)'] within-limit=['F05']  => REACHED
+frus1930v02/d747   ScopeA=Y unlimited=['F08', 'ScopeB', 'V(count-only)'] within-limit=['F08']  => REACHED
+frus1934v05/d127   ScopeA=Y unlimited=['F08', 'H2(count-only)', 'ScopeB', 'V(count-only)'] within-limit=['F08']  => REACHED
+frus1933v05/d299   ScopeA=Y unlimited=['F08', 'F20', 'H2(count-only)', 'ScopeB', 'V(count-only)'] within-limit=['F08', 'F20']  => REACHED
+frus1929v02/d924   ScopeA=Y unlimited=['F07', 'H2(count-only)', 'ScopeB', 'V(count-only)'] within-limit=['F07']  => REACHED
+frus1941v07/d119   ScopeA=Y unlimited=['F09', 'ScopeB', 'V(count-only)'] within-limit=['F09']  => REACHED
+frus1944v07/d878   ScopeA=Y unlimited=['F09', 'H2(count-only)', 'ScopeB', 'V(count-only)'] within-limit=['F09']  => REACHED
+frus1945v09/d741   ScopeA=Y unlimited=['F09', 'H2(count-only)', 'ScopeB', 'V(count-only)'] within-limit=['F09']  => REACHED
+frus1952-54v04/d342   ScopeA=Y unlimited=['F14', 'ScopeB', 'V(count-only)'] within-limit=['F14']  => REACHED
+frus1958-60v06/d70    ScopeA=Y unlimited=['F14', 'ScopeB', 'V(count-only)'] within-limit=['F14']  => REACHED
+frus1958-60v05/d112   ScopeA=- unlimited=[] within-limit=[]  => NOT RETURNED BY ANY LOGGED QUERY
+frus1958-60v06/d499   ScopeA=Y unlimited=['ScopeB', 'V(count-only)'] within-limit=[]  => REACHED
+frus1961-63v11/d21    ScopeA=Y unlimited=['F10', 'F11', 'F12', 'H2(count-only)', 'ScopeB', 'V(count-only)'] within-limit=['F11']  => REACHED
+frus1961-63v11/d34    ScopeA=Y unlimited=['F10', 'ScopeB', 'V(count-only)'] within-limit=['F10']  => REACHED
+frus1961-63v10-12mSupp/d729   ScopeA=Y unlimited=['ScopeB', 'V(count-only)'] within-limit=[]  => REACHED
+frus1969-76ve10/d205   ScopeA=Y unlimited=['F16', 'ScopeB', 'V(count-only)'] within-limit=['F16']  => REACHED
+frus1977-80v23/d21    ScopeA=Y unlimited=['F16', 'F17', 'ScopeB', 'V(count-only)'] within-limit=['F16', 'F17']  => REACHED
+frus1981-88v03/d5     ScopeA=- unlimited=['F13', 'ScopeB', 'V(count-only)'] within-limit=['F13']  => REACHED
+not returned by any logged full-text/heading query or scope set: [('frus1958-60v05', 'd112')]
+fts columns: ['document_id', 'volume_id', 'document_number', 'header', 'dateline', 'source_note', 'body_text', 'subject_tag_ids', 'user_tag_ids', 'is_editorial_note']
+d112: ('112. Memorandum From the Director of Central Intelligence (Dulles) to the Acting Secretary of State', 'Washington, undated.', 'Source: Department of State, ARA Deputy Assistant Secretary’s Files: Lot 61 D 411, Caribbean 1959. Secret. The source text is undated, but the memorandum was probably drafted in mid- or late March. A ', 2658, 0, 0, 0)

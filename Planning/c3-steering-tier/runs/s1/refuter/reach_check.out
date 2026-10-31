@@ -1,0 +1,42 @@
+family MATCH (scan1.py's query) returns 3283 documents (memo: 3,283 incl. Ed2)
+without Ed2: 3242 (memo: 3,242)
+'corrupt' MATCH: 2200 | lockheed census: 46 (memo: 44)
+header query: 2 documents: [('frus1958-60v01', 'ch1'), ('frus1958-60v03mSupp', 'd101')]
+
+pair | family | corrupt-stem | lockheed | header
+frus1950v06/d832 | True | True | False | False
+frus1950v06/d841 | True | True | False | False
+frus1961-63v23/d356 | True | True | False | False
+frus1961-63v23/d358 | True | True | False | False
+frus1977-80v23/d252 | True | True | False | False
+frus1958-60v01/d111 | True | True | False | False
+frus1958-60v01/d135 | True | True | False | False
+frus1964-68v05/d197 | True | True | False | False
+frus1964-68v05/d258 | True | True | False | False
+frus1964-68v05/d395 | True | True | False | False
+frus1964-68v07/d91 | True | True | False | False
+frus1969-76v06/d175 | True | True | False | False
+frus1917-72PubDipv07/d177 | True | True | False | False
+frus1969-76ve09p2/d122 | True | True | True | False
+frus1969-76v27/d45 | True | True | False | False
+frus1969-76ve05p2/d119 | True | True | False | False
+frus1977-80v18/d206 | True | True | False | False
+frus1969-76ve11p1/d159 | True | False | False | False
+frus1969-76ve09p2/d161 | True | False | True | False
+frus1969-76ve12/d218 | True | False | True | False
+frus1969-76ve12/d219 | True | True | True | False
+frus1969-76ve12/d224 | True | False | True | False
+frus1969-76ve15p2/d292 | True | False | True | False
+frus1969-76v31/d149 | True | True | False | False
+frus1977-80v03/d248 | True | True | False | False
+frus1961-63v22/d244 | True | True | False | False
+frus1961-63v22/d249 | True | True | False | False
+frus1943China/d202 | True | True | False | False
+frus1944v06/d269 | True | True | False | False
+cited documents returned by NO logged full-text or heading query: []
+scan1.csv rows: 3283 | all 29 present: True
+d841 in scan1.csv: {'volume_id': 'frus1950v06', 'document_id': 'd841', 'date': '1950-10-09', 'len': '17512', 'fam': '1', 'corrupt': '1', 'header': 'Report to the President by the United States Economic Survey Mission to the Philippines'}
+top-70 by fam size: 70 | fam>=4 (Ed2 removed): 280 (memo: 280)
+d841 in top70: False | in fam>=4: False
+cited docs NOT in top70 and NOT in fam>=4 (so not on either printed list): [('frus1950v06', 'd841'), ('frus1969-76ve12', 'd218'), ('frus1969-76ve12', 'd219'), ('frus1969-76ve12', 'd224')]
+fam counts of the 29: {'frus1950v06/d832': '8', 'frus1950v06/d841': '1', 'frus1961-63v23/d356': '8', 'frus1961-63v23/d358': '8', 'frus1977-80v23/d252': '11', 'frus1958-60v01/d111': '12', 'frus1958-60v01/d135': '5', 'frus1964-68v05/d197': '17', 'frus1964-68v05/d258': '15', 'frus1964-68v05/d395': '6', 'frus1964-68v07/d91': '21', 'frus1969-76v06/d175': '18', 'frus1917-72PubDipv07/d177': '10', 'frus1969-76ve09p2/d122': '60', 'frus1969-76v27/d45': '7', 'frus1969-76ve05p2/d119': '10', 'frus1977-80v18/d206': '9', 'frus1969-76ve11p1/d159': '6', 'frus1969-76ve09p2/d161': '7', 'frus1969-76ve12/d218': '1', 'frus1969-76ve12/d219': '2', 'frus1969-76ve12/d224': '1', 'frus1969-76ve15p2/d292': '4', 'frus1969-76v31/d149': '8', 'frus1977-80v03/d248': '15', 'frus1961-63v22/d244': '10', 'frus1961-63v22/d249': '10', 'frus1943China/d202': '7', 'frus1944v06/d269': '7'}

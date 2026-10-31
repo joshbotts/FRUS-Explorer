@@ -1,0 +1,42 @@
+scope volumes ( 20 ): ['frus1894app1', 'frus1894app2', 'frus1922v01', 'frus1947v05', 'frus1947v07', 'frus1948v07', 'frus1949v08', 'frus1958-60v01', 'frus1961-63v20', 'frus1961-63v22', 'frus1964-68v04', 'frus1964-68v05', 'frus1969-76v08', 'frus1969-76ve09p2', 'frus1969-76ve11p1', 'frus1969-76ve12', 'frus1969-76ve15p2', 'frus1977-80v03', 'frus1977-80v23', 'frus1977-80v24']
+volumes missing from usage index: []
+volumes absent from external-citation index volume list: ['frus1894app1', 'frus1894app2', 'frus1969-76ve09p2', 'frus1969-76ve11p1', 'frus1969-76ve12', 'frus1969-76ve15p2']
+
+CAME-FROM (collection-usage-index, notes citing the collection, in the scope volumes): total collections 201 total notes 3543
+741 txt:department of state|central file Central Files | Department of State
+477 txt:carter library|national security affair National Security Affairs | Carter Library
+312 txt:nixon|nsc file NSC Files | Nixon
+246 txt:ford library|national security advisor National Security Adviser | Ford Library
+236 txt:johnson library|national security file National Security File | Johnson Library
+171 txt:department of state|central files 1967-69 Central Files 1967–69 | Department of State
+119 txt:kennedy library|national security file National Security Files | Kennedy Library
+84 txt:library of congress|manuscript division Manuscript Division | Library of Congress
+57 txt:ford library|nsc institutional file NSC Institutional Files | Ford Library
+54 txt:carter library|national security council National Security Council | Carter Library
+42 lot:55D36 Lot 55–D36 | Department of State
+37 txt:national archives|records of the office of the counselor Records of the Office of the Counselor | National Archives
+32 txt:national archives|transcripts of secretary of state kissinger's staff meeting Transcripts of Secretary of State Kissinger’s Staff Meetings | National Archives
+30 lot:66D193 Vietnam Working Group Files: Lot 66 D 193 | Department of State
+30 txt:johnson library|recordings and transcript Recordings and Transcripts | Johnson Library
+
+POINTED-AT (external-citation-index targets, footnote references, in the scope volumes): total targets 115 refs 1218
+393 txt:carter library|national security affair National Security Affairs | Carter Library
+152 txt:johnson library|national security file National Security File | Johnson Library
+75 txt:kennedy library|national security file National Security Files | Kennedy Library
+55 txt:nixon|nsc file NSC Files | Nixon
+49 txt:carter library|presidential material Presidential Materials | Carter Library
+32 lot:81D113 D Files: Lot 81D113 (Entry P–14) | Department of State
+27 txt:johnson library|presidential daily diary President’s Daily Diary | Johnson Library
+24 txt:carter library|national security council National Security Council | Carter Library
+21 txt:carter library|staff office file Staff Office Files | Carter Library
+19 lot:85D240 Bundy Files: Lot 85 D 240 | Department of State
+18 txt:kennedy library|presidential office file President’s Office Files | Kennedy Library
+17 lot:65D330 Secretary’s Memoranda of Conversation: Lot 65 D 330 | Department of State
+17 lot:72D192 Rusk Files: Lot 72 D 192 | Department of State
+16 lot:66D193 Vietnam Working Group Files: Lot 66 D 193 | Department of State
+15 txt:kennedy library|ball paper Ball Papers | Kennedy Library
+
+volumeCategories sample keys ['k', 'n', 'v']
+
+CATEGORY totals (usage index volumeCategories) in scope volumes:
+11 {"k": 0, "n": [1, 442, 408, 613, 565, 514, 1001, 1763, 1678, 1826, 706, 413, 1200, 1872, 1396, 1311, 1208, 1369, 10, 4, 960, 710, 427, 700, 698, 1028, 478, 880, 875, 913, 328, 671, 67, 57, 82, 90, 44,

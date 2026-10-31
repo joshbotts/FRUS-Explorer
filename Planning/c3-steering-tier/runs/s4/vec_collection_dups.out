@@ -1,0 +1,12 @@
+collection documents: 35 in vector index: 35
+pairs closer than mean-8sd line (48.99) within the collection: 0
+pairs in the 3,165-document scope check that involve a collection document: 2
+0 ('frus1969-76ve15p2', 'd292') ('frus1969-76ve15p2Ed2', 'd292')
+0 ('frus1969-76ve15p2', 'd293') ('frus1969-76ve15p2Ed2', 'd293')
+each member's nearest-neighbour distance within the collection set:
+min 81, median 110, max 144; members with NN below the line: 0
+ closest pairs: (81, ('frus1969-76ve15p2', 'd292'), ('frus1969-76ve15p2', 'd293'))
+ closest pairs: (81, ('frus1969-76ve15p2', 'd293'), ('frus1969-76ve15p2', 'd292'))
+ closest pairs: (82, ('frus1947v07', 'd553'), ('frus1947v07', 'd570'))
+ closest pairs: (82, ('frus1947v07', 'd570'), ('frus1947v07', 'd553'))
+ closest pairs: (92, ('frus1948v07', 'd322'), ('frus1949v08', 'd131'))

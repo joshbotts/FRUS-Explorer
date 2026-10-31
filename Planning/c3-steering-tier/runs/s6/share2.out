@@ -1,0 +1,2 @@
+core census N 479 tolerant 479 strict 419 | sample40 (same idx as core_sample40.txt) tolerant 40 strict 37
+>=1 set N 3174

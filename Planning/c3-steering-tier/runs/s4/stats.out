@@ -1,0 +1,60 @@
+FAMILY hits (apparatus excluded, Ed2 excluded): 3123
+decade | N hits | M dated non-apparatus docs | per 1,000 | top volume share
+1840s | 1 of 143 | 7.0 | frus1902app2 1 of 1
+1850s | 1 of 158 | 6.3 | frus1894app2 1 of 1
+1860s | 114 of 11268 | 10.1 | frus1868p2 17 of 114
+1870s | 107 of 5821 | 18.4 | frus1871 11 of 107
+1880s | 81 of 6484 | 12.5 | frus1888p2 15 of 81
+1890s | 126 of 9845 | 12.8 | frus1894app2 46 of 126
+1900s | 113 of 10261 | 11.0 | frus1906p1 16 of 113
+1910s | 180 of 30842 | 5.8 | frus1913 19 of 180
+1920s | 76 of 20374 | 3.7 | frus1922v01 8 of 76
+1930s | 114 of 40073 | 2.8 | frus1933v02 12 of 114
+1940s | 456 of 75872 | 6.0 | frus1947v07 64 of 456
+1950s | 542 of 42801 | 12.7 | frus1951-54Iran 33 of 542
+1960s | 580 of 27654 | 21.0 | frus1964-68v05 44 of 580
+1970s | 500 of 22258 | 22.5 | frus1969-76ve11p1 38 of 500
+1980s | 128 of 6038 | 21.2 | frus1981-88v01 19 of 128
+1990s | 1 of 177 | 5.6 | frus1989-92v31 1 of 1
+undated hits: 3
+LITERAL SHARE (regex over header+dateline+source_note+body_text, whitespace-collapsed, case-insensitive Python re; 40 evenly spaced of 3123): STRICT 36 of 40; TOLERANT 40 of 40
+frus1862/d176 - T | intimations that some of the escapes from the blockade are known here to have been effected by connivance and bribes to the officers commanding United States vessels. I know not myself how to account for some of the statements
+frus1867p2/d114 S T | e which may be turned to pecuniary profit by a government are peculiarly dangerous when the administration is corrupt, and equally harassing when the rulers are men of integrity. In the first case the members of government get 
+frus1873p2v3/d25 - T |  to enable Her Majesty’s authorities, with perfect impunity, to seize and confiscate American vessels, and to embezzle, almost indiscriminately, the property of our citizens employed in the fisheries on the coasts of the British
+frus1882/d200 S T | and currently reported here, is that American consuls have visited these imprisoned citizens and attempted to bribe them by offers of money into acknowledgment of the justice of such arbitrary imprisonment, by agreeing to lea
+frus1893/d57 S T | eans to which he is now having recourse for the purpose of putting down the rebellion. These means are lying, bribery, cunning, and even crime, in their most revolting and odious forms. He has lied to the nation (1) by saying t
+frus1894app2/d501 S T | . No idiot or insane person, and no person who shall be expelled from the Legislature for giving or receiving bribes or being accessory thereto, and no person who, in due course of law, shall have been convicted of larceny, br
+frus1903/d765 S T |  consul at Beirut: Situation continues grave. Disturbances largely due to acute dissatisfaction with weak and corrupt administration, and a number of consuls have telegraphed their embassies urging that the present governor be 
+frus1911/d239 S T | such act is made criminal by the laws of both countries, and the amount of money or the value of the property misappropriated is not less than two hundred dollars, or one thousand francs. Embezzlement by public officers or depositaries
+frus1917/d637 - T | make it more difficult to come to a settlement and might precipitate publication of Ports Company’s charge of venality of Congress. Have come to believe that Congress has been kept in ignorance of Department’s active desire for 
+frus1919Parisv12/d380 S T | or policies, without making specific references; (b) Specific criticisms, usually of alleged mismanagement or corruption in the local military administration; (c) Protests against the interference of the local military authorities
+frus1924v02/d573 S T |  public administrations, and the utterance, circulation or fraudulent use of the above mentioned objects. 15. Embezzlement or criminal malversation committed within the jurisdiction of one or the other party by public officers or de
+frus1933v02/d395 S T | he justice of the United States said to have taken refuge in Greece and charged in the State of Illinois with embezzlement by a person hired, salaried or employed to the detriment of his employer or principal. (Also known in the Sta
+frus1941v02/d244 S T | e has been vitiated by an overestimation of the French Government’s liberty of action. It was useless to beg, bribe, bully a government to exercise an authority they did not possess. It was equally useless to starve a sick pe
+frus1943v04/d737 S T | ts and the administration of this bill is unclear and incomplete. Those who have observed the inefficient and venal operation of the ordinary courts of law here fully realize the impossibility of there being any fair administ
+frus1945v07/d236 S T | intang and Communists too well to accede to this seemingly innocent proposal. He knows that the Kuomintang is corrupt and vulnerable to boring from within. He knows that the Communists are so well organized and so well discipli
+frus1947v04/d266 S T | xisted between economics and politics. For example, the low salaries of civil servants made them dependent on bribery or membership in a political party. The Communist Party thus benefited by the poor economic conditions of the
+frus1947v07/d706 S T | eed unnecessary to say that aid on a large scale without supervision given to the present government with its corrupt and dictatorial framework would prove to be a complete waste of money, material and guidance. There is no dou
+frus1949v05/d311 S T | stern sense. Their leadership is largely associated with a small privileged segment of Rumanian society and a corrupt bureaucracy whose interests are divorced from those of the bulk of the peasant masses. These elements have ke
+frus1950v05/d223 S T | 1950—4 p. m. 520. Inform Army, Navy, Air. Yesterday Shah told Prime Minister Saed and ministers fight against corruption must be postponed “for reasons of state”. He then accepted collective resignation of Saed government and a fe
+frus1951v02/d499 S T | l problems in the countries of the Middle East and in all the under-developed countries, the incompetence and corruption in the governments, and the need on their part for leadership and technical assistance. He said this leadersh
+frus1952-54v04/d336 S T | on and their own political position. Point Four. Cuba’s economic development has been retarded principally by corrupt and demagogic government and by nationalistic and restrictive laws and practices which discourage foreign and
+frus1952-54v13p1/d132 S T |  certain that Binh had to go. Tam regretted that Binh, who has certain good qualities, had been so stupid and venal, remarking that the latter’s practice of maintaining several households was an expensive one. Tam did not say
+frus1955-57v06/d195 S T | s unfortunate subjects. It had redeemed none of them, and had proved itself completely inefficient and wholly corrupt. It had even destroyed the moral and spiritual liberties of the people of Guatemala, not to mention the commi
+frus1955-57v22/d233 S T | lly agreed on three points: (1) More autonomy must be granted provinces, (2) Democracy must be preserved, (3) Corruption must be eliminated. However, there are differences between central government and provinces as to methods of 
+frus1958-60v05mSupp/ve_d47 S T | enditures on expanding bureaucracy and on ill-planned projects of questionable economic usefulness. Waste and corruption were widespread. To expect Venezuela to shake off heritage of dictatorships and evils of dictatorships and to
+frus1958-60v15/d57 S T | part of Indian legend re US-Pakistan “complicity”. Future arms aid to Pakistan may be considered “pay off” of bribe to Pakistan military for subservience to US. Indians may accuse US of maintaining unpopular Pakistan Governme
+frus1961-63v05/d211 S T | stamp out black marketeering, speculation and other economic crimes involving illegal manufacturing, theft or misappropriation of state property, bribery of officials, and other chronic abuses. The majority of the Jews arrested have bee
+frus1961-63v21/d97 S T | es ($40 million expected this year and $200 million within five years) will become an invitation to waste and corruption which could destroy public confidence in the government. AID has offered to help staff the Development Minist
+frus1964-68v04/d150 S T | nd said that he was not worried about him. 5. Ky made the point that the big problem with senior officers was corruption and that temptations were great. He himself had been offered sizeable sums by many parties in return for requ
+frus1964-68v06/d207 S T | ut the promises made at Manila, referring to the establishment of constitutional government and the attack on corruption as examples. He added that freedom loving peoples everywhere are “looking with confidence at the role and lea
+frus1964-68v24/d360 S T | ment is hampered by regional and tribal parochialism, the dearth of essential skills, and a high incidence of corruption. There is considerable unemployment and underemployment. At mid-course in a six-year development plan, domest
+frus1964-68v31/d241 S T | s almost incredible to us that threats to government or country’s well being, or prevalence of subversion and corruption, were such as to warrant gross breaching of constitutional restraints and political and civil rights—or that,
+frus1969-76v16/d177 S T | to be more forthcoming in the MBFR, SALT and elsewhere. In short, there may be a détente penalty, rather than payoff, for giving the Soviets what they want on grain without exacting a quid pro quo that is clear to them and the
+frus1969-76v31/d129 S T | licts that have troubled our relationships, especially with the French. And LDC s have received a substantial payoff in the package which should have a beneficial effect on north-south relations. But we will still need to deal
+frus1969-76ve05p1/d243 S T | President Obote ʼs effort to oust him. General Amin has since made the usual charges about tribal favoritism, corruption, economic difficulties and lack of democracy in the previous government—all of which are true—to justify the 
+frus1969-76ve10/d225 - T | erage to obtain Cuban cooperation—either by blackmail in threatening to stop essential economic support or by bribes in the form of more economic and military aid. This would explain a number of otherwise puzzling reports we h
+frus1969-76ve11p2/d41 S T | ome high officials such as Raul Lastiri, Julio Gonzalez and Gov Carlos Menem who are believed to be guilty of malfeasance or abuse of power and they have rounded up a good number of suspected terrorists. But it is now clear that th
+frus1977-80v11p1/d80 S T | ery subtle Soviet insinuations), point in the direction of transforming the conflict into a wider assault on “corrupt and impotent” America. This is a dangerous trend. It could make our friends in the region run for cover and o
+frus1977-80v19/d452 S T | met with Foreign Minister Rao. See footnote 3, Document 191. Brzezinski: I agree that it is desirable but the payoff will not come quickly. It will not solve our short-term problem which involves a possible Soviet effort in Af
+frus1981-88v01/d239 S T | ncing, the apologies turned to attack those who fought to be free of communism: our friends were denounced as corrupt and dictatorial, unworthy of our support. Their smallest misdeeds were magnified and condemned. Then we heard

@@ -1,0 +1,12 @@
+{
+ "label": "graft_word",
+ "match": "graft",
+ "strict": "\\bgraft\\b",
+ "tolerant": "\\bgraft(s|ed|ing)?\\b",
+ "M_hitlist_excl_fm_ed_Ed2": 363,
+ "mode": "sample40",
+ "n": 40,
+ "strict_hits": 35,
+ "tolerant_hits": 40,
+ "tolerant_misses": []
+}

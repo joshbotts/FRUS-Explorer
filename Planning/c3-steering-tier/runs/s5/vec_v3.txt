@@ -1,0 +1,41 @@
+/Users/jbotts/frus-analysis/c3s/runs/s5/v3.py:14: RuntimeWarning: divide by zero encountered in matmul
+  i=vnames.index(vol); s=V@V[i]; o=np.argsort(-s)
+/Users/jbotts/frus-analysis/c3s/runs/s5/v3.py:14: RuntimeWarning: overflow encountered in matmul
+  i=vnames.index(vol); s=V@V[i]; o=np.argsort(-s)
+/Users/jbotts/frus-analysis/c3s/runs/s5/v3.py:14: RuntimeWarning: invalid value encountered in matmul
+  i=vnames.index(vol); s=V@V[i]; o=np.argsort(-s)
+CENTROID SIMILARITY (volume centroid cosine, RAW, not calibrated; centroid-to-centroid, not document-to-query)
+ frus1964-68v05: frus1964-68v04 0.991, frus1964-68v06 0.988, frus1964-68v03 0.986, frus1964-68v02 0.984, frus1964-68v01 0.980
+ frus1922v01: frus1922v02 0.988, frus1921v01 0.988, frus1923v01 0.987, frus1924v01 0.985, frus1920v01 0.984
+ frus1977-80v03: frus1969-76v31 0.976, frus1981-88v38 0.971, frus1969-76v03 0.967, frus1969-76v04 0.964, frus1969-76v37 0.962
+ frus1947v07: frus1948v08 0.985, frus1948v07 0.983, frus1946v10 0.982, frus1945v07 0.980, frus1949v09 0.975
+ baseline random volume-pair centroid cosine: mean 0.904 sd 0.031 max 0.992
+
+MAP placements of the 38 collection documents
+ unclustered: 9 of 38
+ cluster 29 (7 docs) terms=['lao', 'vietnamese', 'vietnam', 'thieu'] documentCount=8631 eraCounts={'2': 8631}
+ cluster 3 (5 docs) terms=['nanking', 'shanghai', 'chinese', 'tientsin'] documentCount=37899 eraCounts={'0': 2633, '1': 26227, '2': 9039}
+ cluster 43 (4 docs) terms=['zaya', 'crowder', 'airway', 'guatemala'] documentCount=1635 eraCounts={'1': 1625, '2': 10}
+ cluster 42 (3 docs) terms=['castro', 'somoza', 'cuban', 'cuba'] documentCount=7650 eraCounts={'1': 58, '2': 7592}
+ cluster 5 (2 docs) terms=['philippine', 'philippines', 'quirino', 'magsaysay'] documentCount=615 eraCounts={'1': 75, '2': 540}
+ cluster 37 (2 docs) terms=['shah', 'iran', 'iranian', 'zahedi'] documentCount=1097 eraCounts={'1': 2, '2': 1095}
+ cluster 68 (1 docs) terms=['amag', 'greek', 'greece', 'macveagh'] documentCount=813 eraCounts={'1': 80, '2': 733}
+ cluster 45 (1 docs) terms=['tshombe', 'congo', 'katanga', 'congolese'] documentCount=1260 eraCounts={'2': 1260}
+ cluster 22 (1 docs) terms=['rok', 'korea', 'rhee', 'korean'] documentCount=3440 eraCounts={'1': 73, '2': 3367}
+ cluster 120 (1 docs) terms=['cancun', 'summit', 'ldcs', 'dac'] documentCount=496 eraCounts={'1': 1, '2': 495}
+ cluster 113 (1 docs) terms=['sdr', 'volcker', 'imf', 'antarctic'] documentCount=698 eraCounts={'1': 4, '2': 694}
+ cluster 73 (1 docs) terms=['constantinople', 'terrell', 'porte', 'sublime'] documentCount=1643 eraCounts={'0': 1307, '1': 335, '2': 1}
+ volume-matched baseline: 4552 of 18886 documents in the same 27 volumes are unclustered (0.241); corpus-wide 88059 of 314616 (0.280)
+
+NEAR-DUPLICATE CHECK (sign-bit Hamming): nearest OTHER document in the whole corpus to each collection document; flag <=40
+  13 ('frus1950v03', 'd728') <-> ('frus1950v07', 'd977')
+  65 ('frus1921v01', 'd275') <-> ('frus1926v01', 'd538')
+  65 ('frus1977-80v24', 'd337') <-> ('frus1977-80v24', 'd346')
+  66 ('frus1922v01', 'd836') <-> ('frus1922v01', 'd835')
+  66 ('frus1964-68v05', 'd301') <-> ('frus1964-68v04', 'd21')
+  69 ('frus1969-76ve09p2', 'd155') <-> ('frus1977-80v18', 'd151')
+  69 ('frus1977-80v03', 'd65') <-> ('frus1977-80v03', 'd145')
+  70 ('frus1950v06', 'd802') <-> ('frus1950v06', 'd804')
+ collection docs with nearest other document at <=40 bits: 1 of 38 ; min 13 median 76.5
+ closest pairs inside the collection: [(72, 'frus1977-80v03/d230', 'frus1977-80v03/d248'), (73, 'frus1922v01/d841', 'frus1922v01/d842'), (77, 'frus1922v01/d836', 'frus1922v01/d842'), (79, 'frus1977-80v03/d35', 'frus1977-80v03/d65')]
+ mean within-collection pair distance 155.4 (random-pair baseline 167.1, sd 14.8)

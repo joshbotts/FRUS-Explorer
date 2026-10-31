@@ -1,0 +1,3 @@
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "BEGIN; CREATE TABLE zz(x); ROLLBACK;"
+python3 -u /Users/jbotts/frus-analysis/c3s/runs/canary/canary.py   # operating card A.9 code, RES/DB set; SQL inside: joined() SELECT on document_cache LEFT JOIN document_dates

@@ -1,0 +1,105 @@
+== N1: 'all 553 volumes' (memo M1) ==
+[(553, 321749, 1103, 8481)]
+manifest volumes: 553 published: 550
+== N2: 'about one document in a hundred' (memo M2, M5: 3,057 of 311,429) ==
+denominator 311429 | family hits 3057 in 447 volumes | 9.8 per 1,000 = 0.98 % = 1 in 102
+raw (M4) hits, volumes: [(3163, 451)]
+== N3: 'about three in four of a sample' (memo M6 referent 31 of 40) ==
+  OFF-TOPIC claimed: frus1894app2/d59 | rcel rates. When the contents of a parcel which can not be delivered are liable to deterioration or corruption, they may be destroyed at once, if necessary, or if expedient, sold, without previous notice or jud
+  OFF-TOPIC claimed: frus1904/d578 |  entertain request for surrender as act of comity of a fugitive from the United States charged with embezzlement. While United States Government can not, until treaty becomes effective, promise reciprocity, the e
+  OFF-TOPIC claimed: frus1911/d1020 | ministrations, and the utterance, circulation or fraudulent use of the above mentioned objects. 15. Embezzlement or criminal malversation committed within the jurisdiction of one or the other party by public offi
+  OFF-TOPIC claimed: frus1917/d387 | . Whereas some were for civil war as a necessary evil, maintaining that excessive love of peace had corrupted and enervated the people, others opposed that plan and expressed a preference for a coup d’état, wh
+  OFF-TOPIC claimed: frus1919Parisv07/d25 | e, however, that it was good policy to allow Bulgaria to retain territory obtained from Turkey as a bribe for declaring war on us. In any case, Dédéagatch was not the only port which could serve Bulgarian 
+  OFF-TOPIC claimed: frus1948v06/d51 | seology, and since their text based condensed cable version sent Department mytel 84 and apparently corrupted in form received by Hague, some difficulties were encountered. Statement finally agreed on as follo
+  OFF-TOPIC claimed: frus1955-57v05/d164 | ct further discussions on security but would not go very far in meeting us. They would probably try bribe Adenauer to break away from West. We should not join them in meaningless principles but should try 
+  OFF-TOPIC claimed: frus1961-63v25/d24 | of Pigs, that it grew out of an early history which was not of the President’s making and had to be grafted on to a point of view which was incompletely shaped in his own mind by the time decision became nec
+  OFF-TOPIC claimed: frus1969-76v15/d55 | . Kissinger: When I tell people that I find you pleasant and amusing they think I have been totally corrupted by my visits to Moscow. [Gromyko reacted to this with his best deadpan expression.] FM Gromyko: It 
+sample size 40 STRICT 30 TOLERANT 40 | claimed off-topic ids present in the sample: 9 of 9
+sample ids: frus1862/d176 frus1867p2/d115 frus1874/d309 frus1883/d416 frus1893/d583 frus1894app2/d59 frus1904/d578 frus1911/d1020 frus1917/d387 frus1919Parisv07/d25 frus1922v01/d851 frus1931v02/d691 frus1937v01/d710 frus1943China/d127 frus1944v06/d314 frus1946v06/d421 frus1947v07/d202 frus1948v06/d51 frus1949v07p2/d320 frus1950v05/d294 frus1951v04p1/d381 frus1952-54v04/d664 frus1952-54v13p1/d135 frus1955-57v05/d164 frus1955-57v21/d217 frus1958-60v05/d122 frus1958-60v15/d326 frus1961-63v02/d275 frus1961-63v17/d26 frus1961-63v25/d24 frus1964-68v05/d391 frus1964-68v23/d91 frus1964-68v31/d138 frus1969-76v15/d55 frus1969-76v35/d78 frus1969-76ve05p2/d53 frus1969-76ve11p1/d117 frus1969-76ve15p2/d292 frus1977-80v17p2/d89 frus1977-80v24/d275
+31 of 40 = 0.78 -> 'about three in four' = 0.75
+== N4: 'The collection holds twelve documents' (memo M10 / §8) ==
+document entries 12 distinct 12
+== N5: Lot 54D270 'which NARA split into ten series under ... creator identifier 10481258' ==
+curated-lot-resolutions keys: ['schemaVersion', 'generated', 'note', 'series', 'lots']
+{
+ "lotNumber": "54D270",
+ "kind": "candidates",
+ "displayName": "Marshall Mission Files",
+ "recordGroup": "RG-59",
+ "creatorName": "President (1945-1953 : Truman). Office of the Special Envoy to China.",
+ "creatorNaId": "10481258",
+ "rationale": "NARA did not accession this lot as one series. It arranged the Marshall Mission's records under the mission's own creator record, as ten series split by record type. Any of them may hold the cited document.",
+ "seeAllURL": "https://catalog.archives.gov/search?maskedQ=record.creators.naId:10481258",
+ "candidates": [
+  {
+   "naId": "871815",
+   "title": "Background Materials",
+   "catalogURL": "https://catalog.archives.gov/id/871815",
+   "entryNumber": "A1-1095",
+   "dateRange": "1944\u20131946"
+  },
+  {
+   "naId": "872082",
+   "title": "Top Secret Documents",
+   "catalogURL": "https://catalog.archives.gov/id/872082",
+   "entryNumber": "A1-1096",
+   "dateRange": "1946\u20131947"
+  },
+  {
+   "naId": "872083",
+   "title": "Reference Subject Files",
+   "catalogURL": "https://catalog.archives.gov/id/872083",
+   "entryNumber": "A1-1097",
+   "dateRange": "1945\u20131947"
+  },
+  {
+   "naId": "872084",
+   "title": "Cables Sent",
+   "catalogURL": "https://catalog.archives.gov/id/872084",
+   "entryNumber": "A1-1098",
+   "dateRange": "1946\u20131947"
+  },
+  {
+   "naId": "872088",
+   "title": "Cables Received",
+   "catalogURL": "https://catalog.archives.gov/id/872088",
+   "entryNumber": "A1-1099",
+   "dateRange": "1946\u20131947"
+  },
+  {
+   "naId": "872089",
+   "title": "Drafts of Telegrams, Letters, and Memorandums",
+   "catalogURL": "https://catalog.archives.gov/id/872089",
+   "entryNumber": "A1-1100",
+   "dateRange": "1946\u20131947"
+  },
+  {
+   "naId": "872090",
+   "title": "General George C. Marshall's Report on His Mission to China",
+   "catalogURL": "https://catalog.archives.gov/id/872090",
+   "entryNumber": "A1-1101",
+   "dateRange": "1946\u20131947"
+  },
+  {
+   "naId": "872091",
+   "title": "Records Relating to Political Affairs",
+   "catalogURL": "https://catalog.archives.gov/id/872091",
+   "entryNumber": "A1-1102",
+   "dateRange": "1946\u20131947"
+  },
+  {
+   "naId": "872099",
+   "title": "Records Relating to Military Affairs",
+   "catalogURL": "https://catalog.archives.gov/id/872099",
+   "entryNumber": "A1-1103",
+   "dateRange": "1945\u20131948"
+  },
+  {
+   "naId": "872132",
+   "title": "Ribbon Copy of General George C. Marshall's Report on His Mission to China",
+   "catalogURL": "https://catalog.archives.gov/id/872132",
+   "entryNumber": "A1-1106",
+   "dateRange": "1946\u20131947"
+  }
+ ]
+}

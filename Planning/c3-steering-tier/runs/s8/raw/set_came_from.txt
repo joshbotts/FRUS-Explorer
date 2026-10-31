@@ -1,0 +1,27 @@
+frus1947v07|d617|0|0|10346|decimal|Department of State|59|711.93/2–747|
+frus1947v07|d628|0|0|9576|decimal|Department of State|59|711.93/2–2747|
+frus1947v07|d582|0|0|3521|decimal|Department of State|59|026 China/8–1747|
+frus1947v07|d583|0|0|10186|decimal|Department of State|59|121.893/9–1947|
+frus1948v07|d322|0|0|3815|decimal|Department of State|59|893.24/8–1648|
+frus1948v07|d407|0|0|14029|decimal|Department of State|59|893.00/10–2648|
+frus1958-60v01|d135|0|0|5312|decimal|Department of State|59|751K.5/4–1160|
+frus1958-60v01|d267|0|0|6169|decimal|Department of State|59|751K.00/12–1560|
+frus1964-68v04|d215|0|0|4047|structured|Johnson Library||National Security File|
+frus1964-68v05|d395|0|0|5952|structured|Johnson Library||National Security File|
+frus1964-68v06|d31|0|0|4174|structured|Johnson Library||Tom Johnson’s Notes of Meetings. Top Secret. The meeting was held in the Cabinet Room. Those in attendance were the President|
+frus1964-68v06|d134|0|0|4564|subject_numeric|National Archives|59|Central Files|
+frus1961-63v22|d202|0|0|4694|structured|Kennedy Library||President’s Office Files|
+frus1961-63v22|d221|0|0|1248|structured|Kennedy Library||National Security Files|
+frus1961-63v22|d297|0|0|7981|subject_numeric|Department of State|59|POL 15 S KOR|
+frus1969-76ve09p2|d122|0|0|28403|lot_file|Department of State|84|File|79F80
+frus1969-76ve09p2|d152|0|0|9755|structured|National Archives|59|Transcripts of Secretary of State Kissinger’s Staff Meetings|
+frus1969-76ve09p2|d161|0|0|7879|structured|National Archives|84|Jidda Embassy Files:, Box 30|
+frus1969-76ve15p2|d292|0|0|3590|structured|National Archives|59|Records of Secretary of State Henry Kissinger, Box 24|
+frus1969-76ve15p2|d293|0|0|4361|structured|National Archives|59|Records of Secretary of State Henry Kissinger, Box 24|
+frus1969-76ve12|d218|0|0|3216|structured|Ford Library||National Security Adviser|
+frus1969-76ve12|d219|0|0|3402|structured|Ford Library||National Security Adviser|
+frus1969-76ve12|d227|0|0|6206|cfpf|Department of State|59|CFPF|
+frus1969-76ve09p1|d50|0|0|3882|cfpf|Department of State|59|CFPF|
+frus1977-80v15|d68|0|0|8572|structured|National Archives|59|Office of the Secretariat Staff, Box 17|81D113
+frus1977-80v15|d80|0|0|5998|cfpf|Department of State|59|CFPF D780341–0421|
+frus1977-80v15|d83|0|0|4061|structured|Carter Library||National Security Affairs|

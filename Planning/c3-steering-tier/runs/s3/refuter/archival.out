@@ -1,0 +1,66 @@
+central-files-index schemaVersion 3 generated 2026-09-10 | keys ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+series-facts-index schemaVersion 3 generated 2026-09-10 | keys ['byNaId', 'findingAidTypes', 'generated', 'headings', 'legend', 'referenceUnits', 'restrictions', 'schemaVersion', 'statuses', 'useRestrictions']
+presidential-library-catalog schemaVersion 1 generated 2026-08-06 | keys ['generated', 'libraries', 'schemaVersion', 'source']
+
+== LOT FILES in central-files-index.lotFiles ==
+63D351 -> [{"catalogURL": "https://catalog.archives.gov/id/2839192", "hmsMlrEntryNumbers": ["A1 1586E"], "levelOfDescription": "series", "lotNumber": "63D351", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}]
+66D95 -> [{"catalogURL": "https://catalog.archives.gov/id/2839192", "hmsMlrEntryNumbers": ["A1 1586E"], "levelOfDescription": "series", "lotNumber": "66D95", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}]
+62D430 -> [{"catalogURL": "https://catalog.archives.gov/id/2839191", "hmsMlrEntryNumbers": ["A1 1586C"], "levelOfDescription": "series", "lotNumber": "62D430", "matchType": "control", "naId": "2839191", "recordGroup": "59", "title": "Subject and Special Files"}]
+62D1 -> [{"catalogURL": "https://catalog.archives.gov/id/2838992", "hmsMlrEntryNumbers": ["A1 1583E", "A1 1583F"], "levelOfDescription": "series", "lotNumber": "62D1", "matchType": "control", "naId": "2838992", "recordGroup": "59", "title": "Records Relating to Activities with the National Security Council"}]
+54D270 -> NOT IN lotFiles
+79F80 -> NOT IN lotFiles
+
+== series-facts-index byNaId ==
+2839192 -> {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Office of the Secretary. Executive Secretariat.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "26 linear feet, 3 linear inches", "inclusiveStartYear": 1947, "inclusiveEndYear": 1979}
+2839191 -> {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Executive Secretariat.", "coverageStartYear": 1952, "coverageEndYear": 1961, "findingAids": ["Index"], "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "4 linear feet, 5 linear inches", "inclusiveStartYear": 1953, "inclusiveEndYear": 1961}
+2838992 -> {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Policy Planning Council.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "3 linear feet, 1 linear inch", "inclusiveStartYear": 1948, "inclusiveEndYear": 1961}
+10481258 -> not in byNaId
+1164 -> not in byNaId
+567979 -> not in byNaId
+572235 -> not in byNaId
+
+== curated-lot-resolutions for 54D270 ==
+{"lotNumber": "54D270", "kind": "candidates", "displayName": "Marshall Mission Files", "recordGroup": "RG-59", "creatorName": "President (1945-1953 : Truman). Office of the Special Envoy to China.", "creatorNaId": "10481258", "rationale": "NARA did not accession this lot as one series. It arranged the Marshall Mission's records under the mission's own creator record, as ten series split by record type. Any of them may hold the cited document.", "seeAllURL": "https://catalog.archives.gov/search?maskedQ=record.creators.naId:10481258", "candidates": [{"naId": "871815", "title": "Background Materials", "catalogURL": "https://catalog.archives.gov/id/871815", "entryNumber": "A1-1095", "dateRange": "1944\u20131946"}, {"naId": "872082", "title": "Top Secret Documents", "catalogURL": "https://catalog.archives.gov/id/872082", "entryNumber": "A1-1096", "dateRange": "1946\u20131947"}, {"naId": "872083", "title": "Reference Subject Files", "catalogURL": "https://catalog.archives.gov/id/872083", "entryNumber": "A1-1097", "dateRange": "1945\u20131947"}, {"naId": "872084", "title": "Cables Sent", "catalogURL": "https://catalog.archives.gov/id/872084", "entryNumber": "A1-1098", "dateRange": "1946\u20131947"}, {"naId": "872088", "title": "Cables Received", "catalogURL": "https://catalog.archives.gov/id/872088", "entryNumber": "A1-1099", "dateRange": "1946\u20131947"}, {"naId": "872089", "title": "Drafts of Telegrams, Letters, and Memorandums", "catalogURL": "https://catalog.archives.gov/id/872
+
+== collection-authority rows naming 54D270 ==
+{"aliases": ["54\u2013D270", "Marshall Mission Files"], "id": "lot:54D270", "lotFileNorm": "54D270", "name": "Lot 54\u2013D270", "recordGroup": "59", "repository": "Department of State", "volumeIds": ["frus1944v06", "frus1945v07", "frus1946v09", "frus1946v10", "frus1947v07"]}
+
+== presidential-library-catalog: naId 1164, 567979, 572235, 623746 and 'National Security Affairs' ==
+catalog collections: 0 | row keys: None
+
+== index: document_sources for the cited Saudi airgram (RG 84 Lot 79F80) and Crowder (837.51/764) ==
+[('Department of State', '84', '79F80', 'File', None, 'lot_file', 'Source: National Archives, RG 84, Jidda Embassy Files: Lot 79F80, POL 15–4, Denmark File (corruption). Secret; Exdis; Stadis. Drafted on December 10 by Nicholas M. Murphy (POL), with contributions in draft from Akins, Horan, Bird, Close, Butcher, Cecil, and Samuel Wyman (COML). Approved by Horan. Repeated to Abu Dhabi, Amman, Beirut, Cairo, Damascus, Dhahran, Doha, Kuwait City, Muscat, and Tehran.')]
+[('Department of State', '59', None, '837.51/764', '837.51', 'decimal', '837.51/764')]
+
+== index: came-from (M12) and pointed-at (M13) counts over the 3,057 set, for the units paragraph 2 names ==
+hit set [(3057,)]
+came-from rows: [(2547,)]
+came-from by unit:
+   ('Central Intelligence Agency', None, None, 117)
+   ('Nixon Presidential Materials', None, 'NSC Files', 95)
+   ('Johnson Library', None, 'National Security File', 77)
+   ('Carter Library', None, 'National Security Affairs', 56)
+   ('National Archives', '59', 'Central Files 1970–73', 43)
+   ('National Archives', '59', 'Central Files 1967–69', 40)
+   ('Kennedy Library', None, 'National Security Files', 29)
+   ('National Archives', '59', 'Central Files 1964–66', 23)
+   ('Department of State', '59', '54D270', 17)
+   ('Department of State', '59', '63D351', 16)
+   ('Department of State', '59', 'CFPF', 16)
+   ('Department of State', '59', '62D430', 7)
+   ('Department of State', '59', '62D1', 4)
+   ('Department of State', '84', '79F80', 3)
+   ('National Archives', '84', '79F80', 1)
+came-from citation_era: [('decimal', 1297), ('structured', 637), ('lot_file', 202), ('subject_numeric', 182), ('cfpf', 119), ('named_series', 59), ('published', 34), ('unrecognized', 15), ('foreign', 2)]
+pointed-at rows/docs: [(746, 435)]
+pointed-at by unit:
+   ('Carter Library', 'National Security Affairs', 41)
+   ('Johnson Library', 'National Security File', 28)
+   ('Nixon Presidential Materials', 'NSC Files', 27)
+   ('Department of State', '66D95', 17)
+   ('Department of State', '63D351', 12)
+   ('Department of State', '62D1', 6)
+   ('Department of State', '62D430', 6)
+   ('Kennedy Library', 'National Security Files', 4)
+pointed-at anchors: [('centralFileClass', 448), ('presidentialLibrary', 162), ('lotFile', 136)]
+pre-1940 series (M15): 698 with a start year; 11 before 1940

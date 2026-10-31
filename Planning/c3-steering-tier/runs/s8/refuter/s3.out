@@ -1,0 +1,87 @@
+== overview quotations (document-attributed) ==
+# 1 frus1947v07/d628 OK offsets=[4726] :: reactionaries
+# 2 frus1947v07/d628 OK offsets=[4835] :: party corruption
+# 3 frus1961-63v22/d221 OK offsets=[1090] :: conditional upon Korean performance
+# 4 frus1964-68v05/d395 OK offsets=[1757] :: the Administration’s position
+# 5 frus1969-76ve15p2/d293 OK offsets=[641] :: We must do everything possible to keep this quiet
+# 6 frus1969-76ve09p2/d161 OK offsets=[725] :: POL Northrop and Lockheed
+#10 frus1961-63v22/d297 OK offsets=[4730] :: corrupt
+#15 frus1947v07/d617 OK offsets=[4109] :: corrupt management
+#16 frus1947v07/d628 OK offsets=[4726] :: reactionaries
+#17 frus1947v07/d582 OK offsets=[289] :: earlier certainty of corrupt and inept practices
+#18 frus1947v07/d628 OK offsets=[4721] :: those reactionaries in the Chinese Government who have been counting o
+#19 frus1947v07/d582 OK offsets=[241] :: The information received in Shanghai serves to reaffirm earlier certai
+#20 frus1948v07/d322 OK offsets=[1875] :: It is precisely because he knows the Government to be corrupt and inef
+#21 frus1964-68v05/d395 OK offsets=[1757] :: the Administration’s position
+#22 frus1964-68v06/d134 OK offsets=[1827] :: meet criticism in the U.S.
+#23 frus1964-68v06/d31 OK offsets=[3356] :: We cannot have perfection.
+#24 frus1958-60v01/d267 OK offsets=[4251] :: no country Asia more diligent in prosecuting corruption than GVN
+#25 frus1964-68v05/d395 OK offsets=[1658] :: There was unanimous agreement that a visible and credible anti-corrupt
+#26 frus1964-68v06/d31 OK offsets=[3356] :: We cannot have perfection. We have corruption here.
+#27 frus1961-63v22/d202 OK offsets=[2809] :: graft, corruption and fraud
+#28 frus1961-63v22/d297 OK offsets=[4730] :: corrupt
+#29 frus1961-63v22/d202 OK offsets=[2790] :: The extent and depth of graft, corruption and fraud in the major insti
+#30 frus1961-63v22/d221 OK offsets=[1007] :: Make it absolutely clear that U.S. assistance in the future, above a m
+#31 frus1961-63v22/d297 OK offsets=[4774] :: Who is to decide who is corrupt?
+#32 frus1969-76ve12/d219 OK offsets=[2978] :: an international agreement to curtail such practices
+#33 frus1969-76ve09p2/d122 OK offsets=[1487] :: At the same time we have concluded that corruption has been on the inc
+#34 frus1969-76ve15p2/d293 OK offsets=[641] :: We must do everything possible to keep this quiet.
+#35 frus1969-76ve12/d219 OK offsets=[2917] :: I hope the Government of Japan can support the United States proposal 
+#36 frus1977-80v15/d68 OK offsets=[4491] :: corrupt dictatorship
+#37 frus1977-80v15/d80 OK offsets=[2734] :: Eradication of the corruption
+#38 frus1977-80v15/d68 OK offsets=[4491] :: corrupt dictatorship that has systemically violated human rights
+#39 frus1977-80v15/d80 OK offsets=[2734] :: Eradication of the corruption which has characterized the Somocist dic
+#40 frus1977-80v15/d83 OK offsets=[2004] :: It’s not primarily his corruption, his human rights record, or anythin
+overview document quotations checked: 33 OK: 33
+non-document quoted strings (search terms, controls, euphemism examples, collection name): #7 Department of State, #8 United States, #9 corruption, #11 corruption, #12 commissions, #13 agents' fees, #14 squeeze, #41 corruption, #42 bribery, #43-45 corruption/corrupt/corrupted, #46 collection name
+  euphemism example 'commissions' present in set documents: ['frus1969-76ve09p2/d122', 'frus1969-76ve09p2/d152', 'frus1969-76ve09p2/d155']
+  euphemism example "agents' fees" present in set documents: ['frus1969-76ve09p2/d155']
+  euphemism example 'agents’ fees' present in set documents: ['frus1969-76ve09p2/d155']
+  euphemism example 'squeeze' present in set documents: ['frus1947v07/d583', 'frus1969-76ve09p2/d161']
+== collection excerpts ==
+X 1 frus1947v07/d617 OK offsets=[4032] :: should be carefully examined to determine whether they will be made in
+X 2 frus1947v07/d628 OK offsets=[4721] :: those reactionaries in the Chinese Government who have been counting o
+X 3 frus1947v07/d582 OK offsets=[241] :: The information received in Shanghai serves to reaffirm earlier certai
+X 4 frus1948v07/d322 OK offsets=[1875] :: It is precisely because he knows the Government to be corrupt and inef
+X 5 frus1958-60v01/d267 OK offsets=[4251] :: no country Asia more diligent in prosecuting corruption than GVN
+X 6 frus1964-68v05/d395 OK offsets=[1658] :: There was unanimous agreement that a visible and credible anti-corrupt
+X 7 frus1964-68v06/d31 OK offsets=[3356] :: We cannot have perfection. We have corruption here.
+X 8 frus1964-68v06/d134 OK offsets=[1827] :: meet criticism in the U.S.
+X 9 frus1961-63v22/d202 OK offsets=[2790] :: The extent and depth of graft, corruption and fraud in the major insti
+X10 frus1961-63v22/d221 OK offsets=[1007] :: Make it absolutely clear that U.S. assistance in the future, above a m
+X11 frus1961-63v22/d297 OK offsets=[4774] :: Who is to decide who is corrupt?
+X12 frus1969-76ve09p2/d122 OK offsets=[1487] :: At the same time we have concluded that corruption has been on the inc
+X13 frus1969-76ve09p2/d152 OK offsets=[3724] :: I have taken the position that fees should not be paid to these interm
+X14 frus1969-76ve09p2/d155 OK offsets=[5336] :: to pay large agents’ fees to a Saudi businessman, Adnan Khashoggi, who
+X15 frus1969-76ve09p2/d161 OK offsets=[725] :: POL Northrop and Lockheed
+X16 frus1969-76ve15p2/d292 OK offsets=[1238] :: Such payments coming when Strauss was Defense Minister paved the way f
+X17 frus1969-76ve15p2/d293 OK offsets=[641] :: We must do everything possible to keep this quiet.
+X18 frus1969-76ve12/d219 OK offsets=[2917] :: I hope the Government of Japan can support the United States proposal 
+X19 frus1969-76ve12/d227 OK offsets=[1166] :: THIS IS THE BIGGEST POLITICAL SCANDAL FOR JAPAN’S RULING LIBERAL DEMOC
+X20 frus1977-80v15/d68 OK offsets=[4491] :: corrupt dictatorship that has systemically violated human rights
+X21 frus1977-80v15/d80 OK offsets=[2734] :: Eradication of the corruption which has characterized the Somocist dic
+X22 frus1977-80v15/d83 OK offsets=[2004] :: It’s not primarily his corruption, his human rights record, or anythin
+excerpts: 22 OK: 22
+== exact substring of body_text (session's own test) ==
+X 1 exact_count=1
+X 2 exact_count=1
+X 3 exact_count=1
+X 4 exact_count=1
+X 5 exact_count=1
+X 6 exact_count=1
+X 7 exact_count=1
+X 8 exact_count=1
+X 9 exact_count=1
+X10 exact_count=1
+X11 exact_count=1
+X12 exact_count=1
+X13 exact_count=1
+X14 exact_count=1
+X15 exact_count=1
+X16 exact_count=1
+X17 exact_count=1
+X18 exact_count=1
+X19 exact_count=1
+X20 exact_count=1
+X21 exact_count=1
+X22 exact_count=1

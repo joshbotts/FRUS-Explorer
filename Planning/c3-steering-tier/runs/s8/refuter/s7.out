@@ -1,0 +1,49 @@
+Q_corrupt_set 2186
+Q_brib_set 658
+Q_header_corrupt 2
+Q_china_aid25 25
+Q_china_policy15 15
+Q_vietnam25 25
+Q_lockheed_mix60 60
+Q_korea_nica24 24
+Q_lockheed43 43
+Q_church24 24
+Q_fcpa4 4
+Q_personnel76 76
+Q_blackmarket28 28
+Q_inclined_bribe 1
+heads_hits volumes: ['frus1958-60v01', 'frus1958-60v03mSupp', 'frus1961-63v23', 'frus1964-68v05', 'frus1969-76v06', 'frus1969-76ve09p1', 'frus1969-76ve09p2', 'frus1969-76ve10', 'frus1969-76ve11p1', 'frus1969-76ve11p2', 'frus1969-76ve12', 'frus1969-76ve15p2', 'frus1969-76ve15p2Ed2', 'frus1977-80v19']
+
+pair | queries returning it
+frus1947v07/d628 : ['Q_corrupt_set', 'Q_china_policy15']
+frus1947v07/d582 : ['Q_corrupt_set', 'Q_china_aid25']
+frus1948v07/d322 : ['Q_corrupt_set', 'Q_china_aid25']
+frus1958-60v01/d135 : ['Q_corrupt_set', 'Q_vietnam25']
+frus1958-60v01/d267 : ['Q_corrupt_set', 'Q_vietnam25']
+frus1964-68v05/d395 : ['Q_corrupt_set', 'Q_vietnam25']
+frus1964-68v06/d31 : ['Q_corrupt_set', 'Q_vietnam25']
+frus1961-63v22/d202 : ['Q_corrupt_set', 'Q_korea_nica24']
+frus1961-63v22/d221 : ['Q_corrupt_set', 'Q_korea_nica24']
+frus1961-63v22/d297 : ['Q_corrupt_set', 'Q_korea_nica24']
+frus1969-76ve09p2/d122 : ['Q_corrupt_set', 'Q_brib_set', 'Q_lockheed_mix60', 'Q_lockheed43', 'Q_personnel76']
+frus1969-76ve09p2/d152 : ['Q_brib_set', 'Q_lockheed_mix60', 'Q_lockheed43']
+frus1969-76ve09p2/d155 : ['Q_lockheed_mix60', 'Q_lockheed43', 'Q_church24']
+frus1969-76ve09p2/d161 : ['Q_brib_set', 'Q_lockheed_mix60', 'Q_lockheed43', 'Q_church24']
+frus1969-76ve15p2/d292 : ['Q_brib_set', 'Q_lockheed_mix60', 'Q_lockheed43', 'Q_church24']
+frus1969-76ve15p2/d293 : ['Q_brib_set', 'Q_lockheed_mix60', 'Q_lockheed43', 'Q_church24']
+frus1969-76ve12/d218 : ['Q_brib_set', 'Q_lockheed_mix60', 'Q_lockheed43']
+frus1969-76ve12/d219 : ['Q_corrupt_set', 'Q_church24']
+frus1969-76ve12/d227 : ['Q_brib_set', 'Q_lockheed_mix60', 'Q_lockheed43']
+frus1969-76ve09p1/d50 : ['Q_brib_set', 'Q_lockheed_mix60', 'Q_lockheed43']
+frus1977-80v15/d68 : ['Q_corrupt_set', 'Q_korea_nica24']
+frus1977-80v15/d80 : ['Q_corrupt_set', 'Q_korea_nica24']
+frus1977-80v15/d83 : ['Q_corrupt_set', 'Q_korea_nica24']
+frus1947v07/d617 (quoted, uncited): ['Q_corrupt_set', 'Q_china_policy15']
+frus1964-68v06/d134 (quoted, uncited): ['Q_corrupt_set', 'Q_vietnam25']
+frus1964-68v04/d215 (paraphrased, uncited): ['Q_corrupt_set', 'Q_vietnam25']
+frus1947v07/d583 (collection only): ['Q_corrupt_set', 'Q_brib_set', 'Q_china_aid25']
+frus1948v07/d407 (collection only): ['Q_corrupt_set', 'Q_china_policy15']
+
+d155 in Q_lockheed_mix60 printed list: True position [36] list dates span: ('1919-05-29', '1977-07-02')
+d155 in Q_lockheed43: True
+d155 matches corrupt*/brib*: False False

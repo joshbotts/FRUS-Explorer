@@ -1,0 +1,43 @@
+byNaId entries: 698 | sample key: 102260314 | sample entry keys: ['ar', 'as', 'c', 'ru', 'us', 'x', 'y0', 'y1']
+
+series-facts byNaId[602875] = {"as": 1, "c": 313, "ru": 0, "us": 1, "x": "238 linear feet", "y0": 1949, "y1": 1972}
+
+series-facts byNaId[2839192] = {"ar": [0], "as": 2, "c": 313, "ru": 0, "ur": [0], "us": 3, "x": "26 linear feet, 3 linear inches", "y0": 1947, "y1": 1979}
+
+series-facts byNaId[2658382] = {"as": 3, "c": 89, "ru": 0, "us": 3, "x": "5 linear feet, 7 linear inches", "y0": 1955, "y1": 1962}
+
+legend: {"keys": {"ar": {"field": "accessRestrictions", "into": "restrictions", "kind": "indexList"}, "as": {"field": "accessStatus", "into": "statuses", "kind": "index"}, "c": {"field": "creator", "into": "headings", "kind": "index"}, "cy0": {"field": "coverageStartYear", "kind": "year"}, "cy1": {"field": "coverageEndYear", "kind": "year"}, "fa": {"field": "findingAids", "into": "findingAidTypes", "kind": "indexList"}, "p": {"field": "predecessors", "into": "headings", "kind": "indexList"}, "ru": {"field": "referenceUnit", "into": "referenceUnits", "kind": "index"}, "ur": {"field": "useRestrictions",
+entries with a start year: 0 | start < 1940: 0 | those: []
+
+curated-lot-resolutions note: Hand-curated outcomes for State Department collections that NARA's catalogue does not resolve by control number (#375). No generator writes this file: every row is human archival judgement, so a re-harvest must never overwrite it. Rows are deliberately NOT written into central-files-index.json, volume-sources-index.json, or collection-authority.json — those bundles feed surfaces that cannot express doubt (an icon-only link, a PDF export row, a prose 'resolved offline' caption), and a non-deterministic outcome must not reach them. CuratedLotResolutionsTests enforces that. Rows sharing one NARA series reference it through `series` rather than repeating it, so a rationale is edited once. A row may also claim `seriesNames`, which routes citations that name the collection without a lot number.
+curated series block: {"conferenceFiles": {"naId": "602875", "title": "Conference Files", "catalogURL": "https://catalog.archives.gov/id/602875", "hmsMlrEntryNumbers": ["A1 3051B"], "dateRange": "1949–1972", "recordGroup": "RG-59", "rationale": "Matched by collection name, not by control number. NARA's Conference Files series carries nine other lot numbers from this run of accessions but not this one, and its 1949–1972 span covers the citation."}}
+curated lot 59D95: [{'lotNumber': '59D95', 'kind': 'possible', 'seriesRef': 'conferenceFiles', 'displayName': 'Conference Files'}]
+
+central-files lotFiles[409]: {"catalogURL": "https://catalog.archives.gov/id/2839192", "hmsMlrEntryNumbers": ["A1 1586E"], "levelOfDescription": "series", "lotNumber": "66D95", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}
+
+central-files lotFiles[255]: {"catalogURL": "https://catalog.archives.gov/id/2839192", "hmsMlrEntryNumbers": ["A1 1586E"], "levelOfDescription": "series", "lotNumber": "63D351", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}
+
+central-files numericalFile: {"microfilm": "M862", "rolls": [{"caseEnd": 27, "caseStart": 1, "catalogURL": "https://catalog.archives.gov/id/19086784", "naId": "19086784", "title": "Numerical File: 1-27/200"}, {"caseEnd": 34, "caseStart": 27, "catalogURL": "https://catalog.archives.gov/id/19087957", "naId": "19087957", "title": "Numerical File: 27/201-34/39"}, {"caseEnd": 39, "caseStart": 34, "catalogURL": "https://catalog.archives.gov/id/19088882", "naId": "19088882", "title": "Numerical File: 34/40-39/175"}, {"caseEnd": 40, "caseStart": 39, "catalogURL": "https://catalog.archives.gov/id/19089758", "naId": "19089758", "title": "Numerical File: 39/176-40/135"}, {"caseEnd": 47, "caseStart": 40, "catalogURL": "https://catalog.archives.gov/id/19101116", "naId": "19101116", "title": "Numerical File: 40/795-47"}, {"caseEnd": 40, "caseStart": 40, "catalogURL": "https://catalog.archives.gov/id/19099822", "naId": "19099822", "title": "Numerical File: 40/794 (pt.)"}, {"caseEnd": 40, "caseStart": 40, "catalogURL": "https://catalog.archives.gov/id/19098628", "naId": "19098628", "title": "Numerical File: 40/794 (pt.)"}, {"caseEnd": 40, "caseStart": 40, "catalogURL": "https://catalog.archives.gov/id/19097666", "naId": "1909
+central-files countrySeries titles: [(None, None), (None, None), (None, None), (None, None), (None, None), (None, None), (None, None), (None, None), (None, None), (None, None), (None, None), (None, None)]
+
+collection-authority 'central file' entries: 35
+   lot:62F69 | naId: None | RG 59 | Cited as Lot 62 F 69. Classified and unclassified central files of the Embassy in the Republic of Korea for 1956–1958. | vols 1
+   txt:carter library|white house central file | naId: None | RG None | White House Central Files | vols 12
+   txt:department of state|central file | naId: None | RG 59 | Central Files | vols 158
+   txt:department of state|central files 1950-1954 | naId: None | RG 59 | Central Files 1950–1954 | vols 2
+   txt:department of state|central files 1964-66 | naId: None | RG 59 | Central Files 1964–66 | vols 14
+   txt:department of state|central files 1964-67 | naId: None | RG 59 | Central Files 1964–67 | vols 2
+   txt:department of state|central files 1967-1969 | naId: None | RG 59 | Central Files 1967–1969 | vols 5
+   txt:department of state|central files 1967-69 | naId: None | RG 59 | Central Files 1967–69 | vols 44
+   txt:department of state|central files 1970-1973 | naId: None | RG 59 | Central Files 1970–1973 | vols 13
+   txt:department of state|central files 1970-73 | naId: None | RG 59 | Central Files 1970–73 | vols 52
+   txt:department of state|central files to july 1973 | naId: None | RG 59 | Central Files to July 1973 | vols 1
+   txt:department of state|central files1970-73 | naId: None | RG 59 | Central Files1970-73 | vols 2
+any central-file entry with a naId: False
+
+lot:89D149 full: {"aliases": ["89 D 149", "89D149", "Director’s Correspondence Files", "Director’s Correspondence File—Policy Planning Director", "Executive Secretariat", "Lot 89D149: Executive Secretariat, S/P Records, Memoranda/Correspondence From the Director of the Policy Planning Staff to the Secretary and Other Seventh Floor Principals", "Lot 89D149: Memoranda/Correspondence from the Director of the Policy Planning Staff, Director’s Correspondence Files", "Lot 89D149: Policy Planning Staff, Memoranda/Correspondence from the Director of the Policy Planning Staff to the Secretary and Other Seventh Floor Principals", "Lot 89D149: S/P Files, Memoranda/Correspondence From the Director of the Policy Planning Staff to the Secretary and Other Seventh Floor Principals", "Lot 89D149; Memoranda/Correspondence From the Director of Policy Planning to the Secretary and Other Principals, January 1981–January 1989", "Lot File 89D149; Director’s Correspondence File—Policy Planning Director, 1981–1988", "Policy Planning Staff"], "id": "lot:89D149", "lotFileNorm": "89D149", "name": "Lot 89D149: S/P , Memoranda/Correspondence from the Director of the Policy Planning Staff", "recordGroup": "59", "repository": "De
+
+lot:59D95: {"aliases": ["59 D 95", "59D95", "59D–95", "Collection of documentation on certain official visits of heads of government and foreign ministers to the United States and on major international conferences attended by the Secretary of State for the period 1953–1958, as maintained by the Executive Secretariat. This file is a continuation of Lot 59 D 95.", "Collection of documentation on official visits by heads of government and foreign ministers to the United States and on major international conferences attended by the Secretary of State for the period 1953–1958, as maintained by the Executive Secretariat. This file is a continuation of Lot 59 D 95.", "Collection of documentation on official visits by heads of government and foreign ministers to the United States and on major international conferences attended by the Secretary of State for the years 1953–1958, as maintained by the Executive Secretariat. This file is a continuation of Lot 59 D 95.", "Collection of documents on certain official visits of heads of government and foreign ministers to the United States and on major international conferences for the period 1953–1958, as maintained by the Executive Secretariat of the Depar
+
+volume-sources-index lots sample: []
+volume-sources-index lots mentioning 59D95/89D149: []

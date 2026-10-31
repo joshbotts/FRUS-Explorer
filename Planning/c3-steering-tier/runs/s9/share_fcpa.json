@@ -1,0 +1,12 @@
+{
+ "label": "fcpa",
+ "match": "\"foreign corrupt practic\"",
+ "strict": "\\bforeign corrupt practices\\b",
+ "tolerant": "\\bforeign[\\s\\-,().]+corrupt\\w*[\\s\\-,().]+practic\\w*\\b",
+ "M_hitlist_excl_fm_ed_Ed2": 4,
+ "mode": "census",
+ "n": 4,
+ "strict_hits": 4,
+ "tolerant_hits": 4,
+ "tolerant_misses": []
+}

@@ -1,0 +1,5 @@
+top10 core volumes [('frus1894app2', 19), ('frus1958-60v01', 13), ('frus1947v07', 11), ('frus1961-63v22', 10), ('frus1964-68v05', 9), ('frus1950v06', 7), ('frus1951-54Iran', 7), ('frus1969-76ve04', 7), ('frus1903', 6), ('frus1906p1', 6)]
+corruption family (>=1, regex) | top10: 342 of 5851 0.058 | other volumes: 2832 of 305578 0.009
+control phrase 'Department of State' (FTS) | top10: 2052 of 5851 0.351 | other volumes: 91772 of 305578 0.3
+negative ZZZ_IMPOSSIBLE_ZZZ | top10: 0 of 5851 0.0 | other volumes: 0 of 305578 0.0
+volumes with zero Department of State: 1 of 551

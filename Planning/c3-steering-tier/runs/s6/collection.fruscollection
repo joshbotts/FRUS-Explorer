@@ -1,0 +1,422 @@
+{
+  "format": "fruscollection",
+  "formatVersion": 2,
+  "minimumReaderVersion": 1,
+  "name": "Corruption and U.S. diplomacy (agent run s6)",
+  "authorLine": "Agent run s6, 2026-10-30",
+  "introductionText": "What FRUS answers directly: across the 553 volumes indexed (two second editions set aside), about 1 document in 100 uses the vocabulary of corruption (3,174 of 311,429) and about 1 in 650 does so three or more times (479); the 30 documents here show that officials repeatedly weighed an ally's corruption against a strategic interest and the strategic interest usually won, and that corruption moved policy most visibly when the corrupt party was American (Lockheed, 1975 to 1976) or when allegations reached the Congress (Koreagate, 1978). Where FRUS points for the rest: the printed documents came from the State Department's central files in Record Group 59, the Records of Henry Kissinger (Lot 91D414, NARA identifier 2131131), the Kissinger staff-meeting transcripts (Lot 78D443, 619160), the Jidda Embassy files (Record Group 84, Lot 79F80) and the Johnson, Kennedy, Ford and Carter libraries; the editors' footnotes cite, unprinted, the same libraries' national-security files and State lots 65 D 330, 85 D 240 and 66 D 193. What this request cannot get from FRUS: proof that an allegation changed a decision, the Senate subcommittee's own evidence on Lockheed, anything before 1860 or after 1989 (searched, with controls, and thin), and the American officials' own corruption, which I did not follow.",
+  "composition": {
+    "defaultBodyDepth": "full",
+    "footnoteStyle": "all",
+    "includeSourceNote": true,
+    "tocStyle": "citation",
+    "applyHighlights": false,
+    "includeNotes": true,
+    "includeWordCloud": false
+  },
+  "entries": [
+    {
+      "kind": "heading",
+      "text": "Vietnam: corruption raised with the government for a decade, increasingly because of Washington's own politics",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "These six documents follow one thread from 1960 to 1970: the Embassy reports corruption inside the Saigon government, raises it with the head of state, and by 1967 and 1970 is pressing it because the Congress and the press are doing so. They were chosen because each shows an American official acting on corruption or explaining why. What they do not show is aid cut for corruption; I did not find that."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1958-60v01",
+      "documentId": "d111",
+      "notes": [
+        "Agent run s6, 2026-10-30: Durbrow's despatch of March 1960 reports Presidential adviser Wolf Ladejinsky's account of corruption in the Vietnamese government, including a business agent of the Can Lao Party said to receive a company's stock for favours, which Ladejinsky called straight corruption. An early instance of the Embassy putting corruption in its reports."
+      ]
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1958-60v01",
+      "documentId": "d160",
+      "notes": [
+        "Agent run s6, 2026-10-30: Durbrow reads Diem a message that includes corruption in the Can Lao Party; Diem replies that the party's task is to stop it and blames rumours. Corruption is put to a head of state directly, in 1960."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1958-60v01",
+      "documentId": "d160",
+      "text": "Diem somewhat irritably then reiterated Can Lao party’s principal job is to ferret out and stop corruption rather than engage in any corrupt practices."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1964-68v04",
+      "documentId": "d280",
+      "notes": [
+        "Agent run s6, 2026-10-30: At Manila, President Johnson asks Ky whether anything can be done about corruption before his critics get there, with Congressional investigations about to begin. Ky calls corruption the worst problem in Vietnam. Shows domestic critics as the reason for pressing."
+      ]
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1964-68v05",
+      "documentId": "d197",
+      "notes": [
+        "Agent run s6, 2026-10-30: Presidential counsel McPherson reports from Saigon: Ky tells him most generals and senior provincial officials are corrupt but that corruption takes time and exists everywhere. The Americans hear a candid admission and an excuse in one breath."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1964-68v05",
+      "documentId": "d197",
+      "text": "Most of the generals are corrupt. Most of the senior officials in the provinces are corrupt."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1964-68v05",
+      "documentId": "d258",
+      "notes": [
+        "Agent run s6, 2026-10-30: Minister-Counselor Calhoun agrees with Komer that corruption has become a key obstacle to pacification and discusses Komer's proposal, through the Embassy's interagency committee, to identify suspect officials so American advisers avoid them."
+      ]
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76v06",
+      "documentId": "d175",
+      "notes": [
+        "Agent run s6, 2026-10-30: Bunker tells Thieu corruption is now the number one problem, a problem of Vietnamese-American relations, and ties it to a Congressional inquiry into black-market currency and the prospects for more aid. An editors' note records that Nixon had asked for some quiet work on corruption."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1969-76v06",
+      "documentId": "d175",
+      "text": "The inability of the GVN to do anything about high level corruption is sharply affecting my ability—the American ability—to help you."
+    },
+    {
+      "kind": "heading",
+      "text": "China, 1943 to 1948: corruption as the diagnosis of an ally that would not hold",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "American diplomats put corruption at the centre of their account of the Nationalist government while Washington was deciding how far to back it. The four documents are spread over five years and written by four different hands; the last was reached by asking the semantic index for neighbours, not by searching for words."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1943China",
+      "documentId": "d202",
+      "notes": [
+        "Agent run s6, 2026-10-30: Davies, proposing an American consulate and observers in Communist territory, describes Kuomintang officials: nepotism, favouritism, graft and bribery. The corruption passage is part of his argument about the regime's durability."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1943China",
+      "documentId": "d202",
+      "text": "Nepotism and favoritism are rife. Graft and bribery are commonplace."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1944v06",
+      "documentId": "d269",
+      "notes": [
+        "Agent run s6, 2026-10-30: Ambassador Gauss reports an alleged plot by young officers to remove high officials they believed corrupt and inefficient, naming Kung and Ho Ying-chin among the targets."
+      ]
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1947v07",
+      "documentId": "d591",
+      "notes": [
+        "Agent run s6, 2026-10-30: Sprouse's memorandum for General Wedemeyer's mission lists widespread corruption and graft among the reasons the National Government lost public confidence."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1947v07",
+      "documentId": "d591",
+      "text": "the widespread corruption and graft among Government officials and military officers on all levels have cost the Government the confidence and support of the people."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1948v07",
+      "documentId": "d590",
+      "notes": [
+        "Agent run s6, 2026-10-30: Cabot's letter from Shanghai: American aid wasted, the same old grafters in the same posts. Reached by the semantic neighbours of the Davies memorandum, not by the word search, which missed the form 'grafters'."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1948v07",
+      "documentId": "d590",
+      "text": "The same old inefficient grafters are still occupying the same old positions (with some musical chairs variations)"
+    },
+    {
+      "kind": "heading",
+      "text": "Tolerated, excused or made a condition: corruption weighed against other interests, 1961 to 1980",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "The documents that deplore corruption often argue it should not decide policy. Six documents across nineteen years show the argument in Iran, the Philippines, Korea, Saudi Arabia and Haiti. The quoted passages were chosen where an official states how corruption bears on a decision."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v17",
+      "documentId": "d27",
+      "notes": [
+        "Agent run s6, 2026-10-30: Policy Planning memorandum on Iran: corruption a long-standing feature of administrations; the Shah himself honest, many around him not; not a major economic factor; and a discussion of whether aid can be used as leverage for reform."
+      ]
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v23",
+      "documentId": "d355",
+      "notes": [
+        "Agent run s6, 2026-10-30: NSC staff records the State Department view on the Philippine elections: corruption is characteristic of the country's politics and may be no worse than elsewhere, so the United States should stay out. Corruption as a reason for not acting."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v23",
+      "documentId": "d355",
+      "text": "State argues that corruption is mostly at the top, that it is characteristic of Philippine politics and may be no worse than in a good many other countries."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v22",
+      "documentId": "d249",
+      "notes": [
+        "Agent run s6, 2026-10-30: Ambassador Berger cites the Korean junta's campaign against corruption, graft and bribes among his reasons for confidence in it. Corruption as a reason for backing a government."
+      ]
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76ve09p2",
+      "documentId": "d122",
+      "notes": [
+        "Agent run s6, 2026-10-30: The Embassy in Jidda revises its estimate: corruption is increasing and, unchecked, would breed instability after King Faisal. Recommends telling the Saudis the United States will not facilitate corruption. The semantic index places it in no cluster of the map."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1969-76ve09p2",
+      "documentId": "d122",
+      "text": "the unchecked growth of corruption at the present rate would probably start to breed political instability fairly soon after King Faisal (who is honest and admires honesty in others) passes from the scene."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1977-80v23",
+      "documentId": "d252",
+      "notes": [
+        "Agent run s6, 2026-10-30: Embassy Haiti: a proposed $125 million aid programme conditioned on fiscal and administrative reform, aimed at institutionalised corruption on which the regime's power is built; the Embassy doubts it will succeed. Corruption as a condition of aid."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1977-80v23",
+      "documentId": "d252",
+      "text": "it is the toughest, most ambitious U.S. aid package ever presented to the GOH, and one which focuses squarely on one of the most important factors in Haiti’s development equation today: corruption."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1977-80v18",
+      "documentId": "d206",
+      "notes": [
+        "Agent run s6, 2026-10-30: Ambassador West's assessment as of January 1980: corruption is the greatest single threat to the stability of the Saudi ruling family, and he knows of no truly effective means to help correct it. The 21st-nearest neighbour of the 1974 airgram in the semantic index."
+      ]
+    },
+    {
+      "kind": "heading",
+      "text": "When the corrupt party was an American firm, corruption became a problem of the diplomacy itself, 1975 to 1980",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "Nine documents on the Lockheed and related commission scandals and their legal aftermath. They were chosen because in each an official decides how the Government will conduct itself toward a foreign government once an American firm's payments are in question. One document (the Kissinger conversation with Ambassador Togo) was reached through the semantic neighbours of the Saito conversation."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76ve09p2",
+      "documentId": "d152",
+      "notes": [
+        "Agent run s6, 2026-10-30: Kissinger's staff meeting, 7 August 1975: an official argues fees to arms-sale intermediaries should be disclosed to the buyer and sees nothing good in them; Kissinger replies that this is how business is done in the Middle East and asks who has thought about the impact on Saudi Arabia."
+      ]
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76ve09p2",
+      "documentId": "d161",
+      "notes": [
+        "Agent run s6, 2026-10-30: Ambassador Akins tells Prince Sultan that Lockheed has admitted about $20 million in bribes abroad; Sultan asks that the names never be divulged and says disclosure by Congress would end the special relationship."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1969-76ve09p2",
+      "documentId": "d161",
+      "text": "It would mean the end of the special U.S. -Saudi relationship, and Sultan did not exclude Saudi Arabia’s turning to the Soviets on the rebound."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76ve15p2",
+      "documentId": "d292",
+      "notes": [
+        "Agent run s6, 2026-10-30: Hartman reports the findings of the Senate subcommittee staff on Lockheed payments in West Germany and judges nothing useful can be done. Cited with the later memorandum; the second-edition twin of this volume is not used."
+      ]
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76ve15p2",
+      "documentId": "d293",
+      "notes": [
+        "Agent run s6, 2026-10-30: Follow-up memorandum; the editors' note records Kissinger telling Ford the matter must be kept quiet because disclosure could shake Germany. The quoted words are in the editors' note quoting a memorandum of conversation."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1969-76ve15p2",
+      "documentId": "d293",
+      "text": "We must do everything possible to keep this quiet."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76ve12",
+      "documentId": "d219",
+      "notes": [
+        "Agent run s6, 2026-10-30: Ford replies to Miki on the Lockheed scandal: offers to share SEC material with Japanese investigators and supports an international agreement on corrupt practices."
+      ]
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76ve09p1",
+      "documentId": "d49",
+      "notes": [
+        "Agent run s6, 2026-10-30: The Department forwards a Libyan diplomatic note requesting complete details of commissions and bribes in the Lockheed C-130 sale, showing the Lockheed disclosures reaching a third government."
+      ]
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76ve12",
+      "documentId": "d222",
+      "notes": [
+        "Agent run s6, 2026-10-30: Kissinger tells Ambassador Togo he has kept himself out of the Lockheed matter, which he says is a judicial and not a foreign-policy matter. Reached through the semantic neighbours of the 14 May 1976 conversation."
+      ]
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76ve12",
+      "documentId": "d224",
+      "notes": [
+        "Agent run s6, 2026-10-30: Ambassador Saito stresses for the Prime Minister the extremely political nature of the Lockheed question in Japan; Kissinger says the Department cannot interfere in a criminal investigation."
+      ]
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1977-80v03",
+      "documentId": "d248",
+      "notes": [
+        "Agent run s6, 2026-10-30: Commerce and the Trade Representative on the cost of the Foreign Corrupt Practices Act to exporters: the loss of some sales is intended, and the answer is a multilateral agreement."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1977-80v03",
+      "documentId": "d248",
+      "text": "As a nation we have decided that bribery in international trade is reprehensible and that American companies must forego exports that can be attained only by illicit payments."
+    },
+    {
+      "kind": "heading",
+      "text": "Koreagate and the timetable for withdrawing from Korea, 1978",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "Three documents of April 1978 in which a bribery affair in the Congress becomes a reason for the Executive Branch to change the pace of a troop withdrawal. Nearest in the documents I read to an allegation of corruption altering a decision."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1977-80v13",
+      "documentId": "d92",
+      "notes": [
+        "Agent run s6, 2026-10-30: Memorandum laying out options: one is to postpone the December 1978 withdrawal on the ground that Congress cannot address Korean policy while the Tongsun Park affair hangs over it."
+      ]
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1977-80v13",
+      "documentId": "d94",
+      "notes": [
+        "Agent run s6, 2026-10-30: Meeting of 11 April 1978: Holbrooke says at least 100 votes in the House have been lost on the compensatory package simply because of Koreagate. The editors define Koreagate in a footnote."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1977-80v13",
+      "documentId": "d94",
+      "text": "But at least 100 votes in the House have been lost on the compensatory package simply because of Koreagate."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1977-80v13",
+      "documentId": "d95",
+      "notes": [
+        "Agent run s6, 2026-10-30: Brzezinski to Carter: Koreagate has made many Congressmen reluctant to vote for any aid to Seoul this year, so the arms transfers promised with the withdrawal are at risk."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1977-80v13",
+      "documentId": "d95",
+      "text": "However, Koreagate has made many Congressmen reluctant to vote for any aid to Seoul this year."
+    },
+    {
+      "kind": "heading",
+      "text": "The charge as contested ground: Hawaii, 1893",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "Two statements from the papers on the Hawaiian revolution: one gives corruption as a cause of the revolution, the other denies that the revolutionists found any. They show the allegation as evidence in what the United States collected, not that it decided the American position."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1894app2",
+      "documentId": "d255",
+      "notes": [
+        "Agent run s6, 2026-10-30: Blount to Gresham, transmitting the interview with Mr. Waterhouse, who gives the lottery and opium bills and bribery and corruption as the cause of the revolution."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1894app2",
+      "documentId": "d255",
+      "text": "It started from the lottery bill and the opium bill and the bribery and corruption we had heard of."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1894app2",
+      "documentId": "d306",
+      "notes": [
+        "Agent run s6, 2026-10-30: A statement hostile to the revolutionists: they justified seizing power by the need to correct abuses, yet no fraud or malfeasance was found."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1894app2",
+      "documentId": "d306",
+      "text": "There has been no fraud discovered nor malfeasance unearthed, nor great wrong righted"
+    },
+    {
+      "kind": "heading",
+      "text": "Threads not followed",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "Threads I could not follow in this pass: (1) the Ottoman bribery cases in which missionaries' assailants were allegedly protected by bribed judges (1893 and 1894, Mosul) and what the Legation did; (2) Watergate and the other corruption of American officials, 183 documents mention Watergate; (3) the Soviet corruption assessments of 1982 (the Clark memoranda on Andropov's anti-corruption campaign); (4) the coups explained by corruption, such as Morocco in 1971 and Liberia in 1980; (5) Dominican, Colombian and Philippine cases in the 1960s and 1970s, read only in passages; (6) whether aid was ever actually withheld for corruption, which needs the policy documents that follow each of the exchanges above; (7) the earlier decades before 1860, where the library holds only 483 dated documents; and (8) the 1990s, where it holds 177. The archival sources block below is computed by the app from the documents in this collection."
+    },
+    {
+      "kind": "generated",
+      "generatedBlockType": "archivalSources"
+    }
+  ]
+}

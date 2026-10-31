@@ -1,0 +1,72 @@
+pairs below line: 110 ; involving an Ed2 volume (known reprint, Ed2 suppressed): 40 ; remaining: 70
+4 | ('frus1933-39', 'd31') | ('frus1933v02', 'd593') | 1640 | 1640 | 1.0 | SAME TEXT | Statement by the Soviet Commissar for Foreign | Statement by the Soviet Commissar for Foreign
+7 | ('frus1894Nicaragua', 'd12') | ('frus1894app1', 'd263') | 23825 | 23768 | 0.98 | SAME TEXT | No. 12. Mr. Baker to Mr. Gresham. | Mr. Baker to Mr. Gresham.
+8 | ('frus1894app2', 'd70') | ('frus1894app2', 'd186') | 26665 | 27097 | 1.0 | SAME TEXT | Mr. Stevens to Mr. Foster. | Mr. Stevens to Mr. Foster.
+10 | ('frus1950v03', 'd732') | ('frus1950v07', 'd1002') | 34893 | 34749 | 0.939 | SAME TEXT | United States Minutes, Truman–Attlee Conversa | United States Delegation Minutes of the Fifth
+12 | ('frus1894Nicaragua', 'd23') | ('frus1894app1', 'd274') | 20378 | 20351 | 0.996 | SAME TEXT | No. 23. Mr. Bayard to Mr. Gresham. | Mr. Bayard to Mr. Gresham.
+12 | ('frus1894app2', 'd73') | ('frus1894app2', 'd192') | 48142 | 48114 | 0.986 | SAME TEXT | No. 2. Mr. Stevens to Mr. Foster. | Mr. Stevens to Mr. Foster.
+13 | ('frus1950v03', 'd728') | ('frus1950v07', 'd977') | 42064 | 42091 | 0.69 | DIFFERENT TEXT | United States Minutes, Truman–Attlee Conversa | United States Delegation Minutes of the Secon
+17 | ('frus1981-88v04', 'd266') | ('frus1981-88v11', 'd97') | 21640 | 21960 | 0.549 | DIFFERENT TEXT | 266. Note From the Advisor for Strategic Poli | 97. Memorandum From the Deputy Secretary of S
+17 | ('frus1981-88v06', 'd32') | ('frus1981-88v41', 'd93') | 15814 | 16513 | 0.962 | SAME TEXT | 32. Information Memorandum From the Assistant | 93. Information Memorandum From the Assistant
+18 | ('frus1867p1', 'd226') | ('frus1868p1', 'd83') | 7459 | 7451 | 0.996 | SAME TEXT | Lord Stanley to Colonel Stanton | Lord Stanley to Colonel Stanton
+19 | ('frus1969-76v12', 'd212') | ('frus1969-76ve10', 'd225') | 21517 | 20525 | 0.807 | DIFFERENT TEXT | 212. Memorandum From the President’s Assistan | 225. Memorandum From the President’s Assistan
+21 | ('frus1894', 'd464') | ('frus1894Nicaragua', 'd45') | 3092 | 3106 | 0.987 | SAME TEXT | Mr. Baker to Mr. Gresham. | No. 45. Mr. Baker to Mr. Gresham.
+22 | ('frus1951-54Iran', 'd355') | ('frus1952-54v10', 'd403') | 65953 | 61595 | 0.778 | DIFFERENT TEXT | 355. Statement of Policy by the National Secu | No. 403 Statement of Policy by the National S
+23 | ('frus1950v03', 'd553') | ('frus1950v07', 'd480') | 12294 | 12194 | 0.754 | DIFFERENT TEXT | United States Delegation Minutes, Fourth Sess | United States Delegation Minutes: SFM Pre 4
+23 | ('frus1958-60v03mSupp', 'd133') | ('frus1958-60v03mSupp', 'd134') | 220785 | 261734 | 0.561 | DIFFERENT TEXT | 133. National Intelligence Estimate | 134. National Intelligence Estimate
+25 | ('frus1894app2', 'd501') | ('frus1894app2', 'd506') | 66038 | 89453 | 0.216 | DIFFERENT TEXT | Mr. Willis to Mr. Gresham. | Mr. Willis to Mr. Gresham.
+26 | ('frus1981-88v01', 'd172') | ('frus1981-88v10', 'd22') | 24100 | 21400 | 0.645 | DIFFERENT TEXT | 172. Information Memorandum From the Assistan | 22. Information Memorandum From the Assistant
+29 | ('frus1949v06', 'd8') | ('frus1949v07p2', 'd320') | 10458 | 9730 | 0.845 | DIFFERENT TEXT | Memorandum of Conversation, by the Secretary  | Memorandum of Conversation, by Mr. Jacob D. B
+30 | ('frus1876', 'd164') | ('frus1876', 'd165') | 94347 | 109328 | 0.222 | DIFFERENT TEXT | No. 154. Mr. Pierrepont to Mr. Fish. | No. 155. Mr. Pierrepont to Mr. Fish.
+33 | ('frus1958-60v17', 'd177') | ('frus1958-60v17', 'd293') | 26247 | 37058 | 0.884 | DIFFERENT TEXT | 177. National Security Council Report | 293. National Security Council Report
+34 | ('frus1910', 'd435') | ('frus1912', 'd773') | 14828 | 14473 | 0.754 | DIFFERENT TEXT | By the President of the United States of Amer | By the President of the United States of Amer
+35 | ('frus1894', 'd471') | ('frus1894Nicaragua', 'd62') | 9101 | 13101 | 0.994 | SAME TEXT | Mr. Baker to Mr. Gresham. | No. 62. Mr. Baker to Mr. Gresham.
+35 | ('frus1894app2', 'd90') | ('frus1894app2', 'd198') | 6956 | 7408 | 0.789 | DIFFERENT TEXT | No. 19. Mr. Stevens to Mr. Foster. | Mr. Stevens to Mr. Foster.
+38 | ('frus1903', 'd565') | ('frus1907p2', 'd289') | 15344 | 15016 | 0.962 | SAME TEXT | By the President of the United States of Amer | By the President of the United States of Amer
+38 | ('frus1923v02', 'd467') | ('frus1924v02', 'd327') | 13301 | 13505 | 0.952 | SAME TEXT | Treaty between the United States of America a | Treaty between the United States of America a
+38 | ('frus1925v01', 'd229') | ('frus1925v01', 'd231') | 15121 | 12450 | 0.272 | DIFFERENT TEXT | The Secretary of State to the Consul at Arica | The Secretary of State to the Ambassador in C
+38 | ('frus1969-76ve16', 'd78') | ('frus1969-76ve16', 'd116') | 57470 | 71151 | 0.313 | DIFFERENT TEXT | 78. Special National Intelligence Estimate | 116. National Intelligence Estimate
+39 | ('frus1908', 'd680') | ('frus1910', 'd435') | 16995 | 14828 | 0.862 | DIFFERENT TEXT | By the President of the United States of Amer | By the President of the United States of Amer
+40 | ('frus1868p2', 'd79') | ('frus1874', 'd42') | 10605 | 12306 | 0.544 | DIFFERENT TEXT | Mr. Sanford to Mr. Seward. | No. 40. Mr. Jones to Mr. Fish.
+40 | ('frus1919Parisv06', 'd44') | ('frus1919Parisv06', 'd93') | 71010 | 187060 | 0.15 | DIFFERENT TEXT | Notes of a Meeting Held at President Wilson’s | The President of the Peace Conference (Clemen
+41 | ('frus1908', 'd693') | ('frus1912', 'd773') | 16385 | 14473 | 0.689 | DIFFERENT TEXT | By the President of the United States of Amer | By the President of the United States of Amer
+41 | ('frus1961-63v17', 'd90') | ('frus1961-63v17', 'd168') | 19306 | 29395 | 0.24 | DIFFERENT TEXT | 90. Paper Prepared for the Iran Task Force | 168. Report of the Chairman of the Iran Task 
+41 | ('frus1964-68v23', 'd579') | ('frus1969-76ve05p1', 'd233') | 23574 | 25337 | 0.211 | DIFFERENT TEXT | 579. National Intelligence Estimate | 233. National Intelligence Estimate 65–70
+42 | ('frus1907p2', 'd289') | ('frus1912', 'd773') | 15016 | 14473 | 0.808 | DIFFERENT TEXT | By the President of the United States of Amer | By the President of the United States of Amer
+43 | ('frus1908', 'd693') | ('frus1910', 'd435') | 16385 | 14828 | 0.593 | DIFFERENT TEXT | By the President of the United States of Amer | By the President of the United States of Amer
+43 | ('frus1950v03', 'd728') | ('frus1950v03', 'd732') | 42064 | 34893 | 0.373 | DIFFERENT TEXT | United States Minutes, Truman–Attlee Conversa | United States Minutes, Truman–Attlee Conversa
+43 | ('frus1969-76ve05p1', 'd287') | ('frus1969-76ve05p1', 'd332') | 44857 | 48832 | 0.278 | DIFFERENT TEXT | 287. National Intelligence Estimate 75/76–70 | 332. National Intelligence Estimate 75/76–72
+43 | ('frus1977-80v20', 'd193') | ('frus1981-88v10', 'd155') | 24173 | 46969 | 0.203 | DIFFERENT TEXT | 193. Intelligence Information Cable | 155. Paper Prepared in the Bureau of Intellig
+44 | ('frus1879', 'd132') | ('frus1880', 'd133') | 37649 | 106911 | 0.295 | DIFFERENT TEXT | No. 112. Mr. Seward to Mr. Evarts. | No. 133. Mr. Seward to Mr. Evarts.
+44 | ('frus1888p2', 'd454') | ('frus1888p2', 'd455') | 37595 | 12554 | 0.227 | DIFFERENT TEXT | No. 1. Mr. Phelps to Mr. Bayard. | No. 2. Mr. Phelps to Mr. Bayard.
+44 | ('frus1902', 'd111') | ('frus1905', 'd725') | 11192 | 11402 | 0.89 | DIFFERENT TEXT | By the President of the United States of Amer | By the President of the United States of Amer
+44 | ('frus1903', 'd565') | ('frus1912', 'd773') | 15344 | 14473 | 0.808 | DIFFERENT TEXT | By the President of the United States of Amer | By the President of the United States of Amer
+44 | ('frus1907p2', 'd289') | ('frus1910', 'd435') | 15016 | 14828 | 0.654 | DIFFERENT TEXT | By the President of the United States of Amer | By the President of the United States of Amer
+44 | ('frus1958-60v12', 'd257') | ('frus1958-60v12', 'd293') | 27497 | 19734 | 0.624 | DIFFERENT TEXT | 257. National Security Council Report | 293. National Security Council Report
+45 | ('frus1871', 'd189') | ('frus1877', 'd114') | 50539 | 235245 | 0.198 | DIFFERENT TEXT | Mr. Bancroft to Mr. Fish | No. 114. Mr. Davis to Mr. Evarts.
+45 | ('frus1889', 'd269') | ('frus1889', 'd273') | 675 | 2070 | 0.375 | DIFFERENT TEXT | Mr. Bayard to Mr. Romero. | Mr. Bayard to Mr. Romero.
+45 | ('frus1894app2', 'd254') | ('frus1894app2', 'd344') | 95674 | 86357 | 0.189 | DIFFERENT TEXT | No. 6. Mr. Blount to Mr. Gresham | No. 60. Statement of C. B. Wilson.
+45 | ('frus1908', 'd680') | ('frus1912', 'd773') | 16995 | 14473 | 0.745 | DIFFERENT TEXT | By the President of the United States of Amer | By the President of the United States of Amer
+45 | ('frus1977-80v11p1', 'd193') | ('frus1977-80v29', 'd261') | 3959 | 4228 | 0.688 | DIFFERENT TEXT | 193. Memorandum From the Special Assistant to | 261. Memorandum From the Special Assistant to
+46 | ('frus1894app2', 'd73') | ('frus1894app2', 'd265') | 48142 | 134589 | 0.175 | DIFFERENT TEXT | No. 2. Mr. Stevens to Mr. Foster. | No. 17. Mr. Blount to Mr. Gresham.
+46 | ('frus1895p2', 'd192') | ('frus1895p2', 'd195') | 12413 | 19183 | 0.28 | DIFFERENT TEXT | Mr. Butler to Mr. Olney. | Mr. Butler to Mr. Olney.
+46 | ('frus1903', 'd565') | ('frus1910', 'd435') | 15344 | 14828 | 0.657 | DIFFERENT TEXT | By the President of the United States of Amer | By the President of the United States of Amer
+46 | ('frus1923v01', 'd805') | ('frus1925v02', 'd24') | 12740 | 12550 | 0.884 | DIFFERENT TEXT | Treaty between the United States of America a | Treaty Between the United States of America a
+46 | ('frus1945v07', 'd48') | ('frus1945v07', 'd444') | 13175 | 18933 | 0.162 | DIFFERENT TEXT | Memorandum Concerning United States Post-War  | Report by the State-War-Navy Coordinating Com
+46 | ('frus1950v03', 'd732') | ('frus1950v07', 'd977') | 34893 | 42091 | 0.309 | DIFFERENT TEXT | United States Minutes, Truman–Attlee Conversa | United States Delegation Minutes of the Secon
+46 | ('frus1955-57v23p2', 'd40') | ('frus1955-57v23p2', 'd99') | 19019 | 11766 | 0.225 | DIFFERENT TEXT | 40. Despatch From the Embassy in Korea to the | 99. Staff Study Prepared by an Interdepartmen
+46 | ('frus1969-76v15', 'd195') | ('frus1969-76ve14p2', 'd62') | 31822 | 12247 | 0.846 | DIFFERENT TEXT | 195. Memorandum of Conversation | 62. Memorandum of Conversation
+47 | ('frus1893', 'd585') | ('frus1893', 'd599') | 42025 | 12319 | 0.251 | DIFFERENT TEXT | Mr. Thompson to Mr. Gresham. | Mr. Thompson to Mr. Gresham.
+47 | ('frus1903', 'd565') | ('frus1908', 'd693') | 15344 | 16385 | 0.582 | DIFFERENT TEXT | By the President of the United States of Amer | By the President of the United States of Amer
+47 | ('frus1907p2', 'd289') | ('frus1908', 'd680') | 15016 | 16995 | 0.646 | DIFFERENT TEXT | By the President of the United States of Amer | By the President of the United States of Amer
+47 | ('frus1910', 'd435') | ('frus1914', 'd1789') | 14828 | 14814 | 0.766 | DIFFERENT TEXT | By the President of the United States of Amer | By the President of the United States of Amer
+47 | ('frus1919Parisv10', 'd10') | ('frus1919Parisv10', 'd23') | 123644 | 132355 | 0.323 | DIFFERENT TEXT | Supreme Economic Council: Eleventh Meeting He | Supreme Economic Council: Twenty-fourth Meeti
+47 | ('frus1919Parisv10', 'd23') | ('frus1919Parisv10', 'd31') | 132355 | 225084 | 0.332 | DIFFERENT TEXT | Supreme Economic Council: Twenty-fourth Meeti | [Supreme Economic Council: Thirty-second Meet
+47 | ('frus1950v03', 'd728') | ('frus1950v07', 'd1002') | 42064 | 34749 | 0.32 | DIFFERENT TEXT | United States Minutes, Truman–Attlee Conversa | United States Delegation Minutes of the Fifth
+48 | ('frus1868p2', 'd439') | ('frus1868p2', 'd449') | 41660 | 57186 | 0.168 | DIFFERENT TEXT | Señor Benitez to Mr. Washburn. | Señor Caminos to Mr. Washburn.
+48 | ('frus1894app2', 'd192') | ('frus1894app2', 'd265') | 48114 | 134589 | 0.173 | DIFFERENT TEXT | Mr. Stevens to Mr. Foster. | No. 17. Mr. Blount to Mr. Gresham.
+48 | ('frus1894app2', 'd254') | ('frus1894app2', 'd265') | 95674 | 134589 | 0.174 | DIFFERENT TEXT | No. 6. Mr. Blount to Mr. Gresham | No. 17. Mr. Blount to Mr. Gresham.
+48 | ('frus1905', 'd295') | ('frus1905', 'd725') | 13125 | 11402 | 0.853 | DIFFERENT TEXT | By the President of the United States of Amer | By the President of the United States of Amer
+48 | ('frus1923v01', 'd805') | ('frus1924v01', 'd275') | 12740 | 13421 | 0.898 | DIFFERENT TEXT | Treaty between the United States of America a | Treaty between the United States of America a
+48 | ('frus1950v07', 'd977') | ('frus1950v07', 'd1002') | 42091 | 34749 | 0.401 | DIFFERENT TEXT | United States Delegation Minutes of the Secon | United States Delegation Minutes of the Fifth
+SAME: 12 DIFFERENT: 58

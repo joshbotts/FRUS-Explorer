@@ -1,0 +1,1 @@
+SELECT d.volume_id, COUNT(*) n, (SELECT COUNT(*) FROM document_cache x WHERE x.volume_id=d.volume_id AND x.is_front_matter=0 AND x.is_editorial_note=0) m FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH 'corrupt' AND d.is_front_matter=0 AND d.is_editorial_note=0 GROUP BY d.volume_id ORDER BY n DESC LIMIT 40;

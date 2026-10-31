@@ -1,0 +1,49 @@
+generated 2026-08-06 source apiV2
+
+== Eisenhower Library: 462 collections (keys ['citedAs', 'collections', 'prefix'])
+   collection naId=562456 identifier=DDE-1001 title='Christian A. Herter Papers' statedSeriesCount=9 series listed=9
+   collection naId=1124 identifier=DDE-EPRES title='Eisenhower, Dwight D.: Papers as President of the United States' statedSeriesCount=18 series listed=18
+      series naId=594902 1953–1961 'John Foster Dulles and Christian Herter Files'
+
+== Kennedy Library: 398 collections (keys ['citedAs', 'collections', 'prefix'])
+   collection naId=1166 identifier=JFK-3 title="Papers of John F. Kennedy: Presidential Papers: President's Office Files" statedSeriesCount=16 series listed=16
+      (country) series naId=193654 1961–1963 'Country Files'
+   collection naId=1164 identifier=JFK-4 title='Papers of John F. Kennedy: Presidential Papers: National Security Files' statedSeriesCount=17 series listed=17
+      (country) series naId=193236 1961–1963 'Country Files'
+
+== Johnson Library: 764 collections (keys ['citedAs', 'collections', 'prefix'])
+   collection naId=567979 identifier=LBJ-NSF title='National Security Files' statedSeriesCount=48 series listed=48
+      (country) series naId=567985 1963–1969 'Latin America Country Files'
+      (country) series naId=573102 1963–1969 'Africa Country Files'
+      (country) series naId=580807 1963–1969 'Europe and USSR Country Files'
+      (country) series naId=587357 1963–1969 'Middle East Country Files'
+      (country) series naId=587358 1963–1969 'Asia and the Pacific Country Files'
+      (country) series naId=587360 1963–1969 'United Nations Country Files'
+      (country) series naId=587361 1963–1969 'Country Files Addendum'
+      (country) series naId=591194 1963–1969 'Vietnam Country Files'
+
+== Ford Library: 386 collections (keys ['citedAs', 'collections', 'prefix'])
+   collection naId=572571 identifier=GRF-0351 title='Presidential Correspondence with Foreign Leaders (Ford Administration)' statedSeriesCount=1 series listed=1
+      series naId=572583 1974–1977 'Presidential Correspondence with Foreign Leaders'
+
+== Carter Library: 157 collections (keys ['citedAs', 'collections', 'prefix'])
+   collection naId=1104 identifier=JC-DMBRZEZ title='Zbigniew Brzezinski Collection' statedSeriesCount=6 series listed=6
+      series naId=152224 1972–1981 'Zbigniew Brzezinski Trilateral Commission Correspondence'
+      series naId=152263 1972–1976 'Zbigniew Brzezinski Trilateral Commission Chronological File'
+   collection naId=623728 identifier=JC-MONDAL title='Walter Mondale Papers' statedSeriesCount=30 series listed=30
+      series naId=12013119 1967–1981 'Subject Files from White House Central Files'
+      (country) series naId=12013058 1967–1981 'Foreign Countries Files'
+      (country) series naId=12013118 1967–1981 'Camp David Accords Summit Middle East Files'
+   collection naId=560131 identifier=JC-NSA title='Records of the Office of the National Security Advisor (Carter Administration)' statedSeriesCount=32 series listed=32
+      series naId=560133 1977–1981 "Zbigniew Brzezinski's President's Daily Reports Files"
+      series naId=560144 1977–1981 "Zbigniew Brzezinski's Central Intelligence Agency (CIA) President's Daily Brief Files"
+      series naId=560148 1977–1981 "Zbigniew Brzezinski's President's Correspondence with Foreign Leaders Files"
+      series naId=560149 1977–1981 "Zbigniew Brzezinski's Trip Files"
+      series naId=560150 1977–1981 "Zbigniew Brzezinski's Very Important Persons (VIP) Visit Files"
+      series naId=560151 1977–1981 "Zbigniew Brzezinski's Country Files"
+      (country) series naId=560151 1977–1981 "Zbigniew Brzezinski's Country Files"
+      (country) series naId=560185 1977–1981 'Middle East Files'
+   collection naId=1117 identifier=JC-WHCF title='Carter White House Central Files' statedSeriesCount=7 series listed=7
+      series naId=165203 1977–1981 'White House Central Files Subject File'
+      series naId=562771 1977–1981 'White House Central Files Weekly Presidential Mail Sample'
+      series naId=562773 1977–1981 'White House Central Files Chronological Files'

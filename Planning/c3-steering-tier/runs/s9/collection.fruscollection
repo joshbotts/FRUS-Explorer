@@ -1,0 +1,369 @@
+{
+ "format": "fruscollection",
+ "formatVersion": 2,
+ "minimumReaderVersion": 1,
+ "name": "Corruption and U.S. foreign policy: what FRUS prints",
+ "authorLine": "Agent run s9, 2026-10-30",
+ "introductionText": "What FRUS answers directly: the printed record shows corruption shaping U.S. decisions in four recurring ways: as a reason to limit or condition aid to a client government (China 1947–48, the Philippines 1950), as an obstacle the United States declined to remove by taking control (South Vietnam 1960–68), as a diplomatic problem when American firms' bribes threatened allied governments (Lockheed and Northrop, 1975–76), and as a domestic scandal that constrained policy (Koreagate and the 1978 troop withdrawal). Where FRUS points for the rest: the documents came mainly from the Department of State's central files (Record Group 59), from lot files such as the Records of Henry Kissinger (Entry A1 5403) and Richard N. Cooper's subject files (Entry UD-04D 21/22), and from the Ford and Carter Libraries' national security files; the editors also cite unprinted Executive Secretariat and Policy Planning lots. What this request cannot get from FRUS: the congressional investigations' own records, the drafting of the Foreign Corrupt Practices Act, and anything after 1988.",
+ "composition": {
+  "defaultBodyDepth": "full",
+  "footnoteStyle": "all",
+  "includeSourceNote": true,
+  "tocStyle": "citation",
+  "applyHighlights": false,
+  "includeNotes": true,
+  "includeWordCloud": false
+ },
+ "entries": [
+  {
+   "kind": "heading",
+   "text": "1. A client's corruption as a reason to limit or condition aid (China, the Philippines, 1943–1950)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These documents follow one argument from diagnosis to decision: officers in China described Nationalist corruption from 1943, the Ambassador proposed in 1947 to meter aid against it, and in November 1948 the Secretary of State listed corrupt officials among the reasons the United States would not undertake all-out aid. The 1950 Philippine instruction shows the same reasoning turned into conditions on further aid."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1943China",
+   "documentId": "d202",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: Davies's 1943 memorandum describes graft, bribery and nepotism as structural features of Kuomintang government, the diagnosis later decisions drew on."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1943China",
+   "documentId": "d202",
+   "text": "Graft and bribery are commonplace."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1947v07",
+   "documentId": "d292",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: Stuart proposes aid released stage by stage against evidence of reform and stopped when corruption reasserts itself: corruption as the measure of leverage."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1947v07",
+   "documentId": "d292",
+   "text": "would give us the strongest leverage in furnishing the desperately needed aid as at each stage there is evidence of progress or in stopping it whenever the forces of reaction or of corruption assert themselves"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1948v07",
+   "documentId": "d506",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: The Secretary's November 1948 instruction gives the presence of corrupt officials in high positions as one reason against an all-out aid programme for the National Government."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1948v07",
+   "documentId": "d506",
+   "text": "the administrative inefficiency of the National Government and the extent to which incompetent and corrupt officials occupy high positions make extremely questionable its capacity to utilize effectively American aid in anything approaching all-out proportions"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1950v06",
+   "documentId": "d831",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: Instruction to the Economic Survey Mission to the Philippines; the editors' note summarises the Mission's call for a cleanup of corrupt tax officials, and the instruction asks what conditions might be attached to further aid. The quoted passage is the editors' summary, not the telegram's own text."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1950v06",
+   "documentId": "d831",
+   "text": "the Philippine Government should institute a sweeping cleanup of the large number of corrupt and inefficient tax administrators and collectors"
+  },
+  {
+   "kind": "heading",
+   "text": "2. Corruption as an obstacle in South Vietnam, and the limits of leverage (1960–1968)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "From Durbrow in 1960 to the Saigon embassy's corruption committee in 1967, U.S. officials treated corruption in the South Vietnamese government as a cause of political weakness and an obstacle to pacification; Calhoun's 1967 memorandum is the clearest statement of why Washington declined the control that a rapid cure would have required."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d179",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: Durbrow's 1960 letter lists Diem's tolerance of corruption in his family and in high circles among the weaknesses of his rule."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d179",
+   "text": "Diem knowingly tolerated corruption in his family and in high governmental circles though remaining personally free of such taint."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v05",
+   "documentId": "d258",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: Calhoun accepts that corruption has become a key obstacle to pacification but rejects a U.S. veto over South Vietnamese appointments as an invasion of sovereignty; the editors' note records the committee's 'incident reports' compromise."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v05",
+   "documentId": "d258",
+   "text": "I agree that the level of corruption in Viet-Nam has reached a point where, as you point out, it has become a key obstacle to pacification."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v05",
+   "documentId": "d258",
+   "text": "The assumption of such sweeping prerogatives entails an invasion of the sovereignty of the Republic of Viet-Nam so great that it could and would be argued thereafter that United States is indeed the neo-colonialist power its critics and enemies allege it to be."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v06",
+   "documentId": "d16",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: DePuy's January 1968 memorandum records that corrupt province chiefs had not been removed and junior officers were restive over corruption in the armed forces."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v06",
+   "documentId": "d16",
+   "text": "The Junior Officers of the Army are increasingly restive in that nothing has been done about corruption in the Armed Forces."
+  },
+  {
+   "kind": "heading",
+   "text": "3. American corporate bribery abroad as a diplomatic problem (1975–1976)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "When the Senate's multinational corporations subcommittee exposed Lockheed's and Northrop's payments, the Department and the White House handled the disclosures as a threat to allied governments: in West Germany and the Netherlands, in Saudi Arabia, and in Japan, where the Prime Minister asked for the names and the embassy watched a former Prime Minister's arrest."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve15p2",
+   "documentId": "d292",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: Hartman reports the subcommittee staff's findings that Lockheed's payments to Strauss and the CSU paved the way for the Starfighter sale to West Germany."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve15p2",
+   "documentId": "d292",
+   "text": "Such payments coming when Strauss was Defense Minister paved the way for the sale of the Starfighter to the FRG."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve15p2",
+   "documentId": "d293",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: The editors' note quotes Kissinger telling Ford on 8 October 1975 that the bribes to Prince Bernhard and Strauss had to be kept quiet to protect the CSU. The quotation is in the editors' note, from another record."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve15p2",
+   "documentId": "d293",
+   "text": "We must do everything possible to keep this quiet. If the CSU is destroyed in Germany it will really shake Germany and strengthen the left."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d155",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: Atherton warns that full disclosure of Lockheed's payments through Khashoggi to high Saudi officials could damage Saudi-U.S. relations more than the Northrop case."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d155",
+   "text": "full disclosure of Lockheed’s payments may prove far more damaging to Saudi-US relations"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d218",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: Miki's letter to Ford asks U.S. help in disclosing the names of Japanese officials implicated in the Lockheed payments."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d222",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: Kissinger tells Ambassador Togo that the Lockheed affair belongs to judicial procedure and is not a foreign policy matter."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d222",
+   "text": "As you know, I have kept myself out of the Lockheed matter. I can tell him no more than anyone else. We have to follow our judicial procedures; it is not a foreign policy matter."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d224",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: A special envoy sent at the Diet's insistence thanks the United States for its help and asks for continued release of Lockheed information."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d224",
+   "text": "My mission is under no circumstances to ask for any renegotiation of the agreement on exchange of Lockheed information."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d227",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: The embassy reports Tanaka's arrest and expects it to reduce suspicion that the two governments sought to cover up the scandal."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d227",
+   "text": "WE EXPECT THAT THE ARREST WILL ALSO SHARPLY REDUCE ANY LINGERING SUSPICION THAT THE U.S. AND GOJ WERE SEEKING TO COVER UP THE LOCKHEED SCANDAL."
+  },
+  {
+   "kind": "heading",
+   "text": "4. From scandal to policy: the illicit payments initiative (1976–1978)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "The disclosures moved into economic diplomacy: in 1976 officials asked whether to raise bribery at the economic summit, and by 1977–1978 Carter's economic officials counted the U.S. proposal for an international agreement on illicit payments as one of the few North–South issues on which Washington held the initiative."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76v31",
+   "documentId": "d140",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: Preparing the 1976 summit, Parsky raises corporate bribery and Kissinger counsels against browbeating two governments already in difficulty."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v31",
+   "documentId": "d140",
+   "text": "Two governments are in political difficulty on this issue. It could help, but we shouldn’t browbeat."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v03",
+   "documentId": "d266",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: Cooper names the illicit payments proposal as an area where the United States can take the offensive; Vance highlighted the passage."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v03",
+   "documentId": "d266",
+   "text": "Our proposal on illicit payments is another example."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v03",
+   "documentId": "d310",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: Cooper tells Carter that illicit payments is one area where the United States has seized the initiative in the North–South dialogue."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v03",
+   "documentId": "d310",
+   "text": "Illicit payments is one area where we have done so."
+  },
+  {
+   "kind": "heading",
+   "text": "5. Bribery of the U.S. Congress and the Korean troop withdrawal (1978)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "The Tongsun Park affair, in which South Korean figures were accused of bribing members of Congress, appears in the 1978 papers as a reason to postpone the first combat troop withdrawal from Korea: the scandal, not the withdrawal itself, set the limits of what Congress would vote."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v13",
+   "documentId": "d84",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: The NSC staff paper argues for postponing the first withdrawals because Congress cannot address Korean security while the Tongsun Park affair hangs over it."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v13",
+   "documentId": "d84",
+   "text": "Postponement of the first withdrawals—on grounds that the Congress cannot be expected to address the security dimensions of the problem while the Tongsun Park affair hangs over them—would remove a contentious issue from the Executive-Legislative agenda."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v13",
+   "documentId": "d92",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: The interagency options memorandum carries the same justification into Option 2, postponing the December 1978 brigade withdrawal."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v13",
+   "documentId": "d94",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: At the White House meeting Holbrooke says the issue is the Tongsun Park affair, not the withdrawal, and that Congressmen fear voting any aid to Korea."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v13",
+   "documentId": "d94",
+   "text": "The issue is not the withdrawal but the Tongsun Park affair. Because of “Koreagate,” Congressmen fear political retribution at the polls if they vote for any sort of aid to Korea this year."
+  },
+  {
+   "kind": "heading",
+   "text": "6. An allegation of corruption as a weapon against the United States (1875)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "An early counterpoint: here the allegation is aimed at a process the United States relied on, and the Venezuelan President uses it to refuse payment of U.S. claims awarded by an arbitral commission."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1875v01",
+   "documentId": "d199",
+   "notes": [
+    "Agent finding, run s9, 2026-10-30: Scruggs reports that Guzmán Blanco uses the alleged corruption of the claims commission as a pretext for refusing to pay U.S. claims."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1875v01",
+   "documentId": "d199",
+   "text": "The alleged corruption of the arbitral commission which awarded those claims is Blanco’s pretext for the proposed bad faith of his government."
+  },
+  {
+   "kind": "prose",
+   "text": "Threads this collection could not follow: what the investigating committees themselves found (the Senate multinational corporations subcommittee's and the House ethics inquiries' own records are outside FRUS); how the 1977 Foreign Corrupt Practices Act was drafted (four printed documents name it); corruption in U.S. advisory missions (one 1979 NSC memorandum mentions it for Iran); and anything after 1988, where the indexed series thins to one volume. Corruption described in passing in country reporting across the series (about three thousand documents) is not read here document by document."
+  },
+  {
+   "kind": "generated",
+   "generatedBlockType": "archivalSources"
+  }
+ ]
+}

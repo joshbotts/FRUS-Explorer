@@ -1,0 +1,16 @@
+{
+ "index_digest": "89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101",
+ "bin_digest": "89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101",
+ "map_digest": "89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101",
+ "generation_file": "89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101",
+ "shard_digests": [
+  "89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101"
+ ],
+ "shards": 553
+}
+docs 314616 dims 512 cents 660 volumes 553 recall 0.9021
+{"documentOffset": 0.4, "measuredBy": "Planning/semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md \u00a71b, fitted to EmbeddingGemma 300m's scores over 90 typed queries and 600 anchor documents against the 314,616-document corpus", "queryOffset": 0.47}
+random pairs n 20000 mean 167.1 sd 14.8 p1 132.0 min 95
+1st neighbour over 200 docs: median 84.0 quartiles 74.0 94.0
+10th neighbour over 200 docs: median 102.0 quartiles 95.0 108.25
+25th neighbour over 200 docs: median 108.0 quartiles 102.0 115.0

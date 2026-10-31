@@ -1,0 +1,6 @@
+SQL: SELECT c.volume_id,c.document_id,c.header||' '||coalesce(c.dateline,'')||' '||coalesce(c.source_note,'')||' '||c.body_text FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ORDER BY c.volume_id,c.document_id MATCH "foreign corrupt practic*"
+  frus1977-80v03 d152 strict tolerant
+  frus1977-80v03 d230 strict tolerant
+  frus1977-80v03 d248 strict tolerant
+  frus1977-80v18 d57 strict tolerant
+STRICT 4 of 4; TOLERANT 4 of 4

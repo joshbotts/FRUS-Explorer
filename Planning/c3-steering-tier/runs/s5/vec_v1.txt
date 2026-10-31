@@ -1,0 +1,2 @@
+RANDOM PAIRS n=20000 mean=167.1 sd=14.8 p1=132 min=95
+KTH NEIGHBOUR (200-doc sample): 1st median/q1/q3 (82.0, 71.0, 92.0)  10th (102.0, 95.0, 108.0)  25th (108.0, 101.25, 114.0)

@@ -1,0 +1,21 @@
+{
+ "label": "questionable_payment",
+ "match": "\"question payment\"",
+ "strict": "\\bquestionable payment\\b",
+ "tolerant": "\\bquestionabl\\w*[\\s\\-,().]+payments?\\b",
+ "M_hitlist_excl_fm_ed_Ed2": 9,
+ "mode": "census",
+ "n": 9,
+ "strict_hits": 0,
+ "tolerant_hits": 1,
+ "tolerant_misses": [
+  "frus1919Parisv11/d76",
+  "frus1941v01/d479",
+  "frus1947v08/d338",
+  "frus1949v08/d1651",
+  "frus1952-54v04/d465",
+  "frus1955-57v03mSupp/d813",
+  "frus1955-57v16/d386",
+  "frus1955-57v26/d156"
+ ]
+}

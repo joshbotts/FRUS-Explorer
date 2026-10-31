@@ -1,0 +1,13 @@
+map header documents: 314616 clusters: 140
+unclustered: 5 of 29
+distinct clusters: 10 of 24 clustered docs; largest cluster holds [(29, 8)]
+29 8 ['lao', 'vietnamese', 'vietnam', 'thieu']
+5 4 ['philippine', 'philippines', 'quirino', 'magsaysay']
+7 3 ['japanese', 'sato', 'japan', 'kishi']
+22 2 ['rok', 'korea', 'rhee', 'korean']
+3 2 ['nanking', 'shanghai', 'chinese', 'tientsin']
+42 1 ['castro', 'somoza', 'cuban', 'cuba']
+37 1 ['shah', 'iran', 'iranian', 'zahedi']
+75 1 ['libyan', 'moroccan', 'sahara', 'hassan']
+corpus-wide unclustered: 88059 of 314616
+clusters (of 140 ) whose label terms name corruption/bribery/graft/scandal/fraud: []

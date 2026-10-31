@@ -1,0 +1,10 @@
+frus1958-60v01|d135|lotFile|Department of State||62D26||0
+frus1958-60v01|d267|centralFileClass|Department of State||||0
+frus1961-63v22|d202|presidentialLibrary|Kennedy Library|President’s Office Files|||0
+frus1961-63v22|d297|presidentialLibrary|Kennedy Library|President’s Office Files|||0
+frus1961-63v22|d297|presidentialLibrary|Kennedy Library|President’s Office Files|||1
+frus1961-63v22|d297|presidentialLibrary|Kennedy Library|President’s Office Files|||1
+frus1964-68v05|d395|presidentialLibrary|Johnson Library|President’s Daily Diary|||0
+frus1964-68v06|d134|presidentialLibrary|Johnson Library|National Security File|||0
+frus1964-68v06|d31|presidentialLibrary|Johnson Library|Papers of Clark M. Clifford|||0
+frus1977-80v15|d68|presidentialLibrary|Carter Library|National Security Affairs||Box 33|0

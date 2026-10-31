@@ -1,0 +1,69 @@
+SQL: SELECT c.header, t.date_iso FROM document_cache c LEFT JOIN document_dates t ON t.volume_id=c.volume_id AND t.document_id=c.document_id WHERE c.volume_id=? AND c.document_id=?
+GROUP
+    frus1894app2/d198 1893-02-01 | Mr. Stevens to Mr. Foster.
+    frus1894app2/d90 1893-02-01 | No. 19. Mr. Stevens to Mr. Foster.
+GROUP
+    frus1908/d680 1908-12-14 | By the President of the United States of America.
+    frus1908/d693 1908-05-21 | By the President of the United States of America.
+    frus1910/d435 1910-08-26 | By the President of the United States of America.
+    frus1912/d773 1912-07-10 | By the President of the United States of America.
+    frus1914/d1789 1914-01-24 | By the President of the United States of America.
+GROUP
+    frus1977-80v11p1/d193 1980-02-29 | 193. Memorandum From the Special Assistant to the Secretary of State (Raphel) to Secretary of State Vance and the Deputy Secretary of State 
+    frus1977-80v29/d261 1980-02-29 | 261. Memorandum From the Special Assistant to the Secretary of State (Raphel) to Secretary of State Vance and the Deputy Secretary of State 
+GROUP
+    frus1894Nicaragua/d12 1894-03-08 | No. 12. Mr. Baker to Mr. Gresham.
+    frus1894app1/d263 1891-03-08 | Mr. Baker to Mr. Gresham.
+GROUP
+    frus1902/d111 1902-05-27 | By the President of the United States of America.
+    frus1905/d295 1905-02-08 | By the President of the United States of America.
+    frus1905/d725 1905-05-12 | By the President of the United States of America.
+GROUP
+    frus1894Nicaragua/d23 1894-03-29 | No. 23. Mr. Bayard to Mr. Gresham.
+    frus1894app1/d274 1894-03-29 | Mr. Bayard to Mr. Gresham.
+GROUP
+    frus1969-76v12/d212 1970-09-22 | 212. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to President Nixon
+    frus1969-76ve10/d225 1970-09-22 | 225. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to President Nixon
+GROUP
+    frus1933-39/d31 1933-11-16 | Statement by the Soviet Commissar for Foreign Affairs (Litvinov)
+    frus1933v02/d593 1933-11-16 | Statement by the Soviet Commissar for Foreign Affairs (Litvinov)
+GROUP
+    frus1981-88v06/d32 1987-03-28 | 32. Information Memorandum From the Assistant Secretary of State for Human Rights and Humanitarian Affairs (Schifter) to Secretary of State 
+    frus1981-88v41/d93 1987-03-28 | 93. Information Memorandum From the Assistant Secretary of State for Human Rights and Humanitarian Affairs (Schifter) to Secretary of State 
+GROUP
+    frus1951-54Iran/d355 1954-01-02 | 355. Statement of Policy by the National Security Council
+    frus1952-54v10/d403 1954-01-02 | No. 403 Statement of Policy by the National Security Council
+GROUP
+    frus1903/d565 1903-07-17 | By the President of the United States of America.
+    frus1907p2/d289 1907-06-15 | By the President of the United States of America.
+GROUP
+    frus1949v06/d8 1949-04-04 | Memorandum of Conversation, by the Secretary of State
+    frus1949v07p2/d320 1949-04-04 | Memorandum of Conversation, by Mr. Jacob D. Beam, Acting Special Assistant in the Office of German and Austrian Affairs
+GROUP
+    frus1923v01/d805 1923-11-08 | Treaty between the United States of America and Estonia, Signed at Tallinn, November 8, 1923
+    frus1924v01/d275 1924-03-19 | Treaty between the United States of America and Bulgaria, Signed at Sofia, March 19, 1924
+    frus1925v02/d24 1925-07-02 | Treaty Between the United States of America and Czechoslovakia, Signed at Prague, July 2, 1925
+GROUP
+    frus1894app2/d186 1892-11-20 | Mr. Stevens to Mr. Foster.
+    frus1894app2/d70 1892-11-20 | Mr. Stevens to Mr. Foster.
+GROUP
+    frus1950v03/d553 1950-08-30 | United States Delegation Minutes, Fourth Session, Preliminary Conversations for the September Foreign Ministers Meetings, Washington, August
+    frus1950v07/d480 1950-08-30 | United States Delegation Minutes: SFM Pre 4
+GROUP
+    frus1950v03/d728 1950-12-05 | United States Minutes, Truman–Attlee Conversations, Second Meeting, The Presidential Yacht “Williamsburg,” Washington, December 5, 1950, 2:4
+    frus1950v07/d977 1950-12-05 | United States Delegation Minutes of the Second Meeting of President Truman and Prime Minister Attlee
+GROUP
+    frus1894/d464 1894-05-11 | Mr. Baker to Mr. Gresham.
+    frus1894Nicaragua/d45 1894-05-11 | No. 45. Mr. Baker to Mr. Gresham.
+GROUP
+    frus1894/d471 1894-06-11 | Mr. Baker to Mr. Gresham.
+    frus1894Nicaragua/d62 1894-06-11 | No. 62. Mr. Baker to Mr. Gresham.
+GROUP
+    frus1950v03/d732 1950-12-07 | United States Minutes, Truman–Attlee Conversations, Fifth Meeting, The White House, Washington, December 7, 1950, 3:45–5:10 p. m.
+    frus1950v07/d1002 1950-12-07 | United States Delegation Minutes of the Fifth Meeting of President Truman and Prime Minister Attlee
+GROUP
+    frus1894app2/d192 1893-01-18 | Mr. Stevens to Mr. Foster.
+    frus1894app2/d73 1893-01-18 | No. 2. Mr. Stevens to Mr. Foster.
+GROUP
+    frus1923v02/d467 1923-10-16 | Treaty between the United States of America and Latvia, Signed at Riga, October 16, 1923
+    frus1924v02/d327 1924-04-09 | Treaty between the United States of America and Lithuania, Signed at Kaunas, April 9, 1924

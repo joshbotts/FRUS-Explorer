@@ -1,0 +1,7 @@
+FALSE-FRIEND TEST: share of non-apparatus documents matching, inside the collection's 20 volumes vs the other 533 (Ed2 excluded)
+corrupt (stem; the question's own term): inside 396 of 11384 = 0.0348; outside 1779 of 300045 = 0.0059; ratio 5.87
+CONTROL phrase 'department of state': inside 3301 of 11384 = 0.2900; outside 90523 of 300045 = 0.3017; ratio 0.96
+CONTROL term 'ambassador': inside 4593 of 11384 = 0.4035; outside 106275 of 300045 = 0.3542; ratio 1.14
+NEGATIVE ZZZ_IMPOSSIBLE_ZZZ: inside 0 of 11384 = 0.0000; outside 0 of 300045 = 0.0000; ratio nan
+NEXUS set size: 595
+NEXUS LITERAL SHARE (token regex, window 25 tokens, 40 evenly spaced of 595): STRICT 33 of 40; TOLERANT 39 of 40

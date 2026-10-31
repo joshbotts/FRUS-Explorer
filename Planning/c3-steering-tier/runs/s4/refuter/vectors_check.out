@@ -1,0 +1,22 @@
+binary header: 1 512 314616 660 digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+index digest: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 equal: True
+map digest: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+shards manifest digest: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+.generation: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+one shard header bytes 0-16: b'FRSS\x01\x00\x00\x00\x00\x02\x00\x00\xc4\x01\x00\x00' bytes 16-48: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+volumes: 553 rows mapped: 314616 == docs: True max row+1: 314616
+
+ANCHOR ('frus1922v01', 'd864'): my 25 == session's 25 as a set: True; identical order and distances: True
+  my list: [(94, 'frus1924v01/d570'), (96, 'frus1922v01/d863'), (99, 'frus1922v01/d872'), (100, 'frus1921v01/d687'), (101, 'frus1922v01/d855'), (101, 'frus1923v01/d667'), (103, 'frus1921v01/d683'), (103, 'frus1922v01/d836'), (103, 'frus1922v01/d875'), (104, 'frus1913/d280'), (104, 'frus1922v01/d842'), (107, 'frus1922v01/d835'), (109, 'frus1921v01/d714'), (109, 'frus1921v01/d722'), (110, 'frus1921v01/d710'), (111, 'frus1921v01/d701'), (111, 'frus1922v01/d841'), (112, 'frus1921v01/d688'), (112, 'frus1921v01/d715'), (112, 'frus1934v05/d359'), (112, 'frus1935v04/d682'), (113, 'frus1914/d205'), (113, 'frus1921v01/d681'), (113, 'frus1921v01/d717'), (113, 'frus1921v01/d718')]
+
+ANCHOR ('frus1947v07', 'd582'): my 25 == session's 25 as a set: True; identical order and distances: True
+  my list: [(85, 'frus1947v07/d562'), (92, 'frus1948v07/d310'), (93, 'frus1947v07/d592'), (96, 'frus1930v02/d26'), (97, 'frus1943China/d190'), (97, 'frus1945v07/d2'), (97, 'frus1947v07/d20'), (97, 'frus1948v07/d450'), (98, 'frus1929v02/d75'), (98, 'frus1947v07/d237'), (98, 'frus1948v07/d25'), (99, 'frus1947v07/d78'), (100, 'frus1947v07/d96'), (100, 'frus1948v07/d430'), (101, 'frus1944v06/d360'), (101, 'frus1947v07/d123'), (101, 'frus1948v07/d7'), (101, 'frus1948v07/d322'), (102, 'frus1946v10/d275'), (102, 'frus1947v07/d52'), (102, 'frus1948v07/d266'), (102, 'frus1948v07/d389'), (103, 'frus1947v07/d66'), (103, 'frus1948v07/d142'), (103, 'frus1949v09/d3')]
+
+ANCHOR ('frus1969-76ve09p2', 'd161'): my 25 == session's 25 as a set: True; identical order and distances: True
+  my list: [(75, 'frus1969-76ve09p2/d162'), (99, 'frus1964-68v21/d256'), (103, 'frus1969-76ve09p2/d130'), (106, 'frus1955-57v13/d271'), (106, 'frus1969-76ve09p2/d135'), (107, 'frus1952-54v09p2/d1464'), (107, 'frus1969-76v37/d79'), (107, 'frus1969-76ve09p1/d49'), (108, 'frus1964-68v21/d251'), (108, 'frus1969-76v24/d131'), (109, 'frus1958-60v13/d17'), (109, 'frus1961-63v17/d314'), (109, 'frus1964-68v21/d377'), (109, 'frus1969-76ve09p2/d105'), (110, 'frus1969-76v24/d136'), (110, 'frus1969-76v36/d140'), (110, 'frus1969-76ve09p2/d155'), (110, 'frus1969-76ve09p2/d160'), (111, 'frus1945v08/d850'), (111, 'frus1947v05/d932'), (111, 'frus1950v05/d636'), (111, 'frus1964-68v18/d15'), (111, 'frus1977-80v18/d148'), (111, 'frus1977-80v18/d216'), (112, 'frus1955-57v13/d175')]
+
+Hamming(frus1922v01/d864, d872) = 99
+random pairs seed 1877 n=20000: mean 167.14 sd 14.77 1st pct 132; mean-8sd 48.99
+collection set (35): NN distances min 81 median 110 max 144; closest: [(81, ('frus1969-76ve15p2', 'd292'), ('frus1969-76ve15p2', 'd293')), (81, ('frus1969-76ve15p2', 'd293'), ('frus1969-76ve15p2', 'd292')), (82, ('frus1947v07', 'd553'), ('frus1947v07', 'd570'))]
+Hamming(ve15p2/d292, Ed2/d292) = 0
+Hamming(ve15p2/d293, Ed2/d293) = 0

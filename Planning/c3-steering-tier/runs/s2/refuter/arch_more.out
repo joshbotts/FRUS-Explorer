@@ -1,0 +1,57 @@
+== Ford Library: collections whose title or series mention 'National Security Adviser' / 'Country Files' + Middle East
+   naId=568221 id=GRF-0327 'Presidential Country Files for Middle East and South Asia (Ford Administration)' series=1
+      series naId=568224 1974–1977 'Middle East and South Asia Country Files'
+   naId=646747 id=GRF-0343 'National Security Council Middle East and South Asian Affairs Staff Files (Ford Administration)' series=7
+      series naId=646749 1975–1977 'Middle East and South Asian Affairs Country Files'
+      series naId=646750 1974–1976 'Middle East and South Asian Affairs Visits Files'
+      series naId=646751 1974–1977 'Middle East and South Asian Affairs General Subject Files'
+      series naId=646752 1974–1976 'Middle East and South Asian Affairs Files on Henry Kissinger Trips'
+      series naId=646753 1974–1975 'Middle East and South Asian Affairs Presidential Briefings Files'
+      series naId=646754 1974–1976 'Middle East and South Asian Affairs Peace Negotiations Chronological Files'
+      series naId=646755 1974–1977 'Middle East and South Asian Affairs Chronological Files'
+
+== collection-authority.json: lot:65F115, lot:79F80 full records; Central Decimal records
+   lot:54D270 keys: ['aliases', 'id', 'lotFileNorm', 'name', 'recordGroup', 'repository', 'volumeIds'] naId: None catalogURL: None recordGroup: 59
+   lot:62D181 keys: ['aliases', 'id', 'lotFileNorm', 'name', 'recordGroup', 'repository', 'volumeIds'] naId: None catalogURL: None recordGroup: 59
+   lot:62D26 keys: ['aliases', 'catalogURL', 'children', 'id', 'lotFileNorm', 'naId', 'name', 'recordGroup', 'repository', 'volumeIds'] naId: 1965953 catalogURL: https://catalog.archives.gov/id/1965953 recordGroup: 59
+   lot:65F115 keys: ['aliases', 'id', 'lotFileNorm', 'name', 'recordGroup', 'repository', 'volumeIds'] naId: None catalogURL: None recordGroup: 84
+   lot:79F80 keys: ['aliases', 'id', 'lotFileNorm', 'name', 'recordGroup', 'repository', 'volumeIds'] naId: None catalogURL: None recordGroup: 84
+   records naming 'Central Decimal': 1
+      txt:department of state|central decimal file 1910-1929 | name: Central Decimal File 1910–1929 | naId: None | catalogURL: None | volumes: 1
+
+== accession-series-index.json
+  top keys: ['byAccession', 'generated', 'legend', 'note', 'schemaVersion']
+  '65F115' at 33353: …General Records"}], "286/65F0207": [{"a": "286-65F0207", "n": "26308847", "t": "Project and Subject Files Relating to the Far East"}], "286/65F0480A": [{"a": "286-65F0480-A", "n": "5891428", "t": "Program Files"}], "286/65F0480C": [{"a": "286-65F0480-C", "n": "5891409", "t": "Subject Files"}], "286/65F1153A": [{"a": "286-65F1153A", "n": "6841315", "t": "General Records"}], "286/65G0480": [{"a": "286-65G0480", "n": "5822431", "t": "Subject Files"}], "286/65G1152": [{"a": "286-65G1152", "n": "5717834", "t": "Press Releases and Other Records"}, {"a": "W286-65G1152", "n": "5721235", "t": "Subject …
+  '65 F 115': absent
+  '79F80': absent
+  'Central Decimal' at 587030: …01", "t": "Classified Safehaven Subject Files"}], "84/685612": [{"a": "084-68-5612", "n": "2989987", "t": "Classified Central Subject Files"}], "84/68A1814": [{"a": "084-68A1814", "n": "2887131", "t": "Limited Distribution Chronological Files"}, {"a": "084-68A1814", "n": "4139272", "t": "Classified Central Decimal Files"}, {"a": "084-68A1814", "n": "4288905", "t": "Classified Central Subject Files"}, {"a": "084-68A1814", "n": "4701083", "t": "Classified Central Subject Files"}], "84/68A1814M": [{"a": "084-68A-1814M", "n": "2912202", "t": "Unclassified Subject Files"}, {"a": "084-68A-1814M", "n…
+  '302021': absent
+
+== lot-claimants-index.json
+  keys: ['generated', 'harvestGenerated', 'lots', 'note', 'schemaVersion'] note: NARA series that claim a FRUS lot number, for the lots where more than one does. NARA divides lot files across series and consolidates several into one, so a lot with several claimants has several correct answers; Source Explorer shows them as candidates rather than picking. Built offline from the r
+  lots type: list count: 123
+   65F115 -> None
+   79F80 -> None
+   62D26 -> None
+   62D181 -> None
+   54D270 -> None
+
+== documents under frus1958-60v01's corruption chapter
+   documents under the chapter: 274 first/last: ['d1', 'd2', 'd3'] ['d272', 'd273', 'd274'] ; d131 in it: True ; d135 in it: True
+
+== d161: are the names withheld as 'not declassified'?
+   occurrences of 'not declassified': 6
+   …ny and the USG for the names of the bribe recipients. Lockheed records showed that according to Adnan Kashoggi, [1 line not declassified] had received some of this money. Sultan said the Department or President Ford …
+   …rtainly continue and increase. This was of concern to us because Lockheed records claim that some bribes went to [names not declassified]. 2. I said my presentation was in line with my earlier assurances to him that …
+   … only Kashoggi’s word, however, (as stated in Lockheed files and correspondence) that the accounts were those of [names not declassified]. 5. Sultan said the names cannot rpt not ever be revealed. The Department of S…
+
+== d395: 'first on its list of priorities'? 
+   … of public appearances. (Memorandum from Rostow to the President, November 11; ibid., National Security File, Country File, Vietnam, Post Inaugural Political Activity, 1 E(1)) These are the items: 1. Anti-corruption effort —There was unanimous agreement that a visible and credible anti-corruption effort would help a great deal in improving the Administration’s position, and in building a more effective GVN. (Bus…
+   …at we are experiencing in 1967—would not only wipe out the effects of any GVN wage increase that is granted, but it would also get the new government off on the wrong foot, and would make any serious anti-corruption campaign that much tougher. Incidentally, if there is a 50% inflation next year, plus a GVN wage increase, the real income of GVN officials and soldiers will be about half of the 1964 level—which its…
+
+== d204: 'Within nine days' (d202 1961-03-06, d204 1961-03-15) and 'does not use any of the words'
+   frus1961-63v22 d202 ('1961-03-06',)
+   frus1961-63v22 d204 ('1961-03-15',)
+
+== d248: 'second most significant disincentive'
+   …ts of the United States: Jimmy Carter, 1980–81, Book II, p. 1692) C. FOREIGN CORRUPT PRACTICES ACT Our review indicates that U.S. exporters consider the Foreign Corrupt Practices Act (FCPA) to be the second most significant export disincentive. The Act has two consequences. The first, not unexpectedly, is that some exports are lost because foreign companies can bribe foreign officials while U.S. companies ca…

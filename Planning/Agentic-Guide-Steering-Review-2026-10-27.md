@@ -18,7 +18,32 @@ were corrected on the way, from the records and a measurement at the 2026-10-15 
   `vec_dups.tsv`); the memo printed `d211`, which sits at 80.
 
 Still waiting: R3's deliverable sentence, R5's clause on the block's Ed2 line, R6 to R11, R13 and
-R15, which are R16's treatment arm. §9's five questions are still open. Written against `Docs/Agentic-Analysis-Guide.md` v1.36 (3,574 lines, `v2` @ `e85cef7`),
+R15, which are R16's treatment arm.
+
+**§9 answered, 2026-10-30.** The owner's answers:
+1. the vectors section goes inside the block;
+2. centroid similarity is dropped;
+3. the third question is chosen from five candidates the owner proposes and a session assesses;
+4. READER-FACING OUTPUT is adopted in substance and scope, and its style and language get a pass
+   of their own over the runs' raw outputs;
+5. the budget is as proposed, and the tier starts that day rather than after build 52.
+
+R16 is designed with them in `C-3-Steering-Tier-Design.md`, which moved R9, R11 and R13 out of the
+treatment arm and into that pass.
+
+**R16 ran 2026-10-30** (`C-3-Steering-Tier-Results-2026-10-30.md`), on the owner's corruption
+question. By its rule, the treatment is not adopted: reading 4 failed by one item, with B losing
+O2 twice where A lost T1 once. Readings 1, 2, 5, 6 and 7 held. Reach tied at two strict documents
+an arm. Two parts showed effects of their own:
+- R6's vocabulary bullet: V8 4 of 4 against 0 of 4;
+- R8: T1 4 of 4 against 3 of 4.
+
+V6 needed no new text: v1.36's line, pasted into the block, gave A 4 of 4.
+
+The owner followed the rule (2026-10-30). The guide records the measurement at v1.38 and adopts
+nothing. R7, R8 and R10 are owed a measurement alone.
+
+Written against `Docs/Agentic-Analysis-Guide.md` v1.36 (3,574 lines, `v2` @ `e85cef7`),
 the two results files (`C-3-Results-2026-10-26.md`, twelve runs of the §12 block on the
 recognition question; `C-3-Vectors-Tier-Results-2026-10-27.md`, four runs with Appendix A and the
 artifacts on the owner's Cuba question) and their records (`c3-reader-test/`, `c3-vectors-tier/`:

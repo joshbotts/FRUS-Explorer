@@ -1,0 +1,1 @@
+series-facts rows: 698 with a start year: 698 starting before 1940: 11 -> about one in 63

@@ -1,0 +1,28 @@
+lot-file citations on hit docs: {'65F115': 2, '62D26': 1, '62D430': 1, '65F98': 1, '62D1': 1, '64D199': 1, '66D95': 1, '66D500': 1, '66D483': 2, '85D240': 1, '68D453': 1, '69D277': 1, '71D461': 2, '76D169': 1}
+== 65F115
+== 62D26
+ central-files: 1965953 59 Subject, Personal Name, and Country Files | entries ['A1 3113'] | facts {'as': 'Restricted - Partly', 'c': 'Department of State. Bureau of Far Eastern Affairs. Office of the Assistant Secretary.', 'x': '10 linear feet, 1 linear inch', 'y0': 1960, 'y1': 1963}
+== 62D430
+ central-files: 2839191 59 Subject and Special Files | entries ['A1 1586C'] | facts {'as': 'Restricted - Partly', 'c': 'Department of State. Executive Secretariat.', 'x': '4 linear feet, 5 linear inches', 'y0': 1953, 'y1': 1961}
+ claimants: {"claimants": [{"dateRange": "1953\u20131961", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1586A"], "naId": "2386675", "recordGroup": "59", "title": "Administrative and Chronological Files"}, {"dateRange": "1953\u20131961", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1586B"],
+== 65F98
+== 62D1
+ central-files: 2838992 59 Records Relating to Activities with the National Security Council | entries ['A1 1583E', 'A1 1583F'] | facts {'as': 'Restricted - Partly', 'c': 'Department of State. Policy Planning Council.', 'x': '3 linear feet, 1 linear inch', 'y0': 1948, 'y1': 1961}
+ claimants: {"claimants": [{"dateRange": "1948\u20131961", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1583A", "A1 1583B"], "naId": "2198167", "recordGroup": "59", "title": "Alphabetical Files"}, {"dateRange": "1947\u20131961", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1583C", "A1 1583
+== 64D199
+ central-files: 602231 59 The Secretary's and the Under Secretary's Memorandums of Conversation | entries ['A1 1566'] | facts {'as': 'Unrestricted', 'c': 'Department of State. Executive Secretariat.', 'x': '13 linear feet, 2 linear inches', 'y0': 1953, 'y1': 1964}
+== 66D95
+ central-files: 2839192 59 Records Relating to National Security Council Policy Papers | entries ['A1 1586E'] | facts {'as': 'Restricted - Partly', 'c': 'Department of State. Office of the Secretary. Executive Secretariat.', 'x': '26 linear feet, 3 linear inches', 'y0': 1947, 'y1': 1979}
+ claimants: {"claimants": [{"dateRange": "1947\u20131979", "evidence": "controlNumber", "hmsMlrEntryNumbers": ["A1 1586E"], "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}, {"dateRange": "1947\u20131965", "evidence": "controlNumber", "hmsMlrEntryNu
+== 66D500
+ central-files: 1981837 59 Thailand Files | entries ['A1 3122'] | facts {'as': 'Unrestricted', 'c': 'Department of State. Bureau of Far Eastern Affairs. Office of Southeast Asian Affairs', 'x': '3 linear feet, 6 linear inches', 'y0': 1960, 'y1': 1963}
+== 66D483
+== 85D240
+ central-files: 2131132 59 Subject Files | entries ['A1 5408'] | facts {'as': 'Unrestricted', 'c': 'Department of State. Bureau of East Asian and Pacific Affairs. Office of the Assistant Secretary.', 'x': '14 linear feet, 9 linear inches', 'y0': 1961, 'y1': 1974}
+== 68D453
+ central-files: 602875 59 Conference Files | entries ['A1 3051B'] | facts {'as': 'Unrestricted', 'c': 'Department of State. Office of the Secretary. Executive Secretariat.', 'x': '238 linear feet', 'y0': 1949, 'y1': 1972}
+== 69D277
+== 71D461
+ central-files: 603208 59 Subject Files of Ambassador at Large W. Averell Harriman | entries ['A1 5005'] | facts {'as': 'Unrestricted', 'c': 'Department of State. Office of the Ambassador at Large for Southeast Asian Affairs.', 'x': '4 linear feet, 10 linear inches', 'y0': 1967, 'y1': 1968}
+== 76D169
+ central-files: 2602428 59 Records Relating to Iran | entries ['A1 5644'] | facts {'as': 'Restricted - Partly', 'c': 'Department of State. Bureau of Near Eastern and South Asian Affairs. Office of the Officer in Charge, Iranian Affairs.', 'x': '4 linear feet, 10 linear inches', 'y0': 1965, 'y1': 1975}

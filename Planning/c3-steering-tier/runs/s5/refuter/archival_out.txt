@@ -1,0 +1,109 @@
+series-facts top keys: ['byNaId', 'findingAidTypes', 'generated', 'headings', 'legend', 'referenceUnits', 'restrictions', 'schemaVersion', 'statuses', 'useRestrictions'] | counts: {'byNaId': 698, 'findingAidTypes': 3, 'generated': '2026-09-10', 'headings': 398, 'legend': 2, 'referenceUnits': 2, 'restrictions': 8, 'schemaVersion': 3, 'statuses': 5, 'useRestrictions': 2}
+
+--- series-facts NAID 602875: 0 ---
+
+--- series-facts NAID 2839192: 0 ---
+
+central-files top keys: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion'] | sizes: {'countrySeries': 12, 'generated': '2026-09-10', 'lotFiles': 1070, 'numericalFile': 3, 'schemaVersion': 3}
+
+--- central-files-index lot 59D95: 0 ---
+
+--- central-files-index lot 66D95: 1 ---
+  .lotFiles[409] [lotNumber] {"catalogURL": "https://catalog.archives.gov/id/2839192", "hmsMlrEntryNumbers": "<list:1>", "levelOfDescription": "series", "lotNumber": "66D95", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}
+
+--- central-files-index lot 63D351: 1 ---
+  .lotFiles[255] [lotNumber] {"catalogURL": "https://catalog.archives.gov/id/2839192", "hmsMlrEntryNumbers": "<list:1>", "levelOfDescription": "series", "lotNumber": "63D351", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}
+
+--- central-files-index lot 89D149: 0 ---
+
+curated-lot-resolutions top: dict ['schemaVersion', 'generated', 'note', 'series', 'lots']
+
+--- curated-lot-resolutions 59D95: 1 ---
+  .lots[3] [lotNumber] {"lotNumber": "59D95", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files"}
+
+--- curated-lot-resolutions 89D149: 0 ---
+
+collection-authority top keys: ['collections', 'generated', 'schemaVersion'] {'collections': 3977, 'generated': '2026-10-20', 'schemaVersion': 1}
+
+--- collection-authority 89D149: 1 ---
+  .collections[1550] [lotFileNorm] {"aliases": "<list:12>", "id": "lot:89D149", "lotFileNorm": "89D149", "name": "Lot 89D149: S/P , Memoranda/Correspondence from the Director of the Policy Planning Staff", "recordGroup": "59", "repository": "Department of State", "volumeIds": "<list:12>"}
+
+--- collection-authority 59D95: 1 ---
+  .collections[313] [lotFileNorm] {"aliases": "<list:12>", "children": "<list:2>", "id": "lot:59D95", "lotFileNorm": "59D95", "name": "Conference Files, Lot 59 D 95", "recordGroup": "59", "repository": "Department of State", "volumeIds": "<list:42>"}
+
+--- collection-authority 'Conference Files': 4 ---
+  .collections[313] [name] {"aliases": "<list:12>", "children": "<list:2>", "id": "lot:59D95", "lotFileNorm": "59D95", "name": "Conference Files, Lot 59 D 95", "recordGroup": "59", "repository": "Department of State", "volumeIds": "<list:42>"}
+  .collections[361] [name] {"aliases": "<list:6>", "catalogURL": "https://catalog.archives.gov/id/2561226", "id": "lot:60D514", "lotFileNorm": "60D514", "naId": "2561226", "name": "FE Conference Files, Lot 60 D 514", "recordGroup": "59", "repository": "Department of State", "volumeIds": "<list:7>"}
+  .collections[371] [name] {"aliases": "<list:7>", "id": "lot:60D627", "lotFileNorm": "60D627", "name": "Conference Files, Lot 60 D 627", "recordGroup": "59", "repository": "Department of State", "volumeIds": "<list:39>"}
+  .collections[453] [name] {"aliases": "<list:9>", "id": "lot:62D181", "lotFileNorm": "62D181", "name": "Conference Files: Lot 62 D 181", "recordGroup": "59", "repository": "Department of State", "volumeIds": "<list:33>"}
+
+lot-claimants top keys: ['generated', 'harvestGenerated', 'lots', 'note', 'schemaVersion']
+
+--- lot-claimants 89D149: 0 ---
+
+presidential-library-catalog top keys: ['generated', 'libraries', 'schemaVersion', 'source'] {'generated': '2026-08-06', 'libraries': 11, 'schemaVersion': 1, 'source': 'apiV2'}
+
+--- presidential-library NAID 567979: 1 ---
+  .libraries[5].collections[88] [naId] {"identifier": "LBJ-NSF", "naId": 567979, "series": "<list:48>", "statedSeriesCount": 48, "title": "National Security Files"}
+
+--- presidential-library NAID 572235: 1 ---
+  .libraries[6].collections[134] [naId] {"identifier": "RN-NSF", "naId": 572235, "series": "<list:4>", "statedSeriesCount": 4, "title": "National Security Files (Nixon Administration)"}
+
+--- presidential-library NAID 1164: 1 ---
+  .libraries[4].collections[253] [naId] {"identifier": "JFK-4", "naId": 1164, "series": "<list:17>", "statedSeriesCount": 17, "title": "Papers of John F. Kennedy: Presidential Papers: National Security Files"}
+
+--- presidential-library NAID 643447: 1 ---
+  .libraries[3].collections[422] [naId] {"identifier": "DDE-1424", "naId": 643447, "series": "<list:1>", "statedSeriesCount": 1, "title": "Ann C. Whitman Papers"}
+
+--- presidential-library NAID 1104: 1 ---
+  .libraries[8].collections[39] [naId] {"identifier": "JC-DMBRZEZ", "naId": 1104, "series": "<list:6>", "statedSeriesCount": 6, "title": "Zbigniew Brzezinski Collection"}
+
+--- presidential-library title contains 'National Security Affairs': 4 ---
+  .libraries[3].collections[415] [title] {"identifier": "DDE-1417", "naId": 599128, "series": "<list:14>", "statedSeriesCount": 14, "title": "Records of the Office of the Special Assistant for National Security Affairs (Eisenhower Administration)"}
+  .libraries[9].collections[8] [title] {"identifier": "RR-0093", "naId": 6120363, "series": "<list:11>", "statedSeriesCount": 11, "title": "Records of the Office of the Assistant to the President for National Security Affairs (Reagan Administration)"}
+  .libraries[10].collections[101] [title] {"identifier": "GB-VP-NSA", "naId": 2601061, "series": "<list:26>", "statedSeriesCount": 26, "title": "Records of the National Security Affairs Office of the Vice President (Reagan Administration)"}
+  .libraries[10].collections[122] [title] {"identifier": "GB-VPQ-NSA", "naId": 2579439, "series": "<list:10>", "statedSeriesCount": 10, "title": "Records of the National Security Affairs Office in the Office of the Vice President (George H. W. Bush Administration)"}
+
+--- presidential-library title contains 'Brzezinski': 6 ---
+  .libraries[8].collections[39] [title] {"identifier": "JC-DMBRZEZ", "naId": 1104, "series": "<list:6>", "statedSeriesCount": 6, "title": "Zbigniew Brzezinski Collection"}
+  .libraries[8].collections[39].series[0] [title] {"inclusiveDates": "1972–1981", "naId": 152224, "title": "Zbigniew Brzezinski Trilateral Commission Correspondence"}
+  .libraries[8].collections[39].series[3] [title] {"inclusiveDates": "1972–1976", "naId": 152263, "title": "Zbigniew Brzezinski Trilateral Commission Chronological File"}
+  .libraries[8].collections[106].series[0] [title] {"inclusiveDates": "1977–1981", "naId": 560133, "title": "Zbigniew Brzezinski's President's Daily Reports Files"}
+  .libraries[8].collections[106].series[1] [title] {"inclusiveDates": "1977–1981", "naId": 560144, "title": "Zbigniew Brzezinski's Central Intelligence Agency (CIA) President's Daily Brief Files"}
+  .libraries[8].collections[106].series[2] [title] {"inclusiveDates": "1977–1981", "naId": 560148, "title": "Zbigniew Brzezinski's President's Correspondence with Foreign Leaders Files"}
+
+--- presidential-library title contains 'Whitman': 4 ---
+  .libraries[3].collections[145] [title] {"identifier": "DDE-1148", "naId": 612103, "series": "<list:1>", "statedSeriesCount": 1, "title": "William Merrill Whitman Papers"}
+  .libraries[3].collections[422] [title] {"identifier": "DDE-1424", "naId": 643447, "series": "<list:1>", "statedSeriesCount": 1, "title": "Ann C. Whitman Papers"}
+  .libraries[3].collections[453].series[0] [title] {"inclusiveDates": "1953–1961", "naId": 186474, "title": "Ann Whitman Diary"}
+  .libraries[6].collections[177].series[63] [title] {"inclusiveDates": "1971–1973", "naId": 6171610, "title": "Marina Whitman's Files"}
+
+--- presidential-library title contains 'Rosenberg': 6 ---
+  .libraries[7].collections[138] [title] {"identifier": "GRF-0153", "naId": 644853, "series": "<list:5>", "statedSeriesCount": 5, "title": "Eric Rosenberger and Douglass Blaser Files (Ford Administration)"}
+  .libraries[7].collections[138].series[0] [title] {"inclusiveDates": "1974–1977", "naId": 644856, "title": "Eric Rosenberger's and Douglass Blaser's Subject Files"}
+  .libraries[7].collections[138].series[1] [title] {"inclusiveDates": "1974–1976", "naId": 644875, "title": "Eric Rosenberger's and Douglass Blaser's Foreign Trips Files"}
+  .libraries[7].collections[138].series[2] [title] {"inclusiveDates": "1974–1976", "naId": 644876, "title": "Eric Rosenberger's and Douglass Blaser's Domestic Trips Files"}
+  .libraries[7].collections[138].series[3] [title] {"inclusiveDates": "1974–1977", "naId": 644877, "title": "Eric Rosenberger's and Douglass Blaser's District of Columbia Area Trip Files"}
+  .libraries[7].collections[138].series[4] [title] {"inclusiveDates": "1974–1975", "naId": 140104886, "title": "Eric Rosenberger's and Douglass Blaser's Photographs"}
+
+--- presidential-library title contains 'National Security File': 4 ---
+  .libraries[4].collections[253] [title] {"identifier": "JFK-4", "naId": 1164, "series": "<list:17>", "statedSeriesCount": 17, "title": "Papers of John F. Kennedy: Presidential Papers: National Security Files"}
+  .libraries[5].collections[88] [title] {"identifier": "LBJ-NSF", "naId": 567979, "series": "<list:48>", "statedSeriesCount": 48, "title": "National Security Files"}
+  .libraries[6].collections[134] [title] {"identifier": "RN-NSF", "naId": 572235, "series": "<list:4>", "statedSeriesCount": 4, "title": "National Security Files (Nixon Administration)"}
+  .libraries[8].collections[102].series[8] [title] {"inclusiveDates": "1967–1981", "naId": 12013063, "title": "Issues National Security Files"}
+
+--- presidential-library title contains 'NSC Files': 0 ---
+
+--- presidential-library title contains 'National Security Files (Nixon': 1 ---
+  .libraries[6].collections[134] [title] {"identifier": "RN-NSF", "naId": 572235, "series": "<list:4>", "statedSeriesCount": 4, "title": "National Security Files (Nixon Administration)"}
+
+external-citation-index top keys: ['classPairs', 'classSourceKeys', 'classTargetKeys', 'classTargets', 'coverage', 'generated', 'pairs', 'schemaVersion', 'sourceIds', 'targetIds', 'targets', 'volumes'] schemaVersion: 2
+volume-sources-index top keys: ['generated', 'lots', 'majorCollections', 'recordGroups', 'schemaVersion']
+
+series-facts dicts carrying an inclusive-date field: 0 | sample keys: None
+series with a start year: 0 | start < 1940: 0
+
+centralFileClass citations over hits: rows, distinct decimal_class, distinct file_id: (450, 190, 0)
+sample centralFileClass rows: [('312.11', None, 'File No. 312.11/1005'), ('180.03101', None, '180.03101/51'), ('184.611', None, '184.611/466'), ('181.213302', None, '181.213302/8½'), ('180.0501', None, '180.0501/34')]
+
+lot_file_norm forms in external_citations over hits for 66D95/63D351: [('63D351', '63 D 351', 12), ('66D95', '66 D 95', 17)]

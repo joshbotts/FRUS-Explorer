@@ -1,0 +1,55 @@
+central-files-index keys: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+lotFiles count 1070
+LOT 63D351 -> {"title": "Records Relating to National Security Council Policy Papers", "recordGroup": "59", "naId": "2839192", "hmsMlrEntryNumbers": ["A1 1586E"], "matchType": "control", "levelOfDescription": "series", "dateRange": null, "inclusiveDates": null}
+LOT 62D430 -> {"title": "Subject and Special Files", "recordGroup": "59", "naId": "2839191", "hmsMlrEntryNumbers": ["A1 1586C"], "matchType": "control", "levelOfDescription": "series", "dateRange": null, "inclusiveDates": null}
+LOT 66D95 -> {"title": "Records Relating to National Security Council Policy Papers", "recordGroup": "59", "naId": "2839192", "hmsMlrEntryNumbers": ["A1 1586E"], "matchType": "control", "levelOfDescription": "series", "dateRange": null, "inclusiveDates": null}
+LOT 62D1 -> {"title": "Records Relating to Activities with the National Security Council", "recordGroup": "59", "naId": "2838992", "hmsMlrEntryNumbers": ["A1 1583E", "A1 1583F"], "matchType": "control", "levelOfDescription": "series", "dateRange": null, "inclusiveDates": null}
+LOT 54D270 -> ABSENT from lotFiles
+LOT 59D95 -> ABSENT from lotFiles
+lot-claimants keys: ['generated', 'harvestGenerated', 'lots', 'note', 'schemaVersion']
+CLAIMANTS 63D351 -> ABSENT
+CLAIMANTS 62D430 -> [('2386675', ['A1 1586A'], 'Administrative and Chronological Files', '1953–1961'), ('2839190', ['A1 1586B'], 'Regional and Country Operations Files', '1953–1961'), ('2839191', ['A1 1586C'], 'Subject and Special Files', '1953–1961'), ('2842737', ['A1 1586D'], 'Indexes Relating to the Receipt and Distribution of Records from the White House to the Operations Coordination Board (OCB)', '1958–1961')]
+CLAIMANTS 66D95 -> [('2839192', ['A1 1586E'], 'Records Relating to National Security Council Policy Papers', '1947–1979'), ('2839193', ['A1 1586F'], 'Subject Files', '1947–1965')]
+CLAIMANTS 62D1 -> [('2198167', ['A1 1583A', 'A1 1583B'], 'Alphabetical Files', '1948–1961'), ('2838991', ['A1 1583C', 'A1 1583D'], 'Numerical Files', '1947–1961'), ('2838992', ['A1 1583E', 'A1 1583F'], 'Records Relating to Activities with the National Security Council', '1948–1961')]
+CLAIMANTS 54D270 -> ABSENT
+CLAIMANTS 59D95 -> ABSENT
+series-facts keys: ['byNaId', 'findingAidTypes', 'generated', 'headings', 'legend', 'referenceUnits', 'restrictions', 'schemaVersion', 'statuses', 'useRestrictions']
+NAID 2839192 facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Office of the Secretary. Executive Secretariat.", "extent": "26 linear feet, 3 linear inches", "inclusiveStartYear": 1947, "inclusiveEndYear": 1979}
+NAID 2839191 facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Executive Secretariat.", "extent": "4 linear feet, 5 linear inches", "inclusiveStartYear": 1953, "inclusiveEndYear": 1961}
+NAID 2839193 facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Office of the Secretary. Executive Secretariat.", "extent": "9 linear feet, 7 linear inches", "inclusiveStartYear": 1947, "inclusiveEndYear": 1965}
+NAID 2838992 facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Policy Planning Council.", "extent": "3 linear feet, 1 linear inch", "inclusiveStartYear": 1948, "inclusiveEndYear": 1961}
+presidential-library-catalog all keys: ['citedAs', 'collections', 'generated', 'identifier', 'inclusiveDates', 'libraries', 'naId', 'prefix', 'schemaVersion', 'series', 'source', 'statedSeriesCount', 'title']
+CATALOG Kennedy Library | Papers of John F. Kennedy: Presidential Papers: President's Office Files | JFK-3 | naId 1166 | [('Country Files', '1961–1963', 193654)] | access keys: []
+CATALOG Johnson Library | National Security Files | LBJ-NSF | naId 567979 | [('Asia and the Pacific Country Files', '1963–1969', 587358)] | access keys: []
+CATALOG Ford Library | Presidential Correspondence with Foreign Leaders (Ford Administration) | GRF-0351 | naId 572571 | [('Presidential Correspondence with Foreign Leaders', '1974–1977', 572583)] | access keys: []
+FOUND '2839192' in central-files-index.json count 4
+FOUND 'Entry 5403' in collection-authority.json count 4
+FOUND '54D270' in collection-authority.json count 2
+FOUND '59D95' in collection-authority.json count 3
+FOUND '2839192' in collection-authority.json count 4
+FOUND '54D270' in collection-usage-index.json count 1
+FOUND '59D95' in collection-usage-index.json count 1
+FOUND '567979' in curated-library-resolutions.json count 2
+FOUND '54D270' in curated-lot-resolutions.json count 1
+FOUND '59D95' in curated-lot-resolutions.json count 1
+FOUND '59D95' in external-citation-index.json count 2
+FOUND '2839192' in lot-claimants-index.json count 1
+FOUND '567979' in presidential-library-catalog.json count 1
+FOUND '572571' in presidential-library-catalog.json count 1
+FOUND '193654' in presidential-library-catalog.json count 1
+FOUND '587358' in presidential-library-catalog.json count 1
+FOUND '572583' in presidential-library-catalog.json count 1
+FOUND '59D95' in provenance-flow-index.json count 1
+FOUND '2839192' in series-facts-index.json count 1
+FOUND '59D95' in volume-sources-index.json count 1
+collection-authority keys: ['collections', 'generated', 'schemaVersion']
+volume-sources-index keys: ['generated', 'lots', 'majorCollections', 'recordGroups', 'schemaVersion']
+external-citation-index keys: ['classPairs', 'classSourceKeys', 'classTargetKeys', 'classTargets', 'coverage', 'generated', 'pairs', 'schemaVersion', 'sourceIds', 'targetIds']
+INDEX lot 63D351 document_sources rows 624 external_citations docs 349
+INDEX lot 62D430 document_sources rows 142 external_citations docs 108
+INDEX lot 66D95 document_sources rows 68 external_citations docs 666
+INDEX lot 62D1 document_sources rows 189 external_citations docs 171
+INDEX lot 54D270 document_sources rows 1063 external_citations docs 0
+INDEX lot 59D95 document_sources rows 283 external_citations docs 123
+Entry 5403 in document_sources raw_text: 103
+GVN Corruption in document_sources raw_text: 1

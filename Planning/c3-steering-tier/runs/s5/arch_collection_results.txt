@@ -1,0 +1,15 @@
+SQL: SELECT COALESCE(s.repository,'(no source row)') repo, COALESCE(s.record_group,'-') rg, COALESCE(s.citation_era,'-') era, COUNT(*) n, group_concat(c.volume_id||'/'||c.document_id,' ') docs FROM coll c LEFT JOIN document_sources s ON s.volume_id=c.volume_id AND s.document_id=c.document_id GROUP BY 1,2,3 ORDER BY n DESC
+('Department of State', '59', 'decimal', 20, 'frus1944v06/d269 frus1947v05/d23 frus1947v07/d553 frus1948v07/d440 frus1949v08/d576 frus1912/d1502 frus1922v01/d836 frus1922v01/d841 frus1922v01/d842 frus1922v01/d862 frus1922v01/d864 frus1950v06/d802 frus1952-54v12p2/d324 frus1955-57v22/d7 frus1958-60v01/d135 frus1958-60v01/d160 frus1949v06/d330 frus1950v05/d289 frus1961-63v22/d252 frus1921v01/d275')
+('Carter Library', '-', 'structured', 5, 'frus1977-80v03/d35 frus1977-80v24/d337 frus1977-80v03/d65 frus1977-80v03/d230 frus1977-80v03/d248')
+('Department of State', '59', 'lot_file', 3, 'frus1981-88v01/d247 frus1981-88v01/d264 frus1950v03/d728')
+('Library of Congress', '-', 'structured', 2, 'frus1969-76v08/d191 frus1969-76ve09p2/d155')
+('National Archives', '59', 'subject_numeric', 2, 'frus1964-68v32/d8 frus1964-68v05/d301')
+('(no source row)', '-', '-', 1, 'frus1893/d628')
+('(no source row)', '-', 'named_series', 1, 'frus1961-63v01/d298')
+('(no source row)', '-', 'unrecognized', 1, 'frus1964-68v05/d258')
+('Department of State', '59', 'subject_numeric', 1, 'frus1961-63v20/d422')
+('Eisenhower Library', '-', 'structured', 1, 'frus1958-60v01/d156')
+('Reagan Library', '-', 'structured', 1, 'frus1981-88v41/d251')
+SQL: SELECT s.repository, s.record_group, COUNT(*) FROM coll c JOIN document_sources s ON s.volume_id=c.volume_id AND s.document_id=c.document_id WHERE s.repository IN ('Department of State','National Archives') AND s.record_group='59' AND s.citation_era IN ('decimal','subject_numeric') GROUP BY 1,2
+('Department of State', '59', 21)
+('National Archives', '59', 2)

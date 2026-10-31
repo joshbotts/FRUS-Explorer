@@ -1,0 +1,70 @@
+{
+  "O-med A (1)": {
+    "order": 1,
+    "label": "s7",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "arm": "A"
+  },
+  "O-med B (1)": {
+    "order": 2,
+    "label": "s2",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "arm": "B"
+  },
+  "S-high A (1)": {
+    "order": 3,
+    "label": "s6",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "arm": "A"
+  },
+  "S-high B (1)": {
+    "order": 4,
+    "label": "s1",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "arm": "B"
+  },
+  "O-med A (2)": {
+    "order": 5,
+    "label": "s8",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "arm": "A"
+  },
+  "O-med B (2)": {
+    "order": 6,
+    "label": "s3",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "arm": "B"
+  },
+  "S-high A (2)": {
+    "order": 7,
+    "label": "s5",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "arm": "A"
+  },
+  "S-high B (2)": {
+    "order": 8,
+    "label": "s4",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "arm": "B"
+  },
+  "O-med B, no artifacts": {
+    "order": 9,
+    "label": "s9",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "arm": "B0"
+  },
+  "cal": {
+    "label": "cal",
+    "arm": null,
+    "note": "calibration: the vectors tier's v3 (S-high+V (1)) scored with the 44 items and refuted with both readings; V7 and V8 must come back violated, O4 obeyed, the strict reading {frus1958-60v05/d112}"
+  }
+}

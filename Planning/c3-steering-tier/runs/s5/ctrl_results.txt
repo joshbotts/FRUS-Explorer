@@ -1,0 +1,46 @@
+FALSE-FRIEND TEST. on-topic scope S = 27 volumes (18436 non-apparatus docs, Ed2 suppressed); rest = 292993 docs
+corrupt (term supplied by the question)       S: 423 of 18436 (22.9/1000)   rest: 1752 of 292993 (6.0/1000)
+core family                                   S: 512 of 18436 (27.8/1000)   rest: 2546 of 292993 (8.7/1000)
+CONTROL phrase 'Department of State'          S: 5567 of 18436 (302.0/1000)   rest: 88257 of 292993 (301.2/1000)
+CONTROL term 'Ambassador'                     S: 7527 of 18436 (408.3/1000)   rest: 103341 of 292993 (352.7/1000)
+NEGATIVE control zzzimpossiblezzz             S: 0 of 18436 (0.0/1000)   rest: 0 of 292993 (0.0/1000)
+
+SQL for each row: SELECT COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH <expr> AND is_front_matter=0 AND is_editorial_note=0 AND volume_id NOT IN (Ed2 volumes) AND volume_id [NOT] IN (scope S)
+
+volumes with zero 'Department of State' hits (positive control failures): [('frus1919Parisv05',)]
+
+COVERAGE: dated non-apparatus docs by decade, <1860 and >=1980
+('1620s', 3, 1)
+('1660s', 2, 1)
+('1690s', 2, 1)
+('1740s', 2, 1)
+('1750s', 1, 1)
+('1760s', 3, 2)
+('1770s', 5, 1)
+('1780s', 2, 2)
+('1790s', 11, 3)
+('1800s', 15, 3)
+('1810s', 102, 3)
+('1820s', 29, 4)
+('1830s', 5, 2)
+('1840s', 143, 6)
+('1850s', 158, 8)
+('1980s', 6038, 42)
+('1990s', 177, 1)
+
+COUNTERPART/PERIOD VOCABULARY, doc counts by era (non-apparatus): <1900 | 1900-1945 | >1945
+denominators {'<1900': 33901, '1900-45': 148124, '>1945': 128226}
+corrupt                    253 of 33901 (7.5/1000) | 411 of 148124 (2.8/1000) | 1509 of 128226 (11.8/1000)
+brib*                      158 of 33901 (4.7/1000) | 177 of 148124 (1.2/1000) | 323 of 128226 (2.5/1000)
+graft                      12 of 33901 (0.4/1000) | 103 of 148124 (0.7/1000) | 248 of 128226 (1.9/1000)
+peculat                    0 of 33901 (0.0/1000) | 0 of 148124 (0.0/1000) | 0 of 128226 (0.0/1000)
+defalcat*                  0 of 33901 (0.0/1000) | 0 of 148124 (0.0/1000) | 0 of 128226 (0.0/1000)
+malversat*                 0 of 33901 (0.0/1000) | 0 of 148124 (0.0/1000) | 0 of 128226 (0.0/1000)
+jobber*                    9 of 33901 (0.3/1000) | 6 of 148124 (0.0/1000) | 2 of 128226 (0.0/1000)
+extort*                    189 of 33901 (5.6/1000) | 153 of 148124 (1.0/1000) | 181 of 128226 (1.4/1000)
+squeez*                    21 of 33901 (0.6/1000) | 69 of 148124 (0.5/1000) | 707 of 128226 (5.5/1000)
+"official misconduct"      1 of 33901 (0.0/1000) | 0 of 148124 (0.0/1000) | 0 of 128226 (0.0/1000)
+malfeasance                19 of 33901 (0.6/1000) | 20 of 148124 (0.1/1000) | 34 of 128226 (0.3/1000)
+"improper payments"        0 of 33901 (0.0/1000) | 2 of 148124 (0.0/1000) | 1 of 128226 (0.0/1000)
+"illegal payments"         1 of 33901 (0.0/1000) | 0 of 148124 (0.0/1000) | 0 of 128226 (0.0/1000)
+"secret commissions"       1 of 33901 (0.0/1000) | 0 of 148124 (0.0/1000) | 0 of 128226 (0.0/1000)

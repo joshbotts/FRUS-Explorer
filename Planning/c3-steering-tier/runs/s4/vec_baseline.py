@@ -1,0 +1,10 @@
+from vec import *
+print("digests:", digests)
+print("all agree:", len(set(digests.values()))==1)
+print("generated stamp:", idx.get("generated") or {k:idx[k] for k in idx if k not in ("volumes",)} )
+print("version,dims,docs,cents:", ver,dims,docs,cents)
+print("round trip: volumes", len(idx["volumes"]), "sum n", sum(v["n"] for v in idx["volumes"]), "rows mapped", len(row_of), "== docs", docs)
+print("random pairs n=20000 seed 1877: mean %.2f sd %.2f 1st pct %d" % (mean, sd, first_pct))
+print("mean-8sd line: %.2f" % line)
+print("25th-neighbour distance over 200 random anchors (seed 1878): min %d median %d max %d" % (kth[0], kth[len(kth)//2], kth[-1]))
+print("retrieval keys:", list(idx.get("retrieval",{}).keys()))

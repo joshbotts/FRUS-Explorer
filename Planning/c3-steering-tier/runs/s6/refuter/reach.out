@@ -1,0 +1,77 @@
+L4      subject                returns 19 of 30 cited  :: corrupt
+L5      subject                returns 12 of 30 cited  :: bribe
+L6      subject                returns  5 of 30 cited  :: graft
+L7      subject                returns  0 of 30 cited  :: kickback
+L8      subject                returns  1 of 30 cited  :: embezzle
+L9      subject                returns  1 of 30 cited  :: malfeasance
+L10     subject                returns  1 of 30 cited  :: venal
+L11     subject                returns  0 of 30 cited  :: peculation
+L12     subject                returns  0 of 30 cited  :: extortion
+L13     subject                returns  3 of 30 cited  :: payoff
+L14     control                returns 14 of 30 cited  :: "Department of State"
+L15     control                returns  0 of 30 cited  :: ZZZ_IMPOSSIBLE_ZZZ
+L16     subject                returns  7 of 30 cited  :: "corrupt practices"
+L17     subject                returns  1 of 30 cited  :: "Foreign Corrupt Practices"
+L18     subject                returns  9 of 30 cited  :: Lockheed
+L19     subject                returns  0 of 30 cited  :: "illegal payments"
+L20     subject                returns  0 of 30 cited  :: "questionable payments"
+L21     subject                returns  0 of 30 cited  :: misappropriat
+L22     subject                returns  1 of 30 cited  :: nepotism
+L23     subject                returns  0 of 30 cited  :: cronyism
+L24     subject                returns 10 of 30 cited  :: "bribery"
+L25     subject                returns  7 of 30 cited  :: scandal
+L27     subject                returns 26 of 30 cited  :: corrupt OR bribe OR bribery OR kickback OR embezzle OR malfeasance OR 
+L29     subject                returns 19 of 30 cited  :: corrupt
+L30     heading                returns  0 of 30 cited  :: header:(corrupt OR bribe OR bribery OR graft OR kickback OR embezzle O
+L31/39  subject                returns 27 of 30 cited  :: corrupt OR bribe OR bribery OR kickback OR embezzle OR malfeasance OR 
+L34     subject                returns 13 of 30 cited  :: ("Foreign Corrupt Practices" OR "questionable payments" OR "illegal pa
+L59     subject                returns  2 of 30 cited  :: "Tongsun Park"
+L60     subject                returns  0 of 30 cited  :: "Park Tong Sun" OR "Park Tong-sun"
+L61     subject                returns  2 of 30 cited  :: Koreagate
+L62     subject                returns  0 of 30 cited  :: Watergate
+L63     subject                returns  0 of 30 cited  :: BCCI OR "Bank of Credit and Commerce"
+L64     subject                returns  0 of 30 cited  :: "Teapot Dome"
+L65     subject                returns  0 of 30 cited  :: Abscam
+L66     subject                returns  0 of 30 cited  :: "Iran-Contra"
+L67     subject                returns  0 of 30 cited  :: defalcation
+L68     subject                returns  0 of 30 cited  :: "Credit Mobilier"
+L69     subject                returns  3 of 30 cited  :: Church AND Subcommittee AND Multinational
+L70     probe                  returns  1 of 30 cited  :: "Nixon Presidential" 
+L71     subject                returns  3 of 30 cited  :: "Tongsun Park" OR Koreagate
+L76     subject(pre-1860 only) returns  0 of 30 cited  :: corrupt OR bribe OR bribery OR peculation OR defalcation OR extortion 
+
+== per cited document
+frus1969-76v06/d175        core=True nfam=18 | subject/heading queries: ['L4', 'L27', 'L29', 'L31/39'] | control/probe: ['L14', 'L70']
+frus1961-63v23/d355        core=True nfam=4 | subject/heading queries: ['L4', 'L27', 'L29', 'L31/39'] | control/probe: -
+frus1969-76ve12/d219       core=False nfam=2 | subject/heading queries: ['L4', 'L16', 'L18', 'L25', 'L27', 'L29', 'L31/39', 'L34'] | control/probe: ['L14']
+frus1977-80v13/d94         core=False nfam=1 | subject/heading queries: ['L5', 'L25', 'L27', 'L31/39', 'L59', 'L61', 'L71'] | control/probe: -
+frus1958-60v01/d111        core=True nfam=12 | subject/heading queries: ['L4', 'L16', 'L27', 'L29', 'L31/39', 'L34'] | control/probe: ['L14']
+frus1958-60v01/d160        core=True nfam=8 | subject/heading queries: ['L4', 'L5', 'L16', 'L27', 'L29', 'L31/39', 'L34'] | control/probe: ['L14']
+frus1964-68v04/d280        core=True nfam=3 | subject/heading queries: ['L4', 'L27', 'L29', 'L31/39'] | control/probe: ['L14']
+frus1964-68v05/d197        core=True nfam=16 | subject/heading queries: ['L4', 'L27', 'L29', 'L31/39'] | control/probe: -
+frus1964-68v05/d258        core=True nfam=15 | subject/heading queries: ['L4', 'L27', 'L29', 'L31/39'] | control/probe: -
+frus1943China/d202         core=True nfam=7 | subject/heading queries: ['L4', 'L6', 'L22', 'L24', 'L27', 'L29', 'L31/39'] | control/probe: ['L14']
+frus1944v06/d269           core=True nfam=7 | subject/heading queries: ['L4', 'L27', 'L29', 'L31/39'] | control/probe: -
+frus1947v07/d591           core=True nfam=6 | subject/heading queries: ['L4', 'L6', 'L27', 'L29', 'L31/39'] | control/probe: ['L14']
+frus1948v07/d590           core=False nfam=not-in-inventory | subject/heading queries: ['L25'] | control/probe: -
+frus1961-63v17/d27         core=True nfam=14 | subject/heading queries: ['L4', 'L5', 'L27', 'L29', 'L31/39'] | control/probe: -
+frus1961-63v22/d249        core=True nfam=10 | subject/heading queries: ['L4', 'L5', 'L6', 'L16', 'L24', 'L25', 'L27', 'L29', 'L31/39', 'L34'] | control/probe: ['L14']
+frus1969-76ve09p2/d122     core=True nfam=56 | subject/heading queries: ['L4', 'L5', 'L6', 'L13', 'L16', 'L18', 'L24', 'L27', 'L29', 'L31/39', 'L34'] | control/probe: ['L14']
+frus1977-80v18/d206        core=True nfam=9 | subject/heading queries: ['L4', 'L16', 'L27', 'L29', 'L31/39', 'L34'] | control/probe: -
+frus1977-80v23/d252        core=True nfam=10 | subject/heading queries: ['L4', 'L6', 'L27', 'L29', 'L31/39'] | control/probe: ['L14']
+frus1969-76ve09p2/d152     core=False nfam=1 | subject/heading queries: ['L18', 'L24', 'L27', 'L31/39', 'L34'] | control/probe: -
+frus1969-76ve09p2/d161     core=True nfam=7 | subject/heading queries: ['L5', 'L18', 'L24', 'L27', 'L31/39', 'L34'] | control/probe: ['L14']
+frus1969-76ve15p2/d293     core=False nfam=1 | subject/heading queries: ['L5', 'L18', 'L27', 'L31/39', 'L34', 'L69'] | control/probe: -
+frus1969-76ve15p2/d292     core=True nfam=3 | subject/heading queries: ['L5', 'L13', 'L18', 'L24', 'L27', 'L31/39', 'L34', 'L69'] | control/probe: -
+frus1969-76ve12/d222       core=False nfam=not-in-inventory | subject/heading queries: ['L18', 'L25'] | control/probe: ['L14']
+frus1969-76ve12/d224       core=False nfam=1 | subject/heading queries: ['L5', 'L18', 'L25', 'L27', 'L31/39', 'L34'] | control/probe: ['L14']
+frus1969-76ve09p1/d49      core=True nfam=3 | subject/heading queries: ['L5', 'L18', 'L24', 'L27', 'L31/39', 'L34', 'L69'] | control/probe: ['L14']
+frus1977-80v03/d248        core=True nfam=15 | subject/heading queries: ['L4', 'L5', 'L16', 'L17', 'L24', 'L27', 'L29', 'L31/39', 'L34'] | control/probe: -
+frus1977-80v13/d92         core=False nfam=0 | subject/heading queries: ['L13', 'L31/39', 'L59', 'L71'] | control/probe: -
+frus1977-80v13/d95         core=False nfam=not-in-inventory | subject/heading queries: ['L61', 'L71'] | control/probe: -
+frus1894app2/d255          core=True nfam=6 | subject/heading queries: ['L4', 'L5', 'L24', 'L27', 'L29', 'L31/39'] | control/probe: -
+frus1894app2/d306          core=True nfam=22 | subject/heading queries: ['L4', 'L8', 'L9', 'L10', 'L24', 'L25', 'L27', 'L29', 'L31/39'] | control/probe: -
+
+cited docs returned by NO logged subject/heading query: []
+cited docs returned by NO logged query of any kind: []
+cited docs in the memo's core scope set (>=3): 21 of 30

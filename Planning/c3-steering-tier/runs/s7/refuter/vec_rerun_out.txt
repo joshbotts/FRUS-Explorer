@@ -1,0 +1,56 @@
+index keys: ['documentCount', 'generated', 'harvestGenerated', 'harvestScriptSHA256', 'provenance', 'provenanceDigest', 'retrieval', 'schema', 'subseries']
+schema: 1
+documentCount: 314616 digest: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+volumes[0] keys: ['n', 'r', 'seg', 'v'] | r,n,v: 0 312 frus1861 | seg[:3]: [{'i': 'd1', 'n': 312, 's': 0}]
+binary: magic b'FRSV' version 1 dims 512 docs 314616 centroids 660 digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 size 20476048 expected rows end 20135488 trailer 340560
+decode round trip volumes 553 rows 314616 == documentCount True
+shard frus1961-63v22 header: field4 1 dims 512 n 385 size 198724 expected 64+n*dims+4n 198724
+sign-bit agreement shard vs binary rows, MSB-first : 0.0026
+sign-bit agreement shard vs binary rows, LSB-first : 0.0000
+== anchor frus1961-63v22/d202 min hamming 97 | pure-Hamming top10: [('frus1961-63v22/d204', 97), ('frus1961-63v22/d203', 105), ('frus1961-63v22/d225', 108), ('frus1961-63v22/d249', 108), ('frus1955-57v23p2/d185', 112), ('frus1958-60v18/d266', 112), ('frus1961-63v22/d298', 112), ('frus1961-63v22/d246', 113), ('frus1961-63v22/d247', 113), ('frus1952-54v15p2/d632', 115)]
+   ham  97 cos_raw 0.908 cal 0.846 frus1961-63v22/d204
+   ham 105 cos_raw 0.899 cal 0.831 frus1961-63v22/d203
+   ham 112 cos_raw 0.882 cal 0.803 frus1958-60v18/d266
+   ham 119 cos_raw 0.879 cal 0.798 frus1958-60v18/d265
+   ham 122 cos_raw 0.876 cal 0.794 frus1958-60v18/d283
+   ham 108 cos_raw 0.867 cal 0.779 frus1961-63v22/d225
+   ham 108 cos_raw 0.865 cal 0.774 frus1961-63v22/d249
+   ham 125 cos_raw 0.862 cal 0.770 frus1961-63v22/d205
+   ham 126 cos_raw 0.861 cal 0.768 frus1958-60v18/d328
+   ham 127 cos_raw 0.858 cal 0.764 frus1961-63v22/d208
+== anchor frus1964-68v05/d258 min hamming 97 | pure-Hamming top10: [('frus1958-60v01/d55', 97), ('frus1964-68v05/d395', 97), ('frus1964-68v04/d21', 99), ('frus1964-68v05/d301', 99), ('frus1969-76v06/d175', 99), ('frus1964-68v04/d222', 100), ('frus1964-68v04/d268', 100), ('frus1917-72PubDipv07/d177', 101), ('frus1961-63v02/d300', 101), ('frus1961-63v02/d322', 101)]
+   ham  99 cos_raw 0.895 cal 0.825 frus1969-76v06/d175
+   ham 101 cos_raw 0.891 cal 0.818 frus1964-68v06/d49
+   ham 109 cos_raw 0.888 cal 0.814 frus1961-63v03/d81
+   ham 106 cos_raw 0.885 cal 0.808 frus1961-63v04/d347
+   ham 105 cos_raw 0.884 cal 0.806 frus1961-63v01/d210
+   ham 101 cos_raw 0.880 cal 0.800 frus1917-72PubDipv07/d177
+   ham  99 cos_raw 0.880 cal 0.800 frus1964-68v05/d301
+   ham 104 cos_raw 0.880 cal 0.800 frus1961-63v01/d42
+   ham 106 cos_raw 0.879 cal 0.798 frus1964-68v01/d426
+   ham  97 cos_raw 0.878 cal 0.797 frus1964-68v05/d395
+== anchor frus1969-76ve15p2/d292 min hamming 0 | pure-Hamming top10: [('frus1969-76ve15p2Ed2/d292', 0), ('frus1969-76ve15p2/d293', 81), ('frus1969-76ve15p2Ed2/d293', 81), ('frus1969-76ve09p1/d49', 130), ('frus1969-76ve09p2/d161', 131), ('frus1958-60v07p1/d157', 134), ('frus1964-68v25/d343', 134), ('frus1969-76ve15p2/d118', 134), ('frus1969-76ve15p2Ed2/d118', 134), ('frus1955-57v15/d250', 135)]
+   ham   0 cos_raw 1.001 cal 1.002 frus1969-76ve15p2Ed2/d292
+   ham  81 cos_raw 0.918 cal 0.863 frus1969-76ve15p2/d293
+   ham  81 cos_raw 0.918 cal 0.863 frus1969-76ve15p2Ed2/d293
+   ham 130 cos_raw 0.801 cal 0.669 frus1969-76ve09p1/d49
+   ham 131 cos_raw 0.800 cal 0.666 frus1969-76ve09p2/d161
+   ham 143 cos_raw 0.795 cal 0.659 frus1955-57v20/d228
+   ham 144 cos_raw 0.794 cal 0.657 frus1958-60v09/d259
+   ham 144 cos_raw 0.793 cal 0.654 frus1969-76v40/d46
+   ham 149 cos_raw 0.793 cal 0.654 frus1977-80v27/d141
+   ham 140 cos_raw 0.790 cal 0.650 frus1969-76v38p2/d90
+== near-duplicate minima (min Hamming to any other row)
+   frus1875v01/d199 101 ('frus1874', 'd188')
+   frus1875v02/d393 80 ('frus1883', 'd594')
+   frus1947v07/d582 85 ('frus1947v07', 'd562')
+   frus1948v07/d43 91 ('frus1948v07', 'd44')
+   frus1961-63v22/d202 97 ('frus1961-63v22', 'd204')
+   frus1961-63v22/d204 97 ('frus1961-63v22', 'd202')
+   frus1964-68v04/d215 95 ('frus1964-68v03', 'd110')
+   frus1964-68v05/d258 97 ('frus1958-60v01', 'd55')
+   frus1969-76ve12/d218 54 ('frus1969-76ve12', 'd219')
+   frus1969-76ve15p2/d292 0 ('frus1969-76ve15p2Ed2', 'd292')
+   frus1977-80v03/d152 91 ('frus1961-63v09', 'd256')
+random pairs: mean 167.1 sd 14.8 p1 132 min 95
+25th-neighbour over 200: median 108 q1 101 q3 114; 1st median 82

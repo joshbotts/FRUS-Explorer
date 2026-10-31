@@ -1,0 +1,64 @@
+{
+  "question": "How has corruption, or allegations of corruption, affected U.S. foreign policy decisions or the conduct of diplomacy?",
+  "A_commit": "4fbf75f18ad263399c766d44796bd49a5d278687",
+  "B_commit": "84bf7e50bd8e16adf968558349a765eaf3591346",
+  "guide_A_sha256": "71a30afb45d280e5f15bbf96c02fceb79365a5babebd3a0a9c1ab9d2a26a7e11",
+  "guide_B_sha256": "4eaeb64aedbb676ba3de1b849aba22be8aa218c44b7056ccc266d6b136ce08de",
+  "block_A": {
+    "lines": 205,
+    "sha256": "c2f5511d8c976c351efd6d28de13363f0fe8ec6cf9301fdfa88859642f35f0a4"
+  },
+  "addendum": {
+    "lines": 15,
+    "sha256": "e8117cb8273441dc7a665406ef5618f1f9131dc8cf6ddd32f61a74ff12a84882"
+  },
+  "appendix": {
+    "lines": 346,
+    "sha256": "4e11cc17a49431535b9bc1d6e30c4bdc9d41ee6d0c5794ad026d0b7efd9aaf5b"
+  },
+  "block_B": {
+    "lines": 247,
+    "sha256": "62260a098206ef32cfb927d12313dcb18a86c46af3327dbbd661ca338d42087c"
+  },
+  "card": {
+    "lines": 149,
+    "sha256": "1cc5ae6a25ef067809ee6f73f1c3242474f3431b45b27f6c7f6a1f34aa293198"
+  },
+  "prompts": {
+    "runner_A": {
+      "lines": 749,
+      "chars": 52082,
+      "sha256": "e279a04db1ce220883733b30e545e287774402aaa8c26ca483798e78db619f08"
+    },
+    "runner_B": {
+      "lines": 584,
+      "chars": 40627,
+      "sha256": "bbe65aa8c45e937be0e450ac942e2a0c6781dfd1f7d5675e9e25b7c9e59b1753"
+    },
+    "runner_B0": {
+      "lines": 411,
+      "chars": 31138,
+      "sha256": "3f56735b7eed96fcfd310c4a8d7427a5e65051932ba1afe96da2c495a4e1544e"
+    },
+    "scorer": {
+      "lines": 45,
+      "chars": 3284,
+      "sha256": "8e8086167311870db840091aebcaac9f72a002c4249c1900d2a5b3a2e348d83e"
+    },
+    "refuter": {
+      "lines": 88,
+      "chars": 6843,
+      "sha256": "4108b5df583f94e1eab515ff326dfa755dc6217523f9e473f540b4168330c6e8"
+    },
+    "judge": {
+      "lines": 35,
+      "chars": 2388,
+      "sha256": "ef749f41b2a8e6a0b0c3372f7cb2ea89d1b638e7013e34b62dd70f48b65431df"
+    },
+    "canary": {
+      "lines": 247,
+      "chars": 14811,
+      "sha256": "4ef736814883bf7b9481807507477f0fe236a5535948b761ddfa11207da1eb17"
+    }
+  }
+}

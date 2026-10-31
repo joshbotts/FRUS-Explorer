@@ -1,0 +1,522 @@
+{
+ "format": "fruscollection",
+ "formatVersion": 2,
+ "minimumReaderVersion": 1,
+ "name": "Corruption and American foreign policy, run s5, 2026-10-30",
+ "authorLine": "Agent run s5, 2026-10-30",
+ "introductionText": "What FRUS answers directly: about three thousand documents in the 551 first-edition volumes of the index use the vocabulary of corruption, bribery or graft; on a forty-document test, eight in forty tie it to an American choice. The choices are: supervising rather than dropping a corrupt client (China 1944 to 1949, Greece 1947, the Philippines 1985); making aid or a loan depend on reform (Cuba 1922, the Philippines 1950 and 1952), with Burma refusing American money for the same reason in 1955; declining to press an ally hard enough to change it (Vietnam 1960 to 1972); and, from 1975, regulating and negotiating over the bribery done by American firms. Where FRUS points for the rest: the documents came mostly from the Central Files of the Department of State, Record Group 59 (23 of 37 with a source line), with one from the Conference Files lot (Record Group 59, entry A1 3051B, identifier 602875, 1949 to 1972, unrestricted; probable match by name), two from the Policy Planning Staff lot 89 D 149, seven from presidential libraries and three from non-National Archives holdings; the editors' unprinted citations over the hit documents point to the Carter, Johnson and Nixon libraries and to the Executive Secretariat NSC Policy Papers series (Record Group 59, entry A1 1586E, identifier 2839192, 1947 to 1979, partly restricted). The two channels are not summed. What this request cannot get from FRUS: a rate (FRUS is a selection); whether the stated reason was the real one (foreign archives); years the index barely holds (before 1860, and the 1990s); the companies' own records of the 1970s payments (the Senate subcommittee and Securities and Exchange Commission files); and intelligence reporting on foreign corruption.",
+ "composition": {
+  "defaultBodyDepth": "full",
+  "footnoteStyle": "all",
+  "includeSourceNote": true,
+  "tocStyle": "citation",
+  "applyHighlights": false,
+  "includeNotes": true,
+  "includeWordCloud": false
+ },
+ "entries": [
+  {
+   "kind": "heading",
+   "text": "Corruption was diagnosed early and often, and the usual response was supervision, not withdrawal",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Officials diagnosed corruption in clients they were about to aid. These documents follow the response: supervision or reform, not withdrawal. Date order, 1944 to 1986."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1944v06",
+   "documentId": "d269",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Gauss reports an alleged plot by young Chinese officers to remove officials believed corrupt and inefficient; he notes that criticism of corruption does not attach to Chiang except for failing to remove the corrupt."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1944v06",
+   "documentId": "d269",
+   "text": "no part of the criticism of corruption and inefficiency attaches to the Generalissimo except in relation to his failure to rid the Government of corrupt and inefficient elements"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1947v05",
+   "documentId": "d23",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Acheson names unprecedented corruption in the Greek civil service among the reasons aid cannot be used well, and asks for American and British administrative experts alongside it."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1947v05",
+   "documentId": "d23",
+   "text": "unprecedented corruption and ineffectiveness in the working of the Government"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1947v07",
+   "documentId": "d553",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: A Chinese State Council member tells the embassy, for General Wedemeyer, that U.S. aid must come with close supervision and that corruption is worst among military commanders."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1948v07",
+   "documentId": "d440",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Chinese legislators say Communist propaganda has led the U.S. to think the National Government corrupt: the allegation appears as a contested fact in Sino-American relations."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1949v08",
+   "documentId": "d576",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Acting President Li Tsung-jen's circle asks the U.S. to aid the existing government 'corrupt as it is'; the corruption is conceded by those asking for help."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1949v08",
+   "documentId": "d576",
+   "text": "come to aid of existing government, corrupt as it is"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1981-88v01",
+   "documentId": "d247",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Policy Planning Staff talking points: the Philippine insurgency war goes badly partly because the military are corrupt, and Marcos may be a liability."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1981-88v01",
+   "documentId": "d247",
+   "text": "The war against the Communist NPA is going badly, partly because the military are corrupt, politicized, and incompetent."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1981-88v01",
+   "documentId": "d264",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: INR names corruption among the usual causes of a regime's exhausted legitimacy, 'as in Manila'; read with the 1985 talking points as the Marcos endgame."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1981-88v01",
+   "documentId": "d264",
+   "text": "as in Manila"
+  },
+  {
+   "kind": "heading",
+   "text": "Aid and loans were made to depend on reform, and the demand was easier to make than to enforce",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Here corruption is tied to a loan or aid decision, from Nicaragua in 1912 to the Dominican Republic in 1964. Cuba in 1922 is the fullest sequence; the Burma telegram is the recipient's own refusal."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1912",
+   "documentId": "d1502",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Acting Secretary of State urges approval of the Nicaragua loan convention and describes the Zelaya years as arbitrary and corrupt government."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1912",
+   "documentId": "d1502",
+   "text": "arbitrary and corrupt government"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1922v01",
+   "documentId": "d836",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Reached by vector neighbourhood of the graft memorandum, not by a corruption word search: it contains none. It shows Crowder sequencing his reform memoranda, budget first."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1922v01",
+   "documentId": "d841",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Crowder forwards his memorandum on graft, corruption and immorality, asks for Washington's approval and a warning to the Zayas administration, and admits he cannot obtain proof."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1922v01",
+   "documentId": "d841",
+   "text": "I am utterly unable to obtain evidence which would satisfy beyond a reasonable doubt or to establish even a prima facie case"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1922v01",
+   "documentId": "d842",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Crowder's memorandum on the National Lottery: the colecturia system's corruption is beyond Cuban remedy and the U.S. should take official cognizance."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1922v01",
+   "documentId": "d862",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: The Department tells Crowder the reform plan is vital for stamping out corruption and that Cuban financial rehabilitation depends on it."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1922v01",
+   "documentId": "d864",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Latin American Division note: Crowder advises against consenting to a loan unless the amnesty bill covering the indicted lottery officials is killed."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1922v01",
+   "documentId": "d864",
+   "text": "General Crowder feels that the Department should not consent to a loan unless this amnesty bill is definitely killed."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1950v06",
+   "documentId": "d802",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Acheson briefs Truman before Quirino's visit: Philippine performance must precede more aid; revenues are the object of graft; Quirino took a speech as a charge of corruption."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1950v06",
+   "documentId": "d802",
+   "text": "Philippine performance must precede consideration of any additional American aid"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d324",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Ambassador Spruance proposes telling Quirino privately that aid will stop if the 1953 election is won by force and corrupt practices."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1955-57v22",
+   "documentId": "d7",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Prime Minister Nu inclines against asking for a U.S. loan because widespread corruption makes it impossible to ensure funds are properly used: a recipient's refusal."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v20",
+   "documentId": "d422",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Rusk asks Belgian Foreign Minister Spaak what can be done to control corruption in Leopoldville, noting trouble with Congress over aid to the Congo."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v32",
+   "documentId": "d8",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: The embassy proposes that Mann raise graft with Bonilla on the ground that the aid program loses value if run amid corruption."
+   ]
+  },
+  {
+   "kind": "heading",
+   "text": "In Vietnam the question was how far an ally could be pressed",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "The Vietnam documents show the limit on conditionality: corruption was a key obstacle, but leverage meant taking over the government. The 1986 Africa memorandum states the same limit."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d135",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: State relays a talk with Thuan: reports of corruption in Viet-Nam have reached Capitol Hill and business circles; budget-support principles are discussed."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d135",
+   "text": "these reports had reached certain circles on Capitol Hill and certain business circles"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d156",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: At the NSC, a briefing on criticism that Diem fostered corruption; the President says the U.S. had been proud of Diem."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d160",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Durbrow's demarche to Diem on corruption in the Can Lao party; Diem answers that the party's job is to stop corruption."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v01",
+   "documentId": "d298",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Nolting reports Senator Ellender's view that the insurgency expresses discontent with a corrupt regime and that U.S. aid breeds corruption."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v05",
+   "documentId": "d258",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Calhoun to Komer: corruption is a key obstacle to pacification, but an American veto over appointments would invade sovereignty and feed the neo-colonial charge."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v05",
+   "documentId": "d258",
+   "text": "it has become a key obstacle to pacification"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v05",
+   "documentId": "d258",
+   "text": "an invasion of the sovereignty of the Republic of Viet-Nam"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v05",
+   "documentId": "d301",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: State to Bunker on using American leverage after the elections; the editors' note records that the priorities paper put corruption third; the cable cautions against careless leverage."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76v08",
+   "documentId": "d191",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Sullivan tells WSAG that a Senate Foreign Relations Committee staff report says there is corruption throughout South Vietnam and that U.S. officials ignore it."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1981-88v41",
+   "documentId": "d251",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: White House memorandum on African hunger: corruption aggravates economic decline, and aid through governments weakens conditionality."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1981-88v41",
+   "documentId": "d251",
+   "text": "The government conduit weakens conditionality; when reform fails to occur, aid continues to flow for political reasons."
+  },
+  {
+   "kind": "heading",
+   "text": "The China story became a lesson, and the allegation a retort",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "China's fall was carried into other conversations as a lesson by Americans and as an excuse by others; Korea in 1962 shows an anti-corruption banner accepted without a change in aid."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1949v06",
+   "documentId": "d330",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Acheson cites Nationalist China as the example of the wrong policy; the Shah answers that China fell largely because of corruption."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1949v06",
+   "documentId": "d330",
+   "text": "I pointed to Nationalist China as an example of the wrong policy."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1949v06",
+   "documentId": "d330",
+   "text": "the Shah observed that China’s downfall was largely due to corruption"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1950v05",
+   "documentId": "d289",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: The Shah, in a Reuters interview reported by the chargé, complains that the U.S. press accuses Iran of corruption while other recipients of aid are no better."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1950v05",
+   "documentId": "d289",
+   "text": "What is the corruption in Persia in comparison with corruption elsewhere"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1950v03",
+   "documentId": "d728",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Truman-Attlee talks: Marshall says Chiang was held free of personal corruption but his followers and party were corrupt, in the argument over Formosa and recognition."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v22",
+   "documentId": "d252",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Harriman, reporting on Korea's new rulers, is impressed by their drive against corruption and recommends no change in aid policy."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v22",
+   "documentId": "d252",
+   "text": "Therefore, recommend we do not change for the present our aid policies on account of this latest political action."
+  },
+  {
+   "kind": "heading",
+   "text": "From 1975 the briber was often American",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "From 1975 the question turned to the bribery done by American firms: the Saudi agents' fees, the treaty on illicit payments pressed at summits, and the exporters' complaint about the Foreign Corrupt Practices Act."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d155",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Briefing for Kissinger on Saudi Arabia: publicity about agents' commissions on Northrop and Lockheed contracts threatens to strain U.S.-Saudi relations."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d155",
+   "text": "Problems arising from publicity over the enormous commissions being paid by American firms to promote sales of defense articles and services to the Saudi Government threaten to strain US-Saudi relations."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v03",
+   "documentId": "d35",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Owen to Carter: at the London summit Carter asked the leaders for support on irregular practices in trade to avoid bribery; ECOSOC is to convene a conference on illicit payments."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v24",
+   "documentId": "d337",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Carter asks Venezuela's President Perez for his good offices on the international treaty on illicit payments; Perez links it to the code of conduct."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v24",
+   "documentId": "d337",
+   "text": "President Carter placed high priority on the negotiation of an international treaty on illicit payments,"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v03",
+   "documentId": "d65",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Owen's summit follow-up memorandum: the illicit-payments agreement needs the summit countries' full support; Carter annotates 'Let's push this'."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v03",
+   "documentId": "d230",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Export disincentives: the President is advised to reiterate support for the Foreign Corrupt Practices Act's purpose while noting business complaints about ambiguity."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v03",
+   "documentId": "d248",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Commerce and USTR call the FCPA the second most significant export disincentive, while stating that the prohibition on bribery was fully intended."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v03",
+   "documentId": "d248",
+   "text": "some exports are lost because foreign companies can bribe foreign officials while U.S. companies cannot"
+  },
+  {
+   "kind": "heading",
+   "text": "Corrupt courts, and the protection of Americans abroad",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Before the Cold War, corruption in foreign courts and offices was a reason for how Americans protected themselves and kept their jurisdiction."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1893",
+   "documentId": "d628",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Terrell had an investigation moved from Amadia to Mosul after being told the officials at Amadia were corrupt: corruption as a ground for diplomatic action."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1893",
+   "documentId": "d628",
+   "text": "the officials at Amadia were corrupt men"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1921v01",
+   "documentId": "d275",
+   "notes": [
+    "Agent finding, run s5, 2026-10-30: Schurman argues that extraterritoriality should not end until Chinese judicial practice no longer shows delay, improper influence, squeeze and corruption."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1921v01",
+   "documentId": "d275",
+   "text": "delay, improper influence, squeeze and corruption all but universal today"
+  },
+  {
+   "kind": "heading",
+   "text": "Threads not followed",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Threads not followed in this run: the 1949 White Paper's own treatment of Nationalist corruption (not in this index); Mobutu's Zaire, Trujillo's Dominican Republic and Batista's Cuba after 1958 as cases of corruption and policy; Marcos after 1986 and Panama under Noriega, which fall at or past the edge of the index; the Church Subcommittee papers and the Securities and Exchange Commission's 1976 report on questionable payments; the Organisation for Economic Co-operation and Development's convention of the 1990s; and foreign-language and foreign-archive accounts of any of these cases. The documents on Iran in the 1970s were not read."
+  },
+  {
+   "kind": "generated",
+   "generatedBlockType": "archivalSources"
+  }
+ ]
+}

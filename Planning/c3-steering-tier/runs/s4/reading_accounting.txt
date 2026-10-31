@@ -1,0 +1,1 @@
+documents retrieved whole into work/docs by getdoc.py: 69 ; captured length (characters) == length(body_text): 69

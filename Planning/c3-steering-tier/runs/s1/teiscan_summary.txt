@@ -1,0 +1,25 @@
+COUNTING SURFACE: raw TEI of each of 553 volume files, tags stripped (<[^>]+> -> space), whitespace collapsed, case-insensitive, word-bounded regexes; front matter, footnotes and apparatus INCLUDED (not separated); the first and second editions of the 1951-54 Iran and 1969-76 E-15 pt 2 volumes are both counted.
+corruption                         total     2427  in 331 of 553 volumes
+corrupt(adj)                       total      977  in 294 of 553 volumes
+corrupted                          total       95  in  76 of 553 volumes
+corruptly                          total       13  in  12 of 553 volumes
+corrupting/corrupts                total       63  in  51 of 553 volumes
+corruptionist                      total        9  in   7 of 553 volumes
+bribe                              total      410  in 193 of 553 volumes
+bribed/bribing                     total      142  in  90 of 553 volumes
+bribery                            total      436  in 167 of 553 volumes
+graft                              total      397  in 140 of 553 volumes
+kickback                           total       27  in  22 of 553 volumes
+embezzle*                          total      381  in  88 of 553 volumes
+venal*                             total      185  in 106 of 553 volumes
+malfeasance                        total       85  in  62 of 553 volumes
+nepotism                           total       55  in  37 of 553 volumes
+cronyism                           total        7  in   6 of 553 volumes
+payoff                             total      244  in 107 of 553 volumes
+peculation                         total       36  in  25 of 553 volumes
+squeeze                            total      653  in 248 of 553 volumes
+questionable payments              total        8  in   8 of 553 volumes
+FCPA                               total       11  in   1 of 553 volumes
+Foreign Corrupt Practices          total        9  in   2 of 553 volumes
+CONTROL+ Department of State       total   178538  in 553 of 553 volumes
+CONTROL- ZZZ_IMPOSSIBLE_ZZZ        total        0  in   0 of 553 volumes

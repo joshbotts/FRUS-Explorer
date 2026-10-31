@@ -1,0 +1,7 @@
+HEADER: No. 195. Mr. Scruggs to Mr. Fish.
+DATELINE: Legation of the United States, Bogotá, April 26, 1875. (Received June 14.)
+SOURCE: 
+DATE: 1875-04-26
+LEN(body_text chars): 1254
+
+No. 195. Mr. Scruggs to Mr. Fish. Legation of the United States, Bogotá, April 26, 1875. (Received June 14.) No. 99.] Sir: Dr. Manuel Murillo, special envoy to Venezuela, has just returned from Caracas. He reports, in private conversation here, that the present government of Venezuela is a pure military despotism, under the form of a republic. Contributions are levied ad libitum, according to the caprices of one man, and collected at the point of the bayonet. The government has long since ceased to pay interest on its foreign debt. It proposes compromising with foreign creditors, and the President, Blanco, does not scruple to assert that their payment will be contingent upon their acceptance of his own terms. In regard to the sums due the United States from that government, Murillo says that Blanco told him most emphatically that “not one real of them would ever be paid.” The alleged corruption of the arbitral commission which awarded those claims is Blanco’s pretext for the proposed bad faith of his government. I may add that this statement by Murillo fully corroborates others of like import made by other persons, direct from Caracas, and who have the reputation of sharing General Blanco’s confidence. I have, &c., WILLIAM L. SCRUGGS.

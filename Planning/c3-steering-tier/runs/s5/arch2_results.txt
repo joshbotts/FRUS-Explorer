@@ -1,0 +1,41 @@
+core-vocabulary hit documents (apparatus excluded, Ed2 suppressed): 3058
+
+-- CAME-FROM (document_sources, one row per document) over the hit documents
+SQL: SELECT COALESCE(s.repository,'(none)') repo, COALESCE(s.record_group,'-') rg, s.citation_era, COUNT(*) FROM hit h LEFT JOIN document_sources s ON s.volume_id=h.volume_id AND s.document_id=h.document_id GROUP BY 1,2,3 ORDER BY 4 DESC LIMIT 14
+('Department of State', '59', 'decimal', 1251)
+('(none)', '-', None, 508)
+('Department of State', '59', 'lot_file', 184)
+('Department of State', '59', 'cfpf', 120)
+('National Archives', '59', 'subject_numeric', 118)
+('Central Intelligence Agency', '-', 'structured', 117)
+('Johnson Library', '-', 'structured', 104)
+('Nixon Presidential Materials', '-', 'structured', 103)
+('Carter Library', '-', 'structured', 78)
+('Department of State', '59', 'subject_numeric', 62)
+('(none)', '-', 'named_series', 59)
+('Eisenhower Library', '-', 'structured', 40)
+('Kennedy Library', '-', 'structured', 35)
+('(none)', '-', 'published', 34)
+hit docs with no document_sources row: 508
+
+-- POINTED-AT (external_citations, many rows per document) over the hit documents, by anchor type
+SQL: SELECT e.anchor, COUNT(*) citations, COUNT(DISTINCT e.volume_id||'/'||e.document_id) docs FROM hit h JOIN external_citations e ON e.volume_id=h.volume_id AND e.document_id=h.document_id GROUP BY 1 ORDER BY 2 DESC
+('centralFileClass', 450, 259)
+('presidentialLibrary', 176, 124)
+('lotFile', 138, 93)
+SQL: SELECT e.repository, COALESCE(NULLIF(e.collection,''),NULLIF(e.lot_file_norm,''),'(decimal/class)') tgt, COUNT(*) FROM hit h JOIN external_citations e ON e.volume_id=h.volume_id AND e.document_id=h.document_id WHERE e.anchor IN ('lotFile','presidentialLibrary') GROUP BY 1,2 ORDER BY 3 DESC LIMIT 14
+('Carter Library', 'National Security Affairs', 53)
+('Johnson Library', 'National Security File', 28)
+('Nixon Presidential Materials', 'NSC Files', 27)
+('Department of State', '66D95', 17)
+('Department of State', '63D351', 12)
+('Eisenhower Library', 'Whitman File', 7)
+('Carter Library', 'Presidential Materials', 6)
+('Department of State', '62D1', 6)
+('Department of State', '62D430', 6)
+('Department of State', '89D149', 6)
+('Johnson Library', 'President’s Daily Diary', 6)
+('Department of State', '67D548', 5)
+('Department of State', '59D518', 4)
+('Kennedy Library', 'National Security Files', 4)
+earliest external_citations document date among all rows: ('1910-12-06',)

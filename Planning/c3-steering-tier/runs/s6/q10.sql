@@ -1,0 +1,1 @@
+SELECT volume_id||'/'||document_id, anchor, repository, collection, lot_file_norm, file_id, decimal_class, substr(raw_text,1,150) FROM external_citations WHERE (volume_id,document_id) IN (VALUES ('frus1958-60v01','d111'),('frus1958-60v01','d160'),('frus1964-68v04','d280'),('frus1961-63v22','d249'),('frus1977-80v03','d248'));

@@ -1,0 +1,31 @@
+== per-volume ranking (top 8) ==
+   ('frus1947v07', 59)
+   ('frus1894app2', 40)
+   ('frus1964-68v05', 40)
+   ('frus1958-60v01', 37)
+   ('frus1961-63v22', 33)
+   ('frus1948v07', 32)
+   ('frus1969-76ve11p1', 32)
+   ('frus1944v06', 30)
+rank of frus1948v07: [(6, 32)]
+== decade table ==
+   ('1860s', 11268, 74, 6.6)
+   ('1870s', 5821, 64, 11.0)
+   ('1880s', 6484, 43, 6.6)
+   ('1890s', 9845, 72, 7.3)
+   ('1900s', 10261, 40, 3.9)
+   ('1910s', 30842, 131, 4.2)
+   ('1920s', 20374, 40, 2.0)
+   ('1930s', 40073, 61, 1.5)
+   ('1940s', 75872, 354, 4.7)
+   ('1950s', 42801, 407, 9.5)
+   ('1960s', 27654, 457, 16.5)
+   ('1970s', 22258, 354, 15.9)
+   ('1980s', 6038, 85, 14.1)
+== 1890s top volume == [('frus1894app2', 38), ('frus1893', 9)]
+== false-friend / density table ==
+   ('on_topic_12', 5222, 294, 1779)
+   ('rest', 306207, 1892, 92045)
+== census replication (same regexes as raw/census.py, no files written) ==
+  N=2186 strict=2159 tolerant=2186 garble_only=9 -> ['frus1912/d1141', 'frus1913/d823', 'frus1914/d557', 'frus1940v01/d1', 'frus1943/d268', 'frus1945v08/d565', 'frus1947v07/d556', 'frus1958-60v12/d227', 'frus1977-80v03/d308']
+  sample40 ids (first 5): ['frus1862/d406', 'frus1867p2/d114', 'frus1875v01/d26', 'frus1887/d64', 'frus1894app2/d306'] ... matches session sample40_corrupt.json first id frus1862/d406: True

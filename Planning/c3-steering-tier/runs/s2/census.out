@@ -1,0 +1,12 @@
+SQL: SELECT c.volume_id, c.document_id, c.header||' '||COALESCE(c.dateline,'')||' '||COALESCE(c.source_note,'')||' '||c.body_text FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ORDER BY c.volume_id, c.document_id
+MATCH "questionable payments": N=9 (census)  STRICT 1 of 9  TOLERANT 1 of 9  | tolerant misses: ['frus1919Parisv11/d76', 'frus1941v01/d479', 'frus1947v08/d338', 'frus1949v08/d1651', 'frus1952-54v04/d465', 'frus1955-57v03mSupp/d813', 'frus1955-57v16/d386', 'frus1955-57v26/d156']
+   STRICT re: \bquestionable payments\b  TOLERANT re: \bquestionabl\w*[\s\-,().]+payments?\b
+MATCH "foreign corrupt practices": N=4 (census)  STRICT 4 of 4  TOLERANT 4 of 4  | tolerant misses: []
+   STRICT re: \bforeign corrupt practices\b  TOLERANT re: \bforeign[\s\-,().]+corrupt\w*[\s\-,().]+practices?\b
+   hits: ['frus1977-80v03/d152', 'frus1977-80v03/d230', 'frus1977-80v03/d248', 'frus1977-80v18/d57']
+MATCH "illicit payments": N=16 (census)  STRICT 16 of 16  TOLERANT 16 of 16  | tolerant misses: []
+   STRICT re: \billicit payments\b  TOLERANT re: \billicit\w*[\s\-,().]+payments?\b
+   hits: ['frus1969-76ve09p2/d155', 'frus1977-80v03/d247', 'frus1977-80v03/d248', 'frus1977-80v03/d25', 'frus1977-80v03/d252', 'frus1977-80v03/d266', 'frus1977-80v03/d308', 'frus1977-80v03/d310', 'frus1977-80v03/d311', 'frus1977-80v03/d35', 'frus1977-80v03/d65', 'frus1977-80v17p3/d61', 'frus1977-80v24/d166', 'frus1977-80v24/d30', 'frus1977-80v24/d336', 'frus1977-80v24/d337']
+MATCH "corrupt practices": N=81 (census)  STRICT 74 of 81  TOLERANT 81 of 81  | tolerant misses: []
+   STRICT re: \bcorrupt practices\b  TOLERANT re: \bcorrupt\w*[\s\-,().]+practices?\b
+family hits in frus1977-80v09Ed2: [('d247',), ('d334',), ('d348',)]

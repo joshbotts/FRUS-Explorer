@@ -1,0 +1,29 @@
+SQL: SELECT c.header, COALESCE(c.dateline,''), COALESCE(c.source_note,''), c.body_text, length(c.body_text), t.date_iso FROM document_cache c LEFT JOIN document_dates t ON t.volume_id=c.volume_id AND t.document_id=c.document_id WHERE c.volume_id=? AND c.document_id=?
+frus1944v06/d148 captured 4972 length(body_text) 4972 WHOLE 1944-09-22 | The Ambassador in China (Gauss) to the Secretary of State
+frus1946v10/d373 captured 5659 length(body_text) 5659 WHOLE 1947-01-07 | Minutes of Meeting Between General Marshall and Dr. T. V. Soong at No. 5 Ning Hai Road, Na
+frus1947v07/d908 captured 2861 length(body_text) 2861 WHOLE 1947-05-08 | The Ambassador in China (Stuart) to the Secretary of State
+frus1948v07/d43 captured 1711 length(body_text) 1711 WHOLE 1948-01-28 | The Ambassador in China (Stuart) to the Secretary of State
+frus1958-60v01/d131 captured 7234 length(body_text) 7234 WHOLE 1960-04-07 | 131. Telegram From the Ambassador in Vietnam (Durbrow) to the Department of State
+frus1958-60v01/d135 captured 5312 length(body_text) 5312 WHOLE 1960-04-11 | 135. Telegram From the Secretary of State to the Embassy in Vietnam
+frus1964-68v05/d395 captured 5952 length(body_text) 5952 WHOLE 1967-11-13 | 395. Memorandum From the Under Secretary of State (Katzenbach) to President Johnson
+frus1964-68v05/d258 captured 5862 length(body_text) 5862 WHOLE 1967-07-27 | 258. Memorandum From the Minister-Counselor for Political Affairs of the Embassy in Vietna
+frus1961-63v22/d202 captured 4694 length(body_text) 4694 WHOLE 1961-03-06 | 202. Report by Hugh D. Farley of the International Cooperation Administration to the Presi
+SQL: SELECT c.header, COALESCE(c.dateline,''), COALESCE(c.source_note,''), c.body_text, length(c.body_text), t.date_iso FROM document_cache c LEFT JOIN document_dates t ON t.volume_id=c.volume_id AND t.document_id=c.document_id WHERE c.volume_id=? AND c.document_id=?
+frus1955-57v13/d16 captured 3721 length(body_text) 3721 WHOLE 1956-01-30 | 16. Memorandum of a Conversation, White House, Washington, January 30, 1956, 2:15 p.m.
+frus1958-60v12/d168 captured 2373 length(body_text) 2373 WHOLE 1959-03-28 | 168. Letter From the Chief of Naval Operations (Burke) to Acting Secretary of State Herter
+frus1964-68v22/d79 captured 4342 length(body_text) 4342 WHOLE 1965-04-23 | 79. Current Intelligence Memorandum
+frus1969-76ve12/d218 captured 3216 length(body_text) 3216 WHOLE 1976-02-24 | 218. Letter From Japanese Prime Minister Miki to President Ford, Tokyo, February 24, 1976.
+frus1969-76ve12/d219 captured 3402 length(body_text) 3402 WHOLE 1976-03-11 | 219. Letter From President Ford to Japanese Prime Minister Miki, Washington, March 11, 197
+frus1969-76ve09p2/d161 captured 7879 length(body_text) 7879 WHOLE 1975-09-11 | 161. Telegram From the Embassy in Saudi Arabia to the Department of State
+frus1969-76ve15p2/d293 captured 4361 length(body_text) 4361 WHOLE 1975-10-07 | 293. Memorandum From the Deputy Assistant Secretary of State for European and Canadian Aff
+frus1977-80v03/d248 captured 29454 length(body_text) 29454 WHOLE 1980-07-29 | 248. Memorandum From Secretary of Commerce Klutznick and the United States Trade Represent
+frus1977-80v03/d308 captured 7837 length(body_text) 7837 WHOLE 1978-06-22 | 308. Paper Prepared in the Department of State
+frus1969-76ve09p2/d152 captured 9755 length(body_text) 9755 WHOLE 1975-08-07 | 152. Minutes of the Secretary of State’s Staff Meeting
+SQL: SELECT c.header, COALESCE(c.dateline,''), COALESCE(c.source_note,''), c.body_text, length(c.body_text), t.date_iso FROM document_cache c LEFT JOIN document_dates t ON t.volume_id=c.volume_id AND t.document_id=c.document_id WHERE c.volume_id=? AND c.document_id=?
+frus1947v07/d900 captured 2712 length(body_text) 2712 WHOLE 1947-04-27 | The Ambassador in China (Stuart) to the Secretary of State
+frus1958-60v01/d176 captured 16564 length(body_text) 16564 WHOLE 1960-06-24 | 176. Memorandum of a Conversation, Saigon, June 24, 1960, 4 p-m.
+frus1961-63v22/d204 captured 2621 length(body_text) 2621 WHOLE 1961-03-15 | 204. Memorandum From the President’s Deputy Special Assistant for National Security Affair
+frus1955-57v13/d321 captured 1936 length(body_text) 1936 WHOLE 1956-01-30 | 321. Memorandum of a Conversation, White House, Washington, January 30, 1956, 2:15 p.m.
+frus1969-76ve09p2/d130 captured 8659 length(body_text) 8659 WHOLE 1975-03-02 | 130. Telegram From the Embassy in Saudi Arabia to the Department of State
+frus1977-80v03/d119 captured 6953 length(body_text) 6953 WHOLE 1978-03-21 | 119. Memorandum From the Chairman of the Cabinet Economic Policy Group (Blumenthal) to Pre
+frus1958-60v01/d155 captured 8621 length(body_text) 8621 WHOLE 1960-05-09 | 155. Letter From the Chief of the Military Assistance Advisory Group in Vietnam (Williams)

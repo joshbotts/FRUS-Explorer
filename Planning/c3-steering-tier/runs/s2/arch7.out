@@ -1,0 +1,22 @@
+<class 'list'> ['1910-1949', '1950-1959', '1960-1963']
+['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+1910-1949 {'classes': ('dict', 9), 'countries': ('dict', 287), 'countryAlternates': ('dict', 101), 'countryArrangedClasses': ('list', 3), 'endYear': ('int', 1949), 'id': ('str', 9), 'relationsClasses': ('list', 1), 'source': ('str', 134), 'sources': ('dict', 2), 'startYear': ('int', 1910), 'subjects': ('dict', 2)}
+    classes 5 Congresses and Conferences
+    countries 20 South America (West Coast)
+    countries 51 France
+    countries 00 World, The
+    countryAlternates 51 ['Corsica']
+1950-1959 {'classes': ('dict', 10), 'countries': ('dict', 252), 'countryAlternates': ('dict', 96), 'countryArrangedClasses': ('list', 7), 'endYear': ('int', 1959), 'id': ('str', 9), 'relationsClasses': ('list', 1), 'source': ('str', 120), 'sources': ('dict', 2), 'startYear': ('int', 1950), 'subjects': ('dict', 0)}
+    classes 5 International Informational and Educational Relations, Cultural Affairs and Programs
+    countries 20 South and Central America
+    countries 51 France
+    countries 00 World, The
+    countryAlternates 51 ['Corsica']
+    countryAlternates 00 ['Universe']
+1960-1963 {'classes': ('dict', 10), 'countries': ('dict', 263), 'countryAlternates': ('dict', 89), 'countryArrangedClasses': ('list', 7), 'endYear': ('int', 1963), 'id': ('str', 9), 'relationsClasses': ('list', 1), 'source': ('str', 111), 'sources': ('dict', 2), 'startYear': ('int', 1960), 'subjects': ('dict', 0)}
+    classes 5 International Informational and Educational Relations. Cultural Affairs. Psychological Warfare
+    countries 20 South and Central America
+    countries 51 France
+    countries 00 World, The
+    countryAlternates 51 ['Corsica']
+    countryAlternates 00 ['Universe']

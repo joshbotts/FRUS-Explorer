@@ -1,0 +1,136 @@
+citations in overview: 47 distinct pairs: 38
+
+== CITATION RESOLUTION ==
+frus1893/d628: title_ok=False number_ok=True doc_number=628 fm/ed=(0, 0) | printed='Papers Relating to the Foreign Relations of the United States, With the Annual Message of the President, Transmitted to Congress, December 4, 1893' | manifest='Papers Relating to the Foreign Relations of the United
+                    States, With the Annual Message of the President, Transmitted to Congress,
+                    December 4, 1893' | header='Mr. Terrell to Mr. Gresham.'
+frus1912/d1502: title_ok=False number_ok=True doc_number=1502 fm/ed=(0, 0) | printed='Papers Relating to the Foreign Relations of the United States, With the Annual Message of the President Transmitted to Congress December 3, 1912' | manifest='Papers Relating to the Foreign Relations of the United
+                    States, With the Annual Message of the President Transmitted to Congress
+                    December 3, 1912' | header='The Acting Secretary of State to the President.'
+frus1921v01/d275: title_ok=False number_ok=True doc_number=275 fm/ed=(0, 0) | printed='Papers Relating to the Foreign Relations of the United States, 1921, Volume I' | manifest='Papers Relating to the Foreign Relations of the United
+                    States, 1921, Volume I' | header='The Minister in China (Schurman) to the Secretary of State'
+frus1922v01/d836: title_ok=False number_ok=True doc_number=836 fm/ed=(0, 0) | printed='Papers Relating to the Foreign Relations of the United States, 1922, Volume I' | manifest='Papers Relating to the Foreign Relations of the United
+                    States, 1922, Volume I' | header='The Representative on Special Mission in Cuba (Crowder) to the Secretary of Stat'
+frus1922v01/d841: title_ok=False number_ok=True doc_number=841 fm/ed=(0, 0) | printed='Papers Relating to the Foreign Relations of the United States, 1922, Volume I' | manifest='Papers Relating to the Foreign Relations of the United
+                    States, 1922, Volume I' | header='The Representative on Special Mission in Cuba (Crowder) to the Secretary of Stat'
+frus1922v01/d842: title_ok=False number_ok=True doc_number=842 fm/ed=(0, 0) | printed='Papers Relating to the Foreign Relations of the United States, 1922, Volume I' | manifest='Papers Relating to the Foreign Relations of the United
+                    States, 1922, Volume I' | header='The Representative on Special Mission in Cuba (Crowder) to the Secretary of Stat'
+frus1922v01/d862: title_ok=False number_ok=True doc_number=862 fm/ed=(0, 0) | printed='Papers Relating to the Foreign Relations of the United States, 1922, Volume I' | manifest='Papers Relating to the Foreign Relations of the United
+                    States, 1922, Volume I' | header='The Acting Secretary of State to the Representative on Special Mission in Cuba ('
+frus1922v01/d864: title_ok=False number_ok=True doc_number=864 fm/ed=(0, 0) | printed='Papers Relating to the Foreign Relations of the United States, 1922, Volume I' | manifest='Papers Relating to the Foreign Relations of the United
+                    States, 1922, Volume I' | header='The Acting Chief of the Division of Latin American Affairs, Department of State '
+frus1944v06/d269: title_ok=False number_ok=True doc_number=269 fm/ed=(0, 0) | printed='Foreign Relations of the United States, Diplomatic Papers, 1944, China, Volume VI' | manifest='Foreign Relations of the United States, Diplomatic Papers,
+                    1944, China, Volume VI' | header='The Ambassador in China (Gauss) to the Secretary of State'
+frus1947v05/d23: title_ok=False number_ok=True doc_number=23 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1947, The Near East and Africa, Volume V' | manifest='Foreign Relations of the United States, 1947, The Near East
+                    and Africa, Volume V' | header='Memorandum by the Under Secretary of State (Acheson) to the Secretary of State'
+frus1947v07/d553: title_ok=False number_ok=True doc_number=553 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1947, The Far East: China, Volume VII' | manifest='Foreign Relations of the United States, 1947, The Far East:
+                    China, Volume VII' | header='Memorandum of Conversation, by Mr. Philip D. Sprouse'
+frus1948v07/d440: title_ok=False number_ok=True doc_number=440 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1948, The Far East: China, Volume VII' | manifest='Foreign Relations of the United States, 1948, The Far East:
+                    China, Volume VII' | header='The Ambassador in China (Stuart) to the Secretary of State'
+frus1949v06/d330: title_ok=False number_ok=True doc_number=330 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1949, The Near East, South Asia, and Africa, Volume VI' | manifest='Foreign Relations of the United States, 1949, The Near East,
+                    South Asia, and Africa, Volume VI' | header='Memorandum of Conversation, by the Secretary of State'
+frus1949v08/d576: title_ok=False number_ok=True doc_number=576 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1949, The Far East: China, Volume VIII' | manifest='Foreign Relations of the United States, 1949, The Far East:
+                    China, Volume VIII' | header='The Chargé in China (Clark) to the Secretary of State'
+frus1950v03/d728: title_ok=False number_ok=True doc_number=728 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1950, Western Europe, Volume III' | manifest='Foreign Relations of the United States, 1950, Western Europe,
+                    Volume III' | header='United States Minutes, Truman–Attlee Conversations, Second Meeting, The Presiden'
+frus1950v05/d289: title_ok=False number_ok=True doc_number=289 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1950, The Near East, South Asia, and Africa, Volume V' | manifest='Foreign Relations of the United States, 1950, The Near East,
+                    South Asia, and Africa, Volume V' | header='The Chargé in Iran (Richards) to the Secretary of State'
+frus1950v06/d802: title_ok=False number_ok=True doc_number=802 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1950, East Asia and the Pacific, Volume VI' | manifest='Foreign Relations of the United States, 1950, East Asia and
+                    the Pacific, Volume VI' | header='Memorandum from the Secretary of State to the President'
+frus1952-54v12p2/d324: title_ok=False number_ok=True doc_number=324 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1952–1954, East Asia and the Pacific, Volume XII, Part 2' | manifest='Foreign Relations of the United States, 1952–1954, East Asia
+                    and the Pacific, Volume XII, Part 2' | header='No. 324 The Ambassador in the Philippines (Spruance) to the Department of State'
+frus1955-57v22/d7: title_ok=False number_ok=True doc_number=7 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1955–1957, Southeast Asia, Volume XXII' | manifest='Foreign Relations of the United States, 1955–1957, Southeast
+                    Asia, Volume XXII' | header='7. Telegram From the Embassy in Burma to the Department of State'
+frus1958-60v01/d135: title_ok=False number_ok=True doc_number=135 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1958–1960, Vietnam, Volume I' | manifest='Foreign Relations of the United States, 1958–1960, Vietnam,
+                    Volume I' | header='135. Telegram From the Secretary of State to the Embassy in Vietnam'
+frus1958-60v01/d156: title_ok=False number_ok=True doc_number=156 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1958–1960, Vietnam, Volume I' | manifest='Foreign Relations of the United States, 1958–1960, Vietnam,
+                    Volume I' | header='156. Memorandum of Discussion at the 444th Meeting of the National Security Coun'
+frus1958-60v01/d160: title_ok=False number_ok=True doc_number=160 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1958–1960, Vietnam, Volume I' | manifest='Foreign Relations of the United States, 1958–1960, Vietnam,
+                    Volume I' | header='160. Telegram From the Ambassador in Vietnam (Durbrow) to the Department of Stat'
+frus1961-63v01/d298: title_ok=False number_ok=True doc_number=298 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1961–1963, Volume I, Vietnam, 1961' | manifest='Foreign Relations of the United States, 1961–1963, Volume I,
+                    Vietnam, 1961' | header='298. Letter From the Ambassador in Viet-Nam (Nolting) to the Deputy Under Secret'
+frus1961-63v20/d422: title_ok=False number_ok=True doc_number=422 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1961–1963, Volume XX, Congo Crisis' | manifest='Foreign Relations of the United States, 1961–1963, Volume XX,
+                    Congo Crisis' | header='422. Memorandum of Conversation'
+frus1961-63v22/d252: title_ok=False number_ok=True doc_number=252 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1961–1963, Volume XXII, Northeast Asia' | manifest='Foreign Relations of the United States, 1961–1963, Volume
+                    XXII, Northeast Asia' | header='252. Telegram From the Embassy in Japan to the Department of State'
+frus1964-68v05/d258: title_ok=False number_ok=True doc_number=258 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1964–1968, Volume V, Vietnam, 1967' | manifest='Foreign Relations of the United States, 1964–1968, Volume V,
+                    Vietnam, 1967' | header='258. Memorandum From the Minister-Counselor for Political Affairs of the Embassy'
+frus1964-68v05/d301: title_ok=False number_ok=True doc_number=301 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1964–1968, Volume V, Vietnam, 1967' | manifest='Foreign Relations of the United States, 1964–1968, Volume V,
+                    Vietnam, 1967' | header='301. Telegram From the Department of State to the Embassy in Vietnam'
+frus1964-68v32/d8: title_ok=False number_ok=True doc_number=8 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1964–1968, Volume XXXII, Dominican Republic; Cuba; Haiti; Guyana' | manifest='Foreign Relations of the United States, 1964–1968, Volume
+                    XXXII, Dominican Republic; Cuba; Haiti; Guyana' | header='8. Telegram From the Embassy in the Dominican Republic to the Department of Stat'
+frus1969-76v08/d191: title_ok=False number_ok=True doc_number=191 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1969–1976, Volume VIII, Vietnam, January–October 1972' | manifest='Foreign Relations of the United States, 1969–1976, Volume
+                    VIII, Vietnam, January–October 1972' | header='191. Minutes of a Washington Special Actions Group Meeting'
+frus1969-76ve09p2/d155: title_ok=False number_ok=True doc_number=155 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1969–1976, Volume E–9, Part 2, Documents on the Middle East Region, 1973–1976' | manifest='Foreign Relations of the United States, 1969–1976, Volume
+                    E–9, Part 2, Documents on the Middle East Region, 1973–1976' | header='155. Briefing Memorandum From the Assistant Secretary of State for Near Eastern '
+frus1977-80v03/d35: title_ok=False number_ok=True doc_number=35 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1977–1980, Volume III, Foreign Economic Policy' | manifest='Foreign Relations of the United States, 1977–1980, Volume
+                    III, Foreign Economic Policy' | header='35. Memorandum From the Special Representative for Economic Summits (Owen) to Pr'
+frus1977-80v03/d65: title_ok=False number_ok=True doc_number=65 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1977–1980, Volume III, Foreign Economic Policy' | manifest='Foreign Relations of the United States, 1977–1980, Volume
+                    III, Foreign Economic Policy' | header='65. Memorandum From the Special Representative for Economic Summits (Owen) to Pr'
+frus1977-80v03/d230: title_ok=False number_ok=True doc_number=230 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1977–1980, Volume III, Foreign Economic Policy' | manifest='Foreign Relations of the United States, 1977–1980, Volume
+                    III, Foreign Economic Policy' | header='230. Memorandum From the Special Representative for Economic Summits (Owen) to P'
+frus1977-80v03/d248: title_ok=False number_ok=True doc_number=248 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1977–1980, Volume III, Foreign Economic Policy' | manifest='Foreign Relations of the United States, 1977–1980, Volume
+                    III, Foreign Economic Policy' | header='248. Memorandum From Secretary of Commerce Klutznick and the United States Trade'
+frus1977-80v24/d337: title_ok=False number_ok=True doc_number=337 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1977–1980, Volume XXIV, South America; Latin America Region' | manifest='Foreign Relations of the United States, 1977–1980, Volume
+                    XXIV, South America; Latin America Region' | header='337. Memorandum of Conversation'
+frus1981-88v01/d247: title_ok=False number_ok=True doc_number=247 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1981–1988, Volume I, Foundations of Foreign Policy' | manifest='Foreign Relations of the United States, 1981–1988, Volume I,
+                    Foundations of Foreign Policy' | header='247. Talking Points Prepared in the Policy Planning Staff'
+frus1981-88v01/d264: title_ok=False number_ok=True doc_number=264 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1981–1988, Volume I, Foundations of Foreign Policy' | manifest='Foreign Relations of the United States, 1981–1988, Volume I,
+                    Foundations of Foreign Policy' | header='264. Information Memorandum From the Director of the Bureau of Intelligence and '
+frus1981-88v41/d251: title_ok=False number_ok=True doc_number=251 fm/ed=(0, 0) | printed='Foreign Relations of the United States, 1981–1988, Volume XLI, Global Issues II' | manifest='Foreign Relations of the United States, 1981–1988, Volume
+                    XLI, Global Issues II' | header='251. Memorandum From the President’s Assistant for National Security Affairs (Po'
+citation problems: 38
+
+== OVERVIEW QUOTATIONS (curly double quotes) == 22
+[VERIFIED] Q4 memo_pair=('frus1944v06', 'd269') overview_cites=('frus1944v06', 'd269') found_in_cited=True | no part of the criticism of corruption and inefficiency attaches to the Generalissimo exce
+[VERIFIED] Q1 memo_pair=('frus1947v05', 'd23') overview_cites=('frus1947v05', 'd23') found_in_cited=True | unprecedented corruption and ineffectiveness in the working of the Government
+[VERIFIED] Q2 memo_pair=('frus1949v08', 'd576') overview_cites=('frus1949v08', 'd576') found_in_cited=True | come to aid of existing government, corrupt as it is
+[VERIFIED] Q3 memo_pair=('frus1981-88v01', 'd247') overview_cites=('frus1981-88v01', 'd247') found_in_cited=True | The war against the Communist NPA is going badly, partly because the military are corrupt,
+[VERIFIED] Q21 memo_pair=('frus1981-88v01', 'd264') overview_cites=('frus1981-88v01', 'd264') found_in_cited=True | as in Manila
+[VERIFIED] Q7 memo_pair=('frus1922v01', 'd841') overview_cites=('frus1922v01', 'd841') found_in_cited=True | I am utterly unable to obtain evidence which would satisfy beyond a reasonable doubt or to
+[VERIFIED] Q5 memo_pair=('frus1922v01', 'd864') overview_cites=('frus1922v01', 'd864') found_in_cited=True | General Crowder feels that the Department should not consent to a loan unless this amnesty
+[VERIFIED] Q6 memo_pair=('frus1950v06', 'd802') overview_cites=('frus1950v06', 'd802') found_in_cited=True | Philippine performance must precede consideration of any additional American aid
+[VERIFIED] Q22 memo_pair=('frus1912', 'd1502') overview_cites=('frus1912', 'd1502') found_in_cited=True | arbitrary and corrupt government
+[VERIFIED] Q8 memo_pair=('frus1958-60v01', 'd135') overview_cites=('frus1958-60v01', 'd135') found_in_cited=True | these reports had reached certain circles on Capitol Hill and certain business circles
+[VERIFIED] Q9 memo_pair=('frus1964-68v05', 'd258') overview_cites=('frus1964-68v05', 'd258') found_in_cited=True | it has become a key obstacle to pacification
+[VERIFIED] Q10 memo_pair=('frus1964-68v05', 'd258') overview_cites=('frus1964-68v05', 'd258') found_in_cited=True | an invasion of the sovereignty of the Republic of Viet-Nam
+[VERIFIED] Q11 memo_pair=('frus1981-88v41', 'd251') overview_cites=('frus1981-88v41', 'd251') found_in_cited=True | The government conduit weakens conditionality; when reform fails to occur, aid continues t
+[VERIFIED] Q12 memo_pair=('frus1949v06', 'd330') overview_cites=('frus1949v06', 'd330') found_in_cited=True | I pointed to Nationalist China as an example of the wrong policy.
+[VERIFIED] Q13 memo_pair=('frus1949v06', 'd330') overview_cites=('frus1949v06', 'd330') found_in_cited=True | the Shah observed that China’s downfall was largely due to corruption
+[VERIFIED] Q14 memo_pair=('frus1950v05', 'd289') overview_cites=('frus1950v05', 'd289') found_in_cited=True | What is the corruption in Persia in comparison with corruption elsewhere
+[VERIFIED] Q15 memo_pair=('frus1961-63v22', 'd252') overview_cites=('frus1961-63v22', 'd252') found_in_cited=True | Therefore, recommend we do not change for the present our aid policies on account of this 
+[VERIFIED] Q16 memo_pair=('frus1969-76ve09p2', 'd155') overview_cites=('frus1969-76ve09p2', 'd155') found_in_cited=True | Problems arising from publicity over the enormous commissions being paid by American firms
+[VERIFIED] Q17 memo_pair=('frus1977-80v24', 'd337') overview_cites=('frus1977-80v24', 'd337') found_in_cited=True | President Carter placed high priority on the negotiation of an international treaty on ill
+[VERIFIED] Q18 memo_pair=('frus1977-80v03', 'd248') overview_cites=('frus1977-80v03', 'd248') found_in_cited=True | some exports are lost because foreign companies can bribe foreign officials while U.S. com
+[VERIFIED] Q19 memo_pair=('frus1893', 'd628') overview_cites=('frus1893', 'd628') found_in_cited=True | the officials at Amadia were corrupt men
+[VERIFIED] Q20 memo_pair=('frus1921v01', 'd275') overview_cites=('frus1921v01', 'd275') found_in_cited=True | delay, improper influence, squeeze and corruption all but universal today
+overview: verified 22 miscited 0 fabricated 0
+
+single-quoted strings in overview: ['GVN Corruption 1967', 'illicit', 'questionable', 'Department of State', 'Department of State', 'squeeze', 'corrupt', 'corruption', 'corrupted', 'Corruption and American foreign policy, run s5, 2026-10-30']
+straight double quotes in overview: []
+
+== COLLECTION EXCERPTS ==
+[VERIFIED] Q4 memo_pair_matches=True frus1944v06/d269 | no part of the criticism of corruption and inefficiency attaches to the Generalissimo exce
+[VERIFIED] Q1 memo_pair_matches=True frus1947v05/d23 | unprecedented corruption and ineffectiveness in the working of the Government
+[VERIFIED] Q2 memo_pair_matches=True frus1949v08/d576 | come to aid of existing government, corrupt as it is
+[VERIFIED] Q3 memo_pair_matches=True frus1981-88v01/d247 | The war against the Communist NPA is going badly, partly because the military are corrupt,
+[VERIFIED] Q21 memo_pair_matches=True frus1981-88v01/d264 | as in Manila
+[VERIFIED] Q22 memo_pair_matches=True frus1912/d1502 | arbitrary and corrupt government
+[VERIFIED] Q7 memo_pair_matches=True frus1922v01/d841 | I am utterly unable to obtain evidence which would satisfy beyond a reasonable doubt or to
+[VERIFIED] Q5 memo_pair_matches=True frus1922v01/d864 | General Crowder feels that the Department should not consent to a loan unless this amnesty
+[VERIFIED] Q6 memo_pair_matches=True frus1950v06/d802 | Philippine performance must precede consideration of any additional American aid
+[VERIFIED] Q8 memo_pair_matches=True frus1958-60v01/d135 | these reports had reached certain circles on Capitol Hill and certain business circles
+[VERIFIED] Q9 memo_pair_matches=True frus1964-68v05/d258 | it has become a key obstacle to pacification
+[VERIFIED] Q10 memo_pair_matches=True frus1964-68v05/d258 | an invasion of the sovereignty of the Republic of Viet-Nam
+[VERIFIED] Q11 memo_pair_matches=True frus1981-88v41/d251 | The government conduit weakens conditionality; when reform fails to occur, aid continues t
+[VERIFIED] Q12 memo_pair_matches=True frus1949v06/d330 | I pointed to Nationalist China as an example of the wrong policy.
+[VERIFIED] Q13 memo_pair_matches=True frus1949v06/d330 | the Shah observed that China’s downfall was largely due to corruption
+[VERIFIED] Q14 memo_pair_matches=True frus1950v05/d289 | What is the corruption in Persia in comparison with corruption elsewhere
+[VERIFIED] Q15 memo_pair_matches=True frus1961-63v22/d252 | Therefore, recommend we do not change for the present our aid policies on account of this 
+[VERIFIED] Q16 memo_pair_matches=True frus1969-76ve09p2/d155 | Problems arising from publicity over the enormous commissions being paid by American firms
+[VERIFIED] Q17 memo_pair_matches=True frus1977-80v24/d337 | President Carter placed high priority on the negotiation of an international treaty on ill
+[VERIFIED] Q18 memo_pair_matches=True frus1977-80v03/d248 | some exports are lost because foreign companies can bribe foreign officials while U.S. com
+[VERIFIED] Q19 memo_pair_matches=True frus1893/d628 | the officials at Amadia were corrupt men
+[VERIFIED] Q20 memo_pair_matches=True frus1921v01/d275 | delay, improper influence, squeeze and corruption all but universal today
+excerpts: verified 22 fabricated 0
+overview quote texts == excerpt texts: True | only in overview: 0 only in excerpts: 0

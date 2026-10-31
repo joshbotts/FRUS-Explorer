@@ -1,0 +1,116 @@
+binary magic b'FRSV' version 1 dims 512 docs 314616 centroids 660 size 20476048 = 64 + docs*64 + cents*516 -> 20476048
+digests: index 89481b1869da1880 binary 89481b1869da1880 map 89481b1869da1880 shards-manifest 89481b1869da1880 shard frus1947v07 89481b1869da1880 .generation 89481b1869da1880
+all six agree: True | memo's digest: True
+decoded rows 314616 volumes 553 | header docs 314616 | rows contiguous 0..n-1: True
+
+ANCHOR ('frus1922v01', 'd841') row 79603 | 25 of 25 identical (distance and pair, in order): True 25
+   73 frus1922v01/d842 
+   92 frus1922v01/d836 
+   99 frus1922v01/d845 
+   99 frus1922v01/d852 
+   100 frus1921v01/d702 
+   100 frus1922v01/d844 
+   101 frus1922v01/d837 
+   101 frus1922v01/d848 
+   103 frus1921v01/d679 
+   103 frus1921v01/d720 
+   103 frus1922v01/d831 
+   104 frus1921v01/d723 
+   104 frus1922v01/d835 
+   107 frus1922v01/d828 
+   107 frus1922v01/d851 
+   108 frus1921v01/d661 
+   108 frus1921v01/d673 
+   108 frus1921v01/d701 
+   108 frus1921v01/d706 
+   108 frus1921v01/d717 
+   108 frus1922v01/d833 
+   108 frus1925v02/d15 
+   109 frus1921v01/d694 
+   109 frus1922v01/d838 
+   109 frus1923v01/d670 
+
+ANCHOR ('frus1969-76ve09p2', 'd122') row 298093 | 25 of 25 identical (distance and pair, in order): True 25
+   81 frus1977-80v18/d154 
+   88 frus1977-80v18/d176 
+   91 frus1969-76ve09p2/d107 
+   95 frus1969-76v24/d133 
+   95 frus1969-76v24/d169 
+   98 frus1977-80v18/d144 
+   99 frus1977-80v18/d143 
+   102 frus1969-76ve09p2/d85 
+   103 frus1969-76v36/d134 
+   103 frus1969-76ve09p2/d155 
+   104 frus1950v05/d636 
+   104 frus1969-76ve09p2/d180 
+   104 frus1977-80v18/d179 
+   105 frus1977-80v18/d196 
+   106 frus1977-80v18/d186 
+   106 frus1977-80v18/d216 
+   107 frus1951v05/d591 
+   107 frus1969-76v24/d153 
+   107 frus1969-76ve09p2/d108 
+   109 frus1969-76ve09p2/d83 
+   109 frus1977-80v18/d206 
+   110 frus1964-68v21/d287 
+   110 frus1969-76v36/d353 
+   110 frus1969-76v37/d79 
+   111 frus1955-57v13/d167 
+  d155 in the 25 nearest of d122: [(103, ('frus1969-76ve09p2', 'd155'))]
+
+ANCHOR ('frus1947v07', 'd583') row 192258 | 25 of 25 identical (distance and pair, in order): True 25
+   82 frus1948v07/d68 
+   84 frus1947v07/d591 
+   85 frus1947v07/d573 
+   85 frus1948v07/d389 
+   86 frus1947v07/d68 
+   86 frus1947v07/d184 
+   87 frus1940v04/d503 
+   87 frus1947v07/d616 
+   88 frus1947v07/d554 
+   89 frus1930v02/d26 
+   89 frus1947v07/d947 
+   89 frus1948v07/d119 
+   90 frus1964-68v30/d48 
+   91 frus1916/d99 
+   91 frus1943China/d153 
+   91 frus1943China/d285 
+   91 frus1944v06/d453 
+   91 frus1945v07/d303 
+   92 frus1946v09/d748 
+   92 frus1947v07/d73 
+   92 frus1947v07/d564 
+   92 frus1947v07/d565 
+   93 frus1946v09/d604 
+   93 frus1948v07/d25 
+   93 frus1948v07/d266 
+
+ANCHOR ('frus1969-76ve11p1', 'd159') row 299051 | 25 of 25 identical (distance and pair, in order): True 25
+   119 frus1958-60v05mSupp/ho_d20 
+   124 frus1955-57v07/d89 
+   130 frus1920v02/d780 
+   131 frus1964-68v31/d117 
+   132 frus1943v06/d321 
+   132 frus1969-76ve11p1/d110 
+   133 frus1958-60v05mSupp/ho_d1 
+   134 frus1969-76v38p1/d52 
+   135 frus1958-60v05mSupp/ho_d15 
+   135 frus1977-80v23/d153 
+   136 frus1928v02/d657 
+   136 frus1928v02/d658 
+   136 frus1958-60v05/d310 
+   137 frus1958-60v05/d280 
+   137 frus1958-60v05mSupp/eta_d54 
+   137 frus1958-60v05mSupp/ch_d4 
+   137 frus1977-80v09Ed2/d198 
+   138 frus1912/d746 
+   138 frus1914/d264 
+   138 frus1915/d594 
+   138 frus1952-54v04/d555 
+   138 frus1961-63v12/d215 
+   138 frus1969-76v38p2/d168 
+   138 frus1969-76ve11p1/d154 
+   138 frus1969-76ve11p1/d155 
+
+random pairs (seed 1877): mean 167.1 sd 14.8 1st pct 132 | memo: 167.1, 14.8, 132 | near-dup line mean-8sd = 49.0 (memo 49.0)
+25th-neighbour over 200 random rows (seed 1878): min 73 p10 93 median 107 p90 119 | memo: 73, 93, 107, 119

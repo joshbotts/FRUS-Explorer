@@ -1,0 +1,246 @@
+{
+ "format": "fruscollection",
+ "formatVersion": 2,
+ "minimumReaderVersion": 1,
+ "name": "Corruption and U.S. foreign policy: scope run",
+ "authorLine": "Agent run s3, 2026-10-30",
+ "introductionText": "What FRUS answers directly: across the 553 volumes indexed, about one document in a hundred uses the language of corruption, bribery, graft or embezzlement, and the printed record shows corruption entering U.S. policy in three ways: as a measure of whether an aid recipient could survive (Nationalist China 1944-48, Korea and the Philippines 1961), as a lever for U.S. pressure on a dependent government (Cuba 1922), and, from 1974, as a diplomatic liability created by American firms' payments abroad (Saudi Arabia, Honduras, Western Europe), which ended in the Foreign Corrupt Practices Act and the 1980 debate over its export cost. Where FRUS points for the rest: the documents came chiefly from the Department of State's central files (Record Group 59: the Central Decimal File, then the 1964-73 central files and the Central Foreign Policy File), from CIA files, and from the presidential libraries' National Security Files (Kennedy, naId 1164; Johnson, naId 567979; Nixon, naId 572235); and from RG 59 lots such as the Marshall Mission Files (Lot 54D270) and the NSC policy papers (Lot 63D351, naId 2839192, entry A1 1586E, 1947-1979, partly restricted). The editors' footnotes point, without printing, to the same central-file classes and to RG 59 Lots 66D95 and 63D351 (naId 2839192), 62D1 (Policy Planning Council, naId 2838992, 1948-1961) and 62D430 (naId 2839191, 1953-1961). What this request cannot get from FRUS: nothing after the series ends (no 1990s document matched); the withheld names in the 1970s reporting (about one matching document in six from 1969 on carries a 'not declassified' bracket); and enclosures the editors did not print, such as Crowder's 1922 memorandum on graft in Cuba, which stays in the Central Decimal File.",
+ "composition": {
+  "defaultBodyDepth": "full",
+  "footnoteStyle": "all",
+  "includeSourceNote": true,
+  "tocStyle": "citation",
+  "applyHighlights": false,
+  "includeNotes": true,
+  "includeWordCloud": false
+ },
+ "entries": [
+  {
+   "kind": "heading",
+   "text": "Corruption as a condition of reform: Cuba, 1922",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "The earliest sustained case in the set: the U.S. special representative made the reform of graft in the Cuban administration a formal demand, and asked Washington to back it with a warning. One document, read whole."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1922v01",
+   "documentId": "d841",
+   "notes": [
+    "Agent finding, run s3, 2026-10-30: Crowder forwards his Memorandum No. 8 on graft and corruption (not printed) and asks for the Department's approval and a warning to the Zayas government; he reports he cannot get specific evidence."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1922v01",
+   "documentId": "d841",
+   "text": "I have not been able to present much in the way of specific instances of corruption. There is here almost a conspiracy to conceal facts"
+  },
+  {
+   "kind": "heading",
+   "text": "Corruption as a measure of an ally's viability: China, 1944-1948",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Embassy, consular and mission reporting treats Nationalist corruption as a cause of military failure and of lost public support, and the Wedemeyer mission's working papers make anti-corruption measures part of the reform programme. Date order."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1944v06",
+   "documentId": "d292",
+   "notes": [
+    "Agent finding, run s3, 2026-10-30: Gauss transmits an OWI report from Fukien: graft and bribery are standard practice and the population cares more about bad government than the war."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1944v06",
+   "documentId": "d292",
+   "text": "graft, bribery and corruption are standard practices to be found in every section of the province"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1947v07",
+   "documentId": "d583",
+   "notes": [
+    "Agent finding, run s3, 2026-10-30: Sprouse's memorandum for Wedemeyer lists reforms the U.S. should seek, including investigation of corruption among army officers and an empowered Control Yuan."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1947v07",
+   "documentId": "d583",
+   "text": "A thorough investigation should be made into the charges of corruption among army officers"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1948v07",
+   "documentId": "d43",
+   "notes": [
+    "Agent finding, run s3, 2026-10-30: Stuart transmits a speech by Hollington Tong complaining that U.S. reporters play up graft cases and make Americans think the whole government corrupt: the allegation itself had become a factor in U.S.-China relations."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1948v07",
+   "documentId": "d43",
+   "text": "many US reporters, when they come across any corruption or graft, play up the cases, making the US public believe that the entire Chinese Government is corrupt"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1948v07",
+   "documentId": "d471",
+   "notes": [
+    "Agent finding, run s3, 2026-10-30: Clubb transmits Fu Tso-yi's speech attributing Nationalist defeat in Manchuria to Nationalist corruption and impotence."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1948v07",
+   "documentId": "d471",
+   "text": "Nationalist failures in suppression rebellion entirely due to Nationalist corruption and impotence"
+  },
+  {
+   "kind": "heading",
+   "text": "Graft and aid in Asia, 1961: Korea and the Philippines",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "In 1961 the embassy in Seoul judged the military government's campaign against graft genuine, and in Washington a former ambassador and the desk discussed placing advisers in Philippine ministries to check graft. Date order."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v23",
+   "documentId": "d356",
+   "notes": [
+    "Agent finding, run s3, 2026-10-30: Cowen tells Bell that graft and corruption are the principal cause of Garcia's low standing and proposes IMF-supplied 'watchdog' consultants; Garcia has signalled acceptance."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v23",
+   "documentId": "d356",
+   "text": "the graft and corruption in the Garcia Administration which he views as the principal cause for the low state of Garcia’s public image"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v22",
+   "documentId": "d244",
+   "notes": [
+    "Agent finding, run s3, 2026-10-30: Embassy Seoul's assessment: the junta's drive against graft, bribery and smuggling is genuine and producing results, though signs of graft are reappearing in high places."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v22",
+   "documentId": "d244",
+   "text": "Military government’s efforts to deal with wholesale graft, bribery and corruption in government and business"
+  },
+  {
+   "kind": "heading",
+   "text": "American payments abroad as a diplomatic liability, 1974-1975",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "From late 1974 the problem turns round: the corruption at issue is paid by American firms, and the documents weigh what disclosure will do to relations with Saudi Arabia, Honduras and the Federal Republic and the Netherlands. Date order."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d122",
+   "notes": [
+    "Agent finding, run s3, 2026-10-30: Embassy Jidda's airgram on corruption in Saudi Arabia: rising corruption is a medium-term threat to the regime and so to U.S. interests; recommends that the U.S. refuse to facilitate corrupt contracts."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d122",
+   "text": "As we have watched corruption mount we have asked ourselves what we might do to counter it—not from any moralistic concern, but as a means of guarding U.S. interests."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d122",
+   "text": "Our own U.S. government reputation for incorruptability may one day prove to be our most valued asset in Saudi Arabia."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve11p1",
+   "documentId": "d159",
+   "notes": [
+    "Agent finding, run s3, 2026-10-30: Rogers tells Kissinger that United Brands paid a $1.25 million bribe to Honduran officials; the Department refused to help cover it up and expects the Honduran government to fall."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve11p1",
+   "documentId": "d159",
+   "text": "The Department just learned of the bribe. It refused to help cover it up."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d155",
+   "notes": [
+    "Agent finding, run s3, 2026-10-30: Atherton's August 1975 briefing for Kissinger: publicity over agents' fees paid by Northrop, Lockheed and Raytheon through Khashoggi threatens to strain U.S.-Saudi relations. Found by its similarity to the Jidda airgram, by no word search, and read before it was cited."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve09p2",
+   "documentId": "d155",
+   "text": "Problems arising from publicity over the enormous commissions being paid by American firms to promote sales of defense articles and services to the Saudi Government threaten to strain US-Saudi relations."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve15p2",
+   "documentId": "d292",
+   "notes": [
+    "Agent finding, run s3, 2026-10-30: Hartman reports the Church subcommittee staff's findings on Lockheed payments to Strauss and the CSU and to Prince Bernhard."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve15p2",
+   "documentId": "d292",
+   "text": "At that point apparently, Lockheed bribed Prince Bernard to weigh in with the Germans."
+  },
+  {
+   "kind": "heading",
+   "text": "From scandal to statute: the Foreign Corrupt Practices Act, 1980",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "By 1980 the question had become whether the 1977 law cost exports. One document, read whole."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v03",
+   "documentId": "d248",
+   "notes": [
+    "Agent finding, run s3, 2026-10-30: Klutznick and Askew list the FCPA as exporters' second export disincentive and recommend clarifying amendments without loopholes for bribery; Carter's statement followed."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v03",
+   "documentId": "d248",
+   "text": "As a nation we have decided that bribery in international trade is reprehensible and that American companies must forego exports that can be attained only by illicit payments."
+  },
+  {
+   "kind": "prose",
+   "text": "Threads not followed in this run: South Vietnam 1954-1968 and Iran 1951-1954, both heavily represented among the matching documents but not read; U.S. covert payments to foreign politicians (for example in the Congo, 1964-1968), present but not read; the 1976 OECD guidelines on bribery; Japan's Lockheed affair; the Church subcommittee and SEC records themselves; and the withheld names in the 1970s reporting."
+  },
+  {
+   "kind": "generated",
+   "generatedBlockType": "archivalSources"
+  }
+ ]
+}

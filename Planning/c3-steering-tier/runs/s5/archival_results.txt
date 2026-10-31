@@ -1,0 +1,37 @@
+SCOPE S: 27 volumes: frus1893, frus1912, frus1921v01, frus1922v01, frus1944v06, frus1947v05, frus1947v07, frus1948v07, frus1949v06, frus1949v08, frus1950v03, frus1950v05, frus1950v06, frus1952-54v12p2, frus1955-57v22, frus1958-60v01, frus1961-63v01, frus1961-63v20, frus1961-63v22, frus1964-68v05, frus1964-68v32, frus1969-76v08, frus1969-76ve09p2, frus1977-80v03, frus1977-80v24, frus1981-88v01, frus1981-88v41
+
+== CAME-FROM channel (collection-usage-index.json, source notes), ranked over scope S
+scope volumes found in index: 27
+ 1133  txt:department of state|central file | Central Files | RG 59 | Department of State
+  280  txt:carter library|national security affair | National Security Affairs | RG None | Carter Library
+  278  txt:johnson library|national security file | National Security File | RG None | Johnson Library
+  187  txt:department of state|central files 1967-69 | Central Files 1967–69 | RG 59 | Department of State
+  166  txt:kennedy library|national security file | National Security Files | RG None | Kennedy Library
+  135  txt:nixon|nsc file | NSC Files | RG None | Nixon
+   97  txt:department of state|central files 1964-66 | Central Files 1964–66 | RG 59 | Department of State
+   85  txt:library of congress|manuscript division | Manuscript Division | RG None | Library of Congress
+   59  lot:M88 | CFM Files, Lot M–88 | RG 59 | Department of State
+   54  txt:reagan library|executive secretariat | Executive Secretariat, National Security Council | RG None | Reagan Library
+   51  lot:89D149 | Lot 89D149: S/P , Memoranda/Correspondence from the Director of the Policy Planning Staff | RG 59 | Department of State
+   42  lot:55D36 | Lot 55–D36 | RG 59 | Department of State
+   38  lot:66D193 | Vietnam Working Group Files: Lot 66 D 193 | RG 59 | Department of State | NAID 2658382 entry ['A1 5155'] | series 'Subject Files Relating to Political, Military, Economic Aid, and Admin' | 1955-1962 | access Restricted - Possibly
+   37  txt:carter library|national security council | National Security Council | RG None | Carter Library
+total notes mapped to a collection in scope: 4116
+
+== POINTED-AT channel (external-citation-index.json targets), ranked over scope S
+scope volumes found in index: 25
+  293  txt:carter library|national security affair | National Security Affairs | RG None | Carter Library
+  162  txt:johnson library|national security file | National Security File | RG None | Johnson Library
+   84  txt:kennedy library|national security file | National Security Files | RG None | Kennedy Library
+   55  txt:nixon|nsc file | NSC Files | RG None | Nixon
+   40  txt:carter library|presidential material | Presidential Materials | RG None | Carter Library
+   35  lot:59D95 | Conference Files, Lot 59 D 95 | RG 59 | Department of State
+   33  txt:reagan library|presidential daily diary | President’s Daily Diary | RG None | Reagan Library
+   32  lot:81D113 | D Files: Lot 81D113 (Entry P–14) | RG 59 | Department of State | NAID 1487627 entry ['P 14'] | series 'Records of Deputy Secretary Warren Christopher' | 1975-1981 | access Restricted - Partly
+   27  lot:63D351 | S/S – NSC Files: Lot 63 D 351 | RG 59 | Department of State | NAID 2839192 entry ['A1 1586E'] | series 'Records Relating to National Security Council Policy Papers' | 1947-1979 | access Restricted - Partly
+   23  lot:66D95 | S/S – NSC (Miscellaneous) Files: Lot 66 D 95 | RG 59 | Department of State | NAID 2839192 entry ['A1 1586E'] | series 'Records Relating to National Security Council Policy Papers' | 1947-1979 | access Restricted - Partly
+   21  txt:carter library|staff office file | Staff Office Files | RG None | Carter Library
+   21  txt:johnson library|presidential daily diary | President’s Daily Diary | RG None | Johnson Library
+   20  lot:65D330 | Secretary’s Memoranda of Conversation: Lot 65 D 330 | RG 59 | Department of State | NAID 602231 entry ['A1 1566'] | series 'The Secretary's and the Under Secretary's Memorandums of Conversation' | 1953-1964 | access Unrestricted
+   20  lot:66D193 | Vietnam Working Group Files: Lot 66 D 193 | RG 59 | Department of State | NAID 2658382 entry ['A1 5155'] | series 'Subject Files Relating to Political, Military, Economic Aid, and Admin' | 1955-1962 | access Restricted - Possibly
+total citations in scope: 1498

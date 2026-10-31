@@ -1,0 +1,5 @@
+Referent coding of sample40_corrupt.json (hand-coded from the printed contexts, this session):
+venality/official or political corruption sense: 36 of 40
+legal term of art ("corruption of the blood"): 1 of 40 (frus1917/d1144)
+rhetorical epithet without a venality allegation: 3 of 40 (frus1894app2/d306, frus1933v02/d187, frus1943/d231)
+garbled-telegram sense: 0 of 40 (census regex: 9 of 2186 garble-only)

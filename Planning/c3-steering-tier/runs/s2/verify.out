@@ -1,0 +1,21 @@
+SQL: SELECT body_text, is_front_matter, is_editorial_note FROM document_cache WHERE volume_id=? AND document_id=?
+frus1944v06/d148 exact-substring occurrences=1 fm=0 en=0
+frus1946v10/d373 exact-substring occurrences=1 fm=0 en=0
+frus1947v07/d908 exact-substring occurrences=1 fm=0 en=0
+frus1948v07/d43 exact-substring occurrences=1 fm=0 en=0
+frus1958-60v01/d131 exact-substring occurrences=1 fm=0 en=0
+frus1958-60v01/d135 exact-substring occurrences=1 fm=0 en=0
+frus1964-68v05/d395 exact-substring occurrences=1 fm=0 en=0
+frus1961-63v22/d202 exact-substring occurrences=1 fm=0 en=0
+frus1961-63v22/d204 exact-substring occurrences=1 fm=0 en=0
+frus1955-57v13/d16 exact-substring occurrences=1 fm=0 en=0
+frus1958-60v12/d168 exact-substring occurrences=1 fm=0 en=0
+frus1964-68v22/d79 exact-substring occurrences=1 fm=0 en=0
+frus1969-76ve09p2/d161 exact-substring occurrences=1 fm=0 en=0
+frus1969-76ve09p2/d152 exact-substring occurrences=1 fm=0 en=0
+frus1969-76ve15p2/d293 exact-substring occurrences=1 fm=0 en=0
+frus1969-76ve12/d218 exact-substring occurrences=1 fm=0 en=0
+frus1969-76ve12/d219 exact-substring occurrences=1 fm=0 en=0
+frus1977-80v03/d248 exact-substring occurrences=1 fm=0 en=0
+frus1977-80v03/d308 exact-substring occurrences=1 fm=0 en=0
+excerpts verified: 19 of 19

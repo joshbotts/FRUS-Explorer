@@ -1,0 +1,5 @@
+DENOM SQL: SELECT COUNT(*) FROM document_cache c WHERE c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') [AND c.volume_id IN (14 cited volumes)]
+MATCH SQL: SELECT COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') [AND c.volume_id IN (...)]
+family                           whole index   3036 of 311429 (0.0097)   cited volumes   370 of  7361 (0.0503)  ratio 5.16
+control: "united states"         whole index 143184 of 311429 (0.4598)   cited volumes  2505 of  7361 (0.3403)  ratio 0.74
+control: "department of state"   whole index  93824 of 311429 (0.3013)   cited volumes  2231 of  7361 (0.3031)  ratio 1.01

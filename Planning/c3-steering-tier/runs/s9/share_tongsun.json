@@ -1,0 +1,12 @@
+{
+ "label": "tongsun",
+ "match": "\"tongsun park\"",
+ "strict": "\\btongsun park\\b",
+ "tolerant": "\\btong[\\s\\-]?sun[\\s\\-,().]+park\\b",
+ "M_hitlist_excl_fm_ed_Ed2": 4,
+ "mode": "census",
+ "n": 4,
+ "strict_hits": 4,
+ "tolerant_hits": 4,
+ "tolerant_misses": []
+}

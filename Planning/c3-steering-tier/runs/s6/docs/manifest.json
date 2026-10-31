@@ -1,0 +1,409 @@
+{
+ "frus1943China/d202": {
+  "header": "Memorandum by the Second Secretary of Embassy in China (Davies), Temporarily in the United States",
+  "dateline": null,
+  "sql_len": 21905,
+  "captured_len": 21905,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1944v06/d269": {
+  "header": "The Ambassador in China (Gauss) to the Secretary of State",
+  "dateline": "Chungking, February 3, 1944. [Received February 26.]",
+  "sql_len": 17713,
+  "captured_len": 17713,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1947v07/d591": {
+  "header": "Memorandum by Mr. Philip D. Sprouse to General Wedemeyer",
+  "dateline": "August 23, 1947",
+  "sql_len": 50751,
+  "captured_len": 50751,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1948v07/d590": {
+  "header": "The Consul General at Shanghai (Cabot) to the Director of the Office of Far Eastern Affairs (Butterworth)",
+  "dateline": "Shanghai, December 30, 1948.",
+  "sql_len": 30405,
+  "captured_len": 30405,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1958-60v01/d111": {
+  "header": "111. Despatch From the Ambassador in Vietnam (Durbrow) to the Department of State",
+  "dateline": "Saigon, March 2, 1960.",
+  "sql_len": 16808,
+  "captured_len": 16808,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1958-60v01/d160": {
+  "header": "160. Telegram From the Ambassador in Vietnam (Durbrow) to the Department of State",
+  "dateline": "Saigon, May 13, 1960\u201410 p.m.",
+  "sql_len": 10084,
+  "captured_len": 10084,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1964-68v04/d280": {
+  "header": "280. Notes of Meeting",
+  "dateline": "Manila, October 23, 1966, 9:15\u201310:15 p.m.",
+  "sql_len": 14020,
+  "captured_len": 14020,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1964-68v05/d197": {
+  "header": "197. Memorandum From the President\u2019s Special Counsel (McPherson) to President Johnson",
+  "dateline": "Washington, June 13, 1967, 8:15 p.m.",
+  "sql_len": 28465,
+  "captured_len": 28465,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1964-68v05/d258": {
+  "header": "258. Memorandum From the Minister-Counselor for Political Affairs of the Embassy in Vietnam (Calhoun) to the Deputy for Civil Operations and Revolutionary Development Support, Military Assistance Command, Vietnam (Komer)",
+  "dateline": "Saigon, July 27, 1967.",
+  "sql_len": 5862,
+  "captured_len": 5862,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1969-76v06/d175": {
+  "header": "175. Telegram From the Embassy in Vietnam to the Department of State",
+  "dateline": "Saigon, January 31, 1970, 1140Z.",
+  "sql_len": 10230,
+  "captured_len": 10230,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1964-68v07/d91": {
+  "header": "91. Telegram From the Embassy in Vietnam to the Department of State",
+  "dateline": "Saigon, October 19, 1968, 1045Z.",
+  "sql_len": 38097,
+  "captured_len": 38097,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1917-72PubDipv07/d177": {
+  "header": "177. Airgram From the Department of State to All American Diplomatic and Consular Posts and United States Information Service Posts",
+  "dateline": "Washington, February 23, 1968, 1419Z",
+  "sql_len": 20385,
+  "captured_len": 20385,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1969-76ve09p2/d122": {
+  "header": "122. Airgram From the Embassy in Saudi Arabia to the Department of State",
+  "dateline": "Jidda, December 16, 1974.",
+  "sql_len": 28403,
+  "captured_len": 28403,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1977-80v18/d206": {
+  "header": "206. Report Prepared by the Ambassador to Saudi Arabia (West)",
+  "dateline": "Jidda, undated",
+  "sql_len": 14102,
+  "captured_len": 14102,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1961-63v17/d27": {
+  "header": "27. Memorandum From the Vice Chairman of the Policy Planning Council (Morgan) to the President\u2019s Special Assistant for National Security Affairs (Bundy)",
+  "dateline": "Washington, March 27, 1961.",
+  "sql_len": 48711,
+  "captured_len": 48711,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1969-76ve05p2/d119": {
+  "header": "119. Telegram 3745 From the Embassy in Morocco to the Department of State",
+  "dateline": "Rabat, July 23, 1971, 1115Z",
+  "sql_len": 9728,
+  "captured_len": 9728,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1977-80v23/d252": {
+  "header": "252. Airgram From the Embassy in Haiti to the Department of State",
+  "dateline": "Port au Prince, July 25, 1978",
+  "sql_len": 22978,
+  "captured_len": 22978,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1961-63v22/d244": {
+  "header": "244. Telegram From the Embassy in Korea to the Department of State",
+  "dateline": "Seoul, October 28, 1961, 6 p.m.",
+  "sql_len": 12380,
+  "captured_len": 12380,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1961-63v22/d249": {
+  "header": "249. Letter From the Ambassador to Korea (Berger) to Secretary of State Rusk",
+  "dateline": "Seoul, December 15, 1961.",
+  "sql_len": 17870,
+  "captured_len": 17870,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1961-63v23/d355": {
+  "header": "355. Memorandum From Robert H. Johnson of the National Security Council Staff to the President\u2019s Deputy Special Assistant for National Security Affairs (Rostow)",
+  "dateline": "Washington, July 14, 1961.",
+  "sql_len": 5722,
+  "captured_len": 5722,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1969-76ve12/d218": {
+  "header": "218. Letter From Japanese Prime Minister Miki to President Ford, Tokyo, February 24, 1976.",
+  "dateline": "February 24, 1976",
+  "sql_len": 3216,
+  "captured_len": 3216,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1969-76ve12/d219": {
+  "header": "219. Letter From President Ford to Japanese Prime Minister Miki, Washington, March 11, 1976.",
+  "dateline": "Washington, March 11, 1976",
+  "sql_len": 3402,
+  "captured_len": 3402,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1969-76ve12/d224": {
+  "header": "224. Memorandum of Conversation, Washington, May 14, 1976.",
+  "dateline": "Washington, May 14, 1976",
+  "sql_len": 9382,
+  "captured_len": 9382,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1969-76ve15p2/d292": {
+  "header": "292. Memorandum From the Assistant Secretary of State for European and Canadian Affairs (Hartman) to the Deputy Under Secretary of State for Management (Eagleburger)",
+  "dateline": "Washington, September 30, 1975.",
+  "sql_len": 3590,
+  "captured_len": 3590,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1969-76ve15p2/d293": {
+  "header": "293. Memorandum From the Deputy Assistant Secretary of State for European and Canadian Affairs (Lowenstein) to the Deputy Under Secretary of State for Management (Eagleburger)",
+  "dateline": "Washington, October 7, 1975.",
+  "sql_len": 4361,
+  "captured_len": 4361,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1969-76ve09p2/d161": {
+  "header": "161. Telegram From the Embassy in Saudi Arabia to the Department of State",
+  "dateline": "Jidda, September 11, 1975, 1235 Z.",
+  "sql_len": 7879,
+  "captured_len": 7879,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1969-76ve09p1/d49": {
+  "header": "49. Telegram 83386 From the Department of State to the Embassy in Libya",
+  "dateline": "Washington, April 7, 1976, 0153Z.",
+  "sql_len": 4314,
+  "captured_len": 4314,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1977-80v03/d248": {
+  "header": "248. Memorandum From Secretary of Commerce Klutznick and the United States Trade Representative (Askew) to President Carter",
+  "dateline": "Washington, July 29, 1980",
+  "sql_len": 29454,
+  "captured_len": 29454,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1969-76ve09p2/d152": {
+  "header": "152. Minutes of the Secretary of State\u2019s Staff Meeting",
+  "dateline": "Washington, August 7, 1975, 8 a.m.",
+  "sql_len": 9755,
+  "captured_len": 9755,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1894app2/d255": {
+  "header": "No. 7. Mr. Blount to Mr. Gresham.",
+  "dateline": "Honolulu, Hawaiian Islands, May 4, 1893.",
+  "sql_len": 90290,
+  "captured_len": 90290,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1893/d652": {
+  "header": "Mr. Terrell to Mr. Gresham.",
+  "dateline": "Legation of the United States, Constantinople, October 27, 1893. (Received November 11.)",
+  "sql_len": 19526,
+  "captured_len": 19526,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1894/d703": {
+  "header": "Mr. Gresham to Mr. Terrell.",
+  "dateline": "Department of State, Department of State, August 4, 1894.",
+  "sql_len": 29194,
+  "captured_len": 29194,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1969-76ve12/d222": {
+  "header": "222. Memorandum of Conversation, Washington, April 22, 1976.",
+  "dateline": "Washington, April 22, 1976",
+  "sql_len": 5252,
+  "captured_len": 5252,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1894app2/d306": {
+  "header": "No. 23. Statement of Charles T. Gulick.",
+  "dateline": null,
+  "sql_len": 318085,
+  "captured_len": 318085,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1977-80v13/d92": {
+  "header": "92. Memorandum From the Assistant Secretary of State for East Asian and Pacific Affairs (Holbrooke), the Deputy Assistant Secretary of Defense for East Asian and Pacific Affairs (Abramowitz), and Michael Armacost and Michel Oksenberg of the National Security Council Staff to Secretary of State Vance, Secretary of Defense Brown, and the President\u2019s Assistant for National Security Affairs (Brzezinski)",
+  "dateline": "Washington, April 4, 1978",
+  "sql_len": 31825,
+  "captured_len": 31825,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1977-80v13/d94": {
+  "header": "94. Memorandum of Conversation",
+  "dateline": "Washington, April 11, 1978, 3:15\u20134:35 p.m.",
+  "sql_len": 22149,
+  "captured_len": 22149,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ },
+ "frus1977-80v13/d95": {
+  "header": "95. Memorandum From the President\u2019s Assistant for National Security Affairs (Brzezinski) to President Carter",
+  "dateline": "Washington, April 18, 1978",
+  "sql_len": 4502,
+  "captured_len": 4502,
+  "whole": true,
+  "apparatus": [
+   0,
+   0
+  ]
+ }
+}

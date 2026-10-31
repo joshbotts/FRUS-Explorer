@@ -291,6 +291,17 @@ operations are required, and what the memo owes for it. The one rule all four ru
 §A.7's last paragraph, the calibration offsets on a cosine the reader sees, which the addendum now
 states.
 
+**The steering tier, 2026-10-30**, measured a revision of these vector instructions against this
+text, on the same two cells (`Planning/C-3-Steering-Tier-Results-2026-10-30.md`). Each cell had two
+runs of this guide's block with the addendum pasted, and Appendix A. Against them ran two runs of a
+revised block with a SEMANTIC VECTORS section and a 149-line card in the appendix's place. The
+question was about corruption, whose documents seldom sit under a chapter of their own: 37 of the
+2,866 that use its main words, about one in 77. With this text the cells obeyed the cosine rule
+in 4 of 4 runs, where the 2026-10-27 runs scored 0 of 4, and reached two documents no word search
+returns. The revision reached the same two and kept the vectors' vocabulary out of the historian's
+text in 4 of 4 runs, where this text did in none. It also lost one more of the 35 items above, so
+by the tier's rule it is not adopted and this text stands.
+
 ---
 
 ## 4. Schema reference
@@ -2451,15 +2462,15 @@ read 616.
 that were refuted and by what. It is the audit trail, and nothing below replaces it. Every number
 and quotation in the three artifacts below traces to a line in it (§8's two forms), and the memo
 carries that trace as a table. When the brief hands over the vector artifacts, the memo also
-carries a section headed **VECTORS**: each of [§A.5](#a5-what-an-agent-can-do-with-no-model)'s
-five operations (nearest neighbours of a document, a semantic join into the database, centroid
-similarity, the map, near-duplicates), named as run or as not run and why; for each one run, its
-anchor, the file it ran over, the baseline it was read against and what it found; which cited
-documents were vector-reached, in both of
-[§14.17](#1417-the-second-finding-aid-when-the-vectors-enter-the-pass)'s readings; and the
-provenance digest, with the index's `generated` stamp. With no artifacts in hand the section is
-the word "none". In the 2026-10-27 measurement all four sessions filled such a section because the
-harness's deliverable asked for one, and each refuter checked the vector work from it.
+carries a section headed **VECTORS**: each operation
+[§14.17](#1417-the-second-finding-aid-when-the-vectors-enter-the-pass) names (the nearest
+neighbours of a document, joined into the database; near-duplicates; the map), named as run or as
+not run and why; for each one run, its anchor, the file it ran over, the baseline it was read
+against and what it found; which cited documents were vector-reached, in both of §14.17's
+readings; and the provenance digest, with the index's `generated` stamp. With no artifacts in hand
+the section is the word "none". In the 2026-10-27 measurement all four sessions filled such a
+section because the harness's deliverable asked for one, and each refuter checked the vector work
+from it.
 
 **2 — the overview, which answers the question.** It opens with **the bottom line, three
 paragraphs in a fixed order, each carrying its evidence**, before any finding:
@@ -2620,11 +2631,12 @@ the first reads, and every anchor was a document the full-text or heading pass h
    [§14.10](#1410-two-bundled-artifacts-that-scope-the-corpus)'s label test, and any cluster figure
    with the set's unclustered share, N of M, against an era-matched baseline on the layout in
    use, or no cluster figure.
-6. **Centroid similarity is optional.** In all four sessions it found what §A.5 says it finds,
-   adjacent annual volumes nearest one another, and changed no answer; and its cosines were the
-   figures every session printed with neither the calibration offsets nor the word *raw*
-   ([§A.7](#a7-free-text-queries-require-the-embedder)'s last paragraph). If you run it, say the
-   cosines are raw.
+6. **Centroid similarity is not part of the pass.** In all four sessions it found what §A.5 says
+   it finds, adjacent annual volumes nearest one another, and changed no answer; and its cosines
+   were the figures every session printed with neither the calibration offsets nor the word *raw*
+   ([§A.7](#a7-free-text-queries-require-the-embedder)'s last paragraph). §A.5 still describes
+   the centroid block, as a reference to the file. Any cosine the reader does see is calibrated or
+   labelled raw.
 
 **Vector-reached, in two readings.** A cited document is vector-reached when a vector operation
 surfaced it, and the term needs both of its readings. The four sessions claimed five such
@@ -3242,6 +3254,20 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.38 — 2026-10-30: **the owner's answers to the steering review, and the measurement they set**
+  (`Planning/C-3-Steering-Tier-Design.md`, `Planning/C-3-Steering-Tier-Results-2026-10-30.md`).
+  §14.17 and §14.16 leave centroid similarity out of the pass, where v1.37 kept it optional (the
+  owner's word: "drop it"). The block's READER-FACING OUTPUT section (v1.29) is adopted in
+  substance and scope; its style and language get a pass of their own, over the measurement runs'
+  raw outputs. §3a records the steering tier: nine runs on 2026-10-30, the same two cells, this
+  text (the block with the addendum pasted, and Appendix A) against a revised block with a
+  SEMANTIC VECTORS section and a 149-line card in the appendix's place, on a question about
+  corruption. The revision kept vector words out of the historian's text in 4 of 4 runs where this
+  text did in none, and both reached two documents no word search returns. This text obeyed the
+  cosine rule in 4 of 4 runs, and the revision lost one more of the 35 items (O2 twice, against T1
+  once). By the tier's rule, and on the owner's word ("Follow the rule"), the revision is not
+  adopted. It stays on its branch, where it is labelled 1.38 (candidate), and the §12 block,
+  §A.8's addendum and Appendix A are unchanged. The §15.1 and §15.1a blocks are unchanged.
 - 1.37 — 2026-10-29: **the steering review's recommendations that leave the §12 block as
   measured** (`Planning/Agentic-Guide-Steering-Review-2026-10-27.md`, R1, R2, R4, R5, R12 and
   R14, read against both C-3 tiers' records). A new **§14.17** says when a session uses the vector

@@ -1,0 +1,108 @@
+## M1 coverage
+SQL: SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache 
+   -> [(553, 321749, 1103, 8481)]
+SQL: SELECT COUNT(*) FROM document_cache c WHERE c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') 
+   -> [(311429,)]
+
+## family (claim 1: 'about one document in a hundred'; scope: 3,036 docs, 447 volumes)
+SQL: SELECT COUNT(*), COUNT(DISTINCT c.volume_id) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ('corrupt OR bribe OR briberi OR graft OR kickback OR embezzl',)
+   -> [(3036, 447)]
+   family 3036 of 311429 = 0.97% -> 'about one in a hundred'; volumes 447
+   family_hits.json == re-run set: True 3036 3036
+
+## claim 2: 553 volumes (above: COUNT(DISTINCT volume_id)); manifest volumes: 553
+
+## claim 3: 19 documents retrieved whole and read
+   cited.txt pairs: 19
+   frus1944v06/d148: length(body_text)=4972 texts file=present holds whole body_text=True
+   frus1946v10/d373: length(body_text)=5659 texts file=present holds whole body_text=True
+   frus1947v07/d908: length(body_text)=2861 texts file=present holds whole body_text=True
+   frus1948v07/d43: length(body_text)=1711 texts file=present holds whole body_text=True
+   frus1958-60v01/d131: length(body_text)=7234 texts file=present holds whole body_text=True
+   frus1958-60v01/d135: length(body_text)=5312 texts file=present holds whole body_text=True
+   frus1964-68v05/d395: length(body_text)=5952 texts file=present holds whole body_text=True
+   frus1961-63v22/d202: length(body_text)=4694 texts file=present holds whole body_text=True
+   frus1955-57v13/d16: length(body_text)=3721 texts file=present holds whole body_text=True
+   frus1958-60v12/d168: length(body_text)=2373 texts file=present holds whole body_text=True
+   frus1964-68v22/d79: length(body_text)=4342 texts file=present holds whole body_text=True
+   frus1969-76ve09p2/d152: length(body_text)=9755 texts file=present holds whole body_text=True
+   frus1969-76ve09p2/d161: length(body_text)=7879 texts file=present holds whole body_text=True
+   frus1969-76ve15p2/d293: length(body_text)=4361 texts file=present holds whole body_text=True
+   frus1969-76ve12/d218: length(body_text)=3216 texts file=present holds whole body_text=True
+   frus1969-76ve12/d219: length(body_text)=3402 texts file=present holds whole body_text=True
+   frus1977-80v03/d248: length(body_text)=29454 texts file=present holds whole body_text=True
+   frus1977-80v03/d308: length(body_text)=7837 texts file=present holds whole body_text=True
+   frus1961-63v22/d204: length(body_text)=2621 texts file=present holds whole body_text=True
+   retrieved whole (texts/ file holds the full body_text): 19 of 19
+
+## claim 4: Marshall Mission Files, Lot 54 D 270 = ten NARA series under creator 10481258
+   kind candidates creatorNaId 10481258 candidates 10
+      871815 Background Materials
+      872082 Top Secret Documents
+      872083 Reference Subject Files
+      872084 Cables Sent
+      872088 Cables Received
+      872089 Drafts of Telegrams, Letters, and Memorandums
+      872090 General George C. Marshall's Report on His Mission to China
+      872091 Records Relating to Political Affairs
+      872099 Records Relating to Military Affairs
+      872132 Ribbon Copy of General George C. Marshall's Report on His Mission to China
+
+## claim 5: 'Foreign Corrupt Practices Act' by name: four documents, all 1977-80; none in the thirteen 1981-88 volumes
+SQL: SELECT c.volume_id, c.document_id, t.date_iso FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid LEFT JOIN document_dates t ON t.volume_id=c.volume_id AND t.document_id=c.document_id WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ORDER BY 1,2 ('"foreign corrupt practices"',)
+   -> [('frus1977-80v03', 'd152', '1978-07-28'), ('frus1977-80v03', 'd230', '1980-01-18'), ('frus1977-80v03', 'd248', '1980-07-29'), ('frus1977-80v18', 'd57', '1980-02-29')]
+   frus1977-80v03/d152 1978-07-28: literal 'foreign corrupt practices' present = True; 'Foreign Corrupt Practices Act' present = True
+   frus1977-80v03/d230 1980-01-18: literal 'foreign corrupt practices' present = True; 'Foreign Corrupt Practices Act' present = True
+   frus1977-80v03/d248 1980-07-29: literal 'foreign corrupt practices' present = True; 'Foreign Corrupt Practices Act' present = True
+   frus1977-80v18/d57 1980-02-29: literal 'foreign corrupt practices' present = True; 'Foreign Corrupt Practices Act' present = True
+SQL: SELECT COUNT(*), COUNT(DISTINCT c.volume_id) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') AND c.volume_id LIKE 'frus1981-88%' ('"foreign corrupt practices"',)
+   -> [(0, 0)]
+SQL: SELECT COUNT(*), COUNT(DISTINCT c.volume_id) FROM document_cache c WHERE c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') AND c.volume_id LIKE 'frus1981-88%' 
+   -> [(4140, 13)]
+SQL: SELECT COUNT(DISTINCT volume_id) FROM document_cache WHERE volume_id LIKE 'frus1981-88%' 
+   -> [(13,)]
+
+## further overview numbers (checked beyond the five)
+SQL: SELECT COUNT(*), COUNT(DISTINCT c.volume_id) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') AND c.volume_id LIKE 'frus1981-88%' ('"corrupt practices"',)
+   -> [(1, 1)]
+SQL: SELECT COUNT(*), COUNT(DISTINCT c.volume_id) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') AND c.volume_id LIKE 'frus1981-88%' ('corrupt OR bribe OR briberi',)
+   -> [(59, 11)]
+SQL: SELECT COUNT(*), COUNT(DISTINCT c.volume_id) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ('"church committee"',)
+   -> [(42, 15)]
+SQL: SELECT COUNT(*), COUNT(DISTINCT c.volume_id) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ('"church committee" AND (bribe OR bribery OR payments)',)
+   -> [(3, 2)]
+SQL: SELECT COUNT(*), COUNT(DISTINCT c.volume_id) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ('(bribe OR bribery) AND (consul OR consular) AND (fee OR fees)',)
+   -> [(27, 21)]
+SQL: SELECT COUNT(*), COUNT(DISTINCT c.volume_id) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ('"department of state"',)
+   -> [(93824, 550)]
+SQL: SELECT COUNT(DISTINCT c.volume_id) FROM document_cache c WHERE c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') 
+   -> [(551,)]
+SQL: SELECT COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ('ZZZ_IMPOSSIBLE_ZZZ',)
+   -> [(0,)]
+decades:
+   1930s: 118 of 40073 = 2.94 per 1,000
+   1960s: 555 of 27654 = 20.07 per 1,000
+   1970s: 435 of 22258 = 19.54 per 1,000
+SQL: SELECT c.volume_id, COUNT(*) FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') GROUP BY 1 ORDER BY 2 DESC LIMIT 3 ('corrupt OR bribe OR briberi OR graft OR kickback OR embezzl',)
+   -> [('frus1947v07', 71), ('frus1894app2', 48), ('frus1964-68v05', 42)]
+lockheed.py source:
+# census of MATCH 'lockheed AND (bribe OR bribery OR payments OR scandal OR corruption)': literal test + referent test (bribe/briber* within the text)
+import sqlite3, re, collections
+con = sqlite3.connect("file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro", uri=True)
+SQL = ("SELECT c.volume_id, c.document_id, t.date_iso, c.header||' '||COALESCE(c.dateline,'')||' '||COALESCE(c.source_note,'')||' '||c.body_text "
+       "FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid LEFT JOIN document_dates t ON t.volume_id=c.volume_id AND t.document_id=c.document_id "
+       "WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ORDER BY c.volume_id, c.document_id")
+print("SQL:", SQL)
+rows = con.execute(SQL, ("lockheed AND (bribe OR bribery OR payments OR scandal OR corruption)",)).fetchall()
+L = re.compile(r"\bLockheed\b", re.I); STRICT = re.compile(r"\b(bribe|bribes|bribery|scandal|corruption|payments)\b", re.I)
+REF = re.compile(r"\bbrib\w*|\bscandals?\b|\bcorrupt\w*|questionable payments|payoffs?|kickbacks?", re.I)
+nl=ns=nr=0; vols=collections.Counter(); refs=[]
+for v,d,dt,txt in rows:
+    txt=re.sub(r"\s+"," ",txt); a=bool(L.search(txt)); b=bool(STRICT.search(txt)); c=bool(REF.search(txt))
+    nl+=a and b; nr+=a and c
+    if a and c: vols[v]+=1; refs.append("%s/%s %s"%(v,d,dt))
+print("N=%d; literal Lockheed + one of the words: %d of %d; referent (Lockheed + bribe/scandal/corrupt/payoff wording): %d of %d" % (len(rows), nl, len(rows), nr, len(rows)))
+print("referent volumes:", vols.most_common()); print("referent docs:", refs)
+
+series-facts rows: 698 with y0: 698 starting before 1940: 11
+vec_baselines nd_family pairs: 66

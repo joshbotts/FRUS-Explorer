@@ -1,0 +1,58 @@
+AUTH {"id": "txt:carter library|national security file", "name": "National Security File", "repository": "Carter Library"}
+AUTH {"id": "txt:carter library|white house central file", "name": "White House Central Files", "repository": "Carter Library"}
+AUTH {"id": "txt:department of state|central decimal file 1910-1929", "name": "Central Decimal File 1910–1929", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|central file", "name": "Central Files", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|central files 1950-1954", "name": "Central Files 1950–1954", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|central files 1964-66", "name": "Central Files 1964–66", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|central files 1964-67", "name": "Central Files 1964–67", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|central files 1967-1969", "name": "Central Files 1967–1969", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|central files 1967-69", "name": "Central Files 1967–69", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|central files 1970-1973", "name": "Central Files 1970–1973", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|central files 1970-73", "name": "Central Files 1970–73", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|central files to july 1973", "name": "Central Files to July 1973", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|central files1970-73", "name": "Central Files1970-73", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|central foreign policy file", "name": "Central Foreign Policy File", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|decimal and subject-numeric indexed central file", "name": "Decimal and Subject-Numeric Indexed Central Files", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|decimal central file", "name": "Decimal Central Files", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|indexed central file", "name": "Indexed Central Files", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|national security file", "name": "National Security File", "repository": "Department of State"}
+AUTH {"id": "txt:department of state|subject-number indexed central file", "name": "Subject-Number Indexed Central Files", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|subject-numeric central file", "name": "Subject-Numeric Central Files", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|subject-numeric indexed central file", "name": "Subject-Numeric Indexed Central Files", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|subject-numeric indexed central files: through january 1963", "name": "Subject-Numeric Indexed Central Files", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|top secret subject-number indexed central files [25 boxes]", "name": "Top Secret Subject-Number Indexed Central Files [25 boxes]", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:department of state|white house central file", "name": "White House Central Files", "repository": "Department of State", "recordGroup": "59"}
+AUTH {"id": "txt:eisenhower library|presidential office file", "name": "President’s Office Files", "repository": "Eisenhower Library"}
+AUTH {"id": "txt:eisenhower library|records of dwight d. eisenhower as president", "name": "Records of Dwight D. Eisenhower as President, White House Central Files, 1953–1961.", "repository": "Eisenhower Library"}
+AUTH {"id": "txt:eisenhower library|white house central file", "name": "White House Central Files", "repository": "Eisenhower Library"}
+AUTH {"id": "txt:ford library|presidential country files for africa", "name": "Presidential Country Files for Africa, 1974–77", "repository": "Ford Library"}
+AUTH {"id": "txt:ford library|presidential country files for middle east and south asia", "name": "Presidential Country Files for Middle East and South Asia", "repository": "Ford Library"}
+AUTH {"id": "txt:ford library|presidential office file", "name": "President’s Office Files", "repository": "Ford Library"}
+AUTH {"id": "txt:ford library|white house central file", "name": "White House Central Files", "repository": "Ford Library"}
+AUTH {"id": "txt:johnson library|national security file", "name": "National Security File", "repository": "Johnson Library"}
+AUTH {"id": "txt:johnson library|white house central file", "name": "White House Central Files", "repository": "Johnson Library"}
+AUTH {"id": "txt:kennedy library|national security file", "name": "National Security Files", "repository": "Kennedy Library"}
+AUTH {"id": "txt:kennedy library|national security files (nsf)", "name": "National Security Files (NSF)", "repository": "Kennedy Library"}
+AUTH {"id": "txt:kennedy library|papers of president john f. kennedy", "name": "Papers of President John F. Kennedy , National Security Files", "repository": "Kennedy Library"}
+AUTH {"id": "txt:kennedy library|presidential office file", "name": "President’s Office Files", "repository": "Kennedy Library"}
+AUTH {"id": "txt:kennedy library|presidential office files: china", "name": "President’s Office Files: China, Korea, Outer Mongolia, Ryukyus", "repository": "Kennedy Library"}
+AUTH {"id": "txt:kennedy library|presidential office files: countrie", "name": "President’s Office Files: Countries", "repository": "Kennedy Library"}
+AUTH {"id": "txt:kennedy library|white house central file", "name": "White House Central Files", "repository": "Kennedy Library"}
+AUTH {"id": "txt:national archives|jidda embassy file", "name": "Jidda Embassy Files", "repository": "National Archives", "recordGroup": "84"}
+AUTH {"id": "txt:national archives|national security file", "name": "National Security Files", "repository": "National Archives"}
+AUTH {"id": "txt:national archives|subject-number indexed central file", "name": "Subject-Number Indexed Central Files", "repository": "National Archives", "recordGroup": "59"}
+AUTH {"id": "txt:national archives|white house central file", "name": "White House Central Files", "repository": "National Archives"}
+AUTH {"id": "txt:national archives|white house central files: presidential daily diary", "name": "White House Central Files: President’s Daily Diary", "repository": "National Archives"}
+AUTH {"id": "txt:nixon|national security file", "name": "National Security File", "repository": "Nixon"}
+AUTH {"id": "txt:nixon|presidential office file", "name": "President’s Office Files", "repository": "Nixon"}
+AUTH {"id": "txt:nixon|white house central file", "name": "White House Central Files", "repository": "Nixon"}
+AUTH {"id": "txt:truman library|papers of harry s. truman as president", "name": "Papers of Harry S. Truman as President, 1945–1953, from the Central Files of the White House.", "repository": "Truman Library"}
+AUTH {"id": "txt:washington national records center|assistant secretary of the treasury central files and volcker group file", "name": "Assistant Secretary of the Treasury Central Files and Volcker Group Files, 1969-1974", "repository": "Washington National Records Center", "recordGroup": "56"}
+AUTH {"id": "txt:washington national records center|assistant secretary of the treasury central files and world file", "name": "Assistant Secretary of the Treasury Central Files and World Files, 1959-1979", "repository": "Washington National Records Center", "recordGroup": "56"}
+AUTH {"id": "txt:|national security file", "name": "National Security Files"}
+AUTH {"id": "txt:|presidential office file", "name": "President’s Office Files"}
+AUTH {"id": "txt:|white house central file", "name": "White House Central Files"}
+usage volumes type <class 'list'> collections type <class 'list'>
+frus1947v07 usage: null
+collections sample: [{"k": 0, "n": [1], "v": [506]}, {"k": 1, "n": [1], "v": [506]}]
+collectionIds sample ['lot:00D239', 'lot:00D469', 'lot:00D471', 'lot:01D127', 'lot:02D360']

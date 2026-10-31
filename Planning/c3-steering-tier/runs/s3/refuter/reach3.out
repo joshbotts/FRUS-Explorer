@@ -1,0 +1,54 @@
+family MATCH (M4/M5 scope set)                                    3163 rows    0.0s
+family MATCH without grafter (top_bm25 / header runs)             3151 rows    0.0s
+header: query                                                        2 rows    0.0s
+payments phrase MATCH (M7, logged after the neighbour list)         28 rows    0.0s
+d155 targeted plural phrases (logged after the neighbour list)      19 rows    0.0s
+foreign corrupt practic* (M17)                                       4 rows    0.0s
+oecd AND (bribe OR briberi) (M17)                                   12 rows    0.0s
+anti corrupt* (M18)                                                 54 rows    0.0s
+church subcommittee/committee (M19)                                113 rows    0.0s
+control "Department of State" (M9)                               98970 rows    0.4s
+
+top_bm25 rows 80 | header hits 2 | share sample 40 | payments census 27
+frus1922v01/d841
+   returned by: ['family MATCH (M4/M5 scope set)', 'family MATCH without grafter (top_bm25 / header runs)']
+   printed sets: ['top_bm25 #14'] | anchor: True | surfaced in neighbour lists of: []
+frus1944v06/d292
+   returned by: ['family MATCH (M4/M5 scope set)', 'family MATCH without grafter (top_bm25 / header runs)']
+   printed sets: ['top_bm25 #11'] | anchor: False | surfaced in neighbour lists of: []
+frus1947v07/d583
+   returned by: ['family MATCH (M4/M5 scope set)', 'family MATCH without grafter (top_bm25 / header runs)']
+   printed sets: ['top_bm25 #17'] | anchor: True | surfaced in neighbour lists of: []
+frus1948v07/d43
+   returned by: ['family MATCH (M4/M5 scope set)', 'family MATCH without grafter (top_bm25 / header runs)']
+   printed sets: ['top_bm25 #28'] | anchor: False | surfaced in neighbour lists of: []
+frus1948v07/d471
+   returned by: ['family MATCH (M4/M5 scope set)', 'family MATCH without grafter (top_bm25 / header runs)']
+   printed sets: ['top_bm25 #9'] | anchor: False | surfaced in neighbour lists of: []
+frus1961-63v22/d244
+   returned by: ['family MATCH (M4/M5 scope set)', 'family MATCH without grafter (top_bm25 / header runs)', 'control "Department of State" (M9)']
+   printed sets: ['top_bm25 #2'] | anchor: False | surfaced in neighbour lists of: []
+frus1961-63v23/d356
+   returned by: ['family MATCH (M4/M5 scope set)', 'family MATCH without grafter (top_bm25 / header runs)', 'control "Department of State" (M9)']
+   printed sets: ['top_bm25 #10'] | anchor: False | surfaced in neighbour lists of: []
+frus1969-76ve09p2/d122
+   returned by: ['family MATCH (M4/M5 scope set)', 'family MATCH without grafter (top_bm25 / header runs)', 'control "Department of State" (M9)']
+   printed sets: ['top_bm25 #1'] | anchor: True | surfaced in neighbour lists of: []
+frus1969-76ve11p1/d159
+   returned by: ['family MATCH (M4/M5 scope set)', 'family MATCH without grafter (top_bm25 / header runs)']
+   printed sets: ['top_bm25 #6'] | anchor: True | surfaced in neighbour lists of: []
+frus1969-76ve15p2/d292
+   returned by: ['family MATCH (M4/M5 scope set)', 'family MATCH without grafter (top_bm25 / header runs)', 'church subcommittee/committee (M19)']
+   printed sets: ['top_bm25 #36', 'share_sample'] | anchor: False | surfaced in neighbour lists of: []
+frus1977-80v03/d248
+   returned by: ['family MATCH (M4/M5 scope set)', 'family MATCH without grafter (top_bm25 / header runs)', 'payments phrase MATCH (M7, logged after the neighbour list)', 'd155 targeted plural phrases (logged after the neighbour list)', 'foreign corrupt practic* (M17)']
+   printed sets: ['top_bm25 #41', 'payments census (logged after the neighbour list)'] | anchor: False | surfaced in neighbour lists of: []
+frus1969-76ve09p2/d155
+   returned by: ['payments phrase MATCH (M7, logged after the neighbour list)', 'd155 targeted plural phrases (logged after the neighbour list)', 'church subcommittee/committee (M19)']
+   printed sets: ['payments census (logged after the neighbour list)'] | anchor: False | surfaced in neighbour lists of: ['frus1969-76ve09p2/d122']
+
+cited in the family MATCH: 11 of 12 | not: [('frus1969-76ve09p2', 'd155')]
+M9: volumes with the control phrase 552 of 553 | missing: ['frus1919Parisv05'] | impossible string: (0,)
+M17 FCPA docs, volumes: 4 2 | M18 anti corrupt* docs: 54 | klepto vocab: (0,)
+M19 withheld: (580, 104)
+M8 decades: [('1930s', 40073, 121), ('1960s', 27654, 558), ('1970s', 22258, 435), ('1980s', 6038, 104), ('1990s', 177, 0)]

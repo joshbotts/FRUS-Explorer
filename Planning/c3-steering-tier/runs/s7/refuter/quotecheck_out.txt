@@ -1,0 +1,98 @@
+quoted passages in overview.md: 30
+ P01 |GVN Corruption 1967|
+ P02 |illicit payments|
+ P03 |questionable payments|
+ P04 |questionable|
+ P05 |question|
+ P06 |kleptocracy|
+ P07 |Department of State|
+ P08 |corruption|
+ P09 |corruption|
+ P10 |corrupt|
+ P11 |The alleged corruption of the arbitral commission which awarded those claims is Blanco’s pretext for the proposed bad faith of his government|
+ P12 |and have been met by vague promises, and still more vague allegations of corruption on the part of individuals|
+ P13 |serves to reaffirm earlier certainty of corrupt and inept practices, both political and economic|
+ P14 |fear that the Central Government contemplates bleeding their island to support the tottering and corrupt Nanking machine and I think their fears well founded|
+ P15 |many US reporters, when they come across any corruption or graft, play up the cases, making the US public believe that the entire Chinese Government is corrupt|
+ P16 |seriously endanger the whole U.S. position in Korea, and threaten to discredit, not only the aid program in Korea, but the Mutual Security program as a whole|
+ P17 |The underlying fact is that all hands agree the situation in Korea is not good|
+ P18 |Earlier in the day he had decided not to raise this subject with General Ky because he did not want to urge on Ky a step which might precipitate a coup|
+ P19 |There is no doubt in his mind that there is widespread disgust with corruption and that it shakes confidence in the government and in the integrity of the elections|
+ P20 |has become a key obstacle to pacification|
+ P21 |I do not think it would be wise for us to seek such control|
+ P22 |coming when Strauss was Defense Minister paved the way for the sale of the Starfighter to the FRG|
+ P23 |if the whole issue is kept unsolved with the names of the officials involved remaining in doubt, democracy in Japan may suffer a fatal blow|
+ P24 |terminate or severely curtail our arms sales and human rights efforts and repeal the foreign bribery and Arab boycott laws|
+ P25 |corruption|
+ P26 |corrupt|
+ P27 |corrupted|
+ P28 |corrupt|
+ P29 |established|
+ P30 |alleged|
+
+== overview document quotations, segment-strict against the exact cited pair
+ OK   frus1964-68v05/d258 offs=[247] |GVN Corruption 1967|
+ TERM (no document attributed) |illicit payments|
+ TERM (no document attributed) |questionable payments|
+ TERM (no document attributed) |questionable|
+ TERM (no document attributed) |question|
+ TERM (no document attributed) |kleptocracy|
+ TERM (no document attributed) |Department of State|
+ TERM (no document attributed) |corruption|
+ TERM (no document attributed) |corruption|
+ TERM (no document attributed) |corrupt|
+ TERM (no document attributed) |The alleged corruption of the arbitral commission which awarded those claims is Blanco’s pretext for the proposed bad faith of his government|
+ OK   frus1875v02/d393 offs=[875] |and have been met by vague promises, and still more vague allegations |
+ OK   frus1947v07/d582 offs=[273] |serves to reaffirm earlier certainty of corrupt and inept practices, b|
+ OK   frus1947v07/d582 offs=[1497] |fear that the Central Government contemplates bleeding their island to|
+ OK   frus1948v07/d43 offs=[639] |many US reporters, when they come across any corruption or graft, play|
+ OK   frus1961-63v22/d202 offs=[2639] |seriously endanger the whole U.S. position in Korea, and threaten to d|
+ OK   frus1961-63v22/d204 offs=[1888] |The underlying fact is that all hands agree the situation in Korea is |
+ OK   frus1964-68v04/d215 offs=[1112] |Earlier in the day he had decided not to raise this subject with Gener|
+ OK   frus1964-68v04/d215 offs=[1879] |There is no doubt in his mind that there is widespread disgust with co|
+ OK   frus1964-68v05/d258 offs=[1506] |has become a key obstacle to pacification|
+ OK   frus1964-68v05/d258 offs=[4503] |I do not think it would be wise for us to seek such control|
+ OK   frus1969-76ve15p2/d292 offs=[1250] |coming when Strauss was Defense Minister paved the way for the sale of|
+ OK   frus1969-76ve12/d218 offs=[1907] |if the whole issue is kept unsolved with the names of the officials in|
+ OK   frus1977-80v03/d152 offs=[2465] |terminate or severely curtail our arms sales and human rights efforts |
+ TERM (no document attributed) |corruption|
+ TERM (no document attributed) |corrupt|
+ TERM (no document attributed) |corrupted|
+ TERM (no document attributed) |corrupt|
+ TERM (no document attributed) |established|
+ TERM (no document attributed) |alleged|
+overview: 14 document quotations, 14 OK
+
+== collection excerpts
+ OK   frus1875v01/d199 offs=[777] |The alleged corruption of the arbitral commission which awarded those |
+ OK   frus1875v02/d393 offs=[875] |and have been met by vague promises, and still more vague allegations |
+ OK   frus1947v07/d582 offs=[241] |The information received in Shanghai serves to reaffirm earlier certai|
+ OK   frus1947v07/d582 offs=[1493] |They fear that the Central Government contemplates bleeding their isla|
+ OK   frus1948v07/d43 offs=[639] |many US reporters, when they come across any corruption or graft, play|
+ OK   frus1961-63v22/d202 offs=[2639] |seriously endanger the whole U.S. position in Korea, and threaten to d|
+ OK   frus1961-63v22/d204 offs=[1888] |The underlying fact is that all hands agree the situation in Korea is |
+ OK   frus1964-68v04/d215 offs=[1112] |Earlier in the day he had decided not to raise this subject with Gener|
+ OK   frus1964-68v04/d215 offs=[1879] |There is no doubt in his mind that there is widespread disgust with co|
+ OK   frus1964-68v05/d258 offs=[1431] |I agree that the level of corruption in Viet-Nam has reached a point w|
+ OK   frus1964-68v05/d258 offs=[4503] |I do not think it would be wise for us to seek such control.|
+ OK   frus1969-76ve15p2/d292 offs=[1238] |Such payments coming when Strauss was Defense Minister paved the way f|
+ OK   frus1969-76ve12/d218 offs=[1907] |if the whole issue is kept unsolved with the names of the officials in|
+ OK   frus1977-80v03/d152 offs=[2465] |terminate or severely curtail our arms sales and human rights efforts |
+collection: 14 excerpts, 14 OK
+
+== for each overview quotation, how many rows of the whole index hold segment 1 (FTS phrase on first 6 words)
+ frus1875v01/d199 phrase "The alleged corruption of the arbitral" -> 1 rows
+ frus1875v02/d393 phrase "and have been met by vague" -> 1 rows
+ frus1947v07/d582 phrase "serves to reaffirm earlier certainty of" -> 1 rows
+ frus1947v07/d582 phrase "fear that the Central Government contemplates" -> 1 rows
+ frus1948v07/d43 phrase "many US reporters when they come" -> 1 rows
+ frus1961-63v22/d202 phrase "seriously endanger the whole U S" -> 1 rows
+ frus1961-63v22/d204 phrase "The underlying fact is that all" -> 1 rows
+ frus1964-68v04/d215 phrase "Earlier in the day he had" -> 8 rows
+ frus1964-68v04/d215 phrase "There is no doubt in his" -> 10 rows
+ frus1964-68v05/d258 phrase "has become a key obstacle to" -> 1 rows
+ frus1964-68v05/d258 phrase "I do not think it would" -> 82 rows
+ frus1969-76ve15p2/d292 phrase "coming when Strauss was Defense Minister" -> 2 rows
+ frus1969-76ve12/d218 phrase "if the whole issue is kept" -> 1 rows
+ frus1977-80v03/d152 phrase "terminate or severely curtail our arms" -> 1 rows
+ frus1964-68v05/d258 phrase "GVN Corruption 1967" -> 1 rows

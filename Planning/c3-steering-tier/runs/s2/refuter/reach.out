@@ -1,0 +1,71 @@
+scope1 family                            MATCH corrupt OR bribe OR briberi OR graft OR kickback OR embezzl  -> 3036 docs
+scope1 corrupt                           MATCH corrupt                                                      -> 2175 docs
+scope1 bribe                             MATCH bribe OR briberi                                             -> 654 docs
+scope1 graft                             MATCH graft                                                        -> 363 docs
+scope1 embezzl                           MATCH embezzl                                                      -> 169 docs
+scope1 kickback                          MATCH kickback                                                     -> 18 docs
+scope1 POS                               MATCH "department of state"                                        -> 93824 docs
+header MATCH                             MATCH header:(corrupt OR bribe OR briberi OR graft OR kickback OR  -> 2 docs
+p1 china                                 MATCH corrupt OR graft                                             -> 250 docs
+p1 lockheed(stem trap)                   MATCH lockhe AND (bribe OR briberi OR payment OR scandal OR corrup -> 0 docs
+p1 fcpa                                  MATCH "corrupt practic" OR "question payment" OR "illicit payment" -> 104 docs
+p1 vietnam5860                           MATCH corrupt                                                      -> 63 docs
+p1 vietnam6468                           MATCH corrupt                                                      -> 103 docs
+p2 lockhe                                MATCH lockhe                                                       -> 0 docs
+p2 lockhe payoff                         MATCH lockhe AND (payoff OR scandal)                               -> 0 docs
+p2 question payments                     MATCH "question payment" AND (compani OR firm OR corpor)           -> 2 docs
+p2 korea                                 MATCH corrupt                                                      -> 57 docs
+p2 iran                                  MATCH corrupt OR bribe OR briberi                                  -> 70 docs
+p2 saudi                                 MATCH bribe OR briberi                                             -> 21 docs
+p2 centam                                MATCH corrupt                                                      -> 55 docs
+p2 zaire                                 MATCH corrupt                                                      -> 34 docs
+p3 full words                            MATCH corruption OR bribery OR bribe OR graft OR kickback OR embez -> 3033 docs
+p3 lockheed                              MATCH lockheed                                                     -> 190 docs
+p3/lockheed.py lockheed+                 MATCH lockheed AND (bribe OR bribery OR payments OR scandal OR cor -> 50 docs
+p3 questionable|fcpa                     MATCH "questionable payments" OR "foreign corrupt practices"       -> 13 docs
+census questionable payments             MATCH "questionable payments"                                      -> 9 docs
+census foreign corrupt practices         MATCH "foreign corrupt practices"                                  -> 4 docs
+census illicit payments                  MATCH "illicit payments"                                           -> 16 docs
+census corrupt practices                 MATCH "corrupt practices"                                          -> 81 docs
+p4 fcpa 1981-88                          MATCH "foreign corrupt practices"                                  -> 0 docs
+p4 corrupt practices 1981-88             MATCH "corrupt practices"                                          -> 1 docs
+p4 corrupt|bribe 1981-88                 MATCH corrupt OR bribe OR briberi                                  -> 59 docs
+p4 lockheed bernhard                     MATCH lockheed AND (bernhard OR netherlands OR dutch)              -> 13 docs
+p4 lockheed italy                        MATCH lockheed AND (italy OR italian)                              -> 20 docs
+p4 church+                               MATCH "church committee" AND (bribe OR bribery OR payments)        -> 3 docs
+p4 church                                MATCH "church committee"                                           -> 42 docs
+p4 anticorruption                        MATCH "anti corruption" OR anticorruption                          -> 55 docs
+p4 consular bribery                      MATCH (bribe OR bribery) AND (consul OR consular) AND (fee OR fees -> 27 docs
+p4 bribe                                 MATCH bribe OR bribery                                             -> 654 docs
+ff united states                         MATCH "united states"                                              -> 143184 docs
+d204 re-run (all terms)                  MATCH corrupt OR bribe OR briberi OR graft OR kickback OR embezzl  -> 3332 docs
+d204 control farley (pinned to the pair) MATCH farley                                                       -> 1 docs
+
+heading hits (heads.py / header MATCH): frus1936v05 ch50, frus1958-60v01 ch1 — documents under them:
+   structure_json sample: {"volumeId": "frus1958-60v01", "sections": [{"documentIds": [], "title": "Front Matter", "subsections": [{"divType": "preface", "documentIds": [], "leadsWithSubsections": false, "sectionId": "preface", "subsections": [], "title": "Preface"}, {"divType": "table-of-contents", "documentIds": [], "leadsWithSubsections": false, "sectionId": "toc", "subsections": [], "title": "Contents"}, {"divType": "sources", "documentIds": [], "leadsWithSubsections": false, "sectionId": "sources", "subsections": [], "title": "List of Sources"}, {"divType": "terms", "documentIds": [], "leadsWithSubsections": false, "sectionId": "terms", "subsections": [], "title": "List of Abbreviations and Symbols"}, {"divType"
+   documents under the frus1958-60v01 corruption chapter: 0 [] … includes d131: False d135: False
+
+=== per cited document ===
+frus1944v06/d148: in family_hits.json=True; returned by 6 discovery queries ['scope1 family', 'scope1 corrupt', 'scope1 graft', 'p1 china', 'p3 full words', 'd204 re-run (all terms)']; heading-chapter=False; pinned control=[]
+frus1946v10/d373: in family_hits.json=True; returned by 7 discovery queries ['scope1 family', 'scope1 corrupt', 'scope1 graft', 'p1 china', 'p3 full words', 'ff united states']…; heading-chapter=False; pinned control=[]
+frus1947v07/d908: in family_hits.json=True; returned by 7 discovery queries ['scope1 family', 'scope1 corrupt', 'scope1 graft', 'p1 china', 'p3 full words', 'ff united states']…; heading-chapter=False; pinned control=[]
+frus1948v07/d43: in family_hits.json=True; returned by 6 discovery queries ['scope1 family', 'scope1 corrupt', 'scope1 graft', 'p1 china', 'p3 full words', 'd204 re-run (all terms)']; heading-chapter=False; pinned control=[]
+frus1958-60v01/d131: in family_hits.json=True; returned by 8 discovery queries ['scope1 family', 'scope1 corrupt', 'scope1 POS', 'p1 fcpa', 'p1 vietnam5860', 'p3 full words']…; heading-chapter=False; pinned control=[]
+frus1958-60v01/d135: in family_hits.json=True; returned by 7 discovery queries ['scope1 family', 'scope1 corrupt', 'scope1 POS', 'p1 vietnam5860', 'p3 full words', 'ff united states']…; heading-chapter=False; pinned control=[]
+frus1964-68v05/d395: in family_hits.json=True; returned by 7 discovery queries ['scope1 family', 'scope1 corrupt', 'p1 vietnam6468', 'p3 full words', 'p4 anticorruption', 'ff united states']…; heading-chapter=False; pinned control=[]
+frus1961-63v22/d202: in family_hits.json=True; returned by 7 discovery queries ['scope1 family', 'scope1 corrupt', 'scope1 graft', 'scope1 POS', 'p2 korea', 'p3 full words']…; heading-chapter=False; pinned control=[]
+frus1955-57v13/d16: in family_hits.json=True; returned by 7 discovery queries ['scope1 family', 'scope1 bribe', 'scope1 POS', 'p2 saudi', 'p3 full words', 'p4 bribe']…; heading-chapter=False; pinned control=[]
+frus1958-60v12/d168: in family_hits.json=True; returned by 9 discovery queries ['scope1 family', 'scope1 bribe', 'scope1 POS', 'p2 iran', 'p2 saudi', 'p3 full words']…; heading-chapter=False; pinned control=[]
+frus1964-68v22/d79: in family_hits.json=True; returned by 8 discovery queries ['scope1 family', 'scope1 corrupt', 'scope1 bribe', 'p2 iran', 'p3 full words', 'p4 bribe']…; heading-chapter=False; pinned control=[]
+frus1969-76ve09p2/d152: in family_hits.json=True; returned by 9 discovery queries ['scope1 family', 'scope1 bribe', 'p3 full words', 'p3 lockheed', 'p3/lockheed.py lockheed+', 'p4 church+']…; heading-chapter=False; pinned control=[]
+frus1969-76ve09p2/d161: in family_hits.json=True; returned by 9 discovery queries ['scope1 family', 'scope1 bribe', 'scope1 POS', 'p3 full words', 'p3 lockheed', 'p3/lockheed.py lockheed+']…; heading-chapter=False; pinned control=[]
+frus1969-76ve15p2/d293: in family_hits.json=True; returned by 8 discovery queries ['scope1 family', 'scope1 bribe', 'p3 full words', 'p3 lockheed', 'p3/lockheed.py lockheed+', 'p4 lockheed bernhard']…; heading-chapter=False; pinned control=[]
+frus1969-76ve12/d218: in family_hits.json=True; returned by 8 discovery queries ['scope1 family', 'scope1 bribe', 'p3 full words', 'p3 lockheed', 'p3/lockheed.py lockheed+', 'p4 bribe']…; heading-chapter=False; pinned control=[]
+frus1969-76ve12/d219: in family_hits.json=True; returned by 10 discovery queries ['scope1 family', 'scope1 corrupt', 'scope1 POS', 'p1 fcpa', 'p3 full words', 'p3 lockheed']…; heading-chapter=False; pinned control=[]
+frus1977-80v03/d248: in family_hits.json=True; returned by 12 discovery queries ['scope1 family', 'scope1 corrupt', 'scope1 bribe', 'p1 fcpa', 'p3 full words', 'p3 questionable|fcpa']…; heading-chapter=False; pinned control=[]
+frus1977-80v03/d308: in family_hits.json=True; returned by 8 discovery queries ['scope1 family', 'scope1 corrupt', 'scope1 POS', 'p1 fcpa', 'p3 full words', 'census illicit payments']…; heading-chapter=False; pinned control=[]
+frus1961-63v22/d204: in family_hits.json=False; returned by 2 discovery queries ['scope1 POS', 'ff united states']; heading-chapter=False; pinned control=['d204 control farley (pinned to the pair)']
+
+strictly vector-reached (returned by no logged discovery query nor under a matching heading): []
+…of which quoted in the overview: []
+d204 literal family words: [] ; 'Farley' in text: True

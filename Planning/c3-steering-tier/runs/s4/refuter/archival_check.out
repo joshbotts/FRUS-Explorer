@@ -1,0 +1,130 @@
+collection volumes: 20 ['frus1894app1', 'frus1894app2', 'frus1922v01', 'frus1947v05', 'frus1947v07', 'frus1948v07', 'frus1949v08', 'frus1958-60v01', 'frus1961-63v20', 'frus1961-63v22', 'frus1964-68v04', 'frus1964-68v05', 'frus1969-76v08', 'frus1969-76ve09p2', 'frus1969-76ve11p1', 'frus1969-76ve12', 'frus1969-76ve15p2', 'frus1977-80v03', 'frus1977-80v23', 'frus1977-80v24']
+
+== document_sources rows ==
+frus1894app2/d172 | era=None repo=None rg=None lot=None series=None | 
+frus1894app2/d199 | era=None repo=None rg=None lot=None series=None | 
+frus1894app2/d316 | era=None repo=None rg=None lot=None series=None | 
+frus1894app1/d27 | era=None repo=None rg=None lot=None series=None | 
+frus1922v01/d852 | era=decimal repo=Department of State rg=59 lot=None series=837.513/54 | 837.513/54: Telegram
+frus1922v01/d864 | era=decimal repo=Department of State rg=59 lot=None series=837.00/2274 | 837.00/2274
+frus1922v01/d872 | era=decimal repo=Department of State rg=59 lot=None series=837.51/879 | 837.51/879
+frus1947v05/d23 | era=decimal repo=Department of State rg=59 lot=None series=868.00/2–2147 | 868.00/2–2147
+frus1961-63v22/d221 | era=structured repo=Kennedy Library rg=None lot=None series=National Security Files | Source: Kennedy Library, National Security Files, Countries Series, Korea, General, 4/1/61-5/25/61. Secret. A note by Johnson on the source 
+frus1947v07/d553 | era=decimal repo=Department of State rg=59 lot=None series=121.893/9–1947 | 121.893/9–1947
+frus1947v07/d570 | era=decimal repo=Department of State rg=59 lot=None series=121.893/9–1947 | 121.893/9–1947
+frus1947v07/d582 | era=decimal repo=Department of State rg=59 lot=None series=026 China/8–1747 | 026 China/8–1747: Telegram
+frus1948v07/d322 | era=decimal repo=Department of State rg=59 lot=None series=893.24/8–1648 | 893.24/8–1648: Telegram
+frus1949v08/d131 | era=decimal repo=Department of State rg=59 lot=None series=893.00/2–549 | 893.00/2–549
+frus1949v08/d576 | era=decimal repo=Department of State rg=59 lot=None series=893.001/8–2349 | 893.001/8–2349: Telegram
+frus1958-60v01/d63 | era=decimal repo=Department of State rg=59 lot=None series=751G.5 MSP /4–1159 | Source: Department of State, Central Files, 751G.5– MSP /4–1159. Secret. Repeated for information to Vientiane, Phnom Penh, Bangkok, and CIN
+frus1958-60v01/d131 | era=decimal repo=Department of State rg=59 lot=None series=751K.00/4–760 | Source: Department of State, Central Files, 751K.00/4–760. Secret; Limit Distribution. Sent also to CINCPAC for PolAd; repeated for informat
+frus1958-60v01/d185 | era=named_series repo=None rg=None lot=None series=Department of State, INR– NIE Files | Source: Department of State, INR– NIE Files. Secret. Also printed in Department of Defense, United States-Vietnam Relations, 1945–1967, Book
+frus1964-68v04/d145 | era=structured repo=Johnson Library rg=None lot=None series=National Security File | Source: Johnson Library, National Security File, Komer Files, Memos to the President, March-June 1966. Secret.
+frus1964-68v05/d185 | era=structured repo=Johnson Library rg=None lot=None series=National Security File | Source: Johnson Library, National Security File, Country File, Vietnam, Vol. LXXII. Secret. Received at the LBJ Ranch at 11:12 a.m. The nota
+frus1964-68v05/d258 | era=unrecognized repo=None rg=None lot=None series=None | Source: Center for Military History, Dep CORDS / MACV Files, GVN Corruption 1967. Secret; Noforn.
+frus1964-68v05/d395 | era=structured repo=Johnson Library rg=None lot=None series=National Security File | Source: Johnson Library, National Security File, Country File, Vietnam, 1 C(2), Revolutionary Development Cadre. Top Secret.
+frus1969-76v08/d191 | era=structured repo=Library of Congress rg=None lot=None series=Manuscript Division | Source: Library of Congress, Manuscript Division, Kissinger Papers, Box TS 80, National Security Council, Committees and Panels, Washington 
+frus1961-63v20/d422 | era=subject_numeric repo=Department of State rg=59 lot=None series=AID (US) 8 The Congo | Source: Department of State, Central Files, AID (US) 8 The Congo. Secret. Drafted by Beaudry and approved in S on June 5. The conversation w
+frus1977-80v24/d14 | era=structured repo=Carter Library rg=None lot=None series=National Security Affairs | Source: Carter Library, National Security Affairs, Brzezinski Material, Subject File, Box 18, Evening Reports (State), 5/77. Secret. Carter 
+frus1977-80v23/d257 | era=structured repo=Carter Library rg=None lot=None series=National Security Affairs | Source: Carter Library, National Security Affairs, Staff Material, North/South, Pastor, Country, Box 24, Haiti, 1/77–12/79. Confidential. Dr
+frus1977-80v23/d264 | era=cfpf repo=Department of State rg=59 lot=None series=CFPF D800368–0097 | Source: National Archives, RG 59, Central Foreign Policy File, D800368–0097. Confidential; Immediate. Drafted by Davis; cleared by Warne; ap
+frus1969-76ve11p1/d159 | era=cfpf repo=Department of State rg=59 lot=None series=CFPF P760175–0717 | Source: National Archives, RG 59, Central Foreign Policy File, P760175–0717. Confidential; Eyes Only. Drafted by Rogers on March 28. In tele
+frus1969-76ve09p2/d135 | era=structured repo=National Archives rg=84 lot=79F80 series=Jidda Embassy Files | Source: National Archives, RG 84, Jidda Embassy Files, Lot 79F80, DEF 12–5.13, Northrop. Confidential; Exdis. Drafted by Butcher; cleared by
+frus1969-76ve09p2/d161 | era=structured repo=National Archives rg=84 lot=None series=Jidda Embassy Files:, Box 30 | Source: Ford Library, National Security Adviser, Presidential Country Files for the Middle East and South Asia, Box 30, Saudi Arabia—State D
+frus1969-76ve15p2/d292 | era=structured repo=National Archives rg=59 lot=None series=Records of Secretary of State Henry Kissinger, Box 24 | Source: National Archives, RG 59, Records of Secretary of State Henry Kissinger, Entry 5403, Box 24, Classified “C” Material. Secret; Eyes O
+frus1969-76ve15p2/d293 | era=structured repo=National Archives rg=59 lot=None series=Records of Secretary of State Henry Kissinger, Box 24 | Source: National Archives, RG 59, Records of Secretary of State Henry Kissinger, Entry 5403, Box 24, Classified “C” Material. Secret; Eyes O
+frus1969-76ve12/d218 | era=structured repo=Ford Library rg=None lot=None series=National Security Adviser | Source: Ford Library, National Security Adviser, Presidential Correspondence with Foreign Leaders, Box 2, Japan, Prime Minister Miki (2). No
+frus1969-76ve12/d224 | era=cfpf repo=Department of State rg=59 lot=None series=CFPF | Source: National Archives, RG 59, Central Foreign Policy Files, P –820117 – 2339. Secret; Nodis. Drafted by Sherman and approved by Collums.
+frus1977-80v03/d230 | era=structured repo=Carter Library rg=None lot=None series=National Security Affairs | Source: Carter Library, National Security Affairs, Brzezinski Material, Brzezinski Office File, Subject Chron File, Box 92, Export Controls:
+TALLY: {'no row': 4, 'RG59 decimal': 12, 'presidential library: Kennedy': 1, 'INR-NIE': 1, 'presidential library: Johnson': 3, 'CMH': 1, 'LoC Kissinger Papers': 1, 'RG59 subject-numeric': 1, 'presidential library: Carter': 3, 'RG59 central foreign policy file': 3, 'RG84 Jidda': 1, 'presidential library: Ford': 2, 'RG59 Kissinger records': 2} sum 35
+
+== central-files-index keys: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+series-facts keys: ['findingAidTypes', 'generated', 'headings', 'legend', 'referenceUnits', 'restrictions', 'schemaVersion', 'statuses', 'useRestrictions'] byNaId rows: 698
+91D414 | title: Records of Henry Kissinger | rg 59 | naId 2131131 | entry ['A1 5403'] | facts: {'creator': 'Department of State. Office of the Secretary.', 'extent': '11 linear feet, 5 linear inches', 'years': (1973, 1977), 'access': 'Restricted - Partly', 'restr': ['FOIA (b)(1) National Security'], 'title': None}
+79F80 NOT in central-files lotFiles
+81D113 | title: Records of Deputy Secretary Warren Christopher | rg 59 | naId 1487627 | entry ['P 14'] | facts: {'creator': 'Department of State. Office of the Deputy Secretary of State.', 'extent': '14 linear feet', 'years': (1975, 1981), 'access': 'Restricted - Partly', 'restr': ['FOIA (b)(1) National Security'], 'title': None}
+85D240 | title: Subject Files | rg 59 | naId 2131132 | entry ['A1 5408'] | facts: {'creator': 'Department of State. Bureau of East Asian and Pacific Affairs. Office of the Assistant Secretary.', 'extent': '14 linear feet, 9 linear inches', 'years': (1961, 1974), 'access': 'Unrestricted', 'restr': [], 'title': None}
+65D330 | title: The Secretary's and the Under Secretary's Memorandums of Conversation | rg 59 | naId 602231 | entry ['A1 1566'] | facts: {'creator': 'Department of State. Executive Secretariat.', 'extent': '13 linear feet, 2 linear inches', 'years': (1953, 1964), 'access': 'Unrestricted', 'restr': [], 'title': None}
+80D177 | title: Subject Files | rg 59 | naId 111879278 | entry ['P 534'] | facts: {'creator': 'Department of State. Bureau of Human Rights and Humanitarian Affairs.', 'extent': '16 linear feet, 7 linear inches', 'years': (1976, 1979), 'access': 'Restricted - Partly', 'restr': ['FOIA (b)(1) National Security', 'FOIA (b)(3) Statute', 'FOIA (b)(6) Personal Information'], 'title': None}
+numericalFile: {"microfilm": "M862", "rolls": [{"caseEnd": 27, "caseStart": 1, "catalogURL": "https://catalog.archives.gov/id/19086784", "naId": "19086784", "title": "Numerical File: 1-27/200"}, {"caseEnd": 34, "caseStart": 27, "catalogURL": "https://catalog.archives.gov/id/19087957", "naId": "19087957", "title": "Numerical File: 27/201-34/39"}, {"caseEnd": 39, "caseStart": 34, "catalogURL": "https://catalog.arc
+numerical seriesNaId facts: None
+countrySeries type: list len 12
+  HAWAII @ countrySeries[0].rolls[286] : {"catalogURL": "https://catalog.archives.gov/id/189254733", "endISO": "1850-01-11", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189254733", "startISO": "1850-05-03", "title": "May 3, 1S45-Jan. 11, 1850"}
+  HAWAII @ countrySeries[0].rolls[324] : {"catalogURL": "https://catalog.archives.gov/id/189256873", "endISO": "1854-01-01", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189256873", "startISO": "1853-07-22", "title": "July 22, 1653-Dec, 29, 1854"}
+  HAWAII @ countrySeries[0].rolls[327] : {"catalogURL": "https://catalog.archives.gov/id/189256136", "endISO": "1853-12-27", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189256136", "startISO": "1853-08-30", "title": "Aug. 30, 1S49-Dec. 27, 1853"}
+  HAWAII @ countrySeries[0].rolls[340] : {"catalogURL": "https://catalog.archives.gov/id/189257319", "endISO": "1855-01-01", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189257319", "startISO": "1855-01-08", "title": "Jan. 8-0ec. 10, 1655"}
+  HAWAII @ countrySeries[0].rolls[377] : {"catalogURL": "https://catalog.archives.gov/id/189257951", "endISO": "1858-12-06", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189257951", "startISO": "1858-01-01", "title": "Jan. 1-Dec. 6, 1658"}
+  HAWAII @ countrySeries[0].rolls[383] : {"catalogURL": "https://catalog.archives.gov/id/189258842", "endISO": "1881-06-17", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189258842", "startISO": "1858-03-05", "title": "Mar. 5, 1858-June 17, 1881"}
+  HAWAII @ countrySeries[0].rolls[386] : {"catalogURL": "https://catalog.archives.gov/id/189258482", "endISO": "1858-05-25", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189258482", "startISO": "1858-06-05", "title": "June 5, 1858-May 25, 1858"}
+  HAWAII @ countrySeries[0].rolls[464] : {"catalogURL": "https://catalog.archives.gov/id/189259380", "endISO": "1863-12-31", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189259380", "startISO": "1863-03-30", "title": "Mar. 30, 1!!81-Dec. 31, 1863"}
+  HAWAII @ countrySeries[0].rolls[486] : {"catalogURL": "https://catalog.archives.gov/id/189259796", "endISO": "1867-06-27", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189259796", "startISO": "1864-01-15", "title": "Jan. 15, 1864-June 27, 1867"}
+  HAWAII @ countrySeries[0].rolls[540] : {"catalogURL": "https://catalog.archives.gov/id/189260279", "endISO": "1869-12-30", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189260279", "startISO": "1867-07-05", "title": "July 5, 1867-Dec. 30, 1869"}
+  HAWAII @ countrySeries[0].rolls[557] : {"catalogURL": "https://catalog.archives.gov/id/189266536", "endISO": "1890-08-19", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189266536", "startISO": "1868-05-01", "title": "May 1, 1868-Aug. 19, 1890"}
+  HAWAII @ countrySeries[0].rolls[592] : {"catalogURL": "https://catalog.archives.gov/id/189260677", "endISO": "1870-05-29", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189260677", "startISO": "1870-01-01", "title": "Jan. 1, 1870-May 29. 1871"}
+  HAWAII @ countrySeries[0].rolls[632] : {"catalogURL": "https://catalog.archives.gov/id/189261166", "endISO": "1872-10-14", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189261166", "startISO": "1871-06-06", "title": "June 6, 1871-Oct. 14, 1872."}
+  HAWAII @ countrySeries[0].rolls[671] : {"catalogURL": "https://catalog.archives.gov/id/189261707", "endISO": "1873-12-31", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189261707", "startISO": "1872-11-01", "title": "Nov. 1, 1872-Dec. 31, 1873"}
+  HAWAII @ countrySeries[0].rolls[711] : {"catalogURL": "https://catalog.archives.gov/id/189262217", "endISO": "1874-12-31", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189262217", "startISO": "1874-01-12", "title": "Jan. 12-Dec. 31, 1874"}
+  HAWAII @ countrySeries[0].rolls[741] : {"catalogURL": "https://catalog.archives.gov/id/189262704", "endISO": "1875-03-11", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189262704", "startISO": "1875-01-12", "title": "Jan. 12, 1875-Mar. 11. 1878"}
+  HAWAII @ countrySeries[0].rolls[835] : {"catalogURL": "https://catalog.archives.gov/id/189263253", "endISO": "1879-06-30", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189263253", "startISO": "1878-03-18", "title": "Mar. 18, 1878-June 30, 1879"}
+  HAWAII @ countrySeries[0].rolls[860] : {"catalogURL": "https://catalog.archives.gov/id/189263839", "endISO": "1879-01-21", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189263839", "startISO": "1879-07-07", "title": "July 7, 1879-Jan. 21. 1881"}
+  HAWAII @ countrySeries[0].rolls[937] : {"catalogURL": "https://catalog.archives.gov/id/189264291", "endISO": "1882-11-18", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189264291", "startISO": "1882-02-14", "title": "Feb. 14. 1881-Nov. 18, 1882"}
+  HAWAII @ countrySeries[0].rolls[1016] : {"catalogURL": "https://catalog.archives.gov/id/189265365", "endISO": "1886-12-27", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189265365", "startISO": "1884-07-05", "title": "July 5, 1884-Dec. 27, 1886"}
+  HAWAII @ countrySeries[0].rolls[1098] : {"catalogURL": "https://catalog.archives.gov/id/189266020", "endISO": "1888-04-07", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189266020", "startISO": "1887-01-13", "title": "Jan. 13, 1887-Apr. 7, 1888"}
+  HAWAII @ countrySeries[0].rolls[1191] : {"catalogURL": "https://catalog.archives.gov/id/189267012", "endISO": "1893-07-31", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189267012", "startISO": "1890-09-04", "title": "Sept. 4, 1690--July 31, 1893"}
+  HAWAII @ countrySeries[0].rolls[1306] : {"catalogURL": "https://catalog.archives.gov/id/189267642", "endISO": "1894-06-23", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189267642", "startISO": "1893-09-19", "title": "Sept. 19, 1893-June 23, 1894"}
+  HAWAII @ countrySeries[0].rolls[1326] : {"catalogURL": "https://catalog.archives.gov/id/189268148", "endISO": "1895-04-28", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189268148", "startISO": "1894-07-01", "title": "July 1, 1894-Apr. 28, 1895"}
+  HAWAII @ countrySeries[0].rolls[1357] : {"catalogURL": "https://catalog.archives.gov/id/189269088", "endISO": "1895-06-02", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189269088", "startISO": "1895-05-02", "title": "May 2, 1895-June 2. 1897"}
+  HAWAII @ countrySeries[0].rolls[1442] : {"catalogURL": "https://catalog.archives.gov/id/189270506", "endISO": "1898-04-30", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189270506", "startISO": "1897-11-06", "title": "Nov. 6, 1897-Apr. 30, 1898"}
+  HAWAII @ countrySeries[0].rolls[1459] : {"catalogURL": "https://catalog.archives.gov/id/189271120", "endISO": "1898-12-29", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189271120", "startISO": "1898-05-02", "title": "May 2-Dec. 29, 1898"}
+  HAWAII @ countrySeries[0].rolls[1511] : {"catalogURL": "https://catalog.archives.gov/id/189272386", "endISO": "1899-02-28", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189272386", "startISO": "1899-09-01", "title": "Sept. 1, 1899-Feb. 28. 1900"}
+  HAWAII @ countrySeries[0].rolls[1526] : {"catalogURL": "https://catalog.archives.gov/id/189273085", "endISO": "1900-08-21", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189273085", "startISO": "1900-03-02", "title": "Mar. 2-Aug. 21, 1900"}
+  HAWAII @ countrySeries[0].rolls[1812] : {"catalogURL": "https://catalog.archives.gov/id/189271678", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189271678", "title": "Jan. 8-Aug. 31. 1899"}
+  HAWAII @ countrySeries[0].rolls[1813] : {"catalogURL": "https://catalog.archives.gov/id/189269830", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189269830", "title": "June 17-Oct. 30. 1897"}
+  HAWAII @ countrySeries[0].rolls[1814] : {"catalogURL": "https://catalog.archives.gov/id/189264825", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189264825", "title": "Dec. 10, 1BB2-June 30, 18S4"}
+  HAWAII @ countrySeries[0].rolls[1815] : {"catalogURL": "https://catalog.archives.gov/id/189255619", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189255619", "title": "June 6, 1S45-June 20, 1S46"}
+  HAWAII @ countrySeries[0].rolls[1816] : {"catalogURL": "https://catalog.archives.gov/id/189253935", "fileUnitNaId": "177380751", "fileUnitTitle": "Despatches from U.S. Ministers to Hawaii, 1843-1900", "geoKeys": ["hawaii"], "naId": "189253935", "title": "May 3, 1S43-May 21, 1S45"}
+series-facts rows: 698 with y0 < 1940: 11 ratio 1 in 63.5
+
+== presidential-library-catalog keys: ['generated', 'schemaVersion', 'source'] {'libraries': 11}
+567979 NOT FOUND | 
+1164 NOT FOUND | 
+560131 NOT FOUND | 
+catalog mentions 'access': True
+
+== external-citation-index: volumes list size 441 first: frus1911 | absent collection volumes: ['frus1894app1', 'frus1894app2', 'frus1969-76ve09p2', 'frus1969-76ve11p1', 'frus1969-76ve12', 'frus1969-76ve15p2'] present: 14
+targets: 115 refs: 1218
+  393 txt:carter library|national security affair National Security Affairs | Carter Library
+  152 txt:johnson library|national security file National Security File | Johnson Library
+  75 txt:kennedy library|national security file National Security Files | Kennedy Library
+  55 txt:nixon|nsc file NSC Files | Nixon
+  49 txt:carter library|presidential material Presidential Materials | Carter Library
+  32 lot:81D113 D Files: Lot 81D113 (Entry P–14) | Department of State
+  27 txt:johnson library|presidential daily diary President’s Daily Diary | Johnson Library
+  24 txt:carter library|national security council National Security Council | Carter Library
+  21 txt:carter library|staff office file Staff Office Files | Carter Library
+  19 lot:85D240 Bundy Files: Lot 85 D 240 | Department of State
+  18 txt:kennedy library|presidential office file President’s Office Files | Kennedy Library
+  17 lot:65D330 Secretary’s Memoranda of Conversation: Lot 65 D 330 | Department of State
+ lot 81D113 refs: [('lot:81D113', 32)]
+ lot 85D240 refs: [('lot:85D240', 19)]
+ lot 65D330 refs: [('lot:65D330', 17)]
+ lot 80D177 refs: [('lot:80D177', 10)]
+volume list begins: ['frus1911', 'frus1912', 'frus1913'] | earliest by series year: frus1911
+
+== decimal classes among the cited rows ==
+  frus1922v01/d852 class=837.513 era=decimal
+  frus1922v01/d864 class=837.00 era=decimal
+  frus1922v01/d872 class=837.51 era=decimal
+  frus1947v05/d23 class=868.00 era=decimal
+  frus1947v07/d553 class=121.893 era=decimal
+  frus1947v07/d570 class=121.893 era=decimal
+  frus1947v07/d582 class=None era=decimal
+  frus1948v07/d322 class=893.24 era=decimal
+  frus1949v08/d131 class=893.00 era=decimal
+  frus1949v08/d576 class=893.001 era=decimal
+  frus1958-60v01/d63 class=751G.5-MSP era=decimal
+  frus1958-60v01/d131 class=751K.00 era=decimal
+  frus1961-63v20/d422 class=AID (US) 8 THE CONGO era=subject_numeric
+  frus1977-80v23/d264 class=None era=cfpf
+  frus1969-76ve11p1/d159 class=None era=cfpf
+  frus1969-76ve12/d224 class=None era=cfpf

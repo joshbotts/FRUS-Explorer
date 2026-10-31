@@ -1,0 +1,30 @@
+frus1875v01/d199: substantive=4 ['corrupt* OR briberi OR bribe* OR graft OR embezzl*', 'corrupt* OR briberi OR bribe*', 'corrupt*', 'venezuela* AND commission AND (corrupt* OR fraud*)'] | controls=[]
+frus1875v02/d393: substantive=4 ['corrupt* OR briberi OR bribe* OR graft OR embezzl*', 'corrupt* OR briberi OR bribe*', 'corrupt*', 'venezuela* AND commission AND (corrupt* OR fraud*)'] | controls=['"department of state"']
+frus1947v07/d582: substantive=3 ['corrupt* OR briberi OR bribe* OR graft OR embezzl*', 'corrupt* OR briberi OR bribe*', 'corrupt*'] | controls=['telegram']
+frus1948v07/d43: substantive=4 ['corrupt* OR briberi OR bribe* OR graft OR embezzl*', 'corrupt* OR briberi OR bribe*', 'corrupt*', 'graft'] | controls=['telegram']
+frus1961-63v22/d202: substantive=4 ['corrupt* OR briberi OR bribe* OR graft OR embezzl*', 'corrupt* OR briberi OR bribe*', 'corrupt*', 'graft'] | controls=['"department of state"']
+frus1961-63v22/d204: substantive=0 [] | controls=['"department of state"']
+frus1964-68v04/d215: substantive=3 ['corrupt* OR briberi OR bribe* OR graft OR embezzl*', 'corrupt* OR briberi OR bribe*', 'corrupt*'] | controls=['"department of state"', 'telegram']
+frus1964-68v05/d258: substantive=3 ['corrupt* OR briberi OR bribe* OR graft OR embezzl*', 'corrupt* OR briberi OR bribe*', 'corrupt*'] | controls=[]
+frus1969-76ve12/d218: substantive=5 ['corrupt* OR briberi OR bribe* OR graft OR embezzl*', 'corrupt* OR briberi OR bribe*', 'briberi OR bribe*', 'lockheed', 'lockheed AND (briberi OR bribe* OR payment* OR scandal*)'] | controls=[]
+frus1969-76ve15p2/d292: substantive=5 ['corrupt* OR briberi OR bribe* OR graft OR embezzl*', 'corrupt* OR briberi OR bribe*', 'briberi OR bribe*', 'lockheed', 'lockheed AND (briberi OR bribe* OR payment* OR scandal*)'] | controls=[]
+frus1977-80v03/d152: substantive=5 ['corrupt* OR briberi OR bribe* OR graft OR embezzl*', 'corrupt* OR briberi OR bribe*', 'corrupt*', 'briberi OR bribe*', '"foreign corrupt practices"'] | controls=[]
+
+In set h (corrupt* OR briberi OR bribe*, non-apparatus, no Ed2):
+  frus1875v01 d199 in h
+  frus1875v02 d393 in h
+  frus1947v07 d582 in h
+  frus1948v07 d43 in h
+  frus1961-63v22 d202 in h
+  frus1961-63v22 d204 NOT in h
+  frus1964-68v04 d215 in h
+  frus1964-68v05 d258 in h
+  frus1969-76ve12 d218 in h
+  frus1969-76ve15p2 d292 in h
+  frus1977-80v03 d152 in h
+
+d204 regex corrupt|brib|graft|embezzl: []
+d204 header: 204. Memorandum From the President’s Deputy Special Assistant for National Security Affairs (Rostow) to President Kennedy
+d204 mentions Farley?: True
+
+bm25 corrupt* within frus1961-63v22 LIMIT 8 (log line 256): [('frus1961-63v22/d252', -8.5), ('frus1961-63v22/d202', -8.0), ('frus1961-63v22/d264', -7.0), ('frus1961-63v22/d249', -6.9), ('frus1961-63v22/d221', -6.7), ('frus1961-63v22/d235', -6.6), ('frus1961-63v22/d283', -6.6), ('frus1961-63v22/d297', -6.5)]
