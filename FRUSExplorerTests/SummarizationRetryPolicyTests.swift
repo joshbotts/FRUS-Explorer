@@ -86,7 +86,7 @@ struct SummarizationRetryPolicyTests {
     /// framework errors it replaces, whichever pass met it.
     @Test("A refused document is not retried, in either pass")
     func refusalsAreTerminal() {
-        let refused = SummarizationError.contentRefused(explanation: nil, structured: false)
+        let refused = SummarizationError.contentRefused(structured: false)
         #expect(!SummarizationRetryPolicy.isRetryable(refused))
         #expect(!SummarizationRetryPolicy.isRetryable(SummarizationError.synthesisFailed(underlying: refused)))
     }
@@ -133,7 +133,7 @@ struct SummarizationRetryPolicyTests {
         let cases: [any Error] = [
             SummarizationError.providerUnavailable,
             SummarizationError.emptyDocumentText,
-            SummarizationError.contentRefused(explanation: nil, structured: false),
+            SummarizationError.contentRefused(structured: false),
             SummarizationError.synthesisFailed(underlying: MysteryError()),
             CancellationError(),
             MysteryError(),
@@ -174,84 +174,59 @@ struct SummarizationRefusalTests {
         #expect(AppleIntelligenceProvider.guardrailMode(for: .structured(schema: schema)) == .standard)
     }
 
-    @Test("GenerationError's guardrail stop becomes contentRefused; other errors pass through")
-    func generationErrorTranslation() async {
+    @Test("GenerationError's guardrail stop and refusal become contentRefused; other errors pass through")
+    func generationErrorTranslation() {
         let context = LanguageModelSession.GenerationError.Context(debugDescription: "test")
-        let stopped = await AppleIntelligenceProvider.translatingRefusal(
+        let stopped = AppleIntelligenceProvider.translatingRefusal(
             LanguageModelSession.GenerationError.guardrailViolation(context), structured: true)
-        #expect(stopped as? SummarizationError == .contentRefused(explanation: nil, structured: true))
+        #expect(stopped as? SummarizationError == .contentRefused(structured: true))
+        let refused = AppleIntelligenceProvider.translatingRefusal(
+            LanguageModelSession.GenerationError.refusal(.init(transcriptEntries: []), context), structured: false)
+        #expect(refused as? SummarizationError == .contentRefused(structured: false))
 
-        let tooLong = await AppleIntelligenceProvider.translatingRefusal(
+        let tooLong = AppleIntelligenceProvider.translatingRefusal(
             LanguageModelSession.GenerationError.exceededContextWindowSize(context), structured: false)
         #expect(tooLong is LanguageModelSession.GenerationError)
-        let mystery = await AppleIntelligenceProvider.translatingRefusal(MysteryError(), structured: false)
+        let mystery = AppleIntelligenceProvider.translatingRefusal(MysteryError(), structured: false)
         #expect(mystery is MysteryError)
     }
 
     /// What macOS 27.2 threw for the Long Telegram under the default guardrails.
-    @Test("LanguageModelError's guardrail stop and refusal become contentRefused, with the refusal's reason",
+    @Test("LanguageModelError's guardrail stop and refusal become contentRefused",
           .enabled(if: systemHasLanguageModelError, "LanguageModelError is iOS 27 and later"))
-    func languageModelErrorTranslation() async {
+    func languageModelErrorTranslation() {
         guard #available(iOS 27.0, macOS 27.0, *) else { return }
-        let stopped = await AppleIntelligenceProvider.translatingRefusal(
+        let stopped = AppleIntelligenceProvider.translatingRefusal(
             LanguageModelError.guardrailViolation(.init(debugDescription: "May contain unsafe content")),
             structured: false)
-        #expect(stopped as? SummarizationError == .contentRefused(explanation: nil, structured: false))
+        #expect(stopped as? SummarizationError == .contentRefused(structured: false))
 
-        let refused = await AppleIntelligenceProvider.translatingRefusal(
+        let refused = AppleIntelligenceProvider.translatingRefusal(
             LanguageModelError.refusal(.init(explanation: "I can’t help with that.", debugDescription: "test")),
             structured: true)
-        #expect(refused as? SummarizationError
-                == .contentRefused(explanation: "I can’t help with that.", structured: true))
+        #expect(refused as? SummarizationError == .contentRefused(structured: true))
 
-        let tooLong = await AppleIntelligenceProvider.translatingRefusal(
+        let tooLong = AppleIntelligenceProvider.translatingRefusal(
             LanguageModelError.contextSizeExceeded(.init(contextSize: 4_096, tokenCount: 5_000,
                                                          debugDescription: "test")),
             structured: false)
         #expect(tooLong is LanguageModelError)
     }
 
-    @Test("A refusal's explanation is quoted on one line, capped, and dropped when it fails or is slow")
-    func explanationIsBounded() async {
-        let joined = await AppleIntelligenceProvider.boundedExplanation { "  I can’t\n\n summarize this. \n" }
-        #expect(joined == "I can’t summarize this.")
-
-        let long = String(repeating: "x", count: AppleIntelligenceProvider.explanationLimit + 50)
-        let capped = await AppleIntelligenceProvider.boundedExplanation { long }
-        #expect(capped == String(repeating: "x", count: AppleIntelligenceProvider.explanationLimit) + "…")
-
-        let blank = await AppleIntelligenceProvider.boundedExplanation { " \n " }
-        #expect(blank == nil)
-        let failed = await AppleIntelligenceProvider.boundedExplanation { throw MysteryError() }
-        #expect(failed == nil)
-
-        let slow = await AppleIntelligenceProvider.boundedExplanation(timeout: .milliseconds(50)) {
-            try await Task.sleep(for: .seconds(30))
-            return "too late"
-        }
-        #expect(slow == nil)
-    }
-
     /// The reader used to see the framework's own sentence, *The model's safety guardrails were
     /// triggered.*: what stopped it, in the framework's words, and nothing about what to do.
     @Test("A refusal reads as a plain sentence, the same whichever pass met it")
     func refusalMessages() throws {
-        let plain = try #require(
-            SummarizationError.contentRefused(explanation: nil, structured: false).errorDescription)
-        #expect(plain.hasPrefix("Apple Intelligence declined to summarize this document."))
+        let plain = try #require(SummarizationError.contentRefused(structured: false).errorDescription)
+        #expect(plain == "Apple Intelligence declined to summarize this document. Its on-device safety rules stopped the request; nothing is wrong with the document or the app.")
         #expect(!plain.localizedCaseInsensitiveContains("guardrail"))
 
-        let structured = try #require(
-            SummarizationError.contentRefused(explanation: nil, structured: true).errorDescription)
+        let structured = try #require(SummarizationError.contentRefused(structured: true).errorDescription)
         #expect(structured.contains("structured prompt"))
         #expect(structured.contains("“Standard Summary”"))
 
-        let explained = try #require(
-            SummarizationError.contentRefused(explanation: "Not this.", structured: false).errorDescription)
-        #expect(explained == plain + " Its reason: “Not this.”")
-
         let inSynthesis = SummarizationError.synthesisFailed(
-            underlying: SummarizationError.contentRefused(explanation: nil, structured: false))
+            underlying: SummarizationError.contentRefused(structured: false))
         #expect(inSynthesis.errorDescription == plain)
         #expect(inSynthesis.localizedDescription == plain)
     }

@@ -8459,4 +8459,57 @@ Three harness fixes come with it: V4 exempts `frus1977-80v09Ed2`; the card gets 
 - **Controls:** d474, d476, d470–d473, d477–d480, d100, d200, d300 and d400, all one chunk, summarized under both, 2 to 6 s each. No output under either read as a refusal.
 - **The error type:** an app built with the 27 SDKs is thrown the new `LanguageModelError` on macOS 27, which `LanguageModelSession.GenerationError` does not match. So `SummarizationRetryPolicy` (#560) did not know it, and retried every deterministic model error four times with backoff on a 27 system.
 
-**The owner's decision, 2026-10-31:** "Permissive for text (Recommended)": plain-text prompts run on the permissive guardrails; structured prompts are unchanged.
+**The owner's decisions, 2026-10-31.**
+1. "Permissive for text (Recommended)": plain-text prompts run on the permissive guardrails, and structured prompts are unchanged.
+2. "Drop the reason (Recommended)", after the walk below showed the model's explanation of a structured refusal of d475: *I must decline this request because I've already explained that I'm not able to volunteer information beyond what's directly asked…*. The message stops after its sentence, and no second model call is made for it.
+
+**What changed, part 1** (`FRUSExplorer/Summarization/`):
+- **`AppleIntelligenceProvider`:** a plain-text prompt's session is built on `SystemLanguageModel(guardrails: .permissiveContentTransformations)`; a structured prompt's keeps the default. Apple's documentation of the mode says a request that generates anything but a `String` "behaves the same way as `default` mode and throws `guardrailViolation(_:)` errors", so guided generation gains nothing from it. The rule is `GuardrailMode` and `guardrailMode(for:)`, which the tests read. Apple's caveat for the mode stands: the model can still decline by writing a refusal as its answer, which would be stored as the summary.
+- **The refusal reaches the reader as a sentence.** A guardrail stop or refusal, in either error family (`LanguageModelError` from iOS and macOS 27, `GenerationError` before), is thrown as the new `SummarizationError.contentRefused(structured:)`. The SDK offers a refusal's explanation (`Refusal.explanation`, a second model call); it is not used (decision 2). The description: *Apple Intelligence declined to summarize this document. Its on-device safety rules stopped the request; nothing is wrong with the document or the app.* For a structured prompt: *…with a structured prompt, which it holds to stricter safety rules. A plain-text prompt such as "Standard Summary" may succeed.* A refusal met in the synthesis pass reads the same. Because the translation is in the provider and the sentence in the error's description, every surface that prints `localizedDescription` reads it: the reader's Summary panel on both platforms, the review sheet's Summarize Again, the inspector's headnote Regenerate and a collection export's summary phase.
+- **`SummarizationRetryPolicy`:** `contentRefused` is terminal, and `LanguageModelError` and `SystemLanguageModel.Error` are classified as `GenerationError` is: on a 27 system they had been retried four times with backoff.
+- **Chunking.** One chunk's refusal still fails the whole document, deliberately: a summary that skipped a refused chunk would leave out part of the document without saying so. After the change it matters for structured prompts only: a plain-text prompt's chunk no longer throws a guardrail violation (d475's five chunks summarized in 3 of 3 runs), and a refusal written as text becomes that chunk's partial.
+
+**What changed, part 2** (`FRUSExplorer/Collections/CollectionPreviewView.swift`). The preview's fingerprint hashed the entries and the composition, and none of the rows the page draws that no entry holds. A summary stored in the reader (by `SummarizationService`, in a context of its own) therefore never re-resolved the page; the inspector beside it re-fetches as it draws, which is why it listed the summary. Highlights, note text and tag assignments made in the reader had the same gap: of them only `selectedHighlightIds` and `selectedNoteIds` were hashed, and those are ids, not the rows. Now:
+- **An always-mounted `CollectionPreviewUserDataObserver`**, the preview's background, holds live `@Query`s on `GeneratedSummary`, `DocumentHighlight`, `ResearchNote`, `DocumentTagAssignment` and `UserTag`. All but the tags are limited to the scope's volumes and document ids, and the notes also to the ids the entries name. This is #189-D's pattern: no navigation or scene-phase edge.
+- **The scope** (`CollectionPreviewUserDataScope`): a static collection's document entries, read from the entries as the page draws; a smart collection's whole result set, as its last resolve found it.
+- **Its digest** is order-free and reads each row's drawn fields. A test found that a `didSet` stamping `lastModified` did not run on a model no context holds, so the digest does not rest on that stamp.
+- **A change within one scope bumps `refreshToken`**, through the usual 1 s debounce (`CollectionPreviewUserDataWatch`). A new scope's first report is only a baseline, since the resolve that moved the scope read those rows. So opening the preview costs no second resolve.
+- **The same view is the iOS editor's preview** (`CollectionEditorView`'s two mounts), so the fix is iOS's too.
+
+**Walked in the Mac check copy** (`tools/mac-check-copy`, its shared fake home, Apple Intelligence on, macOS 27.2), `v2` at `9fc5eb0a` first and then the branch, each built with `build.sh` through `Scripts/heavy.sh`:
+- **At `v2`:**
+  - d475's Summarize this Document with Standard Summary ended in *The model's safety guardrails were triggered.*
+  - Part 2, reproduced: d476 was added to a new collection, *1765 walk*, with its headnote on, and the Collections window read *No stored summary for this document*. The reader beside it then summarized d476, and the row was in the store at 09:45:24. 25 s later the preview still read the placeholder.
+- **On the branch:**
+  - **d475, Standard Summary:** summarized in 2 of 2 runs (stored 09:50:34 and 09:55:55, `wasChunked`).
+  - **d475, Analytical Report (structured):** still declined, as Apple documents for a non-text answer, and the panel read the new structured sentence.
+  - **Controls:** d474, d473 and d477 summarized, and d476 regenerated.
+  - **Part 2:** d474 was added to the collection with its headnote on, and the preview showed its placeholder. d474 was then summarized in the reader window, with the Collections window open beside it: the preview reloaded by itself, and d474's headnote read the new summary.
+  - **A note:** one written on d474 in the reader's composer window reloaded the preview the same way, and appeared on the page as d474's Research Note. That is the notes query's predicate (`noteIds.contains`, or a document key) at run time.
+  - **Left in the copy's home:** the *1765 walk* collection, seven summaries and the note. Nothing else was touched.
+- **Not walked:** the iOS editor's preview, which is the same view, and a highlight made in the reader. The rules both rest on are the unit tests'.
+- **After decision 2** the branch dropped the explanation, and nothing else changed: the structured sentence is the one the walk showed, without its *Its reason* clause. That build was not walked again; `SummarizationRefusalTests` pins both sentences.
+
+**Tests.** In `FRUSExplorerTests/SummarizationRetryPolicyTests.swift`:
+- `SummarizationRetryPolicyTests` gains three tests: `contentRefused` is terminal in either pass; `GenerationError`'s guardrail stop and refusal are terminal and its rate limit is not; `LanguageModelError` is classified alike. The framework's errors are built from their public initialisers, which the suite's head had thought impossible.
+- The new `SummarizationRefusalTests` covers the guardrail mode per format, both error families' translation, and the two sentences, the synthesis pass's included.
+
+In `FRUSExplorerTests/CollectionTests.swift`, the new `CollectionPreviewUserDataTests` covers:
+- the scope, of a static collection and of a smart one;
+- the digest: a summary stored or edited for a page document moves it, and one for the same document number in another volume does not; a highlight's colour and a tag assignment move it; a note on a page document, or one an entry names, moves it, and so does editing it;
+- the watch's baseline rule.
+
+The two `LanguageModelError` tests need iOS 27 (`.enabled(if:)`), and both ran.
+
+**Checked.** Xcode 27.2 (27B52) on macOS 27.2, the iPhone 17 simulator on iOS 27.0, each heavy job through `Scripts/heavy.sh`:
+- **The three suites:** "✔ Test run with 19 tests in 3 suites passed", none skipped, before decision 2.
+- **The full unit target**, after decision 2: "✔ Test run with 7793 tests in 933 suites passed after 437.468 seconds." 37 tests were skipped, every one for its environment: 30 need `FRUS_TEI_MIRROR`, and the rest the search model or a render folder. The run before decision 2 had 7,794 tests and the same 37 skips.
+- **The Mac:** `FRUSExplorerMac` in DirectDistribution built, and so did the check copy's AppStore build. Each printed only the known `GeneratedSummary` redundant-conformance residue, plus the check copy's own expected line.
+- **No `swift test` was owed:** no file under `FRUSCoreKit/` or a package target changed.
+
+**Found, not fixed here.**
+- **A chunked summary's synthesis keeps too little of the document.** The final pass runs the same Standard Summary prompt over the partial summaries. For d475 it kept mostly one part: in the harness, run 1's final summary described *a leader and a group of individuals* and *a movement* and named neither Kennan nor the Soviet Union, and run 3's restated the first partial. The check copy's first stored summary opens *The document involves a person addressing how to deal with Russia*, the closing section alone. So the Long Telegram now carries a headnote, but not yet a good one.
+- **Apple's caveat for the permissive mode:** a model that declines may write its refusal as the answer, and it would be stored as the summary. It was seen in none of the 17 harness runs or the walk.
+- **The test that removed `lastModified` from the digest:** setting `responseText` or `bodyText` on a model no context holds left `lastModified` where it was. Whether the `didSet` runs on a model a context holds was not checked.
+
+**Not pushed, no pull request:** on the owner's word only (the merge queue is serial).

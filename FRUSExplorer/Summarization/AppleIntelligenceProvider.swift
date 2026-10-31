@@ -46,7 +46,7 @@ import FoundationModels
 /// Version history:
 ///   1.0 — Session 19: initial implementation
 ///   1.1 — #1765: plain-text prompts on the permissive guardrails; a guardrail stop or refusal is
-///          thrown as `SummarizationError.contentRefused`, with the model's explanation of a refusal
+///          thrown as `SummarizationError.contentRefused`
 actor AppleIntelligenceProvider: SummarizationProvider {
 
     // MARK: - Shared Instance
@@ -86,7 +86,7 @@ actor AppleIntelligenceProvider: SummarizationProvider {
             }
         } catch {
             let structured = Self.guardrailMode(for: prompt.responseFormat) == .standard
-            throw await Self.translatingRefusal(error, structured: structured)
+            throw Self.translatingRefusal(error, structured: structured)
         }
 
         return SummarizationResult(
@@ -134,71 +134,32 @@ actor AppleIntelligenceProvider: SummarizationProvider {
 
     // MARK: - Refusals
 
-    /// How long a refusal's explanation may take before the failure is reported without it. The
-    /// explanation is a second call to the model, and a batch run holds a concurrency permit while it
-    /// waits.
-    static let explanationTimeout: Duration = .seconds(10)
-
-    /// The longest explanation quoted in a failure message, in characters.
-    static let explanationLimit = 300
-
     /// `error` as `SummarizationError.contentRefused` when it is the model's guardrails stopping the
     /// request or the model declining to answer, and `error` unchanged otherwise (#1765).
     ///
     /// Both error families are read: an app built with the iOS and macOS 27 SDKs is thrown the new
     /// `LanguageModelError` on those systems (measured on macOS 27.2: a guardrail stop arrived as
     /// `LanguageModelError.guardrailViolation`, which `GenerationError` does not match) and the
-    /// deprecated `LanguageModelSession.GenerationError` under iOS and macOS 26. A refusal's
-    /// explanation is asked for, within ``explanationTimeout``.
-    static func translatingRefusal(_ error: any Error, structured: Bool) async -> any Error {
+    /// deprecated `LanguageModelSession.GenerationError` under iOS and macOS 26. A refusal's own
+    /// explanation is not asked for (`SummarizationError.contentRefused`).
+    static func translatingRefusal(_ error: any Error, structured: Bool) -> any Error {
         if #available(iOS 27.0, macOS 27.0, *), let modelError = error as? LanguageModelError {
             switch modelError {
-            case .guardrailViolation:
-                return SummarizationError.contentRefused(explanation: nil, structured: structured)
-            case .refusal(let refusal):
-                let explanation = await boundedExplanation { try await refusal.explanation.content }
-                return SummarizationError.contentRefused(explanation: explanation, structured: structured)
+            case .guardrailViolation, .refusal:
+                return SummarizationError.contentRefused(structured: structured)
             default:
                 return error
             }
         }
         if let generationError = error as? LanguageModelSession.GenerationError {
             switch generationError {
-            case .guardrailViolation:
-                return SummarizationError.contentRefused(explanation: nil, structured: structured)
-            case .refusal(let refusal, _):
-                let explanation = await boundedExplanation { try await refusal.explanation.content }
-                return SummarizationError.contentRefused(explanation: explanation, structured: structured)
+            case .guardrailViolation, .refusal:
+                return SummarizationError.contentRefused(structured: structured)
             default:
                 return error
             }
         }
         return error
-    }
-
-    /// The text `fetch` returns, on one line and at most ``explanationLimit`` characters, or `nil` when
-    /// it throws, returns nothing but space, or takes longer than `timeout`.
-    static func boundedExplanation(
-        timeout: Duration = explanationTimeout,
-        _ fetch: @escaping @Sendable () async throws -> String
-    ) async -> String? {
-        let raw: String? = await withTaskGroup(of: String?.self) { group in
-            group.addTask { try? await fetch() }
-            group.addTask {
-                try? await Task.sleep(for: timeout)
-                return nil
-            }
-            let first = await group.next() ?? nil
-            group.cancelAll()
-            return first
-        }
-        guard let raw else { return nil }
-        let line = raw.split(whereSeparator: \.isNewline)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-        guard !line.isEmpty else { return nil }
-        return line.count > explanationLimit ? String(line.prefix(explanationLimit)) + "…" : line
     }
 
     // MARK: - Private
