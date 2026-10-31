@@ -8328,3 +8328,55 @@ Lane B of `Person-Authority-Lane-Design-2026-10-28.md` §7, items 1 and 2 of #17
 **Checks.** `CollectionTests` reads two blocks of the guide, the JSON examples of §15.1 and §15.1a, by the test's own extraction rule. Both are byte-identical to `v2`'s (SHA-256 `7bd77ebe865d743e…` and `e0937da4f809cfce…`), and so is the §12 block. Every in-page anchor resolves, and no added prose line runs past 100 characters. `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` reads the plan of record's status and its §7 line, neither touched. No build, unit run or `swift test` was owed: no file a target compiles changed, and no test reads a changed line.
 
 **Opened as #1817** on the owner's word of 2026-10-30 ("Commit and open PR"), against `v2` at `cb463e33`, which had not moved since the branch was cut; not merged, auto-merge off.
+
+## Session 2026-10-30 — The steering tier (R16) ran: the revised §12 block and the vectors card against the guide as it stands, nine runs on the owner's corruption question; by its rule, the revision is not adopted
+
+**What was asked.** The owner asked for a walk-through of the steering review's five open questions, then answered them:
+1. "inside": the vectors section goes inside the block;
+2. "drop it": centroid similarity leaves the list;
+3. "how about if i provide five candidate questions that you assess";
+4. "latest reader-facing output is ok in substance and scope but could use additional work on style and language … could that be an independent pass using the raw outputs of the measurement runs?";
+5. "budget sounds good. start today after plan is set".
+
+They set the plan ("Plan is set"), gave five candidates and chose the fifth, on corruption.
+
+**What changed.**
+- `Planning/C-3-Steering-Tier-Design.md`, the plan the owner set, with its as-built notes.
+- The guide, v1.38:
+  - §14.16 and §14.17 now leave centroid similarity out of the pass;
+  - §3a records the steering tier;
+  - the new history entry records both, and the READER-FACING OUTPUT section's adoption in substance and scope.
+- The steering review and the plan of record record the five answers and R16's result.
+- Arm B, the guide's v1.38 candidate, is committed on the local branch `claude/c3-steering-arm-b` (`84bf7e50`). It is not merged and not pushed.
+- The record `Planning/c3-steering-tier/`, and the results `Planning/C-3-Steering-Tier-Results-2026-10-30.md`.
+
+**The candidates.** The session assessed the five against the index copy and the Tier-1 binary, and deleted its files before the first cell.
+- **Corruption:** 37 of its 2,866 core documents sit under a heading that names the subject, and 343 of 450 nearest neighbours of 18 anchors lie outside both its heading and full-text scopes.
+- **The other four** were weaker on the design's properties. They are not named here, so any of them can still be a test question: a test question appears in no planning document before its run.
+
+**Measured** (the results file has the table).
+- **Pins:** arm A is v1.37 (`4fbf75f1`), its block at SHA-256 `c2f5511d…`, the block C-3 measured, with the addendum pasted. Arm B is a 247-line block and a 149-line card; its prompt is 165 lines shorter.
+- **Calibration** on the vectors tier's v3: the new items came back right. Three carried items came back stricter, each on a fault the earlier scorer had noted as a caveat.
+- **The canary** passed in 45 seconds.
+- **The 35 items:** A lost one (T1, the `misappropriat` stem trap) and B two (O2 twice). So reading 4 failed and B is not adopted.
+- **V8 (vector words):** B 4 of 4, A 0 of 4.
+- **T1:** B 4 of 4, A 3 of 4.
+- **V6:** A 4 of 4, where the vectors tier scored 0 of 4.
+- **Reach:** two strict documents an arm, in the same cells.
+- **O2':** failed in all nine runs.
+- **Run 9** (B with no artifacts) wrote "VECTORS: none" and scored 0.971, and the judge ranked it first.
+- **Cost:** 19 points of the weekly meter and 34 of Fable, inside the owner's lines of 30 and 42; 5 h 42 m elapsed.
+
+**Decided.** The owner followed the tier's rule ("Follow the rule"): nothing from arm B is adopted, and the guide records the measurement at v1.38. R7, R8 and R10 are owed a measurement alone.
+
+**Not done.**
+- The reader-facing pass: its first step is written, the style review `Planning/Agentic-Guide-Reader-Facing-Style-Review-2026-10-30.md`, with its scripts in `Planning/reader-facing-style/`. It measures the 25 runs' overviews, proposes the section's wording for style and language (R1–R3), and designs a test that writes each memo's overview twice.
+- **Its pilot ran** on the owner's word ("Run the pilot", lines raised once: "Raise the lines"). Four memos were each written twice, judged blind, and recorded in `Planning/reader-facing-style/pilot/`.
+  - The judge preferred R1 in 4 of 4 pairs.
+  - Pooled, sentences over 40 words fell from 36% to 7%.
+  - Untraced numbers fell from 29 to 5, but no rewrite under either wording traced every one, so the reading failed, and R1's numbers bullet was revised the same day (review §4 and §8).
+  - It cost 5 weekly and 8 Fable points, against an estimate of 1 to 2 and 3 to 5.
+  - The owner skipped the full rewrite pass ("Skip the full pass"): the revised R1 goes to the next full tier, with R7, R8 and R10.
+- The next full tier is not designed. It carries the revised R1, R2's template and J3's rewording, and measures R7, R8 and R10 without the rest of arm B, on one of the owner's four other candidates. Before it runs, V4 must exempt `frus1977-80v09Ed2` (results §5, item 10), the card needs a spot check of a known document if it goes too (results §4), and O2' should be checked by a script (review §8).
+
+**Checks.** `CollectionTests` reads two blocks of the guide, the JSON examples of §15.1 and §15.1a, by the test's own extraction rule. Both are byte-identical to `v2`'s at `cb2011a7` (SHA-256 `7bd77ebe865d743e…` and `e0937da4f809cfce…`), and so is §12. Every in-page anchor and file link resolves, and no added line runs past 100 characters. `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` reads the plan of record's status and its §7 line, neither touched. `brokenSqliteInvocationsAreMarked` reads every workflow script under `Planning/`, and the three new ones (`c3-steering-tier/workflow.mjs` and `canary.mjs`, `reader-facing-style/pilot/pilot.mjs`) do not print `sqlite3 … -uri`. A scan of the new and changed files for the four other candidates' subjects matched only volume titles and the documents' own text. No build, unit run or `swift test` was owed: no file a target compiles changed.
