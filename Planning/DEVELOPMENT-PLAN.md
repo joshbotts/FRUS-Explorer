@@ -8557,10 +8557,11 @@ Mutation, after a checkpoint commit: the synthesis budget taken from the reader'
 - **The full unit target:** "✔ Test run with 7784 tests in 931 suites passed after 414.597 seconds." (signed to run locally, so the Keychain suites pass); the four new tests among them. The CoreData "file is not a database" lines in the log are `StoreSchemaGuardTests`' own corrupt store.
 - **`FRUSExplorerMac`,** DirectDistribution, unsigned: "** BUILD SUCCEEDED **", with the same residue warning.
 - **No `swift test` owed:** no kit file changed.
+- **After merging `v2` at `233dc344`** (`1384b684`), the same way: the full unit target "✔ Test run with 7797 tests in 933 suites passed after 416.985 seconds." (#1820's 7,793 and these 4), and `FRUSExplorerMac` "** BUILD SUCCEEDED **".
 
 **Not done.**
 - **The app was not run with this build,** so no summary was made through it. The unit tests drive the real service through a mock provider. The wrapper, labels and joining are byte-for-byte what the harness measured (the wording test's literal is the harness's template); only a very long document's batch boundaries differ.
 - **The UI suites,** iOS 26.x and a device.
-- **Not pushed, and no pull request:** on the owner's word, for the serial merge queue.
+- **A pull request of its own against `v2`,** #1820 having merged (the owner's word, relayed by #1765's session: "1820 already merged, so results of chunked summary work need to go on a new PR").
 
 **Found, not fixed:** on the default guardrails, which #1765 keeps for structured prompts because the permissive mode does nothing for guided generation, a structured prompt's map step was refused on 10 of the 12 long FRUS documents tried. So the structured templates mostly fail on a long document before synthesis.
