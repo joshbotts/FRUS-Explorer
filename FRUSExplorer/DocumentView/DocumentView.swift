@@ -2595,7 +2595,7 @@ struct SummaryStripView: View {
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Text(summary.responseText)
+            Text(summary.readerText)
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .lineLimit(isExpanded ? nil : Self.collapsedLineLimit)
@@ -2605,7 +2605,7 @@ struct SummaryStripView: View {
                     // into the same proposed height. If it doesn't fit, the visible
                     // text is truncated and the "Show more" control should appear.
                     ViewThatFits(in: .vertical) {
-                        Text(summary.responseText)
+                        Text(summary.readerText)
                             .font(.callout)
                             .hidden()
                             .accessibilityHidden(true)

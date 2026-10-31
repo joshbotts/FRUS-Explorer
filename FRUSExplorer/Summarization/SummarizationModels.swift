@@ -86,6 +86,8 @@ struct SummarizationPromptSnapshot: Sendable {
 ///   1.2 — #1765: `contentRefused`, the model's guardrails or refusal in a sentence a reader can act
 ///          on, where the framework's own text (*The model's safety guardrails were triggered.*) reached
 ///          the reader as it was
+///   1.3 — 2026-10-31: a structured prompt's refusal no longer says the model holds structured prompts
+///          to stricter rules: they are answered as plain text on the same guardrails since that day
 enum SummarizationError: Error, LocalizedError, Equatable {
     /// The device does not have Apple Intelligence hardware or model assets available.
     case providerUnavailable
@@ -94,8 +96,9 @@ enum SummarizationError: Error, LocalizedError, Equatable {
     /// The synthesis pass after chunking failed.
     case synthesisFailed(underlying: Error)
     /// The on-device model would not summarize this content: its guardrails stopped the request, or it
-    /// declined to answer (#1765). `structured` says the prompt asked for a structured answer, which
-    /// Apple's guardrails treat more strictly than plain text (`AppleIntelligenceProvider.GuardrailMode`).
+    /// declined to answer (#1765). `structured` says the prompt asked for a structured answer; a
+    /// structured answer that lacks one of its fields' headings, as a refusal written as the answer
+    /// does, is thrown as this too (`AppleIntelligenceProvider.structuredJSON(fromAnswer:schema:)`).
     /// The model's own explanation of a refusal is not quoted (the owner's decision of 2026-10-31): it
     /// is a second model call, and for the Long Telegram it read *I've already explained…*.
     case contentRefused(structured: Bool)
@@ -138,7 +141,7 @@ enum SummarizationError: Error, LocalizedError, Equatable {
                                           defaultValue: "Standard Summary")
                 return String(
                     localized: "summ.error.refused.structured",
-                    defaultValue: "Apple Intelligence declined to summarize this document with a structured prompt, which it holds to stricter safety rules. A plain-text prompt such as “\(standardName)” may succeed."
+                    defaultValue: "Apple Intelligence declined to summarize this document with a structured prompt. A plain-text prompt such as “\(standardName)” may succeed."
                 )
             }
             return String(

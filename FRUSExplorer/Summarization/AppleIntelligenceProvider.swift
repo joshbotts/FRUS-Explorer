@@ -27,19 +27,23 @@ import FoundationModels
 /// chunking rather than exceeded-context errors.
 ///
 /// ## Structured output
-/// For `.structured` prompts, a `GenerationSchema` is built at runtime from the
-/// prompt's `StructuredSummarySchema.fields` using `DynamicGenerationSchema`. Each
-/// field becomes a `String`-typed property in the root object schema. The response
-/// is a `GeneratedContent` value; its `jsonString` is stored as `GeneratedSummary.responseText`.
+/// A `.structured` prompt's answer is generated as plain text, its fields asked for as Markdown headings
+/// in the session's instructions, and read back into the JSON object stored as
+/// `GeneratedSummary.responseText`: a string per field, keyed by the field's name
+/// (`StructuredSectionAnswer`, 2026-10-31). Until then it was guided generation over a
+/// `DynamicGenerationSchema`, which the on-device model declined for most FRUS documents (38 of 270
+/// in the measurement `StructuredSectionAnswer` records, against 108 of 108 as plain text).
 ///
 /// ## Guardrails (#1765)
-/// A plain-text prompt runs on Apple's `permissiveContentTransformations` guardrails, the mode Apple
-/// gives for transforming supplied text, summarizing included; a structured prompt keeps the default
-/// ones, which is all Apple's mode offers it (``GuardrailMode``). Under the default guardrails the
+/// Every prompt runs on Apple's `permissiveContentTransformations` guardrails (``model``), the mode
+/// Apple gives for transforming supplied text, summarizing included. Under the default guardrails the
 /// Standard Summary of the Long Telegram (`frus1946v06/d475`) failed in 3 of 3 runs on a Mac under
 /// macOS 27.2, at its third or fourth chunk of five; under the permissive ones it summarized in 3 of 3,
 /// and fourteen other documents of the volume summarized under both (2026-10-31; the owner chose the
-/// permissive mode that day). When the model still declines, ``summarize(request:prompt:)`` throws
+/// permissive mode that day for plain-text prompts). A structured prompt kept the default guardrails
+/// while it was guided generation, since Apple's mode behaves as the default for any answer that is not
+/// a `String`; as plain text it takes the permissive mode too, and the owner chose that the same day.
+/// When the model still declines, ``summarize(request:prompt:)`` throws
 /// `SummarizationError.contentRefused` in place of the framework's error, so every surface that prints
 /// the failure reads a sentence a reader can act on.
 ///
@@ -47,6 +51,8 @@ import FoundationModels
 ///   1.0 — Session 19: initial implementation
 ///   1.1 — #1765: plain-text prompts on the permissive guardrails; a guardrail stop or refusal is
 ///          thrown as `SummarizationError.contentRefused`
+///   1.2 — 2026-10-31: a structured prompt is answered as plain text under headings on the permissive
+///          guardrails and read back into its fields, where guided generation was declined
 actor AppleIntelligenceProvider: SummarizationProvider {
 
     // MARK: - Shared Instance
@@ -85,7 +91,8 @@ actor AppleIntelligenceProvider: SummarizationProvider {
                 text = try await structuredResponse(promptText: promptText, schema: schema)
             }
         } catch {
-            let structured = Self.guardrailMode(for: prompt.responseFormat) == .standard
+            let structured: Bool
+            if case .structured = prompt.responseFormat { structured = true } else { structured = false }
             throw Self.translatingRefusal(error, structured: structured)
         }
 
@@ -98,38 +105,33 @@ actor AppleIntelligenceProvider: SummarizationProvider {
 
     // MARK: - Guardrails
 
-    /// Which of Apple's guardrail modes a prompt's session runs under (#1765).
+    /// The on-device model every prompt runs on, under Apple's `permissiveContentTransformations`
+    /// guardrails (#1765).
     ///
-    /// Apple's `permissiveContentTransformations` is the mode for turning supplied text into text, such
-    /// as summarizing an article: a request that generates a `String` does not throw a guardrail
-    /// violation in it, though the model may still decline by writing a refusal as its answer. A
-    /// request that generates anything else, guided generation included, *behaves the same way as
-    /// default mode* (Apple's documentation of the mode), so a structured prompt gains nothing from it
-    /// and keeps ``standard``, saying so rather than passing a setting that does nothing.
-    enum GuardrailMode: Equatable {
-        /// Apple's `permissiveContentTransformations`: plain-text prompts.
-        case permissiveContentTransformations
-        /// Apple's `default`: structured prompts.
-        case standard
-
-        /// The on-device model under this mode's guardrails.
-        var model: SystemLanguageModel {
-            switch self {
-            case .permissiveContentTransformations:
-                SystemLanguageModel(guardrails: .permissiveContentTransformations)
-            case .standard:
-                SystemLanguageModel.default
-            }
-        }
+    /// It is Apple's mode for turning supplied text into text, such as summarizing an article: a request
+    /// that generates a `String` does not throw a guardrail violation in it, though the model may still
+    /// decline by writing a refusal as its answer. Every prompt generates a `String` since 2026-10-31,
+    /// a structured one included (``structuredJSON(fromAnswer:schema:)``). Under the default
+    /// guardrails the same plain-text answers under headings summarized 52 of 54 documents; the two
+    /// stops were the classifier's, one of them on the Long Telegram's fourth chunk.
+    static var model: SystemLanguageModel {
+        SystemLanguageModel(guardrails: .permissiveContentTransformations)
     }
 
-    /// The guardrail mode a prompt of `format` runs under: permissive for plain text, the default for a
-    /// structured answer (``GuardrailMode``).
-    static func guardrailMode(for format: ResponseFormat) -> GuardrailMode {
-        switch format {
-        case .general: .permissiveContentTransformations
-        case .structured: .standard
+    // MARK: - Structured answers
+
+    /// The JSON a structured summary stores, read from the model's answer under `schema`'s headings
+    /// (`StructuredSectionAnswer`).
+    ///
+    /// Throws `SummarizationError.contentRefused(structured: true)` when a field's heading is missing:
+    /// a refusal written as the answer has none, and storing it would put the refusal in the summary.
+    /// None of the 441 answers of the two full runs of 2026-10-31 (297 on the permissive guardrails,
+    /// 144 on the default) lacked a heading.
+    static func structuredJSON(fromAnswer answer: String, schema: StructuredSummarySchema) throws -> String {
+        guard let values = StructuredSectionAnswer.values(in: answer, schema: schema) else {
+            throw SummarizationError.contentRefused(structured: true)
         }
+        return StructuredSectionAnswer.jsonString(values, schema: schema)
     }
 
     // MARK: - Refusals
@@ -165,41 +167,19 @@ actor AppleIntelligenceProvider: SummarizationProvider {
     // MARK: - Private
 
     private func generalResponse(promptText: String) async throws -> String {
-        let session = LanguageModelSession(model: Self.guardrailMode(for: .general).model)
+        let session = LanguageModelSession(model: Self.model)
         let response = try await session.respond(to: promptText)
         return response.content
     }
 
+    /// The prompt's own text as the request, its fields as headings in the session's instructions.
     private func structuredResponse(
         promptText: String,
         schema: StructuredSummarySchema
     ) async throws -> String {
-        let genSchema = try buildGenerationSchema(from: schema)
-        let session = LanguageModelSession(model: Self.guardrailMode(for: .structured(schema: schema)).model)
-        let response = try await session.respond(to: promptText, schema: genSchema)
-        return response.content.jsonString
-    }
-
-    /// Builds a `GenerationSchema` from a `StructuredSummarySchema` at runtime.
-    ///
-    /// Each schema field becomes a `String`-typed property in the root object.
-    /// The `DynamicGenerationSchema(type: String.self)` overload creates a schema
-    /// representing a primitive string value, matching `String`'s `Generable` conformance.
-    private func buildGenerationSchema(
-        from schema: StructuredSummarySchema
-    ) throws -> GenerationSchema {
-        let properties = schema.fields.map { field in
-            DynamicGenerationSchema.Property(
-                name: field.name,
-                description: field.description,
-                schema: DynamicGenerationSchema(type: String.self)
-            )
-        }
-        let root = DynamicGenerationSchema(
-            name: "StructuredSummary",
-            description: "Structured summary with named fields",
-            properties: properties
-        )
-        return try GenerationSchema(root: root, dependencies: [])
+        let session = LanguageModelSession(model: Self.model,
+                                           instructions: StructuredSectionAnswer.instructions(for: schema))
+        let response = try await session.respond(to: promptText)
+        return try Self.structuredJSON(fromAnswer: response.content, schema: schema)
     }
 }

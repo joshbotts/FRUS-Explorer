@@ -30,6 +30,8 @@ private let systemHasLanguageModelError: Bool = {
 /// Version history:
 ///   1.0 — #560: initial implementation
 ///   1.1 — #1765: `contentRefused`, and both framework error families
+///   1.2 — 2026-10-31: a structured answer without its headings is a refusal; the structured sentence
+///          without its stricter-rules clause
 @Suite("Summarization retry policy")
 struct SummarizationRetryPolicyTests {
 
@@ -154,24 +156,35 @@ struct SummarizationRetryPolicyTests {
 
 // MARK: - SummarizationRefusalTests
 
-/// How a guardrail stop or refusal reaches the reader, and which guardrails a prompt runs under
-/// (#1765). The model is not run: the framework's errors are built from their public initialisers.
+/// How a guardrail stop or refusal reaches the reader, and how a structured answer that is not one is
+/// told apart (#1765; 2026-10-31). The model is not run: the framework's errors are built from their
+/// public initialisers.
 @Suite("Summarization refusals (#1765)")
 struct SummarizationRefusalTests {
 
     /// An error the translation must leave alone.
     private struct MysteryError: Error {}
 
-    /// The owner's decision of 2026-10-31: a plain-text prompt on Apple's mode for transforming supplied
-    /// text, which turned the Long Telegram's 3-of-3 refusal into 3 of 3 summaries; a structured prompt
-    /// on the default, since Apple's mode behaves as the default for a non-`String` answer.
-    @Test("A plain-text prompt runs on the permissive guardrails, a structured one on the default")
-    func guardrailModeFollowsTheFormat() {
-        #expect(AppleIntelligenceProvider.guardrailMode(for: .general) == .permissiveContentTransformations)
+    /// The owner's decision of 2026-10-31: a structured prompt is answered as plain text under its
+    /// fields' headings and read back into them. A refusal written as the answer carries no heading,
+    /// and storing it would put the refusal in the summary, so it reads as the structured refusal.
+    @Test("A structured answer is read into its fields; one without the headings is a refusal")
+    func structuredAnswerOrRefusal() throws {
         let schema = StructuredSummarySchema(fields: [
-            StructuredSummarySchema.Field(name: "summary", description: "A summary"),
+            StructuredSummarySchema.Field(name: "Decision", description: "The decision made"),
+            StructuredSummarySchema.Field(name: "Rationale", description: "Key justifications cited"),
         ])
-        #expect(AppleIntelligenceProvider.guardrailMode(for: .structured(schema: schema)) == .standard)
+        let json = try AppleIntelligenceProvider.structuredJSON(
+            fromAnswer: "## Decision\nNone is recorded.\n\n## Rationale\nThe gold outflow.", schema: schema)
+        #expect(json == #"{"Decision": "None is recorded.", "Rationale": "The gold outflow."}"#)
+
+        #expect(throws: SummarizationError.contentRefused(structured: true)) {
+            try AppleIntelligenceProvider.structuredJSON(
+                fromAnswer: "I’m sorry, but I can’t help with that request.", schema: schema)
+        }
+        #expect(throws: SummarizationError.contentRefused(structured: true)) {
+            try AppleIntelligenceProvider.structuredJSON(fromAnswer: "## Decision\nNone.", schema: schema)
+        }
     }
 
     @Test("GenerationError's guardrail stop and refusal become contentRefused; other errors pass through")
@@ -222,8 +235,10 @@ struct SummarizationRefusalTests {
         #expect(!plain.localizedCaseInsensitiveContains("guardrail"))
 
         let structured = try #require(SummarizationError.contentRefused(structured: true).errorDescription)
-        #expect(structured.contains("structured prompt"))
-        #expect(structured.contains("“Standard Summary”"))
+        #expect(structured == "Apple Intelligence declined to summarize this document with a structured prompt. A plain-text prompt such as “Standard Summary” may succeed.")
+        // A structured prompt is answered as plain text on the same guardrails since 2026-10-31, so the
+        // sentence no longer says the model holds it to stricter rules.
+        #expect(!structured.contains("stricter"))
 
         let inSynthesis = SummarizationError.synthesisFailed(
             underlying: SummarizationError.contentRefused(structured: false))
