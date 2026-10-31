@@ -1,0 +1,6 @@
+distinct neighbours (top 25 of 4 anchors): 82
+decades: [('1950s', 20), ('1960s', 41), ('1970s', 20), ('1980s', 1)]
+repository/record group: [(('Department of State', '59'), 25), (('National Archives', '306'), 23), (('Johnson Library', None), 9), ((None, None), 5), (('Ford Library', None), 4), (('Kennedy Library', None), 3), (('Nixon Presidential Materials', None), 2), (('no source row', None), 2)]
+neighbours in the 77-volume scope: 32 of 82 ; outside it: 50
+PubDip v06-v08 documents by decade: [(None, 2), ('1960s', 388), ('1970s', 119)]
+era-matched map baseline, volumes dated 1945-1980 by mean year: unclustered 40679 of 141003

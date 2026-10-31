@@ -1,0 +1,50 @@
+SET A (PD/info volumes, header names an East Asia/Pacific place or office): 42 docs
+SET B (regional volumes, family A): 1176 docs
+
+CAME-FROM channel, Set A : documents with a document_sources row: 42 of 42
+   4 ('National Archives', '306', 'Director’s Subject Files, Box 10')
+   3 ('National Archives', '306', 'DIRCTR Files Bx 33–36, Box 33')
+   2 ('National Archives', '306', 'DIRCTR Sub Files')
+   2 ('Kennedy Library', None, 'National Security Files')
+   2 ('National Archives', '306', 'Director’s Subject Files')
+   2 ('National Archives', '306', 'Office of Policy and Plans')
+   2 ('National Archives', '306', 'Director’s Subject Files, Box 22')
+   2 ('National Archives', '59', 'Central Files 1960–63')
+   1 ('National Archives', '306', 'Office of Plans')
+   1 ('Kennedy Library', None, 'Personal Papers of Robert F.  Kennedy')
+   1 ('National Archives', '306', 'DIRCTR Subj. Files, Box 16')
+   1 ('National Archives', '306', None)
+
+POINTED-AT channel, Set A : documents with >=1 external_citations row: 4 of 42 ; rows 4
+   1 ('Kennedy Library', 'National Security Files', 'presidentialLibrary')
+   1 ('Johnson Library', 'Marks Papers', 'presidentialLibrary')
+   1 ('Nixon Presidential Materials', 'Kissinger Office Files', 'presidentialLibrary')
+   1 ('Department of State', None, 'lotFile')
+
+CAME-FROM channel, Set B : documents with a document_sources row: 1176 of 1176
+   118 ('Department of State', '59', None)
+   67 ('Johnson Library', None, 'National Security File')
+   39 ('Kennedy Library', None, 'National Security Files')
+   39 ('Nixon Presidential Materials', None, 'NSC Files')
+   17 ('National Archives', '59', 'Central Files 1964–66')
+   13 ('Eisenhower Library', None, 'Eisenhower papers')
+   13 ('Central Intelligence Agency', None, None)
+   11 ('Department of State', '59', 'POL 27 VIET S')
+   10 ('National Defense University', None, 'Taylor Papers')
+   9 ('Library of Congress', None, 'Manuscript Division')
+   9 ('National Archives', '59', 'Central Files 1967–69')
+   8 ('Eisenhower Library', None, 'Whitman File')
+
+POINTED-AT channel, Set B : documents with >=1 external_citations row: 322 of 1176 ; rows 551
+   296 ('Department of State', None, 'centralFileClass')
+   134 ('Department of State', None, 'lotFile')
+   36 ('Johnson Library', 'National Security File', 'presidentialLibrary')
+   25 ('Nixon Presidential Materials', 'NSC Files', 'presidentialLibrary')
+   18 ('Kennedy Library', 'National Security Files', 'presidentialLibrary')
+   5 ('Johnson Library', 'President’s Daily Diary', 'presidentialLibrary')
+   3 ('Eisenhower Library', 'Eisenhower papers', 'presidentialLibrary')
+   3 ('Eisenhower Library', 'Whitman File', 'presidentialLibrary')
+   3 ('Kennedy Library', 'President’s Office Files', 'presidentialLibrary')
+   3 ('Johnson Library', 'Rusk Appointment Book', 'presidentialLibrary')
+   3 ('Johnson Library', 'Ball Papers', 'presidentialLibrary')
+   2 ('Eisenhower Library', 'indicates that Eisenhower raised “one or two questions” about the draft of the speech sent to him', 'presidentialLibrary')

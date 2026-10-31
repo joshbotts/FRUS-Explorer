@@ -1,0 +1,37 @@
+index keys ['documentCount', 'generated', 'harvestGenerated', 'harvestScriptSHA256', 'provenance', 'provenanceDigest', 'retrieval', 'schema', 'subseries', 'volumes']
+digest index 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+digest bin   89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+digest map   89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+.generation 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+digest shard 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 b'FRSS'
+ver dims docs cents 1 512 314616 660 generated 2026-10-15 harvestGenerated 2026-10-15T06:55:14
+retrieval {"measuredBy": "Planning/semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md \u00a75, 3,600 era-stratified queries over the 314,616-document corpus; Hamming-800 over 512 sign bits \u2192 int8-512", "measuredRecallAt10": 0.9021, "rerankPool": 800, "scoreCalibration": {"documentOffset": 0.4, "measuredBy": "Planning/semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md \u00a71b, fitted to EmbeddingGemma 300m's scores over 90 typed queries and 600 anchor documents against the 314,616-document corpus", "queryOffset": 0.47}}
+roundtrip volumes 553 bad 0
+random pairs: mean 167.1 sd 14.8 p1 132 min 95 n 20000
+25th-neighbour distance over 200 docs: median 108 q1 101 q3 114
+== anchor frus1917-72PubDipv08/d31
+81 frus1917-72PubDipv07/d106 ('106. Minutes of a Meeting of the President’s General Advisory Committee on Foreign Assistance Programs', 0, 0)
+86 frus1917-72PubDipv06/d3 ('3. Report Prepared by Deputy Director-Designate Donald M. Wilson', 0, 0)
+88 frus1917-72PubDipv06/d5 ('5. Report Prepared by the Task Force on the United States Information Agency', 0, 0)
+88 frus1952-54v13p1/d116 ('The Ambassador at Saigon (Heath) to the Department of State', 0, 0)
+89 frus1955-57v22/d275 ('275. Telegram From the Embassy in Indonesia to the Department of State', 0, 0)
+90 frus1917-72PubDipv08/d99 ('99. Paper Prepared in the United States Information Agency', 0, 0)
+90 frus1950v06/d9 ('Editorial Note', 0, 1)
+91 frus1958-60v16/d65 ('65. National Security Council Report', 0, 0)
+92 frus1917-72PubDipv07/d140 ('140. Letter From the Director of the United States Information Agency (Marks) to All United States Information', 0, 0)
+92 frus1952-54v02p2/d374 ('Memorandum for the National Security Council by the Executive Secretary (Lay)', 0, 0)
+92 frus1977-80v30/d68 ('68. Memorandum From the Director of the United States Information Agency (Reinhardt) to all USIS Principal and', 0, 0)
+94 frus1951v06p1/d12 ('Report to the National Security Council by the Executive Secretary (Lay)', 0, 0)
+== anchor frus1969-76v38p2/d105
+76 frus1969-76ve12/d10 ('10. Memorandum From W.R. Smyser of the National Security Council Staff to Secretary of State Kissinger, Washin', 0, 0)
+77 frus1958-60v16/d65 ('65. National Security Council Report', 0, 0)
+78 frus1969-76v01/d54 ('54. Paper Prepared in the National Security Council Staff', 0, 0)
+80 frus1969-76ve12/d16 ('16. Memorandum From Secretary of State Kissinger to President Ford, Washington, June 13, 1975.', 0, 0)
+82 frus1969-76ve12/d15 ('15. Minutes of the Acting Secretary of State’s Staff Meeting, Washington, June 13, 1975, 8–9:05 a.m.', 0, 0)
+82 frus1977-80v22/d104 ('104. Telegram From the Consulate in Hong Kong to the Department of State', 0, 0)
+84 frus1949v07p2/d387 ('Memorandum by the Executive Secretary of the National Security Council (Souers) to the National Security Counc', 0, 0)
+84 frus1955-57v21/d119 ('119. National Security Council Report', 0, 0)
+84 frus1969-76v38p1/d54 ('54. Memorandum From the Counselor of the Department of State (Sonnenfeldt) and the Director of the Bureau of I', 0, 0)
+85 frus1949v07p2/d386 ('Memorandum by the Ambassador at Large (Jessup) to the Secretary of State', 0, 0)
+85 frus1958-60v16/d12 ('12. National Security Council Report', 0, 0)
+85 frus1969-76v38p1/d58 ('58. Telegram From the Department of State to All Diplomatic and Consular Posts', 0, 0)

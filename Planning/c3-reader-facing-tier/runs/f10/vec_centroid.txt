@@ -1,0 +1,39 @@
+/Users/jbotts/frus-analysis/c3f/runs/f10/vec_ops2.py:8: RuntimeWarning: divide by zero encountered in matmul
+  i=vol_names.index(a); s=Vn@Vn[i]; o=np.argsort(-s)
+/Users/jbotts/frus-analysis/c3f/runs/f10/vec_ops2.py:8: RuntimeWarning: overflow encountered in matmul
+  i=vol_names.index(a); s=Vn@Vn[i]; o=np.argsort(-s)
+/Users/jbotts/frus-analysis/c3f/runs/f10/vec_ops2.py:8: RuntimeWarning: invalid value encountered in matmul
+  i=vol_names.index(a); s=Vn@Vn[i]; o=np.argsort(-s)
+
+CENTROID neighbours of frus1917-72PubDipv07 (raw centroid cosine; no calibration applies to volume centroids)
+  0.987 frus1917-72PubDipv06 
+  0.981 frus1917-72PubDipv08 
+  0.973 frus1977-80v30 
+  0.965 frus1964-68v33 
+  0.965 frus1961-63v25 
+  0.959 frus1964-68v34 
+  0.953 frus1964-68v09 
+  0.953 frus1964-68v12 
+  baseline: cosine to all other 552 volumes: mean 0.906 sd 0.023 min 0.802
+
+CENTROID neighbours of frus1977-80v30 (raw centroid cosine; no calibration applies to volume centroids)
+  0.976 frus1917-72PubDipv08 
+  0.973 frus1917-72PubDipv07 
+  0.970 frus1917-72PubDipv06 
+  0.962 frus1977-80v28 
+  0.961 frus1969-76v38p2 
+  0.956 frus1977-80v20 
+  0.955 frus1961-63v25 
+  0.953 frus1977-80v02 
+  baseline: cosine to all other 552 volumes: mean 0.900 sd 0.026 min 0.792
+
+CENTROID neighbours of frus1955-57v09 (raw centroid cosine; no calibration applies to volume centroids)
+  0.985 frus1958-60v04 
+  0.983 frus1952-54v01p1 
+  0.983 frus1964-68v09 
+  0.980 frus1961-63v09 
+  0.979 frus1955-57v10 
+  0.977 frus1952-54v01p2 
+  0.972 frus1951v01 
+  0.971 frus1964-68v08 
+  baseline: cosine to all other 552 volumes: mean 0.919 sd 0.024 min 0.821

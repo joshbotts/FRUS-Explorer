@@ -1,0 +1,342 @@
+{
+ "format": "fruscollection",
+ "formatVersion": 2,
+ "minimumReaderVersion": 1,
+ "name": "American soft power in East Asia — run f2",
+ "authorLine": "Agent run f2, 2026-10-31",
+ "introductionText": "What FRUS answers directly: FRUS shows American officials from the 1950s to the late 1970s judging their standing in Asia by press comment, opinion surveys and the state of each alliance, and finding it fragile whenever policy was unpopular. Their consistent method was to speak through Asians and keep the American hand low: work \"through indigenous leadership\" (1952–1954, Volume XII, Part 2, Document 403), let Vietnamese persuade Vietnamese (1917–1972, Volume VII, Document 32), and keep \"US visibility\" low (1917–1972, Volume VIII, Document 31). They doubted information alone could move opinion. The ambassador in Tokyo judged Japan's response to the bombing of North Vietnam \"probably unchangeable over the short run\" (1964–1968, Volume XXIX, Part 2, Document 46). After Saigon fell, posts reported that programs on American security commitments \"lack credibility\" (1969–1976, Volume XXXVIII, Part 2, Document 105). The beliefs behind this were of an audience sensitive to race, war memory and Western dominance. The answer rests on fifteen documents.\n\nWhere FRUS points for the rest:\nSeries the printed documents came from (came-from channel; about three in five of the 119 regionally focused documents in the public diplomacy volumes came from the information agency's own records):\n- Subject Files of the Director, U.S. Information Agency, Office of the Director, Executive Secretariat — Record Group 306; FRUS cites it as \"Director's Subject Files,\" Entry A1–42 (1968–1972) and Entry UD WW 257 (1963–1969); NARA identifier 40967285; 1956–1972; partly restricted. A likely match by title and creator only: the transfer number FRUS gives is listed under eighteen series and not under this one.\n- Subject Files, U.S. Information Agency, Office of Policy and Plans — Record Group 306; NARA identifier 1257679; 1953–1971; partly restricted (also a likely match only, by transfer number).\n- Operations Coordinating Board Files, Lot 62 D 430 — Record Group 59, Executive Secretariat; NARA identifier 2839191; 1953–1961; partly restricted. The source of the board's country plans for East Asia.\n- Central Decimal File, classes for Asia's internal and national defense affairs and for Philippine international relations (the printed documents date from 1953 and 1954) — Record Group 59; no identifier in the reference files I used.\n- Robert F. Kennedy Papers, Attorney General Papers: General Correspondence — Kennedy Library; NARA identifier 193936; 1961–1964.\n- Papers of Leonard H. Marks, Work Files — Johnson Library; NARA identifier 50827304; 1965–1968.\n\nSeries the editors cited without printing (pointed-at channel; only about one in eleven of the same 119 documents carries such a pointer):\n- Papers of Leonard H. Marks — Johnson Library; NARA identifier 50809179; 1965–1968.\n- Records of the Deputy Secretary of State (Warren Christopher), Lot 81D113, Entry P–14 — Record Group 59; NARA identifier 1487627; 1975–1981; partly restricted.\n- Kennedy National Security Files; Nixon White House Central Files, Kissinger Office Files and National Security Council Files; Ford National Security Adviser files — presidential libraries; not resolved to identifiers in the reference files I used.\n\nWhat this request cannot get from FRUS: No document uses \"soft power\"; I searched every one of the 553 volumes for the phrase and found none, while in the same search a control phrase was found in every one of the 109 volumes I scoped and an impossible one in none, so I searched instead in the officials' own terms (\"information program,\" \"psychological strategy,\" the agency's name, \"image of the United States\"). FRUS prints the agency's own survey results only as summaries in memoranda; nearly two in three of the documents naming the agency in my scope sit in the five Public Diplomacy volumes, which select for policy, not for evidence of reception. The surveys themselves are on the shelf: the agency's Vietnamese Public Opinion Surveys (Record Group 306, NARA identifier 1127750) and its International Survey Research Reports (identifier 721251). Audience views in Asian languages, and anything after 1980, are beyond these volumes.",
+ "composition": {
+  "defaultBodyDepth": "full",
+  "footnoteStyle": "all",
+  "includeSourceNote": true,
+  "tocStyle": "citation",
+  "applyHighlights": false,
+  "includeNotes": true,
+  "includeWordCloud": false
+ },
+ "entries": [
+  {
+   "kind": "heading",
+   "text": "Speak through Asians, and keep the American voice out of sight (1950s)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These three documents show the first assumption of the strategy papers: that an Asian audience would resist an openly American message, and that themes recalling race, war or Western dominance were dangerous. They follow the thread from a psychological strategy for Thailand to the information agency's own account of its Far East work."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d403",
+   "notes": [
+    "Agent finding, run f2, 2026-10-31: The Psychological Strategy Board's plan for Thailand makes indigenous leadership the channel for American influence and aims to prepare popular attitudes for collaboration."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d403",
+   "text": "utilizing every suitable operation to prepare the minds and emotions of the people to collaborate in the effort"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d403",
+   "text": "In projecting U.S. leadership, however, we must work with and through indigenous leadership wherever possible."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d352",
+   "notes": [
+    "Agent finding, run f2, 2026-10-31: The Department declines to amplify the Philippine 'Asia for Asians' theme because it would recall Japan's wartime slogan and sound anti-Western; it prefers 'free Asian solidarity' within the free world."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d352",
+   "text": "Asia for Asians"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d352",
+   "text": "would carry unsavory recollections of Japanese wartime slogan and could easily be misinterpreted by public at large to be anti-Western in intent"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d190",
+   "notes": [
+    "Agent finding, run f2, 2026-10-31: The information agency's status report for mid-1955; its Far East section names the audience's sensitivities (atomic weapons, race) and credits a symphony tour with Japan's warmest response. Found by its similarity to the 1969 regional conference report, by no word search, and read before it was cited."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d190",
+   "text": "In the Far East USIA was forced to deal with mixed emotions regarding the use of atomic weapons against Asiatic peoples, and to counter communist propaganda designed to stir up race hatred."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d190",
+   "text": "Unparalleled enthusiasm, admiration and good will were produced throughout Japan by the tour of the Symphony of the Air"
+  },
+  {
+   "kind": "heading",
+   "text": "Vietnam: a surrogate voice, and doubts about the audience (1963–1969)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These documents follow the agency's attempt to speak behind the South Vietnamese government: its caution about anti-Chinese themes, its field officers' low opinion of the audience, and its plan to hand psychological work to Saigon."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d128",
+   "notes": [
+    "Agent finding, run f2, 2026-10-31: Murrow weighs a campaign tying Hanoi to Peking and warns that it may magnify the threat and offend South Vietnam's Chinese residents; he prefers editorial emphasis and Vietnamese-placed articles."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d128",
+   "text": "may only serve to increase the dimensions of the threat that looms from the North"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d128",
+   "text": "with over one million Chinese residents in South Viet-Nam who will also hear these broadcasts, we must exercise caution"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d32",
+   "notes": [
+    "Agent finding, run f2, 2026-10-31: A 1964 field review: the agency acts as a surrogate information service for Saigon, holds that Vietnamese must persuade Vietnamese, and judges the civil population harshly."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d32",
+   "text": "Vietnamese peasants are, in the main, going to be persuaded by other Vietnamese."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d32",
+   "text": "family-oriented, selfish and opportunistic even in the best of times"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d58",
+   "notes": [
+    "Agent finding, run f2, 2026-10-31: The agency describes 'Vietnamization' of its information and psychological operations, which it always regarded as belonging to the Vietnamese government."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d58",
+   "text": "functions in this field properly belong to and must ultimately be performed by the Government of Viet-Nam (GVN)"
+  },
+  {
+   "kind": "heading",
+   "text": "Effectiveness was measured by reaction, and policy outweighed persuasion (1963–1970)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These documents show how officials judged effect: by a visitor's reception, by press comment across the region, and by opinion surveys. They follow the thread from a successful tour to the conclusion that unpopular policy could not be offset by information work."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d127",
+   "notes": [
+    "Agent finding, run f2, 2026-10-31: Ambassador Reischauer rates John Glenn's 1963 visit as the most successful American visit to Japan from a public-image standpoint, crediting his openness and modesty."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d127",
+   "text": "probably the most successful visit by an American, from a public image standpoint"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v03",
+   "documentId": "d308",
+   "notes": [
+    "Agent finding, run f2, 2026-10-31: Murrow's survey of world press reaction to the Diem government's repression; the Far East press blames the United States for keeping Diem in power."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v03",
+   "documentId": "d308",
+   "text": "Editorialists are almost unanimously critical of the Diem Government actions and generally blame the U.S. for continuing it in power."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d46",
+   "notes": [
+    "Agent finding, run f2, 2026-10-31: Reischauer's assessment of Japanese reaction to the bombing of North Vietnam: falling poll figures, an emotional response he thinks information work cannot change, and Japanese memory of their own war in China."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d46",
+   "text": "their ready identification of the American position with that of the Japanese armies in China"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d46",
+   "text": "the basic emotional response remains unchanged and is probably unchangeable over the short run"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d46",
+   "text": "Only a rather clear-cut success for American policies is likely to reverse the trend."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d88",
+   "notes": [
+    "Agent finding, run f2, 2026-10-31: Saigon opinion survey results for May 1970, with the lowest rating of the United States as a dependable ally in the series."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d88",
+   "text": "Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys"
+  },
+  {
+   "kind": "heading",
+   "text": "Image follows the alliance: modesty, low visibility and segmented audiences (1969–1971)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These documents show the agency's regional officers concluding that America's image followed bilateral relations, preferring a low American profile, and reading audiences community by community."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "notes": [
+    "Agent finding, run f2, 2026-10-31: Summary of the 1969 Manila conference of the agency's East Asia public affairs officers: image follows bilateral relations; 'modesty, mutuality and multi-lateralism'; low American visibility."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "PAOs emphasized that the image of the US usually depended more on the state of bi-lateral relations"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "One caveat: US visibility should be low."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76v19p2",
+   "documentId": "d67",
+   "notes": [
+    "Agent finding, run f2, 2026-10-31: The agency's director asks for a new review of Japan policy, citing surveys that confirm strains in the alliance and the psychological effect of American force reductions."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v19p2",
+   "documentId": "d67",
+   "text": "public opinion surveys and other assessments of Japanese attitudes have tended to confirm the seriousness of these strains"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d149",
+   "notes": [
+    "Agent finding, run f2, 2026-10-31: An agency report on overseas Chinese attitudes in Southeast Asia after the opening to China, treating them as a distinct audience."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d149",
+   "text": "The predominant mood is apolitical, seeking to be neutral, and concerned with economic and trade problems rather than strong ideological convictions."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d149",
+   "text": "we are compelled to take a very close look at the overseas Chinese as a USIS audience"
+  },
+  {
+   "kind": "heading",
+   "text": "After 1975: credibility of commitment, and a turn to elites (1975–1977)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These documents follow the posts' reassessment after the fall of Saigon, where credibility of commitment became the problem, and a shift toward exchanges among opinion-makers."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "notes": [
+    "Agent finding, run f2, 2026-10-31: Post-by-post abstracts of the agency's East Asia reassessment after the fall of South Vietnam: credibility of American commitments is the common concern, and themes shift to the vitality of American society."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "text": "During this waiting period, programs on U.S. security relations in Asia lack credibility and may in fact do damage to our relations."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "text": "hoping that we have all learned the lesson that America is not omnipotent"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d2",
+   "notes": [
+    "Agent finding, run f2, 2026-10-31: The agency brokers exchanges among Japanese, European and American economic editors over trade frictions."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d2",
+   "text": "We are dealing here with gut issues rather than some of the frothier aspects of cultural exchange."
+  },
+  {
+   "kind": "prose",
+   "text": "Threads not followed: the agency's own survey reports and Asian-language press, which FRUS prints only in summary; the Laos information-media struggle of 1962–1963 in the Public Diplomacy volume for 1961–1963; the Southeast Asia and Pacific volume for 1977–1980; and anything after 1980."
+  },
+  {
+   "kind": "generated",
+   "generatedBlockType": "archivalSources"
+  }
+ ]
+}

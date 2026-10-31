@@ -1,0 +1,4 @@
+cluster 138 members 2189
+top volumes: [('frus1945-50Intel', 366), ('frus1964-68v33', 182), ('frus1969-76v02', 178), ('frus1977-80v28', 161), ('frus1969-76v38p2', 144), ('frus1950-55Intel', 138), ('frus1961-63v25', 109), ('frus1917-72PubDipv08', 83), ('frus1977-80v30', 83), ('frus1917-72PubDipv07', 79), ('frus1917-72PubDipv06', 67), ('frus1969-76v04', 63)]
+members in 99 EAP volumes: 33 of 57935 EAP-vol docs (all, incl apparatus)
+EAP vol docs: unclustered 7392 ; top clusters [(3, 26251), (29, 8286), (22, 3257), (31, 2011), (7, 1558)]

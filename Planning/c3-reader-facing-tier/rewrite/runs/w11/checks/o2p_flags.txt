@@ -1,0 +1,108 @@
+O2' check of w11: 84 numbers in overview.md; 32 traced, 27 weak, 25 untraced.
+TRACE TABLE: 65 rows, from line 7 of trace.md.
+Each flagged number is WEAK (a row holds the value without the word after it) or UNTRACED (no row holds the value). Decide each: TRACED (name the row), NOT A NUMBER, or UNTRACED.
+
+[WEAK] '62 D 430' (value 62d430, next word ''); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: State Department, Executive Secretariat, Subject and Special Files (the Operations Coordinating Board papers, Lot 62 D 430):
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted.
+[UNTRACED] 'A1 1586C' (value a11586c, next word '')
+    sentence: Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted.
+[WEAK] '2839191' (value 2839191, next word 'partly'); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted.
+[WEAK] '63 D 351' (value 63d351, next word ''); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: State Department, Executive Secretariat, Records Relating to NSC Policy Papers (Lot 63 D 351):
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted.
+[UNTRACED] 'A1 1586E' (value a11586e, next word '')
+    sentence: Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted.
+[WEAK] '2839192' (value 2839192, next word 'partly'); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted.
+[WEAK] '67 D 54' (value 67d54, next word ''); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: State Department, Bureau of East Asian and Pacific Affairs, Subject Files of the Vietnam Working Group (Lot 67 D 54):
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted.
+[UNTRACED] 'A1 5305' (value a15305, next word '')
+    sentence: Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted.
+[UNTRACED] 'A1 5414' (value a15414, next word '')
+    sentence: Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted.
+[WEAK] '631403' (value 631403, next word 'unrestricted'); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted.
+[UNTRACED] '72 D 192' (value 72d192, next word '')
+    sentence: State Department, Office of the Secretary, Speeches and Statements (Lot 72 D 192):
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Record Group 59, Entries A1 5376 and 5376A, NARA identifier 631695, , unrestricted, though use may be restricted.
+[UNTRACED] 'A1 5376' (value a15376, next word '')
+    sentence: Record Group 59, Entries A1 5376 and 5376A, NARA identifier 631695, , unrestricted, though use may be restricted.
+[WEAK] '631695' (value 631695, next word 'unrestricted'); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: Record Group 59, Entries A1 5376 and 5376A, NARA identifier 631695, , unrestricted, though use may be restricted.
+[WEAK] '62 D 430' (value 62d430, next word ''); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: State Department, Executive Secretariat, Subject and Special Files (Lot 62 D 430):
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted.
+[UNTRACED] 'A1 1586C' (value a11586c, next word '')
+    sentence: Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted.
+[WEAK] '2839191' (value 2839191, next word 'partly'); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: Record Group 59, Entry A1 1586C, NARA identifier 2839191, , partly restricted.
+[UNTRACED] '66 D 95' (value 66d95, next word '')
+    sentence: State Department, Executive Secretariat, Records Relating to NSC Policy Papers (Lot 66 D 95):
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted.
+[UNTRACED] 'A1 1586E' (value a11586e, next word '')
+    sentence: Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted.
+[WEAK] '2839192' (value 2839192, next word 'partly'); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: Record Group 59, Entry A1 1586E, NARA identifier 2839192, , partly restricted.
+[WEAK] '59 D 260' (value 59d260, next word ''); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: Information Agency, Office of Policy and Plans, Subject Files (Lot 59 D 260):
+[UNTRACED] 'WW 151' (value ww151, next word '')
+    sentence: Record Group 306, Entries UD-WW 151 and others, NARA identifier 1257679, , partly restricted.
+[WEAK] '1257679' (value 1257679, next word 'partly'); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: Record Group 306, Entries UD-WW 151 and others, NARA identifier 1257679, , partly restricted.
+[UNTRACED] '65 D 101' (value 65d101, next word '')
+    sentence: State Department, Policy Planning Council, Chronological Files (Lot 65 D 101):
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Record Group 59, Entry A1 558-D, NARA identifier 1136548, , unrestricted.
+[UNTRACED] 'A1 558' (value a1558, next word '')
+    sentence: Record Group 59, Entry A1 558-D, NARA identifier 1136548, , unrestricted.
+[WEAK] '1136548' (value 1136548, next word 'unrestricted'); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: Record Group 59, Entry A1 558-D, NARA identifier 1136548, , unrestricted.
+[UNTRACED] '71 D 273' (value 71d273, next word '')
+    sentence: Lindley (Lot 71 D 273):
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Record Group 59, Entry A1 5441, NARA identifier 2131139, , unrestricted.
+[UNTRACED] 'A1 5441' (value a15441, next word '')
+    sentence: Record Group 59, Entry A1 5441, NARA identifier 2131139, , unrestricted.
+[WEAK] '2131139' (value 2131139, next word 'unrestricted'); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: Record Group 59, Entry A1 5441, NARA identifier 2131139, , unrestricted.
+[WEAK] '67 D 54' (value 67d54, next word ''); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: State Department, Bureau of East Asian and Pacific Affairs, Subject Files of the Vietnam Working Group (Lot 67 D 54):
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted.
+[UNTRACED] 'A1 5305' (value a15305, next word '')
+    sentence: Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted.
+[UNTRACED] 'A1 5414' (value a15414, next word '')
+    sentence: Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted.
+[WEAK] '631403' (value 631403, next word 'unrestricted'); nearest row: Series entries, NARA identifiers (2839191, 2839192, 631403, 631695, 1257679, 1136548, 2131139), dates and access; lot numbers | Bottom line 2 | [M13], [M11], [M12] | "Lot 62 D 430, Lot 63 D 351, Lot 6
+    sentence: Record Group 59, Entries A1 5305 and A1 5414, NARA identifier 631403, , unrestricted.
+[WEAK] '70' (value 70, next word 'which'); nearest row: Australia/New Zealand: about 70 (69) | Bottom line 3 | [M9] | "Australia/New Zealand: about 70"
+    sentence: Australia and New Zealand, with the same agency names, found about 70, which I did not read.
+[WEAK] 'one' (value 1, next word 'judgement'); nearest row: 25 documents in the collection | Bottom line 1; How this was done; Read next | [M16], [M14] | "25 documents in the collection"; "61 documents retrieved whole, 25 quoted"
+    sentence: I kept the documents the argument rests on. ## Findings The image followed the credibility of American commitments The officials returned repeatedly to one judgement:
+[WEAK] 'One' (value 1, next word 'memorandum'); nearest row: 25 documents in the collection | Bottom line 1; How this was done; Read next | [M16], [M14] | "25 documents in the collection"; "61 documents retrieved whole, 25 quoted"
+    sentence: One memorandum put the balance this way:
+[WEAK] '84' (value 84, next word 'all'); nearest row: 84 volumes in scope | Bottom line 3; Scope; How this was done | [M3] | "84 volumes, about 39,000 documents in scope"
+    sentence: I then searched the regional and information volumes, 84 in all, for that vocabulary, with a phrase every volume contains and a nonsense string as checks on each pass.
+[WEAK] '18' (value 18, next word 'to'); nearest row: about 18 per 1,000 (1940s), about 52 (1960s), about 32 (1970s) | How this was done | [M7] | "rate rises from about 18 per 1,000 ... falls to about 32"
+    sentence: The share of regional documents using the vocabulary rises from about 18 per 1,000 in the to about 52 in the and falls to about 32 in the ; the figure leans on one volume, the China volume on the closing of the information offices.
+[WEAK] '1,000' (value 1000, next word 'to'); nearest row: about 18 per 1,000 (1940s), about 52 (1960s), about 32 (1970s) | How this was done | [M7] | "rate rises from about 18 per 1,000 ... falls to about 32"
+    sentence: The share of regional documents using the vocabulary rises from about 18 per 1,000 in the to about 52 in the and falls to about 32 in the ; the figure leans on one volume, the China volume on the closing of the information offices.
+[WEAK] '52' (value 52, next word 'fall'); nearest row: about 18 per 1,000 (1940s), about 52 (1960s), about 32 (1970s) | How this was done | [M7] | "rate rises from about 18 per 1,000 ... falls to about 32"
+    sentence: The share of regional documents using the vocabulary rises from about 18 per 1,000 in the to about 52 in the and falls to about 32 in the ; the figure leans on one volume, the China volume on the closing of the information offices.
+[WEAK] '32' (value 32, next word 'figure'); nearest row: about 18 per 1,000 (1940s), about 52 (1960s), about 32 (1970s) | How this was done | [M7] | "rate rises from about 18 per 1,000 ... falls to about 32"
+    sentence: The share of regional documents using the vocabulary rises from about 18 per 1,000 in the to about 52 in the and falls to about 32 in the ; the figure leans on one volume, the China volume on the closing of the information offices.
+[WEAK] '141' (value 141, next word 'nearly'); nearest row: 141 candidates | How this was done | [M3], [M4], [M11] | "141 documents whose headings name the information agencies"
+    sentence: Of the 141, nearly half came from State Department files and more than a quarter from the information agency's.
+[WEAK] 'half' (value 0.5, next word 'came'); nearest row: nearly half from State (66), more than a quarter from the information agency (40) | How this was done | [M11] | "nearly half of the 141 from State (66), more than a quarter from USIA (40)"
+    sentence: Of the 141, nearly half came from State Department files and more than a quarter from the information agency's.
+[WEAK] 'One' (value 1, next word 'document'); nearest row: 25 documents in the collection | Bottom line 1; How this was done; Read next | [M16], [M14] | "25 documents in the collection"; "61 documents retrieved whole, 25 quoted"
+    sentence: One document, the Saigon report of , I reached only through a comparison of documents by overall similarity of wording, which no word search found.

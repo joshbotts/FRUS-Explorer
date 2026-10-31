@@ -1,0 +1,13 @@
+PAIRWISE Hamming among the 33 collection documents: n=528 min 96 median 146; random-pair baseline mean 167.1 sd 14.8 min 95 (20000 pairs, Random(1877))
+  ham  96  frus1917-72PubDipv08/d31  frus1917-72PubDipv07/d147
+  ham  96  frus1917-72PubDipv08/d31  frus1969-76v38p2/d105
+  ham  98  frus1952-54v13p2/d992  frus1969-76v38p2/d105
+  ham 100  frus1917-72PubDipv07/d147  frus1917-72PubDipv08/d129
+  ham 102  frus1950v06/d15  frus1950v06/d32
+  ham 103  frus1950v06/d32  frus1969-76v38p2/d105
+  ham 103  frus1917-72PubDipv07/d147  frus1917-72PubDipv08/d58
+  ham 105  frus1950v06/d15  frus1969-76v38p2/d105
+pairs under 60: 0 ; pairs under 40 (near-duplicate range flagged): 0
+unclustered in the 5 public-diplomacy volumes: 282 of 968
+unclustered among the 33 collection documents: 9 of 33
+neighbour documents listed (all anchors, incl. anchors): 52

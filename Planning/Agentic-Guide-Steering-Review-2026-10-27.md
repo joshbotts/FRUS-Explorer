@@ -43,6 +43,10 @@ V6 needed no new text: v1.36's line, pasted into the block, gave A 4 of 4.
 The owner followed the rule (2026-10-30). The guide records the measurement at v1.38 and adopts
 nothing. R7, R8 and R10 are owed a measurement alone.
 
+**R7, R8 and R10 measured 2026-10-31** (`C-3-Reader-Facing-Tier-Results-2026-10-31.md`), with R6's
+vocabulary bullet in that tier's reader-facing arm. By that tier's rule none is adopted, and the
+owner followed it (guide v1.39).
+
 Written against `Docs/Agentic-Analysis-Guide.md` v1.36 (3,574 lines, `v2` @ `e85cef7`),
 the two results files (`C-3-Results-2026-10-26.md`, twelve runs of the §12 block on the
 recognition question; `C-3-Vectors-Tier-Results-2026-10-27.md`, four runs with Appendix A and the

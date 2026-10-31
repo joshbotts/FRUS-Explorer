@@ -1,0 +1,7 @@
+SET A (PD/info volumes, header names an East Asia/Pacific place or office): 42 docs
+SET B (regional volumes, family A): 1176 docs
+Set A record_group counts (document_sources.record_group): {'306': 27, None: 6, '59': 8, '305': 1}
+non-apparatus docs in the 7 information/public-diplomacy volumes: 1582
+Set A repository counts: {'National Archives': 31, 'Kennedy Library': 3, 'Johnson Library': 1, 'Nixon Presidential Materials': 1, 'Department of State': 5, 'Carter Library': 1}
+dumped files: 52
+dumped whole (captured length = length(body_text)): 52 of 52

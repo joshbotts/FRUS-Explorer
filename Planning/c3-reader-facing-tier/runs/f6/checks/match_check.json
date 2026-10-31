@@ -1,0 +1,115 @@
+{
+ "run": "runs/f6",
+ "termsTested": 12,
+ "dead": [
+  {
+   "term": "\"soft power\\\"",
+   "source": "queries.log",
+   "line": 53,
+   "returns": false,
+   "query": "\"soft power\\\"",
+   "nearestLive": null
+  }
+ ],
+ "syntaxErrors": [],
+ "prefixes": [],
+ "vocabLookupsInLog": 0,
+ "all": [
+  {
+   "term": "USIA",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"USIA\"",
+   "nearestLive": null
+  },
+  {
+   "term": "USIS",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"USIS\"",
+   "nearestLive": null
+  },
+  {
+   "term": "information",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"information\"",
+   "nearestLive": null
+  },
+  {
+   "term": "psychological",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"psychological\"",
+   "nearestLive": null
+  },
+  {
+   "term": "propaganda",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"propaganda\"",
+   "nearestLive": null
+  },
+  {
+   "term": "cultural",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"cultural\"",
+   "nearestLive": null
+  },
+  {
+   "term": "educational",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"educational\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"public diplomacy\\\"",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"public diplomacy\\\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"Voice of America\\\"",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"Voice of America\\\"",
+   "nearestLive": null
+  },
+  {
+   "term": "prestige",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"prestige\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"soft power\\\"",
+   "source": "queries.log",
+   "line": 53,
+   "returns": false,
+   "query": "\"soft power\\\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"Peace Corps\\\"",
+   "source": "queries.log",
+   "line": 54,
+   "returns": true,
+   "query": "\"Peace Corps\\\"",
+   "nearestLive": null
+  }
+ ]
+}

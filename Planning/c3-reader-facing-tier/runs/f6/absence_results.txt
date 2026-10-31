@@ -1,0 +1,8 @@
+POSITIVE Department of State|14916|76
+NEGATIVE ZZZ_IMPOSSIBLE_ZZZ|0|0
+survey/poll with USIA/USIS|64|28
+poll or survey of Asian opinion|148|58
+leaflet/script/film/broadcast text|33|17
+Peace Corps|60|18
+Fulbright program (not Senator)|126|41
+binational center|3|3

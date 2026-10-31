@@ -1,0 +1,7 @@
+FAMILY_A_EAP: (898, 40, 32, 32, ['frus1948v06/d111', 'frus1948v06/d156', 'frus1948v06/d242', 'frus1948v06/d52', 'frus1949v07p1/d203', 'frus1949v07p1/d319', 'frus1949v07p1/d404', 'frus1951v06p2/d480']) (memo 898; 32 of 40; 32 of 40)
+famA_scope105: (1538, 40, 34, 34, ['frus1947v06/d831', 'frus1948v06/d117', 'frus1948v06/d227', 'frus1948v06/d95', 'frus1949v07p1/d320', 'frus1951v06p2/d372']) (memo 1,538; 34 of 40; 34 of 40)
+boxer_indemnity_EAP: (99, 40, 38, 40, []) (memo 99; 38 of 40; 40 of 40)
+propaganda_scope105: (3407, 40, 40, 40, []) (memo 3,407; 40/40)
+prestige_scope105: (2108, 40, 40, 40, []) (memo 2,108; 40/40)
+ miss frus1948v06/d111 USI-words: ['USI']
+ miss frus1947v06/d831 USI-words: ['USI']

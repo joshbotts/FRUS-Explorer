@@ -1,0 +1,64 @@
+SELECT f.volume_id, f.document_id, bm25(frus_documents) s, substr(replace(d.header,char(10),' '),1,120), d.dateline, length(d.body_text) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN G ON G.volume_id=d.volume_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND frus_documents MATCH ? AND (d.header LIKE '%Asia%' OR d.header LIKE '%Viet%' OR d.header LIKE '%Japan%' OR d.header LIKE '%China%' OR d.header LIKE '%Chinese%' OR d.header LIKE '%Korea%' OR d.header LIKE '%Indonesia%' OR d.header LIKE '%Philippines%' OR d.header LIKE '%Thai%' OR d.header LIKE '%Pacific%' OR d.header LIKE '%Taiwan%' OR d.header LIKE '%Far East%') ORDER BY f.volume_id, f.document_id
+(Vietnam OR Viet OR Korea OR Japan OR Japanese OR China OR Chinese OR Indonesia OR Philippines OR Thailand OR Laos OR Cambodia OR Asia OR Asian OR Taiwan OR Malaysia OR Singapore OR Pacific)
+61
+frus1917-72PubDipv06 d103 6820 | 103. Letter From the Director of the United States Information Agency (Murrow) to the Assistant Secretary of State for F | Washington, January 3, 1963.
+frus1917-72PubDipv06 d110 10126 | 110. Letter From the Assistant Secretary of State for Far Eastern Affairs (Harriman) to the Director of the United State | Washington, January 28, 1963.
+frus1917-72PubDipv06 d111 3662 | 111. Memorandum From the Acting Assistant Director, Far East, United States Information Agency (Moore) to the Deputy Dir | Washington, February 1, 1963.
+frus1917-72PubDipv06 d112 8210 | 112. Memorandum From the Assistant Director, Far East, United States Information Agency (Bunce) to the Director (Murrow) | Washington, February 8, 1963.
+frus1917-72PubDipv06 d121 3585 | 121. Memorandum From the Assistant Director, Soviet Bloc, United States Information Agency (Brady) to the Director (Murr | Washington, April 30, 1963.
+frus1917-72PubDipv06 d126 4751 | 126. Memorandum From the Acting Director of the United States Information Agency (Wilson) to the Assistant Secretary of  | Washington, May 17, 1963.
+frus1917-72PubDipv06 d127 3245 | 127. Telegram From the Embassy in Japan to the Secretary of State | Tokyo, June 1, 1963 7 p.m.
+frus1917-72PubDipv06 d128 6800 | 128. Letter From the Director of the United States Information Agency (Murrow) to the Assistant Secretary of State for F | Washington, June 4, 1963.
+frus1917-72PubDipv06 d133 3822 | 133. Memorandum From the Deputy Assistant Secretary of State for Far Eastern Affairs (Rice) to the Deputy Director of th | Washington, June 24, 1963.
+frus1917-72PubDipv06 d140 13295 | 140. Memorandum From the Counselor for Public Affairs at the Embassy in Vietnam (Mecklin) to the Director of the United  | En route to Washington, September 10, 19
+frus1917-72PubDipv06 d146 2061 | 146. Letter From the Acting Director of the United States Information Agency (Wilson) to the Counselor for Public Affair | Washington, October 18, 1963.
+frus1917-72PubDipv06 d37 3134 | 37. Memorandum From the Deputy Director for Policy and Plans, United States Information Agency (Sorensen) to the Assista | Washington, June 30, 1961.
+frus1917-72PubDipv07 d103 3687 | 103. Memorandum of Agreement on Direction and Supervision of U.S. Psychological Operations in Vietnam | Saigon, August 10, 1966
+frus1917-72PubDipv07 d171 5883 | 171. Memorandum From the Assistant Director, East Asia and Pacific, United States Information Agency (Oleksiw) to the As | Washington, November 24, 1967
+frus1917-72PubDipv07 d32 27974 | 32. Memorandum From James N. Tull of the Office of the Assistant Director for Far East, United States Information Agency | Washington, October 30, 1964
+frus1917-72PubDipv07 d46 4926 | 46. Airgram From the Embassy in the Soviet Union to the Department of State | Moscow, May 28, 1965
+frus1917-72PubDipv07 d47 9332 | 47. Memorandum From the Assistant Director, Soviet Union and Eastern Europe, United States Information Agency (Davies) t | Washington, June 15, 1965
+frus1917-72PubDipv07 d48 9074 | 48. Guidance Prepared in the Joint U.S. Public Affairs Office in Vietnam | Saigon, June 22, 1965
+frus1917-72PubDipv07 d70 7064 | 70. Memorandum From the Assistant Director, Soviet Union and Eastern Europe, United States Information Agency (Davies) t | Washington, January 10, 1966
+frus1917-72PubDipv07 d73 4186 | 73. Memorandum From the Acting Assistant Director, Office of the Assistant Director, Far East, United States Information | Washington, January 25, 1966
+frus1917-72PubDipv07 d74 5650 | 74. Memorandum From the Assistant Director, Near East and South Asia, United States Information Agency (Carter) to the D | Washington, January 26, 1966
+frus1917-72PubDipv07 d85 19705 | 85. Memorandum From the Deputy Assistant Director, Viet-Nam Affairs, Office of the Assistant Director for the Far East,  | Washington, April 15, 1966
+frus1917-72PubDipv07 d97 3546 | 97. Telegram From the Embassy in the Soviet Union to the Department of State | Moscow, July 21, 1966
+frus1917-72PubDipv08 d106 2737 | 106. Memorandum From the Deputy Assistant Director, Office of the Assistant Director, Near East and South Asia, United S | Washington, September 2, 1970
+frus1917-72PubDipv08 d121 4956 | 121. Letter From the Assistant Director, East Asia and Pacific, United States Information Agency (Reinhardt) to all USIA | Washington, December 11, 1970
+frus1917-72PubDipv08 d127 2661 | 127. Memorandum From the Deputy Assistant Director, Office of the Assistant Director, East Asia and Pacific, United Stat | Washington, April 8, 1971
+frus1917-72PubDipv08 d143 4182 | 143. Memorandum From the Deputy Assistant Secretary of State for East Asian and Pacific Affairs (Brown) to the Acting Di | Washington, July 27, 1971
+frus1917-72PubDipv08 d146 3823 | 146. Memorandum From the Assistant Director, East Asia and Pacific, United States Information Agency (Reinhardt) to the  | Washington, August 16, 1971
+frus1917-72PubDipv08 d149 10253 | 149. Memorandum From the Deputy Assistant Director, Office of the Assistant Director, East Asia and Pacific, United Stat | Washington, November 23, 1971
+frus1917-72PubDipv08 d155 6536 | 155. Memorandum From the Assistant Director, South Asia, United States Information Agency (Squires) to the Deputy Direct | Washington, December 20, 1971
+frus1917-72PubDipv08 d24 1523 | 24. Memorandum From the Assistant Director, East Asia and Pacific, United States Information Agency (Oleksiw) to the Dep | Washington, June 3, 1969
+frus1917-72PubDipv08 d30 1262 | 30. Circular Message From the United States Information Agency to the Embassy in Thailand | Washington, August 2, 1969
+frus1917-72PubDipv08 d31 20792 | 31. Letter From the Assistant Director, East Asia and the Pacific, United States Information Agency (Oleksiw) to all USI | Washington, August 5, 1969
+frus1917-72PubDipv08 d58 4685 | 58. Summary Prepared in the Office of the Assistant Director, East Asia and Pacific, United States Information Agency | Washington, December 8, 1969
+frus1917-72PubDipv08 d63 5970 | 63. Circular Message From the United States Information Agency to all Principal USIS Posts and the Embassy in the Soviet | Washington, December 31, 1969
+frus1917-72PubDipv08 d74 2627 | 74. Memorandum From the Assistant Director, Near East and South Asia, United States Information Agency (Carter) to the A | Washington, February 25, 1970
+frus1917-72PubDipv08 d83 11188 | 83. Airgram From the Embassy in Vietnam to the Department of State | Saigon, May 4, 1970
+frus1917-72PubDipv08 d87 3878 | 87. Memorandum From the Assistant Director, Near East and South Asia, United States Information Agency (Nalle) to the De | Washington, June 1, 1970
+frus1917-72PubDipv08 d88 1861 | 88. Memorandum From the Assistant Director, East Asia and Pacific, United States Information Agency (Oleksiw) to the Dir | Washington, June 1, 1970
+frus1917-72PubDipv08 d92 3819 | 92. Memorandum From the Assistant Director, East Asia and Pacific, United States Information Agency (Reinhardt) to the D | Washington, June 23, 1970
+frus1955-57v09 d10 27901 | 10. Report by the Working Group of the Subcommittee on Soviet Economic Penetration | Washington, March 11, 1957.
+frus1955-57v09 d131 9773 | 131. Memorandum From the Deputy Assistant Secretary of State for Near Eastern, South Asian, and African Affairs (Jernega | Washington, April 14, 1955.
+frus1955-57v09 d54 3485 | 54. Memorandum From the Assistant Secretary of State for Far Eastern Affairs (Robertson) to the Under Secretary of State | Washington, December 8, 1955.
+frus1961-63v25 d155 2697 | 155. Memorandum From the Assistant Director (Soviet Union and Eastern Europe) of the U.S. Information Agency (Brady) to  | Washington, September 26, 1963.
+frus1961-63v25 d170 9124 | 170. Memorandum From the Regional Planning Adviser in the Bureau of Far Eastern Affairs (Jenkins) to the Assistant Secre | Washington, June 1, 1961.
+frus1961-63v25 d179 13197 | 179. Telegram From the Department of State to the Embassy in the Republic of China | Washington, August 15, 1961, 10:08 p.m.
+frus1961-63v25 d431 5215 | 431. Telegram From the Department of State to the Embassy in Japan | Washington, November 13, 1963, 7:48 p.m.
+frus1964-68v33 d126 6018 | 126. Memorandum From the Country Director for Laos (Hamilton) to the Assistant Secretary of State for East Asian and Pac | Washington, August 28, 1967.
+frus1964-68v33 d138 4000 | 138. Memorandum From the Staff Director of the Interdepartmental Regional Group for East Asian and Pacific Affairs (Duem | Washington, December 23, 1968.
+frus1964-68v33 d438 1882 | 438. Memorandum From Robert Komer of the National Security Council Staff to the Assistant Secretary of State for Near Ea | Washington, January 16, 1964.
+frus1969-76v38p2 d105 11622 | 105. Memorandum From the Assistant Director for East Asia and the Pacific, United States Information Agency (Payeff) to  | Washington, May 9, 1975.
+frus1969-76v38p2 d121 7744 | 121. Letter From the Assistant Secretary of State for East Asian and Pacific Affairs (Ingersoll) to the Ambassador to th | Washington, December 20, 1973.
+frus1977-80v28 d89 3957 | 89. Memorandum From the Deputy Under Secretary of State for Management (Read) to the Assistant Secretary of State for Af | Washington, September 11, 1978
+frus1977-80v30 d15 9154 | 15. Memorandum From the Assistant Director, North Africa, Near East, and South Asia, United States Information Agency (N | Washington, March 3, 1977
+frus1977-80v30 d152 8833 | 152. Telegram From the Liaison Office in China to the International Communication Agency | Beijing, October 4, 1978, 0241Z
+frus1977-80v30 d170 3602 | 170. Memorandum From the Director for North African, Near East, and South Asian Affairs, International Communication Age | Washington, April 30, 1979
+frus1977-80v30 d2 6124 | 2. Information Memorandum From the Deputy Assistant Director, East Asia and Pacific, United States Information Agency (F | Washington, January 6, 1977
+frus1977-80v30 d74 2149 | 74. Information Memorandum From the Assistant Director, North Africa, Near East, and South Asia, United States Informati | Washington, June 28, 1977
+frus1977-80v30 d79 2409 | 79. Information Memorandum From the Assistant Director, East Asia and the Pacific, United States Information Agency (Smi | Washington, July 19, 1977
+frus1977-80v30 d81 1401 | 81. Telegram From the Department of State to all East Asian and Pacific Diplomatic Posts | Washington, July 23, 1977, 0055Z
+frus1977-80v30 d83 2898 | 83. Telegram From the Embassy in Indonesia to the Department of State | Jakarta, August 1, 1977, 0830Z

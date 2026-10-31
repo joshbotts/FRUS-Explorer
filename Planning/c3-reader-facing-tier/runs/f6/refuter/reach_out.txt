@@ -1,0 +1,66 @@
+cnt USIS                         rows=   605 cited-hits= 6 
+cnt USIA                         rows=   312 cited-hits= 9 
+cnt Voice of America             rows=    75 cited-hits= 2 
+cnt information program          rows=   141 cited-hits= 6 
+cnt psychological                rows=  2227 cited-hits=10 
+cnt propaganda                   rows=  2789 cited-hits= 8 
+cnt cultural exchange            rows=   123 cited-hits= 0 
+cnt educational exchange         rows=    57 cited-hits= 1 
+cnt prestige                     rows=  1702 cited-hits= 0 
+cnt hearts and minds             rows=    18 cited-hits= 0 
+cnt soft power                   rows=     0 cited-hits= 0 
+cnt image of the United States   rows=     4 cited-hits= 0 
+cnt Asian mind                   rows=     7 cited-hits= 0 
+cnt ZZZ                          rows=     0 cited-hits= 0 
+cnt Department of State          rows= 14916 cited-hits= 6 
+header query                     rows=   153 cited-hits=13 
+rank assessment                  rows=   225 cited-hits= 9 (limit 50: within=8)
+rank audience beliefs            rows=   123 cited-hits= 2 (limit 30: within=1)
+rank exchange                    rows=   547 cited-hits= 3 (limit 30: within=0)
+rank info-set Asia               rows=  1263 cited-hits= 7 (limit 60: within=7)
+QUERY ERROR rank Japan a no such column: American
+rank Japan b                     rows=   254 cited-hits= 3 (limit 25: within=2)
+M4 QA family                     rows=  1296 cited-hits=16 
+absence survey/poll              rows=    64 cited-hits= 2 
+absence Asian opinion            rows=   148 cited-hits= 1 
+absence leaflet                  rows=    33 cited-hits= 2 
+absence Peace Corps              rows=    60 cited-hits= 2 
+absence Fulbright                rows=   126 cited-hits= 0 
+absence binational               rows=     3 cited-hits= 0 
+rank survey/poll top10           rows=    64 cited-hits= 2 (limit 10: within=2)
+falsefriend public diplomacy     rows=     2 cited-hits= 0 
+falsefriend messaging            rows=  6688 cited-hits= 3 
+falsefriend audience             rows=   255 cited-hits= 4 
+
+=== per cited document ===
+frus1917-72PubDipv06/d126   ANY= 1 non-control= 1 | non-control queries: ['rank info-set Asia'] | within read lists: ['rank info-set Asia#7']
+frus1917-72PubDipv06/d133   ANY= 1 non-control= 1 | non-control queries: ['rank info-set Asia'] | within read lists: ['rank info-set Asia#8']
+frus1917-72PubDipv07/d171   ANY= 1 non-control= 1 | non-control queries: ['rank info-set Asia'] | within read lists: ['rank info-set Asia#14']
+frus1917-72PubDipv08/d31    ANY= 1 non-control= 1 | non-control queries: ['rank info-set Asia'] | within read lists: ['rank info-set Asia#10']
+frus1949v07p2/d386   ANY= 7 non-control= 7 | non-control queries: ['cnt information program', 'cnt propaganda', 'rank assessment', 'rank audience beliefs', 'rank Japan b', 'M4 QA family', 'absence Asian opinion'] | within read lists: ['rank assessment#10', 'M4 QA family']
+frus1950v06/d32    ANY= 6 non-control= 5 | non-control queries: ['cnt psychological', 'cnt propaganda', 'header query', 'rank audience beliefs', 'falsefriend audience'] | within read lists: ['header query', 'rank audience beliefs#24']
+frus1952-54v12p2/d403   ANY= 5 non-control= 5 | non-control queries: ['cnt information program', 'cnt psychological', 'header query', 'rank assessment', 'M4 QA family'] | within read lists: ['header query', 'rank assessment#3', 'M4 QA family']
+frus1952-54v14p2/d820   ANY= 6 non-control= 5 | non-control queries: ['cnt information program', 'cnt psychological', 'rank assessment', 'rank Japan b', 'M4 QA family'] | within read lists: ['rank Japan b#4', 'M4 QA family']
+frus1961-63v01/d265   ANY= 6 non-control= 6 | non-control queries: ['cnt USIA', 'cnt psychological', 'cnt propaganda', 'header query', 'rank assessment', 'M4 QA family'] | within read lists: ['header query', 'rank assessment#16', 'M4 QA family']
+frus1961-63v01/d339   ANY=11 non-control=10 | non-control queries: ['cnt USIS', 'cnt USIA', 'cnt psychological', 'cnt propaganda', 'M4 QA family', 'absence survey/poll', 'absence Peace Corps', 'rank survey/poll top10', 'falsefriend messaging', 'falsefriend audience'] | within read lists: ['M4 QA family', 'rank survey/poll top10#4']
+frus1961-63v01/d49    ANY= 3 non-control= 3 | non-control queries: ['cnt propaganda', 'header query', 'M4 QA family'] | within read lists: ['header query', 'M4 QA family']
+frus1961-63v02/d5     ANY= 6 non-control= 5 | non-control queries: ['cnt USIA', 'cnt propaganda', 'header query', 'rank assessment', 'M4 QA family'] | within read lists: ['header query', 'rank assessment#12', 'M4 QA family']
+frus1961-63v04/d108   ANY= 2 non-control= 2 | non-control queries: ['header query', 'M4 QA family'] | within read lists: ['header query', 'M4 QA family']
+frus1961-63v23/d289   ANY= 8 non-control= 7 | non-control queries: ['cnt USIS', 'cnt psychological', 'cnt educational exchange', 'header query', 'rank exchange', 'M4 QA family', 'absence Peace Corps'] | within read lists: ['header query', 'M4 QA family']
+frus1964-68v01/d197   ANY= 9 non-control= 9 | non-control queries: ['cnt USIS', 'cnt USIA', 'cnt information program', 'cnt psychological', 'cnt propaganda', 'header query', 'rank assessment', 'M4 QA family', 'falsefriend audience'] | within read lists: ['header query', 'rank assessment#8', 'M4 QA family']
+frus1964-68v02/d160   ANY= 9 non-control= 9 | non-control queries: ['cnt USIS', 'cnt USIA', 'cnt psychological', 'header query', 'rank assessment', 'M4 QA family', 'absence leaflet', 'falsefriend messaging', 'falsefriend audience'] | within read lists: ['header query', 'rank assessment#5', 'M4 QA family']
+frus1964-68v02/d172   ANY= 7 non-control= 6 | non-control queries: ['cnt USIS', 'cnt USIA', 'header query', 'M4 QA family', 'absence survey/poll', 'rank survey/poll top10'] | within read lists: ['header query', 'M4 QA family', 'rank survey/poll top10#2']
+frus1964-68v03/d138   ANY= 9 non-control= 9 | non-control queries: ['cnt USIA', 'cnt Voice of America', 'cnt information program', 'cnt psychological', 'cnt propaganda', 'rank assessment', 'rank exchange', 'M4 QA family', 'absence leaflet'] | within read lists: ['rank assessment#6', 'M4 QA family']
+frus1964-68v26/d106   ANY= 6 non-control= 6 | non-control queries: ['cnt USIS', 'cnt USIA', 'header query', 'rank assessment', 'M4 QA family', 'falsefriend messaging'] | within read lists: ['header query', 'rank assessment#37', 'M4 QA family']
+frus1964-68v27/d386   ANY= 4 non-control= 4 | non-control queries: ['cnt USIA', 'cnt information program', 'header query', 'M4 QA family'] | within read lists: ['header query', 'M4 QA family']
+frus1969-76v19p2/d67    ANY= 6 non-control= 6 | non-control queries: ['cnt Voice of America', 'cnt psychological', 'header query', 'rank exchange', 'rank Japan b', 'M4 QA family'] | within read lists: ['header query', 'rank Japan b#10', 'M4 QA family']
+frus1969-76v38p2/d105   ANY= 1 non-control= 1 | non-control queries: ['rank info-set Asia'] | within read lists: ['rank info-set Asia#1']
+frus1969-76ve12/d16    ANY= 0 non-control= 0 | non-control queries: [] | within read lists: []
+frus1969-76ve12/d17    ANY= 0 non-control= 0 | non-control queries: [] | within read lists: []
+frus1977-80v22/d3     ANY= 0 non-control= 0 | non-control queries: [] | within read lists: []
+frus1977-80v30/d79    ANY= 1 non-control= 1 | non-control queries: ['rank info-set Asia'] | within read lists: ['rank info-set Asia#34']
+frus1977-80v30/d81    ANY= 1 non-control= 1 | non-control queries: ['rank info-set Asia'] | within read lists: ['rank info-set Asia#56']
+
+STRICT (returned by no logged full-text/heading query at all): [('frus1969-76ve12', 'd16'), ('frus1969-76ve12', 'd17'), ('frus1977-80v22', 'd3')]
+STRICT excluding the two controls: [('frus1969-76ve12', 'd16'), ('frus1969-76ve12', 'd17'), ('frus1977-80v22', 'd3')]
+Returned by no ranked/heading/family LIST the session read (only by count queries or controls): [('frus1969-76ve12', 'd16'), ('frus1969-76ve12', 'd17'), ('frus1977-80v22', 'd3')]

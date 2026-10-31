@@ -1,0 +1,86 @@
+== central-files lotFiles for the lots named ==
+{"catalogURL": "https://catalog.archives.gov/id/1257679", "hmsMlrEntryNumbers": ["UD-WW 151", "UD-WW 197", "UD-WW 234", "UD-WW 264", "UD-WW 287", "UD-WW 288", "UD-WW 365", "UD-WW 366", "UD-WW 372", "UD-WW 379", "UD-WW 382"], "levelOfDescription": "series", "lotNumber": "59D260", "matchType": "control", "naId": "1257679", "recordGroup": "306", "title": "Subject Files"}
+{"catalogURL": "https://catalog.archives.gov/id/2124692", "hmsMlrEntryNumbers": ["A1 1462"], "levelOfDescription": "series", "lotNumber": "62D333", "matchType": "control", "naId": "2124692", "recordGroup": "59", "title": "Psychological Strategy Board Working Files"}
+{"catalogURL": "https://catalog.archives.gov/id/2839191", "hmsMlrEntryNumbers": ["A1 1586C"], "levelOfDescription": "series", "lotNumber": "62D430", "matchType": "control", "naId": "2839191", "recordGroup": "59", "title": "Subject and Special Files"}
+{"catalogURL": "https://catalog.archives.gov/id/2839192", "hmsMlrEntryNumbers": ["A1 1586E"], "levelOfDescription": "series", "lotNumber": "63D351", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}
+{"catalogURL": "https://catalog.archives.gov/id/2839192", "hmsMlrEntryNumbers": ["A1 1586E"], "levelOfDescription": "series", "lotNumber": "66D95", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}
+decimal/subject-numeric structures in central-files-index: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+numericalFile keys: ['microfilm', 'rolls', 'seriesNaId']
+countrySeries categories: ['diplomaticDespatches', 'diplomaticInstructions', 'notesFromForeignMissions', 'notesToForeignMissions', 'consularDespatches', 'consularInstructions', 'notesToForeignConsuls', 'notesFromForeignConsuls', 'domesticLetters', 'lettersReceived', 'specialAgentsDespatches', 'specialAgentsInstructions']
+
+== series-facts byNaId for the NAIDs named ==
+2839192 {"ar": [0], "as": 2, "c": 313, "ru": 0, "ur": [0], "us": 3, "x": "26 linear feet, 3 linear inches", "y0": 1947, "y1": 1979} | access Restricted - Partly | creator Department of State. Office of the Secretary. Executive Secretariat.
+2839191 {"ar": [0], "as": 2, "c": 248, "cy0": 1952, "cy1": 1961, "fa": [1], "ru": 0, "ur": [0], "us": 3, "x": "4 linear feet, 5 linear inches", "y0": 1953, "y1": 1961} | access Restricted - Partly | creator Department of State. Executive Secretariat.
+2124692 {"as": 3, "c": 313, "ru": 0, "us": 1, "x": "3 linear feet, 6 linear inches", "y0": 1951, "y1": 1953} | access Restricted - Possibly | creator Department of State. Office of the Secretary. Executive Secretariat.
+1257679 {"ar": [0], "as": 2, "c": 388, "cy0": 1949, "cy1": 1971, "ru": 0, "us": 3, "x": "47 linear feet", "y0": 1953, "y1": 1971} | access Restricted - Partly | creator U.S. Information Agency. Office of Policy and Plans.
+591194 NOT IN series-facts
+12005682 NOT IN series-facts
+567979 NOT IN series-facts
+566962 NOT IN series-facts
+591256 NOT IN series-facts
+591289 NOT IN series-facts
+5552237 NOT IN series-facts
+5585931 NOT IN series-facts
+series-facts byNaId count: 698
+series with inclusive start < 1940: 11 of 698
+series with inclusive or coverage start < 1940: 20
+
+== collection-authority records for lots 60D322, 62D255, 63D224, 59D260, 63D351, 62D430, 62D333 ==
+{"aliases": ["59 D 260", "Files for the years 1951\u20131959", "USIA /IOP Files, Lots 59 D 260; 61 D 445; 62 D 239; 63 D 224; 64 D 535"], "catalogURL": "https://catalog.archives.gov/id/1257679", "id": "lot:59D260", "lotFileNorm": "59D260", "naId": "1257679", "name": "Lot 59 D 260: Files for the years 1951\u20131959, retired by the Office of Plans.", "recordGroup": "59", "repository": "Department o
+{"aliases": ["60 D 322", "USIA /I Files: Lot 60 D 322", "USIA Files"], "id": "lot:60D322", "lotFileNorm": "60D322", "name": "USIA /I Files, Lot 60 D 322", "recordGroup": "59", "repository": "Department of State"}
+{"aliases": ["62 D 255", "Briefings", "USIA /I/ R Files, Lot 62 D 255"], "id": "lot:62D255", "lotFileNorm": "62D255", "name": "Lot 62 D 255: Briefings, clearance, and speech files for the years 1953\u20131960, retired by the Public Information Staff."}
+{"aliases": ["62 D 333", "PSB files", "State\u2013 PSB files"], "catalogURL": "https://catalog.archives.gov/id/2124692", "id": "lot:62D333", "lotFileNorm": "62D333", "naId": "2124692", "name": "PSB Files, Lot 62 D 333", "recordGroup": "59", "repository": "Department of State"}
+{"aliases": ["62 D 430", "OCB Files", "OCB Files, Lot 62 D 430", "S/S \u2013 OCB Files, Lot 62 D 430", "S/S\u2013 OCB Files: Lot 62 D 430"], "catalogURL": "https://catalog.archives.gov/id/2839191", "children": [{"name": "Master file of the Operations Coordinating Board for the years 1953\u20131960", "volumeIds": ["frus1955-57v06", "frus1955-57v07", "frus1958-60v05", "frus1958-60v05mSupp"]}, {"name
+{"aliases": ["63 D 224", "Files for the Communist Affairs Advisor"], "id": "lot:63D224", "lotFileNorm": "63D224", "name": "Lot 63 D 224: Files for the Communist Affairs Advisor, 1957\u20131962, Atomic Energy Advisor, 1953\u20131961, and Intra\u2013Governmental Liaison Officer, 1954\u20131962, retired by the Office of Plans."}
+{"aliases": ["63 D 351", "63D 351", "63D351", "63\u2013D351", "Department of State Executive Secretariat Files", "Executive Secretariat Files", "NSC Files", "S/S \u2013 NSC , Lot 63 D 351", "S/S \u2013 NSC Files:Lot 63 D 351", "S/S \u2013 NSC Files; Lot 63 D 351", "S/S\u2013 NSC Files, Lot 63 D 351"], "catalogURL": "https://catalog.archives.gov/id/2839192", "children": [{"name": "Master file of Na
+
+== collection-authority records naming entry A1-42 / A1 42 / P-207 / P 207 / P-104 / UD-UP 7 / 84-0003 ==
+{"aliases": ["70 D 398", "USIA /IOP/ G Files: Lot 70 D 398", "USIA /IOP/C Files: Lot 70 D 398"], "catalogURL": "https://catalog.archives.gov/id/40943515", "id": "lot:70D398", "lotFileNorm": "70D398", "naId": "40943515", "name": "Lot 70 D 398: Alphabetical subject files containing Policy Guidance rec
+{"id": "txt:national archives|director's subject file", "name": "Director’s Subject Files", "recordGroup": "306", "repository": "National Archives"}
+{"children": [{"name": "General Subject Files", "volumeIds": ["frus1917-72PubDipv07"]}, {"name": "Plans and Operational Policy Staff", "volumeIds": ["frus1917-72PubDipv08"]}, {"name": "Policy Coordination Staff", "volumeIds": ["frus1917-72PubDipv07", "frus1917-72PubDipv08"]}, {"name": "Program Coord
+{"aliases": ["Office of the Director, Subject File, 1973–1975"], "children": [{"name": "DIRCTR Files Bx 33–36", "volumeIds": ["frus1917-72PubDipv07"]}, {"name": "DIRCTR Sub Files", "volumeIds": ["frus1917-72PubDipv07"]}, {"name": "DIRCTR Subj File", "volumeIds": ["frus1917-72PubDipv06"]}, {"name": "
+{"aliases": ["Records of the Bureau of Educational and Cultural Affairs"], "id": "txt:washington national records center|records of the bureau of educational and cultural affair", "name": "Records of the Bureau of Educational and Cultural Affairs, Office of Policy and Plans, Subject Files, 1961–1977
+
+== accession-series byAccession 306/840003 ==
+306/840003 [{"a": "306-84-0003", "n": "5552237", "t": "Correspondence Files"}, {"a": "306-84-0003", "n": "5585931", "t": "Memorandums Pertaining to the Executive Committee"}]
+383/840003 [{"a": "383-84-0003", "n": "12059447", "t": "Testimonies Before the Senate Armed Services Committee Concerning the Strategic Arms Limitation Talks (SALT) II Treaty"}, {"a": "383-84-0003", "n": "23904845", "t": "Non-Proliferation Files"}]
+84/840003 [{"a": "W084-84-0003", "n": "118947384", "t": "Classified and Unclassified Subject Files"}, {"a": "W084-84-0003", "n": "131028859", "t": "Classified and Unclassified Subject Files"}, {"a": "W084-84-0003", "n": "131065843", "t": "Classified Subject Files"}, {"a": "W084-84-0003", "n": "165042769", "t": "Classified and Unclassified Subject Files"}, {"a": "W084-84-0003", "n": "165128487", "t": "Classified and Unclassified Subject Files"}, {"a": "W084-84-0003", "n": "165318659", "t": "Classified and Unclassified Subject Files"}, {"a": "W084-84-0003", "n": "165467065", "t": "Classified and Unclassified Subject Files"}, {"a": "W084-84-0003", "n": "166072737", "t": "Classified and Unclassified Subject Files"}, {"a": "W084-84-0003", "n": "166666887", "t": "Classified and Unclassified Subject Files"}, {"a": "W084-84-0003", "n": "167348793", "t": "Classified and Unclassified Subject Files"}, {"a": "W084-84-0003", "n": "167454769", "t": "Subject Files Relating to Political and Military Affairs"}, {"a": "W084-84-0003", "n": "167807344", "t": "Classified Economic and Political Subject Files"}, {"a": "W084-84-0003", "n": "167807387", "t": "Classified Central Subject Files"}, {"a": "W084-84-0003", "n": "169051697", "t": "Classified Central Subject Files"}, {"a": "W084-84-0003", "n": "169052291", "t": "Political and Economic Reporting Files"}, {"a": "W084-84-0003", "n": "6217325", "t": "Classified Central Subject Files"}]
+
+== presidential-library-catalog: Johnson NSF / Confidential Files / Carter Plains ==
+Johnson Library | National Security Files | collection naId 567979 | access keys: ['identifier', 'naId', 'series', 'statedSeriesCount', 'title']
+   series {'inclusiveDates': '1963–1969', 'naId': 591194, 'title': 'Vietnam Country Files'}
+Johnson Library | White House Central Files (Johnson Administration) | collection naId 566962 | access keys: ['identifier', 'naId', 'series', 'statedSeriesCount', 'title']
+   series {'inclusiveDates': '1963–1969', 'naId': 12005682, 'title': 'Confidential Files'}
+Carter Library | Plains Files | collection naId 591256 | access keys: ['identifier', 'naId', 'series', 'statedSeriesCount', 'title']
+   series {'inclusiveDates': '1977–1981', 'naId': 591273, 'title': "President's Personal Foreign Affairs Files"}
+   series {'inclusiveDates': '1977–1981', 'naId': 591286, 'title': "President's Daily Diary Research Files"}
+   series {'inclusiveDates': '1973–1982', 'naId': 591289, 'title': 'Subject Files'}
+presidential catalog keys: ['identifier', 'naId', 'series', 'series.inclusiveDates', 'series.naId', 'series.title', 'statedSeriesCount', 'title']
+
+== external-citation-index: entries for 511.00, lot 62D333, 59D260, 63D224, 60D322, 62D255 ==
+ec keys ['classPairs', 'classSourceKeys', 'classTargetKeys', 'classTargets', 'coverage', 'generated', 'pairs', 'schemaVersion', 'sourceIds', 'targetIds', 'targets', 'volumes']
+62D333 present in external-citation-index: True
+59D260 present in external-citation-index: True
+63D224 present in external-citation-index: True
+60D322 present in external-citation-index: True
+62D255 present in external-citation-index: True
+2124692 present in external-citation-index: False
+1257679 present in external-citation-index: False
+
+== volume-sources-index: entries for the cited volumes mentioning RG 306 entries ==
+vs keys ['generated', 'lots', 'majorCollections', 'recordGroups', 'schemaVersion']
+'A1-42' in volume-sources-index: False
+'A1–42' in volume-sources-index: False
+'P-207' in volume-sources-index: False
+'P–207' in volume-sources-index: False
+'P-104' in volume-sources-index: False
+'P–104' in volume-sources-index: False
+'UD-UP 7' in volume-sources-index: False
+'UD–UP 7' in volume-sources-index: False
+'306-84-0003' in volume-sources-index: False
+'306–84–0003' in volume-sources-index: False
+'RG 305' in volume-sources-index: False
+'A1 1586E' in volume-sources-index: False
+'A1 1586C' in volume-sources-index: False
+'A1 1462' in volume-sources-index: False
+'UD-WW 151' in volume-sources-index: False

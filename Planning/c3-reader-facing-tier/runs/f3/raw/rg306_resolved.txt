@@ -1,0 +1,21 @@
+RG306 lotFiles rows: 17
+70D398 | entry ['P 311'] | NAID 40943515 | Alphabetical Subject Files Containing Policy Guidance Records | {"accessRestrictions": ["FOIA (b)(1) National Security", "FOIA (b)(6) Personal Information"], "accessStatus": "Restricted - Partly", "creator": "U.S. Information Agency. Office of Policy.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "20 linear feet, 5 linear inches", "inclusiveStartYear": 1953, "inclusiveEndYear": 1969}
+accession keys: ['byAccession', 'generated', 'legend', 'note', 'schemaVersion']
+{"a": "asPrinted \u2014 NARA's own spelling of the transfer number, verbatim", "i": "prefixInferred \u2014 true when the stored string carried no record-group prefix and the shard's own group was used; ABSENT means false", "n": "naId \u2014 NARA unique identifier for the series", "t": "title \u2014 the series title as NARA describes it"}
+Keys are `<record group>/<accession>`, the accession folded to letters and digits (`71 A 6682` -> `71A6682`). THE RECORD GROUP IS PART OF THE KEY AND MUST BE MATCHED: an accession number is unique only within its group — `68A5612` names 1 series in RG 59 and 18 in RG 84 — so a lookup that ignores it answers a State citation with Foreign Service Post records. Every series NARA records under an acce
+RG306 accession keys: 708 ['306/030003', '306/30672D4904', '306/36A190', '306/59A428', '306/60D0314', '306/60E314', '306/61A0226', '306/61A0226A', '306/61A0331', '306/61A0498', '306/61A0501', '306/61A0502', '306/61A226', '306/61A498', '306/61A502']
+306/72A5121 [{"a": "306-72A-5121", "n": "1257679", "t": "Subject Files"}, {"a": "306-72A-5121", "n": "40943515", "t": "Alphabetical Subject Files Containing Policy Guidance Records"}, {"a": "306-72A-5121", "n": "4667751", "t": "Background Files"}, {"a": "306-72A5121", "n": "48349732", "t": "Regional Subject Files"}, {"a": "306-72A5121", "n": "51861375", "t": "Country Files for Bolivia"}, {"a": "306-72A5121", "n": "53279603", "t": "Regional Country Files"}, {"a": "306-72A5121", "n": "55029502", "t": "Country Files for Switzerland"}, {"a": "306-72A5121", "n": "55159731", "t": "Country Files for Chile"}, {"a
+306/69A3445 [{"a": "306-69A-3445", "n": "1257679", "t": "Subject Files"}, {"a": "306-69A3445", "n": "1274177", "t": "Subject Files"}, {"a": "306-69A3445", "n": "40943515", "t": "Alphabetical Subject Files Containing Policy Guidance Records"}, {"a": "306-69A3445", "n": "48349732", "t": "Regional Subject Files"}, {"a": "306-69A3445", "n": "53279603", "t": "Regional Country Files"}, {"a": "306-69A3445", "n": "55275646", "t": "Correspondence Logs and Receipt Manifests"}, {"a": "306-69A3445", "n": "56918827", "t": "Country Correspondence Files"}, {"a": "306-69A3445", "n": "57596390", "t": "West European Specia
+306/67A222 [{"a": "306-67A222", "n": "48349732", "t": "Regional Subject Files"}, {"a": "306-67A222", "n": "55275645", "t": "Subject and Country Files Relating to Culture"}, {"a": "306-67A222", "n": "63531119", "t": "Subject Files Relating to Youth Issues"}]
+306/68A4933 [{"a": "306-68A4933", "n": "1102141", "t": "Subject Files of the Director"}, {"a": "306-68A4933", "n": "1126733", "t": "Speech Files"}, {"a": "306-68A4933", "n": "42125423", "t": "Vietnam Working Group Subject Files"}, {"a": "306-68A4933", "n": "4656106", "t": "Records Relating to Advisory Committees and Panels"}, {"a": "306-68A4933", "n": "4662423", "t": "Records Relating to the Appearances of Carl Thomas Rowan"}, {"a": "306-68A4933", "n": "4662627", "t": "Records Relating to the Speaking Engagements of Carl Thomas Rowan"}, {"a": "306-68A4933", "n": "4667502", "t": "Records Relating to the De
+306/306840003 null
+306/84A0003 null
+306/72A5121 series: 18
+306/69A3445 series: 9
+306/67A222 series: 3
+306/68A4933 series: 15
+1257679 {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "U.S. Information Agency. Office of Policy and Plans.", "coverageStartYear": 1949, "coverageEndYear": 1971, "referenceUnit": "National Archives at College Park - Textual Reference", "useStatus": "Restricted - Possibly", "extent": "47 linear feet", "inclusiveStartYear": 1953, "inclusiveEndYear": 1971}
+48349732 null
+1102141 null
+42125423 null
+622 null

@@ -1,0 +1,7 @@
+## step1
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+## step2
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "BEGIN; CREATE TABLE zz(x); ROLLBACK;"
+## steps3-6
+python3 -u canary.py   (script saved as canary.py in this directory)
+python3 tie check at hamming 79 (appended to canary.txt)

@@ -1,0 +1,67 @@
+keys ['generated', 'libraries', 'schemaVersion', 'source']
+libraries 11 {"citedAs": "Hoover Library", "collections": [{"identifier": "HH-AAB", "naId": 597033, "series": [{"inclusiveDates": "1903–1959", "naId": 597034, "title": "Articles and Speeches"}, {"inclusiveDates": "1901–1966", "naId": 603721, "title": "Subject Files"}, {"inclusiveDates": "1901–1961", "naId": 6037
+{"citedAs": "Roosevelt Library", "collections": [{"identifier": "FDR-ABELOW", "naId": 199628323, "series": [{"inclusiveDates": "1943–1973", "naId": 199732024, "title": "Correspondence and Personal Papers"}], "statedSeriesCount": 1, "title": "Miriam Abelow Papers"}, {"identifier": "FDR-ADAMS", "naId": 200015392, "series": [{"inclusiveDates": "1977",
+{"citedAs": "Truman Library", "collections": [{"identifier": "HST-ABC", "naId": 635383, "series": [{"inclusiveDates": "1937–1978", "naId": 635384, "title": "Subject Files"}], "statedSeriesCount": 1, "title": "Arnold B. Crank Papers"}, {"identifier": "HST-ABCR", "naId": 2662815, "series": [{"inclusiveDates": "1957–1996", "naId": 2662816, "title": "S
+{"citedAs": "Eisenhower Library", "collections": [{"identifier": "DDE-1001", "naId": 562456, "series": [{"inclusiveDates": "1957–1961", "naId": 562457, "title": "Chronological Files"}, {"inclusiveDates": "1957–1961", "naId": 562459, "title": "Records Relating to Telephone Calls"}, {"inclusiveDates": "1957–1961", "naId": 562460, "title": "Statements
+{"citedAs": "Kennedy Library", "collections": [{"identifier": "JFK-1", "naId": 1158, "series": [{"inclusiveDates": "1940–1956", "naId": 192712, "title": "Boston Office Files"}, {"inclusiveDates": "1933–1950", "naId": 192731, "title": "Correspondence"}, {"inclusiveDates": "1943–1952", "naId": 192755, "title": "Correspondence"}, {"inclusiveDates": "1
+{"citedAs": "Johnson Library", "collections": [{"identifier": "LBJ-76021", "naId": 55248950, "series": [{"inclusiveDates": "1951–1971", "naId": 55248952, "title": "Committee Files"}], "statedSeriesCount": 1, "title": "Papers of India Edwards"}, {"identifier": "LBJ-85025", "naId": 55248815, "series": [{"inclusiveDates": "1964–1969", "naId": 55248818
+{"citedAs": "Nixon", "collections": [{"identifier": "RN- CLAWSO", "naId": 580001022, "series": [{"inclusiveDates": "1973", "naId": 589654644, "title": "Correspondence"}], "statedSeriesCount": 1, "title": "Papers of Carol Clawson"}, {"identifier": "RN-AEW", "naId": 138930994, "series": [{"inclusiveDates": "1970–1973", "naId": 155500546, "title": "Ar
+{"citedAs": "Ford Library", "collections": [{"identifier": "GRF-0001", "naId": 565375, "series": [{"inclusiveDates": "1968–1970", "naId": 565508, "title": "White House Files"}, {"inclusiveDates": "1969–1985", "naId": 565552, "title": "Publications"}, {"inclusiveDates": "1969–1978", "naId": 565628, "title": "Federal Reserve Board Subject Files"}, {"
+{"citedAs": "Carter Library", "collections": [{"identifier": "JC-1005", "naId": 1085, "series": [{"inclusiveDates": "1977–1981", "naId": 141747, "title": "Hamilton Jordan's Transition Files"}, {"inclusiveDates": "1977–1980", "naId": 142099, "title": "Hamilton Jordan's Confidential Files"}, {"inclusiveDates": "1977–1980", "naId": 142231, "title": "H
+{"citedAs": "Reagan Library", "collections": [{"identifier": "RR-0005", "naId": 7551433, "series": [{"inclusiveDates": "1981–1989", "naId": 7643668, "title": "Administration Files"}, {"inclusiveDates": "1981–1989", "naId": 7644682, "title": "Finance Files"}, {"inclusiveDates": "1981–1989", "naId": 7644762, "title": "Personnel Files"}, {"inclusiveDa
+Johnson Library | National Security Files | 567979 | Latin America Country Files | 567985 | 1963–1969
+Johnson Library | National Security Files | 567979 | Africa Country Files | 573102 | 1963–1969
+Johnson Library | National Security Files | 567979 | Europe and USSR Country Files | 580807 | 1963–1969
+Johnson Library | National Security Files | 567979 | Intelligence Briefings Files | 582854 | 1963–1969
+Johnson Library | National Security Files | 567979 | Middle East Country Files | 587357 | 1963–1969
+Johnson Library | National Security Files | 567979 | Asia and the Pacific Country Files | 587358 | 1963–1969
+Johnson Library | National Security Files | 567979 | United Nations Country Files | 587360 | 1963–1969
+Johnson Library | National Security Files | 567979 | Country Files Addendum | 587361 | 1963–1969
+Johnson Library | National Security Files | 567979 | Memos to the President Files | 588989 | 1963–1969
+Johnson Library | National Security Files | 567979 | Vietnam Country Files | 591194 | 1963–1969
+Johnson Library | National Security Files | 567979 | National Security Council Histories Files | 593557 | 1968–1969
+Johnson Library | National Security Files | 567979 | Files of William J. Jorden | 2679432 | 1965–1968
+Johnson Library | National Security Files | 567979 | Agency Files | 4734742 | 1963–1969
+Johnson Library | National Security Files | 567979 | Files of Nathaniel Davis | 6207725 | 1963–1969
+Johnson Library | National Security Files | 567979 | Files of Howard Wriggins | 6233128 | 1963–1969
+Johnson Library | National Security Files | 567979 | Files of Arthur McCafferty | 6254984 | 1963–1969
+Johnson Library | National Security Files | 567979 | Files of Chester Cooper | 7237421 | 1963–1969
+Johnson Library | National Security Files | 567979 | Files of Ulric Haynes | 7260916 | 1963–1969
+Johnson Library | National Security Files | 567979 | Files of Chester V. Clifton | 7284976 | 1963–1969
+Johnson Library | National Security Files | 567979 | Files of the Special Committee of the National Security Council | 7369107 | 1963–1969
+Johnson Library | National Security Files | 567979 | Files of Alfred Jenkins | 7451086 | 1962–1969
+Johnson Library | National Security Files | 567979 | National Security Council Meetings Files | 7624433 | 1963–1969
+Johnson Library | National Security Files | 567979 | Special Head of State Correspondence Files | 7763260 | 1963–1969
+Johnson Library | National Security Files | 567979 | Subject Files | 12006886 | 1963–1969
+Johnson Library | National Security Files | 567979 | International Meetings and Travel Files | 12007725 | 1961–1969
+Johnson Library | National Security Files | 567979 | Head of State Correspondence Files | 12008318 | 1963–1969
+Johnson Library | National Security Files | 567979 | Committee Files | 12008350 | 1963–1969
+Johnson Library | National Security Files | 567979 | Files of Harold H. Saunders | 12008959 | 1961–1969
+Johnson Library | National Security Files | 567979 | Files of Robert W. Komer | 12009321 | 1963–1967
+Johnson Library | National Security Files | 567979 | Komer-Leonhart Files | 12010023 | 1966–1969
+Johnson Library | National Security Files | 567979 | Files of Charles E. Johnson | 12013717 | 1962–1969
+Johnson Library | National Security Files | 567979 | Files of Walt W. Rostow | 12021213 | 1966–1969
+Johnson Library | National Security Files | 567979 | Files of McGeorge Bundy | 12032296 | 1963–1966
+Johnson Library | National Security Files | 567979 | National Security Action Memorandums | 12075320 | 1961–1968
+Johnson Library | National Security Files | 567979 | Files of Bromley K. Smith | 12079955 | 1964–1969
+Johnson Library | National Security Files | 567979 | Intelligence Files | 12093071 | 1961–1969
+Johnson Library | National Security Files | 567979 | Situation Room Files | 12093084 | 1963–1969
+Johnson Library | National Security Files | 567979 | Speech Files | 12165928 | 1963–1969
+Johnson Library | National Security Files | 567979 | Files of William G. Bowdler | 12165931 | 1964–1969
+Johnson Library | National Security Files | 567979 | Files of Francis M. Bator | 16567623 | 1963–1969
+Johnson Library | National Security Files | 567979 | National Intelligence Estimates | 16568320 | 1961–1969
+Johnson Library | National Security Files | 567979 | Name Files | 16575543 | 1963–1969
+Johnson Library | National Security Files | 567979 | Files of Edward K. Hamilton | 16601872 | 1965–1968
+Johnson Library | National Security Files | 567979 | Files of Edward Fried | 16601912 | 1967–1969
+Johnson Library | National Security Files | 567979 | Files of Gordon Chase | 23806510 | 1963–1965
+Johnson Library | National Security Files | 567979 | Files of Spurgeon Keeny | 55288845 | 1963–1969
+Johnson Library | National Security Files | 567979 | Oversize Maps, Photographs, and Charts | 66328797 | 1964
+Johnson Library | National Security Files | 567979 | Files of David Klein | 148893512 | 1962–1966
+Johnson Library | Pre-Presidential Confidential Files | 7541353 | Confidential and Personal Office Files | 7541354 | 1932–1967
+Johnson Library | White House Central Files (Johnson Administration) | 566962 | Confidential Files | 12005682 | 1963–1969
+Carter Library | Office of the Chief of Staff Files | 1085 | Hamilton Jordan's Confidential Files | 142099 | 1977–1980
+Carter Library | Records of the First Lady's Office (Carter Administration) | 561326 | Rosalynn Carter's Plains Files | 7336790 | 1977–1981
+Carter Library | Walter Mondale Papers | 623728 | Issues National Security Files | 12013063 | 1967–1981
+Carter Library | Plains Files | 591256 | President's Personal Foreign Affairs Files | 591273 | 1977–1981
+Carter Library | Plains Files | 591256 | President's Daily Diary Research Files | 591286 | 1977–1981
+Carter Library | Plains Files | 591256 | Subject Files | 591289 | 1973–1982

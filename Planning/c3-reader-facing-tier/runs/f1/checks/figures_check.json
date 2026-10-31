@@ -1,0 +1,20 @@
+{
+ "run": "runs/f1",
+ "arm": "A",
+ "occurrences": [
+  {
+   "file": "memo.md",
+   "line": 82,
+   "figure": "74,043 (the 1940s dated documents)",
+   "match": "74,043",
+   "context": "- Denominators differ from the house rules' 74,043 for the 1940s because my base counts every dated non-apparatus document with Ed2 dropped."
+  },
+  {
+   "file": "memo.md",
+   "line": 186,
+   "figure": "1910-12-06 (the pointed-at channel starts)",
+   "match": "1910-12-06",
+   "context": "- This channel has no row before 1910-12-06, stores citation fragments, and holds lot, library and decimal anchors only. It is not ranked further here."
+  }
+ ]
+}

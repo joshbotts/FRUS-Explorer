@@ -1,0 +1,254 @@
+{
+ "run": "runs/cal-s3",
+ "termsTested": 24,
+ "dead": [
+  {
+   "term": "lockhe",
+   "source": "queries.log",
+   "line": 13,
+   "returns": false,
+   "query": "\"lockhe\"",
+   "nearestLive": "lockhe*"
+  },
+  {
+   "term": "ZZZ_IMPOSSIBLE_ZZZ",
+   "source": "queries.log",
+   "line": 20,
+   "returns": false,
+   "query": "\"ZZZ_IMPOSSIBLE_ZZZ\"",
+   "nearestLive": null
+  },
+  {
+   "term": "ZZZ_IMPOSSIBLE",
+   "source": "queries.log",
+   "line": 21,
+   "returns": false,
+   "query": "\"ZZZ_IMPOSSIBLE\"",
+   "nearestLive": null
+  },
+  {
+   "term": "zzz*",
+   "source": "queries.log",
+   "line": 21,
+   "returns": false,
+   "query": "\"zzz\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "zzz",
+   "source": "queries.log",
+   "line": 24,
+   "returns": false,
+   "query": "\"zzz\"",
+   "nearestLive": null
+  }
+ ],
+ "syntaxErrors": [],
+ "prefixes": [
+  {
+   "prefix": "corrupt*",
+   "firstLogLine": 10,
+   "vocabLookupBefore": true
+  },
+  {
+   "prefix": "zzz*",
+   "firstLogLine": 21,
+   "vocabLookupBefore": false
+  }
+ ],
+ "vocabLookupsInLog": 3,
+ "all": [
+  {
+   "term": "corrupt*",
+   "source": "queries.log",
+   "line": 10,
+   "returns": true,
+   "query": "\"corrupt\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "bribe",
+   "source": "queries.log",
+   "line": 10,
+   "returns": true,
+   "query": "\"bribe\"",
+   "nearestLive": null
+  },
+  {
+   "term": "briberi",
+   "source": "queries.log",
+   "line": 10,
+   "returns": true,
+   "query": "\"briberi\"",
+   "nearestLive": null
+  },
+  {
+   "term": "graft",
+   "source": "queries.log",
+   "line": 10,
+   "returns": true,
+   "query": "\"graft\"",
+   "nearestLive": null
+  },
+  {
+   "term": "grafter",
+   "source": "queries.log",
+   "line": 10,
+   "returns": true,
+   "query": "\"grafter\"",
+   "nearestLive": null
+  },
+  {
+   "term": "kickback",
+   "source": "queries.log",
+   "line": 10,
+   "returns": true,
+   "query": "\"kickback\"",
+   "nearestLive": null
+  },
+  {
+   "term": "embezzl",
+   "source": "queries.log",
+   "line": 10,
+   "returns": true,
+   "query": "\"embezzl\"",
+   "nearestLive": null
+  },
+  {
+   "term": "lockhe",
+   "source": "queries.log",
+   "line": 13,
+   "returns": false,
+   "query": "\"lockhe\"",
+   "nearestLive": "lockhe*"
+  },
+  {
+   "term": "\"Department of State\"",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"Department of State\"",
+   "nearestLive": null
+  },
+  {
+   "term": "ZZZ_IMPOSSIBLE_ZZZ",
+   "source": "queries.log",
+   "line": 20,
+   "returns": false,
+   "query": "\"ZZZ_IMPOSSIBLE_ZZZ\"",
+   "nearestLive": null
+  },
+  {
+   "term": "ZZZ_IMPOSSIBLE",
+   "source": "queries.log",
+   "line": 21,
+   "returns": false,
+   "query": "\"ZZZ_IMPOSSIBLE\"",
+   "nearestLive": null
+  },
+  {
+   "term": "zzz*",
+   "source": "queries.log",
+   "line": 21,
+   "returns": false,
+   "query": "\"zzz\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "state",
+   "source": "queries.log",
+   "line": 23,
+   "returns": true,
+   "query": "\"state\"",
+   "nearestLive": null
+  },
+  {
+   "term": "zzz",
+   "source": "queries.log",
+   "line": 24,
+   "returns": false,
+   "query": "\"zzz\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"improper payments\"",
+   "source": "queries.log",
+   "line": 40,
+   "returns": true,
+   "query": "\"improper payments\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"illicit payments\"",
+   "source": "queries.log",
+   "line": 40,
+   "returns": true,
+   "query": "\"illicit payments\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"improper payment\"",
+   "source": "queries.log",
+   "line": 40,
+   "returns": true,
+   "query": "\"improper payment\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"illicit payment\"",
+   "source": "queries.log",
+   "line": 40,
+   "returns": true,
+   "query": "\"illicit payment\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"questionable payment\"",
+   "source": "queries.log",
+   "line": 40,
+   "returns": true,
+   "query": "\"questionable payment\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"anti corrupt*\"",
+   "source": "queries.log",
+   "line": 44,
+   "returns": true,
+   "query": "\"anti corrupt*\"",
+   "nearestLive": null
+  },
+  {
+   "term": "oecd",
+   "source": "queries.log",
+   "line": 44,
+   "returns": true,
+   "query": "\"oecd\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"foreign corrupt practic*\"",
+   "source": "queries.log",
+   "line": 44,
+   "returns": true,
+   "query": "\"foreign corrupt practic*\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"church subcommittee\"",
+   "source": "queries.log",
+   "line": 53,
+   "returns": true,
+   "query": "\"church subcommittee\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"church committee\"",
+   "source": "queries.log",
+   "line": 53,
+   "returns": true,
+   "query": "\"church committee\"",
+   "nearestLive": null
+  }
+ ]
+}

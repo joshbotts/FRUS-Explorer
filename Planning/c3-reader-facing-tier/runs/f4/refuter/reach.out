@@ -1,0 +1,202 @@
+S2_union_in_R (M04): 1984 rows
+union1_top200 (bm25, printed): 200 rows
+S1_G_Asia_header (M06, printed): 61 rows
+union2_SQLG_G_Asia_words (count only, never listed): 769 rows
+pre_probe_top12 (printed): 12 rows
+pre_count_only "Boxer indemnity" (count only, never listed): 202 rows
+pre_count_only "indemnity" AND "education" (count only, never listed): 230 rows
+pre_count_only "remission" AND "indemnity" AND "students" (count only, never listed): 18 rows
+pre_count_only "cultural relations" (count only, never listed): 469 rows
+pre_count_only "Division of Cultural Relations" (count only, never listed): 26 rows
+pre_count_only "educational exchange" (count only, never listed): 293 rows
+pre_count_only "Voice of America" (count only, never listed): 542 rows
+pre_count_only "public diplomacy" (count only, never listed): 211 rows
+pre_count_only "Department of State" (count only, never listed): 94049 rows
+jk_top28 (printed): 28 rows
+beliefs1 top8 NEAR(Asians propaganda, 12) (printed): 8 rows
+beliefs1 full NEAR(Asians propaganda, 12) (count only): 32 rows
+beliefs1 top8 NEAR(Asians psychology, 12) (printed): 8 rows
+beliefs1 full NEAR(Asians psychology, 12) (count only): 37 rows
+beliefs1 top8 "Asian mind" (printed): 7 rows
+beliefs1 full "Asian mind" (count only): 7 rows
+beliefs1 top8 "Asiatic mind" (printed): 1 rows
+beliefs1 full "Asiatic mind" (count only): 1 rows
+beliefs1 top8 NEAR(oriental psychology, 12) (printed): 8 rows
+beliefs1 full NEAR(oriental psychology, 12) (count only): 16 rows
+beliefs1 top8 NEAR(Asian "mentality", 10) (printed): 0 rows
+beliefs1 full NEAR(Asian "mentality", 10) (count only): 0 rows
+beliefs1 top8 NEAR(Asians "respect", 10) (printed): 8 rows
+beliefs1 full NEAR(Asians "respect", 10) (count only): 84 rows
+beliefs1 top8 NEAR(Vietnamese "psychology", 10) (printed): 8 rows
+beliefs1 full NEAR(Vietnamese "psychology", 10) (count only): 127 rows
+beliefs1 top8 NEAR(Japanese "psychology", 10) (printed): 8 rows
+beliefs1 full NEAR(Japanese "psychology", 10) (count only): 63 rows
+beliefs1 top8 NEAR(Chinese "psychology", 10) (printed): 8 rows
+beliefs1 full NEAR(Chinese "psychology", 10) (count only): 126 rows
+beliefs1 top8 NEAR(Asians "weakness", 8) (printed): 8 rows
+beliefs1 full NEAR(Asians "weakness", 8) (count only): 17 rows
+beliefs1 top8 NEAR(Asians "strength", 8) (printed): 8 rows
+beliefs1 full NEAR(Asians "strength", 8) (count only): 33 rows
+beliefs1 top8 NEAR("Asian" "face", 6) (printed): 8 rows
+beliefs1 full NEAR("Asian" "face", 6) (count only): 28 rows
+beliefs1 top8 "loss of face" (printed): 8 rows
+beliefs1 full "loss of face" (count only): 125 rows
+beliefs1 top8 "save face" (printed): 8 rows
+beliefs1 full "save face" (count only): 93 rows
+beliefs1 top8 "saving face" (printed): 8 rows
+beliefs1 full "saving face" (count only): 93 rows
+beliefs1 top8 NEAR("Asians" "impressed", 12) (printed): 8 rows
+beliefs1 full NEAR("Asians" "impressed", 12) (count only): 52 rows
+beliefs1 top8 "Asian peoples" (printed): 8 rows
+beliefs1 full "Asian peoples" (count only): 69 rows
+beliefs1 top8 NEAR("Asians" "propaganda" "United States", 20) (printed): 5 rows
+beliefs1 full NEAR("Asians" "propaganda" "United States", 20) (count only): 5 rows
+vocab1 "psychological warfare" in R (count only): 260 rows
+vocab1 "psychological operations" in R (count only): 66 rows
+vocab1 "psychological strategy" in R (count only): 15 rows
+vocab1 "information program" in R (count only): 134 rows
+vocab1 USIS in R (count only): 592 rows
+vocab1 USIA in R (count only): 306 rows
+vocab1 "United States Information Service" in R (count only): 57 rows
+vocab1 "Voice of America" in R (count only): 73 rows
+vocab1 "cultural exchange" in R (count only): 117 rows
+vocab1 "educational exchange" in R (count only): 53 rows
+vocab1 Fulbright in R (count only): 293 rows
+vocab1 "Asia Foundation" in R (count only): 10 rows
+vocab1 propaganda in R (count only): 2769 rows
+vocab1 prestige in R (count only): 1697 rows
+vocab1 "image of the United States" in R (count only): 4 rows
+vocab1 "American image" in R (count only): 3 rows
+vocab1 "hearts and minds" in R (count only): 20 rows
+vocab1 "cultural program" in R (count only): 19 rows
+vocab1 "leader grant" in R (count only): 4 rows
+vocab1 "exchange of persons" in R (count only): 40 rows
+vocab1 "binational center" in R (count only): 1 rows
+vocab1 neutralism in R (count only): 2854 rows
+vocab1 "public diplomacy" in R (count only): 2 rows
+vocab1 "information officer" in R (count only): 114 rows
+vocab1 "cultural affairs" in R (count only): 19 rows
+vocab1 "oriental mind" in R (count only): 14 rows
+vocab1 "face" in R (count only): 5391 rows
+vocab1 "Department of State" in R (count only): 14670 rows
+vocab1 "public opinion" in R (count only): 1590 rows
+vocab1 "Information Agency" in R (count only): 109 rows
+vocab1 "Information Service" in R (count only): 133 rows
+vocab1 "psychological" in R (count only): 2211 rows
+vocab1 "Operations Coordinating Board" in R (count only): 154 rows
+vocab1 "Psychological Strategy Board" in R (count only): 9 rows
+adhoc_1906-09_indemnity_top8 (printed): 8 rows
+
+== Membership of each cited document ==
+
+frus1950v06/d50:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 9 -> ['pre_count_only "educational exchange" (count only, never listed)', 'pre_count_only "Voice of America" (count only, never listed)', 'pre_count_only "Department of State" (count only, never listed)', 'vocab1 "information program" in R (count only)', 'vocab1 "Voice of America" in R (count only)', 'vocab1 "educational exchange" in R (count only)']
+
+frus1964-68v01/d122:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 8 -> ['vocab1 "psychological warfare" in R (count only)', 'vocab1 "psychological operations" in R (count only)', 'vocab1 "information program" in R (count only)', 'vocab1 USIS in R (count only)', 'vocab1 USIA in R (count only)', 'vocab1 "public opinion" in R (count only)']
+
+frus1917-72PubDipv07/d85:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 1 -> ['union2_SQLG_G_Asia_words (count only, never listed)']
+
+frus1969-76v38p2/d105:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 2 -> ['union2_SQLG_G_Asia_words (count only, never listed)', 'pre_count_only "Voice of America" (count only, never listed)']
+
+frus1924v01/d540:
+   returned by PRINTED/LISTED queries: 1 -> ['pre_probe_top12 (printed)']
+   returned by COUNT-ONLY queries: 3 -> ['pre_count_only "Boxer indemnity" (count only, never listed)', 'pre_count_only "indemnity" AND "education" (count only, never listed)', 'pre_count_only "remission" AND "indemnity" AND "students" (count only, never listed)']
+
+frus1949v09/d558:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 4 -> ['pre_count_only "Voice of America" (count only, never listed)', 'vocab1 "information program" in R (count only)', 'vocab1 USIS in R (count only)', 'vocab1 "Voice of America" in R (count only)']
+
+frus1952-54v12p2/d403:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 6 -> ['vocab1 "psychological operations" in R (count only)', 'vocab1 "psychological strategy" in R (count only)', 'vocab1 "information program" in R (count only)', 'vocab1 "psychological" in R (count only)', 'vocab1 "Operations Coordinating Board" in R (count only)', 'vocab1 "Psychological Strategy Board" in R (count only)']
+
+frus1917-72PubDipv07/d32:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 3 -> ['union2_SQLG_G_Asia_words (count only, never listed)', 'pre_count_only "educational exchange" (count only, never listed)', 'pre_count_only "public diplomacy" (count only, never listed)']
+
+frus1917-72PubDipv08/d58:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 1 -> ['union2_SQLG_G_Asia_words (count only, never listed)']
+
+frus1917-72PubDipv08/d99:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 3 -> ['union2_SQLG_G_Asia_words (count only, never listed)', 'pre_count_only "Voice of America" (count only, never listed)', 'pre_count_only "public diplomacy" (count only, never listed)']
+
+frus1955-57v22/d447:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 6 -> ['pre_count_only "Department of State" (count only, never listed)', 'vocab1 USIS in R (count only)', 'vocab1 USIA in R (count only)', 'vocab1 "Department of State" in R (count only)', 'vocab1 "Information Agency" in R (count only)', 'vocab1 "Operations Coordinating Board" in R (count only)']
+
+frus1961-63v23/d289:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 8 -> ['pre_count_only "educational exchange" (count only, never listed)', 'pre_count_only "Department of State" (count only, never listed)', 'vocab1 USIS in R (count only)', 'vocab1 "educational exchange" in R (count only)', 'vocab1 neutralism in R (count only)', 'vocab1 "Department of State" in R (count only)']
+
+frus1964-68v27/d386:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 3 -> ['vocab1 "information program" in R (count only)', 'vocab1 USIA in R (count only)', 'vocab1 "Information Agency" in R (count only)']
+
+frus1964-68v02/d160:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 8 -> ['beliefs1 full NEAR(Vietnamese "psychology", 10) (count only)', 'vocab1 "psychological warfare" in R (count only)', 'vocab1 "psychological operations" in R (count only)', 'vocab1 USIS in R (count only)', 'vocab1 USIA in R (count only)', 'vocab1 "Information Agency" in R (count only)']
+
+frus1964-68v29p2/d46:
+   returned by PRINTED/LISTED queries: 1 -> ['jk_top28 (printed)']
+   returned by COUNT-ONLY queries: 7 -> ['pre_count_only "Department of State" (count only, never listed)', 'vocab1 USIS in R (count only)', 'vocab1 "cultural exchange" in R (count only)', 'vocab1 neutralism in R (count only)', 'vocab1 "face" in R (count only)', 'vocab1 "Department of State" in R (count only)']
+
+frus1964-68v26/d106:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 5 -> ['vocab1 USIS in R (count only)', 'vocab1 USIA in R (count only)', 'vocab1 "information officer" in R (count only)', 'vocab1 "Information Agency" in R (count only)', 'vocab1 "Information Service" in R (count only)']
+
+frus1917-72PubDipv08/d31:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 1 -> ['union2_SQLG_G_Asia_words (count only, never listed)']
+
+frus1955-57v23p2/d50:
+   returned by PRINTED/LISTED queries: 1 -> ['beliefs1 top8 "Asian mind" (printed)']
+   returned by COUNT-ONLY queries: 6 -> ['pre_count_only "Department of State" (count only, never listed)', 'beliefs1 full "Asian mind" (count only)', 'beliefs1 full NEAR(Asians "respect", 10) (count only)', 'beliefs1 full NEAR(Asians "strength", 8) (count only)', 'vocab1 propaganda in R (count only)', 'vocab1 "Department of State" in R (count only)']
+
+frus1977-80v30/d79:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 1 -> ['union2_SQLG_G_Asia_words (count only, never listed)']
+
+frus1917-72PubDipv08/d146:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 1 -> ['union2_SQLG_G_Asia_words (count only, never listed)']
+
+frus1917-72PubDipv08/d149:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 1 -> ['union2_SQLG_G_Asia_words (count only, never listed)']
+
+frus1977-80v30/d152:
+   returned by PRINTED/LISTED queries: 0 -> []
+   returned by COUNT-ONLY queries: 2 -> ['union2_SQLG_G_Asia_words (count only, never listed)', 'pre_count_only "Department of State" (count only, never listed)']
+
+== Strict verdict (returned by any logged full-text/heading query, printed or count-only) ==
+  frus1950v06/d50: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1964-68v01/d122: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1917-72PubDipv07/d85: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1969-76v38p2/d105: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1924v01/d540: strict=FTS-REACHED; practical=in a printed/listed result set
+  frus1949v09/d558: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1952-54v12p2/d403: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1917-72PubDipv07/d32: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1917-72PubDipv08/d58: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1917-72PubDipv08/d99: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1955-57v22/d447: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1961-63v23/d289: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1964-68v27/d386: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1964-68v02/d160: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1964-68v29p2/d46: strict=FTS-REACHED; practical=in a printed/listed result set
+  frus1964-68v26/d106: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1917-72PubDipv08/d31: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1955-57v23p2/d50: strict=FTS-REACHED; practical=in a printed/listed result set
+  frus1977-80v30/d79: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1917-72PubDipv08/d146: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1917-72PubDipv08/d149: strict=FTS-REACHED; practical=NOT in any printed/listed result set
+  frus1977-80v30/d152: strict=FTS-REACHED; practical=NOT in any printed/listed result set

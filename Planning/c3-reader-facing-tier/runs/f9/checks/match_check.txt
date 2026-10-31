@@ -1,0 +1,2 @@
+Full-text terms in f9: 7 tested alone against the index copy; 0 return no document. 0 prefixes; 1 frus_documents_vocab lookups in the log. Terms passed to MATCH as query parameters are seen only when they carry a `*`.
+

@@ -1,0 +1,10 @@
+Full-text terms in cal-s1: 18 tested alone against the index copy; 0 return no document. 8 prefixes; 1 frus_documents_vocab lookups in the log. Terms passed to MATCH as query parameters are seen only when they carry a `*`.
+
+PREFIX 'brib*': first in the log at line 5; vocab lookup of its stem before it: False
+PREFIX 'commission*': first in the log at line 32; vocab lookup of its stem before it: False
+PREFIX 'embezzl*': first in the log at line 5; vocab lookup of its stem before it: False
+PREFIX 'malfeas*': first in the log at line 5; vocab lookup of its stem before it: False
+PREFIX 'nepot*': first in the log at line 5; vocab lookup of its stem before it: False
+PREFIX 'misappropri*': first in the log at line 10; vocab lookup of its stem before it: True
+PREFIX 'embezzle*': first in the log at line None; vocab lookup of its stem before it: None
+PREFIX 'venal*': first in the log at line 5; vocab lookup of its stem before it: False

@@ -1,0 +1,10 @@
+QB over scope_vols (76), apparatus excluded             total  1347  rank of ve12/d10: 117
+QB over scope_vols (76), apparatus included             total  1375  rank of ve12/d10: 127
+QB over eap_core+PDV (83)                               total  1379  rank of ve12/d10: 117
+QB corpus-wide, apparatus excluded                      total  2739  rank of ve12/d10: 162
+QB corpus-wide, apparatus included                      total  2812  rank of ve12/d10: 175
+QA over scope_vols                                      total   126  rank of ve12/d10: None
+QA corpus-wide                                          total   191  rank of ve12/d10: None
+QD over scope_vols                                      total   775  rank of ve12/d10: None
+QC error: no such column: American
+QB over scope_vols ORDER BY rank: total 1347 rank 117

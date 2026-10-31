@@ -1,0 +1,17 @@
+['coverage', 'generated', 'provenance', 'schedules', 'schemaVersion']
+glossableYears [{'endYear': 1949, 'scheduleId': '1910-1949', 'startYear': 1910}, {'endYear': 1959, 'scheduleId': '1950-1959', 'startYear': 1950}, {'endYear': 1963, 'scheduleId': '1960-1963', 'startYear': 1960}]
+keyOutside no-gloss
+"511" 508": "Conservation of natural resources", "50A": "Economic adviser", "51": "Financial conditions", "511": "Loans of revolutionary governments", "5121": "Poll tax", "5122": "Land tax. Real estate tax", "5123": "Income tax. Excess profits tax", "5124": "Inheritance tax", "5125": "Personal tax", "513": "Lotteries", "515": "Monetary system. Coinage. Currency. Mint", "5151": "Exchange", "5157": "Curre
+"511.00" absent
+"511.51G" absent
+"511.5" absent
+list ['1910-1949', '1950-1959', '1960-1963']
+['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+classes 5 -> International Informational and Educational Relations, Cultural Affairs and Programs
+countries 51 -> France
+countryAlternates 51 -> ['Corsica']
+dict []
+5 -> {}
+00 -> World, The | 51G -> None | 51 -> France
+countryArrangedClasses ['3', '4', '5', '6', '7', '8', '9']
+relationsClasses ['6']

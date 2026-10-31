@@ -1,0 +1,139 @@
+{
+ "run": "runs/f11",
+ "termsTested": 14,
+ "dead": [
+  {
+   "term": "\"soft power\\\"",
+   "source": "queries.log",
+   "line": 10,
+   "returns": false,
+   "query": "\"soft power\\\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"soft power\"",
+   "source": "queries.log",
+   "line": 11,
+   "returns": false,
+   "query": "\"soft power\"",
+   "nearestLive": null
+  }
+ ],
+ "syntaxErrors": [],
+ "prefixes": [],
+ "vocabLookupsInLog": 0,
+ "all": [
+  {
+   "term": "\"soft power\\\"",
+   "source": "queries.log",
+   "line": 10,
+   "returns": false,
+   "query": "\"soft power\\\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"soft power\"",
+   "source": "queries.log",
+   "line": 11,
+   "returns": false,
+   "query": "\"soft power\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"psychological warfare\"",
+   "source": "queries.log",
+   "line": 12,
+   "returns": true,
+   "query": "\"psychological warfare\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"psychological strategy\"",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"psychological strategy\"",
+   "nearestLive": null
+  },
+  {
+   "term": "USIA",
+   "source": "queries.log",
+   "line": 14,
+   "returns": true,
+   "query": "\"USIA\"",
+   "nearestLive": null
+  },
+  {
+   "term": "USIS",
+   "source": "queries.log",
+   "line": 15,
+   "returns": true,
+   "query": "\"USIS\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"Voice of America\"",
+   "source": "queries.log",
+   "line": 16,
+   "returns": true,
+   "query": "\"Voice of America\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"cultural exchange\"",
+   "source": "queries.log",
+   "line": 17,
+   "returns": true,
+   "query": "\"cultural exchange\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"image of the United States\"",
+   "source": "queries.log",
+   "line": 18,
+   "returns": true,
+   "query": "\"image of the United States\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"hearts and minds\"",
+   "source": "queries.log",
+   "line": 19,
+   "returns": true,
+   "query": "\"hearts and minds\"",
+   "nearestLive": null
+  },
+  {
+   "term": "propaganda",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"propaganda\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"information program\"",
+   "source": "queries.log",
+   "line": 21,
+   "returns": true,
+   "query": "\"information program\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"Asian opinion\"",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"Asian opinion\"",
+   "nearestLive": null
+  },
+  {
+   "term": "prestige",
+   "source": "queries.log",
+   "line": 23,
+   "returns": true,
+   "query": "\"prestige\"",
+   "nearestLive": null
+  }
+ ]
+}

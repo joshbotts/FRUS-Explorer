@@ -1,0 +1,102 @@
+quoted strings found by regex in overview.md: 40
+
+== OVERVIEW QUOTATIONS ==
+  [not a quotation: search term] bottom line 1: "soft power"
+  [not a quotation: search term] bottom line 1: "public diplomacy"
+  [not a quotation: search term] bottom line 3: "soft power"
+  [not a quotation: control term] bottom line 3: "Department of State"
+  [not a quotation: search term] bottom line 3: "Public diplomacy"
+  [not a quotation: search term] decisions: "soft power"
+  [not a quotation: word of the question] decisions: "policymakers"
+  OK   decisions: frus1961-63v04/d81 "Orientals" -- memo Q19 (no explicit citation in the overview; memo section 8 names the vocabulary); ok
+  OK   decisions: frus1961-63v02/d16 "face" -- memo Q16 (no explicit citation; the only 'face' among the 39 quotations); ok
+  OK   finding 1 prose: frus1948v07/d567 "middle group" -- trace: Q2; ok
+  OK   finding 1 bullet: frus1948v07/d567 "If the United States is to win and retain moral leadership it must con" -- trace: Q1; URL frus1948v07/d567; ok
+  OK   finding 1 bullet: frus1949v07p2/d386 "A considerably expanded information program both in Communist and non-" -- trace: Q4; URL frus1949v07p2/d386; ok
+  OK   finding 1 bullet: frus1955-57v22/d484 "The USIA program emphasizes comprehensive anti-Communist indoctrinatio" -- trace: Q13; URL frus1955-57v22/d484; ok
+  OK   finding 2 prose: frus1952-54v12p2/d251 "more affected by our actions than our words" -- trace: Q7; ok
+  OK   finding 2 prose: frus1952-54v12p2/d352 "Asia for Asians" -- trace: Q9; ok
+  OK   finding 2 prose: frus1961-63v04/d81 "Orientals" -- memo Q19; ok
+  OK   finding 2 bullet: frus1952-54v12p2/d251 "which is more affected by our actions than our words and which is host" -- trace: Q7; URL frus1952-54v12p2/d251; ok
+  OK   finding 2 bullet: frus1955-57v22/d447 "a fear of placing the U.S. in the position of appearing to support col" -- trace: Q12; URL frus1955-57v22/d447; ok
+  OK   finding 2 bullet: frus1917-72PubDipv08/d149 "The predominant mood is apolitical, seeking to be neutral, and concern" -- trace: Q32; URL frus1917-72PubDipv08/d149; ok
+  OK   finding 3 prose: frus1952-54v13p1/d116 "degree cannot be accurately measured" -- trace: Q6; ok
+  OK   finding 3 prose: frus1961-63v02/d197 "a really hard reading" -- trace: Q18; ok
+  OK   finding 3 prose: frus1964-68v01/d122 "the weakest part of the war operation" -- trace: Q20; ok
+  OK   finding 3 prose: frus1964-68v02/d160 "not progressed to my satisfaction" -- trace: Q22; ok
+  OK   finding 3 prose: frus1964-68v26/d106 "nothing worthwhile left" -- trace: Q26; ok
+  OK   finding 3 bullet: frus1952-54v13p1/d116 "All factors recited must be viewed as effective though degree cannot b" -- trace: Q6; URL frus1952-54v13p1/d116; ok
+  OK   finding 3 bullet: frus1964-68v01/d122 "the weakest part of the war operation, both on our part and that of th" -- trace: Q20; URL frus1964-68v01/d122; ok
+  OK   finding 3 bullet: frus1961-63v02/d197 "Does anyone have a really hard reading on how well GVN propaganda is w" -- trace: Q18; URL frus1961-63v02/d197; ok
+  OK   finding 4 prose: frus1917-72PubDipv07/d32 "persuaded by other Vietnamese" -- trace: Q23; ok
+  OK   finding 4 bullet: frus1917-72PubDipv07/d32 "Vietnamese peasants are, in the main, going to be persuaded by other V" -- trace: Q23; URL frus1917-72PubDipv07/d32; ok
+  OK   finding 4 bullet: frus1964-68v27/d386 "The Thai Government has not given proper attention to the need for a n" -- trace: Q27; URL frus1964-68v27/d386; ok
+  OK   finding 4 bullet: frus1917-72PubDipv07/d85 "an unfortunately large amount of anti-Americanism under the surface in" -- trace: Q25; URL frus1917-72PubDipv07/d85; ok
+  OK   finding 5 prose: frus1917-72PubDipv08/d99 "lower its voice" -- trace: Q31; ok
+  OK   finding 5 prose: frus1969-76v38p2/d105 "lack credibility" -- trace: Q34; ok
+  OK   finding 5 prose: frus1977-80v30/d79 "the confidence of East Asians in America’s long-term staying power" -- trace: Q37; ok
+  OK   finding 5 bullet: frus1917-72PubDipv08/d31 "PAOs emphasized that the image of the US usually depended more on the " -- trace: Q29; URL frus1917-72PubDipv08/d31; ok
+  OK   finding 5 bullet: frus1969-76v38p2/d105 "During this waiting period, programs on U.S. security relations in Asi" -- trace: Q34; URL frus1969-76v38p2/d105; ok
+  OK   finding 5 bullet: frus1977-80v22/d104 "Rather than being reassured, the ASEAN countries and Japan interpreted" -- trace: Q36; URL frus1977-80v22/d104; ok
+  [not a quotation: example word] how this was done: "clearing"
+  [not a quotation: example word] how this was done: "clear"
+overview quotations checked: 30; failing the check: 0
+
+== COLLECTION EXCERPTS ==
+  OK   frus1948v07/d567 "If the United States is to win and retain moral leadership it must con" 
+  OK   frus1948v07/d567 "The Department considers the USIS newsletter to be the most effective " 
+  OK   frus1949v08/d499 "we should immediately and substantially expand USIS activities in all " 
+  OK   frus1949v07p2/d386 "A considerably expanded information program both in Communist and non-" 
+  OK   frus1950v06/d50 "Comparatively few nationals understand the current policies of the Uni" 
+  OK   frus1952-54v12p2/d359 "During FY 1954 these services were reduced by approximately 65% becaus" 
+  OK   frus1955-57v09/d190 "USIA concentrated on activities to strengthen the resolution of U.S. a" 
+  OK   frus1955-57v22/d484 "The USIA program emphasizes comprehensive anti-Communist indoctrinatio" 
+  OK   frus1949v07p2/d127 "Our insistence that our way is right and the Japanese way is wrong doe" 
+  OK   frus1952-54v12p2/d251 "which is more affected by our actions than our words and which is host" 
+  OK   frus1952-54v12p2/d352 "widespread use in Philippines and elsewhere of slogan “Asia for Asians" 
+  OK   frus1955-57v22/d447 "a fear of placing the U.S. in the position of appearing to support col" 
+  OK   frus1958-60v15/d548 "U.S. informational, cultural and educational activities in Thailand ar" 
+  OK   frus1961-63v04/d81 "With Orientals in general and notably with the Ngo Dinhs, capitulation" 
+  OK   frus1917-72PubDipv08/d149 "The predominant mood is apolitical, seeking to be neutral, and concern" 
+  OK   frus1952-54v13p1/d116 "All factors recited must be viewed as effective though degree cannot b" 
+  OK   frus1952-54v12p2/d251 "2.5 percent may be opposed to United States aims, 1.5 percent favorabl" 
+  OK   frus1961-63v02/d197 "Replies to my superficial enquiries have been unanimous that the conte" 
+  OK   frus1961-63v02/d197 "Does anyone have a really hard reading on how well GVN propaganda is w" 
+  OK   frus1964-68v01/d122 "the weakest part of the war operation, both on our part and that of th" 
+  OK   frus1964-68v01/d122 "I was informed that the program is a failure in several provinces beca" 
+  OK   frus1917-72PubDipv07/d32 "The number one problem in Vietnam is motivation." 
+  OK   frus1964-68v26/d106 "We shall soon have nothing worthwhile left in the way of an informatio" 
+  OK   frus1964-68v02/d160 "efforts to develop among the South Vietnamese people a sense of nation" 
+  OK   frus1961-63v01/d49 "We are in the process of cranking up a major propaganda campaign on Vi" 
+  OK   frus1961-63v02/d16 "the image of the GVN in the world press can be no better than the face" 
+  OK   frus1917-72PubDipv07/d32 "Vietnamese peasants are, in the main, going to be persuaded by other V" 
+  OK   frus1964-68v01/d177 "Increased Voice of America broadcasting into North Viet-Nam and made a" 
+  OK   frus1917-72PubDipv07/d85 "I think it came as a surprise to most Americans that there is an unfor" 
+  OK   frus1964-68v27/d386 "The Thai Government has not given proper attention to the need for a n" 
+  OK   frus1917-72PubDipv08/d31 "Asians are, to varying degrees, America watchers." 
+  OK   frus1917-72PubDipv08/d31 "PAOs emphasized that the image of the US usually depended more on the " 
+  OK   frus1917-72PubDipv08/d31 "Many PAOs reported uncertainty as to the direction of US foreign polic" 
+  OK   frus1917-72PubDipv08/d99 "The President’s concept of partnership suggests that the U.S. will hav" 
+  OK   frus1969-76v19p2/d67 "public opinion surveys and other assessments of Japanese attitudes hav" 
+  OK   frus1969-76v38p2/d105 "During this waiting period, programs on U.S. security relations in Asi" 
+  OK   frus1969-76v38p2/d105 "contrast between USG words and deeds re Indochina are not lost on the " 
+  OK   frus1977-80v22/d104 "Rather than being reassured, the ASEAN countries and Japan interpreted" 
+  OK   frus1977-80v30/d79 "shoring up the confidence of East Asians in America’s long-term stayin" 
+excerpts checked: 39; failing: 0
+
+== OVERVIEW PROSE QUOTATIONS: how many of the 31 collection documents hold the words (mis-citation risk) ==
+  "Orientals" cited->frus1961-63v04/d81: found in 1 of 31: ['frus1961-63v04/d81']
+  "face" cited->frus1961-63v02/d16: found in 16 of 31: 16 docs
+  "middle group" cited->frus1948v07/d567: found in 1 of 31: ['frus1948v07/d567']
+  "more affected by our actions than our words" cited->frus1952-54v12p2/d251: found in 1 of 31: ['frus1952-54v12p2/d251']
+  "Asia for Asians" cited->frus1952-54v12p2/d352: found in 1 of 31: ['frus1952-54v12p2/d352']
+  "Orientals" cited->frus1961-63v04/d81: found in 1 of 31: ['frus1961-63v04/d81']
+  "degree cannot be accurately measured" cited->frus1952-54v13p1/d116: found in 1 of 31: ['frus1952-54v13p1/d116']
+  "a really hard reading" cited->frus1961-63v02/d197: found in 1 of 31: ['frus1961-63v02/d197']
+  "the weakest part of the war operation" cited->frus1964-68v01/d122: found in 1 of 31: ['frus1964-68v01/d122']
+  "not progressed to my satisfaction" cited->frus1964-68v02/d160: found in 1 of 31: ['frus1964-68v02/d160']
+  "nothing worthwhile left" cited->frus1964-68v26/d106: found in 1 of 31: ['frus1964-68v26/d106']
+  "persuaded by other Vietnamese" cited->frus1917-72PubDipv07/d32: found in 1 of 31: ['frus1917-72PubDipv07/d32']
+  "lower its voice" cited->frus1917-72PubDipv08/d99: found in 1 of 31: ['frus1917-72PubDipv08/d99']
+  "lack credibility" cited->frus1969-76v38p2/d105: found in 1 of 31: ['frus1969-76v38p2/d105']
+  "the confidence of East Asians in America’s long-te" cited->frus1977-80v30/d79: found in 1 of 31: ['frus1977-80v30/d79']

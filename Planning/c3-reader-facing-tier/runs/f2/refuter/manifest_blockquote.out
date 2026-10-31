@@ -1,0 +1,23 @@
+manifest: list of 553 | sample keys: ['dateRange', 'editors', 'filename', 'publicationDate', 'sizeBytes', 'status', 'subseries', 'tags', 'title', 'volumeId']
+title-ish keys: ['title']
+regex EA: 102 | PD: 4 | union: 106
+  EA == scope EA: False | mine-scope: [] | scope-mine: ['frus1955-57v22']
+  PD == scope PD: False | sym diff: ['frus1917-72PubDip', 'frus1969-76v38p2']
+  Ed2 in scope: [] | Ed2 in manifest: ['frus1951-54IranEd2', 'frus1969-76ve15p2Ed2', 'frus1977-80v09Ed2']
+  scope volumes present in index: 109 of 109 | manifest ids in index: 553 of 553
+  titles with 1917–1972 and Volume VI, ['frus1917-72PubDipv06']
+  titles with 1917–1972 and Volume VII, []
+  titles with 1917–1972 and Volume VIII, []
+   frus1917-72PubDip | Foreign Relations of the United States, 1917–1972, Public
+                    Diplomacy, World War I | {'dateRange': {'earliest': '1917-08-13T00:00:00-05:00', 'latest': '1919-06-01T17:59:59-05:00'}, 'publicationDate': '2014'}
+   frus1977-80v30 | Foreign Relations of the United States, 1977–1980, Volume
+                    XXX, Public Diplomacy | {'dateRange': {'earliest': '1976-11-03T00:00:00-05:00', 'latest': '1980-12-16T23:59:59-05:00'}, 'publicationDate': '2016'}
+
+== block quote and note phrases ==
+('frus1955-57v09', 'd190') 'In the Far East USIA was forced to deal with mixed emotions regarding ' full: 4842 body: 4620
+('frus1952-54v12p2', 'd352') 'free Asian solidarity' full: 1462 body: 1357
+('frus1917-72PubDipv08', 'd31') 'modesty, mutuality and multi-lateralism' full: 3733 body: 3399
+('frus1964-68v29p2', 'd46') 'Reischauer' at 6979 | ady dangerous situation by inept moves or overly rigid positions in other fields (such as fisheries, textiles, air routes, cultural exchanges, etc.). Reischauer
+('frus1917-72PubDipv06', 'd127') 'Reischauer' at 413 | 
+('frus1961-63v03', 'd308') 'Reischauer' at -1 | 
+   d308 mentions 'Far East' at 973 ; 'Asia' at 2102

@@ -1,0 +1,115 @@
+scope_sets: R = 76 G = 10 overlap = set() Ed2 in R/G: []
+M01 coverage
+  SQL: SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache
+  params: ()
+  -> [(553, 321749, 1103, 8481)]
+M02 R all
+  SQL: SELECT COUNT(DISTINCT d.volume_id), COUNT(*), SUM(d.is_front_matter), SUM(d.is_editorial_note) FROM document_cache d JOIN R USING(volume_id)
+  params: ()
+  -> [(76, 39222, 188, 1493)]
+M02 R non-apparatus
+  SQL: SELECT COUNT(DISTINCT d.volume_id), COUNT(*) FROM document_cache d JOIN R USING(volume_id) WHERE d.is_front_matter=0 AND d.is_editorial_note=0
+  params: ()
+  -> [(76, 37543)]
+M03 G non-apparatus
+  SQL: SELECT COUNT(DISTINCT d.volume_id), COUNT(*) FROM document_cache d JOIN G USING(volume_id) WHERE d.is_front_matter=0 AND d.is_editorial_note=0
+  params: ()
+  -> [(10, 2281)]
+M04 union total in R (docs, volumes)
+  SQL: SELECT COUNT(*), COUNT(DISTINCT f.volume_id), MIN(cnt) FROM (SELECT f.volume_id, COUNT(*) cnt FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN R ON R.volume_id=d.volume_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND frus_documents MATCH ? GROUP BY 1) f
+  params: ('(USIS OR USIA OR JUSPAO OR "Information Agency" OR "Information Service" OR "psychological warfare" OR "psychological operations" OR "psychological strategy" OR "information program" OR "cultural exchange" OR "educational exchange" OR Fulbright OR "Voice of America" OR "exchange of persons" OR "hearts and minds" OR "cultural program" OR "Asia Foundation" OR "leader grant" OR "information officer" OR "cultural affairs" OR "cultural relations" OR "public diplomacy" OR "information activities")',)
+  -> [(76, 76, 4)]
+M04 union total in R (flat count)
+  SQL: SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN R ON R.volume_id=d.volume_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND frus_documents MATCH ?
+  params: ('(USIS OR USIA OR JUSPAO OR "Information Agency" OR "Information Service" OR "psychological warfare" OR "psychological operations" OR "psychological strategy" OR "information program" OR "cultural exchange" OR "educational exchange" OR Fulbright OR "Voice of America" OR "exchange of persons" OR "hearts and minds" OR "cultural program" OR "Asia Foundation" OR "leader grant" OR "information officer" OR "cultural affairs" OR "cultural relations" OR "public diplomacy" OR "information activities")',)
+  -> [(1984, 76)]
+M06 S1 count
+  SQL: SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN G ON G.volume_id=d.volume_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND frus_documents MATCH ? AND (d.header LIKE '%Asia%' OR d.header LIKE '%Viet%' OR d.header LIKE '%Japan%' OR d.header LIKE '%China%' OR d.header LIKE '%Chinese%' OR d.header LIKE '%Korea%' OR d.header LIKE '%Indonesia%' OR d.header LIKE '%Philippines%' OR d.header LIKE '%Thai%' OR d.header LIKE '%Pacific%' OR d.header LIKE '%Taiwan%' OR d.header LIKE '%Far East%')
+  params: ('(Vietnam OR Viet OR Korea OR Japan OR Japanese OR China OR Chinese OR Indonesia OR Philippines OR Thailand OR Laos OR Cambodia OR Asia OR Asian OR Taiwan OR Malaysia OR Singapore OR Pacific)',)
+  -> [(61, 9)]
+M06 S1 per volume
+  SQL: SELECT f.volume_id, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN G ON G.volume_id=d.volume_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND frus_documents MATCH ? AND (d.header LIKE '%Asia%' OR d.header LIKE '%Viet%' OR d.header LIKE '%Japan%' OR d.header LIKE '%China%' OR d.header LIKE '%Chinese%' OR d.header LIKE '%Korea%' OR d.header LIKE '%Indonesia%' OR d.header LIKE '%Philippines%' OR d.header LIKE '%Thai%' OR d.header LIKE '%Pacific%' OR d.header LIKE '%Taiwan%' OR d.header LIKE '%Far East%') GROUP BY 1
+  params: ('(Vietnam OR Viet OR Korea OR Japan OR Japanese OR China OR Chinese OR Indonesia OR Philippines OR Thailand OR Laos OR Cambodia OR Asia OR Asian OR Taiwan OR Malaysia OR Singapore OR Pacific)',)
+  -> [('frus1917-72PubDipv06', 12), ('frus1917-72PubDipv07', 11), ('frus1917-72PubDipv08', 17), ('frus1955-57v09', 3), ('frus1961-63v25', 4), ('frus1964-68v33', 3), ('frus1969-76v38p2', 2), ('frus1977-80v28', 1), ('frus1977-80v30', 8)]
+M07 "Department of State" in R
+  SQL: SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN R ON R.volume_id=d.volume_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND f.frus_documents MATCH ?
+  params: ('"Department of State"',)
+  -> [(14670, 76)]
+M07 "Department of State" whole corpus
+  SQL: SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND frus_documents MATCH ?
+  params: ('"Department of State"',)
+  -> [(94049, 552)]
+M07 ZZZ_IMPOSSIBLE_ZZZ in R
+  SQL: SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN R ON R.volume_id=d.volume_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND f.frus_documents MATCH ?
+  params: ('ZZZ_IMPOSSIBLE_ZZZ',)
+  -> [(0, 0)]
+M07 ZZZ_IMPOSSIBLE_ZZZ whole corpus
+  SQL: SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND frus_documents MATCH ?
+  params: ('ZZZ_IMPOSSIBLE_ZZZ',)
+  -> [(0, 0)]
+M07 "soft power" in R
+  SQL: SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN R ON R.volume_id=d.volume_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND f.frus_documents MATCH ?
+  params: ('"soft power"',)
+  -> [(0, 0)]
+M07 "soft power" whole corpus
+  SQL: SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND frus_documents MATCH ?
+  params: ('"soft power"',)
+  -> [(0, 0)]
+M07 "public diplomacy" in R
+  SQL: SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN R ON R.volume_id=d.volume_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND f.frus_documents MATCH ?
+  params: ('"public diplomacy"',)
+  -> [(2, 2)]
+M07 "public diplomacy" whole corpus
+  SQL: SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND frus_documents MATCH ?
+  params: ('"public diplomacy"',)
+  -> [(211, 38)]
+M07 "Radio Free Asia" in R
+  SQL: SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN R ON R.volume_id=d.volume_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND f.frus_documents MATCH ?
+  params: ('"Radio Free Asia"',)
+  -> [(0, 0)]
+M07 "Radio Free Asia" whole corpus
+  SQL: SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND frus_documents MATCH ?
+  params: ('"Radio Free Asia"',)
+  -> [(2, 2)]
+M07 "Asian mentality" in R
+  SQL: SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN R ON R.volume_id=d.volume_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND f.frus_documents MATCH ?
+  params: ('"Asian mentality"',)
+  -> [(0, 0)]
+M07 "Asian mentality" whole corpus
+  SQL: SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND frus_documents MATCH ?
+  params: ('"Asian mentality"',)
+  -> [(0, 0)]
+"soft power" whole corpus INCLUDING apparatus
+  SQL: SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH ?
+  params: ('"soft power"',)
+  -> [(0,)]
+soft NEAR power (any proximity 3) whole corpus
+  SQL: SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH ?
+  params: ('NEAR(soft power, 3)',)
+  -> [(2,)]
+LIKE '%soft power%' in document_cache (all rows)
+  SQL: SELECT COUNT(*) FROM document_cache WHERE lower(body_text) LIKE '%soft power%' OR lower(header) LIKE '%soft power%'
+  params: ()
+  -> [(0,)]
+DoS volumes in R
+  SQL: SELECT COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN R ON R.volume_id=d.volume_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND f.frus_documents MATCH ?
+  params: ('"Department of State"',)
+  -> [(76,)]
+R doc date span (document_dates)
+  SQL: SELECT MIN(dd.date_iso), MAX(dd.date_iso), COUNT(*) FROM document_dates dd JOIN R USING(volume_id) JOIN document_cache d ON d.volume_id=dd.volume_id AND d.document_id=dd.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso IS NOT NULL
+  params: ()
+  -> [('1943-08-11', '1981-01-14', 37504)]
+G doc date span (document_dates)
+  SQL: SELECT MIN(dd.date_iso), MAX(dd.date_iso), COUNT(*) FROM document_dates dd JOIN G USING(volume_id) JOIN document_cache d ON d.volume_id=dd.volume_id AND d.document_id=dd.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso IS NOT NULL
+  params: ()
+  -> [('1917-08-13', '1980-12-18', 2278)]
+earliest document with an external_citations row
+  SQL: SELECT MIN(dd.date_iso) FROM external_citations e JOIN document_dates dd ON dd.volume_id=e.volume_id AND dd.document_id=e.document_id WHERE dd.date_iso IS NOT NULL
+  params: ()
+  -> [('1910-12-06',)]
+external_citations rows total / docs
+  SQL: SELECT COUNT(*), COUNT(DISTINCT volume_id||'/'||document_id) FROM external_citations
+  params: ()
+  -> [(50173, 32419)]
+external_citations rows over the 22 cited docs: 5
+cited docs by date_iso: ('frus1924v01', 'd540', '1924-12-15') ... ('frus1977-80v30', 'd152', '1978-10-04') n= 22

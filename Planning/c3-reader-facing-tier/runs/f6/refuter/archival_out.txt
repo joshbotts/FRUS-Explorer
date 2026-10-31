@@ -1,0 +1,131 @@
+== accession-series-index ==
+306/67A222 -> [('48349732', 'Regional Subject Files'), ('55275645', 'Subject and Country Files Relating to Culture'), ('63531119', 'Subject Files Relating to Youth Issues')] count 3
+306/68A4933 -> [('1102141', 'Subject Files of the Director'), ('1126733', 'Speech Files'), ('42125423', 'Vietnam Working Group Subject Files'), ('4656106', 'Records Relating to Advisory Committees and Panels'), ('4662423', 'Records Relating to the Appearances of Carl Thomas Rowan'), ('4662627', 'Records Relating to the Speaking Engagements of Carl Thomas Rowan'), ('4667502', 'Records Relating to the Declined Invitations of Carl Thomas Rowan'), ('4667607', 'Program Files'), ('4701166', 'Correspondence Files'), ('48349732', 'Regional Subject Files'), ('51089294', 'Country Files for Indonesia'), ('53279603', 'Regional Country Files'), ('55029502', 'Country Files for Switzerland'), ('55734789', 'Country Files for Spain'), ('74033199', 'Signal Messages')] count 15
+306/72A5121 -> [('1257679', 'Subject Files'), ('40943515', 'Alphabetical Subject Files Containing Policy Guidance Records'), ('4667751', 'Background Files'), ('48349732', 'Regional Subject Files'), ('51861375', 'Country Files for Bolivia'), ('53279603', 'Regional Country Files'), ('55029502', 'Country Files for Switzerland'), ('55159731', 'Country Files for Chile'), ('56190687', 'Country Files for El Salvador'), ('56918933', 'Country Files for Guatemala'), ('57316268', 'Country Files for Haiti'), ('57807763', 'Regional Subject Files'), ('58410079', 'Country Files for Trinidad and Tobago'), ('59414121', 'Country Files for Honduras'), ('59728260', 'Country Files for Costa Rica'), ('63530073', 'Country Files for Jamaica'), ('63531142', 'Country Files for Nicaragua'), ('63821359', 'Regional Subject Files')] count 18
+306/840003 -> [('5552237', 'Correspondence Files'), ('5585931', 'Memorandums Pertaining to the Executive Committee')] count 2
+
+== series-facts-index (y0,y1,extent,accessStatus,creator) ==
+2839192 1947 1979 26 linear feet, 3 linear inches Restricted - Partly Department of State. Office of the Secretary. Executive Secretariat.
+2839193 1947 1965 9 linear feet, 7 linear inches Restricted - Partly Department of State. Office of the Secretary. Executive Secretariat.
+2839191 1953 1961 4 linear feet, 5 linear inches Restricted - Partly Department of State. Executive Secretariat.
+2838992 1948 1961 3 linear feet, 1 linear inch Restricted - Partly Department of State. Policy Planning Council.
+1257679 1953 1971 47 linear feet Restricted - Partly U.S. Information Agency. Office of Policy and Plans.
+40967285 1956 1972 103 linear feet, 1 linear inch Restricted - Partly U.S. Information Agency. Office of the Director. Executive Secretariat.
+1254251 1954 1958 9 linear feet, 2 linear inches Restricted - Partly U.S. Information Agency. Office of Research and Intelligence. Intelligence Production Division.
+42125423 NO ROW
+48349732 NO ROW
+5552237 NO ROW
+5585931 NO ROW
+645643 NO ROW
+1164 NO ROW
+567979 NO ROW
+591194 NO ROW
+587358 NO ROW
+50809179 NO ROW
+572235 NO ROW
+1104 NO ROW
+
+== lot-claimants-index ==
+62D1 [('2198167', 'Alphabetical Files', (None, None)), ('2838991', 'Numerical Files', (None, None)), ('2838992', 'Records Relating to Activities with the National Security Council', (None, None))]
+62D430 [('2386675', 'Administrative and Chronological Files', (None, None)), ('2839190', 'Regional and Country Operations Files', (None, None)), ('2839191', 'Subject and Special Files', (None, None)), ('2842737', 'Indexes Relating to the Receipt and Distribution of Records from the White House to the Operations Coordination Board (OCB)', (None, None))]
+66D95 [('2839192', 'Records Relating to National Security Council Policy Papers', (None, None)), ('2839193', 'Subject Files', (None, None))]
+lots present among the four: ['62D1', '62D430', '66D95']
+
+== central-files-index lotFiles ==
+62D1 2838992 Records Relating to Activities with the National Security Council ['A1 1583E', 'A1 1583F'] control 59
+62D430 2839191 Subject and Special Files ['A1 1586C'] control 59
+63D351 2839192 Records Relating to National Security Council Policy Papers ['A1 1586E'] control 59
+66D95 2839192 Records Relating to National Security Council Policy Papers ['A1 1586E'] control 59
+central-files-index keys: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+countrySeries: [('diplomaticDespatches', '603720', 2160), ('diplomaticInstructions', '593313', 177), ('notesFromForeignMissions', '594363', 522), ('notesToForeignMissions', '597272', 104), ('consularDespatches', '302031', 3357), ('consularInstructions', '604019', 7), ('notesToForeignConsuls', '1076611', 4), ('notesFromForeignConsuls', '1076629', 11), ('domesticLetters', '568025', 272), ('lettersReceived', '583574', 14), ('specialAgentsDespatches', '876974', 22), ('specialAgentsInstructions', '871874', 4)]
+   diplomaticDespatches Diplomatic Despatches ['catalogURL', 'endISO', 'fileUnitNaId', 'fileUnitTitle', 'geoKeys', 'naId', 'startISO', 'title']
+   diplomaticInstructions Diplomatic Instructions ['catalogURL', 'endISO', 'geoKeys', 'naId', 'startISO', 'title']
+   notesFromForeignMissions Notes from Foreign Missions ['catalogURL', 'endISO', 'fileUnitNaId', 'fileUnitTitle', 'geoKeys', 'naId', 'startISO', 'title']
+   notesToForeignMissions Notes to Foreign Missions ['catalogURL', 'endISO', 'geoKeys', 'naId', 'startISO', 'title']
+   consularDespatches Consular Despatches ['catalogURL', 'endISO', 'fileUnitNaId', 'fileUnitTitle', 'geoKeys', 'naId', 'startISO', 'title']
+   consularInstructions Consular Instructions ['catalogURL', 'endISO', 'geoKeys', 'naId', 'startISO', 'title']
+   notesToForeignConsuls Notes to Foreign Consuls ['catalogURL', 'endISO', 'geoKeys', 'naId', 'startISO', 'title']
+   notesFromForeignConsuls Notes from Foreign Consuls ['catalogURL', 'endISO', 'geoKeys', 'naId', 'startISO', 'title']
+   domesticLetters Domestic Letters ['catalogURL', 'endISO', 'geoKeys', 'naId', 'startISO', 'title']
+   lettersReceived Letters Received ['catalogURL', 'endISO', 'geoKeys', 'naId', 'startISO', 'title']
+   specialAgentsDespatches Despatches from Special Agents ['catalogURL', 'endISO', 'geoKeys', 'naId', 'startISO', 'title']
+   specialAgentsInstructions Instructions to Special Agents ['catalogURL', 'endISO', 'geoKeys', 'naId', 'startISO', 'title']
+  cfi contains 'Central Decimal' : 0
+  cfi contains 'Decimal File' : 2
+  cfi contains '1945-49' : 0
+  cfi contains '1950-54' : 0
+  cfi contains '1955-59' : 0
+  cfi contains '1960-63' : 0
+  cfi contains '1945–1949' : 0
+  cfi contains '1950–1954' : 0
+  cfi contains '1955–1959' : 0
+  cfi contains '1960–1963' : 0
+
+== collection-authority ==
+lot:62D1 62D1 S/P – NSC Files: Lot 62 D 1 Department of State 69
+lot:62D430 62D430 OCB Files: Lot 62 D 430 Department of State 60
+lot:63D351 63D351 S/S – NSC Files: Lot 63 D 351 Department of State 98
+lot:66D95 66D95 S/S – NSC (Miscellaneous) Files: Lot 66 D 95 Department of State 86
+lot:68A4933 68A4933 USIA Files: Lot 68 A 4933 Washington National Records Center 1
+txt:washington national records center|usia psychological operations files: frc 68 a 4933 None USIA Psychological Operations Files: FRC 68 A 4933 Washington National Records Center 1
+
+== presidential-library-catalog ==
+Kennedy Library 1164 Papers of John F. Kennedy: Presidential Papers: National Security Files JFK-4 series: [(193236, 'Country Files', None, None), (193350, 'Department and Agency Files', None, None), (193354, 'Meeting Records and Memoranda', None, None), (326996825, 'Regional Security Files', None, None), (326996849, 'Trip and Conference Files', None, None), (326996855, 'Subject Files', None, None)]
+Johnson Library 567979 National Security Files LBJ-NSF series: [(567985, 'Latin America Country Files', None, None), (573102, 'Africa Country Files', None, None), (580807, 'Europe and USSR Country Files', None, None), (582854, 'Intelligence Briefings Files', None, None), (587357, 'Middle East Country Files', None, None), (587358, 'Asia and the Pacific Country Files', None, None)]
+Johnson Library 50809179 Papers of Leonard H. Marks LBJ-P69098 series: [(50827304, 'Work Files', None, None)]
+Nixon 572235 National Security Files (Nixon Administration) RN-NSF series: [(572247, 'Institutional Files', None, None), (572248, 'Central Files', None, None), (579113, 'Henry A. Kissinger Telephone Conversation Transcri', None, None), (1103638, "Henry A. Kissinger's (HAK) Office Files", None, None)]
+Ford Library 645643 National Security Council Vietnam Information Group Files (Johnson, Nixon, and Ford Admini GRF-0338 series: [(645647, 'Vietnam Subject Files', None, None)]
+Carter Library 1104 Zbigniew Brzezinski Collection JC-DMBRZEZ series: [(152224, 'Zbigniew Brzezinski Trilateral Commission Correspo', None, None), (152225, 'Trilateral Commission Correspondence File', None, None), (152230, 'Gerard Smith Trilateral Commission File', None, None), (152263, 'Zbigniew Brzezinski Trilateral Commission Chronolo', None, None), (152300, 'Geographic File', None, None), (152392, 'Subject File', None, None)]
+collection keys sample: ['identifier', 'naId', 'series', 'statedSeriesCount', 'title']
+series keys sample: ['inclusiveDates', 'naId', 'title']
+Ford matches: [(645508, 'Presidential Country Files for Africa (Ford Administration)'), (599173, 'Presidential Country Files for East Asia and the Pacific (Ford Administration)'), (645510, 'Presidential Country Files for Europe and Canada (Ford Administration)'), (645512, 'Presidential Country Files for Latin America (Ford Administration)'), (568221, 'Presidential Country Files for Middle East and South Asia (Ford Administration)'), (593840, 'National Security Council East Asian and Pacific Affairs Staff Files (Ford Administration)')]
+
+== decimal-class-labels (country 90, 98) ==
+keys: ['coverage', 'generated', 'provenance', 'schedules', 'schemaVersion']
+   "90": "Asia", "90a": "Oman", "90b": "Arabia", "90c": "Azerbaijan", "90d": "Syria", "
+   "90": ["Near East"], "90e": ["Levant States"], "90f": ["Hedjaz/Hejas", "Hejaz and Ne
+   "90": "Other internal affairs", "91": "Public press", "911": "Newspapers", "9111": "
+   "90": "Asia", "90a": "Bhutan", "90b": "Burma", "90c": "Nepal", "90d": "Pakistan", "9
+   "90": ["Far East (including all of Asia)"], "90d": ["Baluchistan"], "91": ["Karikal"
+   "90": "Asia", "90a": "Bhutan", "90b": "Burma", "90c": "Nepal", "90d": "Pakistan", "9
+   "98": "Java", "99": "Samoa", "99a": "Western Samoa"
+   "98": ["Borneo", "Borneo, Dutch", "Celebes", "Indonesia", "Madura", "Molucca Islands
+
+== index rows: document_sources for the 27 (repository, record_group, lot, series) ==
+frus1917-72PubDipv06 d126 ('National Archives', '306', None, None, 'DIRCTR Sub Files', 'Source: National Archives, RG 306, DIRCTR Sub Files, 1963–69, Bx 6–29 63–69: Acc: #72A5121, Entry UD WW 257, Box 8, FIEL')
+frus1917-72PubDipv06 d133 ('National Archives', '306', None, None, 'DIRCTR Sub Files', 'Source: National Archives, RG 306, DIRCTR Sub Files, 1963–69, Bx 6–29 63–69: Acc: #72A5121, Entry UD WW 257, Box 8, FIEL')
+frus1917-72PubDipv07 d171 ('Johnson Library', None, None, None, 'Marks Papers', 'Source: Johnson Library, Marks Papers, Box 30, Educational TV —Vietnam. Confidential. A copy was sent to Marks.')
+frus1917-72PubDipv08 d31 ('National Archives', '306', None, None, 'Office of Policy and Plans', 'Source: National Archives, RG 306, Office of Policy and Plans, Plans and Operational Policy Staff, Office of Planning Of')
+frus1949v07p2 d386 ('Department of State', '59', None, None, '711.90/11–1649', '711.90/11–1649')
+frus1950v06 d32 ('Department of State', '59', None, None, '611.90/4–350', '611.90/4–350')
+frus1952-54v12p2 d403 ('Department of State', '59', None, None, '790.5/9–1453', '790.5/9–1453')
+frus1952-54v14p2 d820 ('Department of State', '59', '63 D 351', '63D351', None, 'S/S – NSC files, lot 63 D 351')
+frus1961-63v01 d265 ('National Archives', '306', None, None, 'USIA /TOP Files: FRC 67 A 222', 'Source: Washington National Records Center, RG 306, USIA /TOP Files: FRC 67 A 222, IAF Defoliation 1963. Secret. A note ')
+frus1961-63v01 d339 ('National Archives', '84', None, None, 'Saigon Embassy Files: FRC 66 A 33s', 'Source: Washington National Records Center, RG 84, Saigon Embassy Files: FRC 66 A 33s, Program Direction. Confidential.')
+frus1961-63v01 d49 ('National Archives', '34', None, None, None, 'Source: Washington National Records center, RG 34, Saigon Embassy Files: FRC 66 A 335. Program Direction Secret; Officia')
+frus1961-63v02 d5 ('National Archives', '306', None, None, 'USIA /I/ S Files: FRC 68 A 4933', 'Source: Washington National Records Center, RG 306, USIA /I/ S Files: FRC 68 A 4933, Field-Far East (IAF), 1962. Confide')
+frus1961-63v04 d108 ('Kennedy Library', None, None, None, 'National Security Files', 'Source: Kennedy Library, National Security Files, Meetings and Memoranda Series, Meetings on Vietnam. Confidential.')
+frus1961-63v23 d289 ('Department of State', '59', None, None, '611.98/9–1462', 'Source: Department of State, Central Files, 611.98/9–1462. Secret.')
+frus1964-68v01 d197 ('Johnson Library', None, None, None, 'National Security File', 'Source: Johnson Library, National Security File, Vietnam Country File, Southeast Asia, Vol. 11, Memos (A). Secret. Rowan')
+frus1964-68v02 d160 ('Johnson Library', None, None, None, 'Confidential File', 'Source: Johnson Library, Confidential File, CO 312. Confidential. Copy sent to McGeorge Bundy.')
+frus1964-68v02 d172 ('Johnson Library', None, None, None, 'National Security File', 'Source: Johnson Library, National Security File, Country File, Vietnam, Vol. XXIX. Confidential.')
+frus1964-68v03 d138 ('Johnson Library', None, None, None, 'National Security File', 'Source: Johnson Library, National Security File, Country File, Vietnam, 41-Pt. Program in Non-Military Sphere in SVN. Se')
+frus1964-68v26 d106 ('Johnson Library', None, None, None, 'National Security File', 'Source: Johnson Library, National Security File, Country File, Indonesia, Vol. III, Memos 9/64–2/65, [2 of 2]. Confident')
+frus1964-68v27 d386 ('Johnson Library', None, None, None, 'National Security File', 'Source: Johnson Library, National Security File, Country File, Thailand, Thanom Kittikachorn Visit, 5/8–9/68. Confidenti')
+frus1969-76v19p2 d67 ('Nixon Presidential Materials', None, None, None, 'NSC Files', 'Source: National Archives, Nixon Presidential Materials, NSC Files, NSC Institutional Files (H-Files), National Security')
+frus1969-76v38p2 d105 ('National Archives', '305', None, None, 'Records of the USIA', 'Source: National Archives, RG 305, Records of the USIA, Office of the Director, Subject Files, 1975, Entry UD–UP 7, FRC ')
+frus1969-76ve12 d16 ('Ford Library', None, None, None, 'National Security Adviser', 'Source: Ford Library, National Security Adviser, Presidential Country Files for East Asia and the Pacific, Box 1, Southe')
+frus1969-76ve12 d17 ('Ford Library', None, None, None, 'National Security Adviser', 'Source: Ford Library, National Security Adviser, Presidential Country Files for East Asia and the Pacific, Box 1, Southe')
+frus1977-80v22 d3 ('Carter Library', None, None, None, 'National Security Affairs', 'Source: Carter Library, National Security Affairs, Brzezinski Material, Country File, Box 85, Vietnam, 1/77–12/78. Confi')
+frus1977-80v30 d79 ('National Archives', '306', None, None, 'Office of the Director, Box 130', 'Source: National Archives, RG 306, Office of the Director, Executive Secretariat, Secretariat Staff, Correspondence File')
+frus1977-80v30 d81 ('Department of State', '59', None, None, 'CFPF D770263–1068', 'Source: National Archives, RG 59, Central Foreign Policy File, D770263–1068. Limited Official Use. Drafted by Kenneth Qu')
+
+== external_citations: lot rows exist? ==
+66D95 (873, 666)
+62D430 (130, 108)
+63D351 (502, 349)
+62D1 (211, 171)
+
+== R-10-65 in frus1964-68v02/d172 ==
+(0, 0, 0)
+   ... e attitudes and views of the rural population of Viet Nam. Attached, but not printed. The study was entitled “Facts and Attitudes: Long An Province” (R-10–65), and was issued by USIA in February 1965. The information is based on a series of interviews obtai

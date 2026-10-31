@@ -1,0 +1,50 @@
+O2' check of f2: 45 numbers in overview.md; 22 traced, 19 weak, 4 untraced.
+TRACE TABLE: 27 rows, from line 227 of memo.md.
+Each flagged number is WEAK (a row holds the value without the word after it) or UNTRACED (no row holds the value). Decide each: TRACED (name the row), NOT A NUMBER, or UNTRACED.
+
+[WEAK] 'about three in five' (value 3/5, next word 'regionally'); nearest row: "five Public Diplomacy volumes" (part 3, How) | §1: six PD-titled volumes, one is WWI (frus1917-72PubDip); five cover 1961–1980
+    sentence: Where FRUS points for the rest.** Series the printed documents came from (came-from channel; about three in five of the 119 regionally focused documents in the public diplomacy volumes came from the information agency's own records):
+[WEAK] '119' (value 119, next word 'regionally'); nearest row: "about three in five" of 119 documents from the agency's own records (part 2) | §3 wide set: RG 306 74 of 119
+    sentence: Where FRUS points for the rest.** Series the printed documents came from (came-from channel; about three in five of the 119 regionally focused documents in the public diplomacy volumes came from the information agency's own records):
+[WEAK] 'Record Group 306' (value rg306, next word ''); nearest row: "about three in five" of 119 documents from the agency's own records (part 2) | §3 wide set: RG 306 74 of 119
+    sentence: Information Agency, Office of the Director, Executive Secretariat — Record Group 306;
+[WEAK] '42' (value 42, next word 'entry'); nearest row: Record groups 306, 59; entries A1–42, UD WW 257, P–14; lots 62 D 430, 81D113; accession 72A5121 | §3 table and source notes in raw/ files
+    sentence: FRUS cites it as "Director's Subject Files," Entry A1–42 ( ) and Entry UD WW 257 ( );
+[WEAK] 'eighteen' (value 18, next word 'serie'); nearest row: "eighteen series" under one transfer number (part 2) | §3 table: 306/72A5121 lists 18
+    sentence: A likely match by title and creator only: the transfer number FRUS gives is listed under eighteen series and not under this one.
+[WEAK] 'Record Group 306' (value rg306, next word ''); nearest row: "about three in five" of 119 documents from the agency's own records (part 2) | §3 wide set: RG 306 74 of 119
+    sentence: Information Agency, Office of Policy and Plans — Record Group 306;
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Operations Coordinating Board Files, Lot 62 D 430 — Record Group 59, Executive Secretariat;
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Central Decimal File, classes for Asia's internal and national defense affairs and for Philippine international relations (the printed documents date from and ) — Record Group 59; no identifier in the reference files I used.
+[WEAK] 'about one in eleven' (value 1/11, next word 'same'); nearest row: "about one in eleven" carry a footnote pointer (part 2) | §3: 11 of 119
+    sentence: Series the editors cited without printing (pointed-at channel; only about one in eleven of the same 119 documents carries such a pointer):
+[UNTRACED] '50809179' (value 50809179, next word '')
+    sentence: NARA identifier 50809179; .
+[WEAK] '14' (value 14, next word 'record'); nearest row: "fifteen documents" (Scope, part 1) | §4 quoted 15; coll.txt 14 + d190
+    sentence: Records of the Deputy Secretary of State (Warren Christopher), Lot 81D113, Entry P–14 — Record Group 59;
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Records of the Deputy Secretary of State (Warren Christopher), Lot 81D113, Entry P–14 — Record Group 59;
+[WEAK] 'one' (value 1, next word 'none'); nearest row: "109 volumes", "about 62,000 documents" (Scope) | §1 volume set: 109; 61,852
+    sentence: I searched every one of the 553 volumes for the phrase and found none, while in the same search a control phrase was found in every one of the 109 volumes I scoped and an impossible one in none, so I searched instead in the officials' own terms ("information program," "psychological strategy," the agency's name, "image of the United States").
+[WEAK] 'nearly two in three' (value 2/3, next word 'document'); nearest row: "nearly two in three" of agency-name finds in those volumes (part 3) | §2: 580 of 913
+    sentence: FRUS prints the agency's own survey results only as summaries in memoranda; nearly two in three of the documents naming the agency in my scope sit in the five Public Diplomacy volumes, which select for policy, not for evidence of reception.
+[WEAK] 'Record Group 306' (value rg306, next word ''); nearest row: "about three in five" of 119 documents from the agency's own records (part 2) | §3 wide set: RG 306 74 of 119
+    sentence: The surveys themselves are on the shelf: the agency's Vietnamese Public Opinion Surveys (Record Group 306, NARA identifier 1127750) and its International Survey Research Reports (identifier 721251).
+[WEAK] 'fifteen' (value 15, next word 'document'); nearest row: "fifteen documents" (Scope, part 1) | §4 quoted 15; coll.txt 14 + d190
+    sentence: The collection holds the fifteen documents the argument rests on, dated from to . ## Decisions this needs from you **What counts as soft power.** If it means only the information and cultural programs, the Vietnam psychological-warfare documents fall away and the story becomes the information agency's alone; if it includes the example set by American policy, the Tokyo embassy's reports on the war 
+[WEAK] 'one' (value 1, next word 'million'); nearest row: "109 volumes", "about 62,000 documents" (Scope) | §1 volume set: 109; 61,852
+    sentence: Asked to stress Hanoi's dependence on Peking, the agency's director warned that this "may only serve to increase the dimensions of the threat that looms from the North," and that "with over one million Chinese residents in South Viet-Nam who will also hear these broadcasts, we must exercise caution" .
+[WEAK] '26 percent' (value 26, next word 'public'); nearest row: "only 26 percent" (Finding 3) | §5 note, d88 raw text
+    sentence: By the Saigon surveys found only 26 percent of the public rating the United States a dependable ally, the "lowest point in thirteen Saigon surveys" . ### Image follows the alliance: modesty, low visibility and segmented audiences ( ) The agency's regional officers concluded that image depended less on American life than on bilateral ties.
+[WEAK] 'One' (value 1, next word 'caveat'); nearest row: "109 volumes", "about 62,000 documents" (Scope) | §1 volume set: 109; 61,852
+    sentence: "One caveat:
+[WEAK] 'one' (value 1, next word 'i'); nearest row: "109 volumes", "about 62,000 documents" (Scope) | §1 volume set: 109; 61,852
+    sentence: Each search was run beside a phrase expected everywhere and an impossible one, and I read samples of what each search found to check that it found the words meant.
+[WEAK] 'One' (value 1, next word 'document'); nearest row: "109 volumes", "about 62,000 documents" (Scope) | §1 volume set: 109; 61,852
+    sentence: One document was found by its similarity to another, by no word search, and read before it was cited.
+[WEAK] 'fifteen' (value 15, next word 'document'); nearest row: "fifteen documents" (Scope, part 1) | §4 quoted 15; coll.txt 14 + d190
+    sentence: I traced the documents' archival sources from their source notes and resolved series through the reference files shipped with the application, labelling the likely matches as such. ## Read next The collection "American soft power in East Asia — run f2" holds the fifteen documents under the findings above, with a note on each and the passages quoted here.
+[WEAK] 'one' (value 1, next word 'verified'); nearest row: "109 volumes", "about 62,000 documents" (Scope) | §1 volume set: 109; 61,852
+    sentence: I checked before finishing that every quotation in this overview and every excerpt in the collection is one verified word for word against its document, and that every document cited here is in the collection.

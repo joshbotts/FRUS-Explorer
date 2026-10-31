@@ -1,0 +1,18 @@
+index keys: ['documentCount', 'generated', 'harvestGenerated', 'harvestScriptSHA256', 'provenance', 'provenanceDigest', 'retrieval', 'schema', 'subseries', 'volumes']
+documentCount 314616 dimensions None generated 2026-10-15 model None provenanceDigest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+retrieval: {'measuredBy': 'Planning/semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md §5, 3,600 era-stratified queries over the 314,616-document corpus; Hamming-800 over 512 sign bits → int8-512', 'measuredRecallAt10': 0.9021, 'rerankPool': 800, 'scoreCalibration': {'documentOffset': 0.4, 'measuredBy': "Planning/semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md §1b, fitted to EmbeddingGemma 300m's scores over 90 typed queries and 600 anchor documents against the 314,616-document corpus", 'queryOffset': 0.47}}
+decoded rows: 314616 volumes: 553
+sampled ids absent from document_cache: 0
+binary magic b'FRSV' ver 1 dims 512 docs 314616 cents 660 digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+map digest at 20: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+map-index provenanceDigest: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 clusters: 140 documentCount: 314616
+shards matching the binary's digest: 553 mismatching: 0
+three digests equal (index == binary == map): True
+distinct neighbours (top 25 of 4 anchors): 82 (82 claimed)
+decades: [('1950s', 20), ('1960s', 41), ('1970s', 20), ('1980s', 1)] (claimed 1950s 20, 1960s 41, 1970s 20, 1980s 1)
+sources: [(('Department of State', '59'), 25), (('National Archives', '306'), 23), (('Johnson Library', None), 9), ((None, None), 5), (('Ford Library', None), 4), (('Kennedy Library', None), 3), (('Nixon Presidential Materials', None), 2), (('no source row', None), 2), (('Carter Library', None), 2), (('National Archives', '84'), 1), (('Library of Congress', None), 1), (('Central Intelligence Agency', None), 1), (('National Archives', '330'), 1), (('Eisenhower Library', None), 1), (('National Archives', '305'), 1), (('National Archives', '59'), 1)] (claimed RG59 25, RG306 23, Johnson 9, no source row 7, Ford 4, Kennedy 3, Nixon 2)
+in 77-scope: 32 of 82 (claimed 32 / 50)
+frus1917-72PubDipv07 [(0.987, 'frus1917-72PubDipv06'), (0.981, 'frus1917-72PubDipv08'), (0.973, 'frus1977-80v30'), (0.965, 'frus1964-68v33'), (0.965, 'frus1961-63v25')]
+frus1977-80v30 [(0.976, 'frus1917-72PubDipv08'), (0.973, 'frus1917-72PubDipv07'), (0.97, 'frus1917-72PubDipv06'), (0.962, 'frus1977-80v28'), (0.961, 'frus1969-76v38p2')]
+frus1955-57v09 [(0.985, 'frus1958-60v04'), (0.983, 'frus1952-54v01p1'), (0.983, 'frus1964-68v09'), (0.98, 'frus1961-63v09'), (0.979, 'frus1955-57v10')]
+(claimed: PubDipv07 -> v06 0.987, v08 0.981, 1977-80v30 0.973, 1964-68v33 0.965, 1961-63v25 0.965; 1977-80v30 -> v08 0.976, v07 0.973, v06 0.970, 1977-80v28 0.962, 1969-76v38p2 0.961; 1955-57v09 -> 1958-60v04 0.985, 1952-54v01p1 0.983, 1964-68v09 0.983)

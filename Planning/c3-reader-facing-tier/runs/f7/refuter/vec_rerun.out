@@ -1,0 +1,44 @@
+decoded rows: 314616 index documentCount: 314616 volumes: 553
+binary: b'FRSV' 1 512 314616 660 digest==index: True
+map digest==index: True
+shards: 553 digest mismatches: 0
+ANCHOR frus1917-72PubDipv08/d31
+   ham  81 cos 0.920 cal 0.867  frus1917-72PubDipv07/d106
+   ham  96 cos 0.916 cal 0.860  frus1969-76v38p2/d105
+   ham  90 cos 0.915 cal 0.858  frus1917-72PubDipv08/d99
+   ham 100 cos 0.908 cal 0.847  frus1955-57v09/d190
+   ham  94 cos 0.908 cal 0.846  frus1951v06p2/d105
+   ham  88 cos 0.906 cal 0.844  frus1952-54v13p1/d116
+   ham 104 cos 0.906 cal 0.843  frus1955-57v09/d185
+   ham  95 cos 0.906 cal 0.843  frus1917-72PubDipv07/d69
+   ham 102 cos 0.905 cal 0.841  frus1961-63v25/d156
+   ham  99 cos 0.904 cal 0.840  frus1917-72PubDipv06/d150
+   ham  90 cos 0.903 cal 0.839  frus1950v06/d9
+   ham  97 cos 0.902 cal 0.837  frus1917-72PubDipv07/d32
+ANCHOR frus1964-68v29p2/d123
+   ham  72 cos 0.945 cal 0.909  frus1969-76v19p2/d84
+   ham  72 cos 0.939 cal 0.899  frus1958-60v18/d203
+   ham  76 cos 0.939 cal 0.898  frus1969-76v19p2/d99
+   ham  78 cos 0.929 cal 0.882  frus1969-76v19p2/d3
+   ham  81 cos 0.929 cal 0.881  frus1964-68v29p2/d35
+   ham  72 cos 0.927 cal 0.878  frus1951v06p1/d751
+   ham  82 cos 0.924 cal 0.873  frus1955-57v23p1/d28
+   ham  84 cos 0.922 cal 0.870  frus1961-63v22/d354
+   ham  91 cos 0.918 cal 0.863  frus1952-54v14p2/d832
+   ham  94 cos 0.916 cal 0.860  frus1949v07p2/d127
+   ham  98 cos 0.915 cal 0.858  frus1952-54v14p2/d682
+   ham  96 cos 0.915 cal 0.858  frus1958-60v18/d175
+ANCHOR frus1917-72PubDipv08/d31 with RAW int8 dot (session's method):
+   ham  81 dot 0.920 cal 0.867  frus1917-72PubDipv07/d106
+   ham  96 dot 0.917 cal 0.862  frus1969-76v38p2/d105
+   ham  90 dot 0.915 cal 0.858  frus1917-72PubDipv08/d99
+   ham 100 dot 0.908 cal 0.847  frus1955-57v09/d190
+   ham  94 dot 0.908 cal 0.847  frus1951v06p2/d105
+   ham  88 dot 0.906 cal 0.843  frus1952-54v13p1/d116
+   ham 104 dot 0.905 cal 0.842  frus1955-57v09/d185
+   ham 102 dot 0.905 cal 0.841  frus1961-63v25/d156
+   ham  99 dot 0.905 cal 0.841  frus1917-72PubDipv06/d150
+   ham  95 dot 0.904 cal 0.841  frus1917-72PubDipv07/d69
+   ham  97 dot 0.903 cal 0.838  frus1917-72PubDipv07/d32
+   ham  90 dot 0.902 cal 0.837  frus1950v06/d9
+norm of anchor vec: 0.9998137950897217

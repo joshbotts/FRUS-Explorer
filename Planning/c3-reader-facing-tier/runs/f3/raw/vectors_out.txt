@@ -1,0 +1,47 @@
+index digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+binary digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 match True
+map digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 match True
+round trip 553 of 553 volumes; docs 314616 dims 512
+random pairs n 20000 mean 167.1 sd 14.8 p1 132 min 95
+25th-neighbour over 200 docs: median 107 q1 99 q3 114
+
+ANCHOR frus1917-72PubDipv08/d31 map cluster 65535
+  frus1917-72PubDipv07/d106 hamming 81 raw cos 0.920 calibrated 0.867 cluster 138
+  frus1969-76v38p2/d105 hamming 96 raw cos 0.917 calibrated 0.862 cluster 65535
+  frus1917-72PubDipv08/d99 hamming 90 raw cos 0.915 calibrated 0.858 cluster 138
+  frus1955-57v09/d190 hamming 100 raw cos 0.908 calibrated 0.847 cluster 138
+  frus1951v06p2/d105 hamming 94 raw cos 0.908 calibrated 0.847 cluster 65535
+  frus1952-54v13p1/d116 hamming 88 raw cos 0.906 calibrated 0.843 cluster 29
+  frus1955-57v09/d185 hamming 104 raw cos 0.905 calibrated 0.842 cluster 138
+  frus1961-63v25/d156 hamming 102 raw cos 0.905 calibrated 0.841 cluster 138
+  frus1917-72PubDipv06/d150 hamming 99 raw cos 0.905 calibrated 0.841 cluster 138
+  frus1917-72PubDipv07/d69 hamming 95 raw cos 0.904 calibrated 0.841 cluster 138
+
+ANCHOR frus1964-68v29p2/d46 map cluster 7
+  frus1964-68v29p2/d123 hamming 106 raw cos 0.894 calibrated 0.824 cluster 7
+  frus1958-60v18/d203 hamming 94 raw cos 0.892 calibrated 0.821 cluster 7
+  frus1964-68v29p2/d35 hamming 111 raw cos 0.886 calibrated 0.811 cluster 7
+  frus1969-76v19p2/d99 hamming 118 raw cos 0.883 calibrated 0.805 cluster 7
+  frus1958-60v18/d190 hamming 108 raw cos 0.882 calibrated 0.804 cluster 7
+  frus1952-54v14p2/d682 hamming 124 raw cos 0.881 calibrated 0.802 cluster 7
+  frus1969-76v19p2/d3 hamming 112 raw cos 0.881 calibrated 0.801 cluster 7
+  frus1964-68v29p2/d55 hamming 108 raw cos 0.880 calibrated 0.800 cluster 7
+  frus1952-54v14p2/d832 hamming 115 raw cos 0.878 calibrated 0.797 cluster 7
+  frus1931-41v02/d12 hamming 125 raw cos 0.878 calibrated 0.797 cluster 3
+
+ANCHOR frus1952-54v13p2/d992 map cluster 31
+  frus1952-54v13p1/d57 hamming 74 raw cos 0.947 calibrated 0.912 cluster 31
+  frus1950v06/d513 hamming 71 raw cos 0.944 calibrated 0.907 cluster 31
+  frus1950v06/d602 hamming 75 raw cos 0.940 calibrated 0.900 cluster 31
+  frus1952-54v13p1/d14 hamming 74 raw cos 0.939 calibrated 0.899 cluster 31
+  frus1964-68v01/d214 hamming 84 raw cos 0.938 calibrated 0.896 cluster 29
+  frus1952-54v13p1/d250 hamming 78 raw cos 0.936 calibrated 0.893 cluster 31
+  frus1952-54v13p1/d285 hamming 75 raw cos 0.935 calibrated 0.892 cluster 31
+  frus1952-54v16/d265 hamming 72 raw cos 0.934 calibrated 0.890 cluster 31
+  frus1961-63v01/d210 hamming 84 raw cos 0.933 calibrated 0.889 cluster 29
+  frus1952-54v12p1/d132 hamming 79 raw cos 0.933 calibrated 0.889 cluster 31
+
+map clusters with labels for anchors:
+frus1917-72PubDipv08/d31 65535 unclustered
+frus1964-68v29p2/d46 7 {"centreX": -10929, "centreY": 11065, "documentCount": 1713, "eraCounts": {"1": 3, "2": 1710}, "id": 7, "terms": ["japanese", "sato", "japan", "kishi"]}
+frus1952-54v13p2/d992 31 {"centreX": -25723, "centreY": 6048, "documentCount": 2775, "eraCounts": {"1": 1, "2": 2774}, "id": 31, "terms": ["indochina", "minh", "bao", "dai"]}

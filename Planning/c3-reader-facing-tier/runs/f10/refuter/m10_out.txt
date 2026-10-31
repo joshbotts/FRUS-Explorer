@@ -1,0 +1,45 @@
+M10 EAP99 totals: (13473, 8471) (memo 13,473 rows in 8,471 documents)
+   ('Department of State', None, None, 8779, 5636)
+   ('Nixon Presidential Materials', 'NSC Files', None, 782, 539)
+   ('Johnson Library', 'National Security File', None, 671, 509)
+   ('Department of State', None, '66 D 95', 206, 169)
+   ('Kennedy Library', 'National Security Files', None, 181, 146)
+   ('Department of State', None, '63 D 351', 120, 88)
+   ('Carter Library', 'National Security Affairs', None, 117, 81)
+   ('Johnson Library', 'President’s Daily Diary', None, 101, 88)
+   ('Department of State', None, '93 D 82', 79, 52)
+   ('Department of State', None, '53 D 413', 73, 57)
+   ('Eisenhower Library', 'Whitman File', None, 71, 65)
+   ('Department of State', None, '60 D 627', 65, 55)
+M10 4 PubDip totals: (116, 85) (memo 116 rows in 85 documents)
+   ('Carter Library', 'National Security Affairs', None, 21, 17)
+   ('Nixon Presidential Materials', 'NSC Files', None, 14, 8)
+   ('Carter Library', 'White House Central Files', None, 11, 9)
+   ('Kennedy Library', 'National Security Files', None, 8, 6)
+   ('Kennedy Library', 'President’s Office Files', None, 7, 7)
+M10 the 30 docs' external_citations rows:
+   frus1952-54v13p1/d116 ('Department of State', None, None, 'centralFileClass', '511.00/8–2352')
+   frus1955-57v09/d190 ('Department of State', None, None, 'centralFileClass', 'Department of State, Central Files, 511.00/6–3055')
+   frus1955-57v09/d190 ('Department of State', None, None, 'centralFileClass', 'Ibid., 511.00/5–2755 and 511.00/6–655')
+   frus1955-57v09/d190 ('Department of State', None, None, 'centralFileClass', 'Department of State, Central Files, 511.00/4–2455')
+   frus1964-68v02/d160 ('Johnson Library', 'President’s Daily Diary', None, 'presidentialLibrary', 'Johnson Library, President’s Daily Diary')
+   frus1964-68v02/d172 ('Department of State', None, '71 D 273', 'lotFile', 'Department of State, S/P Files: Lot 71 D 273, Vietnam')
+   frus1964-68v26/d106 ('Johnson Library', 'National Security File', None, 'presidentialLibrary', 'Johnson Library, National Security File, Country File, Indonesia, Vol. III, Memos 9/64–2/6')
+  total rows: 7 (memo 7)
+earliest external_citations volume prefix: ('frus1911',)
+.schema external_citations:
+CREATE TABLE external_citations (
+    volume_id     TEXT NOT NULL,
+    document_id   TEXT NOT NULL,
+    note_ordinal  INTEGER NOT NULL,
+    citation_index INTEGER NOT NULL,
+    anchor        TEXT NOT NULL,
+    repository    TEXT,
+    collection    TEXT,
+    lot_file      TEXT,
+    lot_file_norm TEXT,
+    file_id       TEXT,
+    inherited     INTEGER NOT NULL DEFAULT 0,
+    raw_text      TEXT NOT NULL, decimal_class TEXT, note_label TEXT,
+    PRIMARY KEY (volume_id, document_id, note_ordinal, citation_index)
+)

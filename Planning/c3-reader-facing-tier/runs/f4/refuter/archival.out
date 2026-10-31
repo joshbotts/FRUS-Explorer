@@ -1,0 +1,135 @@
+collection-authority type dict keys/len: ['collections', 'generated', 'schemaVersion']
+central-files-index type dict keys/len: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+volume-sources-index type dict keys/len: ['generated', 'lots', 'majorCollections', 'recordGroups', 'schemaVersion']
+presidential-library-catalog type dict keys/len: ['generated', 'libraries', 'schemaVersion', 'source']
+external-citation-index type dict keys/len: ['classPairs', 'classSourceKeys', 'classTargetKeys', 'classTargets', 'coverage', 'generated', 'pairs', 'schemaVersion', 'sourceIds', 'targetIds', 'targets', 'volumes']
+series-facts-index type dict keys/len: ['byNaId', 'findingAidTypes', 'generated', 'headings', 'legend', 'referenceUnits', 'restrictions', 'schemaVersion', 'statuses', 'useRestrictions']
+accession-series-index type dict keys/len: ['byAccession', 'generated', 'legend', 'note', 'schemaVersion']
+
+== grep of the bottom line's identifiers across the seven bundled files ==
+  '72A5121': {'accession-series-index.json': 22}
+  '72 A 5121': {}
+  'UD WW 257': {}
+  'UD WW 193': {}
+  'A1-42': {}
+  'A1–42': {}
+  'A1 42': {}
+  'P-104': {}
+  'P–104': {}
+  'P 104': {'central-files-index.json': 1}
+  'P-207': {}
+  'P–207': {}
+  'P 207': {}
+  '69A3445': {'accession-series-index.json': 24}
+  '69 A 3445': {}
+  '1257679': {'collection-authority.json': 4, 'central-files-index.json': 4, 'series-facts-index.json': 1, 'accession-series-index.json': 9}
+  '2839192': {'collection-authority.json': 4, 'central-files-index.json': 4, 'series-facts-index.json': 1}
+  '2839191': {'collection-authority.json': 2, 'central-files-index.json': 2, 'series-facts-index.json': 1}
+  '2838992': {'collection-authority.json': 2, 'central-files-index.json': 2, 'series-facts-index.json': 1}
+  '567979': {'presidential-library-catalog.json': 1}
+  '"1164"': {}
+  '"1104"': {}
+  '1586E': {'central-files-index.json': 2}
+  '1586C': {'central-files-index.json': 1}
+  '61 D 385': {'collection-authority.json': 8, 'volume-sources-index.json': 2}
+  '61D385': {'collection-authority.json': 2, 'volume-sources-index.json': 1, 'external-citation-index.json': 2}
+  '62 D 430': {'collection-authority.json': 8, 'volume-sources-index.json': 2}
+  '62D430': {'collection-authority.json': 2, 'central-files-index.json': 1, 'volume-sources-index.json': 1, 'external-citation-index.json': 2}
+  '63 D 351': {'collection-authority.json': 8, 'volume-sources-index.json': 2}
+  '63D351': {'collection-authority.json': 5, 'central-files-index.json': 1, 'volume-sources-index.json': 1, 'external-citation-index.json': 2}
+  '66 D 95': {'collection-authority.json': 7, 'volume-sources-index.json': 2}
+  '66D95': {'collection-authority.json': 2, 'central-files-index.json': 1, 'volume-sources-index.json': 1, 'external-citation-index.json': 2}
+  '62 D 1"': {'collection-authority.json': 6, 'volume-sources-index.json': 2}
+  '62D1"': {'collection-authority.json': 3, 'central-files-index.json': 1, 'volume-sources-index.json': 1, 'external-citation-index.json': 2}
+  '511.90': {'external-citation-index.json': 2}
+  '790.5': {'collection-authority.json': 2, 'volume-sources-index.json': 2, 'external-citation-index.json': 6}
+  '611.95': {'collection-authority.json': 5, 'volume-sources-index.json': 2, 'external-citation-index.json': 11}
+  '611.98': {'collection-authority.json': 2, 'external-citation-index.json': 1}
+  'D780405': {}
+  'Confidential File': {'collection-authority.json': 20, 'volume-sources-index.json': 1, 'presidential-library-catalog.json': 9}
+  'Executive Secretariat Files': {'collection-authority.json': 24, 'volume-sources-index.json': 1, 'presidential-library-catalog.json': 1}
+  'Brzezinski': {'collection-authority.json': 28, 'volume-sources-index.json': 1, 'presidential-library-catalog.json': 14}
+  'Nixon Presidential Materials': {'volume-sources-index.json': 9}
+  'Record Group 305': {}
+  '"305"': {}
+
+== series-facts-index: NAIDs 1257679, 2839192, 2839191, 2838992 ==
+legend: {"keys": {"ar": {"field": "accessRestrictions", "into": "restrictions", "kind": "indexList"}, "as": {"field": "accessStatus", "into": "statuses", "kind": "index"}, "c": {"field": "creator", "into": "headings", "kind": "index"}, "cy0": {"field": "coverageStartYear", "kind": "year"}, "cy1": {"field": "coverageEndYear", "kind": "year"}, "fa": {"field": "findingAids", "into": "findingAidTypes", "kind": "indexList"}, "p": {"field": "predecessors", "into": "headings", "kind": "indexList"}, "ru": {"field": "referenceUnit", "into": "referenceUnits", "kind": "index"}, "ur": {"field": "useRestrictions", "into": "useRestrictions", "kind": "indexList"}, "us": {"field": "useStatus", "into": "statuses", "kind": "index"}, "x": {"field": "extent", "kind": "string"}, "y0": {"field": "inclusiveStartYear", "
+  1257679: {"ar": [0], "as": 2, "c": 388, "cy0": 1949, "cy1": 1971, "ru": 0, "us": 3, "x": "47 linear feet", "y0": 1953, "y1": 1971}
+  2839192: {"ar": [0], "as": 2, "c": 313, "ru": 0, "ur": [0], "us": 3, "x": "26 linear feet, 3 linear inches", "y0": 1947, "y1": 1979}
+  2839191: {"ar": [0], "as": 2, "c": 248, "cy0": 1952, "cy1": 1961, "fa": [1], "ru": 0, "ur": [0], "us": 3, "x": "4 linear feet, 5 linear inches", "y0": 1953, "y1": 1961}
+  2838992: {"ar": [0], "as": 2, "c": 341, "ru": 0, "ur": [0], "us": 3, "x": "3 linear feet, 1 linear inch", "y0": 1948, "y1": 1961}
+  567979: null
+  1164: null
+  1104: null
+
+== accession-series-index: 306/72A5121, 306/69A3445, 306/68A4933 ==
+top keys: ['byAccession', 'generated', 'legend', 'note', 'schemaVersion']
+accession map under key byAccession
+  306/72A5121: [{"a": "306-72A-5121", "n": "1257679", "t": "Subject Files"}, {"a": "306-72A-5121", "n": "40943515", "t": "Alphabetical Subject Files Containing Policy Guidance Records"}, {"a": "306-72A-5121", "n": "4667751", "t": "Background Files"}, {"a": "306-72A5121", "n": "48349732", "t": "Regional Subject Files"}, {"a": "306-72A5121", "n": "51861375", "t": "Country Files for Bolivia"}, {"a": "306-72A5121", "n": "53279603", "t": "Regional Country Files"}, {"a": "306-72A5121", "n": "55029502", "t": "Country Files for Switzerland"}, {"a": "306-72A5121", "n": "55159731", "t": "Country Files for Chile"}, {"a": "306-72A5121", "n": "56190687", "t": "Country Files for El Salvador"}, {"a": "306-72A5121", "n": "56918933", "t": "Country Files for Guatemala"}, {"a": "306-72A5121", "n": "57316268", "t": "Country Files for Haiti"}, {"a": "306-72A5121", "n": "57807763", "t": "Regional Subject Files"}, {"a": "306
+  306/69A3445: [{"a": "306-69A-3445", "n": "1257679", "t": "Subject Files"}, {"a": "306-69A3445", "n": "1274177", "t": "Subject Files"}, {"a": "306-69A3445", "n": "40943515", "t": "Alphabetical Subject Files Containing Policy Guidance Records"}, {"a": "306-69A3445", "n": "48349732", "t": "Regional Subject Files"}, {"a": "306-69A3445", "n": "53279603", "t": "Regional Country Files"}, {"a": "306-69A3445", "n": "55275646", "t": "Correspondence Logs and Receipt Manifests"}, {"a": "306-69A3445", "n": "56918827", "t": "Country Correspondence Files"}, {"a": "306-69A3445", "n": "57596390", "t": "West European Special Study Group Files"}, {"a": "306-69A3445", "n": "81547709", "t": "General Records and Country Files Relating to Latin America"}]
+  306/68A4933: [{"a": "306-68A4933", "n": "1102141", "t": "Subject Files of the Director"}, {"a": "306-68A4933", "n": "1126733", "t": "Speech Files"}, {"a": "306-68A4933", "n": "42125423", "t": "Vietnam Working Group Subject Files"}, {"a": "306-68A4933", "n": "4656106", "t": "Records Relating to Advisory Committees and Panels"}, {"a": "306-68A4933", "n": "4662423", "t": "Records Relating to the Appearances of Carl Thomas Rowan"}, {"a": "306-68A4933", "n": "4662627", "t": "Records Relating to the Speaking Engagements of Carl Thomas Rowan"}, {"a": "306-68A4933", "n": "4667502", "t": "Records Relating to the Declined Invitations of Carl Thomas Rowan"}, {"a": "306-68A4933", "n": "4667607", "t": "Program Files"}, {"a": "306-68A4933", "n": "4701166", "t": "Correspondence Files"}, {"a": "306-68A4933", "n": "48349732", "t": "Regional Subject Files"}, {"a": "306-68A4933", "n": "51089294", "t": "Country Files fo
+
+== collection-authority: lots 61 D 385, 62 D 430, 63 D 351, 66 D 95, 62 D 1, 59 D 260 ==
+collection-authority keys: ['collections', 'generated', 'schemaVersion']
+  61 D 385: 1 collections -> [{"id": "lot:61D385", "name": "OCB Files: Lot 61 D 385", "recordGroup": "59", "repository": "Department of State"}]
+  62 D 430: 2 collections -> [{"id": "lot:61D385", "name": "OCB Files: Lot 61 D 385", "recordGroup": "59", "repository": "Department of State"}, {"id": "lot:62D430", "name": "OCB Files: Lot 62 D 430", "naId": "2839191", "recordGroup": "59", "repository": "Department of State"}]
+  63 D 351: 2 collections -> [{"id": "lot:63D351", "name": "S/S – NSC Files: Lot 63 D 351", "naId": "2839192", "recordGroup": "59", "repository": "Department of State"}, {"id": "lot:63D351NSC65SERIES", "name": "Lot 63 D 351 NSC 65 Series", "recordGroup": "59", "repository": "Department of State"}]
+  66 D 95: 1 collections -> [{"id": "lot:66D95", "name": "S/S – NSC (Miscellaneous) Files: Lot 66 D 95", "naId": "2839192", "recordGroup": "59", "repository": "Department of State"}]
+  62 D 1: 8 collections -> [{"id": "lot:62D1", "name": "S/P – NSC Files: Lot 62 D 1", "naId": "2838992", "recordGroup": "59", "repository": "Department of State"}, {"id": "lot:62D106", "name": "Lot 62 D 106", "recordGroup": "59", "repository": "Department of State"}, {"id": "lot:62D118", "name": "Lot 62 D 118", "recordGroup": "59", "repository": "Department of State"}]
+  59 D 260: 1 collections -> [{"id": "lot:59D260", "name": "Lot 59 D 260: Files for the years 1951–1959, retired by the Office of Plans.", "naId": "1257679", "recordGroup": "59", "repository": "Department of State"}]
+  sample collection keys: ['aliases', 'id', 'lotFileNorm', 'name', 'repository', 'volumeIds']
+
+== presidential-library-catalog: 567979, 1164, 1104, Confidential File, Nixon ==
+  567979: ...g Files"             }           ],           "statedSeriesCount" : 1,           "title" : "Office Files of Matthew Nimetz"         },         {           "identifier" : "LBJ-NSF",           "naId" : 567979,           "series" : [             {               "inclusiveDates" : "1963–1969",               "naId" : 567985,               "title" : "Latin America Country Files"             },             {  ...
+  Confidential File: ...               "naId" : 578413,               "title" : "Safe Files"             },             {               "inclusiveDates" : "1933–1945",               "naId" : 578529,               "title" : "Confidential Files"             },             {               "inclusiveDates" : "1933–1945",               "naId" : 578657,               "title" : "Diplomatic Correspondence"             },             {           ...
+  Confidential File: ...inclusiveDates" : "1945–1953",               "naId" : 599061,               "title" : "Cross Reference Sheets Files"             }           ],           "statedSeriesCount" : 3,           "title" : "Confidential Files (Truman Administration)"         },         {           "identifier" : "HST-CFB",           "naId" : 603649,           "series" : [             {               "inclusiveDates" : "1948–1953",       ...
+  Nixon: ...es" : [             {               "inclusiveDates" : "1995–2015",               "naId" : 52653164,               "title" : "Research Materials for \"The President and the Apprentice: Eisenhower and Nixon, 1952-1961\""             },             {               "inclusiveDates" : "1952–2015",               "naId" : 134745110,               "title" : "Personal Papers"             }           ],        ...
+  Nixon: ...95368,               "title" : "Breach of Faith Files"             },             {               "inclusiveDates" : "1968–1969",               "naId" : 321495383,               "title" : "Richard M. Nixon and H. R. Haldeman Interview Files"             },             {               "inclusiveDates" : "1963–1966",               "naId" : 321495386,               "title" : "Camelot Documents"           ...
+
+== document_sources rows for the 22 cited documents (the came-from paragraph) ==
+  frus1950v06/d50: ('Department of State', '59', None, '511.90/6–2150', 'decimal', '511.90', '511.90/6–2150')
+  frus1964-68v01/d122: ('Johnson Library', None, None, 'National Security File', 'structured', None, 'Source: Johnson Library, National Security File, Vietnam Country Series. Vol. VII. Cables and Memos. Secret.')
+  frus1917-72PubDipv07/d85: ('National Archives', '306', None, 'DIRCTR Files Bx 33–36, Box 33', 'structured', None, 'Source: National Archives, RG 306, DIRCTR Files Bx 33–36, 1966: Acc. #69–A–3445 [E], Entry UD WW 193, Box 33, The Director’s Office (April through June, 1966). Secret. Sent through Moore. An unknown hand wrote: “IAF —Mr. Oleksiw” at the top of the memorandum.')
+  frus1969-76v38p2/d105: ('National Archives', '305', None, 'Records of the USIA', 'structured', None, 'Source: National Archives, RG 305, Records of the USIA, Office of the Director, Subject Files, 1975, Entry UD–UP 7, FRC 306–84–0003, 7501300–7501309. No classification marking. Sent for information.')
+  frus1924v01/d540: ('Department of State', '59', None, '793.11/1103a', 'decimal', '793.11', '793.11/1103a')
+  frus1949v09/d558: (None, None, None, 'Executive Secretariat Files', 'named_series', None, 'Executive Secretariat Files')
+  frus1952-54v12p2/d403: ('Department of State', '59', None, '790.5/9–1453', 'decimal', '790.5', '790.5/9–1453')
+  frus1917-72PubDipv07/d32: ('National Archives', '306', None, 'DIRCTR Subj. Files, Box 16', 'structured', None, 'Source: National Archives, RG 306, DIRCTR Subj. Files, 1963–69, Bx 6–29 63–69: Acc: #72A5121, Entry UD WW 257, Box 16, Field—Far East (IAF) May/December (1964). Secret. Bunce sent a copy of the memorandum to Rowan, Wilson, and Sorensen under a November 10 cove')
+  frus1917-72PubDipv08/d58: ('National Archives', '306', None, 'Director’s Subject Files', 'structured', None, 'Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 3, PSY–Psychological Operations. Confidential. Fitzhugh Green sent a copy of the summary to Shakespeare, copying Loomis and Weathersby, under a December 11 memorandum, ind')
+  frus1917-72PubDipv08/d99: ('National Archives', '306', None, 'Director’s Subject Files, Box 15', 'structured', None, 'Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 15, Policy and Plans (IOP)—General 1970. Limited Official Use. Drafted on July 29 by members of the IOP/P staff. White sent a copy of the Agency Program Memorandum to all ')
+  frus1955-57v22/d447: ('Department of State', '59', '61 D 385', None, 'lot_file', None, 'Source: Department of State, OCB Files: Lot 61 D 385, Singapore and Malaya, General. Secret. Drafted by Smith.')
+  frus1961-63v23/d289: ('Department of State', '59', None, '611.98/9–1462', 'decimal', '611.98', 'Source: Department of State, Central Files, 611.98/9–1462. Secret.')
+  frus1964-68v27/d386: ('Johnson Library', None, None, 'National Security File', 'structured', None, 'Source: Johnson Library, National Security File, Country File, Thailand, Thanom Kittikachorn Visit, 5/8–9/68. Confidential')
+  frus1964-68v02/d160: ('Johnson Library', None, None, 'Confidential File', 'structured', None, 'Source: Johnson Library, Confidential File, CO 312. Confidential. Copy sent to McGeorge Bundy.')
+  frus1964-68v29p2/d46: ('National Archives', '59', None, 'Central Files 1964–66', 'subject_numeric', 'POL 27 VIET S', 'Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Confidential. Repeated to Saigon, London, Seoul, Taipei, Hong Kong, Vientiane, Bangkok, Manila, Djakarta, New Delhi, Paris, Moscow, the High Commissioner of the ')
+  frus1964-68v26/d106: ('Johnson Library', None, None, 'National Security File', 'structured', None, 'Source: Johnson Library, National Security File, Country File, Indonesia, Vol. III, Memos 9/64–2/65, [2 of 2]. Confidential. Copies were sent to Ball and William Bundy.')
+  frus1917-72PubDipv08/d31: ('National Archives', '306', None, 'Office of Policy and Plans', 'structured', None, 'Source: National Archives, RG 306, Office of Policy and Plans, Plans and Operational Policy Staff, Office of Planning Officer, Subject Files, Entry P–207, Box 2, INF 3 PAO Conference. Unclassified; Official-Informal. The letter is PAO Letter #15.')
+  frus1955-57v23p2/d50: ('Department of State', '59', None, '611.95/5–1755', 'decimal', '611.95', 'Source: Department of State, Central Files, 611.95/5–1755. Top Secret. Repeated to Tokyo.')
+  frus1977-80v30/d79: ('National Archives', '306', None, 'Office of the Director, Box 130', 'structured', None, 'Source: National Archives, RG 306, Office of the Director, Executive Secretariat, Secretariat Staff, Correspondence Files, 1973–1980, Entry P–104, Box 130, 7702800–7702809. Confidential. Copies were sent to Reinhardt and IOP. Bray placed a check-mark on the me')
+  frus1917-72PubDipv08/d146: ('National Archives', '306', None, 'Director’s Subject Files, Box 21', 'structured', None, 'Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 21, OGA—The President’s Trip to China and all documents relating to USIA /State coverage. Secret. Copies were sent to Loomis and White. Loomis initialed the top right-hand')
+  frus1917-72PubDipv08/d149: ('National Archives', '306', None, 'Director’s Subject Files, Box 22', 'structured', None, 'Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 22, REA—Public Opinion Research 1971. Limited Official Use. Copies were sent to Loomis, Towery, and Roberts.')
+  frus1977-80v30/d152: ('Department of State', '59', None, 'CFPF D780405–0724', 'cfpf', None, 'Source: National Archives, RG 59, Central Foreign Policy File, D780405–0724. Confidential; Immediate. Sent for information to the Department of State.')
+  tally by (repository, record_group): {('Department of State', '59'): 7, ('Johnson Library', None): 4, ('National Archives', '306'): 8, ('National Archives', '305'): 1, (None, None): 1, ('National Archives', '59'): 1}
+
+== external_citations over S2 for the pointed-at paragraph (re-run of arch1.py's third query) ==
+   ('Department of State', None, None, 427, 243)
+   ('Johnson Library', 'National Security File', None, 72, 55)
+   ('Nixon Presidential Materials', 'NSC Files', None, 69, 49)
+   ('Department of State', None, '66D95', 67, 53)
+   ('Johnson Library', 'President’s Daily Diary', None, 26, 21)
+   ('Department of State', None, '63D351', 24, 19)
+   ('Kennedy Library', 'National Security Files', None, 20, 18)
+   ('Department of State', None, '62D430', 15, 12)
+   ('Carter Library', 'National Security Affairs', None, 14, 9)
+   ('Department of State', None, '62D1', 14, 13)
+   ('Department of State', None, '62D181', 13, 6)
+   ('Department of State', None, '80D212', 10, 5)
+
+== document_sources over S2: top lots (re-run) ==
+   ('63 D 351', '59', 26)
+   ('72D415', '59', 17)
+   ('62 D 430', '59', 12)
+   ('67 D 54', '59', 9)
+   ('61 D 417', '59', 8)
+   ('61 D 385', '59', 6)

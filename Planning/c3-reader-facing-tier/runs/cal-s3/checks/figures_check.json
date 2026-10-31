@@ -1,0 +1,13 @@
+{
+ "run": "runs/cal-s3",
+ "arm": "K",
+ "occurrences": [
+  {
+   "file": "memo.md",
+   "line": 116,
+   "figure": "1910-12-06 (the pointed-at channel starts)",
+   "match": "1910-12-06",
+   "context": "Library National Security Affairs 41; Johnson Library NSF 28; Nixon NSC Files 27; Lot 66D95 17; Lot 63D351 12; Eisenhower Whitman File 7; Lot 62D1 6; Lot 62D430 6; Lot 89D149 6. The pointed-at channel has no row before 1910-12-06 and stores the citation fragment, lot, library and decimal anchors only (house-rule statement, not re-measured)."
+  }
+ ]
+}

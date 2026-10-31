@@ -1,0 +1,54 @@
+OK 'to foster possible rifts between Chinese Communists and the USSR' ['frus1949v09/d558']
+OK 'prepare the minds and emotions of the people' ['frus1952-54v12p2/d403']
+OK 'the dangers of Communism' ['frus1952-54v12p2/d396']
+OK 'preferably personnel having at least a basic knowledge of the Thai language' ['frus1952-54v12p2/d396']
+OK 'wishing avoid show undue interest' ['frus1955-57v21/d23']
+OK 'One caveat: US visibility should be low' ['frus1917-72PubDipv08/d31']
+OK 'must ultimately be performed by the Government of Viet-Nam (GVN)' ['frus1917-72PubDipv08/d58']
+OK 'exploits nationalist and racial feeling' ['frus1952-54v13p1/d116']
+OK 'mixed emotions regarding the use of atomic weapons against Asiatic peoples' ['frus1955-57v09/d190']
+OK 'emotional nationalism' ['frus1955-57v22/d58']
+OK 'memories of white man’s past colonial domination' ['frus1955-57v22/d58']
+OK 'curious ambivalence in Japanese character' ['frus1952-54v14p2/d762']
+OK 'racially, culturally and geographically closer to the Japanese than are the caucasians who' ['frus1964-68v29p2/d46']
+OK 'The predominant mood is apolitical' ['frus1917-72PubDipv08/d149']
+OK 'degree cannot be accurately measured' ['frus1952-54v13p1/d116']
+OK 'Despite all efforts, the trend toward accommodation to Communist pressures in the area con' ['frus1955-57v09/d207']
+OK 'mere words without deeds' ['frus1917-72PubDipv06/d126']
+OK 'have not progressed to my satisfaction' ['frus1964-68v02/d160']
+OK 'basic emotional response remains unchanged and is probably unchangeable over the short run' ['frus1964-68v29p2/d46']
+OK 'more on the state of bi-lateral relations' ['frus1917-72PubDipv08/d31']
+OK 'Asians are, to varying degrees, America watchers' ['frus1917-72PubDipv08/d31']
+OK 'Thais still see us as friends and admire much in the American system.' ['frus1969-76v38p2/d105']
+OK 'belief that the US no longer has the ability or the desire to control events in Asia.' ['frus1969-76v38p2/d105']
+OK 'that America is not omnipotent' ['frus1969-76v38p2/d105']
+OK 'the future role of public diplomacy in support of our policies in Asia' ['frus1977-80v30/d81']
+OK 'I confess I am baffled by phenomenon' ['frus1977-80v30/d83']
+OK 'a demonstrated respect for Indonesia’s neutral stance.' ['frus1961-63v23/d289']
+OK 'we should refrain from glamorous, immediate-impact actions' ['frus1961-63v23/d289']
+OK 'gut issues rather than some of the frothier aspects of cultural exchange' ['frus1977-80v30/d2']
+MISSING 'American Voices in Asia: Information Programs, 1949–1980' []
+OK 'In projecting U.S. leadership, however, we must work with and through indigenous leadershi' ['frus1952-54v12p2/d403']
+OK 'Patronizing attitudes or demands for approbation would tend to minimize our limited potent' ['frus1955-57v22/d58']
+OK 'there is no conceivable information program that will make defeats look like victories, or' ['frus1964-68v01/d197']
+OK 'Since the cessation of jamming in 1977, VOA’s Chinese audiences have grown rapidly and are' ['frus1977-80v30/d215']
+quotes checked 34 missing 1
+part1 words 148
+LONG 31 Messages went out through Asian governments, delegates and media, with American visibility kept low (1952–1954, Volume X
+LONG 32 They pictured the audience as nationalist, alert to race and to colonial memory, and moved by emotion more than argument
+LONG 50 Where FRUS points for the rest.**  Series the printed documents came from: - Records Relating to National Security Counc
+LONG 41 Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints "RG 305"), accession 306
+LONG 32 Series the editors cited without printing: - Psychological Strategy Board Working Files, Record Group 59, entry A1 1462,
+LONG 35 Information Agency, Office of Policy and Plans, Subject Files, Record Group 306, entries UD-WW 151 to UD-WW 382, NARA id
+LONG 37 What this request cannot get from FRUS.** The phrase "soft power" appears in none of the 553 volumes; I confirmed the se
+LONG 46 ## Decisions this needs from you  - **What counts as "soft power".** I read it as the period's information programs, psy
+LONG 34 ### They pictured an audience moved by nationalism, race and memory  In 1952 the embassy in Saigon described an enemy pr
+LONG 32 The agency's report for 1955 said that in the Far East it had to deal with "mixed emotions regarding the use of atomic w
+LONG 36 In 1965 another explained Japanese sympathy for the bombed North Vietnamese, who were "racially, culturally and geograph
+LONG 65 The sharpest statement came from a 1964 meeting of officials on Vietnam:  > there is no conceivable information program 
+LONG 54 Bangkok reported "Thais still see us as friends and admire much in the American system." Wellington reported a "belief t
+LONG 37 The agency's plan for Indonesia in 1962 stressed youth, American studies and reading rooms, with "a demonstrated respect
+LONG 35 In 1977 the agency's East Asia office promoted exchanges among Japanese, European and American economic editors on trade
+LONG 35 The clearest measured success in this record is a broadcast audience:  > Since the cessation of jamming in 1977, VOA’s C
+LONG 50 (1977–1980, Volume XXX, Document 215)  ## How this was done  I used the series' complete index of 553 volumes and search
+Documents cited entries 22 all in final_cited: True final_cited all in overview: True

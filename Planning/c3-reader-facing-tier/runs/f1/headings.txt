@@ -1,0 +1,73 @@
+===== frus1917-72PubDipv06
+  - December 1960–November 1963 [153] d1-d153
+===== frus1917-72PubDipv07
+  - Public Diplomacy, November 1963–December 1968 [0] -
+    - 1963 [5] d1-d5
+    - 1964 [30] d6-d35
+    - 1965 [33] d36-d68
+    - 1966 [53] d69-d121
+    - 1967 [52] d122-d173
+    - 1968 [18] d174-d191
+===== frus1917-72PubDipv08
+  - Public Diplomacy, 1969–1972 [184] d1-d184
+===== frus1955-57v09
+  - General United States Foreign Economic Policy [16] d1-d16
+  - United States International Trade and Commercial Policy [91] d17-d107
+  - United States International Financial and Monetary Policy [22] d108-d129
+  - United States International Investment and Economic Development Policy [40] d130-d169
+  - United States International Transportation and Communications Policy [14] d170-d183
+  - United States Foreign Information Program [26] d184-d209
+===== frus1961-63v25
+  - Organization and Administration of Foreign Policy [0] -
+    - White House and Interdepartmental Coordination [26] d1-d26
+    - Organization and Reorganization Of the Department of State and Foreign Service [42] d27-d68
+    - New Programs and Agencies [9] d69-d77
+    - Intelligence [38] d78-d115
+    - Information Policy [44] d116-d159
+    - United Nations [132] d160-d291
+    - Human Rights [16] d292-d307
+    - Refugees [18] d308-d325
+    - Narcotics [20] d326-d345
+    - International Science Issues [10] d346-d355
+    - U.S.Space Program [30] d356-d385
+    - U.S.-Soviet Space Cooperation [28] d386-d413
+    - Peaceful Uses of Outer Space [19] d414-d432
+    - Communications Satellites [17] d433-d449
+    - Antarctica [34] d450-d483
+    - Law of the Sea [20] d484-d503
+===== frus1969-76v38p2
+  - Organization and Management of Foreign Policy; Public Diplomacy, 1973–1976 [0] -
+    - The Intelligence Community: Investigation and Reorganization [83] d1-d83
+    - International Information Policy, Public Diplomacy, and Cultural Affairs [30] d84-d113
+    - Managing the Department of State [45] d114-d158
+    - Organizing for Defense, Economic, and Global Issues [34] d159-d192
+    - The National Security Council System [18] d193-d210
+    - The Transition From Ford to Carter [15] d211-d225
+===== frus1977-80v30
+  - Public Diplomacy [215] d1-d215
+===== frus1958-60v16
+  - East Asia-Pacific Region [0] -
+    - General U.S. Policies Toward the Region: Activities of the Southeast Asia Treaty Organization; Meetings of the [68] d1-d68
+  - Cambodia [0] -
+    - U.S. Military Assistance to Cambodia; South Vietnamese-Cambodian Relations; Lao-Cambodian Relations; Cambodia’ [90] d69-d158
+  - Laos [0] -
+    - I. U.S. Concern With the Coalition Government in Laos, January–August 1958 [35] d159-d193
+    - II. U.S. Relations With the Phoui Sananikone Government, September 1958–July 1959 [38] d194-d231
+    - III. the Political Crisis and the December 1959 Coup, July–December 1959 [87] d232-d318
+    - IV. Lao Politics Before the Storm, January–August 9, 1960 [36] d319-d354
+    - V. The Kong Le Coup and U.S. Policy Debate, August 9–October 18, 1960 [78] d355-d432
+    - VI. Civil War in Laos, October 19–December 31, 1960 [66] d433-d498
+===== frus1964-68v27
+  - Southeast Asia Region [0] -
+    - Australia, New Zealand, the United States: ANZUS and the Defense of Southeast Asia [45] d1-d45
+    - The Southeast Asia Treaty Organization and President Johnsonʼs Plan for Economic Development of Southeast Asia [51] d46-d96
+  - Burma [8] d97-d104
+  - Cambodia [0] -
+    - January 1964–May 1965: Neutrality Proposals; Border Incidents and U.N. Consideration; Deterioration and Break  [52] d105-d156
+    - August 1965–June 1966: Concern Over Viet Cong and North Vietnamese Use of Cambodia; Policy Debate; Decision To [29] d157-d185
+    - July 1966–December 1968: Reconciliation Attempts; Assessing Cambodiaʼs Support of the Viet Cong and North Viet [78] d186-d263
+  - Thailand [0] -
+    - February 1964–October 1966: Consideration of Reintroduction of U.S. Troops Into Thailand; U.S.-Thai Bilateral  [72] d264-d335
+    - November 1966–November 1968: Thai Combat Troops to South Vietnam; Review of U.S. Programs in Thailand; Renewed [72] d336-d408
+===== frus1952-54v12p1
+  - General United States policies with respect to the East Asian-Pacific area; activities of the ANZUS powers; fi [433] d1-d433

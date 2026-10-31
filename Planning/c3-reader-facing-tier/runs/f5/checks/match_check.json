@@ -1,0 +1,74 @@
+{
+ "run": "runs/f5",
+ "termsTested": 8,
+ "dead": [],
+ "syntaxErrors": [],
+ "prefixes": [],
+ "vocabLookupsInLog": 0,
+ "all": [
+  {
+   "term": "\"information program\"",
+   "source": "queries.log",
+   "line": 71,
+   "returns": true,
+   "query": "\"information program\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"Senate\"",
+   "source": "queries.log",
+   "line": 71,
+   "returns": true,
+   "query": "\"Senate\"",
+   "nearestLive": null
+  },
+  {
+   "term": "USIS",
+   "source": "queries.log",
+   "line": 74,
+   "returns": true,
+   "query": "\"USIS\"",
+   "nearestLive": null
+  },
+  {
+   "term": "USIA",
+   "source": "queries.log",
+   "line": 74,
+   "returns": true,
+   "query": "\"USIA\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"cultural exchange\"",
+   "source": "queries.log",
+   "line": 74,
+   "returns": true,
+   "query": "\"cultural exchange\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"educational exchange\"",
+   "source": "queries.log",
+   "line": 74,
+   "returns": true,
+   "query": "\"educational exchange\"",
+   "nearestLive": null
+  },
+  {
+   "term": "propaganda",
+   "source": "queries.log",
+   "line": 74,
+   "returns": true,
+   "query": "\"propaganda\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"public diplomacy\"",
+   "source": "queries.log",
+   "line": 102,
+   "returns": true,
+   "query": "\"public diplomacy\"",
+   "nearestLive": null
+  }
+ ]
+}

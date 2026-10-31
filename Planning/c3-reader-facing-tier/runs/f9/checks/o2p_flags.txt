@@ -1,0 +1,112 @@
+O2' check of f9: 78 numbers in overview.md; 24 traced, 24 weak, 30 untraced.
+TRACE TABLE: 23 rows, from line 224 of memo.md.
+Each flagged number is WEAK (a row holds the value without the word after it) or UNTRACED (no row holds the value). Decide each: TRACED (name the row), NOT A NUMBER, or UNTRACED.
+
+[UNTRACED] 'Two' (value 2, next word 'channel')
+    sentence: Where FRUS points for the rest.** Two channels, kept separate. *Where the printed documents came from*: the U.S.
+[WEAK] '42' (value 42, next word 'general'); nearest row: RG 306 Director's Subject Files A1–42, JUSPAO A1–31 etc. have no identifier in the bundled data | [M13]
+    sentence: These are the Director's Subject Files, (Entry A1–42), the General Records Relating to the Joint U.S.
+[WEAK] '31' (value 31, next word 'director'); nearest row: RG 306 Director's Subject Files A1–42, JUSPAO A1–31 etc. have no identifier in the bundled data | [M13]
+    sentence: Public Affairs Office in Saigon, (Entry A1–31), the Director's Subject Files of (Entry UD WW 257) and the Office of Policy and Plans subject files (Entry P–207).
+[UNTRACED] 'WW 257' (value ww257, next word '')
+    sentence: Public Affairs Office in Saigon, (Entry A1–31), the Director's Subject Files of (Entry UD WW 257) and the Office of Policy and Plans subject files (Entry P–207).
+[UNTRACED] '207' (value 207, next word '')
+    sentence: Public Affairs Office in Saigon, (Entry A1–31), the Director's Subject Files of (Entry UD WW 257) and the Office of Policy and Plans subject files (Entry P–207).
+[UNTRACED] 'A1 1586C' (value a11586c, next word '')
+    sentence: From the State Department, Record Group 59, the documents come from the Executive Secretariat's Subject and Special Files, , which hold the Operations Coordinating Board papers (Lot 62 D 430, Entry A1 1586C, National Archives identifier 2839191, partly restricted).
+[UNTRACED] '2839191' (value 2839191, next word 'partly')
+    sentence: From the State Department, Record Group 59, the documents come from the Executive Secretariat's Subject and Special Files, , which hold the Operations Coordinating Board papers (Lot 62 D 430, Entry A1 1586C, National Archives identifier 2839191, partly restricted).
+[UNTRACED] 'A1 1586E' (value a11586e, next word '')
+    sentence: They also come from the Records Relating to National Security Council Policy Papers, (Lot 63 D 351, Entry A1 1586E, identifier 2839192, partly restricted), which hold the NSC's semiannual status reports on the information programme.
+[UNTRACED] '2839192' (value 2839192, next word 'partly')
+    sentence: They also come from the Records Relating to National Security Council Policy Papers, (Lot 63 D 351, Entry A1 1586E, identifier 2839192, partly restricted), which hold the NSC's semiannual status reports on the information programme.
+[UNTRACED] 'A1 5305' (value a15305, next word '')
+    sentence: And from the Subject Files of the Vietnam Working Group, (Lot 67 D 54, Entries A1 5305 and A1 5414, identifier 631403, unrestricted), the Central Decimal File, and the Central Foreign Policy File. *What the editors cited without printing*:
+[UNTRACED] 'A1 5414' (value a15414, next word '')
+    sentence: And from the Subject Files of the Vietnam Working Group, (Lot 67 D 54, Entries A1 5305 and A1 5414, identifier 631403, unrestricted), the Central Decimal File, and the Central Foreign Policy File. *What the editors cited without printing*:
+[UNTRACED] '631403' (value 631403, next word 'unrestricted')
+    sentence: And from the Subject Files of the Vietnam Working Group, (Lot 67 D 54, Entries A1 5305 and A1 5414, identifier 631403, unrestricted), the Central Decimal File, and the Central Foreign Policy File. *What the editors cited without printing*:
+[UNTRACED] '66 D 95' (value 66d95, next word '')
+    sentence: Lot 62 D 430 and the NSC policy papers series again (Lot 66 D 95, identifier 2839192).
+[UNTRACED] '2839192' (value 2839192, next word '')
+    sentence: Lot 62 D 430 and the NSC policy papers series again (Lot 66 D 95, identifier 2839192).
+[UNTRACED] '1257679' (value 1257679, next word 'linear')
+    sentence: Also the USIA Office of Policy and Plans Subject Files, (Lot 59 D 260, Record Group 306, identifier 1257679, 47 linear feet, partly restricted).
+[UNTRACED] '47' (value 47, next word 'linear')
+    sentence: Also the USIA Office of Policy and Plans Subject Files, (Lot 59 D 260, Record Group 306, identifier 1257679, 47 linear feet, partly restricted).
+[UNTRACED] '65 D 101' (value 65d101, next word '')
+    sentence: Also the Policy Planning Council's Chronological Files, (Lot 65 D 101, identifier 1136548, unrestricted).
+[UNTRACED] '1136548' (value 1136548, next word 'unrestricted')
+    sentence: Also the Policy Planning Council's Chronological Files, (Lot 65 D 101, identifier 1136548, unrestricted).
+[WEAK] 'three' (value 3, next word 'usia'); nearest row: 84 volumes, about 39,000 documents in scope; 1945–1980; front matter and editorial notes excluded | [M3]
+    sentence: And three USIA lots the bundled data cannot place (63 D 224, 62 D 255, 60 D 322).
+[UNTRACED] '63 D 224' (value 63d224, next word '')
+    sentence: And three USIA lots the bundled data cannot place (63 D 224, 62 D 255, 60 D 322).
+[UNTRACED] '62 D 255' (value 62d255, next word '')
+    sentence: And three USIA lots the bundled data cannot place (63 D 224, 62 D 255, 60 D 322).
+[UNTRACED] '60 D 322' (value 60d322, next word '')
+    sentence: And three USIA lots the bundled data cannot place (63 D 224, 62 D 255, 60 D 322).
+[WEAK] 'half' (value 0.5, next word 'came'); nearest row: nearly half of the 141 from State (66), more than a quarter from USIA (40) | [M11]
+    sentence: Among the 141 documents whose headings name an information agency, nearly half came from State's records and more than a quarter from the USIA's own (see the memo).
+[WEAK] '350' (value 350, next word 'document'); nearest row: "soft power" never appears; the plain word "soft" in about 350 | [M9]
+    sentence: The plain word "soft" appears in about 350 documents there.
+[UNTRACED] 'Two' (value 2, next word 'control')
+    sentence: Two control searches ran in the same pass: the phrase "Department of State" turned up in every volume, and a nonsense string turned up nowhere.
+[WEAK] '40' (value 40, next word 'those'); nearest row: polls/surveys with USIA/USIS: about 160 documents; about 40 also mention Japan | [M9]
+    sentence: So the question had to be asked in the period's words: information program, psychological warfare, USIS/USIA, Voice of America, cultural exchange, public diplomacy. *The audience research itself.* About 160 documents in the scope mention polls or surveys alongside the information agencies, and about 40 of those also name Japan.
+[WEAK] '6' (value 6, next word 'document'); nearest row: Pacific islands with USIA/USIS: 6 documents; Australia/New Zealand: about 70 | [M9]
+    sentence: The research reports sit in the USIA's Office of Research files in Record Group 306, which the bundled data names but gives no identifier. *The Pacific islands.* Only 6 documents in the scope pair the information agencies with Micronesia, Fiji, Samoa, Guam or the Trust Territory, so the Pacific half of the question is barely printed.
+[WEAK] 'half' (value 0.5, next word 'question'); nearest row: nearly half of the 141 from State (66), more than a quarter from USIA (40) | [M11]
+    sentence: The research reports sit in the USIA's Office of Research files in Record Group 306, which the bundled data names but gives no identifier. *The Pacific islands.* Only 6 documents in the scope pair the information agencies with Micronesia, Fiji, Samoa, Guam or the Trust Territory, so the Pacific half of the question is barely printed.
+[WEAK] '70' (value 70, next word 'document'); nearest row: Pacific islands with USIA/USIS: 6 documents; Australia/New Zealand: about 70 | [M9]
+    sentence: Australia and New Zealand fare better, with about 70 documents. *Exchanges' measured results.* The Fulbright programme appears in about 380 documents, but none of them was read for an evaluation, and this overview makes no claim about one. **Scope.** 84 volumes: 76 regional volumes on East Asia and the Pacific covering , plus the eight volumes the editors devoted to the information programme and p
+[UNTRACED] '380' (value 380, next word 'document')
+    sentence: Australia and New Zealand fare better, with about 70 documents. *Exchanges' measured results.* The Fulbright programme appears in about 380 documents, but none of them was read for an evaluation, and this overview makes no claim about one. **Scope.** 84 volumes: 76 regional volumes on East Asia and the Pacific covering , plus the eight volumes the editors devoted to the information programme and p
+[WEAK] 'one' (value 1, next word 'scope'); nearest row: 553 volumes in the index; whole series present | [M1]
+    sentence: Australia and New Zealand fare better, with about 70 documents. *Exchanges' measured results.* The Fulbright programme appears in about 380 documents, but none of them was read for an evaluation, and this overview makes no claim about one. **Scope.** 84 volumes: 76 regional volumes on East Asia and the Pacific covering , plus the eight volumes the editors devoted to the information programme and p
+[UNTRACED] '76' (value 76, next word 'regional')
+    sentence: Australia and New Zealand fare better, with about 70 documents. *Exchanges' measured results.* The Fulbright programme appears in about 380 documents, but none of them was read for an evaluation, and this overview makes no claim about one. **Scope.** 84 volumes: 76 regional volumes on East Asia and the Pacific covering , plus the eight volumes the editors devoted to the information programme and p
+[UNTRACED] 'eight' (value 8, next word 'volume')
+    sentence: Australia and New Zealand fare better, with about 70 documents. *Exchanges' measured results.* The Fulbright programme appears in about 380 documents, but none of them was read for an evaluation, and this overview makes no claim about one. **Scope.** 84 volumes: 76 regional volumes on East Asia and the Pacific covering , plus the eight volumes the editors devoted to the information programme and p
+[WEAK] 'three' (value 3, next word 'chapter'); nearest row: 84 volumes, about 39,000 documents in scope; 1945–1980; front matter and editorial notes excluded | [M3]
+    sentence: The wartime "cultural relations program" with China ( ) has three chapters of its own and would extend the story back.
+[WEAK] 'Twenty' (value 20, next word 'year'); nearest row: one document reached only through semantic neighbours (Saigon 1952) | [M20], [M24]
+    sentence: He called for an expanded information program to show sympathy with Asian nationalism ( , Twenty years later the agency's officers agreed that the image of the United States "usually depended more on the state of bi-lateral relations (security treaty, Okinawa, Korean military modernization, trade restrictions) than on developments within the US".
+[UNTRACED] '8,000' (value 8000, next word 'column')
+    sentence: The report measured Japan in "8,000 column inches a month" reprinted by Japanese newspapers (Foreign Relations of the United States, , Foreign Economic Policy;
+[WEAK] 'thirteen' (value 13, next word 'saigon'); nearest row: Vietnam about a quarter of the collection: 7 of 25 (frus1952-54v13p1/d116, frus1917-72PubDipv07/d32, frus1917-72PubDipv08/d88, frus1961-63v01/d265, frus1961-63v02/d16, frus1917-72PubDipv07/d48, frus19
+    sentence: In , "Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys" ( , In Vietnam, officials treated the American presence as the message's chief liability From the first years of the war, information officers warned that what the United States did would outweigh what it said.
+[WEAK] 'Three' (value 3, next word 'belief'); nearest row: 84 volumes, about 39,000 documents in scope; 1945–1980; front matter and editorial notes excluded | [M3]
+    sentence: It therefore framed every American action as support for "the Vietnamese people’s struggle" ( , By the agency described its psychological operations as always "short-term in nature" and was handing them to the Vietnamese government ( , Beliefs about the audience: race, nationalism and an "Oriental mind" Three beliefs recur.
+[WEAK] 'one' (value 1, next word 'same'); nearest row: 553 volumes in the index; whole series present | [M1]
+    sentence: "While we do not want to appear as having gone “soft” on Chinese Communism neither do we want to appear anti-Chinese or anti-Peking" ( , The agency's East Asia office proposed moon rocks, an astronaut and a library of books for Nixon's trip, to turn "a temporary psychological asset into a long-range one" ( of the same volume, By the liaison office in Peking saw exchanges as the opening, while the 
+[WEAK] '553' (value 553, next word 'fru'); nearest row: 553 volumes in the index; whole series present | [M1]
+    sentence: "we have an opportunity to enhance the communication process to a significant degree" ( , ## How this was done I searched a full-text index of all 553 FRUS volumes, read-only.
+[UNTRACED] 'two' (value 2, next word 'set')
+    sentence: I first read the editors' chapter headings to learn the period's own names for the subject, then defined two sets of volumes from the published volume list: 76 regional volumes on East Asia and the Pacific for , and eight information and public-diplomacy volumes.
+[UNTRACED] '76' (value 76, next word 'regional')
+    sentence: I first read the editors' chapter headings to learn the period's own names for the subject, then defined two sets of volumes from the published volume list: 76 regional volumes on East Asia and the Pacific for , and eight information and public-diplomacy volumes.
+[UNTRACED] 'eight' (value 8, next word 'information')
+    sentence: I first read the editors' chapter headings to learn the period's own names for the subject, then defined two sets of volumes from the published volume list: 76 regional volumes on East Asia and the Pacific for , and eight information and public-diplomacy volumes.
+[WEAK] 'One' (value 1, next word 'false'); nearest row: 553 volumes in the index; whole series present | [M1]
+    sentence: One false friend surfaced: in "USI" means the United States of Indonesia, not the information service, and those two volumes were left out of the rate-by-decade figures.
+[UNTRACED] 'two' (value 2, next word 'volume')
+    sentence: One false friend surfaced: in "USI" means the United States of Indonesia, not the information service, and those two volumes were left out of the rate-by-decade figures.
+[WEAK] 'three' (value 3, next word 'route'); nearest row: 84 volumes, about 39,000 documents in scope; 1945–1980; front matter and editorial notes excluded | [M3]
+    sentence: Candidates came from three routes: document headings naming the information agencies, a ranked search for assessments of Asian attitudes, and the app's semantic neighbours, which link documents by overall similarity of content.
+[WEAK] 'one' (value 1, next word 'document'); nearest row: 553 volumes in the index; whole series present | [M1]
+    sentence: The neighbours surfaced one document no word search had reached, the Saigon embassy's assessment.
+[WEAK] '25' (value 25, next word 'are'); nearest row: Vietnam about a quarter of the collection: 7 of 25 (frus1952-54v13p1/d116, frus1917-72PubDipv07/d32, frus1917-72PubDipv08/d88, frus1961-63v01/d265, frus1961-63v02/d16, frus1917-72PubDipv07/d48, frus19
+    sentence: Of 61 documents retrieved whole, 25 are quoted.
+[WEAK] 'six' (value 6, next word 'heading'); nearest row: Pacific islands with USIA/USIS: 6 documents; Australia/New Zealand: about 70 | [M9]
+    sentence: Exact counts, queries and denominators are in the memo. ## Read next The collection **"American soft power in East Asia and the Pacific — run f9"** holds the 25 documents under six headings that follow the findings, in date order within each, with the quoted passages as excerpts.
+[WEAK] '1' (value 1, next word 'reading'); nearest row: 553 volumes in the index; whole series present | [M1]
+    sentence: (1) reading the USIA Office of Research country reports for Japan, Korea, the Philippines and Thailand in Record Group 306, which would turn 's assertions into measured audience opinion;
+[UNTRACED] '2' (value 2, next word 'decision')
+    sentence: (2) a decision on the wartime China cultural relations program ( ), which would test whether the elite-first strategy predates the Cold War;
+[WEAK] '3' (value 3, next word 'reading'); nearest row: 84 volumes, about 39,000 documents in scope; 1945–1980; front matter and editorial notes excluded | [M3]
+    sentence: (3) reading the Fulbright and exchange documents found but not read, about 380 of them, which may hold the only evaluations of cultural exchange the series prints;
+[UNTRACED] '380' (value 380, next word 'them')
+    sentence: (3) reading the Fulbright and exchange documents found but not read, about 380 of them, which may hold the only evaluations of cultural exchange the series prints;
+[WEAK] '4' (value 4, next word 'decision'); nearest row: 141 documents whose headings name the information agencies (candidate set) | [M4], [M11]
+    sentence: (4) a decision on whether aid and civic action count, which would bring in the much larger aid record and the Burma telegram's theme of aid misunderstood.

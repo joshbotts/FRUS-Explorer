@@ -1,0 +1,72 @@
+{
+ "information program": {
+  "fts_hits": 139,
+  "kind": "census",
+  "checked": 139,
+  "strict": 123,
+  "tolerant": 123,
+  "tolerant_misses": [
+   "frus1948v07/d45",
+   "frus1949v07p2/d317",
+   "frus1949v08/d1572",
+   "frus1949v09/d521",
+   "frus1949v09/d539",
+   "frus1949v09/d558",
+   "frus1950v06/d372",
+   "frus1951v06p1/d254",
+   "frus1951v06p1/d751",
+   "frus1955-57v01/d277"
+  ]
+ },
+ "psychological warfare": {
+  "fts_hits": 253,
+  "kind": "census",
+  "checked": 253,
+  "strict": 253,
+  "tolerant": 253,
+  "tolerant_misses": []
+ },
+ "Voice of America": {
+  "fts_hits": 75,
+  "kind": "census",
+  "checked": 75,
+  "strict": 75,
+  "tolerant": 75,
+  "tolerant_misses": []
+ },
+ "USIS": {
+  "fts_hits": 604,
+  "kind": "sample40",
+  "checked": 40,
+  "strict": 25,
+  "tolerant": 25,
+  "tolerant_misses": [
+   "frus1947v06/d828",
+   "frus1948v06/d103",
+   "frus1948v06/d130",
+   "frus1948v06/d162",
+   "frus1948v06/d215",
+   "frus1948v06/d380",
+   "frus1948v06/d69",
+   "frus1949v07p1/d192",
+   "frus1949v07p1/d300",
+   "frus1949v07p1/d350"
+  ]
+ },
+ "USIA": {
+  "fts_hits": 305,
+  "kind": "sample40",
+  "checked": 40,
+  "strict": 40,
+  "tolerant": 40,
+  "tolerant_misses": []
+ },
+ "psychological strategy": {
+  "fts_hits": 15,
+  "kind": "census",
+  "checked": 15,
+  "strict": 15,
+  "tolerant": 15,
+  "tolerant_misses": []
+ }
+}

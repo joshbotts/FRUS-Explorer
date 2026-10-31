@@ -1,0 +1,30 @@
+SELECT f.volume_id, f.document_id, round(bm25(frus_documents),1) s, substr(replace(d.header,char(10),' '),1,100), d.dateline, length(d.body_text) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id IN ('frus1961-63v22','frus1964-68v29p1','frus1964-68v29p2','frus1958-60v18','frus1955-57v23p1','frus1955-57v23p2','frus1969-76v19p1','frus1969-76v19p2','frus1952-54v14p2','frus1952-54v15p1','frus1952-54v15p2') AND frus_documents MATCH ? ORDER BY s LIMIT 28
+(USIS OR USIA OR "Information Agency" OR "Information Service" OR "cultural exchange" OR "educational exchange" OR Fulbright OR "Voice of America" OR "exchange of persons" OR "cultural program" OR "information program" OR CULCON OR "cultural relations")
+frus1969-76v19p2 d67 -13.9 3697 | 67. Memorandum From the Director of the U.S. Information Agency (Shakespeare) to the President’s Ass | Washington, February 16, 1971.
+frus1955-57v23p2 d162 -12.9 14219 | 162. Progress Report Prepared by the Operations Coordinating Board | Washington, July 18, 1956.
+frus1961-63v22 d198 -10.4 6124 | 198. Memorandum From Secretary of State Rusk to President Kennedy | Washington, May 23, 1961.
+frus1958-60v18 d283 -9.4 13861 | 283. Memorandum From the Assistant Secretary of State for Far Eastern Affairs (Parsons) to Secretary | Washington, October 22, 1959.
+frus1952-54v15p2 d980 -9.3 39700 | Memorandum by the Executive Officer of the Operations Coordinating Board (Staats) to the Executive S | Washington, December 30, 1954.
+frus1969-76v19p1 d170 -9.1 23617 | 170. Airgram From the Embassy in Korea to the Department of State | Seoul, December 10, 1972.
+frus1958-60v18 d295 -8.8 3803 | 295. Telegram From the Embassy in Korea to the Department of State | Seoul, April 12, 1960, 3 p.m.
+frus1961-63v22 d334 -8.5 4500 | 334. Memorandum of Conversation | Washington, June 21, 1961, 10 a.m.
+frus1969-76v19p1 d4 -8.5 1170 | 4. National Security Study Memorandum 34 | Washington, March 21, 1969.
+frus1952-54v15p1 d118 -8.4 4637 | Memorandum for the Record, by the Deputy Assistant Secretary of State for Far Eastern Affairs (Johns | [Washington,] May 14, 1952.
+frus1969-76v19p1 d2 -8.4 2804 | 2. National Security Study Memorandum 27 | Washington, February 22, 1969.
+frus1952-54v15p2 d885 -8.2 8574 | Memorandum of Discussion at the 193d Meeting of the National Security Council, Tuesday, April 13, 19 | April 13, 1954
+frus1969-76v19p2 d134 -8.2 11386 | 134. Memorandum of Conversation | Oahu, Hawaii, September 1, 1972.
+frus1952-54v15p1 d54 -8.1 1603 | The Secretary of State to the President | [Washington,] March 11, 1952.
+frus1955-57v23p1 d249 -7.8 7788 | 249. Letter From the Assistant Secretary of State for Far Eastern Affairs (Robertson) to the Assista | Washington, December 11, 1957.
+frus1952-54v15p2 d978 -7.5 2973 | The Ambassador in Korea (Briggs) to the Department of State | Seoul, December 27, 1954—11 p.m.
+frus1958-60v18 d171 -7.5 5032 | 171. Memorandum of Telephone Conversation Between President Eisenhower and Secretary of State Herter | Washington, June 7, 1960, 2:35 p.m.
+frus1952-54v14p2 d745 -7.3 901 | No. 745 The Ambassador in Japan (Allison) to the Department of State | Tokyo, March 9, 1954.
+frus1964-68v29p1 d228 -7.3 20232 | 228. Notes of Meeting | Washington, January 26, 1968, 11:08
+frus1961-63v22 d181 -7.2 9711 | 181. Summary Record of the 516th Meeting of the National Security Council | Washington, July 31, 1963,4:30–5:30
+frus1964-68v29p2 d46 -7.2 10516 | 46. Telegram From the Embassy in Japan to the Department of State | Tokyo, May 19, 1965, 0927Z.
+frus1969-76v19p1 d54 -7.2 9384 | 54. Memorandum of Conversation | Washington, March 3, 1970.
+frus1958-60v18 d135 -7.1 2735 | 135. Memorandum of Conversation | Washington, January 19, 1960, 10–11
+frus1952-54v14p2 d612 -6.9 2075 | No. 612 The Ambassador in Japan (Murphy) to the Department of State | Tokyo, November 8, 1952—4 p.m.
+frus1961-63v22 d191 -6.8 10173 | 191. Highlights From Secretary of State Rusk’s Policy Planning Meeting | Washington, October 15, 1963.
+frus1961-63v22 d335 -6.8 3804 | 335. Memorandum of Conversation | Washington, June 21, 1961, 3:15 p.m
+frus1955-57v23p2 d102 -6.7 4253 | 102. Report Prepared by the Operations Coordinating Board | Washington, November 30, 1955.
+frus1969-76v19p2 d72 -6.7 5308 | 72. National Security Study Memorandum 122 | Washington, April 15, 1971.

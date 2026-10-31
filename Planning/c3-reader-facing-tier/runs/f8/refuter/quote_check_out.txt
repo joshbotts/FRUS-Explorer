@@ -1,0 +1,86 @@
+Documents cited list: 22
+short citations: 22 unresolved: []
+
+=== OVERVIEW QUOTATIONS ===
+[INLINE] NO-DOC-CITATION 'RG 305'  cit=None
+[INLINE] NO-DOC-CITATION 'soft power'  cit=None
+[INLINE] NO-DOC-CITATION 'soft power'  cit=None
+[INLINE] OK   frus1949v09/d558  'to foster possible rifts between Chinese Communists and the USSR'
+[INLINE] OK   frus1952-54v12p2/d403  'prepare the minds and emotions of the people'
+[BLOCK] OK   frus1952-54v12p2/d403  'In projecting U.S. leadership, however, we must work with and through indigenous'
+[INLINE] OK   frus1952-54v12p2/d396  'the dangers of Communism'
+[INLINE] OK   frus1952-54v12p2/d396  'preferably personnel having at least a basic knowledge of the Thai language'
+[INLINE] OK   frus1955-57v21/d23  'wishing avoid show undue interest'
+[INLINE] OK   frus1917-72PubDipv08/d31  'One caveat: US visibility should be low'
+[INLINE] OK   frus1917-72PubDipv08/d58  'must ultimately be performed by the Government of Viet-Nam (GVN)'
+[INLINE] OK   frus1952-54v13p1/d116  'exploits nationalist and racial feeling'
+[INLINE] OK   frus1955-57v09/d190  'mixed emotions regarding the use of atomic weapons against Asiatic peoples'
+[INLINE] OK   frus1955-57v22/d58  'emotional nationalism'
+[INLINE] OK   frus1955-57v22/d58  'memories of white man’s past colonial domination'
+[BLOCK] OK   frus1955-57v22/d58  'Patronizing attitudes or demands for approbation would tend to minimize our limi'  (ambiguous Document N: [('frus1917-72PubDipv08', 'd58'), ('frus1955-57v22', 'd58')], found in [('frus1955-57v22', 'd58')])
+[INLINE] OK   frus1952-54v14p2/d762  'curious ambivalence in Japanese character'
+[INLINE] OK   frus1964-68v29p2/d46  'racially, culturally and geographically closer to the Japanese than are the cauc'
+[INLINE] OK   frus1917-72PubDipv08/d149  'The predominant mood is apolitical'
+[INLINE] OK   frus1952-54v13p1/d116  'degree cannot be accurately measured'
+[INLINE] OK   frus1955-57v09/d207  'Despite all efforts, the trend toward accommodation to Communist pressures in th'
+[INLINE] OK   frus1917-72PubDipv06/d126  'mere words without deeds'
+[BLOCK] OK   frus1964-68v01/d197  'there is no conceivable information program that will make defeats look like vic'
+[INLINE] OK   frus1964-68v02/d160  'have not progressed to my satisfaction'
+[INLINE] OK   frus1964-68v29p2/d46  'basic emotional response remains unchanged and is probably unchangeable over the'
+[INLINE] OK   frus1917-72PubDipv08/d31  'more on the state of bi-lateral relations'
+[INLINE] OK   frus1917-72PubDipv08/d31  'Asians are, to varying degrees, America watchers'
+[INLINE] OK   frus1969-76v38p2/d105  'Thais still see us as friends and admire much in the American system.'
+[INLINE] OK   frus1969-76v38p2/d105  'belief that the US no longer has the ability or the desire to control events in '
+[INLINE] OK   frus1969-76v38p2/d105  'that America is not omnipotent'
+[INLINE] OK   frus1977-80v30/d81  'the future role of public diplomacy in support of our policies in Asia'
+[INLINE] OK   frus1977-80v30/d83  'I confess I am baffled by phenomenon'
+[INLINE] OK   frus1961-63v23/d289  'a demonstrated respect for Indonesia’s neutral stance.'
+[INLINE] OK   frus1961-63v23/d289  'we should refrain from glamorous, immediate-impact actions'
+[INLINE] OK   frus1977-80v30/d2  'gut issues rather than some of the frothier aspects of cultural exchange'
+[BLOCK] OK   frus1977-80v30/d215  'Since the cessation of jamming in 1977, VOA’s Chinese audiences have grown rapid'
+[INLINE] NO-DOC-CITATION 'American Voices in Asia: Information Programs, 1949–1980'  cit=None
+overview document-quotations: 33, verified: 33, failed: 0
+
+=== COLLECTION EXCERPTS ===
+OK   frus1949v09/d558 to foster possible rifts between Chinese Communists and the USSR 
+OK   frus1952-54v12p2/d396 the dangers of Communism have been brought home to the Thai people 
+OK   frus1952-54v12p2/d396 preferably personnel having at least a basic knowledge of the Thai language 
+OK   frus1952-54v12p2/d403 In projecting U.S. leadership, however, we must work with and through indigenous 
+OK   frus1952-54v12p2/d403 prepare the minds and emotions of the people 
+OK   frus1955-57v21/d23 While wishing avoid show undue interest which could be interpreted as U.S. effor 
+OK   frus1917-72PubDipv08/d58 functions in this field properly belong to and must ultimately be performed by t 
+OK   frus1952-54v13p1/d116 counterpersuasive Commie propaganda which exploits nationalist and racial feelin 
+OK   frus1952-54v13p1/d116 All factors recited must be viewed as effective though degree cannot be accurate 
+OK   frus1952-54v14p2/d762 curious ambivalence in Japanese character asserted itself 
+OK   frus1955-57v09/d190 In the Far East USIA was forced to deal with mixed emotions regarding the use of 
+OK   frus1955-57v22/d58 emotional nationalism which is suspicious of any larger power, especially one as 
+OK   frus1955-57v22/d58 Patronizing attitudes or demands for approbation would tend to minimize our limi 
+OK   frus1964-68v29p2/d46 Intellectually we have met with some success, and there is a growing awareness o 
+OK   frus1964-68v29p2/d46 since they are racially, culturally and geographically closer to the Japanese th 
+OK   frus1917-72PubDipv08/d149 The predominant mood is apolitical, seeking to be neutral, and concerned with ec 
+OK   frus1955-57v09/d207 Despite all efforts, the trend toward accommodation to Communist pressures in th 
+OK   frus1917-72PubDipv06/d126 much of our audience would tend to regard it as mere words without deeds 
+OK   frus1964-68v01/d197 there is no conceivable information program that will make defeats look like vic 
+OK   frus1964-68v02/d160 efforts to develop among the South Vietnamese people a sense of national unity a 
+OK   frus1917-72PubDipv08/d31 Asians are, to varying degrees, America watchers. 
+OK   frus1917-72PubDipv08/d31 PAOs emphasized that the image of the US usually depended more on the state of b 
+OK   frus1917-72PubDipv08/d31 Exposures as a main pillar of PPBS should be dropped. 
+OK   frus1917-72PubDipv08/d31 One caveat: US visibility should be low. 
+OK   frus1969-76v38p2/d105 Thais still see us as friends and admire much in the American system. 
+OK   frus1969-76v38p2/d105 There is belief that the US no longer has the ability or the desire to control e 
+OK   frus1969-76v38p2/d105 hoping that we have all learned the lesson that America is not omnipotent 
+OK   frus1977-80v30/d81 the future role of public diplomacy in support of our policies in Asia 
+OK   frus1977-80v30/d83 I confess I am baffled by phenomenon. 
+OK   frus1961-63v23/d289 a real understanding of and a demonstrated respect for Indonesia’s neutral stanc 
+OK   frus1961-63v23/d289 we should refrain from glamorous, immediate-impact actions 
+OK   frus1977-80v30/d2 We are dealing here with gut issues rather than some of the frothier aspects of  
+OK   frus1977-80v30/d215 Since the cessation of jamming in 1977, VOA’s Chinese audiences have grown rapid 
+collection excerpts: 33, verified: 33
+
+=== NON-DOCUMENT QUOTED STRINGS in overview (listed, not counted) ===
+'RG 305' cit= None
+'soft power' cit= None
+'soft power' cit= None
+'American Voices in Asia: Information Programs, 1949–1980' cit= None
+RG 305 in d105 text: True
+d105 source_note: Source: National Archives, RG 305, Records of the USIA, Office of the Director, Subject Files, 1975, Entry UD–UP 7, FRC 306–84–0003, 7501300–7501309. No classification marking. Sent for information.

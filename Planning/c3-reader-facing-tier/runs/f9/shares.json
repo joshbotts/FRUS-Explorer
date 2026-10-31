@@ -1,0 +1,87 @@
+{
+ "psychological warfare": {
+  "query": "\"psychological warfare\"",
+  "hits": 318,
+  "kind": "sample40",
+  "checked": 40,
+  "strict": 40,
+  "tolerant": 40,
+  "misses": []
+ },
+ "information program": {
+  "query": "\"information program\"",
+  "hits": 237,
+  "kind": "census",
+  "checked": 237,
+  "strict": 218,
+  "tolerant": 236,
+  "misses": [
+   [
+    "frus1964-68v05",
+    "d257",
+    [
+     "Informant Program b",
+     "Informant Program: Within",
+     "informants are able"
+    ]
+   ]
+  ]
+ },
+ "public diplomacy": {
+  "query": "\"public diplomacy\"",
+  "hits": 80,
+  "kind": "census",
+  "checked": 80,
+  "strict": 80,
+  "tolerant": 80,
+  "misses": []
+ },
+ "cultural exchange": {
+  "query": "\"cultural exchange\"",
+  "hits": 197,
+  "kind": "census",
+  "checked": 197,
+  "strict": 196,
+  "tolerant": 197,
+  "misses": []
+ },
+ "Voice of America": {
+  "query": "\"Voice of America\"",
+  "hits": 228,
+  "kind": "census",
+  "checked": 228,
+  "strict": 228,
+  "tolerant": 228,
+  "misses": []
+ },
+ "USIA/USIS": {
+  "query": "usia OR usi",
+  "hits": 1438,
+  "kind": "sample40",
+  "checked": 40,
+  "strict": 36,
+  "tolerant": 36,
+  "misses": [
+   [
+    "frus1948v06",
+    "d146",
+    []
+   ],
+   [
+    "frus1948v06",
+    "d356",
+    []
+   ],
+   [
+    "frus1949v07p1",
+    "d173",
+    []
+   ],
+   [
+    "frus1949v07p1",
+    "d353",
+    []
+   ]
+  ]
+ }
+}

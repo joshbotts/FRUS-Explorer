@@ -1,0 +1,24 @@
+CANARY: 553|321749|1103|8481
+READ-ONLY PROOF: Error in 3rd command line argument: attempt to write a readonly database
+index provenanceDigest: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+manifest provenanceDigest: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+.generation: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+binary: magic=FRSV version=1 dims=512 docs=314616 centroids=660 digest@20=89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+volumes decoded to n: 553 of 553
+row of frus1861/d111: 110
+ten nearest neighbours of frus1861/d111:
+hamming 57 frus1861/d119
+hamming 62 frus1861/d39
+hamming 70 frus1863p1/d254
+hamming 75 frus1862/d130
+hamming 77 frus1861/d203
+hamming 77 frus1862/d262
+hamming 78 frus1861/d20
+hamming 78 frus1862/d111
+hamming 78 frus1862/d455
+hamming 79 frus1862/d72
+frus1861.vec: magic=FRSS version=1 dims=512 docs=312 digest@16=89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+manifest row: {"bytes": 161056, "sha256": "44815664fa1dc495df71c70113520bfec27ca245607e6da1b492c62708184f7b", "volumeID": "frus1861"}
+frus1861.vec sha256=44815664fa1dc495df71c70113520bfec27ca245607e6da1b492c62708184f7b size=161056; matches manifest sha256: True, size: True
+digests agree (index/binary/shard/generation): True
+tie note: documents at hamming 79 from frus1861/d111 (rows): [np.int64(383), np.int64(429), np.int64(768)]

@@ -1,0 +1,86 @@
+Documents-cited list: 15 entries; volume keys:
+   ('1917–1972', 'VI', None) -> ['frus1917-72PubDipv06']
+   ('1917–1972', 'VII', None) -> ['frus1917-72PubDipv07']
+   ('1917–1972', 'VIII', None) -> ['frus1917-72PubDipv08']
+   ('1952–1954', 'XII', '2') -> ['frus1952-54v12p2']
+   ('1955–1957', 'IX', None) -> ['frus1955-57v09']
+   ('1961–1963', 'III', None) -> ['frus1961-63v03']
+   ('1964–1968', 'XXIX', '2') -> ['frus1964-68v29p2']
+   ('1969–1976', 'XIX', '2') -> ['frus1969-76v19p2']
+   ('1969–1976', 'XXXVIII', '2') -> ['frus1969-76v38p2']
+   ('1977–1980', 'XXX', None) -> ['frus1977-80v30']
+
+== overview quoted strings (35) ==
+block quotes: 1
+Q01 OK   frus1952-54v12p2/d403 (1952–1954, Volume XII, Part 2, Document 403) | 'through indigenous leadership' 
+Q02 OK   frus1917-72PubDipv08/d31 (1917–1972, Volume VIII, Document 31) | 'US visibility' 
+Q03 OK   frus1964-68v29p2/d46 (1964–1968, Volume XXIX, Part 2, Document 46) | 'probably unchangeable over the short run' 
+Q04 OK   frus1969-76v38p2/d105 (1969–1976, Volume XXXVIII, Part 2, Document 105) | 'lack credibility' 
+Q05 FAIL frus1969-76v38p2/d105 (1969–1976, Volume XXXVIII, Part 2, Document 105) | "Director's Subject Files,"  <<PREVIOUS-PARAGRAPH-FALLBACK>> FAIL segment "Director's Subject Files,"
+Q06 FAIL frus1969-76v38p2/d105 (1969–1976, Volume XXXVIII, Part 2, Document 105) | 'soft power'  <<PREVIOUS-PARAGRAPH-FALLBACK>> FAIL segment 'soft power'
+Q07 FAIL frus1969-76v38p2/d105 (1969–1976, Volume XXXVIII, Part 2, Document 105) | 'information program,'  <<PREVIOUS-PARAGRAPH-FALLBACK>> FAIL segment 'information program,'
+Q08 FAIL frus1969-76v38p2/d105 (1969–1976, Volume XXXVIII, Part 2, Document 105) | 'psychological strategy,'  <<PREVIOUS-PARAGRAPH-FALLBACK>> FAIL segment 'psychological strategy,'
+Q09 FAIL frus1969-76v38p2/d105 (1969–1976, Volume XXXVIII, Part 2, Document 105) | 'image of the United States'  <<PREVIOUS-PARAGRAPH-FALLBACK>> FAIL segment 'image of the United States'
+Q10 OK   frus1952-54v12p2/d403 (1952–1954, Volume XII, Part 2, Document 403) | 'utilizing every suitable operation to prepare the minds and emotions o' 
+Q11 OK   frus1952-54v12p2/d403 (1952–1954, Volume XII, Part 2, Document 403) | 'In projecting U.S. leadership, however, we must work with and through ' 
+Q12 OK   frus1952-54v12p2/d352 (1952–1954, Volume XII, Part 2, Document 352) | 'Asia for Asians,' 
+Q13 OK   frus1952-54v12p2/d352 (1952–1954, Volume XII, Part 2, Document 352) | 'would carry unsavory recollections of Japanese wartime slogan and coul' 
+Q14 OK   frus1955-57v09/d190 (1955–1957, Volume IX, Document 190) | 'Unparalleled enthusiasm, admiration and good will'  <<PREVIOUS-PARAGRAPH-FALLBACK>> 
+Q15 OK   frus1917-72PubDipv06/d128 (1917–1972, Volume VI, Document 128) | 'may only serve to increase the dimensions of the threat that looms fro' 
+Q16 OK   frus1917-72PubDipv06/d128 (1917–1972, Volume VI, Document 128) | 'with over one million Chinese residents in South Viet-Nam who will als' 
+Q17 OK   frus1917-72PubDipv07/d32 (1917–1972, Volume VII, Document 32) | 'Vietnamese peasants are, in the main, going to be persuaded by other V' 
+Q18 OK   frus1917-72PubDipv07/d32 (1917–1972, Volume VII, Document 32) | 'family-oriented, selfish and opportunistic even in the best of times' 
+Q19 OK   frus1917-72PubDipv08/d58 (1917–1972, Volume VIII, Document 58) | 'properly belong to and must ultimately be performed by the Government ' 
+Q20 OK   frus1917-72PubDipv06/d127 (1917–1972, Volume VI, Document 127) | 'probably the most successful visit by an American, from a public image' 
+Q21 OK   frus1961-63v03/d308 (1961–1963, Volume III, Document 308) | 'Editorialists are almost unanimously critical of the Diem Government a' 
+Q22 OK   frus1964-68v29p2/d46 (1964–1968, Volume XXIX, Part 2, Document 46) | 'their ready identification of the American position with that of the J' 
+Q23 OK   frus1964-68v29p2/d46 (1964–1968, Volume XXIX, Part 2, Document 46) | 'Only a rather clear-cut success for American policies is likely to rev' 
+Q24 OK   frus1917-72PubDipv08/d88 (1917–1972, Volume VIII, Document 88) | 'lowest point in thirteen Saigon surveys' 
+Q25 OK   frus1917-72PubDipv08/d31 (1917–1972, Volume VIII, Document 31) | 'PAOs emphasized that the image of the US usually depended more on the ' 
+Q26 OK   frus1917-72PubDipv08/d31 (1917–1972, Volume VIII, Document 31) | 'One caveat: US visibility should be low.' 
+Q27 OK   frus1969-76v19p2/d67 (1969–1976, Volume XIX, Part 2, Document 67) | 'public opinion surveys and other assessments of Japanese attitudes hav' 
+Q28 OK   frus1917-72PubDipv08/d149 (1917–1972, Volume VIII, Document 149) | 'apolitical, seeking to be neutral,' 
+Q29 OK   frus1917-72PubDipv08/d149 (1917–1972, Volume VIII, Document 149) | 'to take a very close look at the overseas Chinese as a USIS audience' 
+Q30 OK   frus1969-76v38p2/d105 (1969–1976, Volume XXXVIII, Part 2, Document 105) | 'programs on U.S. security relations in Asia lack credibility and may i' 
+Q31 OK   frus1969-76v38p2/d105 (1969–1976, Volume XXXVIII, Part 2, Document 105) | 'that we have all learned the lesson that America is not omnipotent' 
+Q32 OK   frus1977-80v30/d2 (1977–1980, Volume XXX, Document 2) | 'We are dealing here with gut issues rather than some of the frothier a' 
+Q33 FAIL frus1977-80v30/d2 (1977–1980, Volume XXX, Document 2) | 'information program'  <<PREVIOUS-PARAGRAPH-FALLBACK>> FAIL segment 'information program'
+Q34 FAIL frus1977-80v30/d2 (1977–1980, Volume XXX, Document 2) | 'informational program'  <<PREVIOUS-PARAGRAPH-FALLBACK>> FAIL segment 'informational program'
+Q35 FAIL frus1977-80v30/d2 (1977–1980, Volume XXX, Document 2) | 'American soft power in East Asia — run f2'  <<PREVIOUS-PARAGRAPH-FALLBACK>> FAIL segment 'American soft power in East Asia — run f2'
+document-attributed quoted strings checked: 35 verified: 27
+
+== collection excerpts ==
+EX OK   frus1952-54v12p2/d403 offs [2158] | 'utilizing every suitable operation to prepare the minds and emotions o' | parent doc in collection: True
+EX OK   frus1952-54v12p2/d403 offs [3692] | 'In projecting U.S. leadership, however, we must work with and through ' | parent doc in collection: True
+EX OK   frus1952-54v12p2/d352 offs [296] | 'Asia for Asians' | parent doc in collection: True
+EX OK   frus1952-54v12p2/d352 offs [981] | 'would carry unsavory recollections of Japanese wartime slogan and coul' | parent doc in collection: True
+EX OK   frus1955-57v09/d190 offs [4842] | 'In the Far East USIA was forced to deal with mixed emotions regarding ' | parent doc in collection: True
+EX OK   frus1955-57v09/d190 offs [30539] | 'Unparalleled enthusiasm, admiration and good will were produced throug' | parent doc in collection: True
+EX OK   frus1917-72PubDipv06/d128 offs [3471] | 'may only serve to increase the dimensions of the threat that looms fro' | parent doc in collection: True
+EX OK   frus1917-72PubDipv06/d128 offs [3947] | 'with over one million Chinese residents in South Viet-Nam who will als' | parent doc in collection: True
+EX OK   frus1917-72PubDipv07/d32 offs [2138] | 'Vietnamese peasants are, in the main, going to be persuaded by other V' | parent doc in collection: True
+EX OK   frus1917-72PubDipv07/d32 offs [3054] | 'family-oriented, selfish and opportunistic even in the best of times' | parent doc in collection: True
+EX OK   frus1917-72PubDipv08/d58 offs [1681] | 'functions in this field properly belong to and must ultimately be perf' | parent doc in collection: True
+EX OK   frus1917-72PubDipv06/d127 offs [1213] | 'probably the most successful visit by an American, from a public image' | parent doc in collection: True
+EX OK   frus1961-63v03/d308 offs [1073] | 'Editorialists are almost unanimously critical of the Diem Government a' | parent doc in collection: True
+EX OK   frus1964-68v29p2/d46 offs [3356] | 'their ready identification of the American position with that of the J' | parent doc in collection: True
+EX OK   frus1964-68v29p2/d46 offs [6151] | 'the basic emotional response remains unchanged and is probably unchang' | parent doc in collection: True
+EX OK   frus1964-68v29p2/d46 offs [6546] | 'Only a rather clear-cut success for American policies is likely to rev' | parent doc in collection: True
+EX OK   frus1917-72PubDipv08/d88 offs [1443] | 'Rating of the U.S. as a dependable ally of SVN reached the lowest poin' | parent doc in collection: True
+EX OK   frus1917-72PubDipv08/d31 offs [2604] | 'PAOs emphasized that the image of the US usually depended more on the ' | parent doc in collection: True
+EX OK   frus1917-72PubDipv08/d31 offs [7283] | 'One caveat: US visibility should be low.' | parent doc in collection: True
+EX OK   frus1969-76v19p2/d67 offs [2106] | 'public opinion surveys and other assessments of Japanese attitudes hav' | parent doc in collection: True
+EX OK   frus1917-72PubDipv08/d149 offs [1136] | 'The predominant mood is apolitical, seeking to be neutral, and concern' | parent doc in collection: True
+EX OK   frus1917-72PubDipv08/d149 offs [1659] | 'we are compelled to take a very close look at the overseas Chinese as ' | parent doc in collection: True
+EX OK   frus1969-76v38p2/d105 offs [3958] | 'During this waiting period, programs on U.S. security relations in Asi' | parent doc in collection: True
+EX OK   frus1969-76v38p2/d105 offs [5973] | 'hoping that we have all learned the lesson that America is not omnipot' | parent doc in collection: True
+EX OK   frus1977-80v30/d2 offs [5314] | 'We are dealing here with gut issues rather than some of the frothier a' | parent doc in collection: True
+excerpts: 25 verified: 25
+
+== single-quoted phrases inside collection notes (extra) ==
+NOTE OK frus1952-54v12p2 d352 'Asia for Asians' [296]
+NOTE FAIL frus1952-54v12p2 d352 's wartime slogan and sound anti-Western; it prefers ' []
+NOTE FAIL frus1955-57v09 d190 's status report for mid-1955; its Far East section names the audience' []
+NOTE OK frus1917-72PubDipv08 d58 'Vietnamization' [1352]
+NOTE FAIL frus1961-63v03 d308 's survey of world press reaction to the Diem government' []
+NOTE FAIL frus1917-72PubDipv08 d31 's East Asia public affairs officers: image follows bilateral relations; ' []

@@ -1,0 +1,68 @@
+# queries.log — f11, 2026-10-31. Shell commands in order.
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"   -> 553|321749|1103|8481
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "BEGIN; CREATE TABLE zz(x); ROLLBACK;"   -> Error: attempt to write a readonly database (expected)
+mkdir -p /Users/jbotts/frus-analysis/c3f/runs/f11
+python3 (inline) json.load manifest.json; print structure
+sqlite3 ... ".schema document_cache"
+python3 (inline) regex over manifest.json titles for East Asia/Pacific country names (list volumes)
+sqlite3 "$DB" "SELECT volume_id, COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache WHERE volume_id GLOB 'frus19[5-9]*' GROUP BY volume_id" (see below)
+sqlite3 "$DB" ".schema frus_documents"
+sqlite3 "$DB" "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"soft power\"'" and variants (see below)
+sqlite3 "$DB" "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '"soft power"' AND is_editorial_note=0"  -> 0
+sqlite3 "$DB" "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '"psychological warfare"' AND is_editorial_note=0"  -> 701
+sqlite3 "$DB" "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '"psychological strategy"' AND is_editorial_note=0"  -> 228
+sqlite3 "$DB" "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH 'USIA' AND is_editorial_note=0"  -> 2161
+sqlite3 "$DB" "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH 'USIS' AND is_editorial_note=0"  -> 1406
+sqlite3 "$DB" "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '"Voice of America"' AND is_editorial_note=0"  -> 688
+sqlite3 "$DB" "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '"cultural exchange"' AND is_editorial_note=0"  -> 671
+sqlite3 "$DB" "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '"image of the United States"' AND is_editorial_note=0"  -> 43
+sqlite3 "$DB" "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '"hearts and minds"' AND is_editorial_note=0"  -> 60
+sqlite3 "$DB" "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH 'propaganda' AND is_editorial_note=0"  -> 12167
+sqlite3 "$DB" "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '"information program"' AND is_editorial_note=0"  -> 719
+sqlite3 "$DB" "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '"Asian opinion"' AND is_editorial_note=0"  -> 54
+sqlite3 "$DB" "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH 'prestige' AND is_editorial_note=0"  -> 7948
+python3 build_eap_list.py   (saved in run dir; regex over manifest titles -> eap_volumes.txt)
+grep -v -E 'frus1944v05|frus1948v05|frus1949v06|frus1950v05|frus1952-54v11|frus1955-57v08|frus1961-63v19|frus1964-68v25|frus1969-76v11|frus1969-76ve0[78]|frus1977-80v19' eap_volumes.txt > eap_core.txt   (S./Near Asia volumes removed by name)
+python3 -u density.py   (per-volume counts of PSYFAM query; file density.py in run dir; predicate printed in file)
+python3 -u pd_scan.py   (Asia-mentioning docs in info/public-diplomacy volumes; predicate inside pd_scan.py)
+python3 -u pd_headers.py  (headers of docs in PD volumes whose header/dateline/body match region terms in header column)
+python3 dump.py <vol/doc ...>   (SELECT volume_id,document_id,header,dateline,source_note,body_text,length(body_text) FROM document_cache WHERE volume_id=? AND document_id=?; writes docs/<vol>__<doc>.txt; prints length, captured length)
+cat docs/frus1917-72PubDipv06__d111.txt etc. (reading dumped files)
+python3 search.py "<MATCH>" [N]  (bm25 ranked docs in scope_vols.txt; SQL inside search.py: SELECT ... FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH ? AND d.volume_id IN (scope) AND is_front_matter=0 AND is_editorial_note=0 ORDER BY bm25(frus_documents))
+python3 search.py 'NEAR(psychological Asia, 15) OR NEAR(propaganda Asian, 10) OR NEAR(USIS Asian, 15) OR NEAR(information Asian audience, 10)' 25 > s_50s.out   (see below; scope_vols.txt)
+python3 search.py '(psychological OR propaganda OR "information program" OR USIS OR "Voice of America") AND (Asian OR Asians OR Asia) AND (opinion OR attitudes OR reaction OR neutralism)' 20 scope_early.txt
+python3 search.py '(USIS OR USIA OR "cultural exchange" OR "educational exchange" OR Fulbright OR "cultural program" OR "information program" OR "public opinion" OR "image") AND (Japanese OR Japan) AND (anti-American OR neutralism OR leftist OR intellectuals OR students OR Zengakuren OR "public opinion")' 18 scope_japan.txt
+python3 search.py '(USIS OR USIA OR "cultural exchange" OR "educational exchange" OR Fulbright OR "cultural program" OR "information program" OR "image") AND ("anti-American" OR neutralism OR intellectuals OR students OR Zengakuren OR "public opinion")' 18 scope_japan.txt
+python3 -u vec_setup.py   (digest check across index/binary/map/shards manifest; decode ids per A.3; save row maps; random-pair baseline seed 1877)
+python3 -u vec_nn.py   (Hamming top-12 neighbours for 4 anchors + k-th neighbour baseline over 200-doc sample seed 1877 + int8 shard cosine with documentOffset 0.40/scale 0.60 calibration; output vec_nn.out)
+sqlite3 "$DB" ".schema document_dates"; select * from document_dates limit 3
+python3 -u stats.py > stats.out   (scope sets, family A counts by decade per-1,000, controls, false-friend test; all SQL printed inside stats.out and in stats.py)
+python3 -u share.py > share.out   (phrase literal-share check: FTS phrase hits in REG sorted by (volume_id,document_id); 40 evenly spaced; regex over header+dateline+source_note+body_text whitespace-collapsed, case-insensitive; STRICT vs TOLERANT; SQL printed in share.out)
+sqlite3 "$DB" ".schema document_sources" ".schema external_citations"; sample rows
+python3 -u arch.py > arch.out   (came-from: document_sources; pointed-at: external_citations; over (a) PD-volume East Asia header docs (42) and (b) family-A docs in REG; SQL in arch.py)
+python3 json_probe.py   (read top-level keys of series-facts-index.json, central-files-index.json, collection-usage-index.json, external-citation-index.json, presidential-library-catalog.json; search for RG 306 / USIA rows)
+python3 json_usia.py   (search series-facts headings for 'Information Agency' creators; search collection-authority.json, central-files-index.json for RG 306 / USIA)
+python3 lots.py > lots.out  (lot_file_norm of Set A/B documents, document_sources and external_citations; resolved against central-files-index.json lotFiles and series-facts-index.json byNaId)
+grep -l -E "UD WW 257|UD-WW 257|A1.?42|P.?207|UD WW 193" "/Applications/FRUS Explorer.app/Contents/Resources"/*.json; python3 inline scan of entry strings in collection-authority/central-files/volume-sources
+python3 acc.py   (accession-series-index.json keys 306/72A5121, 306/69A3445, 306/68A4933, 306/66Y0274; collection-authority entry containing 'FRC 68 A 4933')
+python3 inline: accession-series-index byAccession lookup for 72A5121/69A3445/68A4933
+python3 -u absent.py > absent.out  (counts in REG for terms outside the argument + pre-1940 share of series-facts; SQL in absent.py)
+python3 -u vec_ops2.py > vec_ops2.out   (centroid similarity for frus1917-72PubDipv08 and frus1977-80v30; map cluster of the collection documents + unclustered shares; semantic join: top-60 Hamming neighbours of frus1969-76v38p2/d105 into document_dates and document_sources; near-duplicate scan among the 25 collection documents)
+python3 titles.py   (manifest title + document_number + dateline for the 25 collection documents; SELECT document_number,dateline FROM document_cache WHERE volume_id=? AND document_id=?)
+python3 -u extract_excerpts.py > excerpts.out   (for each excerpt anchor pair: SELECT body_text FROM document_cache WHERE volume_id=? AND document_id=?; whitespace-collapse; take substring start..end; assert unique match; save excerpts.json)
+python3 -u final_numbers.py > final_numbers.out   (RG 306 share in Set A; PD-volume document totals; retrieved-whole count)
+# note: the Japan search line above that contains "anti-American" unquoted failed with an FTS column error (no such column: American); the line after it is the corrected run. sed -i attempts on queries.log/extract_excerpts.py failed on macOS (BSD sed) and were redone with python str.replace.
+python3 -u build_collection.py > build_collection.out   (writes collection.fruscollection from excerpts.json + texts in the script; validates every pair against document_cache: SELECT 1 FROM document_cache WHERE volume_id=? AND document_id=?)
+python3 -u verify_collection.py > verify_collection.out   (re-reads collection.fruscollection; for each excerpt entry SELECT body_text FROM document_cache WHERE volume_id=? AND document_id=?; whitespace-collapse both sides; assert substring; also checks keys, duplicates, Ed2)
+grep -l -F -e "P-104" -e "P 104" -e "P–104" *.json  (bundled JSON, entry-number check)
+python3 inline: central-files-index lotFiles rows with hmsMlrEntryNumbers containing "P 104"
+python3 inline: edits to overview.md (string replacements, 14)
+python3 -u check_overview.py > check_overview.out   (every “...” quotation in overview.md must be a substring of a collection document's whitespace-collapsed body_text (SELECT body_text FROM document_cache WHERE volume_id=? AND document_id=?); every history.state.gov URL must name a collection pair; forbidden-string scan)
+python3 inline: for the two vector-reached documents (frus1969-76ve12/d10, frus1977-80v22/d104) test whether they match family A, and the two ranked text queries run earlier (SELECT 1 FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH ? AND d.volume_id=? AND d.document_id=?)
+python3 inline: rank of frus1969-76ve12/d10 in the broad ranked query (search.py query 2) over scope_vols.txt
+python3 inline: wording edits to overview.md and build_collection.py; build_collection.py, verify_collection.py, check_overview.py re-run
+python3 -u build_memo.py   (assembles memo.md from the .out files in this directory and the quotation table derived from overview.md)
+grep -c -E "South Asia|Near East" pd_headers.out; python3 inline: overview.md wording of the 42-document set
+python3 -u final_numbers.py > final_numbers.out ; python3 -u check_overview.py > check_overview.out ; python3 -u verify_collection.py > verify_collection.out ; python3 build_memo.py   (memo.md assembled from memo_template.md)
+# Also run but not logged verbatim above: read-only inspection commands (ls -la on the bundle's semantic files; cat of the .generation file; head/tail/cut/wc/grep filters on outputs; tr/sed pipelines to print dumped documents in docs/; python3 - <<EOF snippets that print a manifest record or a JSON structure).
+ELIDED: (1) the bodies of the python scripts written by heredoc are not repeated in this log; each is saved in this directory under the name shown (build_eap_list.py, density.py, pd_scan.py, pd_headers.py, search.py, dump.py, ctx.py, stats.py, share.py, arch.py, lots.py, json_usia.py, json_probe.py, acc.py, absent.py, final_numbers.py, titles.py, vec_setup.py, vec_nn.py, vec_ops2.py, extract_excerpts.py, build_collection.py, verify_collection.py, check_overview.py, build_memo.py); (2) several short inline python3 - <<EOF snippets (manifest print, series-facts lookups, accession lookups, rank of one document in a ranked query, a two-document query test, string-replacement edits to overview.md/extract_excerpts.py/build_collection.py/memo_template.md) are described in one line, not reproduced; (3) the many ranked-search invocations of search.py that I ran with different MATCH strings are listed only where they changed the scope or yielded a document used (the others were: the Asian-image/prestige NEAR query, the Asian-mentality NEAR query, the information-program-effectiveness query, the neutralism/prestige query, the 1948-54 query, the Japan query); (4) read-only inspection commands listed in the line above; (5) the id lists in docs_list.py and the dump.py invocations (52 id pairs in all, the files in docs/ are the list); (6) the argument lists of dump.py calls are not all repeated.

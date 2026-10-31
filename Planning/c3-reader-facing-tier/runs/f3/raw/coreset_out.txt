@@ -1,0 +1,4 @@
+SQL: SELECT c.volume_id,c.document_id FROM frus_documents f JOIN document_cache c ON c.rowid=f.rowid WHERE frus_documents MATCH ? AND c.is_front_matter=0 AND c.is_editorial_note=0 AND c.volume_id IN (<volumes>) MATCH regional= (usia OR usi OR "information program" OR "psychological strategy" OR "psychological warfare" OR "cultural exchange")  MATCH global= (usia OR usi OR "information program" OR "psychological strategy" OR "psychological warfare" OR "cultural exchange") AND (asia OR asian OR "far east" OR japan OR japanese OR korea OR vietnam OR "viet nam" OR philippines OR indonesia OR thailand OR laos OR cambodia OR burma OR china OR chinese OR taiwan OR australia OR pacific)
+regional 1221 global 352
+core set 1573 volumes 80
+regional denominator (non-apparatus docs in regional volumes): 33067 regional volumes 72

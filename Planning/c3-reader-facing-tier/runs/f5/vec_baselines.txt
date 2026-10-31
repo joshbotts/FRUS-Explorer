@@ -1,0 +1,4 @@
+RANDOM PAIRS n=20000 Random(1877): mean 167.1 sd 14.8 p1 132 min 95
+k-th NN 1st over 200 docs Random(2026): median 83 q25 75 q75 91
+k-th NN 10th over 200 docs Random(2026): median 100 q25 94 q75 108
+k-th NN 25th over 200 docs Random(2026): median 106 q25 100 q75 113

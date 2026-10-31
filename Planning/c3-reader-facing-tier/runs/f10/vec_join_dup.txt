@@ -1,0 +1,12 @@
+30 nearest of PubDipv07/d73 by Hamming: min 87 max 114; not in local index: 0
+ decades: {'1960s': 14, '1950s': 15, '1940s': 1}
+ repository/record group: {('National Archives', '306'): 7, ('Johnson Library', None): 2, ('Department of State', '59'): 13, (None, None): 2, ('National Archives', '286'): 1, ('Eisenhower Library', None): 3, ('Kennedy Library', None): 1, ('Central Intelligence Agency', None): 1}
+ different-decade-from-1960s and not RG306: [('frus1952-54v13p1/d116', 104, '1952-09-20'), ('frus1955-57v01/d2', 105, '1955-01-03'), ('frus1958-60v01/d55', 108, '1959-02-16'), ('frus1950v06/d3', 109, '1950-02-01'), ('frus1950v06/d9', 110, '1950-01-02'), ('frus1950v06/d53', 111, '1950-06-30'), ('frus1955-57v10/d28', 111, '1956-11-20'), ('frus1951v01/d332', 112, '1951-10-12'), ('frus1955-57v03/d159', 112, '1956-03-16'), ('frus1952-54v01p1/d163', 112, '1952-11-28')]
+pair (('frus1917-72PubDipv06', 'd141'), ('frus1961-63v04', 'd108')) hamming 56 cos_raw 0.976
+pair (('frus1917-72PubDipv06', 'd140'), ('frus1961-63v04', 'd81')) hamming 53 cos_raw 0.985
+closest pairs among the 30 collection documents:
+  76  frus1917-72PubDipv06/d126  ~  frus1917-72PubDipv06/d133
+  88  frus1917-72PubDipv08/d31  ~  frus1952-54v13p1/d116
+  92  frus1964-68v26/d109  ~  frus1964-68v26/d106
+  94  frus1917-72PubDipv07/d32  ~  frus1964-68v02/d160
+collection docs with a corpus neighbour at Hamming <= 40 (possible reprint): [(('frus1955-57v09', 'd190'), 32, 'frus1955-57v09/d185')]

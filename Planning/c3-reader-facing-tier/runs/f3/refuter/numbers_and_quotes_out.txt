@@ -1,0 +1,194 @@
+== 1. SCOPE ==
+scope list length: 81 distinct: 81 regional: 72 global: 9
+[M2] scope volumes, non-apparatus docs: (81, 35214)
+[M2b] regional volumes, non-apparatus docs: (72, 33067)
+scope document date span (date_iso min, max, n, undated): ('1945-11-01', '1981-01-14', 35214, 21)
+regional-volume date span: ('1945-11-01', '1981-01-14')
+scope docs dated before 1946 or after 1980, by year: [('1945', 5), ('1981', 4)]
+scope volumes missing from manifest: []
+manifest dateRange over scope: earliest 1945-11-01T16:00:00-05:00 latest 1981-01-14T23:59:59-05:00
+[M0] index coverage: (553, 321749, 1103, 8481)
+[M0b] non-apparatus corpus-wide: (312169,)
+
+== 2. HEADLINE NUMBERS ==
+[M1] "soft power" corpus-wide, all docs: (0, 0)
+[M1] "soft power" corpus-wide, non-apparatus: (0, 0)
+[M1] "soft power" scope, non-apparatus: (0, 0)
+[M1b] relaxed 'soft' in scope: (345, 73)
+     'soft AND power' (both words, any distance) in scope: (151, 61)
+[M3] regional 1221 global 352 union 1573 volumes 80
+[M5] kept 1401 dropped 172 bare-USI among dropped 166 kept volumes 80 top dropped [('frus1948v06', 82), ('frus1949v07p1', 61), ('frus1947v06', 18)]
+     my C == session's raw/coreset_clean.tsv: True (mine 1401, session 1401)
+overview URLs: 27 distinct pairs: 23
+[M11] came-from rows: 1401 of 1401 | RG 59 = 731 + 57 = 788 -> 56.2% | RG 306 = 177 -> 12.6% = 1 in 7.9
+     any-RG59 record_group (all repositories): 788
+     top repository/RG: [(('Department of State', '59'), 731), (('National Archives', '306'), 177), (('Johnson Library', None), 100), (('Nixon Presidential Materials', None), 78), (('Kennedy Library', None), 70), (('National Archives', '59'), 57), ((None, None), 35), (('Eisenhower Library', None), 28), (('Carter Library', None), 24), (('National Archives', '330'), 22), (('Central Intelligence Agency', None), 19), (('Library of Congress', None), 11)]
+     presidential libraries + Nixon Materials: 326 of the remaining 436 (75%)
+     series named National Security File(s)/NSC Files/National Security Affairs/Adviser: 217 of the remaining 436
+[M12] pointed-at: docs with >=1 external_citations row: 390 of 1401 -> 27.8% = 1 in 3.6
+     citation_era split: [('structured', 596), ('decimal', 484), ('lot_file', 181), ('subject_numeric', 91), ('named_series', 25), ('cfpf', 14), ('published', 7), ('foreign', 2), ('unrecognized', 1)]
+[M7/M8/M9] "department of state"  scope: (14755, 81)  corpus-wide: (94049, 552)
+[M7/M8/M9] ZZZ_IMPOSSIBLE_ZZZ     scope: (0, 0)  corpus-wide: (0, 0)
+[M7/M8/M9] "oriental mind"        scope: (14, 13)  corpus-wide: (25, 24)
+[M7/M8/M9] "asian mind"           scope: (7, 6)  corpus-wide: (13, 11)
+     scope share of non-apparatus corpus: 35214/312169 = 1 in 8.86
+[M10] 1940s C(regional) 165 / dated 9577 = 17.2 per 1,000 = 1 in 58
+[M10] 1950s C(regional) 382 / dated 12112 = 31.5 per 1,000 = 1 in 32
+[M10] 1960s C(regional) 397 / dated 7884 = 50.4 per 1,000 = 1 in 20
+[M10] 1970s C(regional) 104 / dated 3370 = 30.9 per 1,000 = 1 in 32
+[M10] 1980s C(regional) 1 / dated 106 = 9.4 per 1,000 = 1 in 106
+[§8] "circular telegram 208" corpus-wide non-apparatus: (1,)
+[§8] "circular telegram" AND 208 corpus-wide non-apparatus: (11,)
+[house rule] earliest dated document with an external_citations row: ('1910-12-06',)
+[absence claim probe] "country plan"                                                         scope: (55, 18)
+[absence claim probe] "country plans"                                                        scope: (55, 18)
+[absence claim probe] "opinion survey" OR "opinion surveys" OR "public opinion survey"       scope: (24, 10)
+[absence claim probe] "office of research"                                                   scope: (78, 18)
+
+== 3. QUOTATIONS ==
+collection excerpts: 29
+  EX01 frus1949v07p2/d386 FOUND [6077] | A considerably expanded information program both in Communist and non-
+  EX02 frus1952-54v13p1/d116 FOUND [3005] | Such demand can only be construed as intense interest in US by educate
+  EX03 frus1952-54v13p1/d116 FOUND [3762] | Daily VM broadcasts maligning US effort AS go unanswered except for sp
+  EX04 frus1952-54v12p2/d403 FOUND [6391] | It is recognized that Southeast Asia is not a political entity but tha
+  EX05 frus1955-57v09/d190 FOUND [4842] | In the Far East USIA was forced to deal with mixed emotions regarding 
+  EX06 frus1955-57v09/d207 FOUND [32668] | Despite all efforts, the trend toward accommodation to Communist press
+  EX07 frus1952-54v14p2/d551 FOUND [5040] | we must by word and deed do everything within our power to overcome an
+  EX08 frus1952-54v12p2/d60 FOUND [1987] | Bulk of Burmese people simply unable understand aid in terms of altrui
+  EX09 frus1952-54v13p2/d992 FOUND [15218] | In Asia give-away programs are too frequently mistaken in the oriental
+  EX10 frus1958-60v01/d26 FOUND [1486] | Not being Asians, Americans do not understand the Oriental mind and po
+  EX11 frus1961-63v02/d29 FOUND [1556] | American concepts, policies and capabilities do not always fit the ori
+  EX12 frus1961-63v01/d265 FOUND [2956] | But the spectre of charges that “U.S. imperialists are waging germ war
+  EX13 frus1961-63v02/d197 FOUND [3170] | Is it possible, for example, to laugh at the VC, to make them look rid
+  EX14 frus1917-72PubDipv07/d37 FOUND [5031] | On the American side, these programs to affect what the Vietnamese peo
+  EX15 frus1952-54v14p2/d820 FOUND [4040] | Vigorous information programs have been carried on to give the Japanes
+  EX16 frus1952-54v14p2/d820 FOUND [4841] | there have arisen a serious increase in neutralist sentiment, periodic
+  EX17 frus1917-72PubDipv06/d127 FOUND [1488] | Glenn and his family, through the warmth and sincerity of their person
+  EX18 frus1964-68v29p2/d46 FOUND [6026] | Intellectually we have met with some success, and there is a growing a
+  EX19 frus1964-68v29p2/d46 FOUND [1828] | Such simplistic attitudes are possible in Japan because of the ostrich
+  EX20 frus1917-72PubDipv07/d73 FOUND [2219] | In all cases, however, the image of American strength, reliability and
+  EX21 frus1917-72PubDipv07/d73 FOUND [2564] | In almost every country of the area, our programs are directed at elit
+  EX22 frus1917-72PubDipv08/d31 FOUND [2264] | Asians are, to varying degrees, America watchers.
+  EX23 frus1917-72PubDipv08/d31 FOUND [2604] | PAOs emphasized that the image of the US usually depended more on the 
+  EX24 frus1917-72PubDipv08/d31 FOUND [7283] | One caveat: US visibility should be low.
+  EX25 frus1917-72PubDipv08/d146 FOUND [1820] | The President’s projected visit to Peking presents us with opportuniti
+  EX26 frus1917-72PubDipv08/d149 FOUND [1655] | Thus, we are compelled to take a very close look at the overseas Chine
+  EX27 frus1969-76v38p2/d105 FOUND [5899] | We should focus our programming on the benefits accruing from the end 
+  EX28 frus1969-76v38p2/d105 FOUND [6512] | Confidence in US economic power, technological and scientific capabili
+  EX29 frus1977-80v30/d2 FOUND [5314] | We are dealing here with gut issues rather than some of the frothier a
+excerpts FOUND: 29 of 29
+
+overview double-quoted spans: 60
+  S01 line 5 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | soft power
+  S02 line 5 -> ('frus1949v07p2', 'd386') | FOUND | [6098] | information program
+  S03 line 5 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | psychological strategy
+  S04 line 5 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | image
+  S05 line 5 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | prestige
+  S06 line 5 -> ('frus1949v07p2', 'd386') | FOUND | [6077] | A considerably expanded information program both in Communist and non-Communist 
+  S07 line 5 -> ('frus1955-57v09', 'd207') | FOUND | [32685] | the trend toward accommodation to Communist pressures in the area continued
+  S08 line 5 -> ('frus1964-68v29p2', 'd46') | FOUND | [6046] | met with some success
+  S09 line 5 -> ('frus1964-68v29p2', 'd46') | FOUND | [6151] | the basic emotional response remains unchanged
+  S10 line 5 -> ('frus1917-72PubDipv08', 'd31') | FOUND | [2644, 2751] | depended more on the state of bi-lateral relations … than on developments within
+  S11 line 7 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | Records Relating to National Security Council Policy Papers
+  S12 line 7 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | Subject and Special Files
+  S13 line 7 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | Records Relating to Activities with the National Security Council
+  S14 line 7 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | Subject Files
+  S15 line 7 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | Alphabetical Subject Files Containing Policy Guidance Records
+  S16 line 9 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | soft power
+  S17 line 9 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | Department of State
+  S18 line 9 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | International Informational and Educational Relations, Cultural Affairs and Prog
+  S19 line 15 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | soft power
+  S20 line 16 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | messaging
+  S21 line 17 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | the Oriental mind
+  S22 line 17 -> ('frus1949v07p2', 'd386') | NOT FOUND segment 1 of 1 | [] | face
+  S23 line 24 -> ('frus1949v07p2', 'd386') | FOUND | [6172] | to demonstrate our understanding and sympathy for the nationalist aspirations of
+  S24 line 24 -> ('frus1952-54v12p2', 'd403') | FOUND | [6409] | Southeast Asia is not a political entity but that each nation is an entity basic
+  S25 line 24 -> ('frus1952-54v13p1', 'd116') | FOUND | [3035] | intense interest in US by educated groups
+  S26 line 24 -> ('frus1952-54v13p1', 'd116') | FOUND | [3798] | go unanswered
+  S27 line 24 -> ('frus1955-57v09', 'd190') | FOUND | [4877] | mixed emotions regarding the use of atomic weapons against Asiatic peoples
+  S28 line 24 -> ('frus1955-57v09', 'd190') | FOUND | [4972] | designed to stir up race hatred
+  S29 line 24 -> ('frus1955-57v09', 'd207') | FOUND | [32668] | Despite all efforts, the trend toward accommodation to Communist pressures in th
+  S30 line 26 -> ('frus1952-54v14p2', 'd551') | FOUND | [5107] | the Oriental mind
+  S31 line 28 -> ('frus1952-54v14p2', 'd551') | FOUND | [5110] | Oriental mind
+  S32 line 28 -> ('frus1952-54v14p2', 'd551') | FOUND | [5040] | we must by word and deed do everything within our power to overcome any feeling 
+  S33 line 28 -> ('frus1952-54v12p2', 'd60') | FOUND | [1987] | Bulk of Burmese people simply unable understand aid in terms of altruism
+  S34 line 28 -> ('frus1952-54v13p2', 'd992') | FOUND | [15218] | In Asia give-away programs are too frequently mistaken in the oriental mind as m
+  S35 line 28 -> ('frus1958-60v01', 'd26') | FOUND | [1486] | Not being Asians, Americans do not understand the Oriental mind and point of vie
+  S36 line 28 -> ('frus1961-63v02', 'd29') | FOUND | [1556] | American concepts, policies and capabilities do not always fit the oriental mind
+  S37 line 32 -> ('frus1961-63v01', 'd265') | FOUND | [2956] | But the spectre of charges that “U.S. imperialists are waging germ warfare on As
+  S38 line 32 -> ('frus1961-63v02', 'd197') | FOUND | [3192] | to laugh at the VC, to make them look ridiculous and thus lose face?
+  S39 line 32 -> ('frus1917-72PubDipv07', 'd37') | FOUND | [5048] | these programs to affect what the Vietnamese people think must be given the same
+  S40 line 36 -> ('frus1952-54v14p2', 'd820') | FOUND | [4040] | Vigorous information programs
+  S41 line 36 -> ('frus1952-54v14p2', 'd820') | FOUND | [4161] | combat leftist and neutralist influences
+  S42 line 36 -> ('frus1952-54v14p2', 'd820') | FOUND | [4856] | a serious increase in neutralist sentiment
+  S43 line 36 -> ('frus1917-72PubDipv06', 'd127') | FOUND | [1593] | were effective demonstration of typical American virtues
+  S44 line 36 -> ('frus1964-68v29p2', 'd46') | FOUND | [1878] | the ostrich-like pacifism of the Japanese
+  S45 line 36 -> ('frus1964-68v29p2', 'd46') | FOUND | [6197] | probably unchangeable over the short run
+  S46 line 36 -> ('frus1917-72PubDipv07', 'd73') | FOUND | [2615] | at elite groups: government officials, university and high school teachers, medi
+  S47 line 36 -> ('frus1917-72PubDipv07', 'd73') | FOUND | [2236] | the image of American strength, reliability and friendship
+  S48 line 36 -> ('frus1917-72PubDipv08', 'd31') | FOUND | [2264] | Asians are, to varying degrees, America watchers
+  S49 line 36 -> ('frus1917-72PubDipv08', 'd31') | FOUND | [7292] | US visibility should be low
+  S50 line 40 -> ('frus1917-72PubDipv08', 'd146') | FOUND | [1882] | to build what is now a temporary psychological asset into a long-range one
+  S51 line 40 -> ('frus1917-72PubDipv08', 'd149') | FOUND | [1713] | as a USIS audience
+  S52 line 40 -> ('frus1969-76v38p2', 'd105') | FOUND | [6008] | that America is not omnipotent
+  S53 line 40 -> ('frus1969-76v38p2', 'd105') | FOUND | [6512, 6646] | Confidence in US economic power, technological and scientific capability, and ou
+  S54 line 40 -> ('frus1977-80v30', 'd2') | FOUND | [5334] | gut issues rather than some of the frothier aspects of cultural exchange
+  S55 line 44 -> None | (no following URL) | [] | information program
+  S56 line 44 -> None | (no following URL) | [] | psychological strategy
+  S57 line 44 -> None | (no following URL) | [] | psychological warfare
+  S58 line 44 -> None | (no following URL) | [] | cultural exchange
+  S59 line 44 -> None | (no following URL) | [] | USI
+  S60 line 48 -> None | (no following URL) | [] | Information programs and the American image in East Asia, 1949–1977
+
+== EDITION CITATIONS -> PAIRS (manifest.json + document_number) ==
+  Foreign Relations of the United States, 1949, The Far East and Australasia, Volume VII, Part 2, -> frus1949v07p2/d386 | doc_number=386 match=True | manifest title: Foreign Relations of the United States, 1949, The Far East and Australasia, Volume VII, Part 2
+  Foreign Relations of the United States, 1955–1957, Volume IX, Document 207 -> frus1955-57v09/d207 | doc_number=207 match=True | manifest title: Foreign Relations of the United States, 1955–1957, Foreign Economic Policy; Foreign Information Program, Volume IX
+  Foreign Relations of the United States, 1964–1968, Volume XXIX, Part 2, Japan, Document 46 -> frus1964-68v29p2/d46 | doc_number=46 match=True | manifest title: Foreign Relations of the United States, 1964–1968, Volume XXIX, Part 2, Japan
+  Foreign Relations of the United States, 1917–1972, Volume VIII, Public Diplomacy, 1969–1972, Do -> frus1917-72PubDipv08/d31 | doc_number=31 match=True | manifest title: Foreign Relations of the United States, 1917–1972, Volume VIII, Public Diplomacy, 1969–1972
+  Foreign Relations of the United States, 1952–1954, East Asia and the Pacific, Volume XII, Part  -> frus1952-54v12p2/d403 | doc_number=403 match=True | manifest title: Foreign Relations of the United States, 1952–1954, East Asia and the Pacific, Volume XII, Part 2
+  Foreign Relations of the United States, 1952–1954, Indochina, Volume XIII, Part 1, Document 116 -> frus1952-54v13p1/d116 | doc_number=116 match=True | manifest title: Foreign Relations of the United States, 1952–1954, Indochina, Volume XIII, Part 1
+  Foreign Relations of the United States, 1955–1957, Volume IX, Document 190 -> frus1955-57v09/d190 | doc_number=190 match=True | manifest title: Foreign Relations of the United States, 1955–1957, Foreign Economic Policy; Foreign Information Program, Volume IX
+  Foreign Relations of the United States, 1952–1954, China and Japan, Volume XIV, Part 2, Documen -> frus1952-54v14p2/d551 | doc_number=551 match=True | manifest title: Foreign Relations of the United States, 1952–1954, China and Japan, Volume XIV, Part 2
+  Foreign Relations of the United States, 1958–1960, Vietnam, Volume I, Document 26 -> frus1958-60v01/d26 | doc_number=26 match=True | manifest title: Foreign Relations of the United States, 1958–1960, Vietnam, Volume I
+  Foreign Relations of the United States, 1961–1963, Volume II, Vietnam, 1962, Document 29 -> frus1961-63v02/d29 | doc_number=29 match=True | manifest title: Foreign Relations of the United States, 1961–1963, Volume II, Vietnam, 1962
+  Foreign Relations of the United States, 1961–1963, Volume I, Vietnam, 1961, Document 265 -> frus1961-63v01/d265 | doc_number=265 match=True | manifest title: Foreign Relations of the United States, 1961–1963, Volume I, Vietnam, 1961
+  Foreign Relations of the United States, 1917–1972, Volume VII, Public Diplomacy, 1964–1968, Doc -> frus1964-68v01/d197 | doc_number=197 match=True | manifest title: Foreign Relations of the United States, 1964–1968, Volume I, Vietnam, 1964
+  Foreign Relations of the United States, 1952–1954, China and Japan, Volume XIV, Part 2, Documen -> frus1952-54v14p2/d820 | doc_number=820 match=True | manifest title: Foreign Relations of the United States, 1952–1954, China and Japan, Volume XIV, Part 2
+  Foreign Relations of the United States, 1917–1972, Volume VI, Public Diplomacy, 1961–1963, Docu -> frus1917-72PubDipv06/d127 | doc_number=127 match=True | manifest title: Foreign Relations of the United States, 1917–1972, Volume VI, Public Diplomacy, 1961–1963
+  Foreign Relations of the United States, 1969–1976, Volume XXXVIII, Part 2, Document 105 -> frus1969-76v38p2/d105 | doc_number=105 match=True | manifest title: Foreign Relations of the United States, 1969–1976, Volume XXXVIII, Part 2, Organization and Management of Foreign Policy; Public Diplomacy, 1973–1976
+  Foreign Relations of the United States, 1977–1980, Volume XXX, Public Diplomacy, Document 2 -> frus1977-80v30/d2 | doc_number=2 match=True | manifest title: Foreign Relations of the United States, 1977–1980, Volume XXX, Public Diplomacy
+  Volume XII, Part 2, Document 60 -> frus1952-54v12p2/d60 | doc_number=60 match=True | manifest title: Foreign Relations of the United States, 1952–1954, East Asia and the Pacific, Volume XII, Part 2
+  Volume XIII, Part 2, Document 992 -> frus1952-54v13p2/d992 | doc_number=992 match=True | manifest title: Foreign Relations of the United States, 1952–1954, Indochina, Volume XIII, Part 2
+  Volume II, Document 197 -> frus1961-63v02/d197 | doc_number=197 match=True | manifest title: Foreign Relations of the United States, 1961–1963, Volume II, Vietnam, 1962
+  Volume XXIX, Part 2, Document 46 -> frus1964-68v29p2/d46 | doc_number=46 match=True | manifest title: Foreign Relations of the United States, 1964–1968, Volume XXIX, Part 2, Japan
+  Volume VII, Public Diplomacy, Document 73 -> frus1917-72PubDipv07/d73 | doc_number=73 match=True | manifest title: Foreign Relations of the United States, 1917–1972, Volume VII, Public Diplomacy, 1964–1968
+  Volume VIII, Public Diplomacy, Document 31 -> frus1917-72PubDipv08/d31 | doc_number=31 match=True | manifest title: Foreign Relations of the United States, 1917–1972, Volume VIII, Public Diplomacy, 1969–1972
+  Volume VIII, Public Diplomacy, Document 146 -> frus1917-72PubDipv08/d146 | doc_number=146 match=True | manifest title: Foreign Relations of the United States, 1917–1972, Volume VIII, Public Diplomacy, 1969–1972
+  Document 207 -> frus1955-57v09/d207 | doc_number=207 match=True | manifest title: Foreign Relations of the United States, 1955–1957, Foreign Economic Policy; Foreign Information Program, Volume IX
+  Document 149 -> frus1917-72PubDipv08/d149 | doc_number=149 match=True | manifest title: Foreign Relations of the United States, 1917–1972, Volume VIII, Public Diplomacy, 1969–1972
+citations parsed: 25
+
+== CITED DOCUMENTS: header | dateline ==
+  frus1949v07p2/d386 | fm=0 ed=0 | Memorandum by the Ambassador at Large (Jessup) to the Secretary of State | Washington, November 16, 1949.
+  frus1955-57v09/d207 | fm=0 ed=0 | 207. Report Prepared by the National Security Council | Washington, September 11, 1957.
+  frus1964-68v29p2/d46 | fm=0 ed=0 | 46. Telegram From the Embassy in Japan to the Department of State | Tokyo, May 19, 1965, 0927Z.
+  frus1917-72PubDipv08/d31 | fm=0 ed=0 | 31. Letter From the Assistant Director, East Asia and the Pacific, United States Information Agency (Oleksiw) to all USIA Public Affairs Officers | Washington, August 5, 1969
+  frus1952-54v12p2/d403 | fm=0 ed=0 | No. 403 Paper by the Psychological Strategy Board | Washington, September 14, 1953.
+  frus1952-54v13p1/d116 | fm=0 ed=0 | The Ambassador at Saigon (Heath) to the Department of State | Saigon, September 20, 1952—3 p.m.
+  frus1955-57v09/d190 | fm=0 ed=0 | 190. Report Prepared by the National Security Council | Washington, August 31, 1955.
+  frus1952-54v14p2/d551 | fm=0 ed=0 | No. 551 The Commander in Chief, Far East (Ridgway) to the Department of the Army | Tokyo, April 9, 1952—3:37 p.m.
+  frus1952-54v12p2/d60 | fm=0 ed=0 | No. 60 The Ambassador in Burma (Sebald) to the Department of State | Rangoon, March 31, 1953—5 p.m.
+  frus1952-54v13p2/d992 | fm=0 ed=0 | The Chargé at Saigon (McClintock) to the Department of State | Saigon, June 24, 1954—4 p.m.
+  frus1958-60v01/d26 | fm=0 ed=0 | 26. Letter From the Ambassador in Vietnam (Durbrow) to the Director, Bureau of Intelligence and Research (Cumming) | Saigon, August 6, 1958.
+  frus1961-63v02/d29 | fm=0 ed=0 | 29. Letter From the Commander in Chief, Pacificʼs Political Adviser (Martin) to the Director of the Vietnam Task Force (Cottrell) | Honolulu, January 19, 1962.
+  frus1961-63v01/d265 | fm=0 ed=0 | 265. Memorandum From the Assistant Director, Far East (Neilson), to the Director of the United States Information Agency (Murrow) | Washington, November 17, 1961.
+  frus1961-63v02/d197 | fm=0 ed=0 | 197. Memorandum From the Public Affairs Officer at the Embassy in Vietnam (Mecklin) to the Deputy Public Affairs Officer (Baumgartner) | Saigon, May 17, 1962.
+  frus1917-72PubDipv07/d37 | fm=0 ed=0 | 37. Memorandum From the Director of the United States Information Agency (Rowan) to President Johnson | Washington, March 16, 1965
+  frus1964-68v01/d197 | fm=0 ed=0 | 197. Memorandum From the Director of the United States Information Agency (Rowan) to the President | Washington, June 4, 1964.
+  frus1952-54v14p2/d820 | fm=0 ed=0 | No. 820 Memorandum by the Executive Officer of the Operations Coordinating Board (Staats) to the Executive Secretary of the National Security Council (Lay) | Washington, October 28, 1954.
+  frus1917-72PubDipv06/d127 | fm=0 ed=0 | 127. Telegram From the Embassy in Japan to the Secretary of State | Tokyo, June 1, 1963 7 p.m.
+  frus1917-72PubDipv07/d73 | fm=0 ed=0 | 73. Memorandum From the Acting Assistant Director, Office of the Assistant Director, Far East, United States Information Agency (Moore) to the Director (Marks) | Washington, January 25, 1966
+  frus1917-72PubDipv08/d146 | fm=0 ed=0 | 146. Memorandum From the Assistant Director, East Asia and Pacific, United States Information Agency (Reinhardt) to the Director (Shakespeare) | Washington, August 16, 1971
+  frus1917-72PubDipv08/d149 | fm=0 ed=0 | 149. Memorandum From the Deputy Assistant Director, Office of the Assistant Director, East Asia and Pacific, United States Information Agency (Southard) to the  | Washington, November 23, 1971
+  frus1969-76v38p2/d105 | fm=0 ed=0 | 105. Memorandum From the Assistant Director for East Asia and the Pacific, United States Information Agency (Payeff) to the Director (Keogh) and Deputy Director | Washington, May 9, 1975.
+  frus1977-80v30/d2 | fm=0 ed=0 | 2. Information Memorandum From the Deputy Assistant Director, East Asia and Pacific, United States Information Agency (Forster) to the Acting Director (Kopp) | Washington, January 6, 1977

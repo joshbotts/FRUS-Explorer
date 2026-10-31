@@ -1,0 +1,26 @@
+cluster-138 members in 6 info vols with a region mention: 148
+34.3/1000w n=8 frus1977-80v30/d81 | 81. Telegram From the Department of State to all East Asian and Pacific Diplomatic Posts
+22.9/1000w n=12 frus1917-72PubDipv06/d127 | 127. Telegram From the Embassy in Japan to the Secretary of State
+17.4/1000w n=8 frus1917-72PubDipv06/d33 | 33. Memorandum From the Deputy Director of the United States Information Agency (Wilson) t
+15.2/1000w n=10 frus1917-72PubDipv07/d76 | 76. Letter From the Assistant Secretary of State for Educational and Cultural Affairs (Fra
+15.0/1000w n=14 frus1977-80v30/d117 | 117. Paper Prepared in the Office of Research, Office of Planning and Program Direction, U
+14.2/1000w n=8 frus1917-72PubDipv08/d34 | 34. Report Prepared in Research Service, Office of Research and Assessment, United States 
+13.4/1000w n=15 frus1917-72PubDipv07/d35 | 35. Memorandum From the Director of the United States Information Agency (Rowan) to Secret
+10.9/1000w n=11 frus1961-63v25/d133 | 133. Memorandum From the Director of the U.S. Information Agency (Murrow) to President Ken
+10.8/1000w n=15 frus1917-72PubDipv08/d29 | 29. Memorandum From the Director of the United States Information Agency (Shakespeare) to 
+9.8/1000w n=8 frus1917-72PubDipv08/d121 | 121. Letter From the Assistant Director, East Asia and Pacific, United States Information 
+9.7/1000w n=12 frus1917-72PubDipv06/d74 | 74. Memorandum From Attorney General Kennedy to President Kennedy
+9.7/1000w n=6 frus1917-72PubDipv06/d107 | 107. Memorandum From the Chairman of the Psychological-Political Working Group (Jorden) to
+9.2/1000w n=72 frus1955-57v09/d190 | 190. Report Prepared by the National Security Council
+8.9/1000w n=9 frus1917-72PubDipv08/d5 | 5. Paper Prepared in the United States Information Agency
+7.2/1000w n=47 frus1955-57v09/d185 | 185. Report Prepared by the National Security Council
+7.0/1000w n=7 frus1917-72PubDipv06/d11 | 11. Memorandum From the Director, Motion Picture Service, United States Information Agency
+7.0/1000w n=4 frus1917-72PubDipv06/d80 | 80. Message From Secretary of State Rusk to All U.S. Chiefs of Mission
+6.9/1000w n=10 frus1917-72PubDipv08/d151 | 151. Circular Airgram From the United States Information Agency to all Principal USIS Post
+6.7/1000w n=22 frus1977-80v30/d215 | 215. Summary Prepared in the International Communication Agency
+6.4/1000w n=2 frus1961-63v25/d19 | 19. National Security Action Memorandum No. 173
+6.2/1000w n=8 frus1917-72PubDipv07/d118 | 118. Memorandum From the Director, Motion Picture and Television Service, United States In
+6.0/1000w n=8 frus1917-72PubDipv06/d123 | 123. Memorandum From the Assistant Secretary of State for Educational and Cultural Affairs
+5.9/1000w n=6 frus1917-72PubDipv06/d130 | 130. Memorandum From the Director of the United States Information Agency (Murrow) to Pres
+5.8/1000w n=3 frus1961-63v25/d2 | 2. Memorandum From Secretary of State Herter to the President’s Assistant (Persons)
+5.8/1000w n=6 frus1917-72PubDipv07/d69 | 69. Memorandum From the Special Assistant to the Director of the United States Information

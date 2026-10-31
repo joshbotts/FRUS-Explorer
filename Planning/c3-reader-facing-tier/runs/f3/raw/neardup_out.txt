@@ -1,0 +1,24 @@
+frus1949v07p2/d386 nearest frus1951v06p1/d12 hamming 49
+frus1952-54v13p1/d116 nearest frus1917-72PubDipv06/d142 hamming 85
+frus1952-54v12p2/d403 nearest frus1952-54v12p2/d396 hamming 72
+frus1955-57v09/d190 nearest frus1955-57v09/d185 hamming 32
+frus1955-57v09/d207 nearest frus1952-54v02p2/d366 hamming 49
+frus1952-54v14p2/d551 nearest frus1952-54v14p2/d818 hamming 84
+frus1952-54v12p2/d60 nearest frus1952-54v12p2/d52 hamming 82
+frus1952-54v13p2/d992 nearest frus1952-54v16/d270 hamming 68
+frus1958-60v01/d26 nearest frus1958-60v01/d34 hamming 87
+frus1961-63v02/d29 nearest frus1958-60v01/d253 hamming 80
+frus1961-63v01/d265 nearest frus1961-63v03/d93 hamming 81
+frus1961-63v02/d197 nearest frus1961-63v02/d328 hamming 92
+frus1964-68v01/d197 nearest frus1917-72PubDipv07/d37 hamming 72
+frus1917-72PubDipv07/d37 nearest frus1917-72PubDipv07/d16 hamming 67
+frus1952-54v14p2/d820 nearest frus1955-57v23p1/d28 hamming 65
+frus1917-72PubDipv06/d127 nearest frus1955-57v11/d243 hamming 123
+frus1964-68v29p2/d46 nearest frus1958-60v18/d203 hamming 94
+frus1917-72PubDipv07/d73 nearest frus1917-72PubDipv07/d69 hamming 87
+frus1917-72PubDipv08/d31 nearest frus1917-72PubDipv07/d106 hamming 81
+frus1917-72PubDipv08/d146 nearest frus1969-76v13/d286 hamming 91
+frus1917-72PubDipv08/d149 nearest frus1950v06/d185 hamming 78
+frus1969-76v38p2/d105 nearest frus1969-76ve12/d10 hamming 76
+frus1977-80v30/d2 nearest frus1969-76v31/d58 hamming 109
+min pairwise within collection 50 (('frus1955-57v09', 'd190'), ('frus1955-57v09', 'd207'))

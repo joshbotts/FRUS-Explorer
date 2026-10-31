@@ -1,0 +1,24 @@
+63D351 | RG 59 | entry ['A1 1586E'] | NAID 2839192 | Records Relating to National Security Council Policy Papers | https://catalog.archives.gov/id/2839192
+    facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Office of the Secretary. Executive Secretariat.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "26 linear feet, 3 linear inches", "inclusiveStartYear": 1947, "inclusiveEndYear": 1979}
+62D430 | RG 59 | entry ['A1 1586C'] | NAID 2839191 | Subject and Special Files | https://catalog.archives.gov/id/2839191
+    facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Executive Secretariat.", "coverageStartYear": 1952, "coverageEndYear": 1961, "findingAids": ["Index"], "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "4 linear feet, 5 linear inches", "inclusiveStartYear": 1953, "inclusiveEndYear": 1961}
+61D417 | RG 59 | entry ['A1 1261'] | NAID 2103073 | Meeting Summaries and Project Files | https://catalog.archives.gov/id/2103073
+    facts: {"accessStatus": "Unrestricted", "creator": "Department of State. Executive Secretariat.", "predecessors": ["Department of State. Office of the Secretary. Executive Secretariat."], "referenceUnit": "National Archives at College Park - Textual Reference", "useStatus": "Unrestricted", "extent": "2 linear feet, 7 linear inches", "inclusiveStartYear": 1951, "inclusiveEndYear": 1959}
+61D385 NOT IN central-files-index
+66D95 | RG 59 | entry ['A1 1586E'] | NAID 2839192 | Records Relating to National Security Council Policy Papers | https://catalog.archives.gov/id/2839192
+    facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Office of the Secretary. Executive Secretariat.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "26 linear feet, 3 linear inches", "inclusiveStartYear": 1947, "inclusiveEndYear": 1979}
+62D1 | RG 59 | entry ['A1 1583E', 'A1 1583F'] | NAID 2838992 | Records Relating to Activities with the National Security Council | https://catalog.archives.gov/id/2838992
+    facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Policy Planning Council.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "3 linear feet, 1 linear inch", "inclusiveStartYear": 1948, "inclusiveEndYear": 1961}
+64D563 | RG 59 | entry ['A1 558-D'] | NAID 1136548 | Chronological Files | https://catalog.archives.gov/id/1136548
+    facts: {"accessStatus": "Unrestricted", "creator": "Department of State. Policy Planning Council.", "referenceUnit": "National Archives at College Park - Textual Reference", "useStatus": "Unrestricted", "extent": "5 linear feet, 3 linear inches", "inclusiveStartYear": 1947, "inclusiveEndYear": 1962}
+72D415 | RG 59 | entry ['A1 5331'] | NAID 16839115 | Records Relating to the United States-China Ambassadorial Talks | https://catalog.archives.gov/id/16839115
+    facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Bureau of East Asian and Pacific Affairs. Office of Asian Communist Affairs.", "coverageStartYear": 1949, "coverageEndYear": 1968, "referenceUnit": "National Archives at College Park - Textual Reference", "useStatus": "Unrestricted", "extent": "3 linear feet, 11 linear inches", "inclusiveStartYear": 1966, "inclusiveEndYear": 1968}
+62D181 NOT IN central-files-index
+55D339 NOT IN central-files-index
+59D260 | RG 306 | entry ['UD-WW 151', 'UD-WW 197', 'UD-WW 234', 'UD-WW 264', 'UD-WW 287', 'UD-WW 288', 'UD-WW 365', 'UD-WW 366', 'UD-WW 372', 'UD-WW 379', 'UD-WW 382'] | NAID 1257679 | Subject Files | https://catalog.archives.gov/id/1257679
+    facts: {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "U.S. Information Agency. Office of Policy and Plans.", "coverageStartYear": 1949, "coverageEndYear": 1971, "referenceUnit": "National Archives at College Park - Textual Reference", "useStatus": "Restricted - Possibly", "extent": "47 linear feet", "inclusiveStartYear": 1953, "inclusiveEndYear": 1971}
+63D224 NOT IN central-files-index
+62D255 NOT IN central-files-index
+60D322 NOT IN central-files-index
+65F98 NOT IN central-files-index
+lot-claimants row keys: ['claimants', 'lotNumber']

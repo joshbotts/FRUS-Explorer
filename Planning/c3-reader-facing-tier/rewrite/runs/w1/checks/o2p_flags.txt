@@ -1,0 +1,54 @@
+O2' check of w1: 85 numbers in overview.md; 60 traced, 25 weak, 0 untraced.
+TRACE TABLE: 97 rows, from line 7 of trace.md.
+Each flagged number is WEAK (a row holds the value without the word after it) or UNTRACED (no row holds the value). Decide each: TRACED (name the row), NOT A NUMBER, or UNTRACED.
+
+[WEAK] 'one' (value 1, next word 'agency'); nearest row: about 36,000 documents (bottom line 1, Scope, Decisions) | 35,874 | memo line 16; section 1; section 2 "Chosen scope"
+    sentence: A *record group* is the National Archives' numbered grouping of one agency's records, and a *lot file* is a State Department office's papers retired under a lot number.
+[WEAK] 'Fifteen' (value 15, next word 'document'); nearest row: fifteen of the documents from State central decimal files and central files (1950 to 1957; 1967 to 1969; 1970 to 1973; 1977) | 15 (11 + 1 + 1 + 2) | section 9, came-from channel; trace table row "fift
+    sentence: Fifteen of the documents the findings rest on came from these.
+[WEAK] 'Ten' (value 10, next word 'document'); nearest row: ten from Record Group 306 | 10 | section 9; trace table row "eleven from the information agency's records"
+    sentence: Ten of the documents came from here.
+[WEAK] 'One' (value 1, next word 'document'); nearest row: about 36,000 documents (bottom line 1, Scope, Decisions) | 35,874 | memo line 16; section 1; section 2 "Chosen scope"
+    sentence: One document came from here, and I did not match it to a series.
+[WEAK] '2198167' (value 2198167, next word 'date'); nearest row: Alphabetical Files, Policy Planning Council, lot 61 D 167, Record Group 59, entry A1 1583A/B, identifier 2198167, 1948 to 1961, Restricted - Partly; editors' label differs | as listed | section 9 "Lot
+    sentence: Alphabetical Files, Policy Planning Council, State Department lot file 61 D 167, Record Group 59, entry A1 1583A/B, NARA identifier 2198167, dates to , access Restricted - Partly.
+[WEAK] 'Four' (value 4, next word 'document'); nearest row: four documents from presidential libraries (Kennedy, Johnson x2, Nixon) | 4 | section 9
+    sentence: Four documents came from these.
+[WEAK] 'two' (value 2, next word 'that'); nearest row: about 36,000 documents (bottom line 1, Scope, Decisions) | 35,874 | memo line 16; section 1; section 2 "Chosen scope"
+    sentence: The most cited State lots are 84 D 204, which is not in the catalogue data I had, and two that are:
+[WEAK] '7542975' (value 7542975, next word 'subject'); nearest row: Records Relating to the Voice of America, Broadcasting Service, 1948 to 1959, identifier 7542975, Restricted - Partly | as listed | section 9, USIA-created series
+    sentence: Candidate shelves are Records Relating to the Voice of America, Broadcasting Service, to , identifier 7542975, and Subject Files, Office of Policy and Plans, to , identifier 1257679, both Restricted - Partly.
+[WEAK] '1257679' (value 1257679, next word 'both'); nearest row: Subject Files, Office of Policy and Plans, 1953 to 1971, identifier 1257679, Restricted - Partly | as listed (inclusive 1953-1971) | section 9, USIA-created series
+    sentence: Candidate shelves are Records Relating to the Voice of America, Broadcasting Service, to , identifier 7542975, and Subject Files, Office of Policy and Plans, to , identifier 1257679, both Restricted - Partly.
+[WEAK] 'fifty' (value 50, next word 'document'); nearest row: fifty documents in nine volumes for 1941 to 1945 name the Office of War Information | 50 of 8,704; nine volumes | section 4 "Office of War Information"
+    sentence: I did not read the wartime information work, though fifty documents in nine volumes for to name the Office of War Information.
+[WEAK] '50%' (value 50, next word 'will'); nearest row: fifty documents in nine volumes for 1941 to 1945 name the Office of War Information | 50 of 8,704; nine volumes | section 4 "Office of War Information"
+    sentence: He raised the question of whom we are trying to reach and recommended that more thought be given to methods of reaching our audience and to the themes we are trying to put across. > During FY a reduction in the USIS film program by 50% will be necessary because of lack of funds. ### Officials believed Asian audiences follow the winner, respect resolve and read aid as softness Officials wrote of an
+[WEAK] 'six' (value 6, next word 'phrase'); nearest row: six phrases searched | six phrases in the family | section 4 family list
+    sentence: I searched six such phrases, among them "Oriental mind", "Asian psychology" and "Asiatic mind", in the 79 volumes.
+[WEAK] 'seventeen' (value 17, next word 'them'); nearest row: seventeen apply it to reception; fifteen other uses | 17 of 32; 15 of 32; "my reading", "contestable at the margin" | section 4 referent test; section 10 last bullet
+    sentence: In seventeen of them the wording describes how American policy, aid or messaging would be received.
+[WEAK] 'fifteen' (value 15, next word 'it'); nearest row: fifteen of the documents from State central decimal files and central files (1950 to 1957; 1967 to 1969; 1970 to 1973; 1977) | 15 (11 + 1 + 1 + 2) | section 9, came-from channel; trace table row "fift
+    sentence: In fifteen it has other uses, such as an Asian leader's own claim, a remark about negotiators or praise of a general.
+[WEAK] 'about one in thirty-six' (value 1/36, next word 'named'); nearest row: about one in thirty-six (1950s) | 27.8 per 1,000 (1 in 36.0) | section 5
+    sentence: Among dated documents in the 79 volumes, about one in thirty-six in the named the agency or its services, such as its overseas information service or the Voice of America.
+[WEAK] 'About one in twelve' (value 1/12, next word 'did'); nearest row: about one in twelve (1960s) | 84.5 per 1,000 (1 in 11.8) | section 5
+    sentence: About one in twelve did so in the .
+[WEAK] 'half' (value 0.5, next word 'those'); nearest row: 1970s rate nearly as high; nearly half from one volume | 78.1 per 1,000; 138 of 304 (45%) | section 5
+    sentence: The rate is nearly as high, but nearly half of those documents come from one public diplomacy volume, so part of the rise is built into my choice of volumes. > Some of these tasks appear to lie outside the Agency’s appropriate sphere of operations. > > These three country operations absorb nearly fifteen percent of the Agency’s resources available for overseas programming. > Rating of the U.S. as 
+[WEAK] 'one' (value 1, next word 'public'); nearest row: about 36,000 documents (bottom line 1, Scope, Decisions) | 35,874 | memo line 16; section 1; section 2 "Chosen scope"
+    sentence: The rate is nearly as high, but nearly half of those documents come from one public diplomacy volume, so part of the rise is built into my choice of volumes. > Some of these tasks appear to lie outside the Agency’s appropriate sphere of operations. > > These three country operations absorb nearly fifteen percent of the Agency’s resources available for overseas programming. > Rating of the U.S. as 
+[WEAK] 'three' (value 3, next word 'country'); nearest row: "soft power" found in none | 0 of 35,874 | section 3 table, row "soft power"
+    sentence: The rate is nearly as high, but nearly half of those documents come from one public diplomacy volume, so part of the rise is built into my choice of volumes. > Some of these tasks appear to lie outside the Agency’s appropriate sphere of operations. > > These three country operations absorb nearly fifteen percent of the Agency’s resources available for overseas programming. > Rating of the U.S. as 
+[WEAK] 'fifteen' (value 15, next word 'percent'); nearest row: fifteen of the documents from State central decimal files and central files (1950 to 1957; 1967 to 1969; 1970 to 1973; 1977) | 15 (11 + 1 + 1 + 2) | section 9, came-from channel; trace table row "fift
+    sentence: The rate is nearly as high, but nearly half of those documents come from one public diplomacy volume, so part of the rise is built into my choice of volumes. > Some of these tasks appear to lie outside the Agency’s appropriate sphere of operations. > > These three country operations absorb nearly fifteen percent of the Agency’s resources available for overseas programming. > Rating of the U.S. as 
+[WEAK] 'thirteen' (value 13, next word 'saigon'); nearest row: President Magsaysay: Americans misjudge gifts to visitors | note on d361; Q13
+    sentence: The rate is nearly as high, but nearly half of those documents come from one public diplomacy volume, so part of the rise is built into my choice of volumes. > Some of these tasks appear to lie outside the Agency’s appropriate sphere of operations. > > These three country operations absorb nearly fifteen percent of the Agency’s resources available for overseas programming. > Rating of the U.S. as 
+[WEAK] '26 percent' (value 26, next word 'general'); nearest row: Diem convinced Americans do not understand the Oriental mind | note on 1958-1960 Vol I d26; Q14
+    sentence: The rate is nearly as high, but nearly half of those documents come from one public diplomacy volume, so part of the rise is built into my choice of volumes. > Some of these tasks appear to lie outside the Agency’s appropriate sphere of operations. > > These three country operations absorb nearly fifteen percent of the Agency’s resources available for overseas programming. > Rating of the U.S. as 
+[WEAK] '23 percent' (value 23, next word 'college-educated'); nearest row: Finding 4 block 4 | 1917-1972, Volume VIII, Document 31 | Q23
+    sentence: The rate is nearly as high, but nearly half of those documents come from one public diplomacy volume, so part of the rise is built into my choice of volumes. > Some of these tasks appear to lie outside the Agency’s appropriate sphere of operations. > > These three country operations absorb nearly fifteen percent of the Agency’s resources available for overseas programming. > Rating of the U.S. as 
+[WEAK] 'one' (value 1, next word 'on'); nearest row: about 36,000 documents (bottom line 1, Scope, Decisions) | 35,874 | memo line 16; section 1; section 2 "Chosen scope"
+    sentence: The agency proposed to turn "a temporary psychological asset" into a lasting one on that trip .
+[WEAK] 'two' (value 2, next word 'control'); nearest row: about 36,000 documents (bottom line 1, Scope, Decisions) | 35,874 | memo line 16; section 1; section 2 "Chosen scope"
+    sentence: I ran the term searches with two controls: a nonsense string that should find nothing, and "department of state", which should find something.

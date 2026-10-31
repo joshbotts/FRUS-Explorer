@@ -1,0 +1,93 @@
+documents cited by URL in overview: 22
+collection documents: 26
+cited but not in collection: []
+in collection but not cited by URL: [('frus1917-72PubDipv07', 'd171'), ('frus1917-72PubDipv08', 'd92'), ('frus1952-54v12p2', 'd405'), ('frus1952-54v12p2', 'd407')]
+
+L11/12 header-Asia family, 7 info volumes (SCOPE SET A, 42 hits): 42 documents
+
+L13 header-information family, area volumes (SCOPE SET B, 55 hits): 55 documents
+
+L14 bm25 top-30 over 16 regional volumes (SCOPE SET C): 30 documents
+
+L10 broad info x Asia MATCH, corpus-wide (session saw volume counts only; here expanded to documents): 8363 documents
+
+L36/37 survey MATCH, corpus-wide (session saw volume counts and a total only): 320 documents
+
+=== MEMBERSHIP (C = cited by URL in overview; K = in collection) ===
+pair	C	K	Q1	Q2	Q3	Q4	Q5
+frus1917-72PubDipv06/d127	C	K	Y	.	.	Y	.
+frus1917-72PubDipv07/d171	-	K	Y	.	.	Y	.
+frus1917-72PubDipv07/d32	C	K	Y	.	.	Y	Y
+frus1917-72PubDipv07/d73	C	K	Y	.	.	Y	.
+frus1917-72PubDipv08/d143	C	K	Y	.	.	Y	.
+frus1917-72PubDipv08/d146	C	K	Y	.	.	Y	.
+frus1917-72PubDipv08/d149	C	K	Y	.	.	Y	Y
+frus1917-72PubDipv08/d31	C	K	Y	.	.	Y	Y
+frus1917-72PubDipv08/d58	C	K	Y	.	.	Y	.
+frus1917-72PubDipv08/d88	C	K	Y	.	.	.	Y
+frus1917-72PubDipv08/d92	-	K	Y	.	.	Y	.
+frus1950v06/d31	C	K	.	Y	.	Y	.
+frus1952-54v12p2/d403	C	K	.	Y	Y	Y	.
+frus1952-54v12p2/d405	-	K	.	.	Y	Y	.
+frus1952-54v12p2/d407	-	K	.	.	Y	Y	.
+frus1952-54v13p1/d116	C	K	.	.	.	Y	.
+frus1955-57v22/d447	C	K	.	.	Y	Y	.
+frus1961-63v23/d289	C	K	.	Y	Y	Y	.
+frus1964-68v26/d106	C	K	.	Y	.	Y	.
+frus1964-68v27/d386	C	K	.	Y	Y	Y	.
+frus1969-76v19p2/d67	C	K	.	Y	.	Y	Y
+frus1969-76v38p2/d105	C	K	Y	.	.	Y	Y
+frus1977-80v30/d2	C	K	Y	.	.	Y	.
+frus1977-80v30/d79	C	K	Y	.	.	.	.
+frus1977-80v30/d81	C	K	Y	.	.	Y	.
+frus1977-80v30/d83	C	K	Y	.	.	Y	.
+
+Q legend:
+  Q1 = L11/12 header-Asia family, 7 info volumes (SCOPE SET A, 42 hits)
+  Q2 = L13 header-information family, area volumes (SCOPE SET B, 55 hits)
+  Q3 = L14 bm25 top-30 over 16 regional volumes (SCOPE SET C)
+  Q4 = L10 broad info x Asia MATCH, corpus-wide (session saw volume counts only; here expanded to documents)
+  Q5 = L36/37 survey MATCH, corpus-wide (session saw volume counts and a total only)
+
+=== STRICT reach over the document-listing queries Q1-Q3 ===
+frus1917-72PubDipv06/d127: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries ['Q4']
+frus1917-72PubDipv07/d171: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries ['Q4']
+frus1917-72PubDipv07/d32: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries ['Q4', 'Q5']
+frus1917-72PubDipv07/d73: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries ['Q4']
+frus1917-72PubDipv08/d143: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries ['Q4']
+frus1917-72PubDipv08/d146: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries ['Q4']
+frus1917-72PubDipv08/d149: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries ['Q4', 'Q5']
+frus1917-72PubDipv08/d31: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries ['Q4', 'Q5']
+frus1917-72PubDipv08/d58: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries ['Q4']
+frus1917-72PubDipv08/d88: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries ['Q5']
+frus1917-72PubDipv08/d92: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries ['Q4']
+frus1950v06/d31: FTS-REACHED; listing queries ['Q2']; matched by aggregate-only queries ['Q4']
+frus1952-54v12p2/d403: FTS-REACHED; listing queries ['Q2', 'Q3']; matched by aggregate-only queries ['Q4']
+frus1952-54v12p2/d405: FTS-REACHED; listing queries ['Q3']; matched by aggregate-only queries ['Q4']
+frus1952-54v12p2/d407: FTS-REACHED; listing queries ['Q3']; matched by aggregate-only queries ['Q4']
+frus1952-54v13p1/d116: NOT RETURNED BY ANY DOCUMENT-LISTING QUERY; listing queries []; matched by aggregate-only queries ['Q4']
+frus1955-57v22/d447: FTS-REACHED; listing queries ['Q3']; matched by aggregate-only queries ['Q4']
+frus1961-63v23/d289: FTS-REACHED; listing queries ['Q2', 'Q3']; matched by aggregate-only queries ['Q4']
+frus1964-68v26/d106: FTS-REACHED; listing queries ['Q2']; matched by aggregate-only queries ['Q4']
+frus1964-68v27/d386: FTS-REACHED; listing queries ['Q2', 'Q3']; matched by aggregate-only queries ['Q4']
+frus1969-76v19p2/d67: FTS-REACHED; listing queries ['Q2']; matched by aggregate-only queries ['Q4', 'Q5']
+frus1969-76v38p2/d105: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries ['Q4', 'Q5']
+frus1977-80v30/d2: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries ['Q4']
+frus1977-80v30/d79: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries []
+frus1977-80v30/d81: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries ['Q4']
+frus1977-80v30/d83: FTS-REACHED; listing queries ['Q1']; matched by aggregate-only queries ['Q4']
+
+=== COUNTS ===
+1,582 non-apparatus docs in the seven volumes -> 1582
+42 header hits (Q1) -> 42
+55 header hits (Q2) -> 55
+Vietnam-volume rows among the 55 -> 40  of which frus1961-63v01-v04 -> 31
+    frus1961-63v01 5
+    frus1961-63v02 12
+    frus1961-63v03 9
+    frus1961-63v04 5
+320 survey docs (Q5) -> 320
+zzzimpossiblezzz -> []
+non-apparatus rows in the 42 set that are South/Near East (memo says 9):
+   the 9 named all in the 42: True ; 42 minus 9 = 33
+   scope_set_info_volumes.txt has 33 pairs; equals 42 minus 9: True

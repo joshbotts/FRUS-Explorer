@@ -1,0 +1,66 @@
+O2' check of f12: 61 numbers in overview.md; 30 traced, 26 weak, 5 untraced.
+TRACE TABLE: 50 rows, from line 275 of memo.md.
+Each flagged number is WEAK (a row holds the value without the word after it) or UNTRACED (no row holds the value). Decide each: TRACED (name the row), NOT A NUMBER, or UNTRACED.
+
+[WEAK] 'Two' (value 2, next word 'separate'); nearest row: "Twenty-six printed documents", 1950 to 1977 | M-8 (26); M-2 date span
+    sentence: Public Diplomacy, , Where FRUS points for the rest.** Two separate channels, never added together: *Where the printed documents came from.* Most of the 26 documents came from these sources:
+[UNTRACED] 'Record Group 306' (value rg306, next word '')
+    sentence: Information Agency, Record Group 306:
+[WEAK] '42' (value 42, next word 'five'); nearest row: Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / "RG 305" one | M-7 came-from
+    sentence: Director's Subject Files, , Entry A1–42 (five documents);
+[WEAK] 'five' (value 5, next word 'document'); nearest row: Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / "RG 305" one | M-7 came-from
+    sentence: Director's Subject Files, , Entry A1–42 (five documents);
+[WEAK] 'one' (value 1, next word 'entry'); nearest row: Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / "RG 305" one | M-7 came-from
+    sentence: Director's subject files, , Entry UD WW 257 (one) and Entry UD WW 193 (one);
+[WEAK] '207' (value 207, next word 'one'); nearest row: Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / "RG 305" one | M-7 came-from
+    sentence: Office of Policy and Plans, Plans and Operational Policy Staff, Entry P–207 (one);
+[WEAK] '104' (value 104, next word 'two'); nearest row: Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / "RG 305" one | M-7 came-from
+    sentence: Office of the Director, Executive Secretariat, correspondence files, , Entry P–104 (two);
+[WEAK] '7' (value 7, next word 'which'); nearest row: Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / "RG 305" one | M-7 came-from
+    sentence: Office of the Director's subject files for , Entry UD–UP 7, which the edition prints as "RG 305" (one).
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: State Department central files, Record Group 59: decimal files 511.90 ( , informational relations with Asia), 511.51G ( , informational relations with Indochina), 790.5 and 792.5 ( , defence affairs of Asia and of Siam) and 611.98 ( , relations with Indonesia), with the Central Foreign Policy File for (two telegrams).
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: The Operations Coordinating Board files, Lot 61 D 385, in Record Group 59.
+[WEAK] 'five' (value 5, next word 'citation'); nearest row: Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / "RG 305" one | M-7 came-from
+    sentence: Kennedy's correspondence), the Johnson Library (National Security File, Country Files for Indonesia and Thailand, and the Marks Papers) and the Nixon presidential materials (National Security Council files). *What the editors cited without printing.* Only five such citations exist for these documents: the Office of Southeast Asian Affairs' subject files for , Lot 58 D 726 in Record Group 59, Natio
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Kennedy's correspondence), the Johnson Library (National Security File, Country Files for Indonesia and Thailand, and the Marks Papers) and the Nixon presidential materials (National Security Council files). *What the editors cited without printing.* Only five such citations exist for these documents: the Office of Southeast Asian Affairs' subject files for , Lot 58 D 726 in Record Group 59, Natio
+[WEAK] '2544398' (value 2544398, next word 'five'); nearest row: "Only five such citations"; 58 D 726, identifier 2544398, five linear inches, Restricted - Possibly, 1955–1956 | M-7 pointed-at; series-facts
+    sentence: Kennedy's correspondence), the Johnson Library (National Security File, Country Files for Indonesia and Thailand, and the Marks Papers) and the Nixon presidential materials (National Security Council files). *What the editors cited without printing.* Only five such citations exist for these documents: the Office of Southeast Asian Affairs' subject files for , Lot 58 D 726 in Record Group 59, Natio
+[WEAK] 'seven' (value 7, next word 'public-diplomacy'); nearest row: Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / "RG 305" one | M-7 came-from
+    sentence: What this request cannot get from FRUS.** *The words "soft power".* They occur nowhere in the 21 volumes scanned: the seven public-diplomacy and information volumes and fourteen East Asia volumes, .
+[UNTRACED] 'Record Group 306' (value rg306, next word '')
+    sentence: The survey material is filed under "Public Opinion Research" in USIA's Director's Subject Files (Record Group 306, Entry A1–42). *How audiences actually reacted.* FRUS prints American records only. * onward.* None of the corpus's fourteen volumes from onward covers East Asia or public diplomacy. **Scope.** I read the 33 documents in the seven public-diplomacy and information volumes whose headings
+[WEAK] '42' (value 42, next word 'how'); nearest row: Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / "RG 305" one | M-7 came-from
+    sentence: The survey material is filed under "Public Opinion Research" in USIA's Director's Subject Files (Record Group 306, Entry A1–42). *How audiences actually reacted.* FRUS prints American records only. * onward.* None of the corpus's fourteen volumes from onward covers East Asia or public diplomacy. **Scope.** I read the 33 documents in the seven public-diplomacy and information volumes whose headings
+[WEAK] 'fourteen' (value 14, next word 'volume'); nearest row: "the image of American strength, reliability and friendship" (bottom line; Finding 2) | M-4 Q14
+    sentence: The survey material is filed under "Public Opinion Research" in USIA's Director's Subject Files (Record Group 306, Entry A1–42). *How audiences actually reacted.* FRUS prints American records only. * onward.* None of the corpus's fourteen volumes from onward covers East Asia or public diplomacy. **Scope.** I read the 33 documents in the seven public-diplomacy and information volumes whose headings
+[WEAK] 'seven' (value 7, next word 'public-diplomacy'); nearest row: Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / "RG 305" one | M-7 came-from
+    sentence: The survey material is filed under "Public Opinion Research" in USIA's Director's Subject Files (Record Group 306, Entry A1–42). *How audiences actually reacted.* FRUS prints American records only. * onward.* None of the corpus's fourteen volumes from onward covers East Asia or public diplomacy. **Scope.** I read the 33 documents in the seven public-diplomacy and information volumes whose headings
+[WEAK] 'one' (value 1, next word 'case'); nearest row: Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / "RG 305" one | M-7 came-from
+    sentence: I also read documents from fourteen East Asia volumes, , found by heading and ranked word searches and, in one case, by a semantic-neighbour search.
+[WEAK] 'Twenty-six' (value 26, next word 'document'); nearest row: "Twenty-six printed documents", 1950 to 1977 | M-8 (26); M-2 date span
+    sentence: Twenty-six documents form the argument.
+[WEAK] 'about three in four' (value 3/4, next word 'area-volume'); nearest row: "about three in four" area-volume heading hits from Vietnam volumes | M-2 step 5 (40 of 55)
+    sentence: Reading it more broadly, to cover aid and alliance behaviour, would bring in most of the regional volumes, and the evidence would no longer be specifically about persuasion. **Whether Vietnam belongs in a regional question.** Vietnam material outnumbers everything else: about three in four of the area-volume documents whose headings name the information program come from the Vietnam volumes.
+[WEAK] 'thirty' (value 30, next word 'document'); nearest row: "about thirty" in the four 1961–1963 Vietnam volumes | M-2 step 5 (31)
+    sentence: If Vietnam becomes the centre of the study, the four Vietnam volumes of alone hold about thirty documents whose headings name USIA or public affairs. **Whether "the region" includes South Asia.** I excluded it.
+[WEAK] 'one' (value 1, next word 'arm'); nearest row: Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / "RG 305" one | M-7 came-from
+    sentence: The corpus has nothing on this subject after , and I found little between and ; a targeted search of the volumes might fill that gap. ## Findings The first strategy was psychological warfare by local proxy ( ) Early planning treated information as one arm of an anti-communist psychological strategy, carried out through Asian governments and local outlets.
+[WEAK] 'one' (value 1, next word 'that'); nearest row: Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / "RG 305" one | M-7 came-from
+    sentence: It added that the human-rights message was heard as one that "seeks to implant American models on other societies" ( , In Japan the effort turned to editors and economists, dealing with "gut issues rather than some of the frothier aspects of cultural exchange" ( , ## How this was done I worked from a local copy of the FRUS Explorer search index, which holds all 553 volumes.
+[WEAK] 'forty-two' (value 42, next word 'document'); nearest row: Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / "RG 305" one | M-7 came-from
+    sentence: In those volumes I took every document whose heading names an East Asian or Pacific country or USIA's Far East or East Asia office: forty-two documents, of which nine concerned South Asia or the Near East and were set aside.
+[WEAK] 'nine' (value 9, next word 'concerned'); nearest row: 33 documents; 42 with nine set aside; 553 volumes | M-2 step 4; M-1
+    sentence: In those volumes I took every document whose heading names an East Asian or Pacific country or USIA's Far East or East Asia office: forty-two documents, of which nine concerned South Asia or the Near East and were set aside.
+[WEAK] 'forty' (value 40, next word 'document'); nearest row: "about three in four" area-volume heading hits from Vietnam volumes | M-2 step 5 (40 of 55)
+    sentence: I retrieved forty documents whole, read most of them in full, and built the argument on twenty-six.
+[WEAK] 'twenty-one' (value 21, next word 'volume'); nearest row: "soft power" in none of 21 volumes; check phrase in every volume; made-up string in none | M-5
+    sentence: To test the vocabulary I scanned the original edition files of twenty-one volumes, with tags stripped, using a check phrase that must appear and a made-up string that must not.
+[WEAK] 'One' (value 1, next word 'semantic-neighbour'); nearest row: Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / "RG 305" one | M-7 came-from
+    sentence: One semantic-neighbour search, which finds documents with similar overall content, added the Saigon assessment that word searches had not surfaced;
+[WEAK] 'twenty-six' (value 26, next word 'document'); nearest row: "Twenty-six printed documents", 1950 to 1977 | M-8 (26); M-2 date span
+    sentence: Exact counts, queries and the trace from each statement to its source are in the memo. ## Read next The collection "American soft power in East Asia and the Pacific: how officials judged it, " holds the twenty-six documents in finding order, with a note on each and the quoted passages marked.
+[WEAK] 'thirty' (value 30, next word 'so'); nearest row: "about thirty" in the four 1961–1963 Vietnam volumes | M-2 step 5 (31)
+    sentence: USIA's opinion-research reports for Japan, Thailand and Saigon, which would replace officials' summaries with the surveys themselves; a decision on Vietnam, which would let me take in, or set aside, the thirty or so USIA and public affairs documents in the four Vietnam volumes for ; any post- material you hold, since this corpus stops at on this subject.

@@ -1,0 +1,27 @@
+legend: {"keys": {"ar": {"field": "accessRestrictions", "into": "restrictions", "kind": "indexList"}, "as": {"field": "accessStatus", "into": "statuses", "kind": "index"}, "c": {"field": "creator", "into": "headings", "kind": "index"}, "cy0": {"field": "coverageStartYear", "kind": "year"}, "cy1": {"field": "coverageEndYear", "kind": "year"}, "fa": {"field": "findingAids", "into": "findingAidTypes", "kind": "indexList"}, "p": {"field": "predecessors", "into": "headings", "kind": "indexList"}, "ru": {"field": "referenceUnit", "into": "referenceUnits", "kind": "index"}, "ur": {"field": "useRestrictions", "into": "useRestrictions", "kind": "indexList"}, "us": {"field": "useStatus", "into": "statuses", "kind": "index"}, "x": {"field": "extent", "kind": "string"}, "y0": {"field": "inclusiveStartYear", "kind": "year"}, "y1": {"field": "inclusiveEndYear", "kind": "year"}}, "note": "Each `byNaId` row uses one-letter keys. `kind: index`/`indexList` values are offsets into the TOP-LEVEL array named by `into` — note that `as` and `us` share `statuses`, while `ar` uses `restrictions` and `ur` uses `useRestrictions`; the names do not tell you that. `y0`/`y1` are NARA's INCLUSIVE dates and `cy0`/`cy1` its COVERAGE dates, which it publishes for some series only. NEITHER PAIR CONTAINS THE OTHER: naId 604801 is inclusive 1963-1973 and coverage 1947-1964, and across 1,155 RG 59 series carrying both, coverage starts earlier in 880, the same year in 274 and LATER in 1. So a date screen must take the UNIO
+restrictions: ["FOIA (b)(1) National Security", "FOIA (b)(3) Statute", "FOIA (b)(6) Personal Information", "FOIA (b)(4) Trade Secrets and Commercial or Financial Information", "FOIA (b)(7e) Law Enforcement", "FOIA (b)(7) Law Enforcement", "FOIA (b)(9) Geological or Geophysical Information and Data", "FOIA (b)(2) Internal Personnel Rules and Practices"]
+findingAidTypes: ["Folder List", "Index", "Container List"]
+
+== series-facts byNaId rows ==
+40967285 -> {"ar": [0, 2], "as": 2, "c": 397, "ru": 0, "us": 1, "x": "103 linear feet, 1 linear inch", "y0": 1956, "y1": 1972}
+     creator heading: U.S. Information Agency. Office of the Director. Executive Secretariat.
+1257679 -> {"ar": [0], "as": 2, "c": 388, "cy0": 1949, "cy1": 1971, "ru": 0, "us": 3, "x": "47 linear feet", "y0": 1953, "y1": 1971}
+     creator heading: U.S. Information Agency. Office of Policy and Plans.
+2839191 -> {"ar": [0], "as": 2, "c": 248, "cy0": 1952, "cy1": 1961, "fa": [1], "ru": 0, "ur": [0], "us": 3, "x": "4 linear feet, 5 linear inches", "y0": 1953, "y1": 1961}
+     creator heading: Department of State. Executive Secretariat.
+193936 -> NO ROW
+50827304 -> NO ROW
+50809179 -> NO ROW
+1487627 -> {"ar": [0], "as": 2, "c": 284, "cy0": 1975, "cy1": 1981, "fa": [0], "ru": 0, "ur": [0], "us": 3, "x": "14 linear feet", "y0": 1975, "y1": 1981}
+     creator heading: Department of State. Office of the Deputy Secretary of State.
+1127750 -> NO ROW
+721251 -> NO ROW
+1257657 -> NO ROW
+
+== accession-series-index entries holding each NAID ==
+legend: {"a": "asPrinted — NARA's own spelling of the transfer number, verbatim", "i": "prefixInferred — true when the stored string carried no record-group prefix and the shard's own group was used; ABSENT means false", "n": "naId — NARA unique identifier for the series", "t": "title — the series title as NARA describes it"}
+note: Keys are `<record group>/<accession>`, the accession folded to letters and digits (`71 A 6682` -> `71A6682`). THE RECORD GROUP IS PART OF THE KEY AND MUST BE MATCHED: an accession number is unique only within its group — `68A5612` names 1 series in RG 59 and 18 in RG 84 — so a lookup that ignores it answers a State citation with Foreign Service Post records. Every series NARA records under an acce
+Traceback (most recent call last):
+  File "/Users/jbotts/frus-analysis/c3f/runs/f2/refuter/series_facts.py", line 21, in <module>
+    for acc,lst in accs.items():
+AttributeError: 'list' object has no attribute 'items'

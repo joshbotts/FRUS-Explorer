@@ -1,0 +1,20 @@
+{
+ "run": "runs/cal-v2",
+ "arm": "A",
+ "occurrences": [
+  {
+   "file": "memo.md",
+   "line": 144,
+   "figure": "1910-12-06 (the pointed-at channel starts)",
+   "match": "1910-12-06",
+   "context": "**Pointed-at** (external_citations; footnote mentions; many rows per document; no row before 1910-12-06; holds lot, library and decimal anchors only, as the citation fragment):"
+  },
+  {
+   "file": "memo.md",
+   "line": 164,
+   "figure": "11 of 695 (series before 1940)",
+   "match": "11 of 695",
+   "context": "3928, 31 rolls); Notes from the Cuban Legation, 1844–1906 (183303950, 2 rolls); Diplomatic Instructions and Notes to Foreign Missions rolls (no file-unit title in the file). The offline stack barely reaches before 1940 (11 of 695 bundled series); pre-1906 roadmap is the microfilm country series only."
+  }
+ ]
+}

@@ -1,0 +1,24 @@
+O2' check of w12: 55 numbers in overview.md; 45 traced, 10 weak, 0 untraced.
+TRACE TABLE: 53 rows, from line 7 of trace.md.
+Each flagged number is WEAK (a row holds the value without the word after it) or UNTRACED (no row holds the value). Decide each: TRACED (name the row), NOT A NUMBER, or UNTRACED.
+
+[WEAK] 'thirteen' (value 13, next word 'round'); nearest row: "thirteen" (Saigon surveys) | 129 (Q21) | 306
+    sentence: Saigon surveys rated the United States lowest as a dependable ally in thirteen rounds .
+[WEAK] '2,700' (value 2700, next word 'search'); nearest row: "about 2,700" found | 66, 69 (2692) | 284
+    sentence: This rests on 22 documents I read closely, among about 2,700 the search found.
+[WEAK] '42' (value 42, next word 'no'); nearest row: Record Group 306; Entry A1–42; FRC accessions 67 A 222 and 68 A 4933 | 188, 213 | 302
+    sentence: Record Group 306, Entry A1–42; no NARA identifier, dates or access status in the reference lists I used.
+[WEAK] '511' (value 511, next word 'which'); nearest row: Central Decimal File class 511; files 511.90 (Asia), 511.00 (world); came-from 511.90, 511.51G; no NAID for the 1950s file | 189, 194–196, 215, 216 | 301
+    sentence: Central Decimal File, class 511, which the Department's filing scheme for the labels "International Informational and Educational Relations":
+[WEAK] '2839192' (value 2839192, next word 'as'); nearest row: Lot 63 D 351 / 66 D 95: RG 59, Entry A1 1586E, NAID 2839192, 1947–1979, partly restricted; "appears most often in both" | 155, 176, 177, 205 | 296, 303
+    sentence: NARA identifier 2839192, as above.
+[WEAK] '2,700' (value 2700, next word 'document'); nearest row: "about 2,700" found | 66, 69 (2692) | 284
+    sentence: I ran scoping searches pairing the information terms with "survey," "poll" and "office of research" near Asian place names, but did not audit them. **Scope.** I searched every volume of the series and kept about 2,700 documents in 273 volumes, dated through , that pair an information-program term with an East Asian or Pacific place.
+[WEAK] '161' (value 161, next word 'that'); nearest row: "161" matched "USI" (United States of Indonesia) | 64, 67, 68 | 287
+    sentence: I left out editorial notes, front matter and second editions, and dropped documents that matched only on the search's word forms, among them 161 that matched "USI," the period's abbreviation for the United States of Indonesia. ## Decisions this needs from you **Information only, or exchange too.** Counting only the information program and the American image keeps the answer on the United States In
+[WEAK] 'two' (value 2, next word 'document'); nearest row: "added two documents"; "both were already in the found set" | 90, 264 | 293
+    sentence: A measure of how alike documents are in content added two documents near the conference summary; both were already in the found set.
+[WEAK] 'twice' (value 2, next word 'different'); nearest row: "added two documents"; "both were already in the found set" | 90, 264 | 293
+    sentence: The same measure showed three pairs of documents printed twice in different volumes, and I cite each only once.
+[WEAK] 'forty' (value 40, next word 'matching'); nearest row: "the 1949 China volume and the 1955–1957 China microfiche supplement each hold more than forty" | 295, 313 (57 and 43) | 295
+    sentence: Adding exchange programs would answer the cultural side of "soft power," and the China volume and the China microfiche supplement each hold more than forty matching documents that I did not read.

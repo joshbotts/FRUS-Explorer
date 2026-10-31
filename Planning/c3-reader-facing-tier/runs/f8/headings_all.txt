@@ -1,0 +1,95 @@
+frus1945-50Intel | Psychological and Political Warfare | 76 | d241
+frus1945Berlinv02 | General policy; sharing of information on atomic energy | 1 | d1157
+frus1945Malta | Exchange of notes | 4 | d496
+frus1945v01 | Participation by the United States in the establishment of the United Nations Educational, Scientific, and Cultural Organization | 15 | d360
+frus1945v04 | Agreement between the United States and Iceland respecting air transport services, effected by exchange of notes signed January 27, 1945 | 0 | 
+frus1945v04 | Agreement between the United States and Iceland respecting transportation by air of Icelandic passengers and mail, effected by exchange of notes signed January 27 and April 11, 1945 | 0 | 
+frus1945v05 | Agreement between the United States and Norway respecting certain problems of marine transportation and litigation, effected by exchange of notes signed May 29, 1945 | 0 | 
+frus1945v05 | Agreement between the United States and Norway respecting air transport services, effected by exchange of notes signed October 6, 1945 | 0 | 
+frus1945v05 | Agreement between the United States and Poland respecting reciprocal privileges for Foreign Service personnel, effected by exchange of notes signed at Warsaw October 5 and 30, 1945 | 0 | 
+frus1945v05 | Agreement between the United States and Portugal regarding Air Transport Command service to Europe through Portugal, effected by exchange of notes signed at Lisbon, March 27, 1945 | 12 | d312
+frus1945v05 | Military air transport agreement between the United States and Sweden effected by exchange of notes dated March 12, 1945 | 4 | d568
+frus1945v05 | Agreement between the United States and Sweden amending the agreement of December 16, 1944, respecting air transport services, effected by exchange of notes signed at Stockholm December 4, 1945 | 0 | 
+frus1945v06 | Efforts by the United States to arrange a third exchange of American and Japanese nationals | 8 | d293
+frus1945v07 | Financial relations between the United States and China: Efforts to assist in curbing inflation in China; shipment of gold to China; financial settlement of yuan expenditures by United States military forces; Lend-Lease  | 134 | d788
+frus1945v07 | Exchange of views between the United States and China regarding the administration of liberated areas | 6 | d1150
+frus1945v07 | Exchange of views between the United States and China on the future status of Korea and the question of recognizing a provisional Korean Government | 0 | 
+frus1945v08 | Extension of financial and economic assistance by the United States to Saudi Arabia; proposals by the United States to Saudi Arabia for the establishment of a military mission, the construction of an airfield at Dhahran  | 143 | d830
+frus1945v08 | Problem of dollar exchange needed by Syria and Lebanon; discussions regarding an informal request by Syria for a $20,000,000 loan | 2 | d1180
+frus1945v09 | Agreement between the United States and Guatemala amending the agreement of July 15, 1944, respecting an agricultural experiment station, signed March 10, 1945 | 0 | 
+frus1945v09 | Arrangements by the United States and Mexico regarding the temporary migration of agricultural and other workers into the United States | 17 | d919
+frus1946v05 | Agreement between the United States and the United Kingdom relating to marine transportation and litigation, effected by exchange of notes signed at Washington March 25 and May 7, 1946 | 0 | 
+frus1946v05 | Agreement between the United States and Luxembourg regarding mutual aid settlement, effected by exchange of memorandums signed at Luxembourg August 29, 1946 | 0 | 
+frus1946v05 | Agreement between the United States and the Netherlands regarding commercial policy, effected by exchange of notes signed at Washington November 21, 1946 | 0 | 
+frus1946v05 | Agreement between the United States and Portugal regarding Portuguese colonial sisal, effected by exchange of notes signed at Lisbon May 17, 1946 | 0 | 
+frus1946v06 | Concern of the United States over the dispute between Hungary and Czechoslovakia regarding the exchange of populations and revision of frontiers | 10 | d254
+frus1946v07 | Agricultural mission of the United States to various Near Eastern countries | 0 | 
+frus1946v10 | Technical collaboration in agriculture and forestry between the United States and China; China–United States agricultural mission | 18 | d1001
+frus1946v11 | Arrangements by the United States and Mexico regarding the temporary migration of agricultural and other workers into the United States | 11 | d838
+frus1947v01 | United States policy regarding non-self-governing territories outside the United Nations trusteeship system; the question of transmission of information under Article 73(e) of the Charter | 15 | d177
+frus1947v03 | Concern of the United States over the foreign exchange position of the United Kingdom | 59 | d1
+frus1947v03 | AGREEMENT BETWEEN THE UNITED STATES AND SWEDEN RESPECTNG EXCHANGE OF OFFICIAL PUBLICATIONS | 0 | 
+frus1947v06 | Exchange of Ambassadors between the United States and Siam | 0 | 
+frus1947v07 | Council of Foreign Ministers meeting at Moscow: United States opposition to placing China question on agenda; exchange of views between the United States and the Soviet Union regarding withdrawal of troops from China | 22 | d505
+frus1947v07 | Mission to China of Lieutenant General Albert C. Wedemeyer to appraise the political, economic, psychological, and military situation | 82 | d532
+frus1947v07 | Exchange of notes terminating the Sino-American special technical cooperative agreement of April 15, 1943 | 1 | d824
+frus1947v07 | Financial relations between the United States and China: Chinese requests for financial assistance; representations regarding fixing of an equitable rate of exchange for expenditures by American armed forces and diplomat | 160 | d842
+frus1947v07 | Agreement between the United States and China respecting the United States Educational Foundation in China, signed at Nanking, November 10, 1947 | 24 | d1014
+frus1947v08 | Conflicts in United States–Mexican fisheries relations and exchange of views on a proposed fisheries treaty | 6 | d689
+frus1947v08 | Arrangements by the United States and Mexico regarding temporary migration of agricultural and other workers into the United States | 10 | d703
+frus1948v01p1 | The United States and the United Nations conference on freedom of information, held at Geneva, Switzerland, March 23–April 21, 1948 | 1 | d189
+frus1948v01p2 | United States national security policy: estimates of threats to the national security; organization for national security; military posture and foreign policy; the extension of military assistance to foreign nations; eff | 64 | d1
+frus1948v02 | F. Exchanges with the governments of the Soviet Union and Eastern Europe regarding Germany | 23 | d229
+frus1948v04 | Interest of the United States in the dispute between Yugoslavia and the Communist Information Bureau; efforts to reach agreement regarding mutual claims between the United States and Yugoslavia | 49 | d685
+frus1948v05p1 | Information policy of the United States concerning the Arab states; the question of cooperation in this field with the United Kingdom | 1 | d53
+frus1948v06 | Agreement between the United States and New Zealand respecting a United States educational foundation in New Zealand | 0 | 
+frus1948v08 | Financial relations between the United States and China: interest of the United States in Chinese efforts to maintain financial stability; representations regarding fixing of an equitable rate of exchange for expenditure | 74 | d309
+frus1948v08 | III. Exchange of notes by the United States and China on the establishment of the Joint Commission on Rural Reconstruction in China, August 5, 1948 | 25 | d513
+frus1948v08 | Negotiations concerning United States Senate reservation to treaty of friendship, commerce, and navigation signed November 4, 1946, and regarding exchange of interpretative notes | 24 | d641
+frus1948v09 | Arrangements by the United States and Mexico regarding temporary migration of agricultural workers into the United States | 1 | d466
+frus1949v07p1 | Agreement between the United States and Australia respecting a United States educational foundation in Australia | 0 | 
+frus1949v07p1 | Agreement between the United States and New Zealand respecting a United States educational foundation in New Zealand | 0 | 
+frus1949v08 | II. Consulates General at Peiping and Tientsin: Refusal of Chinese Communists to deal with Consulates without recognition; closing of offices of United States Information Service; imposition of taxes on consular properti | 101 | d1301
+frus1949v08 | III. Hankow and Tsingtao: Refusal of Communists to deal with Consulates; closing of United States Information Service offices; closure of Consulate at Hankow and withdrawal of staff; closure of Consulate at Tsingtao; sei | 66 | d1402
+frus1949v08 | IV. Shanghai: Claims of ex-Navy employees leading to siege and occupation of Consulate General for few days; Colling case; Gould-Miner case; arrest of Vice Consul William M. Olive; closure of United States Information Se | 190 | d1468
+frus1949v09 | I. Preliminary exchanges with the British; efforts to develop a “commonfront” policy; Anglo-American consulation during July and August; Anglo-American conversations at Washington in September (January–September) | 96 | d1
+frus1950v01 | II. United States concern at the discriminatory aspects of exchange and import restrictions maintained by the Union of South Africa. | 7 | d244
+frus1950v02 | Attitude of the United States toward the Lie twenty-year peace plan, Soviet peace propaganda at the United Nations, and related matters | 39 | d217
+frus1950v02 | II. The draft convention on freedom of information, and related items | 4 | d304
+frus1950v04 | Attitude and response of the United States to the Soviet “Peace Offensive”; efforts to strengthen the United States information program, particularly the Voice of America | 41 | d122
+frus1951v01 | The United States international information program | 18 | d318
+frus1951v01 | V. Representations by Other Governments to the United States Regarding Section 104 of the Defense Production Act Amendments of 1951, and Section 22 of the Agricultural Adjustment Act of 1933, as Amended (The Sixth Sessio | 39 | d606
+frus1951v02 | Attitude of the United States toward Soviet peace propaganda at the United Nations, and related matters | 0 | 
+frus1951v02 | III. The Draft Convention on Freedom of Information | 13 | d523
+frus1951v03p1 | A. Exchanges of notes among the Four Powers, and related activities, November 1950–March 1951 | 19 | d569
+frus1951v04p2 | General policies and problems in United States relations with Eastern Europe and the Soviet Union; efforts of the United States to assure fulfillment of the treaties of peace with Bulgaria, Hungary, and Romania; civil av | 59 | d135
+frus1952-54v02p2 | The United States Foreign Information Program | 76 | d294
+frus1952-54v02p2 | The Report of the President’s Committee on International Information Activities, June 30, 1953 | 5 | d370
+frus1952-54v03 | II. Underlying issues at the United Nations and diplomatic exchanges between the United States and other Administering Authorities regarding certain of these issues | 94 | d807
+frus1952-54v03 | A. The United States decision to cease transmission of information under Article 73(e) of the Charter in respect of Puerto Rico | 30 | d901
+frus1952-54v06p1 | United States Attitude Toward European Agricultural Integration | 17 | d235
+frus1952-54v06p1 | D. Continuing Relations With the United Kindgom, March 1953–December 1954; Prime Minister Churchill’s Correspondence With President Eisenhower; U.S. Concern Over Prime Minister Churchill’s Health; Secretary Dulles’ Visit | 62 | d392
+frus1952-54v07p1 | II. Exchanges of Notes with the Soviet Union Concerning a German Peace Treaty, German Unity, and All-German Elections, March 10–September 23, 1952 | 0 | 
+frus1952-54v07p1 | VISITS OF WEST GERMAN OFFICIALS TO THE UNITED STATES, INTEREST OF THE UNITED STATES IN THE OUTCOME OF THE FEDERAL ELECTIONS, SEPTEMBER 6, 1953; UNITED STATES ECONOMIC ASSISTANCE; POSITION OF THE UNITED STATES WITH RESPEC | 117 | d140
+frus1952-54v07p1 | 1. Exchanges of notes with the Soviet Union, July 15, 1953–January 1, 1954 | 34 | d257
+frus1952-54v07p1 | E. FURTHER EXCHANGES OF NOTES WITH THE SOVIET UNION CONCERNING EUROPEAN SECURITY AND THE GERMAN QUESTION | 1 | d531
+frus1955-57v05 | Diplomatic Exchanges and Multilateral Discussions Concerning the Possibility of a Meeting of the Heads of Government, May 6–June 4, 1955 | 30 | d103
+frus1955-57v09 | United States Foreign Information Program | 26 | d184
+frus1955-57v19 | Basic National Security Policy; Estimates of Threats to the National Security; Military Posture, Strategy, and Weapons Development; Missile Programs; Scientific and Technological Capabilities; Concern for Continental and | 174 | d1
+frus1955-57v20 | Review of Basic Disarmament Policy; Negotiations in the Subcommittee of the United Nations Disarmament Commission; Proposals for Inspection and Verification; Nuclear Weapons Tests; Effects of Fall-Out From Nuclear Explos | 317 | d1
+frus1955-57v24 | East-West Exchanges | 0 | 
+frus1955-57v24 | United States Policy in Establishing a Program of Exchange of Information and Persons With the Soviet Bloc | 23 | d92
+frus1955-57v25 | Aftermath of the Polish Crisis and the Hungarian Rebellion, November 1956–February 1957: Inquiries into the Alleged Role of U.S. Radio Broadcasting in the Hungarian Rebellion; U.S. Relief Assistance to Hungary and the Re | 53 | d183
+frus1955-57v27 | Joint Defense Arrangements; Negotiations Relating to Trade, Agricultural Products, and Waterways; U.S. Concern Over Rising Nationalism and Possible Changes of Policy By the New Conservative Government | 40 | d340
+frus1958-60v08 | January–March 1959: Further Exchanges of Notes Leading to the Proposal for a Foreign Ministers Meeting on Berlin | 0 | 
+frus1958-60v10p2 | East-West Exchanges | 0 | 
+frus1958-60v10p2 | Establishment of a Program of Exchange of Information and Persons with the Soviet Bloc | 30 | d1
+frus1961-63v04 | III. The Coup Against the Diem Government, October 23–November 2, 1963: Differing Interpretations of U.S. Policy Toward Coup Plotting, Efforts To Obtain Information on a Potential Coup, Lodge-Diem Discussions, U.S. Asses | 70 | d209
+frus1961-63v06 | Kennedy-Khrushchev Exchanges | 120 | d1
+frus1961-63v25 | Information Policy | 44 | d116
+frus1969-76v31 | The End of Fixed Exchange Rates, January–March 1973 | 37 | d1
+frus1969-76v38p2 | Organization and Management of Foreign Policy; Public Diplomacy, 1973–1976 | 0 | 
+frus1969-76v38p2 | International Information Policy, Public Diplomacy, and Cultural Affairs | 30 | d84
+frus1977-80v20 | Radio Free Europe, Radio Liberty, and Voice of America | 36 | d45
+frus1977-80v28 | USIA Reorganization | 6 | d135
+frus1977-80v30 | Public Diplomacy | 215 | d1

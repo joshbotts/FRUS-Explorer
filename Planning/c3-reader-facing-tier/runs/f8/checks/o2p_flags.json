@@ -1,0 +1,675 @@
+{
+ "run": "runs/f8",
+ "traceSource": "runs/f8/memo.md",
+ "traceTableLine": 200,
+ "traceRows": 24,
+ "mentions": 60,
+ "counts": {
+  "traced": 15,
+  "weak": 13,
+  "untraced": 32
+ },
+ "list": [
+  {
+   "text": "twenty-two",
+   "values": [
+    "22"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"twenty-two documents\" | M11",
+   "sentence": "The finding rests on twenty-two documents, read whole, from eighty-six volumes."
+  },
+  {
+   "text": "eighty-six",
+   "values": [
+    "86"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"eighty-six volumes\", \"about 40,500 documents\" | M4 (40,529)",
+   "sentence": "The finding rests on twenty-two documents, read whole, from eighty-six volumes."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Records Relating to National Security Council Policy Papers (Executive Secretariat), Record Group 59, entry A1 1586E, NARA identifier 2839192, , partly restricted; holds the information-program progress reports to the National Security Council and the Thailand plan's file."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Records Relating to National Security Council Policy Papers (Executive Secretariat), Record Group 59, entry A1 1586E, NARA identifier 2839192, , partly restricted; holds the information-program progress reports to the National Security Council and the Thailand plan's file."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Records Relating to National Security Council Policy Papers (Executive Secretariat), Record Group 59, entry A1 1586E, NARA identifier 2839192, , partly restricted; holds the information-program progress reports to the National Security Council and the Thailand plan's file."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Subject and Special Files (Operations Coordinating Board), Record Group 59, entry A1 1586C, NARA identifier 2839191, , partly restricted; holds the country plans such as Burma's."
+  },
+  {
+   "text": "A1 1586C",
+   "values": [
+    "a11586c"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Subject and Special Files (Operations Coordinating Board), Record Group 59, entry A1 1586C, NARA identifier 2839191, , partly restricted; holds the country plans such as Burma's."
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Subject and Special Files (Operations Coordinating Board), Record Group 59, entry A1 1586C, NARA identifier 2839191, , partly restricted; holds the country plans such as Burma's."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Department of State Central Files (decimal file, then the subject-numeric file from , then the Central Foreign Policy File), Record Group 59; the bundled indexes give no NARA identifier for these years."
+  },
+  {
+   "text": "591194",
+   "values": [
+    "591194"
+   ],
+   "next": "access",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "National Security Files, Vietnam Country Files, Johnson Library, NARA identifier 591194, ; access not recorded in the bundled indexes."
+  },
+  {
+   "text": "12005682",
+   "values": [
+    "12005682"
+   ],
+   "next": "access",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "White House Central Files, Confidential Files, Johnson Library, NARA identifier 12005682, ; access not recorded."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Director's Subject Files, , Record Group 306, entry A1–42; no NARA identifier in the bundled indexes."
+  },
+  {
+   "text": "42",
+   "values": [
+    "42"
+   ],
+   "next": "no",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Director's Subject Files, , Record Group 306, entry A1–42; no NARA identifier in the bundled indexes."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Office of Policy and Plans subject files, Record Group 306, entry P–207; no NARA identifier in the bundled indexes."
+  },
+  {
+   "text": "207",
+   "values": [
+    "207"
+   ],
+   "next": "no",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Office of Policy and Plans subject files, Record Group 306, entry P–207; no NARA identifier in the bundled indexes."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints \"RG 305\"), accession 306–84–0003, which the bundled index splits between Correspondence Files (NARA identifier 5552237) and Memorandums Pertaining to the Executive Committee (5585931); dates and access not recorded."
+  },
+  {
+   "text": "RG 305",
+   "values": [
+    "rg305"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints \"RG 305\"), accession 306–84–0003, which the bundled index splits between Correspondence Files (NARA identifier 5552237) and Memorandums Pertaining to the Executive Committee (5585931); dates and access not recorded."
+  },
+  {
+   "text": "306",
+   "values": [
+    "306"
+   ],
+   "next": "which",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints \"RG 305\"), accession 306–84–0003, which the bundled index splits between Correspondence Files (NARA identifier 5552237) and Memorandums Pertaining to the Executive Committee (5585931); dates and access not recorded."
+  },
+  {
+   "text": "84",
+   "values": [
+    "84"
+   ],
+   "next": "which",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints \"RG 305\"), accession 306–84–0003, which the bundled index splits between Correspondence Files (NARA identifier 5552237) and Memorandums Pertaining to the Executive Committee (5585931); dates and access not recorded."
+  },
+  {
+   "text": "0003",
+   "values": [
+    "0003"
+   ],
+   "next": "which",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints \"RG 305\"), accession 306–84–0003, which the bundled index splits between Correspondence Files (NARA identifier 5552237) and Memorandums Pertaining to the Executive Committee (5585931); dates and access not recorded."
+  },
+  {
+   "text": "5552237",
+   "values": [
+    "5552237"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints \"RG 305\"), accession 306–84–0003, which the bundled index splits between Correspondence Files (NARA identifier 5552237) and Memorandums Pertaining to the Executive Committee (5585931); dates and access not recorded."
+  },
+  {
+   "text": "5585931",
+   "values": [
+    "5585931"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints \"RG 305\"), accession 306–84–0003, which the bundled index splits between Correspondence Files (NARA identifier 5552237) and Memorandums Pertaining to the Executive Committee (5585931); dates and access not recorded."
+  },
+  {
+   "text": "591256",
+   "values": [
+    "591256"
+   ],
+   "next": "probably",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Plains Files, Carter Library, collection NARA identifier 591256, probably its Subject Files (591289), ;"
+  },
+  {
+   "text": "591289",
+   "values": [
+    "591289"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Plains Files, Carter Library, collection NARA identifier 591256, probably its Subject Files (591289), ;"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Psychological Strategy Board Working Files, Record Group 59, entry A1 1462, NARA identifier 2124692, , possibly restricted; holds the drafts of the Thailand psychological strategy."
+  },
+  {
+   "text": "A1 1462",
+   "values": [
+    "a11462"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Psychological Strategy Board Working Files, Record Group 59, entry A1 1462, NARA identifier 2124692, , possibly restricted; holds the drafts of the Thailand psychological strategy."
+  },
+  {
+   "text": "2124692",
+   "values": [
+    "2124692"
+   ],
+   "next": "possibly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Psychological Strategy Board Working Files, Record Group 59, entry A1 1462, NARA identifier 2124692, , possibly restricted; holds the drafts of the Thailand psychological strategy."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Office of Policy and Plans, Subject Files, Record Group 306, entries UD-WW 151 to UD-WW 382, NARA identifier 1257679, , partly restricted; the editors cite its files on the Suez crisis and on nuclear testing."
+  },
+  {
+   "text": "WW 151",
+   "values": [
+    "ww151"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Office of Policy and Plans, Subject Files, Record Group 306, entries UD-WW 151 to UD-WW 382, NARA identifier 1257679, , partly restricted; the editors cite its files on the Suez crisis and on nuclear testing."
+  },
+  {
+   "text": "WW 382",
+   "values": [
+    "ww382"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Office of Policy and Plans, Subject Files, Record Group 306, entries UD-WW 151 to UD-WW 382, NARA identifier 1257679, , partly restricted; the editors cite its files on the Suez crisis and on nuclear testing."
+  },
+  {
+   "text": "1257679",
+   "values": [
+    "1257679"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Office of Policy and Plans, Subject Files, Record Group 306, entries UD-WW 151 to UD-WW 382, NARA identifier 1257679, , partly restricted; the editors cite its files on the Suez crisis and on nuclear testing."
+  },
+  {
+   "text": "60 D 322",
+   "values": [
+    "60d322"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency files retired as lots 60 D 322 and 62 D 255; the bundled indexes give no NARA identifier."
+  },
+  {
+   "text": "62 D 255",
+   "values": [
+    "62d255"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency files retired as lots 60 D 322 and 62 D 255; the bundled indexes give no NARA identifier."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Department of State Central Files, the information-program file of (Record Group 59); among it, the other posts' replies to the circular asking ambassadors to judge their information programs, of which FRUS prints one."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"about one in fifty\" (1950s) | M7 (21.2 per 1,000 = 275 of 12,972)",
+   "sentence": "Department of State Central Files, the information-program file of (Record Group 59); among it, the other posts' replies to the circular asking ambassadors to judge their information programs, of which FRUS prints one."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"all 553 volumes\" (coverage) | M1",
+   "sentence": "What this request cannot get from FRUS.** The phrase \"soft power\" appears in none of the 553 volumes;"
+  },
+  {
+   "text": "eighty-six",
+   "values": [
+    "86"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"eighty-six volumes\", \"about 40,500 documents\" | M4 (40,529)",
+   "sentence": "I searched for opinion polls and opinion or attitude surveys alongside the information agency across all eighty-six volumes, with the same two controls."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "control",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"the same two controls\" / \"a phrase found in every volume and a nonsense control found in none\" | Section 3.4 (positive 86 of 86 volumes; negative 0) and M5",
+   "sentence": "I searched for opinion polls and opinion or attitude surveys alongside the information agency across all eighty-six volumes, with the same two controls."
+  },
+  {
+   "text": "thirty",
+   "values": [
+    "30"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"fewer than thirty documents\", \"one of them\" in a regional volume | M9 (27; 1)",
+   "sentence": "I found fewer than thirty documents, and only one of them in a regional volume."
+  },
+  {
+   "text": "seventy-five",
+   "values": [
+    "75"
+   ],
+   "next": "regional",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"seventy-five regional volumes\" | Section 2 inclusion rule; M2",
+   "sentence": "What Asians thought reaches FRUS only through American reporting. **Scope.** I searched seventy-five regional volumes on East Asia and the Pacific from , about 37,200 documents, and eleven thematic volumes on information and public diplomacy, about 3,300 documents."
+  },
+  {
+   "text": "37,200",
+   "values": [
+    "37200"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"about 37,200 documents\" (regional) | M2 (37,203)",
+   "sentence": "What Asians thought reaches FRUS only through American reporting. **Scope.** I searched seventy-five regional volumes on East Asia and the Pacific from , about 37,200 documents, and eleven thematic volumes on information and public diplomacy, about 3,300 documents."
+  },
+  {
+   "text": "eleven",
+   "values": [
+    "11"
+   ],
+   "next": "thematic",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"eleven thematic volumes\" | M3",
+   "sentence": "What Asians thought reaches FRUS only through American reporting. **Scope.** I searched seventy-five regional volumes on East Asia and the Pacific from , about 37,200 documents, and eleven thematic volumes on information and public diplomacy, about 3,300 documents."
+  },
+  {
+   "text": "3,300",
+   "values": [
+    "3300"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"about 3,300 documents\" (thematic) | M3 (3,326)",
+   "sentence": "What Asians thought reaches FRUS only through American reporting. **Scope.** I searched seventy-five regional volumes on East Asia and the Pacific from , about 37,200 documents, and eleven thematic volumes on information and public diplomacy, about 3,300 documents."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "caveat",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\" (coverage) | M1",
+   "sentence": "\"One caveat:"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "saw",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\" (coverage) | M1",
+   "sentence": "In one saw a \"curious ambivalence in Japanese character\" after the fishing boat was caught in American nuclear fallout ."
+  },
+  {
+   "text": "100",
+   "values": [
+    "100"
+   ],
+   "next": "million",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"100 million\" (inside Q34) | Q34",
+   "sentence": "The clearest measured success in this record is a broadcast audience: > Since the cessation of jamming in , VOA’s Chinese audiences have grown rapidly and are now estimated to number over 100 million listeners. ## How this was done I used the series' complete index of 553 volumes and searched it in the period's own vocabulary, which I took from the editors' chapter headings: information program, psychological warfare and strategy, the information agency, Voice of America and public diplomacy."
+  },
+  {
+   "text": "million",
+   "values": [
+    "1000000"
+   ],
+   "next": "listener",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"100 million\" (inside Q34) | Q34",
+   "sentence": "The clearest measured success in this record is a broadcast audience: > Since the cessation of jamming in , VOA’s Chinese audiences have grown rapidly and are now estimated to number over 100 million listeners. ## How this was done I used the series' complete index of 553 volumes and searched it in the period's own vocabulary, which I took from the editors' chapter headings: information program, psychological warfare and strategy, the information agency, Voice of America and public diplomacy."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"all 553 volumes\" (coverage) | M1",
+   "sentence": "The clearest measured success in this record is a broadcast audience: > Since the cessation of jamming in , VOA’s Chinese audiences have grown rapidly and are now estimated to number over 100 million listeners. ## How this was done I used the series' complete index of 553 volumes and searched it in the period's own vocabulary, which I took from the editors' chapter headings: information program, psychological warfare and strategy, the information agency, Voice of America and public diplomacy."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "abbreviation",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\" (coverage) | M1",
+   "sentence": "One abbreviation for the information service was set aside, because the search also matched the initials of the United States of Indonesia."
+  },
+  {
+   "text": "700",
+   "values": [
+    "700"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"about 700 documents\" in \"sixty-nine of the seventy-five\" volumes | M6 (701; 69 of 75)",
+   "sentence": "Within the regional volumes these searches found about 700 documents in sixty-nine of the seventy-five volumes."
+  },
+  {
+   "text": "sixty-nine",
+   "values": [
+    "69"
+   ],
+   "next": "seventy-five",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about 700 documents\" in \"sixty-nine of the seventy-five\" volumes | M6 (701; 69 of 75)",
+   "sentence": "Within the regional volumes these searches found about 700 documents in sixty-nine of the seventy-five volumes."
+  },
+  {
+   "text": "seventy-five",
+   "values": [
+    "75"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"seventy-five regional volumes\" | Section 2 inclusion rule; M2",
+   "sentence": "Within the regional volumes these searches found about 700 documents in sixty-nine of the seventy-five volumes."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "dated",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\" (coverage) | M1",
+   "sentence": "They make up about one dated document in fifty in the and about one in twenty-three in the ."
+  },
+  {
+   "text": "fifty",
+   "values": [
+    "50"
+   ],
+   "next": "one",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about one in fifty\" (1950s) | M7 (21.2 per 1,000 = 275 of 12,972)",
+   "sentence": "They make up about one dated document in fifty in the and about one in twenty-three in the ."
+  },
+  {
+   "text": "about one in twenty-three",
+   "values": [
+    "1",
+    "23"
+   ],
+   "next": "",
+   "kind": "ratio",
+   "class": "traced",
+   "row": "\"about one in twenty-three\" (1960s) | M8 (44.3 per 1,000 = 311 of 7,028)",
+   "sentence": "They make up about one dated document in fifty in the and about one in twenty-three in the ."
+  },
+  {
+   "text": "fifty-one",
+   "values": [
+    "51"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"fifty-one documents\" read whole | M10",
+   "sentence": "I ranked candidates, read fifty-one documents whole, and quoted from twenty-two; all thirty-four quotations were checked word for word against the stored text."
+  },
+  {
+   "text": "twenty-two",
+   "values": [
+    "22"
+   ],
+   "next": "all",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"twenty-two documents\" | M11",
+   "sentence": "I ranked candidates, read fifty-one documents whole, and quoted from twenty-two; all thirty-four quotations were checked word for word against the stored text."
+  },
+  {
+   "text": "thirty-four",
+   "values": [
+    "34"
+   ],
+   "next": "quotation",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"100 million\" (inside Q34) | Q34",
+   "sentence": "I ranked candidates, read fifty-one documents whole, and quoted from twenty-two; all thirty-four quotations were checked word for word against the stored text."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "key",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"two key memoranda\" (similarity anchors) | Section 7 (anchors frus1917-72PubDipv08/d31, frus1969-76v38p2/d105)",
+   "sentence": "I also asked which documents most resemble two key memoranda, by no word search."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"one document I had already found\" | Section 7 (frus1952-54v13p1/d116 at 88 from d31)",
+   "sentence": "That surfaced one document I had already found and none that I cite for the first time."
+  }
+ ]
+}

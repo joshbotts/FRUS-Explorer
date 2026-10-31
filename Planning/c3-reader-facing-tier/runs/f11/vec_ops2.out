@@ -1,0 +1,51 @@
+== CENTROID SIMILARITY (semantic-vectors-binary.bin centroid block; first 553 = volumes in index order; raw cosine; random-volume-pair baseline below)
+baseline random volume pairs: mean 0.905 sd 0.032 p99 0.974
+/Users/jbotts/frus-analysis/c3f/runs/f11/vec_ops2.py:21: RuntimeWarning: divide by zero encountered in matmul
+  i=vl.index(a); s=C[:553]@C[i]; s[i]=-1; o=np.argsort(-s)[:8]
+/Users/jbotts/frus-analysis/c3f/runs/f11/vec_ops2.py:21: RuntimeWarning: overflow encountered in matmul
+  i=vl.index(a); s=C[:553]@C[i]; s[i]=-1; o=np.argsort(-s)[:8]
+/Users/jbotts/frus-analysis/c3f/runs/f11/vec_ops2.py:21: RuntimeWarning: invalid value encountered in matmul
+  i=vl.index(a); s=C[:553]@C[i]; s[i]=-1; o=np.argsort(-s)[:8]
+frus1917-72PubDipv08 -> [('frus1917-72PubDipv07', 0.981), ('frus1917-72PubDipv06', 0.977), ('frus1977-80v30', 0.976), ('frus1969-76v38p2', 0.965), ('frus1969-76v02', 0.962), ('frus1961-63v25', 0.962), ('frus1964-68v33', 0.961), ('frus1969-76ve01', 0.961)]
+frus1977-80v30 -> [('frus1917-72PubDipv08', 0.976), ('frus1917-72PubDipv07', 0.973), ('frus1917-72PubDipv06', 0.97), ('frus1977-80v28', 0.962), ('frus1969-76v38p2', 0.961), ('frus1977-80v20', 0.956), ('frus1961-63v25', 0.955), ('frus1977-80v02', 0.953)]
+frus1964-68v27 -> [('frus1961-63v23', 0.98), ('frus1969-76v20', 0.976), ('frus1964-68v01', 0.973), ('frus1964-68v02', 0.971), ('frus1977-80v22', 0.971), ('frus1955-57v21', 0.971), ('frus1958-60v16', 0.969), ('frus1964-68v04', 0.968)]
+
+== MAP (semantic-map.bin placements; cluster labels from semantic-map-index.json)
+map-index keys ['clusters', 'documentCount', 'generated', 'gridExtent', 'layout', 'provenanceDigest', 'schema']
+corpus unclustered: 88059 of 314616 (28.0%)
+  frus1949v07p2/d386 cluster 20 ['grc', 'formosa', 'chiang', 'taiwan']
+  frus1952-54v12p2/d403 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+  frus1955-57v09/d189 cluster 115 ['edc', 'nato', 'nuclear', 'soviet']
+  frus1917-72PubDipv06/d135 cluster 20 ['grc', 'formosa', 'chiang', 'taiwan']
+  frus1917-72PubDipv08/d24 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+  frus1950v06/d89 cluster UNCLUSTERED 
+  frus1958-60v16/d65 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+  frus1917-72PubDipv07/d32 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+  frus1964-68v29p2/d46 cluster 7 ['japanese', 'sato', 'japan', 'kishi']
+  frus1955-57v09/d190 cluster 138 ['cia', 'nsc', 'usia', 'inglis']
+  frus1955-57v09/d207 cluster UNCLUSTERED 
+  frus1964-68v01/d197 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+  frus1917-72PubDipv07/d73 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+  frus1917-72PubDipv07/d100 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+  frus1917-72PubDipv08/d88 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+  frus1964-68v29p2/d123 cluster 7 ['japanese', 'sato', 'japan', 'kishi']
+  frus1917-72PubDipv08/d31 cluster UNCLUSTERED 
+  frus1917-72PubDipv08/d149 cluster UNCLUSTERED 
+  frus1969-76ve12/d10 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+  frus1969-76v38p2/d105 cluster UNCLUSTERED 
+  frus1977-80v22/d104 cluster UNCLUSTERED 
+  frus1977-80v30/d79 cluster UNCLUSTERED 
+  frus1977-80v30/d81 cluster 138 ['cia', 'nsc', 'usia', 'inglis']
+  frus1977-80v30/d83 cluster UNCLUSTERED 
+  frus1977-80v30/d152 cluster 103 ['kissinger', 'chou', 'taiwan', 'huang']
+collection unclustered: 8 of 25
+scope-volume baseline (76 volumes, all rows incl. apparatus): unclustered 6079 of 33206 (18.3%)
+
+== SEMANTIC JOIN: top-60 Hamming neighbours of frus1969-76v38p2/d105 into document_dates and document_sources
+decades: [('1940s', 2), ('1950s', 24), ('1960s', 14), ('1970s', 19), ('1980s', 1)]
+came-from (repository, RG): [(('Department of State', '59'), 32), (('National Archives', '59'), 8), (('Ford Library', None), 5), ((None, None), 4), (('Nixon Presidential Materials', None), 3), (('Carter Library', None), 2)]
+not in db: 0 ; outside the 76-volume scope: 11 ; nearest 76 60th 96
+
+== NEAR-DUPLICATE SCAN among the 25 collection documents (min Hamming over all pairs)
+closest 5 pairs: [(50, ('frus1955-57v09', 'd190'), ('frus1955-57v09', 'd207')), (70, ('frus1949v07p2', 'd386'), ('frus1958-60v16', 'd65')), (76, ('frus1969-76ve12', 'd10'), ('frus1969-76v38p2', 'd105')), (77, ('frus1958-60v16', 'd65'), ('frus1969-76v38p2', 'd105')), (79, ('frus1950v06', 'd89'), ('frus1958-60v16', 'd65'))]
+median pair distance 129.0

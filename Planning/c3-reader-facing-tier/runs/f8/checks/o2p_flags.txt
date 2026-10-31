@@ -1,0 +1,94 @@
+O2' check of f8: 60 numbers in overview.md; 15 traced, 13 weak, 32 untraced.
+TRACE TABLE: 24 rows, from line 200 of memo.md.
+Each flagged number is WEAK (a row holds the value without the word after it) or UNTRACED (no row holds the value). Decide each: TRACED (name the row), NOT A NUMBER, or UNTRACED.
+
+[WEAK] 'twenty-two' (value 22, next word 'document'); nearest row: "twenty-two documents" | M11
+    sentence: The finding rests on twenty-two documents, read whole, from eighty-six volumes.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Records Relating to National Security Council Policy Papers (Executive Secretariat), Record Group 59, entry A1 1586E, NARA identifier 2839192, , partly restricted; holds the information-program progress reports to the National Security Council and the Thailand plan's file.
+[UNTRACED] 'A1 1586E' (value a11586e, next word '')
+    sentence: Records Relating to National Security Council Policy Papers (Executive Secretariat), Record Group 59, entry A1 1586E, NARA identifier 2839192, , partly restricted; holds the information-program progress reports to the National Security Council and the Thailand plan's file.
+[UNTRACED] '2839192' (value 2839192, next word 'partly')
+    sentence: Records Relating to National Security Council Policy Papers (Executive Secretariat), Record Group 59, entry A1 1586E, NARA identifier 2839192, , partly restricted; holds the information-program progress reports to the National Security Council and the Thailand plan's file.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Subject and Special Files (Operations Coordinating Board), Record Group 59, entry A1 1586C, NARA identifier 2839191, , partly restricted; holds the country plans such as Burma's.
+[UNTRACED] 'A1 1586C' (value a11586c, next word '')
+    sentence: Subject and Special Files (Operations Coordinating Board), Record Group 59, entry A1 1586C, NARA identifier 2839191, , partly restricted; holds the country plans such as Burma's.
+[UNTRACED] '2839191' (value 2839191, next word 'partly')
+    sentence: Subject and Special Files (Operations Coordinating Board), Record Group 59, entry A1 1586C, NARA identifier 2839191, , partly restricted; holds the country plans such as Burma's.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Department of State Central Files (decimal file, then the subject-numeric file from , then the Central Foreign Policy File), Record Group 59; the bundled indexes give no NARA identifier for these years.
+[UNTRACED] '591194' (value 591194, next word 'access')
+    sentence: National Security Files, Vietnam Country Files, Johnson Library, NARA identifier 591194, ; access not recorded in the bundled indexes.
+[UNTRACED] '12005682' (value 12005682, next word 'access')
+    sentence: White House Central Files, Confidential Files, Johnson Library, NARA identifier 12005682, ; access not recorded.
+[UNTRACED] 'Record Group 306' (value rg306, next word '')
+    sentence: Information Agency, Director's Subject Files, , Record Group 306, entry A1–42; no NARA identifier in the bundled indexes.
+[UNTRACED] '42' (value 42, next word 'no')
+    sentence: Information Agency, Director's Subject Files, , Record Group 306, entry A1–42; no NARA identifier in the bundled indexes.
+[UNTRACED] 'Record Group 306' (value rg306, next word '')
+    sentence: Information Agency, Office of Policy and Plans subject files, Record Group 306, entry P–207; no NARA identifier in the bundled indexes.
+[UNTRACED] '207' (value 207, next word 'no')
+    sentence: Information Agency, Office of Policy and Plans subject files, Record Group 306, entry P–207; no NARA identifier in the bundled indexes.
+[UNTRACED] 'Record Group 306' (value rg306, next word '')
+    sentence: Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints "RG 305"), accession 306–84–0003, which the bundled index splits between Correspondence Files (NARA identifier 5552237) and Memorandums Pertaining to the Executive Committee (5585931); dates and access not recorded.
+[UNTRACED] 'RG 305' (value rg305, next word '')
+    sentence: Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints "RG 305"), accession 306–84–0003, which the bundled index splits between Correspondence Files (NARA identifier 5552237) and Memorandums Pertaining to the Executive Committee (5585931); dates and access not recorded.
+[UNTRACED] '306' (value 306, next word 'which')
+    sentence: Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints "RG 305"), accession 306–84–0003, which the bundled index splits between Correspondence Files (NARA identifier 5552237) and Memorandums Pertaining to the Executive Committee (5585931); dates and access not recorded.
+[UNTRACED] '84' (value 84, next word 'which')
+    sentence: Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints "RG 305"), accession 306–84–0003, which the bundled index splits between Correspondence Files (NARA identifier 5552237) and Memorandums Pertaining to the Executive Committee (5585931); dates and access not recorded.
+[UNTRACED] '0003' (value 0003, next word 'which')
+    sentence: Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints "RG 305"), accession 306–84–0003, which the bundled index splits between Correspondence Files (NARA identifier 5552237) and Memorandums Pertaining to the Executive Committee (5585931); dates and access not recorded.
+[UNTRACED] '5552237' (value 5552237, next word '')
+    sentence: Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints "RG 305"), accession 306–84–0003, which the bundled index splits between Correspondence Files (NARA identifier 5552237) and Memorandums Pertaining to the Executive Committee (5585931); dates and access not recorded.
+[UNTRACED] '5585931' (value 5585931, next word '')
+    sentence: Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints "RG 305"), accession 306–84–0003, which the bundled index splits between Correspondence Files (NARA identifier 5552237) and Memorandums Pertaining to the Executive Committee (5585931); dates and access not recorded.
+[UNTRACED] '591256' (value 591256, next word 'probably')
+    sentence: Plains Files, Carter Library, collection NARA identifier 591256, probably its Subject Files (591289), ;
+[UNTRACED] '591289' (value 591289, next word '')
+    sentence: Plains Files, Carter Library, collection NARA identifier 591256, probably its Subject Files (591289), ;
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Psychological Strategy Board Working Files, Record Group 59, entry A1 1462, NARA identifier 2124692, , possibly restricted; holds the drafts of the Thailand psychological strategy.
+[UNTRACED] 'A1 1462' (value a11462, next word '')
+    sentence: Psychological Strategy Board Working Files, Record Group 59, entry A1 1462, NARA identifier 2124692, , possibly restricted; holds the drafts of the Thailand psychological strategy.
+[UNTRACED] '2124692' (value 2124692, next word 'possibly')
+    sentence: Psychological Strategy Board Working Files, Record Group 59, entry A1 1462, NARA identifier 2124692, , possibly restricted; holds the drafts of the Thailand psychological strategy.
+[UNTRACED] 'Record Group 306' (value rg306, next word '')
+    sentence: Information Agency, Office of Policy and Plans, Subject Files, Record Group 306, entries UD-WW 151 to UD-WW 382, NARA identifier 1257679, , partly restricted; the editors cite its files on the Suez crisis and on nuclear testing.
+[UNTRACED] 'WW 151' (value ww151, next word '')
+    sentence: Information Agency, Office of Policy and Plans, Subject Files, Record Group 306, entries UD-WW 151 to UD-WW 382, NARA identifier 1257679, , partly restricted; the editors cite its files on the Suez crisis and on nuclear testing.
+[UNTRACED] 'WW 382' (value ww382, next word '')
+    sentence: Information Agency, Office of Policy and Plans, Subject Files, Record Group 306, entries UD-WW 151 to UD-WW 382, NARA identifier 1257679, , partly restricted; the editors cite its files on the Suez crisis and on nuclear testing.
+[UNTRACED] '1257679' (value 1257679, next word 'partly')
+    sentence: Information Agency, Office of Policy and Plans, Subject Files, Record Group 306, entries UD-WW 151 to UD-WW 382, NARA identifier 1257679, , partly restricted; the editors cite its files on the Suez crisis and on nuclear testing.
+[UNTRACED] '60 D 322' (value 60d322, next word '')
+    sentence: Information Agency files retired as lots 60 D 322 and 62 D 255; the bundled indexes give no NARA identifier.
+[UNTRACED] '62 D 255' (value 62d255, next word '')
+    sentence: Information Agency files retired as lots 60 D 322 and 62 D 255; the bundled indexes give no NARA identifier.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Department of State Central Files, the information-program file of (Record Group 59); among it, the other posts' replies to the circular asking ambassadors to judge their information programs, of which FRUS prints one.
+[WEAK] 'eighty-six' (value 86, next word 'volume'); nearest row: "eighty-six volumes", "about 40,500 documents" | M4 (40,529)
+    sentence: I searched for opinion polls and opinion or attitude surveys alongside the information agency across all eighty-six volumes, with the same two controls.
+[WEAK] 'thirty' (value 30, next word 'document'); nearest row: "fewer than thirty documents", "one of them" in a regional volume | M9 (27; 1)
+    sentence: I found fewer than thirty documents, and only one of them in a regional volume.
+[WEAK] 'One' (value 1, next word 'caveat'); nearest row: "all 553 volumes" (coverage) | M1
+    sentence: "One caveat:
+[WEAK] 'one' (value 1, next word 'saw'); nearest row: "all 553 volumes" (coverage) | M1
+    sentence: In one saw a "curious ambivalence in Japanese character" after the fishing boat was caught in American nuclear fallout .
+[WEAK] '100' (value 100, next word 'million'); nearest row: "100 million" (inside Q34) | Q34
+    sentence: The clearest measured success in this record is a broadcast audience: > Since the cessation of jamming in , VOA’s Chinese audiences have grown rapidly and are now estimated to number over 100 million listeners. ## How this was done I used the series' complete index of 553 volumes and searched it in the period's own vocabulary, which I took from the editors' chapter headings: information program, p
+[WEAK] 'million' (value 1000000, next word 'listener'); nearest row: "100 million" (inside Q34) | Q34
+    sentence: The clearest measured success in this record is a broadcast audience: > Since the cessation of jamming in , VOA’s Chinese audiences have grown rapidly and are now estimated to number over 100 million listeners. ## How this was done I used the series' complete index of 553 volumes and searched it in the period's own vocabulary, which I took from the editors' chapter headings: information program, p
+[WEAK] 'One' (value 1, next word 'abbreviation'); nearest row: "all 553 volumes" (coverage) | M1
+    sentence: One abbreviation for the information service was set aside, because the search also matched the initials of the United States of Indonesia.
+[WEAK] 'sixty-nine' (value 69, next word 'seventy-five'); nearest row: "about 700 documents" in "sixty-nine of the seventy-five" volumes | M6 (701; 69 of 75)
+    sentence: Within the regional volumes these searches found about 700 documents in sixty-nine of the seventy-five volumes.
+[WEAK] 'one' (value 1, next word 'dated'); nearest row: "all 553 volumes" (coverage) | M1
+    sentence: They make up about one dated document in fifty in the and about one in twenty-three in the .
+[WEAK] 'fifty' (value 50, next word 'one'); nearest row: "about one in fifty" (1950s) | M7 (21.2 per 1,000 = 275 of 12,972)
+    sentence: They make up about one dated document in fifty in the and about one in twenty-three in the .
+[WEAK] 'twenty-two' (value 22, next word 'all'); nearest row: "twenty-two documents" | M11
+    sentence: I ranked candidates, read fifty-one documents whole, and quoted from twenty-two; all thirty-four quotations were checked word for word against the stored text.
+[WEAK] 'thirty-four' (value 34, next word 'quotation'); nearest row: "100 million" (inside Q34) | Q34
+    sentence: I ranked candidates, read fifty-one documents whole, and quoted from twenty-two; all thirty-four quotations were checked word for word against the stored text.

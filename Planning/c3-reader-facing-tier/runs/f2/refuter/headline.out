@@ -1,0 +1,59 @@
+scope file: 109 volumes, EA 103, PD 6
+#1 collection document entries: 15 distinct 15
+#3 PD non-apparatus rows: 968 | >=10 place-word matches (wide set): 119
+   session's pd_ranked.tsv rows: 968 wide: 119 | set equal to mine: True
+#2 came-from by (repository, record_group) over the wide set:
+    74 ('National Archives', '306')
+    14 ('Nixon Presidential Materials', None)
+    9 ('Johnson Library', None)
+    6 ('National Archives', '59')
+    5 ('Kennedy Library', None)
+    3 ('Department of State', '59')
+    3 ('Carter Library', None)
+    2 ('Library of Congress', None)
+    1 ('National Archives', '63')
+    1 ('National Archives', '305')
+    1 ('Ford Library', None)
+   no document_sources row: 0
+   RG 306 total: 74 of 119 = 0.622 (three in five = 0.600)
+#5 wide-set documents with any external_citations row: 11 of 119 = 0.0924 (one in eleven = 0.0909)
+#4 accession-series-index.json top keys: ['byAccession', 'generated', 'legend', 'note', 'schemaVersion']
+   key path: /byAccession/306/72A5121 | type list | len 18
+       {"a": "306-72A-5121", "n": "1257679", "t": "Subject Files"}
+       {"a": "306-72A-5121", "n": "40943515", "t": "Alphabetical Subject Files Containing Policy Guidance Records"}
+       {"a": "306-72A-5121", "n": "4667751", "t": "Background Files"}
+       {"a": "306-72A5121", "n": "48349732", "t": "Regional Subject Files"}
+       {"a": "306-72A5121", "n": "51861375", "t": "Country Files for Bolivia"}
+       {"a": "306-72A5121", "n": "53279603", "t": "Regional Country Files"}
+       {"a": "306-72A5121", "n": "55029502", "t": "Country Files for Switzerland"}
+       {"a": "306-72A5121", "n": "55159731", "t": "Country Files for Chile"}
+       {"a": "306-72A5121", "n": "56190687", "t": "Country Files for El Salvador"}
+       {"a": "306-72A5121", "n": "56918933", "t": "Country Files for Guatemala"}
+       {"a": "306-72A5121", "n": "57316268", "t": "Country Files for Haiti"}
+       {"a": "306-72A5121", "n": "57807763", "t": "Regional Subject Files"}
+       {"a": "306-72A5121", "n": "58410079", "t": "Country Files for Trinidad and Tobago"}
+       {"a": "306-72A5121", "n": "59414121", "t": "Country Files for Honduras"}
+       {"a": "306-72A5121", "n": "59728260", "t": "Country Files for Costa Rica"}
+       {"a": "306-72A5121", "n": "63530073", "t": "Country Files for Jamaica"}
+       {"a": "306-72A5121", "n": "63531142", "t": "Country Files for Nicaragua"}
+       {"a": "306-72A5121", "n": "63821359", "t": "Regional Subject Files"}
+   key path: /byAccession/306/72A5121C | type list | len 5
+       {"a": "306-72A5121-C", "n": "1257716", "t": "Subject Files"}
+       {"a": "306-72A5121-C", "n": "40967285", "t": "Subject Files of the Director"}
+       {"a": "306-72A5121-C", "n": "5989337", "t": "Subject Files"}
+       {"a": "306-72A5121-C", "n": "5989363", "t": "Subject Files"}
+       {"a": "306-72A5121-C", "n": "5992230", "t": "Subject Files"}
+
+== extras ==
+canary: (553, 321749, 1103, 8481)
+manifest type list 
+non-apparatus in 109: 61852 (memo 61,852; overview 'about 62,000')
+non-apparatus in 6 PD: 968 (memo 968)
+non-apparatus in 103 EA: 60884
+MATCH "United States Information Agency" OR USIA              corpus   2194 | scope   913 | EA   333 | PD  580
+   'nearly two in three' = PD/scope = 580 / 913 = 0.635 | d190 in corpus set: True
+MATCH "Department of State"                                   corpus  94049 | scope 17522 | EA 17195 | PD  327
+   scope volumes with zero 'Department of State' matches: []
+MATCH "soft power"                                            corpus      0 | scope     0 | EA     0 | PD    0
+MATCH ZZZ_IMPOSSIBLE_ZZZ                                      corpus      0 | scope     0 | EA     0 | PD    0
+MATCH messaging                                               corpus  32754 | scope  8685 | EA  8534 | PD  151

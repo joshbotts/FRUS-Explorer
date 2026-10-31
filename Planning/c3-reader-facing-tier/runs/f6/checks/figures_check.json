@@ -1,0 +1,20 @@
+{
+ "run": "runs/f6",
+ "arm": "W",
+ "occurrences": [
+  {
+   "file": "memo.md",
+   "line": 97,
+   "figure": "1910-12-06 (the pointed-at channel starts)",
+   "match": "1910-12-06",
+   "context": "32 in 25; Kennedy National Security Files 16 in 14; Carter National Security Affairs 12 in 7. Total over the family: 638 citations in 342 documents. Limits stated to the reader: the pointed-at channel has no row before 1910-12-06, stores the fragment and not the sentence, and holds lot, library and decimal anchors only, so USIA accession citations (FRC numbers) are not in it. These 638 citations are over the whole 1,296-document family (not only"
+  },
+  {
+   "file": "memo.md",
+   "line": 241,
+   "figure": "1910-12-06 (the pointed-at channel starts)",
+   "match": "1910-12-06",
+   "context": "| 1910 (no pointed-at row before 1910) | House rule stated in the brief (external_citations has no row before 1910-12-06); not a measurement of mine |"
+  }
+ ]
+}

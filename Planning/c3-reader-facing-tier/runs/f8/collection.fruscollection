@@ -1,0 +1,451 @@
+{
+ "format": "fruscollection",
+ "formatVersion": 2,
+ "minimumReaderVersion": 1,
+ "name": "American Voices in Asia: Information Programs, 1949–1980",
+ "authorLine": "FRUS research run, 2026-10-31",
+ "introductionText": "What FRUS answers directly: From 1949 to 1980, officials treated American appeal in Asia as an instrument to be aimed, not an asset to be counted. Their main strategy was indirection. Messages went out through Asian governments, delegates and media, with American visibility kept low (1952–1954, Volume XII, Part 2, Document 403; 1955–1957, Volume XXI, Document 23; 1917–1972, Volume VIII, Document 31). They pictured the audience as nationalist, alert to race and to colonial memory, and moved by emotion more than argument (1955–1957, Volume XXII, Document 58; 1964–1968, Volume XXIX, Part 2, Document 46). They rarely claimed success. They judged effect by attendance and by events, and repeatedly concluded that deeds outweighed words (1964–1968, Volume I, Document 197; 1917–1972, Volume VI, Document 126). After Saigon fell, the question became the credibility of American commitment (1969–1976, Volume XXXVIII, Part 2, Document 105). The finding rests on twenty-two documents, read whole, from eighty-six volumes.\n\nWhere FRUS points for the rest: Series the printed documents came from: - Records Relating to National Security Council Policy Papers (Executive Secretariat), Record Group 59, entry A1 1586E, NARA identifier 2839192, 1947–1979, partly restricted; holds the information-program progress reports to the National Security Council and the Thailand plan's file. - Subject and Special Files (Operations Coordinating Board), Record Group 59, entry A1 1586C, NARA identifier 2839191, 1953–1961, partly restricted; holds the country plans such as Burma's. - Department of State Central Files (decimal file, then the subject-numeric file from 1963, then the Central Foreign Policy File), Record Group 59; the bundled indexes give no NARA identifier for these years. - National Security Files, Vietnam Country Files, Johnson Library, NARA identifier 591194, 1963–1969; access not recorded in the bundled indexes. - White House Central Files, Confidential Files, Johnson Library, NARA identifier 12005682, 1963–1969; access not recorded. - U.S. Information Agency, Director's Subject Files, 1968–1972, Record Group 306, entry A1–42; no NARA identifier in the bundled indexes. - U.S. Information Agency, Office of Policy and Plans subject files, Record Group 306, entry P–207; no NARA identifier in the bundled indexes. - U.S. Information Agency, Office of the Director correspondence, Record Group 306 (the edition prints \"RG 305\"), accession 306–84–0003, which the bundled index splits between Correspondence Files (NARA identifier 5552237) and Memorandums Pertaining to the Executive Committee (5585931); dates and access not recorded. - Plains Files, Carter Library, collection NARA identifier 591256, probably its Subject Files (591289), 1973–1982; I matched this series by title only. Series the editors cited without printing: - Psychological Strategy Board Working Files, Record Group 59, entry A1 1462, NARA identifier 2124692, 1951–1953, possibly restricted; holds the drafts of the Thailand psychological strategy. - U.S. Information Agency, Office of Policy and Plans, Subject Files, Record Group 306, entries UD-WW 151 to UD-WW 382, NARA identifier 1257679, 1953–1971, partly restricted; the editors cite its files on the Suez crisis and on nuclear testing. - U.S. Information Agency files retired as lots 60 D 322 and 62 D 255; the bundled indexes give no NARA identifier. - Department of State Central Files, the information-program file of 1952–1955 (Record Group 59); among it, the other posts' replies to the 1952 circular asking ambassadors to judge their information programs, of which FRUS prints one.\n\nWhat this request cannot get from FRUS: The phrase \"soft power\" appears in none of the 553 volumes; I confirmed the search worked with a phrase found in every volume and a nonsense control found in none. So the question has to be asked in the period's own words, as I did. Audience research is the larger gap. I searched for opinion polls and opinion or attitude surveys alongside the information agency across all eighty-six volumes, with the same two controls. I found fewer than thirty documents, and only one of them in a regional volume. The polls themselves, and the agency's country plans and post reports, stay in the information agency's own records listed above. Asian audiences never speak for themselves in this record. What Asians thought reaches FRUS only through American reporting.",
+ "composition": {
+  "defaultBodyDepth": "full",
+  "footnoteStyle": "all",
+  "includeSourceNote": true,
+  "tocStyle": "citation",
+  "applyHighlights": false,
+  "includeNotes": true,
+  "includeWordCloud": false
+ },
+ "entries": [
+  {
+   "kind": "heading",
+   "text": "Speaking through Asian voices",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These documents show the preferred method from 1949 onward: messages aimed at a target, carried by Asian governments, delegations and media, with the American hand kept out of sight. The thread runs from the China program of 1949 through the Thailand strategy of 1953 and Bandung in 1955 to the handover of Vietnam's psychological operations in 1969."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1949v09",
+   "documentId": "d558",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The information program in China is aimed at a political target, a rift between Peking and Moscow, and the Voice of America grows as other channels close."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1949v09",
+   "documentId": "d558",
+   "text": "to foster possible rifts between Chinese Communists and the USSR"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d396",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The departing ambassador in Bangkok credits information programs with some success and asks for Thai-speaking staff to reach the provinces."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d396",
+   "text": "the dangers of Communism have been brought home to the Thai people"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d396",
+   "text": "preferably personnel having at least a basic knowledge of the Thai language"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d403",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The Psychological Strategy Board's plan for Thailand states the rule of working through indigenous leadership and aims at minds and emotions."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d403",
+   "text": "In projecting U.S. leadership, however, we must work with and through indigenous leadership wherever possible."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d403",
+   "text": "prepare the minds and emotions of the people"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1955-57v21",
+   "documentId": "d23",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: Before Bandung the Department coaches friendly Asian delegations while avoiding any show of American interest."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v21",
+   "documentId": "d23",
+   "text": "While wishing avoid show undue interest which could be interpreted as U.S. effort use Conference advance own ends"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d58",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The information agency treats psychological operations in Vietnam as work that belongs to the Vietnamese government and plans its handover."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d58",
+   "text": "functions in this field properly belong to and must ultimately be performed by the Government of Viet-Nam (GVN)"
+  },
+  {
+   "kind": "heading",
+   "text": "Beliefs about the audience",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These documents record what officials believed about Asian audiences: nationalism, sensitivity to race and colonial memory, and emotion over argument. Read in date order, they move from Indochina and Japan in the 1950s to Burma, wartime Japan and the overseas Chinese."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v13p1",
+   "documentId": "d116",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: Saigon's 1952 assessment of the information program names nationalist and racial feeling as the enemy's lever and counts films, libraries and English classes as evidence."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v13p1",
+   "documentId": "d116",
+   "text": "counterpersuasive Commie propaganda which exploits nationalist and racial feeling"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v13p1",
+   "documentId": "d116",
+   "text": "All factors recited must be viewed as effective though degree cannot be accurately measured."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v14p2",
+   "documentId": "d762",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: After the fallout incident of 1954 the embassy in Tokyo describes the Japanese response in terms of national character and emotion."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v14p2",
+   "documentId": "d762",
+   "text": "curious ambivalence in Japanese character asserted itself"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d190",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The agency's report for 1955 describes Asian emotion over atomic weapons and race, and its programs for Japan, Korea, the Philippines and Taiwan."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d190",
+   "text": "In the Far East USIA was forced to deal with mixed emotions regarding the use of atomic weapons against Asiatic peoples, and to counter communist propaganda designed to stir up race hatred."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1955-57v22",
+   "documentId": "d58",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The plan for Burma ties neutralism to colonial memory and warns against patronizing attitudes."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v22",
+   "documentId": "d58",
+   "text": "emotional nationalism which is suspicious of any larger power, especially one associated with memories of white man’s past colonial domination"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v22",
+   "documentId": "d58",
+   "text": "Patronizing attitudes or demands for approbation would tend to minimize our limited potential for effectiveness."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d46",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: Reischauer's embassy explains Japanese opposition to the bombing of North Vietnam by fear, pacifism and racial sympathy, with poll figures."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d46",
+   "text": "Intellectually we have met with some success, and there is a growing awareness of the U.S. point of view, which has perhaps blunted the attack somewhat, but the basic emotional response remains unchanged and is probably unchangeable over the short run."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d46",
+   "text": "since they are racially, culturally and geographically closer to the Japanese than are the caucasians who come from afar"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d149",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The agency's posts describe overseas Chinese opinion in Southeast Asia as apolitical, proud of China, and wary of its model."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d149",
+   "text": "The predominant mood is apolitical, seeking to be neutral, and concerned with economic and trade problems rather than strong ideological convictions."
+  },
+  {
+   "kind": "heading",
+   "text": "Words, deeds and effectiveness",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These documents carry the officials' own verdicts on effect. They measured little, judged by attendance and events, and concluded more than once that information could not outrun policy or the war."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d207",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The agency's 1957 report concedes that accommodation to Communist pressure continued in Southeast Asia despite its efforts."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d207",
+   "text": "Despite all efforts, the trend toward accommodation to Communist pressures in the area continued."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d126",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The agency fears that rebuttals of Indonesia's anti-American charges will be heard as words without deeds."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d126",
+   "text": "much of our audience would tend to regard it as mere words without deeds"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v01",
+   "documentId": "d197",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: Officials meeting in Honolulu conclude that no information program can make defeats look like victories in Vietnam."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v01",
+   "documentId": "d197",
+   "text": "there is no conceivable information program that will make defeats look like victories, or GVN lassitude appear to be fiery enthusiasm"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v02",
+   "documentId": "d160",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The agency's director tells the President that efforts to build Vietnamese unity have not progressed to his satisfaction."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v02",
+   "documentId": "d160",
+   "text": "efforts to develop among the South Vietnamese people a sense of national unity and a determination to fight off Communist aggression, have not progressed to my satisfaction"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The agency's East Asian public affairs officers, meeting in Manila, call Asians America watchers, tie America's image to bilateral relations, and drop exposure counts as a measure."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "Asians are, to varying degrees, America watchers."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "PAOs emphasized that the image of the US usually depended more on the state of bi-lateral relations"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "Exposures as a main pillar of PPBS should be dropped."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "One caveat: US visibility should be low."
+  },
+  {
+   "kind": "heading",
+   "text": "After Vietnam: credibility of commitment",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These documents follow the message after 1975, when posts across the region reported doubt about American staying power and Washington asked what public diplomacy could do about it."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The agency's posts reassess their programs after Saigon falls; post after post reports doubt about American commitment."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "text": "Thais still see us as friends and admire much in the American system."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "text": "There is belief that the US no longer has the ability or the desire to control events in Asia."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "text": "hoping that we have all learned the lesson that America is not omnipotent"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d81",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The new Assistant Secretary asks his ambassadors about the future role of public diplomacy in Asia."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d81",
+   "text": "the future role of public diplomacy in support of our policies in Asia"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d83",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The ambassador in Jakarta reports a persistent belief in American withdrawal and resistance to the human rights message."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d83",
+   "text": "I confess I am baffled by phenomenon."
+  },
+  {
+   "kind": "heading",
+   "text": "The longer game: students, exchanges, broadcasts",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These documents show where officials expected lasting effect: youth, American studies, professional exchanges, and broadcasting once jamming stopped."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v23",
+   "documentId": "d289",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: Murrow's plan for Indonesia stresses youth, American studies and respect for neutrality, and warns against quick-impact actions."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v23",
+   "documentId": "d289",
+   "text": "a real understanding of and a demonstrated respect for Indonesia’s neutral stance"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v23",
+   "documentId": "d289",
+   "text": "we should refrain from glamorous, immediate-impact actions"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d2",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The agency's East Asia office promotes exchanges of economic editors from Japan, Europe and the United States."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d2",
+   "text": "We are dealing here with gut issues rather than some of the frothier aspects of cultural exchange."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d215",
+   "notes": [
+    "Agent finding, FRUS research run, 2026-10-31: The agency reports Chinese audiences for the Voice of America of over 100 million after jamming stopped in 1977."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d215",
+   "text": "Since the cessation of jamming in 1977, VOA’s Chinese audiences have grown rapidly and are now estimated to number over 100 million listeners."
+  },
+  {
+   "kind": "heading",
+   "text": "Threads not followed",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "I did not follow several threads. The information agency's own country plans and post reports, where posts recorded what they measured, are not printed here. Military training and aid as influence, such as the Indonesian army's use of American textbooks in 1957, I left outside the question. The Public Diplomacy volume for 1964–1968 I sampled only lightly. Korea and the Philippines appear mainly through the agency's annual reports. Asian voices themselves are absent, since this record reports them only through American eyes."
+  },
+  {
+   "kind": "generated",
+   "generatedBlockType": "archivalSources"
+  }
+ ]
+}

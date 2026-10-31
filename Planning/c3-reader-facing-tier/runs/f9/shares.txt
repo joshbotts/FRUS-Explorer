@@ -1,0 +1,6 @@
+psychological warfare: hits=318 sample40 checked=40 STRICT=40/40 TOLERANT=40/40 misses=[]
+information program: hits=237 census checked=237 STRICT=218/237 TOLERANT=236/237 misses=[('frus1964-68v05', 'd257', ['Informant Program b', 'Informant Program: Within', 'informants are able'])]
+public diplomacy: hits=80 census checked=80 STRICT=80/80 TOLERANT=80/80 misses=[]
+cultural exchange: hits=197 census checked=197 STRICT=196/197 TOLERANT=197/197 misses=[]
+Voice of America: hits=228 census checked=228 STRICT=228/228 TOLERANT=228/228 misses=[]
+USIA/USIS: hits=1438 sample40 checked=40 STRICT=36/40 TOLERANT=36/40 misses=[('frus1948v06', 'd146', []), ('frus1948v06', 'd356', []), ('frus1949v07p1', 'd173', []), ('frus1949v07p1', 'd353', [])]

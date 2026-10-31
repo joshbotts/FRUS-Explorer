@@ -1,0 +1,14 @@
+M6 control volumes (not in scope, earliest>=1953): 169 docs 55876 (memo 169 volumes, 55,876) | scope vols from 1953: 57 docs 18483 (memo 18,483)
+  FAMILY_A: scope 1538 of 58244 = 26.4 | rest 1615 of 253925 = 6.4 | scope>=1953 1103 of 18483 = 59.7 | control 1292 of 55876 = 23.1
+  propaganda: scope 3407 of 58244 = 58.5 | rest 8700 of 253925 = 34.3 | scope>=1953 1654 of 18483 = 89.5 | control 3439 of 55876 = 61.5
+  prestige: scope 2108 of 58244 = 36.2 | rest 5827 of 253925 = 22.9 | scope>=1953 977 of 18483 = 52.9 | control 2297 of 55876 = 41.1
+  scan1.json POS vols with hits: 552 total 94049 | NEG total 0
+  M7 frus1917-72PubDipv06 69 of 152
+  M7 frus1917-72PubDipv07 98 of 178
+  M7 frus1917-72PubDipv08 92 of 179
+  M7 frus1977-80v30 71 of 212
+  M7 frus1955-57v09 75 of 199
+  M7 frus1961-63v25 174 of 453
+M7 total 579 of 1373 (memo 579 of 1,373)
+M8 Boxer indemnity by decade: [('1930s', 81), ('1940s', 17), ('1950s', 1)] (memo 1930s 81, 1940s 17, 1950s 1)
+M8 OWI by decade: [('1940s', 41)] (memo 41 in the 1940s)

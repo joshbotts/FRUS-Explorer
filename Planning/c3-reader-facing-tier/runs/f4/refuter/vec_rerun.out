@@ -1,0 +1,48 @@
+binary magic: b'FRSV' header ints (version, dims, docs, cents): (1, 512, 314616, 660)
+index provenanceDigest: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+binary digest        : 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 equal: True
+map digest           : 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 equal: True map magic: b'FRSM'
+shard magic: b'FRSS' shard digest @16:48: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 equal: True
+.generation: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 equal: True
+decode: volumes 553 rows 314616
+
+My nearest 16 to frus1917-72PubDipv08/d31 (Hamming over 512 sign bits, stable argsort; Ed2 skipped, apparatus NOT skipped):
+  ham 81 frus1917-72PubDipv07/d106
+  ham 86 frus1917-72PubDipv06/d3
+  ham 88 frus1917-72PubDipv06/d5
+  ham 88 frus1952-54v13p1/d116
+  ham 89 frus1955-57v22/d275
+  ham 90 frus1917-72PubDipv08/d99
+  ham 90 frus1950v06/d9
+  ham 91 frus1958-60v16/d65
+  ham 92 frus1917-72PubDipv07/d140
+  ham 92 frus1952-54v02p2/d374
+  ham 92 frus1977-80v30/d68
+  ham 94 frus1951v06p1/d12
+  ham 94 frus1951v06p2/d105
+  ham 94 frus1952-54v02p2/d303
+  ham 95 frus1917-72PubDipv07/d69
+  ham 95 frus1950v06/d53
+
+Session's list (vec_nn.out), 15 rows:
+  ham 81 frus1917-72PubDipv07/d106
+  ham 86 frus1917-72PubDipv06/d3
+  ham 88 frus1917-72PubDipv06/d5
+  ham 88 frus1952-54v13p1/d116
+  ham 89 frus1955-57v22/d275
+  ham 90 frus1917-72PubDipv08/d99
+  ham 90 frus1950v06/d9
+  ham 91 frus1958-60v16/d65
+  ham 92 frus1917-72PubDipv07/d140
+  ham 92 frus1952-54v02p2/d374
+  ham 92 frus1977-80v30/d68
+  ham 94 frus1951v06p1/d12
+  ham 94 frus1951v06p2/d105
+  ham 94 frus1952-54v02p2/d303
+  ham 95 frus1917-72PubDipv07/d69
+
+Same 15 pairs as a set: True
+Same order: True
+Same distances per pair: True
+Symmetric difference: set()
+Hamming d31 -> frus1917-72PubDipv08/d99: 90

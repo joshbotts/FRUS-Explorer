@@ -1,0 +1,163 @@
+{
+ "run": "runs/f1",
+ "termsTested": 17,
+ "dead": [
+  {
+   "term": "\"soft power\"",
+   "source": "queries.log",
+   "line": 12,
+   "returns": false,
+   "query": "\"soft power\"",
+   "nearestLive": null
+  },
+  {
+   "term": "ZZZ_IMPOSSIBLE_ZZZ",
+   "source": "queries.log",
+   "line": 14,
+   "returns": false,
+   "query": "\"ZZZ_IMPOSSIBLE_ZZZ\"",
+   "nearestLive": null
+  }
+ ],
+ "syntaxErrors": [],
+ "prefixes": [],
+ "vocabLookupsInLog": 0,
+ "all": [
+  {
+   "term": "\"soft power\"",
+   "source": "queries.log",
+   "line": 12,
+   "returns": false,
+   "query": "\"soft power\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"department of state\"",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"department of state\"",
+   "nearestLive": null
+  },
+  {
+   "term": "ZZZ_IMPOSSIBLE_ZZZ",
+   "source": "queries.log",
+   "line": 14,
+   "returns": false,
+   "query": "\"ZZZ_IMPOSSIBLE_ZZZ\"",
+   "nearestLive": null
+  },
+  {
+   "term": "USIA",
+   "source": "queries.log",
+   "line": 15,
+   "returns": true,
+   "query": "\"USIA\"",
+   "nearestLive": null
+  },
+  {
+   "term": "USIS",
+   "source": "queries.log",
+   "line": 16,
+   "returns": true,
+   "query": "\"USIS\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"information program\"",
+   "source": "queries.log",
+   "line": 17,
+   "returns": true,
+   "query": "\"information program\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"psychological warfare\"",
+   "source": "queries.log",
+   "line": 18,
+   "returns": true,
+   "query": "\"psychological warfare\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"psychological strategy\"",
+   "source": "queries.log",
+   "line": 19,
+   "returns": true,
+   "query": "\"psychological strategy\"",
+   "nearestLive": null
+  },
+  {
+   "term": "propaganda",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"propaganda\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"voice of america\"",
+   "source": "queries.log",
+   "line": 21,
+   "returns": true,
+   "query": "\"voice of america\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"american image\"",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"american image\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"image of the united states\"",
+   "source": "queries.log",
+   "line": 23,
+   "returns": true,
+   "query": "\"image of the united states\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"cultural exchange\"",
+   "source": "queries.log",
+   "line": 24,
+   "returns": true,
+   "query": "\"cultural exchange\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"public diplomacy\"",
+   "source": "queries.log",
+   "line": 25,
+   "returns": true,
+   "query": "\"public diplomacy\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"public opinion\"",
+   "source": "queries.log",
+   "line": 26,
+   "returns": true,
+   "query": "\"public opinion\"",
+   "nearestLive": null
+  },
+  {
+   "term": "messaging",
+   "source": "queries.log",
+   "line": 36,
+   "returns": true,
+   "query": "\"messaging\"",
+   "nearestLive": null
+  },
+  {
+   "term": "audience",
+   "source": "queries.log",
+   "line": 37,
+   "returns": true,
+   "query": "\"audience\"",
+   "nearestLive": null
+  }
+ ]
+}

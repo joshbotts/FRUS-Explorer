@@ -1,0 +1,1026 @@
+{
+ "run": "runs/f6",
+ "traceSource": "runs/f6/memo.md",
+ "traceTableLine": 233,
+ "traceRows": 52,
+ "mentions": 92,
+ "counts": {
+  "traced": 31,
+  "weak": 32,
+  "untraced": 29
+ },
+ "list": [
+  {
+   "text": "1,300",
+   "values": [
+    "1300"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "1,300 (documents in the family, rounded from 1,296) | M4 (COUNT(*) = 1296)",
+   "sentence": "About 1,300 documents in the 76 volumes on East Asia and the Pacific touch these programs."
+  },
+  {
+   "text": "76",
+   "values": [
+    "76"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "76 (volumes on East Asia and the Pacific) | M2 (SELECT COUNT(DISTINCT volume_id) ... IN the 76 ids = 76)",
+   "sentence": "About 1,300 documents in the 76 volumes on East Asia and the Pacific touch these programs."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files."
+  },
+  {
+   "text": "FRC 67",
+   "values": [
+    "frc67"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22",
+   "sentence": "Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files."
+  },
+  {
+   "text": "A 222",
+   "values": [
+    "a222"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "3, 15, 18 (series per USIA accession); two (series of FRC 306-84-0003) | M11 (accession-series-index.json: 306/67A222 = 3, 306/68A4933 = 15, 306/72A5121 = 18, 306/840003 = 2); the isolated '3' in the ",
+   "sentence": "Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files."
+  },
+  {
+   "text": "FRC 68",
+   "values": [
+    "frc68"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files."
+  },
+  {
+   "text": "A 4933",
+   "values": [
+    "a4933"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "3, 15, 18 (series per USIA accession); two (series of FRC 306-84-0003) | M11 (accession-series-index.json: 306/67A222 = 3, 306/68A4933 = 15, 306/72A5121 = 18, 306/840003 = 2); the isolated '3' in the ",
+   "sentence": "Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files."
+  },
+  {
+   "text": "FRC 72",
+   "values": [
+    "frc72"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files."
+  },
+  {
+   "text": "A 5121",
+   "values": [
+    "a5121"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "3, 15, 18 (series per USIA accession); two (series of FRC 306-84-0003) | M11 (accession-series-index.json: 306/67A222 = 3, 306/68A4933 = 15, 306/72A5121 = 18, 306/840003 = 2); the isolated '3' in the ",
+   "sentence": "Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files."
+  },
+  {
+   "text": "WW 257",
+   "values": [
+    "ww257"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22",
+   "sentence": "Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files."
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "serie",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "14 (volumes on information policy and public diplomacy) | M3 (= 14 volumes; also Lot count 'Kennedy 14' row in M13, same numeral different meaning)",
+   "sentence": "The finding aids available to me tie these accessions to 3, 15 and 18 series, so I cannot say which series holds the folder, and they give no dates or access status for them."
+  },
+  {
+   "text": "15",
+   "values": [
+    "15"
+   ],
+   "next": "serie",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "3, 15, 18 (series per USIA accession); two (series of FRC 306-84-0003) | M11 (accession-series-index.json: 306/67A222 = 3, 306/68A4933 = 15, 306/72A5121 = 18, 306/840003 = 2); the isolated '3' in the ",
+   "sentence": "The finding aids available to me tie these accessions to 3, 15 and 18 series, so I cannot say which series holds the folder, and they give no dates or access status for them."
+  },
+  {
+   "text": "18",
+   "values": [
+    "18"
+   ],
+   "next": "serie",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "3, 15, 18 (series per USIA accession); two (series of FRC 306-84-0003) | M11 (accession-series-index.json: 306/67A222 = 3, 306/68A4933 = 15, 306/72A5121 = 18, 306/840003 = 2); the isolated '3' in the ",
+   "sentence": "The finding aids available to me tie these accessions to 3, 15 and 18 series, so I cannot say which series holds the folder, and they give no dates or access status for them."
+  },
+  {
+   "text": "42125423",
+   "values": [
+    "42125423"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Series named under these accessions include *Vietnam Working Group Subject Files* (NAID 42125423) and *Regional Subject Files* (NAID 48349732)."
+  },
+  {
+   "text": "48349732",
+   "values": [
+    "48349732"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Series named under these accessions include *Vietnam Working Group Subject Files* (NAID 42125423) and *Regional Subject Files* (NAID 48349732)."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "USIA Office of Policy and Plans, Record Group 306, Entry P-207 (the conference of public affairs officers in Manila), and the Office of the Director's Executive Secretariat, Entry P-104 ( )."
+  },
+  {
+   "text": "P-207",
+   "values": [
+    "p-207"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22",
+   "sentence": "USIA Office of Policy and Plans, Record Group 306, Entry P-207 (the conference of public affairs officers in Manila), and the Office of the Director's Executive Secretariat, Entry P-104 ( )."
+  },
+  {
+   "text": "P-104",
+   "values": [
+    "p-104"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22",
+   "sentence": "USIA Office of Policy and Plans, Record Group 306, Entry P-207 (the conference of public affairs officers in Manila), and the Office of the Director's Executive Secretariat, Entry P-104 ( )."
+  },
+  {
+   "text": "1257679",
+   "values": [
+    "1257679"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "NARA lists an Office of Policy and Plans series (NAID 1257679, , 47 linear feet, access partly restricted);"
+  },
+  {
+   "text": "47",
+   "values": [
+    "47"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22",
+   "sentence": "NARA lists an Office of Policy and Plans series (NAID 1257679, , 47 linear feet, access partly restricted);"
+  },
+  {
+   "text": "40967285",
+   "values": [
+    "40967285"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "I could not confirm it is the series the editors used, and the file falls outside the dates of the Executive Secretariat series NARA lists (NAID 40967285, )."
+  },
+  {
+   "text": "FRC 306",
+   "values": [
+    "frc306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "3, 15, 18 (series per USIA accession); two (series of FRC 306-84-0003) | M11 (accession-series-index.json: 306/67A222 = 3, 306/68A4933 = 15, 306/72A5121 = 18, 306/840003 = 2); the isolated '3' in the ",
+   "sentence": "USIA records cited as accession FRC 306-84-0003 ( ): two series, *Correspondence Files* (NAID 5552237) and *Memorandums Pertaining to the Executive Committee* (NAID 5585931); the finding aids give no dates or access status for them."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "serie",
+   "kind": "word",
+   "class": "weak",
+   "row": "76 (volumes on East Asia and the Pacific) | M2 (SELECT COUNT(DISTINCT volume_id) ... IN the 76 ids = 76)",
+   "sentence": "USIA records cited as accession FRC 306-84-0003 ( ): two series, *Correspondence Files* (NAID 5552237) and *Memorandums Pertaining to the Executive Committee* (NAID 5585931); the finding aids give no dates or access status for them."
+  },
+  {
+   "text": "5552237",
+   "values": [
+    "5552237"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "USIA records cited as accession FRC 306-84-0003 ( ): two series, *Correspondence Files* (NAID 5552237) and *Memorandums Pertaining to the Executive Committee* (NAID 5585931); the finding aids give no dates or access status for them."
+  },
+  {
+   "text": "5585931",
+   "values": [
+    "5585931"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "USIA records cited as accession FRC 306-84-0003 ( ): two series, *Correspondence Files* (NAID 5552237) and *Memorandums Pertaining to the Executive Committee* (NAID 5585931); the finding aids give no dates or access status for them."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Department of State Central Decimal File, Record Group 59: file numbers 711.90 ( ), 611.90 ( ), 790.5 ( ) and 611.98 ( )."
+  },
+  {
+   "text": "711.90",
+   "values": [
+    "711.90"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22",
+   "sentence": "Department of State Central Decimal File, Record Group 59: file numbers 711.90 ( ), 611.90 ( ), 790.5 ( ) and 611.98 ( )."
+  },
+  {
+   "text": "611.90",
+   "values": [
+    "611.90"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22",
+   "sentence": "Department of State Central Decimal File, Record Group 59: file numbers 711.90 ( ), 611.90 ( ), 790.5 ( ) and 611.98 ( )."
+  },
+  {
+   "text": "790.5",
+   "values": [
+    "790.5"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22",
+   "sentence": "Department of State Central Decimal File, Record Group 59: file numbers 711.90 ( ), 611.90 ( ), 790.5 ( ) and 611.98 ( )."
+  },
+  {
+   "text": "611.98",
+   "values": [
+    "611.98"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22",
+   "sentence": "Department of State Central Decimal File, Record Group 59: file numbers 711.90 ( ), 611.90 ( ), 790.5 ( ) and 611.98 ( )."
+  },
+  {
+   "text": "90",
+   "values": [
+    "90"
+   ],
+   "next": "as",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "The finding aids gloss country numbers 90 as Asia and 98 as Java and the Indonesian islands; they hold no series identifier for these years."
+  },
+  {
+   "text": "98",
+   "values": [
+    "98"
+   ],
+   "next": "as",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "The finding aids gloss country numbers 90 as Asia and 98 as Java and the Indonesian islands; they hold no series identifier for these years."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point",
+   "sentence": "Department of State Lot 63 D 351 (a lot is the Department's own batch number for a set of retired files), *Records Relating to National Security Council Policy Papers*, Record Group 59, Entry A1 1586E, NAID 2839192:"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Department of State Lot 63 D 351 (a lot is the Department's own batch number for a set of retired files), *Records Relating to National Security Council Policy Papers*, Record Group 59, Entry A1 1586E, NAID 2839192:"
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22",
+   "sentence": "Department of State Lot 63 D 351 (a lot is the Department's own batch number for a set of retired files), *Records Relating to National Security Council Policy Papers*, Record Group 59, Entry A1 1586E, NAID 2839192:"
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Department of State Lot 63 D 351 (a lot is the Department's own batch number for a set of retired files), *Records Relating to National Security Council Policy Papers*, Record Group 59, Entry A1 1586E, NAID 2839192:"
+  },
+  {
+   "text": "26",
+   "values": [
+    "26"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22",
+   "sentence": "Executive Secretariat, , 26 linear feet, access partly restricted."
+  },
+  {
+   "text": "567979",
+   "values": [
+    "567979"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Johnson Library National Security Files (NAID 567979), including Vietnam Country Files (NAID 591194, ) and Asia and the Pacific Country Files (NAID 587358, ), and the Papers of Leonard H."
+  },
+  {
+   "text": "591194",
+   "values": [
+    "591194"
+   ],
+   "next": "asia",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Johnson Library National Security Files (NAID 567979), including Vietnam Country Files (NAID 591194, ) and Asia and the Pacific Country Files (NAID 587358, ), and the Papers of Leonard H."
+  },
+  {
+   "text": "587358",
+   "values": [
+    "587358"
+   ],
+   "next": "paper",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Johnson Library National Security Files (NAID 567979), including Vietnam Country Files (NAID 591194, ) and Asia and the Pacific Country Files (NAID 587358, ), and the Papers of Leonard H."
+  },
+  {
+   "text": "50809179",
+   "values": [
+    "50809179"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Marks (NAID 50809179);"
+  },
+  {
+   "text": "1164",
+   "values": [
+    "1164"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Kennedy Library National Security Files (NAID 1164, );"
+  },
+  {
+   "text": "572235",
+   "values": [
+    "572235"
+   ],
+   "next": "whose",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Nixon National Security Files (NAID 572235, whose institutional files run );"
+  },
+  {
+   "text": "1104",
+   "values": [
+    "1104"
+   ],
+   "next": "serie",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Carter Library Brzezinski material (collection NAID 1104, series not matched)."
+  },
+  {
+   "text": "1,300",
+   "values": [
+    "1300"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "1,300 (documents in the family, rounded from 1,296) | M4 (COUNT(*) = 1296)",
+   "sentence": "The Ford Library country files the editors cite for East Asia and the Pacific have no match in the library catalogue available to me. *Channel: what the footnotes cite but do not print (over the 1,300 documents; the editors' citation fragments only, with no row before , and no USIA accession numbers among them).* Department of State Lot 66 D 95, cited in 41 documents:"
+  },
+  {
+   "text": "66 D 95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point",
+   "sentence": "The Ford Library country files the editors cite for East Asia and the Pacific have no match in the library catalogue available to me. *Channel: what the footnotes cite but do not print (over the 1,300 documents; the editors' citation fragments only, with no row before , and no USIA accession numbers among them).* Department of State Lot 66 D 95, cited in 41 documents:"
+  },
+  {
+   "text": "41",
+   "values": [
+    "41"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point",
+   "sentence": "The Ford Library country files the editors cite for East Asia and the Pacific have no match in the library catalogue available to me. *Channel: what the footnotes cite but do not print (over the 1,300 documents; the editors' citation fragments only, with no row before , and no USIA accession numbers among them).* Department of State Lot 66 D 95, cited in 41 documents:"
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "NARA divides it between *Records Relating to National Security Council Policy Papers* (NAID 2839192, , partly restricted) and *Subject Files* (NAID 2839193, , 9 linear feet, partly restricted)."
+  },
+  {
+   "text": "2839193",
+   "values": [
+    "2839193"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "NARA divides it between *Records Relating to National Security Council Policy Papers* (NAID 2839192, , partly restricted) and *Subject Files* (NAID 2839193, , 9 linear feet, partly restricted)."
+  },
+  {
+   "text": "9",
+   "values": [
+    "9"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point",
+   "sentence": "NARA divides it between *Records Relating to National Security Council Policy Papers* (NAID 2839192, , partly restricted) and *Subject Files* (NAID 2839193, , 9 linear feet, partly restricted)."
+  },
+  {
+   "text": "62 D 430",
+   "values": [
+    "62d430"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "four (series of lot 62 D 430), three (series of lot 62 D 1) | M12 (lot-claimants-index.json: 4 and 3 claimants) - also 'three' counts the vector-found documents, see below",
+   "sentence": "Department of State Lot 62 D 430, the Operations Coordinating Board's files, cited in 16 documents: four series, , including *Subject and Special Files* (NAID 2839191, partly restricted, 4 linear feet)."
+  },
+  {
+   "text": "16",
+   "values": [
+    "16"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point",
+   "sentence": "Department of State Lot 62 D 430, the Operations Coordinating Board's files, cited in 16 documents: four series, , including *Subject and Special Files* (NAID 2839191, partly restricted, 4 linear feet)."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "serie",
+   "kind": "word",
+   "class": "weak",
+   "row": "1,300 (documents in the family, rounded from 1,296) | M4 (COUNT(*) = 1296)",
+   "sentence": "Department of State Lot 62 D 430, the Operations Coordinating Board's files, cited in 16 documents: four series, , including *Subject and Special Files* (NAID 2839191, partly restricted, 4 linear feet)."
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Department of State Lot 62 D 430, the Operations Coordinating Board's files, cited in 16 documents: four series, , including *Subject and Special Files* (NAID 2839191, partly restricted, 4 linear feet)."
+  },
+  {
+   "text": "4",
+   "values": [
+    "4"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "1,300 (documents in the family, rounded from 1,296) | M4 (COUNT(*) = 1296)",
+   "sentence": "Department of State Lot 62 D 430, the Operations Coordinating Board's files, cited in 16 documents: four series, , including *Subject and Special Files* (NAID 2839191, partly restricted, 4 linear feet)."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point",
+   "sentence": "Department of State Lot 63 D 351, cited in 13 documents (NAID 2839192, as above)."
+  },
+  {
+   "text": "13",
+   "values": [
+    "13"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point",
+   "sentence": "Department of State Lot 63 D 351, cited in 13 documents (NAID 2839192, as above)."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "as",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Department of State Lot 63 D 351, cited in 13 documents (NAID 2839192, as above)."
+  },
+  {
+   "text": "62 D 1",
+   "values": [
+    "62d1"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "four (series of lot 62 D 430), three (series of lot 62 D 1) | M12 (lot-claimants-index.json: 4 and 3 claimants) - also 'three' counts the vector-found documents, see below",
+   "sentence": "Department of State Lot 62 D 1, Policy Planning Council, cited in 9 documents: three series, including *Records Relating to Activities with the National Security Council* (NAID 2838992, , partly restricted)."
+  },
+  {
+   "text": "9",
+   "values": [
+    "9"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point",
+   "sentence": "Department of State Lot 62 D 1, Policy Planning Council, cited in 9 documents: three series, including *Records Relating to Activities with the National Security Council* (NAID 2838992, , partly restricted)."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "serie",
+   "kind": "word",
+   "class": "weak",
+   "row": "14 (volumes on information policy and public diplomacy) | M3 (= 14 volumes; also Lot count 'Kennedy 14' row in M13, same numeral different meaning)",
+   "sentence": "Department of State Lot 62 D 1, Policy Planning Council, cited in 9 documents: three series, including *Records Relating to Activities with the National Security Council* (NAID 2838992, , partly restricted)."
+  },
+  {
+   "text": "2838992",
+   "values": [
+    "2838992"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Department of State Lot 62 D 1, Policy Planning Council, cited in 9 documents: three series, including *Records Relating to Activities with the National Security Council* (NAID 2838992, , partly restricted)."
+  },
+  {
+   "text": "19",
+   "values": [
+    "19"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point",
+   "sentence": "Nixon White House National Security Council files, cited in 19 documents;"
+  },
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point",
+   "sentence": "Johnson National Security File, 25;"
+  },
+  {
+   "text": "14",
+   "values": [
+    "14"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "14 (volumes on information policy and public diplomacy) | M3 (= 14 volumes; also Lot count 'Kennedy 14' row in M13, same numeral different meaning)",
+   "sentence": "Kennedy National Security Files, 14;"
+  },
+  {
+   "text": "7",
+   "values": [
+    "7"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point",
+   "sentence": "Carter National Security Affairs, 7."
+  },
+  {
+   "text": "178",
+   "values": [
+    "178"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point",
+   "sentence": "Central Decimal File numbers, cited in 178 documents; the finding aids available to me give no series for ."
+  },
+  {
+   "text": "76",
+   "values": [
+    "76"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "76 (volumes on East Asia and the Pacific) | M2 (SELECT COUNT(DISTINCT volume_id) ... IN the 76 ids = 76)",
+   "sentence": "I searched the 76 volumes for documents that pair the Information Agency or its overseas posts with polls, surveys or research reports and found 64 documents in 28 volumes, but the Agency's study of a province south of Saigon, which its director said set out the problem with unusual clarity, is described and not printed."
+  },
+  {
+   "text": "64",
+   "values": [
+    "64"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "64 (documents), 28 (volumes) - survey/poll scan; 33 (documents), 17 (volumes) - leaflet/script/film scan; 3 (binational centres); 60 (Peace Corps) | M14 table rows 1, 3, 6 and 4 respectively (absence_",
+   "sentence": "I searched the 76 volumes for documents that pair the Information Agency or its overseas posts with polls, surveys or research reports and found 64 documents in 28 volumes, but the Agency's study of a province south of Saigon, which its director said set out the problem with unusual clarity, is described and not printed."
+  },
+  {
+   "text": "28",
+   "values": [
+    "28"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "64 (documents), 28 (volumes) - survey/poll scan; 33 (documents), 17 (volumes) - leaflet/script/film scan; 3 (binational centres); 60 (Peace Corps) | M14 table rows 1, 3, 6 and 4 respectively (absence_",
+   "sentence": "I searched the 76 volumes for documents that pair the Information Agency or its overseas posts with polls, surveys or research reports and found 64 documents in 28 volumes, but the Agency's study of a province south of Saigon, which its director said set out the problem with unusual clarity, is described and not printed."
+  },
+  {
+   "text": "R-10",
+   "values": [
+    "r-10"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22",
+   "sentence": "Its report number is R-10-65; the finding aids available to me do not identify the Agency's Far East research series for the , and the nearest listed is the Office of Research and Intelligence's Intelligence Production Division (NAID 1254251, , partly restricted)."
+  },
+  {
+   "text": "1254251",
+   "values": [
+    "1254251"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Its report number is R-10-65; the finding aids available to me do not identify the Agency's Far East research series for the , and the nearest listed is the Office of Research and Intelligence's Intelligence Production Division (NAID 1254251, , partly restricted)."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "64 (documents), 28 (volumes) - survey/poll scan; 33 (documents), 17 (volumes) - leaflet/script/film scan; 3 (binational centres); 60 (Peace Corps) | M14 table rows 1, 3, 6 and 4 respectively (absence_",
+   "sentence": "The messages themselves, the broadcast scripts, leaflets and films, are mostly described and not reproduced: 33 documents in 17 volumes mention them."
+  },
+  {
+   "text": "17",
+   "values": [
+    "17"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "64 (documents), 28 (volumes) - survey/poll scan; 33 (documents), 17 (volumes) - leaflet/script/film scan; 3 (binational centres); 60 (Peace Corps) | M14 table rows 1, 3, 6 and 4 respectively (absence_",
+   "sentence": "The messages themselves, the broadcast scripts, leaflets and films, are mostly described and not reproduced: 33 documents in 17 volumes mention them."
+  },
+  {
+   "text": "645643",
+   "values": [
+    "645643"
+   ],
+   "next": "whose",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "For Vietnam the shelves are the Ford Library's National Security Council Vietnam Information Group files (NAID 645643, whose Vietnam Subject Files run ) and the Agency's Vietnam Working Group files named above (the finding aids give no dates or access status for them)."
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Three (documents found by similarity); Three (days later) | Three vector-found documents: section 8 (frus1969-76ve12/d16, ve12/d17, frus1977-80v22/d3). 'Three days later': document_dates 1965-02-24 (f",
+   "sentence": "Day-to-day cultural work is thin: binational centers, the Agency's locally run cultural clubs, appear in only 3 documents."
+  },
+  {
+   "text": "76",
+   "values": [
+    "76"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "76 (volumes on East Asia and the Pacific) | M2 (SELECT COUNT(DISTINCT volume_id) ... IN the 76 ids = 76)",
+   "sentence": "I checked the searches against a common phrase that appears in all 76 volumes and a nonsense phrase that appears in none. **Scope.** I searched the 76 volumes on East Asia and the Pacific from to , and 14 volumes on information policy and public diplomacy, in an index that holds all 553 volumes of the series, setting aside front matter and editors' notes."
+  },
+  {
+   "text": "76",
+   "values": [
+    "76"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "76 (volumes on East Asia and the Pacific) | M2 (SELECT COUNT(DISTINCT volume_id) ... IN the 76 ids = 76)",
+   "sentence": "I checked the searches against a common phrase that appears in all 76 volumes and a nonsense phrase that appears in none. **Scope.** I searched the 76 volumes on East Asia and the Pacific from to , and 14 volumes on information policy and public diplomacy, in an index that holds all 553 volumes of the series, setting aside front matter and editors' notes."
+  },
+  {
+   "text": "14",
+   "values": [
+    "14"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "14 (volumes on information policy and public diplomacy) | M3 (= 14 volumes; also Lot count 'Kennedy 14' row in M13, same numeral different meaning)",
+   "sentence": "I checked the searches against a common phrase that appears in all 76 volumes and a nonsense phrase that appears in none. **Scope.** I searched the 76 volumes on East Asia and the Pacific from to , and 14 volumes on information policy and public diplomacy, in an index that holds all 553 volumes of the series, setting aside front matter and editors' notes."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "553 (volumes of the series in the index) | M1 (canary: COUNT(DISTINCT volume_id) = 553)",
+   "sentence": "I checked the searches against a common phrase that appears in all 76 volumes and a nonsense phrase that appears in none. **Scope.** I searched the 76 volumes on East Asia and the Pacific from to , and 14 volumes on information policy and public diplomacy, in an index that holds all 553 volumes of the series, setting aside front matter and editors' notes."
+  },
+  {
+   "text": "61",
+   "values": [
+    "61"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "61 (documents retrieved whole) | Section 7 reading accounting and retrieval_check.txt (61 of 61 whole)",
+   "sentence": "I retrieved 61 documents whole and the collection keeps those the argument rests on. ## Decisions this needs from you **What counts as soft power.** I took information, psychological, cultural and exchange programs and officials' judgments of the American image; adding aid, the Peace Corps and military assistance would bring in the 60 documents that mention the Peace Corps alone and turn the question toward development policy. **Which region.** I took the volumes titled for China, Japan, Korea, Southeast Asia and the Pacific and left out those titled for South Asia alone; two volumes mix South Asia with the rest, the volume titled Asia and the Pacific and the to volume on South and Southeast Asia, and I kept both, so their India and Pakistan documents are in the counts though none is cited. **Which years.** I searched to ; earlier years of missionary and wartime information work would extend the story but need a different vocabulary. **Whose assessment is *policymakers*.** I included Washington principals and public affairs officers in the field; narrowing to the Secretary and the White House would remove most judgments of effectiveness, which come from the Information Agency. **What counts as \"effective.\"** I used only what officials said of their own results; if you want measured effect, the sources are the Agency's research reports, not FRUS. ## Findings Washington read Asia as a revolutionary audience that would follow the winner In the Department's consultants proposed to the President \"[a] considerably expanded information program\" for both Communist and non-Communist Asia ."
+  },
+  {
+   "text": "60",
+   "values": [
+    "60"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "64 (documents), 28 (volumes) - survey/poll scan; 33 (documents), 17 (volumes) - leaflet/script/film scan; 3 (binational centres); 60 (Peace Corps) | M14 table rows 1, 3, 6 and 4 respectively (absence_",
+   "sentence": "I retrieved 61 documents whole and the collection keeps those the argument rests on. ## Decisions this needs from you **What counts as soft power.** I took information, psychological, cultural and exchange programs and officials' judgments of the American image; adding aid, the Peace Corps and military assistance would bring in the 60 documents that mention the Peace Corps alone and turn the question toward development policy. **Which region.** I took the volumes titled for China, Japan, Korea, Southeast Asia and the Pacific and left out those titled for South Asia alone; two volumes mix South Asia with the rest, the volume titled Asia and the Pacific and the to volume on South and Southeast Asia, and I kept both, so their India and Pakistan documents are in the counts though none is cited. **Which years.** I searched to ; earlier years of missionary and wartime information work would extend the story but need a different vocabulary. **Whose assessment is *policymakers*.** I included Washington principals and public affairs officers in the field; narrowing to the Secretary and the White House would remove most judgments of effectiveness, which come from the Information Agency. **What counts as \"effective.\"** I used only what officials said of their own results; if you want measured effect, the sources are the Agency's research reports, not FRUS. ## Findings Washington read Asia as a revolutionary audience that would follow the winner In the Department's consultants proposed to the President \"[a] considerably expanded information program\" for both Communist and non-Communist Asia ."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "76 (volumes on East Asia and the Pacific) | M2 (SELECT COUNT(DISTINCT volume_id) ... IN the 76 ids = 76)",
+   "sentence": "I retrieved 61 documents whole and the collection keeps those the argument rests on. ## Decisions this needs from you **What counts as soft power.** I took information, psychological, cultural and exchange programs and officials' judgments of the American image; adding aid, the Peace Corps and military assistance would bring in the 60 documents that mention the Peace Corps alone and turn the question toward development policy. **Which region.** I took the volumes titled for China, Japan, Korea, Southeast Asia and the Pacific and left out those titled for South Asia alone; two volumes mix South Asia with the rest, the volume titled Asia and the Pacific and the to volume on South and Southeast Asia, and I kept both, so their India and Pakistan documents are in the counts though none is cited. **Which years.** I searched to ; earlier years of missionary and wartime information work would extend the story but need a different vocabulary. **Whose assessment is *policymakers*.** I included Washington principals and public affairs officers in the field; narrowing to the Secretary and the White House would remove most judgments of effectiveness, which come from the Information Agency. **What counts as \"effective.\"** I used only what officials said of their own results; if you want measured effect, the sources are the Agency's research reports, not FRUS. ## Findings Washington read Asia as a revolutionary audience that would follow the winner In the Department's consultants proposed to the President \"[a] considerably expanded information program\" for both Communist and non-Communist Asia ."
+  },
+  {
+   "text": "28",
+   "values": [
+    "28"
+   ],
+   "next": "million",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "64 (documents), 28 (volumes) - survey/poll scan; 33 (documents), 17 (volumes) - leaflet/script/film scan; 3 (binational centres); 60 (Peace Corps) | M14 table rows 1, 3, 6 and 4 respectively (absence_",
+   "sentence": "\"Vietnamese audiences at USIS film showings last year totalled an estimated 28 million,\" USIS being the Agency's overseas arm."
+  },
+  {
+   "text": "million",
+   "values": [
+    "1000000"
+   ],
+   "next": "usi",
+   "kind": "word",
+   "class": "weak",
+   "row": "28 million (in a quotation) | Q14 (frus1964-68v01/d197 passage 'Vietnamese audiences at USIS film showings last year totalled an estimated 28 million.')",
+   "sentence": "\"Vietnamese audiences at USIS film showings last year totalled an estimated 28 million,\" USIS being the Agency's overseas arm."
+  },
+  {
+   "text": "Three",
+   "values": [
+    "3"
+   ],
+   "next": "day",
+   "kind": "word",
+   "class": "traced",
+   "row": "Three (documents found by similarity); Three (days later) | Three vector-found documents: section 8 (frus1969-76ve12/d16, ve12/d17, frus1977-80v22/d3). 'Three days later': document_dates 1965-02-24 (f",
+   "sentence": "Three days later he sent the President an Agency study of a province south of Saigon, which found the rural population \"largely apathetic\" and said the main obstacles were \"inadequate security and ineffective Government\" ."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "",
+   "kind": "word",
+   "class": "traced",
+   "row": "four (series of lot 62 D 430), three (series of lot 62 D 1) | M12 (lot-claimants-index.json: 4 and 3 claimants) - also 'three' counts the vector-found documents, see below",
+   "sentence": "In the director told the President that the Thai government \"has not given proper attention to the need for a national information program designed to gain popular support,\" and asked him to press for a Thai-initiated one ."
+  },
+  {
+   "text": "40",
+   "values": [
+    "40"
+   ],
+   "next": "spread",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "64 (documents), 28 (volumes) - survey/poll scan; 33 (documents), 17 (volumes) - leaflet/script/film scan; 3 (binational centres); 60 (Peace Corps) | M14 table rows 1, 3, 6 and 4 respectively (absence_",
+   "sentence": "The search treats related word forms alike, so I checked the family against the documents themselves: in a sample of 40 spread evenly through the results, 33 held the intended words, and the other seven held none of them."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "held",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "40 (sample), 33 (held the intended words), seven (the other seven) | M5 and M6 (33 of 40 tolerant and strict; seven misses, searched, none held the words)",
+   "sentence": "The search treats related word forms alike, so I checked the family against the documents themselves: in a sample of 40 spread evenly through the results, 33 held the intended words, and the other seven held none of them."
+  },
+  {
+   "text": "seven",
+   "values": [
+    "7"
+   ],
+   "next": "held",
+   "kind": "word",
+   "class": "weak",
+   "row": "61 (documents retrieved whole) | Section 7 reading accounting and retrieval_check.txt (61 of 61 whole)",
+   "sentence": "The search treats related word forms alike, so I checked the family against the documents themselves: in a sample of 40 spread evenly through the results, 33 held the intended words, and the other seven held none of them."
+  },
+  {
+   "text": "Three",
+   "values": [
+    "3"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "14 (volumes on information policy and public diplomacy) | M3 (= 14 volumes; also Lot count 'Kennedy 14' row in M13, same numeral different meaning)",
+   "sentence": "Three documents were found by their similarity to a Agency memorandum, by no word search I ran, and were read before they were cited."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "i",
+   "kind": "word",
+   "class": "weak",
+   "row": "553 (volumes of the series in the index) | M1 (canary: COUNT(DISTINCT volume_id) = 553)",
+   "sentence": "Every quotation in this overview and every excerpt in the collection is one I verified against its document, and every document cited here is in the collection."
+  }
+ ]
+}

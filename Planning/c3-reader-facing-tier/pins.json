@@ -1,0 +1,107 @@
+{
+  "question": "How did policymakers assess American soft power in the east Asia and Pacific region? What messaging strategies did they use and how effective did they think they were? What beliefs about the regional audience contributed to those strategies?",
+  "commits": {
+    "A": "848f37812b2341b9b37763d77a81ffba62979295",
+    "W": "b40d2da69d1fcac31b5f4cb58c2acf9a50a4f1a0",
+    "K": "5e8bd1bd0356be4cf92db2f3322e629374fbf347"
+  },
+  "guides_sha256": {
+    "A": "7a1972c2975e8b62313ae4de211d146f00d2e53ae6d8e03a834f7a120f0d11ee",
+    "W": "987323f0a1ea8347e8b799157edcd77862795f06ab2d4909b106a1b0ac218576",
+    "K": "5b1990f10f43b0fc4d05d699a49810f02a7c3a6ada5a5b0b41daa1e67d85b225"
+  },
+  "blocks": {
+    "A": {
+      "lines": 205,
+      "sha256": "c2f5511d8c976c351efd6d28de13363f0fe8ec6cf9301fdfa88859642f35f0a4"
+    },
+    "W": {
+      "lines": 218,
+      "sha256": "6f7462d590e473758d76ac778545b822030409a23083e051f4e618f50518ff4e"
+    },
+    "K": {
+      "lines": 212,
+      "sha256": "2f79eda128b81852486e47fd4f4010ce3225a192d9ee21309ad5e3f4c978567b"
+    }
+  },
+  "addenda": {
+    "A": {
+      "lines": 15,
+      "sha256": "e8117cb8273441dc7a665406ef5618f1f9131dc8cf6ddd32f61a74ff12a84882"
+    },
+    "W": {
+      "lines": 18,
+      "sha256": "b717c85633e5053410f8d5fe35d493cf660793031715656bff2d27f655bea379"
+    },
+    "K": {
+      "lines": 15,
+      "sha256": "e8117cb8273441dc7a665406ef5618f1f9131dc8cf6ddd32f61a74ff12a84882"
+    }
+  },
+  "appendices": {
+    "A": {
+      "lines": 346,
+      "sha256": "4e11cc17a49431535b9bc1d6e30c4bdc9d41ee6d0c5794ad026d0b7efd9aaf5b"
+    },
+    "W": {
+      "lines": 349,
+      "sha256": "c35275fd275e9ddf96d1707027baee58caf09fef93b4e4e5513f6b1af5c7d982"
+    },
+    "K": {
+      "lines": 346,
+      "sha256": "4e11cc17a49431535b9bc1d6e30c4bdc9d41ee6d0c5794ad026d0b7efd9aaf5b"
+    }
+  },
+  "prompts": {
+    "runner_A": {
+      "lines": 749,
+      "chars": 52206,
+      "sha256": "aeeb9c475a8039119ed9dc385dc8eeaa9d0e582c61c34a7ac1e98f81597a34b8"
+    },
+    "runner_W": {
+      "lines": 771,
+      "chars": 53985,
+      "sha256": "ea557c9b3756e8a1ded24f49bcd5b7f28d232efd7cdb0859fab74fb6a8cbdc4a"
+    },
+    "runner_K": {
+      "lines": 756,
+      "chars": 52928,
+      "sha256": "49df3459a39b9eceb25f08bd731fdb663239d8114a5f280579bb8b926cf76772"
+    },
+    "scorer": {
+      "lines": 59,
+      "chars": 4658,
+      "sha256": "b39665e3e8f53b6446447c1ce254a8f499df422d7c3d770199c2a5b2d1555e19"
+    },
+    "refuter": {
+      "lines": 114,
+      "chars": 9023,
+      "sha256": "ee9ffc9a4f93a4949408c7491b33e296582baf29896400657f8248e8fd1183bb"
+    },
+    "judge": {
+      "lines": 38,
+      "chars": 3194,
+      "sha256": "0af690cf7af78416daa225040fdb893d0acff6c4c303c0082238908990b881c8"
+    },
+    "canary": {
+      "lines": 436,
+      "chars": 29085,
+      "sha256": "333a746182510dabc5ccf438b8f7f61e5f9ace253c12a815fc1e6107c237fabb"
+    },
+    "cal_scorer": {
+      "lines": 59,
+      "chars": 4534,
+      "sha256": "4a2dab43956b72f9afbee34da16ee560295fea03a8b36b7fad591cb54458ebee"
+    },
+    "cal_steps_v2": {
+      "lines": 50,
+      "chars": 3778,
+      "sha256": "b8f925f5621184970c71fdc1b6c87e2a6fd7199eec4ce7bcd497b2bee42e96e5"
+    },
+    "cal_steps_r8": {
+      "lines": 50,
+      "chars": 3820,
+      "sha256": "7ba71354f4e6aa8242a6ee80c5000bb74f737c4cfca9c11dd23dce4659e50874"
+    }
+  }
+}

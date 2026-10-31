@@ -1,0 +1,3 @@
+The house rules' figures in f2's memo and overview: 1 occurrences. A number that only coincides with one of them (a document number, say) is not one of them.
+
+memo.md:108 1910-12-06 (the pointed-at channel starts) [1910-12-06]: …Caveat stated before use: the channel has no row before 1910-12-06, stores the citation fragment,…

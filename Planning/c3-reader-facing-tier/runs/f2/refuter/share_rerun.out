@@ -1,0 +1,8 @@
+"United States Information Agency" OR USIA                                       corpus  2194 | scope  913 | STRICT 40/40 | TOLERANT 40/40 | misses []
+"psychological warfare" OR "psychological strategy" OR "psychological operations corpus   863 | scope  363 | STRICT 39/40 | TOLERANT 40/40 | misses []
+propaganda                                                                       corpus 12107 | scope 3495 | STRICT 40/40 | TOLERANT 40/40 | misses []
+"image of the United States" OR "American image" OR "U.S. image"                 corpus   109 | scope   30 | STRICT 30/30 | TOLERANT 30/30 | misses []
+"information program"                                                            corpus   592 | scope  207 | STRICT 38/40 | TOLERANT 38/40 | misses ['frus1949v07p2/d317', 'frus1958-60v16/d294']
+"cultural exchange" OR "exchange of persons"                                     corpus   901 | scope  289 | STRICT 38/40 | TOLERANT 40/40 | misses []
+frus1949v07p2 d317 []
+frus1958-60v16 d294 []

@@ -302,6 +302,21 @@ returns. The revision reached the same two and kept the vectors' vocabulary out 
 text in 4 of 4 runs, where this text did in none. It also lost one more of the 35 items above, so
 by the tier's rule it is not adopted and this text stands.
 
+**The reader-facing tier, 2026-10-31**, measured two more revisions against this text on the same
+two cells (`Planning/C-3-Reader-Facing-Tier-Results-2026-10-31.md`), on a question about how
+policymakers assessed American soft power in East Asia and the Pacific, and the messaging they used.
+Each cell had two runs of this text, two of a revised READER-FACING OUTPUT section that ends the
+overview with a list of the documents cited, and two of three revised rules: the prefix-on-stem
+trap, a zero printed beside a relaxed query that returns rows, and a figure from these rules
+re-derived or attributed. The revised section changed the writing in every run: the median sentence
+fell from 23 words to 19, and the bottom line's first paragraph stayed within 165 words. But the
+reader judge, weighing the evidence first, ranked it above this text in one block of four, and it
+lost two more of the 35 items above. One run under the revised rules lost two items. So by the
+tier's rule, and on the owner's word ("Follow the rule"), neither was adopted. A rewrite test that
+then held the research fixed (`Planning/C-3-Reader-Facing-Rewrite-Test-2026-10-31.md`) found the
+revised section's overviews preferred in 7 of 8 pairs, and on the owner's word the revised section
+and its template were adopted at v1.40. The three revised rules were not.
+
 ---
 
 ## 4. Schema reference
@@ -1512,22 +1527,35 @@ REPORTING
   and how many you quoted; keep the reading SELECT and the raw text on disk.
 
 READER-FACING OUTPUT — the overview and the collection are for a historian, not for me
-- Write the overview in plain prose. No SQL, no table or column name, no volume_id/document_id
+- Write the overview, and the collection's introduction, prose and notes, in plain prose for a
+  reader who never sees the memo. No SQL, no table or column name, no volume_id/document_id
   string, no file path, no issue number. Those belong in the memo, which keeps every one.
-- Open with three paragraphs, in this order, before any finding: (1) what FRUS answers directly,
-  with the documents cited; (2) where FRUS points for the rest, the series the documents came
-  from and the series the footnotes cite unprinted, as two lists, each series by title, record
-  group and entry, NARA identifier, dates and access; (3) what this request cannot get from FRUS,
-  each as a search you ran, with its terms, volumes and controls, and the shelf if one exists.
-- Cite as the printed edition — "Foreign Relations of the United States, 1958–1960, Volume VII,
-  Part 1, Document 12" — then the history.state.gov URL. The id pair is for the memo and the log.
+- Nothing comes before the bottom line but the title. Its three parts, in this order, before
+  any finding: (1) what FRUS answers directly, in one paragraph of about 150 words, citing the
+  documents it rests on; (2) where FRUS points for the rest, as two bulleted lists, one series
+  to a line, by title, record group and entry, NARA identifier, dates and access: the series the
+  documents came from, then the series the footnotes cite unprinted; (3) what this request
+  cannot get from FRUS, each as a search you ran, with its terms, volumes and controls, and the
+  shelf if one exists.
+- In the text, cite a document by year, volume and number: "(1948, Volume VII, Document 506)".
+  End with a list headed "Documents cited", each cited once in full as the printed edition —
+  "Foreign Relations of the United States, 1958–1960, Volume VII, Part 1, Document 12" — then
+  the history.state.gov URL. Never cite by title, date or correspondent alone.
 - Give every number as a count of a named set in words ("about one document in seven among the
-  43 volumes indexed"), rounded to what the comparison needs; put the exact N of M, the rate and
-  the denominator in the memo and say "see the memo" once, not at every number.
+  43 volumes indexed"), rounded to what the comparison needs, and only the numbers the argument
+  needs. "Three ways" and "four governments" are numbers too. Do not count the overview's or the
+  collection's own parts ("the collection's sections", not "its six sections"), and say nothing
+  of the memo. Before you finish, list every numeral and number-word in the overview and find
+  each in the memo's trace table.
+- One claim to a sentence, and few sentences over 30 words. Put a quotation in its sentence or as
+  a block quote with the short citation, and do not repeat a citation the paragraph gave.
+- Write "I" for what you did and decided; let the documents' own actors carry what the record
+  shows.
 - Every quotation in the overview is one the memo verified against its document; every document
   the overview cites is in the collection. Check both before you finish, and say you did.
 - Explain a technical term the first time it appears, in the sentence, or do not use it: "the
-  index treats 'clearing agreement' and 'clear agreement' as the same words", not "stem".
+  search treats 'clearing agreement' and 'clear agreement' as the same words", not "stem";
+  "found", not "returned" or "hits"; "the volumes' source files", not "TEI".
 
 SCOPING — applies whenever you are scanning the corpus to decide what to search for
 - Run a POSITIVE control ("Department of State", expect nonzero in every volume) and a NEGATIVE
@@ -1625,7 +1653,10 @@ not one of the 26 items carried from C-0b lost a single run under the block, and
 block arm's six violations falls on the two items scoring the rules v1.20 rewrote.** One of those,
 the SQL/log rule, scored **0 of 4** there; v1.21 rewrote it again and **C-0d measured the 184-line
 text at 99.2%, with that rule at 4 of 4**. Records: `Planning/C0c-Falsifier-2026-09-06.md` and
-`Planning/C0d-Falsifier-2026-09-06.md`. It was separately measured to hold across a doubled
+`Planning/C0d-Falsifier-2026-09-06.md`. Since v1.40 the block is 218 lines: its READER-FACING
+OUTPUT section is the one the reader-facing tier ran as arm W, which over four runs lost two more
+of the 35 items than the 205-line text (`Planning/C-3-Reader-Facing-Tier-Results-2026-10-31.md`).
+It was separately measured to hold across a doubled
 session at its v1.10 length (C-2); that survival test has not been repeated on the longer text. Its
 blocks are not equally reachable in any case. This is what an agent handed only the database can and cannot do:
 
@@ -2477,14 +2508,15 @@ paragraphs in a fixed order, each carrying its evidence**, before any finding:
 
 1. **What FRUS answers directly.** The finding, in the historian's terms, with the documents it
    rests on cited as the edition (§8) and the set sized in words. A claim here with no cited
-   document is not a finding and does not go here.
+   document is not a finding and does not go here. It is one paragraph of about 150 words.
 2. **Where FRUS points for the rest.** The archival series the printed documents came from and
    the series the editors cited without printing, kept as two lists because they answer two
    questions (§8, §14.11), each series named as a researcher writes to an archive: title, record
    group and entry number, catalog identifier, date span, access status. The evidence is the count
    of citing documents or footnotes behind each series, in words. The Cuba scope's second list ran
    to 676 footnote pointers into 61 archival units, 15 of which the source notes never name, led
-   by the Carter Library's National Security Affairs files: that is the paragraph.
+   by the Carter Library's National Security Affairs files: that is the paragraph. In the
+   overview the two lists are bulleted, one series to a line.
 3. **What this request cannot get from FRUS.** Each part of the question the corpus does not hold,
    stated as a search that was run and found nothing, with the terms, the volumes and the controls
    that make the zero a measurement (§14.2, §14.6), and, where the shelf exists, where it is
@@ -2509,8 +2541,11 @@ no word search (§14.17's strict reading), that a similarity is a lead for readi
 evidence, and that each was read before it was cited; and where the full record is, with the
 query log summarised into the shape of the app's own method appendix (manual §17.6: one row per
 search, its scope, the volumes indexed at the time, what it returned, and whether a count is a
-floor), the raw log beside it; and **read next**: the collection, by name, what the historian's
-additions would unlock, and what they can do next in the app.
+floor), the raw log beside it; **read next**: the collection, by name, what the historian's
+additions would unlock, and what they can do next in the app; and **documents cited**: every
+document the overview cites, once each, in full as the printed edition (§8) with its
+history.state.gov URL, in the order first cited. In the text a document is cited by year,
+volume and document number, and this list resolves the short form.
 
 Three rules hold throughout the overview, and the §12 block states them to the agent. **No SQL,
 no table or column name, no `volume_id/document_id` string, no file path and no issue number
@@ -3254,6 +3289,32 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.40 — 2026-10-31: **the reader-facing section's revision adopted, on the owner's word** ("Include
+  in 1819, along with adopting R1 and R2"). The §12 block's READER-FACING OUTPUT section becomes the
+  style review's R1 (`Planning/Agentic-Guide-Reader-Facing-Style-Review-2026-10-30.md` §4): 30 lines
+  in place of 17, and the block 218 lines in place of 205. §14.16's template takes R2: part 1 of the
+  bottom line about 150 words, part 2 as bulleted lists, and a closing list of the documents cited,
+  with the text citing a document by year, volume and number. The evidence is the reader-facing
+  tier, whose arm W changed the writing in every run but lost two more of the 35 items than this
+  text and won one judged block of four, and the rewrite test that followed, which held the
+  research fixed and found the revised overviews preferred in 7 of 8 pairs
+  (`Planning/C-3-Reader-Facing-Rewrite-Test-2026-10-31.md`). By the tier's rule they would not have
+  been adopted; the owner adopted them with both results in hand. The vocabulary bullet and the
+  three revised rules are not adopted. §A.8's addendum, Appendix A and the §15.1 and §15.1a blocks
+  are unchanged.
+- 1.39 — 2026-10-31: **the reader-facing tier's measurement, adopting nothing**
+  (`Planning/C-3-Reader-Facing-Tier-Design.md`,
+  `Planning/C-3-Reader-Facing-Tier-Results-2026-10-31.md`). §3a records the tier: twelve runs on
+  2026-10-31, the same two cells, this text against a revised READER-FACING OUTPUT section with a
+  closing Documents cited list and the vocabulary bullet in §A.8's addendum (candidate W), and
+  against three revised §12 rules, the prefix-on-stem trap, the zero beside a relaxed query and a
+  guide figure re-derived or attributed (candidate K), on a question about American soft power in
+  East Asia and the Pacific. The revised section shortened the sentences and the bottom line in
+  every run, but the reader judge ranked it above this text in one block of four, and it lost two
+  more of the 35 items; one run under the revised rules lost two items. By the tier's rule, and on
+  the owner's word ("Follow the rule"), neither is adopted. Both stay on their branches, labelled
+  1.39 (candidate W) and 1.39 (candidate K), and the §12 block, §A.8's addendum and Appendix A are
+  unchanged. The §15.1 and §15.1a blocks are unchanged.
 - 1.38 — 2026-10-30: **the owner's answers to the steering review, and the measurement they set**
   (`Planning/C-3-Steering-Tier-Design.md`, `Planning/C-3-Steering-Tier-Results-2026-10-30.md`).
   §14.17 and §14.16 leave centroid similarity out of the pass, where v1.37 kept it optional (the

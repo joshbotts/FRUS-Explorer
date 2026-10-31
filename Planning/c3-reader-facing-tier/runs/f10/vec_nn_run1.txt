@@ -1,0 +1,39 @@
+
+ANCHOR frus1917-72PubDipv07/d73 | 73. Memorandum From the Acting Assistant Director, Office of the Assistant Direc
+ hamming top10 (sign scan): [87, 103, 104, 105, 108, 108, 109, 109, 109, 110]
+  cos_raw 0.927 cal 0.878 ham  87  frus1917-72PubDipv07/d69 | 69. Memorandum From the Special Assistant to the Director of the United States I
+  cos_raw 0.893 cal 0.822 ham 108  frus1917-72PubDipv08/d31 | 31. Letter From the Assistant Director, East Asia and the Pacific, United States
+  cos_raw 0.889 cal 0.816 ham 104  frus1952-54v13p1/d116 | The Ambassador at Saigon (Heath) to the Department of State
+  cos_raw 0.886 cal 0.810 ham 103  frus1917-72PubDipv07/d159 | 159. Letter From the Director of the United States Information Agency (Marks) to
+  cos_raw 0.882 cal 0.803 ham 124  frus1977-80v30/d68 | 68. Memorandum From the Director of the United States Information Agency (Reinha
+  cos_raw 0.881 cal 0.802 ham 111  frus1917-72PubDipv07/d106 | 106. Minutes of a Meeting of the President’s General Advisory Committee on Forei
+  cos_raw 0.878 cal 0.796 ham 109  frus1917-72PubDipv07/d74 | 74. Memorandum From the Assistant Director, Near East and South Asia, United Sta
+  cos_raw 0.877 cal 0.796 ham 116  frus1917-72PubDipv07/d94 | 94. Letter From the Director of the United States Information Agency (Marks) to 
+  cos_raw 0.875 cal 0.791 ham 118  frus1917-72PubDipv08/d99 | 99. Paper Prepared in the United States Information Agency
+  cos_raw 0.874 cal 0.791 ham 113  frus1917-72PubDipv07/d32 | 32. Memorandum From James N. Tull of the Office of the Assistant Director for Fa
+
+ANCHOR frus1964-68v26/d106 | 106. Memorandum From Director of the United States Information Agency Rowan to S
+ hamming top10 (sign scan): [87, 87, 88, 89, 90, 92, 95, 95, 95, 96]
+  cos_raw 0.908 cal 0.846 ham  92  frus1964-68v26/d109 | 109. Telegram From the Embassy in Indonesia to the Department of State
+  cos_raw 0.901 cal 0.835 ham  88  frus1964-68v26/d113 | 113. Telegram From the Embassy in Indonesia to the Department of State
+  cos_raw 0.901 cal 0.835 ham 102  frus1964-68v26/d111 | 111. Telegram From the Embassy in Indonesia to the Department of State
+  cos_raw 0.900 cal 0.833 ham  89  frus1964-68v26/d124 | 124. Telegram From the Embassy in Indonesia to the Department of State
+  cos_raw 0.898 cal 0.829 ham  90  frus1964-68v26/d139 | 139. Telegram From the Department of State to the Embassy in Indonesia
+  cos_raw 0.894 cal 0.823 ham 113  frus1964-68v26/d129 | 129. Memorandum From the Director, Far East Region (Blouin) to the Assistant Sec
+  cos_raw 0.893 cal 0.822 ham  97  frus1964-68v26/d108 | 108. Telegram From the Department of State to the Embassy in Indonesia
+  cos_raw 0.890 cal 0.816 ham  87  frus1964-68v26/d115 | 115. Telegram From the Embassy in Indonesia to the Department of State
+  cos_raw 0.888 cal 0.814 ham 102  frus1964-68v26/d203 | 203. Telegram From the Department of State to the Embassy in Indonesia
+  cos_raw 0.887 cal 0.812 ham 109  frus1964-68v26/d102 | 102. Telegram From the Department of State to the Embassy in the United Kingdom
+
+ANCHOR frus1950v06/d32 | Memorandum of Conversation, by Mr. Charlton Ogburn, Policy Information Officer, 
+ hamming top10 (sign scan): [68, 80, 81, 81, 81, 82, 82, 83, 84, 84]
+  cos_raw 0.931 cal 0.885 ham  68  frus1950v06/d22 | Record of the Conversation Between the Ambassador at Large (Jessup) and Represen
+  cos_raw 0.924 cal 0.873 ham  82  frus1950v06/d53 | Minutes of the Nineteenth Meeting of the Foreign Military Assistance Coordinatin
+  cos_raw 0.921 cal 0.868 ham  81  frus1950v03/d552 | United States Delegation Minutes, Third Session, Preliminary Conversations for t
+  cos_raw 0.916 cal 0.861 ham  85  frus1951v06p1/d8 | Memorandum by the Assistant Secretary of State for Far Eastern Affairs (Rusk) to
+  cos_raw 0.915 cal 0.859 ham  85  frus1950v06/d113 | Memorandum of Conversation, by the Ambassador at Large (Jessup)
+  cos_raw 0.915 cal 0.858 ham  81  frus1950v06/d89 | Final Report of the Joint MDAP Survey Mission to Southeast Asia
+  cos_raw 0.914 cal 0.856 ham  90  frus1955-57v21/d171 | 171. United States Minutes of the ANZUS Council Meeting, Department of State, Wa
+  cos_raw 0.911 cal 0.852 ham  88  frus1955-57v21/d122 | 122. United States Minutes of the ANZUS Council Meeting, Department of State, Wa
+  cos_raw 0.911 cal 0.851 ham  84  frus1952-54v12p1/d57 | United States Minutes of the First Meeting, ANZUS Council: Fifth Session
+  cos_raw 0.910 cal 0.850 ham  87  frus1950v06/d5 | Memorandum of Conversation, by the Ambassador at Large (Jessup)

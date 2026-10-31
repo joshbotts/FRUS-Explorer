@@ -1,0 +1,5 @@
+59D260 | RG 306 | NAID 1257679 | entry ['UD-WW 151', 'UD-WW 197', 'UD-WW 234', 'UD-WW 264', 'UD-WW 287', 'UD-WW 288', 'UD-WW 365', 'UD-WW 366', 'UD-WW 372', 'UD-WW 379', 'UD-WW 382'] | Subject Files | control
+    facts: {'creator': 'U.S. Information Agency. Office of Policy and Plans.', 'inclusiveStartYear': 1953, 'inclusiveEndYear': 1971, 'accessStatus': 'Restricted - Partly', 'useStatus': 'Restricted - Possibly', 'extent': '47 linear feet', 'accessRestrictions': ['FOIA (b)(1) National Security']}
+63D224 NOT IN central-files-index lotFiles
+62D255 NOT IN central-files-index lotFiles
+60D322 NOT IN central-files-index lotFiles

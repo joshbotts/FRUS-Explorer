@@ -1,0 +1,11 @@
+map-index keys ['clusters', 'documentCount', 'generated', 'gridExtent', 'layout', 'provenanceDigest', 'schema']
+{"centreX": -2259, "centreY": -10310, "documentCount": 698, "eraCounts": {"1": 134, "2": 564}, "id": 0, "terms": ["spanish", "salazar", "spain", "lagen"]}
+unclustered 88059 of 314616 (28.0%)
+frus1917-72PubDipv07/d73 cluster 29 {"centreX": -27774, "centreY": 1899, "documentCount": 8631, "eraCounts": {"2": 8631}, "id": 29, "terms": ["lao", "vietnamese", "vietnam", "thieu"]}
+frus1964-68v26/d106 cluster 32 {"centreX": -23295, "centreY": 3505, "documentCount": 1125, "eraCounts": {"1": 1, "2": 1124}, "id": 32, "terms": ["sukarno", "indonesian", "indonesia", "nasution"]}
+frus1950v06/d32 cluster 31 {"centreX": -25723, "centreY": 6048, "documentCount": 2775, "eraCounts": {"1": 1, "2": 2774}, "id": 31, "terms": ["indochina", "minh", "bao", "dai"]}
+frus1917-72PubDipv08/d31 cluster UNCLUSTERED 
+frus1952-54v13p1/d116 cluster 29 {"centreX": -27774, "centreY": 1899, "documentCount": 8631, "eraCounts": {"2": 8631}, "id": 29, "terms": ["lao", "vietnamese", "vietnam", "thieu"]}
+frus1917-72PubDipv07/d32 cluster 29 {"centreX": -27774, "centreY": 1899, "documentCount": 8631, "eraCounts": {"2": 8631}, "id": 29, "terms": ["lao", "vietnamese", "vietnam", "thieu"]}
+frus1977-80v30/d79 cluster UNCLUSTERED 
+frus1917-72PubDipv06/d107 cluster 138 {"centreX": -19386, "centreY": -5809, "documentCount": 2189, "eraCounts": {"1": 6, "2": 2183}, "id": 138, "terms": ["cia", "nsc", "usia", "inglis"]}

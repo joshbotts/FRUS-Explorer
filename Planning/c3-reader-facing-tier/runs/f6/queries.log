@@ -1,0 +1,62 @@
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"   -> 553|321749|1103|8481
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "BEGIN; CREATE TABLE zz(x); ROLLBACK;"   -> Error: attempt to write a readonly database
+sqlite3 -readonly $DB '.schema document_cache' ; '.schema frus_documents'
+python3 (inspect manifest.json top-level keys)
+python3 manifest.json title-keyword listing (script inline; output /tmp/x)
+python3 manifest.json -> eap_volumes.txt (East Asia/Pacific volume selection by title regex, earliest year>=1944, South Asia excluded)
+./cnt.sh '"USIS"'  (FTS MATCH on frus_documents joined document_cache, is_front_matter=0 AND is_editorial_note=0 AND volume_id IN eap_volumes.txt)
+./cnt.sh '"USIA"'  (FTS MATCH on frus_documents joined document_cache, is_front_matter=0 AND is_editorial_note=0 AND volume_id IN eap_volumes.txt)
+./cnt.sh '"Voice of America"'  (FTS MATCH on frus_documents joined document_cache, is_front_matter=0 AND is_editorial_note=0 AND volume_id IN eap_volumes.txt)
+./cnt.sh '"information program"'  (FTS MATCH on frus_documents joined document_cache, is_front_matter=0 AND is_editorial_note=0 AND volume_id IN eap_volumes.txt)
+./cnt.sh '"psychological"'  (FTS MATCH on frus_documents joined document_cache, is_front_matter=0 AND is_editorial_note=0 AND volume_id IN eap_volumes.txt)
+./cnt.sh '"propaganda"'  (FTS MATCH on frus_documents joined document_cache, is_front_matter=0 AND is_editorial_note=0 AND volume_id IN eap_volumes.txt)
+./cnt.sh '"cultural exchange"'  (FTS MATCH on frus_documents joined document_cache, is_front_matter=0 AND is_editorial_note=0 AND volume_id IN eap_volumes.txt)
+./cnt.sh '"educational exchange"'  (FTS MATCH on frus_documents joined document_cache, is_front_matter=0 AND is_editorial_note=0 AND volume_id IN eap_volumes.txt)
+./cnt.sh '"prestige"'  (FTS MATCH on frus_documents joined document_cache, is_front_matter=0 AND is_editorial_note=0 AND volume_id IN eap_volumes.txt)
+./cnt.sh '"hearts and minds"'  (FTS MATCH on frus_documents joined document_cache, is_front_matter=0 AND is_editorial_note=0 AND volume_id IN eap_volumes.txt)
+./cnt.sh '"soft power"'  (FTS MATCH on frus_documents joined document_cache, is_front_matter=0 AND is_editorial_note=0 AND volume_id IN eap_volumes.txt)
+./cnt.sh '"image of the United States"'  (FTS MATCH on frus_documents joined document_cache, is_front_matter=0 AND is_editorial_note=0 AND volume_id IN eap_volumes.txt)
+./cnt.sh '"Asian mind"'  (FTS MATCH on frus_documents joined document_cache, is_front_matter=0 AND is_editorial_note=0 AND volume_id IN eap_volumes.txt)
+./cnt.sh '"ZZZ_IMPOSSIBLE_ZZZ"'  (FTS MATCH on frus_documents joined document_cache, is_front_matter=0 AND is_editorial_note=0 AND volume_id IN eap_volumes.txt)
+./cnt.sh '"Department of State"'  (FTS MATCH on frus_documents joined document_cache, is_front_matter=0 AND is_editorial_note=0 AND volume_id IN eap_volumes.txt)
+sqlite3 -readonly $DB "SELECT d.volume_id,d.document_id,header... FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH 'header : (USIA OR USIS OR information OR psychological OR propaganda OR cultural OR educational OR \"public diplomacy\" OR \"Voice of America\" OR prestige)' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id IN (eap) ORDER BY volume_id,rowid" > hdr_hits.txt
+./rank.sh '(USIA OR USIS OR "information program" OR "information activities" OR "Voice of America" OR "psychological program" OR "cultural program") AND (effectiveness OR impact OR image OR attitudes) AND (Asian OR Asians OR "Far East")' 50   (FTS MATCH + bm25 ASC, EAP volumes, non-apparatus)
+./rank.sh '("Asian mind" OR "Asian psychology" OR "Oriental mind" OR "Asian mentality" OR "Asians are" OR "peoples of Asia" OR "Asian peoples") AND (propaganda OR information OR psychological OR USIA OR USIS OR prestige)' 30
+./rank.sh '("hearts and minds" OR "Voice of America" OR "cultural exchange" OR "educational exchange" OR Fulbright OR "leader grant")' 30
+./rank.sh '(Asia OR Asian OR Vietnam OR Japan OR Japanese OR Korea OR China OR Chinese OR Thailand OR Philippines OR Indonesia OR Indochina OR Laos OR Pacific)' 60 info_in.txt  (info/public-diplomacy volume set in info_in.txt)
+./getdoc.sh <vol> <doc>  :: SELECT header||'DATELINE'||dateline||'SOURCE'||source_note||body_text FROM document_cache WHERE volume_id='<vol>' AND document_id='<doc>'  -> docs/<vol>__<doc>.txt (used for every document read; ids listed in docs/ directory)
+./rank.sh '(USIS OR USIA OR "information program" OR "cultural exchange" OR "educational exchange" OR propaganda OR "psychological") AND (Japan OR Japanese) AND (image OR opinion OR attitudes OR anti-American OR effective)' 25 jp_in.txt
+./rank.sh '(USIS OR USIA OR "information program" OR "cultural exchange" OR "educational exchange" OR propaganda OR psychological) AND (Japan OR Japanese) AND (image OR opinion OR attitudes OR "anti American" OR effective)' 25 jp_in.txt
+sqlite3 -readonly $DB '.schema document_dates' '.schema document_sources' '.schema external_citations'; select * from document_dates limit 3
+sqlite3 -readonly $DB < decade.sql   (decade.sql in run dir: hits = frus_documents MATCH QA in EAP volumes, non-apparatus; base = dated docs via document_dates.date_iso)
+python3 share.py 'QA family, EAP volumes' '<QA FTS>' '<strict regex>' '<tolerant regex>' eap_in.txt  (QA = (USIA OR USIS OR "Information Agency" OR "Information Service" OR "Voice of America" OR "information program" OR "psychological program" OR "psychological strategy" OR "cultural exchange" OR "educational exchange") ; strict = USIA|USIS|Information Agency|Information Service|Voice of America|information program|psychological program|psychological strategy|cultural exchange|educational exchange ; tolerant = USIA|USIS|Information\W+Agenc|Information\W+Servic|Voice\W+of\W+America|information\W+programm?e?s?|psychological\W+(programm?e?s?|strateg\w+)|cultural\W+exchang\w+|educational\W+exchang\w+) -> share_results.txt
+for t in soft power|public diplomacy|messaging|audience|Department of State|ZZZ: SELECT t, (eap hits via FTS MATCH join document_cache, apparatus excluded, volume_id IN eap), eap_docs, (other hits NOT IN eap), other_docs  -> falsefriend.txt
+WITH hits(QA family in EAP) JOIN document_sources GROUP BY repository, record_group -> src_channel_qa.txt
+SELECT ... FROM document_sources s JOIN document_cache d ... WHERE s.record_group IN ('306','305') AND apparatus excluded AND volume_id IN (eap + info) -> rg306.txt
+python3 (inspect semantic-vectors-index.json keys; read provenance digests: index provenanceDigest, binary hdr@20, map hdr@20, shard hdr@16)
+python3 vec.py  (decode segments, round-trip check 553 of 553, random-pair baseline random.Random(1877) 20000 pairs, 25th-neighbour baseline 200 docs random.Random(2026)) -> vec_baselines.txt
+python3 vecnn.py frus1917-72PubDipv08/d31 frus1969-76v38p2/d105 frus1964-68v01/d197  (Hamming-800 over semantic-vectors-binary.bin sign bits, int8 shard rerank, top 15, calibrated (cos-0.40)/0.60; join to document_cache/document_dates; FTS QA membership) -> vec_neighbours.txt
+python3 (per cited doc: document_cache flags/number, document_dates.date_iso, document_sources row) for cited.txt
+python3 jsonscan.py (regex scan of the bundled JSON for USIA accession/lot patterns and NAID 2839192)
+WITH hits(QA family in EAP) JOIN external_citations GROUP BY anchor,repository,collection,lot_file_norm ORDER BY count DESC -> pointed_at_qa.txt
+python3 (membership of frus1969-76ve12/d16, ve12/d17, frus1977-80v22/d3 in the full ordered result lists of each FTS query run in this session, FTS MATCH ordered by bm25) 
+python3 (semantic-map.bin placements: cluster for each cited doc; labels from semantic-map-index.json clusters; corpus unclustered count) -> map_cited.txt
+python3 (pairwise Hamming over sign bits among the 25 cited documents; near-duplicate screen) -> vec_pairs.txt
+python3 verify_excerpts.py  (SELECT body_text FROM document_cache WHERE volume_id=? AND document_id=? ; substring test of each excerpt in excerpts.json) -> excerpt_verification.txt
+python3 (compare each docs/*.txt body against SELECT body_text; length in characters) -> retrieval_check.txt
+./absence.sh  (absence/control scans over EAP volumes; script body in run dir; results in absence_results.txt)
+./rank.sh '(USIA OR USIS) AND (poll OR survey OR "opinion research" OR "research report" OR "audience research")' 10
+same hits CTE JOIN external_citations WHERE lot_file_norm IN (66D95,62D430,63D351) GROUP BY lot,volume
+(cited.txt and excerpts.json extended after reading frus1961-63v01/d339 and frus1964-68v02/d172 via getdoc.sh)
+sqlite3 -readonly $DB "SELECT COUNT(DISTINCT volume_id), SUM(is_front_matter=0 AND is_editorial_note=0) FROM document_cache WHERE volume_id IN (<eap_volumes.txt, 76 ids>);"  -> 76 | 36972
+sqlite3 -readonly $DB "SELECT COUNT(DISTINCT volume_id), SUM(is_front_matter=0 AND is_editorial_note=0) FROM document_cache WHERE volume_id IN (<info_in.txt, 14 ids>);"  -> 14 | 3743
+sqlite3 -readonly $DB "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"soft power\"';"  (whole index, no filters)
+sqlite3 -readonly $DB "SELECT COUNT(*), COUNT(DISTINCT volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE frus_documents MATCH '\"Peace Corps\"' AND apparatus excluded AND volume_id IN (eap)"
+python3 build_overview.py; python3 build_collection.py; python3 (validate collection: every pair exists in document_cache, excerpts verbatim in body_text, no duplicates, overview cites subset of collection)
+python3 archival_facts.py  (reads series-facts-index, accession-series-index, central-files-index, lot-claimants-index, presidential-library-catalog, decimal-class-labels) -> archival_facts.txt
+python3 (compare provenanceDigest to all 553 Tier-2 shard headers at offset 16) -> digest_check.txt
+python3 ctx.py docs/<vol>__<doc>.txt '<regex>' <window> <n>   (keyword-in-context reads of already-retrieved documents; run for frus1950v06/d32, frus1955-57v22/d448, frus1949v07p2/d386, d338, frus1958-60v18/d180, frus1952-54v14p2/d820, frus1955-57v09/d185, d54, frus1964-68v01/d197)
+python3 (print header + collapsed body of docs/<vol>__<doc>.txt, first N characters; run for each document listed as "read" in memo section 7)
+python3 build_overview.py; python3 build_collection.py; python3 build_memo.py; python3 build_trace.py; cat memo_head.md memo_part2.md memo_part3.md > memo.md
+python3 (final validation: every overview quotation is a substring of a verified passage; every collection pair exists; overview cites subset of collection; collection JSON parses)
+ELIDED: (1) the 76-id and 14-id volume lists are written as <76 ids>/<14 ids> or eap_in.txt/info_in.txt in several lines (the full lists are in memo section 2 and in eap_volumes.txt, info_in.txt); (2) the QA search expression is abbreviated to <QA> in several lines (its full text is in memo M4 and in the first lines that used it); (3) every inline python3 heredoc body (manifest listing, JSON inspections, vec/shard readers, archival lookups, validation scripts) is replaced by a one-line description, and the scripts that survive on disk are share.py, vec.py, vecnn.py, archival_facts.py, jsonscan.py, ctx.py, rank.sh, cnt.sh, getdoc.sh, absence.sh, verify_excerpts.py and the build_*.py files; (4) the individual commands that printed documents to me for reading (cat/python print of docs/*.txt) are summarised by the two lines above, not listed one by one; (5) the ten or so exploratory ranked queries of rank.sh whose result lists I read are logged with their query strings, but the second-pass sqlite3 calls that listed neighbours' headers are folded into vecnn.py; (6) several outputs (hdr_hits.txt, rank1.txt, rank_info.txt, rg306.txt) are on disk and not reproduced here; (7) a few small shell commands (ls, wc, grep, mkdir, cat of heads) are not logged.

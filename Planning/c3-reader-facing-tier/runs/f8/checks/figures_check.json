@@ -1,0 +1,55 @@
+{
+ "run": "runs/f8",
+ "arm": "W",
+ "occurrences": [
+  {
+   "file": "memo.md",
+   "line": 75,
+   "figure": "701 (the Ed2 overlap, index)",
+   "match": "701",
+   "context": "M6. **701** documents in **69 of 75** regional volumes. (Thematic volumes not included in this set.)"
+  },
+  {
+   "file": "memo.md",
+   "line": 167,
+   "figure": "1910-12-06 (the pointed-at channel starts)",
+   "match": "1910-12-06",
+   "context": "SQL: `SELECT repository, collection, lot_file, file_id, substr(raw_text,1,140) FROM external_citations WHERE volume_id=? AND document_id=?`. Caveat: this channel has no rows before 1910-12-06, stores the citation fragment, and holds lot, library and decimal anchors only."
+  },
+  {
+   "file": "memo.md",
+   "line": 174,
+   "figure": "701 (the Ed2 overlap, index)",
+   "match": "701",
+   "context": "### 6.3 Channels over the topic set (701 regional documents) — `archival_topicset.txt`"
+  },
+  {
+   "file": "memo.md",
+   "line": 175,
+   "figure": "701 (the Ed2 overlap, index)",
+   "match": "701",
+   "context": "- CAME-FROM rows 701 of 701. Citation forms: decimal 249, structured 244, lot_file 116, subject_numeric 61, named_series 25, published 2, foreign 2, cfpf 2. Top: Johnson Library NSF 58; Nixon NSC Files 33; Kennedy NSF 26; lot 63D351 16; lot"
+  },
+  {
+   "file": "memo.md",
+   "line": 175,
+   "figure": "701 (the Ed2 overlap, index)",
+   "match": "701",
+   "context": "- CAME-FROM rows 701 of 701. Citation forms: decimal 249, structured 244, lot_file 116, subject_numeric 61, named_series 25, published 2, foreign 2, cfpf 2. Top: Johnson Library NSF 58; Nixon NSC Files 33; Kennedy NSF 26; lot 63D351 16; lot 62D430"
+  },
+  {
+   "file": "memo.md",
+   "line": 179,
+   "figure": "11 of 695 (series before 1940)",
+   "match": "11 of 695",
+   "context": "Pre-1940 note: the offline archival stack barely reaches before 1940 (11 of 695 bundled series); this scope begins in 1945, so the limit does not bite here. No [HARVEST] path was given: that surface is unavailable."
+  },
+  {
+   "file": "memo.md",
+   "line": 206,
+   "figure": "701 (the Ed2 overlap, index)",
+   "match": "701",
+   "context": "| \"about 700 documents\" in \"sixty-nine of the seventy-five\" volumes | M6 (701; 69 of 75) |"
+  }
+ ]
+}

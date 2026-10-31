@@ -1,0 +1,33 @@
+ANCHOR frus1964-68v01/d122 ('122. Memorandum From the Director of the United States Information Agency (Rowan) to ', 'Washington, April 21, 1964.')
+  ham  45 cos_raw 0.977 cal 0.962 frus1917-72PubDipv07/d13 | 13. Memorandum From the Director of United States Information Agency (Rowan) to Presi | Washington, April 21, 1964
+  ham  73 cos_raw 0.944 cal 0.906 frus1917-72PubDipv07/d37 | 37. Memorandum From the Director of the United States Information Agency (Rowan) to P | Washington, March 16, 1965
+  ham  82 cos_raw 0.930 cal 0.883 frus1917-72PubDipv07/d16 | 16. Memorandum From the Director of the United States Information Agency (Rowan) to P | Washington, May 26, 1964
+  ham  83 cos_raw 0.921 cal 0.868 frus1964-68v01/d177 | 177. Memorandum From the Director of the United States Information Agency (Rowan) to  | Washington, May 26, 1964.
+  ham 100 cos_raw 0.918 cal 0.863 frus1964-68v02/d160 | 160. Memorandum From the Director of the United States Information Agency (Rowan) to  | Washington, February 24, 1965.
+  ham  99 cos_raw 0.899 cal 0.831 frus1964-68v01/d197 | 197. Memorandum From the Director of the United States Information Agency (Rowan) to  | Washington, June 4, 1964.
+  ham 100 cos_raw 0.889 cal 0.815 frus1917-72PubDipv07/d32 | 32. Memorandum From James N. Tull of the Office of the Assistant Director for Far Eas | Washington, October 30, 1964
+  ham  95 cos_raw 0.889 cal 0.814 frus1917-72PubDipv07/d78 | 78. News Release Prepared in the Office of Public Information, United States Informat | New York, February 11, 1966
+  ham  98 cos_raw 0.887 cal 0.812 frus1917-72PubDipv07/d157 | 157. Memorandum From the Director of the United States Information Agency (Marks) to  | Washington, July 13, 1967
+  ham  97 cos_raw 0.887 cal 0.812 frus1964-68v01/d127 | 127. Memorandum From the Secretary of State’s Special Assistant for Vietnam (Sullivan | Washington, April 24, 1964.
+ANCHOR frus1961-63v02/d197 ('197. Memorandum From the Public Affairs Officer at the Embassy in Vietnam (Mecklin) t', 'Saigon, May 17, 1962.')
+  ham  92 cos_raw 0.890 cal 0.816 frus1961-63v02/d328 | 328. Report by the Deputy Director of the Vietnam Working Group (Heavner) | Washington, December 11, 1962.
+  ham 103 cos_raw 0.887 cal 0.812 frus1961-63v02/d127 | 127. Airgram From the Embassy in Vietnam to the Department of State | Saigon, March 23, 1962.
+  ham 102 cos_raw 0.883 cal 0.806 frus1961-63v01/d166 | 166. Memorandum From Robert H. Johnson of the National Security Council Staff to the  | Washington. October 14, 1961.
+  ham 109 cos_raw 0.882 cal 0.803 frus1961-63v03/d71 | 71. Telegram From the Commander, Military Assistance Command, Vietnam (Harkins) to th | Saigon, March 30, 1963, 2:05 p
+  ham  99 cos_raw 0.882 cal 0.803 frus1961-63v01/d339 | 339. Memorandum From the Public Affairs Officer of the Embassy in Viet-Nam (Anspacher | Saigon, December 23, 1961.
+  ham 101 cos_raw 0.882 cal 0.803 frus1961-63v04/d347 | 347. Memorandum From the Assistant Secretary of State for Far Eastern Affairs (Hilsma | Washington, December 5, 1963.
+  ham 104 cos_raw 0.880 cal 0.800 frus1964-68v01/d197 | 197. Memorandum From the Director of the United States Information Agency (Rowan) to  | Washington, June 4, 1964.
+  ham 105 cos_raw 0.880 cal 0.800 frus1961-63v02/d203 | 203. Telegram From the Embassy in Vietnam to the Department of State | Saigon, May 23, 1962—3 p.m.
+  ham 111 cos_raw 0.879 cal 0.799 frus1958-60v01/d112 | 112. Despatch From the Ambassador in Vietnam (Durbrow) to the Department of State | Saigon, March 7, 1960.
+  ham 105 cos_raw 0.877 cal 0.795 frus1917-72PubDipv07/d32 | 32. Memorandum From James N. Tull of the Office of the Assistant Director for Far Eas | Washington, October 30, 1964
+ANCHOR frus1952-54v13p1/d116 ('The Ambassador at Saigon (Heath) to the Department of State', 'Saigon, September 20, 1952—3 p')
+  ham  88 cos_raw 0.906 cal 0.843 frus1917-72PubDipv08/d31 | 31. Letter From the Assistant Director, East Asia and the Pacific, United States Info | Washington, August 5, 1969
+  ham  85 cos_raw 0.904 cal 0.840 frus1917-72PubDipv06/d142 | 142. Memorandum From the Director of the United States Information Agency (Murrow) to | Washington, September 20, 1963
+  ham  95 cos_raw 0.904 cal 0.839 frus1917-72PubDipv07/d32 | 32. Memorandum From James N. Tull of the Office of the Assistant Director for Far Eas | Washington, October 30, 1964
+  ham  92 cos_raw 0.900 cal 0.833 frus1955-57v09/d207 | 207. Report Prepared by the National Security Council | Washington, September 11, 1957
+  ham  87 cos_raw 0.900 cal 0.833 frus1917-72PubDipv07/d106 | 106. Minutes of a Meeting of the President’s General Advisory Committee on Foreign As | Washington, September 12, 1966
+  ham  94 cos_raw 0.898 cal 0.830 frus1951v01/d332 | Study Prepared by the Department of State | [Washington, October 12, 1951.
+  ham 102 cos_raw 0.896 cal 0.827 frus1955-57v09/d185 | 185. Report Prepared by the National Security Council | Washington, March 2, 1955.
+  ham 106 cos_raw 0.896 cal 0.826 frus1955-57v09/d190 | 190. Report Prepared by the National Security Council | Washington, August 31, 1955.
+  ham  94 cos_raw 0.894 cal 0.823 frus1917-72PubDipv06/d3 | 3. Report Prepared by Deputy Director-Designate Donald M. Wilson | Washington, December 1960.
+  ham  93 cos_raw 0.894 cal 0.823 frus1952-54v02p2/d370 | Report to the President by the President’s Committee on International Information Act | [Washington,] June 30, 1953.

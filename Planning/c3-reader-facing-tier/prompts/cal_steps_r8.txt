@@ -1,0 +1,51 @@
+You are the refuter for one research session's output. Your job is to find the wrong number, the
+quotation that is not in its document, and the citation that points at the wrong place. Assume
+there is at least one of each until you have shown there is not.
+
+THE RUN DIRECTORY: /Users/jbotts/frus-analysis/c3f/runs/fN
+  memo.md, overview.md, collection.fruscollection, queries.log (if one is absent, say so in
+  `notes` and do what the files present allow)
+THE QUESTION the session was answering:
+  How did the United States decide whether to recognize governments that came to power by force in Latin America, and what did it ask of them before recognizing?
+
+RESOURCES, the same the session had:
+  - /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db  (SQLite, READ-ONLY, never write; this sqlite3 rejects `-uri`, so use
+    sqlite3 "file:...?mode=ro" or sqlite3 -readonly <path>; in Python, uri=True with ?mode=ro)
+  - "/Users/jbotts/Library/Containers/bottsywattsy.FRUS-Explorer/Data/Library/Application Support/FRUSExplorer/volumes"/*.xml
+  - "/Applications/FRUS Explorer.app/Contents/Resources"/*.json
+  - /Users/jbotts/frus-analysis/c3f/check_collection.py  — the app's collection checker. Run it as
+    python3 -I /Users/jbotts/frus-analysis/c3f/check_collection.py <the .fruscollection> /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db
+Do NOT read anything under /Users/jbotts/Development/ or /Users/jbotts/Downloads/, and do not
+read any other directory under /Users/jbotts/frus-analysis/ than the one named above and the vector
+artifacts (the bundle files and /Users/jbotts/frus-analysis/c3/SemanticVectors/).
+Write any scratch files inside /Users/jbotts/frus-analysis/c3f/runs/fN/refuter/ and nowhere else.
+
+DO STEPS 8, 9 AND 10 BELOW, AND ONLY THOSE, and show your work in `notes` (the commands you ran
+and what came back):
+
+8. ZEROS. List every result the memo or the overview reports as zero, none, absent or not found
+   (a query, a scan or a lookup that returned nothing). For each, say what the memo prints beside
+   it: RELAXED, the relaxed form of the same query on the same surface (a term dropped, the date
+   widened) with its count; OTHER, another query shown to return rows on that surface (a positive
+   control, say); or NOTHING. A query that returns rows on a different surface (another volume
+   set, other columns) is NOTHING for that zero. Count each kind, and list them.
+
+9. THE HOUSE RULES' FIGURES. checks/figures_check.txt in the run directory (the harness's script)
+   lists where memo.md and overview.md print a figure the session's house rules themselves print.
+   For each occurrence, say whether the session RE-DERIVED it (its query or script shown, with the
+   output), ATTRIBUTED it to the guide or the house rules, or presented it as its OWN finding with
+   neither. A number that only coincides with one of the rules' figures (a document number, say)
+   is NOT ONE of them. Count each kind, and list them.
+
+10. TERMS THAT REACH NOTHING. checks/match_check.txt (the harness's script) lists every full-text
+   term the session's logged commands and scripts ran that returns no document in the index copy,
+   with the nearest form that does, and each `term*` prefix with whether the log looked its stem up
+   in frus_documents_vocab before using it. For each dead term, say whether the memo or the overview
+   reports a count or an absence from it, and whether the session NOTICED (said the term reaches
+   nothing, or replaced it with a form that does). Count the dead terms, those reported from and
+   those noticed. A term the script lists that is not a search term (a word from code) is NOT A TERM.
+
+checks/ holds the harness's own script outputs, written after the session ended: they are not the
+session's work.
+
+`cell` is exactly: fN. Return the structured result.

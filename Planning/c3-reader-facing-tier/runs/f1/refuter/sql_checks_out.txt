@@ -1,0 +1,244 @@
+=== M0.1 coverage ===
+[M0.1] SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache
+   -> [(553, 321749, 1103, 8481)]
+[non-apparatus] SELECT COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0
+   -> [(312169,)]
+
+=== M0.3 / M0.4 / M1.1 controls ===
+[M1.1 "department of state"] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(94049, 552)]
+[M1.1 ZZZ_IMPOSSIBLE_ZZZ] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(0, 0)]
+[M1.1 "soft power"] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(0, 0)]
+[M1.1 messaging] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(32754, 551)]
+[M1.1 audience] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(2834, 482)]
+[M1.1 USIA] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(1965, 213)]
+[M1.1 USIS] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(1242, 184)]
+[M1.1 "information program"] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(592, 169)]
+[M1.1 "psychological warfare"] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(642, 175)]
+[M1.1 "psychological strategy"] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(157, 34)]
+[M1.1 propaganda] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(12107, 516)]
+[M1.1 "voice of america"] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(542, 139)]
+[M1.1 "american image"] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(25, 17)]
+[M1.1 "image of the united states"] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(43, 35)]
+[M1.1 "cultural exchange"] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(662, 172)]
+[M1.1 "public diplomacy"] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(211, 38)]
+[M1.1 "public opinion"] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(10292, 548)]
+[M0.3 missing volume] SELECT DISTINCT volume_id FROM document_cache WHERE volume_id NOT IN (SELECT d.volume_id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '"department of state"' AND d.is_front_matter=0 AND d.is_editorial_note=0)
+   -> [('frus1919Parisv05',)]
+[relaxed soft power: soft] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(1726, 383)]
+[relaxed soft power: power] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(68317, 553)]
+[relaxed soft power: soft AND power] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(785, 297)]
+[relaxed soft power: "soft-power"] SELECT COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(0, 0)]
+
+=== M1.2 false friends (PD volumes vs corpus) ===
+[M1.2 "soft power"] SELECT SUM(d.volume_id IN ('frus1917-72PubDipv06','frus1917-72PubDipv07','frus1917-72PubDipv08','frus1977-80v30')), (SELECT COUNT(*) FROM document_cache WHERE volume_id IN ('frus1917-72PubDipv06','frus1917-72PubDipv07','frus1917-72PubDipv08','frus1977-80v30') AND is_front_matter=0 AND is_editorial_note=0), COUNT(*), (SELECT COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note …
+   -> [(None, 721, 0, 312169)]
+[M1.2 messaging] SELECT SUM(d.volume_id IN ('frus1917-72PubDipv06','frus1917-72PubDipv07','frus1917-72PubDipv08','frus1977-80v30')), (SELECT COUNT(*) FROM document_cache WHERE volume_id IN ('frus1917-72PubDipv06','frus1917-72PubDipv07','frus1917-72PubDipv08','frus1977-80v30') AND is_front_matter=0 AND is_editorial_note=0), COUNT(*), (SELECT COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note …
+   -> [(125, 721, 32754, 312169)]
+[M1.2 audience] SELECT SUM(d.volume_id IN ('frus1917-72PubDipv06','frus1917-72PubDipv07','frus1917-72PubDipv08','frus1977-80v30')), (SELECT COUNT(*) FROM document_cache WHERE volume_id IN ('frus1917-72PubDipv06','frus1917-72PubDipv07','frus1917-72PubDipv08','frus1977-80v30') AND is_front_matter=0 AND is_editorial_note=0), COUNT(*), (SELECT COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note …
+   -> [(200, 721, 2834, 312169)]
+[M1.2 "department of state"] SELECT SUM(d.volume_id IN ('frus1917-72PubDipv06','frus1917-72PubDipv07','frus1917-72PubDipv08','frus1977-80v30')), (SELECT COUNT(*) FROM document_cache WHERE volume_id IN ('frus1917-72PubDipv06','frus1917-72PubDipv07','frus1917-72PubDipv08','frus1977-80v30') AND is_front_matter=0 AND is_editorial_note=0), COUNT(*), (SELECT COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note …
+   -> [(226, 721, 94049, 312169)]
+[M1.2 literal messaging] SELECT COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 AND body_text LIKE '%messaging%'
+   -> [(3,)]
+[M1.2 literal messaging (which)] SELECT volume_id||'/'||document_id FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 AND body_text LIKE '%messaging%'
+   -> [('frus1981-88v05/d118',), ('frus1981-88v06/d35',), ('frus1981-88v11/d188',)]
+[literal messaging incl. apparatus] SELECT COUNT(*) FROM document_cache WHERE body_text LIKE '%messaging%'
+   -> [(5,)]
+[literal 'soft power' LIKE, all surfaces] SELECT COUNT(*) FROM document_cache WHERE (header||' '||coalesce(dateline,'')||' '||coalesce(source_note,'')||' '||body_text) LIKE '%soft power%'
+   -> [(0,)]
+
+=== M1.5 scope set ===
+scope set: 2860 docs in 273 volumes
+equals session's scope_hits.json: True (session n = 2860 )
+
+=== M1.7 census (my own implementation of the memo's tolerant rule) ===
+both families: 2692 of 2860; lacking info literal: 165; of which bare USI: 161; spell out United States of Indonesia: 9
+USI volume spread: [('frus1948v06', 84), ('frus1949v07p1', 56), ('frus1947v06', 14), ('frus1946v08', 3), ('frus1950v06', 2), ('frus1949v09', 1), ('frus1952-54v03', 1)]
+confirmed set volumes: 273
+share: 94.1 per 100
+equals session's scope_confirmed.csv: True (session n = 2692 )
+top 12 volumes of confirmed: [('frus1917-72PubDipv07', 86), ('frus1917-72PubDipv08', 84), ('frus1917-72PubDipv06', 66), ('frus1949v08', 57), ('frus1977-80v30', 57), ('frus1961-63v02', 45), ('frus1964-68v01', 45), ('frus1950-55Intel', 43), ('frus1955-57v03mSupp', 43), ('frus1961-63v03', 43), ('frus1961-63v04', 40), ('frus1955-57v21', 38)]
+frus1949v08: 57 frus1955-57v03mSupp: 43
+
+=== M1.6 sample of 40 (STRICT/TOLERANT), re-run ===
+STRICT 35/40, TOLERANT 36/40, geo 40/40, misses [('frus1947v06', 'd693'), ('frus1948v06', 'd142'), ('frus1949v07p1', 'd296'), ('frus1951v06p2', 'd494')]
+
+=== M1.8 decade shape re-run ===
+   ('1900s', 1, 10261, 0.1, 1)
+   ('1920s', 1, 20374, 0.0, 1)
+   ('1930s', 2, 40073, 0.0, 1)
+   ('1940s', 404, 75872, 5.3, 92)
+   ('1950s', 1019, 42801, 23.8, 43)
+   ('1960s', 973, 27654, 35.2, 86)
+   ('1970s', 466, 22258, 20.9, 56)
+   ('1980s', 125, 6038, 20.7, 33)
+
+=== Argument set (22) and the overview's 21 cited pairs ===
+argset n: 22 distinct: 22
+cited n: 21 distinct: 21
+cited ⊆ argset: True argset − cited: {('frus1961-63v02', 'd16')}
+argset ⊆ scope(2860): True argset ⊆ confirmed(2692): True
+cited ⊆ scope(2860): True missing: set()
+argset dates: ('frus1950v06/d50', '1950-06-21') … ('frus1977-80v30/d79', '1977-07-19')
+argset volumes: ['frus1917-72PubDipv06', 'frus1917-72PubDipv07', 'frus1917-72PubDipv08', 'frus1950v06', 'frus1952-54v12p2', 'frus1952-54v13p1', 'frus1955-57v09', 'frus1955-57v22', 'frus1961-63v01', 'frus1961-63v02', 'frus1964-68v27', 'frus1969-76v19p2', 'frus1969-76v38p2', 'frus1977-80v30'] 14
+
+=== Header query (log line 30) and BM25 query (log line 32): which cited pairs do they return? ===
+header query rows: 330 (session: 330)
+bm25 rows: 40
+header rows equal session's: True ; bm25 rows equal session's: False
+  frus1950v06/d50                scope:True  header:False bm25:True  readlist46:True 
+  frus1917-72PubDipv07/d73       scope:True  header:True  bm25:False readlist46:True 
+  frus1952-54v13p1/d116          scope:True  header:False bm25:True  readlist46:True 
+  frus1917-72PubDipv08/d88       scope:True  header:True  bm25:False readlist46:True 
+  frus1969-76v38p2/d105          scope:True  header:True  bm25:False readlist46:True 
+  frus1952-54v12p2/d403          scope:True  header:True  bm25:True  readlist46:True 
+  frus1955-57v09/d190            scope:True  header:False bm25:False readlist46:False
+  frus1955-57v22/d447            scope:True  header:False bm25:True  readlist46:True 
+  frus1961-63v01/d49             scope:True  header:True  bm25:False readlist46:True 
+  frus1961-63v01/d265            scope:True  header:True  bm25:False readlist46:True 
+  frus1917-72PubDipv06/d140      scope:True  header:True  bm25:False readlist46:True 
+  frus1917-72PubDipv06/d126      scope:True  header:True  bm25:False readlist46:True 
+  frus1917-72PubDipv08/d31       scope:True  header:True  bm25:False readlist46:True 
+  frus1917-72PubDipv08/d149      scope:True  header:True  bm25:False readlist46:True 
+  frus1917-72PubDipv07/d85       scope:True  header:True  bm25:False readlist46:True 
+  frus1917-72PubDipv07/d32       scope:True  header:True  bm25:False readlist46:True 
+  frus1969-76v19p2/d67           scope:True  header:True  bm25:True  readlist46:True 
+  frus1964-68v27/d386            scope:True  header:True  bm25:True  readlist46:True 
+  frus1917-72PubDipv08/d58       scope:True  header:True  bm25:False readlist46:True 
+  frus1917-72PubDipv08/d99       scope:True  header:True  bm25:False readlist46:False
+  frus1977-80v30/d79             scope:True  header:True  bm25:False readlist46:True 
+
+=== M4.1 / M4.2 over the confirmed set (TEMP table on the ro connection) ===
+s size [(2692,)]
+  came-from ('Nixon Presidential Materials', '-', '-', 'NSC Files', 'structured', 161)
+  came-from ('Johnson Library', '-', '-', 'National Security File', 'structured', 113)
+  came-from ('Eisenhower Library', '-', '-', 'Whitman File', 'structured', 106)
+  came-from ('Department of State', '59', '63D351', '-', 'lot_file', 73)
+  came-from ('Kennedy Library', '-', '-', 'National Security Files', 'structured', 70)
+  came-from ('Carter Library', '-', '-', 'National Security Affairs', 'structured', 53)
+  came-from ('Central Intelligence Agency', '-', '-', '-', 'structured', 49)
+  came-from ('Eisenhower Library', '-', '-', 'Eisenhower papers', 'structured', 49)
+  came-from ('National Archives', '59', '-', 'Central Files 1964–66', 'subject_numeric', 34)
+  came-from ('Department of State', '59', '62D430', '-', 'lot_file', 29)
+  came-from ('National Archives', '306', '-', 'Director’s Subject Files', 'structured', 29)
+  came-from ('National Archives', '59', '-', 'Central Files 1967–69', 'subject_numeric', 24)
+  came-from ('National Archives', '59', '-', 'Central Files 1970–73', 'subject_numeric', 24)
+  came-from ('?', '-', '-', '-', 'published', 17)
+  came-from ('Library of Congress', '-', '-', 'Manuscript Division', 'structured', 17)
+  came-from ('Department of State', '59', '61D385', '-', 'lot_file', 14)
+  came-from ('Ford Library', '-', '-', 'National Security Adviser', 'structured', 14)
+  came-from ('Department of State', '59', '-', 'POL 27 VIET S', 'subject_numeric', 13)
+  came-from ('Johnson Library', '-', '-', 'White House Central Files', 'structured', 12)
+  came-from ('National Archives', '306', '-', 'DIRCTR Sub Files', 'structured', 12)
+  came-from ('Department of State', '59', '64D563', '-', 'lot_file', 11)
+  came-from ('National Defense University', '-', '-', 'Taylor Papers', 'structured', 11)
+  came-from ('Department of State', '59', '62D1', '-', 'lot_file', 10)
+  came-from ('Department of State', '59', '62D333', '-', 'lot_file', 10)
+  came-from ('Department of State', '59', '67D54', '-', 'lot_file', 10)
+docs with a document_sources row: [(2690,)]
+came-from by lot_file_norm (all lots): [('63D351', 80), ('62D430', 36), ('62D1', 20), ('61D385', 18), ('64D563', 13), ('62D333', 11), ('72D415', 10), ('67D54', 10)]
+  pointed-at ('Department of State', '-', '-', 'centralFileClass', 302)
+  pointed-at ('Department of State', '-', '66D95', 'lotFile', 108)
+  pointed-at ('Department of State', '-', '63D351', 'lotFile', 66)
+  pointed-at ('Nixon Presidential Materials', 'NSC Files', '-', 'presidentialLibrary', 62)
+  pointed-at ('Johnson Library', 'National Security File', '-', 'presidentialLibrary', 40)
+  pointed-at ('Department of State', '-', '62D430', 'lotFile', 29)
+  pointed-at ('Carter Library', 'National Security Affairs', '-', 'presidentialLibrary', 27)
+  pointed-at ('Eisenhower Library', 'Whitman File', '-', 'presidentialLibrary', 23)
+  pointed-at ('Kennedy Library', 'National Security Files', '-', 'presidentialLibrary', 22)
+  pointed-at ('Department of State', '-', '62D1', 'lotFile', 18)
+  pointed-at ('Department of State', '-', '61D167', 'lotFile', 9)
+  pointed-at ('Johnson Library', 'President’s Daily Diary', '-', 'presidentialLibrary', 9)
+  pointed-at ('Department of State', '-', '64D199', 'lotFile', 8)
+  pointed-at ('Department of State', '-', '64D563', 'lotFile', 7)
+  pointed-at ('Eisenhower Library', 'Eisenhower papers', '-', 'presidentialLibrary', 7)
+  pointed-at ('Nixon Presidential Materials', 'White House Central Files', '-', 'presidentialLibrary', 7)
+  pointed-at ('Department of State', '-', '60D627', 'lotFile', 6)
+  pointed-at ('Department of State', '-', '63D75', 'lotFile', 6)
+  pointed-at ('Eisenhower Library', 'White House Office Files', '-', 'presidentialLibrary', 6)
+  pointed-at ('Nixon Presidential Materials', 'White House Special Files', '-', 'presidentialLibrary', 6)
+pointed-at by lot_file_norm (all lots): [('66D95', 108), ('63D351', 66), ('62D430', 29), ('62D1', 18), ('61D167', 9), ('64D199', 8), ('64D563', 7), ('60D627', 6)]
+series 2839192 lots combined (63D351+66D95): came-from [(87,)] pointed-at distinct docs [(141,)]
+
+=== M4.3 argument set (22) sources and pointed-at ===
+  src ('frus1917-72PubDipv06/d126', 'National Archives', '306', None, 'DIRCTR Sub Files', 'structured', None)
+  src ('frus1917-72PubDipv06/d140', 'Kennedy Library', None, None, 'National Security Files', 'structured', None)
+  src ('frus1917-72PubDipv07/d32', 'National Archives', '306', None, 'DIRCTR Subj. Files, Box 16', 'structured', None)
+  src ('frus1917-72PubDipv07/d73', 'National Archives', '306', None, 'DIRCTR Files Bx 33–36, Box 33', 'structured', None)
+  src ('frus1917-72PubDipv07/d85', 'National Archives', '306', None, 'DIRCTR Files Bx 33–36, Box 33', 'structured', None)
+  src ('frus1917-72PubDipv08/d149', 'National Archives', '306', None, 'Director’s Subject Files, Box 22', 'structured', None)
+  src ('frus1917-72PubDipv08/d31', 'National Archives', '306', None, 'Office of Policy and Plans', 'structured', None)
+  src ('frus1917-72PubDipv08/d58', 'National Archives', '306', None, 'Director’s Subject Files', 'structured', None)
+  src ('frus1917-72PubDipv08/d88', 'National Archives', '306', None, 'Director’s Subject Files, Box 10', 'structured', None)
+  src ('frus1917-72PubDipv08/d99', 'National Archives', '306', None, 'Director’s Subject Files, Box 15', 'structured', None)
+  src ('frus1950v06/d50', 'Department of State', '59', None, '511.90/6–2150', 'decimal', '511.90')
+  src ('frus1952-54v12p2/d403', 'Department of State', '59', None, '790.5/9–1453', 'decimal', '790.5')
+  src ('frus1952-54v13p1/d116', 'Department of State', '59', None, '511.51G/9–2052', 'decimal', '511.51G')
+  src ('frus1955-57v09/d190', 'Department of State', '59', '63D351', None, 'lot_file', None)
+  src ('frus1955-57v22/d447', 'Department of State', '59', '61D385', None, 'lot_file', None)
+  src ('frus1961-63v01/d265', 'National Archives', '306', None, 'USIA /TOP Files: FRC 67 A 222', 'structured', None)
+  src ('frus1961-63v01/d49', 'National Archives', '34', None, None, 'structured', None)
+  src ('frus1961-63v02/d16', 'National Archives', '306', None, 'USIA /I/ S Files: FRC 68 A 4933', 'structured', None)
+  src ('frus1964-68v27/d386', 'Johnson Library', None, None, 'National Security File', 'structured', None)
+  src ('frus1969-76v19p2/d67', 'Nixon Presidential Materials', None, None, 'NSC Files', 'structured', None)
+  src ('frus1969-76v38p2/d105', 'National Archives', '305', None, 'Records of the USIA', 'structured', None)
+  src ('frus1977-80v30/d79', 'National Archives', '306', None, 'Office of the Director, Box 130', 'structured', None)
+  ext ('frus1917-72PubDipv06/d140', 'presidentialLibrary', 'Kennedy Library', 'National Security Files', None, None, 'Kennedy Library, National Security Files, Meetings and Memoranda Series, Box 316')
+  ext ('frus1950v06/d50', 'centralFileClass', 'Department of State', None, None, '511.90', '511.90/7–550')
+  ext ('frus1952-54v13p1/d116', 'centralFileClass', 'Department of State', None, None, '511.00', '511.00/8–2352')
+  ext ('frus1955-57v09/d190', 'centralFileClass', 'Department of State', None, None, '511.00', 'Department of State, Central Files, 511.00/6–3055')
+  ext ('frus1955-57v09/d190', 'centralFileClass', 'Department of State', None, None, '511.00', 'Ibid., 511.00/5–2755 and 511.00/6–655')
+  ext ('frus1955-57v09/d190', 'centralFileClass', 'Department of State', None, None, '511.00', 'Department of State, Central Files, 511.00/4–2455')
+  ext ('frus1955-57v22/d447', 'lotFile', 'Department of State', None, '61D385', None, 'Department of State, OCB Files: Lot 61 D 385, Singapore and Malaya, General')
+  ext ('frus1955-57v22/d447', 'lotFile', 'Department of State', None, '58D726', None, 'Ibid., SEA Files: Lot 58 D 726, 350 OCB Paper and Plans')
+
+=== M4.2 claim: 'no row before 1910-12-06' ===
+[min date of external_citations] SELECT MIN(dd.date_iso), COUNT(*) FROM external_citations ec JOIN document_dates dd ON dd.volume_id=ec.volume_id AND dd.document_id=ec.document_id WHERE dd.date_iso IS NOT NULL
+   -> [('1910-12-06', 50173)]
+[rows before 1910-12-06] SELECT COUNT(*) FROM external_citations ec JOIN document_dates dd ON dd.volume_id=ec.volume_id AND dd.document_id=ec.document_id WHERE dd.date_iso < '1910-12-06'
+   -> [(0,)]
+
+=== M1.4 manifest scan ===
+manifest volumes: 553
+  PD/Info title: ('frus1917-72PubDipv06.xml', 'Foreign Relations of the United States, 1917–1972, Volume VI,                     Public D')
+  PD/Info title: ('frus1917-72PubDipv07.xml', 'Foreign Relations of the United States, 1917–1972, Volume                     VII, Public ')
+  PD/Info title: ('frus1917-72PubDipv08.xml', 'Foreign Relations of the United States, 1917–1972, Volume                     VIII, Public')
+  PD/Info title: ('frus1955-57v09.xml', 'Foreign Relations of the United States, 1955–1957, Foreign                     Economic Po')
+  PD/Info title: ('frus1961-63v25.xml', 'Foreign Relations of the United States, 1961–1963, Volume                     XXV, Organiz')
+  PD/Info title: ('frus1977-80v30.xml', 'Foreign Relations of the United States, 1977–1980, Volume                     XXX, Public ')
+1981-88 volumes: 13 ['frus1981-88v01.xml', 'frus1981-88v03.xml', 'frus1981-88v04.xml', 'frus1981-88v05.xml', 'frus1981-88v06.xml', 'frus1981-88v10.xml', 'frus1981-88v11.xml', 'frus1981-88v13.xml', 'frus1981-88v16.xml', 'frus1981-88v24.xml', 'frus1981-88v38.xml', 'frus1981-88v41.xml', 'frus1981-88v44p1.xml']
+
+=== M2 reading accounting: 48 raw files equal length(body_text) ===
+raw files: 48; BODYLEN == length(body_text) == captured body length for 48; total 392917
+all 22 argset pairs have a raw file: True
+
+=== M1.8a survey vocabulary (scoping) ===
+[M1.8a (survey OR surveys OR poll OR polls)] SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(277,)]
+[M1.8a ("office of research")] SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(30,)]
+[M1.8a ("opinion research")] SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+   -> [(7,)]
+
+DONE

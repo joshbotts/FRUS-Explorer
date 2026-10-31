@@ -1,0 +1,14 @@
+scope volumes present in index: 81 of 81
+coverage: {'authorityCollectionCount': 3977, 'authorityCollectionsReached': 1834, 'noteCount': 264598, 'notesInACollection': 76140, 'notesWithAClassKey': 193192, 'volumesScanned': 553, 'volumesWithNotes': 502}
+5629 notes | 34 volumes | txt:department of state|central file
+1839 notes | 16 volumes | txt:nixon|nsc file
+1290 notes | 19 volumes | txt:johnson library|national security file
+628 notes | 9 volumes | txt:kennedy library|national security file
+464 notes | 11 volumes | txt:department of state|central files 1967-69
+447 notes | 3 volumes | txt:carter library|national security affair
+344 notes | 3 volumes | lot:55D128
+317 notes | 4 volumes | txt:ford library|national security advisor
+263 notes | 4 volumes | txt:department of state|central files 1964-66
+252 notes | 20 volumes | txt:eisenhower library|whitman file
+214 notes | 24 volumes | txt:library of congress|manuscript division
+189 notes | 13 volumes | txt:department of state|central files 1970-73

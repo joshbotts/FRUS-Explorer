@@ -1,0 +1,53 @@
+L18 re-run, the frus1977-80v30 rows: ['frus1977-80v30/d215', 'frus1977-80v30/d203', 'frus1977-80v30/d83', 'frus1977-80v30/d175', 'frus1977-80v30/d183', 'frus1977-80v30/d81', 'frus1977-80v30/d146', 'frus1977-80v30/d120', 'frus1977-80v30/d149', 'frus1977-80v30/d209', 'frus1977-80v30/d67', 'frus1977-80v30/d125', 'frus1977-80v30/d182', 'frus1977-80v30/d2', 'frus1977-80v30/d188', 'frus1977-80v30/d30', 'frus1977-80v30/d46', 'frus1977-80v30/d39']
+L20 re-run: ['frus1955-57v21/d23', 'frus1955-57v21/d143', 'frus1952-54v12p1/d388', 'frus1952-54v12p1/d390', 'frus1952-54v12p1/d103', 'frus1952-54v12p1/d192', 'frus1955-57v21/d72', 'frus1955-57v21/d299', 'frus1961-63v23/d14', 'frus1958-60v16/d48', 'frus1952-54v12p1/d364', 'frus1955-57v21/d79', 'frus1955-57v21/d48', 'frus1961-63v23/d55', 'frus1952-54v12p1/d333']
+L13 re-run: ['frus1952-54v13p1/d116']
+rank_them.tsv equals re-run over the 8 volumes: True
+
+=== cited pair -> saved/printed result sets that hold it (STRICT) ===
+frus1949v09/d558             REACHED          ['L7 rank_ea_info (80)', 'L24 topic_set (701)']  fts_scan terms (ea only, counts printed): ['"information program"', 'USIS', '"Voice of America"']
+frus1952-54v12p2/d396        REACHED          ['L7 rank_ea_info (80)', 'L24 topic_set (701)']  fts_scan terms (ea only, counts printed): ['"psychological strategy"', '"information program"']
+frus1952-54v12p2/d403        REACHED          ['L7 rank_ea_info (80)', 'L24 topic_set (701)']  fts_scan terms (ea only, counts printed): ['"psychological strategy"', '"information program"', '"Operations Coordinating Board"']
+frus1955-57v21/d23           REACHED          ['L24 topic_set (701)', 'L20 rank regional4 (15) [re-run]']  fts_scan terms (ea only, counts printed): ['USIA']
+frus1952-54v13p1/d116        REACHED          ['L7 rank_ea_info (80)', 'L11 rank_race (30)', 'L24 topic_set (701)', 'L13 511.00/8-2352 query [re-run]']  fts_scan terms (ea only, counts printed): ['"psychological warfare"', '"information program"', 'USIS', '"exchange of persons"']
+frus1952-54v14p2/d762        REACHED          ['L11 rank_race (30)']  fts_scan terms (ea only, counts printed): []
+frus1955-57v09/d190          REACHED          ['L8 rank_them (50, 8 vols)', 'L18 rank thematic8 (25) [re-run]']  fts_scan terms (ea only, counts printed): []
+frus1955-57v22/d58           REACHED          ['L11 rank_race (30)', 'L24 topic_set (701)']  fts_scan terms (ea only, counts printed): ['"information program"', '"Operations Coordinating Board"']
+frus1964-68v29p2/d46         REACHED          ['L15 rank_jp (30)', 'L46 survey AND listing (27)']  fts_scan terms (ea only, counts printed): ['USIS', '"cultural exchange"']
+frus1955-57v09/d207          REACHED          ['L8 rank_them (50, 8 vols)', 'L18 rank thematic8 (25) [re-run]']  fts_scan terms (ea only, counts printed): []
+frus1964-68v01/d197          REACHED          ['L7 rank_ea_info (80)', 'L24 topic_set (701)']  fts_scan terms (ea only, counts printed): ['"psychological warfare"', '"information program"', 'USIS', 'USIA']
+frus1964-68v02/d160          REACHED          ['L7 rank_ea_info (80)', 'L24 topic_set (701)']  fts_scan terms (ea only, counts printed): ['"psychological warfare"', 'USIS', 'USIA']
+frus1969-76v38p2/d105        REACHED          ['L8 rank_them (50, 8 vols)', 'L18 rank thematic8 (25) [re-run]']  fts_scan terms (ea only, counts printed): []
+frus1977-80v30/d81           REACHED          ['L8 rank_them (50, 8 vols)', 'L18 rank thematic8 (25) [re-run]']  fts_scan terms (ea only, counts printed): []
+frus1977-80v30/d83           REACHED          ['L8 rank_them (50, 8 vols)', 'L18 rank thematic8 (25) [re-run]']  fts_scan terms (ea only, counts printed): []
+frus1961-63v23/d289          REACHED          ['L7 rank_ea_info (80)']  fts_scan terms (ea only, counts printed): ['USIS']
+frus1977-80v30/d2            REACHED          ['L8 rank_them (50, 8 vols)', 'L18 rank thematic8 (25) [re-run]']  fts_scan terms (ea only, counts printed): []
+frus1977-80v30/d215          REACHED          ['L8 rank_them (50, 8 vols)', 'L18 rank thematic8 (25) [re-run]']  fts_scan terms (ea only, counts printed): []
+frus1917-72PubDipv08/d58     REACHED          ['L34 rank_pubdip (40)']  fts_scan terms (ea only, counts printed): []
+frus1917-72PubDipv08/d149    REACHED          ['L34 rank_pubdip (40)']  fts_scan terms (ea only, counts printed): []
+frus1917-72PubDipv08/d31     REACHED          ['L34 rank_pubdip (40)']  fts_scan terms (ea only, counts printed): []
+frus1917-72PubDipv06/d126    REACHED          ['L34 rank_pubdip (40)']  fts_scan terms (ea only, counts printed): []
+strictly reached by a saved/printed result set: 22 of 22
+
+=== when was each cited pair first dumped (log line) ===
+frus1949v09/d558             first named on log line None
+frus1952-54v12p2/d396        first named on log line None
+frus1952-54v12p2/d403        first named on log line None
+frus1955-57v21/d23           first named on log line 21
+frus1952-54v13p1/d116        first named on log line 12
+frus1952-54v14p2/d762        first named on log line 12
+frus1955-57v09/d190          first named on log line 10
+frus1955-57v22/d58           first named on log line 12
+frus1964-68v29p2/d46         first named on log line 16
+frus1955-57v09/d207          first named on log line 10
+frus1964-68v01/d197          first named on log line None
+frus1964-68v02/d160          first named on log line None
+frus1969-76v38p2/d105        first named on log line 37
+frus1977-80v30/d81           first named on log line None
+frus1977-80v30/d83           first named on log line None
+frus1961-63v23/d289          first named on log line None
+frus1977-80v30/d2            first named on log line 19
+frus1977-80v30/d215          first named on log line 19
+frus1917-72PubDipv08/d58     first named on log line 35
+frus1917-72PubDipv08/d149    first named on log line 35
+frus1917-72PubDipv08/d31     first named on log line 35
+frus1917-72PubDipv06/d126    first named on log line 35

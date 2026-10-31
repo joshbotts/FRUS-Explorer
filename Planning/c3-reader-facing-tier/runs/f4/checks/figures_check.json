@@ -1,0 +1,20 @@
+{
+ "run": "runs/f4",
+ "arm": "W",
+ "occurrences": [
+  {
+   "file": "memo.md",
+   "line": 99,
+   "figure": "1910-12-06 (the pointed-at channel starts)",
+   "match": "1910-12-06",
+   "context": "Channel B, POINTED-AT (external_citations; no row before 1910-12-06; stores the citation fragment not the sentence; lot, library and decimal anchors only): over S2, Department of State lot anchors 66D95 (67 citations in 53 documents) and 63D351 (24 in 19), both resolving to NARA 2839192"
+  },
+  {
+   "file": "memo.md",
+   "line": 105,
+   "figure": "11 of 695 (series before 1940)",
+   "match": "11 of 695",
+   "context": "- The offline stack barely reaches before 1940 (house rule: 11 of 695 bundled series); I did not measure that figure; it is quoted from the house rules and used only to explain why no pre-1945 shelf is named."
+  }
+ ]
+}

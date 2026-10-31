@@ -1,0 +1,74 @@
+O2' check of w15: 107 numbers in overview.md; 72 traced, 34 weak, 1 untraced.
+TRACE TABLE: 88 rows, from line 7 of trace.md.
+Each flagged number is WEAK (a row holds the value without the word after it) or UNTRACED (no row holds the value). Decide each: TRACED (name the row), NOT A NUMBER, or UNTRACED.
+
+[WEAK] 'two' (value 2, next word 'dozen'); nearest row: about two dozen documents | Bottom line 1; Methods | 25 documents in the collection (section 3; T8 "25 documents from 1949 to 1978"; section 4 verification output)
+    sentence: This rests on about two dozen documents from to , chosen from about 30,000 in the regional volumes.
+[WEAK] 'dozen' (value 12, next word 'document'); nearest row: about two dozen documents | Bottom line 1; Methods | 25 documents in the collection (section 3; T8 "25 documents from 1949 to 1978"; section 4 verification output)
+    sentence: This rests on about two dozen documents from to , chosen from about 30,000 in the regional volumes.
+[WEAK] '1' (value 1, next word 'inch'); nearest row: about two dozen documents | Bottom line 1; Methods | 25 documents in the collection (section 3; T8 "25 documents from 1949 to 1978"; section 4 verification output)
+    sentence: The nearest catalogue match by creator is NAID 40967285: the Agency's Office of the Director, Executive Secretariat, 103 linear feet 1 inch, access partly restricted.
+[WEAK] 'seven' (value 7, next word 'public-diplomacy'); nearest row: 42 documents, seven volumes, about two in three from RG 306 | Part 2 | N5 (42 headings); section 5 "Set A by record group: RG 306: 27 of 42"; section 1 (7 information volumes)
+    sentence: Of 42 documents in the seven public-diplomacy and information volumes whose headings name an Asian or Pacific place or office, about two in three came from Record Group 306.
+[WEAK] 'about two in three' (value 2/3, next word 'came'); nearest row: about two dozen documents | Bottom line 1; Methods | 25 documents in the collection (section 3; T8 "25 documents from 1949 to 1978"; section 4 verification output)
+    sentence: Of 42 documents in the seven public-diplomacy and information volumes whose headings name an Asian or Pacific place or office, about two in three came from Record Group 306.
+[WEAK] 'About one in four' (value 1/4, next word 'regional'); nearest row: about two dozen documents | Bottom line 1; Methods | 25 documents in the collection (section 3; T8 "25 documents from 1949 to 1978"; section 4 verification output)
+    sentence: That test is loose, because it also caught some headings that name South Asian or Near Eastern offices. *Series the footnotes cite but the editors did not print (the footnoted channel):* About one in four of the regional set (322 of 1,176) has a footnote of this kind.
+[WEAK] '322' (value 322, next word 'has'); nearest row: about one in four; 322 of 1,176 | Part 2, footnoted list | section 5 POINTED-AT Set B: 322 of 1,176
+    sentence: That test is loose, because it also caught some headings that name South Asian or Near Eastern offices. *Series the footnotes cite but the editors did not print (the footnoted channel):* About one in four of the regional set (322 of 1,176) has a footnote of this kind.
+[WEAK] '1,176' (value 1176, next word 'has'); nearest row: 1,176 documents (the regional set) | Bottom line 2; Findings of Part 2 | N3 (family A: 1,176 of 30,092)
+    sentence: That test is loose, because it also caught some headings that name South Asian or Near Eastern offices. *Series the footnotes cite but the editors did not print (the footnoted channel):* About one in four of the regional set (322 of 1,176) has a footnote of this kind.
+[WEAK] 'half' (value 0.5, next word 'give'); nearest row: 551 citations; more than half give a central-file number | Part 2, footnoted list | section 5: rows 551, centralFileClass 296
+    sentence: Of 551 such citations, more than half give a Department of State central-file number, not a named series. **Records Relating to National Security Council Policy Papers**, Department of State, Record Group 59, Executive Secretariat, NAID 2839192, , 26 linear feet 3 inches, access partly restricted.
+[WEAK] '3' (value 3, next word 'inche'); nearest row: about two dozen documents | Bottom line 1; Methods | 25 documents in the collection (section 3; T8 "25 documents from 1949 to 1978"; section 4 verification output)
+    sentence: Of 551 such citations, more than half give a Department of State central-file number, not a named series. **Records Relating to National Security Council Policy Papers**, Department of State, Record Group 59, Executive Secretariat, NAID 2839192, , 26 linear feet 3 inches, access partly restricted.
+[WEAK] '5' (value 5, next word 'inche'); nearest row: after 1975 (reassurance) | Bottom line 1 | T8 Finding 5; section 4 (Q20 to Q23 are 1975 to 1977)
+    sentence: Footnotes cite it under Department lot files 66D95 and 63D351. **Subject and Special Files**, Department of State, Record Group 59, Executive Secretariat, NAID 2839191, , 4 linear feet 5 inches, access partly restricted (lot file 62D430). **Records Relating to Activities with the National Security Co…**, Department of State, Record Group 59, Policy Planning Council, NAID 2838992, , 3 linear feet 1
+[WEAK] '1' (value 1, next word 'inch'); nearest row: about two dozen documents | Bottom line 1; Methods | 25 documents in the collection (section 3; T8 "25 documents from 1949 to 1978"; section 4 verification output)
+    sentence: Footnotes cite it under Department lot files 66D95 and 63D351. **Subject and Special Files**, Department of State, Record Group 59, Executive Secretariat, NAID 2839191, , 4 linear feet 5 inches, access partly restricted (lot file 62D430). **Records Relating to Activities with the National Security Co…**, Department of State, Record Group 59, Policy Planning Council, NAID 2838992, , 3 linear feet 1
+[WEAK] '25' (value 25, next word 'point'); nearest row: about two dozen documents | Bottom line 1; Methods | 25 documents in the collection (section 3; T8 "25 documents from 1949 to 1978"; section 4 verification output)
+    sentence: About 25 point to the Nixon National Security Council Files.
+[WEAK] '20' (value 20, next word 'point'); nearest row: after 1975 (reassurance) | Bottom line 1 | T8 Finding 5; section 4 (Q20 to Q23 are 1975 to 1977)
+    sentence: About 20 point to the Kennedy Library's National Security Files.
+[WEAK] 'one' (value 1, next word 'document'); nearest row: about two dozen documents | Bottom line 1; Methods | 25 documents in the collection (section 3; T8 "25 documents from 1949 to 1978"; section 4 verification output)
+    sentence: The two words anywhere in one document turned up in about 130 documents, mostly *soft* beside an unrelated *power*, and I did not read them. *Cultural diplomacy* and *Radio Free Asia* were also absent, and *public diplomacy* appeared in two documents.
+[WEAK] '2' (value 2, next word 'inche'); nearest row: about two dozen documents | Bottom line 1; Methods | 25 documents in the collection (section 3; T8 "25 documents from 1949 to 1978"; section 4 verification output)
+    sentence: The nearest series I could identify is the Office of Research and Intelligence, NAID 1254251, , 9 linear feet 2 inches, access partly restricted.
+[WEAK] 'dozen' (value 12, next word 'document'); nearest row: about two dozen documents | Bottom line 1; Methods | 25 documents in the collection (section 3; T8 "25 documents from 1949 to 1978"; section 4 verification output)
+    sentence: Exchanges and private channels are thin. *Asia Foundation* was found in a dozen documents, *Peace Corps* in about 60, *cultural exchange* in about 90 and *educational exchange* in about 55, and I did not read them. *Fulbright* appears in about 280, mostly the Senator.
+[WEAK] '60' (value 60, next word 'cultural'); nearest row: about 60, Peace Corps | Part 3 | N7 (59)
+    sentence: Exchanges and private channels are thin. *Asia Foundation* was found in a dozen documents, *Peace Corps* in about 60, *cultural exchange* in about 90 and *educational exchange* in about 55, and I did not read them. *Fulbright* appears in about 280, mostly the Senator.
+[WEAK] '90' (value 90, next word 'educational'); nearest row: about 90, cultural exchange | Part 3 | N7 (92)
+    sentence: Exchanges and private channels are thin. *Asia Foundation* was found in a dozen documents, *Peace Corps* in about 60, *cultural exchange* in about 90 and *educational exchange* in about 55, and I did not read them. *Fulbright* appears in about 280, mostly the Senator.
+[WEAK] '55' (value 55, next word 'i'); nearest row: about 55, educational exchange | Part 3 | N7 (54)
+    sentence: Exchanges and private channels are thin. *Asia Foundation* was found in a dozen documents, *Peace Corps* in about 60, *cultural exchange* in about 90 and *educational exchange* in about 55, and I did not read them. *Fulbright* appears in about 280, mostly the Senator.
+[WEAK] 'seven' (value 7, next word 'volume'); nearest row: 42 documents, seven volumes, about two in three from RG 306 | Part 2 | N5 (42 headings); section 5 "Set A by record group: RG 306: 27 of 42"; section 1 (7 information volumes)
+    sentence: I also searched seven volumes of public-diplomacy and information records, holding about 1,600 documents, and took from them only documents whose headings name an Asian or Pacific place or office.
+[WEAK] '28' (value 28, next word 'million'); nearest row: June 1964; 28 million film audiences | Finding 3 | collection note on frus1964-68v01/d197; section 4 (facts read: film audiences of 28 million)
+    sentence: As a measure he offered that Vietnamese film audiences had totalled an estimated 28 million.
+[WEAK] 'One' (value 1, next word 'was'); nearest row: about two dozen documents | Bottom line 1; Methods | 25 documents in the collection (section 3; T8 "25 documents from 1949 to 1978"; section 4 verification output)
+    sentence: One was “The image of a huge white nation attempting to suppress an Asian struggle for freedom” .
+[WEAK] '26 percent' (value 26, next word 'rated'); nearest row: NAID 2839192; 1947–1979; 26 linear feet 3 inches; partly restricted; lots 66D95 and 63D351 | Part 2, footnoted list | section 5 lots listing (POINTED-AT Set B, lots 66D95 and 63D351); T8
+    sentence: A survey of 637 adults in Saigon found that only 26 percent rated the United States a dependable ally.
+[WEAK] 'thirteen' (value 13, next word 'survey'); nearest row: May 1970 survey; 637 adults; 26 percent; thirteen surveys | Finding 3 | section 4 (facts read: Saigon survey 637 adults, 26 percent); T8 "26 percent, lowest of thirteen surveys"
+    sentence: That was the lowest in thirteen surveys . ### Officials concluded that the image followed policy and America at home In Ambassador Reischauer sent the only poll then available in Japan.
+[WEAK] '40 percent' (value 40, next word 'since'); nearest row: about 40 documents, Nixon Presidential Materials NSC Files | Part 2, printed list | section 5, CAME-FROM Set B: 39
+    sentence: Support for aligning Japan with the free world had fallen from 49 to 40 percent since January.
+[WEAK] 'one' (value 1, next word 'had'); nearest row: about two dozen documents | Bottom line 1; Methods | 25 documents in the collection (section 3; T8 "25 documents from 1949 to 1978"; section 4 verification output)
+    sentence: In a reviewer judged that the emotional pull of China, though not necessarily the ideological one, had directly affected overseas Chinese communities . ### After Vietnam the message became reassurance, and the audience was reported to doubt it In a National Security Council staff member told Kissinger that Asian countries were adjusting well to the Nixon Doctrine .
+[WEAK] 'seven' (value 7, next word 'volume'); nearest row: 42 documents, seven volumes, about two in three from RG 306 | Part 2 | N5 (42 headings); section 5 "Set A by record group: RG 306: 27 of 42"; section 1 (7 information volumes)
+    sentence: I added seven volumes that gather the government's public-diplomacy and information records, and kept from them only documents whose headings name an Asian or Pacific place or office.
+[WEAK] '134' (value 134, next word 'document'); nearest row: 134 of 135 (information program) | Methods | section 2 phrase shares (TOLERANT 134 of 135)
+    sentence: The phrase *information program* was present, with spacing and punctuation allowed to vary, in 134 of 135 documents found. *Psychological warfare* was present in all 252 and *psychological strategy* in all 15.
+[WEAK] '135' (value 135, next word 'document'); nearest row: 134 of 135 (information program) | Methods | section 2 phrase shares (TOLERANT 134 of 135)
+    sentence: The phrase *information program* was present, with spacing and punctuation allowed to vary, in 134 of 135 documents found. *Psychological warfare* was present in all 252 and *psychological strategy* in all 15.
+[WEAK] 'about 33 in every thousand' (value 33/1000, next word 'regional'); nearest row: about 33, 53, 19 in every thousand (1950s, 1960s, 1970s) | Methods | N17; section 2 decade table (33, 53, 19 per 1,000)
+    sentence: Documents naming the Agency, its posts, the Voice of America or its information and psychological programs were about 33 in every thousand in the regional volumes in the .
+[WEAK] 'about 8 in every thousand' (value 8/1000, next word 'document'); nearest row: audience about 8 against about 12 in every thousand; 201 other volumes | Methods | section 2 false-friend lines (8.2 against 11.8; 201 control volumes)
+    sentence: These words do not mark the region by themselves. *Audience* was rarer in the regional volumes (about 8 in every thousand documents) than in the 201 other volumes of the same years (about 12).
+[WEAK] 'one' (value 1, next word 'half'); nearest row: about two dozen documents | Bottom line 1; Methods | 25 documents in the collection (section 3; T8 "25 documents from 1949 to 1978"; section 4 verification output)
+    sentence: The Agency's acronyms were only about one and a half times as common there (about 26 against 18 in every thousand).
+[UNTRACED] '18 in every thousand' (value 18/1000, next word '')
+    sentence: The Agency's acronyms were only about one and a half times as common there (about 26 against 18 in every thousand).
+[WEAK] 'nine' (value 9, next word 'ten'); nearest row: loose test, some headings name South Asian or Near Eastern offices | Part 2 | N5 (9 of the 42 headings name South Asia or Near East offices)
+    sentence: It finds about nine in ten of the true nearest documents, so its silence proves nothing.

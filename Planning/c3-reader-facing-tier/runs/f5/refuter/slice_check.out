@@ -1,0 +1,26 @@
+scan_docs rows: 43176 scope rows: 38059 functional rows: 5117
+M5: A>=1: 4085 A>=2: 1482 Adistinct>=2: 622 (claimed 4,085 / 1,482 / 622)
+    functional A>=1: 913 of 5117 (claimed 913 of 5,117)
+M6: scan rows with A>=2 and R>=2 (all 97 volumes): 1608 (claimed 1,608)
+    beliefs_hits rows: 381 (claimed 381)
+    naming Asian(s)/Oriental(s)/face: 145 (claimed 145) with effect word: 12 (claimed 33)
+topic slice from the 77 volumes (Adistinct>=2 & R>=2): 597
+PubDip selected (R>=8 or hR>=1): 114 of 509 (claimed 114 of 509)
+  d99 in the PubDip selection: True  d104 in the 77-volume slice: False
+TOPIC SLICE total (711 claimed): 711
+external_citations rows on slice documents (392 claimed): 392 on documents (200 claimed): 200
+by anchors (top 12):
+    181 /  95 docs  ('Department of State', None, None)
+     33 /  17 docs  ('Nixon Presidential Materials', 'NSC Files', None)
+     24 /  19 docs  ('Department of State', None, '66D95')
+     19 /  13 docs  ('Johnson Library', 'National Security File', None)
+     12 /   8 docs  ('Department of State', None, '63D351')
+      9 /   7 docs  ('Kennedy Library', 'National Security Files', None)
+      9 /   8 docs  ('Department of State', None, '62D430')
+      8 /   7 docs  ('Department of State', None, '62D1')
+      8 /   3 docs  ('Department of State', None, '62D181')
+      5 /   1 docs  ('Department of State', None, '74D417')
+      4 /   2 docs  ('Department of State', None, '55D128')
+      4 /   3 docs  ('Department of State', None, '67D54')
+check the overview's figures: State no lot 181: 181 | Nixon NSC 33: 33 | 66D95 24: 24 | Johnson NSF 19: 19 | 63D351 12: 12 | Kennedy NSF 9: 9 | 62D430 9: 9 | 62D1 8: 8
+earliest document date among external_citations rows (house figure 1910-12-06): ('1910-12-06',)

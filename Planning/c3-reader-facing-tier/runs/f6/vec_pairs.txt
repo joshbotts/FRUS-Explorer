@@ -1,0 +1,9 @@
+(76, 'frus1917-72PubDipv06/d126', 'frus1917-72PubDipv06/d133')
+(80, 'frus1969-76v38p2/d105', 'frus1969-76ve12/d16')
+(85, 'frus1949v07p2/d386', 'frus1969-76v38p2/d105')
+(86, 'frus1949v07p2/d386', 'frus1950v06/d32')
+(87, 'frus1969-76ve12/d16', 'frus1969-76ve12/d17')
+(88, 'frus1969-76v38p2/d105', 'frus1977-80v22/d3')
+(96, 'frus1917-72PubDipv08/d31', 'frus1969-76v38p2/d105')
+(97, 'frus1964-68v02/d160', 'frus1964-68v03/d138')
+pairs 351 min 76

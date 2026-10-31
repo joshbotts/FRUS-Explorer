@@ -1,0 +1,45 @@
+index keys: ['documentCount', 'generated', 'harvestGenerated', 'harvestScriptSHA256', 'provenance', 'provenanceDigest', 'retrieval', 'schema', 'subseries', 'volumes']
+documentCount: 314616 | volumes: 553
+volume entry keys: ['n', 'r', 'seg', 'v'] | first entry (trunc): {"n": 312, "r": 0, "seg": [{"i": "d1", "n": 312, "s": 0}], "v": "frus1861"}
+schema: 1
+provenanceDigest: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+binary size: 20476048 | magic: b'FRSV' | header u32s 4..64: (1, 512, 314616, 660, 404441225, 2149112425, 2460391877, 195688765, 1090263535, 2746563884, 2161306224, 23166619, 0, 0, 0)
+ver 1 dims 512 docs 314616 centroids 660 | binary digest == index digest: True
+map magic: b'FRSM' | map digest == index: True
+.generation == index digest: True | shards present: 553
+decoded rows: 314616 == docs: True | contiguous rows 0..docs-1: True
+sign block ends at byte 20135488 of 20476048
+Ed2 volumes in index: ['frus1951-54IranEd2', 'frus1969-76ve15p2Ed2', 'frus1977-80v09Ed2']
+
+ANCHOR frus1917-72PubDipv08/d31 row 61222 | pure-Hamming top 10: [('frus1917-72PubDipv07/d106', 81), ('frus1917-72PubDipv06/d3', 86), ('frus1917-72PubDipv06/d5', 88), ('frus1952-54v13p1/d116', 88), ('frus1955-57v22/d275', 89), ('frus1917-72PubDipv08/d99', 90), ('frus1950v06/d9', 90), ('frus1958-60v16/d65', 91), ('frus1917-72PubDipv07/d140', 92), ('frus1952-54v02p2/d374', 92)]
+  anchor shard: file 95008 bytes; 64+n*d+4n = 95008
+  rerank top 10 (cos, hamming, calibrated):
+   frus1917-72PubDipv07/d106  ham 81  cos 0.920  cal 0.867
+   frus1969-76v38p2/d105  ham 96  cos 0.917  cal 0.862
+   frus1917-72PubDipv08/d99  ham 90  cos 0.915  cal 0.858
+   frus1955-57v09/d190  ham 100  cos 0.908  cal 0.847
+   frus1951v06p2/d105  ham 94  cos 0.908  cal 0.847
+   frus1952-54v13p1/d116  ham 88  cos 0.906  cal 0.843
+   frus1955-57v09/d185  ham 104  cos 0.905  cal 0.842
+   frus1961-63v25/d156  ham 102  cos 0.905  cal 0.841
+   frus1917-72PubDipv06/d150  ham 99  cos 0.905  cal 0.841
+   frus1917-72PubDipv07/d69  ham 95  cos 0.904  cal 0.841
+  shards touched: 168
+
+ANCHOR frus1969-76v38p2/d105 row 293635 | pure-Hamming top 10: [('frus1969-76ve12/d10', 76), ('frus1958-60v16/d65', 77), ('frus1969-76v01/d54', 78), ('frus1969-76ve12/d16', 80), ('frus1969-76ve12/d15', 82), ('frus1977-80v22/d104', 82), ('frus1949v07p2/d387', 84), ('frus1955-57v21/d119', 84), ('frus1969-76v38p1/d54', 84), ('frus1949v07p2/d386', 85)]
+  anchor shard: file 116164 bytes; 64+n*d+4n = 116164
+  rerank top 10 (cos, hamming, calibrated):
+   frus1969-76v01/d54  ham 78  cos 0.922  cal 0.870
+   frus1969-76v38p1/d54  ham 84  cos 0.918  cal 0.863
+   frus1917-72PubDipv08/d31  ham 96  cos 0.917  cal 0.862
+   frus1977-80v22/d104  ham 82  cos 0.915  cal 0.858
+   frus1977-80v01/d88  ham 90  cos 0.914  cal 0.856
+   frus1981-88v01/d229  ham 95  cos 0.913  cal 0.855
+   frus1969-76ve12/d16  ham 80  cos 0.913  cal 0.855
+   frus1977-80v22/d107  ham 89  cos 0.912  cal 0.853
+   frus1969-76ve12/d10  ham 76  cos 0.910  cal 0.851
+   frus1951v06p1/d12  ham 86  cos 0.904  cal 0.840
+  shards touched: 187
+
+random pairs (seed 1877, 20000): mean 167.1 sd 14.8 p1 132 min 95
+retrieval block: {"measuredBy": "Planning/semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md §5, 3,600 era-stratified queries over the 314,616-document corpus; Hamming-800 over 512 sign bits → int8-512", "measuredRecallAt10": 0.9021, "rerankPool": 800, "scoreCalibration": {"documentOffset": 0.4, "measuredBy": "Planning/semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md §1b, fitted to EmbeddingGemma 300m'

@@ -1,0 +1,493 @@
+{
+ "format": "fruscollection",
+ "formatVersion": 2,
+ "minimumReaderVersion": 1,
+ "name": "Soft power in East Asia and the Pacific (agent run f11)",
+ "authorLine": "Agent run f11, 2026-10-31",
+ "introductionText": "What FRUS answers directly: the series never uses the phrase soft power, but 25 documents from 1949 to 1978 show how the officials who ran American information work in East Asia and the Pacific described their message (contrast with communism, American strength, and after 1975 reassurance), their belief about the audience (nationalist, poor, wary of whites, persuaded by its own people, America-watching) and their judgement of effect (counts of output in the 1950s, doubt in the 1960s, surveys that moved with policy). Where FRUS points for the rest: the printed documents mostly came from the records of the U.S. Information Agency in Record Group 306 at the National Archives and from presidential libraries; the footnotes of the regional volumes cite unprinted State Department lot files and central files and presidential library files, kept as a separate channel. What this request cannot get from FRUS: any source that uses the term soft power, the audience's own voice, controlled measures of effect, or the private and cultural channels beyond the government; the Agency's own research reports are in the National Archives.",
+ "composition": {
+  "defaultBodyDepth": "full",
+  "footnoteStyle": "all",
+  "includeSourceNote": true,
+  "tocStyle": "citation",
+  "applyHighlights": false,
+  "includeNotes": true,
+  "includeWordCloud": false
+ },
+ "entries": [
+  {
+   "kind": "heading",
+   "text": "Messaging: contrast, strength and reassurance rather than attraction",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These five documents show what officials told themselves the message was for, from 1949 to 1969. The thread is that the message was built from the audience's fears and loyalties, anti-communism, neutralism and doubt about American strength, and never from the appeal of American society alone."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1949v07p2",
+   "documentId": "d386",
+   "notes": [
+    "Agent run f11, 2026-10-31: Jessup, November 1949: a larger information program in non-Communist Asia is wanted to show sympathy with nationalism and to expose Soviet imperialism, with the US and the USSR contrasted by the record."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1949v07p2",
+   "documentId": "d386",
+   "text": "A considerably expanded information program both in Communist and non-Communist areas of Asia is called for, both to demonstrate our understanding and sympathy for the nationalist aspirations of the Asian peoples and to expose the menace to these aspirations created by Soviet imperialism. No opportunity should be lost to contrast—by reference to the record—the aims and attitudes of the US and the USSR."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d403",
+   "notes": [
+    "Agent run f11, 2026-10-31: Psychological Strategy Board plan for Thailand, September 1953: information work is to run through local leaders and local outlets, alongside aid and paramilitary preparation. Image work is one instrument among several."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d403",
+   "text": "In projecting U.S. leadership, however, we must work with and through indigenous leadership wherever possible."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d189",
+   "notes": [
+    "Agent run f11, 2026-10-31: Washburn, Acting Director of USIA, to all posts, August 1955: after the Geneva summit the information program is told to expect and combat an upsurge of neutralism."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d189",
+   "text": "We can anticipate, too, an upsurge of neutralism. Our information program must energetically combat these tendencies."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d135",
+   "notes": [
+    "Agent run f11, 2026-10-31: USIA guidance of July 1963 to all posts on blunting the psychological effect of a Chinese nuclear test. The message is American strength delivered calmly; the negative case against China is left to others because USIA's own credibility on it is low."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d135",
+   "text": "USIA’s main role in the interagency program will be to develop the positive aspect—U.S.-Free World strength, avoiding a preoccupation with the negative side—Chinese weakness."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d135",
+   "text": "as an overt U.S. agency, our credibility on this negative aspect is relatively low"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d24",
+   "notes": [
+    "Agent run f11, 2026-10-31: Oleksiw, June 1969, on the Nixon-Thieu Midway meeting: the agency's objectives are written as public images to strengthen. It shows image management stated as a list of effects sought."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d24",
+   "text": "Thus modified, Agency objectives for the Midway Meeting are to strengthen the public image of:"
+  },
+  {
+   "kind": "heading",
+   "text": "What officials believed about the Asian audience",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These four documents are where policymakers say, in their own words, what kind of people they thought they were addressing. The thread is a mix of respect for nationalism and distance from the audience: poor and apathetic, wary of whites, persuaded by their own countrymen, or emotionally pacifist."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1950v06",
+   "documentId": "d89",
+   "notes": [
+    "Agent run f11, 2026-10-31: Final report of the Joint State-Defense survey mission to Southeast Asia, December 1950. Its propaganda section says American information work talks over the audience's heads and that Americans must first learn the psychology of poor people."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1950v06",
+   "documentId": "d89",
+   "text": "At present we are talking over the heads of Southeast Asia, and doing so inadequately."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1950v06",
+   "documentId": "d89",
+   "text": "It is not enough that we try to teach Southeast Asia to understand us; it is perhaps even more important that we learn to understand them."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v16",
+   "documentId": "d65",
+   "notes": [
+    "Agent run f11, 2026-10-31: NSC 6012, July 1960. A policy line to keep the number of American officials to a minimum is justified by the expected reaction to Americans in privileged positions. It is a belief about the audience built into policy."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1958-60v16",
+   "documentId": "d65",
+   "text": "Hold or reduce the number of U.S. officials in each country to a strict minimum consistent with sound implementation of essential programs, in order to head off an adverse political reaction to the presence of a large number of Americans in relatively privileged positions."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d32",
+   "notes": [
+    "Agent run f11, 2026-10-31: Tull's field review of USIS Vietnam, October 1964. It states plainly what the reviewer thinks of the Vietnamese civil population and why American messages must travel through Vietnamese hands."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d32",
+   "text": "Vietnamese peasants are, in the main, going to be persuaded by other Vietnamese."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d32",
+   "text": "But the Vietnamese civil population, family-oriented, selfish and opportunistic even in the best of times, has virtually nothing to lead it or inspire it now."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d46",
+   "notes": [
+    "Agent run f11, 2026-10-31: Ambassador Reischauer to Bundy, May 1965. It explains Japanese hostility to the bombing of North Vietnam by pacifism, leftist intellectuals and racial closeness to the victims, and gives the one poll he had."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d46",
+   "text": "Such simplistic attitudes are possible in Japan because of the ostrich-like pacifism of the Japanese during the past twenty years."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d46",
+   "text": "The only available public opinion poll has shown a drop since January of this year from 49 percent to 40 percent in those favoring alignment of Japan with the free world and a corresponding rise from 22 to 32 percent of those favoring neutralism. Similarly, the number of persons naming the United States as one of their three favorite countries has dropped from 52 percent to 38 percent since last December and those naming the United States as a country they dislike has risen from 4 percent to 8 percent."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d46",
+   "text": "the basic emotional response remains unchanged and is probably unchangeable over the short run."
+  },
+  {
+   "kind": "heading",
+   "text": "How effective officials thought it was",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These six documents are the assessments of effect, in order of date. The thread runs from counts of material placed in 1955 and 1957, to flat doubt in 1964 that any program could outrun events, to the first attempts to ask the audience in 1966 and 1970."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d190",
+   "notes": [
+    "Agent run f11, 2026-10-31: National Security Council report of August 1955 on the foreign information program. The Far East section reports activity and placements, and concedes a press unreceptive to explanatory material."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d190",
+   "text": "Although the national press remained generally unreceptive to explanatory material on U.S. policy and Communism, a remarkable placement of material on the peaceful uses of atomic energy was achieved."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d207",
+   "notes": [
+    "Agent run f11, 2026-10-31: The same series, September 1957. The Far East section is again a country-by-country account of activity, with a hedge on Japan: a favourable public attitude beside rising dissatisfaction."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d207",
+   "text": "Despite new strength in the conservative forces under the leadership of Prime Minister Kishi and a generally favorable public attitude to the U.S., there is increasing dissatisfaction with present U.S.-Japanese arrangements."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v01",
+   "documentId": "d197",
+   "notes": [
+    "Agent run f11, 2026-10-31: Rowan to President Johnson, June 4, 1964, reporting the Honolulu working group. It says no information program can turn defeats into victories, and cites film audiences as the available measure."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v01",
+   "documentId": "d197",
+   "text": "there is no conceivable information program that will make defeats look like victories, or GVN lassitude appear to be fiery enthusiasm. No single thing will do more to provide a positive information-psychological outlook than a few sparkling victories for our side."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v01",
+   "documentId": "d197",
+   "text": "Vietnamese audiences at USIS film showings last year totalled an estimated 28 million."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d73",
+   "notes": [
+    "Agent run f11, 2026-10-31: Moore to Marks, January 1966, summarising Far East posts. It describes programs aimed at elites and budgets too small for mass efforts."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d73",
+   "text": "In almost every country of the area, our programs are directed at elite groups: government officials, university and high school teachers, media representatives, top-level business executives."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d73",
+   "text": "In most programs, however, budget stringencies make it impossible to carry out meaningful, mass efforts."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d100",
+   "notes": [
+    "Agent run f11, 2026-10-31: Marks to Rostow, August 1966, with the agency's survey of how the world saw Vietnam. It lists the images that hurt and the means posts judged effective, including Asian voices."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d100",
+   "text": "The image of a huge white nation attempting to suppress an Asian struggle for freedom."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d100",
+   "text": "2. more action by Asians, officially and non-officially, to tell the Vietnam story, even if this requires US financial support;"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d88",
+   "notes": [
+    "Agent run f11, 2026-10-31: Oleksiw to Shakespeare, June 1970: results of the May opinion survey in Saigon, 637 adults, including the lowest rating yet of the US as a dependable ally."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d88",
+   "text": "Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys, with only 26 percent of the general public and 23 percent of the college-educated thinking of U.S. as “very dependable” or “rather dependable.”"
+  },
+  {
+   "kind": "heading",
+   "text": "The image followed policy and America at home",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Three documents from 1968 to 1971 show officials concluding that the regional image of the United States moved with the state of the alliance and with American domestic order, more than with anything the information program produced."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d123",
+   "notes": [
+    "Agent run f11, 2026-10-31: Embassy Tokyo, June 5, 1968: Tet, racial violence and unrest at home are read as unsettling Japan's view of the United States."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d123",
+   "text": "Racial violence and social unrest in America have roused concern over basic stability of American society, made American image a rather less positive political symbol."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "notes": [
+    "Agent run f11, 2026-10-31: Summary of the East Asia and Pacific public affairs officers' conference, Manila, May 1969. It records that Asians watch America, that prestige falls with domestic troubles, and that the image depends more on bilateral issues."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "Asians are, to varying degrees, America watchers. America’s domestic problems are, however, first viewed in terms of their possible influence on US policies and actions towards Asia. Many PAOs saw little evidence of intellectual interest in US racial, urban and student disorders and their causes. But there was general agreement that US prestige is diminished when we are not able to solve our own problems at home."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "PAOs emphasized that the image of the US usually depended more on the state of bi-lateral relations (security treaty, Okinawa, Korean military modernization, trade restrictions) than on developments within the US."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d149",
+   "notes": [
+    "Agent run f11, 2026-10-31: Southard, November 1971, on overseas Chinese attitudes after the opening to China began. It reads an audience whose pull toward China is emotional and not ideological."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d149",
+   "text": "It is apparent that the emotional pull of China (but not necessarily the ideological one) has had a direct effect on overseas Chinese communities, more so now than 5 or 10 years ago."
+  },
+  {
+   "kind": "heading",
+   "text": "After Vietnam: reassurance as the message",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These seven documents, from 1974 to 1978, show the message becoming reassurance that the United States would stay in the region, with posts reporting that audiences doubted it. Two were found through a vector search on a document of 1975 and were not among the top text-query results I read."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d10",
+   "notes": [
+    "Agent run f11, 2026-10-31: Smyser to Kissinger, July 1974: Asian countries are judged to be adjusting well to the Nixon Doctrine. Reached through the semantic neighbours of the 1975 USIA reassessment."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76ve12",
+   "documentId": "d10",
+   "text": "I still believe, as I wrote you six months ago, that the Asian countries are generally adjusting well to the shift in American policy represented by the Nixon Doctrine."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "notes": [
+    "Agent run f11, 2026-10-31: Payeff to Keogh and Kopp, May 1975: post-by-post abstracts of public opinion and program implications after the fall of South Vietnam."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "text": "The American defeat has been in good part written off by the Japanese since the US withdrawal two years ago."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "text": "The denouement in Indochina has left Hong Kong viewing USG as “very clearly in default.”"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "text": "hoping that we have all learned the lesson that America is not omnipotent and that other nations cannot rely on Uncle Sam to do what they should be doing themselves."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v22",
+   "documentId": "d104",
+   "notes": [
+    "Agent run f11, 2026-10-31: Sullivan, Hong Kong, February 1977: the Asian reading of Washington's refusal to reassess after 1975. Reached through the semantic neighbours of the 1975 USIA reassessment."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v22",
+   "documentId": "d104",
+   "text": "Rather than being reassured, the ASEAN countries and Japan interpreted our apparent unwillingness to come to grips with the “new realities” as another indication that the United States, after twenty years of exaggerating the extent of its interests in Southeast Asia, might now decide it had no interest there at all."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d79",
+   "notes": [
+    "Agent run f11, 2026-10-31: Smith to Bray, July 1977: the agency is told the Administration believes it must shore up East Asian confidence in American staying power."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d79",
+   "text": "I don’t think there should be any serious doubt that this Administration believes shoring up the confidence of East Asians in America’s long-term staying power and positive involvement in the area is real and necessary."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d81",
+   "notes": [
+    "Agent run f11, 2026-10-31: Holbrooke's telegram (signed Vance) to chiefs of mission, July 1977, asking for views on public diplomacy in Asia and telling posts that country plans will be re-read against policy goals."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d83",
+   "notes": [
+    "Agent run f11, 2026-10-31: Embassy Jakarta's reply, August 1977: public diplomacy is judged effective, but the audience still believes the US is withdrawing and finds the human rights message accusatory."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d83",
+   "text": "We still face deeply implanted and persistent feeling that new administration is “withdrawing” or, at least, “reducing priority” in East Asia."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d83",
+   "text": "Full appreciation for President Carter’s broad and sympathetic interest in human dignity and basic rights is hampered by feeling that our approach to this issue: (1) is accusatory; (2) seeks to implant American models on other societies; and (3) fails to recognize special needs of developing societies."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d152",
+   "notes": [
+    "Agent run f11, 2026-10-31: Mort Smith, Beijing, October 1978, on exchanges and other programs of the International Communication Agency in the PRC. It is the one document here in which the audience is being opened and not reassured."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d152",
+   "text": "The enlarged scope for ICA -funded activities is real and important to the future of US – PRC relations and to perceptions of each other."
+  },
+  {
+   "kind": "heading",
+   "text": "Threads not followed",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Not followed: the Philippines and Indonesia as audiences (only passing documents were read); Korea after 1960; the Voice of America's audience in China; Australia and New Zealand; the cultural and educational exchange record (Fulbright appears in the regional volumes, but most hits are the Senator); the pre-1948 China volumes; and the Agency's own research reports, which are summarised in these documents but not printed. Most semantic neighbours of documents in the collection were listed and not read."
+  },
+  {
+   "kind": "generated",
+   "generatedBlockType": "archivalSources"
+  }
+ ]
+}

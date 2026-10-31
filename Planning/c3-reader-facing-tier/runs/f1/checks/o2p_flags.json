@@ -1,0 +1,708 @@
+{
+ "run": "runs/f1",
+ "traceSource": "runs/f1/memo.md",
+ "traceTableLine": 282,
+ "traceRows": 28,
+ "mentions": 63,
+ "counts": {
+  "traced": 33,
+  "weak": 24,
+  "untraced": 6
+ },
+ "list": [
+  {
+   "text": "thirteen",
+   "values": [
+    "13"
+   ],
+   "next": "reading",
+   "kind": "word",
+   "class": "weak",
+   "row": "¶1 \"the image of American strength, reliability and friendship\" | Q13",
+   "sentence": "They assumed film was effective without being able to measure it ( , Their Saigon surveys showed trust in the United States as an ally at its lowest in thirteen readings ( , After their posts reported that programs on American security commitments lacked credibility (Foreign Relations of the United States, , , , Organization and Management of Foreign Policy;"
+  },
+  {
+   "text": "22",
+   "values": [
+    "22"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"22 documents, each retrieved in full\" | M2 (accounting), M6",
+   "sentence": "Public Diplomacy, , The argument rests on 22 documents, each retrieved in full, out of about 2,700 documents in the corpus that mention the information program together with the region."
+  },
+  {
+   "text": "2,700",
+   "values": [
+    "2700"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"about 2,700 documents\", \"273 volumes\" | M1.7 (2692 of 2860; 273 volumes)",
+   "sentence": "Public Diplomacy, , The argument rests on 22 documents, each retrieved in full, out of about 2,700 documents in the corpus that mention the information program together with the region."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "separate",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"22 documents, each retrieved in full\" | M2 (accounting), M6",
+   "sentence": "Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Director's Office files of (Entry UD WW 193); the Office of Policy and Plans' planning-officer subject files (Entry P–207); the Executive Secretariat's correspondence files, (Entry P–104); two Washington National Records Center accessions of USIA files (FRC 67 A 222 and 68 A 4933)."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 entries A1–42, UD WW 257, UD WW 193, P–207, P–104, FRC 67 A 222, 68 A 4933 | M4.3; the source notes in `argset_meta.txt`",
+   "sentence": "Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Director's Office files of (Entry UD WW 193); the Office of Policy and Plans' planning-officer subject files (Entry P–207); the Executive Secretariat's correspondence files, (Entry P–104); two Washington National Records Center accessions of USIA files (FRC 67 A 222 and 68 A 4933)."
+  },
+  {
+   "text": "42",
+   "values": [
+    "42"
+   ],
+   "next": "bundled",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "RG 306 entries A1–42, UD WW 257, UD WW 193, P–207, P–104, FRC 67 A 222, 68 A 4933 | M4.3; the source notes in `argset_meta.txt`",
+   "sentence": "Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Director's Office files of (Entry UD WW 193); the Office of Policy and Plans' planning-officer subject files (Entry P–207); the Executive Secretariat's correspondence files, (Entry P–104); two Washington National Records Center accessions of USIA files (FRC 67 A 222 and 68 A 4933)."
+  },
+  {
+   "text": "WW 257",
+   "values": [
+    "ww257"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 entries A1–42, UD WW 257, UD WW 193, P–207, P–104, FRC 67 A 222, 68 A 4933 | M4.3; the source notes in `argset_meta.txt`",
+   "sentence": "Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Director's Office files of (Entry UD WW 193); the Office of Policy and Plans' planning-officer subject files (Entry P–207); the Executive Secretariat's correspondence files, (Entry P–104); two Washington National Records Center accessions of USIA files (FRC 67 A 222 and 68 A 4933)."
+  },
+  {
+   "text": "WW 193",
+   "values": [
+    "ww193"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 entries A1–42, UD WW 257, UD WW 193, P–207, P–104, FRC 67 A 222, 68 A 4933 | M4.3; the source notes in `argset_meta.txt`",
+   "sentence": "Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Director's Office files of (Entry UD WW 193); the Office of Policy and Plans' planning-officer subject files (Entry P–207); the Executive Secretariat's correspondence files, (Entry P–104); two Washington National Records Center accessions of USIA files (FRC 67 A 222 and 68 A 4933)."
+  },
+  {
+   "text": "207",
+   "values": [
+    "207"
+   ],
+   "next": "executive",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "RG 306 entries A1–42, UD WW 257, UD WW 193, P–207, P–104, FRC 67 A 222, 68 A 4933 | M4.3; the source notes in `argset_meta.txt`",
+   "sentence": "Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Director's Office files of (Entry UD WW 193); the Office of Policy and Plans' planning-officer subject files (Entry P–207); the Executive Secretariat's correspondence files, (Entry P–104); two Washington National Records Center accessions of USIA files (FRC 67 A 222 and 68 A 4933)."
+  },
+  {
+   "text": "104",
+   "values": [
+    "104"
+   ],
+   "next": "two",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "RG 306 entries A1–42, UD WW 257, UD WW 193, P–207, P–104, FRC 67 A 222, 68 A 4933 | M4.3; the source notes in `argset_meta.txt`",
+   "sentence": "Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Director's Office files of (Entry UD WW 193); the Office of Policy and Plans' planning-officer subject files (Entry P–207); the Executive Secretariat's correspondence files, (Entry P–104); two Washington National Records Center accessions of USIA files (FRC 67 A 222 and 68 A 4933)."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "washington",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"22 documents, each retrieved in full\" | M2 (accounting), M6",
+   "sentence": "Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Director's Office files of (Entry UD WW 193); the Office of Policy and Plans' planning-officer subject files (Entry P–207); the Executive Secretariat's correspondence files, (Entry P–104); two Washington National Records Center accessions of USIA files (FRC 67 A 222 and 68 A 4933)."
+  },
+  {
+   "text": "FRC 67",
+   "values": [
+    "frc67"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 entries A1–42, UD WW 257, UD WW 193, P–207, P–104, FRC 67 A 222, 68 A 4933 | M4.3; the source notes in `argset_meta.txt`",
+   "sentence": "Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Director's Office files of (Entry UD WW 193); the Office of Policy and Plans' planning-officer subject files (Entry P–207); the Executive Secretariat's correspondence files, (Entry P–104); two Washington National Records Center accessions of USIA files (FRC 67 A 222 and 68 A 4933)."
+  },
+  {
+   "text": "A 222",
+   "values": [
+    "a222"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 entries A1–42, UD WW 257, UD WW 193, P–207, P–104, FRC 67 A 222, 68 A 4933 | M4.3; the source notes in `argset_meta.txt`",
+   "sentence": "Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Director's Office files of (Entry UD WW 193); the Office of Policy and Plans' planning-officer subject files (Entry P–207); the Executive Secretariat's correspondence files, (Entry P–104); two Washington National Records Center accessions of USIA files (FRC 67 A 222 and 68 A 4933)."
+  },
+  {
+   "text": "68 A 4933",
+   "values": [
+    "68a4933"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 entries A1–42, UD WW 257, UD WW 193, P–207, P–104, FRC 67 A 222, 68 A 4933 | M4.3; the source notes in `argset_meta.txt`",
+   "sentence": "Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Director's Office files of (Entry UD WW 193); the Office of Policy and Plans' planning-officer subject files (Entry P–207); the Executive Secretariat's correspondence files, (Entry P–104); two Washington National Records Center accessions of USIA files (FRC 67 A 222 and 68 A 4933)."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 entries A1–42, UD WW 257, UD WW 193, P–207, P–104, FRC 67 A 222, 68 A 4933 | M4.3; the source notes in `argset_meta.txt`",
+   "sentence": "Beyond Record Group 306 they came from: the Kennedy, Johnson and Nixon national security files; the State Department's Central Decimal File of the ; the State Department Executive Secretariat's Records Relating to National Security Council Policy Papers (Record Group 59, Entry A1 1586E, National Archives identifier 2839192, , partly restricted)."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 59 NAID 2839192, Entry A1 1586E, 1947–1979, partly restricted | M4.4",
+   "sentence": "Beyond Record Group 306 they came from: the Kennedy, Johnson and Nixon national security files; the State Department's Central Decimal File of the ; the State Department Executive Secretariat's Records Relating to National Security Council Policy Papers (Record Group 59, Entry A1 1586E, National Archives identifier 2839192, , partly restricted)."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 59 NAID 2839192, Entry A1 1586E, 1947–1979, partly restricted | M4.4",
+   "sentence": "Beyond Record Group 306 they came from: the Kennedy, Johnson and Nixon national security files; the State Department's Central Decimal File of the ; the State Department Executive Secretariat's Records Relating to National Security Council Policy Papers (Record Group 59, Entry A1 1586E, National Archives identifier 2839192, , partly restricted)."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "RG 59 NAID 2839192, Entry A1 1586E, 1947–1979, partly restricted | M4.4",
+   "sentence": "Beyond Record Group 306 they came from: the Kennedy, Johnson and Nixon national security files; the State Department's Central Decimal File of the ; the State Department Executive Secretariat's Records Relating to National Security Council Policy Papers (Record Group 59, Entry A1 1586E, National Archives identifier 2839192, , partly restricted)."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "lot-file series that appears most often in both channels | M4.1, M4.2 (63D351 73 came-from; 66D95 108 + 63D351 66 pointed-at)",
+   "sentence": "This is the series behind Lots 63 D 351 and 66 D 95."
+  },
+  {
+   "text": "66 D 95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "lot-file series that appears most often in both channels | M4.1, M4.2 (63D351 73 came-from; 66D95 108 + 63D351 66 pointed-at)",
+   "sentence": "This is the series behind Lots 63 D 351 and 66 D 95."
+  },
+  {
+   "text": "2,700",
+   "values": [
+    "2700"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"about 2,700 documents\", \"273 volumes\" | M1.7 (2692 of 2860; 273 volumes)",
+   "sentence": "Across the wider set of about 2,700 documents it is the State Department lot-file series that appears most often in both channels."
+  },
+  {
+   "text": "Two",
+   "values": [
+    "2"
+   ],
+   "next": "serie",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"22 documents, each retrieved in full\" | M2 (accounting), M6",
+   "sentence": "Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.00, \"International Informational and Educational Relations\" of the United States with Asia and with the world, as the filing manual glosses them; the bundled indexes carry no series identifier for the decimal file); the Operations Coordinating Board files (Lot 61 D 385, which the bundled indexes cannot place on a shelf); the Southeast Asia files of the officer in charge of Malaya affairs (Lot 58 D 726:"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 59 NAID 2839192, Entry A1 1586E, 1947–1979, partly restricted | M4.4",
+   "sentence": "Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.00, \"International Informational and Educational Relations\" of the United States with Asia and with the world, as the filing manual glosses them; the bundled indexes carry no series identifier for the decimal file); the Operations Coordinating Board files (Lot 61 D 385, which the bundled indexes cannot place on a shelf); the Southeast Asia files of the officer in charge of Malaya affairs (Lot 58 D 726:"
+  },
+  {
+   "text": "A1 1462",
+   "values": [
+    "a11462"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.00, \"International Informational and Educational Relations\" of the United States with Asia and with the world, as the filing manual glosses them; the bundled indexes carry no series identifier for the decimal file); the Operations Coordinating Board files (Lot 61 D 385, which the bundled indexes cannot place on a shelf); the Southeast Asia files of the officer in charge of Malaya affairs (Lot 58 D 726:"
+  },
+  {
+   "text": "2124692",
+   "values": [
+    "2124692"
+   ],
+   "next": "access",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "PSB Working Files NAID 2124692 | M4.4",
+   "sentence": "Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.00, \"International Informational and Educational Relations\" of the United States with Asia and with the world, as the filing manual glosses them; the bundled indexes carry no series identifier for the decimal file); the Operations Coordinating Board files (Lot 61 D 385, which the bundled indexes cannot place on a shelf); the Southeast Asia files of the officer in charge of Malaya affairs (Lot 58 D 726:"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 59 NAID 2839192, Entry A1 1586E, 1947–1979, partly restricted | M4.4",
+   "sentence": "Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.00, \"International Informational and Educational Relations\" of the United States with Asia and with the world, as the filing manual glosses them; the bundled indexes carry no series identifier for the decimal file); the Operations Coordinating Board files (Lot 61 D 385, which the bundled indexes cannot place on a shelf); the Southeast Asia files of the officer in charge of Malaya affairs (Lot 58 D 726:"
+  },
+  {
+   "text": "A1 5305",
+   "values": [
+    "a15305"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.00, \"International Informational and Educational Relations\" of the United States with Asia and with the world, as the filing manual glosses them; the bundled indexes carry no series identifier for the decimal file); the Operations Coordinating Board files (Lot 61 D 385, which the bundled indexes cannot place on a shelf); the Southeast Asia files of the officer in charge of Malaya affairs (Lot 58 D 726:"
+  },
+  {
+   "text": "A1 5414",
+   "values": [
+    "a15414"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.00, \"International Informational and Educational Relations\" of the United States with Asia and with the world, as the filing manual glosses them; the bundled indexes carry no series identifier for the decimal file); the Operations Coordinating Board files (Lot 61 D 385, which the bundled indexes cannot place on a shelf); the Southeast Asia files of the officer in charge of Malaya affairs (Lot 58 D 726:"
+  },
+  {
+   "text": "631403",
+   "values": [
+    "631403"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Vietnam Working Group NAID 631403 | M4.4",
+   "sentence": "Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.00, \"International Informational and Educational Relations\" of the United States with Asia and with the world, as the filing manual glosses them; the bundled indexes carry no series identifier for the decimal file); the Operations Coordinating Board files (Lot 61 D 385, which the bundled indexes cannot place on a shelf); the Southeast Asia files of the officer in charge of Malaya affairs (Lot 58 D 726:"
+  },
+  {
+   "text": "511",
+   "values": [
+    "511"
+   ],
+   "next": "file",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "class 511 gloss \"International Informational and Educational Relations\" | M4.4",
+   "sentence": "Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.00, \"International Informational and Educational Relations\" of the United States with Asia and with the world, as the filing manual glosses them; the bundled indexes carry no series identifier for the decimal file); the Operations Coordinating Board files (Lot 61 D 385, which the bundled indexes cannot place on a shelf); the Southeast Asia files of the officer in charge of Malaya affairs (Lot 58 D 726:"
+  },
+  {
+   "text": "511.90",
+   "values": [
+    "511.90"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.00, \"International Informational and Educational Relations\" of the United States with Asia and with the world, as the filing manual glosses them; the bundled indexes carry no series identifier for the decimal file); the Operations Coordinating Board files (Lot 61 D 385, which the bundled indexes cannot place on a shelf); the Southeast Asia files of the officer in charge of Malaya affairs (Lot 58 D 726:"
+  },
+  {
+   "text": "511.00",
+   "values": [
+    "511.00"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.00, \"International Informational and Educational Relations\" of the United States with Asia and with the world, as the filing manual glosses them; the bundled indexes carry no series identifier for the decimal file); the Operations Coordinating Board files (Lot 61 D 385, which the bundled indexes cannot place on a shelf); the Southeast Asia files of the officer in charge of Malaya affairs (Lot 58 D 726:"
+  },
+  {
+   "text": "61 D 385",
+   "values": [
+    "61d385"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 61 D 385 not placed | M4.4",
+   "sentence": "Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.00, \"International Informational and Educational Relations\" of the United States with Asia and with the world, as the filing manual glosses them; the bundled indexes carry no series identifier for the decimal file); the Operations Coordinating Board files (Lot 61 D 385, which the bundled indexes cannot place on a shelf); the Southeast Asia files of the officer in charge of Malaya affairs (Lot 58 D 726:"
+  },
+  {
+   "text": "58 D 726",
+   "values": [
+    "58d726"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 58 D 726 NAID 2544398 | M4.4",
+   "sentence": "Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.00, \"International Informational and Educational Relations\" of the United States with Asia and with the world, as the filing manual glosses them; the bundled indexes carry no series identifier for the decimal file); the Operations Coordinating Board files (Lot 61 D 385, which the bundled indexes cannot place on a shelf); the Southeast Asia files of the officer in charge of Malaya affairs (Lot 58 D 726:"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 59 NAID 2839192, Entry A1 1586E, 1947–1979, partly restricted | M4.4",
+   "sentence": "Record Group 59, Entry UD 53, identifier 2544398, , access possibly restricted)."
+  },
+  {
+   "text": "UD 53",
+   "values": [
+    "ud53"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Record Group 59, Entry UD 53, identifier 2544398, , access possibly restricted)."
+  },
+  {
+   "text": "2544398",
+   "values": [
+    "2544398"
+   ],
+   "next": "access",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Lot 58 D 726 NAID 2544398 | M4.4",
+   "sentence": "Record Group 59, Entry UD 53, identifier 2544398, , access possibly restricted)."
+  },
+  {
+   "text": "552",
+   "values": [
+    "552"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Department of State\" in 552 of 553 volumes; nonsense string nothing | M0.3, M0.4",
+   "sentence": "The check that the search works found \"Department of State\" in 552 of 553 volumes, and a nonsense string found nothing."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Department of State\" in 552 of 553 volumes; nonsense string nothing | M0.3, M0.4",
+   "sentence": "The check that the search works found \"Department of State\" in 552 of 553 volumes, and a nonsense string found nothing."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"messaging\" in three documents; treated as \"message\" | M1.2",
+   "sentence": "\"Soft power\" is a term of . *\"Messaging\".* The literal word occurs in three documents in the whole series."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 entries A1–42, UD WW 257, UD WW 193, P–207, P–104, FRC 67 A 222, 68 A 4933 | M4.3; the source notes in `argset_meta.txt`",
+   "sentence": "They sit in USIA's Record Group 306 files named above, including the Director's Subject Files' public opinion research folders. *The audience's own voice.* No Asian audience speaks for itself here."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Department of State\" in 552 of 553 volumes; nonsense string nothing | M0.3, M0.4",
+   "sentence": "That record lies in Asian archives and press, outside this series. *Gaps in the indexed library.* Among the 553 volumes indexed, the series has no public-diplomacy volume for or for the ."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "indexed",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"Department of State\" in 552 of 553 volumes; nonsense string nothing | M0.3, M0.4",
+   "sentence": "The are seen through regional volumes and the Foreign Information Program volume. **Scope.** I searched every one of the 553 indexed volumes for documents dated through that name the information program (USIA, USIS, the Voice of America, psychological warfare or strategy, cultural exchange, public diplomacy, the American image) together with a place in East Asia or the Pacific."
+  },
+  {
+   "text": "2,700",
+   "values": [
+    "2700"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"about 2,700 documents\", \"273 volumes\" | M1.7 (2692 of 2860; 273 volumes)",
+   "sentence": "That gave about 2,700 documents in 273 volumes, after excluding front matter, editorial notes, second editions and 161 false matches on the abbreviation \"USI\", which documents of on Indonesia use and which the search engine treats as the same word as USIS."
+  },
+  {
+   "text": "273",
+   "values": [
+    "273"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"about 2,700 documents\", \"273 volumes\" | M1.7 (2692 of 2860; 273 volumes)",
+   "sentence": "That gave about 2,700 documents in 273 volumes, after excluding front matter, editorial notes, second editions and 161 false matches on the abbreviation \"USI\", which documents of on Indonesia use and which the search engine treats as the same word as USIS."
+  },
+  {
+   "text": "161",
+   "values": [
+    "161"
+   ],
+   "next": "false",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"161 false matches on the abbreviation USI\" | M1.7",
+   "sentence": "That gave about 2,700 documents in 273 volumes, after excluding front matter, editorial notes, second editions and 161 false matches on the abbreviation \"USI\", which documents of on Indonesia use and which the search engine treats as the same word as USIS."
+  },
+  {
+   "text": "22",
+   "values": [
+    "22"
+   ],
+   "next": "them",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"22 documents, each retrieved in full\" | M2 (accounting), M6",
+   "sentence": "The argument rests on 22 of them, chosen by reading, and every count is conditional on this 553-volume library (see the memo). ## Decisions this needs from you **What counts as \"soft power\".** I read it as the government's deliberate information, cultural and image work, together with its judgments of America's standing."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Department of State\" in 552 of 553 volumes; nonsense string nothing | M0.3, M0.4",
+   "sentence": "The argument rests on 22 of them, chosen by reading, and every count is conditional on this 553-volume library (see the memo). ## Decisions this needs from you **What counts as \"soft power\".** I read it as the government's deliberate information, cultural and image work, together with its judgments of America's standing."
+  },
+  {
+   "text": "thirteen",
+   "values": [
+    "13"
+   ],
+   "next": "saigon",
+   "kind": "word",
+   "class": "weak",
+   "row": "¶1 \"the image of American strength, reliability and friendship\" | Q13",
+   "sentence": "In the \"Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys\" ( , In USIA's director told Kissinger that \"public opinion surveys and other assessments of Japanese attitudes have tended to confirm the seriousness of these strains\" ( , From the the strategy shifted to handing the message to Asian governments, then to reassurance In USIA's director complained that \"The Thai Government has not given proper attention to the need for a national information program designed to gain popular support\" (Foreign Relations of the United States, , , Mainland Southeast Asia;"
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Department of State\" in 552 of 553 volumes; nonsense string nothing | M0.3, M0.4",
+   "sentence": "Public Diplomacy, , In the new administration's USIA held that \"shoring up the confidence of East Asians in America’s long-term staying power and positive involvement in the area is real and necessary\" ( , ## How this was done I worked from a read-only copy of the FRUS Explorer search index of all 553 volumes and from the volumes' published contents."
+  },
+  {
+   "text": "about 94 in every 100",
+   "values": [
+    "94",
+    "100"
+   ],
+   "next": "matche",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "\"about 94 in every 100\" | M1.7 (2692 of 2860)",
+   "sentence": "I checked by exact-text matching that the search found what it claimed: about 94 in every 100 matches held the words literally."
+  },
+  {
+   "text": "48",
+   "values": [
+    "48"
+   ],
+   "next": "full",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"48 in full\" | M2",
+   "sentence": "From the matching documents I retrieved 48 in full, chosen by relevance ranking and by headings naming USIA's Far East and East Asia offices."
+  },
+  {
+   "text": "22",
+   "values": [
+    "22"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"22 documents, each retrieved in full\" | M2 (accounting), M6",
+   "sentence": "I read the shorter ones entire and the longer ones at their passages on the region, and built the argument on 22."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"22 documents, each retrieved in full\" | M2 (accounting), M6",
+   "sentence": "I used the app's document-similarity data, a numerical measure of how alike two documents' texts are, to find neighbours of a key document."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"22 documents, each retrieved in full\" | M2 (accounting), M6",
+   "sentence": "That added two documents to the reading, the USIA status report and the program memorandum."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "pair",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"messaging\" in three documents; treated as \"message\" | M1.2",
+   "sentence": "It also found three pairs of documents printed twice."
+  },
+  {
+   "text": "twice",
+   "values": [
+    "2"
+   ],
+   "next": "",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"three pairs … printed twice\" | M5 Operation 1",
+   "sentence": "It also found three pairs of documents printed twice."
+  },
+  {
+   "text": "22",
+   "values": [
+    "22"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"22 documents, each retrieved in full\" | M2 (accounting), M6",
+   "sentence": "Exact counts, queries and verification are in the memo. ## Read next The collection **\"American soft power in East Asia and the Pacific: how policymakers assessed it\"** holds the 22 documents under five headings matching the findings, with notes and the 28 passages quoted here."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "heading",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"three pairs … printed twice\" | M5 Operation 1",
+   "sentence": "Exact counts, queries and verification are in the memo. ## Read next The collection **\"American soft power in East Asia and the Pacific: how policymakers assessed it\"** holds the 22 documents under five headings matching the findings, with notes and the 28 passages quoted here."
+  },
+  {
+   "text": "28",
+   "values": [
+    "28"
+   ],
+   "next": "passage",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Finding 5 quotations | Q23, Q24, Q25, Q26, Q27, Q28",
+   "sentence": "Exact counts, queries and verification are in the memo. ## Read next The collection **\"American soft power in East Asia and the Pacific: how policymakers assessed it\"** holds the 22 documents under five headings matching the findings, with notes and the 28 passages quoted here."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "place",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"messaging\" in three documents; treated as \"message\" | M1.2",
+   "sentence": "Your additions would unlock the most in three places."
+  },
+  {
+   "text": "forty",
+   "values": [
+    "40"
+   ],
+   "next": "matching",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"more than forty matching documents\" in the 1949 China volume and the 1955–57 China microfiche supplement | M7 note below (57 and 43 in `scope_confirmed.csv`)",
+   "sentence": "First, the late- and China record: the China volume and the China microfiche supplement each hold more than forty matching documents, none read here, and the occupation-era programs in Japan and Korea were not followed either."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 entries A1–42, UD WW 257, UD WW 193, P–207, P–104, FRC 67 A 222, 68 A 4933 | M4.3; the source notes in `argset_meta.txt`",
+   "sentence": "Second, the USIA survey reports, which the printed documents summarise and which sit in Record Group 306."
+  }
+ ]
+}

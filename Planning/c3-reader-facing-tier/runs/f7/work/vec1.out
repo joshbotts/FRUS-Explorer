@@ -1,0 +1,4 @@
+ids decoded round-trip: volumes 553 docs 314616 missing 0
+dims 512 docs 314616 cents 660 recall@10 0.9021 calib {'documentOffset': 0.4, 'measuredBy': "Planning/semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md §1b, fitted to EmbeddingGemma 300m's scores over 90 typed queries and 600 anchor documents against the 314,616-document corpus", 'queryOffset': 0.47}
+RANDOM PAIRS n=20000 mean 167.1 sd 14.8 p1 132 min 95
+200-doc sample: 1st-NN median 83; 25th-NN median 107 quartiles 99 114

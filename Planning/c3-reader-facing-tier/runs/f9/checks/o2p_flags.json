@@ -1,0 +1,872 @@
+{
+ "run": "runs/f9",
+ "traceSource": "runs/f9/memo.md",
+ "traceTableLine": 224,
+ "traceRows": 23,
+ "mentions": 78,
+ "counts": {
+  "traced": 24,
+  "weak": 24,
+  "untraced": 30
+ },
+ "list": [
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "25 documents in the collection | [M16]",
+   "sentence": "The argument rests on 25 documents, from about 2,000 in the scope that use the information programme's vocabulary."
+  },
+  {
+   "text": "2,000",
+   "values": [
+    "2000"
+   ],
+   "next": "scope",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "25 documents, about 2,000 in scope (bottom line) | [M16], [M5]",
+   "sentence": "The argument rests on 25 documents, from about 2,000 in the scope that use the information programme's vocabulary."
+  },
+  {
+   "text": "Two",
+   "values": [
+    "2"
+   ],
+   "next": "channel",
+   "kind": "word",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Where FRUS points for the rest.** Two channels, kept separate. *Where the printed documents came from*: the U.S."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "came-from among the 141: 66 RG 59, 40 RG 306 | [M11]",
+   "sentence": "Information Agency's own records, Record Group 306 at the National Archives."
+  },
+  {
+   "text": "42",
+   "values": [
+    "42"
+   ],
+   "next": "general",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "RG 306 Director's Subject Files A1–42, JUSPAO A1–31 etc. have no identifier in the bundled data | [M13]",
+   "sentence": "These are the Director's Subject Files, (Entry A1–42), the General Records Relating to the Joint U.S."
+  },
+  {
+   "text": "31",
+   "values": [
+    "31"
+   ],
+   "next": "director",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "RG 306 Director's Subject Files A1–42, JUSPAO A1–31 etc. have no identifier in the bundled data | [M13]",
+   "sentence": "Public Affairs Office in Saigon, (Entry A1–31), the Director's Subject Files of (Entry UD WW 257) and the Office of Policy and Plans subject files (Entry P–207)."
+  },
+  {
+   "text": "WW 257",
+   "values": [
+    "ww257"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Public Affairs Office in Saigon, (Entry A1–31), the Director's Subject Files of (Entry UD WW 257) and the Office of Policy and Plans subject files (Entry P–207)."
+  },
+  {
+   "text": "207",
+   "values": [
+    "207"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Public Affairs Office in Saigon, (Entry A1–31), the Director's Subject Files of (Entry UD WW 257) and the Office of Policy and Plans subject files (Entry P–207)."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "came-from among the 141: 66 RG 59, 40 RG 306 | [M11]",
+   "sentence": "From the State Department, Record Group 59, the documents come from the Executive Secretariat's Subject and Special Files, , which hold the Operations Coordinating Board papers (Lot 62 D 430, Entry A1 1586C, National Archives identifier 2839191, partly restricted)."
+  },
+  {
+   "text": "62 D 430",
+   "values": [
+    "62d430"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430, Lot 63 D 351, Lot 67 D 54, Lot 59 D 260 and their NAIDs, dates, access | [M13]",
+   "sentence": "From the State Department, Record Group 59, the documents come from the Executive Secretariat's Subject and Special Files, , which hold the Operations Coordinating Board papers (Lot 62 D 430, Entry A1 1586C, National Archives identifier 2839191, partly restricted)."
+  },
+  {
+   "text": "A1 1586C",
+   "values": [
+    "a11586c"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "From the State Department, Record Group 59, the documents come from the Executive Secretariat's Subject and Special Files, , which hold the Operations Coordinating Board papers (Lot 62 D 430, Entry A1 1586C, National Archives identifier 2839191, partly restricted)."
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "From the State Department, Record Group 59, the documents come from the Executive Secretariat's Subject and Special Files, , which hold the Operations Coordinating Board papers (Lot 62 D 430, Entry A1 1586C, National Archives identifier 2839191, partly restricted)."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430, Lot 63 D 351, Lot 67 D 54, Lot 59 D 260 and their NAIDs, dates, access | [M13]",
+   "sentence": "They also come from the Records Relating to National Security Council Policy Papers, (Lot 63 D 351, Entry A1 1586E, identifier 2839192, partly restricted), which hold the NSC's semiannual status reports on the information programme."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "They also come from the Records Relating to National Security Council Policy Papers, (Lot 63 D 351, Entry A1 1586E, identifier 2839192, partly restricted), which hold the NSC's semiannual status reports on the information programme."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "They also come from the Records Relating to National Security Council Policy Papers, (Lot 63 D 351, Entry A1 1586E, identifier 2839192, partly restricted), which hold the NSC's semiannual status reports on the information programme."
+  },
+  {
+   "text": "67 D 54",
+   "values": [
+    "67d54"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430, Lot 63 D 351, Lot 67 D 54, Lot 59 D 260 and their NAIDs, dates, access | [M13]",
+   "sentence": "And from the Subject Files of the Vietnam Working Group, (Lot 67 D 54, Entries A1 5305 and A1 5414, identifier 631403, unrestricted), the Central Decimal File, and the Central Foreign Policy File. *What the editors cited without printing*:"
+  },
+  {
+   "text": "A1 5305",
+   "values": [
+    "a15305"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "And from the Subject Files of the Vietnam Working Group, (Lot 67 D 54, Entries A1 5305 and A1 5414, identifier 631403, unrestricted), the Central Decimal File, and the Central Foreign Policy File. *What the editors cited without printing*:"
+  },
+  {
+   "text": "A1 5414",
+   "values": [
+    "a15414"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "And from the Subject Files of the Vietnam Working Group, (Lot 67 D 54, Entries A1 5305 and A1 5414, identifier 631403, unrestricted), the Central Decimal File, and the Central Foreign Policy File. *What the editors cited without printing*:"
+  },
+  {
+   "text": "631403",
+   "values": [
+    "631403"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "And from the Subject Files of the Vietnam Working Group, (Lot 67 D 54, Entries A1 5305 and A1 5414, identifier 631403, unrestricted), the Central Decimal File, and the Central Foreign Policy File. *What the editors cited without printing*:"
+  },
+  {
+   "text": "62 D 430",
+   "values": [
+    "62d430"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430, Lot 63 D 351, Lot 67 D 54, Lot 59 D 260 and their NAIDs, dates, access | [M13]",
+   "sentence": "Lot 62 D 430 and the NSC policy papers series again (Lot 66 D 95, identifier 2839192)."
+  },
+  {
+   "text": "66 D 95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lot 62 D 430 and the NSC policy papers series again (Lot 66 D 95, identifier 2839192)."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lot 62 D 430 and the NSC policy papers series again (Lot 66 D 95, identifier 2839192)."
+  },
+  {
+   "text": "59 D 260",
+   "values": [
+    "59d260"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 430, Lot 63 D 351, Lot 67 D 54, Lot 59 D 260 and their NAIDs, dates, access | [M13]",
+   "sentence": "Also the USIA Office of Policy and Plans Subject Files, (Lot 59 D 260, Record Group 306, identifier 1257679, 47 linear feet, partly restricted)."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "came-from among the 141: 66 RG 59, 40 RG 306 | [M11]",
+   "sentence": "Also the USIA Office of Policy and Plans Subject Files, (Lot 59 D 260, Record Group 306, identifier 1257679, 47 linear feet, partly restricted)."
+  },
+  {
+   "text": "1257679",
+   "values": [
+    "1257679"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Also the USIA Office of Policy and Plans Subject Files, (Lot 59 D 260, Record Group 306, identifier 1257679, 47 linear feet, partly restricted)."
+  },
+  {
+   "text": "47",
+   "values": [
+    "47"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Also the USIA Office of Policy and Plans Subject Files, (Lot 59 D 260, Record Group 306, identifier 1257679, 47 linear feet, partly restricted)."
+  },
+  {
+   "text": "65 D 101",
+   "values": [
+    "65d101"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Also the Policy Planning Council's Chronological Files, (Lot 65 D 101, identifier 1136548, unrestricted)."
+  },
+  {
+   "text": "1136548",
+   "values": [
+    "1136548"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Also the Policy Planning Council's Chronological Files, (Lot 65 D 101, identifier 1136548, unrestricted)."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "usia",
+   "kind": "word",
+   "class": "weak",
+   "row": "84 volumes, about 39,000 documents in scope; 1945–1980; front matter and editorial notes excluded | [M3]",
+   "sentence": "And three USIA lots the bundled data cannot place (63 D 224, 62 D 255, 60 D 322)."
+  },
+  {
+   "text": "63 D 224",
+   "values": [
+    "63d224"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "And three USIA lots the bundled data cannot place (63 D 224, 62 D 255, 60 D 322)."
+  },
+  {
+   "text": "62 D 255",
+   "values": [
+    "62d255"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "And three USIA lots the bundled data cannot place (63 D 224, 62 D 255, 60 D 322)."
+  },
+  {
+   "text": "60 D 322",
+   "values": [
+    "60d322"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "And three USIA lots the bundled data cannot place (63 D 224, 62 D 255, 60 D 322)."
+  },
+  {
+   "text": "141",
+   "values": [
+    "141"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "141 documents whose headings name the information agencies (candidate set) | [M4], [M11]",
+   "sentence": "Among the 141 documents whose headings name an information agency, nearly half came from State's records and more than a quarter from the USIA's own (see the memo)."
+  },
+  {
+   "text": "half",
+   "values": [
+    "0.5"
+   ],
+   "next": "came",
+   "kind": "word",
+   "class": "weak",
+   "row": "nearly half of the 141 from State (66), more than a quarter from USIA (40) | [M11]",
+   "sentence": "Among the 141 documents whose headings name an information agency, nearly half came from State's records and more than a quarter from the USIA's own (see the memo)."
+  },
+  {
+   "text": "quarter",
+   "values": [
+    "0.25"
+   ],
+   "next": "from",
+   "kind": "word",
+   "class": "traced",
+   "row": "nearly half of the 141 from State (66), more than a quarter from USIA (40) | [M11]",
+   "sentence": "Among the 141 documents whose headings name an information agency, nearly half came from State's records and more than a quarter from the USIA's own (see the memo)."
+  },
+  {
+   "text": "84",
+   "values": [
+    "84"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "84 volumes, about 39,000 documents in scope; 1945–1980; front matter and editorial notes excluded | [M3]",
+   "sentence": "What this request cannot get from FRUS.** *The term itself.* \"Soft power\" never appears in any of the 84 volumes searched."
+  },
+  {
+   "text": "350",
+   "values": [
+    "350"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"soft power\" never appears; the plain word \"soft\" in about 350 | [M9]",
+   "sentence": "The plain word \"soft\" appears in about 350 documents there."
+  },
+  {
+   "text": "Two",
+   "values": [
+    "2"
+   ],
+   "next": "control",
+   "kind": "word",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Two control searches ran in the same pass: the phrase \"Department of State\" turned up in every volume, and a nonsense string turned up nowhere."
+  },
+  {
+   "text": "160",
+   "values": [
+    "160"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "polls/surveys with USIA/USIS: about 160 documents; about 40 also mention Japan | [M9]",
+   "sentence": "So the question had to be asked in the period's words: information program, psychological warfare, USIS/USIA, Voice of America, cultural exchange, public diplomacy. *The audience research itself.* About 160 documents in the scope mention polls or surveys alongside the information agencies, and about 40 of those also name Japan."
+  },
+  {
+   "text": "40",
+   "values": [
+    "40"
+   ],
+   "next": "those",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "polls/surveys with USIA/USIS: about 160 documents; about 40 also mention Japan | [M9]",
+   "sentence": "So the question had to be asked in the period's words: information program, psychological warfare, USIS/USIA, Voice of America, cultural exchange, public diplomacy. *The audience research itself.* About 160 documents in the scope mention polls or surveys alongside the information agencies, and about 40 of those also name Japan."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "came-from among the 141: 66 RG 59, 40 RG 306 | [M11]",
+   "sentence": "The research reports sit in the USIA's Office of Research files in Record Group 306, which the bundled data names but gives no identifier. *The Pacific islands.* Only 6 documents in the scope pair the information agencies with Micronesia, Fiji, Samoa, Guam or the Trust Territory, so the Pacific half of the question is barely printed."
+  },
+  {
+   "text": "6",
+   "values": [
+    "6"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Pacific islands with USIA/USIS: 6 documents; Australia/New Zealand: about 70 | [M9]",
+   "sentence": "The research reports sit in the USIA's Office of Research files in Record Group 306, which the bundled data names but gives no identifier. *The Pacific islands.* Only 6 documents in the scope pair the information agencies with Micronesia, Fiji, Samoa, Guam or the Trust Territory, so the Pacific half of the question is barely printed."
+  },
+  {
+   "text": "half",
+   "values": [
+    "0.5"
+   ],
+   "next": "question",
+   "kind": "word",
+   "class": "weak",
+   "row": "nearly half of the 141 from State (66), more than a quarter from USIA (40) | [M11]",
+   "sentence": "The research reports sit in the USIA's Office of Research files in Record Group 306, which the bundled data names but gives no identifier. *The Pacific islands.* Only 6 documents in the scope pair the information agencies with Micronesia, Fiji, Samoa, Guam or the Trust Territory, so the Pacific half of the question is barely printed."
+  },
+  {
+   "text": "70",
+   "values": [
+    "70"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Pacific islands with USIA/USIS: 6 documents; Australia/New Zealand: about 70 | [M9]",
+   "sentence": "Australia and New Zealand fare better, with about 70 documents. *Exchanges' measured results.* The Fulbright programme appears in about 380 documents, but none of them was read for an evaluation, and this overview makes no claim about one. **Scope.** 84 volumes: 76 regional volumes on East Asia and the Pacific covering , plus the eight volumes the editors devoted to the information programme and public diplomacy."
+  },
+  {
+   "text": "380",
+   "values": [
+    "380"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Australia and New Zealand fare better, with about 70 documents. *Exchanges' measured results.* The Fulbright programme appears in about 380 documents, but none of them was read for an evaluation, and this overview makes no claim about one. **Scope.** 84 volumes: 76 regional volumes on East Asia and the Pacific covering , plus the eight volumes the editors devoted to the information programme and public diplomacy."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "scope",
+   "kind": "word",
+   "class": "weak",
+   "row": "553 volumes in the index; whole series present | [M1]",
+   "sentence": "Australia and New Zealand fare better, with about 70 documents. *Exchanges' measured results.* The Fulbright programme appears in about 380 documents, but none of them was read for an evaluation, and this overview makes no claim about one. **Scope.** 84 volumes: 76 regional volumes on East Asia and the Pacific covering , plus the eight volumes the editors devoted to the information programme and public diplomacy."
+  },
+  {
+   "text": "84",
+   "values": [
+    "84"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "84 volumes, about 39,000 documents in scope; 1945–1980; front matter and editorial notes excluded | [M3]",
+   "sentence": "Australia and New Zealand fare better, with about 70 documents. *Exchanges' measured results.* The Fulbright programme appears in about 380 documents, but none of them was read for an evaluation, and this overview makes no claim about one. **Scope.** 84 volumes: 76 regional volumes on East Asia and the Pacific covering , plus the eight volumes the editors devoted to the information programme and public diplomacy."
+  },
+  {
+   "text": "76",
+   "values": [
+    "76"
+   ],
+   "next": "regional",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Australia and New Zealand fare better, with about 70 documents. *Exchanges' measured results.* The Fulbright programme appears in about 380 documents, but none of them was read for an evaluation, and this overview makes no claim about one. **Scope.** 84 volumes: 76 regional volumes on East Asia and the Pacific covering , plus the eight volumes the editors devoted to the information programme and public diplomacy."
+  },
+  {
+   "text": "eight",
+   "values": [
+    "8"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Australia and New Zealand fare better, with about 70 documents. *Exchanges' measured results.* The Fulbright programme appears in about 380 documents, but none of them was read for an evaluation, and this overview makes no claim about one. **Scope.** 84 volumes: 76 regional volumes on East Asia and the Pacific covering , plus the eight volumes the editors devoted to the information programme and public diplomacy."
+  },
+  {
+   "text": "39,000",
+   "values": [
+    "39000"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "84 volumes, about 39,000 documents in scope; 1945–1980; front matter and editorial notes excluded | [M3]",
+   "sentence": "Together they hold about 39,000 documents, excluding front matter and the editors' own notes."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "553 volumes in the index; whole series present | [M1]",
+   "sentence": "The index searched holds all 553 volumes of the series. ## Decisions this needs from you **What counts as \"soft power\".** I counted information, cultural and psychological programmes, from the USIS libraries to psychological operations in Vietnam."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "chapter",
+   "kind": "word",
+   "class": "weak",
+   "row": "84 volumes, about 39,000 documents in scope; 1945–1980; front matter and editorial notes excluded | [M3]",
+   "sentence": "The wartime \"cultural relations program\" with China ( ) has three chapters of its own and would extend the story back."
+  },
+  {
+   "text": "quarter",
+   "values": [
+    "0.25"
+   ],
+   "next": "collection",
+   "kind": "word",
+   "class": "traced",
+   "row": "Vietnam about a quarter of the collection: 7 of 25 (frus1952-54v13p1/d116, frus1917-72PubDipv07/d32, frus1917-72PubDipv08/d88, frus1961-63v01/d265, frus1961-63v02/d16, frus1917-72PubDipv07/d48, frus19",
+   "sentence": "I left it out meanwhile. **Whether wartime psychological operations belong.** Vietnam supplies about a quarter of the collection."
+  },
+  {
+   "text": "Twenty",
+   "values": [
+    "20"
+   ],
+   "next": "year",
+   "kind": "word",
+   "class": "weak",
+   "row": "one document reached only through semantic neighbours (Saigon 1952) | [M20], [M24]",
+   "sentence": "He called for an expanded information program to show sympathy with Asian nationalism ( , Twenty years later the agency's officers agreed that the image of the United States \"usually depended more on the state of bi-lateral relations (security treaty, Okinawa, Korean military modernization, trade restrictions) than on developments within the US\"."
+  },
+  {
+   "text": "8,000",
+   "values": [
+    "8000"
+   ],
+   "next": "column",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "The report measured Japan in \"8,000 column inches a month\" reprinted by Japanese newspapers (Foreign Relations of the United States, , Foreign Economic Policy;"
+  },
+  {
+   "text": "thirteen",
+   "values": [
+    "13"
+   ],
+   "next": "saigon",
+   "kind": "word",
+   "class": "weak",
+   "row": "Vietnam about a quarter of the collection: 7 of 25 (frus1952-54v13p1/d116, frus1917-72PubDipv07/d32, frus1917-72PubDipv08/d88, frus1961-63v01/d265, frus1961-63v02/d16, frus1917-72PubDipv07/d48, frus19",
+   "sentence": "In , \"Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys\" ( , In Vietnam, officials treated the American presence as the message's chief liability From the first years of the war, information officers warned that what the United States did would outweigh what it said."
+  },
+  {
+   "text": "Three",
+   "values": [
+    "3"
+   ],
+   "next": "belief",
+   "kind": "word",
+   "class": "weak",
+   "row": "84 volumes, about 39,000 documents in scope; 1945–1980; front matter and editorial notes excluded | [M3]",
+   "sentence": "It therefore framed every American action as support for \"the Vietnamese people’s struggle\" ( , By the agency described its psychological operations as always \"short-term in nature\" and was handing them to the Vietnamese government ( , Beliefs about the audience: race, nationalism and an \"Oriental mind\" Three beliefs recur."
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Oriental/Asian mind\" phrases: 30 documents in 22 volumes, 26 of them in volumes covering 1949–1963 (\"most of them from 1949 to 1963\") | [M10]",
+   "sentence": "Third, there was a generalised \"Oriental\" or \"Asian\" mind, invoked, mostly by American officials, in 30 documents across 22 volumes, most of them from to ."
+  },
+  {
+   "text": "22",
+   "values": [
+    "22"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Oriental/Asian mind\" phrases: 30 documents in 22 volumes, 26 of them in volumes covering 1949–1963 (\"most of them from 1949 to 1963\") | [M10]",
+   "sentence": "Third, there was a generalised \"Oriental\" or \"Asian\" mind, invoked, mostly by American officials, in 30 documents across 22 volumes, most of them from to ."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "same",
+   "kind": "word",
+   "class": "weak",
+   "row": "553 volumes in the index; whole series present | [M1]",
+   "sentence": "\"While we do not want to appear as having gone “soft” on Chinese Communism neither do we want to appear anti-Chinese or anti-Peking\" ( , The agency's East Asia office proposed moon rocks, an astronaut and a library of books for Nixon's trip, to turn \"a temporary psychological asset into a long-range one\" ( of the same volume, By the liaison office in Peking saw exchanges as the opening, while the line lasted:"
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "fru",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "553 volumes in the index; whole series present | [M1]",
+   "sentence": "\"we have an opportunity to enhance the communication process to a significant degree\" ( , ## How this was done I searched a full-text index of all 553 FRUS volumes, read-only."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "set",
+   "kind": "word",
+   "class": "untraced",
+   "row": null,
+   "sentence": "I first read the editors' chapter headings to learn the period's own names for the subject, then defined two sets of volumes from the published volume list: 76 regional volumes on East Asia and the Pacific for , and eight information and public-diplomacy volumes."
+  },
+  {
+   "text": "76",
+   "values": [
+    "76"
+   ],
+   "next": "regional",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "I first read the editors' chapter headings to learn the period's own names for the subject, then defined two sets of volumes from the published volume list: 76 regional volumes on East Asia and the Pacific for , and eight information and public-diplomacy volumes."
+  },
+  {
+   "text": "eight",
+   "values": [
+    "8"
+   ],
+   "next": "information",
+   "kind": "word",
+   "class": "untraced",
+   "row": null,
+   "sentence": "I first read the editors' chapter headings to learn the period's own names for the subject, then defined two sets of volumes from the published volume list: 76 regional volumes on East Asia and the Pacific for , and eight information and public-diplomacy volumes."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "false",
+   "kind": "word",
+   "class": "weak",
+   "row": "553 volumes in the index; whole series present | [M1]",
+   "sentence": "One false friend surfaced: in \"USI\" means the United States of Indonesia, not the information service, and those two volumes were left out of the rate-by-decade figures."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "untraced",
+   "row": null,
+   "sentence": "One false friend surfaced: in \"USI\" means the United States of Indonesia, not the information service, and those two volumes were left out of the rate-by-decade figures."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "route",
+   "kind": "word",
+   "class": "weak",
+   "row": "84 volumes, about 39,000 documents in scope; 1945–1980; front matter and editorial notes excluded | [M3]",
+   "sentence": "Candidates came from three routes: document headings naming the information agencies, a ranked search for assessments of Asian attitudes, and the app's semantic neighbours, which link documents by overall similarity of content."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "553 volumes in the index; whole series present | [M1]",
+   "sentence": "The neighbours surfaced one document no word search had reached, the Saigon embassy's assessment."
+  },
+  {
+   "text": "61",
+   "values": [
+    "61"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "61 documents retrieved whole, 25 quoted | [M14]",
+   "sentence": "Of 61 documents retrieved whole, 25 are quoted."
+  },
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "are",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Vietnam about a quarter of the collection: 7 of 25 (frus1952-54v13p1/d116, frus1917-72PubDipv07/d32, frus1917-72PubDipv08/d88, frus1961-63v01/d265, frus1961-63v02/d16, frus1917-72PubDipv07/d48, frus19",
+   "sentence": "Of 61 documents retrieved whole, 25 are quoted."
+  },
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "25 documents in the collection | [M16]",
+   "sentence": "Exact counts, queries and denominators are in the memo. ## Read next The collection **\"American soft power in East Asia and the Pacific — run f9\"** holds the 25 documents under six headings that follow the findings, in date order within each, with the quoted passages as excerpts."
+  },
+  {
+   "text": "six",
+   "values": [
+    "6"
+   ],
+   "next": "heading",
+   "kind": "word",
+   "class": "weak",
+   "row": "Pacific islands with USIA/USIS: 6 documents; Australia/New Zealand: about 70 | [M9]",
+   "sentence": "Exact counts, queries and denominators are in the memo. ## Read next The collection **\"American soft power in East Asia and the Pacific — run f9\"** holds the 25 documents under six headings that follow the findings, in date order within each, with the quoted passages as excerpts."
+  },
+  {
+   "text": "1",
+   "values": [
+    "1"
+   ],
+   "next": "reading",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "553 volumes in the index; whole series present | [M1]",
+   "sentence": "(1) reading the USIA Office of Research country reports for Japan, Korea, the Philippines and Thailand in Record Group 306, which would turn 's assertions into measured audience opinion;"
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "came-from among the 141: 66 RG 59, 40 RG 306 | [M11]",
+   "sentence": "(1) reading the USIA Office of Research country reports for Japan, Korea, the Philippines and Thailand in Record Group 306, which would turn 's assertions into measured audience opinion;"
+  },
+  {
+   "text": "2",
+   "values": [
+    "2"
+   ],
+   "next": "decision",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "(2) a decision on the wartime China cultural relations program ( ), which would test whether the elite-first strategy predates the Cold War;"
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "reading",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "84 volumes, about 39,000 documents in scope; 1945–1980; front matter and editorial notes excluded | [M3]",
+   "sentence": "(3) reading the Fulbright and exchange documents found but not read, about 380 of them, which may hold the only evaluations of cultural exchange the series prints;"
+  },
+  {
+   "text": "380",
+   "values": [
+    "380"
+   ],
+   "next": "them",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "(3) reading the Fulbright and exchange documents found but not read, about 380 of them, which may hold the only evaluations of cultural exchange the series prints;"
+  },
+  {
+   "text": "4",
+   "values": [
+    "4"
+   ],
+   "next": "decision",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "141 documents whose headings name the information agencies (candidate set) | [M4], [M11]",
+   "sentence": "(4) a decision on whether aid and civic action count, which would bring in the much larger aid record and the Burma telegram's theme of aid misunderstood."
+  }
+ ]
+}

@@ -1,0 +1,416 @@
+{
+ "format": "fruscollection",
+ "formatVersion": 2,
+ "minimumReaderVersion": 1,
+ "name": "American soft power in East Asia and the Pacific: how policymakers assessed it",
+ "authorLine": "Agent run f1, 2026-10-31",
+ "introductionText": "What FRUS answers directly: across 22 documents from 1950 to 1977, policymakers judged America's standing in East Asia and the Pacific mostly as a matter of credibility - whether Asians believed U.S. commitments and saw American strength, reliability and friendship - and they built information programs aimed at elites, run increasingly through Asian governments. They doubted their own measures of effect, and their beliefs about the audience ranged from 'meager knowledge' of the United States (1950) to race-sensitivity, colonial suspicion and 'America watchers' (1969). Where FRUS points for the rest: the documents came mostly from USIA's own files in Record Group 306 (Director's Subject Files, Entry A1-42, and earlier director's files), presidential library national security files, and State's Executive Secretariat NSC policy-paper files (Lot 63 D 351/66 D 95, NAID 2839192); the editors also cite unprinted Central Decimal File class 511 (U.S. informational relations), OCB files (Lot 61 D 385) and SEA files (Lot 58 D 726, NAID 2544398). What this request cannot get from FRUS: the phrase 'soft power' and the word 'messaging' do not occur as such (both postdate the period); USIA's audience survey reports themselves are not printed; and no Asian audience speaks for itself here - reception is only seen through American reporting.",
+ "composition": {
+  "defaultBodyDepth": "full",
+  "footnoteStyle": "all",
+  "includeSourceNote": true,
+  "tocStyle": "citation",
+  "applyHighlights": false,
+  "includeNotes": true,
+  "includeWordCloud": false
+ },
+ "entries": [
+  {
+   "kind": "heading",
+   "text": "Information as the companion of aid and containment, 1950-1955",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These five documents show the first frame: information work in Asia was justified as the explanatory arm of military and economic aid against communism, and its planners already worried about race, nationalism and colonial association."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1950v06",
+   "documentId": "d50",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: Webb asks Truman for an intensified information and exchange program for Southeast and South Asia, premised on the region's meager knowledge of the United States."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1950v06",
+   "documentId": "d50",
+   "text": "the generally meager knowledge and understanding of the United States on the part of the peoples of this area"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v13p1",
+   "documentId": "d116",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: Heath in Saigon reports on information objectives and admits films' effect can only be assumed; communist propaganda exploits nationalist and racial feeling."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v13p1",
+   "documentId": "d116",
+   "text": "Since many new customs FE can be traced to Amer films, must be assumed that films is effective program though difficult to determine degree."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v13p1",
+   "documentId": "d116",
+   "text": "Commie propaganda which exploits nationalist and racial feeling"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d403",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: PSB D-23: psychological strategy based on Thailand, aiming to prepare the minds and emotions of the people for collaboration."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d403",
+   "text": "utilizing every suitable operation to prepare the minds and emotions of the people to collaborate in the effort"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d190",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: USIA's mid-1955 status report: in the Far East it faced mixed emotions about atomic weapons used against Asian peoples and propaganda designed to stir up race hatred. Reached through a semantic-neighbour list."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d190",
+   "text": "In the Far East USIA was forced to deal with mixed emotions regarding the use of atomic weapons against Asiatic peoples, and to counter communist propaganda designed to stir up race hatred."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1955-57v22",
+   "documentId": "d447",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: USIA resists expanding its Malaya program partly for fear of appearing to support colonialism; FE overrides it."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v22",
+   "documentId": "d447",
+   "text": "a fear of placing the U.S. in the position of appearing to support colonialism"
+  },
+  {
+   "kind": "heading",
+   "text": "Vietnam, 1961-1963: propaganda campaigns and a damaged image",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "The Kennedy-era Vietnam documents show USIA mounting a deliberate campaign while its own officers warned that U.S. methods and the Diem government's conduct were hurting the American image in Asia."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v01",
+   "documentId": "d49",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: USIA orders a major propaganda campaign on Viet Cong insurgency and depends on declassified material from Saigon."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v01",
+   "documentId": "d49",
+   "text": "We are in the process of cranking up a major propaganda campaign on Viet Cong insurgency in VietNam."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v01",
+   "documentId": "d265",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: USIA's Far East chief warns that defoliants could bring charges of germ warfare on Asians and a harvest of ill-will."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v01",
+   "documentId": "d265",
+   "text": "But the spectre of charges that “U.S. imperialists are waging germ warfare on Asians” haunts me."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v02",
+   "documentId": "d16",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: USIS Saigon: the GVN's image can be no better than the face it presents; credibility of U.S. news coverage at stake."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v02",
+   "documentId": "d16",
+   "text": "the image of the GVN in the world press can be no better than the face the GVN presents to the public"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d140",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: Mecklin's September 1963 memo: the U.S. image being hurt, and a belief about 'Orientals' and face shaping proposed tactics. A near-identical copy is printed in the Vietnam volume (1961-1963, IV, Document 81)."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d140",
+   "text": "With Orientals in general and notably with the Ngo Dinhs, capitulation is virtually impossible if they are painted into a corner."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d140",
+   "text": "the U.S. image was being hurt"
+  },
+  {
+   "kind": "heading",
+   "text": "Beliefs about the audience",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These documents show whom USIA thought it was addressing in East Asia - elites, overseas Chinese, America-watchers - and what it believed those audiences thought of the United States."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d126",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: USIA plans a campaign against Afro-Asian anti-American propaganda led by Indonesia, but expects the audience to discount words without deeds."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d126",
+   "text": "much of our audience would tend to regard it as mere words without deeds"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d73",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: USIA Far East summary of 1966 country plans: elite target audiences; the image of American strength, reliability and friendship as the basic objective."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d73",
+   "text": "In all cases, however, the image of American strength, reliability and friendship is basic to our objectives."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d73",
+   "text": "In almost every country of the area, our programs are directed at elite groups"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d85",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: USIA Vietnam affairs officer after the 1966 Struggle movement: anti-Americanism under the surface, explained by Vietnamese history of colonization."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d85",
+   "text": "there is an unfortunately large amount of anti-Americanism under the surface in Viet-Nam"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: Summary of the 1969 East Asia PAO conference: Asians as America watchers; the U.S. image depends more on bilateral issues than on U.S. domestic events; PPBS evaluation not worth the effort."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "Asians are, to varying degrees, America watchers."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "PAOs emphasized that the image of the US usually depended more on the state of bi-lateral relations"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "the total exercise as presently constituted has not been worth the effort"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d149",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: 1971 analysis of overseas Chinese attitudes in Southeast Asia as a USIS audience: apolitical, seeking neutrality."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d149",
+   "text": "The predominant mood is apolitical, seeking to be neutral, and concerned with economic and trade problems rather than strong ideological convictions."
+  },
+  {
+   "kind": "heading",
+   "text": "Measuring effect",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These documents show how effect was measured - survey teams, Saigon opinion trend surveys, Japanese attitude surveys - and what the measures said."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d32",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: 1964 inspection of USIS Vietnam: survey teams valued as the best insight into rural attitudes; leaflets not pre-tested."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d32",
+   "text": "The teams have given us more of an insight into rural attitudes than any other device that has been used."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d88",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: May 1970 Saigon opinion trend survey: rating of the U.S. as a dependable ally at its lowest in thirteen surveys."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d88",
+   "text": "Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76v19p2",
+   "documentId": "d67",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: Shakespeare to Kissinger, 1971: surveys of Japanese attitudes confirm strains in the relationship; asks for an NSC review."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v19p2",
+   "documentId": "d67",
+   "text": "public opinion surveys and other assessments of Japanese attitudes have tended to confirm the seriousness of these strains"
+  },
+  {
+   "kind": "heading",
+   "text": "Handing the message to Asian governments, and selling staying power",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "From 1968 USIA sought to shift information work to Asian governments and, after 1975, to reassure East Asians that the United States would stay."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v27",
+   "documentId": "d386",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: Marks to Johnson, 1968: Thailand lacks a national information program; USIA wants the Thai to assume programs it runs."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v27",
+   "documentId": "d386",
+   "text": "The Thai Government has not given proper attention to the need for a national information program designed to gain popular support."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d58",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: 1969 Vietnamization of JUSPAO's information and psychological operations: USIA always saw its PSYOP role as short-term."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d58",
+   "text": "USIA has, from the beginning, considered its psychological operations (PSYOP) support program in Viet-Nam as short-term in nature."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d99",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: 1970 Agency Program Memorandum: disengage from information support to Southeast Asian governments; do not take a favorable climate in Japan for granted. Reached through a semantic-neighbour list."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d99",
+   "text": "it will disengage as rapidly as feasible from information support to governments there"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d99",
+   "text": "Far from taking for granted a favorable psychological climate in Japan and key countries of Western Europe"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: May 1975 post assessments after the fall of South Vietnam: security-relations programs lack credibility in Thailand; Korea and Philippines doubts."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "text": "programs on U.S. security relations in Asia lack credibility and may in fact do damage to our relations"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d79",
+   "notes": [
+    "Agent finding, Agent run f1, 2026-10-31: 1977 USIA East Asia memo: shoring up East Asian confidence in America's long-term staying power is real and necessary."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d79",
+   "text": "shoring up the confidence of East Asians in America’s long-term staying power and positive involvement in the area is real and necessary"
+  },
+  {
+   "kind": "prose",
+   "text": "Threads not followed in this run: USIA's survey reports themselves (Office of Research; RG 306) are cited but not printed; the late-1940s and 1950s China record (the 1949 China volume and the 1955-1957 China microfiche supplement each hold more than forty matching documents) and the occupation-era programs in Japan and Korea were not read; cultural and educational exchange as distinct from information was not separated; Asian audiences' own records lie outside FRUS; and no 1981-1988 public diplomacy volume is among the 553 indexed."
+  },
+  {
+   "kind": "generated",
+   "generatedBlockType": "archivalSources"
+  }
+ ]
+}

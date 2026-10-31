@@ -1,0 +1,994 @@
+{
+ "run": "runs/f7",
+ "traceSource": "runs/f7/memo.md",
+ "traceTableLine": 181,
+ "traceRows": 36,
+ "mentions": 89,
+ "counts": {
+  "traced": 40,
+  "weak": 39,
+  "untraced": 10
+ },
+ "list": [
+  {
+   "text": "79",
+   "values": [
+    "79"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"soft power\" not found in the 79 volumes | 0 of 35,874 documents | §3 table, row \"soft power\"",
+   "sentence": "What beliefs about the regional audience contributed to those strategies? ## The bottom line What FRUS answers directly.** The series never uses the phrase \"soft power\" (a search of the 79 volumes I read, about 35,900 documents, found it nowhere), but it answers the question under three older names: the information program, psychological strategy and, from the , public diplomacy."
+  },
+  {
+   "text": "35,900",
+   "values": [
+    "35900"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "about 35,900 documents | 35,874 | §1, §2",
+   "sentence": "What beliefs about the regional audience contributed to those strategies? ## The bottom line What FRUS answers directly.** The series never uses the phrase \"soft power\" (a search of the 79 volumes I read, about 35,900 documents, found it nowhere), but it answers the question under three older names: the information program, psychological strategy and, from the , public diplomacy."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "older",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"soft power\" not found in the 79 volumes | 0 of 35,874 documents | §3 table, row \"soft power\"",
+   "sentence": "What beliefs about the regional audience contributed to those strategies? ## The bottom line What FRUS answers directly.** The series never uses the phrase \"soft power\" (a search of the 79 volumes I read, about 35,900 documents, found it nowhere), but it answers the question under three older names: the information program, psychological strategy and, from the , public diplomacy."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "33 documents carry the argument | 33 pairs in `collection.fruscollection` | §6, §13",
+   "sentence": "What it holds is mainly the officials' own judgments, and I rest the account on 33 documents chosen from that set."
+  },
+  {
+   "text": "fourteen",
+   "values": [
+    "14"
+   ],
+   "next": "country",
+   "kind": "word",
+   "class": "traced",
+   "row": "fourteen-country tour | 14 nations (quote in `frus1950v06/d32`'s opening note) | §13 row for d32 (source: \"14-nation fact-finding tour\")",
+   "sentence": "Their verdicts on effectiveness were mixed and rarely flattering: in Ambassador at Large Philip Jessup, reporting on a fourteen-country tour, found the United States \"weak on propaganda\" and a conference of chiefs of mission found worldwide material \"not satisfactory\" ( , in the agency's posts reported that programs on American security commitments in Asia \"lack credibility\" until Washington settled its policy ( , The beliefs about the audience that officials brought to the work were that Asians follow the winner and respect resolve, read aid as softness or as a sign of selfish designs, carry a colonial memory, and (in the leaders' own words) that Americans do not understand \"the Oriental mind\"."
+  },
+  {
+   "text": "thirty-two",
+   "values": [
+    "32"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "thirty-two documents using the wording | 32 | §4",
+   "sentence": "Of the thirty-two documents in which officials use that wording, seventeen apply it to how American policy or aid would be received; the other fifteen are uses such as an Asian leader's own claim or a remark about a negotiator."
+  },
+  {
+   "text": "seventeen",
+   "values": [
+    "17"
+   ],
+   "next": "apply",
+   "kind": "word",
+   "class": "traced",
+   "row": "seventeen apply it to reception; fifteen other | 17 / 15 of 32 | §4",
+   "sentence": "Of the thirty-two documents in which officials use that wording, seventeen apply it to how American policy or aid would be received; the other fifteen are uses such as an Asian leader's own claim or a remark about a negotiator."
+  },
+  {
+   "text": "fifteen",
+   "values": [
+    "15"
+   ],
+   "next": "are",
+   "kind": "word",
+   "class": "weak",
+   "row": "seventeen apply it to reception; fifteen other | 17 / 15 of 32 | §4",
+   "sentence": "Of the thirty-two documents in which officials use that wording, seventeen apply it to how American policy or aid would be received; the other fifteen are uses such as an Asian leader's own claim or a remark about a negotiator."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "33 documents carry the argument | 33 pairs in `collection.fruscollection` | §6, §13",
+   "sentence": "Where FRUS points for the rest.** *Series the printed documents came from (came-from channel, for the 33 documents).* Fifteen came from the State Department's central files (Record Group 59: the numbered subject-classification files, the central decimal files, of , the Central Files of and and the Central Foreign Policy File of ); eleven came from the Records of the U.S."
+  },
+  {
+   "text": "Fifteen",
+   "values": [
+    "15"
+   ],
+   "next": "came",
+   "kind": "word",
+   "class": "weak",
+   "row": "seventeen apply it to reception; fifteen other | 17 / 15 of 32 | §4",
+   "sentence": "Where FRUS points for the rest.** *Series the printed documents came from (came-from channel, for the 33 documents).* Fifteen came from the State Department's central files (Record Group 59: the numbered subject-classification files, the central decimal files, of , the Central Files of and and the Central Foreign Policy File of ); eleven came from the Records of the U.S."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Where FRUS points for the rest.** *Series the printed documents came from (came-from channel, for the 33 documents).* Fifteen came from the State Department's central files (Record Group 59: the numbered subject-classification files, the central decimal files, of , the Central Files of and and the Central Foreign Policy File of ); eleven came from the Records of the U.S."
+  },
+  {
+   "text": "eleven",
+   "values": [
+    "11"
+   ],
+   "next": "came",
+   "kind": "word",
+   "class": "weak",
+   "row": "eleven from the information agency's records (ten RG 306, one RG 305) | 10 + 1 | §9",
+   "sentence": "Where FRUS points for the rest.** *Series the printed documents came from (came-from channel, for the 33 documents).* Fifteen came from the State Department's central files (Record Group 59: the numbered subject-classification files, the central decimal files, of , the Central Files of and and the Central Foreign Policy File of ); eleven came from the Records of the U.S."
+  },
+  {
+   "text": "ten",
+   "values": [
+    "10"
+   ],
+   "next": "record",
+   "kind": "word",
+   "class": "weak",
+   "row": "eleven from the information agency's records (ten RG 306, one RG 305) | 10 + 1 | §9",
+   "sentence": "Information Agency (ten in Record Group 306, chiefly the Director's Subject Files, , entry A1-42, with Office of Policy and Plans files, entries UD-264 and P-207, and Executive Secretariat correspondence files, , entry P-104; and one in Record Group 305, the Office of the Director's Subject Files, , entry UD-UP 7)."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "eleven from the information agency's records (ten RG 306, one RG 305) | 10 + 1 | §9",
+   "sentence": "Information Agency (ten in Record Group 306, chiefly the Director's Subject Files, , entry A1-42, with Office of Policy and Plans files, entries UD-264 and P-207, and Executive Secretariat correspondence files, , entry P-104; and one in Record Group 305, the Office of the Director's Subject Files, , entry UD-UP 7)."
+  },
+  {
+   "text": "A1-42",
+   "values": [
+    "a1-42"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency (ten in Record Group 306, chiefly the Director's Subject Files, , entry A1-42, with Office of Policy and Plans files, entries UD-264 and P-207, and Executive Secretariat correspondence files, , entry P-104; and one in Record Group 305, the Office of the Director's Subject Files, , entry UD-UP 7)."
+  },
+  {
+   "text": "UD-264",
+   "values": [
+    "ud-264"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency (ten in Record Group 306, chiefly the Director's Subject Files, , entry A1-42, with Office of Policy and Plans files, entries UD-264 and P-207, and Executive Secretariat correspondence files, , entry P-104; and one in Record Group 305, the Office of the Director's Subject Files, , entry UD-UP 7)."
+  },
+  {
+   "text": "P-207",
+   "values": [
+    "p-207"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency (ten in Record Group 306, chiefly the Director's Subject Files, , entry A1-42, with Office of Policy and Plans files, entries UD-264 and P-207, and Executive Secretariat correspondence files, , entry P-104; and one in Record Group 305, the Office of the Director's Subject Files, , entry UD-UP 7)."
+  },
+  {
+   "text": "P-104",
+   "values": [
+    "p-104"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency (ten in Record Group 306, chiefly the Director's Subject Files, , entry A1-42, with Office of Policy and Plans files, entries UD-264 and P-207, and Executive Secretariat correspondence files, , entry P-104; and one in Record Group 305, the Office of the Director's Subject Files, , entry UD-UP 7)."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "record",
+   "kind": "word",
+   "class": "weak",
+   "row": "about 35,900 documents | 35,874 | §1, §2",
+   "sentence": "Information Agency (ten in Record Group 306, chiefly the Director's Subject Files, , entry A1-42, with Office of Policy and Plans files, entries UD-264 and P-207, and Executive Secretariat correspondence files, , entry P-104; and one in Record Group 305, the Office of the Director's Subject Files, , entry UD-UP 7)."
+  },
+  {
+   "text": "Record Group 305",
+   "values": [
+    "rg305"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "eleven from the information agency's records (ten RG 306, one RG 305) | 10 + 1 | §9",
+   "sentence": "Information Agency (ten in Record Group 306, chiefly the Director's Subject Files, , entry A1-42, with Office of Policy and Plans files, entries UD-264 and P-207, and Executive Secretariat correspondence files, , entry P-104; and one in Record Group 305, the Office of the Director's Subject Files, , entry UD-UP 7)."
+  },
+  {
+   "text": "7",
+   "values": [
+    "7"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency (ten in Record Group 306, chiefly the Director's Subject Files, , entry A1-42, with Office of Policy and Plans files, entries UD-264 and P-207, and Executive Secretariat correspondence files, , entry P-104; and one in Record Group 305, the Office of the Director's Subject Files, , entry UD-UP 7)."
+  },
+  {
+   "text": "Three",
+   "values": [
+    "3"
+   ],
+   "next": "came",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"soft power\" not found in the 79 volumes | 0 of 35,874 documents | §3 table, row \"soft power\"",
+   "sentence": "Three came from State Department office files (\"lots\", accessions of an office's retired papers): the Policy Planning Staff's \"S/P-NSC files, lot 61 D 167\", which the bundled index matches by control number to the Policy Planning Council's Alphabetical Files, (National Archives identifier 2198167, partly restricted; the Archives' title differs from FRUS's label)."
+  },
+  {
+   "text": "61 D 167",
+   "values": [
+    "61d167"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Three came from State Department office files (\"lots\", accessions of an office's retired papers): the Policy Planning Staff's \"S/P-NSC files, lot 61 D 167\", which the bundled index matches by control number to the Policy Planning Council's Alphabetical Files, (National Archives identifier 2198167, partly restricted; the Archives' title differs from FRUS's label)."
+  },
+  {
+   "text": "2198167",
+   "values": [
+    "2198167"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "identifier 2198167 (Alphabetical Files 1948-1961) | NAID 2198167 | §9",
+   "sentence": "Three came from State Department office files (\"lots\", accessions of an office's retired papers): the Policy Planning Staff's \"S/P-NSC files, lot 61 D 167\", which the bundled index matches by control number to the Policy Planning Council's Alphabetical Files, (National Archives identifier 2198167, partly restricted; the Archives' title differs from FRUS's label)."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "operation",
+   "kind": "word",
+   "class": "weak",
+   "row": "79 volumes read | 74 + 5 | §2 chosen scope",
+   "sentence": "The other two, the Operations Coordinating Board files (lot 61 D 385) and the Saigon embassy files (lot 65 F 98, Record Group 84), are not resolved in the bundled index."
+  },
+  {
+   "text": "61 D 385",
+   "values": [
+    "61d385"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "The other two, the Operations Coordinating Board files (lot 61 D 385) and the Saigon embassy files (lot 65 F 98, Record Group 84), are not resolved in the bundled index."
+  },
+  {
+   "text": "65 F 98",
+   "values": [
+    "65f98"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "The other two, the Operations Coordinating Board files (lot 61 D 385) and the Saigon embassy files (lot 65 F 98, Record Group 84), are not resolved in the bundled index."
+  },
+  {
+   "text": "Record Group 84",
+   "values": [
+    "rg84"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "The other two, the Operations Coordinating Board files (lot 61 D 385) and the Saigon embassy files (lot 65 F 98, Record Group 84), are not resolved in the bundled index."
+  },
+  {
+   "text": "Four",
+   "values": [
+    "4"
+   ],
+   "next": "came",
+   "kind": "word",
+   "class": "weak",
+   "row": "thirty-two documents using the wording | 32 | §4",
+   "sentence": "Four came from presidential libraries: the Kennedy Library (Robert F."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "public",
+   "kind": "word",
+   "class": "weak",
+   "row": "79 volumes read | 74 + 5 | §2 chosen scope",
+   "sentence": "Kennedy's personal papers), the Johnson Library (National Security File and the Marks Papers) and the Nixon Presidential Materials (National Security Council files). *Series the editors' footnotes cite but do not print (pointed-at channel, whole volumes, not summed with the first).* In the five public diplomacy volumes the footnotes cite 202 unprinted items in 143 documents; the most cited State lots are 84 D 204 (not resolved), 78 D 295 (Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management, , identifier 27022973, partly restricted) and 78 D 184 (Subject Files of Assistant Secretary John Richardson, Bureau of Educational and Cultural Affairs, , identifier 5038052, partly restricted), plus National Security Council files at the Nixon, Carter and Ford libraries."
+  },
+  {
+   "text": "202",
+   "values": [
+    "202"
+   ],
+   "next": "unprinted",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "202 unprinted items in 143 documents (public diplomacy volumes) | 202 rows / 143 documents | §9 pointed-at",
+   "sentence": "Kennedy's personal papers), the Johnson Library (National Security File and the Marks Papers) and the Nixon Presidential Materials (National Security Council files). *Series the editors' footnotes cite but do not print (pointed-at channel, whole volumes, not summed with the first).* In the five public diplomacy volumes the footnotes cite 202 unprinted items in 143 documents; the most cited State lots are 84 D 204 (not resolved), 78 D 295 (Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management, , identifier 27022973, partly restricted) and 78 D 184 (Subject Files of Assistant Secretary John Richardson, Bureau of Educational and Cultural Affairs, , identifier 5038052, partly restricted), plus National Security Council files at the Nixon, Carter and Ford libraries."
+  },
+  {
+   "text": "143",
+   "values": [
+    "143"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "202 unprinted items in 143 documents (public diplomacy volumes) | 202 rows / 143 documents | §9 pointed-at",
+   "sentence": "Kennedy's personal papers), the Johnson Library (National Security File and the Marks Papers) and the Nixon Presidential Materials (National Security Council files). *Series the editors' footnotes cite but do not print (pointed-at channel, whole volumes, not summed with the first).* In the five public diplomacy volumes the footnotes cite 202 unprinted items in 143 documents; the most cited State lots are 84 D 204 (not resolved), 78 D 295 (Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management, , identifier 27022973, partly restricted) and 78 D 184 (Subject Files of Assistant Secretary John Richardson, Bureau of Educational and Cultural Affairs, , identifier 5038052, partly restricted), plus National Security Council files at the Nixon, Carter and Ford libraries."
+  },
+  {
+   "text": "84 D 204",
+   "values": [
+    "84d204"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 84 D 204, 78 D 295 (27022973), 78 D 184 (5038052) | as listed | §9",
+   "sentence": "Kennedy's personal papers), the Johnson Library (National Security File and the Marks Papers) and the Nixon Presidential Materials (National Security Council files). *Series the editors' footnotes cite but do not print (pointed-at channel, whole volumes, not summed with the first).* In the five public diplomacy volumes the footnotes cite 202 unprinted items in 143 documents; the most cited State lots are 84 D 204 (not resolved), 78 D 295 (Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management, , identifier 27022973, partly restricted) and 78 D 184 (Subject Files of Assistant Secretary John Richardson, Bureau of Educational and Cultural Affairs, , identifier 5038052, partly restricted), plus National Security Council files at the Nixon, Carter and Ford libraries."
+  },
+  {
+   "text": "78 D 295",
+   "values": [
+    "78d295"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 84 D 204, 78 D 295 (27022973), 78 D 184 (5038052) | as listed | §9",
+   "sentence": "Kennedy's personal papers), the Johnson Library (National Security File and the Marks Papers) and the Nixon Presidential Materials (National Security Council files). *Series the editors' footnotes cite but do not print (pointed-at channel, whole volumes, not summed with the first).* In the five public diplomacy volumes the footnotes cite 202 unprinted items in 143 documents; the most cited State lots are 84 D 204 (not resolved), 78 D 295 (Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management, , identifier 27022973, partly restricted) and 78 D 184 (Subject Files of Assistant Secretary John Richardson, Bureau of Educational and Cultural Affairs, , identifier 5038052, partly restricted), plus National Security Council files at the Nixon, Carter and Ford libraries."
+  },
+  {
+   "text": "27022973",
+   "values": [
+    "27022973"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "lots 84 D 204, 78 D 295 (27022973), 78 D 184 (5038052) | as listed | §9",
+   "sentence": "Kennedy's personal papers), the Johnson Library (National Security File and the Marks Papers) and the Nixon Presidential Materials (National Security Council files). *Series the editors' footnotes cite but do not print (pointed-at channel, whole volumes, not summed with the first).* In the five public diplomacy volumes the footnotes cite 202 unprinted items in 143 documents; the most cited State lots are 84 D 204 (not resolved), 78 D 295 (Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management, , identifier 27022973, partly restricted) and 78 D 184 (Subject Files of Assistant Secretary John Richardson, Bureau of Educational and Cultural Affairs, , identifier 5038052, partly restricted), plus National Security Council files at the Nixon, Carter and Ford libraries."
+  },
+  {
+   "text": "78 D 184",
+   "values": [
+    "78d184"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 84 D 204, 78 D 295 (27022973), 78 D 184 (5038052) | as listed | §9",
+   "sentence": "Kennedy's personal papers), the Johnson Library (National Security File and the Marks Papers) and the Nixon Presidential Materials (National Security Council files). *Series the editors' footnotes cite but do not print (pointed-at channel, whole volumes, not summed with the first).* In the five public diplomacy volumes the footnotes cite 202 unprinted items in 143 documents; the most cited State lots are 84 D 204 (not resolved), 78 D 295 (Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management, , identifier 27022973, partly restricted) and 78 D 184 (Subject Files of Assistant Secretary John Richardson, Bureau of Educational and Cultural Affairs, , identifier 5038052, partly restricted), plus National Security Council files at the Nixon, Carter and Ford libraries."
+  },
+  {
+   "text": "5038052",
+   "values": [
+    "5038052"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "lots 84 D 204, 78 D 295 (27022973), 78 D 184 (5038052) | as listed | §9",
+   "sentence": "Kennedy's personal papers), the Johnson Library (National Security File and the Marks Papers) and the Nixon Presidential Materials (National Security Council files). *Series the editors' footnotes cite but do not print (pointed-at channel, whole volumes, not summed with the first).* In the five public diplomacy volumes the footnotes cite 202 unprinted items in 143 documents; the most cited State lots are 84 D 204 (not resolved), 78 D 295 (Administrative Correspondence and Policy and Procedural Files of the Deputy Under Secretary for Management, , identifier 27022973, partly restricted) and 78 D 184 (Subject Files of Assistant Secretary John Richardson, Bureau of Educational and Cultural Affairs, , identifier 5038052, partly restricted), plus National Security Council files at the Nixon, Carter and Ford libraries."
+  },
+  {
+   "text": "74",
+   "values": [
+    "74"
+   ],
+   "next": "east",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "79 volumes read | 74 + 5 | §2 chosen scope",
+   "sentence": "In the 74 East Asia volumes the most cited unprinted State series are the Executive Secretariat's records of National Security Council policy papers (lots 66 D 95 and 63 D 351, which the bundled index resolves to one series, identifier 2839192, , partly restricted)."
+  },
+  {
+   "text": "66 D 95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 66 D 95 and 63 D 351 -> 2839192, 1947-1979 | as listed | §9",
+   "sentence": "In the 74 East Asia volumes the most cited unprinted State series are the Executive Secretariat's records of National Security Council policy papers (lots 66 D 95 and 63 D 351, which the bundled index resolves to one series, identifier 2839192, , partly restricted)."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 66 D 95 and 63 D 351 -> 2839192, 1947-1979 | as listed | §9",
+   "sentence": "In the 74 East Asia volumes the most cited unprinted State series are the Executive Secretariat's records of National Security Council policy papers (lots 66 D 95 and 63 D 351, which the bundled index resolves to one series, identifier 2839192, , partly restricted)."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "serie",
+   "kind": "word",
+   "class": "weak",
+   "row": "about 35,900 documents | 35,874 | §1, §2",
+   "sentence": "In the 74 East Asia volumes the most cited unprinted State series are the Executive Secretariat's records of National Security Council policy papers (lots 66 D 95 and 63 D 351, which the bundled index resolves to one series, identifier 2839192, , partly restricted)."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "lots 66 D 95 and 63 D 351 -> 2839192, 1947-1979 | as listed | §9",
+   "sentence": "In the 74 East Asia volumes the most cited unprinted State series are the Executive Secretariat's records of National Security Council policy papers (lots 66 D 95 and 63 D 351, which the bundled index resolves to one series, identifier 2839192, , partly restricted)."
+  },
+  {
+   "text": "thirty",
+   "values": [
+    "30"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "about thirty documents on opinion polls/surveys among roughly 35,000 in 77 volumes | 31 of 35,453 | §4",
+   "sentence": "What this request cannot get from FRUS.** (a) *Independent measurement of how audiences received the messages.* FRUS prints a few of the agency's own opinion surveys and the embassies' impressions; the phrases \"public opinion poll\" and \"opinion survey\" occur in only about thirty documents among the roughly 35,000 in the 77 volumes searched for them (a search that returned nothing for a nonsense control term and returned documents in every one of the 77 volumes for \"Department of State\")."
+  },
+  {
+   "text": "35,000",
+   "values": [
+    "35000"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "about thirty documents on opinion polls/surveys among roughly 35,000 in 77 volumes | 31 of 35,453 | §4",
+   "sentence": "What this request cannot get from FRUS.** (a) *Independent measurement of how audiences received the messages.* FRUS prints a few of the agency's own opinion surveys and the embassies' impressions; the phrases \"public opinion poll\" and \"opinion survey\" occur in only about thirty documents among the roughly 35,000 in the 77 volumes searched for them (a search that returned nothing for a nonsense control term and returned documents in every one of the 77 volumes for \"Department of State\")."
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "about thirty documents on opinion polls/surveys among roughly 35,000 in 77 volumes | 31 of 35,453 | §4",
+   "sentence": "What this request cannot get from FRUS.** (a) *Independent measurement of how audiences received the messages.* FRUS prints a few of the agency's own opinion surveys and the embassies' impressions; the phrases \"public opinion poll\" and \"opinion survey\" occur in only about thirty documents among the roughly 35,000 in the 77 volumes searched for them (a search that returned nothing for a nonsense control term and returned documents in every one of the 77 volumes for \"Department of State\")."
+  },
+  {
+   "text": "77",
+   "values": [
+    "77"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "about thirty documents on opinion polls/surveys among roughly 35,000 in 77 volumes | 31 of 35,453 | §4",
+   "sentence": "What this request cannot get from FRUS.** (a) *Independent measurement of how audiences received the messages.* FRUS prints a few of the agency's own opinion surveys and the embassies' impressions; the phrases \"public opinion poll\" and \"opinion survey\" occur in only about thirty documents among the roughly 35,000 in the 77 volumes searched for them (a search that returned nothing for a nonsense control term and returned documents in every one of the 77 volumes for \"Department of State\")."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "eleven from the information agency's records (ten RG 306, one RG 305) | 10 + 1 | §9",
+   "sentence": "The shelf that holds the research is the agency's records (Record Group 306), for instance the public-opinion research file the editors cite, and a series of \"Program Files\" for (National Archives identifier 1254251, partly restricted) that the bundled index attributes to the agency's research division, an attribution I have not verified for this topic."
+  },
+  {
+   "text": "1254251",
+   "values": [
+    "1254251"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "identifier 1254251 (\"Program Files\" 1954-1958) | NAID 1254251 | §9 USIA-created series",
+   "sentence": "The shelf that holds the research is the agency's records (Record Group 306), for instance the public-opinion research file the editors cite, and a series of \"Program Files\" for (National Archives identifier 1254251, partly restricted) that the bundled index attributes to the agency's research division, an attribution I have not verified for this topic."
+  },
+  {
+   "text": "7542975",
+   "values": [
+    "7542975"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "identifier 7542975 (VOA records 1948-1959) | NAID 7542975 | §9 USIA-created series",
+   "sentence": "(b) *The content of the messages themselves,* the broadcasts, films and publications: not in FRUS; the bundled finding aids list \"Records Relating to the Voice of America\", identifier 7542975, ."
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "far",
+   "kind": "word",
+   "class": "weak",
+   "row": "fifteen from State central files | 15 of 33 | §9 came-from",
+   "sentence": "(c) *The wartime and Japan-occupation information work.* I did not read the nine Far East volumes (fifty of their documents mention the Office of War Information, so this is a gap in my reading, not in the series), nor the occupation of Japan as such."
+  },
+  {
+   "text": "fifty",
+   "values": [
+    "50"
+   ],
+   "next": "their",
+   "kind": "word",
+   "class": "traced",
+   "row": "fifty of their documents mention the Office of War Information | 50 of 8,704 | §4",
+   "sentence": "(c) *The wartime and Japan-occupation information work.* I did not read the nine Far East volumes (fifty of their documents mention the Office of War Information, so this is a gap in my reading, not in the series), nor the occupation of Japan as such."
+  },
+  {
+   "text": "79",
+   "values": [
+    "79"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"soft power\" not found in the 79 volumes | 0 of 35,874 documents | §3 table, row \"soft power\"",
+   "sentence": "Australia, New Zealand and the Pacific islands are thin in the volumes read. **Scope.** I read through search 79 volumes (the series' East Asia and Pacific, Southeast Asia, China, Japan, Korea and Vietnam volumes from to , plus five public diplomacy volumes covering ), about 35,900 documents after leaving out front matter and editors' notes, and 33 documents from them carry the argument."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "public",
+   "kind": "word",
+   "class": "weak",
+   "row": "79 volumes read | 74 + 5 | §2 chosen scope",
+   "sentence": "Australia, New Zealand and the Pacific islands are thin in the volumes read. **Scope.** I read through search 79 volumes (the series' East Asia and Pacific, Southeast Asia, China, Japan, Korea and Vietnam volumes from to , plus five public diplomacy volumes covering ), about 35,900 documents after leaving out front matter and editors' notes, and 33 documents from them carry the argument."
+  },
+  {
+   "text": "35,900",
+   "values": [
+    "35900"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "about 35,900 documents | 35,874 | §1, §2",
+   "sentence": "Australia, New Zealand and the Pacific islands are thin in the volumes read. **Scope.** I read through search 79 volumes (the series' East Asia and Pacific, Southeast Asia, China, Japan, Korea and Vietnam volumes from to , plus five public diplomacy volumes covering ), about 35,900 documents after leaving out front matter and editors' notes, and 33 documents from them carry the argument."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "33 documents carry the argument | 33 pairs in `collection.fruscollection` | §6, §13",
+   "sentence": "Australia, New Zealand and the Pacific islands are thin in the volumes read. **Scope.** I read through search 79 volumes (the series' East Asia and Pacific, Southeast Asia, China, Japan, Korea and Vietnam volumes from to , plus five public diplomacy volumes covering ), about 35,900 documents after leaving out front matter and editors' notes, and 33 documents from them carry the argument."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "553 volumes in the index | 553 | §1",
+   "sentence": "I did not use the second editions where a first edition exists (none was involved), and the index holds all 553 volumes of the series. ## Decisions this needs from you **What counts as \"soft power.\"** Narrowly (attraction through culture, exchanges, institutions and image) or broadly (the whole persuasion apparatus, including psychological warfare and support for friendly governments' own propaganda)?"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "finding",
+   "kind": "word",
+   "class": "weak",
+   "row": "about 35,900 documents | 35,874 | §1, §2",
+   "sentence": "I used the broad reading; the Vietnam material is kept in one finding so it can be dropped without touching the rest, and a narrow reading would leave mainly the Japan, exchange and image evidence. **Which region.** I took the State Department's own East Asia and Pacific grouping (Japan, Korea, China, Taiwan, Southeast Asia and the offshore Pacific);"
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "traced",
+   "row": "nine 1941-1945 volumes; about 8,700 documents | 9 volumes, 8,704 documents | §4, §6",
+   "sentence": "Starting in adds nine volumes, about 8,700 documents, and the wartime Office of War Information. **Whose assessments are \"policymakers'.\"** I counted any U.S. official, which makes the account lean on field posts and the information agency rather than presidents."
+  },
+  {
+   "text": "8,700",
+   "values": [
+    "8700"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "nine 1941-1945 volumes; about 8,700 documents | 9 volumes, 8,704 documents | §4, §6",
+   "sentence": "Starting in adds nine volumes, about 8,700 documents, and the wartime Office of War Information. **Whose assessments are \"policymakers'.\"** I counted any U.S. official, which makes the account lean on field posts and the information agency rather than presidents."
+  },
+  {
+   "text": "fourteen",
+   "values": [
+    "14"
+   ],
+   "next": "countrie",
+   "kind": "word",
+   "class": "weak",
+   "row": "fourteen-country tour | 14 nations (quote in `frus1950v06/d32`'s opening note) | §13 row for d32 (source: \"14-nation fact-finding tour\")",
+   "sentence": "If you want effectiveness itself, the missing evidence is the agency's research files (see above). ## Findings In the program was large, local and, by its own officials' account, badly aimed In the State Department's Far Eastern public affairs office reported that the information program in Southeast Asia had been \"stepped up to the limit of presently available funds,\" with a regional production center planned at Manila and a first sign of effect in more use of its material in local newspapers ( , Ambassador at Large Jessup, who toured fourteen countries that winter, judged the United States \"weak on propaganda\" and asked whom it was trying to reach and with what themes ( , The chiefs of mission meeting in Bangkok agreed that \"USIE materials designed for world-wide or even area-wide distribution\" were \"not satisfactory\" and wanted material for specific groups in simple language, and tied American prestige in Asia to showing the American way of life working in Japan, Korea and the Philippines ( , By the Philippine program was a list of four centers (thirteen American and 111 local staff), press material to 122 newspapers and magazines, and 18 radio stations, with the film program to be halved for lack of money ( , Officials believed in an \"Oriental mind\" that follows the winner and reads resolve Jessup's report adds that French and British officials believed Asians \"are inclined by their psychology to wait and see who is winning.\" The Secretary of State's circular of argued that \"it is in the pattern of the Oriental psychology to respect and follow aggressive, resolute and dynamic leadership\" ( , General Ridgway in wanted the United States to overcome \"any feeling in the Oriental mind that our interest in Asia is casual, temporary or overshadowed\" elsewhere ( , The chargé in Saigon in thought give-away programs \"mistaken in the oriental mind\" for a soft head ( , The formula also ran the other way: the ambassador reported of Diem:"
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "center",
+   "kind": "word",
+   "class": "weak",
+   "row": "thirty-two documents using the wording | 32 | §4",
+   "sentence": "If you want effectiveness itself, the missing evidence is the agency's research files (see above). ## Findings In the program was large, local and, by its own officials' account, badly aimed In the State Department's Far Eastern public affairs office reported that the information program in Southeast Asia had been \"stepped up to the limit of presently available funds,\" with a regional production center planned at Manila and a first sign of effect in more use of its material in local newspapers ( , Ambassador at Large Jessup, who toured fourteen countries that winter, judged the United States \"weak on propaganda\" and asked whom it was trying to reach and with what themes ( , The chiefs of mission meeting in Bangkok agreed that \"USIE materials designed for world-wide or even area-wide distribution\" were \"not satisfactory\" and wanted material for specific groups in simple language, and tied American prestige in Asia to showing the American way of life working in Japan, Korea and the Philippines ( , By the Philippine program was a list of four centers (thirteen American and 111 local staff), press material to 122 newspapers and magazines, and 18 radio stations, with the film program to be halved for lack of money ( , Officials believed in an \"Oriental mind\" that follows the winner and reads resolve Jessup's report adds that French and British officials believed Asians \"are inclined by their psychology to wait and see who is winning.\" The Secretary of State's circular of argued that \"it is in the pattern of the Oriental psychology to respect and follow aggressive, resolute and dynamic leadership\" ( , General Ridgway in wanted the United States to overcome \"any feeling in the Oriental mind that our interest in Asia is casual, temporary or overshadowed\" elsewhere ( , The chargé in Saigon in thought give-away programs \"mistaken in the oriental mind\" for a soft head ( , The formula also ran the other way: the ambassador reported of Diem:"
+  },
+  {
+   "text": "thirteen",
+   "values": [
+    "13"
+   ],
+   "next": "american",
+   "kind": "word",
+   "class": "traced",
+   "row": "four centers, 13 American and 111 local staff; 122 newspapers; 18 radio stations; film program halved | `frus1952-54v12p2/d359` passage: \"4 Information Services centers employing 13 Americans and 111 ",
+   "sentence": "If you want effectiveness itself, the missing evidence is the agency's research files (see above). ## Findings In the program was large, local and, by its own officials' account, badly aimed In the State Department's Far Eastern public affairs office reported that the information program in Southeast Asia had been \"stepped up to the limit of presently available funds,\" with a regional production center planned at Manila and a first sign of effect in more use of its material in local newspapers ( , Ambassador at Large Jessup, who toured fourteen countries that winter, judged the United States \"weak on propaganda\" and asked whom it was trying to reach and with what themes ( , The chiefs of mission meeting in Bangkok agreed that \"USIE materials designed for world-wide or even area-wide distribution\" were \"not satisfactory\" and wanted material for specific groups in simple language, and tied American prestige in Asia to showing the American way of life working in Japan, Korea and the Philippines ( , By the Philippine program was a list of four centers (thirteen American and 111 local staff), press material to 122 newspapers and magazines, and 18 radio stations, with the film program to be halved for lack of money ( , Officials believed in an \"Oriental mind\" that follows the winner and reads resolve Jessup's report adds that French and British officials believed Asians \"are inclined by their psychology to wait and see who is winning.\" The Secretary of State's circular of argued that \"it is in the pattern of the Oriental psychology to respect and follow aggressive, resolute and dynamic leadership\" ( , General Ridgway in wanted the United States to overcome \"any feeling in the Oriental mind that our interest in Asia is casual, temporary or overshadowed\" elsewhere ( , The chargé in Saigon in thought give-away programs \"mistaken in the oriental mind\" for a soft head ( , The formula also ran the other way: the ambassador reported of Diem:"
+  },
+  {
+   "text": "111",
+   "values": [
+    "111"
+   ],
+   "next": "local",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "four centers, 13 American and 111 local staff; 122 newspapers; 18 radio stations; film program halved | `frus1952-54v12p2/d359` passage: \"4 Information Services centers employing 13 Americans and 111 ",
+   "sentence": "If you want effectiveness itself, the missing evidence is the agency's research files (see above). ## Findings In the program was large, local and, by its own officials' account, badly aimed In the State Department's Far Eastern public affairs office reported that the information program in Southeast Asia had been \"stepped up to the limit of presently available funds,\" with a regional production center planned at Manila and a first sign of effect in more use of its material in local newspapers ( , Ambassador at Large Jessup, who toured fourteen countries that winter, judged the United States \"weak on propaganda\" and asked whom it was trying to reach and with what themes ( , The chiefs of mission meeting in Bangkok agreed that \"USIE materials designed for world-wide or even area-wide distribution\" were \"not satisfactory\" and wanted material for specific groups in simple language, and tied American prestige in Asia to showing the American way of life working in Japan, Korea and the Philippines ( , By the Philippine program was a list of four centers (thirteen American and 111 local staff), press material to 122 newspapers and magazines, and 18 radio stations, with the film program to be halved for lack of money ( , Officials believed in an \"Oriental mind\" that follows the winner and reads resolve Jessup's report adds that French and British officials believed Asians \"are inclined by their psychology to wait and see who is winning.\" The Secretary of State's circular of argued that \"it is in the pattern of the Oriental psychology to respect and follow aggressive, resolute and dynamic leadership\" ( , General Ridgway in wanted the United States to overcome \"any feeling in the Oriental mind that our interest in Asia is casual, temporary or overshadowed\" elsewhere ( , The chargé in Saigon in thought give-away programs \"mistaken in the oriental mind\" for a soft head ( , The formula also ran the other way: the ambassador reported of Diem:"
+  },
+  {
+   "text": "122",
+   "values": [
+    "122"
+   ],
+   "next": "newspaper",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "four centers, 13 American and 111 local staff; 122 newspapers; 18 radio stations; film program halved | `frus1952-54v12p2/d359` passage: \"4 Information Services centers employing 13 Americans and 111 ",
+   "sentence": "If you want effectiveness itself, the missing evidence is the agency's research files (see above). ## Findings In the program was large, local and, by its own officials' account, badly aimed In the State Department's Far Eastern public affairs office reported that the information program in Southeast Asia had been \"stepped up to the limit of presently available funds,\" with a regional production center planned at Manila and a first sign of effect in more use of its material in local newspapers ( , Ambassador at Large Jessup, who toured fourteen countries that winter, judged the United States \"weak on propaganda\" and asked whom it was trying to reach and with what themes ( , The chiefs of mission meeting in Bangkok agreed that \"USIE materials designed for world-wide or even area-wide distribution\" were \"not satisfactory\" and wanted material for specific groups in simple language, and tied American prestige in Asia to showing the American way of life working in Japan, Korea and the Philippines ( , By the Philippine program was a list of four centers (thirteen American and 111 local staff), press material to 122 newspapers and magazines, and 18 radio stations, with the film program to be halved for lack of money ( , Officials believed in an \"Oriental mind\" that follows the winner and reads resolve Jessup's report adds that French and British officials believed Asians \"are inclined by their psychology to wait and see who is winning.\" The Secretary of State's circular of argued that \"it is in the pattern of the Oriental psychology to respect and follow aggressive, resolute and dynamic leadership\" ( , General Ridgway in wanted the United States to overcome \"any feeling in the Oriental mind that our interest in Asia is casual, temporary or overshadowed\" elsewhere ( , The chargé in Saigon in thought give-away programs \"mistaken in the oriental mind\" for a soft head ( , The formula also ran the other way: the ambassador reported of Diem:"
+  },
+  {
+   "text": "18",
+   "values": [
+    "18"
+   ],
+   "next": "radio",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "four centers, 13 American and 111 local staff; 122 newspapers; 18 radio stations; film program halved | `frus1952-54v12p2/d359` passage: \"4 Information Services centers employing 13 Americans and 111 ",
+   "sentence": "If you want effectiveness itself, the missing evidence is the agency's research files (see above). ## Findings In the program was large, local and, by its own officials' account, badly aimed In the State Department's Far Eastern public affairs office reported that the information program in Southeast Asia had been \"stepped up to the limit of presently available funds,\" with a regional production center planned at Manila and a first sign of effect in more use of its material in local newspapers ( , Ambassador at Large Jessup, who toured fourteen countries that winter, judged the United States \"weak on propaganda\" and asked whom it was trying to reach and with what themes ( , The chiefs of mission meeting in Bangkok agreed that \"USIE materials designed for world-wide or even area-wide distribution\" were \"not satisfactory\" and wanted material for specific groups in simple language, and tied American prestige in Asia to showing the American way of life working in Japan, Korea and the Philippines ( , By the Philippine program was a list of four centers (thirteen American and 111 local staff), press material to 122 newspapers and magazines, and 18 radio stations, with the film program to be halved for lack of money ( , Officials believed in an \"Oriental mind\" that follows the winner and reads resolve Jessup's report adds that French and British officials believed Asians \"are inclined by their psychology to wait and see who is winning.\" The Secretary of State's circular of argued that \"it is in the pattern of the Oriental psychology to respect and follow aggressive, resolute and dynamic leadership\" ( , General Ridgway in wanted the United States to overcome \"any feeling in the Oriental mind that our interest in Asia is casual, temporary or overshadowed\" elsewhere ( , The chargé in Saigon in thought give-away programs \"mistaken in the oriental mind\" for a soft head ( , The formula also ran the other way: the ambassador reported of Diem:"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "reason",
+   "kind": "word",
+   "class": "weak",
+   "row": "about 35,900 documents | 35,874 | §1, §2",
+   "sentence": "Colonial memory limited what the agency would do and how the message was read In the consul general in Singapore warned that Southeast Asian anti-colonialism might blur the meaning of the Laos invasion and that a tendency to credit Viet Minh aims with nationalism \"will make more difficult characterization of invasion as\" aggression; he asked for a coordinated psychological offensive ( , In the Far Eastern bureau recorded that the information agency had objected to expanding its Malaya program, and understood one of its reasons to be \"a fear of placing the U.S. in the position of appearing to support colonialism\"; a later footnote says the Operations Coordinating Board took State's side ( , In the Deputy Under Secretary weighed Dutch New Guinea by the same test: support for Dutch trusteeship would be seen by \"Asian minds\" as American colonialism ( , What drew Asian audiences, and what wore it down, in officials' own accounts Officials credit institutions, culture and single events rather than messages."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "countrie",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"soft power\" not found in the 79 volumes | 0 of 35,874 documents | §3 table, row \"soft power\"",
+   "sentence": "Philippines, , Vietnam turned the information agency into a wartime agency, and its own planners objected A agency report found that in Vietnam, Thailand and Laos the agency was doing tasks that \"appear to lie outside the Agency's appropriate sphere of operations,\" and that the three countries absorbed \"nearly fifteen percent of the Agency's resources available for overseas programming\" ( , By the plan was to hand the Vietnamese government its own television, radio, printing and province staff ( , , The agency's own Saigon survey of found the rating of the United States as a dependable ally at \"the lowest point in thirteen Saigon surveys,\" with 26 percent of the general public rating it very or rather dependable ( , In Senator Church charged that the agency \"is now engaged in a massive campaign\" to sell the Thieu government to the Vietnamese people, and the agency's internal answer was that it was phasing the work out on a set timetable ( , Across the 79 volumes, the agency's own names (the agency, its overseas service, the Voice of America, the information program) turn up in about one dated document in twelve for the against about one in thirty-six for the ; the rate is nearly as high as the , but nearly half of it comes from one public diplomacy volume, and the public diplomacy volumes are themselves part of the set."
+  },
+  {
+   "text": "fifteen",
+   "values": [
+    "15"
+   ],
+   "next": "percent",
+   "kind": "word",
+   "class": "weak",
+   "row": "seventeen apply it to reception; fifteen other | 17 / 15 of 32 | §4",
+   "sentence": "Philippines, , Vietnam turned the information agency into a wartime agency, and its own planners objected A agency report found that in Vietnam, Thailand and Laos the agency was doing tasks that \"appear to lie outside the Agency's appropriate sphere of operations,\" and that the three countries absorbed \"nearly fifteen percent of the Agency's resources available for overseas programming\" ( , By the plan was to hand the Vietnamese government its own television, radio, printing and province staff ( , , The agency's own Saigon survey of found the rating of the United States as a dependable ally at \"the lowest point in thirteen Saigon surveys,\" with 26 percent of the general public rating it very or rather dependable ( , In Senator Church charged that the agency \"is now engaged in a massive campaign\" to sell the Thieu government to the Vietnamese people, and the agency's internal answer was that it was phasing the work out on a set timetable ( , Across the 79 volumes, the agency's own names (the agency, its overseas service, the Voice of America, the information program) turn up in about one dated document in twelve for the against about one in thirty-six for the ; the rate is nearly as high as the , but nearly half of it comes from one public diplomacy volume, and the public diplomacy volumes are themselves part of the set."
+  },
+  {
+   "text": "thirteen",
+   "values": [
+    "13"
+   ],
+   "next": "saigon",
+   "kind": "word",
+   "class": "weak",
+   "row": "33 documents carry the argument | 33 pairs in `collection.fruscollection` | §6, §13",
+   "sentence": "Philippines, , Vietnam turned the information agency into a wartime agency, and its own planners objected A agency report found that in Vietnam, Thailand and Laos the agency was doing tasks that \"appear to lie outside the Agency's appropriate sphere of operations,\" and that the three countries absorbed \"nearly fifteen percent of the Agency's resources available for overseas programming\" ( , By the plan was to hand the Vietnamese government its own television, radio, printing and province staff ( , , The agency's own Saigon survey of found the rating of the United States as a dependable ally at \"the lowest point in thirteen Saigon surveys,\" with 26 percent of the general public rating it very or rather dependable ( , In Senator Church charged that the agency \"is now engaged in a massive campaign\" to sell the Thieu government to the Vietnamese people, and the agency's internal answer was that it was phasing the work out on a set timetable ( , Across the 79 volumes, the agency's own names (the agency, its overseas service, the Voice of America, the information program) turn up in about one dated document in twelve for the against about one in thirty-six for the ; the rate is nearly as high as the , but nearly half of it comes from one public diplomacy volume, and the public diplomacy volumes are themselves part of the set."
+  },
+  {
+   "text": "26 percent",
+   "values": [
+    "26"
+   ],
+   "next": "general",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "26 percent rated the U.S. very or rather dependable | `frus1917-72PubDipv08/d88` | §13",
+   "sentence": "Philippines, , Vietnam turned the information agency into a wartime agency, and its own planners objected A agency report found that in Vietnam, Thailand and Laos the agency was doing tasks that \"appear to lie outside the Agency's appropriate sphere of operations,\" and that the three countries absorbed \"nearly fifteen percent of the Agency's resources available for overseas programming\" ( , By the plan was to hand the Vietnamese government its own television, radio, printing and province staff ( , , The agency's own Saigon survey of found the rating of the United States as a dependable ally at \"the lowest point in thirteen Saigon surveys,\" with 26 percent of the general public rating it very or rather dependable ( , In Senator Church charged that the agency \"is now engaged in a massive campaign\" to sell the Thieu government to the Vietnamese people, and the agency's internal answer was that it was phasing the work out on a set timetable ( , Across the 79 volumes, the agency's own names (the agency, its overseas service, the Voice of America, the information program) turn up in about one dated document in twelve for the against about one in thirty-six for the ; the rate is nearly as high as the , but nearly half of it comes from one public diplomacy volume, and the public diplomacy volumes are themselves part of the set."
+  },
+  {
+   "text": "79",
+   "values": [
+    "79"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"soft power\" not found in the 79 volumes | 0 of 35,874 documents | §3 table, row \"soft power\"",
+   "sentence": "Philippines, , Vietnam turned the information agency into a wartime agency, and its own planners objected A agency report found that in Vietnam, Thailand and Laos the agency was doing tasks that \"appear to lie outside the Agency's appropriate sphere of operations,\" and that the three countries absorbed \"nearly fifteen percent of the Agency's resources available for overseas programming\" ( , By the plan was to hand the Vietnamese government its own television, radio, printing and province staff ( , , The agency's own Saigon survey of found the rating of the United States as a dependable ally at \"the lowest point in thirteen Saigon surveys,\" with 26 percent of the general public rating it very or rather dependable ( , In Senator Church charged that the agency \"is now engaged in a massive campaign\" to sell the Thieu government to the Vietnamese people, and the agency's internal answer was that it was phasing the work out on a set timetable ( , Across the 79 volumes, the agency's own names (the agency, its overseas service, the Voice of America, the information program) turn up in about one dated document in twelve for the against about one in thirty-six for the ; the rate is nearly as high as the , but nearly half of it comes from one public diplomacy volume, and the public diplomacy volumes are themselves part of the set."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "dated",
+   "kind": "word",
+   "class": "traced",
+   "row": "one dated document in twelve (1960s), one in thirty-six (1950s) | 84.5 and 27.8 per 1,000 | §5",
+   "sentence": "Philippines, , Vietnam turned the information agency into a wartime agency, and its own planners objected A agency report found that in Vietnam, Thailand and Laos the agency was doing tasks that \"appear to lie outside the Agency's appropriate sphere of operations,\" and that the three countries absorbed \"nearly fifteen percent of the Agency's resources available for overseas programming\" ( , By the plan was to hand the Vietnamese government its own television, radio, printing and province staff ( , , The agency's own Saigon survey of found the rating of the United States as a dependable ally at \"the lowest point in thirteen Saigon surveys,\" with 26 percent of the general public rating it very or rather dependable ( , In Senator Church charged that the agency \"is now engaged in a massive campaign\" to sell the Thieu government to the Vietnamese people, and the agency's internal answer was that it was phasing the work out on a set timetable ( , Across the 79 volumes, the agency's own names (the agency, its overseas service, the Voice of America, the information program) turn up in about one dated document in twelve for the against about one in thirty-six for the ; the rate is nearly as high as the , but nearly half of it comes from one public diplomacy volume, and the public diplomacy volumes are themselves part of the set."
+  },
+  {
+   "text": "twelve",
+   "values": [
+    "12"
+   ],
+   "next": "for",
+   "kind": "word",
+   "class": "weak",
+   "row": "four centers, 13 American and 111 local staff; 122 newspapers; 18 radio stations; film program halved | `frus1952-54v12p2/d359` passage: \"4 Information Services centers employing 13 Americans and 111 ",
+   "sentence": "Philippines, , Vietnam turned the information agency into a wartime agency, and its own planners objected A agency report found that in Vietnam, Thailand and Laos the agency was doing tasks that \"appear to lie outside the Agency's appropriate sphere of operations,\" and that the three countries absorbed \"nearly fifteen percent of the Agency's resources available for overseas programming\" ( , By the plan was to hand the Vietnamese government its own television, radio, printing and province staff ( , , The agency's own Saigon survey of found the rating of the United States as a dependable ally at \"the lowest point in thirteen Saigon surveys,\" with 26 percent of the general public rating it very or rather dependable ( , In Senator Church charged that the agency \"is now engaged in a massive campaign\" to sell the Thieu government to the Vietnamese people, and the agency's internal answer was that it was phasing the work out on a set timetable ( , Across the 79 volumes, the agency's own names (the agency, its overseas service, the Voice of America, the information program) turn up in about one dated document in twelve for the against about one in thirty-six for the ; the rate is nearly as high as the , but nearly half of it comes from one public diplomacy volume, and the public diplomacy volumes are themselves part of the set."
+  },
+  {
+   "text": "about one in thirty-six",
+   "values": [
+    "1",
+    "36"
+   ],
+   "next": "for",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "one dated document in twelve (1960s), one in thirty-six (1950s) | 84.5 and 27.8 per 1,000 | §5",
+   "sentence": "Philippines, , Vietnam turned the information agency into a wartime agency, and its own planners objected A agency report found that in Vietnam, Thailand and Laos the agency was doing tasks that \"appear to lie outside the Agency's appropriate sphere of operations,\" and that the three countries absorbed \"nearly fifteen percent of the Agency's resources available for overseas programming\" ( , By the plan was to hand the Vietnamese government its own television, radio, printing and province staff ( , , The agency's own Saigon survey of found the rating of the United States as a dependable ally at \"the lowest point in thirteen Saigon surveys,\" with 26 percent of the general public rating it very or rather dependable ( , In Senator Church charged that the agency \"is now engaged in a massive campaign\" to sell the Thieu government to the Vietnamese people, and the agency's internal answer was that it was phasing the work out on a set timetable ( , Across the 79 volumes, the agency's own names (the agency, its overseas service, the Voice of America, the information program) turn up in about one dated document in twelve for the against about one in thirty-six for the ; the rate is nearly as high as the , but nearly half of it comes from one public diplomacy volume, and the public diplomacy volumes are themselves part of the set."
+  },
+  {
+   "text": "half",
+   "values": [
+    "0.5"
+   ],
+   "next": "it",
+   "kind": "word",
+   "class": "weak",
+   "row": "1970s rate nearly as high, nearly half from one volume | 78.1 per 1,000; 138 of 304 (45%) | §5",
+   "sentence": "Philippines, , Vietnam turned the information agency into a wartime agency, and its own planners objected A agency report found that in Vietnam, Thailand and Laos the agency was doing tasks that \"appear to lie outside the Agency's appropriate sphere of operations,\" and that the three countries absorbed \"nearly fifteen percent of the Agency's resources available for overseas programming\" ( , By the plan was to hand the Vietnamese government its own television, radio, printing and province staff ( , , The agency's own Saigon survey of found the rating of the United States as a dependable ally at \"the lowest point in thirteen Saigon surveys,\" with 26 percent of the general public rating it very or rather dependable ( , In Senator Church charged that the agency \"is now engaged in a massive campaign\" to sell the Thieu government to the Vietnamese people, and the agency's internal answer was that it was phasing the work out on a set timetable ( , Across the 79 volumes, the agency's own names (the agency, its overseas service, the Voice of America, the information program) turn up in about one dated document in twelve for the against about one in thirty-six for the ; the rate is nearly as high as the , but nearly half of it comes from one public diplomacy volume, and the public diplomacy volumes are themselves part of the set."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "public",
+   "kind": "word",
+   "class": "weak",
+   "row": "about 35,900 documents | 35,874 | §1, §2",
+   "sentence": "Philippines, , Vietnam turned the information agency into a wartime agency, and its own planners objected A agency report found that in Vietnam, Thailand and Laos the agency was doing tasks that \"appear to lie outside the Agency's appropriate sphere of operations,\" and that the three countries absorbed \"nearly fifteen percent of the Agency's resources available for overseas programming\" ( , By the plan was to hand the Vietnamese government its own television, radio, printing and province staff ( , , The agency's own Saigon survey of found the rating of the United States as a dependable ally at \"the lowest point in thirteen Saigon surveys,\" with 26 percent of the general public rating it very or rather dependable ( , In Senator Church charged that the agency \"is now engaged in a massive campaign\" to sell the Thieu government to the Vietnamese people, and the agency's internal answer was that it was phasing the work out on a set timetable ( , Across the 79 volumes, the agency's own names (the agency, its overseas service, the Voice of America, the information program) turn up in about one dated document in twelve for the against about one in thirty-six for the ; the rate is nearly as high as the , but nearly half of it comes from one public diplomacy volume, and the public diplomacy volumes are themselves part of the set."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "553 volumes in the index | 553 | §1",
+   "sentence": "After Vietnam and the China opening, reassurance became the message, and audiences were slow to credit it In the agency's guidance to its media after the Nixon party's Asian stop was that peace in Asia \"cannot result primarily from American conceptions but has to involve Asian initiatives\" ( , The agency proposed to turn the President's trip to Peking into \"a long-range\" asset with moon rocks and books, and treated the overseas Chinese as \"a USIS audience\" who were proud of Peking but \"reluctant to accept communist political and economic models\" ( , and In , after the fall of South Vietnam, posts reported the Thais \"still see us as friends and admire much in the American system,\" Hong Kong viewed Washington as \"very clearly in default,\" and security programs lacked credibility until policy was settled ( , In Jakarta wrote that the new administration's public diplomacy \"has been effective\" yet there was still a \"deeply implanted and persistent feeling\" that the United States was \"withdrawing\" from East Asia ( , ## How this was done The index holds all 553 volumes of the series."
+  },
+  {
+   "text": "79",
+   "values": [
+    "79"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"soft power\" not found in the 79 volumes | 0 of 35,874 documents | §3 table, row \"soft power\"",
+   "sentence": "I chose the 79 volumes from the series' own titles (East Asia, China, Japan, Korea, Southeast Asia, Vietnam, and the public diplomacy volumes) and counted documents in them, leaving out front matter and editors' notes."
+  },
+  {
+   "text": "thirty-two",
+   "values": [
+    "32"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "thirty-two documents using the wording | 32 | §4",
+   "sentence": "Because the index reduces words to their roots, a phrase search can return a different word with the same root, so every phrase I rely on was checked against the documents' actual wording: all thirty-two documents that the search returned for the \"Oriental mind\" family contain a form of it, twenty-five of thirty-two in the exact form, and I read each to sort the seventeen that apply it to how U.S. policy would be received from the fifteen that do not."
+  },
+  {
+   "text": "twenty-five",
+   "values": [
+    "25"
+   ],
+   "next": "thirty-two",
+   "kind": "word",
+   "class": "weak",
+   "row": "twenty-five of thirty-two exact form | 25 of 32 | §4",
+   "sentence": "Because the index reduces words to their roots, a phrase search can return a different word with the same root, so every phrase I rely on was checked against the documents' actual wording: all thirty-two documents that the search returned for the \"Oriental mind\" family contain a form of it, twenty-five of thirty-two in the exact form, and I read each to sort the seventeen that apply it to how U.S. policy would be received from the fifteen that do not."
+  },
+  {
+   "text": "thirty-two",
+   "values": [
+    "32"
+   ],
+   "next": "exact",
+   "kind": "word",
+   "class": "traced",
+   "row": "twenty-five of thirty-two exact form | 25 of 32 | §4",
+   "sentence": "Because the index reduces words to their roots, a phrase search can return a different word with the same root, so every phrase I rely on was checked against the documents' actual wording: all thirty-two documents that the search returned for the \"Oriental mind\" family contain a form of it, twenty-five of thirty-two in the exact form, and I read each to sort the seventeen that apply it to how U.S. policy would be received from the fifteen that do not."
+  },
+  {
+   "text": "seventeen",
+   "values": [
+    "17"
+   ],
+   "next": "that",
+   "kind": "word",
+   "class": "weak",
+   "row": "seventeen apply it to reception; fifteen other | 17 / 15 of 32 | §4",
+   "sentence": "Because the index reduces words to their roots, a phrase search can return a different word with the same root, so every phrase I rely on was checked against the documents' actual wording: all thirty-two documents that the search returned for the \"Oriental mind\" family contain a form of it, twenty-five of thirty-two in the exact form, and I read each to sort the seventeen that apply it to how U.S. policy would be received from the fifteen that do not."
+  },
+  {
+   "text": "fifteen",
+   "values": [
+    "15"
+   ],
+   "next": "that",
+   "kind": "word",
+   "class": "weak",
+   "row": "seventeen apply it to reception; fifteen other | 17 / 15 of 32 | §4",
+   "sentence": "Because the index reduces words to their roots, a phrase search can return a different word with the same root, so every phrase I rely on was checked against the documents' actual wording: all thirty-two documents that the search returned for the \"Oriental mind\" family contain a form of it, twenty-five of thirty-two in the exact form, and I read each to sort the seventeen that apply it to how U.S. policy would be received from the fifteen that do not."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "time",
+   "kind": "word",
+   "class": "traced",
+   "row": "USIS nearly four times as often as in other postwar volumes | 749 of 35,874 (20.9/1,000) vs 458 of 83,746 (5.5/1,000), ratio 3.8 | §3",
+   "sentence": "I tested the question's own terms against a control (the other postwar volumes) and found \"prestige,\" \"image\" and \"propaganda\" occur at about the rate of the rest of the series, while the agency's overseas-post abbreviation (USIS) occurs nearly four times as often, so I scoped by the agency's records, not by those words."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "anchor",
+   "kind": "word",
+   "class": "traced",
+   "row": "four anchor documents | `PubDipv08/d31`, `v29p2/d123`, `1950v06/d32`, `PubDipv08/d149` | §8 operation 1",
+   "sentence": "I also used the series' semantic vector files (a numerical fingerprint of each document's meaning) as a finding aid: the documents nearest in meaning to four anchor documents, ranked by a coarse pass and then a finer one, led me to the reassessment and so to the later public diplomacy volumes, but closeness is a lead, not evidence, and I read every document I rely on."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "led",
+   "kind": "word",
+   "class": "weak",
+   "row": "about 35,900 documents | 35,874 | §1, §2",
+   "sentence": "I also used the series' semantic vector files (a numerical fingerprint of each document's meaning) as a finding aid: the documents nearest in meaning to four anchor documents, ranked by a coarse pass and then a finer one, led me to the reassessment and so to the later public diplomacy volumes, but closeness is a lead, not evidence, and I read every document I rely on."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "33 documents carry the argument | 33 pairs in `collection.fruscollection` | §6, §13",
+   "sentence": "I wrote a quotation into this overview only if it appears word for word in a document in the collection, and every document cited here is in the collection; the memo records both checks and every number's source. ## Read next The collection \"East Asia and the Pacific: how U.S. officials judged their persuasion, \" holds the 33 documents in six sections that follow the findings, in date order, with a note on each and the quotations used here."
+  },
+  {
+   "text": "six",
+   "values": [
+    "6"
+   ],
+   "next": "section",
+   "kind": "word",
+   "class": "weak",
+   "row": "33 documents carry the argument | 33 pairs in `collection.fruscollection` | §6, §13",
+   "sentence": "I wrote a quotation into this overview only if it appears word for word in a document in the collection, and every document cited here is in the collection; the memo records both checks and every number's source. ## Read next The collection \"East Asia and the Pacific: how U.S. officials judged their persuasion, \" holds the 33 documents in six sections that follow the findings, in date order, with a note on each and the quotations used here."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "point",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"soft power\" not found in the 79 volumes | 0 of 35,874 documents | §3 table, row \"soft power\"",
+   "sentence": "Your additions would unlock most at three points: the agency's public-opinion research files and area files at the National Archives (to test what officials thought against what audiences said), the wartime Far East volumes (the earlier history of the same belief about the audience), and South Asia and the Pacific islands (to see whether the \"Oriental mind\" formula and the colonial constraint were regional or only East Asian)."
+  }
+ ]
+}

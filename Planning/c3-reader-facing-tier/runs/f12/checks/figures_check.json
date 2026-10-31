@@ -1,0 +1,13 @@
+{
+ "run": "runs/f12",
+ "arm": "A",
+ "occurrences": [
+  {
+   "file": "memo.md",
+   "line": 194,
+   "figure": "1910-12-06 (the pointed-at channel starts)",
+   "match": "1910-12-06",
+   "context": "Caveat: this channel holds lot, library and decimal anchors only, stores the citation fragment and not the sentence, and has no row before 1910-12-06."
+  }
+ ]
+}

@@ -1,0 +1,15 @@
+CENTROID cosine (raw, unfloored) nearest volumes to frus1917-72PubDipv08 : [('frus1917-72PubDipv07', 0.981), ('frus1917-72PubDipv06', 0.977), ('frus1977-80v30', 0.976), ('frus1969-76v38p2', 0.965), ('frus1969-76v02', 0.962), ('frus1961-63v25', 0.962), ('frus1964-68v33', 0.961), ('frus1969-76ve01', 0.961)]
+CENTROID cosine (raw, unfloored) nearest volumes to frus1977-80v30 : [('frus1917-72PubDipv08', 0.976), ('frus1917-72PubDipv07', 0.973), ('frus1917-72PubDipv06', 0.97), ('frus1977-80v28', 0.962), ('frus1969-76v38p2', 0.961), ('frus1977-80v20', 0.956), ('frus1961-63v25', 0.955), ('frus1977-80v02', 0.953)]
+CENTROID cosine (raw, unfloored) nearest volumes to frus1917-72PubDipv06 : [('frus1917-72PubDipv07', 0.987), ('frus1917-72PubDipv08', 0.977), ('frus1961-63v25', 0.974), ('frus1977-80v30', 0.97), ('frus1964-68v33', 0.962), ('frus1961-63v09', 0.957), ('frus1964-68v34', 0.956), ('frus1961-63v07-09mSupp', 0.955)]
+random volume-pair centroid cosine: mean 0.904 sd 0.032 p99 0.972
+map unclustered overall 88059 of 314616 (28.0%)
+map index keys ['clusters', 'documentCount', 'generated', 'gridExtent', 'layout', 'provenanceDigest', 'schema']
+<class 'list'> {'centreX': -2259, 'centreY': -10310, 'documentCount': 698, 'eraCounts': {'1': 134, '2': 564}, 'id': 0, 'terms': ['spanish', 'salazar', 'spain', 'lagen']}
+MAP frus1917-72PubDipv08/d31 cluster unclustered None
+MAP frus1964-68v29p2/d123 cluster 7 {'centreX': -10929, 'centreY': 11065, 'documentCount': 1713, 'eraCounts': {'1': 3, '2': 1710}, 'id': 7, 'terms': ['japanese', 'sato', 'japan', 'kishi']}
+MAP frus1950v06/d32 cluster 31 {'centreX': -25723, 'centreY': 6048, 'documentCount': 2775, 'eraCounts': {'1': 1, '2': 2774}, 'id': 31, 'terms': ['indochina', 'minh', 'bao', 'dai']}
+MAP frus1917-72PubDipv08/d149 cluster unclustered None
+MAP frus1969-76v38p2/d105 cluster unclustered None
+MAP frus1977-80v30/d83 cluster unclustered None
+unclustered in the 79 on-topic volumes: 6357 of 37310 (17.0%)
+era-matched baseline (volumes dated 1945-1980 by mean of first/last year, not on-topic): 33957 of 102523 (33.1%) over 227 volumes

@@ -1,0 +1,21 @@
+index keys: ['documentCount', 'generated', 'harvestGenerated', 'harvestScriptSHA256', 'provenance', 'provenanceDigest', 'retrieval', 'schema', 'subseries', 'volumes']
+sample volume entry: {'n': 312, 'r': 0, 'seg': [{'i': 'd1', 'n': 312, 's': 0}], 'v': 'frus1861'}
+segment keys of a multi-segment volume: {'n': 391, 'r': 4373, 'seg': [{'i': 'd1', 'n': 373, 's': 0}, {'i': 'd373a', 'n': 1, 's': 373}, {'i': 'd374', 'n': 17, 's': 374}], 'v': 'frus1865p1'}
+anchor ('frus1969-76v38p2', 'd105') row 293635 Hamming top-800 cutoff 113 min 76
+shard magic: b'FRSS' dims (225, 512)
+TOP 15 by int8 cosine (cos, ham, calibrated (cos-0.40)/0.60, pair):
+  cos 0.922 ham  78 cal 87% frus1969-76v01/d54
+  cos 0.918 ham  84 cal 86% frus1969-76v38p1/d54
+  cos 0.917 ham  96 cal 86% frus1917-72PubDipv08/d31
+  cos 0.915 ham  82 cal 86% frus1977-80v22/d104
+  cos 0.914 ham  90 cal 86% frus1977-80v01/d88
+  cos 0.913 ham  95 cal 86% frus1981-88v01/d229
+  cos 0.913 ham  80 cal 85% frus1969-76ve12/d16
+  cos 0.912 ham  89 cal 85% frus1977-80v22/d107
+  cos 0.910 ham  76 cal 85% frus1969-76ve12/d10
+  cos 0.904 ham  86 cal 84% frus1951v06p1/d12
+  cos 0.904 ham  90 cal 84% frus1977-80v22/d102
+  cos 0.903 ham  99 cal 84% frus1969-76ve12/d17
+  cos 0.903 ham  89 cal 84% frus1961-63v02/d142
+  cos 0.902 ham  88 cal 84% frus1977-80v22/d3
+  cos 0.900 ham  98 cal 83% frus1950v06/d89

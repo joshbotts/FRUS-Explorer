@@ -1,0 +1,13 @@
+{
+ "run": "runs/f9",
+ "arm": "K",
+ "occurrences": [
+  {
+   "file": "memo.md",
+   "line": 110,
+   "figure": "1910-12-06 (the pointed-at channel starts)",
+   "match": "1910-12-06",
+   "context": "Lot 62 D 430 8 rows (7 documents); Lot 66 D 95 4 (4); Lot 67 D 54 2 (1); one row each for Lots 60 D 627, 65 D 101, 63 D 351, 71 D 273 and several presidential-library collections. Caveat: this channel has no row before 1910-12-06, stores the citation fragment not the sentence, and holds lot, library and decimal anchors only; it was not summed with [M11]."
+  }
+ ]
+}

@@ -1,0 +1,37 @@
+SET A (PD/info volumes, header names an East Asia/Pacific place or office): 42 docs
+SET B (regional volumes, family A): 1176 docs
+
+CAME-FROM (document_sources.lot_file_norm), Set A: distinct lots 1
+  lot 81D5       docs   1 | central-files-index: 59 NAID 6862866 Records of Under Secretary of State Philip C. Habib | facts: {'creator': 'Department of State. Office of the Under Secretary of State for Political Affairs.', 'extent': '9 linear feet, 2 linear inches', 'years': '1974-1978', 'access': 'Restricted - Partly'}
+
+CAME-FROM (document_sources.lot_file_norm), Set B: distinct lots 57
+  lot 63D351     docs  19 | central-files-index: 59 NAID 2839192 Records Relating to National Security Council Policy Papers | facts: {'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'extent': '26 linear feet, 3 linear inches', 'years': '1947-1979', 'access': 'Restricted - Partly'}
+  lot 62D430     docs  12 | central-files-index: 59 NAID 2839191 Subject and Special Files | facts: {'creator': 'Department of State. Executive Secretariat.', 'extent': '4 linear feet, 5 linear inches', 'years': '1953-1961', 'access': 'Restricted - Partly'}
+  lot 61D417     docs   8 | central-files-index: 59 NAID 2103073 Meeting Summaries and Project Files | facts: {'creator': 'Department of State. Executive Secretariat.', 'extent': '2 linear feet, 7 linear inches', 'years': '1951-1959', 'access': 'Unrestricted'}
+  lot 61D385     docs   7 | central-files-index: NOT IN INDEX | facts: None
+  lot 67D54      docs   7 | central-files-index: 59 NAID 631403 Subject Files of the Vietnam Working Group | facts: {'creator': 'Department of State. Bureau of East Asian and Pacific Affairs.', 'extent': '21 linear feet', 'years': '1963-1974', 'access': 'Unrestricted'}
+  lot 66D193     docs   6 | central-files-index: 59 NAID 2658382 Subject Files Relating to Political, Military, Economic Aid, | facts: {'creator': 'Department of State. Bureau of Far Eastern Affairs.', 'extent': '5 linear feet, 7 linear inches', 'years': '1955-1962', 'access': 'Restricted - Possibly'}
+  lot 61D167     docs   4 | central-files-index: 59 NAID 2198167 Alphabetical Files | facts: {'creator': 'Department of State. Policy Planning Council.', 'extent': '48 linear feet, 7 linear inches', 'years': '1948-1961', 'access': 'Restricted - Partly'}
+  lot 58D207     docs   4 | central-files-index: 59 NAID 2103059 Subject Files | facts: {'creator': 'Department of State. Bureau of Far Eastern Affairs. Office of Philippine and Southeast Asian Affairs. Office of the Director.', 'extent': '8 linear inches', 'years': '1950-1956', 'access': 'Restricted - Partly'}
+  lot 59D95      docs   3 | central-files-index: NOT IN INDEX | facts: None
+  lot 72D316     docs   3 | central-files-index: 59 NAID 603185 National Security Action Memorandum Files | facts: {'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'extent': '3 linear feet, 11 linear inches', 'years': '1961-1968', 'access': 'Unrestricted'}
+  lot 68D451     docs   3 | central-files-index: 59 NAID 622921 Records of the Special Group on Counter Insurgency | facts: {'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'extent': '3 linear feet, 11 linear inches', 'years': '1962-1966', 'access': 'Unrestricted'}
+  lot 70D199     docs   3 | central-files-index: 59 NAID 604801 Subject Files | facts: {'creator': 'Department of State. Planning and Coordination Staff.', 'extent': '33 linear feet, 8 linear inches', 'years': '1963-1973', 'access': 'Unrestricted'}
+  lot 53D250     docs   2 | central-files-index: NOT IN INDEX | facts: None
+  lot 64D563     docs   2 | central-files-index: 59 NAID 1136548 Chronological Files | facts: {'creator': 'Department of State. Policy Planning Council.', 'extent': '5 linear feet, 3 linear inches', 'years': '1947-1962', 'access': 'Unrestricted'}
+
+POINTED-AT (external_citations.lot_file_norm), Set B: distinct lots 49
+  lot 66D95      docs  17 | central-files-index: 59 NAID 2839192 Records Relating to National Security Council Policy Papers | facts: {'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'extent': '26 linear feet, 3 linear inches', 'years': '1947-1979', 'access': 'Restricted - Partly'}
+  lot 62D430     docs  11 | central-files-index: 59 NAID 2839191 Subject and Special Files | facts: {'creator': 'Department of State. Executive Secretariat.', 'extent': '4 linear feet, 5 linear inches', 'years': '1953-1961', 'access': 'Restricted - Partly'}
+  lot 63D351     docs   9 | central-files-index: 59 NAID 2839192 Records Relating to National Security Council Policy Papers | facts: {'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'extent': '26 linear feet, 3 linear inches', 'years': '1947-1979', 'access': 'Restricted - Partly'}
+  lot 62D1       docs   7 | central-files-index: 59 NAID 2838992 Records Relating to Activities with the National Security Co | facts: {'creator': 'Department of State. Policy Planning Council.', 'extent': '3 linear feet, 1 linear inch', 'years': '1948-1961', 'access': 'Restricted - Partly'}
+  lot 62D181     docs   4 | central-files-index: NOT IN INDEX | facts: None
+  lot 80D212     docs   2 | central-files-index: 59 NAID 2990007 National Security Council National Security Study Memorandum | facts: {'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'extent': '17 linear feet', 'years': '1967-1977', 'access': 'Restricted - Fully'}
+  lot 74D417     docs   1 | central-files-index: 84 NAID 588795 Files of Ambassador Ellsworth Bunker | facts: {'creator': 'Department of State. U.S. Embassy, South Vietnam. Office of the Ambassador.', 'extent': '3 linear feet', 'years': '1967-1973', 'access': 'Unrestricted'}
+  lot 55D128     docs   2 | central-files-index: 59 NAID 2127218 Records Related to the Korean War | facts: {'creator': 'Department of State. Bureau of Far Eastern Affairs.', 'extent': '3 linear feet, 6 linear inches', 'years': '1950-1952', 'access': 'Restricted - Partly'}
+  lot 64D563     docs   3 | central-files-index: 59 NAID 1136548 Chronological Files | facts: {'creator': 'Department of State. Policy Planning Council.', 'extent': '5 linear feet, 3 linear inches', 'years': '1947-1962', 'access': 'Unrestricted'}
+  lot 61D385     docs   3 | central-files-index: NOT IN INDEX | facts: None
+  lot 67D54      docs   2 | central-files-index: 59 NAID 631403 Subject Files of the Vietnam Working Group | facts: {'creator': 'Department of State. Bureau of East Asian and Pacific Affairs.', 'extent': '21 linear feet', 'years': '1963-1974', 'access': 'Unrestricted'}
+  lot 54D423     docs   1 | central-files-index: 59 NAID 2127217 Japanese Petitions | facts: {'creator': 'Department of State. Bureau of Far Eastern Affairs. Office of Northeast Asian Affairs.', 'extent': '5 linear feet, 6 linear inches', 'years': '1951-1954', 'access': 'Unrestricted'}
+  lot 60D627     docs   2 | central-files-index: NOT IN INDEX | facts: None
+  lot 65D101     docs   2 | central-files-index: 59 NAID 1136548 Chronological Files | facts: {'creator': 'Department of State. Policy Planning Council.', 'extent': '5 linear feet, 3 linear inches', 'years': '1947-1962', 'access': 'Unrestricted'}

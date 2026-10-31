@@ -1,0 +1,205 @@
+
+##### collection-authority.json: dict
+   collections: list len 3977; sample {"aliases": ["00 D 221", "Office of the Geographer and Global Issues Program files"], "id": "lot:00D221", "lotFileNorm": "00D221", "name": "INR /GGI Files: Lot 00 D 221 Office of the Geographer and Global Issues Program files", "repository": "National Archives", "volumeIds": ["frus1969-76ve01"]}
+   generated: 2026-10-20
+   schemaVersion: 1
+
+-- authority rows for Director's Subject Files: 2
+    {"id": "txt:national archives|director's subject file", "name": "Director’s Subject Files", "recordGroup": "306", "repository": "National Archives", "volumeIds": ["frus1917-72PubDipv06", "frus1917-72PubDipv07", "frus1917-72PubDipv08"]}
+    {"id": "txt:national archives|office of the director", "name": "Office of the Director", "recordGroup": "306", "repository": "National Archives", "aliases": ["Office of the Director, Subject File, 1973–1975"], "volumeIds": ["frus1917-72PubDipv06", "frus1917-72PubDipv07", "frus1917-72PubDipv08", "frus1969-76v38p2", "frus1977-80v30"]}
+
+-- authority rows for Office of Policy and Plans: 3
+    {"id": "lot:70D398", "name": "Lot 70 D 398: Alphabetical subject files containing Policy Guidance records as maintained by the Policy Guidance Staff, Office of Policy and Plans, U.S. Information Agency, for the years 1952–1967.", "recordGroup": "59", "repository": "Department of State", "naId": "40943515", "aliases": ["70 D 398", "USIA /IOP/ G Files: Lot 70 D 398", "USIA /IOP/C Files: Lot 70 D 398"], "volumeIds": ["frus1955-57v24", "frus1955-57v25", "frus1958-60v10p1", "frus1958-60v10p2"]}
+    {"id": "txt:national archives|office of policy and plan", "name": "Office of Policy and Plans", "recordGroup": "306", "repository": "National Archives", "volumeIds": ["frus1917-72PubDipv07", "frus1917-72PubDipv08"]}
+    {"id": "txt:washington national records center|records of the bureau of educational and cultural affair", "name": "Records of the Bureau of Educational and Cultural Affairs, Office of Policy and Plans, Subject Files, 1961–1977, FRC 306-81-24", "recordGroup": "306", "repository": "Washington National Records Center", "aliases": ["Records of the Bureau of Educational and Cultural Affairs"], "volumeIds": ["frus1969-76v38p2"]}
+
+-- authority rows for Office of the Director (RG 306): 10
+    {"id": "lot:59D242", "name": "USIA / IBS Files: Lot 59 D 242", "repository": "Department of State", "naId": "7542975", "aliases": ["59 D 242", "USIA /IBS Files: Lot 59 D 242"], "volumeIds": ["frus1955-57v24", "frus1955-57v25"]}
+    {"id": "lot:67D317", "name": "USIA Files: Lot 67 D 317", "recordGroup": "306", "repository": "Washington National Records Center", "naId": "40967285", "aliases": ["67 D 317"], "volumeIds": ["frus1961-63v25"]}
+    {"id": "lot:67D333", "name": "USIA Files: Lot 67 D 333", "recordGroup": "306", "repository": "Washington National Records Center", "naId": "40967285", "aliases": ["67 D 333"], "volumeIds": ["frus1961-63v25"]}
+    {"id": "lot:70D449", "name": "USIA Files: Lot 70 D 449", "recordGroup": "306", "repository": "Washington National Records Center", "naId": "40967285", "aliases": ["70 D 449"], "volumeIds": ["frus1961-63v25"]}
+    {"id": "txt:national archives|historical collection", "name": "Historical Collection", "recordGroup": "306", "repository": "National Archives", "volumeIds": ["frus1917-72PubDipv08", "frus1969-76v38p2"]}
+    {"id": "txt:national archives|office of the director", "name": "Office of the Director", "recordGroup": "306", "repository": "National Archives", "aliases": ["Office of the Director, Subject File, 1973–1975"], "volumeIds": ["frus1917-72PubDipv06", "frus1917-72PubDipv07", "frus1917-72PubDipv08", "frus1969-76v38p2", "frus1977-80v30"]}
+    {"id": "txt:national archives|usia historical collection", "name": "USIA Historical Collection", "recordGroup": "306", "repository": "National Archives", "volumeIds": ["frus1917-72PubDipv06", "frus1917-72PubDipv07", "frus1917-72PubDipv08", "frus1961-63v25", "frus1977-80v30"]}
+    {"id": "txt:washington national records center|files of the office of the director of the u.s. information agency", "name": "Files of the Office of the Director of the U.S. Information Agency, 1961-1962; action copies retained by the Assistant Director for the Far East, 1963-1964.", "recordGroup": "306", "repository": "Washington National Records Center", "aliases": ["Files of the Office of the Director of the U.S. Information Agency", "Files of the Office of the Director of the U.S. Information Agency, 1961-1962; action copies retained by the Assistant Director for the Far East.1963-1964."], 
+    {"id": "txt:|office of the director", "name": "Office of the Director", "recordGroup": "306", "volumeIds": ["frus1977-80v30"]}
+    {"id": "txt:|usia historical collection", "name": "USIA Historical Collection", "recordGroup": "306", "volumeIds": ["frus1977-80v30"]}
+
+-- authority rows for Executive Secretariat (RG 306): 2
+    {"id": "txt:national archives|office of the director", "name": "Office of the Director", "recordGroup": "306", "repository": "National Archives", "aliases": ["Office of the Director, Subject File, 1973–1975"], "volumeIds": ["frus1917-72PubDipv06", "frus1917-72PubDipv07", "frus1917-72PubDipv08", "frus1969-76v38p2", "frus1977-80v30"]}
+    {"id": "txt:|office of the director", "name": "Office of the Director", "recordGroup": "306", "volumeIds": ["frus1977-80v30"]}
+
+-- authority rows for RG 306 entry numbers A1-42/P-104/P-207/UD WW 257/UD WW 193/UD-UP 7: 0
+
+-- authority rows for lot 61 D 385: 1
+    {"id": "lot:61D385", "name": "OCB Files: Lot 61 D 385", "recordGroup": "59", "repository": "Department of State", "aliases": ["61 D 385", "61D 385", "OCB Files", "OCB Files, Lot 61 D 385", "S/S – OCB Files, Lot 61 D 385", "S/S – OCB Files, Lots 61 D 385; 62 D 430", "S/S – OCB Files: Lot 61 D 385", "S/S – OCB Files: Lots 61 D 385; 62 D 430", "S/S– OCB Files: Lot 61 D 385 and Lot 62 D 430"], "volumeIds": ["frus1950-55Intel", "frus1952-54v01p1", "frus1952-54v01p2", "frus1952-54v08", "frus1952-54v11p1", "frus1952-54v11p2", "frus1955-57v01", "frus1955-57v02", "frus1955-57v03", "frus1955-57v04", "fr
+
+-- authority rows for lot 58 D 726: 1
+    {"id": "lot:58D726", "name": "SEA Files: Lot 58 D 726", "recordGroup": "59", "repository": "Department of State", "naId": "2544398", "aliases": ["58 D 726", "SEA Files"], "volumeIds": ["frus1955-57v22"]}
+
+-- authority rows for Marks Papers: 1
+    {"id": "txt:johnson library|marks paper", "name": "Marks Papers", "repository": "Johnson Library", "volumeIds": ["frus1917-72PubDipv07"]}
+
+-- authority rows for Kissinger Office Files: 14
+    {"id": "txt:national archives|agency file", "name": "Agency Files", "repository": "National Archives", "volumeIds": ["frus1969-76ve09p2"]}
+    {"id": "txt:national archives|henry a. kissinger office file", "name": "Henry A. Kissinger Office Files", "repository": "National Archives", "volumeIds": ["frus1969-76v21", "frus1969-76ve16"]}
+    {"id": "txt:national archives|national security council (nsc) file", "name": "National Security Council (NSC) Files", "repository": "National Archives", "volumeIds": ["frus1969-76v15", "frus1969-76v21", "frus1969-76v26", "frus1969-76ve16"]}
+    {"id": "txt:national archives|national security council file", "name": "National Security Council Files", "recordGroup": "273", "repository": "National Archives", "aliases": ["National Security Council Files, Country Files"], "volumeIds": ["frus1950-55Intel", "frus1969-76v07", "frus1969-76v08", "frus1969-76v09", "frus1969-76v10", "frus1969-76v19p1", "frus1969-76v22", "frus1969-76v25", "frus1969-76v27", "frus1969-76v28", "frus1969-76v31", "frus1969-76v38p1", "frus1969-76v38p2", "frus1969-76v39", "frus1969-76v41", "frus1969-76ve14p2"]}
+    {"id": "txt:national archives|national security file", "name": "National Security Files", "repository": "National Archives", "volumeIds": ["frus1969-76v24"]}
+    {"id": "txt:national archives|nsc file", "name": "NSC Files, Henry A. Kissinger Office Files", "repository": "National Archives", "aliases": ["NSC Files"], "volumeIds": ["frus1969-76v31"]}
+    {"id": "txt:nixon|henry a. kissinger office file", "name": "Henry A. Kissinger Office Files", "repository": "Nixon", "aliases": ["Henry A. Kissinger Office Files, Country Files, Africa", "Henry A. Kissinger Office Files, U.S.-Domestic-Agency Files, State/White House Relationship"], "volumeIds": ["frus1969-76v40", "frus1969-76ve05p1"]}
+    {"id": "txt:nixon|kissinger office file", "name": "Kissinger Office Files", "repository": "Nixon", "volumeIds": ["frus1969-76v08", "frus1969-76v12", "frus1969-76v13", "frus1969-76v14", "frus1969-76v15", "frus1969-76v33", "frus1969-76v39", "frus1969-76v40", "frus1969-76ve02", "frus1969-76ve10"]}
+    {"id": "txt:nixon|kissinger office files: country file", "name": "Kissinger Office Files: Country Files, Europe, USSR", "repository": "Nixon", "aliases": ["Kissinger Office Files: Country Files"], "volumeIds": ["frus1969-76ve02"]}
+    {"id": "txt:nixon|national security council file", "name": "National Security Council Files", "repository": "Nixon", "aliases": ["National Security Council Files, Country Files, Latin America", "National Security Council Files, Institutional Files (H-Files)"], "volumeIds": ["frus1964-68v06", "frus1964-68v14", "frus1969-76v01", "frus1969-76v02", "frus1969-76v03", "frus1969-76v04", "frus1969-76v05", "frus1969-76v06", "frus1969-76v11", "frus1969-76v12", "frus1969-76v14", "frus1969-76v17", "frus1969-76v18", "frus1969-76v19p2", "frus1969-76v20", "frus1969-76v29", "frus1969-76v30", "frus1969-76v32",
+    {"id": "txt:nixon|national security file", "name": "National Security File", "repository": "Nixon", "volumeIds": ["frus1964-68v07", "frus1969-76ve04", "frus1969-76ve05p2"]}
+    {"id": "txt:nixon|nsc file", "name": "NSC Files", "repository": "Nixon", "aliases": ["NSC File", "NSC Files, Henry A. Kissinger Office Files", "NSC Files, NSC Institutional Files (H-Files)"], "volumeIds": ["frus1917-72PubDipv08", "frus1964-68v07", "frus1964-68v14", "frus1969-76v01", "frus1969-76v02", "frus1969-76v03", "frus1969-76v04", "frus1969-76v05", "frus1969-76v06", "frus1969-76v07", "frus1969-76v08", "frus1969-76v09", "frus1969-76v10", "frus1969-76v11", "frus1969-76v12", "frus1969-76v13", "frus1969-76v14", "frus1969-76v15", "frus1969-76v17", "frus1969-76v18", "frus1969-76v19p1", "frus196
+
+-- authority rows for Robert F. Kennedy papers: 2
+    {"id": "txt:kennedy library|papers of robert f. kennedy", "name": "Papers of Robert F. Kennedy", "repository": "Kennedy Library", "volumeIds": ["frus1961-63v10", "frus1961-63v10-12mSupp"]}
+    {"id": "txt:kennedy library|personal papers of robert f. kennedy", "name": "Personal Papers of Robert F. Kennedy", "repository": "Kennedy Library", "volumeIds": ["frus1917-72PubDipv06"]}
+
+-- authority rows with recordGroup 306 or naming the Information Agency: 53; with naId: 7
+-- authority rows in all: 3977 ; with naId: 1014
+-- sample of keys across rows: ['aliases', 'catalogURL', 'children', 'id', 'lotFileNorm', 'naId', 'name', 'recordGroup', 'repository', 'volumeIds']
+
+##### central-files-index.json: dict
+   countrySeries: list len 12; sample {"category": "diplomaticDespatches", "displayName": "Diplomatic Despatches", "rolls": [{"catalogURL": "https://catalog.archives.gov/id/189346553", "endISO": "1887-05-31", "fileUnitNaId": "177380755", "fileUnitTitle": "Despatches from U.S. Ministers to Peru, 1826-1906", "geoKeys": ["peru"], "naId": "
+   generated: 2026-09-10
+   lotFiles: list len 1070; sample {"catalogURL": "https://catalog.archives.gov/id/2124670", "hmsMlrEntryNumbers": ["A1 1457"], "levelOfDescription": "series", "lotNumber": "428", "matchType": "control", "naId": "2124670", "recordGroup": "59", "title": "Subject Files Relating to Palestine, Political, Security, and Trusteeship Matters
+   numericalFile: dict len 3; sample ["microfilm", "M862"]
+   schemaVersion: 3
+
+-- central-files lotFiles rows for 61D385: 0
+
+-- central-files lotFiles rows for 58D726: 1
+    {"catalogURL": "https://catalog.archives.gov/id/2544398", "hmsMlrEntryNumbers": ["UD 53"], "levelOfDescription": "series", "lotNumber": "58D726", "matchType": "control", "naId": "2544398", "recordGroup": "59", "title": "Subject Files"}
+
+-- central-files nodes naming the five decimal files: 0
+
+##### series-facts-index.json: dict
+   byNaId: dict len 698; sample ["102260314", {"ar": [0], "as": 0, "c": 376, "ru": 0, "us": 1, "x": "11 linear feet, 8 linear inches", "y0": 1962, "y1": 1985}]
+   findingAidTypes: list len 3; sample "Folder List"
+   generated: 2026-09-10
+   headings: list len 398; sample "Board of Foreign Scholarships."
+   legend: dict len 2; sample ["keys", {"ar": {"field": "accessRestrictions", "into": "restrictions", "kind": "indexList"}, "as": {"field": "accessStatus", "into": "statuses", "kind": "index"}, "c": {"field": "creator", "into": "headings", "kind": "index"}, "cy0": {"field": "coverageStartYear", "kind": "year"}, "cy1": {"field": 
+   referenceUnits: list len 2; sample "National Archives at College Park - Textual Reference"
+   restrictions: list len 8; sample "FOIA (b)(1) National Security"
+   schemaVersion: 3
+   statuses: list len 5; sample "Restricted - Fully"
+   useRestrictions: list len 2; sample "Copyright"
+
+-- series-facts byNaId 2544398 (decoded): {"accessStatus": "Restricted - Possibly", "creator": "Department of State. Bureau of Far Eastern Affairs. Office of Southeast Asian Affairs. Office of the Officer in Charge for Malaya Affairs.", "predecessors": ["Department of State. Bureau of Far Eastern Affairs. Office of Philippine and Southeast Asian Affairs. Office of the Officer in Charge for Thai and Malaya Affairs."], "referenceUnit": "National Archives at College Park - Textual Reference", "useStatus": "Restricted - Possibly", "extent": "5 linear inches", "inclusiveStartYear": 1955, "inclusiveEndYear": 1956}
+-- raw row: {"as": 3, "c": 102, "p": [98], "ru": 0, "us": 3, "x": "5 linear inches", "y0": 1955, "y1": 1956}
+
+##### presidential-library-catalog.json: dict
+   generated: 2026-08-06
+   libraries: list len 11; sample {"citedAs": "Hoover Library", "collections": [{"identifier": "HH-AAB", "naId": 597033, "series": [{"inclusiveDates": "1903–1959", "naId": 597034, "title": "Articles and Speeches"}, {"inclusiveDates": "1901–1966", "naId": 603721, "title": "Subject Files"}, {"inclusiveDates": "1901–1961", "naId": 6037
+   schemaVersion: 1
+   source: apiV2
+
+-- presidential-library-catalog nodes naming 'Marks Papers': 2 (first 4)
+    /libraries[1]/collections[211] {"identifier": "FDR-MARKS", "naId": 205003570, "series": [{"inclusiveDates": "1933–1946", "naId": 205003575, "title": "Correspondence, Memoranda, Reports, Legal Papers, and Office Files"}], "statedSeriesCount": 1, "title": "Herbert Marks Papers"}
+    /libraries[2]/collections[627] {"identifier": "HST-TM", "naId": 6201810, "series": [{"inclusiveDates": "1916–1992", "naId": 6201811, "title": "Scrapbook Files"}], "statedSeriesCount": 1, "title": "Ted Marks Papers"}
+
+-- presidential-library-catalog nodes naming 'Kissinger Office Files': 0 (first 4)
+
+-- presidential-library-catalog nodes naming 'National Security File': 4 (first 4)
+    /libraries[4]/collections[253]/title Papers of John F. Kennedy: Presidential Papers: National Security Files
+    /libraries[5]/collections[88]/title National Security Files
+    /libraries[6]/collections[134] {"identifier": "RN-NSF", "naId": 572235, "series": [{"inclusiveDates": "1969–1974", "naId": 572247, "title": "Institutional Files"}, {"inclusiveDates": "1969–1974", "naId": 572248, "title": "Central Files"}, {"inclusiveDates": "1969–1974", "naId": 579113, "title": "Henry A. Kissinger Telephone Conversation Transcripts (Telcons)"}, {"inclusiveDates": "1969–1975", "naId": 1103638, "title": "Henry A.
+    /libraries[8]/collections[102]/series[8] {"inclusiveDates": "1967–1981", "naId": 12013063, "title": "Issues National Security Files"}
+
+-- presidential-library-catalog nodes naming 'Robert F. Kennedy': 6 (first 4)
+    /libraries[4]/collections[29] {"identifier": "JFK-120", "naId": 636745, "series": [{"inclusiveDates": "1963–1965", "naId": 636746, "title": "Records Related to Peace Corps Volunteer Duty"}, {"inclusiveDates": "1968", "naId": 636748, "title": "Records Related to Robert F. Kennedy's Presidential Campaign"}, {"inclusiveDates": "1971–1972", "naId": 636749, "title": "Records Related to George McGovern's Presidential Campaign"}, {"i
+    /libraries[4]/collections[32] {"identifier": "JFK-123", "naId": 636768, "series": [{"inclusiveDates": "1961–1970", "naId": 636769, "title": "Personal Subject Files"}, {"inclusiveDates": "1956–1963", "naId": 636770, "title": "Records Related to the \"Milwaukee Journal\""}, {"inclusiveDates": "1963–1968", "naId": 636771, "title": "Post Office Files"}, {"inclusiveDates": "1968", "naId": 636772, "title": "Records Related to Robert
+    /libraries[4]/collections[39]/series[15] {"inclusiveDates": "1964–1968", "naId": 573304, "title": "Files Related to Robert F. Kennedy's Political Campaigns"}
+    /libraries[4]/collections[40] {"identifier": "JFK-138", "naId": 588229, "series": [{"inclusiveDates": "1937–1960", "naId": 588230, "title": "Pre-Administration Files"}, {"inclusiveDates": "1961–1964", "naId": 589197, "title": "Attorney General Files"}, {"inclusiveDates": "1964–1968", "naId": 589199, "title": "Senate Files"}, {"inclusiveDates": "1968", "naId": 589201, "title": "Presidential Campaign Files"}, {"inclusiveDates": 
+
+-- presidential-library-catalog nodes naming 'NSC Files': 0 (first 4)
+
+-- presidential-library-catalog nodes naming 'Country File, Indonesia': 0 (first 4)
+
+-- presidential-library-catalog nodes naming 'Country File, Thailand': 0 (first 4)
+
+##### external-citation-index.json: dict
+   classPairs: list len 8143; sample {"f": 0, "n": 1, "t": 2715}
+   classSourceKeys: list len 3451; sample "003.9411"
+   classTargetKeys: list len 4460; sample "010.1"
+   classTargets: list len 4460; sample {"k": 0, "n": [1], "v": [235]}
+   coverage: dict len 24; sample ["absenceClaimsRefused", 140]
+   generated: 2026-10-20
+   pairs: list len 3114; sample {"f": 0, "n": 2, "t": 1}
+   schemaVersion: 2
+   sourceIds: list len 814; sample "lot:01D127"
+   targetIds: list len 1006; sample "lot:00D471"
+   targets: list len 1006; sample {"k": 0, "n": [1], "v": [431]}
+   volumes: list len 441; sample "frus1911"
+
+-- external-citation-index nodes naming '61D385': 2 (first 3)
+    /sourceIds[128] lot:61D385
+    /targetIds[219] lot:61D385
+
+-- external-citation-index nodes naming '61 D 385': 0 (first 3)
+
+-- external-citation-index nodes naming '58D726': 1 (first 3)
+    /targetIds[112] lot:58D726
+
+-- external-citation-index nodes naming '58 D 726': 0 (first 3)
+
+-- external-citation-index nodes naming 'Kissinger Office Files': 0 (first 3)
+
+-- external-citation-index nodes naming 'Marks Papers': 0 (first 3)
+
+##### volume-sources-index.json: dict
+   generated: 2026-09-25
+   lots: dict len 0; sample null
+   majorCollections: list len 2470; sample {"isHeading": true, "key": "txt:washington national records center, suitland, maryland", "occurrences": 131, "repository": "Washington National Records Center", "text": "Washington National Records Center, Suitland, Maryland", "volumeIds": ["frus1955-57v01", "frus1955-57v02", "frus1955-57v03", "frus
+   recordGroups: dict len 36; sample ["107", {"catalogURL": "https://catalog.archives.gov/id/436", "matchType": "api", "naId": "436", "recordGroup": "107", "title": "Records of the Office of the Secretary of War"}]
+   schemaVersion: 2
+
+-- volume-sources-index nodes naming 'A1–42': 0 (first 3)
+
+-- volume-sources-index nodes naming 'A1-42': 0 (first 3)
+
+-- volume-sources-index nodes naming 'P–104': 0 (first 3)
+
+-- volume-sources-index nodes naming 'P-104': 0 (first 3)
+
+-- volume-sources-index nodes naming 'P–207': 0 (first 3)
+
+-- volume-sources-index nodes naming 'UD WW 257': 0 (first 3)
+
+-- volume-sources-index nodes naming 'UD WW 193': 0 (first 3)
+
+-- volume-sources-index nodes naming 'UD–UP 7': 0 (first 3)
+
+-- volume-sources-index nodes naming 'RG 305': 0 (first 3)
+
+-- volume-sources-index nodes naming 'Director’s Subject Files': 0 (first 3)
+
+-- volume-sources-index nodes naming 'Director's Subject Files': 0 (first 3)
+
+##### decimal-class-labels.json: dict
+   coverage: dict len 6; sample ["decimalFileOpensIn", 1910]
+   generated: 2026-09-08
+   provenance: Parsed from NARA's published classification manuals and the 1910–1963 country-number table. The manuals are not redistributed here; every vocabulary c
+   schedules: list len 3; sample {"classes": {"0": "General. Miscellaneous", "1": "Administrations, United States Government", "2": "Extradition", "3": "Protection of Interests", "4": "Claims", "5": "Congresses and Conferences", "6": "Commerce. Customs Administration", "7": "Political Relations of States. Bi-lateral Treaties", "8":
+   schemaVersion: 2
+
+-- glossableYears: [{"endYear": 1949, "scheduleId": "1910-1949", "startYear": 1910}, {"endYear": 1959, "scheduleId": "1950-1959", "startYear": 1950}, {"endYear": 1963, "scheduleId": "1960-1963", "startYear": 1960}]
+
+-- 511.90 (1950) schedule 1950-1959: class 5 = 'International Informational and Educational Relations, Cultural Affairs and Programs'; country 11 = 'United States'; sub .90: subjects has 0 keys; countryAlternates starting 11: {"11a": ["Kure Islands", "Ocean Islands", "Palmyra Island"], "11c": ["Puerto Rico"], "11e": ["Manua Islands", "Swains Island", "Tutuilla"], "11f": ["Culebra Island", "Flamenco Island", "Naos Island", "Perico Island"], "11g": ["St. Croix Island", "St. John Island", "St. Thomas Island"]}
+   schedule keys: ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+
+-- 511.51G (1952) schedule 1950-1959: class 5 = 'International Informational and Educational Relations, Cultural Affairs and Programs'; country 11 = 'United States'; sub .51G: subjects has 0 keys; countryAlternates starting 11: {"11a": ["Kure Islands", "Ocean Islands", "Palmyra Island"], "11c": ["Puerto Rico"], "11e": ["Manua Islands", "Swains Island", "Tutuilla"], "11f": ["Culebra Island", "Flamenco Island", "Naos Island", "Perico Island"], "11g": ["St. Croix Island", "St. John Island", "St. Thomas Island"]}
+   countries['51G'] = None | countryAlternates['51G'] = None
+   schedule keys: ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+
+-- 790.5 (1953) schedule 1950-1959: class 7 = 'Internal Political and National Defense Affairs'; country 90 = 'Asia'; sub .5: subjects has 0 keys; countryAlternates starting 90: {"90": ["Far East (including all of Asia)"], "90d": ["Baluchistan"]}
+   schedule keys: ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+
+-- 792.5 (1953) schedule 1950-1959: class 7 = 'Internal Political and National Defense Affairs'; country 92 = 'Siam'; sub .5: subjects has 0 keys; countryAlternates starting 92: {"92": ["Thailand"]}
+   schedule keys: ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+
+-- 611.98 (1962) schedule 1960-1963: class 6 = 'International Political Relations. Other International Relations. Bilateral Treaties'; country 11 = 'United States'; sub .98: subjects has 0 keys; countryAlternates starting 11: {"11c": ["Puerto Rico"], "11e": ["Manua Islands", "Swains Island", "Tutuilla"], "11f": ["Culebra Island", "Flamenco Island", "Naos Island", "Perico Island"], "11g": ["St. Croix Island", "St. John Island", "St. Thomas Island"]}
+   schedule keys: ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']

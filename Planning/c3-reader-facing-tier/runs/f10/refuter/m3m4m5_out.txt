@@ -1,0 +1,17 @@
+M3 scope105 non-apparatus: 58244 (memo 58,244) | six info vols: 1373 (memo 1,373) | 99 EAP: 56871
+M4 Family A FTS scope105: 1538 (memo 1,538) | EAP99: 898 (memo 898)
+   propaganda scope105: 3407 (memo 3,407) | prestige: 2108 (memo 2,108)
+   Boxer indemnity EAP99: 99 (memo 99)
+M4 literal census: 1329 of 1538 (memo 1,329 of 1,538) = 86.4 %
+   1 in 43.8 (memo 1 in 43.8; overview 'one in forty-four')
+M5 by decade (num / den / per1000 / top volume):
+   1940s 153 of 19556 7.8 | top frus1949v08 65
+   1950s 249 of 13171 18.9 | top frus1955-57v03mSupp 25
+   1960s 684 of 8725 78.4 | top frus1917-72PubDipv07 147
+   1970s 240 of 3685 65.1 | top frus1977-80v30 121
+   1980s 3 of 122 24.6 | top frus1977-80v30 3
+   1960s: 1 in 12.8 (memo 1 in 12.8; overview 'one in thirteen')
+   in famA literal census: ('frus1952-54v13p1', 'd116') True
+   in famA literal census: ('frus1917-72PubDipv07', 'd32') True
+   in famA literal census: ('frus1917-72PubDipv08', 'd34') True
+session famA_literal.tsv rows: 1329 | equal to my census: True

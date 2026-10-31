@@ -1,0 +1,22 @@
+centralFileClass|Department of State|||312|178
+lotFile|Department of State||66D95|51|41
+presidentialLibrary|Nixon Presidential Materials|NSC Files||36|19
+presidentialLibrary|Johnson Library|National Security File||32|25
+lotFile|Department of State||62D430|19|16
+lotFile|Department of State||63D351|17|13
+presidentialLibrary|Kennedy Library|National Security Files||16|14
+presidentialLibrary|Carter Library|National Security Affairs||12|7
+lotFile|Department of State||62D1|10|9
+lotFile|Department of State||55D128|6|3
+lotFile|Department of State||62D181|6|3
+lotFile|Department of State||80D212|6|2
+presidentialLibrary|Eisenhower Library|Whitman File||5|5
+lotFile|Department of State||67D54|4|3
+lotFile|Department of State||72D415|4|4
+presidentialLibrary|Eisenhower Library|Eisenhower papers||4|4
+presidentialLibrary|Johnson Library|President’s Daily Diary||4|4
+presidentialLibrary|Nixon Presidential Materials|NSC Files NSC Institutional Files||4|1
+lotFile|Department of State||60D627|3|1
+lotFile|Department of State||61D385|3|3
+lotFile|Department of State||64D199|3|2
+lotFile|Department of State||64D563|3|3

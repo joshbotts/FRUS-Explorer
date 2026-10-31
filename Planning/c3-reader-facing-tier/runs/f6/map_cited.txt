@@ -1,0 +1,28 @@
+frus1949v07p2/d386 cluster 20 ['grc', 'formosa', 'chiang', 'taiwan']
+frus1950v06/d32 cluster 31 ['indochina', 'minh', 'bao', 'dai']
+frus1952-54v12p2/d403 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+frus1952-54v14p2/d820 cluster 7 ['japanese', 'sato', 'japan', 'kishi']
+frus1961-63v01/d49 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+frus1961-63v01/d265 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+frus1961-63v01/d339 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+frus1961-63v02/d5 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+frus1917-72PubDipv06/d126 cluster 32 ['sukarno', 'indonesian', 'indonesia', 'nasution']
+frus1917-72PubDipv06/d133 cluster 32 ['sukarno', 'indonesian', 'indonesia', 'nasution']
+frus1961-63v04/d108 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+frus1964-68v01/d197 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+frus1964-68v02/d160 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+frus1964-68v02/d172 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+frus1964-68v03/d138 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+frus1917-72PubDipv07/d171 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+frus1961-63v23/d289 cluster 32 ['sukarno', 'indonesian', 'indonesia', 'nasution']
+frus1964-68v26/d106 cluster 32 ['sukarno', 'indonesian', 'indonesia', 'nasution']
+frus1964-68v27/d386 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+frus1917-72PubDipv08/d31 unclustered
+frus1969-76v19p2/d67 cluster 7 ['japanese', 'sato', 'japan', 'kishi']
+frus1969-76v38p2/d105 unclustered
+frus1969-76ve12/d16 unclustered
+frus1969-76ve12/d17 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+frus1977-80v22/d3 unclustered
+frus1977-80v30/d79 unclustered
+frus1977-80v30/d81 cluster 138 ['cia', 'nsc', 'usia', 'inglis']
+unclustered 5 of 27; corpus 88059 of 314616

@@ -1,0 +1,508 @@
+{
+ "format": "fruscollection",
+ "formatVersion": 2,
+ "minimumReaderVersion": 1,
+ "name": "American soft power in East Asia and the Pacific: how officials judged it, 1950–1977",
+ "authorLine": "Agent run f12, 2026-10-31",
+ "introductionText": "What FRUS answers directly: about two dozen printed documents, from 1950 to 1977, show how officials of the State Department and the U.S. Information Agency judged America's appeal in East Asia and the Pacific. They wanted to project an image of American strength, reliability and friendship, aimed mostly at elites, through local voices and with low American visibility; they measured success by press placement, attendance, demand for English, the warmth of a visit and, from about 1970, opinion surveys; and they believed Asian audiences judged the United States less by its domestic life than by its bilateral conduct and its staying power. After 1975 their own assessments say credibility had become the message.\n\nWhere FRUS points for the rest: the printed documents came mainly from the U.S. Information Agency's records (Record Group 306: the Director's Subject Files, 1968–1972, Entry A1–42; the Director's subject files of 1963–1969, Entries UD WW 257 and UD WW 193; the Office of Policy and Plans, Entry P–207; the Executive Secretariat's correspondence files, 1973–1980, Entry P–104), from State Department central files (Record Group 59: decimal files 511.90, 511.51G, 790.5, 792.5 and 611.98, and the 1977 Central Foreign Policy File), from the Operations Coordinating Board files (Lot 61 D 385) and from the Kennedy, Johnson and Nixon presidential records. The editors also cite, without printing, the Office of Southeast Asian Affairs' subject files for 1955–1956 (Lot 58 D 726, National Archives identifier 2544398, access possibly restricted). The app's bundled indexes give no National Archives identifier or access status for the USIA entries.\n\nWhat this request cannot get from FRUS: the phrase \"soft power\" does not occur in any of the 21 volumes scanned (the officials wrote of \"image\", \"psychological\" objectives and \"public diplomacy\"); the underlying opinion surveys are summarised, not printed; the audiences' own voices are absent because FRUS prints U.S. records; and no East Asia or public diplomacy volume after 1980 is in this corpus. The surveys sit in USIA's research files in Record Group 306.",
+ "composition": {
+  "defaultBodyDepth": "full",
+  "footnoteStyle": "all",
+  "includeSourceNote": true,
+  "tocStyle": "citation",
+  "applyHighlights": false,
+  "includeNotes": true,
+  "includeWordCloud": false
+ },
+ "entries": [
+  {
+   "kind": "heading",
+   "text": "Information as anti-communist psychological strategy, routed through local voices (1950–1957)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "The earliest planning treated the information program as one arm of a psychological strategy against communist expansion in Southeast Asia: produce in local languages, place material in the local press, aim at leaders, and let Asian governments speak. These documents show how officials measured success (placement, attendance, demand for English) and the limits they set themselves (French and British sensitivities, the fear of looking colonial)."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1950v06",
+   "documentId": "d31",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: The Bureau of Far Eastern Affairs reports the expanded information program in Southeast Asia and offers the first evidence of effect: more U.S. material appearing in the local press."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1950v06",
+   "documentId": "d31",
+   "text": "There is already evidence, however, of increased usage of USIE news and feature material in the local press throughout the area."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v13p1",
+   "documentId": "d116",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: Ambassador Heath's survey for a Senate inquiry: objectives in Indochina, which devices worked, and why rural audiences were not a primary target. Reached through a semantic-neighbour search, not a word search."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v13p1",
+   "documentId": "d116",
+   "text": "Such demand can only be construed as intense interest in US by educated groups."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v13p1",
+   "documentId": "d116",
+   "text": "It should deliberately soft-pedal suggestions which may be expected to foster anti-Fr attitudes or to stimulate unbridled nationalism."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v13p1",
+   "documentId": "d116",
+   "text": "Since many new customs FE can be traced to Amer films, must be assumed that films is effective program though difficult to determine degree."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v13p1",
+   "documentId": "d116",
+   "text": "Rural and village populations which make up as much as 80 percent of the 12 million in the non- VM zone are not a primary target group."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d403",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: The Psychological Strategy Board's plan based on Thailand: work through indigenous leadership and local outlets, and treat each Southeast Asian nation as a separate audience."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d403",
+   "text": "utilizing every suitable operation to prepare the minds and emotions of the people to collaborate in the effort"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d403",
+   "text": "It is recognized that Southeast Asia is not a political entity but that each nation is an entity basically different from the others and requires special treatment."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d405",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: The country team's appraisal in Bangkok: the 'will to resist' is the psychological objective, and the Thai government should run the program."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d405",
+   "text": "Must strengthen “will and ability of Thai people resist Commie aggression”"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d407",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: The USIS part of the Bangkok recommendations: themes chosen for a Thai audience (monarchy, religion, independence)."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d407",
+   "text": "informing Thai of threat to monarchy, religion, tradition of independence"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1955-57v22",
+   "documentId": "d447",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: USIA's objection to expanding its Malaya program, in part from fear of appearing to support colonialism, overruled by the Far Eastern bureau."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v22",
+   "documentId": "d447",
+   "text": "a fear of placing the U.S. in the position of appearing to support colonialism"
+  },
+  {
+   "kind": "heading",
+   "text": "The image to project: strength, reliability and modest openness (1962–1969)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "From the early 1960s the regional office stated a single image (American strength, reliability and friendship), aimed it at elites, and judged its success by personal contact and by the state of each bilateral relationship. These documents carry the officials' clearest statements about what Asian audiences valued and what put them off."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v23",
+   "documentId": "d289",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: USIA's plan for Indonesia: youth, American studies, travel, and a warning to respect neutrality and avoid 'glamorous' quick-impact gestures."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v23",
+   "documentId": "d289",
+   "text": "we should refrain from glamorous, immediate-impact actions"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v23",
+   "documentId": "d289",
+   "text": "any actions the U.S. undertakes in furtherance of better relations with Indonesia must be pegged to a real understanding of and a demonstrated respect for Indonesia’s neutral stance"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d127",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: Ambassador Reischauer judges John Glenn's 1963 visit the most successful American visit to Japan from a public-image standpoint, and says why."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d127",
+   "text": "probably the most successful visit by an American, from a public image standpoint"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d127",
+   "text": "Many seemed, for first time, to appreciate openness of the U.S. space program as compared to Russian."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d73",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: The Far East area office summarises its posts: the image of strength, reliability and friendship is basic; elites are the target almost everywhere."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d73",
+   "text": "the image of American strength, reliability and friendship is basic to our objectives"
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d73",
+   "text": "In almost every country of the area, our programs are directed at elite groups"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: The 1969 Manila conference of public affairs officers: Asians as 'America watchers', the image of the U.S. driven by bilateral relations, and low U.S. visibility."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "Asians are, to varying degrees, America watchers."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "PAOs emphasized that the image of the US usually depended more on the state of bi-lateral relations (security treaty, Okinawa, Korean military modernization, trade restrictions) than on developments within the US."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "One caveat: US visibility should be low."
+  },
+  {
+   "kind": "heading",
+   "text": "Counterinsurgency information in Indochina and Thailand: a surrogate voice meant to become local (1964–1970)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Where there was insurgency the programme stopped addressing elites and became a surrogate information service for the host government. Officials judged it by whether local services could take it over and, by 1970, by opinion surveys; their beliefs about the audience were at their bluntest here."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d32",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: A 1964 field review of USIS Vietnam: peasants will be persuaded by other Vietnamese, motivation is the 'number one problem', with a harsh view of the civil population."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d32",
+   "text": "Vietnamese peasants are, in the main, going to be persuaded by other Vietnamese."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d32",
+   "text": "family-oriented, selfish and opportunistic even in the best of times"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d171",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: Educational television for Vietnam is to be kept apart from USIA so that it is not seen as propaganda."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d171",
+   "text": "the effort should not be construed as a propaganda mechanism"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v27",
+   "documentId": "d386",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: USIA's director asks that the Thai government build its own national information program and court foreign correspondents."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v27",
+   "documentId": "d386",
+   "text": "The Thai Government has not given proper attention to the need for a national information program designed to gain popular support."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d58",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: The handover of information and psychological operations in Vietnam: USIA saw its role as short-term from the start."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d58",
+   "text": "USIA has, from the beginning, considered its psychological operations (PSYOP) support program in Viet-Nam as short-term in nature."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d88",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: A Saigon opinion survey of May 1970: the rating of the U.S. as a dependable ally at its lowest in thirteen surveys."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d88",
+   "text": "Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d92",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: Notes on Cambodia's 'communications vacuum': keep the American presence small and let Cambodians do as much as possible."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d92",
+   "text": "The Cambodians want to do as much as possible on their own and we should respect that desire."
+  },
+  {
+   "kind": "heading",
+   "text": "Where the audience pushed back: Indonesia, Japan, China and the overseas Chinese (1965–1971)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "These documents record the limits of persuasion as officials saw them: mob attacks on USIS posts, Japanese strains measured in opinion surveys, a USIA film held back so as not to offend Peking, and an audience (the overseas Chinese) proud of China and wary of both camps."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v26",
+   "documentId": "d106",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: USIA's director calls attacks on USIS in Indonesia 'intolerable' and proposes retaliation; the editors' note records a White House aide's view that this was an over-reaction."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v26",
+   "documentId": "d106",
+   "text": "Anti-American activities in Indonesia, particularly those directed against USIS during the last six months, have created a situation that I can describe only as intolerable."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76v19p2",
+   "documentId": "d67",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: USIA's director asks for an NSC review of Japan policy, citing opinion surveys that confirm strains."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v19p2",
+   "documentId": "d67",
+   "text": "public opinion surveys and other assessments of Japanese attitudes have tended to confirm the seriousness of these strains"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d143",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: The East Asia bureau asks USIA not to release a film on Tibet during the opening to China."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d143",
+   "text": "While we do not want to appear as having gone “soft” on Chinese Communism neither do we want to appear anti-Chinese or anti-Peking."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d146",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: USIA's East Asia office proposes 'Psychological Initiatives' for the President's trip to Peking: moon rocks, an astronaut, books."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d146",
+   "text": "by virtue of immense Chinese interest and curiosity about space, could generate favorable opinion toward the U.S. and its scientific accomplishments"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d149",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: A survey of public affairs officers on overseas Chinese attitudes in Southeast Asia after the thaw."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d149",
+   "text": "Although the overseas Chinese appear proud of the achievements of Peking, they are reluctant to accept communist political and economic models."
+  },
+  {
+   "kind": "heading",
+   "text": "After Saigon: credibility as the message (1975–1977)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "After 1975 the officials' assessment turned on one question, whether Asians still believed the United States would stay. Post-by-post reassessments, the Carter administration's call for public diplomacy in Asia, and the Jakarta embassy's reply show what they thought the region's audiences doubted."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: Post-by-post reassessment after the fall of South Vietnam: Japan, Korea, Thailand, the Philippines, Indonesia, Singapore, Malaysia, Hong Kong, Taiwan, Burma, Laos, Australia, New Zealand."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "text": "The American defeat has been in good part written off by the Japanese since the US withdrawal two years ago."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "text": "During this waiting period, programs on U.S. security relations in Asia lack credibility and may in fact do damage to our relations."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "text": "Thais still see us as friends and admire much in the American system."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d2",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: USIS Tokyo and Brussels build exchanges among economic editors: 'gut issues' rather than cultural exchange."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d2",
+   "text": "We are dealing here with gut issues rather than some of the frothier aspects of cultural exchange."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d79",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: USIA's East Asia director: shoring up East Asian confidence in American staying power is real policy."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d79",
+   "text": "shoring up the confidence of East Asians in America’s long-term staying power and positive involvement in the area is real and necessary"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d81",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: Assistant Secretary Holbrooke asks chiefs of mission in East Asia for views on public diplomacy in support of policy (the request Jakarta answered)."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d83",
+   "notes": [
+    "Agent finding, run f12, 2026-10-31: The Jakarta embassy's answer: public diplomacy effective, but a persistent belief that the U.S. is withdrawing, and a human-rights message heard as accusatory."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d83",
+   "text": "We still face deeply implanted and persistent feeling that new administration is “withdrawing” or, at least, “reducing priority” in East Asia."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d83",
+   "text": "seeks to implant American models on other societies"
+  },
+  {
+   "kind": "prose",
+   "text": "Threads this run could not follow: (1) the opinion-survey reports themselves (USIA's research office); FRUS prints summaries of a few, not the surveys; (2) the audiences' own voices, since FRUS prints U.S. records only; (3) 1981 onward, for which no East Asia or public diplomacy volume is in this corpus; (4) Burma, Korea, Australia and New Zealand, which appear mainly inside regional round-ups; (5) Voice of America broadcasting policy toward China and Vietnam, which this run did not separate out; (6) 1956–1961, a gap between the Malaya staff study and the Kennedy-era documents that the chosen searches did not fill."
+  },
+  {
+   "kind": "generated",
+   "generatedBlockType": "archivalSources"
+  }
+ ]
+}

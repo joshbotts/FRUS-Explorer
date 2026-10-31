@@ -1,0 +1,1392 @@
+{
+ "run": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w5",
+ "traceSource": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w5/trace.md",
+ "traceTableLine": 12,
+ "traceRows": 121,
+ "mentions": 125,
+ "counts": {
+  "traced": 100,
+  "weak": 23,
+  "untraced": 2
+ },
+ "list": [
+  {
+   "text": "thirty",
+   "values": [
+    "30"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "About thirty documents, out of roughly 58,000 in 105 volumes, bear on the question."
+  },
+  {
+   "text": "000 in 105",
+   "values": [
+    "000",
+    "105"
+   ],
+   "next": "volume",
+   "kind": "ratio",
+   "class": "untraced",
+   "row": null,
+   "sentence": "About thirty documents, out of roughly 58,000 in 105 volumes, bear on the question."
+  },
+  {
+   "text": "Two",
+   "values": [
+    "2"
+   ],
+   "next": "channel",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "Where FRUS points for the rest.** Two channels lead to archives."
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "I tallied it over the 30 documents I selected."
+  },
+  {
+   "text": "99",
+   "values": [
+    "99"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"tallied ... over the 30 documents\"; \"over the 99 volumes\" | M9 (30 pairs); M10 (99 East Asia volumes)",
+   "sentence": "I tallied it over the 99 volumes on East Asia and the Pacific."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "\"13 of the 30\" (Record Group 59) | M9 (State Department 59 = 9; National Archives 59 = 4; together 13 of 30)",
+   "sentence": "Central files of the Department of State, Record Group 59 (the Department's records at the National Archives): the source of 13 of the 30 documents."
+  },
+  {
+   "text": "13",
+   "values": [
+    "13"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"about one in 13 among the documents of the 1960s\" | Section 9 row; M5 (684 of 8,725 = 1 in 12.8)",
+   "sentence": "Central files of the Department of State, Record Group 59 (the Department's records at the National Archives): the source of 13 of the 30 documents."
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "Central files of the Department of State, Record Group 59 (the Department's records at the National Archives): the source of 13 of the 30 documents."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "\"10 of the 30\" (Record Group 306) | M9 (National Archives 306 = 10 of 30)",
+   "sentence": "Records of the United States Information Agency, Record Group 306, National Archives: the source of 10 of the 30."
+  },
+  {
+   "text": "10",
+   "values": [
+    "10"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"10 of the 30\" (Record Group 306) | M9 (National Archives 306 = 10 of 30)",
+   "sentence": "Records of the United States Information Agency, Record Group 306, National Archives: the source of 10 of the 30."
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "Records of the United States Information Agency, Record Group 306, National Archives: the source of 10 of the 30."
+  },
+  {
+   "text": "WW 257",
+   "values": [
+    "ww257"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Entries \"UD WW 257, UD WW 193, A1-42, P-104 and P-142\" | M11 (RG 306 entries); section 9 row",
+   "sentence": "The source notes cite entries UD WW 257, UD WW 193, A1-42, P-104 and P-142."
+  },
+  {
+   "text": "WW 193",
+   "values": [
+    "ww193"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Entries \"UD WW 257, UD WW 193, A1-42, P-104 and P-142\" | M11 (RG 306 entries); section 9 row",
+   "sentence": "The source notes cite entries UD WW 257, UD WW 193, A1-42, P-104 and P-142."
+  },
+  {
+   "text": "A1-42",
+   "values": [
+    "a1-42"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Entries \"UD WW 257, UD WW 193, A1-42, P-104 and P-142\" | M11 (RG 306 entries); section 9 row",
+   "sentence": "The source notes cite entries UD WW 257, UD WW 193, A1-42, P-104 and P-142."
+  },
+  {
+   "text": "P-104",
+   "values": [
+    "p-104"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Entries \"UD WW 257, UD WW 193, A1-42, P-104 and P-142\" | M11 (RG 306 entries); section 9 row",
+   "sentence": "The source notes cite entries UD WW 257, UD WW 193, A1-42, P-104 and P-142."
+  },
+  {
+   "text": "P-142",
+   "values": [
+    "p-142"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Entries \"UD WW 257, UD WW 193, A1-42, P-104 and P-142\" | M11 (RG 306 entries); section 9 row",
+   "sentence": "The source notes cite entries UD WW 257, UD WW 193, A1-42, P-104 and P-142."
+  },
+  {
+   "text": "1257679",
+   "values": [
+    "1257679"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Office of Policy and Plans, NARA identifier 1257679, 1953–1971, 47 linear feet, partly restricted | M11 (series-facts: NAID 1257679; 47 linear feet; 1953-1971; Restricted - Partly)",
+   "sentence": "Unconfirmed lead for the Agency's files: an Office of Policy and Plans series, NARA identifier 1257679, , 47 linear feet, partly restricted."
+  },
+  {
+   "text": "47",
+   "values": [
+    "47"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Office of Policy and Plans, NARA identifier 1257679, 1953–1971, 47 linear feet, partly restricted | M11 (series-facts: NAID 1257679; 47 linear feet; 1953-1971; Restricted - Partly)",
+   "sentence": "Unconfirmed lead for the Agency's files: an Office of Policy and Plans series, NARA identifier 1257679, , 47 linear feet, partly restricted."
+  },
+  {
+   "text": "5634081",
+   "values": [
+    "5634081"
+   ],
+   "next": "unrestricted",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Executive Secretariat 5634081, 1953–1965, unrestricted | M11",
+   "sentence": "Unconfirmed lead: an Agency Executive Secretariat series, NARA identifier 5634081, , unrestricted."
+  },
+  {
+   "text": "40967113",
+   "values": [
+    "40967113"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Executive Secretariat 40967113, 1961–1966, partly restricted | M11",
+   "sentence": "Unconfirmed lead: an Agency Executive Secretariat series, NARA identifier 40967113, , partly restricted."
+  },
+  {
+   "text": "40967285",
+   "values": [
+    "40967285"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Executive Secretariat 40967285, 1956–1972, partly restricted | M11",
+   "sentence": "Unconfirmed lead: an Agency Executive Secretariat series, NARA identifier 40967285, , partly restricted."
+  },
+  {
+   "text": "567979",
+   "values": [
+    "567979"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Johnson National Security File, NARA identifier 567979; \"3 of the 30\" | M11 (NAID 567979); M9 (Johnson: National Security File 3)",
+   "sentence": "Johnson Library, National Security File, NARA identifier 567979: the source of 3 of the 30."
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Johnson National Security File, NARA identifier 567979; \"3 of the 30\" | M11 (NAID 567979); M9 (Johnson: National Security File 3)",
+   "sentence": "Johnson Library, National Security File, NARA identifier 567979: the source of 3 of the 30."
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "Johnson Library, National Security File, NARA identifier 567979: the source of 3 of the 30."
+  },
+  {
+   "text": "1",
+   "values": [
+    "1"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "Johnson Library, Confidential File: the source of 1 of the 30."
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "Johnson Library, Confidential File: the source of 1 of the 30."
+  },
+  {
+   "text": "50809179",
+   "values": [
+    "50809179"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Papers of Leonard H. Marks, NARA identifier 50809179, \"1 of the 30\", name match only, second Marks collection | M9 (Marks Papers 1); M11 (NAID 50809179; name match only; \"Leonard M. Marks, Jr.\")",
+   "sentence": "Marks, NARA identifier 50809179: the source of 1 of the 30."
+  },
+  {
+   "text": "1",
+   "values": [
+    "1"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "Marks, NARA identifier 50809179: the source of 1 of the 30."
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "Marks, NARA identifier 50809179: the source of 1 of the 30."
+  },
+  {
+   "text": "1",
+   "values": [
+    "1"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "Kennedy Library: the source of 1 of the 30."
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "Kennedy Library: the source of 1 of the 30."
+  },
+  {
+   "text": "1",
+   "values": [
+    "1"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "Nixon presidential materials: the source of 1 of the 30."
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "Nixon presidential materials: the source of 1 of the 30."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "\"13 of the 30\" (Record Group 59) | M9 (State Department 59 = 9; National Archives 59 = 4; together 13 of 30)",
+   "sentence": "Central decimal files of the Department of State, Record Group 59 (files arranged by a subject-number system): cited in about 5,600 of the 8,500 documents that carry any such citation in the East Asia and Pacific volumes."
+  },
+  {
+   "text": "5,600",
+   "values": [
+    "5600"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Central decimal files: \"about 5,600 of the 8,500 documents\" | M10 (8,779 rows in 5,636 documents; 99 volumes: 13,473 rows in 8,471 documents; the 8,471 is documents with any citation row); rounded",
+   "sentence": "Central decimal files of the Department of State, Record Group 59 (files arranged by a subject-number system): cited in about 5,600 of the 8,500 documents that carry any such citation in the East Asia and Pacific volumes."
+  },
+  {
+   "text": "8,500",
+   "values": [
+    "8500"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Central decimal files: \"about 5,600 of the 8,500 documents\" | M10 (8,779 rows in 5,636 documents; 99 volumes: 13,473 rows in 8,471 documents; the 8,471 is documents with any citation row); rounded",
+   "sentence": "Central decimal files of the Department of State, Record Group 59 (files arranged by a subject-number system): cited in about 5,600 of the 8,500 documents that carry any such citation in the East Asia and Pacific volumes."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "cite",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "The footnotes of two of the 30 cite file number 511.00, which falls in the Department's class for international informational and educational relations, cultural affairs and programs."
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "cite",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "The footnotes of two of the 30 cite file number 511.00, which falls in the Department's class for international informational and educational relations, cultural affairs and programs."
+  },
+  {
+   "text": "511.00",
+   "values": [
+    "511.00"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "File number 511.00 in \"two of the 30\"; \"1950–1959 class\" for international informational and educational relations, cultural affairs and programs | M10 (the 30 documents' 7 rows: 511.00 in frus1952-54",
+   "sentence": "The footnotes of two of the 30 cite file number 511.00, which falls in the Department's class for international informational and educational relations, cultural affairs and programs."
+  },
+  {
+   "text": "hundred",
+   "values": [
+    "100"
+   ],
+   "next": "time",
+   "kind": "word",
+   "class": "traced",
+   "row": "Nixon NSC files \"cited several hundred times\" | M10 (782 rows in 539 documents); section 9 row \"several hundred times\"",
+   "sentence": "Nixon Presidential Materials, National Security Council Files: cited several hundred times."
+  },
+  {
+   "text": "567979",
+   "values": [
+    "567979"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Johnson National Security File, NARA identifier 567979; \"3 of the 30\" | M11 (NAID 567979); M9 (Johnson: National Security File 3)",
+   "sentence": "Johnson Library, National Security File, NARA identifier 567979: cited several hundred times."
+  },
+  {
+   "text": "hundred",
+   "values": [
+    "100"
+   ],
+   "next": "time",
+   "kind": "word",
+   "class": "traced",
+   "row": "Nixon NSC files \"cited several hundred times\" | M10 (782 rows in 539 documents); section 9 row \"several hundred times\"",
+   "sentence": "Johnson Library, National Security File, NARA identifier 567979: cited several hundred times."
+  },
+  {
+   "text": "1164",
+   "values": [
+    "1164"
+   ],
+   "next": "cited",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Kennedy National Security Files, NARA identifier 1164, \"about 150 documents\" | M10 (181 rows in 146 documents); M11 (JFK-4 National Security Files NAID 1164)",
+   "sentence": "Kennedy Library, National Security Files, NARA identifier 1164: cited in about 150 documents."
+  },
+  {
+   "text": "150",
+   "values": [
+    "150"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Kennedy National Security Files, NARA identifier 1164, \"about 150 documents\" | M10 (181 rows in 146 documents); M11 (JFK-4 National Security Files NAID 1164)",
+   "sentence": "Kennedy Library, National Security Files, NARA identifier 1164: cited in about 150 documents."
+  },
+  {
+   "text": "80",
+   "values": [
+    "80"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Carter Library \"about 80 documents\"; Brzezinski Collection, NARA identifier 1104 | M10 (117 rows in 81 documents); M11 (NAID 1104)",
+   "sentence": "Jimmy Carter Library, national security affairs files: cited in about 80 documents."
+  },
+  {
+   "text": "1104",
+   "values": [
+    "1104"
+   ],
+   "next": "nearest",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Carter Library \"about 80 documents\"; Brzezinski Collection, NARA identifier 1104 | M10 (117 rows in 81 documents); M11 (NAID 1104)",
+   "sentence": "The library's catalogue lists a Zbigniew Brzezinski Collection, NARA identifier 1104, the nearest catalogue entry."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351: \"Records Relating to National Security Council Policy Papers\", Record Group 59, entry A1 1586E, NARA identifier 2839192, 1947–1979, 26 linear feet (26 linear feet 3 inches), partly restr",
+   "sentence": "Department of State lot file 63 D 351 (a lot file is a block of records the Department transferred to the Archives as a unit), \"Records Relating to National Security Council Policy Papers\":"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "\"13 of the 30\" (Record Group 59) | M9 (State Department 59 = 9; National Archives 59 = 4; together 13 of 30)",
+   "sentence": "Record Group 59, entry A1 1586E, NARA identifier 2839192, , 26 linear feet, partly restricted."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 63 D 351: \"Records Relating to National Security Council Policy Papers\", Record Group 59, entry A1 1586E, NARA identifier 2839192, 1947–1979, 26 linear feet (26 linear feet 3 inches), partly restr",
+   "sentence": "Record Group 59, entry A1 1586E, NARA identifier 2839192, , 26 linear feet, partly restricted."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 63 D 351: \"Records Relating to National Security Council Policy Papers\", Record Group 59, entry A1 1586E, NARA identifier 2839192, 1947–1979, 26 linear feet (26 linear feet 3 inches), partly restr",
+   "sentence": "Record Group 59, entry A1 1586E, NARA identifier 2839192, , 26 linear feet, partly restricted."
+  },
+  {
+   "text": "26",
+   "values": [
+    "26"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 63 D 351: \"Records Relating to National Security Council Policy Papers\", Record Group 59, entry A1 1586E, NARA identifier 2839192, 1947–1979, 26 linear feet (26 linear feet 3 inches), partly restr",
+   "sentence": "Record Group 59, entry A1 1586E, NARA identifier 2839192, , 26 linear feet, partly restricted."
+  },
+  {
+   "text": "ninety",
+   "values": [
+    "90"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "Lot 63 D 351 \"cited in about ninety documents\" | M10 (120 rows in 88 documents)",
+   "sentence": "It is cited in about ninety documents."
+  },
+  {
+   "text": "66 D 95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 66 D 95 \"resolves to the same identifier ... cited in about 170\" | M11 (66D95 resolves to NAID 2839192); M10 (206 rows in 169 documents)",
+   "sentence": "A second lot, 66 D 95, resolves to the same identifier and is cited in about 170."
+  },
+  {
+   "text": "170",
+   "values": [
+    "170"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 66 D 95 \"resolves to the same identifier ... cited in about 170\" | M11 (66D95 resolves to NAID 2839192); M10 (206 rows in 169 documents)",
+   "sentence": "A second lot, 66 D 95, resolves to the same identifier and is cited in about 170."
+  },
+  {
+   "text": "93 D 82",
+   "values": [
+    "93d82"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 93 D 82: \"Vietnam Special Caption Messages\", Record Group 59, entry P 38, NARA identifier 2225592, 1962–1972, closed in full | M11 (Restricted - Fully); M10 (listed, 79 rows in 52 documents; not s",
+   "sentence": "Department of State lot file 93 D 82, \"Vietnam Special Caption Messages\":"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "\"13 of the 30\" (Record Group 59) | M9 (State Department 59 = 9; National Archives 59 = 4; together 13 of 30)",
+   "sentence": "Record Group 59, entry P 38, NARA identifier 2225592, , closed in full."
+  },
+  {
+   "text": "P 38",
+   "values": [
+    "p38"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 93 D 82: \"Vietnam Special Caption Messages\", Record Group 59, entry P 38, NARA identifier 2225592, 1962–1972, closed in full | M11 (Restricted - Fully); M10 (listed, 79 rows in 52 documents; not s",
+   "sentence": "Record Group 59, entry P 38, NARA identifier 2225592, , closed in full."
+  },
+  {
+   "text": "2225592",
+   "values": [
+    "2225592"
+   ],
+   "next": "closed",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 93 D 82: \"Vietnam Special Caption Messages\", Record Group 59, entry P 38, NARA identifier 2225592, 1962–1972, closed in full | M11 (Restricted - Fully); M10 (listed, 79 rows in 52 documents; not s",
+   "sentence": "Record Group 59, entry P 38, NARA identifier 2225592, , closed in full."
+  },
+  {
+   "text": "53 D 413",
+   "values": [
+    "53d413"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 53 D 413: \"Military Telegrams Relating to Korea\", Record Group 59, entry A1 1248, NARA identifier 2127212, 1951–1954, partly restricted | M11",
+   "sentence": "Department of State lot file 53 D 413, \"Military Telegrams Relating to Korea\":"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "\"13 of the 30\" (Record Group 59) | M9 (State Department 59 = 9; National Archives 59 = 4; together 13 of 30)",
+   "sentence": "Record Group 59, entry A1 1248, NARA identifier 2127212, , partly restricted."
+  },
+  {
+   "text": "A1 1248",
+   "values": [
+    "a11248"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 53 D 413: \"Military Telegrams Relating to Korea\", Record Group 59, entry A1 1248, NARA identifier 2127212, 1951–1954, partly restricted | M11",
+   "sentence": "Record Group 59, entry A1 1248, NARA identifier 2127212, , partly restricted."
+  },
+  {
+   "text": "2127212",
+   "values": [
+    "2127212"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 53 D 413: \"Military Telegrams Relating to Korea\", Record Group 59, entry A1 1248, NARA identifier 2127212, 1951–1954, partly restricted | M11",
+   "sentence": "Record Group 59, entry A1 1248, NARA identifier 2127212, , partly restricted."
+  },
+  {
+   "text": "69 D 260",
+   "values": [
+    "69d260"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 69 D 260: \"Subject Files\", Bureau of Educational and Cultural Affairs, Record Group 59, entries UD-UP 174 to 177, NARA identifier 27022536, 1961–1969, 11 linear feet (11 linear feet 3 inches), unr",
+   "sentence": "Department of State lot file 69 D 260, \"Subject Files\" of the Bureau of Educational and Cultural Affairs:"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "\"13 of the 30\" (Record Group 59) | M9 (State Department 59 = 9; National Archives 59 = 4; together 13 of 30)",
+   "sentence": "Record Group 59, entries UD-UP 174 to 177, NARA identifier 27022536, , 11 linear feet, unrestricted."
+  },
+  {
+   "text": "UP 174",
+   "values": [
+    "up174"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 69 D 260: \"Subject Files\", Bureau of Educational and Cultural Affairs, Record Group 59, entries UD-UP 174 to 177, NARA identifier 27022536, 1961–1969, 11 linear feet (11 linear feet 3 inches), unr",
+   "sentence": "Record Group 59, entries UD-UP 174 to 177, NARA identifier 27022536, , 11 linear feet, unrestricted."
+  },
+  {
+   "text": "177",
+   "values": [
+    "177"
+   ],
+   "next": "nara",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 69 D 260: \"Subject Files\", Bureau of Educational and Cultural Affairs, Record Group 59, entries UD-UP 174 to 177, NARA identifier 27022536, 1961–1969, 11 linear feet (11 linear feet 3 inches), unr",
+   "sentence": "Record Group 59, entries UD-UP 174 to 177, NARA identifier 27022536, , 11 linear feet, unrestricted."
+  },
+  {
+   "text": "27022536",
+   "values": [
+    "27022536"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 69 D 260: \"Subject Files\", Bureau of Educational and Cultural Affairs, Record Group 59, entries UD-UP 174 to 177, NARA identifier 27022536, 1961–1969, 11 linear feet (11 linear feet 3 inches), unr",
+   "sentence": "Record Group 59, entries UD-UP 174 to 177, NARA identifier 27022536, , 11 linear feet, unrestricted."
+  },
+  {
+   "text": "11",
+   "values": [
+    "11"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Lot 69 D 260: \"Subject Files\", Bureau of Educational and Cultural Affairs, Record Group 59, entries UD-UP 174 to 177, NARA identifier 27022536, 1961–1969, 11 linear feet (11 linear feet 3 inches), unr",
+   "sentence": "Record Group 59, entries UD-UP 174 to 177, NARA identifier 27022536, , 11 linear feet, unrestricted."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "\"10 of the 30\" (Record Group 306) | M9 (National Archives 306 = 10 of 30)",
+   "sentence": "It cannot see citations to Record Group 306, so it is silent on the Agency's own files."
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "The footnotes of the 30 documents themselves cite seven times in all: four times the decimal file above, once a Department lot (71 D 273), and twice a Johnson Library file."
+  },
+  {
+   "text": "seven",
+   "values": [
+    "7"
+   ],
+   "next": "time",
+   "kind": "word",
+   "class": "weak",
+   "row": "Kennedy Library \"1 of the 30\"; Nixon materials \"1 of the 30\" | M9 (presidential libraries 7 of 30: Johnson 5, Kennedy 1, Nixon 1)",
+   "sentence": "The footnotes of the 30 documents themselves cite seven times in all: four times the decimal file above, once a Department lot (71 D 273), and twice a Johnson Library file."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "time",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"seven\" citations in the 30 documents: four (decimal 511.00: once and three times), once (lot 71 D 273), twice (two Johnson files) | M10 (the 30 documents themselves: 7 rows)",
+   "sentence": "The footnotes of the 30 documents themselves cite seven times in all: four times the decimal file above, once a Department lot (71 D 273), and twice a Johnson Library file."
+  },
+  {
+   "text": "71 D 273",
+   "values": [
+    "71d273"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "\"seven\" citations in the 30 documents: four (decimal 511.00: once and three times), once (lot 71 D 273), twice (two Johnson files) | M10 (the 30 documents themselves: 7 rows)",
+   "sentence": "The footnotes of the 30 documents themselves cite seven times in all: four times the decimal file above, once a Department lot (71 D 273), and twice a Johnson Library file."
+  },
+  {
+   "text": "twice",
+   "values": [
+    "2"
+   ],
+   "next": "johnson",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "The footnotes of the 30 documents themselves cite seven times in all: four times the decimal file above, once a Department lot (71 D 273), and twice a Johnson Library file."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"105 of the 553 volumes\"; \"99 on East Asia and the Pacific\"; \"six whose titles name public diplomacy\" | M1 (553), M3 (rule: 99 + six = 105)",
+   "sentence": "I searched all 553 volumes for the phrase \"soft power\" and found it in none of 321,749 documents."
+  },
+  {
+   "text": "321,749",
+   "values": [
+    "321749"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"all 553 volumes\"; \"none of 321,749 documents\" for \"soft power\" | M1 (553 volumes; 321,749 documents); M2 and section 7 (\"soft power\": 0 documents)",
+   "sentence": "I searched all 553 volumes for the phrase \"soft power\" and found it in none of 321,749 documents."
+  },
+  {
+   "text": "552",
+   "values": [
+    "552"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Department of State\" in \"552 of the 553 volumes\"; nonsense string in none | M2 (positive control 552 of 553; negative control 0 in all 553)",
+   "sentence": "The same search found \"Department of State\" in 552 of the 553 volumes and a nonsense string in none, so the search works and the phrase is simply not there."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"105 of the 553 volumes\"; \"99 on East Asia and the Pacific\"; \"six whose titles name public diplomacy\" | M1 (553), M3 (rule: 99 + six = 105)",
+   "sentence": "The same search found \"Department of State\" in 552 of the 553 volumes and a nonsense string in none, so the search works and the phrase is simply not there."
+  },
+  {
+   "text": "99",
+   "values": [
+    "99"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Boxer indemnity\" in \"99 documents\", \"mostly from the 1930s\" | M8 (99 documents; 1930s 81, 1940s 17, 1950s 1)",
+   "sentence": "The edition is thin before the war: the phrase \"Boxer indemnity\" occurs in 99 documents in the East Asia volumes, mostly from the , and the archival indexes reach only 11 of 695 series for the years before ."
+  },
+  {
+   "text": "11",
+   "values": [
+    "11"
+   ],
+   "next": "serie",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"only 11 of 695 series for the years before 1940\" | M8, M12 (the guide: 11 of 695); collection's closing prose",
+   "sentence": "The edition is thin before the war: the phrase \"Boxer indemnity\" occurs in 99 documents in the East Asia volumes, mostly from the , and the archival indexes reach only 11 of 695 series for the years before ."
+  },
+  {
+   "text": "695",
+   "values": [
+    "695"
+   ],
+   "next": "serie",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"only 11 of 695 series for the years before 1940\" | M8, M12 (the guide: 11 of 695); collection's closing prose",
+   "sentence": "The edition is thin before the war: the phrase \"Boxer indemnity\" occurs in 99 documents in the East Asia volumes, mostly from the , and the archival indexes reach only 11 of 695 series for the years before ."
+  },
+  {
+   "text": "105",
+   "values": [
+    "105"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"roughly 58,000 documents\" in \"105 volumes\" (Part 1, Scope, Methods) | M3 (58,244 non-apparatus documents; 105 volumes)",
+   "sentence": "Whether the officials' beliefs about Asian audiences were accurate is a question the edition cannot settle. **Scope.** I searched 105 of the 553 volumes: 99 on East Asia and the Pacific, covering to , and six whose titles name public diplomacy or the foreign information program."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"105 of the 553 volumes\"; \"99 on East Asia and the Pacific\"; \"six whose titles name public diplomacy\" | M1 (553), M3 (rule: 99 + six = 105)",
+   "sentence": "Whether the officials' beliefs about Asian audiences were accurate is a question the edition cannot settle. **Scope.** I searched 105 of the 553 volumes: 99 on East Asia and the Pacific, covering to , and six whose titles name public diplomacy or the foreign information program."
+  },
+  {
+   "text": "99",
+   "values": [
+    "99"
+   ],
+   "next": "on",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"105 of the 553 volumes\"; \"99 on East Asia and the Pacific\"; \"six whose titles name public diplomacy\" | M1 (553), M3 (rule: 99 + six = 105)",
+   "sentence": "Whether the officials' beliefs about Asian audiences were accurate is a question the edition cannot settle. **Scope.** I searched 105 of the 553 volumes: 99 on East Asia and the Pacific, covering to , and six whose titles name public diplomacy or the foreign information program."
+  },
+  {
+   "text": "six",
+   "values": [
+    "6"
+   ],
+   "next": "whose",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"105 of the 553 volumes\"; \"99 on East Asia and the Pacific\"; \"six whose titles name public diplomacy\" | M1 (553), M3 (rule: 99 + six = 105)",
+   "sentence": "Whether the officials' beliefs about Asian audiences were accurate is a question the edition cannot settle. **Scope.** I searched 105 of the 553 volumes: 99 on East Asia and the Pacific, covering to , and six whose titles name public diplomacy or the foreign information program."
+  },
+  {
+   "text": "58,000",
+   "values": [
+    "58000"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"roughly 58,000 documents\" in \"105 volumes\" (Part 1, Scope, Methods) | M3 (58,244 non-apparatus documents; 105 volumes)",
+   "sentence": "They hold roughly 58,000 documents once the volumes' front matter and the editors' notes are set aside, and I left every other volume out, South Asia and the Near East among them. ## Decisions this needs from you **What counts as soft power.** The term is not the officials'."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "aid",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "I counted only information, cultural, educational and psychological programs aimed at the region, so economic aid and military presence are left out as instruments; counting them would turn the question into one about aid and bases, which this set does not address. **What the region includes.** I took China, Japan, Korea, Southeast Asia and the Pacific and left out South Asia; if you want India's audience, the search must be widened to its volumes. **What counts as policymaker.** I included field officers and the Agency's researchers as well as presidents, secretaries and ambassadors; restricting it to the senior group would drop the field reports on which much of the evidence on effectiveness rests. **What counts as effective.** I took the officials' own verdicts and the Agency's surveys, because the edition prints no outcome measure; a stricter rule would leave only the surveys. **Whose beliefs count as evidence.** I treat what an official believed about an audience as the official's belief and never as evidence of the audience's views."
+  },
+  {
+   "text": "75,000",
+   "values": [
+    "75000"
+   ],
+   "next": "to",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Finding 2: weekly film audiences of \"75,000 to 100,000\" and library attendance \"about 200,000 a year\" | Section 6 closing paragraph (audience total 75 to 100,000 weekly; library attendance approximate",
+   "sentence": "In the Saigon embassy answered a Senate inquiry that films and the other programs must be assumed effective, and it reported weekly film audiences of 75,000 to 100,000 and library attendance of about 200,000 a year ."
+  },
+  {
+   "text": "100,000",
+   "values": [
+    "100000"
+   ],
+   "next": "library",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Finding 2: weekly film audiences of \"75,000 to 100,000\" and library attendance \"about 200,000 a year\" | Section 6 closing paragraph (audience total 75 to 100,000 weekly; library attendance approximate",
+   "sentence": "In the Saigon embassy answered a Senate inquiry that films and the other programs must be assumed effective, and it reported weekly film audiences of 75,000 to 100,000 and library attendance of about 200,000 a year ."
+  },
+  {
+   "text": "200,000",
+   "values": [
+    "200000"
+   ],
+   "next": "year",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Finding 2: weekly film audiences of \"75,000 to 100,000\" and library attendance \"about 200,000 a year\" | Section 6 closing paragraph (audience total 75 to 100,000 weekly; library attendance approximate",
+   "sentence": "In the Saigon embassy answered a Senate inquiry that films and the other programs must be assumed effective, and it reported weekly film audiences of 75,000 to 100,000 and library attendance of about 200,000 a year ."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "strand",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "A plan for Thailand treated information as one strand of a wider psychological program that included the ethnic ties of Thai peoples across the region ."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "This is four documents from a decade in which about 250 documents name the Agency or its posts. > “Both Pignon, the French High Commissioner for Indochina, and MacDonald, Commissioner for the United Kingdom in Southeast Asia, believe that the Asians are inclined by their psychology to wait and see who is winning.” > “All factors recited must be viewed as effective though degree cannot be accurately measured.” > “In the Far East USIA was forced to deal with mixed emotions regarding the use of atomic weapons against Asiatic peoples, and to counter communist propaganda designed to stir up race hatred.” ### In Vietnam the message became a war program, and the Agency's own research said the message was not the problem ( ) From the Agency took over the Saigon government's information effort and the American psychological-warfare effort."
+  },
+  {
+   "text": "250",
+   "values": [
+    "250"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Finding 2: \"about 250 documents name the Agency or its posts\" in the decade; \"four documents\" | M5 (1950s: 249); section 5 (finding 2: four documents)",
+   "sentence": "This is four documents from a decade in which about 250 documents name the Agency or its posts. > “Both Pignon, the French High Commissioner for Indochina, and MacDonald, Commissioner for the United Kingdom in Southeast Asia, believe that the Asians are inclined by their psychology to wait and see who is winning.” > “All factors recited must be viewed as effective though degree cannot be accurately measured.” > “In the Far East USIA was forced to deal with mixed emotions regarding the use of atomic weapons against Asiatic peoples, and to counter communist propaganda designed to stir up race hatred.” ### In Vietnam the message became a war program, and the Agency's own research said the message was not the problem ( ) From the Agency took over the Saigon government's information effort and the American psychological-warfare effort."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "author",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "This finding rests on the memoranda of four authors. > “I came to the conclusion that the weakest part of the war operation, both on our part and that of the Government of South Viet-Nam, is in the field of information and psychological warfare.” > “The number one problem in Vietnam is motivation.” > “The USIA researchers conclude that the population is largely apathetic and is primarily interested in ending the twenty years of war; they care less as to which side will win, although there appears to be a substantial degree of approval of the Viet Cong.” ### The audience answered back: race, imperialism and the limits of persuasion ( ) Officials expected Asian audiences to read American actions through race, colonialism and fear of involvement."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "problem",
+   "kind": "word",
+   "class": "traced",
+   "row": "Block, Finding 3: \"The number one problem in Vietnam is motivation.\" | Q11 (frus1917-72PubDipv07/d32)",
+   "sentence": "This finding rests on the memoranda of four authors. > “I came to the conclusion that the weakest part of the war operation, both on our part and that of the Government of South Viet-Nam, is in the field of information and psychological warfare.” > “The number one problem in Vietnam is motivation.” > “The USIA researchers conclude that the population is largely apathetic and is primarily interested in ending the twenty years of war; they care less as to which side will win, although there appears to be a substantial degree of approval of the Viet Cong.” ### The audience answered back: race, imperialism and the limits of persuasion ( ) Officials expected Asian audiences to read American actions through race, colonialism and fear of involvement."
+  },
+  {
+   "text": "twenty",
+   "values": [
+    "20"
+   ],
+   "next": "year",
+   "kind": "word",
+   "class": "untraced",
+   "row": null,
+   "sentence": "This finding rests on the memoranda of four authors. > “I came to the conclusion that the weakest part of the war operation, both on our part and that of the Government of South Viet-Nam, is in the field of information and psychological warfare.” > “The number one problem in Vietnam is motivation.” > “The USIA researchers conclude that the population is largely apathetic and is primarily interested in ending the twenty years of war; they care less as to which side will win, although there appears to be a substantial degree of approval of the Viet Cong.” ### The audience answered back: race, imperialism and the limits of persuasion ( ) Officials expected Asian audiences to read American actions through race, colonialism and fear of involvement."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "official",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "In one official granted that smaller friendly countries had some justification for feeling taken for granted ."
+  },
+  {
+   "text": "eight",
+   "values": [
+    "8"
+   ],
+   "next": "countrie",
+   "kind": "word",
+   "class": "traced",
+   "row": "Finding 4: \"survey of eight countries\" after the Cambodia incursion in 1970 | Section 9 row (polls: eight in 1970)",
+   "sentence": "An Agency survey of eight countries after the incursion into Cambodia in recorded the change in confidence . > “Similarly, the number of persons naming the United States as one of their three favorite countries has dropped from 52 percent to 38 percent since last December and those naming the United States as a country they dislike has risen from 4 percent to 8 percent.” > “We shall soon have nothing worthwhile left in the way of an information operation.” > “The change in confidence in U.S. ability to deal wisely with world problems, from before to after U.S. entry into Cambodia, is the most dramatic trend in the present study.” ### What field officers thought worked: elites, personal contact and the state of bilateral relations ( ) In the Far East area office summarized its field officers' replies."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "their",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "An Agency survey of eight countries after the incursion into Cambodia in recorded the change in confidence . > “Similarly, the number of persons naming the United States as one of their three favorite countries has dropped from 52 percent to 38 percent since last December and those naming the United States as a country they dislike has risen from 4 percent to 8 percent.” > “We shall soon have nothing worthwhile left in the way of an information operation.” > “The change in confidence in U.S. ability to deal wisely with world problems, from before to after U.S. entry into Cambodia, is the most dramatic trend in the present study.” ### What field officers thought worked: elites, personal contact and the state of bilateral relations ( ) In the Far East area office summarized its field officers' replies."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "favorite",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"roughly 58,000 documents\" in \"105 volumes\" (Part 1, Scope, Methods) | M3 (58,244 non-apparatus documents; 105 volumes)",
+   "sentence": "An Agency survey of eight countries after the incursion into Cambodia in recorded the change in confidence . > “Similarly, the number of persons naming the United States as one of their three favorite countries has dropped from 52 percent to 38 percent since last December and those naming the United States as a country they dislike has risen from 4 percent to 8 percent.” > “We shall soon have nothing worthwhile left in the way of an information operation.” > “The change in confidence in U.S. ability to deal wisely with world problems, from before to after U.S. entry into Cambodia, is the most dramatic trend in the present study.” ### What field officers thought worked: elites, personal contact and the state of bilateral relations ( ) In the Far East area office summarized its field officers' replies."
+  },
+  {
+   "text": "52 percent",
+   "values": [
+    "52"
+   ],
+   "next": "to",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Lot 93 D 82: \"Vietnam Special Caption Messages\", Record Group 59, entry P 38, NARA identifier 2225592, 1962–1972, closed in full | M11 (Restricted - Fully); M10 (listed, 79 rows in 52 documents; not s",
+   "sentence": "An Agency survey of eight countries after the incursion into Cambodia in recorded the change in confidence . > “Similarly, the number of persons naming the United States as one of their three favorite countries has dropped from 52 percent to 38 percent since last December and those naming the United States as a country they dislike has risen from 4 percent to 8 percent.” > “We shall soon have nothing worthwhile left in the way of an information operation.” > “The change in confidence in U.S. ability to deal wisely with world problems, from before to after U.S. entry into Cambodia, is the most dramatic trend in the present study.” ### What field officers thought worked: elites, personal contact and the state of bilateral relations ( ) In the Far East area office summarized its field officers' replies."
+  },
+  {
+   "text": "38 percent",
+   "values": [
+    "38"
+   ],
+   "next": "since",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Lot 93 D 82: \"Vietnam Special Caption Messages\", Record Group 59, entry P 38, NARA identifier 2225592, 1962–1972, closed in full | M11 (Restricted - Fully); M10 (listed, 79 rows in 52 documents; not s",
+   "sentence": "An Agency survey of eight countries after the incursion into Cambodia in recorded the change in confidence . > “Similarly, the number of persons naming the United States as one of their three favorite countries has dropped from 52 percent to 38 percent since last December and those naming the United States as a country they dislike has risen from 4 percent to 8 percent.” > “We shall soon have nothing worthwhile left in the way of an information operation.” > “The change in confidence in U.S. ability to deal wisely with world problems, from before to after U.S. entry into Cambodia, is the most dramatic trend in the present study.” ### What field officers thought worked: elites, personal contact and the state of bilateral relations ( ) In the Far East area office summarized its field officers' replies."
+  },
+  {
+   "text": "4 percent",
+   "values": [
+    "4"
+   ],
+   "next": "to",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Block, Finding 4: \"Similarly, the number of persons ... 4 percent to 8 percent.\" | Q23 (frus1964-68v29p2/d46)",
+   "sentence": "An Agency survey of eight countries after the incursion into Cambodia in recorded the change in confidence . > “Similarly, the number of persons naming the United States as one of their three favorite countries has dropped from 52 percent to 38 percent since last December and those naming the United States as a country they dislike has risen from 4 percent to 8 percent.” > “We shall soon have nothing worthwhile left in the way of an information operation.” > “The change in confidence in U.S. ability to deal wisely with world problems, from before to after U.S. entry into Cambodia, is the most dramatic trend in the present study.” ### What field officers thought worked: elites, personal contact and the state of bilateral relations ( ) In the Far East area office summarized its field officers' replies."
+  },
+  {
+   "text": "8 percent",
+   "values": [
+    "8"
+   ],
+   "next": "we",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"Boxer indemnity\" in \"99 documents\", \"mostly from the 1930s\" | M8 (99 documents; 1930s 81, 1940s 17, 1950s 1)",
+   "sentence": "An Agency survey of eight countries after the incursion into Cambodia in recorded the change in confidence . > “Similarly, the number of persons naming the United States as one of their three favorite countries has dropped from 52 percent to 38 percent since last December and those naming the United States as a country they dislike has risen from 4 percent to 8 percent.” > “We shall soon have nothing worthwhile left in the way of an information operation.” > “The change in confidence in U.S. ability to deal wisely with world problems, from before to after U.S. entry into Cambodia, is the most dramatic trend in the present study.” ### What field officers thought worked: elites, personal contact and the state of bilateral relations ( ) In the Far East area office summarized its field officers' replies."
+  },
+  {
+   "text": "six",
+   "values": [
+    "6"
+   ],
+   "next": "countrie",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"105 of the 553 volumes\"; \"99 on East Asia and the Pacific\"; \"six whose titles name public diplomacy\" | M1 (553), M3 (rule: 99 + six = 105)",
+   "sentence": "A survey of six countries found that the moon landing had scarcely any effect in Japan and the Philippines ."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "traced",
+   "row": "Finding 6: \"One volume supplies half the documents of the 1970s that name the Agency\" | M5 (1970s: 121 of 240 in frus1977-80v30) and flag (not a trend)",
+   "sentence": "One volume supplies half the documents of the that name the Agency, so I read this as a sample and not as a trend. > “I don’t think there should be any serious doubt that this Administration believes shoring up the confidence of East Asians in America’s long-term staying power and positive involvement in the area is real and necessary.” > “I would welcome any comments that you, in collaboration with your PAOs, might have on the future role of public diplomacy in support of our policies in Asia.” > “We still face deeply implanted and persistent feeling that new administration is “withdrawing” or, at least, “reducing priority” in East Asia.” ## How this was done I took the index of the whole edition, which holds 553 volumes, as the universe, and ran a control first: a phrase found in nearly every volume, and a nonsense string found in none."
+  },
+  {
+   "text": "half",
+   "values": [
+    "0.5"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "Finding 6: \"One volume supplies half the documents of the 1970s that name the Agency\" | M5 (1970s: 121 of 240 in frus1977-80v30) and flag (not a trend)",
+   "sentence": "One volume supplies half the documents of the that name the Agency, so I read this as a sample and not as a trend. > “I don’t think there should be any serious doubt that this Administration believes shoring up the confidence of East Asians in America’s long-term staying power and positive involvement in the area is real and necessary.” > “I would welcome any comments that you, in collaboration with your PAOs, might have on the future role of public diplomacy in support of our policies in Asia.” > “We still face deeply implanted and persistent feeling that new administration is “withdrawing” or, at least, “reducing priority” in East Asia.” ## How this was done I took the index of the whole edition, which holds 553 volumes, as the universe, and ran a control first: a phrase found in nearly every volume, and a nonsense string found in none."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"105 of the 553 volumes\"; \"99 on East Asia and the Pacific\"; \"six whose titles name public diplomacy\" | M1 (553), M3 (rule: 99 + six = 105)",
+   "sentence": "One volume supplies half the documents of the that name the Agency, so I read this as a sample and not as a trend. > “I don’t think there should be any serious doubt that this Administration believes shoring up the confidence of East Asians in America’s long-term staying power and positive involvement in the area is real and necessary.” > “I would welcome any comments that you, in collaboration with your PAOs, might have on the future role of public diplomacy in support of our policies in Asia.” > “We still face deeply implanted and persistent feeling that new administration is “withdrawing” or, at least, “reducing priority” in East Asia.” ## How this was done I took the index of the whole edition, which holds 553 volumes, as the universe, and ran a control first: a phrase found in nearly every volume, and a nonsense string found in none."
+  },
+  {
+   "text": "105",
+   "values": [
+    "105"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"roughly 58,000 documents\" in \"105 volumes\" (Part 1, Scope, Methods) | M3 (58,244 non-apparatus documents; 105 volumes)",
+   "sentence": "I chose 105 volumes by their printed titles, searched them with the officials' own words, and dated each document by its own date and not by its volume's year."
+  },
+  {
+   "text": "1,500",
+   "values": [
+    "1500"
+   ],
+   "next": "candidate",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Methods: \"re-read all of about 1,500 candidate documents and kept about 1,300\" | M4 (1,538 candidates; 1,329 confirmed)",
+   "sentence": "I therefore re-read all of about 1,500 candidate documents and kept about 1,300 that name the Agency or its posts."
+  },
+  {
+   "text": "1,300",
+   "values": [
+    "1300"
+   ],
+   "next": "that",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Methods: \"re-read all of about 1,500 candidate documents and kept about 1,300\" | M4 (1,538 candidates; 1,329 confirmed)",
+   "sentence": "I therefore re-read all of about 1,500 candidate documents and kept about 1,300 that name the Agency or its posts."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "That is about one document in 44 in the scope, and about one in 13 among the documents of the , a rate inflated by the six information volumes, which are dense in the Agency by construction."
+  },
+  {
+   "text": "44",
+   "values": [
+    "44"
+   ],
+   "next": "scope",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"about one document in 44\" | Section 9 row (1,329 of 58,244 = 1 in 43.8)",
+   "sentence": "That is about one document in 44 in the scope, and about one in 13 among the documents of the , a rate inflated by the six information volumes, which are dense in the Agency by construction."
+  },
+  {
+   "text": "about one in 13",
+   "values": [
+    "1",
+    "13"
+   ],
+   "next": "among",
+   "kind": "ratio",
+   "class": "traced",
+   "row": "\"about one in 13 among the documents of the 1960s\" | Section 9 row; M5 (684 of 8,725 = 1 in 12.8)",
+   "sentence": "That is about one document in 44 in the scope, and about one in 13 among the documents of the , a rate inflated by the six information volumes, which are dense in the Agency by construction."
+  },
+  {
+   "text": "six",
+   "values": [
+    "6"
+   ],
+   "next": "information",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"inflated by the six information volumes\" | M5 flags (the six volumes are in the denominator and dense in the Agency by construction)",
+   "sentence": "That is about one document in 44 in the scope, and about one in 13 among the documents of the , a rate inflated by the six information volumes, which are dense in the Agency by construction."
+  },
+  {
+   "text": "62",
+   "values": [
+    "62"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"retrieved 62 documents in full, selected 30, read 19 of the 30 in full and 11 in part\" | Section 4 (62 retrieved whole; complete text of 19 and part of 11)",
+   "sentence": "I retrieved 62 documents in full, selected 30, and read 19 of the 30 in full and 11 in the opening and the passages around key words."
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "read",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"retrieved 62 documents in full, selected 30, read 19 of the 30 in full and 11 in part\" | Section 4 (62 retrieved whole; complete text of 19 and part of 11)",
+   "sentence": "I retrieved 62 documents in full, selected 30, and read 19 of the 30 in full and 11 in the opening and the passages around key words."
+  },
+  {
+   "text": "19",
+   "values": [
+    "19"
+   ],
+   "next": "full",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"retrieved 62 documents in full, selected 30, read 19 of the 30 in full and 11 in part\" | Section 4 (62 retrieved whole; complete text of 19 and part of 11)",
+   "sentence": "I retrieved 62 documents in full, selected 30, and read 19 of the 30 in full and 11 in the opening and the passages around key words."
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "full",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"retrieved 62 documents in full, selected 30, read 19 of the 30 in full and 11 in part\" | Section 4 (62 retrieved whole; complete text of 19 and part of 11)",
+   "sentence": "I retrieved 62 documents in full, selected 30, and read 19 of the 30 in full and 11 in the opening and the passages around key words."
+  },
+  {
+   "text": "11",
+   "values": [
+    "11"
+   ],
+   "next": "opening",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Entries \"UD WW 257, UD WW 193, A1-42, P-104 and P-142\" | M11 (RG 306 entries); section 9 row",
+   "sentence": "I retrieved 62 documents in full, selected 30, and read 19 of the 30 in full and 11 in the opening and the passages around key words."
+  },
+  {
+   "text": "Three",
+   "values": [
+    "3"
+   ],
+   "next": "i",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"Three of the 30 I reached first through a ranking and a map\" | Section 8 (final paragraph: two neighbours, one map cluster); section 9 row \"three of the thirty\"",
+   "sentence": "Three of the 30 I reached first through a ranking and a map of documents by closeness in meaning, which misses about one in ten of the true neighbours;"
+  },
+  {
+   "text": "30",
+   "values": [
+    "30"
+   ],
+   "next": "i",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"About thirty documents\" (Part 1, Part 2) and \"the 30 documents I selected\" | Section 5; section 4 (30 documents of the collection); M9 (30 pairs)",
+   "sentence": "Three of the 30 I reached first through a ranking and a map of documents by closeness in meaning, which misses about one in ten of the true neighbours;"
+  },
+  {
+   "text": "about one in ten",
+   "values": [
+    "1",
+    "10"
+   ],
+   "next": "true",
+   "kind": "ratio",
+   "class": "traced",
+   "row": "\"misses about one in ten of the true neighbours\" | Section 8 (measuredRecallAt10 = 0.9021, about one of ten true neighbours absent)",
+   "sentence": "Three of the 30 I reached first through a ranking and a map of documents by closeness in meaning, which misses about one in ten of the true neighbours;"
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "agency",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"three Agency surveys and one poll quoted by an ambassador\" | Section 5 (weakest points: the Long An study, the 1969 Apollo survey, the 1970 Cambodia survey; one Japanese poll)",
+   "sentence": "The evidence on effectiveness is the officials' assessments, three Agency surveys and one poll quoted by an ambassador; there is no outcome measure."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "poll",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"three Agency surveys and one poll quoted by an ambassador\" | Section 5 (weakest points: the Long An study, the 1969 Apollo survey, the 1970 Cambodia survey; one Japanese poll)",
+   "sentence": "The evidence on effectiveness is the officials' assessments, three Agency surveys and one poll quoted by an ambassador; there is no outcome measure."
+  }
+ ]
+}

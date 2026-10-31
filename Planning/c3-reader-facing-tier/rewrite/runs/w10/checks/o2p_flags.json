@@ -1,0 +1,850 @@
+{
+ "run": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w10",
+ "traceSource": "/Users/jbotts/frus-analysis/c3f/rewrite/runs/w10/trace.md",
+ "traceTableLine": 7,
+ "traceRows": 77,
+ "mentions": 76,
+ "counts": {
+  "traced": 29,
+  "weak": 41,
+  "untraced": 6
+ },
+ "list": [
+  {
+   "text": "Twenty-six",
+   "values": [
+    "26"
+   ],
+   "next": "printed",
+   "kind": "word",
+   "class": "traced",
+   "row": "Twenty-six printed documents | 257 (documents 26); 264",
+   "sentence": "What beliefs about the regional audience contributed to those strategies? ## The bottom line What FRUS answers directly.** Twenty-six printed documents, dated from to , show State Department and U.S."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "About three documents in five from public-diplomacy volumes (16 of 26) | 268",
+   "sentence": "Public Diplomacy, , About three documents in five come from the public-diplomacy volumes; the rest from the East Asia area volumes."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "come",
+   "kind": "word",
+   "class": "weak",
+   "row": "About three documents in five from public-diplomacy volumes (16 of 26) | 268",
+   "sentence": "Public Diplomacy, , About three documents in five come from the public-diplomacy volumes; the rest from the East Asia area volumes."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "separate",
+   "kind": "word",
+   "class": "weak",
+   "row": "Central Foreign Policy File, two telegrams | 178",
+   "sentence": "Where FRUS points for the rest.** The archival record reaches the historian by two separate routes, which this overview keeps apart and never adds together. *Where the printed documents came from* (each document's source note):"
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 Entry A1–42, Director's Subject Files, 1968–1972, the largest single source (5) | 170",
+   "sentence": "Information Agency's records, Record Group 306 at the National Archives, Entry A1–42, the Director's Subject Files, (the largest single source), and Entries UD WW 257, UD WW 193, P–207 and P–104, plus one document whose source note the edition prints as \"RG 305\", Entry UD–UP 7, which is probably a misprint for Record Group 306; the app's bundled archival indexes give no National Archives identifier for any of these entries, so their identifiers, access status and, apart from A1–42's, their dates could not be established here;"
+  },
+  {
+   "text": "42",
+   "values": [
+    "42"
+   ],
+   "next": "director",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "RG 306 Entry A1–42, Director's Subject Files, 1968–1972, the largest single source (5) | 170",
+   "sentence": "Information Agency's records, Record Group 306 at the National Archives, Entry A1–42, the Director's Subject Files, (the largest single source), and Entries UD WW 257, UD WW 193, P–207 and P–104, plus one document whose source note the edition prints as \"RG 305\", Entry UD–UP 7, which is probably a misprint for Record Group 306; the app's bundled archival indexes give no National Archives identifier for any of these entries, so their identifiers, access status and, apart from A1–42's, their dates could not be established here;"
+  },
+  {
+   "text": "WW 257",
+   "values": [
+    "ww257"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Entries UD WW 257, UD WW 193, P–207, P–104 | 171–174",
+   "sentence": "Information Agency's records, Record Group 306 at the National Archives, Entry A1–42, the Director's Subject Files, (the largest single source), and Entries UD WW 257, UD WW 193, P–207 and P–104, plus one document whose source note the edition prints as \"RG 305\", Entry UD–UP 7, which is probably a misprint for Record Group 306; the app's bundled archival indexes give no National Archives identifier for any of these entries, so their identifiers, access status and, apart from A1–42's, their dates could not be established here;"
+  },
+  {
+   "text": "WW 193",
+   "values": [
+    "ww193"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Entries UD WW 257, UD WW 193, P–207, P–104 | 171–174",
+   "sentence": "Information Agency's records, Record Group 306 at the National Archives, Entry A1–42, the Director's Subject Files, (the largest single source), and Entries UD WW 257, UD WW 193, P–207 and P–104, plus one document whose source note the edition prints as \"RG 305\", Entry UD–UP 7, which is probably a misprint for Record Group 306; the app's bundled archival indexes give no National Archives identifier for any of these entries, so their identifiers, access status and, apart from A1–42's, their dates could not be established here;"
+  },
+  {
+   "text": "207",
+   "values": [
+    "207"
+   ],
+   "next": "p",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Entries UD WW 257, UD WW 193, P–207, P–104 | 171–174",
+   "sentence": "Information Agency's records, Record Group 306 at the National Archives, Entry A1–42, the Director's Subject Files, (the largest single source), and Entries UD WW 257, UD WW 193, P–207 and P–104, plus one document whose source note the edition prints as \"RG 305\", Entry UD–UP 7, which is probably a misprint for Record Group 306; the app's bundled archival indexes give no National Archives identifier for any of these entries, so their identifiers, access status and, apart from A1–42's, their dates could not be established here;"
+  },
+  {
+   "text": "104",
+   "values": [
+    "104"
+   ],
+   "next": "plu",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Entries UD WW 257, UD WW 193, P–207, P–104 | 171–174",
+   "sentence": "Information Agency's records, Record Group 306 at the National Archives, Entry A1–42, the Director's Subject Files, (the largest single source), and Entries UD WW 257, UD WW 193, P–207 and P–104, plus one document whose source note the edition prints as \"RG 305\", Entry UD–UP 7, which is probably a misprint for Record Group 306; the app's bundled archival indexes give no National Archives identifier for any of these entries, so their identifiers, access status and, apart from A1–42's, their dates could not be established here;"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "Information Agency's records, Record Group 306 at the National Archives, Entry A1–42, the Director's Subject Files, (the largest single source), and Entries UD WW 257, UD WW 193, P–207 and P–104, plus one document whose source note the edition prints as \"RG 305\", Entry UD–UP 7, which is probably a misprint for Record Group 306; the app's bundled archival indexes give no National Archives identifier for any of these entries, so their identifiers, access status and, apart from A1–42's, their dates could not be established here;"
+  },
+  {
+   "text": "RG 305",
+   "values": [
+    "rg305"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "\"RG 305\", Entry UD–UP 7, probably a misprint | 175",
+   "sentence": "Information Agency's records, Record Group 306 at the National Archives, Entry A1–42, the Director's Subject Files, (the largest single source), and Entries UD WW 257, UD WW 193, P–207 and P–104, plus one document whose source note the edition prints as \"RG 305\", Entry UD–UP 7, which is probably a misprint for Record Group 306; the app's bundled archival indexes give no National Archives identifier for any of these entries, so their identifiers, access status and, apart from A1–42's, their dates could not be established here;"
+  },
+  {
+   "text": "7",
+   "values": [
+    "7"
+   ],
+   "next": "which",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "Information Agency's records, Record Group 306 at the National Archives, Entry A1–42, the Director's Subject Files, (the largest single source), and Entries UD WW 257, UD WW 193, P–207 and P–104, plus one document whose source note the edition prints as \"RG 305\", Entry UD–UP 7, which is probably a misprint for Record Group 306; the app's bundled archival indexes give no National Archives identifier for any of these entries, so their identifiers, access status and, apart from A1–42's, their dates could not be established here;"
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 Entry A1–42, Director's Subject Files, 1968–1972, the largest single source (5) | 170",
+   "sentence": "Information Agency's records, Record Group 306 at the National Archives, Entry A1–42, the Director's Subject Files, (the largest single source), and Entries UD WW 257, UD WW 193, P–207 and P–104, plus one document whose source note the edition prints as \"RG 305\", Entry UD–UP 7, which is probably a misprint for Record Group 306; the app's bundled archival indexes give no National Archives identifier for any of these entries, so their identifiers, access status and, apart from A1–42's, their dates could not be established here;"
+  },
+  {
+   "text": "42",
+   "values": [
+    "42"
+   ],
+   "next": "s",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "RG 306 Entry A1–42, Director's Subject Files, 1968–1972, the largest single source (5) | 170",
+   "sentence": "Information Agency's records, Record Group 306 at the National Archives, Entry A1–42, the Director's Subject Files, (the largest single source), and Entries UD WW 257, UD WW 193, P–207 and P–104, plus one document whose source note the edition prints as \"RG 305\", Entry UD–UP 7, which is probably a misprint for Record Group 306; the app's bundled archival indexes give no National Archives identifier for any of these entries, so their identifiers, access status and, apart from A1–42's, their dates could not be established here;"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "(b) the State Department's central files, Record Group 59, under five decimal files: 511.90 (information and cultural relations, Asia, ), 511.51G (the same class, Indochina, ), 790.5 and 792.5 (internal political and national defence affairs, Asia and Siam, ) and 611.98 (political relations with Indonesia, ), and the Central Foreign Policy File for two late telegrams; no identifier or access status was resolved for these;"
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "decimal",
+   "kind": "word",
+   "class": "traced",
+   "row": "five decimal files and glosses; years 1950, 1952, 1953, 1962 | 176; 209–215",
+   "sentence": "(b) the State Department's central files, Record Group 59, under five decimal files: 511.90 (information and cultural relations, Asia, ), 511.51G (the same class, Indochina, ), 790.5 and 792.5 (internal political and national defence affairs, Asia and Siam, ) and 611.98 (political relations with Indonesia, ), and the Central Foreign Policy File for two late telegrams; no identifier or access status was resolved for these;"
+  },
+  {
+   "text": "511.90",
+   "values": [
+    "511.90"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "(b) the State Department's central files, Record Group 59, under five decimal files: 511.90 (information and cultural relations, Asia, ), 511.51G (the same class, Indochina, ), 790.5 and 792.5 (internal political and national defence affairs, Asia and Siam, ) and 611.98 (political relations with Indonesia, ), and the Central Foreign Policy File for two late telegrams; no identifier or access status was resolved for these;"
+  },
+  {
+   "text": "511",
+   "values": [
+    "511"
+   ],
+   "next": "g",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "(b) the State Department's central files, Record Group 59, under five decimal files: 511.90 (information and cultural relations, Asia, ), 511.51G (the same class, Indochina, ), 790.5 and 792.5 (internal political and national defence affairs, Asia and Siam, ) and 611.98 (political relations with Indonesia, ), and the Central Foreign Policy File for two late telegrams; no identifier or access status was resolved for these;"
+  },
+  {
+   "text": "790.5",
+   "values": [
+    "790.5"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "1953 plan for Thailand (d403); 1953 decimal files 790.5, 792.5 | 40; 212–213",
+   "sentence": "(b) the State Department's central files, Record Group 59, under five decimal files: 511.90 (information and cultural relations, Asia, ), 511.51G (the same class, Indochina, ), 790.5 and 792.5 (internal political and national defence affairs, Asia and Siam, ) and 611.98 (political relations with Indonesia, ), and the Central Foreign Policy File for two late telegrams; no identifier or access status was resolved for these;"
+  },
+  {
+   "text": "792.5",
+   "values": [
+    "792.5"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "1953 plan for Thailand (d403); 1953 decimal files 790.5, 792.5 | 40; 212–213",
+   "sentence": "(b) the State Department's central files, Record Group 59, under five decimal files: 511.90 (information and cultural relations, Asia, ), 511.51G (the same class, Indochina, ), 790.5 and 792.5 (internal political and national defence affairs, Asia and Siam, ) and 611.98 (political relations with Indonesia, ), and the Central Foreign Policy File for two late telegrams; no identifier or access status was resolved for these;"
+  },
+  {
+   "text": "611.98",
+   "values": [
+    "611.98"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "1962 plan for Indonesia (d289, 611.98) | 214",
+   "sentence": "(b) the State Department's central files, Record Group 59, under five decimal files: 511.90 (information and cultural relations, Asia, ), 511.51G (the same class, Indochina, ), 790.5 and 792.5 (internal political and national defence affairs, Asia and Siam, ) and 611.98 (political relations with Indonesia, ), and the Central Foreign Policy File for two late telegrams; no identifier or access status was resolved for these;"
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "late",
+   "kind": "word",
+   "class": "weak",
+   "row": "Central Foreign Policy File, two telegrams | 178",
+   "sentence": "(b) the State Department's central files, Record Group 59, under five decimal files: 511.90 (information and cultural relations, Asia, ), 511.51G (the same class, Indochina, ), 790.5 and 792.5 (internal political and national defence affairs, Asia and Siam, ) and 611.98 (political relations with Indonesia, ), and the Central Foreign Policy File for two late telegrams; no identifier or access status was resolved for these;"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "(c) the Operations Coordinating Board files, Record Group 59, Lot 61 D 385, which the bundled indexes hold without an identifier;"
+  },
+  {
+   "text": "61 D 385",
+   "values": [
+    "61d385"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 61 D 385, no identifier, not in central-files index | 177; 202",
+   "sentence": "(c) the Operations Coordinating Board files, Record Group 59, Lot 61 D 385, which the bundled indexes hold without an identifier;"
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "citation",
+   "kind": "word",
+   "class": "weak",
+   "row": "About three documents in five from public-diplomacy volumes (16 of 26) | 268",
+   "sentence": "Marks Papers) and the Nixon Presidential Materials (National Security Council Files). *What the editors cited in footnotes without printing*: only five such citations in the collection's documents, namely Lot 61 D 385 again;"
+  },
+  {
+   "text": "61 D 385",
+   "values": [
+    "61d385"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 61 D 385, no identifier, not in central-files index | 177; 202",
+   "sentence": "Marks Papers) and the Nixon Presidential Materials (National Security Council Files). *What the editors cited in footnotes without printing*: only five such citations in the collection's documents, namely Lot 61 D 385 again;"
+  },
+  {
+   "text": "58 D 726",
+   "values": [
+    "58d726"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 58 D 726, Entry UD 53, identifier 2544398, 1955–1956, five linear inches, \"Restricted - Possibly\", creator | 202–208",
+   "sentence": "Lot 58 D 726, the Subject Files of the Office of the Officer in Charge for Malaya Affairs (Bureau of Far Eastern Affairs, Office of Southeast Asian Affairs), Record Group 59, Entry UD 53, National Archives identifier 2544398, , five linear inches, access marked \"Restricted - Possibly\"; the Johnson Library's Marks Papers; the Johnson Library's National Security File, Country File, Indonesia; and the Nixon Kissinger Office Files, Box 86."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lot 58 D 726, the Subject Files of the Office of the Officer in Charge for Malaya Affairs (Bureau of Far Eastern Affairs, Office of Southeast Asian Affairs), Record Group 59, Entry UD 53, National Archives identifier 2544398, , five linear inches, access marked \"Restricted - Possibly\"; the Johnson Library's Marks Papers; the Johnson Library's National Security File, Country File, Indonesia; and the Nixon Kissinger Office Files, Box 86."
+  },
+  {
+   "text": "UD 53",
+   "values": [
+    "ud53"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 58 D 726, Entry UD 53, identifier 2544398, 1955–1956, five linear inches, \"Restricted - Possibly\", creator | 202–208",
+   "sentence": "Lot 58 D 726, the Subject Files of the Office of the Officer in Charge for Malaya Affairs (Bureau of Far Eastern Affairs, Office of Southeast Asian Affairs), Record Group 59, Entry UD 53, National Archives identifier 2544398, , five linear inches, access marked \"Restricted - Possibly\"; the Johnson Library's Marks Papers; the Johnson Library's National Security File, Country File, Indonesia; and the Nixon Kissinger Office Files, Box 86."
+  },
+  {
+   "text": "2544398",
+   "values": [
+    "2544398"
+   ],
+   "next": "five",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Lot 58 D 726, Entry UD 53, identifier 2544398, 1955–1956, five linear inches, \"Restricted - Possibly\", creator | 202–208",
+   "sentence": "Lot 58 D 726, the Subject Files of the Office of the Officer in Charge for Malaya Affairs (Bureau of Far Eastern Affairs, Office of Southeast Asian Affairs), Record Group 59, Entry UD 53, National Archives identifier 2544398, , five linear inches, access marked \"Restricted - Possibly\"; the Johnson Library's Marks Papers; the Johnson Library's National Security File, Country File, Indonesia; and the Nixon Kissinger Office Files, Box 86."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "linear",
+   "kind": "word",
+   "class": "traced",
+   "row": "Lot 58 D 726, Entry UD 53, identifier 2544398, 1955–1956, five linear inches, \"Restricted - Possibly\", creator | 202–208",
+   "sentence": "Lot 58 D 726, the Subject Files of the Office of the Officer in Charge for Malaya Affairs (Bureau of Far Eastern Affairs, Office of Southeast Asian Affairs), Record Group 59, Entry UD 53, National Archives identifier 2544398, , five linear inches, access marked \"Restricted - Possibly\"; the Johnson Library's Marks Papers; the Johnson Library's National Security File, Country File, Indonesia; and the Nixon Kissinger Office Files, Box 86."
+  },
+  {
+   "text": "86",
+   "values": [
+    "86"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lot 58 D 726, the Subject Files of the Office of the Officer in Charge for Malaya Affairs (Bureau of Far Eastern Affairs, Office of Southeast Asian Affairs), Record Group 59, Entry UD 53, National Archives identifier 2544398, , five linear inches, access marked \"Restricted - Possibly\"; the Johnson Library's Marks Papers; the Johnson Library's National Security File, Country File, Indonesia; and the Nixon Kissinger Office Files, Box 86."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "further",
+   "kind": "word",
+   "class": "traced",
+   "row": "one further footnote citation in the 1952 Saigon assessment not read | 192",
+   "sentence": "One further footnote citation, in the Saigon assessment, was counted but not read, and is not described here."
+  },
+  {
+   "text": "twenty-one",
+   "values": [
+    "21"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "twenty-one volumes scanned (seven plus fourteen) | 131–133",
+   "sentence": "What this request cannot get from FRUS.** First, the term itself: a scan of the full text of twenty-one volumes (the seven information and public-diplomacy volumes and fourteen East Asia volumes, ) for \"soft power\", with hyphen and spacing variants, found it in none; the check phrase \"Department of State\" was found in every one of the twenty-one, and a made-up string in none, so the scan worked and the absence is real."
+  },
+  {
+   "text": "seven",
+   "values": [
+    "7"
+   ],
+   "next": "information",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "What this request cannot get from FRUS.** First, the term itself: a scan of the full text of twenty-one volumes (the seven information and public-diplomacy volumes and fourteen East Asia volumes, ) for \"soft power\", with hyphen and spacing variants, found it in none; the check phrase \"Department of State\" was found in every one of the twenty-one, and a made-up string in none, so the scan worked and the absence is real."
+  },
+  {
+   "text": "fourteen",
+   "values": [
+    "14"
+   ],
+   "next": "east",
+   "kind": "word",
+   "class": "weak",
+   "row": "twenty-one volumes scanned (seven plus fourteen) | 131–133",
+   "sentence": "What this request cannot get from FRUS.** First, the term itself: a scan of the full text of twenty-one volumes (the seven information and public-diplomacy volumes and fourteen East Asia volumes, ) for \"soft power\", with hyphen and spacing variants, found it in none; the check phrase \"Department of State\" was found in every one of the twenty-one, and a made-up string in none, so the scan worked and the absence is real."
+  },
+  {
+   "text": "twenty-one",
+   "values": [
+    "21"
+   ],
+   "next": "made-up",
+   "kind": "word",
+   "class": "traced",
+   "row": "check phrase in every one of twenty-one; made-up string in none | 136–137",
+   "sentence": "What this request cannot get from FRUS.** First, the term itself: a scan of the full text of twenty-one volumes (the seven information and public-diplomacy volumes and fourteen East Asia volumes, ) for \"soft power\", with hyphen and spacing variants, found it in none; the check phrase \"Department of State\" was found in every one of the twenty-one, and a made-up string in none, so the scan worked and the absence is real."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 Entry A1–42, Director's Subject Files, 1968–1972, the largest single source (5) | 170",
+   "sentence": "Second, the opinion surveys: a search for survey, poll or public-opinion words together with the agency's names and Asian place names finds them mentioned widely, but the documents read summarise surveys rather than print them; the shelf is the agency's own files in Record Group 306, where one source note names a folder headed \"Public Opinion Research\"."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "source",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "Second, the opinion surveys: a search for survey, poll or public-opinion words together with the agency's names and Asian place names finds them mentioned widely, but the documents read summarise surveys rather than print them; the shelf is the agency's own files in Record Group 306, where one source note names a folder headed \"Public Opinion Research\"."
+  },
+  {
+   "text": "fourteen",
+   "values": [
+    "14"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "traced",
+   "row": "fourteen volumes for 1981 onward, none on the subject; positive check | 154",
+   "sentence": "Third, anything after : a check of the fourteen volumes for onward found none on public diplomacy, Asia, China, Japan, Korea or information, while the same check returned the matching titles for . **Scope.** The argument rests on twenty-six documents read from the seven information and public-diplomacy volumes and the East Asia area volumes, , out of a search index holding all 553 volumes of the series."
+  },
+  {
+   "text": "twenty-six",
+   "values": [
+    "26"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "Twenty-six printed documents | 257 (documents 26); 264",
+   "sentence": "Third, anything after : a check of the fourteen volumes for onward found none on public diplomacy, Asia, China, Japan, Korea or information, while the same check returned the matching titles for . **Scope.** The argument rests on twenty-six documents read from the seven information and public-diplomacy volumes and the East Asia area volumes, , out of a search index holding all 553 volumes of the series."
+  },
+  {
+   "text": "seven",
+   "values": [
+    "7"
+   ],
+   "next": "information",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "Third, anything after : a check of the fourteen volumes for onward found none on public diplomacy, Asia, China, Japan, Korea or information, while the same check returned the matching titles for . **Scope.** The argument rests on twenty-six documents read from the seven information and public-diplomacy volumes and the East Asia area volumes, , out of a search index holding all 553 volumes of the series."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "all 553 volumes | 13",
+   "sentence": "Third, anything after : a check of the fourteen volumes for onward found none on public diplomacy, Asia, China, Japan, Korea or information, while the same check returned the matching titles for . **Scope.** The argument rests on twenty-six documents read from the seven information and public-diplomacy volumes and the East Asia area volumes, , out of a search index holding all 553 volumes of the series."
+  },
+  {
+   "text": "seven",
+   "values": [
+    "7"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "seven documents set aside after reading | 62–69",
+   "sentence": "Documents about South Asia and the Near East, press relations in Washington, United Nations negotiation and internal reporting procedure were excluded, as were seven documents set aside after reading as off the subject. ## Decisions this needs from you **What counts as soft power.** If it means only information, cultural and exchange work, the Vietnam psychological-operations documents fall out and the story becomes one about elites and image; if it includes wartime psychological operations, the counterinsurgency material stays and the audience becomes villagers as well as elites. **Where the region ends.** If South and Southeast Asia are read together, the nine South Asia and Near East documents that the word \"Asia\" also caught come back in and the Indochina weight falls; if East Asia means Northeast Asia alone, most of the and evidence, which is Southeast Asian, falls out. **Whose assessment counts.** If only Washington's judgements count, the post reports and field surveys become evidence about audiences rather than about policy; if field officers count as policymakers, the conference and the reassessment are central. **Meanwhile, the rule used:** a document is in if it is an assessment, plan or instruction about U.S. information, cultural, psychological or public-diplomacy work aimed at East Asian or Pacific audiences and was read; it is out if it is mainly about press relations in Washington, United Nations negotiation, internal reporting procedure or South Asia. ## Findings In the , information was a psychological weapon carried by local voices The earliest planning made information one arm of a strategy against communist expansion, worked through Asian governments and outlets, and tailored country by country: the Thailand plan held that \"each nation is an entity basically different from the others and requires special treatment\" ( , Officials claimed early effect from the press:"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "elite",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "Documents about South Asia and the Near East, press relations in Washington, United Nations negotiation and internal reporting procedure were excluded, as were seven documents set aside after reading as off the subject. ## Decisions this needs from you **What counts as soft power.** If it means only information, cultural and exchange work, the Vietnam psychological-operations documents fall out and the story becomes one about elites and image; if it includes wartime psychological operations, the counterinsurgency material stays and the audience becomes villagers as well as elites. **Where the region ends.** If South and Southeast Asia are read together, the nine South Asia and Near East documents that the word \"Asia\" also caught come back in and the Indochina weight falls; if East Asia means Northeast Asia alone, most of the and evidence, which is Southeast Asian, falls out. **Whose assessment counts.** If only Washington's judgements count, the post reports and field surveys become evidence about audiences rather than about policy; if field officers count as policymakers, the conference and the reassessment are central. **Meanwhile, the rule used:** a document is in if it is an assessment, plan or instruction about U.S. information, cultural, psychological or public-diplomacy work aimed at East Asian or Pacific audiences and was read; it is out if it is mainly about press relations in Washington, United Nations negotiation, internal reporting procedure or South Asia. ## Findings In the , information was a psychological weapon carried by local voices The earliest planning made information one arm of a strategy against communist expansion, worked through Asian governments and outlets, and tailored country by country: the Thailand plan held that \"each nation is an entity basically different from the others and requires special treatment\" ( , Officials claimed early effect from the press:"
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "south",
+   "kind": "word",
+   "class": "traced",
+   "row": "nine South Asia and Near East documents | 33; 35",
+   "sentence": "Documents about South Asia and the Near East, press relations in Washington, United Nations negotiation and internal reporting procedure were excluded, as were seven documents set aside after reading as off the subject. ## Decisions this needs from you **What counts as soft power.** If it means only information, cultural and exchange work, the Vietnam psychological-operations documents fall out and the story becomes one about elites and image; if it includes wartime psychological operations, the counterinsurgency material stays and the audience becomes villagers as well as elites. **Where the region ends.** If South and Southeast Asia are read together, the nine South Asia and Near East documents that the word \"Asia\" also caught come back in and the Indochina weight falls; if East Asia means Northeast Asia alone, most of the and evidence, which is Southeast Asian, falls out. **Whose assessment counts.** If only Washington's judgements count, the post reports and field surveys become evidence about audiences rather than about policy; if field officers count as policymakers, the conference and the reassessment are central. **Meanwhile, the rule used:** a document is in if it is an assessment, plan or instruction about U.S. information, cultural, psychological or public-diplomacy work aimed at East Asian or Pacific audiences and was read; it is out if it is mainly about press relations in Washington, United Nations negotiation, internal reporting procedure or South Asia. ## Findings In the , information was a psychological weapon carried by local voices The earliest planning made information one arm of a strategy against communist expansion, worked through Asian governments and outlets, and tailored country by country: the Thailand plan held that \"each nation is an entity basically different from the others and requires special treatment\" ( , Officials claimed early effect from the press:"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "arm",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "Documents about South Asia and the Near East, press relations in Washington, United Nations negotiation and internal reporting procedure were excluded, as were seven documents set aside after reading as off the subject. ## Decisions this needs from you **What counts as soft power.** If it means only information, cultural and exchange work, the Vietnam psychological-operations documents fall out and the story becomes one about elites and image; if it includes wartime psychological operations, the counterinsurgency material stays and the audience becomes villagers as well as elites. **Where the region ends.** If South and Southeast Asia are read together, the nine South Asia and Near East documents that the word \"Asia\" also caught come back in and the Indochina weight falls; if East Asia means Northeast Asia alone, most of the and evidence, which is Southeast Asian, falls out. **Whose assessment counts.** If only Washington's judgements count, the post reports and field surveys become evidence about audiences rather than about policy; if field officers count as policymakers, the conference and the reassessment are central. **Meanwhile, the rule used:** a document is in if it is an assessment, plan or instruction about U.S. information, cultural, psychological or public-diplomacy work aimed at East Asian or Pacific audiences and was read; it is out if it is mainly about press relations in Washington, United Nations negotiation, internal reporting procedure or South Asia. ## Findings In the , information was a psychological weapon carried by local voices The earliest planning made information one arm of a strategy against communist expansion, worked through Asian governments and outlets, and tailored country by country: the Thailand plan held that \"each nation is an entity basically different from the others and requires special treatment\" ( , Officials claimed early effect from the press:"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "was",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "\"In almost every country of the area, our programs are directed at elite groups\" ( , Officials judged a visit by its reception: one was called \"probably the most successful visit by an American, from a public image standpoint\", because many \"seemed, for first time, to appreciate openness of the U.S. space program as compared to Russian\" ( , Where the audience was neutral, they counselled restraint: the plan for Indonesia said \"we should refrain from glamorous, immediate-impact actions\" and that U.S. actions \"must be pegged to a real understanding of and a demonstrated respect for Indonesia’s neutral stance\" ( , Under insurgency, the voice was to be local and the American hand hidden The officials' beliefs about the audience were bluntest in Vietnam."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "review",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "One review of the programme in Vietnam held that \"Vietnamese peasants are, in the main, going to be persuaded by other Vietnamese\" and described the population as \"family-oriented, selfish and opportunistic even in the best of times\" ( , Host governments were pressed to speak for themselves: one document held that the Thai government \"has not given proper attention to the need for a national information program designed to gain popular support\" (Foreign Relations of the United States, , , Mainland Southeast Asia;"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "One review of the programme in Vietnam held that \"Vietnamese peasants are, in the main, going to be persuaded by other Vietnamese\" and described the population as \"family-oriented, selfish and opportunistic even in the best of times\" ( , Host governments were pressed to speak for themselves: one document held that the Thai government \"has not given proper attention to the need for a national information program designed to gain popular support\" (Foreign Relations of the United States, , , Mainland Southeast Asia;"
+  },
+  {
+   "text": "thirteen",
+   "values": [
+    "13"
+   ],
+   "next": "saigon",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys\" | 103 (Q22)",
+   "sentence": "\"as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys\" ( , Officials recorded where audiences pushed back, in Indonesia, Japan and the Chinese world The writer of one memorandum called anti-American attacks in Indonesia \"a situation that I can describe only as intolerable\", a reaction the editors' note records a White House aide judging excessive (Foreign Relations of the United States, , ndonesia;"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "memorandum",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "\"as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys\" ( , Officials recorded where audiences pushed back, in Indonesia, Japan and the Chinese world The writer of one memorandum called anti-American attacks in Indonesia \"a situation that I can describe only as intolerable\", a reaction the editors' note records a White House aide judging excessive (Foreign Relations of the United States, , ndonesia;"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "\"While we do not want to appear as having gone “soft” on Chinese Communism neither do we want to appear anti-Chinese or anti-Peking.\" Space achievements were proposed as something that \"could generate favorable opinion toward the U.S.\", and of the overseas Chinese one document reported:"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "memorandum",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "Public Diplomacy, , In the one memorandum called \"shoring up the confidence of East Asians in America’s long-term staying power and positive involvement in the area\" real policy, and a reply from the field reported a \"deeply implanted and persistent feeling that new administration is “withdrawing”\" and a view of the United States as one that \"seeks to implant American models on other societies\" ( , ## How this was done The search ran over a read-only copy of the app's full-text index of all 553 FRUS volumes."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "that",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "Public Diplomacy, , In the one memorandum called \"shoring up the confidence of East Asians in America’s long-term staying power and positive involvement in the area\" real policy, and a reply from the field reported a \"deeply implanted and persistent feeling that new administration is “withdrawing”\" and a view of the United States as one that \"seeks to implant American models on other societies\" ( , ## How this was done The search ran over a read-only copy of the app's full-text index of all 553 FRUS volumes."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "fru",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "all 553 volumes | 13",
+   "sentence": "Public Diplomacy, , In the one memorandum called \"shoring up the confidence of East Asians in America’s long-term staying power and positive involvement in the area\" real policy, and a reply from the field reported a \"deeply implanted and persistent feeling that new administration is “withdrawing”\" and a view of the United States as one that \"seeks to implant American models on other societies\" ( , ## How this was done The search ran over a read-only copy of the app's full-text index of all 553 FRUS volumes."
+  },
+  {
+   "text": "seven",
+   "values": [
+    "7"
+   ],
+   "next": "information",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "Because \"soft power\" is not the period's term, the scope was built from the officials' own vocabulary: a search of document headings for East Asian and Pacific place names in the seven information and public-diplomacy volumes (forty-two headings, of which nine concerned South Asia or the Near East and were set aside, leaving about one document in fifty of those volumes); a heading search for information, propaganda and psychological terms across the East Asia area volumes, where about three hits in four came from the Vietnam volumes; and a ranked word search of sixteen regional volumes, which found the Thailand and Malaya clusters."
+  },
+  {
+   "text": "forty-two",
+   "values": [
+    "42"
+   ],
+   "next": "heading",
+   "kind": "word",
+   "class": "weak",
+   "row": "RG 306 Entry A1–42, Director's Subject Files, 1968–1972, the largest single source (5) | 170",
+   "sentence": "Because \"soft power\" is not the period's term, the scope was built from the officials' own vocabulary: a search of document headings for East Asian and Pacific place names in the seven information and public-diplomacy volumes (forty-two headings, of which nine concerned South Asia or the Near East and were set aside, leaving about one document in fifty of those volumes); a heading search for information, propaganda and psychological terms across the East Asia area volumes, where about three hits in four came from the Vietnam volumes; and a ranked word search of sixteen regional volumes, which found the Thailand and Malaya clusters."
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "concerned",
+   "kind": "word",
+   "class": "weak",
+   "row": "nine South Asia and Near East documents | 33; 35",
+   "sentence": "Because \"soft power\" is not the period's term, the scope was built from the officials' own vocabulary: a search of document headings for East Asian and Pacific place names in the seven information and public-diplomacy volumes (forty-two headings, of which nine concerned South Asia or the Near East and were set aside, leaving about one document in fifty of those volumes); a heading search for information, propaganda and psychological terms across the East Asia area volumes, where about three hits in four came from the Vietnam volumes; and a ranked word search of sixteen regional volumes, which found the Thailand and Malaya clusters."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "Because \"soft power\" is not the period's term, the scope was built from the officials' own vocabulary: a search of document headings for East Asian and Pacific place names in the seven information and public-diplomacy volumes (forty-two headings, of which nine concerned South Asia or the Near East and were set aside, leaving about one document in fifty of those volumes); a heading search for information, propaganda and psychological terms across the East Asia area volumes, where about three hits in four came from the Vietnam volumes; and a ranked word search of sixteen regional volumes, which found the Thailand and Malaya clusters."
+  },
+  {
+   "text": "fifty",
+   "values": [
+    "50"
+   ],
+   "next": "those",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "Because \"soft power\" is not the period's term, the scope was built from the officials' own vocabulary: a search of document headings for East Asian and Pacific place names in the seven information and public-diplomacy volumes (forty-two headings, of which nine concerned South Asia or the Near East and were set aside, leaving about one document in fifty of those volumes); a heading search for information, propaganda and psychological terms across the East Asia area volumes, where about three hits in four came from the Vietnam volumes; and a ranked word search of sixteen regional volumes, which found the Thailand and Malaya clusters."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "hit",
+   "kind": "word",
+   "class": "weak",
+   "row": "About three documents in five from public-diplomacy volumes (16 of 26) | 268",
+   "sentence": "Because \"soft power\" is not the period's term, the scope was built from the officials' own vocabulary: a search of document headings for East Asian and Pacific place names in the seven information and public-diplomacy volumes (forty-two headings, of which nine concerned South Asia or the Near East and were set aside, leaving about one document in fifty of those volumes); a heading search for information, propaganda and psychological terms across the East Asia area volumes, where about three hits in four came from the Vietnam volumes; and a ranked word search of sixteen regional volumes, which found the Thailand and Malaya clusters."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "came",
+   "kind": "word",
+   "class": "weak",
+   "row": "only five footnote citations (5 rows from 4 documents) | 186–190",
+   "sentence": "Because \"soft power\" is not the period's term, the scope was built from the officials' own vocabulary: a search of document headings for East Asian and Pacific place names in the seven information and public-diplomacy volumes (forty-two headings, of which nine concerned South Asia or the Near East and were set aside, leaving about one document in fifty of those volumes); a heading search for information, propaganda and psychological terms across the East Asia area volumes, where about three hits in four came from the Vietnam volumes; and a ranked word search of sixteen regional volumes, which found the Thailand and Malaya clusters."
+  },
+  {
+   "text": "sixteen",
+   "values": [
+    "16"
+   ],
+   "next": "regional",
+   "kind": "word",
+   "class": "traced",
+   "row": "ranked search of sixteen regional volumes; 1953 Thailand and 1955 Malaya clusters | 40",
+   "sentence": "Because \"soft power\" is not the period's term, the scope was built from the officials' own vocabulary: a search of document headings for East Asian and Pacific place names in the seven information and public-diplomacy volumes (forty-two headings, of which nine concerned South Asia or the Near East and were set aside, leaving about one document in fifty of those volumes); a heading search for information, propaganda and psychological terms across the East Asia area volumes, where about three hits in four came from the Vietnam volumes; and a ranked word search of sixteen regional volumes, which found the Thailand and Malaya clusters."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "One document, the Saigon assessment, was found only by a search for documents whose overall content resembles a given document, and by no word search."
+  },
+  {
+   "text": "Forty",
+   "values": [
+    "40"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "1953 plan for Thailand (d403); 1953 decimal files 790.5, 792.5 | 40; 212–213",
+   "sentence": "Forty documents were retrieved whole; twenty-nine were read in full, seven in part and four not at all, and seven were set aside after reading."
+  },
+  {
+   "text": "twenty-nine",
+   "values": [
+    "29"
+   ],
+   "next": "were",
+   "kind": "word",
+   "class": "weak",
+   "row": "forty retrieved whole; twenty-nine in full; seven in part; four not read | 51–59",
+   "sentence": "Forty documents were retrieved whole; twenty-nine were read in full, seven in part and four not at all, and seven were set aside after reading."
+  },
+  {
+   "text": "seven",
+   "values": [
+    "7"
+   ],
+   "next": "part",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "Forty documents were retrieved whole; twenty-nine were read in full, seven in part and four not at all, and seven were set aside after reading."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "not",
+   "kind": "word",
+   "class": "weak",
+   "row": "only five footnote citations (5 rows from 4 documents) | 186–190",
+   "sentence": "Forty documents were retrieved whole; twenty-nine were read in full, seven in part and four not at all, and seven were set aside after reading."
+  },
+  {
+   "text": "seven",
+   "values": [
+    "7"
+   ],
+   "next": "were",
+   "kind": "word",
+   "class": "weak",
+   "row": "about one document in fifty of the seven volumes (33 of 1,582) | 32–33",
+   "sentence": "Forty documents were retrieved whole; twenty-nine were read in full, seven in part and four not at all, and seven were set aside after reading."
+  },
+  {
+   "text": "twenty-one",
+   "values": [
+    "21"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "twenty-one volumes scanned (seven plus fourteen) | 131–133",
+   "sentence": "A vocabulary count over the full text of twenty-one volumes, with a check phrase that must appear and a made-up string that must not, established which terms measure the subject:"
+  },
+  {
+   "text": "eighteen",
+   "values": [
+    "18"
+   ],
+   "next": "time",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"image of the United States\" about eighteen times as often | 142; 150",
+   "sentence": "\"image of the United States\" runs about eighteen times as often in the information volumes as in the area volumes, while \"propaganda\" in the area volumes mostly names the communist side's output and was not used."
+  },
+  {
+   "text": "twenty-six",
+   "values": [
+    "26"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "Twenty-six printed documents | 257 (documents 26); 264",
+   "sentence": "Every quotation here is an exact passage the memo verified against its document, and every document cited is in the collection; both were checked before finishing. ## Read next The collection \"American soft power in East Asia and the Pacific: how officials judged it, \" holds all twenty-six documents with their verified passages, arranged under the five findings."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "finding",
+   "kind": "word",
+   "class": "weak",
+   "row": "About three documents in five from public-diplomacy volumes (16 of 26) | 268",
+   "sentence": "Every quotation here is an exact passage the memo verified against its document, and every document cited is in the collection; both were checked before finishing. ## Read next The collection \"American soft power in East Asia and the Pacific: how officials judged it, \" holds all twenty-six documents with their verified passages, arranged under the five findings."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "RG 306 Entry A1–42, Director's Subject Files, 1968–1972, the largest single source (5) | 170",
+   "sentence": "Its gaps are where the historian's additions would count most: the survey reports themselves, from the agency's files in Record Group 306, would test the officials' claims of effect; the years , nearly empty here, may reflect the searches rather than the edition, and a National Security Council policy paper for Southeast Asia is an unread lead, not in the collection and not used as evidence here; and Korea, Burma, Australia and New Zealand appear only inside the round-up, so country-level documents for them would widen the regional picture."
+  }
+ ]
+}

@@ -1,0 +1,46 @@
+=== the 161st USI document (outside the memo's six 1946-1950 volumes) ===
+frus1952-54v03 d800 ('1952-08-01',) Memorandum Prepared in the Division of Research for Far East, Office of Intelligence Research, for t
+  context: ons, the establishment of a constituent assembly, representative government, and the early establishment of a sovereign USI. Following the suppression by the Republic of Indonesia of a Communist uprising in September, the United States informe
+frus1952-54v03 title: ['Foreign Relations of the United States, 1952–1954, United Nations Affairs, Volume III']
+memo's listed USI counts sum: 160
+
+=== BM25 query: set equality with the session's ea_bm25.txt ===
+same 40 pairs: True ; same scores per pair: True ; same order: True
+
+=== header rows with an Asian place (the memo's grep, 57) ===
+header rows: 330 kept: 57 ; equals header_hits_asia.txt: True
+d99 in the 330: True ; d99 in the 57: False
+d190 in the 330: False
+d190 in the 40-sample of scope.py: False
+d190 or d99 in the 40-sample: False False
+
+=== decimal-class-labels 1950-1959 schedule: class 5, countries 11, 90, 00, 51G ===
+ schedule 1910-1949 keys: ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+ schedule 1950-1959 keys: ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+   classes[5] = "International Informational and Educational Relations, Cultural Affairs and Programs"
+   countries[11] = "United States"
+   countries[90] = "Asia"
+   countries[00] = "World, The"
+   countryAlternates[90] = ["Far East (including all of Asia)"]
+   countryAlternates[00] = ["Universe"]
+ schedule 1960-1963 keys: ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+
+=== Nixon NSC Files in presidential-library-catalog.json ===
+libraries: [None, None, None, None, None, None, None, None, None, None, None]
+  'National Security Council Files': 4
+  'Nixon Presidential': 1
+  'NSC': 24
+  'National Security Files': 4
+  'National Security File"': 0
+  Nixon library record keys: ['citedAs', 'collections', 'prefix'] | collections sample: [{"identifier": "RN- CLAWSO", "naId": 580001022, "series": [{"inclusiveDates": "1973", "naId": 589654644, "title": "Correspondence"}], "statedSeriesCount": 1, "title": "Papers of Carol Clawson"}, {"identifier": "RN-AEW", "naId": 138930994, "series": [{"inclusiveDates": "1970\u20131973", "naId": 155500546, "title": "Artemus E. Weatherbee Personal Papers"}], "statedSeriesCount": 1, "title": "Papers of Artemus E. Weatherbee"}, {"identifier": "RN-AFS", "naId": 138930952, "series": [{"inclusiveDates"
+
+=== collection notes prefix and counts ===
+document entries: 22 with notes: 22 all notes open with the prefix: True
+generated block: [{'kind': 'generated', 'generatedBlockType': 'archivalSources'}]
+headings: ['Information as the companion of aid and containment, 1950-1955', 'Vietnam, 1961-1963: propaganda campaigns and a damaged image', 'Beliefs about the audience', 'Measuring effect', 'Handing the message to Asian governments, and selling staying power']
+
+=== 'thirteen' Saigon surveys and 'three pairs printed twice' context ===
+ d88:  percent from a high of 45 percent of the general public in October 1968. —Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys, with only 26 percent of the general
+
+=== date span of the 21 cited / 22 argset ===
+[('1950-06-21', '1977-07-19')]

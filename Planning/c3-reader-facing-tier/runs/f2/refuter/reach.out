@@ -1,0 +1,106 @@
+query result-set sizes:
+  L6 header-LIKE PubDip (LIMIT 80, as logged)            34
+  L6 header-LIKE PubDip (no LIMIT)                       34
+  M8/77 Dept of State (scoped)                        17522
+  M10/62 USIA (scoped)                                  913
+  M11/63 psychological (scoped)                         363
+  M12/64 propaganda (scoped)                           3495
+  M13/65 image (scoped)                                  30
+  M14/66 information program (scoped)                   207
+  M15/67 cultural exchange (scoped)                     289
+  M70 opinion research (scoped)                          75
+  M75 soft power (scoped)                                 0
+  M76 messaging (scoped)                               8685
+  R16 rank_pd wide set (>=10 matches)                   119
+  R16 rank_pd printed top 70                             70
+  L17 header-LIKE (EA volumes)                           94
+  B40 BM25 (EA volumes, all 92)                          92
+  B40 BM25 (EA volumes, top 40 read)                     40
+
+== membership of each cited document ==
+frus1952-54v12p2/d403: 5 queries return it | BM25 EA rank 4
+      - M11/63 psychological (scoped)
+      - M14/66 information program (scoped)
+      - L17 header-LIKE (EA volumes)
+      - B40 BM25 (EA volumes, all 92)
+      - B40 BM25 (EA volumes, top 40 read)
+frus1952-54v12p2/d352: 3 queries return it | BM25 EA rank 2
+      - M10/62 USIA (scoped)
+      - B40 BM25 (EA volumes, all 92)
+      - B40 BM25 (EA volumes, top 40 read)
+frus1955-57v09/d190: 0 queries return it
+      RETURNED BY NO LOGGED QUERY. Unfiltered (pre-scope) membership: ['M8/77 Dept of State', 'M10/62 USIA', 'M12/64 propaganda', 'M14/66 information program', 'M15/67 cultural exchange', 'B40 BM25']
+frus1917-72PubDipv06/d127: 4 queries return it | rank_pd rank 82, matches 14
+      - L6 header-LIKE PubDip (LIMIT 80, as logged)
+      - L6 header-LIKE PubDip (no LIMIT)
+      - M10/62 USIA (scoped)
+      - R16 rank_pd wide set (>=10 matches)
+frus1917-72PubDipv06/d128: 6 queries return it | rank_pd rank 12, matches 50
+      - L6 header-LIKE PubDip (LIMIT 80, as logged)
+      - L6 header-LIKE PubDip (no LIMIT)
+      - M10/62 USIA (scoped)
+      - M12/64 propaganda (scoped)
+      - R16 rank_pd wide set (>=10 matches)
+      - R16 rank_pd printed top 70
+frus1961-63v03/d308: 4 queries return it | BM25 EA rank 32
+      - M10/62 USIA (scoped)
+      - L17 header-LIKE (EA volumes)
+      - B40 BM25 (EA volumes, all 92)
+      - B40 BM25 (EA volumes, top 40 read)
+frus1917-72PubDipv07/d32: 9 queries return it | rank_pd rank 3, matches 78
+      - L6 header-LIKE PubDip (LIMIT 80, as logged)
+      - L6 header-LIKE PubDip (no LIMIT)
+      - M10/62 USIA (scoped)
+      - M11/63 psychological (scoped)
+      - M12/64 propaganda (scoped)
+      - M14/66 information program (scoped)
+      - M70 opinion research (scoped)
+      - R16 rank_pd wide set (>=10 matches)
+      - R16 rank_pd printed top 70
+frus1964-68v29p2/d46: 5 queries return it | BM25 EA rank 37
+      - M8/77 Dept of State (scoped)
+      - M15/67 cultural exchange (scoped)
+      - M70 opinion research (scoped)
+      - B40 BM25 (EA volumes, all 92)
+      - B40 BM25 (EA volumes, top 40 read)
+frus1917-72PubDipv08/d31: 7 queries return it | rank_pd rank 4, matches 76
+      - L6 header-LIKE PubDip (LIMIT 80, as logged)
+      - L6 header-LIKE PubDip (no LIMIT)
+      - M10/62 USIA (scoped)
+      - M14/66 information program (scoped)
+      - M70 opinion research (scoped)
+      - R16 rank_pd wide set (>=10 matches)
+      - R16 rank_pd printed top 70
+frus1917-72PubDipv08/d58: 6 queries return it | rank_pd rank 63, matches 18
+      - L6 header-LIKE PubDip (LIMIT 80, as logged)
+      - L6 header-LIKE PubDip (no LIMIT)
+      - M10/62 USIA (scoped)
+      - M11/63 psychological (scoped)
+      - R16 rank_pd wide set (>=10 matches)
+      - R16 rank_pd printed top 70
+frus1917-72PubDipv08/d88: 4 queries return it | rank_pd rank 134, matches 8
+      - L6 header-LIKE PubDip (LIMIT 80, as logged)
+      - L6 header-LIKE PubDip (no LIMIT)
+      - M10/62 USIA (scoped)
+      - M70 opinion research (scoped)
+frus1969-76v19p2/d67: 2 queries return it
+      - M70 opinion research (scoped)
+      - L17 header-LIKE (EA volumes)
+frus1917-72PubDipv08/d149: 7 queries return it | rank_pd rank 2, matches 102
+      - L6 header-LIKE PubDip (LIMIT 80, as logged)
+      - L6 header-LIKE PubDip (no LIMIT)
+      - M10/62 USIA (scoped)
+      - M12/64 propaganda (scoped)
+      - M76 messaging (scoped)
+      - R16 rank_pd wide set (>=10 matches)
+      - R16 rank_pd printed top 70
+frus1969-76v38p2/d105: 3 queries return it | rank_pd rank 5, matches 72
+      - M10/62 USIA (scoped)
+      - R16 rank_pd wide set (>=10 matches)
+      - R16 rank_pd printed top 70
+frus1977-80v30/d2: 5 queries return it | rank_pd rank 37, matches 27
+      - M10/62 USIA (scoped)
+      - M15/67 cultural exchange (scoped)
+      - M76 messaging (scoped)
+      - R16 rank_pd wide set (>=10 matches)
+      - R16 rank_pd printed top 70

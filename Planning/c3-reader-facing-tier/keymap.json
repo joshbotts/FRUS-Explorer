@@ -1,0 +1,135 @@
+{
+  "O-med A (1)": {
+    "order": 1,
+    "block": 1,
+    "label": "f12",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "arm": "A"
+  },
+  "O-med W (1)": {
+    "order": 2,
+    "block": 1,
+    "label": "f8",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "arm": "W"
+  },
+  "O-med K (1)": {
+    "order": 3,
+    "block": 1,
+    "label": "f3",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "arm": "K"
+  },
+  "judge 1": {
+    "block": 1,
+    "slots": {
+      "X": "f8",
+      "Y": "f3",
+      "Z": "f12"
+    }
+  },
+  "S-high W (1)": {
+    "order": 4,
+    "block": 2,
+    "label": "f6",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "arm": "W"
+  },
+  "S-high K (1)": {
+    "order": 5,
+    "block": 2,
+    "label": "f11",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "arm": "K"
+  },
+  "S-high A (1)": {
+    "order": 6,
+    "block": 2,
+    "label": "f10",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "arm": "A"
+  },
+  "judge 2": {
+    "block": 2,
+    "slots": {
+      "X": "f10",
+      "Y": "f6",
+      "Z": "f11"
+    }
+  },
+  "O-med K (2)": {
+    "order": 7,
+    "block": 3,
+    "label": "f9",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "arm": "K"
+  },
+  "O-med A (2)": {
+    "order": 8,
+    "block": 3,
+    "label": "f1",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "arm": "A"
+  },
+  "O-med W (2)": {
+    "order": 9,
+    "block": 3,
+    "label": "f2",
+    "model": "claude-opus-5-5",
+    "effort": "medium",
+    "arm": "W"
+  },
+  "judge 3": {
+    "block": 3,
+    "slots": {
+      "X": "f1",
+      "Y": "f2",
+      "Z": "f9"
+    }
+  },
+  "S-high A (2)": {
+    "order": 10,
+    "block": 4,
+    "label": "f7",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "arm": "A"
+  },
+  "S-high W (2)": {
+    "order": 11,
+    "block": 4,
+    "label": "f4",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "arm": "W"
+  },
+  "S-high K (2)": {
+    "order": 12,
+    "block": 4,
+    "label": "f5",
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "arm": "K"
+  },
+  "judge 4": {
+    "block": 4,
+    "slots": {
+      "X": "f7",
+      "Y": "f4",
+      "Z": "f5"
+    }
+  },
+  "cal": {
+    "label": "cal",
+    "arm": null,
+    "note": "calibration: the scorer on R16's s1 and s3 (copied as cal-s1, cal-s3), whose O2' misses, s3's V4 under the exemption and every other item are known; the refuter's steps 8 to 10 alone on the vectors tier's v2 (its '11 of 695' as its own finding) and C-3's r8 (a null reported with nothing beside it that returns rows on that surface)"
+  }
+}

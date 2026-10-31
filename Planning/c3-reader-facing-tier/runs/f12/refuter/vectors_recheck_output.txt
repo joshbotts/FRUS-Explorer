@@ -1,0 +1,53 @@
+binary magic b'FRSV' version 1 dims 512 docs 314616 centroids 660
+index documentCount 314616 shippingDims 512
+digest index : 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+digest binary: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+digest map   : 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 (map header magic b'FRSM' )
+shard header bytes 0..64: 465253530100000000020000b800000089481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e610100000000000000000000000000000000
+digest shard (bytes 16..48): 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+ALL EQUAL: True
+rows decoded 314616 == documentCount: True ; distinct rows 314616 ; volumes 553
+rows tile 0..N-1: True
+bytes after header consumed by rows: 20135488 of 20476048 (remainder 340560 bytes = centroids etc.)
+
+ANCHOR frus1917-72PubDipv08/d31 (row 61222); top 12 by Hamming over 512 sign bits:
+    81  frus1917-72PubDipv07/d106
+    86  frus1917-72PubDipv06/d3
+    88  frus1917-72PubDipv06/d5
+    88  frus1952-54v13p1/d116
+    89  frus1955-57v22/d275
+    90  frus1917-72PubDipv08/d99
+    90  frus1950v06/d9
+    91  frus1958-60v16/d65
+    92  frus1917-72PubDipv07/d140
+    92  frus1952-54v02p2/d374
+    92  frus1977-80v30/d68
+    94  frus1951v06p1/d12
+
+ANCHOR frus1969-76v38p2/d105 (row 293635); top 12 by Hamming over 512 sign bits:
+    76  frus1969-76ve12/d10
+    77  frus1958-60v16/d65
+    78  frus1969-76v01/d54
+    80  frus1969-76ve12/d16
+    82  frus1969-76ve12/d15
+    82  frus1977-80v22/d104
+    84  frus1949v07p2/d387
+    84  frus1955-57v21/d119
+    84  frus1969-76v38p1/d54
+    85  frus1949v07p2/d386
+    85  frus1958-60v16/d12
+    85  frus1969-76v38p1/d58
+
+ANCHOR frus1917-72PubDipv07/d73 (row 61073); top 12 by Hamming over 512 sign bits:
+    87  frus1917-72PubDipv07/d69
+   103  frus1917-72PubDipv07/d159
+   104  frus1952-54v13p1/d116
+   105  frus1955-57v01/d2
+   108  frus1917-72PubDipv08/d31
+   108  frus1958-60v01/d55
+   109  frus1917-72PubDipv07/d74
+   109  frus1950v06/d3
+   109  frus1964-68v09/d42
+   110  frus1950v06/d9
+   111  frus1917-72PubDipv07/d106
+   111  frus1950v06/d53

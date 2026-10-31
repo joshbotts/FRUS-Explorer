@@ -8382,3 +8382,69 @@ They set the plan ("Plan is set"), gave five candidates and chose the fifth, on 
 **Checks.** `CollectionTests` reads two blocks of the guide, the JSON examples of §15.1 and §15.1a, by the test's own extraction rule. Both are byte-identical to `v2`'s at `cb2011a7` (SHA-256 `7bd77ebe865d743e…` and `e0937da4f809cfce…`), and so is §12. Every in-page anchor and file link resolves, and no added line runs past 100 characters. `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` reads the plan of record's status and its §7 line, neither touched. `brokenSqliteInvocationsAreMarked` reads every workflow script under `Planning/`, and the three new ones (`c3-steering-tier/workflow.mjs` and `canary.mjs`, `reader-facing-style/pilot/pilot.mjs`) do not print `sqlite3 … -uri`. A scan of the new and changed files for the four other candidates' subjects matched only volume titles and the documents' own text. No build, unit run or `swift test` was owed: no file a target compiles changed.
 
 **Opened as #1818** on the owner's word of 2026-10-30 ("Commit and push"), against `v2` at `cb2011a7`; not merged, auto-merge off. #1817 had been merged that day while the session worked on, so the work went on a new branch, `claude/agentic-guide-v1.38-steering-tier`, cut from `v2`, whose tree the old branch's matched byte for byte.
+
+## Session 2026-10-30 — The next C-3 tier is designed: R1's wording while the agent does the research, and R7, R8 and R10 without the rest of arm B (a draft; nothing run)
+
+**What was asked.** The steering tier's session started this one to draft the next full C-3 tier as a plan for the owner to set. The tier carries what the owner decided on 2026-10-30:
+- the style review's revised R1, R2's template and J3's rewording, tested while the agent also does the research;
+- the measurement of R7, R8 and R10 that R16's rule owes, without the rest of its arm B.
+
+Three harness fixes come with it: V4 exempts `frus1977-80v09Ed2`; the card gets a spot check if it goes; and O2' is checked by a script. Docs and planning only: nothing was run.
+
+**What changed.** `Planning/C-3-Reader-Facing-Tier-Design.md`, status DRAFT, in the steering design's form:
+- **Arms:** A, the guide as it stands; W, with R1, R2's skeleton and R6's vocabulary bullet; K, with R7, R8 and R10.
+- **Runs:** two of each arm in each of O-med and S-high, twelve in four blocks.
+- **Instruments:** the rubric with V4 and O1 reworded; O2' by script; one judge a block, with J3 and J5 in the pilot's wording; three refuter steps for R7's, R8's and R10's occasions.
+- **Readings and adoption**, pre-registered, with a guard on the 35 items that tolerates one item.
+- **Budget lines**, which the owner set as proposed.
+
+**The owner's answers, 2026-10-30.** The first four were asked once, with the design otherwise ready; the fifth after the pull request was opened:
+1. "Bullet in W, no card": R6's bullet goes at the end of §A.8's addendum in W. The card waits; its spot check is designed and measured in the design's §5.2.
+2. "Three arms, 12 runs".
+3. "One-item tolerance": a treatment arm loses at most one more of the 35 than A, and no run of it loses two.
+4. The question: one of the four unused candidates, its text given in chat. It is in no file and named nowhere here.
+5. "Set as recommended", then "change start date to now": the lines are the starting reading plus 32 weekly and plus 54 Fable points, and the tier starts now, before the meters reset on 2026-11-04. From the readings at 23:52 (29% weekly, 44% Fable), the lines sit at 61% and 98%, and the estimate ends the tier at 86% to 92% Fable.
+
+**Measured for the design**, read-only, from the bundle, the index copy and the records:
+- **Arm A:** its three guide texts at v1.38 (`848f3781`) are byte-identical to R16's arm A: the block (`c2f5511d…`), the addendum (`e8117cb8…`) and Appendix A (`4e11cc17…`). R1 there is 30 lines (`d08e51eb…`).
+- **The card's spot check:**
+  - `frus1881/d405` and `frus1894app2/d394`, one letter printed twice, are each other's nearest neighbour, at Hamming 4.
+  - A decode that derives ids from ordinals puts `d394` on `d393`'s row, at 85, because `frus1894app2` holds `d2a` at its third row.
+  - 42 of the 553 volumes hold such an id; `frus1861`, the appendix's worked anchor, is not one of them.
+- **The guard:** an arm exactly as good as A fails R16's guard 27% to 40% of the time, at the loss rates the two earlier tiers saw, taken as a Poisson count. It fails the one-item guard 6% to 22% of the time.
+- **The occasions:**
+  - MATCH prefixes appear in the logs or scripts of 18 of the 25 runs.
+  - The block's "11 of 695" is printed in three of R16's four A runs, two of them as the session's own finding, and the scorer faulted neither under P6.
+  - R16's one T1 loss was a bare stem cut by hand (`MATCH 'misappropriat'`), so the term check tests bare terms too.
+- **The meters:** at about 23:20 they read 29% weekly and 44% Fable, both resetting on 2026-11-04.
+
+**Not done.**
+- **Nothing in the design's §11 is built:** the two guide candidates, the generator, the five scripts and the working folder. *(Overtaken the same night: built and run, below.)*
+- **The question's properties** are checked by the session that runs the tier, before the first cell, and nowhere before.
+- **The runbook's §7 cost table** still stops at the vectors tier. The design's record step adds rows for R16, the pilot and this tier.
+
+**Checks.**
+- No prose line of the design runs past 100 characters.
+- A scan of the design and this entry finds none of the chosen question's terms.
+- No test reads a changed file: `CodingStandardsAuditTests` reads the plan of record, the visual marketing plan and the `workflow.mjs` files under `Planning/`, and none of them changed.
+- No build, unit run or `swift test` was owed: no file a target compiles changed.
+
+**Opened as #1819** on the owner's word of 2026-10-30 ("Open the PR"), against `v2` at `848f3781`, which had not moved since the branch was brought up to it; not merged, auto-merge off.
+
+**Run, 2026-10-31**, on the owner's word ("Build and run", after "change start date to now"), 00:16 to 04:46.
+- **Built:** the W and K candidates on local branches (`b40d2da6`, `5e8bd1bd`, not pushed); `generate_f.py`, whose arm A is R16's arm A byte for byte apart from the question and paths; four checks run on each run after its session (`o2p_check.py`, `match_check.py`, `figures_check.py`, `style_measure.py`). The O2' script flags all 99 numbers R16's scorers named as having no trace row.
+- **Calibration and canary:** every known answer came back. The scorer's O2' text was corrected before any tier run was scored; the citation resolver after run 4, before any reading (results §5 item 4).
+- **Measured** (`Planning/C-3-Reader-Facing-Tier-Results-2026-10-31.md`; record `Planning/c3-reader-facing-tier/`):
+  - **W's writing held in every run:** pooled median sentence 19 words against A's 23, 8% over 40 against 20.5%, part 1 at 152 to 165 words, one citation form and a resolving Documents cited list in 4 of 4, V8 in 4 of 4.
+  - **The judges ranked W above A in one block of four.** They called W's the clearest writing and ranked on the evidence.
+  - **The 35 items:** A lost 4, W 6 (two runs lost two or more), K 4 (one run lost two).
+  - **K's rules:** a relaxed query beside 5 of 61 zeros (the "soft power" zero in every run); a house-rules figure stated as the session's own in 3 of 4 runs; prefixes in one run only.
+  - **O2'** failed in all twelve runs. No fabrication: 796 of 796 quotations, 59 of 60 headline numbers.
+  - **Cost:** 25 weekly points and 43 Fable, inside the lines of 62% and 98%; an hour paused for the 5-hour window.
+- **By the rule, nothing is adopted:** W fails readings 1 and 5, K reading 12.
+- **Decided.** The owner followed the rule ("Follow the rule"). Nothing is adopted; guide v1.39 records the tier in §3a and the version history, and the W and K candidates stay on local branches.
+- **Also changed:** `Planning/Agentic-Harness-Runbook.md` §7 gains rows for R16, the pilot and this tier.
+
+**The rewrite test of R1 and R2 alone, 2026-10-31**, on the owner's word ("do the smaller test of r1 and r2 alone", then "8 pairs now", stop line 97% Fable): the tier's eight A and K memos each written into an overview twice on the run's own model, under the section as it stands and under R1 with R2, judged blind in pairs on Fable at `max`; readings written first. **All six hold:** the judge preferred R1 and R2 in 7 of 8 pairs; pooled median sentence 16 words against 30, 3% over 40 against 30%; part 1 at 155 to 170 words against 293 to 405; untraced numbers 248 of 725 against 494 of 1,082; J1–J5 40 against 36; one citation form and a resolving list in 8 of 8. It cost 3 weekly and 4 Fable points (Fable 87% to 91%). It measures the writing only: the tier's research-cost reading stands, and R1 and R2 stay unadopted by the tier's rule unless the owner decides otherwise. `Planning/C-3-Reader-Facing-Rewrite-Test-2026-10-31.md`; record `Planning/c3-reader-facing-tier/rewrite/`.
+
+**R1 and R2 adopted, 2026-10-31**, on the owner's word ("Include in 1819, along with adopting R1 and R2"), after they asked whether the overviews and the collections together point to the documents each run identified. Guide v1.40: the §12 block's READER-FACING OUTPUT section is R1 (30 lines; the block 218 lines), and §14.16's template takes R2; §3a, §12's measured lengths and the version history say why. The vocabulary bullet and K's rules stay unadopted; §A.8, Appendix A and the §15.1 and §15.1a examples are unchanged (the examples byte-identical). The coverage check is the rewrite test's §5: no overview of 28 cites a document outside its collection; the tier's R1 and R2 runs cited 86 of 86 collected documents, where A left 14 of 111 and K 16 of 104 uncited; from a fixed collection, R1 and R2 left 18 of 215 uncited against 14.

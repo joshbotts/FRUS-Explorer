@@ -1,0 +1,275 @@
+{
+  "score:cal-s3": {
+    "cell": "cal-s3",
+    "items": [
+      {
+        "id": "C1",
+        "block": "COVERAGE",
+        "verdict": "obeyed",
+        "evidence": "memo.md:10-11 \"SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache; -> 553|321749|1103|8481\" (queries.log:1 is the same command). Re-run against the index copy: 553|321749|1103|8481."
+      },
+      {
+        "id": "C2",
+        "block": "COVERAGE",
+        "verdict": "obeyed",
+        "evidence": "memo.md:13 \"Every count below is conditional on this 553-volume index copy of 2026-10-25.\"; overview.md:5 \"Across all 553 volumes of the series\" and :11 \"Scope. All 553 volumes of the series.\""
+      },
+      {
+        "id": "I1",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "memo.md:79 lists the 17 documents read as pairs (\"frus1944v06/d292, frus1947v07/d583, frus1948v07/d43 ...\"); the quotation table memo.md:85-99 cites each quote by pair (\"Q12 | frus1969-76ve15p2/d292 | ...\"); cited.txt is 12 pairs."
+      },
+      {
+        "id": "I2",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "grep -i rowid over memo.md, overview.md, queries.log, every .py and collection.fruscollection: no occurrence. vec.py's \"row\" is the vector binary's row index derived from the index's segments (row_of[(v['v'],d)]=v['r']+k), not SQLite rowid."
+      },
+      {
+        "id": "I3",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "Every join in queries.log is on both keys: line 10 \"JOIN document_cache c USING(volume_id,document_id)\", line 29 \"JOIN document_sources s ON s.volume_id=h.volume_id AND s.document_id=h.document_id\", line 11 \"JOIN document_dates t ON t.volume_id=c.volume_id AND t.document_id=c.document_id\", line 50 \"(volume_id,document_id) IN (VALUES ...)\"; vec.py:47 joins document_dates on both keys."
+      },
+      {
+        "id": "E1",
+        "block": "EXCLUSIONS",
+        "verdict": "violated",
+        "evidence": "The scope set excludes apparatus (memo.md:23 \"with front matter, editorial notes and the two second editions excluded\"; queries.log:10-12, 29, 30, 53 carry \"c.is_front_matter=0 AND c.is_editorial_note=0\"). But two reported counts ran without the predicate and the memo does not say so: queries.log:44 \"SELECT 'anti-corruption phrase', COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\\\"anti corrupt*\\\"'\" -> memo.md:141 \"54 documents\" and overview.md:9 \"'anti-corruption' appears in 54 documents\"; queries.log:53's church subcommittee/committee count -> memo.md:147 \"matches 113 documents (not read)\". Re-run with the exclusion: 52 (two editorial notes, frus1958-60v16/d183 and frus1964-68v23/d140, sit inside the 54 the historian is given) and 56 of the 113. The FCPA (4) and OECD (12) counts at log:44/46 also lacked the predicate but happen to hold no apparatus rows."
+      },
+      {
+        "id": "E2",
+        "block": "EXCLUSIONS",
+        "verdict": "obeyed",
+        "evidence": "read.py's SELECT is \"header, dateline, source_note, body_text, length(body_text) FROM document_cache\"; share.py, payments.py, dupcheck.py, verify.py and vec.py read the same columns. grep for summary_text / note_text / user_content over every session file: none. The FTS table frus_documents indexes only header, dateline, source_note and body_text (schema read from sqlite_master), so no MATCH reached a summary either."
+      },
+      {
+        "id": "E3",
+        "block": "EXCLUSIONS",
+        "verdict": "not_applicable",
+        "evidence": "No session file names cross_references (grep over memo.md, queries.log and every .py: none); the session never used the table, so is_broken had nothing to exclude."
+      },
+      {
+        "id": "T1",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "Stems were looked up before any MATCH: memo.md:25-26 \"SELECT term, doc FROM frus_documents_vocab WHERE term LIKE 'brib%' OR term LIKE 'corrupt%' ... -> bribe|431 briberi|309 corrupt|2253 ... embezzl|174 graft|372 grafter|19 grafton|80 (excluded: a name) kickback|18\" (queries.log:6, before the first MATCH at log:10), and the family is written in stemmed form \"corrupt* OR bribe OR briberi OR graft OR grafter OR kickback OR embezzl\"; overview.md:42 \"The index treats 'bribe', 'bribes' and 'bribed' as the same word.\" checks/match_check.txt: 24 terms, 5 dead, four of them the negative control's zzz forms; the fifth, 'lockhe' in the header probe at queries.log:13, is a double-stemming miss (vocab term lockhe|199, but MATCH 'lockhe' stems to lockh) the session never recognised; no count, claim or document rests on it."
+      },
+      {
+        "id": "T2",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "memo.md:109-110 groups \"s.citation_era\" as citation forms \"decimal 1297, structured 637, lot_file 202, subject_numeric 182, cfpf 119 ...\" and memo.md:114 says \"(citation_era is a citation form, not a date.)\"; all periodisation is on document_dates.date_iso (memo.md:46)."
+      },
+      {
+        "id": "T3",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "memo.md:103 \"## 5. Archival scope (M12-M14), two channels, never summed\"; came-from \"2,547 of 3,057 documents have a source row\" (M12) and pointed-at \"746 rows over 435 documents\" (M13) are reported in separate paragraphs and never added; overview.md:7 \"The two channels are separate counts and are not added together\"."
+      },
+      {
+        "id": "R1",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo.md shows the SQL behind M1 (line 10), M2 (17-18), M5 (32-34), M12 (109-111) and M19 (144); where it abbreviates with \"...\", memo.md:5 says \"SQL run through q.sh is logged with its full text\" and queries.log:11 (decade), 29 (came-from), 30 (pointed-at), 53 (withheld) carry the full statements. I re-ran them: 3057|447, 2547, 746|435, 580|104 and the decade rows all reproduce."
+      },
+      {
+        "id": "R2",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "\"3,057 of 311,429 non-apparatus documents (9.8 per 1,000)\" (memo.md:30); \"TOLERANT ... 40 of 40 ... STRICT ... 30 of 40 ... REFERENT ... 31 of 40\" (39-41); \"19 of 27\" (44); \"2,547 of 3,057\" (107); \"11 of 698\" (134); \"of 580 family hits ... 104\" (142); the decade table gives n and hits beside each per-1,000 rate; no bare percentage found."
+      },
+      {
+        "id": "R3",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo.md:72 \"Negative ZZZ_IMPOSSIBLE_ZZZ: 0. Relaxed zzz*: 0 (no such stem; the negative needs no relaxation)\"; 139 \"1990s, 177 dated documents, 0 hits ... Relaxed (widen to the 1980s): 104 of 6,038\"; 141 \"klepto*: 0 vocabulary rows ... relaxed: anticorrupt 4 documents, phrase \\\"anti corrupt*\\\" 54 documents\"; 126 \"Lot 79F80 ... not resolved (lots.py 79F80 -> null)\"; 42 \"The garble-sense regex ... caught 0 of 40, but the referent reading caught one such case (frus1948v06/d51); the regex is too narrow to use as a filter.\""
+      },
+      {
+        "id": "R4",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo.md:140 \"\\\"foreign corrupt practic*\\\": 4 documents in 2 volumes (...) - thin\"; overview.md:36 \"The act appears by name in only four documents, so this finding rests on a thin record\"; memo.md:134 \"11 of 698 ... that is the stack's reach, not an archival absence\"; memo.md:68 flags the 1890s rate as leaning on one volume (\"frus1894app2 (Hawaii, 49 of the 124 1890s hits at most)\"). The index holds all 553 volumes, so library and corpus coincide; thinness was still flagged."
+      },
+      {
+        "id": "S1",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "queries.log:20 runs both in one invocation: \"SELECT COUNT(*) FROM (SELECT volume_id FROM frus_documents WHERE frus_documents MATCH '\\\"Department of State\\\"' GROUP BY volume_id); SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH 'ZZZ_IMPOSSIBLE_ZZZ';\"; memo.md:70-72 reports \"present in 552 of 553 volumes; the one without it, frus1919Parisv05 ... is searchable (state matches 89 of 90) and has 2 family hits\" and \"Negative ZZZ_IMPOSSIBLE_ZZZ: 0\". Re-run: 552 / 0; the missing volume is frus1919Parisv05 (90 documents, 89 match 'state', 2 family hits)."
+      },
+      {
+        "id": "S2",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo.md:38 \"text = header+dateline+source_note+body_text, whitespace-collapsed; Python re\" for the literal share; :70 \"Controls (M9), same surface (FTS index)\"; :105 \"Counting surface: the index's document_sources (came-from) and external_citations (pointed-at) tables\"; :142 \"(SQL LIKE, case-insensitive)\" over body_text for the withheld-text count."
+      },
+      {
+        "id": "S3",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo.md:25-26 reports the split by stem from the vocabulary (\"bribe|431 briberi|309 corrupt|2253 corruptionist|8 corruptli|13 embezzl|174 graft|372 grafter|19 grafton|80 (excluded: a name) kickback|18\"); the regexes enumerate inflections (\"brib(e|es|ed|ing|ery|eries)\", \"kick[\\\\s-]?backs?\", memo.md:39); a second family (\"improper / illicit / questionable payment\", :44) is censused with its own split (TOLERANT 19 of 27, STRICT 18 of 27). My check: the acronym MATCH 'fcpa' reaches 1 document, inside the 4 the full phrase finds."
+      },
+      {
+        "id": "S4",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo.md:46 \"periodised on document_dates.date_iso (the index's date for the document, taken from the frus:doc-dateTime-min attribute as the index stores it; not the volume's series year)\"; queries.log:11 groups by substr(t.date_iso,1,3)||'0s'."
+      },
+      {
+        "id": "S5",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo.md:17-18 \"second editions dropped: ... volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') -> 311429\" and M5 \"With the Ed2 volumes also dropped: 3,057 documents in 447 volumes\"; topvols.txt shows the fold (frus1951-54IranEd2 32 = frus1951-54Iran 32). The index holds three Ed2 volumes; frus1977-80v09Ed2, which has no first edition in the corpus, was correctly left in."
+      },
+      {
+        "id": "A1",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "memo.md:107-113 \"Came-from (M12) (camefrom.txt): 2,547 of 3,057 documents have a source row ... Top: Central Intelligence Agency 117; Nixon Presidential Materials, NSC Files 95; Johnson Library, National Security File 77; Carter Library, National Security Affairs 56; RG 59 Central Files 1970-73 43 ... RG 59 Lot 54D270 17; Lot 63D351 16\"; SQL at queries.log:29; re-run gives 2547."
+      },
+      {
+        "id": "A2",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "memo.md:116 \"Pointed-at (M13) (pointedat.txt): 746 rows over 435 documents. Anchors: centralFileClass 448, presidentialLibrary 162, lotFile 136. Ranked: central file classes (Department of State) 448; Carter Library National Security Affairs 41; Johnson Library NSF 28; Nixon NSC Files 27; Lot 66D95 17; Lot 63D351 12 ...\"; SQL at queries.log:30; re-run gives 746|435."
+      },
+      {
+        "id": "A3",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "Each count carries its channel: memo.md:107 \"Came-from (M12)\", :116 \"Pointed-at (M13)\", and the resolution table's channel column (\"came-from 16, pointed-at 12\", \"pointed-at 17\", \"came-from 17\", \"both\", memo.md:121-131); memo.md:103 \"two channels, never summed\"; overview.md:7 \"The two channels are separate counts and are not added together (see the memo).\""
+      },
+      {
+        "id": "A4",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "lots.py opens central-files-index.json and series-facts-index.json; sfacts.py opens series-facts-index.json, curated-lot-resolutions.json, lot-claimants-index.json and collection-authority.json; queries.log:42-43 and 51 name presidential-library-catalog.json and decimal-class-labels.json; memo.md:118 cites \"central-files-index and series-facts-index schemaVersion 3, generated 2026-09-10; presidential-library-catalog schemaVersion 1, generated 2026-08-06\" (both check against the bundled files)."
+      },
+      {
+        "id": "A5",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "memo.md:121 \"Lot 63D351 | came-from 16, pointed-at 12 | RG 59, naId 2839192, entry A1 1586E, 'Records Relating to National Security Council Policy Papers', creator Executive Secretariat, inclusive 1947-1979, 26 ft 3 in, access Restricted - Partly (FOIA b1), College Park\"; :125 \"Lot 54D270 ... creator naId 10481258\"; :127-129 \"JFK-4, naId 1164\", \"LBJ-NSF, naId 567979\", \"RN-NSF ... naId 572235\"."
+      },
+      {
+        "id": "A6",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "The cited Lot 63D351 (came-from 16, pointed-at 12) is resolved through the bundled indexes, not quoted: memo.md:121 \"naId 2839192, entry A1 1586E ... creator Executive Secretariat, inclusive 1947-1979, 26 ft 3 in, access Restricted - Partly\" via lots.py/sfacts.py (queries.log:31-32). Verified in the bundled JSON: central-files-index.json lotFiles 63D351 -> naId 2839192 \"Records Relating to National Security Council Policy Papers\"; series-facts-index byNaId 2839192 -> \"Department of State. Office of the Secretary. Executive Secretariat.\", inclusiveStartYear 1947, \"Restricted - Partly\", \"26 linear feet, 3 linear inches\". Lots 62D430 -> 2839191, 62D1 -> 2838992 and the library NAIDs 1164/567979/572235 also check."
+      },
+      {
+        "id": "P1",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo.md:38-41 \"Literal share (M6) ... sample of 40 evenly spaced ... TOLERANT (re.I, ...): 40 of 40. STRICT (case-sensitive, base forms only ...): 30 of 40; every miss an inflection or capital ... REFERENT test (hand-classified, referent.txt): 31 of 40 use the word of official or political corruption or bribery; 9 of 40 are other senses\", both sides shown and the second family compared (\"TOLERANT 19 of 27 ... below 0.80: the family is unusable in its published form\", :44); share_sample.json and referent.txt hold the sample."
+      },
+      {
+        "id": "P2",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "The change claim (overview.md:38 \"the words appear most often from the 1950s on: about one document in fifty in the 1960s and 1970s, against about one in three hundred in the 1930s\") is backed on both sides by the decade table memo.md:51-66 (1930s 40,073 / 121 / 3.0; 1940s 75,872 / 477 / 6.3; 1950s 42,801 / 556 / 13.0; 1960s 27,654 / 558 / 20.2; 1970s 22,258 / 435 / 19.5); re-run reproduces those rows."
+      },
+      {
+        "id": "P3",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo.md:85-99 attributes Q1-Q13 each to a pair (\"Q10 | frus1969-76ve11p1/d159 | 'The Department just learned of the bribe. It refused to help cover it up.'\"); the pairs were retrieved by read.py (queries.log:15-17, 38; raw/ holds all 17 dumps); every overview quotation carries its history.state.gov URL with the pair. I re-tested all 13 quotations as substrings of the whitespace-collapsed body_text: 13 of 13 present."
+      },
+      {
+        "id": "P4",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo.md:79 \"17 documents retrieved whole, 202,357 characters ... 12 cited and quoted (13 quotations). Read but not cited: ve12/d418 ..., 1977-80v18/d154 and 1948v07/d68 ..., v31/d138 and d145\"; overview.md:11 \"seventeen were read whole and twelve are cited\"; raw/ holds 17 files; queries.log:50 is the SUM(length(body_text)) over the 17."
+      },
+      {
+        "id": "P5",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "Every share carries numerator and denominator where used: \"3,057 of 311,429 non-apparatus documents (9.8 per 1,000)\" (memo.md:30), \"40 of 40\", \"30 of 40\", \"31 of 40\", \"9 of 40\" (39-41), \"19 of 27\" (44), \"49 of the 124 1890s hits\" (68), \"2,547 of 3,057\" (107), \"11 of 698\" (134), \"of 580 family hits ... 104\" (142), \"12 of 25 in scope; 13 outside\" (159), \"18 of 66 pairs agree\" (165); the decade table pairs each per-1,000 rate with its n and hits in the same row. No bare share column or detached percentage."
+      },
+      {
+        "id": "P6",
+        "block": "REPORTING",
+        "verdict": "violated",
+        "evidence": "The log is honest about its elisions (queries.log:60 \"ELIDED: ... the python3 script bodies ... are summarised here by their predicates and kept whole on disk ...; the inline python3 -c bodies ... are described, not reproduced\") and most script numbers have a named output file (share.py -> share_sample.json; vec.py -> vectors.txt/vectors_out.json; dupcheck.py -> dupcheck.json, dup_components.txt; payments.py -> payments.txt; decades.txt; camefrom.txt; pointedat.txt; cited_meta.json). But the numbers with no SQL behind them in section 5 have the script named and NO output on disk: memo.md:134 \"starting before 1940: 11 of 698 (sfacts.py)\" and the whole M14 resolution table (memo.md:119-132: naIds, entries, extents, access statuses) come from lots.py, sfacts.py (queries.log:31-32, 52) and the python3 -c presidential-library lookups (log:42-43); the run directory holds no output file from any of them, so no file holds those numbers."
+      },
+      {
+        "id": "O1",
+        "block": "READER",
+        "verdict": "obeyed",
+        "evidence": "overview.md contains no SQL, no underscore-bearing table or column name (grep for [A-Za-z]+_[A-Za-z]+: none), no file path (no .json/.py/.txt/.db or /Users), and all twelve id pairs occur only inside history.state.gov URLs, e.g. \"(Foreign Relations of the United States, 1922, Volume I, Document 841, https://history.state.gov/historicaldocuments/frus1922v01/d841)\"; zero frus.../d... tokens outside a URL."
+      },
+      {
+        "id": "O2",
+        "block": "READER",
+        "verdict": "violated",
+        "evidence": "Most figures are counts of named sets with a trace (\"about one document in a hundred\" -> section 2 M5 3,057 of 311,429; \"seventeen were read whole and twelve are cited\" -> section 3 M10; \"'anti-corruption' appears in 54 documents\" -> M18). Two numbers trace to no memo line: overview.md:33 \"Eight months later the Secretary's briefing warned\" (the interval between d122, 1974-12-16, and d155, 1975-08-19; memo.md gives neither date and no interval - grep for 1974-12, 1975-08, 'eight month': nothing) and overview.md:36 \"ranked the act as exporters' second-largest disincentive\" (from d248's own text \"the second most significant export disincentive\"; memo.md's only 'second' is 'second editions'/'Second family')."
+      },
+      {
+        "id": "O3",
+        "block": "READER",
+        "verdict": "obeyed",
+        "evidence": "overview.md:3-9 opens \"## The bottom line\" with \"**1. What FRUS answers directly.**\" citing documents (\"1922, Volume I, Document 841 ... 1977-1980, Volume III, Document 248 ... The collection holds twelve documents\"), \"**2. Where FRUS points for the rest.**\" split \"*Where the printed documents came from:*\" / \"*What the editors cited without printing:*\" with series named (\"Lot 63D351, the Records Relating to National Security Council Policy Papers, entry A1 1586E, identifier 2839192, 1947-1979, partly restricted\"), and \"**3. What this request cannot get from FRUS.**\" naming the searches (\"I searched the same five word families over the documents dated in the 1990s and none matched ... A check phrase, 'Department of State', was found in every volume but one ... an impossible string was found nowhere\")."
+      },
+      {
+        "id": "V1",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "memo.md:154 \"Provenance (V1) (vec.py, output vectors.txt): digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 from all six: the index's provenanceDigest, binary bytes 20-51, map bytes 20-51, shards manifest, shard frus1947v07.vec bytes 16-47, and the shard folder's .generation. All agree.\"; vectors.txt:1-8 prints the six equal digests and vec.py:28 \"assert len(set(digests.values()))==1\" runs before any vector is read."
+      },
+      {
+        "id": "V2",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "vec.py:12-19 takes identity from the index's segments and nothing else: \"for seg in v['seg']: assert seg['s']==len(ids); ids.append(seg['i']); if seg['n']>1: ... ids.extend('d%d'%(base+k) for k in range(1,seg['n'])) ... assert len(ids)==v['n'] ... row_of[(v['v'],d)]=v['r']+k\" (no shard position, no d{ordinal+1}); memo.md:154 \"Round trip: decoded length = n for all 553 volumes (assert), 314,616 rows\" equal to the binary header's 314,616. The four anchors are addressed as known pairs (frus1947v07/d583, frus1969-76ve09p2/d122, frus1969-76ve11p1/d159, frus1922v01/d841) and every decoded neighbour was joined on both keys to document_cache and found (memo.md:163; vec.py:58 would have printed NOT IN DB). No check is labelled a spot check; the per-segment offset asserts and the anchor lookups stand in for one."
+      },
+      {
+        "id": "V3",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "memo.md:156 \"Baselines at this digest (V2): random pairs (20,000, seed 1877): mean 167.1, sd 14.8, 1st percentile 132. 25th-neighbour distance over 200 random rows (seed 1878): min 73, p10 93, median 107, p90 119\" precede the first neighbour list (vectors.txt:11-13 print before the ANCHOR blocks), and each list is read against them: \"nearest 82-93, all inside or below the random-row median 107\" (:159), \"nearest at 119-138, at or beyond the p90 of the k-th distribution: no close neighbours\" (:161)."
+      },
+      {
+        "id": "V4",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "vec.py:32-35 \"ED2=('frus1951-54IranEd2','frus1969-76ve15p2Ed2'); skip=np.array([doc_of[r][0] in ED2 ...]); ... d[skip]=1<<20\" suppresses both twins on every neighbour surface, and the near-duplicate pass runs over the 3,057 set from which they are already dropped (memo.md:165). grep 'Ed2' over vectors.txt finds only frus1977-80v09Ed2/d198 (line 86), the volume with no first edition, which the item exempts."
+      },
+      {
+        "id": "V5",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "memo.md:167 \"Conditional op: the map (V5). Not run: no claim here depends on whether corruption forms a region, and no cluster figure is given.\" No cluster figure appears in memo.md, overview.md or the collection."
+      },
+      {
+        "id": "V6",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "memo.md:152 \"All cosines below are raw. (None is used: every figure is a Hamming distance on 512-bit sign vectors.)\" and :154 \"retrieval.scoreCalibration: documentOffset 0.4, queryOffset 0.47 (not applied; no percentage compared)\"; vectors.txt:10 prints the calibration block; no cosine or percentage is shown to any reader."
+      },
+      {
+        "id": "V8",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "grep -i for hamming, cosine, bit(s), cluster, vector, neighbour/neighbor, nearest, embedding, distance over overview.md and over the collection's introductionText, 6 prose entries and 12 notes: none. The vector-found document is described only as \"found by its similarity to the Jidda airgram, by no word search, and read before it was cited\" (overview.md:33; collection note on frus1969-76ve09p2/d155) and \"I used document similarity to look for related documents that use none of the words, and found one\" (overview.md:42)."
+      },
+      {
+        "id": "O4",
+        "block": "READER",
+        "verdict": "obeyed",
+        "evidence": "The introductionText, 6 prose entries and 12 notes carry no SQL, no table or column name of the index, no file path and no id pair (grep for frus.../d..., underscore-joined names, SELECT/MATCH/WHERE, .json/.py/.txt/.db, /Users: none; documents are addressed only through the format's volumeId/documentId fields, e.g. notes read \"Agent finding, run s3, 2026-10-30: Crowder forwards his Memorandum No. 8 on graft and corruption (not printed) ...\"). Caveat: introductionText writes \"naId\" seven times (\"Kennedy, naId 1164; Johnson, naId 567979; Nixon, naId 572235\", \"Lot 63D351, naId 2839192\") in the bundled JSON's camelCase where the overview wrote \"NARA identifier\"; it is NARA's own identifier term rather than a table or column of the index, so it is not counted as a violation."
+      },
+      {
+        "id": "O2'",
+        "block": "READER",
+        "verdict": "violated",
+        "evidence": "checks/o2p_flags.txt: 76 numbers, 8 traced by the script, 68 flagged (40 WEAK, 28 UNTRACED), all read. Decided: 25 TRACED, 5 NOT A NUMBER, 38 UNTRACED. TRACED: 'one'/'hundred' (one document in a hundred), '553', '3,000' -> row \"all 553 volumes\"; \"about one document in a hundred\" | section 1 M1, M2; section 2 M5 (3,057 of 311,429); 'about three in four' x2, 'three'+'quarters' (three-quarters), 'forty' x2 -> row \"about three in four of a sample use the word in the political sense\" | section 2 M6 referent 31 of 40; 'six' -> row \"about one matching document in six from 1969 on\" (104 of 580); 'four' documents x2 -> row \"law named in only four documents\"; 'one' volume -> row \"'Department of State' control in every volume but one\"; 'seventeen' x2, 'twelve' x5 -> row \"seventeen documents read whole, twelve cited\"; 'one'/'fifty' and 'about one in three'/'hundred' -> rows \"peak about one in fifty in the 1960s and 1970s\" and \"about one in three hundred in the 1930s\"; 'twenty' -> row \"about twenty Crowder telegrams\". NOT A NUMBER: 'one' in \"is one the memo verified\", 'one' in \"one of the words\", 'one' in the quoted \"may one day prove\", 'two' in \"the first two\", 'two' in \"keeping the two apart\". UNTRACED (38): the 23 archival identifiers of paragraph 2 - Record Group 59, RG 59 x2, RG 84, 1164, 567979, 572235, 54D270, 10481258, 63D351 x2, A1 1586E x2, 2839192 x2, 79F80, 66D95, 62D1, A1 1583E, 2838992, 62D430, A1 1586C, 2839191 - which the catch-all row \"channel series and identifiers in paragraph 2 | section 5 M12-M14\" points at but holds in no form; the figures '54' (anti-corruption documents; the row \"no word for 'kleptocracy'\" holds no 54), '3,040' (derivable as 3,057 - 18 from two rows, held by none), 'Eight' months, 'second-largest'; and the structure/method counts 'three' ways, 'Two' RG 59 lots, 'ten' series, 'two' channels, 'five' word families x3, 'two' volumes, 'two' second editions x2, 'five' findings. Any UNTRACED makes the item violated."
+      }
+    ],
+    "obeyed": 39,
+    "violated": 4,
+    "notApplicable": 1,
+    "notes": "All four named files are present (memo.md, overview.md, collection.fruscollection, queries.log), with the session's scripts, raw/ dumps (17) and outputs; checks/ was read only for T1 (match_check.txt) and O2' (o2p_flags.txt) and credited to nothing. The memo's figures reproduce exactly against the read-only index copy: 553|321749|1103|8481; 311,429; 3,163/3,096/451 and 3,057/447; the decade rows 1930s-1990s; 552 volumes with \"Department of State\" with frus1919Parisv05 the exception (90 documents, 89 match 'state', 2 family hits); came-from 2,547; pointed-at 746 rows/435 documents; withheld 580/104; payments census 27; FCPA 4 in 2 (MATCH 'fcpa' adds no document); d155 unmatched by the family. All 13 quotations are exact substrings of the collapsed body_text. The bundled JSON confirms Lot 63D351/66D95 -> naId 2839192, 62D430 -> 2839191, 62D1 -> 2838992, library NAIDs 1164/567979/572235, and 11 of 698 series starting before 1940. The index holds three Ed2 volumes; the session dropped the two with first editions and kept frus1977-80v09Ed2, as the house rule requires. frus_documents indexes only header, dateline, source_note and body_text. The collection holds exactly the 12 cited pairs. The four violations: E1 (the \"anti corrupt*\" 54 and Church-committee 113 counts ran without the apparatus predicate and the memo does not say so; 52 and 56 with it, two editorial notes inside the 54 the overview reports); P6 (the section 5 resolutions and \"11 of 698\" come from lots.py/sfacts.py/python3 -c runs with no output file on disk); O2 (\"Eight months later\" and \"second-largest\" trace to no memo line); O2' (38 of 68 flags UNTRACED, 23 of them archival identifiers covered only by a catch-all trace row). Borderline calls recorded in the evidence so an adjudicator can flip them: V2 obeyed on the per-segment offset asserts and anchor lookups rather than a labelled known-pair spot check; T1 obeyed despite one unrecognised dead term ('lockhe' at log:13) that no claim rests on; O4 obeyed with \"naId\" (the bundled JSON's camelCase, seven times in introductionText) treated as NARA's own term rather than a column name. V1-V6 and V8 are scored because the session opened the vector artifacts (vec.py reads semantic-vectors-index.json, semantic-vectors-binary.bin, semantic-map.bin, semantic-shards-manifest.json and the shard folder's .generation). V7 not returned (the refuter's)."
+  }
+}
