@@ -8513,3 +8513,55 @@ The two `LanguageModelError` tests need iOS 27 (`.enabled(if:)`), and both ran.
 - **The test that removed `lastModified` from the digest:** setting `responseText` or `bodyText` on a model no context holds left `lastModified` where it was. Whether the `didSet` runs on a model a context holds was not checked.
 
 **Pushed and opened as #1820** against `v2` on the owner's word ("Push and open PR", 2026-10-31).
+
+## Session 2026-10-31 — A long document's summary covers the whole document: each synthesis call wraps the reader's prompt and labels each partial with its part
+
+A follow-up to #1765, in a session of its own. #1765 (#1820, the entry above) puts plain-text prompts on Apple's permissive guardrails, and the Long Telegram (`frus1946v06/d475`, 34,824 characters, five parts at the 3,072-token budget) then summarizes. That exposed the synthesis: each part's summary was good, and the final one kept a slice. The Mac check copy's stored Standard Summary opens "The document involves a person addressing how to deal with Russia", the closing section alone. Cut from `v2` at `9fc5eb0a`, before #1820 merged; `v2` at `233dc344` (#1820) was merged in after the runs below, this file's appended entries its only conflict.
+
+**Why.** `SummarizationService.synthesize` ran the reader's prompt over the joined partial summaries as it stood, so the model read them as one short document of several "documents" and answered for one of them. Which one varied by run: the first, a middle one or the last.
+
+**Measured** with a throwaway harness, never committed (swiftc and FoundationModels on macOS 27.2, the M5 MacBook Air with Apple Intelligence on). It ports this service's budget, paragraph chunking, map pass and hierarchical reduce at the 3,072-token limit, with #1765's guardrails, over text from FRUSCoreKit's parser built as the app builds it. Each run makes the map pass once and synthesises every variant from the same partials. Standard Summary, 17 runs over six documents:
+- the Long Telegram (5 parts);
+- the Vienna memoranda of conversation `frus1961-63v05/d85` (6) and `d87` (7);
+- the ExComm transcript `frus1961-63v11/d18` (5) and McCone's memorandum `d23` (2);
+- NSC 68, `frus1950v01/d85` (18 parts, two reduce levels).
+
+The results:
+- **One part supplying more than half of the final's distinctive words**, over the 14 runs of documents of more than two parts: 7 at `v2`, 1 with the change (`d18`, its opening part, 56%).
+- **The Long Telegram names the Chargé:** 0 of 3 at `v2` ("a political entity and a person"), 3 of 3 with the change.
+- **`d87`:** at `v2` two of three runs end on the lunch that closes the record ("a shift from formal negotiation to a meal"), naming nobody; with the change all three name the President and Khrushchev, Laos, the test ban and Berlin.
+- **Length:** the Standard Summary's two to four sentences held in 16 of 17 runs (NSC 68's first ran to 8). The "who" sentence still lists many names and the sentences run long, as at `v2`.
+- **Tried and not adopted:** the framing put in the document's place (the model copied every partial back, about fifteen sentences), as session instructions (still the last part), a running summary carried part to part, and the request moved into instructions (run-on lists).
+- **Labels and Apple's default guardrails:** with "Part k of N:", the Meeting Record's synthesis over one set of `frus1961-63v09/d194`'s partials was refused 6 of 6 times inside the wrapper and 2 of 2 with the reader's prompt alone, where the same calls without labels passed. "Summary of part k of N:" and four other forms passed there.
+- **Structured prompts** run on the default guardrails (#1765), which refused the map step on 10 of the 12 long documents tried, even economic papers. Where synthesis was reached, it passed 4 of 4 with the change and 3 of 4 at `v2`.
+- **Plain text on the default guardrails,** as before #1765: replaying the 17 sets of partials, both syntheses were refused on the same two (the Long Telegram's first two runs) and passed the other 15.
+
+**Decided.** The owner, shown the outputs before and after (AskUserQuestion, 2026-10-31): "Wrap all prompts (Recommended)", plain-text and structured.
+
+**Changed** (`FRUSExplorer/Summarization/SummarizationService.swift`, 1.3):
+- **`synthesisPromptText(wrapping:firstPart:lastPart:partCount:)`,** the measured wording: the input is summaries of parts *a* to *b*, in order, of one document read in *N* parts; answer once for all of it, at the length the request asks, combining the parts rather than going through them, and keep the names the summaries give. Then the reader's prompt, less its `{{DOCUMENT}}`, then the wrapper's own `{{DOCUMENT}}`.
+- **`synthesisLabel(firstPart:lastPart:partCount:)`:** "Summary of part 3 of 5:", or "Summary of part 1–6 of 18:" for an intermediate summary.
+- **`synthesize`** carries each entry's span of parts through the reduce, so every call's wrapper names its span and the next level's labels say which parts each summary covers. Its budget is the wrapped prompt's, so it now takes the token limit rather than the reader's prompt's budget.
+- **Unchanged:** the seeded prompts and the prompt editor, the map pass, the provider, `GeneratedSummary` and the CloudKit schema. The wrapper is model-facing and never shown, so it is not localized. Summaries already stored keep their text until they are made again.
+
+**Tests** (`SummarizationServiceTests`, 15 → 19; the mock provider records each call's request and prompt):
+- the map calls run the reader's prompt unchanged, and the synthesis call runs it wrapped, under the same id and format, over the partials labelled 1 to *n*, plain-text and structured;
+- the measured wording, pinned, with one placeholder; a change to it is a change the measurement no longer covers;
+- a hierarchical reduce labels each summary with a contiguous span, names it in the call's wrapper, and its last call covers every part;
+- the wrapper is counted: five partials sized to fit the reader's prompt's budget and not the wrapped one's take a reduce level, and every call fits the window less its margin.
+
+Mutation, after a checkpoint commit: the synthesis budget taken from the reader's prompt, as at `v2`, fails the last test with 2 issues, and the other 18 pass.
+
+**Checked.** Each heavy job through `Scripts/heavy.sh`, Xcode 27.2 (27B52) on macOS 27.2, at `9fc5eb0a` with the change:
+- `build-for-testing` of `FRUSExplorer` on an iPhone 17 simulator, iOS 27.0: "** TEST BUILD SUCCEEDED **", with only the `GeneratedSummary` residue warning.
+- **The full unit target:** "✔ Test run with 7784 tests in 931 suites passed after 414.597 seconds." (signed to run locally, so the Keychain suites pass); the four new tests among them. The CoreData "file is not a database" lines in the log are `StoreSchemaGuardTests`' own corrupt store.
+- **`FRUSExplorerMac`,** DirectDistribution, unsigned: "** BUILD SUCCEEDED **", with the same residue warning.
+- **No `swift test` owed:** no kit file changed.
+- **After merging `v2` at `233dc344`** (`1384b684`), the same way: the full unit target "✔ Test run with 7797 tests in 933 suites passed after 416.985 seconds." (#1820's 7,793 and these 4), and `FRUSExplorerMac` "** BUILD SUCCEEDED **".
+
+**Not done.**
+- **The app was not run with this build,** so no summary was made through it. The unit tests drive the real service through a mock provider. The wrapper, labels and joining are byte-for-byte what the harness measured (the wording test's literal is the harness's template); only a very long document's batch boundaries differ.
+- **The UI suites,** iOS 26.x and a device.
+- **A pull request of its own against `v2`,** #1820 having merged (the owner's word, relayed by #1765's session: "1820 already merged, so results of chunked summary work need to go on a new PR").
+
+**Found, not fixed:** on the default guardrails, which #1765 keeps for structured prompts because the permissive mode does nothing for guided generation, a structured prompt's map step was refused on 10 of the 12 long FRUS documents tried. So the structured templates mostly fail on a long document before synthesis.

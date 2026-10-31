@@ -73,6 +73,8 @@ public enum SummarizationStep: Sendable, Equatable {
 ///          to avoid returning a non-`Sendable` `GeneratedSummary` across actor boundaries
 ///   1.2 — Optional `IndexingPipeline` injected at init; `summarize` pushes each new summary
 ///          into FTS5 immediately after SwiftData save for in-session searchability
+///   1.3 — 2026-10-31: a synthesis call wraps the reader's prompt and labels each partial summary
+///          with its part, so a long document's summary covers the whole document
 actor SummarizationService {
 
     // MARK: - Init
@@ -224,7 +226,7 @@ actor SummarizationService {
                 provider: provider,
                 documentId: documentId,
                 volumeId: volumeId,
-                budget: budget,
+                tokenLimit: tokenLimit,
                 onStep: onStep
             )
             return (resultText, true)
@@ -438,57 +440,146 @@ actor SummarizationService {
     /// The naive approach — concatenating *all* partials into a single synthesis call —
     /// overflows the model window once a document is long enough (the original
     /// `frus1950v01/d85` failure). Instead this reduces **hierarchically**: while the
-    /// joined partials exceed `budget`, they're grouped into batches that each fit, and
+    /// joined partials exceed the budget, they're grouped into batches that each fit, and
     /// each batch is synthesised into an intermediate summary; the process repeats on
     /// the intermediates until they fit, then one final synthesis produces the result.
     /// Every model call therefore stays within the window, for a document of any length.
+    ///
+    /// Every synthesis call runs the reader's prompt inside ``synthesisPromptText(wrapping:firstPart:lastPart:partCount:)``,
+    /// over summaries labelled by ``synthesisLabel(firstPart:lastPart:partCount:)`` with the span
+    /// of the document's parts each stands for, so an intermediate summary of parts 1 to 6 is
+    /// labelled as such at the next level. The budget is the wrapped prompt's, which is longer
+    /// than the reader's own.
     private func synthesize(
         partialSummaries: [String],
         prompt: SummarizationPromptSnapshot,
         provider: any SummarizationProvider,
         documentId: String,
         volumeId: String,
-        budget: Int,
+        tokenLimit: Int,
         onStep: (@Sendable (SummarizationStep) -> Void)? = nil
     ) async throws -> String {
         do {
             // Reported once, at the top: the reduce pass is a single logical phase from the
             // reader's point of view, and its own level-by-level detail would flicker.
             onStep?(.synthesizing(parts: partialSummaries.count))
-            var level = partialSummaries
+            let partCount = partialSummaries.count
+            let budget = documentBudget(
+                promptText: Self.synthesisPromptText(
+                    wrapping: prompt.promptText, firstPart: 1, lastPart: partCount, partCount: partCount),
+                responseFormat: prompt.responseFormat,
+                limit: tokenLimit)
+            // Each entry of a reduce level, with the first and last of the document's parts it covers.
+            var level = partialSummaries.enumerated().map { (text: $0.element, first: $0.offset + 1, last: $0.offset + 1) }
+            func labelled(_ entries: [(text: String, first: Int, last: Int)]) -> [String] {
+                entries.map {
+                    Self.synthesisLabel(firstPart: $0.first, lastPart: $0.last, partCount: partCount) + "\n" + $0.text
+                }
+            }
+            func wrapped(firstPart: Int, lastPart: Int) -> SummarizationPromptSnapshot {
+                SummarizationPromptSnapshot(
+                    id: prompt.id,
+                    promptText: Self.synthesisPromptText(
+                        wrapping: prompt.promptText, firstPart: firstPart, lastPart: lastPart, partCount: partCount),
+                    responseFormat: prompt.responseFormat)
+            }
+
             // Reduce level-by-level until everything fits one synthesis call.
             while level.count > 1,
-                  estimateTokens(level.joined(separator: "\n\n")) > budget {
-                let batches = batch(level, maxTokens: budget)
+                  estimateTokens(labelled(level).joined(separator: "\n\n")) > budget {
+                let batches = batch(labelled(level), maxTokens: budget)
                 // No progress possible (each summary already fills a batch on its own):
                 // stop and let the final force-fit handle it, rather than looping.
                 if batches.count >= level.count { break }
                 #if DEBUG
                 print("[SummarizationService] Reduce level: \(level.count) → \(batches.count) batches")
                 #endif
-                var next: [String] = []
+                // `batch` keeps the order and puts every entry in exactly one batch, so the
+                // spans follow from the batch sizes.
+                var next: [(text: String, first: Int, last: Int)] = []
+                var start = 0
                 for group in batches {
+                    let first = level[start].first
+                    let last = level[start + group.count - 1].last
+                    start += group.count
                     let req = SummarizationRequest(
                         documentId: documentId, volumeId: volumeId,
                         chunks: group, isSynthesisPass: true)
-                    next.append(try await provider.summarize(request: req, prompt: prompt).text)
+                    let text = try await provider.summarize(
+                        request: req, prompt: wrapped(firstPart: first, lastPart: last)).text
+                    next.append((text: text, first: first, last: last))
                 }
                 level = next
             }
 
-            // Final synthesis over the (now-fitting) summaries. If a degenerate level
-            // still exceeds budget, fold it to a single capped entry so the call can't
-            // overflow — graceful degradation rather than failure.
-            if estimateTokens(level.joined(separator: "\n\n")) > budget {
-                level = [String(level.joined(separator: "\n\n").prefix(max(1, budget * 4)))]
+            // Final synthesis over the (now-fitting) summaries, which cover every part. If a
+            // degenerate level still exceeds budget, fold it to a single capped entry so the
+            // call can't overflow — graceful degradation rather than failure.
+            var chunks = labelled(level)
+            if estimateTokens(chunks.joined(separator: "\n\n")) > budget {
+                chunks = [String(chunks.joined(separator: "\n\n").prefix(max(1, budget * 4)))]
             }
             let req = SummarizationRequest(
                 documentId: documentId, volumeId: volumeId,
-                chunks: level, isSynthesisPass: true)
-            return try await provider.summarize(request: req, prompt: prompt).text
+                chunks: chunks, isSynthesisPass: true)
+            return try await provider.summarize(
+                request: req, prompt: wrapped(firstPart: 1, lastPart: partCount)).text
         } catch {
             throw SummarizationError.synthesisFailed(underlying: error)
         }
+    }
+
+    // MARK: - Synthesis prompt
+
+    /// The prompt a synthesis call runs: the reader's own prompt, without its `{{DOCUMENT}}`, inside
+    /// an instruction that says the input is the summaries of one document's parts, in order.
+    ///
+    /// Until 2026-10-31 a synthesis call ran the reader's prompt over the joined partial summaries
+    /// as it stood, so the on-device model read them as one short document and answered for one of
+    /// them. Measured on a Mac under macOS 27.2 with a throwaway harness that ran this service's
+    /// chunking and reduce, and #1765's guardrails, over six long documents under the Standard Summary
+    /// (17 runs; each run's partials synthesised both ways): one part supplied more than half of the
+    /// final summary in 7 of 14 runs of documents of more than two parts, and none of the Long
+    /// Telegram's (`frus1946v06/d475`) three named the Chargé, while two of three of
+    /// `frus1961-63v05/d87`'s ended on the lunch that closes the record. Under this instruction it was
+    /// 1 of 14, the Long Telegram named the Chargé in 3 of 3, and the Standard Summary's two to four
+    /// sentences mostly held. Framing the summaries without restating the request made the model
+    /// copy every summary back, and the same framing as session instructions still answered for the
+    /// last part, which is why the request is restated inside it. The owner adopted it for every
+    /// prompt, plain-text and structured, on 2026-10-31.
+    ///
+    /// The wording is the measured wording: a change to it is a change the measurement no longer
+    /// covers. It is model-facing and never shown, so it is not localized.
+    nonisolated static func synthesisPromptText(
+        wrapping promptText: String, firstPart: Int, lastPart: Int, partCount: Int
+    ) -> String {
+        let request = promptText
+            .replacingOccurrences(of: "{{DOCUMENT}}", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return """
+            Below are summaries of parts \(firstPart) to \(lastPart), in order, of one long document \
+            that was read in \(partCount) consecutive parts. Read them as one document, then carry out \
+            this request for all of it. Answer once, at the length the request asks for: combine the \
+            parts into the main line of the document from beginning to end, rather than going through \
+            them one by one or listing every detail, and keep the names the summaries give.
+
+            \(request)
+
+            {{DOCUMENT}}
+            """
+    }
+
+    /// The line above a summary in a synthesis call: "Summary of part 3 of 5:", or "Summary of part
+    /// 1–6 of 18:" for an intermediate summary of several parts.
+    ///
+    /// Not "Part 3 of 5:", which was measured: over one set of a structured prompt's partials
+    /// (`frus1961-63v09/d194`, Meeting Record) those labels made Apple's default guardrails refuse
+    /// the synthesis call every time, 6 of 6 inside the wrapper and 2 of 2 with the reader's prompt
+    /// alone, where the same calls without labels passed. This label passed there, and no synthesis
+    /// measured was refused with it where the unwrapped call passed.
+    nonisolated static func synthesisLabel(firstPart: Int, lastPart: Int, partCount: Int) -> String {
+        let span = firstPart == lastPart ? "\(firstPart)" : "\(firstPart)–\(lastPart)"
+        return "Summary of part \(span) of \(partCount):"
     }
 
     /// Groups summaries into batches whose joined token estimate each stays within
