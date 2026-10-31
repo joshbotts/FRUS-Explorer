@@ -7,7 +7,9 @@ guide changes because of this document, and the test in §5 decides. **Its pilot
 numbers bullet is revised before the full pass. **Measured under research on 2026-10-31**
 (`C-3-Reader-Facing-Tier-Results-2026-10-31.md`): R1 and R2's writing held in every run, but the
 reader ranking and the cost readings failed, so by that tier's rule they are not adopted, and the
-owner followed it (guide v1.39). **Scope:** the style and
+owner followed it (guide v1.39). **Then adopted:** after a rewrite test that held the research fixed
+(`C-3-Reader-Facing-Rewrite-Test-2026-10-31.md`, R1 and R2 preferred in 7 of 8 pairs), the owner
+adopted R1 and R2 (guide v1.40). **Scope:** the style and
 language of the §12 block's READER-FACING OUTPUT section and of what it governs, the overview and
 the collection's introduction, prose and notes. The section's substance and scope were adopted
 on 2026-10-30 and are not reopened here.

@@ -147,6 +147,10 @@ adopted.** The guide stays at v1.38, and the two candidate branches stay local a
 **The owner followed the rule, 2026-10-31** ("Follow the rule"). Nothing from W or K is adopted. The
 guide's §3a and its version history (v1.39) record the measurement.
 
+**R1 and R2 adopted, 2026-10-31.** After the rewrite test of R1 and R2 alone
+(`C-3-Reader-Facing-Rewrite-Test-2026-10-31.md`), the owner adopted them ("Include in 1819, along
+with adopting R1 and R2"): guide v1.40. R6's vocabulary bullet and K's three rules stay unadopted.
+
 Things that bear on that decision, none of which changes the rule's verdict:
 - **The guard's per-run clause fails the control too.** A's run 6 lost three items. With this tier's
   scorer, stricter than R16's on borderline evidence (as calibrated), an arm lost about one item a

@@ -10,6 +10,9 @@ weighed the evidence first, so W's reader reading could not isolate the writing.
 research fixed. It is the pilot's design (`Agentic-Guide-Reader-Facing-Style-Review-2026-10-30.md`
 §5) on that tier's eight A and K memos.
 
+**Adopted, 2026-10-31.** On the owner's word ("Include in 1819, along with adopting R1 and R2"), R1
+and R2 are in the guide at v1.40 (§12's READER-FACING OUTPUT and §14.16's template).
+
 **The answer.** All six readings hold. Written from the same memo, the overview under R1 and R2 was
 preferred by the blind judge in 7 of 8 pairs.
 
@@ -65,3 +68,25 @@ shorter prose and closing list "read more easily".
 2. One question, eight memos, one judge a pair.
 3. The writers worked from finished memos, as the pilot's did, not under the whole block while
    researching.
+
+## 5. The overview and the collection together
+
+The owner asked whether the overviews, read with the collection files, point the reader to the
+documents each run identified. Each overview's linked citations were compared with its collection's
+`document` entries.
+
+- **No overview cites a document its collection lacks.** That held in all 28: the tier's twelve and
+  the test's sixteen.
+- **In the tier, where each session wrote both files**, the four R1 and R2 runs cited every
+  collected document: 86 of 86, so the Documents cited list and the collection name the same
+  documents. The current wording left documents in the collection that its overview never names: 14
+  of 111 in A (9 of them in one run) and 16 of 104 in K (16 in one run).
+- **In the test, where the collection was fixed and only the overview rewritten**, R1 and R2 left 18
+  of the 215 collected documents uncited, against 14 under the current wording. The pairs differ
+  both ways (P1 7 against 5, P6 5 against 0, P7 0 against 5).
+- **The path to a document differs.** Under R1 and R2, the text gives a short citation and the
+  Documents cited list gives the full citation and link; the collection opens the documents in the
+  app. Under the current wording the link sits in the sentence, which two judges preferred because
+  the reader can check without leaving the page.
+- **Not counted:** documents a run read and set aside. The collection holds only what the argument
+  rests on, by design, so those are named only in the memo, which the historian does not receive.
