@@ -1,0 +1,32 @@
+QA total over scope_vols: 126 | QB total over scope_early: 464 | QB over scope_vols: 1347 | QD over scope_japan: 41
+
+pair                         famA hdr dens | QA(rank/25) QB-early(rank/20) QB-vols(rank) QD-japan(rank/18) | init-count terms matched
+frus1949v07p2/d386           True False True | None        8                19            None              | propaganda,"information program"
+frus1952-54v12p2/d403        True False True | None        3                5             None              | "psychological strategy","information program"
+frus1955-57v09/d189          False False False | None        None             None          None              | USIA,USIS,propaganda,"information program"
+frus1917-72PubDipv06/d135    False False False | None        None             155           None              | USIA,USIS,prestige
+frus1917-72PubDipv08/d24     False True False | None        None             None          None              | 
+frus1950v06/d89              True False True | 116         13               32            None              | USIS,propaganda,prestige
+frus1958-60v16/d65           True False True | None        None             63            None              | "psychological warfare",propaganda,"information program"
+frus1917-72PubDipv07/d32     False True False | None        None             None          None              | USIA,USIS,propaganda,"information program"
+frus1964-68v29p2/d46         True False True | None        None             33            3                 | USIS,"cultural exchange"
+frus1955-57v09/d190          False False False | None        None             17            None              | USIA,USIS,"Voice of America","cultural exchange",propaganda,"information program",prestige
+frus1955-57v09/d207          False False False | None        None             4             None              | USIA,USIS,"cultural exchange",propaganda,"information program",prestige
+frus1964-68v01/d197          True False True | None        None             None          None              | "psychological warfare",USIA,USIS,propaganda,"information program"
+frus1917-72PubDipv07/d73     False True False | None        None             None          None              | USIA,USIS
+frus1917-72PubDipv07/d100    False False False | None        None             29            None              | USIA,USIS,propaganda
+frus1917-72PubDipv08/d88     False True False | None        None             None          None              | 
+frus1964-68v29p2/d123        False False False | None        None             596           17                | 
+frus1917-72PubDipv08/d31     False True False | 17          None             2             None              | USIA,USIS,"information program",prestige
+frus1917-72PubDipv08/d149    False True False | None        None             69            None              | USIA,USIS,propaganda
+frus1969-76ve12/d10          False False True | None        None             117           None              | propaganda
+frus1969-76v38p2/d105        False True False | None        None             45            None              | USIA,USIS,"Voice of America"
+frus1977-80v22/d104          False False False | None        None             None          None              | 
+frus1977-80v30/d79           False True False | None        None             None          None              | 
+frus1977-80v30/d81           False True False | None        None             None          None              | USIA
+frus1977-80v30/d83           False True False | None        None             503           None              | USIS
+frus1977-80v30/d152          False True False | None        None             None          None              | 
+
+QA top 25 over scope_vols: [('frus1969-76v10', 'd141'), ('frus1952-54v13p2', 'd1114'), ('frus1951v06p2', 'd480'), ('frus1949v08', 'd409'), ('frus1917-72PubDipv06', 'd133'), ('frus1949v07p1', 'd409'), ('frus1958-60v15', 'd576'), ('frus1949v07p1', 'd28'), ('frus1917-72PubDipv06', 'd126'), ('frus1952-54v12p2', 'd417'), ('frus1955-57v22', 'd203'), ('frus1952-54v12p2', 'd396'), ('frus1969-76v19p2', 'd67'), ('frus1961-63v23', 'd154'), ('frus1955-57v02', 'd142'), ('frus1964-68v30', 'd54'), ('frus1917-72PubDipv08', 'd31'), ('frus1950v07', 'd626'), ('frus1952-54v15p1', 'd51'), ('frus1952-54v12p1', 'd174'), ('frus1964-68v01', 'd9'), ('frus1917-72PubDipv06', 'd93'), ('frus1955-57v02', 'd196'), ('frus1950v06', 'd475'), ('frus1952-54v12p2', 'd398')]
+QB top 20 over scope_early: [('frus1951v06p2', 'd105'), ('frus1951v06p2', 'd480'), ('frus1952-54v12p2', 'd403'), ('frus1952-54v13p1', 'd449'), ('frus1950v06', 'd68'), ('frus1952-54v12p1', 'd390'), ('frus1952-54v14p1', 'd404'), ('frus1949v07p2', 'd386'), ('frus1949v07p2', 'd344'), ('frus1949v07p2', 'd182'), ('frus1950v07', 'd82'), ('frus1952-54v12p1', 'd68'), ('frus1950v06', 'd89'), ('frus1950v07', 'd932'), ('frus1952-54v14p1', 'd179'), ('frus1952-54v12p1', 'd192'), ('frus1949v09', 'd576'), ('frus1952-54v12p1', 'd89'), ('frus1952-54v12p2', 'd273'), ('frus1952-54v12p1', 'd170')]
+QD top 18 over scope_japan: [('frus1958-60v18', 'd190'), ('frus1951v06p1', 'd751'), ('frus1964-68v29p2', 'd46'), ('frus1958-60v18', 'd295'), ('frus1951v06p1', 'd241'), ('frus1958-60v18', 'd164'), ('frus1958-60v18', 'd193'), ('frus1969-76v19p2', 'd37'), ('frus1952-54v14p2', 'd694'), ('frus1958-60v18', 'd332'), ('frus1961-63v22', 'd230'), ('frus1951v06p1', 'd228'), ('frus1958-60v18', 'd171'), ('frus1964-68v29p2', 'd35'), ('frus1958-60v18', 'd334'), ('frus1969-76v19p2', 'd1'), ('frus1964-68v29p2', 'd123'), ('frus1958-60v18', 'd156')]

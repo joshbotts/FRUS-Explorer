@@ -1,0 +1,57 @@
+index keys: ['documentCount', 'generated', 'harvestGenerated', 'harvestScriptSHA256', 'provenance', 'provenanceDigest', 'retrieval', 'schema', 'subseries', 'volumes']
+  schema: 1
+  generated: "2026-10-15"
+  harvestGenerated: "2026-10-15T06:55:14"
+  provenanceDigest: "89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101"
+  documentCount: 314616
+  retrieval: {"measuredBy": "Planning/semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md \u00a75, 3,600 era-stratified queries over the 314,616-document corpus; Hamming-800 over 512 sign bits \u2192 int8-512", "measuredRecallAt10": 0.9021, "rerankPool": 800, "scoreCalibration": {"documentOffset": 0.4, "measuredBy": "Planning/semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md \u00a71b, fitted to Embed
+  first volume entry: {"n": 312, "r": 0, "seg": [{"i": "d1", "n": 312, "s": 0}], "v": "frus1861"}
+decode round-trip volumes: 553 of 553 rows: 314616 documentCount: 314616
+binary bytes: 20476048 magic: b'FRSV'
+header ver/dims/docs/cents: 1 512 314616 660 digest at 20 matches index: True
+map digest at 20 matches: True
+anchor row: 61222
+Hamming top-15 (sign bits only):
+   ham  81 frus1917-72PubDipv07/d106
+   ham  86 frus1917-72PubDipv06/d3
+   ham  88 frus1917-72PubDipv06/d5
+   ham  88 frus1952-54v13p1/d116
+   ham  89 frus1955-57v22/d275
+   ham  90 frus1917-72PubDipv08/d99
+   ham  90 frus1950v06/d9
+   ham  91 frus1958-60v16/d65
+   ham  92 frus1917-72PubDipv07/d140
+   ham  92 frus1952-54v02p2/d374
+   ham  92 frus1977-80v30/d68
+   ham  94 frus1951v06p1/d12
+   ham  94 frus1951v06p2/d105
+   ham  94 frus1952-54v02p2/d303
+   ham  95 frus1917-72PubDipv07/d69
+shard header first 64 bytes: b'FRSS\x01\x00\x00\x00\x00\x02\x00\x00\xb8\x00\x00\x00' (1397969478, 1, 512, 184) digest@16 ok: True n==vol n: True
+anchor vector norm: 0.9998137950897217
+
+Rerank top-15 by int8 cosine after Hamming-800 pool (raw cosine; calibrated = (cos-0.40)/0.60):
+   ham  81 cos 0.920 cal 0.867 frus1917-72PubDipv07/d106
+   ham  96 cos 0.917 cal 0.862 frus1969-76v38p2/d105
+   ham  90 cos 0.915 cal 0.858 frus1917-72PubDipv08/d99
+   ham 100 cos 0.908 cal 0.847 frus1955-57v09/d190
+   ham  94 cos 0.908 cal 0.847 frus1951v06p2/d105
+   ham  88 cos 0.906 cal 0.843 frus1952-54v13p1/d116
+   ham 104 cos 0.905 cal 0.842 frus1955-57v09/d185
+   ham 102 cos 0.905 cal 0.841 frus1961-63v25/d156
+   ham  99 cos 0.905 cal 0.841 frus1917-72PubDipv06/d150
+   ham  95 cos 0.904 cal 0.841 frus1917-72PubDipv07/d69
+   ham  97 cos 0.903 cal 0.838 frus1917-72PubDipv07/d32
+   ham  90 cos 0.902 cal 0.837 frus1950v06/d9
+   ham  92 cos 0.902 cal 0.837 frus1977-80v30/d68
+   ham  96 cos 0.900 cal 0.833 frus1917-72PubDipv07/d94
+   ham  98 cos 0.899 cal 0.832 frus1955-57v09/d207
+
+session's vectors.txt order reproduced exactly: True
+set equal: True
+  memo: frus1917-72PubDipv07/d106 81 0.92 | mine: [('frus1917-72PubDipv07/d106', 81, 0.92)]
+  memo: frus1969-76v38p2/d105 96 0.917 | mine: [('frus1969-76v38p2/d105', 96, 0.917)]
+  memo: frus1952-54v13p1/d116 88 0.906 | mine: [('frus1952-54v13p1/d116', 88, 0.906)]
+Hamming d190-d185: 32 (memo 32)
+map d31: (-25638, 1339, 65535) d116: (-27824, 1607, 29) (memo: d31 unclustered 65535; d116 cluster 29)
+random pairs (seed 1877): mean 167.2 sd 14.9 p1 131 min 90 (memo 167.2 14.9 131 90)

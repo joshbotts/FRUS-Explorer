@@ -1,0 +1,17 @@
+shard magic: b'FRSS' dims (184, 512)
+TOP 15 by int8 cosine (cos, ham, calibrated (cos-0.40)/0.60, pair):
+  cos 0.920 ham  81 cal 87% frus1917-72PubDipv07/d106
+  cos 0.917 ham  96 cal 86% frus1969-76v38p2/d105
+  cos 0.915 ham  90 cal 86% frus1917-72PubDipv08/d99
+  cos 0.908 ham 100 cal 85% frus1955-57v09/d190
+  cos 0.908 ham  94 cal 85% frus1951v06p2/d105
+  cos 0.906 ham  88 cal 84% frus1952-54v13p1/d116
+  cos 0.905 ham 104 cal 84% frus1955-57v09/d185
+  cos 0.905 ham 102 cal 84% frus1961-63v25/d156
+  cos 0.905 ham  99 cal 84% frus1917-72PubDipv06/d150
+  cos 0.904 ham  95 cal 84% frus1917-72PubDipv07/d69
+  cos 0.903 ham  97 cal 84% frus1917-72PubDipv07/d32
+  cos 0.902 ham  90 cal 84% frus1950v06/d9
+  cos 0.902 ham  92 cal 84% frus1977-80v30/d68
+  cos 0.900 ham  96 cal 83% frus1917-72PubDipv07/d94
+  cos 0.899 ham  98 cal 83% frus1955-57v09/d207

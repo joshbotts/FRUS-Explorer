@@ -1,0 +1,3 @@
+core 1573 kept 1401 dropped 172 of which contain bare USI 166
+dropped by volume [('frus1948v06', 82), ('frus1949v07p1', 61), ('frus1947v06', 18), ('frus1946v08', 2), ('frus1949v09', 2), ('frus1950v06', 2), ('frus1949v07p2', 1), ('frus1951v06p1', 1)]
+kept volumes 80

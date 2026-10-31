@@ -1,0 +1,119 @@
+central-files-index keys: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+series-facts keys: ['byNaId', 'findingAidTypes', 'generated', 'headings', 'legend', 'referenceUnits', 'restrictions', 'schemaVersion', 'statuses', 'useRestrictions'] legend: {"keys": {"ar": {"field": "accessRestrictions", "into": "restrictions", "kind": "indexList"}, "as": {"field": "accessStatus", "into": "statuses", "kind": "index"}, "c": {"field": "creator", "into": "headings", "kind": "index"}, "cy0": {"field": "coverageStartYear", "kind": "year"}, "cy1": {"field": "coverageEndYear", "kind": "year"}, "fa": {"field": "findingAids", "into": "findingAidTypes", "kind": "indexList"}, "p": {"field": "predecessors", "into": "headings", "kind": "indexList"}, "ru": {"field": "referenceUnit", "into": "referenceUnits", "kind": "index"}, "ur": {"field": "useRestrictions",
+
+=== Lots via central-files-index lotFiles ===
+63D351 -> {'recordGroup': '59', 'hmsMlrEntryNumbers': ['A1 1586E'], 'naId': '2839192', 'title': 'Records Relating to National Security Council Policy Papers', 'matchType': 'control'} | facts: {'raw': {'ar': [0], 'as': 2, 'c': 313, 'ru': 0, 'ur': [0], 'us': 3, 'x': '26 linear feet, 3 linear inches', 'y0': 1947, 'y1': 1979}, 'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'y0': 1947, 'y1': 1979, 'extent': '26 linear feet, 3 linear inches', 'access': 'Restricted - Partly', 'use': 'Restricted - Possibly', 'ref': 'National Archives at College Park - Textual Reference'}
+66D95 -> {'recordGroup': '59', 'hmsMlrEntryNumbers': ['A1 1586E'], 'naId': '2839192', 'title': 'Records Relating to National Security Council Policy Papers', 'matchType': 'control'} | facts: {'raw': {'ar': [0], 'as': 2, 'c': 313, 'ru': 0, 'ur': [0], 'us': 3, 'x': '26 linear feet, 3 linear inches', 'y0': 1947, 'y1': 1979}, 'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'y0': 1947, 'y1': 1979, 'extent': '26 linear feet, 3 linear inches', 'access': 'Restricted - Partly', 'use': 'Restricted - Possibly', 'ref': 'National Archives at College Park - Textual Reference'}
+62D333 -> {'recordGroup': '59', 'hmsMlrEntryNumbers': ['A1 1462'], 'naId': '2124692', 'title': 'Psychological Strategy Board Working Files', 'matchType': 'control'} | facts: {'raw': {'as': 3, 'c': 313, 'ru': 0, 'us': 1, 'x': '3 linear feet, 6 linear inches', 'y0': 1951, 'y1': 1953}, 'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'y0': 1951, 'y1': 1953, 'extent': '3 linear feet, 6 linear inches', 'access': 'Restricted - Possibly', 'use': 'Unrestricted', 'ref': 'National Archives at College Park - Textual Reference'}
+67D54 -> {'recordGroup': '59', 'hmsMlrEntryNumbers': ['A1 5305', 'A1 5414'], 'naId': '631403', 'title': 'Subject Files of the Vietnam Working Group', 'matchType': 'control'} | facts: {'raw': {'as': 1, 'c': 21, 'fa': [0], 'ru': 0, 'us': 1, 'x': '21 linear feet', 'y0': 1963, 'y1': 1974}, 'creator': 'Department of State. Bureau of East Asian and Pacific Affairs.', 'y0': 1963, 'y1': 1974, 'extent': '21 linear feet', 'access': 'Unrestricted', 'use': 'Unrestricted', 'ref': 'National Archives at College Park - Textual Reference'}
+58D726 -> {'recordGroup': '59', 'hmsMlrEntryNumbers': ['UD 53'], 'naId': '2544398', 'title': 'Subject Files', 'matchType': 'control'} | facts: {'raw': {'as': 3, 'c': 102, 'p': [98], 'ru': 0, 'us': 3, 'x': '5 linear inches', 'y0': 1955, 'y1': 1956}, 'creator': 'Department of State. Bureau of Far Eastern Affairs. Office of Southeast Asian Affairs. Office of the Officer in Charge for Malaya Affairs.', 'y0': 1955, 'y1': 1956, 'extent': '5 linear inches', 'access': 'Restricted - Possibly', 'use': 'Restricted - Possibly', 'ref': 'National Archives at College Park - Textual Reference'}
+61D385 -> NOT IN central-files-index lotFiles
+62D430 -> {'recordGroup': '59', 'hmsMlrEntryNumbers': ['A1 1586C'], 'naId': '2839191', 'title': 'Subject and Special Files', 'matchType': 'control'} | facts: {'raw': {'ar': [0], 'as': 2, 'c': 248, 'cy0': 1952, 'cy1': 1961, 'fa': [1], 'ru': 0, 'ur': [0], 'us': 3, 'x': '4 linear feet, 5 linear inches', 'y0': 1953, 'y1': 1961}, 'creator': 'Department of State. Executive Secretariat.', 'y0': 1953, 'y1': 1961, 'extent': '4 linear feet, 5 linear inches', 'access': 'Restricted - Partly', 'use': 'Restricted - Possibly', 'ref': 'National Archives at College Park - Textual Reference'}
+62D1 -> {'recordGroup': '59', 'hmsMlrEntryNumbers': ['A1 1583E', 'A1 1583F'], 'naId': '2838992', 'title': 'Records Relating to Activities with the National Security Council', 'matchType': 'control'} | facts: {'raw': {'ar': [0], 'as': 2, 'c': 341, 'ru': 0, 'ur': [0], 'us': 3, 'x': '3 linear feet, 1 linear inch', 'y0': 1948, 'y1': 1961}, 'creator': 'Department of State. Policy Planning Council.', 'y0': 1948, 'y1': 1961, 'extent': '3 linear feet, 1 linear inch', 'access': 'Restricted - Partly', 'use': 'Restricted - Possibly', 'ref': 'National Archives at College Park - Textual Reference'}
+
+lotFiles row keys: ['catalogURL', 'hmsMlrEntryNumbers', 'levelOfDescription', 'lotNumber', 'matchType', 'naId', 'recordGroup', 'title']
+
+=== 61D385 elsewhere ===
+61D385 or '61 D 385' in curated-lot-resolutions: False
+61D385 in lot-claimants-index: False
+61D385 in collection-authority: True
+61D385 in volume-sources-index: True
+61D385 in external-citation-index: True
+61D385 rows in index document_sources: (80,) external_citations: (47,)
+
+=== Series facts for the four NAIDs ===
+2839192 {'raw': {'ar': [0], 'as': 2, 'c': 313, 'ru': 0, 'ur': [0], 'us': 3, 'x': '26 linear feet, 3 linear inches', 'y0': 1947, 'y1': 1979}, 'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'y0': 1947, 'y1': 1979, 'extent': '26 linear feet, 3 linear inches', 'access': 'Restricted - Partly', 'use': 'Restricted - Possibly', 'ref': 'National Archives at College Park - Textual Reference'}
+2124692 {'raw': {'as': 3, 'c': 313, 'ru': 0, 'us': 1, 'x': '3 linear feet, 6 linear inches', 'y0': 1951, 'y1': 1953}, 'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'y0': 1951, 'y1': 1953, 'extent': '3 linear feet, 6 linear inches', 'access': 'Restricted - Possibly', 'use': 'Unrestricted', 'ref': 'National Archives at College Park - Textual Reference'}
+631403 {'raw': {'as': 1, 'c': 21, 'fa': [0], 'ru': 0, 'us': 1, 'x': '21 linear feet', 'y0': 1963, 'y1': 1974}, 'creator': 'Department of State. Bureau of East Asian and Pacific Affairs.', 'y0': 1963, 'y1': 1974, 'extent': '21 linear feet', 'access': 'Unrestricted', 'use': 'Unrestricted', 'ref': 'National Archives at College Park - Textual Reference'}
+2544398 {'raw': {'as': 3, 'c': 102, 'p': [98], 'ru': 0, 'us': 3, 'x': '5 linear inches', 'y0': 1955, 'y1': 1956}, 'creator': 'Department of State. Bureau of Far Eastern Affairs. Office of Southeast Asian Affairs. Office of the Officer in Charge for Malaya Affairs.', 'y0': 1955, 'y1': 1956, 'extent': '5 linear inches', 'access': 'Restricted - Possibly', 'use': 'Restricted - Possibly', 'ref': 'National Archives at College Park - Textual Reference'}
+40967285 {'raw': {'ar': [0, 2], 'as': 2, 'c': 397, 'ru': 0, 'us': 1, 'x': '103 linear feet, 1 linear inch', 'y0': 1956, 'y1': 1972}, 'creator': 'U.S. Information Agency. Office of the Director. Executive Secretariat.', 'y0': 1956, 'y1': 1972, 'extent': '103 linear feet, 1 linear inch', 'access': 'Restricted - Partly', 'use': 'Unrestricted', 'ref': 'National Archives at College Park - Textual Reference'}
+
+=== RG 306 in collection-authority.json ===
+collection-authority keys: ['collections', 'generated', 'schemaVersion']
+  sample {"aliases": ["00 D 221", "Office of the Geographer and Global Issues Program files"], "id": "lot:00D221", "lotFileNorm": "00D221", "name": "INR /GGI Files: Lot 00 D 221 Office of the Geographer and Global Issues Program files", "repository": "National Archives", "volumeIds": ["frus1969-76ve01"]}
+  'Director.s Subject Files' in collection-authority: False
+  'DIRCTR' in collection-authority: True
+  'Entry A1.42' in collection-authority: False
+  'UD WW 257' in collection-authority: False
+  'UD WW 193' in collection-authority: False
+  'P.207' in collection-authority: False
+  'P.104' in collection-authority: False
+  '67 A 222' in collection-authority: False
+  '68 A 4933' in collection-authority: True
+  'Office of Policy and Plans' in collection-authority: True
+  CA record: {"id": "txt:national archives|dirctr subj file", "name": "DIRCTR Subj Files", "recordGroup": "306", "repository": "National Archives", "volumeIds": ["frus1917-72PubDipv06", "frus1917-72PubDipv07"]}
+  CA record: {"aliases": ["Office of the Director, Subject File, 1973\u20131975"], "children": [{"name": "DIRCTR Files Bx 33\u201336", "volumeIds": ["frus1917-72PubDipv07"]}, {"name": "DIRCTR Sub Files", "volumeIds": ["frus1917-72PubDipv07"]}, {"name": "DIRCTR Subj File", "volumeIds": ["frus1917-72PubDipv06"]}, {"name": "Director\u2019s Files", "volumeIds": ["f
+  CA record: {"name": "DIRCTR Files Bx 33\u201336", "volumeIds": ["frus1917-72PubDipv07"]}
+  CA record: {"name": "DIRCTR Sub Files", "volumeIds": ["frus1917-72PubDipv07"]}
+  CA record: {"name": "DIRCTR Subj File", "volumeIds": ["frus1917-72PubDipv06"]}
+
+=== Presidential library NSF collections in presidential-library-catalog.json ===
+plc keys: ['generated', 'libraries', 'schemaVersion', 'source']
+  'Kennedy' in presidential-library-catalog: True (198)
+  'National Security Files' in presidential-library-catalog: True (4)
+  'Johnson' in presidential-library-catalog: True (142)
+  'National Security File' in presidential-library-catalog: True (4)
+  'Nixon' in presidential-library-catalog: True (58)
+  'NSC Files' in presidential-library-catalog: False (0)
+
+=== Decimal class gloss (decimal-class-labels.json) ===
+dcl keys: ['coverage', 'generated', 'provenance', 'schedules', 'schemaVersion']
+coverage: {"decimalFileOpensIn": 1910, "glossableYears": [{"endYear": 1949, "scheduleId": "1910-1949", "startYear": 1910}, {"endYear": 1959, "scheduleId": "1950-1959", "startYear": 1950}, {"endYear": 1963, "scheduleId": "1960-1963", "startYear": 1960}], "keyOutsideGlossableYears": "no-gloss", "notShipped": [], "note": "A key is glossable only when the document's own date falls inside one of `glossableYears`
+schedules: <class 'list'>
+  'International Informational and Educational Relations': 2 occurrences
+  '"United States"': 3 occurrences
+  'Far East \\(including all of Asia\\)': 2 occurrences
+  'World, The': 3 occurrences
+  'Indo China': 3 occurrences
+  '"Asia"': 3 occurrences
+
+=== external-citation-index.json: 511.90 / 511.00 ===
+eci keys: ['classPairs', 'classSourceKeys', 'classTargetKeys', 'classTargets', 'coverage', 'generated', 'pairs', 'schemaVersion', 'sourceIds', 'targetIds', 'targets', 'volumes']
+  '511.90': 2 occurrences
+  '511.00': 8 occurrences
+  '"511"': 0 occurrences
+
+=== Index rows for the 22: entries and accessions in source notes ===
+  frus1950v06/d50: [] :: '511.90/6–2150'
+  frus1952-54v13p1/d116: [] :: '511.51G/9–2052: Telegram'
+  frus1952-54v12p2/d403: [] :: '790.5/9–1453'
+  frus1955-57v09/d190: ['Lot 63 D 351'] :: 'Source: Department of State, S/S – NSC Files: Lot 63 D 351, NSC 5525. Secret. This paper is a collection of re'
+  frus1955-57v22/d447: ['Lot 61 D 385'] :: 'Source: Department of State, OCB Files: Lot 61 D 385, Singapore and Malaya, General. Secret. Drafted by Smith.'
+  frus1961-63v01/d49: [] :: 'Source: Washington National Records center, RG 34, Saigon Embassy Files: FRC 66 A 335. Program Direction Secre'
+  frus1961-63v01/d265: ['FRC 67 A 222', 'RG 306'] :: 'Source: Washington National Records Center, RG 306, USIA /TOP Files: FRC 67 A 222, IAF Defoliation 1963. Secre'
+  frus1961-63v02/d16: ['FRC 68 A 4933', 'RG 306'] :: 'Source: Washington National Records Center, RG 306, USIA /I/ S Files: FRC 68 A 4933, Field—Far East (IAF), 196'
+  frus1917-72PubDipv06/d140: ['Kennedy NSF'] :: 'Source: Kennedy Library, National Security Files, Meetings and Memoranda Series, Box 316, Meetings on Vietnam '
+  frus1917-72PubDipv06/d126: ['Entry UD WW 257', 'RG 306'] :: 'Source: National Archives, RG 306, DIRCTR Sub Files, 1963–69, Bx 6–29 63–69: Acc: #72A5121, Entry UD WW 257, B'
+  frus1917-72PubDipv07/d73: ['Entry UD WW 193', 'RG 306'] :: 'Source: National Archives, RG 306, DIRCTR Files Bx 33–36, 1966: Acc. #69–A–3445 [E], Entry UD WW 193, Box 33, '
+  frus1917-72PubDipv07/d85: ['Entry UD WW 193', 'RG 306'] :: 'Source: National Archives, RG 306, DIRCTR Files Bx 33–36, 1966: Acc. #69–A–3445 [E], Entry UD WW 193, Box 33, '
+  frus1917-72PubDipv08/d31: ['Entry P–207', 'RG 306'] :: 'Source: National Archives, RG 306, Office of Policy and Plans, Plans and Operational Policy Staff, Office of P'
+  frus1917-72PubDipv08/d149: ['Entry A1–42', 'RG 306'] :: 'Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 22, REA—Public Opinio'
+  frus1917-72PubDipv07/d32: ['Entry UD WW 257', 'RG 306'] :: 'Source: National Archives, RG 306, DIRCTR Subj. Files, 1963–69, Bx 6–29 63–69: Acc: #72A5121, Entry UD WW 257,'
+  frus1917-72PubDipv08/d88: ['Entry A1–42', 'RG 306'] :: 'Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 10, Field—Far East (I'
+  frus1969-76v19p2/d67: ['Nixon NSC'] :: 'Source: National Archives, Nixon Presidential Materials, NSC Files, NSC Institutional Files (H-Files), Nationa'
+  frus1964-68v27/d386: ['Johnson NSF'] :: 'Source: Johnson Library, National Security File, Country File, Thailand, Thanom Kittikachorn Visit, 5/8–9/68. '
+  frus1917-72PubDipv08/d58: ['Entry A1–42', 'RG 306'] :: 'Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 3, PSY–Psychological '
+  frus1917-72PubDipv08/d99: ['Entry A1–42', 'RG 306'] :: 'Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 15, Policy and Plans '
+  frus1969-76v38p2/d105: [] :: 'Source: National Archives, RG 305, Records of the USIA, Office of the Director, Subject Files, 1975, Entry UD–'
+  frus1977-80v30/d79: ['Entry P–104', 'RG 306'] :: 'Source: National Archives, RG 306, Office of the Director, Executive Secretariat, Secretariat Staff, Correspon'
+
+external_citations rows for the 22 (anchor, lot, decimal_class, raw):
+   ('frus1917-72PubDipv06/d140', 'presidentialLibrary', None, None, 'Kennedy Library, National Security Files, Meetings and Memoranda Serie')
+   ('frus1950v06/d50', 'centralFileClass', None, '511.90', '511.90/7–550')
+   ('frus1952-54v13p1/d116', 'centralFileClass', None, '511.00', '511.00/8–2352')
+   ('frus1955-57v09/d190', 'centralFileClass', None, '511.00', 'Department of State, Central Files, 511.00/6–3055')
+   ('frus1955-57v09/d190', 'centralFileClass', None, '511.00', 'Ibid., 511.00/5–2755 and 511.00/6–655')
+   ('frus1955-57v09/d190', 'centralFileClass', None, '511.00', 'Department of State, Central Files, 511.00/4–2455')
+   ('frus1955-57v22/d447', 'lotFile', '61D385', None, 'Department of State, OCB Files: Lot 61 D 385, Singapore and Malaya, Ge')
+   ('frus1955-57v22/d447', 'lotFile', '58D726', None, 'Ibid., SEA Files: Lot 58 D 726, 350 OCB Paper and Plans')
+
+document_sources decimal rows for the 22:
+   ('frus1952-54v13p1/d116', 'decimal', '511.51G', '511.51G/9–2052')
+   ('frus1950v06/d50', 'decimal', '511.90', '511.90/6–2150')
+   ('frus1952-54v12p2/d403', 'decimal', '790.5', '790.5/9–1453')
+
+=== central-files-index: any series with naId for the 1950-59 decimal file? ===
+  countrySeries: list 12 :: [{"category": "diplomaticDespatches", "displayName": "Diplomatic Despatches", "rolls": [{"catalogURL": "https://catalog.archives.gov/id/189346553", "endISO": "1887-05-31", "fileUnitNaId": "177380755", "fileUnitTitle": "Despatches from U.S. Ministers to Peru, 1826-1906", "geoKeys": ["peru"], "naId": 
+  generated: str 10 :: "2026-09-10"
+  numericalFile: dict 3 :: {"microfilm": "M862", "rolls": [{"caseEnd": 27, "caseStart": 1, "catalogURL": "https://catalog.archives.gov/id/19086784", "naId": "19086784", "title": "Numerical File: 1-27/200"}, {"caseEnd": 34, "caseStart": 27, "catalogURL": "https://catalog.archives.gov/id/19087957", "naId": "19087957", "title": 
+  schemaVersion: int  :: 3

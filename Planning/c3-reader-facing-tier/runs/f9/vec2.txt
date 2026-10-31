@@ -1,0 +1,32 @@
+roundtrip volumes ok 553 of 553
+closest collection pairs: [(32, ('frus1955-57v09', 'd190'), ('frus1955-57v09', 'd185')), (50, ('frus1955-57v09', 'd190'), ('frus1955-57v09', 'd207')), (56, ('frus1955-57v09', 'd185'), ('frus1955-57v09', 'd207')), (85, ('frus1949v07p2', 'd386'), ('frus1969-76v38p2', 'd105')), (88, ('frus1917-72PubDipv08', 'd31'), ('frus1952-54v13p1', 'd116'))]
+mean pairwise 139.2 n pairs 300
+clusters list len 140
+{"centreX": -2259, "centreY": -10310, "documentCount": 698, "eraCounts": {"1": 134, "2": 564}, "id": 0, "terms": ["spanish", "salazar", "spain", "lagen"]}
+collection unclustered 8 of 25
+era baseline (volumes midpoint 1945-1980): unclustered 40679 of 141003
+MAP ('frus1949v07p2', 'd386') 20 ['grc', 'formosa', 'chiang', 'taiwan']
+MAP ('frus1917-72PubDipv08', 'd31') 65535 None
+MAP ('frus1969-76v38p2', 'd105') 65535 None
+MAP ('frus1977-80v30', 'd79') 65535 None
+MAP ('frus1977-80v30', 'd83') 65535 None
+MAP ('frus1950v06', 'd31') 65535 None
+MAP ('frus1952-54v13p1', 'd116') 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+MAP ('frus1952-54v12p2', 'd403') 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+MAP ('frus1955-57v09', 'd190') 138 ['cia', 'nsc', 'usia', 'inglis']
+MAP ('frus1917-72PubDipv07', 'd32') 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+MAP ('frus1917-72PubDipv07', 'd73') 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+MAP ('frus1955-57v09', 'd185') 138 ['cia', 'nsc', 'usia', 'inglis']
+MAP ('frus1955-57v09', 'd207') 65535 None
+MAP ('frus1917-72PubDipv06', 'd127') 138 ['cia', 'nsc', 'usia', 'inglis']
+MAP ('frus1917-72PubDipv08', 'd88') 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+MAP ('frus1961-63v01', 'd265') 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+MAP ('frus1961-63v02', 'd16') 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+MAP ('frus1917-72PubDipv07', 'd48') 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+MAP ('frus1917-72PubDipv08', 'd58') 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+MAP ('frus1947v07', 'd245') 3 ['nanking', 'shanghai', 'chinese', 'tientsin']
+MAP ('frus1952-54v12p2', 'd60') 65535 None
+MAP ('frus1917-72PubDipv08', 'd149') 65535 None
+MAP ('frus1917-72PubDipv08', 'd143') 103 ['kissinger', 'chou', 'taiwan', 'huang']
+MAP ('frus1917-72PubDipv08', 'd146') 103 ['kissinger', 'chou', 'taiwan', 'huang']
+MAP ('frus1977-80v30', 'd152') 103 ['kissinger', 'chou', 'taiwan', 'huang']

@@ -1,0 +1,39 @@
+You are the reader judge. You read ONLY the three overviews and the three collections named here,
+each written for a historian who commissioned the question and will never open a terminal, and judge
+which serve her best. Do not open any other file: no memo, no log, no script output. Do not run
+queries. Ignore any mention of which model or setting produced a file.
+
+THE FILES, labelled X, Y and Z (the labels mean nothing):
+  X: /Users/jbotts/frus-analysis/c3f/runs/fX/overview.md and /Users/jbotts/frus-analysis/c3f/runs/fX/collection.fruscollection
+  Y: /Users/jbotts/frus-analysis/c3f/runs/fY/overview.md and /Users/jbotts/frus-analysis/c3f/runs/fY/collection.fruscollection
+  Z: /Users/jbotts/frus-analysis/c3f/runs/fZ/overview.md and /Users/jbotts/frus-analysis/c3f/runs/fZ/collection.fruscollection
+Read each collection as text: its title page, headings, prose, notes and excerpts are part of what the
+historian receives. If a file is absent, say so in the evidence of every item it affects and judge
+what is there.
+THE QUESTION:
+  How did policymakers assess American soft power in the east Asia and Pacific region? What messaging strategies did they use and how effective did they think they were? What beliefs about the regional audience contributed to those strategies?
+
+FOR EACH OF X, Y AND Z, five items, each yes or no, each with the passage that decided it:
+  J1  The overview opens with the three-part bottom line, in this order and before any finding:
+      what FRUS answers directly; where FRUS points for the rest; what this request cannot get
+      from FRUS.
+  J2  Every number in the overview is given as a count of a named set in words ("about one
+      document in seven among the 43 volumes indexed"), never as a bare percentage or a figure
+      with no base; "no" if any number fails this.
+  J3  Every document the overview cites is cited in full as the printed edition (Foreign Relations
+      of the United States, years, volume, part, document number) with a history.state.gov link,
+      in the text or in a list of the documents cited; "no" if any is cited by a bare id pair, or
+      by title, date or correspondent alone with no full citation anywhere.
+  J4  What the request cannot get from FRUS is stated as a search that was run (its terms, the
+      volumes, and the controls that make the zero a measurement), not as an assertion.
+  J5  The overview contains no SQL, no table or column name, no volume_id/document_id string (such
+      as frus1961-63v12/d45) outside a link, and no file path.
+THEN, FOR EACH: CITATIONS, yes if one citation form is used throughout and every cited document
+can be found in full with its link, no otherwise, with the passage; and TOOL WORDS, every word of
+the research machinery a historian would not know (index, query, hits, returned, matched, TEI,
+corpus, stem, vector, Hamming and the like) and every technical term left unexplained, each with
+where it appears, or "none".
+FINALLY: rank X, Y and Z, best to worst for the historian, and give the reason for the order in two
+or three sentences, judging the whole of what she receives: the evidence and the writing.
+
+`block` is exactly: N. Return the structured judgement.

@@ -1,0 +1,84 @@
+== 4. ARCHIVAL IDENTIFIERS ==
+  lot 63D351 -> RG 59 | entry ['A1 1586E'] | NAID 2839192 | Records Relating to National Security Council Policy Papers | 1947–1979 | Restricted - Partly | ['FOIA (b)(1) National Security'] | National Archives at College Park - Textual Reference
+  lot 66D95 -> RG 59 | entry ['A1 1586E'] | NAID 2839192 | Records Relating to National Security Council Policy Papers | 1947–1979 | Restricted - Partly | ['FOIA (b)(1) National Security'] | National Archives at College Park - Textual Reference
+  lot 62D430 -> RG 59 | entry ['A1 1586C'] | NAID 2839191 | Subject and Special Files | 1953–1961 | Restricted - Partly | ['FOIA (b)(1) National Security'] | National Archives at College Park - Textual Reference
+  lot 62D1 -> RG 59 | entry ['A1 1583E', 'A1 1583F'] | NAID 2838992 | Records Relating to Activities with the National Security Council | 1948–1961 | Restricted - Partly | ['FOIA (b)(1) National Security'] | National Archives at College Park - Textual Reference
+  lot 59D260 -> RG 306 | entry ['UD-WW 151', 'UD-WW 197', 'UD-WW 234', 'UD-WW 264', 'UD-WW 287', 'UD-WW 288', 'UD-WW 365', 'UD-WW 366', 'UD-WW 372', 'UD-WW 379', 'UD-WW 382'] | NAID 1257679 | Subject Files | 1953–1971 | Restricted - Partly | ['FOIA (b)(1) National Security'] | National Archives at College Park - Textual Reference
+     extent: 47 linear feet | creator: U.S. Information Agency. Office of Policy and Plans.
+  lot 70D398 -> RG 306 | entry ['P 311'] | NAID 40943515 | Alphabetical Subject Files Containing Policy Guidance Records | 1953–1969 | Restricted - Partly | ['FOIA (b)(1) National Security', 'FOIA (b)(6) Personal Information'] | National Archives at College Park - Textual Reference
+  RG 306 in volume-sources-index recordGroups: {'catalogURL': 'https://catalog.archives.gov/id/622', 'matchType': 'api', 'naId': '622', 'recordGroup': '306', 'title': 'Records of the U.S. Information Agency'}
+  series-facts byNaId has 622: False
+  accession 306/72A5121 -> 18 series ['Subject Files', 'Alphabetical Subject Files Containing Policy Guidance Records', 'Background Files', 'Regional Subject Files']
+  accession 306/69A3445 -> 9 series ['Subject Files', 'Subject Files', 'Alphabetical Subject Files Containing Policy Guidance Records', 'Regional Subject Files']
+  accession 306/67A222 -> 3 series ['Regional Subject Files', 'Subject and Country Files Relating to Culture', 'Subject Files Relating to Youth Issues']
+  accession 306/68A4933 -> 15 series ['Subject Files of the Director', 'Speech Files', 'Vietnam Working Group Subject Files', 'Records Relating to Advisory Committees and Panels']
+  lot 63D351: pointed-at by 19 C docs (corpus 349 distinct docs); came-from 27 C docs (corpus 624)
+  lot 66D95: pointed-at by 19 C docs (corpus 666 distinct docs); came-from 1 C docs (corpus 68)
+  lot 62D430: pointed-at by 16 C docs (corpus 108 distinct docs); came-from 14 C docs (corpus 142)
+  lot 62D1: pointed-at by 7 C docs (corpus 171 distinct docs); came-from 8 C docs (corpus 189)
+  lot 59D260: pointed-at by 2 C docs (corpus 2 distinct docs); came-from 2 C docs (corpus 3)
+  lot 70D398: pointed-at by 0 C docs (corpus 2 distinct docs); came-from 0 C docs (corpus 1)
+  frus1955-57v09/d207 external_citations lots: ['59D260', '63D224', '62D255', '62D430', '60D322']
+  ... raw_text of the 59D260 row: ['Department of State, USIA /IOP Files: Lot 59 D 260, Suez Canal Crisis, 1956']
+  RG 306 came-from series names over C: [('Director’s Subject Files', 24), ('DIRCTR Sub Files', 6), ('Associate Directorate for Programs', 6), ('Office of Policy and Plans', 6), ('Office of Plans', 5), ('USIA /TOP Files: FRC 67 A 222', 5), ('USIA /I/ S Files: FRC 68 A 4933', 5), ('Office of the Director', 4), ('USIA Historical Collection', 4), ('USIA Historical Collection, Box 13', 4), ('DIRCTR Subj. Files, Box 16', 4), ('DIRCTR Files Bx 33–36, Box 33', 4)]
+  frus1969-76v38p2/d105 document_sources: ('National Archives', '305', 'Records of the USIA', 'Source: National Archives, RG 305, Records of the USIA, Office of the Director, Subject Files, 1975, Entry UD–UP 7, FRC 306–84–0003, 7501300–7501309. No classification marking. Sent for information.')
+  volume-sources-index volumes naming lot 70 D 398: [] | in scope: []
+  volume-sources-index top-level keys: ['generated', 'lots', 'majorCollections', 'recordGroups', 'schemaVersion']
+
+== 7. REACH ==
+Japan query (log line 24) returns 20 rows: ['frus1917-72PubDipv08/d31', 'frus1955-57v09/d207', 'frus1955-57v09/d190', 'frus1964-68v29p2/d46', 'frus1917-72PubDipv06/d150', 'frus1961-63v25/d156', 'frus1955-57v09/d185', 'frus1917-72PubDipv08/d99', 'frus1961-63v22/d354', 'frus1917-72PubDipv06/d135', 'frus1917-72PubDipv08/d174', 'frus1917-72PubDipv06/d127', 'frus1917-72PubDipv08/d29', 'frus1917-72PubDipv07/d106', 'frus1952-54v14p2/d820', 'frus1917-72PubDipv06/d85', 'frus1917-72PubDipv07/d157', 'frus1952-54v14p2/d512', 'frus1955-57v09/d197', 'frus1917-72PubDipv07/d164']
+rank query (log line 20) re-run == raw/rank_q1.txt: True 70 70
+audience query (log line 22) re-run == raw/audience_ids.txt: True 92 92
+circular query (log line 48) returns: [('frus1950v07', 'd941'), ('frus1952-54v13p1', 'd116')]
+
+per cited document: C(clean) | C(raw 1,573) | rank70 | audience92 | japan20 | circular | ANY-FULLTEXT
+  frus1949v07p2/d386           Y Y Y . . . FULLTEXT
+  frus1952-54v13p1/d116        Y Y . . . Y FULLTEXT
+  frus1952-54v12p2/d403        Y Y Y . . . FULLTEXT
+  frus1955-57v09/d190          Y Y Y . Y . FULLTEXT
+  frus1955-57v09/d207          Y Y Y . Y . FULLTEXT
+  frus1952-54v14p2/d551        . . . Y . . FULLTEXT
+  frus1952-54v12p2/d60         . . . Y . . FULLTEXT
+  frus1952-54v13p2/d992        Y Y . Y . . FULLTEXT
+  frus1958-60v01/d26           . . . Y . . FULLTEXT
+  frus1961-63v02/d29           Y Y . Y . . FULLTEXT
+  frus1961-63v01/d265          Y Y Y . . . FULLTEXT
+  frus1961-63v02/d197          Y Y . Y . . FULLTEXT
+  frus1964-68v01/d197          Y Y Y . . . FULLTEXT
+  frus1917-72PubDipv07/d37     Y Y Y . . . FULLTEXT
+  frus1952-54v14p2/d820        Y Y . . Y . FULLTEXT
+  frus1917-72PubDipv06/d127    Y Y . . Y . FULLTEXT
+  frus1964-68v29p2/d46         Y Y . . Y . FULLTEXT
+  frus1917-72PubDipv07/d73     Y Y Y . . . FULLTEXT
+  frus1917-72PubDipv08/d31     Y Y Y . Y . FULLTEXT
+  frus1917-72PubDipv08/d146    Y Y Y . . . FULLTEXT
+  frus1917-72PubDipv08/d149    Y Y Y . . . FULLTEXT
+  frus1969-76v38p2/d105        Y Y Y . . . FULLTEXT
+  frus1977-80v30/d2            Y Y Y . . . FULLTEXT
+cited: 23 returned by >=1 logged full-text query: 23 | none: []
+d116 in raw coreset.tsv (saved at log line 26, before vectors.py at line 40): True | in clean C (line 28): True | in rank70 (line 20): False | in audience92: False
+
+log order of first full-text surfacing:
+  frus1949v07p2/d386           line20 rank70
+  frus1952-54v13p1/d116        line26 coreset
+  frus1952-54v12p2/d403        line20 rank70
+  frus1955-57v09/d190          line20 rank70
+  frus1955-57v09/d207          line20 rank70
+  frus1952-54v14p2/d551        line22 audience92
+  frus1952-54v12p2/d60         line22 audience92
+  frus1952-54v13p2/d992        line22 audience92
+  frus1958-60v01/d26           line22 audience92
+  frus1961-63v02/d29           line22 audience92
+  frus1961-63v01/d265          line20 rank70
+  frus1961-63v02/d197          line22 audience92
+  frus1964-68v01/d197          line20 rank70
+  frus1917-72PubDipv07/d37     line20 rank70
+  frus1952-54v14p2/d820        line24 japan20
+  frus1917-72PubDipv06/d127    line24 japan20
+  frus1964-68v29p2/d46         line24 japan20
+  frus1917-72PubDipv07/d73     line20 rank70
+  frus1917-72PubDipv08/d31     line20 rank70
+  frus1917-72PubDipv08/d146    line20 rank70
+  frus1917-72PubDipv08/d149    line20 rank70
+  frus1969-76v38p2/d105        line20 rank70
+  frus1977-80v30/d2            line20 rank70

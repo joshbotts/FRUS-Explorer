@@ -1,0 +1,3 @@
+dims 512 docs 314616 cents 660
+random pairs: mean 167.1 sd 14.8 p1 132 min 95
+25th neighbour over 200 random docs: median 106 q1 100 q3 113

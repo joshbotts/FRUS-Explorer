@@ -1,0 +1,125 @@
+== series-facts decode ==
+1257679 {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "U.S. Information Agency. Office of Policy and Plans.", "coverageStartYear": 1949, "coverageEndYear": 1971, "referenceUnit": "National Archives at College Park - Textual Reference", "useStatus": "Restricted - Possibly", "extent": "47 linear feet", "inclusiveStartYear": 1953, "inclusiveEndYear": 1971}
+2839192 {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Office of the Secretary. Executive Secretariat.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "26 linear feet, 3 linear inches", "inclusiveStartYear": 1947, "inclusiveEndYear": 1979}
+2839191 {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Executive Secretariat.", "coverageStartYear": 1952, "coverageEndYear": 1961, "findingAids": ["Index"], "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "4 linear feet, 5 linear inches", "inclusiveStartYear": 1953, "inclusiveEndYear": 1961}
+2838992 {"accessRestrictions": ["FOIA (b)(1) National Security"], "accessStatus": "Restricted - Partly", "creator": "Department of State. Policy Planning Council.", "referenceUnit": "National Archives at College Park - Textual Reference", "useRestrictions": ["Copyright"], "useStatus": "Restricted - Possibly", "extent": "3 linear feet, 1 linear inch", "inclusiveStartYear": 1948, "inclusiveEndYear": 1961}
+
+== accession-series-index 306/72A5121: series count and titles ==
+18 series; [('1257679', 'Subject Files'), ('40943515', 'Alphabetical Subject Files Containing Policy Guidance Records'), ('4667751', 'Background Files'), ('48349732', 'Regional Subject Files'), ('51861375', 'Country Files for Bolivia'), ('53279603', 'Regional Country Files'), ('55029502', 'Country Files for Switzerland'), ('55159731', 'Country Files for Chile'), ('56190687', 'Country Files for El Salvador'), ('56918933', 'Country Files for Guatemala'), ('57316268', 'Country Files for Haiti'), ('57807763', 'Regional Subject Files'), ('58410079', 'Country Files for Trinidad and Tobago'), ('59414121', 'Country Files for Honduras'), ('59728260', 'Country Files for Costa Rica'), ('63530073', 'Country Files for Jamaica'), ('63531142', 'Country Files for Nicaragua'), ('63821359', 'Regional Subject Files')]
+306/69A3445: 9 series
+306/68A4933: 15 series
+note: Keys are `<record group>/<accession>`, the accession folded to letters and digits (`71 A 6682` -> `71A6682`). THE RECORD GROUP IS PART OF THE KEY AND MUST BE MATCHED: an accession number is unique only within its group — `68A5612` names 1 series in RG 59 and 18 in RG 84 — so a lookup that ignores it answers a State citation with Foreign Service Post records. Every series NARA records under an accession is stored; state the count rather than choosing, because a key reaches 58 claimants. `prefixInferred` marks the rows where NARA's string carried no prefix and the shard's own group was used.
+
+== central-files-index: lotFiles entries for 62D430, 63D351, 66D95, 62D1, 61D385 (titles) ==
+lotFiles type list len 1070
+sample: {"catalogURL": "https://catalog.archives.gov/id/2124670", "hmsMlrEntryNumbers": ["A1 1457"], "levelOfDescription": "series", "lotNumber": "428", "matchType": "control", "naId": "2124670", "recordGroup": "59", "title": "Subject Files Relating to Palestine, Political, Security, and Trusteeship Matters"}
+  62D430: 1 -> [{"catalogURL": "https://catalog.archives.gov/id/2839191", "hmsMlrEntryNumbers": ["A1 1586C"], "levelOfDescription": "series", "lotNumber": "62D430", "matchType": "control", "naId": "2839191", "recordGroup": "59", "title": "Subject and Special Files"}]
+  63D351: 1 -> [{"catalogURL": "https://catalog.archives.gov/id/2839192", "hmsMlrEntryNumbers": ["A1 1586E"], "levelOfDescription": "series", "lotNumber": "63D351", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}]
+  66D95: 1 -> [{"catalogURL": "https://catalog.archives.gov/id/2839192", "hmsMlrEntryNumbers": ["A1 1586E"], "levelOfDescription": "series", "lotNumber": "66D95", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}]
+  62D1: 5 -> [{"catalogURL": "https://catalog.archives.gov/id/2838992", "hmsMlrEntryNumbers": ["A1 1583E", "A1 1583F"], "levelOfDescription": "series", "lotNumber": "62D1", "matchType": "control", "naId": "2838992", "recordGroup": "59", "title": "Records Relating to Activities with the National Security Council"}, {"catalogURL": "https://catalog.archives.gov/id/27023192", "hmsMlrEntryNumbers": ["A1 1512"], "levelOfDescription": "series", "lotNumber": "62D146", "matchType": "control", "naId": "27023192", "recordGroup": "59", "title": "Name Files"}]
+  61D385: 0 -> []
+  59D260: 1 -> [{"catalogURL": "https://catalog.archives.gov/id/1257679", "hmsMlrEntryNumbers": ["UD-WW 151", "UD-WW 197", "UD-WW 234", "UD-WW 264", "UD-WW 287", "UD-WW 288", "UD-WW 365", "UD-WW 366", "UD-WW 372", "UD-WW 379", "UD-WW 382"], "levelOfDescription": "series", "lotNumber": "59D260", "matchType": "control", "naId": "1257679", "recordGroup": "306", "title": "Subject Files"}]
+
+== central-files-index: does it resolve decimal classes 511.90 / 790.5 / 611.95 / 611.98 to a series? ==
+countrySeries type list len 12
+sample countrySeries: {"category": "diplomaticDespatches", "displayName": "Diplomatic Despatches", "rolls": [{"catalogURL": "https://catalog.archives.gov/id/189346553", "endISO": "1887-05-31", "fileUnitNaId": "177380755", "fileUnitTitle": "Despatches from U.S. Ministers to Peru, 1826-1906", "geoKeys": ["peru"], "naId": "189346553", "startISO": "1318-11-01", "title": "Nov. 1, 11186-May 31, 1887"}, {"catalogURL": "https://catalog.archives.gov/id/188667460", "endISO": "1906-01-01", "fileUnitNaId": "177380727", "fileUnitTitle": "Despatches from U.S. Ministers to France, 1789-1906", "geoKeys": ["france"], "naId": "18866
+numericalFile: {"microfilm": "M862", "rolls": [{"caseEnd": 27, "caseStart": 1, "catalogURL": "https://catalog.archives.gov/id/19086784", "naId": "19086784", "title": "Numerical File: 1-27/200"}, {"caseEnd": 34, "caseStart": 27, "catalogURL": "https://catalog.archives.gov/id/19087957", "naId": "19087957", "title": "Numerical File: 27/201-34/39"}, {"caseEnd": 39, "caseStart": 34, "catalogURL": "https://catalog.archives.gov/id/19088882", "naId": "19088882", "title": "Numerical File: 34/40-39/175"}, {"caseEnd": 40, "caseStart": 39, "catalogURL": "https://catalog.archives.gov/id/19089758", "naId": "19089758", "ti
+  class key '511': 0 exact-key hits 
+  class key '511.9': 0 exact-key hits 
+  class key '790': 0 exact-key hits 
+  class key '790.5': 0 exact-key hits 
+  class key '611.95': 0 exact-key hits 
+  class key '611.98': 0 exact-key hits 
+  class key '611': 0 exact-key hits 
+
+== presidential-library-catalog: JFK 1164, Carter 1104, LBJ Confidential File, Nixon ==
+ LIBRARY: None | keys: ['citedAs', 'collections', 'prefix'] | collections: 201
+ LIBRARY: None | keys: ['citedAs', 'collections', 'prefix'] | collections: 313
+ LIBRARY: None | keys: ['citedAs', 'collections', 'prefix'] | collections: 700
+     HST-CF 598784 Confidential Files (Truman Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     HST-RNSC 1692314 Records of the National Security Committee | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     HST-TNSC 601625 Records of the National Security Council (Truman Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+ LIBRARY: None | keys: ['citedAs', 'collections', 'prefix'] | collections: 462
+     DDE-1417 599128 Records of the Office of the Special Assistant for National Security Affairs (Eisenhower Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+ LIBRARY: None | keys: ['citedAs', 'collections', 'prefix'] | collections: 398
+     JFK-4 1164 Papers of John F. Kennedy: Presidential Papers: National Security Files | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+ LIBRARY: None | keys: ['citedAs', 'collections', 'prefix'] | collections: 764
+     LBJ-NSF 567979 National Security Files | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     LBJ-PPCONF 7541353 Pre-Presidential Confidential Files | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+ LIBRARY: None | keys: ['citedAs', 'collections', 'prefix'] | collections: 212
+     RN-NSF 572235 National Security Files (Nixon Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+ LIBRARY: None | keys: ['citedAs', 'collections', 'prefix'] | collections: 386
+     GRF-0310 645504 National Security Decision Memoranda and National Security Study Memoranda (Ford Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0312 1135 National Security Council Meetings Files (Ford Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0334 645536 National Security Council Documents Filed in the Presidential Acquisition Files or the White House Central Files (Ford Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0335 645547 National Security Council Document Tracking System Files (Ford Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0336 645549 Presidential Files of National Security Council Logged Documents (Ford Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0337 593840 National Security Council East Asian and Pacific Affairs Staff Files (Ford Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0338 645643 National Security Council Vietnam Information Group Files (Johnson, Nixon, and Ford Administrations) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0339 645650 National Security Council Europe, Canada, and Ocean Affairs Staff Files (Ford Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0340 646616 National Security Council Information Liaison with Commissions and Committees Files (Ford Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0341 646663 National Security Council International Economic Affairs Staff Files (Ford Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0342 646668 National Security Council Latin American Affairs Staff Files (Ford Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0343 646747 National Security Council Middle East and South Asian Affairs Staff Files (Ford Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0344 646756 National Security Council Planning and Coordination Staff Files (Nixon and Ford Administrations) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0345 585167 National Security Council Press and Congressional Relations Staff Files (Ford Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0346 646818 National Security Council Program Analysis Staff Files (Nixon and Ford Administrations) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0347 646831 National Security Council Staff Secretary Files (Ford Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0361 646925 Evening Reports from the National Security Council Staff (Ford Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GRF-0398 721504 National Security Council Institutional Files (Ford Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+ LIBRARY: None | keys: ['citedAs', 'collections', 'prefix'] | collections: 157
+     JC-DMBRZEZ 1104 Zbigniew Brzezinski Collection | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     JC-NSA 560131 Records of the Office of the National Security Advisor (Carter Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     JC-NSC 623746 National Security Council Institutional Files (Carter Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+ LIBRARY: None | keys: ['citedAs', 'collections', 'prefix'] | collections: 103
+     RR-0008 40359468 Records of the National Security Council, Directorate of African Affairs (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-0020 12024916 Records of the National Security Council, Asian Affairs Directorate (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-0093 6120363 Records of the Office of the Assistant to the President for National Security Affairs (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-0107 12024929 Records of the National Security Council, Coordination Office (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-0114 364776614 Records of the National Security Council, Office of Counterterrorism and Narcotics (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'title']
+     RR-0121 364672879 Records of the Crisis Management Center (CMC), National Security Council (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-0140 12011341 Records of the National Security Council, Defense Policy Directorate (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-0170 7451593 Records of the National Security Council, Directorate of European and Soviet Affairs (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-0186 12011342 Records of the National Security Council, Defense Programs and Arms Control Directorate (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-0262 12024797 Records of the National Security Council, Intelligence Directorate (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-0265 67603959 Records of the National Security Council, International Economic Affairs Directorate (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-0313 12024796 Records of the National Security Council, Latin American Affairs Directorate (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-0320 60693877 Records of the National Security Council, Legal Advisor Office (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-0397 12024979 Records of the National Security Council, Near East and South Asia Affairs Directorate (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-0920 12024920 Records of the National Security Council, Political Affairs Directorate (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-0930 12011340 Records of the National Security Council, Political and Military Affairs Directorate (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-EXSEC 1188 Executive Secretariat, National Security Council: Records | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     RR-NSC 1189 Numbered National Security Policy Papers | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+ LIBRARY: None | keys: ['citedAs', 'collections', 'prefix'] | collections: 141
+     GB-NSC 2163580 Records of the National Security Council (George H. W. Bush Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GB-VP-NSA 2601061 Records of the National Security Affairs Office of the Vice President (Reagan Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+     GB-VPQ-NSA 2579439 Records of the National Security Affairs Office in the Office of the Vice President (George H. W. Bush Administration) | dates: None | access: None | keys: ['identifier', 'naId', 'statedSeriesCount', 'title']
+
+== collection-authority: LBJ Confidential File, Brzezinski, Nixon NSC ==
+   {'id': 'txt:carter library|brzezinski donated historical material', 'name': 'Brzezinski Donated Historical Material', 'repository': 'Carter Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:carter library|brzezinski donated material', 'name': 'Brzezinski Donated Material', 'repository': 'Carter Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:carter library|brzezinski material', 'name': 'Brzezinski Material', 'repository': 'Carter Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:carter library|brzezinski office file', 'name': 'Brzezinski Office File', 'repository': 'Carter Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:carter library|donated historical material', 'name': 'Donated Historical Material', 'repository': 'Carter Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:carter library|donated material', 'name': 'Donated Material', 'repository': 'Carter Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:carter library|files of the executive secretariat', 'name': 'Files of the Executive Secretariat, National Security Council', 'repository': 'Carter Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:carter library|national security affair', 'name': 'National Security Affairs', 'repository': 'Carter Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:carter library|national security affairs file', 'name': 'National Security Affairs Files', 'repository': 'Carter Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:carter library|national security file', 'name': 'National Security File', 'repository': 'Carter Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:carter library|records of the office of the national security advisor', 'name': 'Records of the Office of the National Security Adviser', 'repository': 'Carter Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:carter library|zbigniew brzezinski donated material', 'name': 'Zbigniew Brzezinski Donated Material', 'repository': 'Carter Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:department of state|brzezinski', 'name': 'Brzezinski, Zbigniew . Power and Principle: Memoirs of the National Security Adviser, 1977–1981. New York: Farrar, Straus, Giroux, 1983.', 'repository': 'Department of State', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:johnson library|confidential file', 'name': 'Confidential File', 'repository': 'Johnson Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:johnson library|confidential file agency report', 'name': 'Confidential File Agency Reports', 'repository': 'Johnson Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:johnson library|papers of lyndon b. johnson', 'name': 'Papers of Lyndon B. Johnson', 'repository': 'Johnson Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:johnson library|papers of president lyndon b. johnson', 'name': 'Papers of President Lyndon B. Johnson', 'repository': 'Johnson Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:johnson library|white house central file', 'name': 'White House Central Files', 'repository': 'Johnson Library', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:national archives|brzezinski', 'name': 'Brzezinski, Zbigniew. Power and Principle: Memoirs of the National Security Adviser, 1977–1981. New York: Farrar, Straus, Giroux, 1983.', 'repository': 'National Archives', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:nixon|national security council file', 'name': 'National Security Council Files', 'repository': 'Nixon', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:nixon|national security council historical file', 'name': 'National Security Council Historical Files', 'repository': 'Nixon', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:nixon|national security council institutional files (h-files)', 'name': 'National Security Council Institutional Files (H-Files)', 'repository': 'Nixon', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:nixon|national security file', 'name': 'National Security File', 'repository': 'Nixon', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:nixon|nsc file', 'name': 'NSC Files', 'repository': 'Nixon', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:nixon|nsc institutional file', 'name': 'NSC Institutional Files', 'repository': 'Nixon', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:nixon|nsc institutional files (h-files)', 'name': 'NSC Institutional Files (H-Files)', 'repository': 'Nixon', 'naId': None, 'recordGroup': None}
+   {'id': 'txt:nixon|nsc secretariat', 'name': 'NSC Secretariat', 'repository': 'Nixon', 'naId': None, 'recordGroup': None}

@@ -1,0 +1,853 @@
+{
+ "run": "runs/cal-s3",
+ "traceSource": "runs/cal-s3/memo.md",
+ "traceTableLine": 176,
+ "traceRows": 18,
+ "mentions": 76,
+ "counts": {
+  "traced": 8,
+  "weak": 40,
+  "untraced": 28
+ },
+ "list": [
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "# How has corruption, or allegations of corruption, affected U.S. foreign policy decisions or the conduct of diplomacy? ## The bottom line What FRUS answers directly.** Across all 553 volumes of the series, about one document in a hundred uses the words corruption, bribery, graft, kickback or embezzlement, and in a sample about three in four of those use them for official or political corruption."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "# How has corruption, or allegations of corruption, affected U.S. foreign policy decisions or the conduct of diplomacy? ## The bottom line What FRUS answers directly.** Across all 553 volumes of the series, about one document in a hundred uses the words corruption, bribery, graft, kickback or embezzlement, and in a sample about three in four of those use them for official or political corruption."
+  },
+  {
+   "text": "hundred",
+   "values": [
+    "100"
+   ],
+   "next": "use",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "# How has corruption, or allegations of corruption, affected U.S. foreign policy decisions or the conduct of diplomacy? ## The bottom line What FRUS answers directly.** Across all 553 volumes of the series, about one document in a hundred uses the words corruption, bribery, graft, kickback or embezzlement, and in a sample about three in four of those use them for official or political corruption."
+  },
+  {
+   "text": "about three in four",
+   "values": [
+    "3",
+    "4"
+   ],
+   "next": "those",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "\"about three in four of a sample use the word in the political sense\" | §2 M6 referent 31 of 40",
+   "sentence": "# How has corruption, or allegations of corruption, affected U.S. foreign policy decisions or the conduct of diplomacy? ## The bottom line What FRUS answers directly.** Across all 553 volumes of the series, about one document in a hundred uses the words corruption, bribery, graft, kickback or embezzlement, and in a sample about three in four of those use them for official or political corruption."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "way",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about three in four of a sample use the word in the political sense\" | §2 M6 referent 31 of 40",
+   "sentence": "The printed record shows corruption shaping U.S. policy in three ways."
+  },
+  {
+   "text": "twelve",
+   "values": [
+    "12"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"a few dozen texts printed twice\" (18) | VECTORS V4",
+   "sentence": "The collection holds twelve documents."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Where FRUS points for the rest.** *Where the printed documents came from:* the Department of State's central files, Record Group 59: the Central Decimal File through (the bundled indexes give no single identifier for it), then the central files and the Central Foreign Policy File."
+  },
+  {
+   "text": "1164",
+   "values": [
+    "1164"
+   ],
+   "next": "johnson",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Kennedy (NARA identifier 1164, ), Johnson (567979, ) and Nixon (572235, ); access status for these is not in the bundled data."
+  },
+  {
+   "text": "567979",
+   "values": [
+    "567979"
+   ],
+   "next": "nixon",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Kennedy (NARA identifier 1164, ), Johnson (567979, ) and Nixon (572235, ); access status for these is not in the bundled data."
+  },
+  {
+   "text": "572235",
+   "values": [
+    "572235"
+   ],
+   "next": "access",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Kennedy (NARA identifier 1164, ), Johnson (567979, ) and Nixon (572235, ); access status for these is not in the bundled data."
+  },
+  {
+   "text": "Two",
+   "values": [
+    "2"
+   ],
+   "next": "rg",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "Two RG 59 lots."
+  },
+  {
+   "text": "RG 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Two RG 59 lots."
+  },
+  {
+   "text": "54D270",
+   "values": [
+    "54d270"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lot 54D270, the Marshall Mission Files, which NARA split into ten series under the Special Envoy to China (creator identifier 10481258)."
+  },
+  {
+   "text": "ten",
+   "values": [
+    "10"
+   ],
+   "next": "serie",
+   "kind": "word",
+   "class": "weak",
+   "row": "seventeen documents read whole, twelve cited | §3 M10",
+   "sentence": "Lot 54D270, the Marshall Mission Files, which NARA split into ten series under the Special Envoy to China (creator identifier 10481258)."
+  },
+  {
+   "text": "10481258",
+   "values": [
+    "10481258"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lot 54D270, the Marshall Mission Files, which NARA split into ten series under the Special Envoy to China (creator identifier 10481258)."
+  },
+  {
+   "text": "63D351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lot 63D351, the Records Relating to National Security Council Policy Papers, entry A1 1586E, identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lot 63D351, the Records Relating to National Security Council Policy Papers, entry A1 1586E, identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lot 63D351, the Records Relating to National Security Council Policy Papers, entry A1 1586E, identifier 2839192, , partly restricted."
+  },
+  {
+   "text": "RG 84",
+   "values": [
+    "rg84"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "The Jidda embassy's post files (RG 84, Lot 79F80), source of the Saudi airgram, could not be resolved to a series. *What the editors cited without printing:* the same central-file classes, which are by far the largest group."
+  },
+  {
+   "text": "79F80",
+   "values": [
+    "79f80"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "The Jidda embassy's post files (RG 84, Lot 79F80), source of the Saudi airgram, could not be resolved to a series. *What the editors cited without printing:* the same central-file classes, which are by far the largest group."
+  },
+  {
+   "text": "RG 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "RG 59 Lots 66D95 and 63D351 (both identifier 2839192, entry A1 1586E)."
+  },
+  {
+   "text": "66D95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "RG 59 Lots 66D95 and 63D351 (both identifier 2839192, entry A1 1586E)."
+  },
+  {
+   "text": "63D351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "RG 59 Lots 66D95 and 63D351 (both identifier 2839192, entry A1 1586E)."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "entry",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "RG 59 Lots 66D95 and 63D351 (both identifier 2839192, entry A1 1586E)."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "RG 59 Lots 66D95 and 63D351 (both identifier 2839192, entry A1 1586E)."
+  },
+  {
+   "text": "62D1",
+   "values": [
+    "62d1"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lot 62D1, the Policy Planning Council's Records Relating to Activities with the National Security Council (entries A1 1583E and 1583F, identifier 2838992, , partly restricted)."
+  },
+  {
+   "text": "A1 1583E",
+   "values": [
+    "a11583e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lot 62D1, the Policy Planning Council's Records Relating to Activities with the National Security Council (entries A1 1583E and 1583F, identifier 2838992, , partly restricted)."
+  },
+  {
+   "text": "2838992",
+   "values": [
+    "2838992"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lot 62D1, the Policy Planning Council's Records Relating to Activities with the National Security Council (entries A1 1583E and 1583F, identifier 2838992, , partly restricted)."
+  },
+  {
+   "text": "62D430",
+   "values": [
+    "62d430"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lot 62D430, Subject and Special Files (entry A1 1586C, identifier 2839191, , partly restricted)."
+  },
+  {
+   "text": "A1 1586C",
+   "values": [
+    "a11586c"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lot 62D430, Subject and Special Files (entry A1 1586C, identifier 2839191, , partly restricted)."
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Lot 62D430, Subject and Special Files (entry A1 1586C, identifier 2839191, , partly restricted)."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "channel",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "The two channels are separate counts and are not added together (see the memo)."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "word",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "I searched the same five word families over the documents dated in the and none matched, while the still hold about a hundred."
+  },
+  {
+   "text": "hundred",
+   "values": [
+    "100"
+   ],
+   "next": "",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "I searched the same five word families over the documents dated in the and none matched, while the still hold about a hundred."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "matching",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"about one matching document in six from 1969 on\" withheld text | §6 M19 (104 of 580)",
+   "sentence": "The names behind the reporting are often withheld: about one matching document in six dated from on carries a \"not declassified\" bracket."
+  },
+  {
+   "text": "six",
+   "values": [
+    "6"
+   ],
+   "next": "dated",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about three in four of a sample use the word in the political sense\" | §2 M6 referent 31 of 40",
+   "sentence": "The names behind the reporting are often withheld: about one matching document in six dated from on carries a \"not declassified\" bracket."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about three in four of a sample use the word in the political sense\" | §2 M6 referent 31 of 40",
+   "sentence": "The law itself is thin: the Foreign Corrupt Practices Act is named in only four documents, in two volumes."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "The law itself is thin: the Foreign Corrupt Practices Act is named in only four documents, in two volumes."
+  },
+  {
+   "text": "54",
+   "values": [
+    "54"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "The corpus has no word for \"kleptocracy\": no indexed word begins with those letters, while \"anti-corruption\" appears in 54 documents."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "A check phrase, \"Department of State\", was found in every volume but one, a volume of conference minutes that is still searchable, and an impossible string was found nowhere, so these absences are not a failure of the search. **Scope.** All 553 volumes of the series."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "A check phrase, \"Department of State\", was found in every volume but one, a volume of conference minutes that is still searchable, and an impossible string was found nowhere, so these absences are not a failure of the search. **Scope.** All 553 volumes of the series."
+  },
+  {
+   "text": "3,000",
+   "values": [
+    "3000"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "The scope is the roughly 3,000 documents that use the corruption words (fewer than 3,040 distinct texts once reprints are set aside), with front matter, editorial notes and two second editions excluded; seventeen were read whole and twelve are cited."
+  },
+  {
+   "text": "3,040",
+   "values": [
+    "3040"
+   ],
+   "next": "distinct",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "The scope is the roughly 3,000 documents that use the corruption words (fewer than 3,040 distinct texts once reprints are set aside), with front matter, editorial notes and two second editions excluded; seventeen were read whole and twelve are cited."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "second",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "The scope is the roughly 3,000 documents that use the corruption words (fewer than 3,040 distinct texts once reprints are set aside), with front matter, editorial notes and two second editions excluded; seventeen were read whole and twelve are cited."
+  },
+  {
+   "text": "seventeen",
+   "values": [
+    "17"
+   ],
+   "next": "were",
+   "kind": "word",
+   "class": "weak",
+   "row": "law named in only four documents | §6 M17",
+   "sentence": "The scope is the roughly 3,000 documents that use the corruption words (fewer than 3,040 distinct texts once reprints are set aside), with front matter, editorial notes and two second editions excluded; seventeen were read whole and twelve are cited."
+  },
+  {
+   "text": "twelve",
+   "values": [
+    "12"
+   ],
+   "next": "are",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"a few dozen texts printed twice\" (18) | VECTORS V4",
+   "sentence": "The scope is the roughly 3,000 documents that use the corruption words (fewer than 3,040 distinct texts once reprints are set aside), with front matter, editorial notes and two second editions excluded; seventeen were read whole and twelve are cited."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "memo",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "I checked that every quotation in this overview and every excerpt in the collection is one the memo verified, word for word, against its document, and that every document cited here is in the collection. ## Decisions this needs from you **What counts as corruption.** If it means only bribery and graft by officials, the working set is about three-quarters of what the word search returns."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "quarter",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about three in four of a sample use the word in the political sense\" | §2 M6 referent 31 of 40",
+   "sentence": "I checked that every quotation in this overview and every excerpt in the collection is one the memo verified, word for word, against its document, and that every document cited here is in the collection. ## Decisions this needs from you **What counts as corruption.** If it means only bribery and graft by officials, the working set is about three-quarters of what the word search returns."
+  },
+  {
+   "text": "quarters",
+   "values": [
+    "0.25"
+   ],
+   "next": "what",
+   "kind": "word",
+   "class": "untraced",
+   "row": null,
+   "sentence": "I checked that every quotation in this overview and every excerpt in the collection is one the memo verified, word for word, against its document, and that every document cited here is in the collection. ## Decisions this needs from you **What counts as corruption.** If it means only bribery and graft by officials, the working set is about three-quarters of what the word search returns."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "word",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "Meanwhile I used the five word families and read for the official or political sense. **Whose corruption.** Counting foreign governments' corruption gives the China, Korea and Philippines threads."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "allegation",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "Meanwhile I included the first two. **Allegation or fact.** Several documents carry an allegation made by a third party, such as a Chinese official's speech or a Senate staffer's account."
+  },
+  {
+   "text": "twenty",
+   "values": [
+    "20"
+   ],
+   "next": "crowder",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"about twenty Crowder telegrams\" that do not use the words | VECTORS V3 (20 of the 25 nearest to frus1922v01/d841 are OUTSIDE/ABSENT)",
+   "sentence": "There is here almost a conspiracy to conceal facts\" ( , Around this document sit about twenty Crowder telegrams of that do not use the words; they are the next reading."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "day",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "The embassy in Jidda wrote that \"As we have watched corruption mount we have asked ourselves what we might do to counter it—not from any moralistic concern, but as a means of guarding U.S. interests.\" It recommended that the United States refuse to be party to corrupt contracts, since \"Our own U.S. government reputation for incorruptability may one day prove to be our most valued asset in Saudi Arabia\" ( , , , , Eight months later the Secretary's briefing warned that \"Problems arising from publicity over the enormous commissions being paid by American firms to promote sales of defense articles and services to the Saudi Government threaten to strain US-Saudi relations\" (same volume, , That briefing was found by its similarity to the Jidda airgram, by no word search, and read before it was cited."
+  },
+  {
+   "text": "Eight",
+   "values": [
+    "8"
+   ],
+   "next": "month",
+   "kind": "word",
+   "class": "weak",
+   "row": "decade rise from the 1940s to the 1960s–70s; peak about one in fifty in the 1960s and 1970s | §2 M8 (20.2 and 19.5 per 1,000)",
+   "sentence": "The embassy in Jidda wrote that \"As we have watched corruption mount we have asked ourselves what we might do to counter it—not from any moralistic concern, but as a means of guarding U.S. interests.\" It recommended that the United States refuse to be party to corrupt contracts, since \"Our own U.S. government reputation for incorruptability may one day prove to be our most valued asset in Saudi Arabia\" ( , , , , Eight months later the Secretary's briefing warned that \"Problems arising from publicity over the enormous commissions being paid by American firms to promote sales of defense articles and services to the Saudi Government threaten to strain US-Saudi relations\" (same volume, , That briefing was found by its similarity to the Jidda airgram, by no word search, and read before it was cited."
+  },
+  {
+   "text": "second-largest",
+   "values": [
+    "second"
+   ],
+   "next": "disincentive",
+   "kind": "rank",
+   "class": "untraced",
+   "row": null,
+   "sentence": "The Commerce Secretary and the Trade Representative ranked the act as exporters' second-largest disincentive, while holding that \"As a nation we have decided that bribery in international trade is reprehensible and that American companies must forego exports that can be attained only by illicit payments.\" They recommended amendments to clarify the law without loopholes ( , The act appears by name in only four documents, so this finding rests on a thin record."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about three in four of a sample use the word in the political sense\" | §2 M6 referent 31 of 40",
+   "sentence": "The Commerce Secretary and the Trade Representative ranked the act as exporters' second-largest disincentive, while holding that \"As a nation we have decided that bribery in international trade is reprehensible and that American companies must forego exports that can be attained only by illicit payments.\" They recommended amendments to clarify the law without loopholes ( , The act appears by name in only four documents, so this finding rests on a thin record."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "Across the series, the words appear most often from the on: about one document in fifty in the and , against about one in three hundred in the (see the memo). ## How this was done I searched the full-text index of all 553 FRUS volumes for five word families (corruption, bribery, graft, kickback, embezzlement), excluding front matter, editorial notes and two duplicate second editions."
+  },
+  {
+   "text": "fifty",
+   "values": [
+    "50"
+   ],
+   "next": "against",
+   "kind": "word",
+   "class": "weak",
+   "row": "decade rise from the 1940s to the 1960s–70s; peak about one in fifty in the 1960s and 1970s | §2 M8 (20.2 and 19.5 per 1,000)",
+   "sentence": "Across the series, the words appear most often from the on: about one document in fifty in the and , against about one in three hundred in the (see the memo). ## How this was done I searched the full-text index of all 553 FRUS volumes for five word families (corruption, bribery, graft, kickback, embezzlement), excluding front matter, editorial notes and two duplicate second editions."
+  },
+  {
+   "text": "about one in three",
+   "values": [
+    "1",
+    "3"
+   ],
+   "next": "hundred",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "\"about one in three hundred in the 1930s\", \"one in fifty\" | §2 M8 (3.0; 20.2, 19.5 per 1,000)",
+   "sentence": "Across the series, the words appear most often from the on: about one document in fifty in the and , against about one in three hundred in the (see the memo). ## How this was done I searched the full-text index of all 553 FRUS volumes for five word families (corruption, bribery, graft, kickback, embezzlement), excluding front matter, editorial notes and two duplicate second editions."
+  },
+  {
+   "text": "hundred",
+   "values": [
+    "100"
+   ],
+   "next": "see",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "Across the series, the words appear most often from the on: about one document in fifty in the and , against about one in three hundred in the (see the memo). ## How this was done I searched the full-text index of all 553 FRUS volumes for five word families (corruption, bribery, graft, kickback, embezzlement), excluding front matter, editorial notes and two duplicate second editions."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "fru",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "Across the series, the words appear most often from the on: about one document in fifty in the and , against about one in three hundred in the (see the memo). ## How this was done I searched the full-text index of all 553 FRUS volumes for five word families (corruption, bribery, graft, kickback, embezzlement), excluding front matter, editorial notes and two duplicate second editions."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "word",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "Across the series, the words appear most often from the on: about one document in fifty in the and , against about one in three hundred in the (see the memo). ## How this was done I searched the full-text index of all 553 FRUS volumes for five word families (corruption, bribery, graft, kickback, embezzlement), excluding front matter, editorial notes and two duplicate second editions."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "duplicate",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "Across the series, the words appear most often from the on: about one document in fifty in the and , against about one in three hundred in the (see the memo). ## How this was done I searched the full-text index of all 553 FRUS volumes for five word families (corruption, bribery, graft, kickback, embezzlement), excluding front matter, editorial notes and two duplicate second editions."
+  },
+  {
+   "text": "forty",
+   "values": [
+    "40"
+   ],
+   "next": "matching",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about three in four of a sample use the word in the political sense\" | §2 M6 referent 31 of 40",
+   "sentence": "I tested the search on an evenly spaced sample of forty matching documents: all forty contained one of the words as printed, and about three in four used it in the political sense."
+  },
+  {
+   "text": "forty",
+   "values": [
+    "40"
+   ],
+   "next": "contained",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about three in four of a sample use the word in the political sense\" | §2 M6 referent 31 of 40",
+   "sentence": "I tested the search on an evenly spaced sample of forty matching documents: all forty contained one of the words as printed, and about three in four used it in the political sense."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "word",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "I tested the search on an evenly spaced sample of forty matching documents: all forty contained one of the words as printed, and about three in four used it in the political sense."
+  },
+  {
+   "text": "about three in four",
+   "values": [
+    "3",
+    "4"
+   ],
+   "next": "used",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "\"about three in four of a sample use the word in the political sense\" | §2 M6 referent 31 of 40",
+   "sentence": "I tested the search on an evenly spaced sample of forty matching documents: all forty contained one of the words as printed, and about three in four used it in the political sense."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "apart",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "I traced where the matching documents came from and what their footnotes cite, through the archival indexes that ship with FRUS Explorer, keeping the two apart."
+  },
+  {
+   "text": "eighteen",
+   "values": [
+    "18"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"about eighteen documents printed twice\" | VECTORS V4",
+   "sentence": "I compared document texts to find and set aside about eighteen documents printed twice."
+  },
+  {
+   "text": "twice",
+   "values": [
+    "2"
+   ],
+   "next": "",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"a few dozen texts printed twice\" (18) | VECTORS V4",
+   "sentence": "I compared document texts to find and set aside about eighteen documents printed twice."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "I used document similarity to look for related documents that use none of the words, and found one."
+  },
+  {
+   "text": "seventeen",
+   "values": [
+    "17"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "law named in only four documents | §6 M17",
+   "sentence": "I read seventeen documents in full and quoted twelve, checking each quotation word for word against its document. ## Read next The collection, *Corruption and U.S. foreign policy: scope run*, holds the twelve documents under the five findings above, with the excerpts quoted here."
+  },
+  {
+   "text": "twelve",
+   "values": [
+    "12"
+   ],
+   "next": "checking",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"a few dozen texts printed twice\" (18) | VECTORS V4",
+   "sentence": "I read seventeen documents in full and quoted twelve, checking each quotation word for word against its document. ## Read next The collection, *Corruption and U.S. foreign policy: scope run*, holds the twelve documents under the five findings above, with the excerpts quoted here."
+  },
+  {
+   "text": "twelve",
+   "values": [
+    "12"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"a few dozen texts printed twice\" (18) | VECTORS V4",
+   "sentence": "I read seventeen documents in full and quoted twelve, checking each quotation word for word against its document. ## Read next The collection, *Corruption and U.S. foreign policy: scope run*, holds the twelve documents under the five findings above, with the excerpts quoted here."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "finding",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"all 553 volumes\"; \"about one document in a hundred\" | §1 M1, M2; §2 M5 (3,057 of 311,429)",
+   "sentence": "I read seventeen documents in full and quoted twelve, checking each quotation word for word against its document. ## Read next The collection, *Corruption and U.S. foreign policy: scope run*, holds the twelve documents under the five findings above, with the excerpts quoted here."
+  },
+  {
+   "text": "twenty",
+   "values": [
+    "20"
+   ],
+   "next": "so",
+   "kind": "word",
+   "class": "weak",
+   "row": "decade rise from the 1940s to the 1960s–70s; peak about one in fifty in the 1960s and 1970s | §2 M8 (20.2 and 19.5 per 1,000)",
+   "sentence": "The twenty or so Crowder telegrams around the Cuba document."
+  }
+ ]
+}

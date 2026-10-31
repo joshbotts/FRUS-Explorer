@@ -1,0 +1,61 @@
+M2 EAP set: volumes | non-apparatus docs
+76|36972
+M3 info set:
+14|3743
+M4 QA family over EAP (docs | volumes):
+1296|76
+M13 pointed-at over the QA family (anchor|repo|collection|lot|citations|docs), top 12:
+centralFileClass|Department of State|||312|178
+lotFile|Department of State||66D95|51|41
+presidentialLibrary|Nixon Presidential Materials|NSC Files||36|19
+presidentialLibrary|Johnson Library|National Security File||32|25
+lotFile|Department of State||62D430|19|16
+lotFile|Department of State||63D351|17|13
+presidentialLibrary|Kennedy Library|National Security Files||16|14
+presidentialLibrary|Carter Library|National Security Affairs||12|7
+lotFile|Department of State||62D1|10|9
+lotFile|Department of State||55D128|6|3
+lotFile|Department of State||62D181|6|3
+lotFile|Department of State||80D212|6|2
+M13 total over family (citations | docs):
+638|342
+M14 absence scans (docs | volumes):
+(USIA OR USIS) AND (poll OR survey OR "opinion research" OR "research report" OR "audience research")|64|28
+(leaflet OR leaflets OR "radio script" OR "film script" OR "VOA script") AND (USIA OR USIS OR "Voice of America")|33|17
+"Peace Corps"|60|18
+("binational center" OR "bi-national center" OR "Binational Centers")|3|3
+"soft power"|0|0
+"Department of State"|14916|76
+"ZZZ_IMPOSSIBLE_ZZZ"|0|0
+M8 soft power whole index:
+0
+external_citations earliest date (house figure 1910-12-06):
+1910-12-06|50173
+CREATE TABLE external_citations (
+    volume_id     TEXT NOT NULL,
+    document_id   TEXT NOT NULL,
+    note_ordinal  INTEGER NOT NULL,
+    citation_index INTEGER NOT NULL,
+    anchor        TEXT NOT NULL,
+    repository    TEXT,
+    collection    TEXT,
+    lot_file      TEXT,
+    lot_file_norm TEXT,
+    file_id       TEXT,
+    inherited     INTEGER NOT NULL DEFAULT 0,
+    raw_text      TEXT NOT NULL, decimal_class TEXT, note_label TEXT,
+    PRIMARY KEY (volume_id, document_id, note_ordinal, citation_index)
+);
+CREATE INDEX idx_ext_cit_doc
+ON external_citations(volume_id, document_id);
+CREATE INDEX idx_ext_cit_lot_norm ON external_citations(lot_file_norm);
+CREATE INDEX idx_ext_cit_repo_collection
+ON external_citations(repository, collection);
+CREATE INDEX idx_ext_cit_class ON external_citations(decimal_class);
+M13 per-lot doc counts, re-derived separately (lot_file_norm):
+62D1|10|9
+62D430|19|16
+63D351|17|13
+66D95|51|41
+M13 central file decimal anchors docs:
+centralFileClass|312|178

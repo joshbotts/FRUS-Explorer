@@ -1,0 +1,54 @@
+round trip OK volumes 553 docs 314616
+digests index/binary/map/shard/.generation equal: True 89481b1869da1880
+dims 512 docs 314616 cents 660 recall@10 0.9021 calib {'documentOffset': 0.4, 'measuredBy': "Planning/semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md §1b, fitted to EmbeddingGemma 300m's scores over 90 typed queries and 600 anchor documents against the 314,616-document corpus", 'queryOffset': 0.47}
+
+## ANCHOR frus1917-72PubDipv08/d31
+  ham 81 frus1917-72PubDipv07/d106  noFTS  | 106. Minutes of a Meeting of the President’s General Advisory Committee on Foreign Assistance P | Washington, September 12, 1966
+  ham 86 frus1917-72PubDipv06/d3  noFTS  | 3. Report Prepared by Deputy Director-Designate Donald M. Wilson | Washington, December 1960.
+  ham 88 frus1917-72PubDipv06/d5  noFTS  | 5. Report Prepared by the Task Force on the United States Information Agency | Washington, December 31, 1960.
+  ham 88 frus1952-54v13p1/d116 inR FTShit  | The Ambassador at Saigon (Heath) to the Department of State | Saigon, September 20, 1952—3 p
+  ham 89 frus1955-57v22/d275 inR FTShit  | 275. Telegram From the Embassy in Indonesia to the Department of State | Djakarta, October 11, 1957—3 p
+  ham 90 frus1917-72PubDipv08/d99  noFTS  | 99. Paper Prepared in the United States Information Agency | Washington, July 30, 1970
+  ham 90 frus1950v06/d9 inR noFTS apparatus | Editorial Note | 
+  ham 91 frus1958-60v16/d65 inR FTShit  | 65. National Security Council Report | Washington, July 25, 1960.
+  ham 92 frus1917-72PubDipv07/d140  noFTS  | 140. Letter From the Director of the United States Information Agency (Marks) to All United Sta | Washington, March 6, 1967
+  ham 92 frus1952-54v02p2/d374  noFTS  | Memorandum for the National Security Council by the Executive Secretary (Lay) | Washington, October 1, 1953.
+  ham 92 frus1977-80v30/d68  noFTS  | 68. Memorandum From the Director of the United States Information Agency (Reinhardt) to all USI | Washington, June 17, 1977
+  ham 94 frus1951v06p1/d12 inR FTShit  | Report to the National Security Council by the Executive Secretary (Lay) | Washington, May 17, 1951.
+  ham 94 frus1951v06p2/d105 inR FTShit  | Memorandum by the Acting Assistant Secretary of State for Near Eastern, South Asian, and Africa | [Washington,] March 20, 1951.
+  ham 94 frus1952-54v02p2/d303  noFTS  | Extract From a “Report on International Information Administration—1952” to the Secretary of St | December 31, 1952
+  ham 95 frus1917-72PubDipv07/d69  noFTS  | 69. Memorandum From the Special Assistant to the Director of the United States Information Agen | Washington, January 7, 1966
+
+## ANCHOR frus1961-63v23/d289
+  ham 89 frus1958-60v17/d138 inR noFTS  | 138. Memorandum From the Assistant Secretary for Far Eastern Affairs (Robertson) to Secretary o | Washington, July 30, 1958.
+  ham 99 frus1964-68v26/d216 inR noFTS  | 216. Memorandum From the Assistant Secretary of Defense for International Security Affairs (McN | Washington, August 3, 1966.
+  ham 100 frus1964-68v26/d132 inR noFTS  | 132. Memorandum From the Deputy Assistant Secretary of State for Far Eastern Affairs (Berger) t | Washington, August 8, 1965.
+  ham 101 frus1958-60v17/d1 inR FTShit  | 1. Memorandum From the Assistant Secretary of State for Far Eastern Affairs (Robertson) to Secr | Washington, January 2, 1958.
+  ham 102 frus1964-68v26/d106 inR FTShit  | 106. Memorandum From Director of the United States Information Agency Rowan to Secretary of Sta | Washington, February 18, 1965.
+  ham 104 frus1961-63v23/d293 inR noFTS  | 293. Memorandum of Conversation | Washington, October 11, 1962, 
+  ham 105 frus1955-57v22/d286 inR noFTS  | 286. Memorandum From the Director of the Office of Southwest Pacific Affairs (Mein) to the Assi | Washington, November 12, 1957.
+  ham 105 frus1958-60v17/d285 inR noFTS  | 285. Memorandum From Acting Secretary of State Dillon to President Eisenhower | Washington, October 5, 1960.
+  ham 105 frus1961-63v23/d269 inR noFTS  | 269. Memorandum From the Director of Central Intelligence’s Assistant (Knoche) to Director of C | Washington, May 22, 1962.
+  ham 105 frus1961-63v23/d288 inR noFTS  | 288. Memorandum From the Joint Chiefs of Staff to Secretary of Defense McNamara | Washington, September 5, 1962.
+  ham 105 frus1964-68v26/d121 inR FTShit  | 121. Report From Ambassador Ellsworth Bunker to President Johnson | Washington, undated.
+  ham 105 frus1964-68v26/d147 inR FTShit  | 147. Telegram From the Embassy in Indonesia to the Department of State | Djakarta, October 5, 1965, 143
+  ham 105 frus1964-68v26/d263 inR noFTS  | 263. Action Memorandum From the Assistant Secretary of State for Far Eastern Affairs (Bundy) to | Washington, July 13, 1964.
+  ham 106 frus1955-57v22/d95 inR noFTS  | 95. National Security Council Report | Washington, May 3, 1955.
+  ham 106 frus1961-63v23/d291 inR FTShit  | 291. Memorandum From the Under Secretary of State (Ball) to President Kennedy | Washington, October 10, 1962.
+
+## ANCHOR frus1969-76v38p2/d105
+  ham 76 frus1969-76ve12/d10 inR noFTS  | 10. Memorandum From W.R. Smyser of the National Security Council Staff to Secretary of State Ki | Washington, July 18, 1974
+  ham 77 frus1958-60v16/d65 inR FTShit  | 65. National Security Council Report | Washington, July 25, 1960.
+  ham 78 frus1969-76v01/d54  noFTS  | 54. Paper Prepared in the National Security Council Staff | Washington, undated.
+  ham 80 frus1969-76ve12/d16 inR noFTS  | 16. Memorandum From Secretary of State Kissinger to President Ford, Washington, June 13, 1975. | Washington, June 13, 1975
+  ham 82 frus1969-76ve12/d15 inR noFTS  | 15. Minutes of the Acting Secretary of State’s Staff Meeting, Washington, June 13, 1975, 8–9:05 | Washington, June 13, 1975, 8–9
+  ham 82 frus1977-80v22/d104 inR noFTS  | 104. Telegram From the Consulate in Hong Kong to the Department of State | Hong Kong, February 7, 1977, 0
+  ham 84 frus1949v07p2/d387 inR FTShit  | Memorandum by the Executive Secretary of the National Security Council (Souers) to the National | Washington, December 30, 1949.
+  ham 84 frus1955-57v21/d119 inR FTShit  | 119. National Security Council Report | Washington, September 5, 1956.
+  ham 84 frus1969-76v38p1/d54  noFTS  | 54. Memorandum From the Counselor of the Department of State (Sonnenfeldt) and the Director of  | Washington, April 4, 1975.
+  ham 85 frus1949v07p2/d386 inR FTShit  | Memorandum by the Ambassador at Large (Jessup) to the Secretary of State | Washington, November 16, 1949.
+  ham 85 frus1958-60v16/d12 inR FTShit  | 12. National Security Council Report | Washington, April 2, 1958.
+  ham 85 frus1969-76v38p1/d58  noFTS  | 58. Telegram From the Department of State to All Diplomatic and Consular Posts | Washington, May 15, 1975, 0021
+  ham 85 frus1969-76v38p1/d60  noFTS  | 60. Draft Memorandum From Secretary of State Kissinger to President Ford | Washington, July 18, 1975.
+  ham 85 frus1969-76ve12/d125 inR noFTS  | 125. Memorandum of Conversation, Camp David, Maryland, July 5, 1975, 12:45–2 p.m. | Camp David, Maryland, July 5, 
+  ham 86 frus1951v06p1/d12 inR FTShit  | Report to the National Security Council by the Executive Secretary (Lay) | Washington, May 17, 1951.

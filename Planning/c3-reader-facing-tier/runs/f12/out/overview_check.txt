@@ -1,0 +1,16 @@
+straight double quotes: 100 (even)
+term/name, not a document quotation: soft power
+term/name, not a document quotation: RG 305
+term/name, not a document quotation: Restricted - Possibly
+term/name, not a document quotation: soft power
+term/name, not a document quotation: Department of State
+term/name, not a document quotation: image of the United States
+term/name, not a document quotation: psychological
+term/name, not a document quotation: public diplomacy
+term/name, not a document quotation: Public Opinion Research
+term/name, not a document quotation: soft power
+term/name, not a document quotation: the region
+term/name, not a document quotation: American soft power in East Asia and the Pacific: how officials judged it, 1950–1977
+quoted spans 39 unverified 0
+cited docs 22 missing from collection []
+excerpts in collection 38 all in verified quotes: True

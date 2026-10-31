@@ -1,0 +1,112 @@
+frus1894app1 1886 817 Foreign Relations of the United States, 1894, Appendix I, Chinese-Japanese War, Enforcement of Regulation Resp
+frus1901China 1900 315 Foreign Relations of the United States, 1901, Appendix, Affairs in China, Report of William W. Rockhill, Late 
+frus1917-72PubDip 1917 38 Foreign Relations of the United States, 1917–1972, Public Diplomacy, World War I
+frus1917-72PubDipv06 1960 152 Foreign Relations of the United States, 1917–1972, Volume VI, Public Diplomacy, 1961–1963
+frus1917-72PubDipv07 1963 178 Foreign Relations of the United States, 1917–1972, Volume VII, Public Diplomacy, 1964–1968
+frus1917-72PubDipv08 1968 179 Foreign Relations of the United States, 1917–1972, Volume VIII, Public Diplomacy, 1969–1972
+frus1931-41v01 1931 683 Papers Relating to the Foreign Relations of the United States, Japan, 1931–1941, Volume I
+frus1931-41v02 1936 424 Papers Relating to the Foreign Relations of the United States, Japan, 1931–1941, Volume II
+frus1942China 1941 661 Foreign Relations of the United States, Diplomatic Papers, 1942, China
+frus1943China 1942 824 Foreign Relations of the United States, Diplomatic Papers, 1943, China
+frus1944v05 1943 1291 Foreign Relations of the United States, Diplomatic Papers, 1944, The Near East, South Asia, and Africa, The Fa
+frus1944v06 1943 900 Foreign Relations of the United States, Diplomatic Papers, 1944, China, Volume VI
+frus1945v07 1944 1168 Foreign Relations of the United States, Diplomatic Papers, 1945, The Far East, China, Volume VII
+frus1946v09 1945 753 Foreign Relations of the United States, 1946, The Far East: China, Volume IX
+frus1946v10 1945 1124 Foreign Relations of the United States, 1946, The Far East: China, Volume X
+frus1947v07 1946 1176 Foreign Relations of the United States, 1947, The Far East: China, Volume VII
+frus1948v05p1 1946 411 Foreign Relations of the United States, 1948, The Near East, South Asia, and Africa, Volume V, Part 1
+frus1948v05p2 1948 796 Foreign Relations of the United States, 1948, The Near East, South Asia, and Africa, Volume V, Part 2
+frus1948v07 1947 797 Foreign Relations of the United States, 1948, The Far East: China, Volume VII
+frus1948v08 1947 902 Foreign Relations of the United States, 1948, The Far East: China, Volume VIII
+frus1949v01 1948 307 Foreign Relations of the United States, 1949, National Security Affairs, Foreign Economic Policy, Volume I
+frus1949v06 1948 1150 Foreign Relations of the United States, 1949, The Near East, South Asia, and Africa, Volume VI
+frus1949v08 1948 1702 Foreign Relations of the United States, 1949, The Far East: China, Volume VIII
+frus1949v09 1947 1470 Foreign Relations of the United States, 1949, The Far East: China, Volume IX
+frus1950v01 1949 306 Foreign Relations of the United States, 1950, National Security Affairs; Foreign Economic Policy, Volume I
+frus1950v05 1949 930 Foreign Relations of the United States, 1950, The Near East, South Asia, and Africa, Volume V
+frus1950v06 1950 809 Foreign Relations of the United States, 1950, East Asia and the Pacific, Volume VI
+frus1950v07 1950 1020 Foreign Relations of the United States, 1950, Korea, Volume VII
+frus1951v01 1948 744 Foreign Relations of the United States, 1951, National Security Affairs; Foreign Economic Policy, Volume I
+frus1951v06p1 1950 773 Foreign Relations of the United States, 1951, Asia and the Pacific, Volume VI, Part 1
+frus1951v06p2 1951 497 Foreign Relations of the United States, 1951, Asia and the Pacific, Volume VI, Part 2
+frus1951v07p1 1951 882 Foreign Relations of the United States, 1951, Korea and China, Volume VII, Part 1
+frus1951v07p2 1951 316 Foreign Relations of the United States, 1951, Korea and China, Volume VII, Part 2
+frus1952-54v11p1 1952 572 Foreign Relations of the United States, 1952–1954, Africa and South Asia, Volume XI, Part 1
+frus1952-54v11p2 1952 528 Foreign Relations of the United States, 1952–1954, Africa and South Asia, Volume XI, Part 2
+frus1952-54v12p1 1951 398 Foreign Relations of the United States, 1952–1954, East Asia and the Pacific, Volume XII, Part 1
+frus1952-54v12p2 1952 428 Foreign Relations of the United States, 1952–1954, East Asia and the Pacific, Volume XII, Part 2
+frus1952-54v13p1 1951 754 Foreign Relations of the United States, 1952–1954, Indochina, Volume XIII, Part 1
+frus1952-54v13p2 1954 587 Foreign Relations of the United States, 1952–1954, Indochina, Volume XIII, Part 2
+frus1952-54v14p1 1952 435 Foreign Relations of the United States, 1952–1954, China and Japan, Volume XIV, Part 1
+frus1952-54v14p2 1951 359 Foreign Relations of the United States, 1952–1954, China and Japan, Volume XIV, Part 2
+frus1952-54v15p1 1952 554 Foreign Relations of the United States, 1952–1954, Korea, Volume XV, Part 1
+frus1952-54v15p2 1953 379 Foreign Relations of the United States, 1952–1954, Korea, Volume XV, Part 2
+frus1955-57v01 1954 395 Foreign Relations of the United States, 1955–1957, Vietnam, Volume I
+frus1955-57v02 1955 301 Foreign Relations of the United States, 1955–1957, China, Volume II
+frus1955-57v03 1955 287 Foreign Relations of the United States, 1955–1957, China, Volume III
+frus1955-57v03mSupp 1955 860 Foreign Relations of the United States, 1955–1957, Volume III, Microfiche Supplement, China
+frus1955-57v08 1955 209 Foreign Relations of the United States, 1955–1957, South Asia, Volume VIII
+frus1955-57v09 1955 199 Foreign Relations of the United States, 1955–1957, Foreign Economic Policy; Foreign Information Program, Volum
+frus1955-57v10 1955 254 Foreign Relations of the United States, 1955–1957, Foreign Aid and Economic Defense Policy, Volume X
+frus1955-57v21 1955 492 Foreign Relations of the United States, 1955–1957, East Asian Security; Cambodia; Laos, Volume XXI
+frus1955-57v22 1955 498 Foreign Relations of the United States, 1955–1957, Southeast Asia, Volume XXII
+frus1955-57v23p1 1955 241 Foreign Relations of the United States, 1955–1957, Japan, Volume XXIII, Part 1
+frus1955-57v23p2 1955 251 Foreign Relations of the United States, 1955–1957, Korea, Volume XXIII, Part 2
+frus1955-57v26 1955 302 Foreign Relations of the United States, 1955–1957, Central and Southeastern Europe, Volume XXVI
+frus1958-60v01 1958 264 Foreign Relations of the United States, 1958–1960, Vietnam, Volume I
+frus1958-60v04 1958 261 Foreign Relations of the United States, 1958–1960, Foreign Economic Policy, Volume IV
+frus1958-60v15 1957 516 Foreign Relations of the United States, 1958–1960, South and Southeast Asia, Volume XV
+frus1958-60v16 1958 432 Foreign Relations of the United States, 1958–1960, East Asia-Pacific Region; Cambodia; Laos, Volume XVI
+frus1958-60v17 1958 260 Foreign Relations of the United States, 1958–1960, Indonesia, Volume XVII
+frus1958-60v18 1958 319 Foreign Relations of the United States, 1958–1960, Japan; Korea, Volume XVIII
+frus1958-60v19 1958 349 Foreign Relations of the United States, 1958–1960, China, Volume XIX
+frus1961-63v01 1961 304 Foreign Relations of the United States, 1961–1963, Volume I, Vietnam, 1961
+frus1961-63v02 1962 310 Foreign Relations of the United States, 1961–1963, Volume II, Vietnam, 1962
+frus1961-63v03 1961 294 Foreign Relations of the United States, 1961–1963, Volume III, Vietnam, January–August 1963
+frus1961-63v04 1963 367 Foreign Relations of the United States, 1961–1963, Volume IV, Vietnam, August–December 1963
+frus1961-63v06 1960 117 Foreign Relations of the United States, 1961–1963, Volume VI, Kennedy-Khrushchev Exchanges
+frus1961-63v07-09mSupp 1960 484 Foreign Relations of the United States, 1961–1963, Volumes VII, VIII, IX, Arms Control; National Security Poli
+frus1961-63v09 1961 315 Foreign Relations of the United States, 1961–1963, Volume IX, Foreign Economic Policy
+frus1961-63v19 1961 341 Foreign Relations of the United States, 1961–1963, Volume XIX, South Asia
+frus1961-63v22 1958 347 Foreign Relations of the United States, 1961–1963, Volume XXII, Northeast Asia
+frus1961-63v23 1961 457 Foreign Relations of the United States, 1961–1963, Volume XXIII: Southeast Asia
+frus1961-63v24 1961 468 Foreign Relations of the United States, 1961–1963, Volume XXIV, Laos Crisis
+frus1961-63v25 1961 453 Foreign Relations of the United States, 1961–1963, Volume XXV, Organization of Foreign Policy; Information Pol
+frus1964-68v01 1964 452 Foreign Relations of the United States, 1964–1968, Volume I, Vietnam, 1964
+frus1964-68v02 1965 320 Foreign Relations of the United States, 1964–1968, Volume II, Vietnam, January–June 1965
+frus1964-68v03 1965 264 Foreign Relations of the United States, 1964–1968, Volume III, Vietnam, June–December 1965
+frus1964-68v04 1965 327 Foreign Relations of the United States, 1964–1968, Volume IV, Vietnam, 1966
+frus1964-68v05 1967 412 Foreign Relations of the United States, 1964–1968, Volume V, Vietnam, 1967
+frus1964-68v06 1968 308 Foreign Relations of the United States, 1964–1968, Volume VI, Vietnam, January–August 1968
+frus1964-68v07 1968 267 Foreign Relations of the United States, 1964–1968, Volume VII, Vietnam, September 1968–January 1969
+frus1964-68v25 1964 531 Foreign Relations of the United States, 1964–1968, Volume XXV, South Asia
+frus1964-68v26 1964 360 Foreign Relations of the United States, 1964–1968, Volume XXVI, Indonesia; Malaysia-Singapore; Philippines
+frus1964-68v27 1964 397 Foreign Relations of the United States, 1964–1968, Volume XXVII, Mainland Southeast Asia; Regional Affairs
+frus1964-68v28 1964 388 Foreign Relations of the United States, 1964–1968, Volume XXVIII, Laos
+frus1964-68v29p1 1964 338 Foreign Relations of the United States, 1964–1968, Volume XXIX, Part 1, Korea
+frus1964-68v29p2 1964 122 Foreign Relations of the United States, 1964–1968, Volume XXIX, Part 2, Japan
+frus1964-68v30 1964 336 Foreign Relations of the United States, 1964–1968, Volume XXX, China
+frus1969-76v03 1969 192 Foreign Relations of the United States, 1969–1976, Volume III, Foreign Economic Policy; International Monetary
+frus1969-76v06 1969 316 Foreign Relations of the United States, 1969–1976, Volume VI, Vietnam, January 1969–July 1970
+frus1969-76v07 1970 280 Foreign Relations of the United States, 1969–1976, Volume VII, Vietnam, July 1970–January 1972
+frus1969-76v08 1972 262 Foreign Relations of the United States, 1969–1976, Volume VIII, Vietnam, January–October 1972
+frus1969-76v09 1972 331 Foreign Relations of the United States, 1969–1976, Volume IX, Vietnam, October 1972–January 1973
+frus1969-76v10 1973 298 Foreign Relations of the United States, 1969–1976, Volume X, Vietnam, January 1973–July 1975
+frus1969-76v11 1971 305 Foreign Relations of the United States, 1969–1976, Volume XI, South Asia Crisis, 1971
+frus1969-76v17 1969 268 Foreign Relations of the United States, 1969–1976, Volume XVII, China, 1969–1972
+frus1969-76v18 1973 151 Foreign Relations of the United States, 1969–1976, Volume XVIII, China, 1973–1976
+frus1969-76v19p1 1969 170 Foreign Relations of the United States, 1969–1976, Volume XIX, Part 1, Korea, 1969–1972
+frus1969-76v19p2 1969 131 Foreign Relations of the United States, 1969–1976, Volume XIX, Part 2, Japan, 1969–1972
+frus1969-76v20 1969 320 Foreign Relations of the United States, 1969–1976, Volume XX, Southeast Asia, 1969–1972
+frus1969-76v31 1971 280 Foreign Relations of the United States, 1969–1976, Volume XXXI, Foreign Economic Policy, 1973–1976
+frus1969-76v38p2 1972 209 Foreign Relations of the United States, 1969–1976, Volume XXXVIII, Part 2, Organization and Management of Fore
+frus1969-76v42 1969 70 Foreign Relations of the United States, 1969–1976, Volume XLII, Vietnam: The Kissinger-Le Duc Tho Negotiations
+frus1969-76ve07 1969 434 Foreign Relations of the United States, 1969–1976, Volume E–7, Documents on South Asia, 1969–1972
+frus1969-76ve08 1973 265 Foreign Relations of the United States, 1969–1976, Volume E–8, Documents on South Asia, 1973–1976
+frus1969-76ve12 1973 416 Foreign Relations of the United States, 1969–1976, Volume E–12, Documents on East and Southeast Asia, 1973–197
+frus1969-76ve13 1969 175 Foreign Relations of the United States, 1969–1976, Volume E–13, Documents on China, 1969–1972
+frus1977-80v03 1976 343 Foreign Relations of the United States, 1977–1980, Volume III, Foreign Economic Policy
+frus1977-80v13 1976 318 Foreign Relations of the United States, 1977–1980, Volume XIII, China
+frus1977-80v19 1977 477 Foreign Relations of the United States, 1977–1980, Volume XIX, South Asia
+frus1977-80v22 1977 335 Foreign Relations of the United States, 1977–1980, Volume XXII, Southeast Asia and the Pacific
+frus1977-80v30 1976 212 Foreign Relations of the United States, 1977–1980, Volume XXX, Public Diplomacy

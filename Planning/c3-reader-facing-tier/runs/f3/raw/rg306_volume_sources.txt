@@ -1,0 +1,27 @@
+8 | Record Group 306, Records of the United States Information Agency | {'isHeading': False, 'recordGroup': '306'} | vols 7
+6 | USIA/IAE/E Files: Lot 64 A 536 | {'isHeading': False, 'lotFile': '64 A 536'} | vols 4
+6 | USIA/IOP/G Files: Lot 70 D 398 | {'isHeading': False, 'lotFile': '70 D 398'} | vols 4
+4 | USIA Files, Lot 56 D 581 | {'isHeading': False, 'lotFile': '56 D 581'} | vols 4
+4 | USIA Files, Lot 60 D 322 | {'isHeading': False, 'lotFile': '60 D 322'} | vols 4
+3 | USIA/IOP/G Files, Lot 64 D 535 | {'isHeading': False, 'lotFile': '64 D 535'} | vols 1
+2 | USIA/IBS Files: Lot 59 D 242 | {'isHeading': False, 'lotFile': '59 D 242'} | vols 2
+2 | USIA/IOP Files, Lots 59 D 260; 61 D 445; 62 D 239; 63 D 224; 64 D 535 | {'isHeading': False, 'lotFile': '59 D 260'} | vols 1
+2 | USIA/IAE Files: Lot 60 D 439 | {'isHeading': False, 'lotFile': '60 D 439'} | vols 2
+2 | USIA/I/R Files, Lot 62 D 255 | {'isHeading': False, 'lotFile': '62 D 255'} | vols 1
+2 | Record Group 306, Records of the U.S. Information Agency | {'isHeading': True, 'recordGroup': '306'} | vols 2
+1 | Lot 61 D 233: Files of the Assistant Director for Near East and South Asia, United States Information Agency, for the years 1953–1959. | {'isHeading': False, 'lotFile': '61 D 233'} | vols 1
+1 | USIA Files, Lot 63 A 190, Files of the U.S. Information Agency | {'isHeading': False, 'lotFile': '63 A 190'} | vols 1
+1 | USIA Files: Lot 64 D 171 | {'isHeading': False, 'lotFile': '64 D 171'} | vols 1
+1 | Classified files pertaining to U.S. Information Agency activities of the Embassy at Saigon, 1959-1961, formerly Lot 65 F 42. | {'isHeading': False, 'lotFile': '65 F 42'} | vols 1
+1 | USIA Files: Lot 67 D 317 | {'isHeading': False, 'lotFile': '67 D 317'} | vols 1
+1 | USIA Files: Lot 67 D 333 | {'isHeading': False, 'lotFile': '67 D 333'} | vols 1
+1 | USIA Files: Lot 68 A 4933 | {'isHeading': False, 'lotFile': '68 A 4933'} | vols 1
+1 | USIA Files: Lot 68 D 393 | {'isHeading': False, 'lotFile': '68 D 393'} | vols 1
+1 | USIA Files: Lot 70 D 449 | {'isHeading': False, 'lotFile': '70 D 449'} | vols 1
+1 | USIA Files: Lot 88 A 18 | {'isHeading': False, 'lotFile': '88 A 18'} | vols 1
+1 | Record Group 306 | {'isHeading': False, 'recordGroup': '306'} | vols 1
+1 | Record Group 306, Records of the International Communication Agency | {'isHeading': True, 'recordGroup': '306'} | vols 1
+1 | Record Group 306, Records of the United States Information Agency/United States International Communication Agency | {'isHeading': True, 'recordGroup': '306'} | vols 1
+1 | United States Information Agency Records (RG 306) | {'isHeading': False, 'recordGroup': '306'} | vols 1
+dict
+True {"catalogURL": "https://catalog.archives.gov/id/622", "matchType": "api", "naId": "622", "recordGroup": "306", "title": "Records of the U.S. Information Agency"}

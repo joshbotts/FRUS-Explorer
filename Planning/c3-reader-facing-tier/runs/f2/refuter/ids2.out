@@ -1,0 +1,50 @@
+statuses: ['Restricted - Fully', 'Unrestricted', 'Restricted - Partly', 'Restricted - Possibly', 'Undetermined']
+useRestrictions: ['Copyright', 'Other']
+referenceUnits: ['National Archives at College Park - Textual Reference', 'National Archives at College Park - Motion Pictures']
+40967285 accessStatus: Restricted - Partly | useStatus: Unrestricted | access restrictions: ['FOIA (b)(1) National Security', 'FOIA (b)(6) Personal Information'] | extent: 103 linear feet, 1 linear inch | years: 1956 1972
+1257679 accessStatus: Restricted - Partly | useStatus: Restricted - Possibly | access restrictions: ['FOIA (b)(1) National Security'] | extent: 47 linear feet | years: 1953 1971
+2839191 accessStatus: Restricted - Partly | useStatus: Restricted - Possibly | access restrictions: ['FOIA (b)(1) National Security'] | extent: 4 linear feet, 5 linear inches | years: 1953 1961
+1487627 accessStatus: Restricted - Partly | useStatus: Restricted - Possibly | access restrictions: ['FOIA (b)(1) National Security'] | extent: 14 linear feet | years: 1975 1981
+
+JFK collections[394]: {"identifier": "JFK-RFK", "naId": 1169, "statedSeriesCount": 9, "title": "Robert F. Kennedy Papers"} | series: [(193936, 'Robert F. Kennedy Papers: Attorney General Papers: General Correspondence', '1961–1964'), (193954, 'Robert F. Kennedy Papers: Attorney General Papers: Personal Correspondence', '1960–1964'), (193972, 'Robert F. Kennedy Papers: Attorney General Files: Speeches', '1961–1964'), (193997, 'Robert F. Kennedy Papers: Attorney General Files: Trips; Good Will Trip Briefing Book', '1961–1964'), (194001, "Robert F. Kennedy Papers: Pre-administration Political File: John F. Kennedy's 1960 Campaign and Transition", '1959–1960')]
+
+Ford library titles matching Advis/Adviser/Scowcroft/NSA:
+     series in GRF-0029 590416 Business Advisory Services Files 1973–1984
+     series in GRF-0161 7666911 Consumer Advisory Council Files 1974–1977
+     series in GRF-0186 24740321 Advisory Committees and Councils Appointment Files 1971–1977
+     series in GRF-0226 649346 President's Foreign Intelligence Advisory Board Subject Files 1969–1986
+     series in GRF-0230 649702 Scientific Advisory Board of the U.S. Air Force Files 1955–1964
+   GRF-0311 645506 Brent Scowcroft Morning News Summaries (Ford Administration) 1
+   GRF-0332 645522 Henry Kissinger and Brent Scowcroft West Wing Office Files (Ford Administration) 2
+   GRF-0354 646872 Brent Scowcroft Daily Work Files (Nixon and Ford Administrations) 2
+   GRF-0360 646910 Trip Cables of Brent Scowcroft  (Ford Administration) 1
+     series in GRF-0429 5720264 Council of Economic Advisers Chronological Files 1969–1970
+
+Nixon library collection titles (all 212, first 60 chars) containing NSC/National Security/White House Central/Kissinger:
+   RN-NSF 572235 National Security Files (Nixon Administration) | series: [(572247, 'Institutional Files', '1969–1974'), (572248, 'Central Files', '1969–1974'), (579113, 'Henry A. Kissinger Telephone Conversation Transcripts (Telco', '1969–1974'), (1103638, "Henry A. Kissinger's (HAK) Office Files", '1969–1975')]
+
+Kennedy JFK-4 series (first 20):
+   1164 Papers of John F. Kennedy: Presidential Papers: National Security Files
+      193236 Country Files 1961–1963
+      193350 Department and Agency Files 1961–1963
+      193354 Meeting Records and Memoranda 1961–1963
+      326996825 Regional Security Files 1961–1963
+      326996849 Trip and Conference Files 1961–1963
+      326996855 Subject Files 1961–1963
+      326996860 Chester V. Clifton Files 1961–1963
+      326996862 Carl Kaysen Files 1961–1963
+      326996865 William H. Brubeck Files 1961–1963
+      326996869 Ralph A. Dungan Files 1961–1963
+      326996872 McGeorge Bundy Correspondence 1961–1963
+      326996878 Robert W. Komer Files 1961–1963
+      326996881 National Security Council Administrative Files and Miscellaneous Subject Files 1961–1963
+      326996884 Henry Kissinger Files 1961–1963
+      326996885 Charles Johnson Files 1961–1963
+      329123042 Bromley K. Smith Files 1961–1963
+      329123047 Unreviewed Materials 1961–1963
+
+collection-authority lot:62D430 naId 2839191 rg 59 name OCB Files: Lot 62 D 430 | volumes: 60
+
+collection-authority lot:81D113 naId 1487627 rg 59 name D Files: Lot 81D113 (Entry P–14) | volumes: 12
+
+decimal-class-labels top keys: ['coverage', 'generated', 'provenance', 'schedules', 'schemaVersion']

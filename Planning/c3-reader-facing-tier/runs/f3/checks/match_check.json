@@ -1,0 +1,327 @@
+{
+ "run": "runs/f3",
+ "termsTested": 33,
+ "dead": [
+  {
+   "term": "ZZZ_IMPOSSIBLE_ZZZ",
+   "source": "queries.log",
+   "line": 15,
+   "returns": false,
+   "query": "\"ZZZ_IMPOSSIBLE_ZZZ\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"soft power\"",
+   "source": "queries.log",
+   "line": 16,
+   "returns": false,
+   "query": "\"soft power\"",
+   "nearestLive": null
+  }
+ ],
+ "syntaxErrors": [],
+ "prefixes": [
+  {
+   "prefix": "effect*",
+   "firstLogLine": 20,
+   "vocabLookupBefore": false
+  },
+  {
+   "prefix": "attitud*",
+   "firstLogLine": 20,
+   "vocabLookupBefore": false
+  },
+  {
+   "prefix": "audienc*",
+   "firstLogLine": 20,
+   "vocabLookupBefore": true
+  },
+  {
+   "prefix": "imag*",
+   "firstLogLine": 20,
+   "vocabLookupBefore": true
+  },
+  {
+   "prefix": "intellectu*",
+   "firstLogLine": 24,
+   "vocabLookupBefore": false
+  },
+  {
+   "prefix": "neutralis*",
+   "firstLogLine": 24,
+   "vocabLookupBefore": true
+  },
+  {
+   "prefix": "inform*",
+   "firstLogLine": 48,
+   "vocabLookupBefore": true
+  }
+ ],
+ "vocabLookupsInLog": 2,
+ "all": [
+  {
+   "term": "\"department of state\"",
+   "source": "queries.log",
+   "line": 14,
+   "returns": true,
+   "query": "\"department of state\"",
+   "nearestLive": null
+  },
+  {
+   "term": "ZZZ_IMPOSSIBLE_ZZZ",
+   "source": "queries.log",
+   "line": 15,
+   "returns": false,
+   "query": "\"ZZZ_IMPOSSIBLE_ZZZ\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"soft power\"",
+   "source": "queries.log",
+   "line": 16,
+   "returns": false,
+   "query": "\"soft power\"",
+   "nearestLive": null
+  },
+  {
+   "term": "soft",
+   "source": "queries.log",
+   "line": 17,
+   "returns": true,
+   "query": "\"soft\"",
+   "nearestLive": null
+  },
+  {
+   "term": "usia",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"usia\"",
+   "nearestLive": null
+  },
+  {
+   "term": "usi",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"usi\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"information program\"",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"information program\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"psychological\"",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"psychological\"",
+   "nearestLive": null
+  },
+  {
+   "term": "propaganda",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"propaganda\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"east asia\"",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"east asia\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"far east\"",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"far east\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"southeast asia\"",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"southeast asia\"",
+   "nearestLive": null
+  },
+  {
+   "term": "asian",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"asian\"",
+   "nearestLive": null
+  },
+  {
+   "term": "effect*",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"effect\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "attitud*",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"attitud\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "audienc*",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"audienc\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "imag*",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"imag\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "opinion",
+   "source": "queries.log",
+   "line": 20,
+   "returns": true,
+   "query": "\"opinion\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"asian mind\"",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"asian mind\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"oriental mind\"",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"oriental mind\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"asians respect\"",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"asians respect\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"lose face\"",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"lose face\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"asian psychology\"",
+   "source": "queries.log",
+   "line": 22,
+   "returns": true,
+   "query": "\"asian psychology\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"cultural exchange\"",
+   "source": "queries.log",
+   "line": 24,
+   "returns": true,
+   "query": "\"cultural exchange\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"exchange program\"",
+   "source": "queries.log",
+   "line": 24,
+   "returns": true,
+   "query": "\"exchange program\"",
+   "nearestLive": null
+  },
+  {
+   "term": "japan",
+   "source": "queries.log",
+   "line": 24,
+   "returns": true,
+   "query": "\"japan\"",
+   "nearestLive": null
+  },
+  {
+   "term": "japanese",
+   "source": "queries.log",
+   "line": 24,
+   "returns": true,
+   "query": "\"japanese\"",
+   "nearestLive": null
+  },
+  {
+   "term": "intellectu*",
+   "source": "queries.log",
+   "line": 24,
+   "returns": true,
+   "query": "\"intellectu\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "neutralis*",
+   "source": "queries.log",
+   "line": 24,
+   "returns": true,
+   "query": "\"neutralis\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "\"circular telegram 208\"",
+   "source": "queries.log",
+   "line": 48,
+   "returns": true,
+   "query": "\"circular telegram 208\"",
+   "nearestLive": null
+  },
+  {
+   "term": "depcirtel",
+   "source": "queries.log",
+   "line": 48,
+   "returns": true,
+   "query": "\"depcirtel\"",
+   "nearestLive": null
+  },
+  {
+   "term": "inform*",
+   "source": "queries.log",
+   "line": 48,
+   "returns": true,
+   "query": "\"inform\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "\"circular telegram\"",
+   "source": "queries.log",
+   "line": 50,
+   "returns": true,
+   "query": "\"circular telegram\"",
+   "nearestLive": null
+  }
+ ]
+}

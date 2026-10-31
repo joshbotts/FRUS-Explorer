@@ -1,0 +1,66 @@
+O2' check of cal-s1: 57 numbers in overview.md; 26 traced, 28 weak, 3 untraced.
+TRACE TABLE: 37 rows, from line 194 of memo.md.
+Each flagged number is WEAK (a row holds the value without the word after it) or UNTRACED (no row holds the value). Decide each: TRACED (name the row), NOT A NUMBER, or UNTRACED.
+
+[WEAK] '2,200' (value 2200, next word 'roughly'); nearest row: about 2,200 documents; about 400 volumes | M3.2 (2,175 in 399; 2,200 in 401 before Ed2)
+    sentence: About 2,200 of its roughly 311,000 ordinary documents (about one in 140, spread over about 400 volumes) use the word "corrupt" or a form of it.
+[WEAK] 'about one in 140' (value 1/140, next word 'spread'); nearest row: roughly 311,000 ordinary documents; one in 140 | M1.4, M3.2 (311,429; one in 143)
+    sentence: About 2,200 of its roughly 311,000 ordinary documents (about one in 140, spread over about 400 volumes) use the word "corrupt" or a form of it.
+[WEAK] 'forty' (value 40, next word 'six'); nearest row: a sample of forty, six not about official corruption | M3.5 (34 of 40 referent; 6 of 40 not)
+    sentence: Most of those are passing remarks: in a sample of forty, six were not about official corruption at all.
+[WEAK] 'six' (value 6, next word 'were'); nearest row: a sample of forty, six not about official corruption | M3.5 (34 of 40 referent; 6 of 40 not)
+    sentence: Most of those are passing remarks: in a sample of forty, six were not about official corruption at all.
+[WEAK] 'five' (value 5, next word 'way'); nearest row: one series in thirty-five among 698 | M5.5
+    sentence: Where the documents show corruption bearing on what the United States did or said, it works in five ways, and almost never as the single cause of a decision.
+[WEAK] 'Two' (value 2, next word 'different'); nearest row: about 2,200 documents; about 400 volumes | M3.2 (2,175 in 399; 2,200 in 401 before Ed2)
+    sentence: Where FRUS points for the rest.** Two different things are listed here and they are not added together.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: (a) the State Department's central decimal files, Record Group 59 (the classes for China in , the Philippines in and , Vietnam in and South Korea in ), with no series-level identifier, entry or access status in the finding aids I had;
+[WEAK] 'one' (value 1, next word 'army'); nearest row: 553 volumes | M1.1, M1.2
+    sentence: I could not confirm access terms for any of these; and (e) one Army collection that is not at the National Archives, the Center for Military History's files of the deputy for pacification (CORDS), folder on corruption in the Vietnamese government for .
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: (a) the Far Eastern Bureau's Subject, Personal Name, and Country Files, Record Group 59, lot 62 D 26, National Archives identifier 1965953, entry A1 3113, , partly restricted ;
+[WEAK] '1965953' (value 1965953, next word 'entry'); nearest row: National Archives identifiers 567979; 165203 (1977-1981); 1965953, A1 3113, 1960-1963, open in part; 603208, A1 5005, 1967-68, open; 2602428, A1 5644, 1965-1975, open in part | M5.3, M5.4
+    sentence: (a) the Far Eastern Bureau's Subject, Personal Name, and Country Files, Record Group 59, lot 62 D 26, National Archives identifier 1965953, entry A1 3113, , partly restricted ;
+[WEAK] '603208' (value 603208, next word 'entry'); nearest row: National Archives identifiers 567979; 165203 (1977-1981); 1965953, A1 3113, 1960-1963, open in part; 603208, A1 5005, 1967-68, open; 2602428, A1 5644, 1965-1975, open in part | M5.3, M5.4
+    sentence: (c) the files of Ambassador at Large Harriman for Southeast Asia, lot 71 D 461, identifier 603208, entry A1 5005, , open; and (d) the Near Eastern Bureau's Iran files, lot 76 D 169, identifier 2602428, entry A1 5644, , partly restricted.
+[WEAK] '2602428' (value 2602428, next word 'entry'); nearest row: National Archives identifiers 567979; 165203 (1977-1981); 1965953, A1 3113, 1960-1963, open in part; 603208, A1 5005, 1967-68, open; 2602428, A1 5644, 1965-1975, open in part | M5.3, M5.4
+    sentence: (c) the files of Ambassador at Large Harriman for Southeast Asia, lot 71 D 461, identifier 603208, entry A1 5005, , open; and (d) the Near Eastern Bureau's Iran files, lot 76 D 169, identifier 2602428, entry A1 5644, , partly restricted.
+[WEAK] 'one' (value 1, next word 'serie'); nearest row: 553 volumes | M1.1, M1.2
+    sentence: The finding aids reach back poorly: only about one series in thirty-five among the 698 series their facts file describes begins before .
+[WEAK] 'thirty-five' (value 35, next word 'among'); nearest row: one series in thirty-five among 698 | M5.5
+    sentence: The finding aids reach back poorly: only about one series in thirty-five among the 698 series their facts file describes begins before .
+[WEAK] '698' (value 698, next word 'serie'); nearest row: one series in thirty-five among 698 | M5.5
+    sentence: The finding aids reach back poorly: only about one series in thirty-five among the 698 series their facts file describes begins before .
+[WEAK] '29' (value 29, next word 'cited'); nearest row: 29 documents from 20 volumes | M4.1, M4.3
+    sentence: The hits are mostly descriptions of foreign governments; the cases in which an American decision is tied to the charge are the 29 cited here, and the volumes were not read exhaustively.
+[WEAK] 'four' (value 4, next word 'document'); nearest row: 29 documents from 20 volumes | M4.1, M4.3
+    sentence: (c) The Senate hearings that exposed the American payments, and the history and enforcement of the Foreign Corrupt Practices Act: that exact phrase appears in only four documents in the whole series, all from .
+[WEAK] '311,429' (value 311429, next word 'ordinary'); nearest row: roughly 311,000 ordinary documents; one in 140 | M1.4, M3.2 (311,429; one in 143)
+    sentence: (e) Anything the shelf above does not hold: the unprinted files named in the second list are where an investigator would look next. **Scope.** All 553 volumes in the index were searched, with front matter and editors' notes set aside and the second edition of the Iran volume left out in favour of the first, which gave 311,429 ordinary documents.
+[WEAK] '2,200' (value 2200, next word 'bury'); nearest row: about 2,200 documents; about 400 volumes | M3.2 (2,175 in 399; 2,200 in 401 before Ed2)
+    sentence: Counting only foreign officials would drop the Lockheed and United Brands cases, which are the clearest case of American conduct of diplomacy; counting every use would raise the set to the full 2,200 and bury the cases. **What counts as affected.** I required a document in which an American official ties corruption to something done, proposed, refused or said.
+[WEAK] 'two' (value 2, next word 'discussed'); nearest row: about 2,200 documents; about 400 volumes | M3.2 (2,175 in 399; 2,200 in 401 before Ed2)
+    sentence: If your interest includes the 19th century, the question needs a different search. ## Findings ### Corruption was the reason Washington gave when it pressed an aided government for reform The survey mission sent to Manila in met the charge in every office it visited, as its chief told President Quirino, and its report to the President listed inefficiency and even corruption as widespread while rec
+[WEAK] 'two' (value 2, next word 'departing'); nearest row: about 2,200 documents; about 400 volumes | M3.2 (2,175 in 399; 2,200 in 401 before Ed2)
+    sentence: In two departing officers in Haiti described an American aid proposal as aimed squarely at corruption and doubted it would succeed.
+[WEAK] 'one' (value 1, next word 'which'); nearest row: 553 volumes | M1.1, M1.2
+    sentence: He pointed out that the Philippines could not assume a role of leadership in Asia until there was a change for the better." ( "it is the toughest, most ambitious U.S. aid package ever presented to the GOH, and one which focuses squarely on one of the most important factors in Haiti’s development equation today: corruption." ### In Vietnam corruption was pressed, politicised and, by choice, left in
+[WEAK] 'one' (value 1, next word 'most'); nearest row: 553 volumes | M1.1, M1.2
+    sentence: He pointed out that the Philippines could not assume a role of leadership in Asia until there was a change for the better." ( "it is the toughest, most ambitious U.S. aid package ever presented to the GOH, and one which focuses squarely on one of the most important factors in Haiti’s development equation today: corruption." ### In Vietnam corruption was pressed, politicised and, by choice, left in
+[WEAK] 'four' (value 4, next word 'threat'); nearest row: 29 documents from 20 volumes | M4.1, M4.3
+    sentence: In the Ambassador to Saudi Arabia listed corruption among four threats to the royal family and said he knew of no way for the United States to correct it.
+[WEAK] 'one' (value 1, next word 'i'); nearest row: 553 volumes | M1.1, M1.2
+    sentence: Arabian Peninsula, ( "The problem of corruption is a difficult one and I do not know of any truly effective means that we can use to help correct the situation." ### When the bribes were American, the question became disclosure, protection and a new rule In the State Department learned that United Brands had paid a bribe to Honduran officials, probably the chief of state, and refused the company's
+[UNTRACED] 'second greatest' (value second, next word 'export')
+    sentence: A Senate staff investigator's claims about Lockheed payments in Western Europe were relayed up the Department the same autumn ( , In Japan's prime minister asked the President for the names in the Lockheed record ( , and Ford offered to share the Securities and Exchange Commission's material under the American legal limits, while Kissinger told Japan's envoy that the Secretary of State could not i
+[WEAK] '29' (value 29, next word 'them'); nearest row: 29 documents from 20 volumes | M4.1, M4.3
+    sentence: I read 63 documents whole to find the cases, kept 29 of them, and quoted 17 passages, each checked letter for letter against its document.
+[WEAK] 'one' (value 1, next word 'mission'); nearest row: 553 volumes | M1.1, M1.2
+    sentence: I also asked the similarity index for documents like each anchor and read what came back; none of the cited documents depended on it, and one, the mission's report, I first read because it came up this way.
+[WEAK] 'twice' (value 2, next word 'serie'); nearest row: about 2,200 documents; about 400 volumes | M3.2 (2,175 in 399; 2,200 in 401 before Ed2)
+    sentence: I checked that the 29 documents and the quotations are not printed twice in the series under a different volume. ## Read next The collection "Corruption and U.S. foreign policy, run s1" holds the 29 documents in five groups that follow the findings, with a note on each and the 17 passages quoted above.
+[WEAK] 'five' (value 5, next word 'group'); nearest row: one series in thirty-five among 698 | M5.5
+    sentence: I checked that the 29 documents and the quotations are not printed twice in the series under a different volume. ## Read next The collection "Corruption and U.S. foreign policy, run s1" holds the 29 documents in five groups that follow the findings, with a note on each and the 17 passages quoted above.
+[WEAK] 'three' (value 3, next word 'thing'); nearest row: about 2,200 documents; about 400 volumes | M3.2 (2,175 in 399; 2,200 in 401 before Ed2)
+    sentence: Your additions would open three things: the Chinese civil war and Iran in the , which I did not follow; the Dominican Republic, Indonesia and the Soviet-elite report of , which I noted and left; and the unprinted lot files in the second list, which a visit to College Park would bring within reach.

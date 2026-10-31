@@ -1,0 +1,66 @@
+{
+ "run": "runs/f9",
+ "termsTested": 7,
+ "dead": [],
+ "syntaxErrors": [],
+ "prefixes": [],
+ "vocabLookupsInLog": 1,
+ "all": [
+  {
+   "term": "usia",
+   "source": "decades.py",
+   "line": 3,
+   "returns": true,
+   "query": "\"usia\"",
+   "nearestLive": null
+  },
+  {
+   "term": "usi",
+   "source": "decades.py",
+   "line": 3,
+   "returns": true,
+   "query": "\"usi\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"information program\"",
+   "source": "decades.py",
+   "line": 3,
+   "returns": true,
+   "query": "\"information program\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"psychological warfare\"",
+   "source": "decades.py",
+   "line": 3,
+   "returns": true,
+   "query": "\"psychological warfare\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"Voice of America\"",
+   "source": "decades.py",
+   "line": 3,
+   "returns": true,
+   "query": "\"Voice of America\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"public diplomacy\"",
+   "source": "decades.py",
+   "line": 3,
+   "returns": true,
+   "query": "\"public diplomacy\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"cultural exchange\"",
+   "source": "decades.py",
+   "line": 3,
+   "returns": true,
+   "query": "\"cultural exchange\"",
+   "nearestLive": null
+  }
+ ]
+}

@@ -1,0 +1,5 @@
+round trip OK volumes 553 docs 314616
+digests index/binary/map/shard/.generation equal: True 89481b1869da1880
+dims 512 docs 314616 cents 660 recall@10 0.9021 calib {'documentOffset': 0.4, 'measuredBy': "Planning/semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md §1b, fitted to EmbeddingGemma 300m's scores over 90 typed queries and 600 anchor documents against the 314,616-document corpus", 'queryOffset': 0.47}
+random pairs: mean 167.1 sd 14.8 p1 132 min 95
+1st-nn median 83, 10th-nn median 100, 25th-nn median 106 (quartiles 100,113)

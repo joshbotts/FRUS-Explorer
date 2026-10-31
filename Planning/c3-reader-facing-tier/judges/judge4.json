@@ -1,0 +1,118 @@
+{
+  "judge:4": {
+    "block": "4. Return the structured judgement.",
+    "overviews": [
+      {
+        "slot": "X",
+        "items": [
+          {
+            "id": "J1",
+            "verdict": "yes",
+            "evidence": "The overview's first section is '## The bottom line', with '**1. What FRUS answers directly.**', '**2. Where FRUS points for the rest.**' and '**3. What this request cannot get from FRUS.**' in that order; 'Scope', 'Decisions this needs from you' and the six '## Findings' all follow it."
+          },
+          {
+            "id": "J2",
+            "verdict": "yes",
+            "evidence": "Every measurement names its set: 'the phrases \"public opinion poll\" and \"opinion survey\" occur in only about thirty documents among the roughly 35,000 in the 77 volumes searched for them'; 'about one dated document in twelve for the 1960s against about one in thirty-six for the 1950s' across the 79 volumes; 'Of the thirty-two documents in which officials use that wording, seventeen apply it to how American policy or aid would be received; the other fifteen...'. The two percentages are quotations that carry their base ('nearly fifteen percent of the Agency's resources available for overseas programming'; '26 percent of the general public'). The one figure with no set in its own sentence, 'zero hits' in part 3(e), restates part 1's 'a search of the 79 volumes I read, about 35,900 documents, found it nowhere'. (The volume count wobbles between 79 in parts 1 and 2 and 77 in part 3(a).)"
+          },
+          {
+            "id": "J3",
+            "verdict": "yes",
+            "evidence": "Every document carries the printed edition and a link, e.g. '(Foreign Relations of the United States, 1950, East Asia and the Pacific, Volume VI, Document 31, https://history.state.gov/historicaldocuments/frus1950v06/d31)'. Six are cited only in a shortened form after a full citation of the same volume in the same finding: '(Document 271, https://history.state.gov/historicaldocuments/frus1955-57v22/d271)' two sentences after 'Foreign Relations of the United States, 1955–1957, Southeast Asia, Volume XXII, Document 447'; '(Volume VIII, Document 58, ...)', '(Document 88, ...)', '(Document 129, ...)' and '(Documents 146 and 149, ...)' after the full citation of 1917–1972, Volume VIII, Public Diplomacy, 1969–1972. None is a bare id pair or a title, date or correspondent alone; there is no separate list."
+          },
+          {
+            "id": "J4",
+            "verdict": "yes",
+            "evidence": "Part 3(a) states the audience-measurement gap as a search with terms, volumes and controls: 'the phrases \"public opinion poll\" and \"opinion survey\" occur in only about thirty documents among the roughly 35,000 in the 77 volumes searched for them (a search that returned nothing for a nonsense control term and returned documents in every one of the 77 volumes for \"Department of State\")'. Part 3(e) gives the term's zero with its control: 'zero hits, and the words \"prestige\", \"image\" and \"propaganda\" occur as often in other postwar volumes as in these, so they measure the series, not the question'. Items (b) and (d) (the broadcasts themselves; the Asian side) are asserted, and (c) is given as a reading gap with a count ('fifty of their documents mention the Office of War Information, so this is a gap in my reading, not in the series')."
+          },
+          {
+            "id": "J5",
+            "verdict": "yes",
+            "evidence": "No SQL, table or column name or file path appears; every 'frus…/d…' string sits inside a history.state.gov link; the memo is mentioned without a path ('the memo records both checks and every number's source')."
+          }
+        ],
+        "citations": {
+          "verdict": "yes",
+          "evidence": "One convention throughout: a full parenthetical with link at a document's first appearance in a finding ('Foreign Relations of the United States, 1964–1968, Volume XXIX, Part 2, Japan, Document 123, https://history.state.gov/historicaldocuments/frus1964-68v29p2/d123'), shortened to '(Document N, link)' for the same volume thereafter. All 24 documents cited can be found in full from the volume named in the preceding sentence and the link; six (1955–1957, Volume XXII, Document 271; 1917–1972, Volume VIII, Documents 58, 88, 129, 146 and 149) appear only in the shortened form."
+        },
+        "toolWords": "'zero hits' (part 3(e)). 'the index holds all 553 volumes of the series' (Scope; How this was done) and 'Because the index reduces words to their roots' (How this was done). 'the bundled index matches by control number', 'not resolved in the bundled index', 'the bundled finding aids name these USIA series', 'the bundled index resolves to one series' (part 2), 'the bundled index attributes', 'the bundled finding aids list' (part 3(a), (b)): 'bundled' and the software sense of 'resolve' are never explained. 'a search that returned nothing for a nonsense control term and returned documents' (part 3(a)) and 'the search returned for the \"Oriental mind\" family' (How this was done). 'so I scoped by the agency's records' (How this was done). 'four anchor documents', 'ranked by a coarse pass and then a finer one' (How this was done). 'came-from channel', 'pointed-at channel' and 'This second channel stores the citation fragment, not the sentence, and holds lot, library and decimal anchors only' (part 2): project terms defined only by their labels. 'the memo records both checks and every number's source' (How this was done): a document she does not receive. 'the series' semantic vector files' is explained in place ('a numerical fingerprint of each document's meaning'). Collection: 'None of these is shown to be absent from the corpus' (Threads not followed)."
+      },
+      {
+        "slot": "Y",
+        "items": [
+          {
+            "id": "J1",
+            "verdict": "yes",
+            "evidence": "'## The bottom line' opens the overview with '**1. What FRUS answers directly.**', '**2. Where FRUS points for the rest.**' and '**3. What this request cannot get from FRUS.**' in that order, before 'Scope', 'Decisions this needs from you' and the five findings."
+          },
+          {
+            "id": "J2",
+            "verdict": "no",
+            "evidence": "The overview's own counts name their sets ('About two thousand documents in the East Asia and Pacific volumes use this vocabulary'; 'seventy-six East Asia and Pacific volumes from 1945 to 1980 (about thirty-seven thousand documents)'; 'a sample of forty documents from the full-text hits'), but finding 3 gives a poll as percentages with no base named anywhere: 'In Japan the American embassy reported in 1965 that the number naming the United States among their three favorite countries \"has dropped from 52 percent to 38 percent since last December\"'. Of whom is never said, where X writes '26 percent of the general public' and Z '2.5 percent of 80 million Indonesians'."
+          },
+          {
+            "id": "J3",
+            "verdict": "yes",
+            "evidence": "In-text citations are a short form, '(1950, Volume VI, Document 50)', '(1964–1968, Volume XXIX, Part 2, Document 46)', and every one of the 22 appears in the closing '## Documents cited' list in full with its link, e.g. '15. Foreign Relations of the United States, 1964–1968, Volume XXIX, Part 2, Japan, Document 46. https://history.state.gov/historicaldocuments/frus1964-68v29p2/d46'. No document is referred to by title, date or correspondent alone."
+          },
+          {
+            "id": "J4",
+            "verdict": "yes",
+            "evidence": "'I tested \"soft power\" across the whole series and found it in no document, while a control phrase, \"Department of State,\" appeared in every one of the seventy-six regional volumes and an impossible string appeared in none.' The audience-reception gap, by contrast, is asserted from reading ('Apart from a few polls quoted in cables, I found no measurement of what people in the region made of the messages'), and the Boxer-indemnity test ('I tested the contemporaries' vocabulary of Boxer indemnity remission and cultural relations') names its terms but no volumes or controls."
+          },
+          {
+            "id": "J5",
+            "verdict": "yes",
+            "evidence": "No SQL, table or column name or file path; the 'frus…/d…' ids appear only inside the links of the 'Documents cited' list; 'the offline index' is named as a finding aid, not as a table."
+          }
+        ],
+        "citations": {
+          "verdict": "yes",
+          "evidence": "One form throughout: short in the text ('(1917–1972, Volume VIII, Document 99)') and full with link once each in the numbered 'Documents cited' list ('10. Foreign Relations of the United States, 1917–1972, Volume VIII, Public Diplomacy, 1969–1972, Document 99. https://history.state.gov/historicaldocuments/frus1917-72PubDipv08/d99'); all 22 in-text citations are in the list and every entry has its history.state.gov link."
+        },
+        "toolWords": "'the offline index' and 'the index': 'The offline index lists a number of series under that accession and cannot say which holds this entry', 'none resolved to a series by the offline index', 'the index does not resolve a single file to a series', 'the index gives no dates or access for them' (part 2, came-from bullets), 'the offline index gives no identifier' (part 2, pointed-at bullets), 'not located by the offline index', 'the offline archival indexes barely reach before 1940' (part 3): 'offline', 'index' and the software sense of 'resolve' unexplained. 'all 553 volumes indexed' (Scope). 'a sample of forty documents from the full-text hits' (How this was done). 'an impossible string appeared in none' (part 3). '\"came from\" channel' and '\"pointed at\" channel' (part 2): labels defined only by context. The method note otherwise speaks plainly ('words that the search treats as the same'; 'by its similarity to another document and by no word search'). Collection: none."
+      },
+      {
+        "slot": "Z",
+        "items": [
+          {
+            "id": "J1",
+            "verdict": "yes",
+            "evidence": "'## The bottom line' opens with '**1. What FRUS answers directly.**', '**2. Where FRUS points for the rest.**' and '**3. What this request cannot get from FRUS.**' in that order, before 'Scope', 'Decisions this needs from you' and the five findings."
+          },
+          {
+            "id": "J2",
+            "verdict": "yes",
+            "evidence": "Every number names its set: 'about one in seventy in the 1940s, one in forty-four in the 1950s, one in twenty-four in the 1960s and one in seventy-five in the 1970s, each among the dated documents of the 77 volumes' (How this was done); 'across the 711 documents on this topic in the 77 East Asia and Pacific volumes and the public diplomacy volumes, footnotes give 392 pointers on 200 documents' (part 2); '211 documents in the series, 175 of them in volumes from 1977 on, and only two among the 38,059 documents of the 77 regional volumes' (part 3(a)); the quoted figures carry their base ('2.5 percent of 80 million Indonesians'; 'cuts of about two-thirds to press services in a single year')."
+          },
+          {
+            "id": "J3",
+            "verdict": "no",
+            "evidence": "Each finding's bullets cite three documents in full with links, but the prose above them quotes or refers to documents cited nowhere in the overview: 'the Philippine policy paper of April 1954 records cuts of about two-thirds to press services' (finding 1); 'in 1954 the Department refused an \"Asia for Asians\" theme' and 'they wrote of \"Orientals\" and of capitulation being impossible once someone is cornered' (finding 2); 'in February 1965 he said the effort to build national unity had \"not progressed to my satisfaction\"; and in Indonesia he predicted that USIS would soon have \"nothing worthwhile left\"' (finding 3); 'In 1961 Washington ordered a major propaganda campaign on the Viet Cong. By 1962 the Americans were debating whether to place information advisers at the Presidency and in the provinces; by 1964 USIA listed fourteen steps' (finding 4); 'In 1970 the agency's first program memorandum said the United States would have to \"lower its voice\"' and 'in July 1977 USIA's East Asia office read the Administration's policy statements as meant to shore up \"the confidence of East Asians in America's long-term staying power\"' (finding 5). About ten documents are cited by date or correspondent alone; they are in the collection, but the overview has no list of documents cited."
+          },
+          {
+            "id": "J4",
+            "verdict": "yes",
+            "evidence": "'I searched all 553 volumes for \"soft power\" and found no document; the same search with the two words anywhere in a document finds 785 documents, none of them using the phrase. As controls, \"Department of State\" occurs in documents of every one of the 77 East Asia and Pacific volumes, and a nonsense string finds nothing.' The measured-effect gap is asserted rather than searched ('The documents contain officers' judgments and one Public Affairs Officer's guess at Indonesian opinion; they do not contain audience surveys'), and the collection's own Document 67 of 1969–1976, Volume XIX, Part 2 speaks of 'public opinion surveys and other assessments of Japanese attitudes'."
+          },
+          {
+            "id": "J5",
+            "verdict": "yes",
+            "evidence": "No SQL, table or column name or file path; every 'frus…/d…' sits inside a link; the memo is mentioned without a path ('the exact counts, rates and the leading volume in each period are in the memo')."
+          }
+        ],
+        "citations": {
+          "verdict": "no",
+          "evidence": "Three forms. Full with a document number: 'Foreign Relations of the United States, 1955–1957, Southeast Asia, Volume XXII, Document 484 (https://history.state.gov/historicaldocuments/frus1955-57v22/d484)'. Full with correspondent and date in place of a number: 'Foreign Relations of the United States, 1948, The Far East: China, Volume VII, the Secretary of State to the Ambassador in China (Stuart), December 24, 1948 (https://history.state.gov/historicaldocuments/frus1948v07/d567)', likewise the Jessup memorandum of November 16, 1949 and Heath's telegram of September 20, 1952. And prose references with no citation at all: 'the agency's first program memorandum', 'USIA's East Asia office' in July 1977, 'in February 1965 he said', 'in 1954 the Department refused an \"Asia for Asians\" theme'. Only 15 of the collection's 31 documents are cited anywhere in the overview."
+        },
+        "toolWords": "'footnotes give 392 pointers on 200 documents', 'State Department files cited without a lot number (181 pointers)', 'USIA's own files are named in only 11 footnote pointers in the whole index' (part 2): 'pointers' and 'index' unexplained. 'the bundled reference data does not identify', 'The bundled data names the USIA series nearest to these' (part 2), 'the 698 series described in the bundled data' (part 3(d)). 'a nonsense string finds nothing' (part 3(a)). 'in an index that holds all 553 volumes' (Scope). 'reached by comparing the numeric meaning fingerprints of documents that ship with the app' (finding 5). 'not the index's stemmed search, which treats \"clearing\" and \"clear\" as the same word', 'each document's nearest neighbours in the series' meaning-based reference data', 'exact-wording scans', 'retrieved 95 documents whole' (How this was done): 'stemmed' is glossed by its clause, 'nearest neighbours' is not. 'the exact counts, rates and the leading volume in each period are in the memo' (How this was done): a document she does not receive. 'Used meanwhile: both, labelled.', 'Used meanwhile: South Asia excluded.', 'Used meanwhile: both.' (Decisions): a status field left standing in the prose. Collection: none beyond 'scanned' (Threads not followed)."
+      }
+    ],
+    "ranking": [
+      "X",
+      "Y",
+      "Z"
+    ],
+    "reason": "X gives the historian the fullest answer to all three parts of her question, from the 1950 \"weak on propaganda\" verdicts through the \"Oriental mind\" and colonial-memory beliefs to the 1968 Tokyo stocktaking and the 1975 and 1977 doubts about staying power, with every claim carried by a full citation and link in the text, every count tied to its set, both of its zeros measured with controls, and a 33-document collection whose section notes read as a historian's; its faults are the jargon of its archival paragraph and method note (\"hits\", \"returned\", \"scoped\", \"bundled index\", \"anchor documents\"), six documents cited only in a shortened form after their volume, a 79-against-77 volume count, and one Glenn quotation trimmed of its \"probably\". Y is the cleanest to read and to trace, one in-text form and a full list of 22 with links, with the plainest account of method, but it is thinner, misses the 1950 and \"Oriental mind\" material that most directly answers the audience-belief part, stretches to a 1924 Boxer-indemnity precedent, quotes its one poll without saying of whom, and asserts rather than measures the audience-reception gap. Z's 31-document collection and its footnote counts are the most thorough of the three, yet its overview quotes or refers to about ten documents with no citation anywhere in it, mixes three citation forms, asserts that FRUS prints no audience surveys when its own collection points to some, and leaks the most machinery (\"pointers\", \"nearest neighbours\", \"ship with the app\", \"Used meanwhile:\"), so the historian must do the matching work herself."
+  }
+}

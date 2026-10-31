@@ -1,0 +1,435 @@
+{
+ "format": "fruscollection",
+ "formatVersion": 2,
+ "minimumReaderVersion": 1,
+ "name": "Information programs and the American image in East Asia, 1949–1977",
+ "authorLine": "Agent run f3, 2026-10-31",
+ "introductionText": "1. What FRUS answers directly. The phrase \"soft power\" never appears in FRUS; officials of 1949–1977 wrote instead of the \"information program\", \"psychological strategy\", the \"image\" of the United States and its \"prestige\". In that vocabulary, about 1,400 documents in the 81 East Asian and public-diplomacy volumes discuss the effort, and they show a consistent assessment: the information program could win attention among educated elites but rarely moved opinion against what American policy itself was doing. Ambassador at Large Jessup's 1949 review proposed that \"A considerably expanded information program both in Communist and non-Communist areas of Asia is called for\", to align the United States with Asian nationalism (Foreign Relations of the United States, 1949, The Far East and Australasia, Volume VII, Part 2, Document 386, https://history.state.gov/historicaldocuments/frus1949v07p2/d386); the National Security Council's 1957 report on the program conceded that \"the trend toward accommodation to Communist pressures in the area continued\" (Foreign Relations of the United States, 1955–1957, Volume IX, Document 207, https://history.state.gov/historicaldocuments/frus1955-57v09/d207); Ambassador Reischauer in 1965 judged that Embassy and information-service work in Japan had \"met with some success\" intellectually while \"the basic emotional response remains unchanged\" (Foreign Relations of the United States, 1964–1968, Volume XXIX, Part 2, Japan, Document 46, https://history.state.gov/historicaldocuments/frus1964-68v29p2/d46); and the Information Agency's area office reported in 1969 that the American image in Asia \"depended more on the state of bi-lateral relations … than on developments within the US\" (Foreign Relations of the United States, 1917–1972, Volume VIII, Public Diplomacy, 1969–1972, Document 31, https://history.state.gov/historicaldocuments/frus1917-72PubDipv08/d31). Twenty-three documents carry the argument below.\n\n2. Where FRUS points for the rest. *Where the printed documents came from:* more than half of the 1,400 come from the State Department's own files (Record Group 59), chiefly the decimal central files and, for policy papers, the Executive Secretariat's \"Records Relating to National Security Council Policy Papers\" (Record Group 59, entry A1 1586E, National Archives identifier 2839192, 1947–1979, partly restricted under national-security exemptions, College Park), which also holds the annual reports on the information program; and about one in eight come from the Information Agency's own records (Record Group 306, the Records of the U.S. Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, 1953–1961, partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, 1948–1961, partly restricted); and, cited behind the 1957 report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, 1953–1971, 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, 1953–1969, partly restricted) is named in the volumes' source lists. Only about one document in four of the 1,400 carries such a citation, so this second list is thin.\n\n3. What this request cannot get from FRUS. Three things. First, the term itself: a search for \"soft power\" across all 553 volumes found nothing, against a control (\"Department of State\") found in every volume of the scope and an impossible test word found nowhere; the question has to be asked in the period's own words. Second, measured effectiveness: the posts' surveys, the Information Agency's opinion research and the country plans are summarized but not printed — the 1969 Manila conference report, sixty pages, survives in FRUS only as a summary, and the 1975 post cables are printed only as abstracts. Those are in the Information Agency's records (Record Group 306), where the bundled finding aids can name the record group and accessions but not one series. Third, the full round of 1952 embassy reports on information-program effectiveness: a search for the Department's 1952 circular asking every major post to assess its program found one printed reply, from Saigon; the rest sit in the State Department's 1950–54 decimal file under class 511 (the class the 1950s filing manual labels \"International Informational and Educational Relations, Cultural Affairs and Programs\").",
+ "composition": {
+  "defaultBodyDepth": "full",
+  "footnoteStyle": "all",
+  "includeSourceNote": true,
+  "tocStyle": "citation",
+  "applyHighlights": false,
+  "includeNotes": true,
+  "includeWordCloud": false
+ },
+ "entries": [
+  {
+   "kind": "heading",
+   "text": "1. The program as alignment with Asian nationalism, and early doubts (1949–1957)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Why these documents: they set out what the information program in Asia was for and how its first managers judged it. The thread runs from Jessup's call for an expanded program in 1949, through the Psychological Strategy Board's country-by-country plan and Saigon's 1952 effectiveness report, to the National Security Council's candid annual reports of 1955 and 1957."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1949v07p2",
+   "documentId": "d386",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Proposes an expanded information program in Asia to identify the United States with Asian nationalism and against Soviet imperialism."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1949v07p2",
+   "documentId": "d386",
+   "text": "A considerably expanded information program both in Communist and non-Communist areas of Asia is called for, both to demonstrate our understanding and sympathy for the nationalist aspirations of the Asian peoples and to expose the menace to these aspirations created by Soviet imperialism."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v13p1",
+   "documentId": "d116",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Saigon's reply to the 1952 circular on program effectiveness: reach among educated groups read as success; the rural majority admitted to be outside the program. Reached through a document-similarity neighbour of the 1969 Manila conference summary, then read."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v13p1",
+   "documentId": "d116",
+   "text": "Such demand can only be construed as intense interest in US by educated groups."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v13p1",
+   "documentId": "d116",
+   "text": "Daily VM broadcasts maligning US effort AS go unanswered except for sporadic efforts by VOA which not timely nor too effective because of difficulty of reception with average type of radio receiver used here."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d403",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Psychological Strategy Board plan for Thailand: psychological operations through indigenous channels, and the premise that each Southeast Asian nation needs separate treatment."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d403",
+   "text": "It is recognized that Southeast Asia is not a political entity but that each nation is an entity basically different from the others and requires special treatment."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d190",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: 1955 report to the NSC: the Formosa Strait crisis forced the agency to answer fears of atomic weapons used against Asians and racial propaganda; aims to orient Asian neutralists and strengthen allies."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d190",
+   "text": "In the Far East USIA was forced to deal with mixed emotions regarding the use of atomic weapons against Asiatic peoples, and to counter communist propaganda designed to stir up race hatred."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d207",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: 1957 report to the NSC: country-by-country Far East programs and the admission that accommodation to Communist pressure continued despite them."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1955-57v09",
+   "documentId": "d207",
+   "text": "Despite all efforts, the trend toward accommodation to Communist pressures in the area continued."
+  },
+  {
+   "kind": "heading",
+   "text": "2. Beliefs about the audience: 'the Oriental mind'",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Why these documents: each ties a belief about how Asians think to a recommendation on how the United States should present itself — aid as weakness, doubts about American staying power, aid not understood as altruism — and the last two show Diem's government turning the same idea against the Americans."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v14p2",
+   "documentId": "d551",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Ridgway from Tokyo: American interest in Asia must be shown to be permanent, by word and deed."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v14p2",
+   "documentId": "d551",
+   "text": "we must by word and deed do everything within our power to overcome any feeling in the Oriental mind that our interest in Asia is casual, temporary or overshadowed by our interests in other regions."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d60",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Sebald from Rangoon: Burmese cannot read aid as altruism; recommends withdrawing from the local limelight."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v12p2",
+   "documentId": "d60",
+   "text": "Bulk of Burmese people simply unable understand aid in terms of altruism."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v13p2",
+   "documentId": "d992",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: McClintock from Saigon: aid should be strictly reciprocal because give-aways read as weakness; calls for psychological techniques to supply a 'mystique'."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v13p2",
+   "documentId": "d992",
+   "text": "In Asia give-away programs are too frequently mistaken in the oriental mind as meaning that the donor not only has a soft heart but also a soft head."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d26",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Durbrow reports Diem's conviction that Americans cannot understand Asians and that Vietnamese should do the work in the region."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1958-60v01",
+   "documentId": "d26",
+   "text": "Not being Asians, Americans do not understand the Oriental mind and point of view."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v02",
+   "documentId": "d29",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Pacific Command's political adviser records the Saigon government's view that American concepts do not fit Asian ways."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v02",
+   "documentId": "d29",
+   "text": "American concepts, policies and capabilities do not always fit the oriental mind."
+  },
+  {
+   "kind": "heading",
+   "text": "3. Vietnam: information as a weapon of war",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Why these documents: they show the information agency inside the Vietnam war — warning of the regional cost of defoliants, designing ridicule of the Viet Cong, and asking that psychological programs rank with military ones."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v01",
+   "documentId": "d265",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: The agency's Far East director warns that defoliants will feed 'germ warfare' propaganda across Asia."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v01",
+   "documentId": "d265",
+   "text": "But the spectre of charges that “U.S. imperialists are waging germ warfare on Asians” haunts me."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1961-63v02",
+   "documentId": "d197",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: The Saigon public affairs officer's questions for improving South Vietnamese propaganda: ridicule, face, town versus village."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1961-63v02",
+   "documentId": "d197",
+   "text": "Is it possible, for example, to laugh at the VC, to make them look ridiculous and thus lose face?"
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v01",
+   "documentId": "d197",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Rowan's 1964 report to the President on a public affairs program for South Vietnam, from the Honolulu discussions."
+   ]
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d37",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Rowan's 1965 report: the psychological program is better than a year earlier but still inadequate; asks equal status with military and economic operations."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d37",
+   "text": "On the American side, these programs to affect what the Vietnamese people think must be given the same status, the same concern, the same adequacy of working resources, as our military and economic operations."
+  },
+  {
+   "kind": "heading",
+   "text": "4. Japan and the region's elites: contact, achievement, and the limits set by policy",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Why these documents: they trace the elite-centred model in Japan and across the area — vigorous programs against neutralism, the Glenn visit as the model success, Reischauer's verdict that policy outweighed persuasion in 1965, and the 1966 and 1969 area reviews."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1952-54v14p2",
+   "documentId": "d820",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: 1954 progress report on Japan policy: vigorous information programs alongside rising neutralism and anti-Americanism."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v14p2",
+   "documentId": "d820",
+   "text": "Vigorous information programs have been carried on to give the Japanese a better understanding of the United States and of world problems and to combat leftist and neutralist influences."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1952-54v14p2",
+   "documentId": "d820",
+   "text": "there have arisen a serious increase in neutralist sentiment, periodic flare-ups of anti-Americanism and an intensification of communist overtures to Japan."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d127",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Reischauer on John Glenn's 1963 visit as the most successful image event since Robert Kennedy's."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv06",
+   "documentId": "d127",
+   "text": "Glenn and his family, through the warmth and sincerity of their personalities and their genuine enthusiasm and friendliness, were effective demonstration of typical American virtues."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d46",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Reischauer on Japanese reaction to the bombing of North Vietnam: some intellectual success, emotional response unchanged; poll figures cited."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d46",
+   "text": "Intellectually we have met with some success, and there is a growing awareness of the U.S. point of view, which has perhaps blunted the attack somewhat, but the basic emotional response remains unchanged and is probably unchangeable over the short run."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1964-68v29p2",
+   "documentId": "d46",
+   "text": "Such simplistic attitudes are possible in Japan because of the ostrich-like pacifism of the Japanese during the past twenty years."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d73",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Far East area office summary of post reports, 1966: elite targets, image of strength and reliability, personal contact as the most effective medium."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d73",
+   "text": "In all cases, however, the image of American strength, reliability and friendship is basic to our objectives."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv07",
+   "documentId": "d73",
+   "text": "In almost every country of the area, our programs are directed at elite groups: government officials, university and high school teachers, media representatives, top-level business executives."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Summary of the 1969 Manila conference of public affairs officers: attitudes toward America, low US visibility, Japan's image in Southeast Asia."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "Asians are, to varying degrees, America watchers."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "PAOs emphasized that the image of the US usually depended more on the state of bi-lateral relations (security treaty, Okinawa, Korean military modernization, trade restrictions) than on developments within the US."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d31",
+   "text": "One caveat: US visibility should be low."
+  },
+  {
+   "kind": "heading",
+   "text": "5. Credibility after the China opening and the fall of Saigon (1971–1977)",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Why these documents: they show the agency recasting its aims around credibility — exploiting the Peking trip, studying the overseas Chinese, collecting post reassessments after 1975, and shifting Japan work to economic communication."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d146",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Proposals to turn the President's China trip into a lasting psychological asset (moon rock, astronaut, books)."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d146",
+   "text": "The President’s projected visit to Peking presents us with opportunities to build what is now a temporary psychological asset into a long-range one."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d149",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Report on overseas Chinese attitudes in Southeast Asia after the thaw with Peking."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1917-72PubDipv08",
+   "documentId": "d149",
+   "text": "Thus, we are compelled to take a very close look at the overseas Chinese as a USIS audience."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: Abstracts of East Asia posts' reassessments after the fall of South Vietnam, country by country."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "text": "We should focus our programming on the benefits accruing from the end of our involvement; hoping that we have all learned the lesson that America is not omnipotent and that other nations cannot rely on Uncle Sam to do what they should be doing themselves."
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1969-76v38p2",
+   "documentId": "d105",
+   "text": "Confidence in US economic power, technological and scientific capability, and our leadership role in seeking solutions for world economic and social problems remains."
+  },
+  {
+   "kind": "document",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d2",
+   "notes": [
+    "Agent finding, run f3, 2026-10-31: USIS Tokyo and Brussels initiatives for US–EC–Japan media exchanges on trade issues."
+   ]
+  },
+  {
+   "kind": "excerpt",
+   "volumeId": "frus1977-80v30",
+   "documentId": "d2",
+   "text": "We are dealing here with gut issues rather than some of the frothier aspects of cultural exchange."
+  },
+  {
+   "kind": "heading",
+   "text": "Threads not followed",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Threads this run could not follow: (1) the other embassies' 1952 replies to the Department's circular on information-program effectiveness, of which FRUS prints only Saigon's — they sit in the State Department's 1950–54 decimal file, class 511; (2) the Information Agency's own measures — country plans, opinion surveys, the full sixty-page report of the 1969 Manila conference, and the 1975 post cables printed only as abstracts — in Record Group 306, which the bundled finding aids reach only at the level of accessions split across many series; (3) Korea, the Philippines, Indonesia, Australia and New Zealand, sampled here only through regional reports; (4) the 1981–1988 volumes."
+  },
+  {
+   "kind": "generated",
+   "generatedBlockType": "archivalSources"
+  }
+ ]
+}

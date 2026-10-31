@@ -1,0 +1,34 @@
+{
+ "run": "runs/f11",
+ "arm": "K",
+ "occurrences": [
+  {
+   "file": "memo.md",
+   "line": 76,
+   "figure": "one bundled series in sixty (series before 1940)",
+   "match": "one in sixty",
+   "context": "- N8. 11 of 698 bundled series start before 1940 (one in 63.5): series-facts-index.json byNaId, field y0 (absent.out). The guide's figure was \"about one in sixty\"; this is the re-derived one."
+  },
+  {
+   "file": "memo.md",
+   "line": 216,
+   "figure": "1910-12-06 (the pointed-at channel starts)",
+   "match": "1910-12-06",
+   "context": "POINTED-AT channel (external_citations; volume set = the 69 regional volumes; documents = set B). The channel has no row before 1910-12-06 (not relevant here), stores the citation fragment and not the sentence, and holds lot, library and decimal anchors only. Output above: 322 of 1,176 documents have at least one row; 551 rows, of which centralFileClass 29"
+  },
+  {
+   "file": "memo.md",
+   "line": 433,
+   "figure": "one bundled series in sixty (series before 1940)",
+   "match": "one in sixty",
+   "context": "| 11 of 698 series before 1940, one in sixty-three | Bottom line 3 | N8 |"
+  },
+  {
+   "file": "overview.md",
+   "line": 9,
+   "figure": "one bundled series in sixty (series before 1940)",
+   "match": "one in sixty",
+   "context": "rom the government’s side. Fifth, the period before 1948, which I did not search for this question, where the bundled archival finding aids are also thin: only 11 of the 698 series they describe start before 1940, about one in sixty-three."
+  }
+ ]
+}

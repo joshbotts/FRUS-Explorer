@@ -1,0 +1,40 @@
+documents (non-apparatus) in 77 scope volumes: 38059
+
+FAMILY COUNTS (documents with >=1 match, of 38059):
+  USIA                                375
+  USIS                                402
+  VOA                                 179
+  psywar                              320
+  cultural/educational exchange       329
+  info program                        187
+  public diplomacy                      2
+  soft power                            0
+  hearts and minds                     15
+  POS Department of State           14998
+  NEG ZZZ_IMPOSSIBLE_ZZZ                0
+
+CORE (USIA or USIS or VOA) documents: 864
+  USIA only/any: 375 USIS any: 402 VOA any: 179
+
+POSITIVE control 'Department of State': volumes with zero matching docs: [] of 77
+NEGATIVE control ZZZ_IMPOSSIBLE_ZZZ total docs: 0
+
+DECADE (date_iso from document_dates, i.e. the document's own date; scope77 non-apparatus)  core docs / dated docs, per 1,000, top-volume share of numerator
+  1940s     196 of  13688  =  14.3 per 1,000   top volume frus1949v08 88 of 196
+  1950s     293 of  12972  =  22.6 per 1,000   top volume frus1955-57v03mSupp 30 of 293
+  1960s     330 of   7884  =  41.9 per 1,000   top volume frus1961-63v03 41 of 330
+  1970s      45 of   3370  =  13.4 per 1,000   top volume frus1969-76v08 12 of 45
+  1980s       0 of    106
+  undated     0 of     39
+
+ psywar {'1940s': '12 of 13688', '1950s': '138 of 12972', '1960s': '124 of 7884', '1970s': '46 of 3370'}
+
+ cultural/educational exchange {'1940s': '57 of 13688', '1950s': '150 of 12972', '1960s': '49 of 7884', '1970s': '71 of 3370', '1980s': '2 of 106'}
+
+ info program {'1940s': '25 of 13688', '1950s': '86 of 12972', '1960s': '73 of 7884', '1970s': '3 of 3370'}
+
+ public diplomacy {'1960s': '2 of 7884'}
+
+ hearts and minds {'1940s': '3 of 13688', '1950s': '3 of 12972', '1960s': '7 of 7884', '1970s': '2 of 3370'}
+
+Top volumes by core docs: [('frus1949v08', 88, 1702), ('frus1961-63v03', 41, 294), ('frus1964-68v01', 39, 452), ('frus1961-63v04', 38, 367), ('frus1948v07', 33, 797), ('frus1961-63v02', 32, 310), ('frus1955-57v03mSupp', 30, 860), ('frus1964-68v26', 27, 360), ('frus1955-57v21', 26, 492), ('frus1955-57v22', 26, 498)]

@@ -1,0 +1,22 @@
+frus1917-72PubDipv06 1111275 {'soft_power': 0, 'POS_DoS': 190, 'NEG': 0, 'psyop': 0}
+frus1917-72PubDipv07 1605470 {'soft_power': 0, 'POS_DoS': 170, 'NEG': 0, 'psyop': 43}
+frus1917-72PubDipv08 1222863 {'soft_power': 0, 'POS_DoS': 192, 'NEG': 0, 'psyop': 35}
+frus1955-57v09 1581429 {'soft_power': 0, 'POS_DoS': 453, 'NEG': 0, 'psyop': 0}
+frus1961-63v25 2876724 {'soft_power': 0, 'POS_DoS': 450, 'NEG': 0, 'psyop': 0}
+frus1969-76v38p2 2057727 {'soft_power': 0, 'POS_DoS': 348, 'NEG': 0, 'psyop': 0}
+frus1977-80v30 1804263 {'soft_power': 0, 'POS_DoS': 220, 'NEG': 0, 'psyop': 0}
+frus1950v06 4303489 {'soft_power': 0, 'POS_DoS': 500, 'NEG': 0, 'psyop': 0}
+frus1952-54v12p1 2789359 {'soft_power': 0, 'POS_DoS': 361, 'NEG': 0, 'psyop': 0}
+frus1952-54v12p2 1845280 {'soft_power': 0, 'POS_DoS': 362, 'NEG': 0, 'psyop': 0}
+frus1955-57v21 2780188 {'soft_power': 0, 'POS_DoS': 1293, 'NEG': 0, 'psyop': 0}
+frus1955-57v22 2420219 {'soft_power': 0, 'POS_DoS': 1265, 'NEG': 0, 'psyop': 0}
+frus1958-60v16 2684896 {'soft_power': 0, 'POS_DoS': 1242, 'NEG': 0, 'psyop': 4}
+frus1961-63v22 2161319 {'soft_power': 0, 'POS_DoS': 724, 'NEG': 0, 'psyop': 0}
+frus1961-63v23 2590430 {'soft_power': 0, 'POS_DoS': 854, 'NEG': 0, 'psyop': 5}
+frus1964-68v26 2135296 {'soft_power': 0, 'POS_DoS': 246, 'NEG': 0, 'psyop': 0}
+frus1964-68v27 2334085 {'soft_power': 0, 'POS_DoS': 560, 'NEG': 0, 'psyop': 3}
+frus1969-76v19p2 1370739 {'soft_power': 0, 'POS_DoS': 107, 'NEG': 0, 'psyop': 0}
+frus1969-76v20 1915645 {'soft_power': 0, 'POS_DoS': 248, 'NEG': 0, 'psyop': 1}
+frus1969-76ve12 2896287 {'soft_power': 0, 'POS_DoS': 324, 'NEG': 0, 'psyop': 0}
+frus1977-80v22 2717256 {'soft_power': 0, 'POS_DoS': 265, 'NEG': 0, 'psyop': 0}
+volumes 21 chars 47204239 totals {'soft_power': 0, 'POS_DoS': 10374, 'NEG': 0, 'psyop': 91} volumes_nonzero {'soft_power': 0, 'POS_DoS': 21, 'NEG': 0, 'psyop': 6}

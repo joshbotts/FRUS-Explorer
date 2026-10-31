@@ -1,0 +1,6 @@
+V2: 30 nearest of d73 Hamming min 87 max 114; decades {'1960s': 14, '1950s': 15, '1940s': 1}; sources {('National Archives', '306'): 7, ('Johnson Library', None): 2, ('Department of State', '59'): 13, (None, None): 2, ('National Archives', '286'): 1, ('Eisenhower Library', None): 3, ('Kennedy Library', None): 1, ('Central Intelligence Agency', None): 1}
+    (memo: 87-114; 1960s 14, 1950s 15, 1940s 1; RG59 13, RG306 7, Johnson 2, Eisenhower 3, Kennedy 1, RG286 1, CIA 1, none 2)
+V5 reprint d141~v04/d108: ham 56 cos 0.976 (memo 56, 0.976)
+V5 reprint d140~v04/d81: ham 53 cos 0.985 (memo 53, 0.985)
+V5 closest pairs among the 30: [(76, 'frus1917-72PubDipv06/d126', 'frus1917-72PubDipv06/d133'), (88, 'frus1952-54v13p1/d116', 'frus1917-72PubDipv08/d31'), (92, 'frus1964-68v26/d106', 'frus1964-68v26/d109'), (94, 'frus1917-72PubDipv07/d32', 'frus1964-68v02/d160')] (memo 76 d126~d133; 88; 92; 94)
+V5 collection docs with a corpus neighbour at <=40 bits: [(32, 'frus1955-57v09/d190', 'frus1955-57v09/d185')] (memo: d190~d185 at 32)

@@ -1,0 +1,118 @@
+{
+  "judge:2": {
+    "block": "2. Return the structured judgement.",
+    "overviews": [
+      {
+        "slot": "X",
+        "items": [
+          {
+            "id": "J1",
+            "verdict": "yes",
+            "evidence": "Opens with '## The bottom line' and then, in order and before Scope, Decisions and Findings: '**1. What FRUS answers directly.**', '**2. Where FRUS points for the rest.**', '**3. What this request cannot get from FRUS.**'."
+          },
+          {
+            "id": "J2",
+            "verdict": "yes",
+            "evidence": "Every figure names its set: 'Among the 105 volumes searched, which hold roughly 58,000 documents, about one document in forty-four names the information agency or its posts; the figure was about one in thirteen for documents of the 1960s'; 'of roughly fifteen hundred candidate documents, about thirteen hundred passed'; of the thirty documents 'thirteen come from State Department files ... ten come from the records of the Information Agency ... seven come from presidential libraries'; the controls as '552 of 553 volumes'. The only percentage is a poll quoted from a document with its population named: 'In Japan in May 1965 the share naming the United States among their three favourite countries fell from fifty-two to thirty-eight percent in five months'; the film and library figures are the ambassador's own counts ('audience of 75,000 to 100,000 a week for films; about 200,000 library visits a year')."
+          },
+          {
+            "id": "J3",
+            "verdict": "yes",
+            "evidence": "All thirty citations are in-line and full with the link, e.g. 'in Foreign Relations of the United States, 1952–1954, Indochina, Volume XIII, Part 1, Document 116 (https://history.state.gov/historicaldocuments/frus1952-54v13p1/d116)' and 'in Foreign Relations of the United States, 1917–1972, Volume VII, Public Diplomacy, 1964–1968, Document 147 (https://history.state.gov/historicaldocuments/frus1917-72PubDipv07/d147)'. The summaries in the bottom line ('\"the weakest part of the war operation\" in Vietnam in 1964', 'a situation \"intolerable\" in Indonesia in 1965') each have a full citation in the findings; nothing is cited by id pair or by title, date or correspondent alone."
+          },
+          {
+            "id": "J4",
+            "verdict": "yes",
+            "evidence": "Part 3(a): 'a search of all 553 volumes for \"soft power\" found no document, and the controls worked (\"Department of State\" appears in 552 of 553 volumes; a nonsense string appears in none)' — term, volumes, positive and negative control with counts. Items (b) to (e) are readings rather than searches ('there is no outcome measure anywhere in the set, only the officials' own appraisals'; 'Korea, the Philippines and the Pacific islands appear only in passing'), and (d) says a search surfaced only schools and the Boxer indemnity without giving its terms; the headline zero is a measurement."
+          },
+          {
+            "id": "J5",
+            "verdict": "yes",
+            "evidence": "No SQL, no table or column names, no file paths; volume and document ids appear only inside history.state.gov links; the references to 'the memo' ('see the memo for the exact counts and how the hits were checked') name a document, not a path."
+          }
+        ],
+        "citations": {
+          "verdict": "yes",
+          "evidence": "One form throughout — the full printed-edition citation followed by its link in parentheses, in the sentence that uses it ('in Foreign Relations of the United States, 1964–1968, Volume XXIX, Part 2, Japan, Document 46 (https://history.state.gov/historicaldocuments/frus1964-68v29p2/d46)') — and all thirty cited documents are in the collection and findable from the text alone; there is no list of documents cited, and none is needed."
+        },
+        "toolWords": "Overview — 'hits' and 'the memo' (bottom line 1: 'see the memo for the exact counts and how the hits were checked'; the memo is a document she does not receive, named again in How this was done, 'the memo says which'); 'indexed on this machine' (Scope: 'All 553 volumes are indexed on this machine'); 'bundled finding aids', 'bundled indexes', 'bundled archival indexes' (bottom line 2; bottom line 3(b) and 3(d)), 'bundled' never explained; 'a nonsense string' (bottom line 3(a)); 'anchors' (bottom line 2, 'only decimal, lot and library anchors'; How this was done, 'neighbouring documents of two anchors'); 'roadmap' and 'the tools' (bottom line 3(d): 'an empty pre-war roadmap is a limit of the tools'); 'The index folds word endings together' (How this was done; the folding is explained by the USIS/USI example, 'index' is not); 'candidate documents' (same); 'the application's semantic-vector files', 'map of the corpus', 'corpus' (same, unexplained); 'lot 63 D 351', 'entry A1 1586E', 'UD WW 257', 'NARA identifier' (bottom line 2; 'lot' and 'NARA' are never expanded, though the National Archives is named in the same sentence); the closing italic 'Check before finishing:' line is an author's checklist left in the text. Collection — the title 'American soft power in East Asia and the Pacific - run f10', the author line 'Agent run f10, 2026-10-31' and every note's prefix 'Agent finding, run f10, 2026-10-31:'; 'indexed volumes' (introduction); 'the corpus' and 'the bundled archival indexes' (section 1 prose, and three times each on the threads page); 'vector neighbour', 'full-text query' (notes on frus1952-54v13p1 d116 and PubDipv07 d32), 'semantic map', 'cluster' (note on PubDipv08 d34); 'PAO' in those two notes before 'Public Affairs Officers' is spelled out in d73's note; 'the run' (threads page: 'where the run read little')."
+      },
+      {
+        "slot": "Y",
+        "items": [
+          {
+            "id": "J1",
+            "verdict": "yes",
+            "evidence": "Opens with '## The bottom line' and then, in order and before Scope, Decisions and Findings: '**1. What FRUS answers directly.**', '**2. Where FRUS points for the rest.**', '**3. What this request cannot get from FRUS.**'."
+          },
+          {
+            "id": "J2",
+            "verdict": "yes",
+            "evidence": "No percentages anywhere. Counts name their sets: 'About 1,300 documents in the 76 volumes on East Asia and the Pacific touch these programs'; 'found 64 documents in 28 volumes'; '33 documents in 17 volumes mention them'; 'Lot 66 D 95, cited in 41 documents' under a header that fixes the base ('over the 1,300 documents'); 'in a sample of 40 spread evenly through the results, 33 held the intended words, and the other seven held none of them'. 'appear in only 3 documents' and 'the 60 documents that mention the Peace Corps alone' lean on the 76 volumes named earlier in the same part; the one figure from a document is the Agency's own ('Vietnamese audiences at USIS film showings last year totalled an estimated 28 million')."
+          },
+          {
+            "id": "J3",
+            "verdict": "yes",
+            "evidence": "In the text every citation is a short form, '(1965, Volume II, Document 160)', '(1954, Volume XIV, Part 2, Document 820)', but the closing '## Documents cited' gives all 27 in full with links, e.g. '4. Foreign Relations of the United States, 1964–1968, Volume II, Vietnam, January–June 1965, Document 160. https://history.state.gov/historicaldocuments/frus1964-68v02/d160' and '3. Foreign Relations of the United States, 1952–1954, China and Japan, Volume XIV, Part 2, Document 820. https://history.state.gov/historicaldocuments/frus1952-54v14p2/d820'; every one of the 27 in-text short forms matches one list entry, and nothing is cited by id pair or by title, date or correspondent alone."
+          },
+          {
+            "id": "J4",
+            "verdict": "yes",
+            "evidence": "Part 3 gives the searches with terms, volumes and counts: 'I searched the 76 volumes for documents that pair the Information Agency or its overseas posts with polls, surveys or research reports and found 64 documents in 28 volumes'; 'The messages themselves, the broadcast scripts, leaflets and films, are mostly described and not reproduced: 33 documents in 17 volumes mention them'; 'binational centers ... appear in only 3 documents'; and the controls: 'I checked the searches against a common phrase that appears in all 76 volumes and a nonsense phrase that appears in none.' The control phrases are not named, and the headline zero in part 1 ('the phrase appears in no volume of the series') is asserted with no search described; 'I did not search before 1945' is stated as such."
+          },
+          {
+            "id": "J5",
+            "verdict": "yes",
+            "evidence": "No SQL, no table or column names, no file paths; the only id strings are inside the links of the 'Documents cited' list."
+          }
+        ],
+        "citations": {
+          "verdict": "yes",
+          "evidence": "One in-text form throughout, '(year, Volume, [Part,] Document N)', resolved by a numbered list of 27 full citations with links at the end, so every cited document can be found in full with its link — at the cost of a trip to the list each time, since the in-text year is the document's ('1954, Volume XIV, Part 2'; '1965, Volume II') while the volume's span is '1952–1954' or '1964–1968'."
+        },
+        "toolWords": "Overview — 'index' (Scope: 'in an index that holds all 553 volumes of the series'); 'row' (bottom line 2, footnote channel header: 'with no row before 1910'); 'FRC' and 'accession' (bottom line 2: 'accessions FRC 67 A 222 (1961), FRC 68 A 4933 (1962) and FRC 72 A 5121', 'accession FRC 306-84-0003'), neither expanded; 'Entry UD WW 257', 'Entry P-207', 'Entry P-104' (bottom line 2), archival entry numbers unexplained; 'GVN' inside a quotation (finding 2: 'the image of the GVN'), unexpanded; 'ranked', 'retrieved the top ones whole' (How this was done) are search-engine phrasing in plain words. NAID ('each series has a National Archives catalog identifier, NAID'), lot ('a lot is the Department's own batch number for a set of retired files'), USIS ('USIS being the Agency's overseas arm'), the Operations Coordinating Board and public affairs officers are each explained where first used, and the meaning search is put plainly ('found by their similarity to a 1975 Agency memorandum, by no word search I ran'). Collection — the author line 'Agent run, soft power in East Asia and the Pacific, 2026-10-31' and every note's prefix 'Agent finding, soft-power run, 2026-10-31:'; 'the generated list that follows' (threads page); 'GVN', 'VietNam', 'USG' appear only inside document excerpts."
+      },
+      {
+        "slot": "Z",
+        "items": [
+          {
+            "id": "J1",
+            "verdict": "yes",
+            "evidence": "Opens with '## The bottom line' and then, in order and before Scope, Decisions and Findings: '**1. What FRUS answers directly** —', '**2. Where FRUS points for the rest** —', '**3. What this request cannot get from FRUS** —'."
+          },
+          {
+            "id": "J2",
+            "verdict": "yes",
+            "evidence": "Counts name their sets: 'it appears in none of the 30,092 documents of the 69 East Asian and Pacific volumes searched'; 'Of 42 documents in the information and public diplomacy volumes whose headings name an Asian or Pacific country, post or office ..., 27 came from the U.S. Information Agency's own records'; 'Among the 1,176 regional documents that use the information vocabulary, 322 carry at least one footnote citation'; 'only 11 of the 698 series they describe start before 1940, about one in sixty-three'; 'about 26 documents per thousand in the regional volumes and about 18 per thousand in the other volumes of the same years'. The percentages are poll results quoted from documents with their populations named: 'only 26 percent of the general public thought the United States a dependable ally, the lowest of thirteen surveys'; 'those favouring alignment with the free world had fallen from 49 to 40 percent and those favouring neutralism had risen from 22 to 32 percent'. ''Department of State', returned 13,470' leaves the unit (documents) to the parallel clause 'each returned no document in the 69 regional volumes'."
+          },
+          {
+            "id": "J3",
+            "verdict": "no",
+            "evidence": "Three documents are never given in full anywhere and there is no list of documents cited: in Finding 3 '(same volume, Document 207, https://history.state.gov/historicaldocuments/frus1955-57v09/d207)', and in Finding 5 'in a telegram answering the Assistant Secretary's request for views (Document 81, https://history.state.gov/historicaldocuments/frus1977-80v30/d81), that it still faced a \"deeply implanted and persistent feeling\" that the United States was withdrawing (Document 83, https://history.state.gov/historicaldocuments/frus1977-80v30/d83)'. Each is a back-reference to a full citation of the same volume earlier in the sentence and carries its link, so she can reach it, but the printed-edition form is not given for them. The other 22 are full and in-line, e.g. '(Foreign Relations of the United States, 1950, East Asia and the Pacific, Volume VI, Document 89, https://history.state.gov/historicaldocuments/frus1950v06/d89)'."
+          },
+          {
+            "id": "J4",
+            "verdict": "yes",
+            "evidence": "Part 3: ''soft power', 'cultural diplomacy' and 'Radio Free Asia' each returned no document in the 69 regional volumes (with the phrase 'public diplomacy' appearing in just 2), and a control search for a phrase that cannot occur returned none either, while a common phrase, 'Department of State', returned 13,470, so the search works' — terms, volumes, both controls (the negative phrase described, the positive named with its count). Also 'the Asia Foundation appears in 12 of the 30,092 regional documents and the Peace Corps in 59, and the phrase 'cultural exchange' in 92', and 'the period before 1948, which I did not search for this question' stated as such."
+          },
+          {
+            "id": "J5",
+            "verdict": "yes",
+            "evidence": "No SQL, no table or column names, no file paths; volume and document ids appear only inside history.state.gov links; 'the memo' ('every excerpt in the collection is one the memo verified against its document') names a document, not a path."
+          }
+        ],
+        "citations": {
+          "verdict": "no",
+          "evidence": "Not one form throughout: 22 of the 25 documents are cited in full in-line with the link ('(Foreign Relations of the United States, 1917–1972, Volume VI, Public Diplomacy, 1961–1963, Document 135, https://history.state.gov/historicaldocuments/frus1917-72PubDipv06/d135)'), three as back-references with links only ('(same volume, Document 207, https://...d207)', '(Document 81, https://...d81)', '(Document 83, https://...d83)'). Every cited document can be reached by its link and the volume is named in the same sentence, so the failure is of uniformity, not of findability."
+        },
+        "toolWords": "Overview — 'returned' (bottom line 3: 'each returned no document', 'returned none either', 'returned 13,470'); 'a control search' (same); 'bundled' (bottom line 2: 'The bundled finding aids match the accession to many National Archives series', 'The nearest bundled series'; bottom line 3: 'the nearest bundled series', 'the bundled archival finding aids are also thin'), never explained; 'a loose test that also catches some South Asian offices' (bottom line 2); 'the second editions' (Scope), unexplained; 'the full-text index', 'matches word stems' (How this was done; the stems are glossed by one example, 'index' is not); 'ranked the results, retrieved 52 documents whole' (same); 'phrase family', 'matched literally', 'once inflections and punctuation were allowed (80 of 135 with single spaces only)' (same), matcher detail never explained; 'marker' (same: 'so I did not use it as a marker'); 'numeric fingerprints of each document's meaning, shipped with the application', 'nearest neighbours', 'average fingerprint', 'map of document clusters' (same); 'the word-search results' (same, and Finding 5); 'the memo' (same: 'one the memo verified against its document'), a document she does not receive; 'Entry A1–42', 'Entry UD WW 257, accession 72 A 5121', 'Entry P–207', 'Entry P–104' (bottom line 2), unexplained; 'GVN' inside a quotation (Finding 3: 'or GVN lassitude appear to be fiery enthusiasm'). Collection — the title 'Soft power in East Asia and the Pacific (agent run f11)', the author line 'Agent run f11, 2026-10-31' and every note's prefix 'Agent run f11, 2026-10-31:'; 'a vector search', 'the top text-query results' (section 5 prose: 'Two were found through a vector search on a document of 1975 and were not among the top text-query results I read'); 'the semantic neighbours of the 1975 USIA reassessment' (notes on frus1969-76ve12 d10 and frus1977-80v22 d104); 'NSC 6012' (note on frus1958-60v16 d65), NSC unexpanded in the collection; 'most hits are the Senator' and 'Most semantic neighbours of documents in the collection were listed and not read' (threads page); 'GVN', 'USG', 'SVN', 'PAOs', 'ICA' inside excerpts, 'ICA' explained in d152's note."
+      }
+    ],
+    "ranking": [
+      "X",
+      "Y",
+      "Z"
+    ],
+    "reason": "X gives her the most and asks the least of her: thirty documents from 1931 to 1977 that reach all three parts of the question (the 1952 Saigon \"must be assumed\" effective, the Long An survey, the Japan poll, the Cambodia and moon-landing surveys, the Manila conference and the 1977 reassurance), every one cited in full with its link in the sentence that uses it, a zero measured with both controls named, and a collection that walks the five findings with a note and a verified passage for each; its machinery shows only in the methods paragraph, the collection's notes and the run number on the title page. Y is the clearest writing of the three and formally complete, with the archival channel laid out as a list and its terms (NAID, lot, USIS, PAO) explained where they appear, but every in-text citation is a short form keyed to the document's year that must be resolved in the closing list, its headline zero (\"the phrase appears in no volume of the series\") is asserted rather than measured, and it cites almost none of the Agency's own surveys it says it found, so \"how effective did they think they were\" gets the thinnest answer. Z answers the question's three parts most directly and finds strong evidence on measured effect and on beliefs about the audience (the 1950 survey mission, NSC 6012, the 1963 nuclear-test guidance, the 1966 and 1970 surveys), but three citations are back-references never given in full, its \"where the documents came from\" channel counts a different set (42 documents by a heading test) rather than the 25 she is given, and its methods paragraph and collection notes carry the most unexplained machinery (returned, word stems, phrase family, numeric fingerprints, nearest neighbours, vector search, semantic neighbours)."
+  }
+}

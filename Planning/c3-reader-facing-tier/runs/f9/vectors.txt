@@ -1,0 +1,53 @@
+roundtrip volumes ok 553 of 553
+random pairs: mean 167.2 sd 14.9 p1 131 min 90
+kth-neighbour over 200 docs (Random(2026)): 1st median 83; 10th median 100 q1 94 q3 108; 25th median 106 q1 100 q3 113
+
+ANCHOR ('frus1917-72PubDipv08', 'd31') row 61222 own-vol centroid n/a; top15 by int8 cosine after Hamming-800
+  ham  81 cos_raw 0.920 calibrated 0.867 frus1917-72PubDipv07/d106 | 1966-09-12 | 106. Minutes of a Meeting of the President’s General Advisory Committee on Foreign Assistance Programs | apparatus=(0, 0) | src=('National Archives', '306', 'Director’s Subject Files')
+  ham  96 cos_raw 0.917 calibrated 0.862 frus1969-76v38p2/d105 | 1975-05-09 | 105. Memorandum From the Assistant Director for East Asia and the Pacific, United States Information Agency (P | apparatus=(0, 0) | src=('National Archives', '305', 'Records of the USIA')
+  ham  90 cos_raw 0.915 calibrated 0.858 frus1917-72PubDipv08/d99 | 1970-07-30 | 99. Paper Prepared in the United States Information Agency | apparatus=(0, 0) | src=('National Archives', '306', 'Director’s Subject Files, Box 15')
+  ham 100 cos_raw 0.908 calibrated 0.847 frus1955-57v09/d190 | 1955-08-31 | 190. Report Prepared by the National Security Council | apparatus=(0, 0) | src=('Department of State', '59', '63D351')
+  ham  94 cos_raw 0.908 calibrated 0.847 frus1951v06p2/d105 | 1951-03-20 | Memorandum by the Acting Assistant Secretary of State for Near Eastern, South Asian, and African Affairs (Berr | apparatus=(0, 0) | src=('Department of State', '59', '120.4346E/3–2051')
+  ham  88 cos_raw 0.906 calibrated 0.843 frus1952-54v13p1/d116 | 1952-09-20 | The Ambassador at Saigon (Heath) to the Department of State | apparatus=(0, 0) | src=('Department of State', '59', '511.51G/9–2052')
+  ham 104 cos_raw 0.905 calibrated 0.842 frus1955-57v09/d185 | 1955-03-02 | 185. Report Prepared by the National Security Council | apparatus=(0, 0) | src=('Department of State', '59', '63D351')
+  ham 102 cos_raw 0.905 calibrated 0.841 frus1961-63v25/d156 | 1963-10-28 | 156. Memorandum From the Office of Public Information of the U.S. Information Agency to Agency Employees | apparatus=(0, 0) | src=(None, None, 'Department of State, USIA Historical Collection')
+  ham  99 cos_raw 0.905 calibrated 0.841 frus1917-72PubDipv06/d150 | 1963-10-28 | 150. Memorandum From the Office of Public Information, United States Information Agency to USIA Employees | apparatus=(0, 0) | src=('National Archives', '306', 'USIA Historical Collection')
+  ham  95 cos_raw 0.904 calibrated 0.841 frus1917-72PubDipv07/d69 | 1966-01-07 | 69. Memorandum From the Special Assistant to the Director of the United States Information Agency (White) to t | apparatus=(0, 0) | src=('National Archives', '306', 'DIRCTR Files Bx 33–36, Box 33')
+  ham  97 cos_raw 0.903 calibrated 0.838 frus1917-72PubDipv07/d32 | 1964-10-30 | 32. Memorandum From James N. Tull of the Office of the Assistant Director for Far East, United States Informat | apparatus=(0, 0) | src=('National Archives', '306', 'DIRCTR Subj. Files, Box 16')
+  ham  90 cos_raw 0.902 calibrated 0.837 frus1950v06/d9 | 1950-01-02 | Editorial Note | apparatus=(0, 1) | src=None
+  ham  92 cos_raw 0.902 calibrated 0.837 frus1977-80v30/d68 | 1977-06-17 | 68. Memorandum From the Director of the United States Information Agency (Reinhardt) to all USIS Principal and | apparatus=(0, 0) | src=('National Archives', '306', 'USIA Historical Collection, Box 24')
+  ham  96 cos_raw 0.900 calibrated 0.833 frus1917-72PubDipv07/d94 | 1966-06-21 | 94. Letter From the Director of the United States Information Agency (Marks) to the Chairman of the U.S. Advis | apparatus=(0, 0) | src=('National Archives', '306', 'Director’s Subject Files')
+  ham  98 cos_raw 0.899 calibrated 0.832 frus1955-57v09/d207 | 1957-09-11 | 207. Report Prepared by the National Security Council | apparatus=(0, 0) | src=('Department of State', '59', '63D351')
+
+ANCHOR ('frus1969-76v38p2', 'd105') row 293635 own-vol centroid n/a; top15 by int8 cosine after Hamming-800
+  ham  78 cos_raw 0.922 calibrated 0.870 frus1969-76v01/d54 | 1970-01-22 | 54. Paper Prepared in the National Security Council Staff | apparatus=(0, 0) | src=('Department of State', '59', '77D112')
+  ham  84 cos_raw 0.918 calibrated 0.863 frus1969-76v38p1/d54 | 1975-04-04 | 54. Memorandum From the Counselor of the Department of State (Sonnenfeldt) and the Director of the Bureau of I | apparatus=(0, 0) | src=('National Archives', '59', '81D286')
+  ham  96 cos_raw 0.917 calibrated 0.862 frus1917-72PubDipv08/d31 | 1969-08-05 | 31. Letter From the Assistant Director, East Asia and the Pacific, United States Information Agency (Oleksiw)  | apparatus=(0, 0) | src=('National Archives', '306', 'Office of Policy and Plans')
+  ham  82 cos_raw 0.915 calibrated 0.858 frus1977-80v22/d104 | 1977-02-07 | 104. Telegram From the Consulate in Hong Kong to the Department of State | apparatus=(0, 0) | src=('Department of State', '59', 'CFPF D770042–1117')
+  ham  90 cos_raw 0.914 calibrated 0.856 frus1977-80v01/d88 | 1978-06-16 | 88. Address by the Assistant Secretary of State for East Asian and Pacific Affairs (Holbrooke) | apparatus=(0, 0) | src=(None, None, None)
+  ham  95 cos_raw 0.913 calibrated 0.855 frus1981-88v01/d229 | 1985-01-29 | 229. Address by the Under Secretary of State for Political Affairs (Armacost) | apparatus=(0, 0) | src=(None, None, None)
+  ham  80 cos_raw 0.913 calibrated 0.855 frus1969-76ve12/d16 | 1975-06-13 | 16. Memorandum From Secretary of State Kissinger to President Ford, Washington, June 13, 1975. | apparatus=(0, 0) | src=('Ford Library', None, 'National Security Adviser')
+  ham  89 cos_raw 0.912 calibrated 0.853 frus1977-80v22/d107 | 1977-06-08 | 107. Memorandum From Michael Armacost of the National Security Council Staff to the President’s Assistant for  | apparatus=(0, 0) | src=('Department of State', '59', '89D265')
+  ham  76 cos_raw 0.910 calibrated 0.851 frus1969-76ve12/d10 | 1974-07-18 | 10. Memorandum From W.R. Smyser of the National Security Council Staff to Secretary of State Kissinger, Washin | apparatus=(0, 0) | src=('Nixon Presidential Materials', None, 'NSC Files')
+  ham  86 cos_raw 0.904 calibrated 0.840 frus1951v06p1/d12 | 1951-05-17 | Report to the National Security Council by the Executive Secretary (Lay) | apparatus=(0, 0) | src=('Department of State', '59', '63D351')
+  ham  90 cos_raw 0.904 calibrated 0.839 frus1977-80v22/d102 | 1977-01-31 | 102. Memorandum From the Director of the Office of Regional Affairs, Bureau of East Asian and Pacific Affairs  | apparatus=(0, 0) | src=('Department of State', '59', '94D430')
+  ham  99 cos_raw 0.903 calibrated 0.838 frus1969-76ve12/d17 | 1975-07-15 | 17. Memorandum From W.R. Smyser of the National Security Council Staff to Secretary of State Kissinger, Washin | apparatus=(0, 0) | src=('Ford Library', None, 'National Security Adviser')
+  ham  89 cos_raw 0.903 calibrated 0.838 frus1961-63v02/d142 | 1962-04-04 | 142. Memorandum From the Ambassador at Large (Bowles) to the President | apparatus=(0, 0) | src=('Kennedy Library', None, 'Schlesinger Papers')
+  ham  88 cos_raw 0.902 calibrated 0.836 frus1977-80v22/d3 | 1977-02-04 | 3. Memorandum From Michael Armacost of the National Security Council Staff to the President’s Assistant for Na | apparatus=(0, 0) | src=('Carter Library', None, 'National Security Affairs')
+  ham  98 cos_raw 0.900 calibrated 0.833 frus1950v06/d89 | 1950-12-06 | Final Report of the Joint MDAP Survey Mission to Southeast Asia | apparatus=(0, 0) | src=('Department of State', '59', '54D5')
+/Users/jbotts/frus-analysis/c3f/runs/f9/vectors.py:76: RuntimeWarning: divide by zero encountered in matmul
+  k=vnames.index(vv); sims=C[:len(vnames)]@C[k]; top=np.argsort(-sims)[1:9]
+/Users/jbotts/frus-analysis/c3f/runs/f9/vectors.py:76: RuntimeWarning: overflow encountered in matmul
+  k=vnames.index(vv); sims=C[:len(vnames)]@C[k]; top=np.argsort(-sims)[1:9]
+/Users/jbotts/frus-analysis/c3f/runs/f9/vectors.py:76: RuntimeWarning: invalid value encountered in matmul
+  k=vnames.index(vv); sims=C[:len(vnames)]@C[k]; top=np.argsort(-sims)[1:9]
+
+CENTROID neighbours of frus1917-72PubDipv08 [('frus1917-72PubDipv07', 0.981), ('frus1917-72PubDipv06', 0.977), ('frus1977-80v30', 0.976), ('frus1969-76v38p2', 0.965), ('frus1969-76v02', 0.962), ('frus1961-63v25', 0.962), ('frus1964-68v33', 0.961), ('frus1969-76ve01', 0.961)]
+
+CENTROID neighbours of frus1917-72PubDipv07 [('frus1917-72PubDipv06', 0.987), ('frus1917-72PubDipv08', 0.981), ('frus1977-80v30', 0.973), ('frus1964-68v33', 0.965), ('frus1961-63v25', 0.965), ('frus1964-68v34', 0.959), ('frus1964-68v09', 0.953), ('frus1964-68v12', 0.953)]
+
+map-index keys ['clusters', 'documentCount', 'generated', 'gridExtent', 'layout', 'provenanceDigest', 'schema']
+MAP ('frus1917-72PubDipv08', 'd31') -25638 1339 65535
+MAP ('frus1969-76v38p2', 'd105') -25412 1501 65535
+MAP ('frus1917-72PubDipv07', 'd48') -28220 1974 29
+MAP ('frus1955-57v09', 'd190') -18959 -4689 138

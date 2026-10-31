@@ -1,0 +1,133 @@
+=== OVERVIEW QUOTED SPANS ===
+[01] TERM/NAME  para 5: "soft power"
+[02] OK   frus1917-72PubDipv07/d73 (url) offsets [2236]: "the image of American strength, reliability and friendship"
+[03] OK   frus1917-72PubDipv08/d31 (url) offsets [2622, 2751]: "the image of the US usually depended more on the state of bi-lateral relations … than on development"
+[04] TERM/NAME  para 14: "RG 305"
+[05] TERM/NAME  para 19: "Restricted - Possibly"
+[06] TERM/NAME  para 27: "soft power"
+[07] TERM/NAME  para 27: "Department of State"
+[08] TERM/NAME  para 27: "image of the United States"
+[09] TERM/NAME  para 27: "psychological"
+[10] TERM/NAME  para 27: "public diplomacy"
+[11] TERM/NAME  para 28: "Public Opinion Research"
+[12] FAIL None (NO CITATION FOLLOWS IN PARAGRAPH) None: "Asia"
+[13] TERM/NAME  para 36: "soft power"
+[14] TERM/NAME  para 38: "the region"
+[15] OK   frus1952-54v12p2/d403 (url) offsets [2167]: "every suitable operation to prepare the minds and emotions of the people to collaborate in the effor"
+[16] OK   frus1952-54v12p2/d403 (url) offsets [6450]: "each nation is an entity basically different from the others and requires special treatment"
+[17] OK   frus1950v06/d31 (url) offsets [751]: "increased usage of USIE news and feature material in the local press throughout the area"
+[18] OK   frus1952-54v13p1/d116 (url) offsets [3035]: "intense interest in US by educated groups"
+[19] OK   frus1952-54v13p1/d116 (url) offsets [3589]: "not a primary target group"
+[20] OK   frus1952-54v13p1/d116 (url) offsets [2750]: "though difficult to determine degree"
+[21] OK   frus1952-54v13p1/d116 (url) offsets [1460]: "soft-pedal"
+[22] OK   frus1952-54v13p1/d116 (url) offsets [1534]: "unbridled nationalism"
+[23] OK   frus1955-57v22/d447 (url) offsets [1627]: "a fear of placing the U.S. in the position of appearing to support colonialism"
+[24] OK   frus1917-72PubDipv07/d73 (above/Public Diplomacy, 1964–1968) offsets [2236]: "the image of American strength, reliability and friendship is basic to our objectives"
+[25] OK   frus1917-72PubDipv07/d73 (above/Public Diplomacy, 1964–1968) offsets [2564]: "In almost every country of the area, our programs are directed at elite groups"
+[26] OK   frus1917-72PubDipv06/d127 (url) offsets [1213]: "probably the most successful visit by an American, from a public image standpoint"
+[27] OK   frus1917-72PubDipv06/d127 (url) offsets [2093]: "seemed, for first time, to appreciate openness of the U.S. space program as compared to Russian"
+[28] OK   frus1961-63v23/d289 (url) offsets [2810]: "must be pegged to a real understanding of and a demonstrated respect for Indonesia’s neutral stance"
+[29] OK   frus1961-63v23/d289 (url) offsets [2990]: "we should refrain from glamorous, immediate-impact actions"
+[30] OK   frus1917-72PubDipv08/d31 (above/Public Diplomacy, 1969–1972) offsets [2264]: "Asians are, to varying degrees, America watchers"
+[31] OK   frus1917-72PubDipv08/d31 (above/Public Diplomacy, 1969–1972) offsets [7292]: "US visibility should be low"
+[32] OK   frus1917-72PubDipv07/d32 (url) offsets [2138]: "Vietnamese peasants are, in the main, going to be persuaded by other Vietnamese"
+[33] OK   frus1917-72PubDipv07/d32 (url) offsets [3054]: "family-oriented, selfish and opportunistic even in the best of times"
+[34] OK   frus1964-68v27/d386 (url) offsets [600]: "has not given proper attention to the need for a national information program designed to gain popul"
+[35] OK   frus1917-72PubDipv08/d58 (url) offsets [1544]: "from the beginning"
+[36] OK   frus1917-72PubDipv08/d58 (url) offsets [1624]: "as short-term in nature"
+[37] OK   frus1917-72PubDipv08/d88 (url) offsets [1456]: "as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys"
+[38] OK   frus1964-68v26/d106 (url) offsets [619]: "a situation that I can describe only as intolerable"
+[39] OK   frus1969-76v19p2/d67 (url) offsets [2106]: "public opinion surveys and other assessments of Japanese attitudes have tended to confirm the seriou"
+[40] OK   frus1917-72PubDipv08/d143 (url) offsets [2432]: "While we do not want to appear as having gone “soft” on Chinese Communism neither do we want to appe"
+[41] OK   frus1917-72PubDipv08/d146 (url) offsets [2378]: "could generate favorable opinion toward the U.S."
+[42] OK   frus1917-72PubDipv08/d149 (url) offsets [1387]: "Although the overseas Chinese appear proud of the achievements of Peking, they are reluctant to acce"
+[43] OK   frus1969-76v38p2/d105 (above/Public Diplomacy, 1973–1976) offsets [2429]: "The American defeat has been in good part written off by the Japanese"
+[44] OK   frus1969-76v38p2/d105 (above/Public Diplomacy, 1973–1976) offsets [3981]: "programs on U.S. security relations in Asia lack credibility and may in fact do damage to our relati"
+[45] OK   frus1969-76v38p2/d105 (above/Public Diplomacy, 1973–1976) offsets [4065]: "Thais still see us as friends and admire much in the American system"
+[46] OK   frus1977-80v30/d79 (url) offsets [2116]: "shoring up the confidence of East Asians in America’s long-term staying power and positive involveme"
+[47] OK   frus1977-80v30/d83 (url) offsets [1026]: "We still face deeply implanted and persistent feeling that new administration is “withdrawing” or, a"
+[48] OK   frus1977-80v30/d83 (url) offsets [1845]: "seeks to implant American models on other societies"
+[49] OK   frus1977-80v30/d2 (url) offsets [5334]: "gut issues rather than some of the frothier aspects of cultural exchange"
+[50] TERM/NAME  para 64: "American soft power in East Asia and the Pacific: how officials judged it, 1950–1977"
+quoted spans total 50: document quotations 38 (ok 37, fail 1); terms/names 12
+
+=== TRACE CROSS-CHECK (overview citation pair vs memo Q pair) ===
+[02] cited frus1917-72PubDipv07/d73  memo Q pairs [('frus1917-72PubDipv07', 'd73')]  -> MATCH
+[03] cited frus1917-72PubDipv08/d31  memo Q pairs [('frus1917-72PubDipv08', 'd31')]  -> MATCH
+[15] cited frus1952-54v12p2/d403  memo Q pairs [('frus1952-54v12p2', 'd403')]  -> MATCH
+[16] cited frus1952-54v12p2/d403  memo Q pairs [('frus1952-54v12p2', 'd403')]  -> MATCH
+[17] cited frus1950v06/d31  memo Q pairs [('frus1950v06', 'd31')]  -> MATCH
+[18] cited frus1952-54v13p1/d116  memo Q pairs [('frus1952-54v13p1', 'd116')]  -> MATCH
+[19] cited frus1952-54v13p1/d116  memo Q pairs [('frus1952-54v13p1', 'd116')]  -> MATCH
+[20] cited frus1952-54v13p1/d116  memo Q pairs [('frus1952-54v13p1', 'd116')]  -> MATCH
+[21] cited frus1952-54v13p1/d116  memo Q pairs [('frus1952-54v13p1', 'd116')]  -> MATCH
+[22] cited frus1952-54v13p1/d116  memo Q pairs [('frus1952-54v13p1', 'd116')]  -> MATCH
+[23] cited frus1955-57v22/d447  memo Q pairs [('frus1955-57v22', 'd447')]  -> MATCH
+[24] cited frus1917-72PubDipv07/d73  memo Q pairs [('frus1917-72PubDipv07', 'd73')]  -> MATCH
+[25] cited frus1917-72PubDipv07/d73  memo Q pairs [('frus1917-72PubDipv07', 'd73')]  -> MATCH
+[26] cited frus1917-72PubDipv06/d127  memo Q pairs [('frus1917-72PubDipv06', 'd127')]  -> MATCH
+[27] cited frus1917-72PubDipv06/d127  memo Q pairs [('frus1917-72PubDipv06', 'd127')]  -> MATCH
+[28] cited frus1961-63v23/d289  memo Q pairs [('frus1961-63v23', 'd289')]  -> MATCH
+[29] cited frus1961-63v23/d289  memo Q pairs [('frus1961-63v23', 'd289')]  -> MATCH
+[30] cited frus1917-72PubDipv08/d31  memo Q pairs [('frus1917-72PubDipv08', 'd31')]  -> MATCH
+[31] cited frus1917-72PubDipv08/d31  memo Q pairs [('frus1917-72PubDipv08', 'd31')]  -> MATCH
+[32] cited frus1917-72PubDipv07/d32  memo Q pairs [('frus1917-72PubDipv07', 'd32')]  -> MATCH
+[33] cited frus1917-72PubDipv07/d32  memo Q pairs [('frus1917-72PubDipv07', 'd32')]  -> MATCH
+[34] cited frus1964-68v27/d386  memo Q pairs [('frus1964-68v27', 'd386')]  -> MATCH
+[35] cited frus1917-72PubDipv08/d58  memo Q pairs [('frus1917-72PubDipv08', 'd58')]  -> MATCH
+[36] cited frus1917-72PubDipv08/d58  memo Q pairs [('frus1917-72PubDipv08', 'd58')]  -> MATCH
+[37] cited frus1917-72PubDipv08/d88  memo Q pairs [('frus1917-72PubDipv08', 'd88')]  -> MATCH
+[38] cited frus1964-68v26/d106  memo Q pairs [('frus1964-68v26', 'd106')]  -> MATCH
+[39] cited frus1969-76v19p2/d67  memo Q pairs [('frus1969-76v19p2', 'd67')]  -> MATCH
+[40] cited frus1917-72PubDipv08/d143  memo Q pairs [('frus1917-72PubDipv08', 'd143')]  -> MATCH
+[41] cited frus1917-72PubDipv08/d146  memo Q pairs [('frus1917-72PubDipv08', 'd146')]  -> MATCH
+[42] cited frus1917-72PubDipv08/d149  memo Q pairs [('frus1917-72PubDipv08', 'd149')]  -> MATCH
+[43] cited frus1969-76v38p2/d105  memo Q pairs [('frus1969-76v38p2', 'd105')]  -> MATCH
+[44] cited frus1969-76v38p2/d105  memo Q pairs [('frus1969-76v38p2', 'd105')]  -> MATCH
+[45] cited frus1969-76v38p2/d105  memo Q pairs [('frus1969-76v38p2', 'd105')]  -> MATCH
+[46] cited frus1977-80v30/d79  memo Q pairs [('frus1977-80v30', 'd79')]  -> MATCH
+[47] cited frus1977-80v30/d83  memo Q pairs [('frus1977-80v30', 'd83')]  -> MATCH
+[48] cited frus1977-80v30/d83  memo Q pairs [('frus1977-80v30', 'd83')]  -> MATCH
+[49] cited frus1977-80v30/d2  memo Q pairs [('frus1977-80v30', 'd2')]  -> MATCH
+
+=== COLLECTION EXCERPTS ===
+OK   frus1950v06/d31 offs [720] : There is already evidence, however, of increased usage of USIE news and feature material i
+OK   frus1952-54v13p1/d116 offs [3005] : Such demand can only be construed as intense interest in US by educated groups.
+OK   frus1952-54v13p1/d116 offs [1440] : It should deliberately soft-pedal suggestions which may be expected to foster anti-Fr atti
+OK   frus1952-54v13p1/d116 offs [2667] : Since many new customs FE can be traced to Amer films, must be assumed that films is effec
+OK   frus1952-54v13p1/d116 offs [3504] : Rural and village populations which make up as much as 80 percent of the 12 million in the
+OK   frus1952-54v12p2/d403 offs [2158] : utilizing every suitable operation to prepare the minds and emotions of the people to coll
+OK   frus1952-54v12p2/d403 offs [6391] : It is recognized that Southeast Asia is not a political entity but that each nation is an 
+OK   frus1952-54v12p2/d405 offs [2237] : Must strengthen “will and ability of Thai people resist Commie aggression”
+OK   frus1952-54v12p2/d407 offs [1114] : informing Thai of threat to monarchy, religion, tradition of independence
+OK   frus1955-57v22/d447 offs [1627] : a fear of placing the U.S. in the position of appearing to support colonialism
+OK   frus1961-63v23/d289 offs [2990] : we should refrain from glamorous, immediate-impact actions
+OK   frus1961-63v23/d289 offs [2742] : any actions the U.S. undertakes in furtherance of better relations with Indonesia must be 
+OK   frus1917-72PubDipv06/d127 offs [1213] : probably the most successful visit by an American, from a public image standpoint
+OK   frus1917-72PubDipv06/d127 offs [2089] : Many seemed, for first time, to appreciate openness of the U.S. space program as compared 
+OK   frus1917-72PubDipv07/d73 offs [2236] : the image of American strength, reliability and friendship is basic to our objectives
+OK   frus1917-72PubDipv07/d73 offs [2564] : In almost every country of the area, our programs are directed at elite groups
+OK   frus1917-72PubDipv08/d31 offs [2264] : Asians are, to varying degrees, America watchers.
+OK   frus1917-72PubDipv08/d31 offs [2604] : PAOs emphasized that the image of the US usually depended more on the state of bi-lateral 
+OK   frus1917-72PubDipv08/d31 offs [7283] : One caveat: US visibility should be low.
+OK   frus1917-72PubDipv07/d32 offs [2138] : Vietnamese peasants are, in the main, going to be persuaded by other Vietnamese.
+OK   frus1917-72PubDipv07/d32 offs [3054] : family-oriented, selfish and opportunistic even in the best of times
+OK   frus1917-72PubDipv07/d171 offs [3370] : the effort should not be construed as a propaganda mechanism
+OK   frus1964-68v27/d386 offs [583] : The Thai Government has not given proper attention to the need for a national information 
+OK   frus1917-72PubDipv08/d58 offs [1537] : USIA has, from the beginning, considered its psychological operations (PSYOP) support prog
+OK   frus1917-72PubDipv08/d88 offs [1443] : Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon
+OK   frus1917-72PubDipv08/d92 offs [2720] : The Cambodians want to do as much as possible on their own and we should respect that desi
+OK   frus1964-68v26/d106 offs [517] : Anti-American activities in Indonesia, particularly those directed against USIS during the
+OK   frus1969-76v19p2/d67 offs [2106] : public opinion surveys and other assessments of Japanese attitudes have tended to confirm 
+OK   frus1917-72PubDipv08/d143 offs [2432] : While we do not want to appear as having gone “soft” on Chinese Communism neither do we wa
+OK   frus1917-72PubDipv08/d146 offs [2324] : by virtue of immense Chinese interest and curiosity about space, could generate favorable 
+OK   frus1917-72PubDipv08/d149 offs [1387] : Although the overseas Chinese appear proud of the achievements of Peking, they are relucta
+OK   frus1969-76v38p2/d105 offs [2429] : The American defeat has been in good part written off by the Japanese since the US withdra
+OK   frus1969-76v38p2/d105 offs [3958] : During this waiting period, programs on U.S. security relations in Asia lack credibility a
+OK   frus1969-76v38p2/d105 offs [4065] : Thais still see us as friends and admire much in the American system.
+OK   frus1977-80v30/d2 offs [5314] : We are dealing here with gut issues rather than some of the frothier aspects of cultural e
+OK   frus1977-80v30/d79 offs [2116] : shoring up the confidence of East Asians in America’s long-term staying power and positive
+OK   frus1977-80v30/d83 offs [1026] : We still face deeply implanted and persistent feeling that new administration is “withdraw
+OK   frus1977-80v30/d83 offs [1845] : seeks to implant American models on other societies
+excerpts 38: ok 38 fail 0
+excerpts whose pair has no document entry: []

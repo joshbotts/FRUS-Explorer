@@ -1,0 +1,57 @@
+coverage: {"decimalFileOpensIn": 1910, "glossableYears": [{"endYear": 1949, "scheduleId": "1910-1949", "startYear": 1910}, {"endYear": 1959, "scheduleId": "1950-1959", "startYear": 1950}, {"endYear": 1963, "scheduleId": "1960-1963", "startYear": 1960}], "keyOutsideGlossableYears": "no-gloss", "notShipped": [], "note": "A key is glossable only when the document's own date falls inside one of `glossableYears`. Outside them this file has NO gloss — do not compose one from a schedule that does not govern the key's era. The classification was renumbered in 1950, so composing across that year returns a plausi
+schedules type list keys/len: 3
+
+schedule 0 | keys: ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+    classes -> dict 9 | sample: {"0": "General. Miscellaneous", "1": "Administrations, United States Government"}
+      [classes] 6 = "Commerce. Customs Administration"
+      [classes] 7 = "Political Relations of States. Bi-lateral Treaties"
+    countries -> dict 287 | sample: {"00": "World, The", "10": "America. Pan-America"}
+      [countries] 90 = "Asia"
+      [countries] 96 = "Philippines"
+    countryAlternates -> dict 101 | sample: {"11a": ["Kure Islands", "Ocean Islands", "Palmyra Island"], "11c": ["Puerto Rico"]}
+      [countryAlternates] 90 = ["Near East"]
+    countryArrangedClasses -> list 3 | sample: ["6", "7"]
+    endYear = 1949
+    id = "1910-1949"
+    relationsClasses -> list 1 | sample: ["7"]
+    source = "RG 59 Department of State Classification of Correspondence, August 1910 – December 1949 (National Archives and Records 
+    sources -> dict 2 | sample: {"countries": "Department of State 1910–1963 Central Decimal File Country Numbers (National Archives and Records Administration)", "schedule": "RG 59 Department of State Classification of Corresponden
+    startYear = 1910
+    subjects -> dict 2 | sample: {"6": {"00": "Import trade of country"}, "8": {"00": "Political affairs", "001": "Chief executive. Sovereign", "0011": "Family", "002": "Cabinet. Ministry", "003": "Vice President", "00B": "Bolshevism
+      [subjects] 6 = {"00": "Import trade of country"}
+
+schedule 1 | keys: ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+    classes -> dict 10 | sample: {"0": "Miscellaneous", "1": "Administration of the United States Government"}
+      [classes] 6 = "International Political Relations. Other International Relations"
+      [classes] 7 = "Internal Political and National Defense Affairs"
+    countries -> dict 252 | sample: {"00": "World, The", "01": "Outer Space"}
+      [countries] 90 = "Asia"
+      [countries] 96 = "Philippines"
+    countryAlternates -> dict 96 | sample: {"00": ["Universe"], "01": ["Arctic"]}
+      [countryAlternates] 90 = ["Far East (including all of Asia)"]
+    countryArrangedClasses -> list 7 | sample: ["3", "4"]
+    endYear = 1959
+    id = "1950-1959"
+    relationsClasses -> list 1 | sample: ["6"]
+    source = "Records Codification Manual, Department of State (adopted 1 January 1950) (National Archives and Records Administration
+    sources -> dict 2 | sample: {"countries": "Department of State 1910–1963 Central Decimal File Country Numbers (National Archives and Records Administration)", "schedule": "Records Codification Manual, Department of State (adopte
+    startYear = 1950
+    subjects -> dict 0 | sample: {}
+
+schedule 2 | keys: ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+    classes -> dict 10 | sample: {"0": "Miscellaneous", "1": "Administration of the United States Government"}
+      [classes] 6 = "International Political Relations. Other International Relations. Bilateral Treaties"
+      [classes] 7 = "Internal Political and National Defense Affairs"
+    countries -> dict 263 | sample: {"00": "World, The", "01": "Outer Space"}
+      [countries] 90 = "Asia"
+      [countries] 96 = "Philippines"
+    countryAlternates -> dict 89 | sample: {"00": ["Universe"], "11c": ["Puerto Rico"]}
+      [countryAlternates] 90 = ["Far East (including all of Asia)"]
+    countryArrangedClasses -> list 7 | sample: ["3", "4"]
+    endYear = 1963
+    id = "1960-1963"
+    relationsClasses -> list 1 | sample: ["6"]
+    source = "Records Classification Handbook, Department of State (1960–1963) (National Archives and Records Administration)"
+    sources -> dict 2 | sample: {"countries": "Department of State 1910–1963 Central Decimal File Country Numbers (National Archives and Records Administration)", "schedule": "Records Classification Handbook, Department of State (19
+    startYear = 1960
+    subjects -> dict 0 | sample: {}

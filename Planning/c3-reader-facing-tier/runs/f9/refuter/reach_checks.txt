@@ -1,0 +1,98 @@
+logged predicates: 31
+   fam:POS_DeptState | "Department of State"
+   fam:NEG | ZZZ_IMPOSSIBLE_ZZZ
+   fam:propaganda | propaganda
+   fam:psychological | psycholog
+   fam:usia_usis | usia OR usi
+   fam:info_program | "information program"
+   fam:image_US | "image of the United States"
+   fam:prestige | prestig
+   fam:public_diplomacy | "public diplomacy"
+   fam:cultural_exchange | "cultural exchange"
+   fam:VOA | "Voice of America"
+   fam:soft_power | "soft power"
+   fam:psywar | "psychological warfare"
+   fam:hearts_minds | "hearts and minds"
+   fam:asian_mind | "Asian mind" OR "Oriental mind" OR "Asian mentality" OR "Oriental mentality"
+   gap:POS | "Department of State"
+   gap:NEG | ZZZ_IMPOSSIBLE_ZZZ
+   gap:soft power | "soft power"
+   gap:soft | soft
+   gap:poll/survey+usia | (poll OR survey) AND (usia OR usi)
+   gap:+japan | (poll OR survey) AND (usia OR usi) AND (japan OR japanes)
+   gap:usia+aus/nz | (usia OR usi) AND (australia OR "new zealand")
+   gap:usia+pacific | (usia OR usi) AND (micronesia OR fiji OR "trust territory" OR samoa OR guam)
+   gap:fulbright | fulbright
+   gap:fulbright+eval | fulbright AND (evaluat OR effect OR impact)
+   gap:asian mind | "Asian mind" OR "Oriental mind" OR "Asian mentality" OR "Oriental mentality" OR "Asian psychology" OR "Oriental psycholo
+   gap:face | "lose face" OR "loss of face" OR "save face" OR "saving face" OR "face saving"
+   M8 ranked | (usia OR usi OR propaganda OR psycholog OR "information program") AND (asian OR asia OR "far east" OR "far eastern") AND
+   hdr I | header:(japan OR japanes OR china OR chines OR korea OR vietnam OR vietnames OR asia OR asian OR indonesia OR philippin 
+   hdr R | header:(usia OR usi OR "information agency" OR "information service" OR psycholog OR propaganda OR "public affairs" OR "
+   decades union | usia OR usi OR "information program" OR "psychological warfare" OR "Voice of America" OR "public diplomacy" OR "cultural
+usia OR usi hit list: 1438 sample-40 contains d116: False
+psychological warfare hit list: 318 sample-40 contains d116: False
+
+[STRICT REACH] per cited document: predicates whose MATCH set (over the logged scope) contains it
+  frus1949v07p2/d386: 4 predicates ['fam:propaganda', 'fam:info_program', 'M8 ranked', 'decades union'] | printed sets: ['ranked top-45']
+  frus1917-72PubDipv08/d31: 8 predicates ['fam:usia_usis', 'fam:info_program', 'fam:prestige', 'gap:poll/survey+usia', 'gap:+japan', 'gap:usia+aus/nz', 'M8 ranked', 'hdr I'] | printed sets: ['candidate_set(141)', 'ranked top-45']
+  frus1969-76v38p2/d105: 5 predicates ['fam:usia_usis', 'fam:VOA', 'gap:usia+aus/nz', 'M8 ranked', 'hdr I'] | printed sets: ['candidate_set(141)', 'ranked top-45']
+  frus1977-80v30/d79: 1 predicates ['hdr I'] | printed sets: ['candidate_set(141)']
+  frus1977-80v30/d83: 6 predicates ['fam:POS_DeptState', 'fam:usia_usis', 'fam:public_diplomacy', 'gap:POS', 'M8 ranked', 'hdr I'] | printed sets: ['candidate_set(141)']
+  frus1950v06/d31: 4 predicates ['fam:propaganda', 'fam:usia_usis', 'hdr R', 'decades union'] | printed sets: ['candidate_set(141)']
+  frus1952-54v13p1/d116: 9 predicates ['fam:POS_DeptState', 'fam:propaganda', 'fam:psychological', 'fam:usia_usis', 'fam:info_program', 'fam:psywar', 'gap:POS', 'gap:soft', 'decades union'] | printed sets: []
+  frus1952-54v12p2/d403: 5 predicates ['fam:psychological', 'fam:info_program', 'M8 ranked', 'hdr R', 'decades union'] | printed sets: ['candidate_set(141)', 'ranked top-45']
+  frus1955-57v09/d190: 10 predicates ['fam:POS_DeptState', 'fam:propaganda', 'fam:psychological', 'fam:usia_usis', 'fam:info_program', 'fam:prestige', 'fam:cultural_exchange', 'fam:VOA', 'gap:POS', 'M8 ranked'] | printed sets: ['ranked top-45']
+  frus1917-72PubDipv07/d32: 10 predicates ['fam:propaganda', 'fam:psychological', 'fam:usia_usis', 'fam:info_program', 'fam:public_diplomacy', 'gap:poll/survey+usia', 'gap:fulbright', 'gap:fulbright+eval', 'M8 ranked', 'hdr I'] | printed sets: ['candidate_set(141)', 'ranked top-45']
+  frus1917-72PubDipv07/d73: 4 predicates ['fam:psychological', 'fam:usia_usis', 'M8 ranked', 'hdr I'] | printed sets: ['candidate_set(141)', 'ranked top-45']
+  frus1955-57v09/d185: 13 predicates ['fam:POS_DeptState', 'fam:propaganda', 'fam:psychological', 'fam:usia_usis', 'fam:info_program', 'fam:prestige', 'fam:cultural_exchange', 'fam:VOA', 'gap:POS', 'gap:soft', 'gap:poll/survey+usia', 'gap:+japan', 'M8 ranked'] | printed sets: ['ranked top-45']
+  frus1955-57v09/d207: 13 predicates ['fam:POS_DeptState', 'fam:propaganda', 'fam:psychological', 'fam:usia_usis', 'fam:info_program', 'fam:prestige', 'fam:cultural_exchange', 'gap:POS', 'gap:soft', 'gap:poll/survey+usia', 'gap:+japan', 'gap:usia+aus/nz', 'M8 ranked'] | printed sets: ['ranked top-45']
+  frus1917-72PubDipv06/d127: 2 predicates ['fam:usia_usis', 'hdr I'] | printed sets: ['candidate_set(141)']
+  frus1917-72PubDipv08/d88: 1 predicates ['hdr I'] | printed sets: ['candidate_set(141)']
+  frus1961-63v01/d265: 5 predicates ['fam:propaganda', 'fam:psychological', 'fam:usia_usis', 'hdr R', 'decades union'] | printed sets: ['candidate_set(141)']
+  frus1961-63v02/d16: 7 predicates ['fam:psychological', 'fam:usia_usis', 'fam:info_program', 'gap:poll/survey+usia', 'M8 ranked', 'hdr R', 'decades union'] | printed sets: ['candidate_set(141)', 'ranked top-45']
+  frus1917-72PubDipv07/d48: 3 predicates ['fam:propaganda', 'fam:psychological', 'hdr I'] | printed sets: ['candidate_set(141)']
+  frus1917-72PubDipv08/d58: 3 predicates ['fam:psychological', 'fam:usia_usis', 'hdr I'] | printed sets: ['candidate_set(141)']
+  frus1947v07/d245: 3 predicates ['fam:psychological', 'fam:prestige', 'hdr R'] | printed sets: ['candidate_set(141)']
+  frus1952-54v12p2/d60: 4 predicates ['fam:POS_DeptState', 'fam:asian_mind', 'gap:POS', 'gap:asian mind'] | printed sets: ['asian-mind census']
+  frus1917-72PubDipv08/d149: 4 predicates ['fam:propaganda', 'fam:usia_usis', 'M8 ranked', 'hdr I'] | printed sets: ['candidate_set(141)', 'ranked top-45']
+  frus1917-72PubDipv08/d143: 4 predicates ['fam:propaganda', 'fam:usia_usis', 'gap:soft', 'hdr I'] | printed sets: ['candidate_set(141)']
+  frus1917-72PubDipv08/d146: 5 predicates ['fam:psychological', 'fam:usia_usis', 'fam:prestige', 'M8 ranked', 'hdr I'] | printed sets: ['candidate_set(141)']
+  frus1977-80v30/d152: 3 predicates ['fam:POS_DeptState', 'gap:POS', 'hdr I'] | printed sets: ['candidate_set(141)']
+
+[V7] d116 (frus1952-54v13p1): (['fam:POS_DeptState', 'fam:propaganda', 'fam:psychological', 'fam:usia_usis', 'fam:info_program', 'fam:psywar', 'gap:POS', 'gap:soft', 'decades union'], [])
+
+[DEAD TERMS] each atomic term the session's MATCH strings use, tested alone against the whole index (frus_documents):
+  terms tested: 73 dead/err: [('"Asian mentality"', 0), ('"soft power"', 0), ('ZZZ_IMPOSSIBLE_ZZZ', 0), ('evaluat', 0)]
+  vocab lookups in log for stems: ['imag', 'prestig', 'attitud', 'psycholog', 'cultur', 'philippin', 'pacif', 'japanes', 'chines', 'vietnames', 'effect', 'assess', 'impact']
+
+[M7] decade table re-run (R minus frus1948v06, frus1949v07p1):
+  1940s 219 R_den 12328 per1000_R 17.8 corpus_den 75872 per1000_corpus 2.9 top frus1949v08 79 of 219
+  1950s 389 R_den 12112 per1000_R 32.1 corpus_den 43159 per1000_corpus 9.0 top frus1955-57v21 34 of 389
+  1960s 414 R_den 7884 per1000_R 52.5 corpus_den 27654 per1000_corpus 15.0 top frus1961-63v02 43 of 414
+  1970s 109 R_den 3370 per1000_R 32.3 corpus_den 22640 per1000_corpus 4.8 top frus1969-76v08 21 of 109
+  1980s 1 R_den 106 per1000_R 9.4 corpus_den 6038 per1000_corpus 0.2 top frus1977-80v13 1 of 1
+
+[M14] reading lists:
+  total listed: 61 distinct: 61
+  frus1955-57v09/d184 editorial note? (1, '184. Editorial Note')
+  sum length(body_text) over the listed docs: (658318,) (memo 658,318 over 61)
+  collection docs all in reading lists: True
+
+[non-document spans] 'South and Southeast Asia' volume title; 'cultural relations program' chapter heading:
+   [('frus1958-60v15', 'Foreign Relations of the United States, 1958–1960, South and Southeast Asia, Volume XV')]
+   heading in frus1942China
+   heading in frus1943China
+   heading in frus1944v06
+   heading in frus1944v05
+  volumes with 'cultural relations program' heading (1940s): 4
+
+[house figure] pointed-at channel's earliest dated row: ('1910-12-06',) | rows before 1910-12-06: (0,)
+
+[M12] pointed-at over the 141: unattributed Department of State rows
+   ('Department of State', None, None) rows 16 docs 11
+   ('Department of State', None, '62D430') rows 8 docs 7
+   ('Department of State', None, '66D95') rows 4 docs 4
+   ('Department of State', None, '67D54') rows 2 docs 1
+
+[M16] pointed-at rows for the 25: 12 on docs: ['frus1952-54v13p1/d116', 'frus1955-57v09/d190', 'frus1955-57v09/d185', 'frus1955-57v09/d207', 'frus1917-72PubDipv08/d143']

@@ -1,0 +1,3 @@
+opinion-poll family, 77 volumes: FTS hits 31; STRICT literal 8 of 31; TOLERANT literal 31 of 31 (census of all hits, Python re, case-insensitive)
+Office of War Information, 9 wartime Far East volumes: FTS hits 50; STRICT literal 49 of 50; TOLERANT literal 50 of 50 (census of all hits, Python re, case-insensitive)
+OWI acronym FTS hits, same 9 volumes: FTS hits 60; STRICT literal 60 of 60; TOLERANT literal 60 of 60 (census of all hits, Python re, case-insensitive)

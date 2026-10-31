@@ -1,0 +1,17 @@
+index keys: ['documentCount', 'generated', 'harvestGenerated', 'harvestScriptSHA256', 'provenance', 'provenanceDigest', 'retrieval', 'schema', 'subseries', 'volumes']
+  documentCount = 314616
+  generated = "2026-10-15"
+  harvestGenerated = "2026-10-15T06:55:14"
+  harvestScriptSHA256 = "41a6656dddf73e7e837dccc73e2e2cdfbf4bce87af3402a2a7bd5218c004e736"
+  provenance = {"chunkChars": 3200, "model": "embeddinggemma-2-Q8_0", "modelFileSHA256": "2188ac1deca4b77dffefd603c2776a9d76d9d74ec01841392982ebb840b09135", "nativeDims": 768, "overlapChars": 480, "pooling": "char-length-weighted mean of unit-norm chunk vectors, L2-renormalized", "prefix": "title: none | text: ", 
+  provenanceDigest = "89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101"
+  retrieval = {"measuredBy": "Planning/semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md \u00a75, 3,600 era-stratified queries over the 314,616-document corpus; Hamming-800 over 512 sign bits \u2192 int8-512", "measuredRecallAt10": 0.9021, "rerankPool": 800, "scoreCalibration": {"documentOffset": 0.4, "meas
+  schema = 1
+  subseries = ["1861", "1862", "1863", "1864", "1865", "1866", "1867", "1868", "1870", "1871", "1872", "1873", "1874", "1875", "1876", "1877", "1878", "1879", "1880", "1881", "1882", "1883", "1884", "1885", "1886", "1887", "1888", "1889", "1890", "1891", "1892", "1893", "1894", "1895", "1896", "1897", "1898", "18
+binary magic b'FRSV' ver,dims,docs,cents (1, 512, 314616, 660) digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+map magic b'FRSM' hdr (1, 314616, 140, 30000) digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+shards 553 distinct shard digests 1 ['69da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e610100000000']
+generation file .generation 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+index digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+ALL EQUAL: False
+map-index provenanceDigest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 documentCount 314616 clusters 140

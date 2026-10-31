@@ -1,0 +1,131 @@
+{
+ "run": "runs/f12",
+ "termsTested": 14,
+ "dead": [
+  {
+   "term": "zzzimpossiblezzz",
+   "source": "queries.log",
+   "line": 38,
+   "returns": false,
+   "query": "\"zzzimpossiblezzz\"",
+   "nearestLive": null
+  }
+ ],
+ "syntaxErrors": [],
+ "prefixes": [],
+ "vocabLookupsInLog": 0,
+ "all": [
+  {
+   "term": "psychological",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"psychological\"",
+   "nearestLive": null
+  },
+  {
+   "term": "propaganda",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"propaganda\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"information agency\"",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"information agency\"",
+   "nearestLive": null
+  },
+  {
+   "term": "usia",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"usia\"",
+   "nearestLive": null
+  },
+  {
+   "term": "usis",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"usis\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"information program\"",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"information program\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"public affairs\"",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"public affairs\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"information policy\"",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"information policy\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"cultural\"",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"cultural\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"united states information agency\"",
+   "source": "queries.log",
+   "line": 14,
+   "returns": true,
+   "query": "\"united states information agency\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"psychological\"",
+   "source": "queries.log",
+   "line": 14,
+   "returns": true,
+   "query": "\"psychological\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"image of the united states\"",
+   "source": "queries.log",
+   "line": 14,
+   "returns": true,
+   "query": "\"image of the united states\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"american image\"",
+   "source": "queries.log",
+   "line": 14,
+   "returns": true,
+   "query": "\"american image\"",
+   "nearestLive": null
+  },
+  {
+   "term": "zzzimpossiblezzz",
+   "source": "queries.log",
+   "line": 38,
+   "returns": false,
+   "query": "\"zzzimpossiblezzz\"",
+   "nearestLive": null
+  }
+ ]
+}

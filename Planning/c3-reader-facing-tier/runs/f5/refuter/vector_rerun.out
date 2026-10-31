@@ -1,0 +1,64 @@
+index keys: ['documentCount', 'generated', 'harvestGenerated', 'harvestScriptSHA256', 'provenance', 'provenanceDigest', 'retrieval', 'schema', 'subseries', 'volumes']
+documentCount 314616 dimensions None generated 2026-10-15 model None provenanceDigest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+retrieval: {'measuredBy': 'Planning/semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md §5, 3,600 era-stratified queries over the 314,616-document corpus; Hamming-800 over 512 sign bits → int8-512', 'measuredRecallAt10': 0.9021, 'rerankPool': 800, 'scoreCalibration': {'documentOffset': 0.4, 'measuredBy': "Planning/semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md §1b, fitted to EmbeddingGemma 300m's scores over 90 typed queries and 600 anchor documents against the 314,616-document corpus", 'queryOffset': 0.47}}
+decoded rows: 314616 volumes: 553
+sampled ids absent from document_cache: 0
+binary magic b'FRSV' ver 1 dims 512 docs 314616 cents 660 digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+map digest at 20: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+map-index provenanceDigest: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 clusters: 140 documentCount: 314616
+shards matching the binary's digest: 553 mismatching: 0
+three digests equal (index == binary == map): True
+
+== RE-RUN: nearest neighbours of frus1964-68v01/d122 (compare nn_run1.txt) ==
+  ham  45 cos_raw 0.977 cal 0.962 frus1917-72PubDipv07/d13
+  ham  73 cos_raw 0.944 cal 0.906 frus1917-72PubDipv07/d37
+  ham  82 cos_raw 0.930 cal 0.883 frus1917-72PubDipv07/d16
+  ham  83 cos_raw 0.921 cal 0.868 frus1964-68v01/d177
+  ham 100 cos_raw 0.918 cal 0.863 frus1964-68v02/d160
+  ham  99 cos_raw 0.899 cal 0.831 frus1964-68v01/d197
+  ham 100 cos_raw 0.889 cal 0.815 frus1917-72PubDipv07/d32
+  ham  95 cos_raw 0.889 cal 0.814 frus1917-72PubDipv07/d78
+  ham  98 cos_raw 0.887 cal 0.812 frus1917-72PubDipv07/d157
+  ham  97 cos_raw 0.887 cal 0.812 frus1964-68v01/d127
+  Hamming-only top 10: [(('frus1917-72PubDipv07', 'd13'), 45), (('frus1917-72PubDipv07', 'd37'), 73), (('frus1917-72PubDipv07', 'd16'), 82), (('frus1964-68v01', 'd177'), 83), (('frus1961-63v01', 'd339'), 90), (('frus1917-72PubDipv07', 'd78'), 95), (('frus1961-63v02', 'd16'), 96), (('frus1964-68v01', 'd127'), 97), (('frus1917-72PubDipv07', 'd157'), 98), (('frus1917-72PubDipv08', 'd66'), 98)]
+  reproduces the session's list in order: True
+  as a set: True
+
+== RE-RUN: nearest neighbours of frus1917-72PubDipv08/d31 (the list that surfaced d99) ==
+  ham  81 cos_raw 0.920 cal 0.867 frus1917-72PubDipv07/d106
+  ham  96 cos_raw 0.917 cal 0.862 frus1969-76v38p2/d105
+  ham  90 cos_raw 0.915 cal 0.858 frus1917-72PubDipv08/d99
+  ham 100 cos_raw 0.908 cal 0.847 frus1955-57v09/d190
+  ham  94 cos_raw 0.908 cal 0.847 frus1951v06p2/d105
+  ham  88 cos_raw 0.906 cal 0.843 frus1952-54v13p1/d116
+  ham 104 cos_raw 0.905 cal 0.842 frus1955-57v09/d185
+  ham 102 cos_raw 0.905 cal 0.841 frus1961-63v25/d156
+  ham  99 cos_raw 0.905 cal 0.841 frus1917-72PubDipv06/d150
+  ham  95 cos_raw 0.904 cal 0.841 frus1917-72PubDipv07/d69
+
+== RE-RUN: nearest neighbours of frus1969-76v38p2/d105 (the list that surfaced d104) ==
+  ham  78 cos_raw 0.922 cal 0.870 frus1969-76v01/d54
+  ham  84 cos_raw 0.918 cal 0.863 frus1969-76v38p1/d54
+  ham  96 cos_raw 0.917 cal 0.862 frus1917-72PubDipv08/d31
+  ham  82 cos_raw 0.915 cal 0.858 frus1977-80v22/d104
+  ham  90 cos_raw 0.914 cal 0.856 frus1977-80v01/d88
+  ham  95 cos_raw 0.913 cal 0.855 frus1981-88v01/d229
+  ham  80 cos_raw 0.913 cal 0.855 frus1969-76ve12/d16
+  ham  89 cos_raw 0.912 cal 0.853 frus1977-80v22/d107
+  ham  76 cos_raw 0.910 cal 0.851 frus1969-76ve12/d10
+  ham  86 cos_raw 0.904 cal 0.840 frus1951v06p1/d12
+
+== MAP: the 31 collection documents ==
+  unclustered among the 31: 7 of 31 | corpus-wide unclustered: 88059 of 314616
+  era-matched baseline 1945-1980 by mean year: unclustered 40679 of 141003
+
+== NEAR-DUPLICATES claimed ==
+  frus1964-68v01/d122 vs frus1917-72PubDipv07/d13: Hamming 45 (claimed 45) OK
+  frus1964-68v01/d177 vs frus1917-72PubDipv07/d16: Hamming 37 (claimed 37) OK
+  frus1961-63v04/d81 vs frus1917-72PubDipv06/d140: Hamming 53 (claimed 53) OK
+  frus1955-57v22/d484 vs frus1958-60v15/d548: Hamming 63 (claimed 63) OK
+  frus1955-57v09/d190 vs frus1955-57v09/d185: Hamming 32 (claimed 32) OK
+  frus1949v07p2/d386 vs frus1951v06p1/d12: Hamming 49 (claimed 49) OK
+
+== BASELINE spot check: random pairs (own seed) ==
+  mean 167.0 sd 14.8 p1 131 min 98 (session: 167.1, 14.8, 132, 95)

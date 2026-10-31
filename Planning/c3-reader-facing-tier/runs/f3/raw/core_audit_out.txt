@@ -1,0 +1,8 @@
+literal share on sample of 40 of 1573 : STRICT 33 of 40; TOLERANT 35 of 40; tolerant misses ['frus1948v06/d153', 'frus1948v06/d42', 'frus1949v07p1/d249', 'frus1949v07p1/d385', 'frus1951v07p2/d94']
+decade | core(regional) | dated non-apparatus docs in regional volumes | per 1,000 | top volume share
+1940s | 331 | 9577 | 34.6 | frus1948v06 93 of 331
+1950s | 386 | 12112 | 31.9 | frus1955-57v21 34 of 386
+1960s | 399 | 7884 | 50.6 | frus1961-63v02 43 of 399
+1970s | 104 | 3370 | 30.9 | frus1969-76v08 19 of 104
+1980s | 1 | 106 | 9.4 | frus1977-80v13 1 of 1
+undated regional core docs: 0

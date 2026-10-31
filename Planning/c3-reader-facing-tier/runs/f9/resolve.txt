@@ -1,0 +1,18 @@
+62D430 | RG 59 | NAID 2839191 | entry ['A1 1586C'] | Subject and Special Files | control
+    facts: {'creator': 'Department of State. Executive Secretariat.', 'inclusiveStartYear': 1953, 'inclusiveEndYear': 1961, 'accessStatus': 'Restricted - Partly', 'useStatus': 'Restricted - Possibly', 'extent': '4 linear feet, 5 linear inches', 'accessRestrictions': ['FOIA (b)(1) National Security']}
+63D351 | RG 59 | NAID 2839192 | entry ['A1 1586E'] | Records Relating to National Security Council Policy Papers | control
+    facts: {'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'inclusiveStartYear': 1947, 'inclusiveEndYear': 1979, 'accessStatus': 'Restricted - Partly', 'useStatus': 'Restricted - Possibly', 'extent': '26 linear feet, 3 linear inches', 'accessRestrictions': ['FOIA (b)(1) National Security']}
+61D385 NOT IN central-files-index lotFiles
+67D54 | RG 59 | NAID 631403 | entry ['A1 5305', 'A1 5414'] | Subject Files of the Vietnam Working Group | control
+    facts: {'creator': 'Department of State. Bureau of East Asian and Pacific Affairs.', 'inclusiveStartYear': 1963, 'inclusiveEndYear': 1974, 'accessStatus': 'Unrestricted', 'useStatus': 'Unrestricted', 'extent': '21 linear feet', 'accessRestrictions': None}
+72D192 | RG 59 | NAID 631695 | entry ['A1 5376', 'A1 5376A'] | Speeches and Statements | control
+    facts: {'creator': 'Department of State. Office of the Secretary.', 'inclusiveStartYear': 1961, 'inclusiveEndYear': 1969, 'accessStatus': 'Unrestricted', 'useStatus': 'Restricted - Possibly', 'extent': '17 linear feet, 6 linear inches', 'accessRestrictions': None}
+66D95 | RG 59 | NAID 2839192 | entry ['A1 1586E'] | Records Relating to National Security Council Policy Papers | control
+    facts: {'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'inclusiveStartYear': 1947, 'inclusiveEndYear': 1979, 'accessStatus': 'Restricted - Partly', 'useStatus': 'Restricted - Possibly', 'extent': '26 linear feet, 3 linear inches', 'accessRestrictions': ['FOIA (b)(1) National Security']}
+60D627 NOT IN central-files-index lotFiles
+65D101 | RG 59 | NAID 1136548 | entry ['A1 558-D'] | Chronological Files | control
+    facts: {'creator': 'Department of State. Policy Planning Council.', 'inclusiveStartYear': 1947, 'inclusiveEndYear': 1962, 'accessStatus': 'Unrestricted', 'useStatus': 'Unrestricted', 'extent': '5 linear feet, 3 linear inches', 'accessRestrictions': None}
+71D273 | RG 59 | NAID 2131139 | entry ['A1 5441'] | Files of Ernest K. Lindley | control
+    facts: {'creator': 'Department of State. Policy Planning Council.', 'inclusiveStartYear': 1961, 'inclusiveEndYear': 1969, 'accessStatus': 'Unrestricted', 'useStatus': 'Unrestricted', 'extent': '5 linear feet, 8 linear inches', 'accessRestrictions': None}
+series-facts rows whose creator names Information Agency: 14
+series-facts rows 698 with inclusiveStartYear<1940: 11

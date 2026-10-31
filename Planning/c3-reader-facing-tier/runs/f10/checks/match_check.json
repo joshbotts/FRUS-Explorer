@@ -1,0 +1,98 @@
+{
+ "run": "runs/f10",
+ "termsTested": 11,
+ "dead": [],
+ "syntaxErrors": [],
+ "prefixes": [],
+ "vocabLookupsInLog": 0,
+ "all": [
+  {
+   "term": "Boxer",
+   "source": "queries.log",
+   "line": 72,
+   "returns": true,
+   "query": "\"Boxer\"",
+   "nearestLive": null
+  },
+  {
+   "term": "indemnity",
+   "source": "queries.log",
+   "line": 72,
+   "returns": true,
+   "query": "\"indemnity\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Office",
+   "source": "queries.log",
+   "line": 73,
+   "returns": true,
+   "query": "\"Office\"",
+   "nearestLive": null
+  },
+  {
+   "term": "of",
+   "source": "queries.log",
+   "line": 73,
+   "returns": true,
+   "query": "\"of\"",
+   "nearestLive": null
+  },
+  {
+   "term": "War",
+   "source": "queries.log",
+   "line": 73,
+   "returns": true,
+   "query": "\"War\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Information",
+   "source": "queries.log",
+   "line": 73,
+   "returns": true,
+   "query": "\"Information\"",
+   "nearestLive": null
+  },
+  {
+   "term": "American",
+   "source": "queries.log",
+   "line": 74,
+   "returns": true,
+   "query": "\"American\"",
+   "nearestLive": null
+  },
+  {
+   "term": "prestige",
+   "source": "queries.log",
+   "line": 74,
+   "returns": true,
+   "query": "\"prestige\"",
+   "nearestLive": null
+  },
+  {
+   "term": "missionaries",
+   "source": "queries.log",
+   "line": 75,
+   "returns": true,
+   "query": "\"missionaries\"",
+   "nearestLive": null
+  },
+  {
+   "term": "cultural",
+   "source": "queries.log",
+   "line": 76,
+   "returns": true,
+   "query": "\"cultural\"",
+   "nearestLive": null
+  },
+  {
+   "term": "relations",
+   "source": "queries.log",
+   "line": 76,
+   "returns": true,
+   "query": "\"relations\"",
+   "nearestLive": null
+  }
+ ]
+}

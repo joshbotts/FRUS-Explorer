@@ -1,0 +1,42 @@
+O2' check of f4: 54 numbers in overview.md; 35 traced, 19 weak, 0 untraced.
+TRACE TABLE: 41 rows, from line 160 of memo.md.
+Each flagged number is WEAK (a row holds the value without the word after it) or UNTRACED (no row holds the value). Decide each: TRACED (name the row), NOT A NUMBER, or UNTRACED.
+
+[WEAK] 'one' (value 1, next word 'what'); nearest row: "from 1945 to 1980" | section 1, inclusion rule (volume series years of R)
+    sentence: What beliefs about the regional audience contributed to those strategies? ## The bottom line What FRUS answers directly.** The phrase "soft power" appears in no document of the series, so I read the question as one about what officials called information programs, psychological operations, and educational and cultural exchange.
+[WEAK] 'two' (value 2, next word 'thousand'); nearest row: "about two thousand documents" | M04 (1,984), M05 (literal share 35 of 40 tolerant, 33 of 40 strict)
+    sentence: About two thousand documents in the East Asia and Pacific volumes use this vocabulary; those that carry the argument are cited below.
+[WEAK] 'thousand' (value 1000, next word 'document'); nearest row: "about thirty-seven thousand documents" | M02 (37,543 non-apparatus documents)
+    sentence: About two thousand documents in the East Asia and Pacific volumes use this vocabulary; those that carry the argument are cited below.
+[WEAK] '42' (value 42, next word 'office'); nearest row: entries A1-42, P-104, P-207, accession 69 A 3445, entry UD WW 193 | section 4 (document_sources raw text of d58/d99/d146/d149, d79, d31, d85; unresolved)
+    sentence: United States Information Agency, Director's Subject Files, (entry A1–42), the Office of the Director and Office of Policy and Plans files (entries P–104 and P–207), and the Director's files of (accession 69 A 3445, entry UD WW 193): all Record Group 306, none resolved to a series by the offline index.
+[WEAK] '104' (value 104, next word 'p'); nearest row: entries A1-42, P-104, P-207, accession 69 A 3445, entry UD WW 193 | section 4 (document_sources raw text of d58/d99/d146/d149, d79, d31, d85; unresolved)
+    sentence: United States Information Agency, Director's Subject Files, (entry A1–42), the Office of the Director and Office of Policy and Plans files (entries P–104 and P–207), and the Director's files of (accession 69 A 3445, entry UD WW 193): all Record Group 306, none resolved to a series by the offline index.
+[WEAK] '207' (value 207, next word 'director'); nearest row: entries A1-42, P-104, P-207, accession 69 A 3445, entry UD WW 193 | section 4 (document_sources raw text of d58/d99/d146/d149, d79, d31, d85; unresolved)
+    sentence: United States Information Agency, Director's Subject Files, (entry A1–42), the Office of the Director and Office of Policy and Plans files (entries P–104 and P–207), and the Director's files of (accession 69 A 3445, entry UD WW 193): all Record Group 306, none resolved to a series by the offline index.
+[WEAK] '0724' (value 0724, next word 'index'); nearest row: Record Group 59, decimal files 511.90, 790.5, 611.95, 611.98, 1964-1966, D780405-0724 | section 4 (document_sources for frus1950v06/d50, v12p2/d403, v23p2/d50, v23/d289, v29p2/d46, v30/d152)
+    sentence: Department of State central files, Record Group 59: decimal files 511.90 ( ), 790.5 ( ), 611.95 ( ) and 611.98 ( ), the subject-numeric files and a file numbered D780405–0724; the index does not resolve a single file to a series.
+[WEAK] '2839191' (value 2839191, next word 'partly'); nearest row: Lots 61 D 385, 62 D 430, NARA 2839191, 1953-1961 | section 4
+    sentence: Department of State, Operations Coordinating Board files, Lots 61 D 385 and 62 D 430, Record Group 59; the second is the Executive Secretariat's "Subject and Special Files," NARA identifier 2839191, , partly restricted.
+[WEAK] '2838992' (value 2838992, next word 'partly'); nearest row: Lot 62 D 1, NARA 2838992, 1948-1961 | section 4
+    sentence: Record Group 59, Lot 62 D 1, NARA identifier 2838992, , partly restricted.
+[WEAK] 'thirty-seven' (value 37, next word 'thousand'); nearest row: "about thirty-seven thousand documents" | M02 (37,543 non-apparatus documents)
+    sentence: I did not read the educational-exchange record for Japan, Korea or the Philippines systematically, so those countries are thinly represented. **Scope.** I searched all 553 volumes indexed, drawing on seventy-six East Asia and Pacific volumes from to (about thirty-seven thousand documents) and the area memoranda in the public diplomacy and information volumes (about sixty).
+[WEAK] 'thousand' (value 1000, next word 'document'); nearest row: "about thirty-seven thousand documents" | M02 (37,543 non-apparatus documents)
+    sentence: I did not read the educational-exchange record for Japan, Korea or the Philippines systematically, so those countries are thinly represented. **Scope.** I searched all 553 volumes indexed, drawing on seventy-six East Asia and Pacific volumes from to (about thirty-seven thousand documents) and the area memoranda in the public diplomacy and information volumes (about sixty).
+[WEAK] 'one' (value 1, next word 'development'); nearest row: "from 1945 to 1980" | section 1, inclusion rule (volume series years of R)
+    sentence: If you also want aid, the Peace Corps and military civic action, the set grows and the argument becomes one about development policy;
+[WEAK] 'one' (value 1, next word 'aim'); nearest row: "from 1945 to 1980" | section 1, inclusion rule (volume series years of R)
+    sentence: If you want the period before or South Asia, the opening finding changes, because the earlier record uses other words. ## Findings Persuasion was meant to ride with aid and arms In the Under Secretary of State reported that Voice of America broadcasts to China had been expanded as Communist authorities ordered Information Service posts closed in Shanghai, Hankow, Nanking, Peiping and Tientsin, and
+[WEAK] 'three' (value 3, next word 'favorite'); nearest row: quotation Q03 (frus1950v06/d50) | quotation table, section 3
+    sentence: In Japan the American embassy reported in that the number naming the United States among their three favorite countries "has dropped from 52 percent to 38 percent since last December," even though the embassy and its information service had done their best .
+[WEAK] '38 percent' (value 38, next word 'since'); nearest row: years in running text: 1924, 1949, 1950, 1953, 1955, 1962, 1964, 1965, 1966, 1968, 1969, 1970, 1971, 1975, 1977, 1978 | section 7 datelines (1924 d540; 1949 d558; 1950 d50; 1953 d403; 1955 frus1955-57
+    sentence: In Japan the American embassy reported in that the number naming the United States among their three favorite countries "has dropped from 52 percent to 38 percent since last December," even though the embassy and its information service had done their best .
+[WEAK] 'forty' (value 40, next word 'document'); nearest row: "about two thousand documents" | M04 (1,984), M05 (literal share 35 of 40 tolerant, 33 of 40 strict)
+    sentence: I then read the strongest documents whole, keeping the text of each, and I checked a sample of forty documents from the full-text hits to confirm that the phrases actually occur and not only words that the search treats as the same.
+[WEAK] 'one' (value 1, next word 'document'); nearest row: "from 1945 to 1980" | section 1, inclusion rule (volume series years of R)
+    sentence: I also found one document, the Agency's program guidance, by its similarity to another document and by no word search, and I read it before citing it.
+[WEAK] 'one' (value 1, next word 'i'); nearest row: "from 1945 to 1980" | section 1, inclusion rule (volume series years of R)
+    sentence: Every quotation in this overview is one I verified against its document, and every document the overview cites is in the collection. ## Read next The collection, "Persuasion in East Asia and the Pacific, ," holds each document the argument rests on, in date order under the findings above.
+[WEAK] 'two' (value 2, next word 'thing'); nearest row: "about two thousand documents" | M04 (1,984), M05 (literal share 35 of 40 tolerant, 33 of 40 strict)
+    sentence: Your additions would unlock two things: any document on the educational-exchange program for Japan, Korea or the Philippines would test the thin part of this record, and the Agency's research and poll reports in the national archives would test the officials' beliefs about the audience.

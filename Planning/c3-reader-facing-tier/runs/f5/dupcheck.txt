@@ -1,0 +1,3 @@
+frus1964-68v01__d122 4493 frus1917-72PubDipv07__d13 5103 similarity of first 3000 chars: 0.786
+frus1964-68v01__d177 8230 frus1917-72PubDipv07__d16 8543 similarity of first 3000 chars: 0.884
+frus1961-63v04__d81 10867 frus1917-72PubDipv06__d140 13296 similarity of first 3000 chars: 0.747

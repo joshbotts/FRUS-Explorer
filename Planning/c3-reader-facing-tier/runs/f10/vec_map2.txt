@@ -1,0 +1,3 @@
+30 collection docs: unclustered 6 of 30; clusters: [(29, 10, ['lao', 'vietnamese', 'vietnam', 'thieu']), (138, 5, ['cia', 'nsc', 'usia', 'inglis']), (32, 4, ['sukarno', 'indonesian', 'indonesia', 'nasution']), (3, 3, ['nanking', 'shanghai', 'chinese', 'tientsin']), (31, 1, ['indochina', 'minh', 'bao', 'dai']), (7, 1, ['japanese', 'sato', 'japan', 'kishi'])]
+era-matched baseline (volumes with mid-year 1961-1977): unclustered 12952 of 44225 (29.3%)
+4 public-diplomacy volumes: unclustered 230 of 743 (31.0%)

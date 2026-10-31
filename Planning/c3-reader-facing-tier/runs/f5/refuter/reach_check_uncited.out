@@ -1,0 +1,47 @@
+documents cited in the overview (URLs): 6
+  in the collection: 6 not in: []
+pubdip rows selected by R>=8 or hR>=1 (114 claimed): 114 of 509
+
+frus1952-54v12p2/d352  [full-text claimed]  in 77-scope=True
+   logged scope/heading queries returning it: ['MATCH USIA', 'MATCH union-by-volume (line 50)', 'scan.py filter A>=2&R>=2 (beliefs.py, 1,608 docs)']
+   corpus-wide logged MATCH predicates it satisfies: ['USIA']
+   scan.py A=2 Adistinct=1 R=24 -> beliefs set(A>=2&R>=2)=True, ranked/topic-slice(Adistinct>=2&R>=2)=False
+   substantive (non-control) logged query returns it: True
+
+frus1961-63v04/d81  [full-text claimed]  in 77-scope=True
+   logged scope/heading queries returning it: ['MATCH USIA', 'MATCH USIS', 'MATCH "information agency"', 'MATCH "information service"', 'MATCH prestige', 'MATCH union-by-volume (line 50)', 'header LIKE (line 52)', 'scan.py filter A>=2&R>=2 (beliefs.py, 1,608 docs)', 'scan.py filter Adistinct>=2&R>=2 (ranked.txt / topic slice)']
+   corpus-wide logged MATCH predicates it satisfies: ['USIA', 'USIS', '"information agency"', '"information service"', 'prestige']
+   scan.py A=5 Adistinct=4 R=19 -> beliefs set(A>=2&R>=2)=True, ranked/topic-slice(Adistinct>=2&R>=2)=True
+   substantive (non-control) logged query returns it: True
+
+frus1964-68v02/d160  [full-text claimed]  in 77-scope=True
+   logged scope/heading queries returning it: ['MATCH USIA', 'MATCH USIS', 'MATCH "information agency"', 'MATCH "information service"', 'MATCH "psychological warfare"', 'MATCH "psychological operations"', 'MATCH union-by-volume (line 50)', 'header LIKE (line 52)', 'scan.py filter A>=2&R>=2 (beliefs.py, 1,608 docs)', 'scan.py filter Adistinct>=2&R>=2 (ranked.txt / topic slice)']
+   corpus-wide logged MATCH predicates it satisfies: ['USIA', 'USIS', '"information agency"', '"information service"', '"psychological warfare"', '"psychological operations"']
+   scan.py A=27 Adistinct=7 R=15 -> beliefs set(A>=2&R>=2)=True, ranked/topic-slice(Adistinct>=2&R>=2)=True
+   substantive (non-control) logged query returns it: True
+
+frus1964-68v26/d106  [full-text claimed]  in 77-scope=True
+   logged scope/heading queries returning it: ['MATCH USIA', 'MATCH USIS', 'MATCH "information agency"', 'MATCH "information service"', 'MATCH union-by-volume (line 50)', 'header LIKE (line 52)', 'NEAR NEAR(USIS effectiveness, 10)', 'scan.py filter A>=2&R>=2 (beliefs.py, 1,608 docs)', 'scan.py filter Adistinct>=2&R>=2 (ranked.txt / topic slice)']
+   corpus-wide logged MATCH predicates it satisfies: ['USIA', 'USIS', '"information agency"', '"information service"']
+   scan.py A=13 Adistinct=4 R=37 -> beliefs set(A>=2&R>=2)=True, ranked/topic-slice(Adistinct>=2&R>=2)=True
+   substantive (non-control) logged query returns it: True
+
+frus1917-72PubDipv08/d99  [VECTOR-ONLY claimed]  in 77-scope=False
+   logged scope/heading queries returning it: ['PubDip regex scan filter R>=8 or hR>=1 (114 docs; topic slice)']
+   corpus-wide logged MATCH predicates it satisfies: ['USIA', 'USIS', '"information agency"', '"information program"', '"Voice of America"', 'propaganda', '"public diplomacy" [hit list 97/98]']
+   pubdip scan R=8 hR=0 A=37 -> selected(R>=8 or hR>=1)=True
+   substantive (non-control) logged query returns it: True
+
+frus1977-80v30/d79  [full-text claimed]  in 77-scope=False
+   logged scope/heading queries returning it: ['scan.py filter A>=2&R>=2 (beliefs.py, 1,608 docs)']
+   corpus-wide logged MATCH predicates it satisfies: ['"information agency"']
+   scan.py A=2 Adistinct=1 R=14 -> beliefs set(A>=2&R>=2)=True, ranked/topic-slice(Adistinct>=2&R>=2)=False
+   substantive (non-control) logged query returns it: True
+
+== STRICT verdicts ==
+  frus1952-54v12p2/d352: any logged full-text query returns it=True; a non-control query returns it=True; memo: full-text claimed
+  frus1961-63v04/d81: any logged full-text query returns it=True; a non-control query returns it=True; memo: full-text claimed
+  frus1964-68v02/d160: any logged full-text query returns it=True; a non-control query returns it=True; memo: full-text claimed
+  frus1964-68v26/d106: any logged full-text query returns it=True; a non-control query returns it=True; memo: full-text claimed
+  frus1917-72PubDipv08/d99: any logged full-text query returns it=True; a non-control query returns it=True; memo: VECTOR-ONLY claimed
+  frus1977-80v30/d79: any logged full-text query returns it=True; a non-control query returns it=True; memo: full-text claimed

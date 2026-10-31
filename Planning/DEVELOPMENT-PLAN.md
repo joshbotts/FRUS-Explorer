@@ -8419,7 +8419,7 @@ Three harness fixes come with it: V4 exempts `frus1977-80v09Ed2`; the card gets 
 - **The meters:** at about 23:20 they read 29% weekly and 44% Fable, both resetting on 2026-11-04.
 
 **Not done.**
-- **Nothing in the design's §11 is built:** the two guide candidates, the generator, the five scripts and the working folder.
+- **Nothing in the design's §11 is built:** the two guide candidates, the generator, the five scripts and the working folder. *(Overtaken the same night: built and run, below.)*
 - **The question's properties** are checked by the session that runs the tier, before the first cell, and nowhere before.
 - **The runbook's §7 cost table** still stops at the vectors tier. The design's record step adds rows for R16, the pilot and this tier.
 
@@ -8430,3 +8430,16 @@ Three harness fixes come with it: V4 exempts `frus1977-80v09Ed2`; the card gets 
 - No build, unit run or `swift test` was owed: no file a target compiles changed.
 
 **Opened as #1819** on the owner's word of 2026-10-30 ("Open the PR"), against `v2` at `848f3781`, which had not moved since the branch was brought up to it; not merged, auto-merge off.
+
+**Run, 2026-10-31**, on the owner's word ("Build and run", after "change start date to now"), 00:16 to 04:46.
+- **Built:** the W and K candidates on local branches (`b40d2da6`, `5e8bd1bd`, not pushed); `generate_f.py`, whose arm A is R16's arm A byte for byte apart from the question and paths; four checks run on each run after its session (`o2p_check.py`, `match_check.py`, `figures_check.py`, `style_measure.py`). The O2' script flags all 99 numbers R16's scorers named as having no trace row.
+- **Calibration and canary:** every known answer came back. The scorer's O2' text was corrected before any tier run was scored; the citation resolver after run 4, before any reading (results §5 item 4).
+- **Measured** (`Planning/C-3-Reader-Facing-Tier-Results-2026-10-31.md`; record `Planning/c3-reader-facing-tier/`):
+  - **W's writing held in every run:** pooled median sentence 19 words against A's 23, 8% over 40 against 20.5%, part 1 at 152 to 165 words, one citation form and a resolving Documents cited list in 4 of 4, V8 in 4 of 4.
+  - **The judges ranked W above A in one block of four.** They called W's the clearest writing and ranked on the evidence.
+  - **The 35 items:** A lost 4, W 6 (two runs lost two or more), K 4 (one run lost two).
+  - **K's rules:** a relaxed query beside 5 of 61 zeros (the "soft power" zero in every run); a house-rules figure stated as the session's own in 3 of 4 runs; prefixes in one run only.
+  - **O2'** failed in all twelve runs. No fabrication: 796 of 796 quotations, 59 of 60 headline numbers.
+  - **Cost:** 25 weekly points and 43 Fable, inside the lines of 62% and 98%; an hour paused for the 5-hour window.
+- **By the rule, nothing is adopted:** W fails readings 1 and 5, K reading 12. The guide stays at v1.38; whether to follow the rule is the owner's.
+- **Also changed:** `Planning/Agentic-Harness-Runbook.md` §7 gains rows for R16, the pilot and this tier.

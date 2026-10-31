@@ -1,0 +1,14 @@
+index digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+binary digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 dims 512 docs 314616 cents 660
+map digest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+shard .generation 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+shard manifest keys ['generated', 'provenanceDigest', 'schema', 'shards', 'shippingDims']
+  generated 2026-10-15
+  provenanceDigest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+  schema 1
+  shippingDims 512
+shards checked 553 digest mismatches 0
+volumes round-trip ok 553 of 553 rows 314616
+random pairs: mean 167.1 sd 14.8 p1 132 min 95
+scoreCalibration {'documentOffset': 0.4, 'measuredBy': "Planning/semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md §1b, fitted to EmbeddingGemma 300m's scores over 90 typed queries and 600 anchor documents against the 314,616-document corpus", 'queryOffset': 0.47}
+measuredRecallAt10 0.9021 generated 2026-10-15 harvestGenerated 2026-10-15T06:55:14

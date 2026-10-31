@@ -1,0 +1,21 @@
+REGIONAL volumes: 69 ; info/PD volumes: 7
+SQL: select count(*) from document_cache d where volume_id in (REG) and is_front_matter=0 and is_editorial_note=0 -> 30092
+SQL (family A): SELECT d.volume_id,d.document_id,dd.date_iso FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid LEFT JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE frus_documents MATCH ? AND d.volume_id IN (REG...) AND d.is_front_matter=0 AND d.is_editorial_note=0 MATCH (USIA OR USIS OR "Voice of America" OR "information program" OR "psychological warfare" OR "psychological strategy" OR "United States Information")
+family A hits in REG: 1176 of 30092
+REG positive control 'Department of State' -> 13470
+REG negative control ZZZ_IMPOSSIBLE_ZZZ -> 0
+REG "soft power" -> 0
+REG soft AND power -> 127
+REG "public diplomacy" -> 2
+REG "cultural diplomacy" -> 0
+family A undated hits: 0
+decade | hits | dated non-apparatus docs in REG | per 1,000 | top volume (share)
+1940s | 303 | 6608 | 46 | frus1948v06 93 of 303
+1950s | 395 | 12112 | 33 | frus1955-57v21 35 of 395
+1960s | 414 | 7884 | 53 | frus1961-63v02 43 of 414
+1970s | 63 | 3370 | 19 | frus1969-76v08 20 of 63
+1980s | 1 | 106 | 9 | frus1977-80v22 1 of 1
+control volumes (1948-80 non-scope): 201 docs 77265
+FALSE-FRIEND 'audience OR audiences': REG 247 of 30092 (8.2 per 1,000) vs control 915 of 77265 (11.8 per 1,000)
+FALSE-FRIEND 'USIS OR USIA': REG 790 of 30092 (26.3 per 1,000) vs control 1388 of 77265 (18.0 per 1,000)
+FALSE-FRIEND 'propaganda': REG 2414 of 30092 (80.2 per 1,000) vs control 5434 of 77265 (70.3 per 1,000)

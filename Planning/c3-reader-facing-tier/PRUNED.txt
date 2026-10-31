@@ -1,0 +1,6 @@
+pruned: Planning/c3-reader-facing-tier/runs/f11/vec_rows.pkl
+pruned: Planning/c3-reader-facing-tier/runs/f11/vec_bits.npy
+pruned: Planning/c3-reader-facing-tier/runs/f2/vecmaps.pkl
+pruned: Planning/c3-reader-facing-tier/runs/f5/census.tsv
+pruned: Planning/c3-reader-facing-tier/runs/f5/scan_docs.tsv
+pruned: Planning/c3-reader-facing-tier/runs/f9/headings_all.txt

@@ -1,0 +1,47 @@
+topic slice documents (scope77 docs with >=2 distinct information terms and >=2 region words; PubDip docs with region words): 711
+external_citations rows on slice documents: 392 on 200 documents
+181 ('Department of State', None, None)
+33 ('Nixon Presidential Materials', 'NSC Files', None)
+24 ('Department of State', None, '66D95')
+19 ('Johnson Library', 'National Security File', None)
+12 ('Department of State', None, '63D351')
+9 ('Kennedy Library', 'National Security Files', None)
+9 ('Department of State', None, '62D430')
+8 ('Department of State', None, '62D1')
+8 ('Department of State', None, '62D181')
+5 ('Department of State', None, '74D417')
+4 ('Department of State', None, '55D128')
+4 ('Department of State', None, '67D54')
+3 ('Nixon Presidential Materials', 'White House Central Files', None)
+3 ('Department of State', None, '72D415')
+3 ('Johnson Library', 'President’s Daily Diary', None)
+3 ('Carter Library', 'National Security Affairs', None)
+2 ('Nixon Presidential Materials', 'White House Special Files', None)
+2 ('Department of State', None, '64D563')
+2 ('Department of State', None, '61D167')
+2 ('Eisenhower Library', 'Eisenhower papers', None)
+2 ('Department of State', None, '65D101')
+2 ('Department of State', None, '58D266')
+--- by distinct documents
+95 ('Department of State', None, None)
+19 ('Department of State', None, '66D95')
+17 ('Nixon Presidential Materials', 'NSC Files', None)
+13 ('Johnson Library', 'National Security File', None)
+8 ('Department of State', None, '63D351')
+8 ('Department of State', None, '62D430')
+7 ('Kennedy Library', 'National Security Files', None)
+7 ('Department of State', None, '62D1')
+3 ('Nixon Presidential Materials', 'White House Central Files', None)
+3 ('Department of State', None, '72D415')
+3 ('Department of State', None, '62D181')
+3 ('Department of State', None, '67D54')
+curated lots rows 20
+62D1 central-files: [('59', 'Records Relating to Activities with the National Security Council', '2838992', ['A1 1583E', 'A1 1583F'])] | curated: []
+     Restricted - Partly 1948 1961 Department of State. Policy Planning Council.
+62D181 central-files: [] | curated: ['{"lotNumber": "62D181", "kind": "possible", "seriesRef": "conferenceFiles", "displayName": "Conference Files"}']
+74D417 central-files: [('84', 'Files of Ambassador Ellsworth Bunker', '588795', ['A1 3372'])] | curated: []
+     Unrestricted 1967 1973 Department of State. U.S. Embassy, South Vietnam. Office of the Ambassador.
+72D415 central-files: [('59', 'Records Relating to the United States-China Ambassadorial Talks', '16839115', ['A1 5331'])] | curated: []
+     Restricted - Partly 1966 1968 Department of State. Bureau of East Asian and Pacific Affairs. Office of Asian Communist Affairs.
+67D54 central-files: [('59', 'Subject Files of the Vietnam Working Group', '631403', ['A1 5305', 'A1 5414'])] | curated: []
+     Unrestricted 1963 1974 Department of State. Bureau of East Asian and Pacific Affairs.

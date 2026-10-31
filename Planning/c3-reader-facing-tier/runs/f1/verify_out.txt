@@ -1,0 +1,30 @@
+SQL: SELECT body_text, length(body_text) FROM document_cache WHERE volume_id=? AND document_id=? AND is_front_matter=0 AND is_editorial_note=0
+frus1950v06/d50 len=6446 exact_in_body=True in_collapsed=True :: the generally meager knowledge and understanding of the Unit
+frus1952-54v13p1/d116 len=8958 exact_in_body=True in_collapsed=True :: Since many new customs FE can be traced to Amer films, must 
+frus1952-54v13p1/d116 len=8958 exact_in_body=True in_collapsed=True :: Commie propaganda which exploits nationalist and racial feel
+frus1952-54v12p2/d403 len=8401 exact_in_body=True in_collapsed=True :: utilizing every suitable operation to prepare the minds and 
+frus1955-57v09/d190 len=51295 exact_in_body=True in_collapsed=True :: In the Far East USIA was forced to deal with mixed emotions 
+frus1955-57v22/d447 len=3751 exact_in_body=True in_collapsed=True :: a fear of placing the U.S. in the position of appearing to s
+frus1961-63v01/d49 len=1711 exact_in_body=True in_collapsed=True :: We are in the process of cranking up a major propaganda camp
+frus1961-63v01/d265 len=3369 exact_in_body=True in_collapsed=True :: But the spectre of charges that “U.S. imperialists are wagin
+frus1961-63v02/d16 len=5995 exact_in_body=True in_collapsed=True :: the image of the GVN in the world press can be no better tha
+frus1917-72PubDipv06/d140 len=13295 exact_in_body=True in_collapsed=True :: With Orientals in general and notably with the Ngo Dinhs, ca
+frus1917-72PubDipv06/d140 len=13295 exact_in_body=True in_collapsed=True :: the U.S. image was being hurt
+frus1917-72PubDipv06/d126 len=4751 exact_in_body=True in_collapsed=True :: much of our audience would tend to regard it as mere words w
+frus1917-72PubDipv07/d73 len=4186 exact_in_body=True in_collapsed=True :: In all cases, however, the image of American strength, relia
+frus1917-72PubDipv07/d73 len=4186 exact_in_body=True in_collapsed=True :: In almost every country of the area, our programs are direct
+frus1917-72PubDipv07/d85 len=19705 exact_in_body=True in_collapsed=True :: there is an unfortunately large amount of anti-Americanism u
+frus1917-72PubDipv08/d31 len=20792 exact_in_body=True in_collapsed=True :: Asians are, to varying degrees, America watchers.
+frus1917-72PubDipv08/d31 len=20792 exact_in_body=True in_collapsed=True :: PAOs emphasized that the image of the US usually depended mo
+frus1917-72PubDipv08/d31 len=20792 exact_in_body=True in_collapsed=True :: the total exercise as presently constituted has not been wor
+frus1917-72PubDipv08/d149 len=10253 exact_in_body=True in_collapsed=True :: The predominant mood is apolitical, seeking to be neutral, a
+frus1917-72PubDipv07/d32 len=27974 exact_in_body=True in_collapsed=True :: The teams have given us more of an insight into rural attitu
+frus1917-72PubDipv08/d88 len=1861 exact_in_body=True in_collapsed=True :: Rating of the U.S. as a dependable ally of SVN reached the l
+frus1969-76v19p2/d67 len=3697 exact_in_body=True in_collapsed=True :: public opinion surveys and other assessments of Japanese att
+frus1964-68v27/d386 len=1589 exact_in_body=True in_collapsed=True :: The Thai Government has not given proper attention to the ne
+frus1917-72PubDipv08/d58 len=4685 exact_in_body=True in_collapsed=True :: USIA has, from the beginning, considered its psychological o
+frus1917-72PubDipv08/d99 len=25695 exact_in_body=True in_collapsed=True :: it will disengage as rapidly as feasible from information su
+frus1917-72PubDipv08/d99 len=25695 exact_in_body=True in_collapsed=True :: Far from taking for granted a favorable psychological climat
+frus1969-76v38p2/d105 len=11622 exact_in_body=True in_collapsed=True :: programs on U.S. security relations in Asia lack credibility
+frus1977-80v30/d79 len=2409 exact_in_body=True in_collapsed=True :: shoring up the confidence of East Asians in America’s long-t
+FAILED: 0

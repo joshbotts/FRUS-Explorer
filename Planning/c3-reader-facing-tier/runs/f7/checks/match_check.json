@@ -1,0 +1,66 @@
+{
+ "run": "runs/f7",
+ "termsTested": 7,
+ "dead": [],
+ "syntaxErrors": [],
+ "prefixes": [],
+ "vocabLookupsInLog": 0,
+ "all": [
+  {
+   "term": "\"information agency\"",
+   "source": "work/scope1.sql",
+   "line": 4,
+   "returns": true,
+   "query": "\"information agency\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"information service\"",
+   "source": "work/scope1.sql",
+   "line": 4,
+   "returns": true,
+   "query": "\"information service\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"information program\"",
+   "source": "work/scope1.sql",
+   "line": 4,
+   "returns": true,
+   "query": "\"information program\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"psychological strategy\"",
+   "source": "work/scope1.sql",
+   "line": 4,
+   "returns": true,
+   "query": "\"psychological strategy\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"psychological warfare\"",
+   "source": "work/scope1.sql",
+   "line": 4,
+   "returns": true,
+   "query": "\"psychological warfare\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"voice of america\"",
+   "source": "work/scope1.sql",
+   "line": 4,
+   "returns": true,
+   "query": "\"voice of america\"",
+   "nearestLive": null
+  },
+  {
+   "term": "propaganda",
+   "source": "work/scope1.sql",
+   "line": 4,
+   "returns": true,
+   "query": "\"propaganda\"",
+   "nearestLive": null
+  }
+ ]
+}

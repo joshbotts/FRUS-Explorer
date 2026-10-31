@@ -1,0 +1,686 @@
+{
+ "run": "runs/f12",
+ "traceSource": "runs/f12/memo.md",
+ "traceTableLine": 275,
+ "traceRows": 50,
+ "mentions": 61,
+ "counts": {
+  "traced": 30,
+  "weak": 26,
+  "untraced": 5
+ },
+ "list": [
+  {
+   "text": "Twenty-six",
+   "values": [
+    "26"
+   ],
+   "next": "printed",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"Twenty-six printed documents\", 1950 to 1977 | M-8 (26); M-2 date span",
+   "sentence": "What beliefs about the regional audience contributed to those strategies? ## The bottom line What FRUS answers directly.** Twenty-six printed documents from to show how officials of the State Department and the U.S."
+  },
+  {
+   "text": "Two",
+   "values": [
+    "2"
+   ],
+   "next": "separate",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"Twenty-six printed documents\", 1950 to 1977 | M-8 (26); M-2 date span",
+   "sentence": "Public Diplomacy, , Where FRUS points for the rest.** Two separate channels, never added together: *Where the printed documents came from.* Most of the 26 documents came from these sources:"
+  },
+  {
+   "text": "26",
+   "values": [
+    "26"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"Twenty-six printed documents\", 1950 to 1977 | M-8 (26); M-2 date span",
+   "sentence": "Public Diplomacy, , Where FRUS points for the rest.** Two separate channels, never added together: *Where the printed documents came from.* Most of the 26 documents came from these sources:"
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, Record Group 306:"
+  },
+  {
+   "text": "42",
+   "values": [
+    "42"
+   ],
+   "next": "five",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "Director's Subject Files, , Entry A1–42 (five documents);"
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "Director's Subject Files, , Entry A1–42 (five documents);"
+  },
+  {
+   "text": "WW 257",
+   "values": [
+    "ww257"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "Director's subject files, , Entry UD WW 257 (one) and Entry UD WW 193 (one);"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "entry",
+   "kind": "word",
+   "class": "weak",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "Director's subject files, , Entry UD WW 257 (one) and Entry UD WW 193 (one);"
+  },
+  {
+   "text": "WW 193",
+   "values": [
+    "ww193"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "Director's subject files, , Entry UD WW 257 (one) and Entry UD WW 193 (one);"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "",
+   "kind": "word",
+   "class": "traced",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "Director's subject files, , Entry UD WW 257 (one) and Entry UD WW 193 (one);"
+  },
+  {
+   "text": "207",
+   "values": [
+    "207"
+   ],
+   "next": "one",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "Office of Policy and Plans, Plans and Operational Policy Staff, Entry P–207 (one);"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "",
+   "kind": "word",
+   "class": "traced",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "Office of Policy and Plans, Plans and Operational Policy Staff, Entry P–207 (one);"
+  },
+  {
+   "text": "104",
+   "values": [
+    "104"
+   ],
+   "next": "two",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "Office of the Director, Executive Secretariat, correspondence files, , Entry P–104 (two);"
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"the image of American strength, reliability and friendship\" (bottom line; Finding 2) | M-4 Q14",
+   "sentence": "Office of the Director, Executive Secretariat, correspondence files, , Entry P–104 (two);"
+  },
+  {
+   "text": "7",
+   "values": [
+    "7"
+   ],
+   "next": "which",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "Office of the Director's subject files for , Entry UD–UP 7, which the edition prints as \"RG 305\" (one)."
+  },
+  {
+   "text": "RG 305",
+   "values": [
+    "rg305"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "Office of the Director's subject files for , Entry UD–UP 7, which the edition prints as \"RG 305\" (one)."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "",
+   "kind": "word",
+   "class": "traced",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "Office of the Director's subject files for , Entry UD–UP 7, which the edition prints as \"RG 305\" (one)."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "State Department central files, Record Group 59: decimal files 511.90 ( , informational relations with Asia), 511.51G ( , informational relations with Indochina), 790.5 and 792.5 ( , defence affairs of Asia and of Siam) and 611.98 ( , relations with Indonesia), with the Central Foreign Policy File for (two telegrams)."
+  },
+  {
+   "text": "511.90",
+   "values": [
+    "511.90"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Decimal files 511.90, 511.51G, 790.5, 792.5, 611.98 with glosses; CFPF two telegrams | M-7 came-from and decimal-class-labels",
+   "sentence": "State Department central files, Record Group 59: decimal files 511.90 ( , informational relations with Asia), 511.51G ( , informational relations with Indochina), 790.5 and 792.5 ( , defence affairs of Asia and of Siam) and 611.98 ( , relations with Indonesia), with the Central Foreign Policy File for (two telegrams)."
+  },
+  {
+   "text": "511",
+   "values": [
+    "511"
+   ],
+   "next": "g",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Decimal files 511.90, 511.51G, 790.5, 792.5, 611.98 with glosses; CFPF two telegrams | M-7 came-from and decimal-class-labels",
+   "sentence": "State Department central files, Record Group 59: decimal files 511.90 ( , informational relations with Asia), 511.51G ( , informational relations with Indochina), 790.5 and 792.5 ( , defence affairs of Asia and of Siam) and 611.98 ( , relations with Indonesia), with the Central Foreign Policy File for (two telegrams)."
+  },
+  {
+   "text": "790.5",
+   "values": [
+    "790.5"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Decimal files 511.90, 511.51G, 790.5, 792.5, 611.98 with glosses; CFPF two telegrams | M-7 came-from and decimal-class-labels",
+   "sentence": "State Department central files, Record Group 59: decimal files 511.90 ( , informational relations with Asia), 511.51G ( , informational relations with Indochina), 790.5 and 792.5 ( , defence affairs of Asia and of Siam) and 611.98 ( , relations with Indonesia), with the Central Foreign Policy File for (two telegrams)."
+  },
+  {
+   "text": "792.5",
+   "values": [
+    "792.5"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Decimal files 511.90, 511.51G, 790.5, 792.5, 611.98 with glosses; CFPF two telegrams | M-7 came-from and decimal-class-labels",
+   "sentence": "State Department central files, Record Group 59: decimal files 511.90 ( , informational relations with Asia), 511.51G ( , informational relations with Indochina), 790.5 and 792.5 ( , defence affairs of Asia and of Siam) and 611.98 ( , relations with Indonesia), with the Central Foreign Policy File for (two telegrams)."
+  },
+  {
+   "text": "611.98",
+   "values": [
+    "611.98"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Decimal files 511.90, 511.51G, 790.5, 792.5, 611.98 with glosses; CFPF two telegrams | M-7 came-from and decimal-class-labels",
+   "sentence": "State Department central files, Record Group 59: decimal files 511.90 ( , informational relations with Asia), 511.51G ( , informational relations with Indochina), 790.5 and 792.5 ( , defence affairs of Asia and of Siam) and 611.98 ( , relations with Indonesia), with the Central Foreign Policy File for (two telegrams)."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "telegram",
+   "kind": "word",
+   "class": "traced",
+   "row": "Decimal files 511.90, 511.51G, 790.5, 792.5, 611.98 with glosses; CFPF two telegrams | M-7 came-from and decimal-class-labels",
+   "sentence": "State Department central files, Record Group 59: decimal files 511.90 ( , informational relations with Asia), 511.51G ( , informational relations with Indochina), 790.5 and 792.5 ( , defence affairs of Asia and of Siam) and 611.98 ( , relations with Indonesia), with the Central Foreign Policy File for (two telegrams)."
+  },
+  {
+   "text": "61 D 385",
+   "values": [
+    "61d385"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 61 D 385; Kennedy, Johnson, Nixon sources | M-7 came-from",
+   "sentence": "The Operations Coordinating Board files, Lot 61 D 385, in Record Group 59."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "The Operations Coordinating Board files, Lot 61 D 385, in Record Group 59."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "citation",
+   "kind": "word",
+   "class": "weak",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "Kennedy's correspondence), the Johnson Library (National Security File, Country Files for Indonesia and Thailand, and the Marks Papers) and the Nixon presidential materials (National Security Council files). *What the editors cited without printing.* Only five such citations exist for these documents: the Office of Southeast Asian Affairs' subject files for , Lot 58 D 726 in Record Group 59, National Archives identifier 2544398, five linear inches, access possibly restricted (the National Archives' wording is \"Restricted - Possibly\"); the Operations Coordinating Board files, Lot 61 D 385, again; the Johnson Library's Marks Papers and National Security File;"
+  },
+  {
+   "text": "58 D 726",
+   "values": [
+    "58d726"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "\"Only five such citations\"; 58 D 726, identifier 2544398, five linear inches, Restricted - Possibly, 1955–1956 | M-7 pointed-at; series-facts",
+   "sentence": "Kennedy's correspondence), the Johnson Library (National Security File, Country Files for Indonesia and Thailand, and the Marks Papers) and the Nixon presidential materials (National Security Council files). *What the editors cited without printing.* Only five such citations exist for these documents: the Office of Southeast Asian Affairs' subject files for , Lot 58 D 726 in Record Group 59, National Archives identifier 2544398, five linear inches, access possibly restricted (the National Archives' wording is \"Restricted - Possibly\"); the Operations Coordinating Board files, Lot 61 D 385, again; the Johnson Library's Marks Papers and National Security File;"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Kennedy's correspondence), the Johnson Library (National Security File, Country Files for Indonesia and Thailand, and the Marks Papers) and the Nixon presidential materials (National Security Council files). *What the editors cited without printing.* Only five such citations exist for these documents: the Office of Southeast Asian Affairs' subject files for , Lot 58 D 726 in Record Group 59, National Archives identifier 2544398, five linear inches, access possibly restricted (the National Archives' wording is \"Restricted - Possibly\"); the Operations Coordinating Board files, Lot 61 D 385, again; the Johnson Library's Marks Papers and National Security File;"
+  },
+  {
+   "text": "2544398",
+   "values": [
+    "2544398"
+   ],
+   "next": "five",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"Only five such citations\"; 58 D 726, identifier 2544398, five linear inches, Restricted - Possibly, 1955–1956 | M-7 pointed-at; series-facts",
+   "sentence": "Kennedy's correspondence), the Johnson Library (National Security File, Country Files for Indonesia and Thailand, and the Marks Papers) and the Nixon presidential materials (National Security Council files). *What the editors cited without printing.* Only five such citations exist for these documents: the Office of Southeast Asian Affairs' subject files for , Lot 58 D 726 in Record Group 59, National Archives identifier 2544398, five linear inches, access possibly restricted (the National Archives' wording is \"Restricted - Possibly\"); the Operations Coordinating Board files, Lot 61 D 385, again; the Johnson Library's Marks Papers and National Security File;"
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "linear",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"Only five such citations\"; 58 D 726, identifier 2544398, five linear inches, Restricted - Possibly, 1955–1956 | M-7 pointed-at; series-facts",
+   "sentence": "Kennedy's correspondence), the Johnson Library (National Security File, Country Files for Indonesia and Thailand, and the Marks Papers) and the Nixon presidential materials (National Security Council files). *What the editors cited without printing.* Only five such citations exist for these documents: the Office of Southeast Asian Affairs' subject files for , Lot 58 D 726 in Record Group 59, National Archives identifier 2544398, five linear inches, access possibly restricted (the National Archives' wording is \"Restricted - Possibly\"); the Operations Coordinating Board files, Lot 61 D 385, again; the Johnson Library's Marks Papers and National Security File;"
+  },
+  {
+   "text": "61 D 385",
+   "values": [
+    "61d385"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 61 D 385; Kennedy, Johnson, Nixon sources | M-7 came-from",
+   "sentence": "Kennedy's correspondence), the Johnson Library (National Security File, Country Files for Indonesia and Thailand, and the Marks Papers) and the Nixon presidential materials (National Security Council files). *What the editors cited without printing.* Only five such citations exist for these documents: the Office of Southeast Asian Affairs' subject files for , Lot 58 D 726 in Record Group 59, National Archives identifier 2544398, five linear inches, access possibly restricted (the National Archives' wording is \"Restricted - Possibly\"); the Operations Coordinating Board files, Lot 61 D 385, again; the Johnson Library's Marks Papers and National Security File;"
+  },
+  {
+   "text": "21",
+   "values": [
+    "21"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"soft power\" in none of 21 volumes; check phrase in every volume; made-up string in none | M-5",
+   "sentence": "What this request cannot get from FRUS.** *The words \"soft power\".* They occur nowhere in the 21 volumes scanned: the seven public-diplomacy and information volumes and fourteen East Asia volumes, ."
+  },
+  {
+   "text": "seven",
+   "values": [
+    "7"
+   ],
+   "next": "public-diplomacy",
+   "kind": "word",
+   "class": "weak",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "What this request cannot get from FRUS.** *The words \"soft power\".* They occur nowhere in the 21 volumes scanned: the seven public-diplomacy and information volumes and fourteen East Asia volumes, ."
+  },
+  {
+   "text": "fourteen",
+   "values": [
+    "14"
+   ],
+   "next": "east",
+   "kind": "word",
+   "class": "traced",
+   "row": "fourteen East Asia volumes | M-5 volume list",
+   "sentence": "What this request cannot get from FRUS.** *The words \"soft power\".* They occur nowhere in the 21 volumes scanned: the seven public-diplomacy and information volumes and fourteen East Asia volumes, ."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "The survey material is filed under \"Public Opinion Research\" in USIA's Director's Subject Files (Record Group 306, Entry A1–42). *How audiences actually reacted.* FRUS prints American records only. * onward.* None of the corpus's fourteen volumes from onward covers East Asia or public diplomacy. **Scope.** I read the 33 documents in the seven public-diplomacy and information volumes whose headings name an East Asian or Pacific country, or USIA's Far East or East Asia office."
+  },
+  {
+   "text": "42",
+   "values": [
+    "42"
+   ],
+   "next": "how",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "The survey material is filed under \"Public Opinion Research\" in USIA's Director's Subject Files (Record Group 306, Entry A1–42). *How audiences actually reacted.* FRUS prints American records only. * onward.* None of the corpus's fourteen volumes from onward covers East Asia or public diplomacy. **Scope.** I read the 33 documents in the seven public-diplomacy and information volumes whose headings name an East Asian or Pacific country, or USIA's Far East or East Asia office."
+  },
+  {
+   "text": "fourteen",
+   "values": [
+    "14"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"the image of American strength, reliability and friendship\" (bottom line; Finding 2) | M-4 Q14",
+   "sentence": "The survey material is filed under \"Public Opinion Research\" in USIA's Director's Subject Files (Record Group 306, Entry A1–42). *How audiences actually reacted.* FRUS prints American records only. * onward.* None of the corpus's fourteen volumes from onward covers East Asia or public diplomacy. **Scope.** I read the 33 documents in the seven public-diplomacy and information volumes whose headings name an East Asian or Pacific country, or USIA's Far East or East Asia office."
+  },
+  {
+   "text": "33",
+   "values": [
+    "33"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "33 documents; 42 with nine set aside; 553 volumes | M-2 step 4; M-1",
+   "sentence": "The survey material is filed under \"Public Opinion Research\" in USIA's Director's Subject Files (Record Group 306, Entry A1–42). *How audiences actually reacted.* FRUS prints American records only. * onward.* None of the corpus's fourteen volumes from onward covers East Asia or public diplomacy. **Scope.** I read the 33 documents in the seven public-diplomacy and information volumes whose headings name an East Asian or Pacific country, or USIA's Far East or East Asia office."
+  },
+  {
+   "text": "seven",
+   "values": [
+    "7"
+   ],
+   "next": "public-diplomacy",
+   "kind": "word",
+   "class": "weak",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "The survey material is filed under \"Public Opinion Research\" in USIA's Director's Subject Files (Record Group 306, Entry A1–42). *How audiences actually reacted.* FRUS prints American records only. * onward.* None of the corpus's fourteen volumes from onward covers East Asia or public diplomacy. **Scope.** I read the 33 documents in the seven public-diplomacy and information volumes whose headings name an East Asian or Pacific country, or USIA's Far East or East Asia office."
+  },
+  {
+   "text": "fourteen",
+   "values": [
+    "14"
+   ],
+   "next": "east",
+   "kind": "word",
+   "class": "traced",
+   "row": "fourteen East Asia volumes | M-5 volume list",
+   "sentence": "I also read documents from fourteen East Asia volumes, , found by heading and ranked word searches and, in one case, by a semantic-neighbour search."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "case",
+   "kind": "word",
+   "class": "weak",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "I also read documents from fourteen East Asia volumes, , found by heading and ranked word searches and, in one case, by a semantic-neighbour search."
+  },
+  {
+   "text": "Twenty-six",
+   "values": [
+    "26"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"Twenty-six printed documents\", 1950 to 1977 | M-8 (26); M-2 date span",
+   "sentence": "Twenty-six documents form the argument."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "33 documents; 42 with nine set aside; 553 volumes | M-2 step 4; M-1",
+   "sentence": "Every count is conditional on this index, which holds all 553 volumes of the series. ## Decisions this needs from you **What counts as \"soft power\".** I read it as the officials' own idea of attraction and persuasion: the information program, exchanges, image, psychological objectives and public diplomacy."
+  },
+  {
+   "text": "about three in four",
+   "values": [
+    "3",
+    "4"
+   ],
+   "next": "area-volume",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "\"about three in four\" area-volume heading hits from Vietnam volumes | M-2 step 5 (40 of 55)",
+   "sentence": "Reading it more broadly, to cover aid and alliance behaviour, would bring in most of the regional volumes, and the evidence would no longer be specifically about persuasion. **Whether Vietnam belongs in a regional question.** Vietnam material outnumbers everything else: about three in four of the area-volume documents whose headings name the information program come from the Vietnam volumes."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "vietnam",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"about three in four\" area-volume heading hits from Vietnam volumes | M-2 step 5 (40 of 55)",
+   "sentence": "If Vietnam becomes the centre of the study, the four Vietnam volumes of alone hold about thirty documents whose headings name USIA or public affairs. **Whether \"the region\" includes South Asia.** I excluded it."
+  },
+  {
+   "text": "thirty",
+   "values": [
+    "30"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about thirty\" in the four 1961–1963 Vietnam volumes | M-2 step 5 (31)",
+   "sentence": "If Vietnam becomes the centre of the study, the four Vietnam volumes of alone hold about thirty documents whose headings name USIA or public affairs. **Whether \"the region\" includes South Asia.** I excluded it."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "arm",
+   "kind": "word",
+   "class": "weak",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "The corpus has nothing on this subject after , and I found little between and ; a targeted search of the volumes might fill that gap. ## Findings The first strategy was psychological warfare by local proxy ( ) Early planning treated information as one arm of an anti-communist psychological strategy, carried out through Asian governments and local outlets."
+  },
+  {
+   "text": "thirteen",
+   "values": [
+    "13"
+   ],
+   "next": "saigon",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys\" | M-4 Q22",
+   "sentence": "Regional Affairs, , By USIA said it had \"from the beginning\" regarded its psychological operations in Vietnam \"as short-term in nature\" (Public Diplomacy, , A Saigon survey supplied the bleakest measure in the set: the rating of the United States \"as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys\" (Public Diplomacy, , Officials recorded where audiences pushed back and where persuasion had limits In Indonesia in the problem was hostility, not indifference."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "that",
+   "kind": "word",
+   "class": "weak",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "It added that the human-rights message was heard as one that \"seeks to implant American models on other societies\" ( , In Japan the effort turned to editors and economists, dealing with \"gut issues rather than some of the frothier aspects of cultural exchange\" ( , ## How this was done I worked from a local copy of the FRUS Explorer search index, which holds all 553 volumes."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "33 documents; 42 with nine set aside; 553 volumes | M-2 step 4; M-1",
+   "sentence": "It added that the human-rights message was heard as one that \"seeks to implant American models on other societies\" ( , In Japan the effort turned to editors and economists, dealing with \"gut issues rather than some of the frothier aspects of cultural exchange\" ( , ## How this was done I worked from a local copy of the FRUS Explorer search index, which holds all 553 volumes."
+  },
+  {
+   "text": "forty-two",
+   "values": [
+    "42"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "In those volumes I took every document whose heading names an East Asian or Pacific country or USIA's Far East or East Asia office: forty-two documents, of which nine concerned South Asia or the Near East and were set aside."
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "concerned",
+   "kind": "word",
+   "class": "weak",
+   "row": "33 documents; 42 with nine set aside; 553 volumes | M-2 step 4; M-1",
+   "sentence": "In those volumes I took every document whose heading names an East Asian or Pacific country or USIA's Far East or East Asia office: forty-two documents, of which nine concerned South Asia or the Near East and were set aside."
+  },
+  {
+   "text": "fourteen",
+   "values": [
+    "14"
+   ],
+   "next": "east",
+   "kind": "word",
+   "class": "traced",
+   "row": "fourteen East Asia volumes | M-5 volume list",
+   "sentence": "In fourteen East Asia area volumes I added documents found by searching headings for information-program words and by ranking documents on those words."
+  },
+  {
+   "text": "forty",
+   "values": [
+    "40"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about three in four\" area-volume heading hits from Vietnam volumes | M-2 step 5 (40 of 55)",
+   "sentence": "I retrieved forty documents whole, read most of them in full, and built the argument on twenty-six."
+  },
+  {
+   "text": "twenty-six",
+   "values": [
+    "26"
+   ],
+   "next": "",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"Twenty-six printed documents\", 1950 to 1977 | M-8 (26); M-2 date span",
+   "sentence": "I retrieved forty documents whole, read most of them in full, and built the argument on twenty-six."
+  },
+  {
+   "text": "twenty-one",
+   "values": [
+    "21"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"soft power\" in none of 21 volumes; check phrase in every volume; made-up string in none | M-5",
+   "sentence": "To test the vocabulary I scanned the original edition files of twenty-one volumes, with tags stripped, using a check phrase that must appear and a made-up string that must not."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "semantic-neighbour",
+   "kind": "word",
+   "class": "weak",
+   "row": "Two channels; A1–42 five, UD WW 257 one, UD WW 193 one, P–207 one, P–104 two, UD–UP 7 / \"RG 305\" one | M-7 came-from",
+   "sentence": "One semantic-neighbour search, which finds documents with similar overall content, added the Saigon assessment that word searches had not surfaced;"
+  },
+  {
+   "text": "twenty-six",
+   "values": [
+    "26"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"Twenty-six printed documents\", 1950 to 1977 | M-8 (26); M-2 date span",
+   "sentence": "Exact counts, queries and the trace from each statement to its source are in the memo. ## Read next The collection \"American soft power in East Asia and the Pacific: how officials judged it, \" holds the twenty-six documents in finding order, with a note on each and the quoted passages marked."
+  },
+  {
+   "text": "thirty",
+   "values": [
+    "30"
+   ],
+   "next": "so",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about thirty\" in the four 1961–1963 Vietnam volumes | M-2 step 5 (31)",
+   "sentence": "USIA's opinion-research reports for Japan, Thailand and Saigon, which would replace officials' summaries with the surveys themselves; a decision on Vietnam, which would let me take in, or set aside, the thirty or so USIA and public affairs documents in the four Vietnam volumes for ; any post- material you hold, since this corpus stops at on this subject."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "vietnam",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"about three in four\" area-volume heading hits from Vietnam volumes | M-2 step 5 (40 of 55)",
+   "sentence": "USIA's opinion-research reports for Japan, Thailand and Saigon, which would replace officials' summaries with the surveys themselves; a decision on Vietnam, which would let me take in, or set aside, the thirty or so USIA and public affairs documents in the four Vietnam volumes for ; any post- material you hold, since this corpus stops at on this subject."
+  }
+ ]
+}

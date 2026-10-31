@@ -1,0 +1,11 @@
+/Users/jbotts/frus-analysis/c3f/runs/f10/refuter/centroid_baseline.py:12: RuntimeWarning: divide by zero encountered in matmul
+  i=names.index("frus1917-72PubDipv07"); s=Cn@Cn[i]; o=np.argsort(-s)
+/Users/jbotts/frus-analysis/c3f/runs/f10/refuter/centroid_baseline.py:12: RuntimeWarning: overflow encountered in matmul
+  i=names.index("frus1917-72PubDipv07"); s=Cn@Cn[i]; o=np.argsort(-s)
+/Users/jbotts/frus-analysis/c3f/runs/f10/refuter/centroid_baseline.py:12: RuntimeWarning: invalid value encountered in matmul
+  i=names.index("frus1917-72PubDipv07"); s=Cn@Cn[i]; o=np.argsort(-s)
+zero-norm centroids among first 553: 0 | min norm 0.9971981810589092
+V3 float64 centroid neighbours of PubDipv07: [('frus1917-72PubDipv06', 0.987), ('frus1917-72PubDipv08', 0.981), ('frus1977-80v30', 0.973), ('frus1964-68v33', 0.965), ('frus1961-63v25', 0.965)] (memo v06 0.987, v08 0.981, 1977-80v30 0.973, 64-68v33 0.965, 61-63v25 0.965)
+  baseline mean 0.906 sd 0.023 min 0.802 (memo 0.906/0.023/0.802)
+random pairs n=20000 mean 167.1 sd 14.8 p1 132 min 95 (memo 167.1, 14.8, 132, 95)
+25th-NN median 106 q1 100 q3 113 ; 1st-NN median 83 q1 75 q3 91 (memo 106/100/113; 83/75/91)

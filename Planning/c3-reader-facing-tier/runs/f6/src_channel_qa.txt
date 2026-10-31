@@ -1,0 +1,23 @@
+Department of State|59|919
+Johnson Library||76
+Nixon Presidential Materials||51
+Eisenhower Library||48
+Kennedy Library||47
+National Archives|59|32
+||20
+National Archives|330|18
+Carter Library||15
+National Archives|306|15
+Central Intelligence Agency||11
+National Defense University||10
+National Archives|84|9
+Ford Library||7
+Library of Congress||6
+Center of Military History||3
+Department of State|84|3
+National Archives|218|1
+National Archives|273|1
+National Archives|319|1
+National Archives|334|1
+National Archives|34|1
+Truman Library||1

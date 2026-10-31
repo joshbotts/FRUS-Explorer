@@ -1,0 +1,33 @@
+74 EA volumes listed: 74 unique: 74
+all 79 in manifest: True []
+all 79 in index: True index volumes: 553
+HEADLINE 2: non-apparatus docs in 79 volumes: 35874  (74 EA: 34944 ; 5 PubDip: 930 ; 77: 35453 )
+HEADLINE 3: 'soft power' in 79: (0, 0)
+  'soft power' whole index (non-apparatus): (0,)
+  'soft power' whole index incl apparatus: (0,)
+HEADLINE 5: oriental-mind family in 79: (32, 24)
+  pairs: ['frus1949v07p1/d79', 'frus1949v07p2/d99', 'frus1949v09/d465', 'frus1950v06/d266', 'frus1950v06/d32', 'frus1950v06/d721', 'frus1950v07/d812', 'frus1952-54v12p1/d103', 'frus1952-54v12p2/d60', 'frus1952-54v13p2/d992', 'frus1952-54v14p2/d551', 'frus1952-54v14p2/d768', 'frus1955-57v01/d69', 'frus1955-57v02/d292', 'frus1955-57v21/d244', 'frus1955-57v22/d147', 'frus1955-57v22/d148', 'frus1955-57v22/d271', 'frus1955-57v22/d361', 'frus1955-57v23p2/d50', 'frus1958-60v01/d135', 'frus1958-60v01/d26', 'frus1958-60v17/d35', 'frus1961-63v01/d43', 'frus1961-63v02/d29', 'frus1961-63v22/d336', 'frus1961-63v22/d42', 'frus1964-68v02/d15', 'frus1964-68v04/d182', 'frus1964-68v30/d59', 'frus1969-76v10/d198', 'frus1969-76ve13/d11']
+  belief_classes.tsv rows: 32 classes: Counter({'audience': 17, 'other': 15})
+CONTROL dept of state in 77: (14090, 77)
+CONTROL ZZZ in 79: (0, 0)
+opinion-poll union in 77: (31, 21)
+wartime 9 vols docs: 8704  OWI phrase: (50, 7)  owi: (60, 7)
+ext_cit PubDip5 rows/docs: (202, 143)
+ext_cit PubDip5 rows/docs non-apparatus only: (202, 143)
+ext_cit EA74 rows/docs: (12830, 7905)
+top lots PubDip5: [('84D204', 7, 5), ('78D295', 5, 5), ('78D184', 4, 3), ('81D113', 2, 2)]
+top lots EA74: [('66D95', 208, 171), ('63D351', 121, 89), ('93D82', 79, 52)]
+min date pointed-at channel: ('1910-12-06',)
+DECADE 1940s: 372 of 11453 = 32.5/1000; 1 in 30.8; top [('frus1948v06', 93)]
+DECADE 1950s: 337 of 12112 = 27.8/1000; 1 in 35.9; top [('frus1955-57v21', 33)]
+DECADE 1960s: 699 of 8272 = 84.5/1000; 1 in 11.8; top [('frus1917-72PubDipv07', 150)]
+DECADE 1970s: 304 of 3894 = 78.1/1000; 1 in 12.8; top [('frus1977-80v30', 138)]
+DECADE 1980s: 7 of 122 = 57.4/1000; 1 in 17.4; top [('frus1977-80v30', 7)]
+date span 79 vols (document_dates): ('1945-11-01', '1981-01-14')
+manifest year span 79 vols: 1945 1981
+control volumes: 220 docs: 83746
+  usis: on 749 (20.9) ctrl 458 (5.5) ratio 3.82
+  prestige: on 1700 (47.4) ctrl 3673 (43.9) ratio 1.08
+  image: on 518 (14.4) ctrl 1525 (18.2) ratio 0.79
+  propaganda: on 2808 (78.3) ctrl 5843 (69.8) ratio 1.12
+  department of state: on 14251 (397.3) ctrl 43703 (521.9) ratio 0.76

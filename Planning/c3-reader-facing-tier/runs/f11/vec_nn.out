@@ -1,0 +1,57 @@
+BASELINE 200-doc sample (seed 1877): 25th-neighbour median 108 quartiles 101/114 ; nearest-neighbour median 82, quartiles 71/92
+
+ANCHOR frus1917-72PubDipv08/d31 25th-neighbour distance 98 nearest 81
+  ham  81  frus1917-72PubDipv07/d106  rawcos 0.920 calibrated 87%  in_db=True  106. Minutes of a Meeting of the President’s General Advisory Committee on Foreign Assista
+  ham  86  frus1917-72PubDipv06/d3  rawcos 0.899 calibrated 83%  in_db=True  3. Report Prepared by Deputy Director-Designate Donald M. Wilson
+  ham  88  frus1917-72PubDipv06/d5  rawcos 0.894 calibrated 82%  in_db=True  5. Report Prepared by the Task Force on the United States Information Agency
+  ham  88  frus1952-54v13p1/d116  rawcos 0.906 calibrated 84%  in_db=True  The Ambassador at Saigon (Heath) to the Department of State
+  ham  89  frus1955-57v22/d275  rawcos 0.850 calibrated 75%  in_db=True  275. Telegram From the Embassy in Indonesia to the Department of State
+  ham  90  frus1917-72PubDipv08/d99  rawcos 0.915 calibrated 86%  in_db=True  99. Paper Prepared in the United States Information Agency
+  ham  90  frus1950v06/d9  rawcos 0.902 calibrated 84%  in_db=True  Editorial Note
+  ham  91  frus1958-60v16/d65  rawcos 0.876 calibrated 79%  in_db=True  65. National Security Council Report
+  ham  92  frus1917-72PubDipv07/d140  rawcos 0.897 calibrated 83%  in_db=True  140. Letter From the Director of the United States Information Agency (Marks) to All Unite
+  ham  92  frus1952-54v02p2/d374  rawcos 0.891 calibrated 82%  in_db=True  Memorandum for the National Security Council by the Executive Secretary (Lay)
+  ham  92  frus1977-80v30/d68  rawcos 0.902 calibrated 84%  in_db=True  68. Memorandum From the Director of the United States Information Agency (Reinhardt) to al
+  ham  94  frus1951v06p1/d12  rawcos 0.888 calibrated 81%  in_db=True  Report to the National Security Council by the Executive Secretary (Lay)
+
+ANCHOR frus1969-76v38p2/d105 25th-neighbour distance 90 nearest 76
+  ham  76  frus1969-76ve12/d10  rawcos 0.910 calibrated 85%  in_db=True  10. Memorandum From W.R. Smyser of the National Security Council Staff to Secretary of Sta
+  ham  77  frus1958-60v16/d65  rawcos 0.896 calibrated 83%  in_db=True  65. National Security Council Report
+  ham  78  frus1969-76v01/d54  rawcos 0.922 calibrated 87%  in_db=True  54. Paper Prepared in the National Security Council Staff
+  ham  80  frus1969-76ve12/d16  rawcos 0.913 calibrated 85%  in_db=True  16. Memorandum From Secretary of State Kissinger to President Ford, Washington, June 13, 1
+  ham  82  frus1969-76ve12/d15  rawcos 0.890 calibrated 82%  in_db=True  15. Minutes of the Acting Secretary of State’s Staff Meeting, Washington, June 13, 1975, 8
+  ham  82  frus1977-80v22/d104  rawcos 0.915 calibrated 86%  in_db=True  104. Telegram From the Consulate in Hong Kong to the Department of State
+  ham  84  frus1949v07p2/d387  rawcos 0.887 calibrated 81%  in_db=True  Memorandum by the Executive Secretary of the National Security Council (Souers) to the Nat
+  ham  84  frus1955-57v21/d119  rawcos 0.891 calibrated 82%  in_db=True  119. National Security Council Report
+  ham  84  frus1969-76v38p1/d54  rawcos 0.918 calibrated 86%  in_db=True  54. Memorandum From the Counselor of the Department of State (Sonnenfeldt) and the Directo
+  ham  85  frus1949v07p2/d386  rawcos 0.894 calibrated 82%  in_db=True  Memorandum by the Ambassador at Large (Jessup) to the Secretary of State
+  ham  85  frus1958-60v16/d12  rawcos 0.892 calibrated 82%  in_db=True  12. National Security Council Report
+  ham  85  frus1969-76v38p1/d58  rawcos 0.896 calibrated 83%  in_db=True  58. Telegram From the Department of State to All Diplomatic and Consular Posts
+
+ANCHOR frus1964-68v29p2/d46 25th-neighbour distance 110 nearest 94
+  ham  94  frus1958-60v18/d203  rawcos 0.892 calibrated 82%  in_db=True  203. Telegram From the Embassy in Japan to the Department of State
+  ham  95  frus1961-63v03/d226  rawcos 0.856 calibrated 76%  in_db=True  226. Memorandum of Conversation
+  ham 101  frus1917-72PubDipv07/d100  rawcos 0.867 calibrated 78%  in_db=True  100. Memorandum From the Director of the United States Information Agency (Marks) to the P
+  ham 102  frus1964-68v03/d110  rawcos 0.859 calibrated 77%  in_db=True  110. Summary Notes of the 554th Meeting of the National Security Council
+  ham 103  frus1964-68v04/d100  rawcos 0.877 calibrated 79%  in_db=True  100. Telegram From the Embassy in Vietnam to the Department of State
+  ham 105  frus1961-63v02/d325  rawcos 0.827 calibrated 71%  in_db=True  325. Letter From the Director of the Vietnam Working Group (Wood) to the Ambassador in Vie
+  ham 105  frus1964-68v04/d239  rawcos 0.832 calibrated 72%  in_db=True  239. Memorandum From the Presidentʼs Special Assistant (Rostow) to President Johnson
+  ham 105  frus1969-76v11/d151  rawcos 0.827 calibrated 71%  in_db=True  151. Telegram From the Embassy in India to the Department of State
+  ham 105  frus1981-88v01/d239  rawcos 0.853 calibrated 75%  in_db=True  239. Address by Secretary of State Shultz
+  ham 106  frus1961-63v03/d239  rawcos 0.851 calibrated 75%  in_db=True  239. Report From the Assistant Secretary of State for Public Affairs (Manning) to the Pres
+  ham 106  frus1964-68v29p2/d123  rawcos 0.894 calibrated 82%  in_db=True  123. Telegram From the Embassy in Japan to the Department of State
+  ham 107  frus1961-63v03/d277  rawcos 0.846 calibrated 74%  in_db=True  277. Memorandum From the Counselor for Public Affairs of the Embassy in Vietnam (Mecklin) 
+
+ANCHOR frus1917-72PubDipv07/d100 25th-neighbour distance 99 nearest 89
+  ham  89  frus1917-72PubDipv07/d176  rawcos 0.856 calibrated 76%  in_db=True  176. Memorandum From the Director of the United States Information Agency (Marks) to Presi
+  ham  92  frus1917-72PubDipv08/d17  rawcos 0.892 calibrated 82%  in_db=True  17. Memorandum From the Deputy Director for Policy and Research, United States Information
+  ham  92  frus1961-63v01/d210  rawcos 0.869 calibrated 78%  in_db=True  210. Letter From the President’s Military Representative (Taylor) to the President
+  ham  93  frus1917-72PubDipv07/d157  rawcos 0.880 calibrated 80%  in_db=True  157. Memorandum From the Director of the United States Information Agency (Marks) to Presi
+  ham  95  frus1917-72PubDipv07/d71  rawcos 0.881 calibrated 80%  in_db=True  71. Memorandum From the Director of the United States Information Agency (Marks) to Presid
+  ham  95  frus1917-72PubDipv07/d169  rawcos 0.876 calibrated 79%  in_db=True  169. Memorandum From the Director of the United States Information Agency (Marks) to Presi
+  ham  95  frus1917-72PubDipv08/d66  rawcos 0.855 calibrated 76%  in_db=True  66. Memorandum From the Acting Director of the United States Information Agency (Loomis) t
+  ham  95  frus1958-60v01/d47  rawcos 0.857 calibrated 76%  in_db=True  47. Paper Prepared by the Operations Coordinating Board
+  ham  95  frus1958-60v01/d147  rawcos 0.882 calibrated 80%  in_db=True  147. Paper Prepared by the Operations Coordinating Board
+  ham  95  frus1961-63v03/d19  rawcos 0.872 calibrated 79%  in_db=True  19. Memorandum From the Director of the Bureau of Intelligence and Research (Hilsman) and 
+  ham  95  frus1961-63v04/d115  rawcos 0.870 calibrated 78%  in_db=True  115. Draft Letter From President Kennedy to President Diem
+  ham  96  frus1964-68v01/d197  rawcos 0.853 calibrated 75%  in_db=True  197. Memorandum From the Director of the United States Information Agency (Rowan) to the P

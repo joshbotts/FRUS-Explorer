@@ -1,0 +1,5 @@
+collection OK: docs 25 excerpts 34 last entry {'kind': 'generated', 'generatedBlockType': 'archivalSources'}
+overview URL pairs 25 missing from collection set() collection docs not cited by URL set()
+overview quoted spans not found verbatim in collection bodies: ['soft power', 'South and Southeast Asia', 'cultural relations program', 'American soft power in East Asia and the Pacific — run f9']
+saturated in collection bodies: True
+effective in collection bodies: True

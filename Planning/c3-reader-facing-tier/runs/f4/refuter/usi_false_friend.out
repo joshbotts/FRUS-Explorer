@@ -1,0 +1,5 @@
+S2 = 1984 | union without the USIS term = 1577 | matched by USIS alone = 407
+of those: with a literal 'USIS' = 219 | without any literal 'USIS' (false friend, e.g. 'USI' United States of Indonesia) = 188
+false-friend docs by volume: [('frus1948v06', 80), ('frus1949v07p1', 59), ('frus1947v06', 18), ('frus1950v06', 7), ('frus1951v06p2', 6), ('frus1949v08', 5), ('frus1951v06p1', 3), ('frus1946v08', 2)]
+false-friend docs containing a literal 'USI' token: 162
+session's regexes over ALL 1984: STRICT 1612 (0.812) TOLERANT 1688 (0.851); sample said 33/40=0.825 and 35/40=0.875

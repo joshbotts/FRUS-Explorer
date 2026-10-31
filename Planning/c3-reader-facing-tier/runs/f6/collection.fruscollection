@@ -1,0 +1,479 @@
+{
+  "format": "fruscollection",
+  "formatVersion": 2,
+  "minimumReaderVersion": 1,
+  "name": "Soft power in East Asia and the Pacific, 1949 to 1977",
+  "authorLine": "Agent run, soft power in East Asia and the Pacific, 2026-10-31",
+  "introductionText": "What FRUS answers directly: Officials never wrote of soft power; the phrase appears in no volume of the series. They wrote of information programs, psychological strategy and the American image. They planned messages to show sympathy for Asian nationalism and to expose Soviet imperialism, believing that Asians would back whoever seemed to be winning. They judged their own results guardedly, from a Tokyo committee that had not been effective to a director who found efforts at unity in South Vietnam had not progressed to his satisfaction. Their recurring conclusion was that Asian audiences judged America by its deeds, its commitments and its staying power more than by its words. Where FRUS points for the rest: the documents came from the records of the U.S. Information Agency, the Department of State's central decimal file and its lot files on National Security Council papers, and the Johnson, Kennedy, Nixon, Ford and Carter presidential libraries; the footnotes cite Department of State lots 66 D 95, 62 D 430, 63 D 351 and 62 D 1 and library files that FRUS does not print. What this request cannot get from FRUS: any measurement of how Asian audiences received the messages, the messages themselves, and Asian voices other than through American summaries. The Agency's research reports, its Vietnam working group files and the Ford Library's Vietnam Information Group files hold more.",
+  "composition": {
+    "defaultBodyDepth": "full",
+    "footnoteStyle": "all",
+    "includeSourceNote": true,
+    "tocStyle": "citation",
+    "applyHighlights": false,
+    "includeNotes": true,
+    "includeWordCloud": false
+  },
+  "entries": [
+    {
+      "kind": "heading",
+      "text": "Asia as a revolutionary audience, 1949 to 1954",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "These four documents show how planners first described the Asian audience as a revolution to be won, a public inclined to follow the winner, and a Japanese press to be countered. They follow the thread from the 1949 call for an expanded information program to the 1954 admission that the Tokyo committee was not working."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1949v07p2",
+      "documentId": "d386",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: The consultants' outline for the President names an expanded information program as one of its specific policies, aimed at showing sympathy for Asian nationalism and exposing Soviet imperialism."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1949v07p2",
+      "documentId": "d386",
+      "text": "A considerably expanded information program both in Communist and non-Communist areas of Asia is called for, both to demonstrate our understanding and sympathy for the nationalist aspirations of the Asian peoples and to expose the menace to these aspirations created by Soviet imperialism."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1950v06",
+      "documentId": "d32",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: Jessup's oral report relays the French and British belief that Asians wait to see who is winning, and records where pro-American feeling was strongest. It is the earliest clear statement here of a belief about the Asian audience."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1950v06",
+      "documentId": "d32",
+      "text": "Both Pignon, the French High Commissioner for Indochina, and MacDonald, Commissioner for the United Kingdom in Southeast Asia, believe that the Asians are inclined by their psychology to wait and see who is winning. The bandwagon attitude will be more important than questions of ideology in determining their decisions."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1952-54v12p2",
+      "documentId": "d403",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: A summary of the Psychological Strategy Board's plan for Thailand. It pairs information work with military and economic aid and aims at a climate of victory. Only an extract is printed."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1952-54v12p2",
+      "documentId": "d403",
+      "text": "extend U.S. influence—and local acceptance of it—throughout the whole of Southeast Asia, associating it as closely as possible with appropriate indigenous anti-communist and non-communist forces so as to increase the national self-confidence of these forces, thus gradually creating a climate of victory."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1952-54v14p2",
+      "documentId": "d820",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: The Operations Coordinating Board's first progress report on Japan. It says the committee meant to carry out psychological strategy in Tokyo has been ineffective and blames sensational press reaction for prejudicing relations."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1952-54v14p2",
+      "documentId": "d820",
+      "text": "The Inter-Agency Committee in Tokyo, which was established to implement the psychological strategy plan has not thus far been effective except for the handling of the Troop Acceptance problem."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1952-54v14p2",
+      "documentId": "d820",
+      "text": "The complex emotional reactions of the Japanese, particularly as sensationally represented in their press, to United States actions and policies, the threat of nuclear warfare, and the growth of Communist power in Asia have tended more and more to prejudice United States–Japanese relationships."
+    },
+    {
+      "kind": "heading",
+      "text": "Credibility as the working constraint, 1961 to 1963",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "These documents follow officials who ran the Vietnam and Indonesia campaigns and wrote that the message was limited by the conduct of the government it promoted and by Washington's own press practice."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v01",
+      "documentId": "d49",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: A USIA letter to its Saigon officer ordering a major campaign on Viet Cong insurgency and asking that more material be declassified so it can be used."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v01",
+      "documentId": "d49",
+      "text": "We are in the process of cranking up a major propaganda campaign on Viet Cong insurgency in VietNam."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v01",
+      "documentId": "d265",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: USIA's Far East chief warns that defoliants would give communist propaganda an easy theme and could produce ill will across the region."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v01",
+      "documentId": "d265",
+      "text": "The use of chemical weaponry in an Asian country could create such a storm of criticism that possible short-range military advantages on the ground in Viet-Nam might be outweighed by a harvest of ill-will deleterious to certain long-ranged goals in Viet-Nam and the region (Southeast Asia)."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v01",
+      "documentId": "d339",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: The public affairs officer in Saigon argues that American information work cannot improve the image of the South Vietnamese government beyond what that government shows the world."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v01",
+      "documentId": "d339",
+      "text": "We cannot do more with the image of the GVN than is made available by the GVN itself; in other words, unless we rely on distortion, whatever we mirror will be a reflection of the face the GVN presents to the world."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v02",
+      "documentId": "d5",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: A correspondent's rebuke after an American-only briefing, relayed by USIA, shows how closed briefings damaged credibility with foreign press."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v02",
+      "documentId": "d5",
+      "text": "please strike me from your list of publications and information materials. I no longer need to get my American propaganda from a source which restricts its outlets to its own people."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1917-72PubDipv06",
+      "documentId": "d126",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: USIA proposes a campaign against Afro-Asian propaganda led from Indonesia, and judges that it would convince less without a diplomatic protest to back it."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1917-72PubDipv06",
+      "documentId": "d126",
+      "text": "I believe, however, that such a campaign would not be as effective, since much of our audience would tend to regard it as mere words without deeds."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1917-72PubDipv06",
+      "documentId": "d133",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: The State Department declines to publicize its protests to Indonesia, to protect its aid program. The exchange shows messaging being limited by policy goals."
+      ]
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v04",
+      "documentId": "d108",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: Murrow's survey of world reaction to events in Vietnam: Asian press and officials were largely critical of the Diem regime, with Seoul and Manila the exceptions."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v04",
+      "documentId": "d108",
+      "text": "There is virtually no sympathy for the Diem regime, except in South Korea and the Philippines where officials see Diem as the only available anti-communist bulwark."
+    },
+    {
+      "kind": "heading",
+      "text": "Measuring effect in Vietnam, 1964 to 1967",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "Here the Agency and the White House judge what the information program had achieved in South Vietnam, from a candid view that a message cannot outrun events to a staff claim of improvement and an attempt to keep educational television free of the propaganda label."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1964-68v01",
+      "documentId": "d197",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: A Honolulu interagency committee's frank view that no information program can disguise military failure, with the figure for Vietnamese film audiences."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1964-68v01",
+      "documentId": "d197",
+      "text": "there is no conceivable information program that will make defeats look like victories, or GVN lassitude appear to be fiery enthusiasm."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1964-68v01",
+      "documentId": "d197",
+      "text": "Vietnamese audiences at USIS film showings last year totalled an estimated 28 million."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1964-68v02",
+      "documentId": "d160",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: The USIA director tells the President that efforts to build unity in South Vietnam have not progressed to his satisfaction, though he claims headway in some areas."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1964-68v02",
+      "documentId": "d160",
+      "text": "efforts to develop among the South Vietnamese people a sense of national unity and a determination to fight off Communist aggression, have not progressed to my satisfaction."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1964-68v02",
+      "documentId": "d172",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: The director sends the President a USIA study of a rural province. It finds a largely apathetic population and names insecurity and weak government, not messaging, as the obstacles. The study itself is not printed."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1964-68v02",
+      "documentId": "d172",
+      "text": "The USIA researchers conclude that the population is largely apathetic and is primarily interested in ending the twenty years of war; they care less as to which side will win, although there appears to be a substantial degree of approval of the Viet Cong."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1964-68v02",
+      "documentId": "d172",
+      "text": "the principal problems facing us in obtaining the support of the Vietnamese population are inadequate security and ineffective Government."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1964-68v03",
+      "documentId": "d138",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: A White House staff status report says propaganda and psychological operations in South Vietnam had grown more effective with more information personnel."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1964-68v03",
+      "documentId": "d138",
+      "text": "Propaganda and psychological operations in South Vietnam have also expanded and grown more effective with the buildup of U.S. information personnel."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1917-72PubDipv07",
+      "documentId": "d171",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: USIA's East Asia chief reports plans for educational television in Vietnam. The director acts outside his agency role so that it is not seen as propaganda."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1917-72PubDipv07",
+      "documentId": "d171",
+      "text": "the effort should not be construed as a propaganda mechanism"
+    },
+    {
+      "kind": "heading",
+      "text": "Neutral and client governments, 1962 to 1968",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "These three show the approach to governments that were neutral, hostile or merely under-equipped: carry the message through local institutions, resist leaving under pressure, and press the host to speak for itself."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v23",
+      "documentId": "d289",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: Murrow's plan for USIS in Indonesia: youth, American studies, travel and branch posts, with respect for Indonesia's neutrality and patient persistence."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v23",
+      "documentId": "d289",
+      "text": "any actions the U.S. undertakes in furtherance of better relations with Indonesia must be pegged to a real understanding of and a demonstrated respect for Indonesia’s neutral stance."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v23",
+      "documentId": "d289",
+      "text": "Fourth, “patient persistence” should be the key attitude of all Americans involved, on the scene and here in Washington;"
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1964-68v26",
+      "documentId": "d106",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: The USIA director says attacks on USIS in Indonesia are intolerable but that closing the posts would be read as retreat."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1964-68v26",
+      "documentId": "d106",
+      "text": "Such an action would be interpreted by both our enemies and friends as a retreat and as knuckling under to communist pressure."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1964-68v27",
+      "documentId": "d386",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: Before the Thai prime minister's visit, the USIA director says Thailand lacks a national information program and wants it to take over some programs."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1964-68v27",
+      "documentId": "d386",
+      "text": "The Thai Government has not given proper attention to the need for a national information program designed to gain popular support."
+    },
+    {
+      "kind": "heading",
+      "text": "After Vietnam: an audience watching deeds, 1969 to 1977",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "These documents follow the shift from 'telling America's story' to reassuring Asians of American staying power, and record the belief that Asians judged the United States by its deeds and commitments. Three were found by similarity to the 1975 reassessment rather than by a word search, and read before they were cited."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1917-72PubDipv08",
+      "documentId": "d31",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: A summary of the 1969 Manila conference of USIA's public affairs officers in East Asia: Asian audiences watch America, and its image rests on bilateral relations. It also covers books, seminars, binational centers and Japan's image in Southeast Asia."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1917-72PubDipv08",
+      "documentId": "d31",
+      "text": "Asians are, to varying degrees, America watchers."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76v19p2",
+      "documentId": "d67",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: The USIA director asks for a National Security Council review of Japan policy, citing public opinion surveys that confirm strains and posing psychological questions."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1969-76v19p2",
+      "documentId": "d67",
+      "text": "Is there a psychological threshold for economic frictions beyond which it will be difficult to sustain a productive basic relationship?"
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76v38p2",
+      "documentId": "d105",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: Abstracts of overseas posts' replies after the fall of South Vietnam: several posts, among them Thailand, Hong Kong, Burma and Taiwan, ask Washington to clarify its policy first, since programs on commitments lack credibility until it does."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1969-76v38p2",
+      "documentId": "d105",
+      "text": "The denouement in Indochina has left Hong Kong viewing USG as “very clearly in default.”"
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1969-76v38p2",
+      "documentId": "d105",
+      "text": "programs on U.S. security relations in Asia lack credibility and may in fact do damage to our relations."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76ve12",
+      "documentId": "d16",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: Found by its similarity to the 1975 reassessment, not by word search. Habib's summary of a Southeast Asian tour says assurances are welcomed while doubt rests on Congress."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1969-76ve12",
+      "documentId": "d16",
+      "text": "With respect to the U.S., our affirmations of good intentions are welcomed by all."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76ve12",
+      "documentId": "d17",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: Found by its similarity to the 1975 reassessment, not by word search. Smyser describes Asian beliefs about revolutionary warfare and the importance of what America will do."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1969-76ve12",
+      "documentId": "d17",
+      "text": "Most nations in Asia apparently believe that revolutionary warfare of the Vietnamese model, like a car accident, is something that happens to other people."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1977-80v22",
+      "documentId": "d3",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: Found by its similarity to the 1975 reassessment, not by word search. Armacost notes that Asians read American Vietnam policy as a test of broader intentions and expect cycles of involvement and indifference."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1977-80v22",
+      "documentId": "d3",
+      "text": "With their long time perspective, Asians have become accustomed to seeing the United States go through periodic cycles of intense involvement in the Pacific, as in the past decade, followed by indifference toward the area."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1977-80v30",
+      "documentId": "d79",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: USIA's East Asia chief points to the Secretary's Asia Society speech and the Department's budget submission as proof that reassuring East Asians is policy."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1977-80v30",
+      "documentId": "d79",
+      "text": "shoring up the confidence of East Asians in America’s long-term staying power and positive involvement in the area is real and necessary."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1977-80v30",
+      "documentId": "d81",
+      "notes": [
+        "Agent finding, soft-power run, 2026-10-31: A telegram to chiefs of mission in East Asia and the Pacific, sent under Vance's name for Holbrooke, asks them and their public affairs officers to align public diplomacy with policy goals."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1977-80v30",
+      "documentId": "d81",
+      "text": "I consider Mort’s appointment to be a unique opportunity to establish an especially close working relationship between State and USIA in developing a public posture for our diplomatic efforts."
+    },
+    {
+      "kind": "heading",
+      "text": "Threads I could not follow",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "I could not measure the effect of any message on an Asian audience, because the volumes print officials' judgments and almost no survey results. I did not search before 1945, and did not follow aid, the Peace Corps or military assistance as forms of influence. I did not read the Japan and Korea volumes beyond the documents that matched the search terms, so cultural exchange there is thin in this collection. The broadcast scripts, leaflets and films themselves I could not locate in the sources the footnotes cite; the generated list that follows names the series the printed documents came from."
+    },
+    {
+      "kind": "generated",
+      "generatedBlockType": "archivalSources"
+    }
+  ]
+}

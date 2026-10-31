@@ -1,0 +1,6 @@
+"United States Information Agency" OR USIA | hits in scope 913 | sample 40 | STRICT 40 of 40 | TOLERANT 40 of 40 | tolerant misses []
+"psychological warfare" OR "psychological strategy" OR "psychological operations" | hits in scope 363 | sample 40 | STRICT 39 of 40 | TOLERANT 40 of 40 | tolerant misses []
+propaganda | hits in scope 3495 | sample 40 | STRICT 40 of 40 | TOLERANT 40 of 40 | tolerant misses []
+"image of the United States" OR "American image" OR "U.S. image" | hits in scope 30 | sample 30 | STRICT 30 of 30 | TOLERANT 30 of 30 | tolerant misses []
+"information program" | hits in scope 207 | sample 40 | STRICT 38 of 40 | TOLERANT 38 of 40 | tolerant misses ['frus1949v07p2/d317', 'frus1958-60v16/d294']
+"cultural exchange" OR "exchange of persons" | hits in scope 289 | sample 40 | STRICT 38 of 40 | TOLERANT 40 of 40 | tolerant misses []

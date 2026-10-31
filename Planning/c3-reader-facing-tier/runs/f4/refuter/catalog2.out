@@ -1,0 +1,113 @@
+catalog source: apiV2 | generated: 2026-08-06
+
+JFK citedAs=Kennedy Library :: JFK-4 naId=1164 title=Papers of John F. Kennedy: Presidential Papers: National Security Files statedSeriesCount=17 keys=['identifier', 'naId', 'series', 'statedSeriesCount', 'title']
+    series 193236 1961–1963 Country Files
+    series 193350 1961–1963 Department and Agency Files
+    series 193354 1961–1963 Meeting Records and Memoranda
+    series 326996825 1961–1963 Regional Security Files
+    series 326996849 1961–1963 Trip and Conference Files
+    series 326996855 1961–1963 Subject Files
+    series 326996860 1961–1963 Chester V. Clifton Files
+    series 326996862 1961–1963 Carl Kaysen Files
+    series 326996865 1961–1963 William H. Brubeck Files
+    series 326996869 1961–1963 Ralph A. Dungan Files
+    series 326996872 1961–1963 McGeorge Bundy Correspondence
+    series 326996878 1961–1963 Robert W. Komer Files
+    series 326996881 1961–1963 National Security Council Administrative Files and Miscellaneous Subject Files
+    series 326996884 1961–1963 Henry Kissinger Files
+    series 326996885 1961–1963 Charles Johnson Files
+    series 329123042 1961–1963 Bromley K. Smith Files
+    series 329123047 1961–1963 Unreviewed Materials
+
+LBJ citedAs=Johnson Library :: LBJ-NSF naId=567979 title=National Security Files statedSeriesCount=48 keys=['identifier', 'naId', 'series', 'statedSeriesCount', 'title']
+    series 567985 1963–1969 Latin America Country Files
+    series 573102 1963–1969 Africa Country Files
+    series 580807 1963–1969 Europe and USSR Country Files
+    series 582854 1963–1969 Intelligence Briefings Files
+    series 587357 1963–1969 Middle East Country Files
+    series 587358 1963–1969 Asia and the Pacific Country Files
+    series 587360 1963–1969 United Nations Country Files
+    series 587361 1963–1969 Country Files Addendum
+    series 588989 1963–1969 Memos to the President Files
+    series 591194 1963–1969 Vietnam Country Files
+    series 593557 1968–1969 National Security Council Histories Files
+    series 2679432 1965–1968 Files of William J. Jorden
+    series 4734742 1963–1969 Agency Files
+    series 6207725 1963–1969 Files of Nathaniel Davis
+    series 6233128 1963–1969 Files of Howard Wriggins
+    series 6254984 1963–1969 Files of Arthur McCafferty
+    series 7237421 1963–1969 Files of Chester Cooper
+    series 7260916 1963–1969 Files of Ulric Haynes
+    series 7284976 1963–1969 Files of Chester V. Clifton
+    series 7369107 1963–1969 Files of the Special Committee of the National Security Council
+    series 7451086 1962–1969 Files of Alfred Jenkins
+    series 7624433 1963–1969 National Security Council Meetings Files
+    series 7763260 1963–1969 Special Head of State Correspondence Files
+    series 12006886 1963–1969 Subject Files
+    series 12007725 1961–1969 International Meetings and Travel Files
+    series 12008318 1963–1969 Head of State Correspondence Files
+    series 12008350 1963–1969 Committee Files
+    series 12008959 1961–1969 Files of Harold H. Saunders
+    series 12009321 1963–1967 Files of Robert W. Komer
+    series 12010023 1966–1969 Komer-Leonhart Files
+    series 12013717 1962–1969 Files of Charles E. Johnson
+    series 12021213 1966–1969 Files of Walt W. Rostow
+    series 12032296 1963–1966 Files of McGeorge Bundy
+    series 12075320 1961–1968 National Security Action Memorandums
+    series 12079955 1964–1969 Files of Bromley K. Smith
+    series 12093071 1961–1969 Intelligence Files
+    series 12093084 1963–1969 Situation Room Files
+    series 12165928 1963–1969 Speech Files
+    series 12165931 1964–1969 Files of William G. Bowdler
+    series 16567623 1963–1969 Files of Francis M. Bator
+
+RN citedAs=Nixon :: RN-NSF naId=572235 title=National Security Files (Nixon Administration) statedSeriesCount=4 keys=['identifier', 'naId', 'series', 'statedSeriesCount', 'title']
+    series 572247 1969–1974 Institutional Files
+    series 572248 1969–1974 Central Files
+    series 579113 1969–1974 Henry A. Kissinger Telephone Conversation Transcripts (Telcons)
+    series 1103638 1969–1975 Henry A. Kissinger's (HAK) Office Files
+
+JC citedAs=Carter Library :: JC-DMBRZEZ naId=1104 title=Zbigniew Brzezinski Collection statedSeriesCount=6 keys=['identifier', 'naId', 'series', 'statedSeriesCount', 'title']
+    series 152224 1972–1981 Zbigniew Brzezinski Trilateral Commission Correspondence
+    series 152225 1973 Trilateral Commission Correspondence File
+    series 152230 1972–1977 Gerard Smith Trilateral Commission File
+    series 152263 1972–1976 Zbigniew Brzezinski Trilateral Commission Chronological File
+    series 152300 1972–1981 Geographic File
+    series 152392 1977–1981 Subject File
+
+JC citedAs=Carter Library :: JC-NSA naId=560131 title=Records of the Office of the National Security Advisor (Carter Administration) statedSeriesCount=32 keys=['identifier', 'naId', 'series', 'statedSeriesCount', 'title']
+    series 560133 1977–1981 Zbigniew Brzezinski's President's Daily Reports Files
+    series 560144 1977–1981 Zbigniew Brzezinski's Central Intelligence Agency (CIA) President's Daily Brief Files
+    series 560148 1977–1981 Zbigniew Brzezinski's President's Correspondence with Foreign Leaders Files
+    series 560149 1977–1981 Zbigniew Brzezinski's Trip Files
+    series 560150 1977–1981 Zbigniew Brzezinski's Very Important Persons (VIP) Visit Files
+    series 560151 1977–1981 Zbigniew Brzezinski's Country Files
+    series 560152 1977–1981 Zbigniew Brzezinski's Subject Files
+    series 560153 1977–1981 Zbigniew Brzezinski's Agency Files
+    series 560155 1977–1981 Zbigniew Brzezinski's Name Files
+    series 560156 1977–1981 Zbigniew Brzezinski's Staff Evening Reports Files
+    series 560157 1977–1981 Karl F. Inderfurth's and Robert M. Gates' Chronological Files
+    series 560158 1977–1981 General William Odom's Files
+    series 560161 1977–1981 Jerrold Schecter's and Alfred Friendly's Press Files
+    series 560163 1977–1981 Public and Congressional Correspondence Files
+    series 560164 1977–1981 Zbigniew Brzezinski's Office Files
+    series 560165 1977–1981 Cable Files
+    series 560166 1977–1981 Staff Office Files
+    series 560170 1977–1981 Deputy National Security Advisor's Files
+    series 560172 1977–1981 Special Projects Files
+    series 560176 1977–1981 Staff Secretary's Files
+    series 560177 1977–1981 Freedom of Information and Legal Files
+    series 560178 1977–1981 Press and Congressional Relations Files
+    series 560183 1977–1981 Europe and U.S.S.R. Files
+    series 560184 1977–1981 North/South
+    series 560185 1977–1981 Middle East Files
+    series 560187 1977–1981 Far East Files
+    series 560189 1977–1981 Horn of Africa and Special Issues Files
+    series 560190 1977–1981 Global Issues Files
+    series 560191 1977–1981 International Economics Files
+    series 560192 1977–1981 Science and Technology Files
+    series 560193 1977–1981 Defense and Security Files
+    series 560194 1977–1981 Intelligence Oversight Board Files
+
+Nixon library collections with NSC/Council/Kissinger in the title:
+    RN-NSF 572235 National Security Files (Nixon Administration)

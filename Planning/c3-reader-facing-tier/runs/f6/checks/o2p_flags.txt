@@ -1,0 +1,126 @@
+O2' check of f6: 92 numbers in overview.md; 31 traced, 32 weak, 29 untraced.
+TRACE TABLE: 52 rows, from line 233 of memo.md.
+Each flagged number is WEAK (a row holds the value without the word after it) or UNTRACED (no row holds the value). Decide each: TRACED (name the row), NOT A NUMBER, or UNTRACED.
+
+[UNTRACED] 'Record Group 306' (value rg306, next word '')
+    sentence: Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files.
+[WEAK] 'FRC 67' (value frc67, next word ''); nearest row: NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22
+    sentence: Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files.
+[WEAK] 'A 222' (value a222, next word ''); nearest row: 3, 15, 18 (series per USIA accession); two (series of FRC 306-84-0003) | M11 (accession-series-index.json: 306/67A222 = 3, 306/68A4933 = 15, 306/72A5121 = 18, 306/840003 = 2); the isolated '3' in the 
+    sentence: Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files.
+[UNTRACED] 'FRC 68' (value frc68, next word '')
+    sentence: Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files.
+[WEAK] 'A 4933' (value a4933, next word ''); nearest row: 3, 15, 18 (series per USIA accession); two (series of FRC 306-84-0003) | M11 (accession-series-index.json: 306/67A222 = 3, 306/68A4933 = 15, 306/72A5121 = 18, 306/840003 = 2); the isolated '3' in the 
+    sentence: Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files.
+[UNTRACED] 'FRC 72' (value frc72, next word '')
+    sentence: Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files.
+[WEAK] 'A 5121' (value a5121, next word ''); nearest row: 3, 15, 18 (series per USIA accession); two (series of FRC 306-84-0003) | M11 (accession-series-index.json: 306/67A222 = 3, 306/68A4933 = 15, 306/72A5121 = 18, 306/840003 = 2); the isolated '3' in the 
+    sentence: Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files.
+[WEAK] 'WW 257' (value ww257, next word ''); nearest row: NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22
+    sentence: Information Agency (USIA), Record Group 306, held by the National Archives (each series has a National Archives catalog identifier, NAID), accessions FRC 67 A 222 ( ), FRC 68 A 4933 ( ) and FRC 72 A 5121, Entry UD WW 257 ( ): the director's and the Far East area office's files.
+[WEAK] '3' (value 3, next word 'serie'); nearest row: 14 (volumes on information policy and public diplomacy) | M3 (= 14 volumes; also Lot count 'Kennedy 14' row in M13, same numeral different meaning)
+    sentence: The finding aids available to me tie these accessions to 3, 15 and 18 series, so I cannot say which series holds the folder, and they give no dates or access status for them.
+[UNTRACED] '42125423' (value 42125423, next word '')
+    sentence: Series named under these accessions include *Vietnam Working Group Subject Files* (NAID 42125423) and *Regional Subject Files* (NAID 48349732).
+[UNTRACED] '48349732' (value 48349732, next word '')
+    sentence: Series named under these accessions include *Vietnam Working Group Subject Files* (NAID 42125423) and *Regional Subject Files* (NAID 48349732).
+[UNTRACED] 'Record Group 306' (value rg306, next word '')
+    sentence: USIA Office of Policy and Plans, Record Group 306, Entry P-207 (the conference of public affairs officers in Manila), and the Office of the Director's Executive Secretariat, Entry P-104 ( ).
+[WEAK] 'P-207' (value p-207, next word ''); nearest row: NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22
+    sentence: USIA Office of Policy and Plans, Record Group 306, Entry P-207 (the conference of public affairs officers in Manila), and the Office of the Director's Executive Secretariat, Entry P-104 ( ).
+[WEAK] 'P-104' (value p-104, next word ''); nearest row: NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22
+    sentence: USIA Office of Policy and Plans, Record Group 306, Entry P-207 (the conference of public affairs officers in Manila), and the Office of the Director's Executive Secretariat, Entry P-104 ( ).
+[UNTRACED] '1257679' (value 1257679, next word 'linear')
+    sentence: NARA lists an Office of Policy and Plans series (NAID 1257679, , 47 linear feet, access partly restricted);
+[WEAK] '47' (value 47, next word 'linear'); nearest row: NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22
+    sentence: NARA lists an Office of Policy and Plans series (NAID 1257679, , 47 linear feet, access partly restricted);
+[UNTRACED] '40967285' (value 40967285, next word '')
+    sentence: I could not confirm it is the series the editors used, and the file falls outside the dates of the Executive Secretariat series NARA lists (NAID 40967285, ).
+[WEAK] 'two' (value 2, next word 'serie'); nearest row: 76 (volumes on East Asia and the Pacific) | M2 (SELECT COUNT(DISTINCT volume_id) ... IN the 76 ids = 76)
+    sentence: USIA records cited as accession FRC 306-84-0003 ( ): two series, *Correspondence Files* (NAID 5552237) and *Memorandums Pertaining to the Executive Committee* (NAID 5585931); the finding aids give no dates or access status for them.
+[UNTRACED] '5552237' (value 5552237, next word '')
+    sentence: USIA records cited as accession FRC 306-84-0003 ( ): two series, *Correspondence Files* (NAID 5552237) and *Memorandums Pertaining to the Executive Committee* (NAID 5585931); the finding aids give no dates or access status for them.
+[UNTRACED] '5585931' (value 5585931, next word '')
+    sentence: USIA records cited as accession FRC 306-84-0003 ( ): two series, *Correspondence Files* (NAID 5552237) and *Memorandums Pertaining to the Executive Committee* (NAID 5585931); the finding aids give no dates or access status for them.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Department of State Central Decimal File, Record Group 59: file numbers 711.90 ( ), 611.90 ( ), 790.5 ( ) and 611.98 ( ).
+[WEAK] '711.90' (value 711.90, next word ''); nearest row: NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22
+    sentence: Department of State Central Decimal File, Record Group 59: file numbers 711.90 ( ), 611.90 ( ), 790.5 ( ) and 611.98 ( ).
+[WEAK] '611.90' (value 611.90, next word ''); nearest row: NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22
+    sentence: Department of State Central Decimal File, Record Group 59: file numbers 711.90 ( ), 611.90 ( ), 790.5 ( ) and 611.98 ( ).
+[WEAK] '790.5' (value 790.5, next word ''); nearest row: NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22
+    sentence: Department of State Central Decimal File, Record Group 59: file numbers 711.90 ( ), 611.90 ( ), 790.5 ( ) and 611.98 ( ).
+[WEAK] '611.98' (value 611.98, next word ''); nearest row: NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22
+    sentence: Department of State Central Decimal File, Record Group 59: file numbers 711.90 ( ), 611.90 ( ), 790.5 ( ) and 611.98 ( ).
+[UNTRACED] '90' (value 90, next word 'as')
+    sentence: The finding aids gloss country numbers 90 as Asia and 98 as Java and the Indonesian islands; they hold no series identifier for these years.
+[UNTRACED] '98' (value 98, next word 'as')
+    sentence: The finding aids gloss country numbers 90 as Asia and 98 as Java and the Indonesian islands; they hold no series identifier for these years.
+[UNTRACED] 'Record Group 59' (value rg59, next word '')
+    sentence: Department of State Lot 63 D 351 (a lot is the Department's own batch number for a set of retired files), *Records Relating to National Security Council Policy Papers*, Record Group 59, Entry A1 1586E, NAID 2839192:
+[WEAK] 'A1 1586E' (value a11586e, next word ''); nearest row: NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22
+    sentence: Department of State Lot 63 D 351 (a lot is the Department's own batch number for a set of retired files), *Records Relating to National Security Council Policy Papers*, Record Group 59, Entry A1 1586E, NAID 2839192:
+[UNTRACED] '2839192' (value 2839192, next word '')
+    sentence: Department of State Lot 63 D 351 (a lot is the Department's own batch number for a set of retired files), *Records Relating to National Security Council Policy Papers*, Record Group 59, Entry A1 1586E, NAID 2839192:
+[WEAK] '26' (value 26, next word 'linear'); nearest row: NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22
+    sentence: Executive Secretariat, , 26 linear feet, access partly restricted.
+[UNTRACED] '567979' (value 567979, next word '')
+    sentence: Johnson Library National Security Files (NAID 567979), including Vietnam Country Files (NAID 591194, ) and Asia and the Pacific Country Files (NAID 587358, ), and the Papers of Leonard H.
+[UNTRACED] '591194' (value 591194, next word 'asia')
+    sentence: Johnson Library National Security Files (NAID 567979), including Vietnam Country Files (NAID 591194, ) and Asia and the Pacific Country Files (NAID 587358, ), and the Papers of Leonard H.
+[UNTRACED] '587358' (value 587358, next word 'paper')
+    sentence: Johnson Library National Security Files (NAID 567979), including Vietnam Country Files (NAID 591194, ) and Asia and the Pacific Country Files (NAID 587358, ), and the Papers of Leonard H.
+[UNTRACED] '50809179' (value 50809179, next word '')
+    sentence: Marks (NAID 50809179);
+[UNTRACED] '1164' (value 1164, next word '')
+    sentence: Kennedy Library National Security Files (NAID 1164, );
+[UNTRACED] '572235' (value 572235, next word 'whose')
+    sentence: Nixon National Security Files (NAID 572235, whose institutional files run );
+[UNTRACED] '1104' (value 1104, next word 'serie')
+    sentence: Carter Library Brzezinski material (collection NAID 1104, series not matched).
+[UNTRACED] '2839192' (value 2839192, next word 'partly')
+    sentence: NARA divides it between *Records Relating to National Security Council Policy Papers* (NAID 2839192, , partly restricted) and *Subject Files* (NAID 2839193, , 9 linear feet, partly restricted).
+[UNTRACED] '2839193' (value 2839193, next word 'linear')
+    sentence: NARA divides it between *Records Relating to National Security Council Policy Papers* (NAID 2839192, , partly restricted) and *Subject Files* (NAID 2839193, , 9 linear feet, partly restricted).
+[WEAK] '9' (value 9, next word 'linear'); nearest row: 41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point
+    sentence: NARA divides it between *Records Relating to National Security Council Policy Papers* (NAID 2839192, , partly restricted) and *Subject Files* (NAID 2839193, , 9 linear feet, partly restricted).
+[WEAK] 'four' (value 4, next word 'serie'); nearest row: 1,300 (documents in the family, rounded from 1,296) | M4 (COUNT(*) = 1296)
+    sentence: Department of State Lot 62 D 430, the Operations Coordinating Board's files, cited in 16 documents: four series, , including *Subject and Special Files* (NAID 2839191, partly restricted, 4 linear feet).
+[UNTRACED] '2839191' (value 2839191, next word 'partly')
+    sentence: Department of State Lot 62 D 430, the Operations Coordinating Board's files, cited in 16 documents: four series, , including *Subject and Special Files* (NAID 2839191, partly restricted, 4 linear feet).
+[WEAK] '4' (value 4, next word 'linear'); nearest row: 1,300 (documents in the family, rounded from 1,296) | M4 (COUNT(*) = 1296)
+    sentence: Department of State Lot 62 D 430, the Operations Coordinating Board's files, cited in 16 documents: four series, , including *Subject and Special Files* (NAID 2839191, partly restricted, 4 linear feet).
+[UNTRACED] '2839192' (value 2839192, next word 'as')
+    sentence: Department of State Lot 63 D 351, cited in 13 documents (NAID 2839192, as above).
+[WEAK] '9' (value 9, next word 'document'); nearest row: 41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point
+    sentence: Department of State Lot 62 D 1, Policy Planning Council, cited in 9 documents: three series, including *Records Relating to Activities with the National Security Council* (NAID 2838992, , partly restricted).
+[WEAK] 'three' (value 3, next word 'serie'); nearest row: 14 (volumes on information policy and public diplomacy) | M3 (= 14 volumes; also Lot count 'Kennedy 14' row in M13, same numeral different meaning)
+    sentence: Department of State Lot 62 D 1, Policy Planning Council, cited in 9 documents: three series, including *Records Relating to Activities with the National Security Council* (NAID 2838992, , partly restricted).
+[UNTRACED] '2838992' (value 2838992, next word 'partly')
+    sentence: Department of State Lot 62 D 1, Policy Planning Council, cited in 9 documents: three series, including *Records Relating to Activities with the National Security Council* (NAID 2838992, , partly restricted).
+[WEAK] '19' (value 19, next word 'document'); nearest row: 41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point
+    sentence: Nixon White House National Security Council files, cited in 19 documents;
+[WEAK] '178' (value 178, next word 'document'); nearest row: 41, 16, 13, 9 (documents citing Lots 66 D 95, 62 D 430, 63 D 351, 62 D 1); 19, 25, 14, 7 (Nixon, Johnson, Kennedy, Carter library citations); 178 (central file numbers) | M13 (docs column of the point
+    sentence: Central Decimal File numbers, cited in 178 documents; the finding aids available to me give no series for .
+[WEAK] 'R-10' (value r-10, next word ''); nearest row: NAIDs, entry numbers, FRC accession numbers, record groups, file numbers, lot numbers, linear feet (26, 47, 9, 4 etc.) | NAIDs and extents: archival_facts.txt; accession and entry strings (FRC 67 A 22
+    sentence: Its report number is R-10-65; the finding aids available to me do not identify the Agency's Far East research series for the , and the nearest listed is the Office of Research and Intelligence's Intelligence Production Division (NAID 1254251, , partly restricted).
+[UNTRACED] '1254251' (value 1254251, next word 'partly')
+    sentence: Its report number is R-10-65; the finding aids available to me do not identify the Agency's Far East research series for the , and the nearest listed is the Office of Research and Intelligence's Intelligence Production Division (NAID 1254251, , partly restricted).
+[UNTRACED] '645643' (value 645643, next word 'whose')
+    sentence: For Vietnam the shelves are the Ford Library's National Security Council Vietnam Information Group files (NAID 645643, whose Vietnam Subject Files run ) and the Agency's Vietnam Working Group files named above (the finding aids give no dates or access status for them).
+[WEAK] '60' (value 60, next word 'document'); nearest row: 64 (documents), 28 (volumes) - survey/poll scan; 33 (documents), 17 (volumes) - leaflet/script/film scan; 3 (binational centres); 60 (Peace Corps) | M14 table rows 1, 3, 6 and 4 respectively (absence_
+    sentence: I retrieved 61 documents whole and the collection keeps those the argument rests on. ## Decisions this needs from you **What counts as soft power.** I took information, psychological, cultural and exchange programs and officials' judgments of the American image; adding aid, the Peace Corps and military assistance would bring in the 60 documents that mention the Peace Corps alone and turn the quest
+[WEAK] 'two' (value 2, next word 'volume'); nearest row: 76 (volumes on East Asia and the Pacific) | M2 (SELECT COUNT(DISTINCT volume_id) ... IN the 76 ids = 76)
+    sentence: I retrieved 61 documents whole and the collection keeps those the argument rests on. ## Decisions this needs from you **What counts as soft power.** I took information, psychological, cultural and exchange programs and officials' judgments of the American image; adding aid, the Peace Corps and military assistance would bring in the 60 documents that mention the Peace Corps alone and turn the quest
+[WEAK] '28' (value 28, next word 'million'); nearest row: 64 (documents), 28 (volumes) - survey/poll scan; 33 (documents), 17 (volumes) - leaflet/script/film scan; 3 (binational centres); 60 (Peace Corps) | M14 table rows 1, 3, 6 and 4 respectively (absence_
+    sentence: "Vietnamese audiences at USIS film showings last year totalled an estimated 28 million," USIS being the Agency's overseas arm.
+[WEAK] 'million' (value 1000000, next word 'usi'); nearest row: 28 million (in a quotation) | Q14 (frus1964-68v01/d197 passage 'Vietnamese audiences at USIS film showings last year totalled an estimated 28 million.')
+    sentence: "Vietnamese audiences at USIS film showings last year totalled an estimated 28 million," USIS being the Agency's overseas arm.
+[WEAK] '40' (value 40, next word 'spread'); nearest row: 64 (documents), 28 (volumes) - survey/poll scan; 33 (documents), 17 (volumes) - leaflet/script/film scan; 3 (binational centres); 60 (Peace Corps) | M14 table rows 1, 3, 6 and 4 respectively (absence_
+    sentence: The search treats related word forms alike, so I checked the family against the documents themselves: in a sample of 40 spread evenly through the results, 33 held the intended words, and the other seven held none of them.
+[WEAK] 'seven' (value 7, next word 'held'); nearest row: 61 (documents retrieved whole) | Section 7 reading accounting and retrieval_check.txt (61 of 61 whole)
+    sentence: The search treats related word forms alike, so I checked the family against the documents themselves: in a sample of 40 spread evenly through the results, 33 held the intended words, and the other seven held none of them.
+[WEAK] 'Three' (value 3, next word 'document'); nearest row: 14 (volumes on information policy and public diplomacy) | M3 (= 14 volumes; also Lot count 'Kennedy 14' row in M13, same numeral different meaning)
+    sentence: Three documents were found by their similarity to a Agency memorandum, by no word search I ran, and were read before they were cited.
+[WEAK] 'one' (value 1, next word 'i'); nearest row: 553 (volumes of the series in the index) | M1 (canary: COUNT(DISTINCT volume_id) = 553)
+    sentence: Every quotation in this overview and every excerpt in the collection is one I verified against its document, and every document cited here is in the collection.

@@ -1,0 +1,150 @@
+ 43.4 frus1955-57v09/d185 1955-03-02 len=42866 A=103/18 B=9 C=10 D=29 | 185. Report Prepared by the National Security Council
+ 39.5 frus1969-76v38p2/d112 1977-01-03 len=19268 A=29/12 B=5 C=1 D=4 | 112. Briefing Paper Prepared in the Bureau of Educational and Cultural Affairs
+ 39.1 frus1977-80v30/d215 1980-11-20 len=21453 A=32/10 B=6 C=4 D=7 | 215. Summary Prepared in the International Communication Agency
+ 38.5 frus1955-57v09/d190 1955-08-31 len=51378 A=109/18 B=4 C=24 D=17 | 190. Report Prepared by the National Security Council
+ 37.1 frus1951v01/d332 1951-10-12 len=35531 A=41/15 B=1 C=4 D=18 | Study Prepared by the Department of State
+ 36.7 frus1951v01/d326 1951-05-02 len=6871 A=21/9 B=1 C=0 D=3 | Memorandum by the Assistant Secretary of State for Public Affairs (Barrett) to the Director of 
+ 36.5 frus1969-76v38p2/d94 1973-11-14 len=27960 A=50/13 B=6 C=0 D=5 | 94. Address by the Director of the United States Information Agency (Keogh)
+ 34.8 frus1952-54v02p2/d303 1952-12-31 len=27166 A=41/11 B=7 C=1 D=9 | Extract From a “Report on International Information Administration—1952” to the Secretary of St
+ 34.1 frus1951v01/d328 1951-08-08 len=26244 A=40/12 B=1 C=1 D=19 | Study Prepared by the Department of State
+ 34.0 frus1969-76v38p2/d105 1975-05-09 len=11815 A=17/6 B=5 C=2 D=9 | 105. Memorandum From the Assistant Director for East Asia and the Pacific, United States Inform
+ 33.8 frus1952-54v13p1/d116 1952-09-20 len=9052 A=23/7 B=1 C=1 D=11 | The Ambassador at Saigon (Heath) to the Department of State
+ 33.6 frus1952-54v02p2/d363 1954-07-06 len=4694 A=12/7 B=1 C=1 D=2 | The Director of the United States Information Agency (Streibert) to All USIS Posts
+ 32.9 frus1961-63v02/d16 1962-01-12 len=6194 A=14/7 B=1 C=2 D=1 | 16. Memorandum From the Assistant Director for East Asian and Pacific Affairs, United States In
+ 32.9 frus1952-54v02p2/d374 1953-10-01 len=44004 A=104/16 B=3 C=0 D=23 | Memorandum for the National Security Council by the Executive Secretary (Lay)
+ 32.8 frus1964-68v02/d160 1965-02-24 len=6347 A=27/7 B=3 C=0 D=2 | 160. Memorandum From the Director of the United States Information Agency (Rowan) to President 
+ 32.4 frus1955-57v09/d207 1957-09-11 len=48978 A=116/12 B=6 C=15 D=19 | 207. Report Prepared by the National Security Council
+ 32.3 frus1964-68v01/d177 1964-05-26 len=8354 A=29/9 B=0 C=0 D=0 | 177. Memorandum From the Director of the United States Information Agency (Rowan) to the Presid
+ 32.2 frus1977-80v30/d203 1980-02-07 len=13482 A=14/9 B=2 C=0 D=2 | 203. Address by the Director of the International Communication Agency (Reinhardt)
+ 32.0 frus1964-68v01/d197 1964-06-04 len=14402 A=25/8 B=1 C=1 D=5 | 197. Memorandum From the Director of the United States Information Agency (Rowan) to the Presid
+ 31.8 frus1952-54v12p2/d359 1954-04-05 len=22970 A=13/6 B=2 C=10 D=14 | No. 359 Memorandum by the Executive Secretary (Lay) to the National Security Council
+ 31.4 frus1952-54v12p2/d403 1953-09-14 len=8483 A=18/6 B=0 C=2 D=5 | No. 403 Paper by the Psychological Strategy Board
+ 31.2 frus1977-80v30/d125 1978-04-03 len=29276 A=19/10 B=14 C=0 D=29 | 125. Remarks by the Director of the International Communication Agency (Reinhardt)
+ 31.0 frus1955-57v09/d191 1955-08-31 len=21389 A=17/8 B=4 C=1 D=8 | 191. Report by the Operations Coordinating Board to the National Security Council
+ 30.7 frus1952-54v02p2/d300 1952-07-29 len=26360 A=17/11 B=0 C=0 D=9 | Memorandum by the Administrator of the International Information Administration (Compton) to th
+ 30.5 frus1964-68v01/d122 1964-04-21 len=4619 A=16/6 B=1 C=0 D=3 | 122. Memorandum From the Director of the United States Information Agency (Rowan) to the Presid
+ 29.8 frus1969-76v38p2/d90 1973-08-06 len=11739 A=20/4 B=5 C=5 D=2 | 90. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to Pres
+ 29.2 frus1950v06/d50 1950-06-21 len=6542 A=17/7 B=0 C=0 D=1 | Memorandum by the Under Secretary of State (Webb) to the President
+ 28.8 frus1955-57v09/d197 1956-04-11 len=29475 A=21/6 B=2 C=9 D=14 | 197. Circular Airgram From the United States Information Agency to all USIS Missions
+ 27.5 frus1948v07/d567 1948-12-24 len=10967 A=20/4 B=2 C=2 D=9 | The Secretary of State to the Ambassador in China (Stuart)
+ 27.3 frus1969-76v06/d315 1970-06-02 len=4026 A=12/5 B=0 C=0 D=3 | 315. National Security Decision Memorandum 63
+ 27.1 frus1952-54v02p2/d296 1952-02-15 len=18988 A=14/7 B=5 C=0 D=2 | The Secretary of State to Certain Diplomatic and Consular Offices
+ 27.1 frus1977-80v30/d35 1977-04-15 len=10966 A=18/4 B=4 C=1 D=5 | 35. Memorandum From Paul Henze of the National Security Council Staff to the President’s Assist
+ 27.0 frus1952-54v02p2/d362 1954-03-01 len=31067 A=57/7 B=16 C=2 D=21 | The Director of the United States Information Agency (Streibert) to the Under Secretary of Stat
+ 26.9 frus1964-68v03/d138 1965-09-10 len=6760 A=7/6 B=0 C=1 D=5 | 138. Memorandum by Chester L. Cooper of the National Security Council Staff
+ 26.9 frus1969-76v38p2/d113 1977-01-06 len=20128 A=50/7 B=0 C=1 D=12 | 113. Memorandum From the Chairman of the National Security Council Under Secretaries Committee 
+ 26.9 frus1949v08/d251 1949-03-30 len=12042 A=22/3 B=0 C=14 D=2 | The Ambassador in China (Stuart) to the Secretary of State
+ 26.1 frus1958-60v15/d370 1959-09-23 len=40492 A=22/11 B=0 C=1 D=25 | 370. Airgram From the Embassy in Pakistan to the Department of State
+ 26.1 frus1961-63v03/d152 1963-06-04 len=6064 A=23/6 B=0 C=0 D=0 | 152. Letter From the Director of the United States Information Agency (Murrow) to the Assistant
+ 26.0 frus1969-76v38p2/d92 1973-09-10 len=18360 A=20/6 B=2 C=0 D=7 | 92. Memorandum From Lawrence S. Eagleburger of the National Security Council Staff to the Presi
+ 25.7 frus1958-60v15/d215 1958-08-26 len=15203 A=12/4 B=1 C=3 D=13 | 215. Telegram From the Embassy in India to the Department of State
+ 25.7 frus1969-76v38p2/d96 1974-01-04 len=6759 A=24/4 B=9 C=0 D=0 | 96. News Release by the United States Information Agency
+ 25.6 frus1961-63v02/d197 1962-05-17 len=6026 A=16/4 B=0 C=1 D=4 | 197. Memorandum From the Public Affairs Officer at the Embassy in Vietnam (Mecklin) to the Depu
+ 25.5 frus1977-80v30/d115 1977-12-15 len=21211 A=36/5 B=19 C=0 D=7 | 115. Research Report Prepared in the Office of Research, Office of Planning and Program Directi
+ 25.5 frus1969-76v08/d261 1972-09-15 len=11803 A=9/4 B=8 C=0 D=10 | 261. Memorandum From the Deputy Special Assistant for Vietnamese Affairs, Central Intelligence 
+ 25.5 frus1961-63v01/d339 1961-12-23 len=7137 A=10/5 B=3 C=0 D=2 | 339. Memorandum From the Public Affairs Officer of the Embassy in Viet-Nam (Anspacher) to the A
+ 25.3 frus1961-63v02/d179 1962-05-02 len=5059 A=14/4 B=2 C=1 D=1 | 179. Minutes of Staff Meeting, United States Information Service, Saigon, May 2, 1962
+ 25.2 frus1950v06/d115 1950-06-16 len=30499 A=13/6 B=1 C=5 D=16 | Policy Statement Prepared in the Department of State
+ 25.2 frus1949v08/d499 1949-07-14 len=15614 A=7/4 B=4 C=4 D=9 | Memorandum by the Ambassador in China (Stuart)
+ 25.1 frus1961-63v04/d81 1963-09-10 len=11064 A=5/4 B=3 C=4 D=14 | 81. Memorandum From the Counselor for Public Affairs of the Embassy in Vietnam (Mecklin) to the
+ 24.8 frus1969-76v38p2/d98 1974-11-15 len=13999 A=12/6 B=0 C=1 D=2 | 98. Memorandum From the Chairman of the National Security Council Subcommittee for Joint Commis
+ 24.8 frus1952-54v02p2/d359 1953-10-26 len=6772 A=13/5 B=0 C=0 D=2 | The Director of the United States Information Agency (Streibert) to Certain Diplomatic Posts
+ 24.7 frus1961-63v25/d122 1961-05-08 len=8556 A=28/5 B=1 C=0 D=2 | 122. Paper Prepared in the U.S. Information Agency
+ 24.5 frus1951v06p2/d480 1951-07-31 len=5727 A=10/4 B=0 C=4 D=0 | Memorandum of Conversation, by Mr. S. Shepard Jones of the Bureau of Near Eastern, South Asian,
+ 24.3 frus1952-54v12p1/d312 1954-08-20 len=16678 A=6/4 B=4 C=5 D=5 | Note to the National Security Council by the Executive Secretary (Lay)
+ 24.3 frus1955-57v22/d463 1957-02-27 len=24271 A=22/3 B=0 C=8 D=8 | 463. Operations Coordinating Board Outline Plan
+ 24.3 frus1969-76v38p2/d97 1974-04-03 len=31726 A=23/4 B=6 C=5 D=9 | 97. Address by the Assistant Secretary of State for Educational and Cultural Affairs (Richardso
+ 24.2 frus1977-80v30/d63 1977-06-09 len=26890 A=21/5 B=10 C=1 D=6 | 63. Statement by the Director of the United States Information Agency (Reinhardt) Before the Su
+ 24.2 frus1977-80v30/d67 1977-06-16 len=35354 A=48/7 B=5 C=1 D=10 | 67. Memorandum From the Director of the United States Information Agency (Reinhardt) to the Dep
+ 24.1 frus1955-57v22/d448 1955-12-14 len=24620 A=11/3 B=1 C=12 D=15 | 448. Staff Study Prepared by an Interdepartmental Committee for the Operations Coordinating Boa
+ 23.9 frus1961-63v25/d156 1963-10-28 len=51140 A=84/10 B=5 C=1 D=15 | 156. Memorandum From the Office of Public Information of the U.S. Information Agency to Agency 
+ 23.9 frus1977-80v30/d61 1977-06-07 len=2748 A=12/4 B=0 C=1 D=0 | 61. Memorandum From the Associate Press Secretary (Schecter) to the President’s Assistant for N
+ 23.3 frus1958-60v16/d4 1958-03-12 len=16607 A=6/3 B=0 C=10 D=6 | 4. Telegram From the Delegation at the SEATO Council Meeting to the Department of State
+ 23.3 frus1949v07p2/d386 1949-11-16 len=13190 A=3/3 B=1 C=9 D=7 | Memorandum by the Ambassador at Large (Jessup) to the Secretary of State
+ 23.2 frus1958-60v15/d182 1958-03-18 len=13420 A=5/4 B=0 C=11 D=2 | 182. National Intelligence Estimate
+ 23.1 frus1964-68v26/d106 1965-02-18 len=8384 A=13/4 B=0 C=2 D=1 | 106. Memorandum From Director of the United States Information Agency Rowan to Secretary of Sta
+ 23.0 frus1955-57v22/d484 1956-01-04 len=23489 A=8/5 B=0 C=5 D=8 | 484. Staff Study Prepared by an Interdepartmental Working Group for the Operations Coordinating
+ 22.9 frus1977-80v30/d96 1977-10-12 len=17756 A=24/3 B=16 C=0 D=11 | 96. Paper Prepared in the Office of Research, United States Information Agency
+ 22.8 frus1961-63v23/d289 1962-09-14 len=3792 A=12/4 B=0 C=0 D=1 | 289. Memorandum From the Director of the United States Information Agency (Murrow) to Secretary
+ 22.1 frus1977-80v30/d101 1977-11-01 len=16935 A=10/3 B=7 C=1 D=5 | 101. Preliminary Report Prepared in the Office of Research, United States Information Agency
+ 22.0 frus1955-57v21/d88 1956-03-07 len=15390 A=5/2 B=6 C=5 D=7 | 88. Telegram From the Delegation at the SEATO Council Meeting to the Department of State
+ 21.9 frus1961-63v25/d149 1963-05-09 len=12857 A=8/2 B=10 C=2 D=8 | 149. Memorandum From the Acting Director of the U.S. Information Agency (Wilson) to President K
+ 21.8 frus1969-76v08/d188 1972-06-12 len=11381 A=13/3 B=1 C=0 D=8 | 188. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to Pre
+ 21.6 frus1955-57v21/d122 1956-11-17 len=29558 A=8/5 B=1 C=5 D=6 | 122. United States Minutes of the ANZUS Council Meeting, Department of State, Washington, Novem
+ 21.5 frus1950v06/d647 1950-07-27 len=7338 A=4/2 B=2 C=5 D=7 | Policy Statement on Indonesia. Prepared in the Department of State
+ 21.4 frus1955-57v22/d158 1956-05-17 len=12361 A=5/3 B=2 C=6 D=3 | 158. Memorandum of a Conversation, Department of State, Washington, May 17, 1956
+ 21.3 frus1948v07/d19 1948-01-12 len=6941 A=15/4 B=0 C=0 D=1 | The Consul General at Shanghai (Cabot) to the Secretary of State
+ 21.1 frus1961-63v25/d143 1962-12-19 len=4501 A=12/2 B=1 C=1 D=3 | 143. Memorandum From the Director of the U.S. Information Agency (Murrow) to the President’s Pr
+ 21.0 frus1952-54v14p1/d404 1954-11-23 len=39937 A=10/4 B=2 C=14 D=16 | No. 404 National Intelligence Estimate
+ 21.0 frus1952-54v13p1/d606 1954-03-11 len=21914 A=10/4 B=0 C=3 D=11 | Memorandum by the Chairman of the Operations Coordinating Board (Smith) to the President
+ 21.0 frus1952-54v14p1/d276 1954-09-04 len=21970 A=11/2 B=5 C=3 D=10 | No. 276 Special National Intelligence Estimate
+ 21.0 frus1955-57v09/d196 1956-03-13 len=5809 A=11/4 B=0 C=0 D=1 | 196. Memorandum of a Meeting Between the President and the Republican Leadership, The White Hou
+ 20.8 frus1955-57v21/d23 1955-02-25 len=9959 A=2/2 B=1 C=14 D=5 | 23. Circular Telegram From the Department of State to Certain Diplomatic Missions
+ 20.8 frus1964-68v26/d62 1964-08-20 len=6128 A=3/3 B=0 C=6 D=3 | 62. Current Intelligence Memorandum
+ 20.8 frus1950v01/d145 1950-12-08 len=81101 A=48/13 B=0 C=4 D=36 | Report to the National Security Council by the Executive Secretary (Lay)
+ 20.8 frus1977-80v30/d213 1980-10-24 len=17768 A=8/6 B=1 C=0 D=3 | 213. News Release Prepared in the International Communication Agency
+ 20.7 frus1951v06p2/d1 1951-07-30 len=33275 A=7/5 B=4 C=4 D=6 | Department of State Policy Statement for New Zealand
+ 20.7 frus1961-63v25/d133 1961-12-05 len=6303 A=12/4 B=0 C=0 D=0 | 133. Memorandum From the Director of the U.S. Information Agency (Murrow) to President Kennedy
+ 20.7 frus1977-80v30/d2 1977-01-06 len=6310 A=7/4 B=0 C=0 D=5 | 2. Information Memorandum From the Deputy Assistant Director, East Asia and Pacific, United Sta
+ 20.6 frus1977-80v30/d39 1977-04-19 len=27931 A=23/5 B=2 C=0 D=11 | 39. Information Memorandum From the Assistant Director, Motion Pictures and Television Service,
+ 20.6 frus1948v07/d203 1948-05-27 len=5662 A=3/3 B=1 C=5 D=3 | The Consul General at Shanghai (Cabot) to the Secretary of State
+ 20.5 frus1961-63v25/d146 1963-02-28 len=4923 A=8/2 B=3 C=0 D=6 | 146. Memorandum From the Director of the U.S. Information Agency (Murrow) to the Deputy Directo
+ 20.4 frus1951v01/d330 1951-10-10 len=14054 A=24/4 B=0 C=1 D=2 | Record of the Under Secretary’s Meeting, October 10, 1951
+ 20.3 frus1964-68v26/d124 1965-06-05 len=6370 A=6/2 B=2 C=3 D=5 | 124. Telegram From the Embassy in Indonesia to the Department of State
+ 20.2 frus1951v06p2/d105 1951-03-20 len=62750 A=12/6 B=4 C=81 D=25 | Memorandum by the Acting Assistant Secretary of State for Near Eastern, South Asian, and Africa
+ 20.2 frus1952-54v14p2/d820 1954-10-28 len=20310 A=5/3 B=0 C=7 D=8 | No. 820 Memorandum by the Executive Officer of the Operations Coordinating Board (Staats) to th
+ 20.1 frus1951v06p2/d489 1951-12-06 len=29772 A=4/3 B=4 C=14 D=21 | Memorandum by the Ambassador in India (Bowles) to the Secretary of State
+ 20.0 frus1964-68v27/d344 1967-04-26 len=26104 A=16/5 B=0 C=0 D=15 | 344. Report of the Thai Working Group to the East Asia and Pacific Interdepartmental Regional G
+ 20.0 frus1948v07/d468 1948-11-16 len=4104 A=12/2 B=1 C=0 D=3 | The Acting Secretary of State to the Ambassador in China (Stuart)
+ 19.9 frus1955-57v09/d202 1957-01-18 len=4157 A=16/2 B=1 C=0 D=3 | 202. Minutes of a Cabinet Meeting, Washington, January 18, 1957, 9–10:50 a.m.
+ 19.8 frus1961-63v03/d96 1963-04-18 len=16449 A=27/3 B=1 C=0 D=22 | 96. Memorandum Prepared in the Department of State
+ 19.8 frus1948v07/d42 1948-01-26 len=6415 A=12/2 B=1 C=0 D=4 | The Ambassador in China (Stuart) to the Secretary of State
+ 19.8 frus1950v06/d89 1950-12-06 len=30739 A=5/2 B=6 C=18 D=15 | Final Report of the Joint MDAP Survey Mission to Southeast Asia
+ 19.8 frus1961-63v02/d8 1962-01-05 len=2474 A=7/4 B=2 C=0 D=0 | 8. Telegram From the Task Force in Vietnam to the United States Information Agency
+ 19.8 frus1949v08/d131 1949-02-05 len=7549 A=4/4 B=3 C=1 D=3 | The Ambassador in China (Stuart) to the Secretary of State
+ 19.7 frus1961-63v02/d5 1962-01-04 len=2692 A=5/4 B=0 C=2 D=1 | 5. Memorandum From the Assistant Director for East Asian and Pacific Affairs, United States Inf
+ 19.6 frus1950v06/d498 1950-04-08 len=7923 A=3/2 B=2 C=7 D=2 | The Chargé at Saigon (Gullion) to the Secretary of State
+ 19.6 frus1951v06p2/d372 1951-02-21 len=24251 A=5/5 B=1 C=3 D=14 | Department of State Policy Statement
+ 19.6 frus1955-57v22/d447 1955-12-05 len=3912 A=9/3 B=0 C=1 D=2 | 447. Memorandum From the Assistant Secretary of State for Far Eastern Affairs (Robertson) to th
+ 19.4 frus1977-80v30/d15 1977-03-03 len=9394 A=8/3 B=2 C=2 D=2 | 15. Memorandum From the Assistant Director, North Africa, Near East, and South Asia, United Sta
+ 19.4 frus1961-63v25/d40 1961-08-18 len=12685 A=4/3 B=2 C=3 D=7 | 40. Memorandum From the Under Secretary of State (Bowles) to Secretary of State Rusk
+ 19.3 frus1955-57v21/d350 1956-04-06 len=24123 A=4/3 B=0 C=8 D=16 | 350. Despatch From the Embassy in Laos to the Department of State
+ 19.3 frus1961-63v23/d143 1961-01-25 len=7738 A=2/2 B=0 C=6 D=7 | 143. Telegram From the Embassy in Indonesia to the Department of State
+ 19.3 frus1952-54v12p1/d283 1954-08-04 len=18169 A=2/2 B=4 C=8 D=4 | Note to the National Security Council by the Executive Secretary (Lay)
+ 19.2 frus1951v07p1/d295 1951-05-23 len=19269 A=4/3 B=3 C=5 D=5 | Memorandum by the United States Representative at the United Nations (Austin) to the Assistant 
+ 19.2 frus1964-68v26/d121 1965-04-21 len=24615 A=3/3 B=2 C=9 D=5 | 121. Report From Ambassador Ellsworth Bunker to President Johnson
+ 19.1 frus1961-63v02/d290 1962-09-21 len=3866 A=7/4 B=0 C=0 D=2 | 290. Memorandum of Conversation, United States Information Agency, Washington, September 21, 19
+ 19.0 frus1949v08/d1572 1949-07-18 len=4146 A=12/2 B=0 C=0 D=3 | The Consul at Shanghai (McConaughy) to the Secretary of State
+ 19.0 frus1955-57v09/d195 1955-12-13 len=6306 A=9/4 B=0 C=0 D=1 | 195. Memorandum of a Meeting Between the President and Legislative Leaders, The White House, Wa
+ 19.0 frus1949v08/d673 1949-11-14 len=19086 A=8/3 B=4 C=2 D=4 | The Consul General at Shanghai (McConaughy) to the Secretary of State
+ 19.0 frus1977-80v30/d68 1977-06-17 len=31756 A=40/5 B=1 C=0 D=13 | 68. Memorandum From the Director of the United States Information Agency (Reinhardt) to all USI
+ 18.9 frus1969-76v08/d233 1972-08-11 len=6489 A=6/4 B=0 C=0 D=4 | 233. Memorandum From the Deputy Special Assistant for Vietnamese Affairs, Central Intelligence 
+ 18.9 frus1977-80v30/d74 1977-06-28 len=2341 A=5/4 B=2 C=0 D=1 | 74. Information Memorandum From the Assistant Director, North Africa, Near East, and South Asia
+ 18.8 frus1952-54v12p1/d388 1954-11-12 len=7913 A=2/2 B=0 C=7 D=4 | Draft of National Security Council Paper Prepared in the Department of State
+ 18.8 frus1964-68v01/d90 1964-03-18 len=17516 A=2/2 B=1 C=10 D=17 | 90. Memorandum From the President’s Special Assistant for National Security Affairs (Bundy) to 
+ 18.8 frus1977-80v30/d113 1977-12-09 len=22895 A=25/4 B=1 C=3 D=0 | 113. Research Note Prepared in the United States Information Agency
+ 18.7 frus1977-80v30/d57 1977-05-28 len=14410 A=6/4 B=7 C=1 D=0 | 57. Address by the Director of the United States Information Agency (Reinhardt)
+ 18.7 frus1958-60v15/d548 1960-05-01 len=28598 A=3/3 B=2 C=8 D=9 | 548. Report Prepared by the Operations Coordinating Board
+ 18.6 frus1977-80v30/d167 1979-03-14 len=3040 A=7/4 B=0 C=0 D=1 | 167. Memorandum From the President’s Deputy Assistant for National Security Affairs (Aaron) to 
+ 18.5 frus1958-60v15/d412 1958-06-04 len=29034 A=4/3 B=1 C=8 D=15 | 412. National Security Council Report
+ 18.5 frus1949v09/d576 1949-10-24 len=14178 A=8/3 B=2 C=2 D=3 | Memorandum by the Assistant Secretary of State for Far Eastern Affairs (Butterworth) to the Und
+ 18.4 frus1958-60v01/d17 1958-06-04 len=35176 A=16/4 B=0 C=3 D=13 | 17. Paper Prepared by the Operations Coordinating Board
+ 18.2 frus1964-68v28/d389 1968-10-31 len=19264 A=3/2 B=0 C=9 D=9 | 389. Special National Intelligence Estimate
+ 18.2 frus1964-68v27/d386 1968-05-06 len=1717 A=6/4 B=0 C=0 D=1 | 386. Memorandum From the Director of the United States Information Agency (Marks) to President 
+ 18.2 frus1961-63v25/d138 1962-08-15 len=6119 A=9/3 B=2 C=0 D=1 | 138. Memorandum of Meeting
+ 18.1 frus1977-80v30/d73 1977-06-27 len=8561 A=9/3 B=3 C=0 D=1 | 73. Memorandum From the Advisor (National Security), Planning and Program Advisory Staff, Offic
+ 18.0 frus1958-60v16/d65 1960-07-25 len=35750 A=4/4 B=0 C=18 D=10 | 65. National Security Council Report
+ 17.9 frus1961-63v01/d42 1961-05-03 len=59232 A=10/6 B=3 C=5 D=28 | 42. Memorandum From the Deputy Secretary of Defense (Gilpatric) to the President
+ 17.9 frus1969-76v38p2/d86 1973-03-20 len=11366 A=12/3 B=1 C=0 D=1 | 86. Minutes of a Meeting of the United States Information Agency Executive Committee
+ 17.9 frus1955-57v03mSupp/d728 1956-10-04 len=22598 A=13/3 B=1 C=0 D=12 | 728. Telegram 363 from Geneva
+ 17.8 frus1958-60v01/d89 1959-09-02 len=8218 A=7/2 B=1 C=1 D=10 | 89. Telegram From the Ambassador in Vietnam (Durbrow) to the Department of State
+ 17.8 frus1961-63v01/d57 1961-05-20 len=9444 A=2/2 B=2 C=6 D=3 | 57. Telegram From the Embassy in Thailand to the Department of State
+ 17.8 frus1952-54v15p1/d131 1952-05-22 len=8351 A=6/2 B=2 C=1 D=6 | Memorandum by the Deputy Assistant Secretary of State for Far Eastern Affairs (Johnson) to the 
+ 17.8 frus1952-54v12p2/d273 1954-06-15 len=7260 A=2/2 B=0 C=10 D=1 | No. 273 The Ambassador in Indonesia (Cumming) to the Department of State
+ 17.7 frus1958-60v18/d175 1960-06-11 len=34422 A=3/3 B=3 C=11 D=11 | 175. National Security Council Report
+ 17.7 frus1952-54v12p2/d11 1952-02-15 len=16638 A=3/2 B=5 C=4 D=5 | No. 11 The Chargé in Burma (Day) to the Department of State
+ 17.6 frus1952-54v13p2/d1351 1954-11-29 len=10100 A=5/4 B=0 C=0 D=5 | The Chargé in Vietnam (Kidder) to the Department of State
+ 17.5 frus1948v06/d2 1948-09-24 len=17040 A=3/3 B=6 C=2 D=4 | Policy Statement of the Department of State
+ 17.4 frus1951v01/d323 1951-01-29 len=15065 A=4/3 B=2 C=2 D=10 | Memorandum by the Assistant Secretary of State for Public Affairs (Barrett)
+ 17.4 frus1955-57v03/d268 1957-06-28 len=23111 A=7/3 B=2 C=3 D=5 | 268. Address by the Secretary of State, San Francisco, June 28, 1957, 10:30 a.m.
+ 17.4 frus1955-57v21/d299 1955-06-04 len=7207 A=4/3 B=1 C=3 D=2 | 299. Letter From the Minister in Laos (Yost) to the Director of the Office of Philippine and So

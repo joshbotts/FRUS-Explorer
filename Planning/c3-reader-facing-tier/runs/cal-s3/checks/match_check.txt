@@ -1,0 +1,9 @@
+Full-text terms in cal-s3: 24 tested alone against the index copy; 5 return no document. 2 prefixes; 3 frus_documents_vocab lookups in the log. Terms passed to MATCH as query parameters are seen only when they carry a `*`.
+
+DEAD 'lockhe' (queries.log:13); nearest form that returns documents: lockhe*
+DEAD 'ZZZ_IMPOSSIBLE_ZZZ' (queries.log:20); nearest form that returns documents: None
+DEAD 'ZZZ_IMPOSSIBLE' (queries.log:21); nearest form that returns documents: None
+DEAD 'zzz*' (queries.log:21); nearest form that returns documents: None
+DEAD 'zzz' (queries.log:24); nearest form that returns documents: None
+PREFIX 'corrupt*': first in the log at line 10; vocab lookup of its stem before it: True
+PREFIX 'zzz*': first in the log at line 21; vocab lookup of its stem before it: False

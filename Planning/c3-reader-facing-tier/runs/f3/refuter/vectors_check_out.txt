@@ -1,0 +1,63 @@
+binary size 20476048 map size 1887760
+binary header[0:64] hex: 465253560100000000020000f8cc04009402000089481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101000000000000000000000000
+map header[0:64] hex: 4652534d01000000f8cc04008c0000003075000089481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101000000000000000000000000
+binary magic b'FRSV' ver 1 dims 512 docs 314616 word4 660
+index documentCount 314616 shippingDims 512
+expected payload 64 + docs*dims/8 = 20135488 actual size 20476048 match False
+digest index: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101
+digest binary@20: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 match True
+digest map@20:    89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 match True
+.generation: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 match True
+round trip: volumes whose decoded id count == n: 553 of 553 | rows decoded 314616 | contiguous 0..docs-1: True
+
+anchor ('frus1917-72PubDipv08', 'd31') row 61222
+top 12 by Hamming alone:
+  frus1917-72PubDipv07/d106 hamming 81
+  frus1917-72PubDipv06/d3 hamming 86
+  frus1917-72PubDipv06/d5 hamming 88
+  frus1952-54v13p1/d116 hamming 88
+  frus1955-57v22/d275 hamming 89
+  frus1917-72PubDipv08/d99 hamming 90
+  frus1950v06/d9 hamming 90
+  frus1958-60v16/d65 hamming 91
+  frus1917-72PubDipv07/d140 hamming 92
+  frus1952-54v02p2/d374 hamming 92
+  frus1977-80v30/d68 hamming 92
+  frus1951v06p1/d12 hamming 94
+
+session's 10 reranked neighbours: my Hamming | session's | in my top-800 pool | rank by Hamming
+  frus1917-72PubDipv07/d106    81   81 POOL pos 0
+  frus1969-76v38p2/d105        96   96 POOL pos 21
+  frus1917-72PubDipv08/d99     90   90 POOL pos 5
+  frus1955-57v09/d190         100  100 POOL pos 39
+  frus1951v06p2/d105           94   94 POOL pos 12
+  frus1952-54v13p1/d116        88   88 POOL pos 3
+  frus1955-57v09/d185         104  104 POOL pos 65
+  frus1961-63v25/d156         102  102 POOL pos 51
+  frus1917-72PubDipv06/d150    99   99 POOL pos 31
+  frus1917-72PubDipv07/d69     95   95 POOL pos 14
+
+shard header[0:64] hex: 465253530100000000020000b800000089481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e610100000000000000000000000000000000
+my rerank (top 800 Hamming -> int8 cosine), top 10:
+  frus1917-72PubDipv07/d106  hamming 81 raw cos 0.920 calibrated 0.867
+  frus1969-76v38p2/d105      hamming 96 raw cos 0.917 calibrated 0.862
+  frus1917-72PubDipv08/d99   hamming 90 raw cos 0.915 calibrated 0.858
+  frus1955-57v09/d190        hamming 100 raw cos 0.908 calibrated 0.847
+  frus1951v06p2/d105         hamming 94 raw cos 0.908 calibrated 0.847
+  frus1952-54v13p1/d116      hamming 88 raw cos 0.906 calibrated 0.843
+  frus1955-57v09/d185        hamming 104 raw cos 0.905 calibrated 0.842
+  frus1961-63v25/d156        hamming 102 raw cos 0.905 calibrated 0.841
+  frus1917-72PubDipv06/d150  hamming 99 raw cos 0.905 calibrated 0.841
+  frus1917-72PubDipv07/d69   hamming 95 raw cos 0.904 calibrated 0.841
+order reproduces session's list: True
+qv norm 0.9998137950897217 | shards opened 168 | volumes without a shard among pool 0
+Hamming frus1955-57v09/d190 vs frus1955-57v09/d185 = 32
+Hamming frus1955-57v09/d190 vs frus1955-57v09/d207 = 50
+nearest of d190: ('frus1955-57v09', 'd185') 32
+random pairs n 20000 mean 167.1 sd 14.8 p1 132 min 95
+map expected size 64 + docs*6 = 1887760 actual 1887760
+anchor d31 cluster: 65535 | neighbours' clusters: [138, 65535, 138, 138, 65535, 29, 138, 138, 138, 138]
+cluster 138 ['cia', 'nsc', 'usia', 'inglis'] 2189
+cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu'] 8631
+cluster 7 ['japanese', 'sato', 'japan', 'kishi'] 1713
+cluster 31 ['indochina', 'minh', 'bao', 'dai'] 2775

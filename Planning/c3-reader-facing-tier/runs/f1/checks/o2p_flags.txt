@@ -1,0 +1,64 @@
+O2' check of f1: 63 numbers in overview.md; 33 traced, 24 weak, 6 untraced.
+TRACE TABLE: 28 rows, from line 282 of memo.md.
+Each flagged number is WEAK (a row holds the value without the word after it) or UNTRACED (no row holds the value). Decide each: TRACED (name the row), NOT A NUMBER, or UNTRACED.
+
+[WEAK] 'thirteen' (value 13, next word 'reading'); nearest row: ¶1 "the image of American strength, reliability and friendship" | Q13
+    sentence: They assumed film was effective without being able to measure it ( , Their Saigon surveys showed trust in the United States as an ally at its lowest in thirteen readings ( , After their posts reported that programs on American security commitments lacked credibility (Foreign Relations of the United States, , , , Organization and Management of Foreign Policy;
+[WEAK] 'two' (value 2, next word 'separate'); nearest row: "22 documents, each retrieved in full" | M2 (accounting), M6
+    sentence: Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Directo
+[WEAK] '42' (value 42, next word 'bundled'); nearest row: RG 306 entries A1–42, UD WW 257, UD WW 193, P–207, P–104, FRC 67 A 222, 68 A 4933 | M4.3; the source notes in `argset_meta.txt`
+    sentence: Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Directo
+[WEAK] '207' (value 207, next word 'executive'); nearest row: RG 306 entries A1–42, UD WW 257, UD WW 193, P–207, P–104, FRC 67 A 222, 68 A 4933 | M4.3; the source notes in `argset_meta.txt`
+    sentence: Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Directo
+[WEAK] '104' (value 104, next word 'two'); nearest row: RG 306 entries A1–42, UD WW 257, UD WW 193, P–207, P–104, FRC 67 A 222, 68 A 4933 | M4.3; the source notes in `argset_meta.txt`
+    sentence: Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Directo
+[WEAK] 'two' (value 2, next word 'washington'); nearest row: "22 documents, each retrieved in full" | M2 (accounting), M6
+    sentence: Where FRUS points for the rest.** These are two separate channels, and their counts are not added together. *Where the printed documents came from:* mostly USIA's own records in National Archives Record Group 306: the Director's Subject Files, (Entry A1–42; the bundled finding aids give no catalogue identifier, dates or access status); the director's subject files of (Entry UD WW 257); the Directo
+[WEAK] '63 D 351' (value 63d351, next word ''); nearest row: lot-file series that appears most often in both channels | M4.1, M4.2 (63D351 73 came-from; 66D95 108 + 63D351 66 pointed-at)
+    sentence: This is the series behind Lots 63 D 351 and 66 D 95.
+[WEAK] '66 D 95' (value 66d95, next word ''); nearest row: lot-file series that appears most often in both channels | M4.1, M4.2 (63D351 73 came-from; 66D95 108 + 63D351 66 pointed-at)
+    sentence: This is the series behind Lots 63 D 351 and 66 D 95.
+[WEAK] 'Two' (value 2, next word 'serie'); nearest row: "22 documents, each retrieved in full" | M2 (accounting), M6
+    sentence: Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.0
+[UNTRACED] 'A1 1462' (value a11462, next word '')
+    sentence: Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.0
+[WEAK] '2124692' (value 2124692, next word 'access'); nearest row: PSB Working Files NAID 2124692 | M4.4
+    sentence: Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.0
+[UNTRACED] 'A1 5305' (value a15305, next word '')
+    sentence: Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.0
+[UNTRACED] 'A1 5414' (value a15414, next word '')
+    sentence: Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.0
+[WEAK] '631403' (value 631403, next word 'unrestricted'); nearest row: Vietnam Working Group NAID 631403 | M4.4
+    sentence: Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.0
+[WEAK] '511' (value 511, next word 'file'); nearest row: class 511 gloss "International Informational and Educational Relations" | M4.4
+    sentence: Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.0
+[UNTRACED] '511.90' (value 511.90, next word '')
+    sentence: Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.0
+[UNTRACED] '511.00' (value 511.00, next word '')
+    sentence: Two more series sit behind the wider set: the Psychological Strategy Board Working Files (Record Group 59, Entry A1 1462, identifier 2124692, , access possibly restricted); the Subject Files of the Vietnam Working Group (Record Group 59, Entry A1 5305/A1 5414, identifier 631403, , unrestricted). *What the editors cited without printing:* the Central Decimal File's class 511 files (511.90 and 511.0
+[UNTRACED] 'UD 53' (value ud53, next word '')
+    sentence: Record Group 59, Entry UD 53, identifier 2544398, , access possibly restricted).
+[WEAK] '2544398' (value 2544398, next word 'access'); nearest row: Lot 58 D 726 NAID 2544398 | M4.4
+    sentence: Record Group 59, Entry UD 53, identifier 2544398, , access possibly restricted).
+[WEAK] 'three' (value 3, next word 'document'); nearest row: "messaging" in three documents; treated as "message" | M1.2
+    sentence: "Soft power" is a term of . *"Messaging".* The literal word occurs in three documents in the whole series.
+[WEAK] '553' (value 553, next word 'indexed'); nearest row: "Department of State" in 552 of 553 volumes; nonsense string nothing | M0.3, M0.4
+    sentence: The are seen through regional volumes and the Foreign Information Program volume. **Scope.** I searched every one of the 553 indexed volumes for documents dated through that name the information program (USIA, USIS, the Voice of America, psychological warfare or strategy, cultural exchange, public diplomacy, the American image) together with a place in East Asia or the Pacific.
+[WEAK] '22' (value 22, next word 'them'); nearest row: "22 documents, each retrieved in full" | M2 (accounting), M6
+    sentence: The argument rests on 22 of them, chosen by reading, and every count is conditional on this 553-volume library (see the memo). ## Decisions this needs from you **What counts as "soft power".** I read it as the government's deliberate information, cultural and image work, together with its judgments of America's standing.
+[WEAK] 'thirteen' (value 13, next word 'saigon'); nearest row: ¶1 "the image of American strength, reliability and friendship" | Q13
+    sentence: In the "Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys" ( , In USIA's director told Kissinger that "public opinion surveys and other assessments of Japanese attitudes have tended to confirm the seriousness of these strains" ( , From the the strategy shifted to handing the message to Asian governments, then to reassurance In USIA's director compla
+[WEAK] 'about 94 in every 100' (value 94/100, next word 'matche'); nearest row: "about 94 in every 100" | M1.7 (2692 of 2860)
+    sentence: I checked by exact-text matching that the search found what it claimed: about 94 in every 100 matches held the words literally.
+[WEAK] 'two' (value 2, next word 'document'); nearest row: "22 documents, each retrieved in full" | M2 (accounting), M6
+    sentence: I used the app's document-similarity data, a numerical measure of how alike two documents' texts are, to find neighbours of a key document.
+[WEAK] 'two' (value 2, next word 'document'); nearest row: "22 documents, each retrieved in full" | M2 (accounting), M6
+    sentence: That added two documents to the reading, the USIA status report and the program memorandum.
+[WEAK] 'three' (value 3, next word 'pair'); nearest row: "messaging" in three documents; treated as "message" | M1.2
+    sentence: It also found three pairs of documents printed twice.
+[WEAK] 'five' (value 5, next word 'heading'); nearest row: "three pairs … printed twice" | M5 Operation 1
+    sentence: Exact counts, queries and verification are in the memo. ## Read next The collection **"American soft power in East Asia and the Pacific: how policymakers assessed it"** holds the 22 documents under five headings matching the findings, with notes and the 28 passages quoted here.
+[WEAK] '28' (value 28, next word 'passage'); nearest row: Finding 5 quotations | Q23, Q24, Q25, Q26, Q27, Q28
+    sentence: Exact counts, queries and verification are in the memo. ## Read next The collection **"American soft power in East Asia and the Pacific: how policymakers assessed it"** holds the 22 documents under five headings matching the findings, with notes and the 28 passages quoted here.
+[WEAK] 'three' (value 3, next word 'place'); nearest row: "messaging" in three documents; treated as "message" | M1.2
+    sentence: Your additions would unlock the most in three places.

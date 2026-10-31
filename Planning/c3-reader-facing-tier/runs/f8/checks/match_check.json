@@ -1,0 +1,91 @@
+{
+ "run": "runs/f8",
+ "termsTested": 9,
+ "dead": [
+  {
+   "term": "\"soft power\\\"",
+   "source": "queries.log",
+   "line": 17,
+   "returns": false,
+   "query": "\"soft power\\\"",
+   "nearestLive": null
+  }
+ ],
+ "syntaxErrors": [],
+ "prefixes": [],
+ "vocabLookupsInLog": 0,
+ "all": [
+  {
+   "term": "\"511.00/8-2352\\\"",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"511.00/8-2352\\\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"circular telegram 208\\\"",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"circular telegram 208\\\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"Depcirtel 208\\\"",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"Depcirtel 208\\\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"soft power\\\"",
+   "source": "queries.log",
+   "line": 17,
+   "returns": false,
+   "query": "\"soft power\\\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"psychological warfare\"",
+   "source": "queries.log",
+   "line": 24,
+   "returns": true,
+   "query": "\"psychological warfare\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"psychological strategy\"",
+   "source": "queries.log",
+   "line": 24,
+   "returns": true,
+   "query": "\"psychological strategy\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"information program\"",
+   "source": "queries.log",
+   "line": 24,
+   "returns": true,
+   "query": "\"information program\"",
+   "nearestLive": null
+  },
+  {
+   "term": "USIA",
+   "source": "queries.log",
+   "line": 24,
+   "returns": true,
+   "query": "\"USIA\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"Voice of America\"",
+   "source": "queries.log",
+   "line": 24,
+   "returns": true,
+   "query": "\"Voice of America\"",
+   "nearestLive": null
+  }
+ ]
+}

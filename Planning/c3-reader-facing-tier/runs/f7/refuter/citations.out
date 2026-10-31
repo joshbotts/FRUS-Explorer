@@ -1,0 +1,126 @@
+manifest volume keys: ['dateRange', 'editors', 'filename', 'generalEditor', 'publicationDate', 'sizeBytes', 'status', 'subseries', 'tags', 'title', 'volumeId']
+OK  printed Document 32 -> frus1950v06/d32 | document_number=32 | manifest title: Foreign Relations of the United States, 1950, East Asia and
+                    the Pacific, Vo
+      cited as: Foreign Relations of the United States, 1950, East Asia and the Pacific, Volume VI, Documents 32 and 15
+OK  printed Document 15 -> frus1950v06/d15 | document_number=15 | manifest title: Foreign Relations of the United States, 1950, East Asia and
+                    the Pacific, Vo
+      cited as: Foreign Relations of the United States, 1950, East Asia and the Pacific, Volume VI, Documents 32 and 15
+OK  printed Document 123 -> frus1964-68v29p2/d123 | document_number=123 | manifest title: Foreign Relations of the United States, 1964–1968, Volume
+                    XXIX, Part 2, Jap
+      cited as: Foreign Relations of the United States, 1964–1968, Volume XXIX, Part 2, Japan, Document 123
+OK  printed Document 105 -> frus1969-76v38p2/d105 | document_number=105 | manifest title: Foreign Relations of the United States, 1969–1976, Volume
+                    XXXVIII, Part 2, 
+      cited as: Foreign Relations of the United States, 1969–1976, Volume XXXVIII, Part 2, Document 105
+OK  printed Document 31 -> frus1950v06/d31 | document_number=31 | manifest title: Foreign Relations of the United States, 1950, East Asia and
+                    the Pacific, Vo
+      cited as: Foreign Relations of the United States, 1950, East Asia and the Pacific, Volume VI, Document 31
+OK  printed Document 32 -> frus1950v06/d32 | document_number=32 | manifest title: Foreign Relations of the United States, 1950, East Asia and
+                    the Pacific, Vo
+      cited as: Document 32
+OK  printed Document 15 -> frus1950v06/d15 | document_number=15 | manifest title: Foreign Relations of the United States, 1950, East Asia and
+                    the Pacific, Vo
+      cited as: Document 15
+OK  printed Document 359 -> frus1952-54v12p2/d359 | document_number=359 | manifest title: Foreign Relations of the United States, 1952–1954, East Asia
+                    and the Pacifi
+      cited as: Foreign Relations of the United States, 1952–1954, East Asia and the Pacific, Volume XII, Part 2, Document 359
+OK  printed Document 266 -> frus1950v06/d266 | document_number=266 | manifest title: Foreign Relations of the United States, 1950, East Asia and
+                    the Pacific, Vo
+      cited as: Foreign Relations of the United States, 1950, East Asia and the Pacific, Volume VI, Document 266
+OK  printed Document 551 -> frus1952-54v14p2/d551 | document_number=551 | manifest title: Foreign Relations of the United States, 1952–1954, China and
+                    Japan, Volume 
+      cited as: Foreign Relations of the United States, 1952–1954, China and Japan, Volume XIV, Part 2, Document 551
+OK  printed Document 992 -> frus1952-54v13p2/d992 | document_number=992 | manifest title: Foreign Relations of the United States, 1952–1954, Indochina,
+                    Volume XIII, 
+      cited as: Foreign Relations of the United States, 1952–1954, Indochina, Volume XIII, Part 2, Document 992
+OK  printed Document 26 -> frus1958-60v01/d26 | document_number=26 | manifest title: Foreign Relations of the United States, 1958–1960, Vietnam,
+                    Volume I
+      cited as: Foreign Relations of the United States, 1958–1960, Vietnam, Volume I, Document 26
+OK  printed Document 103 -> frus1952-54v12p1/d103 | document_number=103 | manifest title: Foreign Relations of the United States, 1952–1954, East Asia
+                    and the Pacifi
+      cited as: Foreign Relations of the United States, 1952–1954, East Asia and the Pacific, Volume XII, Part 1, Document 103
+OK  printed Document 447 -> frus1955-57v22/d447 | document_number=447 | manifest title: Foreign Relations of the United States, 1955–1957, Southeast
+                    Asia, Volume X
+      cited as: Foreign Relations of the United States, 1955–1957, Southeast Asia, Volume XXII, Document 447
+OK  printed Document 271 -> frus1955-57v22/d271 | document_number=271 | manifest title: Foreign Relations of the United States, 1955–1957, Southeast
+                    Asia, Volume X
+      cited as: Document 271
+OK  printed Document 127 -> frus1917-72PubDipv06/d127 | document_number=127 | manifest title: Foreign Relations of the United States, 1917–1972, Volume VI,
+                    Public Diplom
+      cited as: Foreign Relations of the United States, 1917–1972, Volume VI, Public Diplomacy, 1961–1963, Document 127
+OK  printed Document 123 -> frus1964-68v29p2/d123 | document_number=123 | manifest title: Foreign Relations of the United States, 1964–1968, Volume
+                    XXIX, Part 2, Jap
+      cited as: Foreign Relations of the United States, 1964–1968, Volume XXIX, Part 2, Japan, Document 123
+OK  printed Document 31 -> frus1917-72PubDipv08/d31 | document_number=31 | manifest title: Foreign Relations of the United States, 1917–1972, Volume
+                    VIII, Public Dipl
+      cited as: Foreign Relations of the United States, 1917–1972, Volume VIII, Public Diplomacy, 1969–1972, Document 31
+OK  printed Document 106 -> frus1964-68v26/d106 | document_number=106 | manifest title: Foreign Relations of the United States, 1964–1968, Volume
+                    XXVI, Indonesia; 
+      cited as: Foreign Relations of the United States, 1964–1968, Volume XXVI, Indonesia; Malaysia-Singapore; Philippines, Do
+OK  printed Document 147 -> frus1917-72PubDipv07/d147 | document_number=147 | manifest title: Foreign Relations of the United States, 1917–1972, Volume
+                    VII, Public Diplo
+      cited as: Foreign Relations of the United States, 1917–1972, Volume VII, Public Diplomacy, 1964–1968, Document 147
+OK  printed Document 58 -> frus1917-72PubDipv08/d58 | document_number=58 | manifest title: Foreign Relations of the United States, 1917–1972, Volume
+                    VIII, Public Dipl
+      cited as: Volume VIII, Document 58
+OK  printed Document 88 -> frus1917-72PubDipv08/d88 | document_number=88 | manifest title: Foreign Relations of the United States, 1917–1972, Volume
+                    VIII, Public Dipl
+      cited as: Document 88
+OK  printed Document 129 -> frus1917-72PubDipv08/d129 | document_number=129 | manifest title: Foreign Relations of the United States, 1917–1972, Volume
+                    VIII, Public Dipl
+      cited as: Document 129
+OK  printed Document 30 -> frus1917-72PubDipv08/d30 | document_number=30 | manifest title: Foreign Relations of the United States, 1917–1972, Volume
+                    VIII, Public Dipl
+      cited as: Foreign Relations of the United States, 1917–1972, Volume VIII, Public Diplomacy, 1969–1972, Document 30
+OK  printed Document 146 -> frus1917-72PubDipv08/d146 | document_number=146 | manifest title: Foreign Relations of the United States, 1917–1972, Volume
+                    VIII, Public Dipl
+      cited as: Documents 146 and 149
+OK  printed Document 149 -> frus1917-72PubDipv08/d149 | document_number=149 | manifest title: Foreign Relations of the United States, 1917–1972, Volume
+                    VIII, Public Dipl
+      cited as: Documents 146 and 149
+OK  printed Document 105 -> frus1969-76v38p2/d105 | document_number=105 | manifest title: Foreign Relations of the United States, 1969–1976, Volume
+                    XXXVIII, Part 2, 
+      cited as: Foreign Relations of the United States, 1969–1976, Volume XXXVIII, Part 2, Document 105
+OK  printed Document 83 -> frus1977-80v30/d83 | document_number=83 | manifest title: Foreign Relations of the United States, 1977–1980, Volume
+                    XXX, Public Diplo
+      cited as: Foreign Relations of the United States, 1977–1980, Volume XXX, Public Diplomacy, Document 83
+
+=== headers, dates, numbers of the 24 cited documents ===
+  frus1950v06/d32 #32 1950-04-03 | Memorandum of Conversation, by Mr. Charlton Ogburn, Policy Information Officer, Bureau of Far Eastern Affairs | [Washington, April 3, 1950.]
+  frus1950v06/d15 #15 1950-02-27 | The Ambassador in Thailand (Stanton) to the Secretary of State | Bangkok, February 27, 1950—7 p. m.
+  frus1964-68v29p2/d123 #123 1968-06-05 | 123. Telegram From the Embassy in Japan to the Department of State | Tokyo, June 5, 1968, 0700Z.
+  frus1969-76v38p2/d105 #105 1975-05-09 | 105. Memorandum From the Assistant Director for East Asia and the Pacific, United States Information Agency (Payeff) to the Director (Keogh) and Deput | Washington, May 9, 1975.
+  frus1950v06/d31 #31 1950-03-28 | Memorandum by the Officer in Charge of Public Affairs, Bureau of Far Eastern Affairs (Connors) to the Ambassador at Large (Jessup) | [Washington,] March 28, 1950.
+  frus1952-54v12p2/d359 #359 1954-04-05 | No. 359 Memorandum by the Executive Secretary (Lay) to the National Security Council | [Washington,] April 5, 1954.
+  frus1950v06/d266 #266 1950-08-26 | The Secretary of State to Certain Diplomatic Offices | Washington, August 26, 1950—3 a. m.
+  frus1952-54v14p2/d551 #551 1952-04-09 | No. 551 The Commander in Chief, Far East (Ridgway) to the Department of the Army | Tokyo, April 9, 1952—3:37 p.m.
+  frus1952-54v13p2/d992 #992 1954-06-24 | The Chargé at Saigon (McClintock) to the Department of State | Saigon, June 24, 1954—4 p.m.
+  frus1958-60v01/d26 #26 1958-08-06 | 26. Letter From the Ambassador in Vietnam (Durbrow) to the Director, Bureau of Intelligence and Research (Cumming) | Saigon, August 6, 1958.
+  frus1952-54v12p1/d103 #103 1953-05-07 | The Consul General at Singapore (Baldwin) to the Department of State | Singapore, May 7, 1953—7 p.m.
+  frus1955-57v22/d447 #447 1955-12-05 | 447. Memorandum From the Assistant Secretary of State for Far Eastern Affairs (Robertson) to the Under Secretary of State (Hoover) | Washington, December 5, 1955.
+  frus1955-57v22/d271 #271 1957-10-02 | 271. Memorandum From the Deputy Under Secretary of State for Political Affairs (Murphy) to the Secretary of State | Washington, October 2, 1957.
+  frus1917-72PubDipv06/d127 #127 1963-06-01 | 127. Telegram From the Embassy in Japan to the Secretary of State | Tokyo, June 1, 1963 7 p.m.
+  frus1917-72PubDipv08/d31 #31 1969-08-05 | 31. Letter From the Assistant Director, East Asia and the Pacific, United States Information Agency (Oleksiw) to all USIA Public Affairs Officers | Washington, August 5, 1969
+  frus1964-68v26/d106 #106 1965-02-18 | 106. Memorandum From Director of the United States Information Agency Rowan to Secretary of State Rusk | Washington, February 18, 1965.
+  frus1917-72PubDipv07/d147 #147 1967-04-05 | 147. Report Prepared in the Office of Policy and Research, United States Information Agency | Washington, undated
+  frus1917-72PubDipv08/d58 #58 1969-12-08 | 58. Summary Prepared in the Office of the Assistant Director, East Asia and Pacific, United States Information Agency | Washington, December 8, 1969
+  frus1917-72PubDipv08/d88 #88 1970-06-01 | 88. Memorandum From the Assistant Director, East Asia and Pacific, United States Information Agency (Oleksiw) to the Director (Shakespeare) | Washington, June 1, 1970
+  frus1917-72PubDipv08/d129 #129 1971-04-15 | 129. Memorandum From the Deputy Director for Policy and Plans, United States Information Agency (White) to the Under Secretary of State (Irwin) | Washington, April 15, 1971
+  frus1917-72PubDipv08/d30 #30 1969-08-02 | 30. Circular Message From the United States Information Agency to the Embassy in Thailand | Washington, August 2, 1969
+  frus1917-72PubDipv08/d146 #146 1971-08-16 | 146. Memorandum From the Assistant Director, East Asia and Pacific, United States Information Agency (Reinhardt) to the Director (Shakespeare) | Washington, August 16, 1971
+  frus1917-72PubDipv08/d149 #149 1971-11-23 | 149. Memorandum From the Deputy Assistant Director, Office of the Assistant Director, East Asia and Pacific, United States Information Agency (Southar | Washington, November 23, 1971
+  frus1977-80v30/d83 #83 1977-08-01 | 83. Telegram From the Embassy in Indonesia to the Department of State | Jakarta, August 1, 1977, 0830Z
+
+d32 '14-nation': r 15, 1949, to March 15, 1950, Ambassador at Large Philip C. Jessup conducted a 14-nation fact-finding tour of the Far East. For the text of his radio address r
+d32 'fourteen': NOT FOUND
+d32 '14 nation': NOT FOUND
+d32 '14 countries': NOT FOUND
+
+RG 305 rows in document_sources: (1, 1) [('frus1969-76v38p2', 'd105', 'Source: National Archives, RG 305, Records of the USIA, Office of the Director, Subject Files, 1975, Entry UD–UP 7, FRC 306–84–0003, 7501300')]
+manifest volumes among the 79 with earliest year 1945: [('frus1946v08', '1945-11-01T16:00:00-05:00'), ('frus1946v09', '1945-12-06T00:00:00-05:00'), ('frus1946v10', '1945-11-01T16:00:00-05:00')]
+'effectiveness of our information' whole index: (0,)
+d105 in belief family? (0,)
+d447 matched by '"information agency" OR "information service" OR "information program" OR "psychological strategy" OR "psychological warfare" OR "voice of america" OR propaganda': True
+d447 matched by 'usis': True
+d447 matched by 'colonialism': True
+d447 matched by '"support colonialism"': True
+d447 matched by 'malaya AND usia': True

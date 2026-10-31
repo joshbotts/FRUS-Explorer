@@ -1,0 +1,14 @@
+soft_power               information vols (7)       count      0 chars  12259751 per_million    0.00  volumes_nonzero 0 of 7
+soft_power               East Asia area vols (14)   count      0 chars  34944488 per_million    0.00  volumes_nonzero 0 of 14
+image_of_US              information vols (7)       count     45 chars  12259751 per_million    3.67  volumes_nonzero 7 of 7
+image_of_US              East Asia area vols (14)   count      7 chars  34944488 per_million    0.20  volumes_nonzero 6 of 14
+psychological            information vols (7)       count    438 chars  12259751 per_million   35.73  volumes_nonzero 7 of 7
+psychological            East Asia area vols (14)   count    577 chars  34944488 per_million   16.51  volumes_nonzero 14 of 14
+propaganda               information vols (7)       count    441 chars  12259751 per_million   35.97  volumes_nonzero 7 of 7
+propaganda               East Asia area vols (14)   count    640 chars  34944488 per_million   18.31  volumes_nonzero 14 of 14
+public_diplomacy         information vols (7)       count    342 chars  12259751 per_million   27.90  volumes_nonzero 5 of 7
+public_diplomacy         East Asia area vols (14)   count      1 chars  34944488 per_million    0.03  volumes_nonzero 1 of 14
+POS_Department_of_State  information vols (7)       count   2023 chars  12259751 per_million  165.01  volumes_nonzero 7 of 7
+POS_Department_of_State  East Asia area vols (14)   count   8351 chars  34944488 per_million  238.98  volumes_nonzero 14 of 14
+NEG_ZZZ                  information vols (7)       count      0 chars  12259751 per_million    0.00  volumes_nonzero 0 of 7
+NEG_ZZZ                  East Asia area vols (14)   count      0 chars  34944488 per_million    0.00  volumes_nonzero 0 of 14

@@ -1,0 +1,195 @@
+{
+ "run": "runs/cal-s1",
+ "termsTested": 18,
+ "dead": [],
+ "syntaxErrors": [],
+ "prefixes": [
+  {
+   "prefix": "brib*",
+   "firstLogLine": 5,
+   "vocabLookupBefore": false
+  },
+  {
+   "prefix": "commission*",
+   "firstLogLine": 32,
+   "vocabLookupBefore": false
+  },
+  {
+   "prefix": "embezzl*",
+   "firstLogLine": 5,
+   "vocabLookupBefore": false
+  },
+  {
+   "prefix": "malfeas*",
+   "firstLogLine": 5,
+   "vocabLookupBefore": false
+  },
+  {
+   "prefix": "nepot*",
+   "firstLogLine": 5,
+   "vocabLookupBefore": false
+  },
+  {
+   "prefix": "misappropri*",
+   "firstLogLine": 10,
+   "vocabLookupBefore": true
+  },
+  {
+   "prefix": "embezzle*",
+   "firstLogLine": null,
+   "vocabLookupBefore": null
+  },
+  {
+   "prefix": "venal*",
+   "firstLogLine": 5,
+   "vocabLookupBefore": false
+  }
+ ],
+ "vocabLookupsInLog": 1,
+ "all": [
+  {
+   "term": "corrupt",
+   "source": "queries.log",
+   "line": 6,
+   "returns": true,
+   "query": "\"corrupt\"",
+   "nearestLive": null
+  },
+  {
+   "term": "brib*",
+   "source": "queries.log",
+   "line": 7,
+   "returns": true,
+   "query": "\"brib\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "graft",
+   "source": "queries.log",
+   "line": 7,
+   "returns": true,
+   "query": "\"graft\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"foreign corrupt practices\"",
+   "source": "queries.log",
+   "line": 31,
+   "returns": true,
+   "query": "\"foreign corrupt practices\"",
+   "nearestLive": null
+  },
+  {
+   "term": "lockheed",
+   "source": "queries.log",
+   "line": 32,
+   "returns": true,
+   "query": "\"lockheed\"",
+   "nearestLive": null
+  },
+  {
+   "term": "bribe",
+   "source": "queries.log",
+   "line": 32,
+   "returns": true,
+   "query": "\"bribe\"",
+   "nearestLive": null
+  },
+  {
+   "term": "briberi",
+   "source": "queries.log",
+   "line": 32,
+   "returns": true,
+   "query": "\"briberi\"",
+   "nearestLive": null
+  },
+  {
+   "term": "payoff",
+   "source": "queries.log",
+   "line": 32,
+   "returns": true,
+   "query": "\"payoff\"",
+   "nearestLive": null
+  },
+  {
+   "term": "commission*",
+   "source": "queries.log",
+   "line": 32,
+   "returns": true,
+   "query": "\"commission\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "embezzl*",
+   "source": "scan1.py",
+   "line": null,
+   "returns": true,
+   "query": "\"embezzl\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "venal",
+   "source": "scan1.py",
+   "line": null,
+   "returns": true,
+   "query": "\"venal\"",
+   "nearestLive": null
+  },
+  {
+   "term": "kickback",
+   "source": "scan1.py",
+   "line": null,
+   "returns": true,
+   "query": "\"kickback\"",
+   "nearestLive": null
+  },
+  {
+   "term": "malfeas*",
+   "source": "scan1.py",
+   "line": null,
+   "returns": true,
+   "query": "\"malfeas\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "nepot*",
+   "source": "scan1.py",
+   "line": null,
+   "returns": true,
+   "query": "\"nepot\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "cronyism",
+   "source": "scan1.py",
+   "line": null,
+   "returns": true,
+   "query": "\"cronyism\"",
+   "nearestLive": null
+  },
+  {
+   "term": "misappropri*",
+   "source": "scan1.py",
+   "line": null,
+   "returns": true,
+   "query": "\"misappropri\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "embezzle*",
+   "source": "teiscan.py",
+   "line": null,
+   "returns": true,
+   "query": "\"embezzle\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "venal*",
+   "source": "teiscan.py",
+   "line": null,
+   "returns": true,
+   "query": "\"venal\"*",
+   "nearestLive": null
+  }
+ ]
+}

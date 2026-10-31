@@ -1,0 +1,191 @@
+{'dateRange': {'earliest': '1860-12-31T00:00:00-05:00', 'latest': '1861-12-31T23:59:59-05:00'}, 'editors': [], 'filename': 'frus1861.xml', 'publicationDate': '1861', 'sizeBytes': 2609156, 'status': 'published', 'subseries': '1861', 'tags': ['belgium', 'mexico', 'united-kingdom', 'austria', 'france', 'spain', 'russia', 'italy', 'denmark', 'netherlands', 'turkey', 'sweden', 'portugal', 'peru', 'guatemala', 'nicaragua', 'egypt', 'venezuela', 'chile', 'japan', 'black-jeremiah-sullivan', 'lincoln-abraham', 'seward-william-henry', 'buchanan-james-p', 'american-revolutionary-war', 'suriname', 'grenada'], 'title': 'Message of the President of the United States to the Two\n                    Houses of Congress, at the Commencement of the Second Session of the\n                    Thirty-seventh Congress', 'volumeId': 'frus1861'}
+frus1942China | Foreign Relations of the United States, Diplomatic Papers,
+                    1942, China | {'earliest': '1941-12-27T18:00:00-05:00', 'latest': '1943-01-06T18:00:00-05:00'}
+frus1943China | Foreign Relations of the United States, Diplomatic Papers,
+                    1943, China | {'earliest': '1942-06-04T00:00:00-05:00', 'latest': '1944-01-06T11:00:00-05:00'}
+frus1944v05 | Foreign Relations of the United States, Diplomatic Papers,
+                    1944, The Near East, South Asia, and Afri | {'earliest': '1943-05-12T02:00:00-05:00', 'latest': '1947-05-18T23:59:59-04:00'}
+frus1944v06 | Foreign Relations of the United States, Diplomatic Papers,
+                    1944, China, Volume VI | {'earliest': '1943-11-09T15:00:00-05:00', 'latest': '1945-01-02T21:00:00-05:00'}
+frus1945v07 | Foreign Relations of the United States, Diplomatic Papers,
+                    1945, The Far East, China, Volume VII | {'earliest': '1944-12-20T02:00:00-05:00', 'latest': '1946-01-30T08:00:00-05:00'}
+frus1946v09 | Foreign Relations of the United States, 1946, The Far East:
+                    China, Volume IX | {'earliest': '1945-12-06T00:00:00-05:00', 'latest': '1946-08-10T23:59:59-05:00'}
+frus1946v10 | Foreign Relations of the United States, 1946, The Far East:
+                    China, Volume X | {'earliest': '1945-11-01T16:00:00-05:00', 'latest': '1947-10-01T23:59:59-05:00'}
+frus1947v07 | Foreign Relations of the United States, 1947, The Far East:
+                    China, Volume VII | {'earliest': '1946-11-09T13:00:00-05:00', 'latest': '1948-01-19T23:59:59-05:00'}
+frus1948v05p1 | Foreign Relations of the United States, 1948, The Near East,
+                    South Asia, and Africa, Volume V, Part  | {'earliest': '1946-01-01T00:00:00-05:00', 'latest': '1949-12-31T23:59:59-05:00'}
+frus1948v05p2 | Foreign Relations of the United States, 1948, The Near East,
+                    South Asia, and Africa, Volume V, Part  | {'earliest': '1948-01-05T00:00:00-05:00', 'latest': '1949-01-03T17:00:00-05:00'}
+frus1948v06 | Foreign Relations of the United States, 1948, The Far East
+                    and Australasia, Volume VI | {'earliest': '1947-10-09T00:00:00-05:00', 'latest': '1948-12-31T19:00:00-05:00'}
+frus1948v07 | Foreign Relations of the United States, 1948, The Far East:
+                    China, Volume VII | {'earliest': '1947-10-09T00:00:00-05:00', 'latest': '1949-01-06T23:59:59-05:00'}
+frus1948v08 | Foreign Relations of the United States, 1948, The Far East:
+                    China, Volume VIII | {'earliest': '1947-10-13T00:00:00+08:00', 'latest': '1948-12-31T14:00:00-05:00'}
+frus1949v06 | Foreign Relations of the United States, 1949, The Near East,
+                    South Asia, and Africa, Volume VI | {'earliest': '1948-05-31T23:30:00-05:00', 'latest': '1950-01-05T21:00:00-05:00'}
+frus1949v07p1 | Foreign Relations of the United States, 1949, The Far East
+                    and Australasia, Volume VII, Part 1 | {'earliest': '1949-01-03T00:00:00-05:00', 'latest': '1949-12-31T18:00:00-05:00'}
+frus1949v07p2 | Foreign Relations of the United States, 1949, The Far East
+                    and Australasia, Volume VII, Part 2 | {'earliest': '1949-01-03T00:00:00-05:00', 'latest': '1949-12-30T23:59:59-05:00'}
+frus1949v08 | Foreign Relations of the United States, 1949, The Far East:
+                    China, Volume VIII | {'earliest': '1948-11-28T01:00:00-05:00', 'latest': '1949-12-31T12:00:00-05:00'}
+frus1949v09 | Foreign Relations of the United States, 1949, The Far East:
+                    China, Volume IX | {'earliest': '1947-06-22T18:00:00-05:00', 'latest': '1950-01-06T16:00:00-05:00'}
+frus1950v05 | Foreign Relations of the United States, 1950, The Near East,
+                    South Asia, and Africa, Volume V | {'earliest': '1949-12-22T00:00:00-05:00', 'latest': '1951-10-21T16:00:00-05:00'}
+frus1950v06 | Foreign Relations of the United States, 1950, East Asia and
+                    the Pacific, Volume VI | {'earliest': '1950-01-02T00:00:00-05:00', 'latest': '1951-01-06T15:00:00-05:00'}
+frus1950v07 | Foreign Relations of the United States, 1950, Korea, Volume
+                    VII | {'earliest': '1950-01-14T00:00:00-05:00', 'latest': '1950-12-30T22:09:00-05:00'}
+frus1951v06p1 | Foreign Relations of the United States, 1951, Asia and the
+                    Pacific, Volume VI, Part 1 | {'earliest': '1950-12-31T11:00:00-05:00', 'latest': '1954-11-16T23:59:59-05:00'}
+frus1951v06p2 | Foreign Relations of the United States, 1951, Asia and the
+                    Pacific, Volume VI, Part 2 | {'earliest': '1951-01-02T14:00:00-05:00', 'latest': '1951-12-29T19:33:00-05:00'}
+frus1951v07p1 | Foreign Relations of the United States, 1951, Korea and
+                    China, Volume VII, Part 1 | {'earliest': '1951-01-01T00:00:00-05:00', 'latest': '1951-12-31T21:31:00-05:00'}
+frus1951v07p2 | Foreign Relations of the United States, 1951, Korea and
+                    China, Volume VII, Part 2 | {'earliest': '1951-01-02T00:00:00-05:00', 'latest': '1951-12-29T23:59:59-05:00'}
+frus1952-54v11p1 | Foreign Relations of the United States, 1952–1954, Africa and
+                    South Asia, Volume XI, Part 1 | {'earliest': '1952-01-04T00:00:00-05:00', 'latest': '1954-12-31T16:00:00-05:00'}
+frus1952-54v11p2 | Foreign Relations of the United States, 1952–1954, Africa and
+                    South Asia, Volume XI, Part 2 | {'earliest': '1952-01-01T20:00:00-05:00', 'latest': '1954-12-31T23:59:59-05:00'}
+frus1952-54v12p1 | Foreign Relations of the United States, 1952–1954, East Asia
+                    and the Pacific, Volume XII, Part 1 | {'earliest': '1951-12-29T00:00:00-05:00', 'latest': '1954-12-31T16:10:00-05:00'}
+frus1952-54v12p2 | Foreign Relations of the United States, 1952–1954, East Asia
+                    and the Pacific, Volume XII, Part 2 | {'earliest': '1952-01-04T02:30:00-05:00', 'latest': '1954-12-24T12:00:00-05:00'}
+frus1952-54v13p1 | Foreign Relations of the United States, 1952–1954, Indochina,
+                    Volume XIII, Part 1 | {'earliest': '1951-01-29T00:00:00-05:00', 'latest': '1954-07-30T22:59:59-05:00'}
+frus1952-54v13p2 | Foreign Relations of the United States, 1952–1954, Indochina,
+                    Volume XIII, Part 2 | {'earliest': '1954-04-26T00:00:00-05:00', 'latest': '1954-12-31T14:00:00-05:00'}
+frus1952-54v14p1 | Foreign Relations of the United States, 1952–1954, China and
+                    Japan, Volume XIV, Part 1 | {'earliest': '1952-01-08T00:00:00-05:00', 'latest': '1954-12-30T20:00:00-05:00'}
+frus1952-54v14p2 | Foreign Relations of the United States, 1952–1954, China and
+                    Japan, Volume XIV, Part 2 | {'earliest': '1951-12-31T00:26:00-05:00', 'latest': '1954-12-31T13:00:00-05:00'}
+frus1952-54v15p1 | Foreign Relations of the United States, 1952–1954, Korea,
+                    Volume XV, Part 1 | {'earliest': '1952-01-02T00:00:00-05:00', 'latest': '1953-06-07T21:51:00-05:00'}
+frus1952-54v15p2 | Foreign Relations of the United States, 1952–1954, Korea,
+                    Volume XV, Part 2 | {'earliest': '1953-06-08T00:00:00-05:00', 'latest': '1954-12-30T23:59:59-05:00'}
+frus1955-57v01 | Foreign Relations of the United States, 1955–1957, Vietnam,
+                    Volume I | {'earliest': '1954-12-15T00:00:00-05:00', 'latest': '1957-12-20T23:59:59-05:00'}
+frus1955-57v02 | Foreign Relations of the United States, 1955–1957, China,
+                    Volume II | {'earliest': '1955-01-04T00:00:00-05:00', 'latest': '1955-07-29T23:59:59-05:00'}
+frus1955-57v03 | Foreign Relations of the United States, 1955–1957, China,
+                    Volume III | {'earliest': '1955-01-13T06:00:00-05:00', 'latest': '1957-12-31T23:59:59-05:00'}
+frus1955-57v03mSupp | Foreign Relations of the United States, 1955–1957, Volume
+                    III, Microfiche Supplement, China | {'earliest': '1955-07-29T00:00:00-05:00', 'latest': '1959-10-10T23:59:59-05:00'}
+frus1955-57v08 | Foreign Relations of the United States, 1955–1957, South
+                    Asia, Volume VIII | {'earliest': '1955-01-14T11:30:00-05:00', 'latest': '1957-12-27T23:59:59-05:00'}
+frus1955-57v09 | Foreign Relations of the United States, 1955–1957, Foreign
+                    Economic Policy; Foreign Information Prog | {'earliest': '1955-01-06T15:10:00-05:00', 'latest': '1958-01-03T23:59:59-05:00'}
+frus1955-57v21 | Foreign Relations of the United States, 1955–1957, East Asian
+                    Security; Cambodia; Laos, Volume XXI | {'earliest': '1955-01-06T14:00:00-05:00', 'latest': '1958-01-17T23:59:59-05:00'}
+frus1955-57v22 | Foreign Relations of the United States, 1955–1957, Southeast
+                    Asia, Volume XXII | {'earliest': '1955-01-01T00:00:00-05:00', 'latest': '1957-12-30T17:00:00-05:00'}
+frus1955-57v23p1 | Foreign Relations of the United States, 1955–1957, Japan,
+                    Volume XXIII, Part 1 | {'earliest': '1955-01-04T16:13:00-05:00', 'latest': '1957-12-31T23:59:59-05:00'}
+frus1955-57v23p2 | Foreign Relations of the United States, 1955–1957, Korea,
+                    Volume XXIII, Part 2 | {'earliest': '1955-01-07T00:00:00-05:00', 'latest': '1957-12-31T23:59:59-05:00'}
+frus1955-57v26 | Foreign Relations of the United States, 1955–1957, Central
+                    and Southeastern Europe, Volume XXVI | {'earliest': '1955-02-07T00:00:00-05:00', 'latest': '1957-12-27T19:31:00-05:00'}
+frus1958-60v01 | Foreign Relations of the United States, 1958–1960, Vietnam,
+                    Volume I | {'earliest': '1958-01-23T23:00:00-05:00', 'latest': '1960-12-31T20:15:00-05:00'}
+frus1958-60v15 | Foreign Relations of the United States, 1958–1960, South and
+                    Southeast Asia, Volume XV | {'earliest': '1957-12-26T05:00:00-05:00', 'latest': '1960-12-27T18:35:00-05:00'}
+frus1958-60v16 | Foreign Relations of the United States, 1958–1960, East
+                    Asia-Pacific Region; Cambodia; Laos, Volume  | {'earliest': '1958-01-13T14:30:00-05:00', 'latest': '1960-12-31T11:30:00-05:00'}
+frus1958-60v17 | Foreign Relations of the United States, 1958–1960, Indonesia,
+                    Volume XVII | {'earliest': '1958-01-02T00:00:00-05:00', 'latest': '1960-12-29T23:59:59-05:00'}
+frus1958-60v18 | Foreign Relations of the United States, 1958–1960, Japan;
+                    Korea, Volume XVIII | {'earliest': '1958-01-08T00:00:00-05:00', 'latest': '1960-12-20T23:59:59-05:00'}
+frus1958-60v19 | Foreign Relations of the United States, 1958–1960, China,
+                    Volume XIX | {'earliest': '1958-01-23T00:00:00-05:00', 'latest': '1960-12-28T23:59:59-05:00'}
+frus1961-63v01 | Foreign Relations of the United States, 1961–1963, Volume I,
+                    Vietnam, 1961 | {'earliest': '1961-01-04T00:00:00-05:00', 'latest': '1961-12-28T17:45:00-05:00'}
+frus1961-63v02 | Foreign Relations of the United States, 1961–1963, Volume II,
+                    Vietnam, 1962 | {'earliest': '1962-01-02T00:00:00-05:00', 'latest': '1962-12-27T23:59:59-05:00'}
+frus1961-63v03 | Foreign Relations of the United States, 1961–1963, Volume
+                    III, Vietnam, January–August 1963 | {'earliest': '1961-07-03T23:00:00-05:00', 'latest': '1963-08-28T23:59:59-05:00'}
+frus1961-63v04 | Foreign Relations of the United States, 1961–1963, Volume IV,
+                    Vietnam, August–December 1963 | {'earliest': '1963-08-28T00:00:00-05:00', 'latest': '1963-12-31T23:59:59-05:00'}
+frus1961-63v19 | Foreign Relations of the United States, 1961–1963, Volume
+                    XIX, South Asia | {'earliest': '1961-01-31T00:00:00-05:00', 'latest': '1963-12-31T23:59:59-05:00'}
+frus1961-63v22 | Foreign Relations of the United States, 1961–1963, Volume
+                    XXII, Northeast Asia | {'earliest': '1958-06-24T00:00:00-05:00', 'latest': '1963-12-20T23:59:59-05:00'}
+frus1961-63v23 | Foreign Relations of the United States, 1961–1963, Volume
+                    XXIII: Southeast Asia | {'earliest': '1961-01-12T03:30:00-05:00', 'latest': '1963-12-26T23:59:59-05:00'}
+frus1961-63v24 | Foreign Relations of the United States, 1961–1963, Volume
+                    XXIV, Laos Crisis | {'earliest': '1961-01-02T11:15:00-05:00', 'latest': '1963-12-11T23:59:59-05:00'}
+frus1961-63v25 | Foreign Relations of the United States, 1961–1963, Volume
+                    XXV, Organization of Foreign Policy; Infor | {'earliest': '1961-01-03T14:35:00-05:00', 'latest': '1963-12-27T23:59:59-05:00'}
+frus1964-68v01 | Foreign Relations of the United States, 1964–1968, Volume I,
+                    Vietnam, 1964 | {'earliest': '1964-01-01T00:00:00-05:00', 'latest': '1965-08-05T09:15:00-05:00'}
+frus1964-68v02 | Foreign Relations of the United States, 1964–1968, Volume II,
+                    Vietnam, January–June 1965 | {'earliest': '1965-01-02T02:00:00-05:00', 'latest': '1965-06-12T23:59:59-05:00'}
+frus1964-68v03 | Foreign Relations of the United States, 1964–1968, Volume
+                    III, Vietnam, June–December 1965 | {'earliest': '1965-06-12T18:15:00-05:00', 'latest': '1965-12-31T23:59:59-05:00'}
+frus1964-68v04 | Foreign Relations of the United States, 1964–1968, Volume IV,
+                    Vietnam, 1966 | {'earliest': '1965-01-06T17:07:00-05:00', 'latest': '1966-12-30T23:59:59-05:00'}
+frus1964-68v05 | Foreign Relations of the United States, 1964–1968, Volume V,
+                    Vietnam, 1967 | {'earliest': '1967-01-01T00:00:00-05:00', 'latest': '1967-12-31T04:49:00-05:00'}
+frus1964-68v06 | Foreign Relations of the United States, 1964–1968, Volume VI,
+                    Vietnam, January–August 1968 | {'earliest': '1968-01-03T00:00:00-05:00', 'latest': '1969-05-04T17:30:00-05:00'}
+frus1964-68v07 | Foreign Relations of the United States, 1964–1968, Volume
+                    VII, Vietnam, September 1968–January 1969 | {'earliest': '1968-01-10T10:00:00-05:00', 'latest': '1969-01-19T23:59:59-05:00'}
+frus1964-68v25 | Foreign Relations of the United States, 1964–1968, Volume
+                    XXV, South Asia | {'earliest': '1964-01-02T00:00:00-05:00', 'latest': '1968-11-22T20:56:00-05:00'}
+frus1964-68v26 | Foreign Relations of the United States, 1964–1968, Volume
+                    XXVI, Indonesia; Malaysia-Singapore; Phili | {'earliest': '1964-01-02T15:20:00-05:00', 'latest': '1969-01-13T06:50:00-05:00'}
+frus1964-68v27 | Foreign Relations of the United States, 1964–1968, Volume
+                    XXVII, Mainland Southeast Asia; Regional A | {'earliest': '1964-01-24T00:00:00-05:00', 'latest': '1968-12-29T01:49:00-05:00'}
+frus1964-68v28 | Foreign Relations of the United States, 1964–1968, Volume
+                    XXVIII, Laos | {'earliest': '1964-01-17T00:00:00-05:00', 'latest': '1968-12-31T00:45:00-05:00'}
+frus1964-68v29p1 | Foreign Relations of the United States, 1964–1968, Volume
+                    XXIX, Part 1, Korea | {'earliest': '1964-01-03T00:00:00-05:00', 'latest': '1968-12-23T23:59:59-05:00'}
+frus1964-68v29p2 | Foreign Relations of the United States, 1964–1968, Volume
+                    XXIX, Part 2, Japan | {'earliest': '1964-01-10T00:00:00-05:00', 'latest': '1969-01-11T02:31:00-05:00'}
+frus1964-68v30 | Foreign Relations of the United States, 1964–1968, Volume
+                    XXX, China | {'earliest': '1964-01-09T00:00:00-05:00', 'latest': '1969-01-06T17:00:00-05:00'}
+frus1969-76v06 | Foreign Relations of the United States, 1969–1976, Volume VI,
+                    Vietnam, January 1969–July 1970 | {'earliest': '1969-01-16T00:00:00-05:00', 'latest': '1970-07-21T22:59:59-05:00'}
+frus1969-76v07 | Foreign Relations of the United States, 1969–1976, Volume
+                    VII, Vietnam, July 1970–January 1972 | {'earliest': '1970-07-22T00:00:00-05:00', 'latest': '1972-01-26T10:00:00-05:00'}
+frus1969-76v08 | Foreign Relations of the United States, 1969–1976, Volume
+                    VIII, Vietnam, January–October 1972 | {'earliest': '1972-01-20T00:00:00-05:00', 'latest': '1972-10-06T12:25:00-05:00'}
+frus1969-76v09 | Foreign Relations of the United States, 1969–1976, Volume IX,
+                    Vietnam, October 1972–January 1973 | {'earliest': '1972-01-13T15:03:00-05:00', 'latest': '1973-01-27T18:08:00-05:00'}
+frus1969-76v10 | Foreign Relations of the United States, 1969–1976, Volume X,
+                    Vietnam, January 1973–July 1975 | {'earliest': '1973-01-27T11:15:00-05:00', 'latest': '1975-07-22T23:59:59-05:00'}
+frus1969-76v11 | Foreign Relations of the United States, 1969–1976, Volume XI,
+                    South Asia Crisis, 1971 | {'earliest': '1971-01-20T12:15:00-05:00', 'latest': '1971-12-30T14:27:00-05:00'}
+frus1969-76v17 | Foreign Relations of the United States, 1969–1976, Volume
+                    XVII, China, 1969–1972 | {'earliest': '1969-01-25T00:00:00-05:00', 'latest': '1972-12-16T18:07:00-05:00'}
+frus1969-76v18 | Foreign Relations of the United States, 1969–1976, Volume
+                    XVIII, China, 1973–1976 | {'earliest': '1973-01-03T22:15:00-05:00', 'latest': '1976-11-03T23:59:59-05:00'}
+frus1969-76v19p1 | Foreign Relations of the United States, 1969–1976, Volume
+                    XIX, Part 1, Korea, 1969–1972 | {'earliest': '1969-01-30T00:00:00-05:00', 'latest': '1972-12-22T23:59:59-05:00'}
+frus1969-76v19p2 | Foreign Relations of the United States, 1969–1976, Volume
+                    XIX, Part 2, Japan, 1969–1972 | {'earliest': '1969-01-14T06:25:00-05:00', 'latest': '1972-10-18T10:00:00-05:00'}
+frus1969-76v20 | Foreign Relations of the United States, 1969–1976, Volume XX,
+                    Southeast Asia, 1969–1972 | {'earliest': '1969-01-14T06:19:00-05:00', 'latest': '1972-12-16T23:59:59-05:00'}
+frus1969-76v42 | Foreign Relations of the United States, 1969–1976, Volume
+                    XLII, Vietnam: The Kissinger-Le Duc Tho Ne | {'earliest': '1969-08-04T00:00:00-05:00', 'latest': '1973-12-20T23:59:59-05:00'}
+frus1969-76ve07 | Foreign Relations of the United States, 1969–1976, Volume
+                    E–7, Documents on South Asia, 1969–1972 | {'earliest': '1969-01-27T00:00:00-05:00', 'latest': '1972-12-31T07:55:00-05:00'}
+frus1969-76ve08 | Foreign Relations of the United States, 1969–1976, Volume
+                    E–8, Documents on South Asia, 1973–1976 | {'earliest': '1973-01-02T05:48:00-05:00', 'latest': '1976-12-31T18:47:00-05:00'}
+frus1969-76ve12 | Foreign Relations of the United States, 1969–1976, Volume
+                    E–12, Documents on East and Southeast Asia | {'earliest': '1973-01-02T00:00:00-05:00', 'latest': '1976-12-31T23:59:59-05:00'}
+frus1969-76ve13 | Foreign Relations of the United States, 1969–1976, Volume
+                    E–13, Documents on China, 1969–1972 | {'earliest': '1969-12-19T00:00:00-05:00', 'latest': '1972-12-29T23:59:59-05:00'}
+frus1977-80v13 | Foreign Relations of the United States, 1977–1980, Volume
+                    XIII, China | {'earliest': '1976-11-03T00:00:00-05:00', 'latest': '1981-01-14T23:59:59-05:00'}
+frus1977-80v19 | Foreign Relations of the United States, 1977–1980, Volume
+                    XIX, South Asia | {'earliest': '1977-01-12T10:43:00-05:00', 'latest': '1981-01-15T23:59:59-05:00'}
+frus1977-80v22 | Foreign Relations of the United States, 1977–1980, Volume
+                    XXII, Southeast Asia and the Pacific | {'earliest': '1977-01-26T00:00:00-05:00', 'latest': '1981-01-02T08:38:00-05:00'}
+frus1977-80v30 | Foreign Relations of the United States, 1977–1980, Volume
+                    XXX, Public Diplomacy | {'earliest': '1976-11-03T00:00:00-05:00', 'latest': '1980-12-16T23:59:59-05:00'}

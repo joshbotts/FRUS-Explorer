@@ -1,0 +1,7 @@
+FTS "soft power"           corpus (553 volumes, non-apparatus): 0
+FTS soft AND power         corpus (553 volumes, non-apparatus): 785
+FTS "public diplomacy"     corpus (553 volumes, non-apparatus): 211
+FTS "hearts and minds"     corpus (553 volumes, non-apparatus): 60
+'public diplomacy' FTS hits 211; STRICT regex share 210 of 211; TOLERANT 211 of 211 (whole set, under 300)
+[('frus1977-80v30', 56), ('frus1981-88v04', 30), ('frus1981-88v01', 16), ('frus1981-88v05', 15), ('frus1977-80v28', 10), ('frus1981-88v41', 9), ('frus1917-72PubDipv08', 8), ('frus1969-76v38p2', 7)]
+soft AND power hits 785 literal 'soft power' in 0 of 785

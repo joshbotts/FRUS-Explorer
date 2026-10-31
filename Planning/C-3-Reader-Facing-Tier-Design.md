@@ -1,7 +1,19 @@
 # C-3, the reader-facing tier — R1's wording under research, and R7, R8 and R10 measured without the rest of arm B, Opus 5.5 at `medium` and Sonnet 5.5 at `high`
 
-**Status:** DRAFT, 2026-10-30, with all five of its choices answered by the owner the same evening
-(below). Nothing has run and nothing below is built. The design rests on two decisions of the
+**Status:** RUN 2026-10-31, 00:16 to 04:46, on the owner's word ("Build and run"). Results:
+**`C-3-Reader-Facing-Tier-Results-2026-10-31.md`**; record `c3-reader-facing-tier/`. By §8's rule
+nothing is adopted: W failed readings 1 and 5, and K reading 12. As built, four things differ from
+the text below:
+- the zeros step was calibrated on C-3's r8, not r3, whose zero was never reported;
+- after calibration and before any tier run was scored, the scorer's O2' text gained §5.3's rule
+  that a row covering the archival identifiers as a group traces them, and NOT A NUMBER became a
+  pronoun "one" only;
+- after run 4 and before any reading, the citation resolver accepted a year inside a multi-year
+  volume's span;
+- each run's instruments ran while the next run worked, and runs 11 and 12 waited an hour for the
+  5-hour usage window to reset.
+
+The question is printed in the record and the results. The design rests on two decisions of the
 owner's of 2026-10-30:
 - **"Skip the full pass."** The revised R1, R2's template and J3's rewording go to the next full
   tier, which tests the wording while the agent also does the research

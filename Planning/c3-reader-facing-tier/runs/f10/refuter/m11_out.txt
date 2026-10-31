@@ -1,0 +1,42 @@
+central-files keys: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+lotFiles type list len 1070
+sample lot row keys: ['catalogURL', 'hmsMlrEntryNumbers', 'levelOfDescription', 'lotNumber', 'matchType', 'naId', 'recordGroup', 'title']
+53D413 -> {"catalogURL": "https://catalog.archives.gov/id/2127212", "hmsMlrEntryNumbers": ["A1 1248"], "levelOfDescription": "series", "lotNumber": "53D413", "matchType": "control", "naId": "2127212", "recordGroup": "59", "title": "Military Telegrams Relating to Korea"}
+54D270 -> NOT in lotFiles
+60D627 -> NOT in lotFiles
+63D351 -> {"catalogURL": "https://catalog.archives.gov/id/2839192", "hmsMlrEntryNumbers": ["A1 1586E"], "levelOfDescription": "series", "lotNumber": "63D351", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}
+66D95 -> {"catalogURL": "https://catalog.archives.gov/id/2839192", "hmsMlrEntryNumbers": ["A1 1586E"], "levelOfDescription": "series", "lotNumber": "66D95", "matchType": "control", "naId": "2839192", "recordGroup": "59", "title": "Records Relating to National Security Council Policy Papers"}
+69D260 -> {"catalogURL": "https://catalog.archives.gov/id/27022536", "hmsMlrEntryNumbers": ["UD-UP 174", "UD-UP 175", "UD-UP 176", "UD-UP 177"], "levelOfDescription": "series", "lotNumber": "69D260", "matchType": "control", "naId": "27022536", "recordGroup": "59", "title": "Subject Files"}
+71D273 -> {"catalogURL": "https://catalog.archives.gov/id/2131139", "hmsMlrEntryNumbers": ["A1 5441"], "levelOfDescription": "series", "lotNumber": "71D273", "matchType": "control", "naId": "2131139", "recordGroup": "59", "title": "Files of Ernest K. Lindley"}
+93D82 -> {"catalogURL": "https://catalog.archives.gov/id/2225592", "hmsMlrEntryNumbers": ["P 38"], "levelOfDescription": "series", "lotNumber": "93D82", "matchType": "control", "naId": "2225592", "recordGroup": "59", "title": "Vietnam Special Caption Messages"}
+
+series-facts keys: ['byNaId', 'findingAidTypes', 'generated', 'headings', 'legend', 'referenceUnits', 'restrictions', 'schemaVersion', 'statuses', 'useRestrictions']
+2839192 -> {"ar": [0], "as": 2, "c": 313, "ru": 0, "ur": [0], "us": 3, "x": "26 linear feet, 3 linear inches", "y0": 1947, "y1": 1979}
+27022536 -> {"as": 1, "c": 55, "ru": 0, "ur": [0, 1], "us": 3, "x": "11 linear feet, 3 linear inches", "y0": 1961, "y1": 1969}
+2225592 -> {"ar": [0], "as": 0, "c": 313, "ru": 0, "us": 1, "x": "9 linear feet", "y0": 1962, "y1": 1972}
+2127212 -> {"ar": [0], "as": 2, "c": 297, "ru": 0, "us": 1, "x": "3 linear feet, 6 linear inches", "y0": 1951, "y1": 1954}
+1257679 -> {"ar": [0], "as": 2, "c": 388, "cy0": 1949, "cy1": 1971, "ru": 0, "us": 3, "x": "47 linear feet", "y0": 1953, "y1": 1971}
+5634081 -> {"as": 1, "c": 397, "ru": 0, "ur": [0], "us": 3, "x": "1 linear foot, 3 linear inches", "y0": 1953, "y1": 1965}
+40967113 -> {"ar": [0], "as": 2, "c": 397, "ru": 0, "us": 1, "x": "10 linear feet, 6 linear inches", "y0": 1961, "y1": 1966}
+40967285 -> {"ar": [0, 2], "as": 2, "c": 397, "ru": 0, "us": 1, "x": "103 linear feet, 1 linear inch", "y0": 1956, "y1": 1972}
+2839193 -> {"ar": [0], "as": 2, "c": 313, "ru": 0, "ur": [0], "us": 3, "x": "9 linear feet, 7 linear inches", "y0": 1947, "y1": 1965}
+
+pres-lib keys: ['generated', 'libraries', 'schemaVersion', 'source']
+567979 occurrences: 1 Table Lists"}, {"identifier": "LBJ-NIMETZ", "naId": 40032453, "series": [{"inclusiveDates": "1967\u20131969", "naId": 40032500, "title": "Working Files"}], "statedSeriesCount": 1, "title": "Office Files of Matthew Nimetz"}, {"identifier": "LBJ-NSF", "naId": 567979, "series": [{"inclusiveDates": "1963\u2013196
+1164 occurrences: 1 sonal Papers"}, {"identifier": "JFK-398", "naId": 27500766, "series": [{"inclusiveDates": "1956\u20131960", "naId": 27500769, "title": "Subject Files"}], "statedSeriesCount": 1, "title": "Clarence J. Martin Personal Papers"}, {"identifier": "JFK-4", "naId": 1164, "series": [{"inclusiveDates": "1961\u20131963"
+50809179 occurrences: 1 48, "title": "Internal Revenue Service Files"}, {"inclusiveDates": "1966\u20131969", "naId": 29742249, "title": "Office of Economic Opportunity Files"}], "statedSeriesCount": 2, "title": "Papers of Bertrand M. Harding"}, {"identifier": "LBJ-P69098", "naId": 50809179, "series": [{"inclusiveDates": "1965\u20131
+1104 occurrences: 1 eDates": "1976\u20131978", "naId": 55317213, "title": "White House Files"}, {"inclusiveDates": "1976\u20131992", "naId": 76508627, "title": "Oral History Files"}], "statedSeriesCount": 5, "title": "Peter Bourne Papers"}, {"identifier": "JC-DMBRZEZ", "naId": 1104, "series": [{"inclusiveDates": "1972\u20131981"
+
+volume-sources RG 306 mentions: 6
+   UD WW 257 in volume-sources: False | in series-facts: False | in central-files: False
+   UD WW 193 in volume-sources: False | in series-facts: False | in central-files: False
+   A1-42 in volume-sources: False | in series-facts: False | in central-files: False
+   A1 42 in volume-sources: False | in series-facts: False | in central-files: False
+   P-104 in volume-sources: False | in series-facts: False | in central-files: False
+   P 104 in volume-sources: False | in series-facts: False | in central-files: True
+   P-142 in volume-sources: False | in series-facts: False | in central-files: False
+   P 142 in volume-sources: False | in series-facts: False | in central-files: False
+   1257679 in volume-sources: False | in series-facts: True | in central-files: True
+
+external-citation-index keys: ['classPairs', 'classSourceKeys', 'classTargetKeys', 'classTargets', 'coverage', 'generated', 'pairs', 'schemaVersion', 'sourceIds', 'targetIds', 'targets', 'volumes']
+claimants 66D95 [('2839192', 'Records Relating to National Security Council Policy Papers'), ('2839193', 'Subject Files')]

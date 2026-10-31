@@ -1,0 +1,35 @@
+import sqlite3,json,re,collections
+db=sqlite3.connect("file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro",uri=True)
+R="/Users/jbotts/frus-analysis/c3f/runs/f10/"
+scope=open(R+"scope105.txt").read().strip().split(","); eap=open(R+"eap_vols.txt").read().strip().split(",")
+ph=lambda L: ",".join("?"*len(L))
+s1=json.load(open(R+"scan1.json")); den=s1["den"]; hits=s1["hits"]
+man=json.load(open("/Applications/FRUS Explorer.app/Contents/Resources/manifest.json"))
+early={v["volumeId"]:int(v["dateRange"]["earliest"][:4]) for v in man if v.get("dateRange")}
+sc=set(scope)
+ctrl=[v for v in den if v not in sc and early.get(v,0)>=1953]
+sc53=[v for v in scope if early.get(v,0)>=1953]
+dC=sum(den[v] for v in ctrl); dS53=sum(den[v] for v in sc53)
+print("M6 control volumes (not in scope, earliest>=1953):",len(ctrl),"docs",dC,"(memo 169 volumes, 55,876) | scope vols from 1953:",len(sc53),"docs",dS53,"(memo 18,483)")
+dS=sum(den.get(v,0) for v in sc); dO=sum(n for v,n in den.items() if v not in sc)
+for k in ["FAMILY_A","propaganda","prestige"]:
+    hs=sum(hits[k].get(v,0) for v in sc); ho=sum(n for v,n in hits[k].items() if v not in sc)
+    h53=sum(hits[k].get(v,0) for v in sc53); hc=sum(hits[k].get(v,0) for v in ctrl)
+    print(f"  {k}: scope {hs} of {dS} = {1000*hs/dS:.1f} | rest {ho} of {dO} = {1000*ho/dO:.1f} | scope>=1953 {h53} of {dS53} = {1000*h53/dS53:.1f} | control {hc} of {dC} = {1000*hc/dC:.1f}")
+print("  scan1.json POS vols with hits:",len(hits["POS"]),"total",sum(hits["POS"].values()),"| NEG total",sum(hits["NEG"].values()))
+# M7 region census
+rx=re.compile(r"\b(East(ern)? Asia\w*|Far East\w*|Asia\w*|Vietnam\w*|Viet-Nam\w*|Japan\w*|Korea\w*|China|Chinese|Philippine\w*|Filipino\w*|Indonesia\w*|Thai\w*|Taiwan\w*|Formosa\w*|Laos|Lao|Laotian|Cambodia\w*|Pacific|Singapore\w*|Malaysia\w*|Malaya\w*|Burma|Burmese|Hong Kong|Okinawa\w*|Southeast Asia\w*)\b")
+info="frus1917-72PubDipv06 frus1917-72PubDipv07 frus1917-72PubDipv08 frus1977-80v30 frus1955-57v09 frus1961-63v25".split()
+tm=tn=0
+for v in info:
+    n=m=0
+    for d,h,dl,sn,b in db.execute("select document_id,header,dateline,source_note,body_text from document_cache where volume_id=? and is_front_matter=0 and is_editorial_note=0",(v,)):
+        n+=1; t=" ".join(((h or '')+" "+(dl or '')+" "+(sn or '')+" "+b).split())
+        if rx.search(t): m+=1
+    tm+=m; tn+=n; print("  M7",v,m,"of",n)
+print("M7 total",tm,"of",tn,"(memo 579 of 1,373)")
+# M8 Boxer indemnity by decade
+rows=db.execute(f"select substr(dd.date_iso,1,3)||'0s',count(*) from frus_documents f join document_cache d on d.volume_id=f.volume_id and d.document_id=f.document_id left join document_dates dd on dd.volume_id=d.volume_id and dd.document_id=d.document_id where frus_documents match ? and d.is_front_matter=0 and d.is_editorial_note=0 and f.volume_id in ({ph(eap)}) group by 1",['"Boxer indemnity"']+eap).fetchall()
+print("M8 Boxer indemnity by decade:",rows,"(memo 1930s 81, 1940s 17, 1950s 1)")
+owi=db.execute(f"select substr(dd.date_iso,1,3)||'0s',count(*) from frus_documents f join document_cache d on d.volume_id=f.volume_id and d.document_id=f.document_id left join document_dates dd on dd.volume_id=d.volume_id and dd.document_id=d.document_id where frus_documents match ? and d.is_front_matter=0 and d.is_editorial_note=0 and f.volume_id in ({ph(eap)}) group by 1",['"Office of War Information"']+eap).fetchall()
+print("M8 OWI by decade:",owi,"(memo 41 in the 1940s)")

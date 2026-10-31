@@ -1,0 +1,134 @@
+central-files lotFiles: 1070 distinct lot keys: 1070
+sample lotFile keys: ['catalogURL', 'hmsMlrEntryNumbers', 'levelOfDescription', 'lotNumber', 'matchType', 'naId', 'recordGroup', 'title']
+series-facts byNaId count: 698 legend fields: {'ar': 'accessRestrictions', 'as': 'accessStatus', 'c': 'creator', 'cy0': 'coverageStartYear', 'cy1': 'coverageEndYear', 'fa': 'findingAids', 'p': 'predecessors', 'ru': 'referenceUnit', 'ur': 'useRestrictions', 'us': 'useStatus', 'x': 'extent', 'y0': 'inclusiveStartYear', 'y1': 'inclusiveEndYear'}
+
+LOT 61D167: 1 row(s) in central-files-index
+   naId 2198167 RG 59 title: Alphabetical Files | entry ['A1 1583A', 'A1 1583B'] | match control | dates None | creator None
+   series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Policy Planning Council.', 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useRestrictions': ['Copyright'], 'useStatus': 'Restricted - Possibly', 'extent': '48 linear feet, 7 linear inches', 'inclusiveStartYear': 1948, 'inclusiveEndYear': 1961}
+   curated: []
+
+LOT 61D385: 0 row(s) in central-files-index
+   curated: []
+
+LOT 65F98: 0 row(s) in central-files-index
+   curated: []
+
+LOT 84D204: 0 row(s) in central-files-index
+   curated: []
+
+LOT 78D295: 1 row(s) in central-files-index
+   naId 27022973 RG 59 title: Administrative Correspondence and Policy and Procedural Files | entry ['UD-UP 80'] | match control | dates None | creator None
+   series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Office of the Deputy Under Secretary of State for Management.', 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useStatus': 'Unrestricted', 'extent': '7 linear feet, 2 linear inches', 'inclusiveStartYear': 1968, 'inclusiveEndYear': 1975}
+   curated: []
+
+LOT 78D184: 1 row(s) in central-files-index
+   naId 5038052 RG 59 title: Subject Files of Assistant Secretary John Richardson | entry ['P 242'] | match control | dates None | creator None
+   series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security', 'FOIA (b)(3) Statute', 'FOIA (b)(6) Personal Information', 'FOIA (b)(2) Internal Personnel Rules and Practices'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Bureau of Educational and Cultural Affairs. Office of the Assistant Secretary.', 'coverageStartYear': 1948, 'coverageEndYear': 1976, 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useRestrictions': ['Copyright'], 'useStatus': 'Restricted - Possibly', 'extent': '4 linear feet, 8 linear inches', 'inclusiveStartYear': 1968, 'inclusiveEndYear': 1976}
+   curated: []
+
+LOT 66D95: 1 row(s) in central-files-index
+   naId 2839192 RG 59 title: Records Relating to National Security Council Policy Papers | entry ['A1 1586E'] | match control | dates None | creator None
+   series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useRestrictions': ['Copyright'], 'useStatus': 'Restricted - Possibly', 'extent': '26 linear feet, 3 linear inches', 'inclusiveStartYear': 1947, 'inclusiveEndYear': 1979}
+   curated: []
+
+LOT 63D351: 1 row(s) in central-files-index
+   naId 2839192 RG 59 title: Records Relating to National Security Council Policy Papers | entry ['A1 1586E'] | match control | dates None | creator None
+   series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useRestrictions': ['Copyright'], 'useStatus': 'Restricted - Possibly', 'extent': '26 linear feet, 3 linear inches', 'inclusiveStartYear': 1947, 'inclusiveEndYear': 1979}
+   curated: []
+
+LOT 58D726: 1 row(s) in central-files-index
+   naId 2544398 RG 59 title: Subject Files | entry ['UD 53'] | match control | dates None | creator None
+   series-facts: {'accessStatus': 'Restricted - Possibly', 'creator': 'Department of State. Bureau of Far Eastern Affairs. Office of Southeast Asian Affairs. Office of the Officer in Charge for Malaya Affairs.', 'predecessors': ['Department of State. Bureau of Far Eastern Affairs. Office of Philippine and Southeast Asian Affairs. Office of the Officer in Charge for Thai and Malaya Affairs.'], 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useStatus': 'Restricted - Possibly', 'extent': '5 linear inches', 'inclusiveStartYear': 1955, 'inclusiveEndYear': 1956}
+   curated: []
+
+NAID 2198167: series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Policy Planning Council.', 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useRestrictions': ['Copyright'], 'useStatus': 'Restricted - Possibly', 'extent': '48 linear feet, 7 linear inches', 'inclusiveStartYear': 1948, 'inclusiveEndYear': 1961}
+   central-files rows: [('61D167', 'Alphabetical Files', '59', ['A1 1583A', 'A1 1583B'])]
+
+NAID 27022973: series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Office of the Deputy Under Secretary of State for Management.', 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useStatus': 'Unrestricted', 'extent': '7 linear feet, 2 linear inches', 'inclusiveStartYear': 1968, 'inclusiveEndYear': 1975}
+   central-files rows: [('78D295', 'Administrative Correspondence and Policy and Procedural Files', '59', ['UD-UP 80'])]
+
+NAID 5038052: series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security', 'FOIA (b)(3) Statute', 'FOIA (b)(6) Personal Information', 'FOIA (b)(2) Internal Personnel Rules and Practices'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Bureau of Educational and Cultural Affairs. Office of the Assistant Secretary.', 'coverageStartYear': 1948, 'coverageEndYear': 1976, 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useRestrictions': ['Copyright'], 'useStatus': 'Restricted - Possibly', 'extent': '4 linear feet, 8 linear inches', 'inclusiveStartYear': 1968, 'inclusiveEndYear': 1976}
+   central-files rows: [('76D186', 'Subject Files of Assistant Secretary John Richardson', '59', ['P 242']), ('78D184', 'Subject Files of Assistant Secretary John Richardson', '59', ['P 242'])]
+
+NAID 2839192: series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useRestrictions': ['Copyright'], 'useStatus': 'Restricted - Possibly', 'extent': '26 linear feet, 3 linear inches', 'inclusiveStartYear': 1947, 'inclusiveEndYear': 1979}
+   central-files rows: [('63D351', 'Records Relating to National Security Council Policy Papers', '59', ['A1 1586E']), ('66D95', 'Records Relating to National Security Council Policy Papers', '59', ['A1 1586E'])]
+
+NAID 1254251: series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'U.S. Information Agency. Office of Research and Intelligence. Intelligence Production Division.', 'coverageStartYear': 1951, 'coverageEndYear': 1958, 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useRestrictions': ['Copyright'], 'useStatus': 'Restricted - Possibly', 'extent': '9 linear feet, 2 linear inches', 'inclusiveStartYear': 1954, 'inclusiveEndYear': 1958}
+   central-files rows: [('60D147', 'Program Files', '306', ['UD-WW 138', 'UD-WW 337', 'UD-WW 392'])]
+
+NAID 7542975: series-facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'U.S. Information Agency. Broadcasting Service. Office of the Director.', 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useStatus': 'Unrestricted', 'extent': '6 linear feet, 6 linear inches', 'inclusiveStartYear': 1948, 'inclusiveEndYear': 1959}
+   central-files rows: [('59D242', 'Records Relating to the Voice of America (VOA)', '306', ['P 482'])]
+
+NAID 2544398: series-facts: {'accessStatus': 'Restricted - Possibly', 'creator': 'Department of State. Bureau of Far Eastern Affairs. Office of Southeast Asian Affairs. Office of the Officer in Charge for Malaya Affairs.', 'predecessors': ['Department of State. Bureau of Far Eastern Affairs. Office of Philippine and Southeast Asian Affairs. Office of the Officer in Charge for Thai and Malaya Affairs.'], 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useStatus': 'Restricted - Possibly', 'extent': '5 linear inches', 'inclusiveStartYear': 1955, 'inclusiveEndYear': 1956}
+   central-files rows: [('58D726', 'Subject Files', '59', ['UD 53'])]
+
+RECORD GROUPS in volume-sources-index: ['107', '16', '170', '185', '200', '218', '220', '233', '263', '273', '286', '306', '319', '323', '330', '333', '334', '353', '359', '364', '374', '383', '40', '407', '429', '457', '46', '460', '469', '472', '51', '56', '59', '63', '80', '84']
+  RG 59 : {'catalogURL': 'https://catalog.archives.gov/id/388', 'matchType': 'api', 'naId': '388', 'recordGroup': '59', 'title': 'General Records of the Department of State'}
+  RG 306 : {'catalogURL': 'https://catalog.archives.gov/id/622', 'matchType': 'api', 'naId': '622', 'recordGroup': '306', 'title': 'Records of the U.S. Information Agency'}
+  RG 305 : None
+  RG 84 : {'catalogURL': 'https://catalog.archives.gov/id/413', 'matchType': 'api', 'naId': '413', 'recordGroup': '84', 'title': 'Records of the Foreign Service Posts of the Department of State'}
+
+PRESIDENTIAL LIBRARY CATALOG:
+   Hoover Library collections: 201 | matches: []
+   Roosevelt Library collections: 313 | matches: ['Herbert Marks Papers']
+   Truman Library collections: 700 | matches: ['Ted Marks Papers', 'Records of the National Security Council (Truman Administration)']
+   Eisenhower Library collections: 462 | matches: []
+   Kennedy Library collections: 398 | matches: ['Robert F. Kennedy Papers', 'Robert F. Kennedy Memorial Foundation Records', 'Robert F. Kennedy Tributes', 'Papers of John F. Kennedy: Presidential Papers: National Security Files', 'Robert F. Kennedy Papers']
+   Johnson Library collections: 764 | matches: ['National Security Files', 'Papers of Leonard H. Marks', 'Papers of Leonard M. Marks, Jr.']
+   Nixon collections: 212 | matches: ['National Security Files (Nixon Administration)']
+   Ford Library collections: 386 | matches: ['National Security Council Meetings Files (Ford Administration)', 'National Security Council Documents Filed in the Presidential Acquisition Files or the White House Central Files (Ford Administration)', 'National Security Council Document Tracking System Files (Ford Administration)', 'Presidential Files of National Security Council Logged Documents (Ford Administration)', 'National Security Council East Asian and Pacific Affairs Staff Files (Ford Administration)', 'National Security Council Vietnam Information Group Files (Johnson, Nixon, and Ford Administrations)']
+   Carter Library collections: 157 | matches: ['National Security Council Institutional Files (Carter Administration)']
+   Reagan Library collections: 103 | matches: ['Records of the National Security Council, Directorate of African Affairs (Reagan Administration)', 'Records of the National Security Council, Asian Affairs Directorate (Reagan Administration)', 'Records of the National Security Council, Coordination Office (Reagan Administration)', 'Records of the National Security Council, Office of Counterterrorism and Narcotics (Reagan Administration)', 'Records of the Crisis Management Center (CMC), National Security Council (Reagan Administration)', 'Records of the National Security Council, Defense Policy Directorate (Reagan Administration)']
+   Bush Library collections: 141 | matches: ['Records of the National Security Council (George H. W. Bush Administration)']
+  sample collection keys: ['identifier', 'naId', 'series', 'statedSeriesCount', 'title']
+
+COLLECTION AUTHORITY matches:
+  /Robert F\. Kennedy/ -> 2: [('txt:kennedy library|papers of robert f. kennedy', 'Papers of Robert F. Kennedy', 'Kennedy Library'), ('txt:kennedy library|personal papers of robert f. kennedy', 'Personal Papers of Robert F. Kennedy', 'Kennedy Library')]
+  /^Marks Papers|Marks Papers/ -> 1: [('txt:johnson library|marks paper', 'Marks Papers', 'Johnson Library')]
+  /National Security File\b/ -> 8: [('txt:carter library|national security file', 'National Security File', 'Carter Library'), ('txt:department of state|national security file', 'National Security File', 'Department of State'), ('txt:johnson library|national security file', 'National Security File', 'Johnson Library'), ('txt:johnson library|papers of lyndon b. johnson', 'Papers of Lyndon B. Johnson', 'Johnson Library'), ('txt:johnson library|papers of president lyndon b. johnson', 'Papers of President Lyndon B. Johnson', 'Johnson Library')]
+  /NSC Files/ -> 18: [('lot:61D167', 'S/P – NSC Files, Lot 61 D 167', 'Department of State'), ('lot:62D1', 'S/P – NSC Files: Lot 62 D 1', 'Department of State'), ('lot:62D385', 'P – NSC Files, Lot 62 D 385', 'Department of State'), ('lot:63D351', 'S/S – NSC Files: Lot 63 D 351', 'Department of State'), ('lot:66D148', 'S/S – NSC Files, Lot 66 D 148', 'Department of State')]
+  /Director.s Subject Files/ -> 1: [("txt:national archives|director's subject file", 'Director’s Subject Files', 'National Archives')]
+  /Office of Policy and Plans/ -> 3: [('lot:70D398', 'Lot 70 D 398: Alphabetical subject files containing Policy Guidance re', 'Department of State'), ('txt:national archives|office of policy and plan', 'Office of Policy and Plans', 'National Archives'), ('txt:washington national records center|records of the bureau of educational and cultural affair', 'Records of the Bureau of Educational and Cultural Affairs, Office of P', 'Washington National Records Center')]
+  /Executive Secretariat/ -> 91: [('lot:03D102', 'Lot 03D102: Executive Secretariat, S/P Files, Subject Files of Policy ', 'Department of State'), ('lot:122', 'Lot 122', 'Department of State'), ('lot:12D215', 'Lot 12D215: Executive Secretariat, A Bureau, Department of State Centr', 'Department of State'), ('lot:2015D608', 'Lot 2015D608: Executive Secretariat, Papers of L. Paul Bremer II as Am', None), ('lot:52D444', 'Lot 52D444', 'Department of State')]
+  /Records of the USIA|Office of the Director/ -> 14: [('lot:62D42', 'INR Files: Lot 62 D 42', 'Department of State'), ('lot:81D155', 'Office of the Secretariat Staff, Ambassador at Large and Special Repre', 'Department of State'), ('lot:82D298', 'S/P Files: Lot 82D298 (Entry P–9)', 'Department of State'), ('txt:central intelligence agency|files of the office of the director of central intelligence', 'Files of the Office of the Director of Central Intelligence, Richard M', 'Central Intelligence Agency'), ('txt:central intelligence agency|files of the office of the director of intelligence', 'Files of the Office of the Director of Intelligence', 'Central Intelligence Agency')]
+
+USIA creator headings: ['U.S. Information Agency. Broadcasting Service. Office of the Director.', 'U.S. Information Agency. Information Center Service.', 'U.S. Information Agency. Information Center Service. Cultural Operations Division.', 'U.S. Information Agency. Office of Plans.', 'U.S. Information Agency. Office of Policy and Plans.', 'U.S. Information Agency. Office of Policy and Programs.', 'U.S. Information Agency. Office of Policy.', 'U.S. Information Agency. Office of Research and Analysis. Area Analysis Division. Latin American Branch.', 'U.S. Information Agency. Office of Research and Analysis. Foreign Propaganda Intelligence Division.', 'U.S. Information Agency. Office of Research and Intelligence. Intelligence Production Division.', 'U.S. Information Agency. Office of the Assistant Director for Europe.', 'U.S. Information Agency. Office of the Assistant Director for Latin America.', 'U.S. Information Agency. Office of the Assistant Director for Near East, South Asia, and Africa.', 'U.S. Information Agency. Office of the Director. Executive Secretariat.']
+series with a USIA creator heading: 14
+series before 1940 (y0<1940): 11 of 698 ; with cy0<1940: 11
+series with y1<1940: 1
+
+DOCUMENT_SOURCES for the 33 (record_group, repository, era, lot, series) + Entry strings in source_note:
+  frus1950v06/d15: ('59', 'Department of State', 'decimal', None, '790.001/2–2750') | entries: [] | 790.001/2–2750: Telegram
+  frus1950v06/d31: ('59', 'Department of State', 'decimal', None, '511.90/3–2850') | entries: [] | 511.90/3–2850
+  frus1950v06/d32: ('59', 'Department of State', 'decimal', None, '611.90/4–350') | entries: [] | 611.90/4–350
+  frus1952-54v12p2/d403: ('59', 'Department of State', 'decimal', None, '790.5/9–1453') | entries: [] | 790.5/9–1453
+  frus1952-54v12p2/d359: ('59', 'Department of State', 'lot_file', '61D167', None) | entries: [] | S/P – NSC files, lot 61 D 167, NSC 5413/1
+  frus1950v06/d266: ('59', 'Department of State', 'decimal', None, '794A.00/8–2650') | entries: [] | 794A.00/8–2650: Circular telegram
+  frus1952-54v14p2/d551: ('59', 'Department of State', 'decimal', None, '795.00/4–2952') | entries: [] | 795.00/4–2952: Telegram
+  frus1952-54v12p2/d60: ('59', 'Department of State', 'decimal', None, '890B.00 TA /3–3153') | entries: [] | 890B.00 TA /3–3153: Telegram
+  frus1952-54v13p2/d992: ('59', 'Department of State', 'decimal', None, '751G.00/6–2454') | entries: [] | 751G.00/6–2454: Telegram
+  frus1955-57v22/d361: ('59', 'Department of State', 'decimal', None, '796.11/8–2655') | entries: [] | Source: Department of State, Central Files, 796.11/8–2655. Secret; Priority; Limited Distribution.
+  frus1958-60v01/d26: ('84', 'Department of State', 'lot_file', '65F98', None) | entries: [] | Source: Department of State, Saigon Embassy Files: Lot 65 F 98, 320 Vietnam–Cambodia 1958 Aug–Dec. Secret; Official–Informal.
+  frus1952-54v12p1/d103: ('59', 'Department of State', 'decimal', None, '751J.00/5–753') | entries: [] | 751J.00/5–753: Telegram
+  frus1955-57v22/d447: ('59', 'Department of State', 'lot_file', '61D385', None) | entries: [] | Source: Department of State, OCB Files: Lot 61 D 385, Singapore and Malaya, General. Secret. Drafted by Smith.
+  frus1955-57v22/d271: ('59', 'Department of State', 'decimal', None, '656.56D13/10–257') | entries: [] | Source: Department of State, Central Files, 656.56D13/10–257. Secret.
+  frus1917-72PubDipv06/d127: (None, 'Kennedy Library', 'structured', None, 'Personal Papers of Robert F.  Kennedy') | entries: [] | Source: Kennedy Library, Personal Papers of Robert F. Kennedy, Attorney General’s General Correspondence (#138.2), Box 78, United States Information Agency (USI
+  frus1964-68v26/d106: (None, 'Johnson Library', 'structured', None, 'National Security File') | entries: [] | Source: Johnson Library, National Security File, Country File, Indonesia, Vol. III, Memos 9/64–2/65, [2 of 2]. Confidential. Copies were sent to Ball and Willia
+  frus1964-68v29p2/d123: ('59', 'National Archives', 'subject_numeric', None, 'Central Files 1967–69') | entries: [] | Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL JAPAN–US. Secret; Limdis.
+  frus1917-72PubDipv08/d31: ('306', 'National Archives', 'structured', None, 'Office of Policy and Plans') | entries: ['Entry P–207'] | Source: National Archives, RG 306, Office of Policy and Plans, Plans and Operational Policy Staff, Office of Planning Officer, Subject Files, Entry P–207, Box 2
+  frus1917-72PubDipv07/d147: (None, 'Johnson Library', 'structured', None, 'Marks Papers') | entries: [] | Source: Johnson Library, Marks Papers, Box 32, USIA Responsibilities in Limited War & Insurgency Situations. Secret. Ryan sent the report to Marks under an Apri
+  frus1917-72PubDipv08/d24: ('306', 'National Archives', 'structured', None, 'Director’s Subject Files') | entries: ['Entry A1–42'] | Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 3, PSY—Psychological Operations. Confidential. Loomis initialed the top
+  frus1917-72PubDipv08/d58: ('306', 'National Archives', 'structured', None, 'Director’s Subject Files') | entries: ['Entry A1–42'] | Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 3, PSY–Psychological Operations. Confidential. Fitzhugh Green sent a co
+  frus1917-72PubDipv08/d88: ('306', 'National Archives', 'structured', None, 'Director’s Subject Files, Box 10') | entries: ['Entry A1–42'] | Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 10, Field—Far East (IAF) 1970. Limited Official Use. A copy was sent to
+  frus1917-72PubDipv08/d92: ('306', 'National Archives', 'structured', None, 'Director’s Subject Files, Box 10') | entries: ['Entry A1–42'] | Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 10, Field—Far East (IAF) 1970. Secret. Printed from an uninitialed copy
+  frus1917-72PubDipv08/d129: ('59', 'National Archives', 'subject_numeric', None, 'Central Files 1970–73') | entries: [] | Source: National Archives, RG 59, Central Files 1970–73, EDX 1 US. Confidential.
+  frus1917-72PubDipv08/d30: ('306', 'National Archives', 'structured', None, 'Office of Policy and Plans, Box 313') | entries: ['Entry UD–264'] | Source: National Archives, RG 306, Office of Policy and Plans, 1963–1969, General Subject Files, 1949–1970, Entry UD–264, Box 313, Master Copies 1969. Confident
+  frus1917-72PubDipv08/d127: ('306', 'National Archives', 'structured', None, 'Director’s Subject Files, Box 23') | entries: ['Entry A1–42'] | Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 23, INC—General 1971. No classification marking. Copies were sent to Wh
+  frus1917-72PubDipv08/d143: (None, 'Nixon Presidential Materials', 'structured', None, 'NSC Files') | entries: [] | Source: National Archives, Nixon Presidential Materials, NSC Files, Box 294, Agency Files, USIA —Vol. III—1971 [Jan–Dec 1971] [1 of 2]. Confidential. Eliot sent
+  frus1917-72PubDipv08/d146: ('306', 'National Archives', 'structured', None, 'Director’s Subject Files, Box 21') | entries: ['Entry A1–42'] | Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 21, OGA—The President’s Trip to China and all documents relating to USI
+  frus1917-72PubDipv08/d149: ('306', 'National Archives', 'structured', None, 'Director’s Subject Files, Box 22') | entries: ['Entry A1–42'] | Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 22, REA—Public Opinion Research 1971. Limited Official Use. Copies were
+  frus1969-76v38p2/d105: ('305', 'National Archives', 'structured', None, 'Records of the USIA') | entries: ['Entry UD–UP 7'] | Source: National Archives, RG 305, Records of the USIA, Office of the Director, Subject Files, 1975, Entry UD–UP 7, FRC 306–84–0003, 7501300–7501309. No classif
+  frus1977-80v30/d79: ('306', 'National Archives', 'structured', None, 'Office of the Director, Box 130') | entries: ['Entry P–104'] | Source: National Archives, RG 306, Office of the Director, Executive Secretariat, Secretariat Staff, Correspondence Files, 1973–1980, Entry P–104, Box 130, 7702
+  frus1977-80v30/d81: ('59', 'Department of State', 'cfpf', None, 'CFPF D770263–1068') | entries: [] | Source: National Archives, RG 59, Central Foreign Policy File, D770263–1068. Limited Official Use. Drafted by Kenneth Quinn and Morton Smith; approved by Holbro
+  frus1977-80v30/d83: ('59', 'Department of State', 'cfpf', None, 'CFPF D770274–0868') | entries: [] | Source: National Archives, RG 59, Central Foreign Policy File, D770274–0868. Limited Official Use. Sent for information to Bangkok, Kuala Lumpur, Manila, Singap
+tally (rg,era): {('59', 'decimal'): 11, ('59', 'lot_file'): 2, ('84', 'lot_file'): 1, (None, 'structured'): 4, ('59', 'subject_numeric'): 2, ('306', 'structured'): 10, ('305', 'structured'): 1, ('59', 'cfpf'): 2}

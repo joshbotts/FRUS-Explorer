@@ -1,0 +1,44 @@
+digests 89481b1869da1880 89481b1869da1880 89481b1869da1880 89481b1869da1880 ALL EQUAL
+generated 2026-10-15 harvestGenerated 2026-10-15T06:55:14 recall@10 0.9021 calib {'documentOffset': 0.4, 'measuredBy': "Planning/semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md §1b, fitted to EmbeddingGemma 300m's scores over 90 typed queries and 600 anchor documents against the 314,616-document corpus", 'queryOffset': 0.47}
+round trip 553 of 553
+random pairs: n 20000 mean 167.1 sd 14.8 p1 132 min 95
+k-th neighbour over 200 docs: 1st median 84; 10th median 102 (q1 95 q3 108); 25th median 108
+ANCHOR frus1917-72PubDipv08/d31
+    81  frus1917-72PubDipv07/d106
+    86  frus1917-72PubDipv06/d3
+    88  frus1917-72PubDipv06/d5
+    88  frus1952-54v13p1/d116
+    89  frus1955-57v22/d275
+    90  frus1917-72PubDipv08/d99
+    90  frus1950v06/d9
+    91  frus1958-60v16/d65
+    92  frus1917-72PubDipv07/d140
+    92  frus1952-54v02p2/d374
+    92  frus1977-80v30/d68
+    94  frus1951v06p1/d12
+ANCHOR frus1969-76v38p2/d105
+    76  frus1969-76ve12/d10
+    77  frus1958-60v16/d65
+    78  frus1969-76v01/d54
+    80  frus1969-76ve12/d16
+    82  frus1969-76ve12/d15
+    82  frus1977-80v22/d104
+    84  frus1949v07p2/d387
+    84  frus1955-57v21/d119
+    84  frus1969-76v38p1/d54
+    85  frus1949v07p2/d386
+    85  frus1958-60v16/d12
+    85  frus1969-76v38p1/d58
+ANCHOR frus1917-72PubDipv07/d73
+    87  frus1917-72PubDipv07/d69
+   103  frus1917-72PubDipv07/d159
+   104  frus1952-54v13p1/d116
+   105  frus1955-57v01/d2
+   108  frus1917-72PubDipv08/d31
+   108  frus1958-60v01/d55
+   109  frus1917-72PubDipv07/d74
+   109  frus1950v06/d3
+   109  frus1964-68v09/d42
+   110  frus1950v06/d9
+   111  frus1917-72PubDipv07/d106
+   111  frus1950v06/d53

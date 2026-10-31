@@ -1,0 +1,9 @@
+whitespace-collapsed titles: regex EA: 103 | PD: 6 | EA minus PD: 103 | union: 109
+  EA == scope EA: True | mine-scope: [] | scope-mine: []
+  PD == scope PD: True | sym diff: []
+  EA∩PD: []
+  titles with 1917–1972 and Volume VI, ['frus1917-72PubDipv06']
+  titles with 1917–1972 and Volume VII, ['frus1917-72PubDipv07']
+  titles with 1917–1972 and Volume VIII, ['frus1917-72PubDipv08']
+  frus1955-57v22: Foreign Relations of the United States, 1955–1957, Southeast Asia, Volume XXII
+  Ed2 ids in manifest: ['frus1951-54IranEd2', 'frus1969-76ve15p2Ed2', 'frus1977-80v09Ed2'] | any in scope: []

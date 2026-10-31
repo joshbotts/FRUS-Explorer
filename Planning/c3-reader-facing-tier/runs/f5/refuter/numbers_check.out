@@ -1,0 +1,85 @@
+SCOPE volumes in h.py: 77 distinct: 77
+
+[canary]  (553, 321749, 1103, 8481)
+[scope presence] rows: (77,) docs: (39808,)
+[scope non-apparatus] 38,059 claimed: (38059,)
+[Ed2 volumes in scope]: []
+
+[H1] "soft power" FTS non-apparatus: (0,) | FTS incl. apparatus: (0,) | LIKE 'soft power'/'soft-power' any row: (0,)
+[relaxed] soft AND power (785 claimed): (785,)
+[relaxed] literal soft[\s-]+power among them (0 claimed): 0
+
+[H2] collection document entries: 31 distinct: 31
+     document dates span: 1948-12-24 to 1977-07-19
+     volumes of the 31: 22 ['frus1917-72PubDipv07', 'frus1917-72PubDipv08', 'frus1948v07', 'frus1949v07p2', 'frus1949v08', 'frus1950v06', 'frus1952-54v12p2', 'frus1952-54v13p1', 'frus1955-57v09', 'frus1955-57v22', 'frus1958-60v15', 'frus1961-63v01', 'frus1961-63v02', 'frus1961-63v04', 'frus1964-68v01', 'frus1964-68v02', 'frus1964-68v26', 'frus1964-68v27', 'frus1969-76v19p2', 'frus1969-76v38p2', 'frus1977-80v22', 'frus1977-80v30']
+
+[H3-5] document_sources for the 31:
+   frus1948v07/d567: RG59 central files (decimal/cfpf)  811.20200(D)/12–2448
+   frus1949v08/d499: RG59 central files (decimal/cfpf)  711.93/8–1549
+   frus1949v07p2/d386: RG59 central files (decimal/cfpf)  711.90/11–1649
+   frus1950v06/d50: RG59 central files (decimal/cfpf)  511.90/6–2150
+   frus1952-54v12p2/d359: RG59 lot file  S/P – NSC files, lot 61 D 167, NSC 5413/1
+   frus1955-57v09/d190: RG59 lot file  Source: Department of State, S/S – NSC Files: Lot 63 D 351, NSC 5525. Secret. Th
+   frus1955-57v22/d484: RG59 lot file  Source: Department of State, OCB Files: Lot 62 D 430, Thailand. Top Secret. The 
+   frus1949v07p2/d127: RG59 central files (decimal/cfpf)  740.0011 PW (Peace)/8–2049
+   frus1952-54v12p2/d251: RG59 lot file  S/P – NSC files, lot 61 D 167, “Indochina”
+   frus1952-54v12p2/d352: RG59 central files (decimal/cfpf)  696.00/2–1054: Telegram
+   frus1955-57v22/d447: RG59 lot file  Source: Department of State, OCB Files: Lot 61 D 385, Singapore and Malaya, Gene
+   frus1958-60v15/d548: RG59 lot file  Source: Department of State, OCB Files: Lot 62 D 430, Thailand. Secret. A prefat
+   frus1961-63v04/d81: RG306 USIA  Source: Kennedy Library, National Security Files, Vietnam Country Series, Memos 
+   frus1917-72PubDipv08/d149: RG306 USIA  Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1
+   frus1952-54v13p1/d116: RG59 central files (decimal/cfpf)  511.51G/9–2052: Telegram
+   frus1961-63v02/d197: RG84 embassy  Source: Washington National Records Center, RG 84, Saigon Embassy Files: FRC 67 
+   frus1964-68v01/d122: Johnson Library  Source: Johnson Library, National Security File, Vietnam Country Series. Vol. VI
+   frus1917-72PubDipv07/d32: RG306 USIA  Source: National Archives, RG 306, DIRCTR Subj. Files, 1963–69, Bx 6–29 63–69: A
+   frus1964-68v26/d106: Johnson Library  Source: Johnson Library, National Security File, Country File, Indonesia, Vol. I
+   frus1964-68v02/d160: Johnson Library  Source: Johnson Library, Confidential File, CO 312. Confidential. Copy sent to M
+   frus1961-63v01/d49: RG34 as printed (embassy)  Source: Washington National Records center, RG 34, Saigon Embassy Files: FRC 66 
+   frus1961-63v02/d16: RG306 USIA  Source: Washington National Records Center, RG 306, USIA /I/ S Files: FRC 68 A 4
+   frus1964-68v01/d177: Johnson Library  Source: Johnson Library, National Security File, Vietnam Country File, Vol X. Se
+   frus1917-72PubDipv07/d85: RG306 USIA  Source: National Archives, RG 306, DIRCTR Files Bx 33–36, 1966: Acc. #69–A–3445 
+   frus1964-68v27/d386: Johnson Library  Source: Johnson Library, National Security File, Country File, Thailand, Thanom 
+   frus1917-72PubDipv08/d31: RG306 USIA  Source: National Archives, RG 306, Office of Policy and Plans, Plans and Operati
+   frus1917-72PubDipv08/d99: RG306 USIA  Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1
+   frus1969-76v19p2/d67: Nixon Presidential Materials  Source: National Archives, Nixon Presidential Materials, NSC Files, NSC Institut
+   frus1969-76v38p2/d105: RG305 as printed  Source: National Archives, RG 305, Records of the USIA, Office of the Director, 
+   frus1977-80v22/d104: RG59 central files (decimal/cfpf)  Source: National Archives, RG 59, Central Foreign Policy File, D770042–1117. Con
+   frus1977-80v30/d79: RG306 USIA  Source: National Archives, RG 306, Office of the Director, Executive Secretariat
+    8 RG59 central files (decimal/cfpf)
+    8 RG306 USIA
+    6 RG59 lot file
+    5 Johnson Library
+    1 RG84 embassy
+    1 RG34 as printed (embassy)
+    1 Nixon Presidential Materials
+    1 RG305 as printed
+   sum: 31
+   lot files among the six: {'61 D 167': 2, '63 D 351': 1, '62 D 430': 2, '61 D 385': 1}
+
+[M4] public diplomacy:
+   211 claimed: (211,) | 175 of them 1977+/1981+ claimed: 175 | by volume: [('frus1977-80v30', 56), ('frus1981-88v04', 30), ('frus1981-88v01', 16), ('frus1981-88v05', 15), ('frus1977-80v28', 10), ('frus1981-88v41', 9), ('frus1917-72PubDipv08', 8), ('frus1969-76v38p2', 7)]
+   in the 77 volumes (2 claimed, FTS): (2,)
+   STRICT regex share (210 of 211 claimed): 163 | TOLERANT (211): 211
+   hearts and minds corpus (60 in zero_and_relaxed.txt): (60,)
+
+[M3 controls] FTS 'Department of State': volumes with hits 77 of 77; docs 15174
+   ZZZ_IMPOSSIBLE_ZZZ: (0,)
+
+[M10] series-facts keys: ['byNaId', 'findingAidTypes', 'generated', 'headings', 'legend', 'referenceUnits', 'restrictions', 'schemaVersion']
+   legend: {'keys': {'ar': {'field': 'accessRestrictions', 'into': 'restrictions', 'kind': 'indexList'}, 'as': {'field': 'accessStatus', 'into': 'statuses', 'kind': 'index'}, 'c': {'field': 'creator', 'into': 'headings', 'kind': 'index'}, 'cy0': {'field': 'coverageStartYear', 'kind': 'year'}, 'cy1': {'field': 'coverageEndYear', 'kind': 'year'}, 'fa': {'field': 'findingAids', 'into': 'findingAidTypes', 'kind': 'indexList'}, 'p': {'field': 'predecessors', 'into': 'headings', 'kind': 'indexList'}, 'ru': {'field': 'referenceUnit', 'into': 'referenceUnits', 'kind': 'index'}, 'ur': {'field': 'useRestrictions', 'into': 'useRestrictions', 'kind': 'indexList'}, 'us': {'field': 'useStatus', 'into': 'statuses', 'kind': 'index'}, 'x': {'field': 'extent', 'kind': 'string'}, 'y0': {'field': 'inclusiveStartYear', 'kind': 'year'}, 'y1': {'field': 'inclusiveEndYear', 'kind': 'year'}}, 'note': "Each `byNaId` row uses one-letter keys. `kind: index`/`indexList` values are offsets into the TOP-LEVEL array named by `into` — note that `as` and `us` share `statuses`, while `ar` uses `restrictions` and `ur` uses `useRestrictions`; the names do not tell you that. `y0`/`y1` are NARA's INCLUSIVE dates and `cy0`/`cy1` its COVERAGE dates, which it publishes for some series only. NEITHER PAIR CONTAINS THE OTHER: naId 604801 is inclusive 1963-1973 and coverage 1947-1964, and across 1,155 RG 59 series carrying both, coverage starts earlier in 880, the same year in 274 and LATER in 1. So a date screen must take the UNION - min(y0,cy0) to max(y1,cy1) - not whichever pair looks wider and not coverage-in-preference-to-inclusive. Measured on the commercial-diplomacy run's 93 lot resolutions: the union fails 3, preferring coverage fails 4 (it invents a failure on 604801), and the inclusive pair alone fails 6."}
+   sample row: {'ar': [0], 'as': 0, 'c': 376, 'ru': 0, 'us': 1, 'x': '11 linear feet, 8 linear inches', 'y0': 1962, 'y1': 1985}
+   start-year key guess: note
+   rows: 698 with a start year: 0 before 1940: 0
+
+[M11] USIA pointers in external_citations (11 claimed): (11,)
+   RG306 came-from whole index (427,427 claimed): (427, 427)
+
+[sec 3] fetched.tsv rows: 95 distinct pairs: 95 OK: 95
+   docs/ files: 95
+
+[fact] d251 2.5 percent context:  than its budget permits it to supply. The magnitude and importance of the work is pointed up by our Public Affairs Officer’s (admittedly unverifiable) estimate that of Indonesia’s 80 million people, 2.5 percent may be opposed to United States aims, 1.5 percent favorable, and 96 percent “unsure”. 6. Personal Influence Despite the fact that the United States is fourth and Indonesia the sixth most populous nation in the world, they opened diplomatic relations
+   '80 million' / '80,000,000' in d251: True
+[fact] d177 numbered items found: ['19', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '18', '10']
+   items 1..14 present in the 'I have' .. 'Following are more details' span: True 15. present: False
+[fact] d484 '28' context:  26. The USIA program emphasizes comprehensive anti-Communist indoctrination throughout Thailand. Working downward from 28 top leaders who received intensive indoctrination courses, the program has been extended systematically through the gove
+[fact] d359 65% context: d weekly to 122 newspapers and magazines, 18 radio stations, and 65 government officials. During FY 1954 these services were reduced by approximately 65% because of lack of funds. 7. USIA has contracts with Philippine motion picture 

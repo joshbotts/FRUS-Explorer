@@ -1,0 +1,1 @@
+QA family, EAP volumes (refuter re-run): hits=1296 sample=40 STRICT=33 of 40 TOLERANT=33 of 40 (regex case-insensitive, Python re) misses_tolerant=['frus1948v06/d131', 'frus1948v06/d219', 'frus1948v06/d76', 'frus1949v07p1/d180', 'frus1949v07p1/d348', 'frus1949v08/d1108', 'frus1950v06/d15']

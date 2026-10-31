@@ -1,0 +1,53 @@
+frus1948v07/d567 [('Department of State', '59', None, '811.20200(D)/12–2448', 'decimal', '811.20200(D)/12–2448')]
+frus1949v08/d499 [('Department of State', '59', None, '711.93/8–1549', 'decimal', '711.93/8–1549')]
+frus1949v07p2/d386 [('Department of State', '59', None, '711.90/11–1649', 'decimal', '711.90/11–1649')]
+frus1949v07p2/d127 [('Department of State', '59', None, '740.0011 PW (Peace)/8–2049', 'decimal', '740.0011 PW (Peace)/8–2049')]
+frus1950v06/d50 [('Department of State', '59', None, '511.90/6–2150', 'decimal', '511.90/6–2150')]
+frus1952-54v13p1/d116 [('Department of State', '59', None, '511.51G/9–2052', 'decimal', '511.51G/9–2052: Telegram')]
+frus1952-54v12p2/d251 [('Department of State', '59', '61 D 167', None, 'lot_file', 'S/P – NSC files, lot 61 D 167, “Indochina”')]
+frus1952-54v12p2/d352 [('Department of State', '59', None, '696.00/2–1054', 'decimal', '696.00/2–1054: Telegram')]
+frus1952-54v12p2/d359 [('Department of State', '59', '61 D 167', None, 'lot_file', 'S/P – NSC files, lot 61 D 167, NSC 5413/1')]
+frus1955-57v09/d190 [('Department of State', '59', '63 D 351', None, 'lot_file', 'Source: Department of State, S/S – NSC Files: Lot 63 D 351, NSC 5525. Secret. This paper is a collection of reports prepared by various executive agen')]
+frus1955-57v22/d447 [('Department of State', '59', '61 D 385', None, 'lot_file', 'Source: Department of State, OCB Files: Lot 61 D 385, Singapore and Malaya, General. Secret. Drafted by Smith.')]
+frus1955-57v22/d484 [('Department of State', '59', '62 D 430', None, 'lot_file', 'Source: Department of State, OCB Files: Lot 62 D 430, Thailand. Top Secret. The working group which prepared the study included representatives of the')]
+frus1958-60v15/d548 [('Department of State', '59', '62 D 430', None, 'lot_file', 'Source: Department of State, OCB Files: Lot 62 D 430, Thailand. Secret. A prefatory statement indicates that this plan was approved by the OCB with th')]
+frus1961-63v01/d49 [('National Archives', '34', None, None, 'structured', 'Source: Washington National Records center, RG 34, Saigon Embassy Files: FRC 66 A 335. Program Direction Secret; Official-Informal; For Addressee Only')]
+frus1961-63v02/d16 [('National Archives', '306', None, 'USIA /I/ S Files: FRC 68 A 4933', 'structured', 'Source: Washington National Records Center, RG 306, USIA /I/ S Files: FRC 68 A 4933, Field—Far East (IAF), 1962. Secret. Initialed by Neilson.')]
+frus1961-63v02/d197 [('National Archives', '84', None, 'Saigon Embassy Files: FRC 67 A 677. USIS 1962. Secret.', 'structured', 'Source: Washington National Records Center, RG 84, Saigon Embassy Files: FRC 67 A 677. USIS 1962. Secret.')]
+frus1961-63v04/d81 [('National Archives', '306', None, 'USIA /TOP Files: FRC 67 A 222', 'structured', 'Source: Kennedy Library, National Security Files, Vietnam Country Series, Memos and Miscellaneous. Secret. Murrow sent this memorandum to McGeorge Bun')]
+frus1964-68v01/d122 [('Johnson Library', None, None, 'National Security File', 'structured', 'Source: Johnson Library, National Security File, Vietnam Country Series. Vol. VII. Cables and Memos. Secret.')]
+frus1964-68v01/d177 [('Johnson Library', None, None, 'National Security File', 'structured', 'Source: Johnson Library, National Security File, Vietnam Country File, Vol X. Secret.')]
+frus1964-68v02/d160 [('Johnson Library', None, None, 'Confidential File', 'structured', 'Source: Johnson Library, Confidential File, CO 312. Confidential. Copy sent to McGeorge Bundy.')]
+frus1917-72PubDipv07/d32 [('National Archives', '306', None, 'DIRCTR Subj. Files, Box 16', 'structured', 'Source: National Archives, RG 306, DIRCTR Subj. Files, 1963–69, Bx 6–29 63–69: Acc: #72A5121, Entry UD WW 257, Box 16, Field—Far East (IAF) May/Decemb')]
+frus1917-72PubDipv07/d85 [('National Archives', '306', None, 'DIRCTR Files Bx 33–36, Box 33', 'structured', 'Source: National Archives, RG 306, DIRCTR Files Bx 33–36, 1966: Acc. #69–A–3445 [E], Entry UD WW 193, Box 33, The Director’s Office (April through Jun')]
+frus1964-68v26/d106 [('Johnson Library', None, None, 'National Security File', 'structured', 'Source: Johnson Library, National Security File, Country File, Indonesia, Vol. III, Memos 9/64–2/65, [2 of 2]. Confidential. Copies were sent to Ball ')]
+frus1964-68v27/d386 [('Johnson Library', None, None, 'National Security File', 'structured', 'Source: Johnson Library, National Security File, Country File, Thailand, Thanom Kittikachorn Visit, 5/8–9/68. Confidential')]
+frus1917-72PubDipv08/d31 [('National Archives', '306', None, 'Office of Policy and Plans', 'structured', 'Source: National Archives, RG 306, Office of Policy and Plans, Plans and Operational Policy Staff, Office of Planning Officer, Subject Files, Entry P–')]
+frus1917-72PubDipv08/d99 [('National Archives', '306', None, 'Director’s Subject Files, Box 15', 'structured', 'Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 15, Policy and Plans (IOP)—General 1970. Limited Official Use')]
+frus1917-72PubDipv08/d149 [('National Archives', '306', None, 'Director’s Subject Files, Box 22', 'structured', 'Source: National Archives, RG 306, Director’s Subject Files, 1968–1972, Entry A1–42, Box 22, REA—Public Opinion Research 1971. Limited Official Use. C')]
+frus1969-76v19p2/d67 [('Nixon Presidential Materials', None, None, 'NSC Files', 'structured', 'Source: National Archives, Nixon Presidential Materials, NSC Files, NSC Institutional Files (H-Files), National Security Study Memoranda, Box H–182, N')]
+frus1969-76v38p2/d105 [('National Archives', '305', None, 'Records of the USIA', 'structured', 'Source: National Archives, RG 305, Records of the USIA, Office of the Director, Subject Files, 1975, Entry UD–UP 7, FRC 306–84–0003, 7501300–7501309. ')]
+frus1977-80v22/d104 [('Department of State', '59', None, 'CFPF D770042–1117', 'cfpf', 'Source: National Archives, RG 59, Central Foreign Policy File, D770042–1117. Confidential; Stadis.')]
+frus1977-80v30/d79 [('National Archives', '306', None, 'Office of the Director, Box 130', 'structured', 'Source: National Archives, RG 306, Office of the Director, Executive Secretariat, Secretariat Staff, Correspondence Files, 1973–1980, Entry P–104, Box')]
+---- pointed-at rows for the 31 documents
+('frus1950v06', 'd50', 'Department of State', None, None, '511.90/7–550')
+('frus1952-54v13p1', 'd116', 'Department of State', None, None, '511.00/8–2352')
+('frus1952-54v12p2', 'd251', 'Department of State', None, '63 D 351', 'S/S – NSC files, lot 63 D 351')
+('frus1952-54v12p2', 'd251', 'Department of State', None, '64 D 563', 'PPS files, lot 64 D 563, box 730')
+('frus1952-54v12p2', 'd352', 'Department of State', None, None, '696.00/2–1054')
+('frus1952-54v12p2', 'd359', 'Department of State', None, None, '611.96/4654')
+('frus1952-54v12p2', 'd359', 'Eisenhower Library', 'Eisenhower papers', None, 'Eisenhower Library, Eisenhower papers, Whitman file')
+('frus1955-57v09', 'd190', 'Department of State', None, None, 'Department of State, Central Files, 511.00/6–3055')
+('frus1955-57v09', 'd190', 'Department of State', None, None, 'Ibid., 511.00/5–2755 and 511.00/6–655')
+('frus1955-57v09', 'd190', 'Department of State', None, None, 'Department of State, Central Files, 511.00/4–2455')
+('frus1955-57v22', 'd447', 'Department of State', None, '61 D 385', 'Department of State, OCB Files: Lot 61 D 385, Singapore and Malaya, General')
+('frus1955-57v22', 'd447', 'Department of State', None, '58 D 726', 'Ibid., SEA Files: Lot 58 D 726, 350 OCB Paper and Plans')
+('frus1955-57v22', 'd484', 'Department of State', None, '62 D 430', 'Department of State, OCB Files: Lot 62 D 430, Preliminary Notes on OCB Meetings')
+('frus1955-57v22', 'd484', 'Department of State', None, '66 D 95', 'Files: Lot 66 D 95, Records of Action by the National Security Council, 1955')
+('frus1955-57v22', 'd484', 'Department of State', None, None, 'Ibid., Central Files, 792.5/1–1356')
+('frus1958-60v15', 'd548', 'Department of State', None, None, 'Ibid., 611.92/12–2160')
+('frus1958-60v15', 'd548', 'Department of State', None, '62 D 430', 'Ibid., OCB Files: Lot 62 D 430, Buddhist Organizations')
+('frus1964-68v02', 'd160', 'Johnson Library', 'President’s Daily Diary', None, 'Johnson Library, President’s Daily Diary')
+('frus1964-68v26', 'd106', 'Johnson Library', 'National Security File', None, 'Johnson Library, National Security File, Country File, Indonesia, Vol. III, Memos 9/64–2/65, [2 of 2]')
+('frus1977-80v22', 'd104', 'Carter Library', 'National Security Affairs', None, 'Carter Library, National Security Affairs, Brzezinski Material, Brzezinski Office File, Country Chron File, Bo')
+rows 20

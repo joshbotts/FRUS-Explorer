@@ -1,0 +1,96 @@
+double-quoted spans in overview.md: 53
+memo Q rows: 22
+L  5 NOT A DOCUMENT QUOTATION     'information program' :: 
+L  5 NOT A DOCUMENT QUOTATION     'psychological strategy' :: 
+L  5 NOT A DOCUMENT QUOTATION     'image' :: 
+L  5 NOT A DOCUMENT QUOTATION     'credibility' :: 
+L  5 NOT A DOCUMENT QUOTATION     'soft power' :: 
+L  5 NOT A DOCUMENT QUOTATION     'messaging' :: 
+L  5 OK                           'the generally meager knowledge and understanding of the United States ' :: frus1950v06/d50 [url] offsets [3182]; memo trace ['Q1'] agree=True
+L  5 OK                           'the image of American strength, reliability and friendship' :: frus1917-72PubDipv07/d73 [url] offsets [2236]; memo trace ['Q13'] agree=True
+L 25 NOT A DOCUMENT QUOTATION     'International Informational and Educational Relations' :: 
+L 30 NOT A DOCUMENT QUOTATION     'soft power' :: 
+L 30 NOT A DOCUMENT QUOTATION     'Department of State' :: 
+L 30 NOT A DOCUMENT QUOTATION     'Soft power' :: 
+L 31 NOT A DOCUMENT QUOTATION     'Messaging' :: 
+L 31 NOT A DOCUMENT QUOTATION     'messaging' :: 
+L 31 NOT A DOCUMENT QUOTATION     'message' :: 
+L 36 NOT A DOCUMENT QUOTATION     'USI' :: 
+L 40 NOT A DOCUMENT QUOTATION     'soft power' :: 
+L 41 NOT A DOCUMENT QUOTATION     'messaging' :: 
+L 42 NOT A DOCUMENT QUOTATION     'East Asia and Pacific' :: 
+L 42 NOT A DOCUMENT QUOTATION     'Far East' :: 
+L 42 NOT A DOCUMENT QUOTATION     'East Asia and Pacific' :: 
+L 49 OK                           'the generally meager knowledge and understanding of the United States ' :: frus1950v06/d50 [url] offsets [3182]; memo trace ['Q1'] agree=True
+L 49 OK                           'every suitable operation to prepare the minds and emotions of the peop' :: frus1952-54v12p2/d403 [url] offsets [2167]; memo trace ['Q4'] agree=True
+L 49 OK                           'utilizing every suitable operation…' :: frus1952-54v12p2/d403 [url] offsets [2158]; memo trace ['Q4'] agree=True
+L 49 OK                           'Commie propaganda which exploits nationalist and racial feeling' :: frus1952-54v13p1/d116 [url] offsets [1202]; memo trace [] agree=None
+L 49 OK                           'mixed emotions regarding the use of atomic weapons against Asiatic peo' :: frus1955-57v09/d190 [url] offsets [4877]; memo trace ['Q5'] agree=True
+L 49 OK                           'designed to stir up race hatred' :: frus1955-57v09/d190 [url] offsets [4972]; memo trace ['Q5'] agree=True
+L 49 OK                           'a fear of placing the U.S. in the position of appearing to support col' :: frus1955-57v22/d447 [url] offsets [1627]; memo trace ['Q6'] agree=True
+L 53 OK                           'We are in the process of cranking up a major propaganda campaign on Vi' :: frus1961-63v01/d49 [url] offsets [568]; memo trace ['Q7'] agree=True
+L 53 OK                           'But the spectre of charges that “U.S. imperialists are waging germ war' :: frus1961-63v01/d265 [same volume → frus1961-63v01] offsets [2956]; memo trace ['Q8'] agree=True
+L 53 OK                           'the U.S. image was being hurt' :: frus1917-72PubDipv06/d140 [url] offsets [10191]; memo trace [] agree=None
+L 53 OK                           'With Orientals in general and notably with the Ngo Dinhs, capitulation' :: frus1917-72PubDipv06/d140 [url] offsets [8160]; memo trace ['Q10'] agree=True
+L 57 OK                           'In all cases, however, the image of American strength, reliability and' :: frus1917-72PubDipv07/d73 [url] offsets [2219]; memo trace ['Q13'] agree=True
+L 57 OK                           'In almost every country of the area, our programs are directed at elit' :: frus1917-72PubDipv07/d73 [url] offsets [2564]; memo trace [] agree=None
+L 57 OK                           'much of our audience would tend to regard it as mere words without dee' :: frus1917-72PubDipv06/d126 [url] offsets [4049]; memo trace ['Q12'] agree=True
+L 57 OK                           'Asians are, to varying degrees, America watchers' :: frus1917-72PubDipv08/d31 [url] offsets [2264]; memo trace ['Q16'] agree=True
+L 57 OK                           'usually depended more on the state of bi-lateral relations' :: frus1917-72PubDipv08/d31 [url] offsets [2637]; memo trace [] agree=None
+L 57 OK                           'The predominant mood is apolitical, seeking to be neutral' :: frus1917-72PubDipv08/d149 [same volume → frus1917-72PubDipv08] offsets [1136]; memo trace ['Q19'] agree=True
+L 57 OK                           'an unfortunately large amount of anti-Americanism under the surface in' :: frus1917-72PubDipv07/d85 [url] offsets [2972]; memo trace ['Q15'] agree=True
+L 61 OK                           'must be assumed that films is effective program though difficult to de' :: frus1952-54v13p1/d116 [short citation resolved via manifest.json: '1952–1954, Volume XIII, Part 1, Document 116' → frus1952-54v13p1] offsets [2710]; memo trace ['Q2'] agree=True
+L 61 OK                           'The teams have given us more of an insight into rural attitudes than a' :: frus1917-72PubDipv07/d32 [url] offsets [15873]; memo trace ['Q20'] agree=True
+L 61 OK                           'has not been worth the effort' :: frus1917-72PubDipv08/d31 [short citation resolved via manifest.json: '1917–1972, Volume VIII, Document 31' → frus1917-72PubDipv08] offsets [2110]; memo trace [] agree=None
+L 61 OK                           'Rating of the U.S. as a dependable ally of SVN reached the lowest poin' :: frus1917-72PubDipv08/d88 [url] offsets [1443]; memo trace ['Q21'] agree=True
+L 61 OK                           'public opinion surveys and other assessments of Japanese attitudes hav' :: frus1969-76v19p2/d67 [url] offsets [2106]; memo trace ['Q22'] agree=True
+L 65 OK                           'The Thai Government has not given proper attention to the need for a n' :: frus1964-68v27/d386 [url] offsets [583]; memo trace ['Q23'] agree=True
+L 65 OK                           'from the beginning, considered its psychological operations (PSYOP) su' :: frus1917-72PubDipv08/d58 [url] offsets [1544]; memo trace ['Q24'] agree=True
+L 65 OK                           'it will disengage as rapidly as feasible from information support to g' :: frus1917-72PubDipv08/d99 [same volume → frus1917-72PubDipv08] offsets [15658]; memo trace ['Q25'] agree=True
+L 65 OK                           'taking for granted a favorable psychological climate in Japan' :: frus1917-72PubDipv08/d99 [same volume → frus1917-72PubDipv08] offsets [15370]; memo trace [] agree=None
+L 65 OK                           'programs on U.S. security relations in Asia lack credibility and may i' :: frus1969-76v38p2/d105 [url] offsets [3981]; memo trace ['Q27'] agree=True
+L 65 OK                           'shoring up the confidence of East Asians in America’s long-term stayin' :: frus1977-80v30/d79 [url] offsets [2116]; memo trace ['Q28'] agree=True
+L 69 NOT A DOCUMENT QUOTATION     'USI' :: 
+L 73 NOT A DOCUMENT QUOTATION     'American soft power in East Asia and the Pacific: how policymakers ass' :: 
+L 73 NOT A DOCUMENT QUOTATION     'soft power' :: 
+
+DOCUMENT QUOTATIONS in overview: 31; verified 31; fabrications 0; mis-citations 0
+
+=== collection excerpts ===
+  OK  frus1950v06/d50 'the generally meager knowledge and understanding of the Unit' offsets [3182]
+  OK  frus1952-54v13p1/d116 'Since many new customs FE can be traced to Amer films, must ' offsets [2667]
+  OK  frus1952-54v13p1/d116 'Commie propaganda which exploits nationalist and racial feel' offsets [1202]
+  OK  frus1952-54v12p2/d403 'utilizing every suitable operation to prepare the minds and ' offsets [2158]
+  OK  frus1955-57v09/d190 'In the Far East USIA was forced to deal with mixed emotions ' offsets [4842]
+  OK  frus1955-57v22/d447 'a fear of placing the U.S. in the position of appearing to s' offsets [1627]
+  OK  frus1961-63v01/d49 'We are in the process of cranking up a major propaganda camp' offsets [568]
+  OK  frus1961-63v01/d265 'But the spectre of charges that “U.S. imperialists are wagin' offsets [2956]
+  OK  frus1961-63v02/d16 'the image of the GVN in the world press can be no better tha' offsets [3867]
+  OK  frus1917-72PubDipv06/d140 'With Orientals in general and notably with the Ngo Dinhs, ca' offsets [8160]
+  OK  frus1917-72PubDipv06/d140 'the U.S. image was being hurt' offsets [10191]
+  OK  frus1917-72PubDipv06/d126 'much of our audience would tend to regard it as mere words w' offsets [4049]
+  OK  frus1917-72PubDipv07/d73 'In all cases, however, the image of American strength, relia' offsets [2219]
+  OK  frus1917-72PubDipv07/d73 'In almost every country of the area, our programs are direct' offsets [2564]
+  OK  frus1917-72PubDipv07/d85 'there is an unfortunately large amount of anti-Americanism u' offsets [2965]
+  OK  frus1917-72PubDipv08/d31 'Asians are, to varying degrees, America watchers.' offsets [2264]
+  OK  frus1917-72PubDipv08/d31 'PAOs emphasized that the image of the US usually depended mo' offsets [2604]
+  OK  frus1917-72PubDipv08/d31 'the total exercise as presently constituted has not been wor' offsets [2072]
+  OK  frus1917-72PubDipv08/d149 'The predominant mood is apolitical, seeking to be neutral, a' offsets [1136]
+  OK  frus1917-72PubDipv07/d32 'The teams have given us more of an insight into rural attitu' offsets [15873]
+  OK  frus1917-72PubDipv08/d88 'Rating of the U.S. as a dependable ally of SVN reached the l' offsets [1443]
+  OK  frus1969-76v19p2/d67 'public opinion surveys and other assessments of Japanese att' offsets [2106]
+  OK  frus1964-68v27/d386 'The Thai Government has not given proper attention to the ne' offsets [583]
+  OK  frus1917-72PubDipv08/d58 'USIA has, from the beginning, considered its psychological o' offsets [1537]
+  OK  frus1917-72PubDipv08/d99 'it will disengage as rapidly as feasible from information su' offsets [15658]
+  OK  frus1917-72PubDipv08/d99 'Far from taking for granted a favorable psychological climat' offsets [15363]
+  OK  frus1969-76v38p2/d105 'programs on U.S. security relations in Asia lack credibility' offsets [3981]
+  OK  frus1977-80v30/d79 'shoring up the confidence of East Asians in America’s long-t' offsets [2116]
+excerpts: 28, verified 28, bad []
+quotes.json n: 28 ; equals collection excerpts (pair,text): True
+collection name: American soft power in East Asia and the Pacific: how policymakers assessed it
+overview names the collection as: American soft power in East Asia and the Pacific: how policymakers assessed it
+
+=== class gloss against decimal-class-labels.json ===
+'International Informational and Educational Relations' in decimal-class-labels.json: True
+  label: International Informational and Educational Relations. Cultural Affairs. Psychological Warfare
+  label: International Informational and Educational Relations, Cultural Affairs and Programs

@@ -1,0 +1,202 @@
+{
+ "run": "runs/f4",
+ "termsTested": 24,
+ "dead": [],
+ "syntaxErrors": [],
+ "prefixes": [],
+ "vocabLookupsInLog": 0,
+ "all": [
+  {
+   "term": "indemnity",
+   "source": "queries.log",
+   "line": 23,
+   "returns": true,
+   "query": "\"indemnity\"",
+   "nearestLive": null
+  },
+  {
+   "term": "indemnities",
+   "source": "queries.log",
+   "line": 23,
+   "returns": true,
+   "query": "\"indemnities\"",
+   "nearestLive": null
+  },
+  {
+   "term": "education",
+   "source": "queries.log",
+   "line": 23,
+   "returns": true,
+   "query": "\"education\"",
+   "nearestLive": null
+  },
+  {
+   "term": "educational",
+   "source": "queries.log",
+   "line": 23,
+   "returns": true,
+   "query": "\"educational\"",
+   "nearestLive": null
+  },
+  {
+   "term": "students",
+   "source": "queries.log",
+   "line": 23,
+   "returns": true,
+   "query": "\"students\"",
+   "nearestLive": null
+  },
+  {
+   "term": "university",
+   "source": "queries.log",
+   "line": 23,
+   "returns": true,
+   "query": "\"university\"",
+   "nearestLive": null
+  },
+  {
+   "term": "China",
+   "source": "queries.log",
+   "line": 23,
+   "returns": true,
+   "query": "\"China\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Vietnam",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Vietnam\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Viet",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Viet\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Korea",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Korea\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Japan",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Japan\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Japanese",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Japanese\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Chinese",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Chinese\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Indonesia",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Indonesia\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Philippines",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Philippines\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Thailand",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Thailand\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Laos",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Laos\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Cambodia",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Cambodia\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Asia",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Asia\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Asian",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Asian\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Taiwan",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Taiwan\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Malaysia",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Malaysia\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Singapore",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Singapore\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Pacific",
+   "source": "arch1.py",
+   "line": 5,
+   "returns": true,
+   "query": "\"Pacific\"",
+   "nearestLive": null
+  }
+ ]
+}

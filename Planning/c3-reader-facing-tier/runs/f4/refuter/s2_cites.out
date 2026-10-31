@@ -1,0 +1,13 @@
+66D95 + 63D351 combined over S2 (citations, distinct docs): (91, 61)
+LBJ NSF over S2: (72, 55)
+Carter Library collections over S2: [('National Security Affairs', 14, 9), ('Presidential Materials', 1, 1)]
+Brzezinski in external_citations raw over S2: (9, 7)
+sample Carter raw: [('Carter Library, National Security Affairs, Brzezinski Material, Country File, Box 8, China',), ('Carter Library, National Security Affairs, Staff Material, Far East, Oksenberg Subject File, Box 55, Policy Process: 10/76–4/77',), ('Carter Library, National Security Affairs, Brzezinski Material, Country File, Box 8, China',), ('Carter Library, National Security Affairs, Brzezinski Material, Country File, Box 8, China',)]
+62D430 came-from over S2 (document_sources, lot_file_norm): (12,)
+61D385 came-from over S2: (6,)
+  ext cite of frus1950v06/d50: ('Department of State', None, None, '511.90/7–550')
+  ext cite of frus1955-57v22/d447: ('Department of State', None, '61D385', 'Department of State, OCB Files: Lot 61 D 385, Singapore and Malaya, General')
+  ext cite of frus1955-57v22/d447: ('Department of State', None, '58D726', 'Ibid., SEA Files: Lot 58 D 726, 350 OCB Paper and Plans')
+  ext cite of frus1964-68v02/d160: ('Johnson Library', 'President’s Daily Diary', None, 'Johnson Library, President’s Daily Diary')
+  ext cite of frus1964-68v26/d106: ('Johnson Library', 'National Security File', None, 'Johnson Library, National Security File, Country File, Indonesia, Vol. III, Memos 9/64–2/65, [2 of 2]')
+volume_sources with OCB lots: [('frus1950-55Intel', '61 D 385', 'S/S–NSC OCB Files: Lot 61 D 385'), ('frus1950-55Intel', '62 D 430', 'S/S–NSC Files: Lot 62 D 430'), ('frus1952-54v01p1', '61 D 385', 'Lot 61 D 385'), ('frus1952-54v01p1', '62 D 430', 'Lot 62 D 430'), ('frus1952-54v01p2', '61 D 385', 'Lot 61 D 385'), ('frus1952-54v01p2', '62 D 430', 'Lot 62 D 430'), ('frus1952-54v02p1', '62 D 430', 'Lot 62 D 430'), ('frus1952-54v02p2', '62 D 430', 'Lot 62 D 430'), ('frus1952-54v03', '62 D 430', None), ('frus1952-54v04', '62 D 430', 'Lot 62 D 430'), ('frus1952-54v06p1', '62 D 430', 'Lot 62 D 430'), ('frus1952-54v06p2', '62 D 430', 'Lot 62 D 430')]

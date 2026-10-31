@@ -1,0 +1,7 @@
+0
+500
+1000
+1500
+2000
+2500
+TOLERANT census (incl. USIE): 2692 of 2860 contain an info-family literal and a geo literal; 165 lack an info literal, of which 161 contain the bare token USI

@@ -1,0 +1,24 @@
+== CENTROIDS (volume centroids rows 0..552 in index order)
+frus1917-72PubDipv07 [(0.987, 'frus1917-72PubDipv06'), (0.981, 'frus1917-72PubDipv08'), (0.973, 'frus1977-80v30'), (0.965, 'frus1964-68v33'), (0.965, 'frus1961-63v25'), (0.959, 'frus1964-68v34')]
+frus1977-80v30 [(0.976, 'frus1917-72PubDipv08'), (0.973, 'frus1917-72PubDipv07'), (0.97, 'frus1917-72PubDipv06'), (0.962, 'frus1977-80v28'), (0.961, 'frus1969-76v38p2'), (0.956, 'frus1977-80v20')]
+frus1955-57v09 [(0.985, 'frus1958-60v04'), (0.983, 'frus1952-54v01p1'), (0.983, 'frus1964-68v09'), (0.98, 'frus1961-63v09'), (0.979, 'frus1955-57v10'), (0.977, 'frus1952-54v01p2')]
+== MAP keys ['clusters', 'documentCount', 'generated', 'gridExtent', 'layout', 'provenanceDigest', 'schema']
+set size 31 unclustered 7
+cluster 29 n_in_set 13 label ['lao', 'vietnamese', 'vietnam', 'thieu'] docs None
+cluster 65535 n_in_set 7 label None docs None
+cluster 32 n_in_set 3 label ['sukarno', 'indonesian', 'indonesia', 'nasution'] docs None
+cluster 3 n_in_set 2 label ['nanking', 'shanghai', 'chinese', 'tientsin'] docs None
+cluster 7 n_in_set 2 label ['japanese', 'sato', 'japan', 'kishi'] docs None
+cluster 138 n_in_set 2 label ['cia', 'nsc', 'usia', 'inglis'] docs None
+cluster 20 n_in_set 1 label ['grc', 'formosa', 'chiang', 'taiwan'] docs None
+cluster 5 n_in_set 1 label ['philippine', 'philippines', 'quirino', 'magsaysay'] docs None
+overall unclustered share: 88059 of 314616
+== NEAR-DUPLICATE SCAN within set (Hamming <=70), plus nearest in corpus <=40 for each
+pair ['frus1955-57v22', 'd484'] ['frus1958-60v15', 'd548'] hamming 63
+close to ('frus1949v07p2', 'd386') [(('frus1951v06p1', 'd12'), 49), (('frus1952-54v14p1', 'd397'), 58), (('frus1952-54v12p1', 'd394'), 60)]
+close to ('frus1952-54v12p2', 'd359') [(('frus1952-54v12p2', 'd351'), 60)]
+close to ('frus1955-57v09', 'd190') [(('frus1955-57v09', 'd185'), 32), (('frus1952-54v02p2', 'd366'), 45), (('frus1955-57v09', 'd207'), 50)]
+close to ('frus1955-57v22', 'd484') [(('frus1964-68v27', 'd313'), 54)]
+close to ('frus1961-63v04', 'd81') [(('frus1917-72PubDipv06', 'd140'), 53)]
+close to ('frus1964-68v01', 'd122') [(('frus1917-72PubDipv07', 'd13'), 45)]
+close to ('frus1964-68v01', 'd177') [(('frus1917-72PubDipv07', 'd16'), 37)]

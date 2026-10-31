@@ -1,0 +1,45 @@
+cited pairs (distinct, by URL): 24
+cited but not in collection: []
+in collection but not cited: [('frus1952-54v12p2', 'd403'), ('frus1952-54v12p2', 'd60'), ('frus1955-57v22', 'd361'), ('frus1917-72PubDipv08', 'd24'), ('frus1917-72PubDipv08', 'd92'), ('frus1917-72PubDipv08', 'd127'), ('frus1917-72PubDipv08', 'd143'), ('frus1977-80v30', 'd79'), ('frus1977-80v30', 'd81')]
+  result set scope2 (header LIKE, PubDip v06-08): 24 pairs
+  result set scope4 (header FTS, 74 EA vols): 62 pairs
+  result set cand_image (FTS ranked): 114 pairs
+  result set cand_eff (FTS ranked): 70 pairs
+  result set cand_img2 (FTS ranked): 140 pairs
+  result set belief (FTS oriental-mind family, 79 vols): 32 pairs
+  result set scope5 (header LIKE, 4 later vols): 22 pairs
+  vec2 neighbour-list pairs (incl anchors): 52
+dump_log columns sample: ['frus1917-72PubDipv06/d53', '4508', '4508', 'OK\n']
+
+REACH per cited document:
+  frus1950v06/d32: text/heading sets=['cand_image (FTS ranked)', 'cand_eff (FTS ranked)', 'belief (FTS oriental-mind family, 79 vols)'] | in vec2 lists=True | dump order=38
+  frus1950v06/d15: text/heading sets=['cand_eff (FTS ranked)'] | in vec2 lists=False | dump order=59
+  frus1964-68v29p2/d123: text/heading sets=['cand_image (FTS ranked)'] | in vec2 lists=True | dump order=64
+  frus1969-76v38p2/d105: text/heading sets=['scope5 (header LIKE, 4 later vols)'] | in vec2 lists=True | dump order=75
+  frus1950v06/d31: text/heading sets=['scope4 (header FTS, 74 EA vols)'] | in vec2 lists=False | dump order=3
+  frus1952-54v12p2/d359: text/heading sets=['cand_eff (FTS ranked)'] | in vec2 lists=False | dump order=68
+  frus1950v06/d266: text/heading sets=['belief (FTS oriental-mind family, 79 vols)'] | in vec2 lists=False | dump order=87
+  frus1952-54v14p2/d551: text/heading sets=['cand_image (FTS ranked)', 'belief (FTS oriental-mind family, 79 vols)'] | in vec2 lists=False | dump order=88
+  frus1952-54v13p2/d992: text/heading sets=['cand_image (FTS ranked)', 'belief (FTS oriental-mind family, 79 vols)'] | in vec2 lists=False | dump order=89
+  frus1958-60v01/d26: text/heading sets=['cand_image (FTS ranked)', 'belief (FTS oriental-mind family, 79 vols)'] | in vec2 lists=False | dump order=90
+  frus1952-54v12p1/d103: text/heading sets=['cand_image (FTS ranked)', 'belief (FTS oriental-mind family, 79 vols)'] | in vec2 lists=False | dump order=6
+  frus1955-57v22/d447: text/heading sets=NONE | in vec2 lists=False | dump order=70
+  frus1955-57v22/d271: text/heading sets=['cand_image (FTS ranked)', 'belief (FTS oriental-mind family, 79 vols)'] | in vec2 lists=False | dump order=92
+  frus1917-72PubDipv06/d127: text/heading sets=['scope2 (header LIKE, PubDip v06-08)', 'cand_img2 (FTS ranked)'] | in vec2 lists=False | dump order=1
+  frus1917-72PubDipv08/d31: text/heading sets=['scope2 (header LIKE, PubDip v06-08)', 'cand_eff (FTS ranked)', 'cand_img2 (FTS ranked)'] | in vec2 lists=True | dump order=12
+  frus1964-68v26/d106: text/heading sets=['scope4 (header FTS, 74 EA vols)', 'cand_eff (FTS ranked)'] | in vec2 lists=False | dump order=28
+  frus1917-72PubDipv07/d147: text/heading sets=['cand_eff (FTS ranked)', 'cand_img2 (FTS ranked)'] | in vec2 lists=False | dump order=55
+  frus1917-72PubDipv08/d58: text/heading sets=['scope2 (header LIKE, PubDip v06-08)'] | in vec2 lists=False | dump order=13
+  frus1917-72PubDipv08/d88: text/heading sets=['scope2 (header LIKE, PubDip v06-08)'] | in vec2 lists=False | dump order=14
+  frus1917-72PubDipv08/d129: text/heading sets=['cand_eff (FTS ranked)'] | in vec2 lists=False | dump order=56
+  frus1917-72PubDipv08/d30: text/heading sets=['scope2 (header LIKE, PubDip v06-08)'] | in vec2 lists=False | dump order=11
+  frus1917-72PubDipv08/d146: text/heading sets=['scope2 (header LIKE, PubDip v06-08)', 'cand_img2 (FTS ranked)'] | in vec2 lists=False | dump order=19
+  frus1917-72PubDipv08/d149: text/heading sets=['scope2 (header LIKE, PubDip v06-08)', 'cand_eff (FTS ranked)', 'cand_img2 (FTS ranked)'] | in vec2 lists=True | dump order=20
+  frus1977-80v30/d83: text/heading sets=['scope5 (header LIKE, 4 later vols)'] | in vec2 lists=False | dump order=84
+
+re-run scope2: 24 == saved: True
+re-run scope4: 62 == saved: True
+re-run scope5: 22 == saved: True | contains v38p2/d105: True | contains 77-80v30 d79,d81,d83: [True, True, True]
+re-run belief: 32 == saved: True
+  v38p2/d105 matched by scope1 predicate (all vols): True (count-only query in the log; lists no documents)
+  v38p2/d105 matched by decade predicate (79): True (count-only query in the log; lists no documents)

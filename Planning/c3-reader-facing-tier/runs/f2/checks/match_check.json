@@ -1,0 +1,331 @@
+{
+ "run": "runs/f2",
+ "termsTested": 38,
+ "dead": [
+  {
+   "term": "ZZZ_IMPOSSIBLE_ZZZ",
+   "source": "queries.log",
+   "line": 9,
+   "returns": false,
+   "query": "\"ZZZ_IMPOSSIBLE_ZZZ\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"soft power\"",
+   "source": "queries.log",
+   "line": 75,
+   "returns": false,
+   "query": "\"soft power\"",
+   "nearestLive": null
+  }
+ ],
+ "syntaxErrors": [],
+ "prefixes": [],
+ "vocabLookupsInLog": 0,
+ "all": [
+  {
+   "term": "\"Department of State\"",
+   "source": "queries.log",
+   "line": 8,
+   "returns": true,
+   "query": "\"Department of State\"",
+   "nearestLive": null
+  },
+  {
+   "term": "ZZZ_IMPOSSIBLE_ZZZ",
+   "source": "queries.log",
+   "line": 9,
+   "returns": false,
+   "query": "\"ZZZ_IMPOSSIBLE_ZZZ\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"United States Information Agency\"",
+   "source": "queries.log",
+   "line": 10,
+   "returns": true,
+   "query": "\"United States Information Agency\"",
+   "nearestLive": null
+  },
+  {
+   "term": "USIA",
+   "source": "queries.log",
+   "line": 10,
+   "returns": true,
+   "query": "\"USIA\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"psychological warfare\"",
+   "source": "queries.log",
+   "line": 11,
+   "returns": true,
+   "query": "\"psychological warfare\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"psychological strategy\"",
+   "source": "queries.log",
+   "line": 11,
+   "returns": true,
+   "query": "\"psychological strategy\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"psychological operations\"",
+   "source": "queries.log",
+   "line": 11,
+   "returns": true,
+   "query": "\"psychological operations\"",
+   "nearestLive": null
+  },
+  {
+   "term": "propaganda",
+   "source": "queries.log",
+   "line": 12,
+   "returns": true,
+   "query": "\"propaganda\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"image of the United States\"",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"image of the United States\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"American image\"",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"American image\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"U.S. image\"",
+   "source": "queries.log",
+   "line": 13,
+   "returns": true,
+   "query": "\"U.S. image\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"information program\"",
+   "source": "queries.log",
+   "line": 14,
+   "returns": true,
+   "query": "\"information program\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"cultural exchange\"",
+   "source": "queries.log",
+   "line": 15,
+   "returns": true,
+   "query": "\"cultural exchange\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"exchange of persons\"",
+   "source": "queries.log",
+   "line": 15,
+   "returns": true,
+   "query": "\"exchange of persons\"",
+   "nearestLive": null
+  },
+  {
+   "term": "USIS",
+   "source": "queries.log",
+   "line": 40,
+   "returns": true,
+   "query": "\"USIS\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"information activities\"",
+   "source": "queries.log",
+   "line": 40,
+   "returns": true,
+   "query": "\"information activities\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Asian",
+   "source": "queries.log",
+   "line": 40,
+   "returns": true,
+   "query": "\"Asian\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Asians",
+   "source": "queries.log",
+   "line": 40,
+   "returns": true,
+   "query": "\"Asians\"",
+   "nearestLive": null
+  },
+  {
+   "term": "attitude",
+   "source": "queries.log",
+   "line": 40,
+   "returns": true,
+   "query": "\"attitude\"",
+   "nearestLive": null
+  },
+  {
+   "term": "attitudes",
+   "source": "queries.log",
+   "line": 40,
+   "returns": true,
+   "query": "\"attitudes\"",
+   "nearestLive": null
+  },
+  {
+   "term": "image",
+   "source": "queries.log",
+   "line": 40,
+   "returns": true,
+   "query": "\"image\"",
+   "nearestLive": null
+  },
+  {
+   "term": "prestige",
+   "source": "queries.log",
+   "line": 40,
+   "returns": true,
+   "query": "\"prestige\"",
+   "nearestLive": null
+  },
+  {
+   "term": "poll",
+   "source": "queries.log",
+   "line": 70,
+   "returns": true,
+   "query": "\"poll\"",
+   "nearestLive": null
+  },
+  {
+   "term": "polls",
+   "source": "queries.log",
+   "line": 70,
+   "returns": true,
+   "query": "\"polls\"",
+   "nearestLive": null
+  },
+  {
+   "term": "survey",
+   "source": "queries.log",
+   "line": 70,
+   "returns": true,
+   "query": "\"survey\"",
+   "nearestLive": null
+  },
+  {
+   "term": "surveys",
+   "source": "queries.log",
+   "line": 70,
+   "returns": true,
+   "query": "\"surveys\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Japanese",
+   "source": "queries.log",
+   "line": 70,
+   "returns": true,
+   "query": "\"Japanese\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Korean",
+   "source": "queries.log",
+   "line": 70,
+   "returns": true,
+   "query": "\"Korean\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Koreans",
+   "source": "queries.log",
+   "line": 70,
+   "returns": true,
+   "query": "\"Koreans\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Filipino",
+   "source": "queries.log",
+   "line": 70,
+   "returns": true,
+   "query": "\"Filipino\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Filipinos",
+   "source": "queries.log",
+   "line": 70,
+   "returns": true,
+   "query": "\"Filipinos\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Thai",
+   "source": "queries.log",
+   "line": 70,
+   "returns": true,
+   "query": "\"Thai\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Indonesian",
+   "source": "queries.log",
+   "line": 70,
+   "returns": true,
+   "query": "\"Indonesian\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Indonesians",
+   "source": "queries.log",
+   "line": 70,
+   "returns": true,
+   "query": "\"Indonesians\"",
+   "nearestLive": null
+  },
+  {
+   "term": "Vietnamese",
+   "source": "queries.log",
+   "line": 70,
+   "returns": true,
+   "query": "\"Vietnamese\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"Information Agency\"",
+   "source": "queries.log",
+   "line": 70,
+   "returns": true,
+   "query": "\"Information Agency\"",
+   "nearestLive": null
+  },
+  {
+   "term": "\"soft power\"",
+   "source": "queries.log",
+   "line": 75,
+   "returns": false,
+   "query": "\"soft power\"",
+   "nearestLive": null
+  },
+  {
+   "term": "messaging",
+   "source": "queries.log",
+   "line": 76,
+   "returns": true,
+   "query": "\"messaging\"",
+   "nearestLive": null
+  }
+ ]
+}

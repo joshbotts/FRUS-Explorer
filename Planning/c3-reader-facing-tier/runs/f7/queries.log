@@ -1,0 +1,45 @@
+# queries.log for run f7 (shell commands in order; db = /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db)
+sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"   -> 553|321749|1103|8481
+sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "BEGIN; CREATE TABLE zz(x); ROLLBACK;"   -> Error: attempt to write a readonly database
+mkdir -p /Users/jbotts/frus-analysis/c3f/runs/f7/work
+python3 heredoc: list manifest.json volumes whose title/tags match East Asia/Pacific/information terms (script work/manifest_scan.py)
+sqlite3 -readonly $DB (per-volume counts, FTS match 'psychological strategy' etc. ; see work/scope1.sql) -> work/scope1.out
+sqlite3 -readonly $DB < work/scope2.sql > work/scope2.out   (header-level matches in PubDip volumes for Asia; see file)
+for v in work/ea_vols_list.txt: select count(*) from document_cache where volume_id=$v and is_front_matter=0 and is_editorial_note=0  -> work/ea_vol_counts.txt (ea_vols.txt hand-picked from manifest scan)
+python3 work/scope3.py (FTS MATCH on info vocabulary within 74 EA volumes; query in file) -> work/scope3.out
+python3 work/scope4.py (FTS header: match info/psych/propaganda terms in 74 EA vols) -> work/scope4.out
+python3 work/phr1.py (phrase MATCH counts in EA vols + 3 PubDip vols; includes controls ZZZ_IMPOSSIBLE_ZZZ and department of state) -> work/phr1.out
+python3 work/cand.py '<FTS query>' N  (ranked candidate lister over EA vols + PubDip v06-08 + 1955-57v09 + 1961-63v25 + 1952-54v02p2; outputs in work/cand_*.out)
+python3 work/dump.py <vol/doc ...>  (SELECT header,dateline,source_note,body_text,length(body_text) FROM document_cache WHERE volume_id=? AND document_id=? AND is_front_matter=0 AND is_editorial_note=0 ; writes docs/<vol>__<doc>.txt, verifies captured length = length(body_text); log work/dump_log.tsv)
+python3 (inspect semantic-vectors-index.json keys, provenance digest across index/bin/map/shards) - work/vec_check.py
+python3 work/vec2.py frus1917-72PubDipv08/d31 frus1964-68v29p2/d123 frus1950v06/d32 frus1917-72PubDipv08/d149 -> work/vec2.out  (Hamming top-800 over semantic-vectors-binary.bin, rerank by int8 cosine from Tier-2 shards, calibrated (cos-0.40)/0.60)
+sqlite3 header LIKE scan of frus1969-76v38p2, frus1977-80v30 (Asia terms in header) -> work/scope5.out
+python3 work/belief.py (FTS then regex literal check) -> work/belief.out
+python3 work/falsefriend.py (controls + false-friend: per-1000 docs on-topic vs control volumes) -> work/falsefriend.out
+python3 work/decade.py (usia/usis etc. hits per 1000 dated non-apparatus docs by decade of document_dates.date_iso, on-topic 79 volumes) -> work/decade.out
+sqlite3 document_sources for the PubDip/EA reading set (work/sources1.sql) -> work/sources1.out
+python3 work/archival1.py (collection-usage-index.json ranked for scope volumes, names via collection-authority.json) -> work/archival1.out
+sqlite3 external_citations (pointed-at) for PubDip v06-08, 38p2, 77-80v30 and for the EA 74 volumes (work/ext1.py) -> work/ext1.out
+python3 work/archival3.py (lot resolution via central-files-index.json, curated-lot-resolutions.json, series-facts-index.json) -> work/archival3.out
+python3 work/belief_share.py (census strict/tolerant regex over 32 FTS hits, case-insensitive Python re) -> work/belief_share.out; reading classification by hand -> work/belief_classes.tsv
+python3 work/vec3.py (centroid cosine nearest volumes; semantic-map.bin clusters for anchors; unclustered share vs era-matched baseline) -> work/vec3.out
+python3 work/prewar.py (wartime 1941-45 Far East volumes: controls + OWI/propaganda counts) -> work/prewar.out
+python3 work/vec4.py (pairwise Hamming among the 33 collection documents; unclustered shares) -> work/vec4.out
+python3 work/src_final.py (document_sources / external_citations for the 33 collection documents) -> work/src_final.out
+python3 work/archival4.py (lots 61D167, 61D385, 58D726, 65F98 resolved via central-files-index, series-facts-index, curated-lot-resolutions, lot-claimants-index) -> work/archival4.out
+python3 work/build_collection.py -> collection.fruscollection (every pair checked in document_cache non-apparatus; quotes from work/docs_spec.py verified by work/verify_quotes.py)
+python3 work/misc_counts.py (docs in 77 volumes; union of opinion-poll phrases; 5 PubDip vol docs) -> work/misc_counts.out
+python3 work/phrase_census.py (strict/tolerant census for the opinion-poll phrases and Office of War Information) -> work/phrase_census.out
+# --- commands run but not logged at the time; added at the end, so their position in this file is NOT their order of execution ---
+python3 work/vec1.py  (id-segment round trip, random-pair and 25th-neighbour baselines; run before vec2.py) -> work/vec1.out
+python3 work/json_inspect.py (top-level keys of collection-usage-index, external-citation-index, collection-authority, series-facts-index, central-files-index; run before archival1.py)
+python3 work/archival2.py (collection-authority rows for RG 306 names; series-facts creator headings for the U.S. Information Agency; lotFiles with recordGroup 306)
+python3 work/verify_quotes.py (45 quotations against body_text, 33 pairs checked in document_cache; writes work/docmeta.json)
+python3 work/check_overview.py (overview quoted spans against the 33 document bodies; URLs against the 33 pairs)
+python3 work/dump.py <33 collection pairs> > work/dump_final.out
+sqlite3 -readonly $DB "select count(*), sum(is_front_matter), sum(is_editorial_note) from document_cache where volume_id='frus1969-76v38p2'" -> 227|2|16
+cat / cut / head of docs/<vol>__<doc>.txt and .meta.txt, and inline python regex windows over docs/*.txt (reading of the dumped documents; output on screen only)
+sqlite3 -readonly $DB ".schema document_cache" ".schema frus_documents" ".schema document_dates" ".schema document_sources" ".schema external_citations"; sqlite3 -readonly $DB "select * from document_dates limit 3"
+grep, wc, awk, ls on work/*.out and work/dump_log.tsv (counting lines of my own outputs)
+python3 -c (patching work/decade.py and the text of overview.md and memo.md; build edits to work/build_collection.py)
+ELIDED: (1) every heredoc script body is not repeated here; each is saved as work/<name>.py or work/<name>.sql, which is the complete text; (2) the on-screen reads of docs/*.txt (the cat/cut/head commands and inline python windows) are not listed one by one, and the 93 document pairs dumped are in work/dump_log.tsv, not here; (3) the schema inspections and the sqlite3 ad-hoc one-liners above are given in summary, not verbatim; (4) several commands were logged as a description with the script name rather than the literal command line; (5) the lines added after "commands run but not logged" are out of execution order; (6) the id list passed to work/dump.py on each call is not repeated (the unique list is work/dump_log.tsv); (7) the in-place edits to my own scripts and prose (python replace calls, one failed sed) are not itemised.

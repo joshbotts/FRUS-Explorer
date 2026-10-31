@@ -1,0 +1,20 @@
+['coverage', 'generated', 'provenance', 'schedules', 'schemaVersion']
+{"decimalFileOpensIn": 1910, "glossableYears": [{"endYear": 1949, "scheduleId": "1910-1949", "startYear": 1910}, {"endYear": 1959, "scheduleId": "1950-1959", "startYear": 1950}, {"endYear": 1963, "scheduleId": "1960-1963", "startYear": 1960}], "keyOutsideGlossableYears": "no-gloss", "notShipped": [], "note": "A key is glossable only when the document's own date falls inside one of `glossableYears`. Outside them this file has NO gloss \u2014 do not compose one from a schedule that does not govern the key's era. The classification was renumbered in 1950, so composing across that year returns a plausible WRONG reading rather than a miss: `411` reads as Claims under the 1910\u20131949 schedule where the editors gloss `411.48` as Poland, and `48` reads as British Africa \u2014 and `48` is live in TWO of this schedule's vocabularies at once (country `British Africa`, class-8 subject `Calamitie
+generated str 10 "2026-09-08"
+provenance str 927 "Parsed from NARA's published classification manuals and the 1910\u20131963 country-number table. The manuals are not redistributed here; every vocabulary carries the title of the document it was read from. The classification was RENUMBERED in 1950 \u2014 clas
+schedules list 3 [{"classes": {"0": "General. Miscellaneous", "1": "Administrations, United States Government", "2": "Extradition", "3": "Protection of Interests", "4": "Claims", "5": "Congresses and Conferences", "6": "Commerce. Customs Administration", "7": "Political Relati
+schemaVersion int  2
+SCHEDULE 1910-1949 ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+SCHEDULE 1950-1959 ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']
+ classes: {'0': 'Miscellaneous', '1': 'Administration of the United States Government', '2': 'Protection of Interests, (Persons and Property)', '3': 'International Conferences, Congresses, Meetings and Organizations. United Nations. Organization of American States. Multilateral Treaties', '4': 'International Trade and Commerce, Trade Relations, Treaties, Agreements, Customs Administration', '5': 'International Informational and Educational Relations, Cultural Affairs and Programs', '6': 'International Political Relations. Other International Relations', '7': 'Internal Political and National Defense Affairs', '8': 'Internal Economic, Industrial and Social Affairs', '9': 'Other Internal Affairs. Communications, Transportation, Science'}
+  countryAlternates {"00": ["Universe"], "01": ["Arctic"], "11a": ["Kure Islands", "Ocean Islands", "Palmyra Island"], "11c": ["Puerto Rico"], "11e": ["Manua Islands", "Swains Island", "Tutuilla"], "11f": ["Culebra Island", "Flamenco Island", "Naos Island", "Perico Island"], "11g": ["St. Croix Island", "St. John Island", "St. Thomas Island"], "22": ["Galapagos Islands"], "37": ["Isle of Pines"], "38": ["Hispaniola"], "40a": ["Ireland", "Irish Free State"], "41": ["Scotland", "United Kingdom", "Wales"], "41b": ["Bri
+  countryArrangedClasses ["3", "4", "5", "6", "7", "8", "9"]
+  endYear 1959
+  id "1950-1959"
+  relationsClasses ["6"]
+  source "Records Codification Manual, Department of State (adopted 1 January 1950) (National Archives and Records Administration)"
+  sources {"countries": "Department of State 1910\u20131963 Central Decimal File Country Numbers (National Archives and Records Administration)", "schedule": "Records Codification Manual, Department of State (adopted 1 January 1950) (National Archives and Records Administration)"}
+  startYear 1950
+  subjects {}
+ subject sample for 511: {}
+SCHEDULE 1960-1963 ['classes', 'countries', 'countryAlternates', 'countryArrangedClasses', 'endYear', 'id', 'relationsClasses', 'source', 'sources', 'startYear', 'subjects']

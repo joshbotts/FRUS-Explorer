@@ -1,0 +1,13 @@
+{
+ "run": "runs/cal-r8",
+ "arm": "A",
+ "occurrences": [
+  {
+   "file": "memo.md",
+   "line": 64,
+   "figure": "1910-12-06 (the pointed-at channel starts)",
+   "match": "1910-12-06",
+   "context": "**M14. Pointed-at** (`external_citations`, many rows per document; no row before 1910-12-06; holds lot, library and decimal anchors only): 160 rows over 118 core documents. Repository/collection: Department of State, no collection, 138 rows / 102 docs; Carter Library, National Security Affairs 16 / 12; Nixon P"
+  }
+ ]
+}

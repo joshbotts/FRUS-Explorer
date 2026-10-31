@@ -1,0 +1,13 @@
+{
+ "run": "runs/f2",
+ "arm": "W",
+ "occurrences": [
+  {
+   "file": "memo.md",
+   "line": 108,
+   "figure": "1910-12-06 (the pointed-at channel starts)",
+   "match": "1910-12-06",
+   "context": "Caveat stated before use: the channel has no row before 1910-12-06, stores the citation fragment,"
+  }
+ ]
+}

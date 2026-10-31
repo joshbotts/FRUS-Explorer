@@ -1,0 +1,14 @@
+round trip: 553 of 553 volumes decode to n
+digest index 89481b1869da1880 binary 89481b1869da1880 map 89481b1869da1880 match: True dims 512 docs 314616
+random pairs (20,000, Random(1877)): mean 167.1 sd 14.8 p1 132 min 95
+k-th neighbour over 200 random docs: nearest median 83 (q1 73 q3 92); 25th median 107 (q1 99 q3 114)
+frus1917-72PubDipv07/d106 hamming 81 raw-cos 0.920 calibrated 87%
+frus1969-76v38p2/d105 hamming 96 raw-cos 0.917 calibrated 86%
+frus1917-72PubDipv08/d99 hamming 90 raw-cos 0.915 calibrated 86%
+frus1955-57v09/d190 hamming 100 raw-cos 0.908 calibrated 85%
+frus1951v06p2/d105 hamming 94 raw-cos 0.908 calibrated 85%
+frus1952-54v13p1/d116 hamming 88 raw-cos 0.906 calibrated 84%
+frus1955-57v09/d185 hamming 104 raw-cos 0.905 calibrated 84%
+frus1961-63v25/d156 hamming 102 raw-cos 0.905 calibrated 84%
+frus1917-72PubDipv06/d150 hamming 99 raw-cos 0.905 calibrated 84%
+frus1917-72PubDipv07/d69 hamming 95 raw-cos 0.904 calibrated 84%

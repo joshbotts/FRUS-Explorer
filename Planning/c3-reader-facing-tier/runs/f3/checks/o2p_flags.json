@@ -1,0 +1,774 @@
+{
+ "run": "runs/f3",
+ "traceSource": "runs/f3/memo.md",
+ "traceTableLine": 291,
+ "traceRows": 23,
+ "mentions": 69,
+ "counts": {
+  "traced": 26,
+  "weak": 29,
+  "untraced": 14
+ },
+ "list": [
+  {
+   "text": "1,400",
+   "values": [
+    "1400"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "~1,400 documents on the information program (C = 1,401 in 80 volumes) | §1 [M5]",
+   "sentence": "In that vocabulary, about 1,400 documents in the 81 East Asian and public-diplomacy volumes discuss the effort, and they show a consistent assessment: the information program could win attention among educated elites but rarely moved opinion against what American policy itself was doing."
+  },
+  {
+   "text": "81",
+   "values": [
+    "81"
+   ],
+   "next": "east",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "81 volumes, ~35,000 documents in scope | §1 [M2]",
+   "sentence": "In that vocabulary, about 1,400 documents in the 81 East Asian and public-diplomacy volumes discuss the effort, and they show a consistent assessment: the information program could win attention among educated elites but rarely moved opinion against what American policy itself was doing."
+  },
+  {
+   "text": "Twenty-three",
+   "values": [
+    "23"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "23 documents, 29 quotations verified | §6 [M13], [M14]",
+   "sentence": "Ambassador at Large Jessup's review proposed that \"A considerably expanded information program both in Communist and non-Communist areas of Asia is called for\", to align the United States with Asian nationalism ( , the National Security Council's report on the program conceded that \"the trend toward accommodation to Communist pressures in the area continued\" ( , Ambassador Reischauer in judged that Embassy and information-service work in Japan had \"met with some success\" intellectually while \"the basic emotional response remains unchanged\" ( , and the Information Agency's area office reported in that the American image in Asia \"depended more on the state of bi-lateral relations … than on developments within the US\" ( , Twenty-three documents carry the argument below."
+  },
+  {
+   "text": "half",
+   "values": [
+    "0.5"
+   ],
+   "next": "come",
+   "kind": "word",
+   "class": "weak",
+   "row": "came-from: about half State RG 59 (731+57 of 1,401), about 1 in 8 USIA RG 306 (177) | §5 [M11]",
+   "sentence": "Where FRUS points for the rest.** *Where the printed documents came from:* more than half of the 1,400 come from the State Department's own files (Record Group 59), chiefly the decimal central files and, for policy papers, the Executive Secretariat's \"Records Relating to National Security Council Policy Papers\" (Record Group 59, entry A1 1586E, National Archives identifier 2839192, , partly restricted under national-security exemptions, College Park), which also holds the annual reports on the information program; and about one in eight come from the Information Agency's own records (Record Group 306, the Records of the U.S."
+  },
+  {
+   "text": "1,400",
+   "values": [
+    "1400"
+   ],
+   "next": "come",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "~1,400 documents on the information program (C = 1,401 in 80 volumes) | §1 [M5]",
+   "sentence": "Where FRUS points for the rest.** *Where the printed documents came from:* more than half of the 1,400 come from the State Department's own files (Record Group 59), chiefly the decimal central files and, for policy papers, the Executive Secretariat's \"Records Relating to National Security Council Policy Papers\" (Record Group 59, entry A1 1586E, National Archives identifier 2839192, , partly restricted under national-security exemptions, College Park), which also holds the annual reports on the information program; and about one in eight come from the Information Agency's own records (Record Group 306, the Records of the U.S."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "came-from: about half State RG 59 (731+57 of 1,401), about 1 in 8 USIA RG 306 (177) | §5 [M11]",
+   "sentence": "Where FRUS points for the rest.** *Where the printed documents came from:* more than half of the 1,400 come from the State Department's own files (Record Group 59), chiefly the decimal central files and, for policy papers, the Executive Secretariat's \"Records Relating to National Security Council Policy Papers\" (Record Group 59, entry A1 1586E, National Archives identifier 2839192, , partly restricted under national-security exemptions, College Park), which also holds the annual reports on the information program; and about one in eight come from the Information Agency's own records (Record Group 306, the Records of the U.S."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "came-from: about half State RG 59 (731+57 of 1,401), about 1 in 8 USIA RG 306 (177) | §5 [M11]",
+   "sentence": "Where FRUS points for the rest.** *Where the printed documents came from:* more than half of the 1,400 come from the State Department's own files (Record Group 59), chiefly the decimal central files and, for policy papers, the Executive Secretariat's \"Records Relating to National Security Council Policy Papers\" (Record Group 59, entry A1 1586E, National Archives identifier 2839192, , partly restricted under national-security exemptions, College Park), which also holds the annual reports on the information program; and about one in eight come from the Information Agency's own records (Record Group 306, the Records of the U.S."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Where FRUS points for the rest.** *Where the printed documents came from:* more than half of the 1,400 come from the State Department's own files (Record Group 59), chiefly the decimal central files and, for policy papers, the Executive Secretariat's \"Records Relating to National Security Council Policy Papers\" (Record Group 59, entry A1 1586E, National Archives identifier 2839192, , partly restricted under national-security exemptions, College Park), which also holds the annual reports on the information program; and about one in eight come from the Information Agency's own records (Record Group 306, the Records of the U.S."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Where FRUS points for the rest.** *Where the printed documents came from:* more than half of the 1,400 come from the State Department's own files (Record Group 59), chiefly the decimal central files and, for policy papers, the Executive Secretariat's \"Records Relating to National Security Council Policy Papers\" (Record Group 59, entry A1 1586E, National Archives identifier 2839192, , partly restricted under national-security exemptions, College Park), which also holds the annual reports on the information program; and about one in eight come from the Information Agency's own records (Record Group 306, the Records of the U.S."
+  },
+  {
+   "text": "about one in eight",
+   "values": [
+    "1",
+    "8"
+   ],
+   "next": "come",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "came-from: about half State RG 59 (731+57 of 1,401), about 1 in 8 USIA RG 306 (177) | §5 [M11]",
+   "sentence": "Where FRUS points for the rest.** *Where the printed documents came from:* more than half of the 1,400 come from the State Department's own files (Record Group 59), chiefly the decimal central files and, for policy papers, the Executive Secretariat's \"Records Relating to National Security Council Policy Papers\" (Record Group 59, entry A1 1586E, National Archives identifier 2839192, , partly restricted under national-security exemptions, College Park), which also holds the annual reports on the information program; and about one in eight come from the Information Agency's own records (Record Group 306, the Records of the U.S."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "came-from: about half State RG 59 (731+57 of 1,401), about 1 in 8 USIA RG 306 (177) | §5 [M11]",
+   "sentence": "Where FRUS points for the rest.** *Where the printed documents came from:* more than half of the 1,400 come from the State Department's own files (Record Group 59), chiefly the decimal central files and, for policy papers, the Executive Secretariat's \"Records Relating to National Security Council Policy Papers\" (Record Group 59, entry A1 1586E, National Archives identifier 2839192, , partly restricted under national-security exemptions, College Park), which also holds the annual reports on the information program; and about one in eight come from the Information Agency's own records (Record Group 306, the Records of the U.S."
+  },
+  {
+   "text": "622",
+   "values": [
+    "622"
+   ],
+   "next": "director",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "3",
+   "values": [
+    "3"
+   ],
+   "next": "to",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "RG 306 accessions split across \"3 to 18 series\" | §5 table: 3, 9, 15, 18",
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "18",
+   "values": [
+    "18"
+   ],
+   "next": "serie",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "RG 306 accessions split across \"3 to 18 series\" | §5 table: 3, 9, 15, 18",
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 63D351/66D95, 62D430, 62D1, 59D260, 70D398 resolutions | §5 table",
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "66 D 95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "lots 63D351/66D95, 62D430, 62D1, 59D260, 70D398 resolutions | §5 table",
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "came-from: about half State RG 59 (731+57 of 1,401), about 1 in 8 USIA RG 306 (177) | §5 [M11]",
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "A1 1586C",
+   "values": [
+    "a11586c"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "came-from: about half State RG 59 (731+57 of 1,401), about 1 in 8 USIA RG 306 (177) | §5 [M11]",
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "A1 1583E",
+   "values": [
+    "a11583e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "2838992",
+   "values": [
+    "2838992"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "came-from: about half State RG 59 (731+57 of 1,401), about 1 in 8 USIA RG 306 (177) | §5 [M11]",
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "WW 151",
+   "values": [
+    "ww151"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "382",
+   "values": [
+    "382"
+   ],
+   "next": "identifier",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "1257679",
+   "values": [
+    "1257679"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "47",
+   "values": [
+    "47"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "came-from: about half State RG 59 (731+57 of 1,401), about 1 in 8 USIA RG 306 (177) | §5 [M11]",
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "P 311",
+   "values": [
+    "p311"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "40943515",
+   "values": [
+    "40943515"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Information Agency, identifier 622) — the Director's subject files and the East Asia area office's files, which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series each, so no single shelf can be named; the presidential libraries' National Security Files supply most of the rest. *What the editors cited without printing:* the same National Security Council policy-papers series (its lots 63 D 351 and 66 D 95); the Executive Secretariat's \"Subject and Special Files\" (Record Group 59, entry A1 1586C, identifier 2839191, , partly restricted); the Policy Planning Council's \"Records Relating to Activities with the National Security Council\" (Record Group 59, entries A1 1583E–F, identifier 2838992, , partly restricted); and, cited behind the report, the Information Agency's Office of Policy and Plans \"Subject Files\" (Record Group 306, entries UD-WW 151 to 382, identifier 1257679, , 47 linear feet, partly restricted), the closest shelf to the program's own policy guidance; the agency's \"Alphabetical Subject Files Containing Policy Guidance Records\" (Record Group 306, entry P 311, identifier 40943515, , partly restricted) is named in the volumes' source lists."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "81 volumes, ~35,000 documents in scope | §1 [M2]",
+   "sentence": "Only about one document in four of the 1,400 carries such a citation, so this second list is thin."
+  },
+  {
+   "text": "four",
+   "values": [
+    "4"
+   ],
+   "next": "carrie",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"about one document in four\" carries a citation | §5 [M12]: 390 of 1,401",
+   "sentence": "Only about one document in four of the 1,400 carries such a citation, so this second list is thin."
+  },
+  {
+   "text": "1,400",
+   "values": [
+    "1400"
+   ],
+   "next": "carrie",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "~1,400 documents on the information program (C = 1,401 in 80 volumes) | §1 [M5]",
+   "sentence": "Only about one document in four of the 1,400 carries such a citation, so this second list is thin."
+  },
+  {
+   "text": "Three",
+   "values": [
+    "3"
+   ],
+   "next": "thing",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"Oriental mind\" in 14 scope documents, 14 of 25 corpus-wide | §3 [M8], [M9]",
+   "sentence": "What this request cannot get from FRUS.** Three things."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "553 volumes in the index | §0 [M0]",
+   "sentence": "First, the term itself: a search for \"soft power\" across all 553 volumes found nothing, against a control (\"Department of State\") found in every volume of the scope and an impossible test word found nowhere; the question has to be asked in the period's own words."
+  },
+  {
+   "text": "sixty",
+   "values": [
+    "60"
+   ],
+   "next": "page",
+   "kind": "word",
+   "class": "weak",
+   "row": "density rising to about 1 in 20 in the 1960s (50.4 per 1,000), ~1 in 30 in 1950s/1970s, ~1 in 60 in 1940s | §4 [M10]",
+   "sentence": "Second, measured effectiveness: the posts' surveys, the Information Agency's opinion research and the country plans are summarized but not printed — the Manila conference report, sixty pages, survives in FRUS only as a summary, and the post cables are printed only as abstracts."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "came-from: about half State RG 59 (731+57 of 1,401), about 1 in 8 USIA RG 306 (177) | §5 [M11]",
+   "sentence": "Those are in the Information Agency's records (Record Group 306), where the bundled finding aids can name the record group and accessions but not one series."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "serie",
+   "kind": "word",
+   "class": "weak",
+   "row": "81 volumes, ~35,000 documents in scope | §1 [M2]",
+   "sentence": "Those are in the Information Agency's records (Record Group 306), where the bundled finding aids can name the record group and accessions but not one series."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "printed",
+   "kind": "word",
+   "class": "traced",
+   "row": "circular 208: only one reply printed | §8",
+   "sentence": "Third, the full round of embassy reports on information-program effectiveness: a search for the Department's circular asking every major post to assess its program found one printed reply, from Saigon; the rest sit in the State Department's decimal file under class 511 (the class the filing manual labels \"International Informational and Educational Relations, Cultural Affairs and Programs\"). **Scope.** I read the 72 postwar volumes on East Asia, Southeast Asia, China, Japan, Korea and Indochina from to , plus nine volumes on the information program and public diplomacy, in which a document counted only if it named an Asian place: 81 volumes and about 35,000 documents, with front matter and editorial notes excluded."
+  },
+  {
+   "text": "511",
+   "values": [
+    "511"
+   ],
+   "next": "class",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "decimal class 5 gloss for 511.x | §5",
+   "sentence": "Third, the full round of embassy reports on information-program effectiveness: a search for the Department's circular asking every major post to assess its program found one printed reply, from Saigon; the rest sit in the State Department's decimal file under class 511 (the class the filing manual labels \"International Informational and Educational Relations, Cultural Affairs and Programs\"). **Scope.** I read the 72 postwar volumes on East Asia, Southeast Asia, China, Japan, Korea and Indochina from to , plus nine volumes on the information program and public diplomacy, in which a document counted only if it named an Asian place: 81 volumes and about 35,000 documents, with front matter and editorial notes excluded."
+  },
+  {
+   "text": "72",
+   "values": [
+    "72"
+   ],
+   "next": "postwar",
+   "kind": "numeral",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Third, the full round of embassy reports on information-program effectiveness: a search for the Department's circular asking every major post to assess its program found one printed reply, from Saigon; the rest sit in the State Department's decimal file under class 511 (the class the filing manual labels \"International Informational and Educational Relations, Cultural Affairs and Programs\"). **Scope.** I read the 72 postwar volumes on East Asia, Southeast Asia, China, Japan, Korea and Indochina from to , plus nine volumes on the information program and public diplomacy, in which a document counted only if it named an Asian place: 81 volumes and about 35,000 documents, with front matter and editorial notes excluded."
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "volume",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"Oriental mind\" in 14 scope documents, 14 of 25 corpus-wide | §3 [M8], [M9]",
+   "sentence": "Third, the full round of embassy reports on information-program effectiveness: a search for the Department's circular asking every major post to assess its program found one printed reply, from Saigon; the rest sit in the State Department's decimal file under class 511 (the class the filing manual labels \"International Informational and Educational Relations, Cultural Affairs and Programs\"). **Scope.** I read the 72 postwar volumes on East Asia, Southeast Asia, China, Japan, Korea and Indochina from to , plus nine volumes on the information program and public diplomacy, in which a document counted only if it named an Asian place: 81 volumes and about 35,000 documents, with front matter and editorial notes excluded."
+  },
+  {
+   "text": "81",
+   "values": [
+    "81"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "81 volumes, ~35,000 documents in scope | §1 [M2]",
+   "sentence": "Third, the full round of embassy reports on information-program effectiveness: a search for the Department's circular asking every major post to assess its program found one printed reply, from Saigon; the rest sit in the State Department's decimal file under class 511 (the class the filing manual labels \"International Informational and Educational Relations, Cultural Affairs and Programs\"). **Scope.** I read the 72 postwar volumes on East Asia, Southeast Asia, China, Japan, Korea and Indochina from to , plus nine volumes on the information program and public diplomacy, in which a document counted only if it named an Asian place: 81 volumes and about 35,000 documents, with front matter and editorial notes excluded."
+  },
+  {
+   "text": "35,000",
+   "values": [
+    "35000"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "81 volumes, ~35,000 documents in scope | §1 [M2]",
+   "sentence": "Third, the full round of embassy reports on information-program effectiveness: a search for the Department's circular asking every major post to assess its program found one printed reply, from Saigon; the rest sit in the State Department's decimal file under class 511 (the class the filing manual labels \"International Informational and Educational Relations, Cultural Affairs and Programs\"). **Scope.** I read the 72 postwar volumes on East Asia, Southeast Asia, China, Japan, Korea and Indochina from to , plus nine volumes on the information program and public diplomacy, in which a document counted only if it named an Asian place: 81 volumes and about 35,000 documents, with front matter and editorial notes excluded."
+  },
+  {
+   "text": "1,400",
+   "values": [
+    "1400"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "~1,400 documents on the information program (C = 1,401 in 80 volumes) | §1 [M5]",
+   "sentence": "The volumes and the wartime Far East volumes were left out. ## Decisions this needs from you **Whether \"soft power\" means the information program, or influence in general.** If the first, the about 1,400 documents built here are the right set; if the second, aid, trade, base and treaty documents belong in it too (I did not count them), and the finding that image followed policy becomes the subject rather than a conclusion."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "81 volumes, ~35,000 documents in scope | §1 [M2]",
+   "sentence": "Meanwhile I used the first. **Whether Vietnam counts as \"messaging\" or as war.** Counting the Vietnam psychological-warfare papers makes the the busiest decade by far (about one document in twenty of the regional volumes); leaving them out makes the story one of elite programs in Japan and Southeast Asia."
+  },
+  {
+   "text": "twenty",
+   "values": [
+    "20"
+   ],
+   "next": "regional",
+   "kind": "word",
+   "class": "weak",
+   "row": "density rising to about 1 in 20 in the 1960s (50.4 per 1,000), ~1 in 30 in 1950s/1970s, ~1 in 60 in 1940s | §4 [M10]",
+   "sentence": "Meanwhile I used the first. **Whether Vietnam counts as \"messaging\" or as war.** Counting the Vietnam psychological-warfare papers makes the the busiest decade by far (about one document in twenty of the regional volumes); leaving them out makes the story one of elite programs in Japan and Southeast Asia."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "elite",
+   "kind": "word",
+   "class": "weak",
+   "row": "81 volumes, ~35,000 documents in scope | §1 [M2]",
+   "sentence": "Meanwhile I used the first. **Whether Vietnam counts as \"messaging\" or as war.** Counting the Vietnam psychological-warfare papers makes the the busiest decade by far (about one document in twenty of the regional volumes); leaving them out makes the story one of elite programs in Japan and Southeast Asia."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "finding",
+   "kind": "word",
+   "class": "weak",
+   "row": "81 volumes, ~35,000 documents in scope | §1 [M2]",
+   "sentence": "Meanwhile I included them, but as one finding of five. **Whether officials' remarks about \"the Oriental mind\" are evidence of their beliefs about the audience, or of a figure of speech.** I treated them as evidence when they were tied to a recommendation about how to address Asians;"
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "whether",
+   "kind": "word",
+   "class": "weak",
+   "row": "~1,400 documents on the information program (C = 1,401 in 80 volumes) | §1 [M5]",
+   "sentence": "Meanwhile I included them, but as one finding of five. **Whether officials' remarks about \"the Oriental mind\" are evidence of their beliefs about the audience, or of a figure of speech.** I treated them as evidence when they were tied to a recommendation about how to address Asians;"
+  },
+  {
+   "text": "Fourteen",
+   "values": [
+    "14"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"Oriental mind\" in 14 scope documents, 14 of 25 corpus-wide | §3 [M8], [M9]",
+   "sentence": "I did not count every use of \"face\". **Which end date.** I stopped at because the volumes were outside this pass; including them would add the Reagan-era public diplomacy program. ## Findings From the start, officials judged the program by whether it could put the United States on the side of Asian nationalism — and doubted it could In Jessup's review of Far Eastern policy proposed an information program \"to demonstrate our understanding and sympathy for the nationalist aspirations of the Asian peoples and to expose the menace to these aspirations created by Soviet imperialism\" ( , The Psychological Strategy Board's Thailand plan added that \"Southeast Asia is not a political entity but that each nation is an entity basically different from the others and requires special treatment\" ( , When the posts were asked in how effective their work was, Saigon measured reach — films, libraries, English classes oversubscribed — and read it as \"intense interest in US by educated groups\", while admitting that Viet Minh broadcasts \"go unanswered\" in the countryside ( , The annual reports to the National Security Council were candid: in the agency had to answer \"mixed emotions regarding the use of atomic weapons against Asiatic peoples\" and propaganda \"designed to stir up race hatred\" ( , and by \"Despite all efforts, the trend toward accommodation to Communist pressures in the area continued\" ( , A belief about \"the Oriental mind\" shaped the advice: aid looked like weakness, and only American staying power would persuade Fourteen documents in the scope use the phrase \"Oriental mind\" — more than half of the 25 in the whole series, although these volumes hold only about one document in nine — so it was a habit of thinking about this region rather than a commonplace of the series."
+  },
+  {
+   "text": "half",
+   "values": [
+    "0.5"
+   ],
+   "next": "whole",
+   "kind": "word",
+   "class": "weak",
+   "row": "came-from: about half State RG 59 (731+57 of 1,401), about 1 in 8 USIA RG 306 (177) | §5 [M11]",
+   "sentence": "I did not count every use of \"face\". **Which end date.** I stopped at because the volumes were outside this pass; including them would add the Reagan-era public diplomacy program. ## Findings From the start, officials judged the program by whether it could put the United States on the side of Asian nationalism — and doubted it could In Jessup's review of Far Eastern policy proposed an information program \"to demonstrate our understanding and sympathy for the nationalist aspirations of the Asian peoples and to expose the menace to these aspirations created by Soviet imperialism\" ( , The Psychological Strategy Board's Thailand plan added that \"Southeast Asia is not a political entity but that each nation is an entity basically different from the others and requires special treatment\" ( , When the posts were asked in how effective their work was, Saigon measured reach — films, libraries, English classes oversubscribed — and read it as \"intense interest in US by educated groups\", while admitting that Viet Minh broadcasts \"go unanswered\" in the countryside ( , The annual reports to the National Security Council were candid: in the agency had to answer \"mixed emotions regarding the use of atomic weapons against Asiatic peoples\" and propaganda \"designed to stir up race hatred\" ( , and by \"Despite all efforts, the trend toward accommodation to Communist pressures in the area continued\" ( , A belief about \"the Oriental mind\" shaped the advice: aid looked like weakness, and only American staying power would persuade Fourteen documents in the scope use the phrase \"Oriental mind\" — more than half of the 25 in the whole series, although these volumes hold only about one document in nine — so it was a habit of thinking about this region rather than a commonplace of the series."
+  },
+  {
+   "text": "25",
+   "values": [
+    "25"
+   ],
+   "next": "whole",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"Oriental mind\" in 14 scope documents, 14 of 25 corpus-wide | §3 [M8], [M9]",
+   "sentence": "I did not count every use of \"face\". **Which end date.** I stopped at because the volumes were outside this pass; including them would add the Reagan-era public diplomacy program. ## Findings From the start, officials judged the program by whether it could put the United States on the side of Asian nationalism — and doubted it could In Jessup's review of Far Eastern policy proposed an information program \"to demonstrate our understanding and sympathy for the nationalist aspirations of the Asian peoples and to expose the menace to these aspirations created by Soviet imperialism\" ( , The Psychological Strategy Board's Thailand plan added that \"Southeast Asia is not a political entity but that each nation is an entity basically different from the others and requires special treatment\" ( , When the posts were asked in how effective their work was, Saigon measured reach — films, libraries, English classes oversubscribed — and read it as \"intense interest in US by educated groups\", while admitting that Viet Minh broadcasts \"go unanswered\" in the countryside ( , The annual reports to the National Security Council were candid: in the agency had to answer \"mixed emotions regarding the use of atomic weapons against Asiatic peoples\" and propaganda \"designed to stir up race hatred\" ( , and by \"Despite all efforts, the trend toward accommodation to Communist pressures in the area continued\" ( , A belief about \"the Oriental mind\" shaped the advice: aid looked like weakness, and only American staying power would persuade Fourteen documents in the scope use the phrase \"Oriental mind\" — more than half of the 25 in the whole series, although these volumes hold only about one document in nine — so it was a habit of thinking about this region rather than a commonplace of the series."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "81 volumes, ~35,000 documents in scope | §1 [M2]",
+   "sentence": "I did not count every use of \"face\". **Which end date.** I stopped at because the volumes were outside this pass; including them would add the Reagan-era public diplomacy program. ## Findings From the start, officials judged the program by whether it could put the United States on the side of Asian nationalism — and doubted it could In Jessup's review of Far Eastern policy proposed an information program \"to demonstrate our understanding and sympathy for the nationalist aspirations of the Asian peoples and to expose the menace to these aspirations created by Soviet imperialism\" ( , The Psychological Strategy Board's Thailand plan added that \"Southeast Asia is not a political entity but that each nation is an entity basically different from the others and requires special treatment\" ( , When the posts were asked in how effective their work was, Saigon measured reach — films, libraries, English classes oversubscribed — and read it as \"intense interest in US by educated groups\", while admitting that Viet Minh broadcasts \"go unanswered\" in the countryside ( , The annual reports to the National Security Council were candid: in the agency had to answer \"mixed emotions regarding the use of atomic weapons against Asiatic peoples\" and propaganda \"designed to stir up race hatred\" ( , and by \"Despite all efforts, the trend toward accommodation to Communist pressures in the area continued\" ( , A belief about \"the Oriental mind\" shaped the advice: aid looked like weakness, and only American staying power would persuade Fourteen documents in the scope use the phrase \"Oriental mind\" — more than half of the 25 in the whole series, although these volumes hold only about one document in nine — so it was a habit of thinking about this region rather than a commonplace of the series."
+  },
+  {
+   "text": "nine",
+   "values": [
+    "9"
+   ],
+   "next": "so",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"Oriental mind\" in 14 scope documents, 14 of 25 corpus-wide | §3 [M8], [M9]",
+   "sentence": "I did not count every use of \"face\". **Which end date.** I stopped at because the volumes were outside this pass; including them would add the Reagan-era public diplomacy program. ## Findings From the start, officials judged the program by whether it could put the United States on the side of Asian nationalism — and doubted it could In Jessup's review of Far Eastern policy proposed an information program \"to demonstrate our understanding and sympathy for the nationalist aspirations of the Asian peoples and to expose the menace to these aspirations created by Soviet imperialism\" ( , The Psychological Strategy Board's Thailand plan added that \"Southeast Asia is not a political entity but that each nation is an entity basically different from the others and requires special treatment\" ( , When the posts were asked in how effective their work was, Saigon measured reach — films, libraries, English classes oversubscribed — and read it as \"intense interest in US by educated groups\", while admitting that Viet Minh broadcasts \"go unanswered\" in the countryside ( , The annual reports to the National Security Council were candid: in the agency had to answer \"mixed emotions regarding the use of atomic weapons against Asiatic peoples\" and propaganda \"designed to stir up race hatred\" ( , and by \"Despite all efforts, the trend toward accommodation to Communist pressures in the area continued\" ( , A belief about \"the Oriental mind\" shaped the advice: aid looked like weakness, and only American staying power would persuade Fourteen documents in the scope use the phrase \"Oriental mind\" — more than half of the 25 in the whole series, although these volumes hold only about one document in nine — so it was a habit of thinking about this region rather than a commonplace of the series."
+  },
+  {
+   "text": "Two",
+   "values": [
+    "2"
+   ],
+   "next": "year",
+   "kind": "word",
+   "class": "weak",
+   "row": "81 volumes, ~35,000 documents in scope | §1 [M2]",
+   "sentence": "\"But the spectre of charges that “U.S. imperialists are waging germ warfare on Asians” haunts me\" ( , The Saigon public affairs officer asked in whether it was possible \"to laugh at the VC, to make them look ridiculous and thus lose face?\" ( , , Director Rowan told President Johnson in that \"these programs to affect what the Vietnamese people think must be given the same status, the same concern, the same adequacy of working resources, as our military and economic operations\" ( , see also , In Japan and among the region's elites, officials thought personal contact and visible achievement worked, but could not outrun policy The progress report on Japan recorded \"Vigorous information programs\" to \"combat leftist and neutralist influences\" alongside \"a serious increase in neutralist sentiment\" ( , Ambassador Reischauer judged John Glenn's tour a model: his family \"were effective demonstration of typical American virtues\" ( , Two years later, under the bombing of North Vietnam, he blamed Japanese opinion on \"the ostrich-like pacifism of the Japanese\" and conceded that the emotional response was \"probably unchangeable over the short run\" ( , , , The agency's Far East office in aimed its programs \"at elite groups: government officials, university and high school teachers, media representatives, top-level business executives\", with \"the image of American strength, reliability and friendship\" as the common objective ( , Public Diplomacy, , The Manila conference of public affairs officers concluded that \"Asians are, to varying degrees, America watchers\", that image followed the state of each bilateral relationship, and, for seminars, that \"US visibility should be low\" ( , Public Diplomacy, , After the opening to China and the fall of Saigon, the measure became credibility In the East Asia office saw in the President's trip to Peking a chance \"to build what is now a temporary psychological asset into a long-range one\" ( , Public Diplomacy, , and turned to the overseas Chinese \"as a USIS audience\" ( , After Saigon fell in the posts' reassessments, printed as abstracts, ran from Singapore's advice to accept \"that America is not omnipotent\" to Kuala Lumpur's report that \"Confidence in US economic power, technological and scientific capability, and our leadership role … remains\" ( , By the Japan program was recast as communication among the industrialized democracies on trade, \"gut issues rather than some of the frothier aspects of cultural exchange\" ( , ## How this was done I searched a full-text copy of the FRUS index (553 volumes) for the period's own words for the information effort — the agency's and service's acronyms, \"information program\", \"psychological strategy\" and \"psychological warfare\", \"cultural exchange\" — within 81 volumes chosen from the series' titles, and checked a sample of every phrase count against the documents' literal text, because the index treats different forms of a word as the same word."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "public",
+   "kind": "word",
+   "class": "weak",
+   "row": "81 volumes, ~35,000 documents in scope | §1 [M2]",
+   "sentence": "\"But the spectre of charges that “U.S. imperialists are waging germ warfare on Asians” haunts me\" ( , The Saigon public affairs officer asked in whether it was possible \"to laugh at the VC, to make them look ridiculous and thus lose face?\" ( , , Director Rowan told President Johnson in that \"these programs to affect what the Vietnamese people think must be given the same status, the same concern, the same adequacy of working resources, as our military and economic operations\" ( , see also , In Japan and among the region's elites, officials thought personal contact and visible achievement worked, but could not outrun policy The progress report on Japan recorded \"Vigorous information programs\" to \"combat leftist and neutralist influences\" alongside \"a serious increase in neutralist sentiment\" ( , Ambassador Reischauer judged John Glenn's tour a model: his family \"were effective demonstration of typical American virtues\" ( , Two years later, under the bombing of North Vietnam, he blamed Japanese opinion on \"the ostrich-like pacifism of the Japanese\" and conceded that the emotional response was \"probably unchangeable over the short run\" ( , , , The agency's Far East office in aimed its programs \"at elite groups: government officials, university and high school teachers, media representatives, top-level business executives\", with \"the image of American strength, reliability and friendship\" as the common objective ( , Public Diplomacy, , The Manila conference of public affairs officers concluded that \"Asians are, to varying degrees, America watchers\", that image followed the state of each bilateral relationship, and, for seminars, that \"US visibility should be low\" ( , Public Diplomacy, , After the opening to China and the fall of Saigon, the measure became credibility In the East Asia office saw in the President's trip to Peking a chance \"to build what is now a temporary psychological asset into a long-range one\" ( , Public Diplomacy, , and turned to the overseas Chinese \"as a USIS audience\" ( , After Saigon fell in the posts' reassessments, printed as abstracts, ran from Singapore's advice to accept \"that America is not omnipotent\" to Kuala Lumpur's report that \"Confidence in US economic power, technological and scientific capability, and our leadership role … remains\" ( , By the Japan program was recast as communication among the industrialized democracies on trade, \"gut issues rather than some of the frothier aspects of cultural exchange\" ( , ## How this was done I searched a full-text copy of the FRUS index (553 volumes) for the period's own words for the information effort — the agency's and service's acronyms, \"information program\", \"psychological strategy\" and \"psychological warfare\", \"cultural exchange\" — within 81 volumes chosen from the series' titles, and checked a sample of every phrase count against the documents' literal text, because the index treats different forms of a word as the same word."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "553 volumes in the index | §0 [M0]",
+   "sentence": "\"But the spectre of charges that “U.S. imperialists are waging germ warfare on Asians” haunts me\" ( , The Saigon public affairs officer asked in whether it was possible \"to laugh at the VC, to make them look ridiculous and thus lose face?\" ( , , Director Rowan told President Johnson in that \"these programs to affect what the Vietnamese people think must be given the same status, the same concern, the same adequacy of working resources, as our military and economic operations\" ( , see also , In Japan and among the region's elites, officials thought personal contact and visible achievement worked, but could not outrun policy The progress report on Japan recorded \"Vigorous information programs\" to \"combat leftist and neutralist influences\" alongside \"a serious increase in neutralist sentiment\" ( , Ambassador Reischauer judged John Glenn's tour a model: his family \"were effective demonstration of typical American virtues\" ( , Two years later, under the bombing of North Vietnam, he blamed Japanese opinion on \"the ostrich-like pacifism of the Japanese\" and conceded that the emotional response was \"probably unchangeable over the short run\" ( , , , The agency's Far East office in aimed its programs \"at elite groups: government officials, university and high school teachers, media representatives, top-level business executives\", with \"the image of American strength, reliability and friendship\" as the common objective ( , Public Diplomacy, , The Manila conference of public affairs officers concluded that \"Asians are, to varying degrees, America watchers\", that image followed the state of each bilateral relationship, and, for seminars, that \"US visibility should be low\" ( , Public Diplomacy, , After the opening to China and the fall of Saigon, the measure became credibility In the East Asia office saw in the President's trip to Peking a chance \"to build what is now a temporary psychological asset into a long-range one\" ( , Public Diplomacy, , and turned to the overseas Chinese \"as a USIS audience\" ( , After Saigon fell in the posts' reassessments, printed as abstracts, ran from Singapore's advice to accept \"that America is not omnipotent\" to Kuala Lumpur's report that \"Confidence in US economic power, technological and scientific capability, and our leadership role … remains\" ( , By the Japan program was recast as communication among the industrialized democracies on trade, \"gut issues rather than some of the frothier aspects of cultural exchange\" ( , ## How this was done I searched a full-text copy of the FRUS index (553 volumes) for the period's own words for the information effort — the agency's and service's acronyms, \"information program\", \"psychological strategy\" and \"psychological warfare\", \"cultural exchange\" — within 81 volumes chosen from the series' titles, and checked a sample of every phrase count against the documents' literal text, because the index treats different forms of a word as the same word."
+  },
+  {
+   "text": "81",
+   "values": [
+    "81"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "81 volumes, ~35,000 documents in scope | §1 [M2]",
+   "sentence": "\"But the spectre of charges that “U.S. imperialists are waging germ warfare on Asians” haunts me\" ( , The Saigon public affairs officer asked in whether it was possible \"to laugh at the VC, to make them look ridiculous and thus lose face?\" ( , , Director Rowan told President Johnson in that \"these programs to affect what the Vietnamese people think must be given the same status, the same concern, the same adequacy of working resources, as our military and economic operations\" ( , see also , In Japan and among the region's elites, officials thought personal contact and visible achievement worked, but could not outrun policy The progress report on Japan recorded \"Vigorous information programs\" to \"combat leftist and neutralist influences\" alongside \"a serious increase in neutralist sentiment\" ( , Ambassador Reischauer judged John Glenn's tour a model: his family \"were effective demonstration of typical American virtues\" ( , Two years later, under the bombing of North Vietnam, he blamed Japanese opinion on \"the ostrich-like pacifism of the Japanese\" and conceded that the emotional response was \"probably unchangeable over the short run\" ( , , , The agency's Far East office in aimed its programs \"at elite groups: government officials, university and high school teachers, media representatives, top-level business executives\", with \"the image of American strength, reliability and friendship\" as the common objective ( , Public Diplomacy, , The Manila conference of public affairs officers concluded that \"Asians are, to varying degrees, America watchers\", that image followed the state of each bilateral relationship, and, for seminars, that \"US visibility should be low\" ( , Public Diplomacy, , After the opening to China and the fall of Saigon, the measure became credibility In the East Asia office saw in the President's trip to Peking a chance \"to build what is now a temporary psychological asset into a long-range one\" ( , Public Diplomacy, , and turned to the overseas Chinese \"as a USIS audience\" ( , After Saigon fell in the posts' reassessments, printed as abstracts, ran from Singapore's advice to accept \"that America is not omnipotent\" to Kuala Lumpur's report that \"Confidence in US economic power, technological and scientific capability, and our leadership role … remains\" ( , By the Japan program was recast as communication among the industrialized democracies on trade, \"gut issues rather than some of the frothier aspects of cultural exchange\" ( , ## How this was done I searched a full-text copy of the FRUS index (553 volumes) for the period's own words for the information effort — the agency's and service's acronyms, \"information program\", \"psychological strategy\" and \"psychological warfare\", \"cultural exchange\" — within 81 volumes chosen from the series' titles, and checked a sample of every phrase count against the documents' literal text, because the index treats different forms of a word as the same word."
+  },
+  {
+   "text": "172",
+   "values": [
+    "172"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Indonesia false friend removed (172 dropped, 166 \"USI\") | §1 [M4], [M5]",
+   "sentence": "That check found that \"USI\" also meant the United States of Indonesia in , so 172 documents were dropped, leaving about 1,400."
+  },
+  {
+   "text": "1,400",
+   "values": [
+    "1400"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "~1,400 documents on the information program (C = 1,401 in 80 volumes) | §1 [M5]",
+   "sentence": "That check found that \"USI\" also meant the United States of Indonesia in , so 172 documents were dropped, leaving about 1,400."
+  },
+  {
+   "text": "121",
+   "values": [
+    "121"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "121 read whole, 23 quoted | §6",
+   "sentence": "I read 121 documents whole, quoted 23, and verified each quotation word for word against its document."
+  },
+  {
+   "text": "23",
+   "values": [
+    "23"
+   ],
+   "next": "verified",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "23 documents, 29 quotations verified | §6 [M13], [M14]",
+   "sentence": "I read 121 documents whole, quoted 23, and verified each quotation word for word against its document."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "key",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"Oriental mind\" in 14 scope documents, 14 of 25 corpus-wide | §3 [M8], [M9]",
+   "sentence": "I also used the app's document-similarity vectors to look for neighbours of three key documents, which led to one document (Saigon's report) that the full-text search had also caught but I had not read; similarity was treated as a lead only."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "81 volumes, ~35,000 documents in scope | §1 [M2]",
+   "sentence": "I also used the app's document-similarity vectors to look for neighbours of three key documents, which led to one document (Saigon's report) that the full-text search had also caught but I had not read; similarity was treated as a lead only."
+  },
+  {
+   "text": "23",
+   "values": [
+    "23"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "23 documents, 29 quotations verified | §6 [M13], [M14]",
+   "sentence": "I checked before finishing that every quotation here and every excerpt in the collection was verified against its document in the memo, and that every document cited here is in the collection. ## Read next The collection **\"Information programs and the American image in East Asia, \"** holds the 23 documents above under the five findings, with the quoted passages marked."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "finding",
+   "kind": "word",
+   "class": "weak",
+   "row": "~1,400 documents on the information program (C = 1,401 in 80 volumes) | §1 [M5]",
+   "sentence": "I checked before finishing that every quotation here and every excerpt in the collection was verified against its document in the memo, and that every document cited here is in the collection. ## Read next The collection **\"Information programs and the American image in East Asia, \"** holds the 23 documents above under the five findings, with the quoted passages marked."
+  },
+  {
+   "text": "Three",
+   "values": [
+    "3"
+   ],
+   "next": "addition",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"Oriental mind\" in 14 scope documents, 14 of 25 corpus-wide | §3 [M8], [M9]",
+   "sentence": "Three additions from you would change the argument: the Information Agency's East Asia country plans and opinion surveys (Record Group 306), which would let effectiveness be judged by the agency's own measures rather than its officials' impressions; the embassy replies on program effectiveness in the State Department's decimal file, which would turn Saigon's single report into a regional comparison; and the volumes, which would show whether the post-Vietnam turn to credibility and economic communication lasted."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "came-from: about half State RG 59 (731+57 of 1,401), about 1 in 8 USIA RG 306 (177) | §5 [M11]",
+   "sentence": "Three additions from you would change the argument: the Information Agency's East Asia country plans and opinion surveys (Record Group 306), which would let effectiveness be judged by the agency's own measures rather than its officials' impressions; the embassy replies on program effectiveness in the State Department's decimal file, which would turn Saigon's single report into a regional comparison; and the volumes, which would show whether the post-Vietnam turn to credibility and economic communication lasted."
+  }
+ ]
+}

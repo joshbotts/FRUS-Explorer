@@ -1,0 +1,67 @@
+document_dates|CREATE TABLE document_dates (
+    volume_id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    date_iso TEXT, date_iso_max TEXT, date_precision TEXT, date_certainty TEXT,
+    PRIMARY KEY (volume_id, document_id)
+)
+document_cache|CREATE TABLE document_cache (
+    volume_id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    document_number TEXT,
+    header TEXT NOT NULL,
+    dateline TEXT,
+    source_note TEXT,
+    body_text TEXT NOT NULL,
+    subject_tag_ids TEXT,
+    user_tag_ids TEXT,
+    summary_text TEXT,
+    note_text TEXT, is_editorial_note INTEGER NOT NULL DEFAULT 0, is_front_matter INTEGER NOT NULL DEFAULT 0, despatch_serial TEXT,
+    PRIMARY KEY (volume_id, document_id)
+)
+volume_structures|CREATE TABLE volume_structures (
+    volume_id      TEXT PRIMARY KEY,
+    structure_json TEXT NOT NULL
+)
+frus_documents|CREATE VIRTUAL TABLE frus_documents USING fts5(
+    document_id UNINDEXED,
+    volume_id UNINDEXED,
+    document_number UNINDEXED,
+    header,
+    dateline,
+    source_note,
+    body_text,
+    subject_tag_ids UNINDEXED,
+    user_tag_ids UNINDEXED,
+    is_editorial_note UNINDEXED,
+    content='document_cache', content_rowid='rowid', tokenize = 'porter unicode61'
+)
+external_citations|CREATE TABLE external_citations (
+    volume_id     TEXT NOT NULL,
+    document_id   TEXT NOT NULL,
+    note_ordinal  INTEGER NOT NULL,
+    citation_index INTEGER NOT NULL,
+    anchor        TEXT NOT NULL,
+    repository    TEXT,
+    collection    TEXT,
+    lot_file      TEXT,
+    lot_file_norm TEXT,
+    file_id       TEXT,
+    inherited     INTEGER NOT NULL DEFAULT 0,
+    raw_text      TEXT NOT NULL, decimal_class TEXT, note_label TEXT,
+    PRIMARY KEY (volume_id, document_id, note_ordinal, citation_index)
+)
+document_sources|CREATE TABLE document_sources (
+    volume_id      TEXT NOT NULL,
+    document_id    TEXT NOT NULL,
+    repository     TEXT,
+    record_group   TEXT,
+    lot_file       TEXT,
+    lot_file_norm  TEXT,
+    series_name    TEXT,
+    citation_era   TEXT NOT NULL DEFAULT 'unrecognized',
+    raw_text       TEXT NOT NULL,
+    classification TEXT,
+    decimal_class  TEXT,
+    job_number_norm TEXT,
+    PRIMARY KEY (volume_id, document_id)
+)

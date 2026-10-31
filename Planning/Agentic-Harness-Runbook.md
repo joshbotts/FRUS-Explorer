@@ -187,6 +187,12 @@ carries one; neither does C-0's or C-2's.
 
 | C-3 vectors tier **[VERIFIED]** | 18 agents in 6 workflow runs: 1 calibration scorer, 1 canary, 4 cells each with a scorer, a refuter and a judge on Fable at `max` | 4.08 M output (thinking included); 13.8 M cache write; 216 M cache read; 654 tool calls, 0 errored | 2 h 46 m elapsed, 23:13 to 01:59, one cell at a time, 33 to 40 minutes a cell with its instruments in parallel | 8 points of the weekly meter (80% → 88%), 16 of the Fable window. `Planning/c3-vectors-tier/usage.md` |
 
+| C-3 steering tier (R16) **[VERIFIED]** | 9 runs, each with a scorer, a refuter and a judge on Fable at `max`; a calibration and a canary | 8.10 M output across the runs, their instruments and the calibration | 5 h 42 m elapsed, one run at a time | 19 points of the weekly meter, 34 of the Fable meter. `Planning/c3-steering-tier/usage.md` |
+
+| Reader-facing pilot **[VERIFIED]** | 8 writers, 4 O2' scorers and 4 pairwise judges | about 1.51 M output | 47 minutes over two invocations | 5 weekly points and 8 Fable, against an estimate of 1 to 2 and 3 to 5; the O2' scorer on Fable at `max` took nearly half. `Planning/reader-facing-style/pilot/usage.md` |
+
+| C-3 reader-facing tier **[VERIFIED]** | 12 runs, 24 instruments, 4 block judges, a 4-agent calibration and a canary | 12.9 M output across the runs, their scorers and refuters and the calibration (the judges and the canary not tallied) | 4 h 30 m elapsed, each run's instruments overlapping the next run; an hour of it paused for the 5-hour window | 25 weekly points and 43 Fable. Overlapping five or six agents filled the 5-hour window about 30 points an hour, so pace a pipelined run by that window too. `Planning/c3-reader-facing-tier/usage.md` |
+
 The refuter share is the number to plan around: an adversarial pass is not a rounding error on the
 budget, it is half of it. In C-3 the three instruments together cost about as much as a cheap
 cell and more than the cheapest (`Planning/C-3-Results-2026-10-26.md` §4 item 4).

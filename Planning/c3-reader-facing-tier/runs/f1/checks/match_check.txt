@@ -1,0 +1,4 @@
+Full-text terms in f1: 17 tested alone against the index copy; 2 return no document. 0 prefixes; 0 frus_documents_vocab lookups in the log. Terms passed to MATCH as query parameters are seen only when they carry a `*`.
+
+DEAD '"soft power"' (queries.log:12); nearest form that returns documents: None
+DEAD 'ZZZ_IMPOSSIBLE_ZZZ' (queries.log:14); nearest form that returns documents: None

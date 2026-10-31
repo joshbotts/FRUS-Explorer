@@ -1,0 +1,111 @@
+central-files-index keys: ['countrySeries', 'generated', 'lotFiles', 'numericalFile', 'schemaVersion']
+series-facts keys: ['byNaId', 'findingAidTypes', 'generated', 'headings', 'legend', 'referenceUnits', 'restrictions', 'schemaVersion', 'statuses', 'useRestrictions']
+collection-authority keys: ['collections', 'generated', 'schemaVersion']
+legend fields: ['accessRestrictions', 'accessStatus', 'coverageEndYear', 'coverageStartYear', 'creator', 'extent', 'findingAids', 'inclusiveEndYear', 'inclusiveStartYear', 'predecessors', 'referenceUnit', 'useRestrictions', 'useStatus']
+lotFiles rows: 1070 distinct lots: 1070
+sample lotFiles row keys: ['catalogURL', 'hmsMlrEntryNumbers', 'levelOfDescription', 'lotNumber', 'matchType', 'naId', 'recordGroup', 'title']
+
+--- Lot 62 D 430: lotFiles rows 1
+   row: {'recordGroup': '59', 'naId': '2839191', 'hmsMlrEntryNumbers': ['A1 1586C'], 'title': 'Subject and Special Files', 'matchType': 'control', 'lotNumber': '62D430'}
+   facts: {'creator': 'Department of State. Executive Secretariat.', 'inclusiveStartYear': 1953, 'inclusiveEndYear': 1961, 'accessStatus': 'Restricted - Partly', 'useStatus': 'Restricted - Possibly', 'extent': '4 linear feet, 5 linear inches', 'accessRestrictions': ['FOIA (b)(1) National Security'], 'title': None}
+   checks: {'rg': True, 'naid': True, 'title': True, 'dates': True, 'access': True, 'entry': True, 'creator': True} ALL OK
+
+--- Lot 63 D 351: lotFiles rows 1
+   row: {'recordGroup': '59', 'naId': '2839192', 'hmsMlrEntryNumbers': ['A1 1586E'], 'title': 'Records Relating to National Security Council Policy Papers', 'matchType': 'control', 'lotNumber': '63D351'}
+   facts: {'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'inclusiveStartYear': 1947, 'inclusiveEndYear': 1979, 'accessStatus': 'Restricted - Partly', 'useStatus': 'Restricted - Possibly', 'extent': '26 linear feet, 3 linear inches', 'accessRestrictions': ['FOIA (b)(1) National Security'], 'title': None}
+   checks: {'rg': True, 'naid': True, 'title': True, 'dates': True, 'access': True, 'entry': True} ALL OK
+
+--- Lot 67 D 54: lotFiles rows 1
+   row: {'recordGroup': '59', 'naId': '631403', 'hmsMlrEntryNumbers': ['A1 5305', 'A1 5414'], 'title': 'Subject Files of the Vietnam Working Group', 'matchType': 'control', 'lotNumber': '67D54'}
+   facts: {'creator': 'Department of State. Bureau of East Asian and Pacific Affairs.', 'inclusiveStartYear': 1963, 'inclusiveEndYear': 1974, 'accessStatus': 'Unrestricted', 'useStatus': 'Unrestricted', 'extent': '21 linear feet', 'accessRestrictions': None, 'title': None}
+   checks: {'rg': True, 'naid': True, 'title': True, 'dates': True, 'access': True, 'entry': True} ALL OK
+
+--- Lot 66 D 95: lotFiles rows 1
+   row: {'recordGroup': '59', 'naId': '2839192', 'hmsMlrEntryNumbers': ['A1 1586E'], 'title': 'Records Relating to National Security Council Policy Papers', 'matchType': 'control', 'lotNumber': '66D95'}
+   facts: {'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'inclusiveStartYear': 1947, 'inclusiveEndYear': 1979, 'accessStatus': 'Restricted - Partly', 'useStatus': 'Restricted - Possibly', 'extent': '26 linear feet, 3 linear inches', 'accessRestrictions': ['FOIA (b)(1) National Security'], 'title': None}
+   checks: {'rg': True, 'naid': True, 'title': True, 'dates': True, 'access': True, 'entry': True} ALL OK
+
+--- Lot 59 D 260: lotFiles rows 1
+   row: {'recordGroup': '306', 'naId': '1257679', 'hmsMlrEntryNumbers': ['UD-WW 151', 'UD-WW 197', 'UD-WW 234', 'UD-WW 264', 'UD-WW 287', 'UD-WW 288', 'UD-WW 365', 'UD-WW 366', 'UD-WW 372', 'UD-WW 379', 'UD-WW 382'], 'title': 'Subject Files', 'matchType': 'control', 'lotNumber': '59D260'}
+   facts: {'creator': 'U.S. Information Agency. Office of Policy and Plans.', 'inclusiveStartYear': 1953, 'inclusiveEndYear': 1971, 'accessStatus': 'Restricted - Partly', 'useStatus': 'Restricted - Possibly', 'extent': '47 linear feet', 'accessRestrictions': ['FOIA (b)(1) National Security'], 'title': None}
+   checks: {'rg': True, 'naid': True, 'title': True, 'dates': True, 'access': True, 'extent': True, 'creator': True} ALL OK
+
+--- Lot 65 D 101: lotFiles rows 1
+   row: {'recordGroup': '59', 'naId': '1136548', 'hmsMlrEntryNumbers': ['A1 558-D'], 'title': 'Chronological Files', 'matchType': 'control', 'lotNumber': '65D101'}
+   facts: {'creator': 'Department of State. Policy Planning Council.', 'inclusiveStartYear': 1947, 'inclusiveEndYear': 1962, 'accessStatus': 'Unrestricted', 'useStatus': 'Unrestricted', 'extent': '5 linear feet, 3 linear inches', 'accessRestrictions': None, 'title': None}
+   checks: {'rg': True, 'naid': True, 'title': True, 'dates': True, 'access': True, 'creator': True} ALL OK
+
+--- Lot 63 D 224: lotFiles rows 0
+   claim: bundled data cannot place it -> CONFIRMED absent from lotFiles
+
+--- Lot 62 D 255: lotFiles rows 0
+   claim: bundled data cannot place it -> CONFIRMED absent from lotFiles
+
+--- Lot 60 D 322: lotFiles rows 0
+   claim: bundled data cannot place it -> CONFIRMED absent from lotFiles
+
+--- collection-authority: RG 306 series the overview names (and whether they carry a NAID)
+   {"aliases": ["70 D 398", "USIA /IOP/ G Files: Lot 70 D 398", "USIA /IOP/C Files: Lot 70 D 398"], "catalogURL": "https://catalog.archives.gov/id/40943515", "id": "lot:70D398", "lotFileNorm": "70D398", "naId": "40943515", "name": "Lot 70 D 398: Alphabetical subject files containing Policy Guidance records as maintained by the Policy Guidance Staff, Office of Policy and Plans, U.S. Information Agency
+   {"id": "txt:national archives|dirctr subj file", "name": "DIRCTR Subj Files", "recordGroup": "306", "repository": "National Archives", "volumeIds": ["frus1917-72PubDipv06", "frus1917-72PubDipv07"]}
+   {"id": "txt:national archives|director's subject file", "name": "Director’s Subject Files", "recordGroup": "306", "repository": "National Archives", "volumeIds": ["frus1917-72PubDipv06", "frus1917-72PubDipv07", "frus1917-72PubDipv08"]}
+   {"aliases": ["General Records Relating to the Joint U.S. Public Affairs Office ( JUSPAO )"], "id": "txt:national archives|general records relating to the joint u.s. public affairs office ( juspao )", "name": "General Records Relating to the Joint U.S. Public Affairs Office ( JUSPAO ), 1966–1975 (Entry A1–31)", "recordGroup": "306", "repository": "National Archives", "volumeIds": ["frus1917-72PubDi
+   {"children": [{"name": "General Subject Files", "volumeIds": ["frus1917-72PubDipv07"]}, {"name": "Plans and Operational Policy Staff", "volumeIds": ["frus1917-72PubDipv08"]}, {"name": "Policy Coordination Staff", "volumeIds": ["frus1917-72PubDipv07", "frus1917-72PubDipv08"]}, {"name": "Program Coordination Staff", "volumeIds": ["frus1917-72PubDipv08"]}], "id": "txt:national archives|office of poli
+   {"children": [{"name": "Library", "volumeIds": ["frus1917-72PubDipv06"]}, {"name": "Research Reports", "volumeIds": ["frus1917-72PubDipv07"]}, {"name": "Research Reports: 1960-1999: Entry P-142", "volumeIds": ["frus1917-72PubDipv08"]}, {"name": "Special Reports", "volumeIds": ["frus1917-72PubDipv06", "frus1917-72PubDipv08", "frus1969-76v38p2", "frus1977-80v30"]}], "id": "txt:national archives|offi
+   {"children": [{"name": "Library", "volumeIds": ["frus1917-72PubDipv06", "frus1917-72PubDipv08", "frus1977-80v30"]}, {"name": "Program Files", "volumeIds": ["frus1917-72PubDipv08"]}], "id": "txt:national archives|office of research and assessment", "name": "Office of Research and Assessment", "recordGroup": "306", "repository": "National Archives", "volumeIds": ["frus1917-72PubDipv06", "frus1917-72
+   {"children": [{"name": "Office of the Associate Director", "volumeIds": ["frus1917-72PubDipv08"]}], "id": "txt:national archives|office of research and evaluation", "name": "Office of Research and Evaluation", "recordGroup": "306", "repository": "National Archives", "volumeIds": ["frus1917-72PubDipv08"]}
+   {"children": [{"name": "Office of the Assistant Director For Research Analysis: Research Programs Files", "volumeIds": ["frus1917-72PubDipv07"]}], "id": "txt:national archives|office of research and reference", "name": "Office of Research and Reference", "recordGroup": "306", "repository": "National Archives", "volumeIds": ["frus1917-72PubDipv07"]}
+   {"aliases": ["Office of the Director, Subject File, 1973–1975"], "children": [{"name": "DIRCTR Files Bx 33–36", "volumeIds": ["frus1917-72PubDipv07"]}, {"name": "DIRCTR Sub Files", "volumeIds": ["frus1917-72PubDipv07"]}, {"name": "DIRCTR Subj File", "volumeIds": ["frus1917-72PubDipv06"]}, {"name": "Director’s Files", "volumeIds": ["frus1917-72PubDipv07"]}, {"name": "Director’s Subject Files", "vol
+   {"aliases": ["Records of the Bureau of Educational and Cultural Affairs"], "id": "txt:washington national records center|records of the bureau of educational and cultural affair", "name": "Records of the Bureau of Educational and Cultural Affairs, Office of Policy and Plans, Subject Files, 1961–1977, FRC 306-81-24", "recordGroup": "306", "repository": "Washington National Records Center", "volumeI
+   {"children": [{"name": "Briefing Papers", "volumeIds": ["frus1977-80v30"]}, {"name": "Foreign Opinion Notes", "volumeIds": ["frus1977-80v30"]}, {"name": "Library", "volumeIds": ["frus1977-80v30"]}, {"name": "Office of the Associate Director", "volumeIds": ["frus1977-80v30"]}, {"name": "Research Memoranda", "volumeIds": ["frus1977-80v30"]}, {"name": "Special Reports", "volumeIds": ["frus1977-80v30"
+  matching nodes: 12
+
+--- series-facts: rows whose creator names the Information Agency, and any Office of Research / East Asia
+   1254209 U.S. Information Agency. Office of Research and Analysis. Area Analysis Division. Latin American Branch. 1955 1962 Restricted - Partly None
+   1254251 U.S. Information Agency. Office of Research and Intelligence. Intelligence Production Division. 1954 1958 Restricted - Partly None
+   1254428 U.S. Information Agency. Office of Policy and Programs. 1952 1956 Restricted - Partly None
+   1257679 U.S. Information Agency. Office of Policy and Plans. 1953 1971 Restricted - Partly None
+   25777867 U.S. Information Agency. Information Center Service. Cultural Operations Division. 1953 1956 Unrestricted None
+   40910228 U.S. Information Agency. Office of Plans. 1953 1959 Unrestricted None
+   40943515 U.S. Information Agency. Office of Policy. 1953 1969 Restricted - Partly None
+   40967113 U.S. Information Agency. Office of the Director. Executive Secretariat. 1961 1966 Restricted - Partly None
+   40967285 U.S. Information Agency. Office of the Director. Executive Secretariat. 1956 1972 Restricted - Partly None
+   44264049 U.S. Information Agency. Office of the Assistant Director for Europe. 1945 1958 Restricted - Partly None
+   56190687 U.S. Information Agency. Office of the Assistant Director for Latin America. 1953 1970 Restricted - Partly None
+   5634081 U.S. Information Agency. Office of the Director. Executive Secretariat. 1953 1965 Unrestricted None
+   6106829 U.S. Information Agency. Office of the Assistant Director for Near East, South Asia, and Africa. 1953 1960 Unrestricted None
+   7542975 U.S. Information Agency. Broadcasting Service. Office of the Director. 1948 1959 Restricted - Partly None
+
+--- external_citations raw text for frus1955-57v09/d207 (the source of 59 D 260, 63 D 224, 62 D 255, 60 D 322):
+   ('59D260', 'Department of State', 'lotFile', 'Department of State, USIA /IOP Files: Lot 59 D 260, Suez Canal Crisis, 1956')
+   ('63D224', 'Department of State', 'lotFile', 'Department of State, USIA /IOP Files: Lot 63 D 224, Disarmament—Nuclear Test, Stephen Benedict, 1955–58')
+   ('62D255', 'Department of State', 'lotFile', 'in Department of State, USIA /I/ R Files: Lot 62 D 255, Cabinet Presentation—Government Groups, and in an OCB report, “Inventory of U.S. Government and Private Organization Activity in Connection with Islamic Organizations Overseas,” ibid., OCB Files: Lot 62 D')
+   ('62D430', 'Department of State', 'lotFile', 'in Department of State, USIA /I/ R Files: Lot 62 D 255, Cabinet Presentation—Government Groups, and in an OCB report, “Inventory of U.S. Government and Private Organization Activity in Connection with Islamic Organizations Overseas,” ibid., OCB Files: Lot 62 D')
+   ('60D322', 'Department of State', 'lotFile', 'Ibid., USIA /I Files: Lot 60 D 322, Reel 4, 1957')
+
+--- which candidate-set documents point at 65 D 101 and 66 D 95 and 63 D 351:
+   65D101 rows: 1 docs: [('frus1952-54v13p1', 'd606', 1)]
+   66D95 rows: 4 docs: [('frus1955-57v22', 'd484', 1), ('frus1955-57v22', 'd513', 1), ('frus1955-57v23p2', 'd99', 1), ('frus1958-60v01', 'd17', 1)]
+   63D351 rows: 1 docs: [('frus1955-57v09', 'd131', 1)]
+   62D430 rows: 8 docs: [('frus1952-54v13p1', 'd606', 1), ('frus1955-57v01', 'd263', 1), ('frus1955-57v22', 'd484', 1), ('frus1955-57v23p2', 'd99', 1), ('frus1958-60v01', 'd147', 2), ('frus1958-60v01', 'd17', 1), ('frus1958-60v15', 'd548', 1)]
+   71D273 rows: 1 docs: [('frus1964-68v02', 'd172', 1)]
+   60D627 rows: 1 docs: [('frus1952-54v12p1', 'd278', 1)]
+   67D54 rows: 2 docs: [('frus1961-63v03', 'd152', 2)]
+
+--- document_sources of the 25: record group / series / era
+   6 ('Department of State', '59', 'decimal')
+   3 ('Department of State', '59', 'lot_file')
+   2 ('Department of State', '59', 'cfpf')
+   1 ('National Archives', '306', 'Office of Policy and Plans')
+   1 ('National Archives', '305', 'Records of the USIA')
+   1 ('National Archives', '306', 'Office of the Director, Box 130')
+   1 ('National Archives', '306', 'DIRCTR Subj. Files, Box 16')
+   1 ('National Archives', '306', 'DIRCTR Files Bx 33–36, Box 33')
+   1 ('Kennedy Library', None, 'Personal Papers of Robert F.  Kennedy')
+   1 ('National Archives', '306', 'Director’s Subject Files, Box 10')
+   1 ('National Archives', '306', 'USIA /TOP Files: FRC 67 A 222')
+   1 ('National Archives', '306', 'USIA /I/ S Files: FRC 68 A 4933')
+   1 ('National Archives', '306', None)
+   1 ('National Archives', '306', 'Director’s Subject Files')
+   1 ('National Archives', '306', 'Director’s Subject Files, Box 22')
+   1 ('Nixon Presidential Materials', None, 'NSC Files')
+   1 ('National Archives', '306', 'Director’s Subject Files, Box 21')

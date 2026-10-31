@@ -1,0 +1,41 @@
+{
+ "run": "runs/f7",
+ "arm": "A",
+ "occurrences": [
+  {
+   "file": "memo.md",
+   "line": 14,
+   "figure": "718 (the Ed2 overlap, vectors)",
+   "match": "718",
+   "context": "`note_text` were never selected. No cross_references or person tables were used, so the broken-reference exclusion did not arise. Second editions (`frus1951-54IranEd2`, `frus1969-76ve15p2Ed2`) are not in the scope; the 718/701 overlap rule did not arise."
+  },
+  {
+   "file": "memo.md",
+   "line": 14,
+   "figure": "701 (the Ed2 overlap, index)",
+   "match": "701",
+   "context": "te_text` were never selected. No cross_references or person tables were used, so the broken-reference exclusion did not arise. Second editions (`frus1951-54IranEd2`, `frus1969-76ve15p2Ed2`) are not in the scope; the 718/701 overlap rule did not arise."
+  },
+  {
+   "file": "memo.md",
+   "line": 158,
+   "figure": "1910-12-06 (the pointed-at channel starts)",
+   "match": "1910-12-06",
+   "context": "ed-at channel, whole volumes (`work/ext1.py`, `work/ext1.out`; `SELECT repository, lot_file_norm, collection, COUNT(*) ... FROM external_citations WHERE volume_id IN (...) GROUP BY ...`).** The channel has no row before 1910-12-06 (`SELECT MIN(substr(dd.date_iso,1,10)) FROM external_citations e JOIN document_dates dd ...`), stores the citation fragment and not the sentence, and holds lot, library and decimal anchors only."
+  },
+  {
+   "file": "memo.md",
+   "line": 163,
+   "figure": "56% (creator attribution)",
+   "match": "56%",
+   "context": "**USIA-created series in the bundled facts (candidates for the historian; the creator heading is NARA's attribution and is a decoy surface at about 56% precision elsewhere, so none is verified on-topic):** 14 rows with a USIA creator heading. Example: NAID 1257679, \"Subject Files\" (lots 59 D 260 and 61 D 445), Office of Policy and Plans, inclusive 1953-1971, coverage 1"
+  },
+  {
+   "file": "memo.md",
+   "line": 163,
+   "figure": "11 of 695 (series before 1940)",
+   "match": "11 of 695",
+   "context": "nclusive 1954-1958, coverage 1951-1958, 9 linear feet 2 inches, \"Restricted - Partly\". No creator heading in the bundled facts is the USIA East Asia and Pacific area office. The offline stack barely reaches before 1940 (11 of 695 bundled series), so nothing is said about earlier shelves."
+  }
+ ]
+}

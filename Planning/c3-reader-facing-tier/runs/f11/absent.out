@@ -1,0 +1,18 @@
+REG "soft power" -> 0
+REG NEAR(soft power, 3) -> 0
+REG "Asia Foundation" -> 12
+REG Fulbright -> 278
+REG "Peace Corps" -> 59
+REG "Radio Free Asia" -> 0
+REG "cultural exchange" -> 92
+REG "educational exchange" -> 54
+REG "opinion poll" OR "opinion survey" OR "public opinion poll" -> 25
+REG "USIS" AND (poll OR survey) -> 40
+REG "Radio Peking" OR "Peking Radio" -> 23
+REG "hearts and minds" -> 15
+series-facts: 698 series; start before 1940: 11 ; no start year: 0
+1102141 None
+42125423 None
+40967285 {'ar': [0, 2], 'as': 2, 'c': 397, 'ru': 0, 'us': 1, 'x': '103 linear feet, 1 linear inch', 'y0': 1956, 'y1': 1972}
+1257679 {'ar': [0], 'as': 2, 'c': 388, 'cy0': 1949, 'cy1': 1971, 'ru': 0, 'us': 3, 'x': '47 linear feet', 'y0': 1953, 'y1': 1971}
+40943515 {'ar': [0, 2], 'as': 2, 'c': 390, 'ru': 0, 'ur': [0], 'us': 3, 'x': '20 linear feet, 5 linear inches', 'y0': 1953, 'y1': 1969}

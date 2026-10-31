@@ -1,0 +1,118 @@
+{
+  "judge:1": {
+    "block": "1. Return the structured judgement.",
+    "overviews": [
+      {
+        "slot": "X",
+        "items": [
+          {
+            "id": "J1",
+            "verdict": "yes",
+            "evidence": "Under \"## The bottom line\" the overview opens \"**1. What FRUS answers directly.** From 1949 to 1980, officials treated American appeal in Asia as an instrument to be aimed, not an asset to be counted...\", then \"**2. Where FRUS points for the rest.**\" (the series the documents came from, then those cited without printing), then \"**3. What this request cannot get from FRUS.** The phrase \\\"soft power\\\" appears in none of the 553 volumes...\". \"## Findings\" comes only after \"Scope\" and \"Decisions this needs from you\"."
+          },
+          {
+            "id": "J2",
+            "verdict": "yes",
+            "evidence": "Every figure carries its set: \"The finding rests on twenty-two documents, read whole, from eighty-six volumes\"; \"seventy-five regional volumes ... about 37,200 documents, and eleven thematic volumes ... about 3,300 documents\"; \"about 700 documents in sixty-nine of the seventy-five volumes. They make up about one dated document in fifty in the 1950s and about one in twenty-three in the 1960s\"; \"I found fewer than thirty documents, and only one of them in a regional volume\"; \"read fifty-one documents whole, and quoted from twenty-two; all thirty-four quotations were checked\". No percentage appears; the one figure not the agent's is the source's own words (\"over 100 million listeners\")."
+          },
+          {
+            "id": "J3",
+            "verdict": "yes",
+            "evidence": "In-text citations are short (\"1952–1954, Volume XII, Part 2, Document 403\"; \"Document 116 above\"), but the closing \"Documents cited\" list gives all twenty-two in full with links, e.g. \"1. Foreign Relations of the United States, 1952–1954, East Asia and the Pacific, Volume XII, Part 2, Document 403 — https://history.state.gov/historicaldocuments/frus1952-54v12p2/d403\". I matched every document cited in the text to that list: 22 of 22 are there."
+          },
+          {
+            "id": "J4",
+            "verdict": "yes",
+            "evidence": "\"The phrase \\\"soft power\\\" appears in none of the 553 volumes; I confirmed the search worked with a phrase found in every volume and a nonsense control found in none\"; and \"I searched for opinion polls and opinion or attitude surveys alongside the information agency across all eighty-six volumes, with the same two controls. I found fewer than thirty documents, and only one of them in a regional volume.\" Terms, volumes and controls are stated, though the control phrase itself is not named. The last point (\"Asian audiences never speak for themselves in this record\") is an assertion about the edition's nature, not a count."
+          },
+          {
+            "id": "J5",
+            "verdict": "yes",
+            "evidence": "No SQL, table or column name, or file path anywhere. Every \"frus…/d…\" string sits inside a history.state.gov link in the \"Documents cited\" list; the prose cites as \"(1949, Volume IX, Document 558)\". Archival references are \"Record Group 59, entry A1 1586E, NARA identifier 2839192\" and \"lots 60 D 322 and 62 D 255\"."
+          }
+        ],
+        "citations": {
+          "verdict": "yes",
+          "evidence": "One short form throughout the text (\"1955–1957, Volume XXII, Document 58\", with \"Document 58 above\" for a repeat) and one full form in the \"Documents cited\" list, each entry ending in its link (\"— https://history.state.gov/historicaldocuments/frus1955-57v22/d58\"); all 22 documents named in the text appear in the list. The collection's introduction repeats the same short form."
+        },
+        "toolWords": "\"index\" — How this was done: \"I used the series' complete index of 553 volumes and searched it\". \"bundled indexes\" / \"the bundled index\" / \"the app's bundled archival indexes\" — bottom line part 2, six times (\"the bundled indexes give no NARA identifier for these years\", \"access not recorded in the bundled indexes\", \"which the bundled index splits between...\") and How this was done (\"through the app's bundled archival indexes\"); \"the app\" is never introduced. \"matched\" — How this was done: \"because the search also matched the initials of the United States of Indonesia\" (plain sense, but a list word). \"the stored text\" — How this was done: \"all thirty-four quotations were checked word for word against the stored text\" (stored where is not said). \"ranked candidates\" — How this was done: \"I ranked candidates, read fifty-one documents whole\". \"nonsense control\" / \"the same two controls\" — bottom line part 3, a method word left to context. Collection: author line \"FRUS research run, 2026-10-31\"; two excerpts of Document 31 carry period acronyms the collection never expands, \"Exposures as a main pillar of PPBS should be dropped.\" and \"PAOs emphasized that the image of the US...\" (the overview paraphrases both; \"GVN\" is expanded in the Document 58 excerpt)."
+      },
+      {
+        "slot": "Y",
+        "items": [
+          {
+            "id": "J1",
+            "verdict": "yes",
+            "evidence": "\"## The bottom line\" opens \"**1. What FRUS answers directly.** The phrase \\\"soft power\\\" never appears in FRUS; officials of 1949–1977 wrote instead of the \\\"information program\\\", \\\"psychological strategy\\\"...\", followed by \"**2. Where FRUS points for the rest.** *Where the printed documents came from:* more than half of the 1,400...\" and \"**3. What this request cannot get from FRUS.** Three things.\", all before \"## Findings\"."
+          },
+          {
+            "id": "J2",
+            "verdict": "yes",
+            "evidence": "\"about 1,400 documents in the 81 East Asian and public-diplomacy volumes discuss the effort\"; \"more than half of the 1,400 come from the State Department's own files\"; \"about one in eight come from the Information Agency's own records\"; \"Only about one document in four of the 1,400 carries such a citation\"; \"Fourteen documents in the scope use the phrase \\\"Oriental mind\\\" — more than half of the 25 in the whole series, although these volumes hold only about one document in nine\"; \"I read 121 documents whole, quoted 23\". No percentage appears; the bare-looking figures are measures of a named thing (\"the 1969 Manila conference report, sixty pages\"; \"47 linear feet\")."
+          },
+          {
+            "id": "J3",
+            "verdict": "no",
+            "evidence": "There is no list of documents cited, and six documents appear only in a short form lacking the series name and years, never in full anywhere: \"(Volume XII, Part 2, Document 60, https://history.state.gov/historicaldocuments/frus1952-54v12p2/d60)\"; \"(Volume XIII, Part 2, Document 992, https://history.state.gov/historicaldocuments/frus1952-54v13p2/d992)\" — whose volume (1952–1954, Indochina, Volume XIII, Part 2) is itself never cited in full, only Part 1 is; \"(Volume II, Document 197, ...)\"; \"(Volume VII, Public Diplomacy, Document 73, ...)\"; \"(Volume VIII, Public Diplomacy, Document 146, ...)\"; \"(Document 149, https://...frus1917-72PubDipv08/d149)\". Each carries a link, so none is a bare id pair, but none is cited in full."
+          },
+          {
+            "id": "J4",
+            "verdict": "yes",
+            "evidence": "\"a search for \\\"soft power\\\" across all 553 volumes found nothing, against a control (\\\"Department of State\\\") found in every volume of the scope and an impossible test word found nowhere; the question has to be asked in the period's own words\"; and \"a search for the Department's 1952 circular asking every major post to assess its program found one printed reply, from Saigon; the rest sit in the State Department's 1950–54 decimal file under class 511\". The middle item (\"the 1969 Manila conference report, sixty pages, survives in FRUS only as a summary, and the 1975 post cables are printed only as abstracts\") is a reading of the documents rather than a search, but the zero itself is a controlled measurement."
+          },
+          {
+            "id": "J5",
+            "verdict": "yes",
+            "evidence": "No SQL, table or column name, or file path. Every \"frus…/d…\" string is inside a link, e.g. \"(... Document 386, https://history.state.gov/historicaldocuments/frus1949v07p2/d386)\". Archival numbers are given as \"class 511\", \"lots 63 D 351 and 66 D 95\", \"entries UD-WW 151 to 382\"."
+          }
+        ],
+        "citations": {
+          "verdict": "no",
+          "evidence": "The form changes within the text: full with link when a volume first appears (\"Foreign Relations of the United States, 1949, The Far East and Australasia, Volume VII, Part 2, Document 386, https://...\"), then \"(Document 207, https://...)\", \"(Volume XII, Part 2, Document 60, https://...)\" and \"(Volume VIII, Public Diplomacy, Document 146, https://...)\", and the shortening is uneven (Document 992's volume is never given in full). Every document carries a link, so each can be reached, but six are never given in full and there is no list."
+        },
+        "toolWords": "\"vectors\" and \"neighbours\" — How this was done: \"I also used the app's document-similarity vectors to look for neighbours of three key documents\". \"queries\", \"denominators\", \"the memo\" — How this was done: \"Exact counts, queries and denominators are in the memo\" (a file she does not receive). \"index\" / \"full-text copy\" — How this was done: \"I searched a full-text copy of the FRUS index (553 volumes)\" and \"because the index treats different forms of a word as the same word\" (the second explained in plain words). \"bundled finding aids\" — bottom line part 2 (\"which the bundled finding aids can only trace to an accession that NARA has since split across 3 to 18 series\") and part 3 (\"where the bundled finding aids can name the record group and accessions but not one series\"). \"resolved through the finding aids shipped with FRUS Explorer\" — How this was done. \"Decade shapes are given as a share of each decade's dated documents in the regional volumes, with editorial footnotes still mixed in\" — How this was done, unexplained. \"a control\", \"an impossible test word\" — part 3. Period acronyms left unexplained in quotations: \"VC\" (finding 3, \"to laugh at the VC\"), \"USIS\" (finding 5, \"as a USIS audience\"). Collection: author line \"Agent run f3, 2026-10-31\" and every note \"Agent finding, run f3, 2026-10-31\" (the run label means nothing to her); Document 116's note \"Reached through a document-similarity neighbour of the 1969 Manila conference summary, then read\"; \"Threads not followed\": \"the bundled finding aids reach only at the level of accessions split across many series\"; excerpts carry \"VM\", \"AS\", \"VOA\", \"PAOs\", \"VC\", \"USIS\" unexplained."
+      },
+      {
+        "slot": "Z",
+        "items": [
+          {
+            "id": "J1",
+            "verdict": "yes",
+            "evidence": "\"## The bottom line\" opens \"**1. What FRUS answers directly.** Twenty-six printed documents from 1950 to 1977 show how officials of the State Department and the U.S. Information Agency judged America's appeal...\", then \"**2. Where FRUS points for the rest.** Two separate channels, never added together:\", then \"**3. What this request cannot get from FRUS.**\" with four bullets, all before \"## Findings\"."
+          },
+          {
+            "id": "J2",
+            "verdict": "yes",
+            "evidence": "\"Twenty-six printed documents from 1950 to 1977\"; \"Most of the 26 documents came from these sources: ... Director's Subject Files, 1968–1972, Entry A1–42 (five documents)\"; \"Only five such citations exist for these documents\"; \"They occur nowhere in the 21 volumes scanned: the seven public-diplomacy and information volumes and fourteen East Asia volumes\"; \"None of the corpus's fourteen volumes from 1981 onward covers East Asia or public diplomacy\"; \"about three in four of the area-volume documents whose headings name the information program come from the Vietnam volumes\"; \"forty-two documents, of which nine concerned South Asia or the Near East\". No percentage in the overview (\"80 percent\" appears only in a collection excerpt, the document's own words)."
+          },
+          {
+            "id": "J3",
+            "verdict": "no",
+            "evidence": "There is no list of documents cited, and nine documents appear only in a short form without the series name or volume number: \"(Public Diplomacy, 1964–1968, Document 32, https://history.state.gov/historicaldocuments/frus1917-72PubDipv07/d32)\", \"(Public Diplomacy, 1969–1972, Document 58, ...)\", \"(... Document 88, ...)\", \"(... Document 143, ...)\", \"(Document 146 of the same volume, ...)\", \"(Document 149, ...)\", \"(Document 81, https://...frus1977-80v30/d81)\", \"(Document 83, ...)\", \"(Document 2, ...)\". The volume's full form appears once earlier (\"Foreign Relations of the United States, 1917–1972, Volume VII, Public Diplomacy, 1964–1968, Document 73\"), so she can reconstruct each, but these documents themselves are never cited in full."
+          },
+          {
+            "id": "J4",
+            "verdict": "yes",
+            "evidence": "\"They occur nowhere in the 21 volumes scanned: the seven public-diplomacy and information volumes and fourteen East Asia volumes, 1950–1980. In the same scan the check phrase \\\"Department of State\\\" was found in every volume and a made-up string in none.\" Terms, volumes and controls are stated; the scan is narrower than the series (X and Y searched all 553) and says so. The other bullets are readings (\"The surveys themselves are not printed\"; \"FRUS prints American records only\") and a count (\"None of the corpus's fourteen volumes from 1981 onward covers East Asia or public diplomacy\")."
+          },
+          {
+            "id": "J5",
+            "verdict": "yes",
+            "evidence": "No SQL, table or column name, or file path. Every \"frus…/d…\" string is inside a link, e.g. \"(... Document 31, https://history.state.gov/historicaldocuments/frus1950v06/d31)\". Archival references are \"Entry A1–42\", \"Lot 61 D 385\", \"decimal files 511.90 (1950, informational relations with Asia)\". \"I scanned the original edition files of twenty-one volumes, with tags stripped\" names no path."
+          }
+        ],
+        "citations": {
+          "verdict": "no",
+          "evidence": "Four shapes in one text: full with link (\"Foreign Relations of the United States, 1955–1957, Southeast Asia, Volume XXII, Document 447, https://...\"), a back-reference (\"Public Diplomacy, 1964–1968, Document 73, above\"), a title-and-years short form on a first citation (\"Public Diplomacy, 1969–1972, Document 58, https://...\"), and number-only continuations (\"Document 146 of the same volume, https://...\"; \"Document 81, https://...\"). Every document has a link or points to a cited one, so all can be reached; the form is not one."
+        },
+        "toolWords": "\"corpus\" — bottom line part 3: \"None of the corpus's fourteen volumes from 1981 onward\"; Decisions: \"The corpus has nothing on this subject after 1980\"; Read next: \"since this corpus stops at 1980 on this subject\". \"this run\" — part 3: \"Those terms are what this run searched\". \"returns\" / \"return\" — Scope: \"South Asian and Near Eastern material that the word \\\"Asia\\\" also returns\"; Decisions: \"which the same searches return\". \"search index\" / \"index\" — How this was done: \"a local copy of the FRUS Explorer search index, which holds all 553 volumes\"; Scope: \"Every count is conditional on this index\". \"semantic-neighbour search\" — Scope: \"in one case, by a semantic-neighbour search\", unexplained until How this was done (\"which finds documents with similar overall content\"). \"ranked word searches\" — Scope: \"found by heading and ranked word searches\". \"the original edition files ... with tags stripped\" — How this was done, unexplained. \"a made-up string\" — part 3. \"retrieved forty documents whole\" — How this was done. \"the app's bundled archival indexes\" / \"bundled archival reference files\" — part 2 and How this was done. \"queries\", \"the memo\" — How this was done: \"Exact counts, queries and the trace from each statement to its source are in the memo\". Period acronyms left unexplained: \"USIS\" throughout, \"USIE\" (finding 1 quotation), \"SVN\" (finding 3 quotation). Collection: author line \"Agent run f12, 2026-10-31\" and every note \"Agent finding, run f12, 2026-10-31\"; Document 116's note \"Reached through a semantic-neighbour search, not a word search\"; introduction \"no East Asia or public diplomacy volume after 1980 is in this corpus\"; closing prose \"Threads this run could not follow\" (with no heading of its own); excerpts carry \"PAOs\", \"SVN\", \"VM\", \"USIE\", \"Commie\" unexplained (\"PSYOP\" is expanded)."
+      }
+    ],
+    "ranking": [
+      "X",
+      "Y",
+      "Z"
+    ],
+    "reason": "X alone gives the historian every document in full in one consistent form (a short citation in the text, a complete list with links at the end), keeps the research machinery almost entirely out of what she reads, and answers all three parts of her question from a stated base of eighty-six volumes with the strongest thread on effectiveness (words against deeds, audience exposures dropped as a measure, one measured success). Y has the most rigorous evidence after X — whole-scope counts with their bases, the measured \"Oriental mind\" finding that ties beliefs about the audience to recommendations, and the most specific unprinted sources (decimal class 511, the sixty-page Manila report surviving only as a summary) — but it cites unevenly with no list, clogs its opening paragraph with inline URLs, and leaks \"vectors\", \"queries\" and \"the memo\". Z gives the crispest direct answer and the broadest set of documents (Malaya, the Indonesian attacks, the Tibet film, the Saigon surveys, Cambodia) but rests on a narrower search (a 21-volume scan for the phrase, heading-based selection, a self-noted 1956–1961 gap), cites unevenly, and uses the most machinery words (\"corpus\", \"this run\", \"returns\", \"tags stripped\") in the text she receives."
+  }
+}

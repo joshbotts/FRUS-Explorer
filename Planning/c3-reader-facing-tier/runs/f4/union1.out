@@ -1,0 +1,203 @@
+SELECT f.volume_id, f.document_id, bm25(frus_documents) s, substr(replace(d.header,char(10),' '),1,110), d.dateline FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN R ON R.volume_id=d.volume_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND frus_documents MATCH ? ORDER BY s LIMIT 200
+(USIS OR USIA OR JUSPAO OR "Information Agency" OR "Information Service" OR "psychological warfare" OR "psychological operations" OR "psychological strategy" OR "information program" OR "cultural exchange" OR "educational exchange" OR Fulbright OR "Voice of America" OR "exchange of persons" OR "hearts and minds" OR "cultural program" OR "Asia Foundation" OR "leader grant" OR "information officer" OR "cultural affairs" OR "cultural relations" OR "public diplomacy" OR "information activities" OR "propaganda")
+frus1964-68v01 d122 -51.0 | 122. Memorandum From the Director of the United States Information Agency (Rowan) to the President | Washington, April 21, 1964.
+frus1964-68v02 d160 -48.5 | 160. Memorandum From the Director of the United States Information Agency (Rowan) to President Johnson | Washington, February 24, 1965.
+frus1964-68v01 d177 -46.6 | 177. Memorandum From the Director of the United States Information Agency (Rowan) to the President | Washington, May 26, 1964.
+frus1948v07 d45 -42.8 | The Secretary of State to the Ambassador in China (Stuart) | Washington, January 28, 1948—4 p. m.
+frus1969-76v06 d315 -40.9 | 315. National Security Decision Memorandum 63 | Washington, June 2, 1970.
+frus1950v06 d50 -37.7 | Memorandum by the Under Secretary of State (Webb) to the President | [Washington,] June 21, 1950.
+frus1964-68v03 d138 -37.6 | 138. Memorandum by Chester L. Cooper of the National Security Council Staff | Washington, September 10, 1965.
+frus1961-63v02 d16 -37.5 | 16. Memorandum From the Assistant Director for East Asian and Pacific Affairs, United States Information Agenc | Washington, January 12, 1962.
+frus1952-54v12p2 d359 -36.3 | No. 359 Memorandum by the Executive Secretary (Lay) to the National Security Council | [Washington,] April 5, 1954.
+frus1952-54v12p2 d403 -35.6 | No. 403 Paper by the Psychological Strategy Board | Washington, September 14, 1953.
+frus1961-63v03 d152 -34.8 | 152. Letter From the Director of the United States Information Agency (Murrow) to the Assistant Secretary of S | Washington, June 4, 1963.
+frus1952-54v13p1 d116 -34.7 | The Ambassador at Saigon (Heath) to the Department of State | Saigon, September 20, 1952—3 p.m.
+frus1951v06p2 d480 -33.8 | Memorandum of Conversation, by Mr. S. Shepard Jones of the Bureau of Near Eastern, South Asian, and African Af | [Washington,] July 31, 1951.
+frus1949v09 d558 -33.3 | Memorandum by the Under Secretary of State (Webb) to the Executive Secretary of the National Security Council  | [Washington,] August 19, 1949.
+frus1964-68v01 d197 -33.1 | 197. Memorandum From the Director of the United States Information Agency (Rowan) to the President | Washington, June 4, 1964.
+frus1961-63v02 d8 -32.3 | 8. Telegram From the Task Force in Vietnam to the United States Information Agency | Saigon, January 5, 1962.
+frus1948v07 d55 -30.0 | The Ambassador in China (Stuart) to the Secretary of State | Nanking, February 4, 1948—11 a. m. [Received February 4—6:16
+frus1964-68v01 d231 -29.6 | 231. Memorandum From the Director of the United States Information Agency (Rowan) to the President | Washington, July 11, 1964.
+frus1955-57v03mSupp d302 -28.7 | 302. Telegram 915 from Geneva | Geneva, October 20, 1955, 4 p.m.
+frus1964-68v26 d106 -28.7 | 106. Memorandum From Director of the United States Information Agency Rowan to Secretary of State Rusk | Washington, February 18, 1965.
+frus1961-63v02 d5 -26.8 | 5. Memorandum From the Assistant Director for East Asian and Pacific Affairs, United States Information Agency | Washington, January 4, 1962.
+frus1964-68v27 d386 -26.7 | 386. Memorandum From the Director of the United States Information Agency (Marks) to President Johnson | Washington, May 6, 1968.
+frus1964-68v02 d246 -26.5 | 246. National Security Action Memorandum No. 330 | Washington, April 9, 1965.
+frus1961-63v01 d339 -26.2 | 339. Memorandum From the Public Affairs Officer of the Embassy in Viet-Nam (Anspacher) to the Ambassador in Vi | Saigon, December 23, 1961.
+frus1949v08 d1576 -26.0 | The Consul at Shanghai (McConaughy) to the Secretary of State | Shanghai, July 22, 1949. [Received July 22—3:34 a. m.]
+frus1961-63v23 d289 -25.8 | 289. Memorandum From the Director of the United States Information Agency (Murrow) to Secretary of State Rusk | Washington, September 14, 1962.
+frus1961-63v02 d290 -25.4 | 290. Memorandum of Conversation, United States Information Agency, Washington, September 21, 1962, 5 p.m. | Washington, September 21, 1962, 5 p.m.
+frus1961-63v02 d179 -25.1 | 179. Minutes of Staff Meeting, United States Information Service, Saigon, May 2, 1962 | Saigon, May 2, 1962.
+frus1948v07 d19 -24.5 | The Consul General at Shanghai (Cabot) to the Secretary of State | Shanghai, January 12, 1948. [Received January 20.]
+frus1947v06 d228 -24.3 | The Political Adviser in Japan (Atcheson) to the Secretary of State | Tokyo, [June 24, 1947.]
+frus1952-54v13p1 d482 -24.0 | The Acting Secretary of State to the Embassy in France | Washington, December 12, 1953—5:33 p.m.
+frus1949v08 d1185 -23.6 | The Ambassador in China (Stuart) to the Secretary of State | Nanking, June 7, 1949—6 p. m. [Received June 7—10:15 a. m.]
+frus1952-54v12p2 d396 -23.6 | No. 396 Memorandum by the Ambassador to Thailand (Stanton) to the Director of the Office of Philippine and Sou | Washington, July 16, 1953.
+frus1948v07 d567 -23.5 | The Secretary of State to the Ambassador in China (Stuart) | Washington, December 24, 1948.
+frus1955-57v21 d514 -23.2 | 514. Despatch From the Embassy in Laos to the Department of State | Vientiane, December 16, 1957.
+frus1961-63v02 d167 -23.2 | 167. Memorandum From the Naval Aide to the Presidentʼs Military Representative (Bagley) to the Presidentʼs Mil | Washington, April 20, 1962.
+frus1964-68v02 d172 -23.1 | 172. Memorandum From the Director of the United States Information Agency (Rowan) to President Johnson | Washington, February 27, 1965.
+frus1964-68v02 d203 -22.3 | 203. Memorandum From the President’s Special Assistant for National Security Affairs (Bundy) to President John | Washington, March 17, 1965.
+frus1961-63v23 d395 -22.0 | 395. Memorandum From Secretary of State Rusk to President Kennedy | Washington, undated.
+frus1964-68v01 d127 -21.8 | 127. Memorandum From the Secretary of State’s Special Assistant for Vietnam (Sullivan) and the Assistant Secre | Washington, April 24, 1964.
+frus1964-68v27 d205 -21.7 | 205. Action Memorandum From the Chairman of the Cambodian Study Group (Unger) to the Under Secretary of State  | Washington, May 1, 1967.
+frus1952-54v12p2 d400 -21.6 | No. 400 Memorandum of Discussion at the 161st Meeting of the National Security Council, Washington, September  | Washington, September 9, 1953
+frus1969-76v06 d229 -21.5 | 229. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to President Nixon | Washington, April 14, 1970.
+frus1964-68v01 d203 -21.3 | 203. Telegram From the Department of State to the Embassy in Vietnam | Washington, June 6, 1964—1:13 p.m.
+frus1952-54v12p2 d407 -21.2 | No. 407 The Chargé in Thailand (Parsons) to the Department of State | Bangkok, December 9, 1953—5 p.m.
+frus1950v06 d590 -21.1 | The Secretary of State to the Legation at Saigon | Washington, November 22, 1950—5 p. m.
+frus1961-63v02 d266 -21.0 | 266. Memorandum From the Director of the United States Information Agency (Murrow) to the Presidentʼs Assistan | Washington, August 16, 1962.
+frus1949v08 d1482 -21.0 | The Minister-Counselor of Embassy in China (Clark) to the Secretary of State | Canton, June 13, 1949—6 p. m. [Received June 13—8:37 a. m.]
+frus1949v08 d950 -20.8 | The Ambassador in China (Stuart) to the Secretary of State | Nanking, July 23, 1949. [Received July 23—5:33 p. m.]
+frus1947v07 d1015 -20.8 | The Acting Secretary of State to the Ambassador in China (Stuart) | Washington, April 7, 1947—7 p.m.
+frus1955-57v22 d447 -20.7 | 447. Memorandum From the Assistant Secretary of State for Far Eastern Affairs (Robertson) to the Under Secreta | Washington, December 5, 1955.
+frus1961-63v23 d52 -20.7 | 52. Telegram From the Embassy in Burma to the Department of State | Rangoon, March 19, 1962, 5 p.m.
+frus1964-68v06 d296 -20.7 | 296. Paper Prepared in the Central Intelligence Agency | Washington, undated.
+frus1949v09 d576 -20.6 | Memorandum by the Assistant Secretary of State for Far Eastern Affairs (Butterworth) to the Under Secretary of | [Washington,] October 24, 1949.
+frus1961-63v03 d108 -20.5 | 108. Letter From the Assistant Secretary of State for Far Eastern Affairs (Hilsman) to the Director of the Uni | Washington, May 6, 1963.
+frus1964-68v07 d197 -20.5 | 197. Memorandum for the Record | Saigon, November 5, 1968.
+frus1964-68v26 d113 -20.4 | 113. Telegram From the Embassy in Indonesia to the Department of State | Djakarta, March 4, 1965,10 a.m.
+frus1947v07 d1017 -20.4 | The Ambassador in China (Stuart) to the Secretary of State | Nanking, May 4, 1947—8 p.m. [Received May 5—8:05 a.m.]
+frus1949v09 d539 -20.3 | Memorandum by the Secretary of State to the Executive Secretary of the National Security Council (Souers) | [Washington,] April 4, 1949.
+frus1961-63v04 d81 -20.2 | 81. Memorandum From the Counselor for Public Affairs of the Embassy in Vietnam (Mecklin) to the Director of th | En Route to Washington, September 10, 1963.
+frus1949v08 d1367 -20.2 | The Consul General at Tientsin (Smyth) to the Secretary of State | Tientsin, July 23, 1949. [Received July 23—5:41 p. m.]
+frus1969-76v06 d199 -20.1 | 199. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to President Nixon | Washington, March 13, 1970.
+frus1961-63v02 d197 -19.9 | 197. Memorandum From the Public Affairs Officer at the Embassy in Vietnam (Mecklin) to the Deputy Public Affai | Saigon, May 17, 1962.
+frus1949v08 d1568 -19.8 | The Secretary of State to the Consul General at Shanghai (Cabot) | Washington, July 15, 1949—7 p. m.
+frus1969-76v08 d233 -19.7 | 233. Memorandum From the Deputy Special Assistant for Vietnamese Affairs, Central Intelligence Agency (Horgan) | Washington, August 11, 1972.
+frus1969-76v10 d93 -19.6 | 93. Memorandum From Rob Roy Ratliff of the National Security Council Staff to the President’s Assistant for Na | Washington, July 11, 1973.
+frus1951v06p2 d29 -19.6 | The Secretary of State to the Embassy in the Philippines | Washington, April 25, 1951.
+frus1961-63v03 d55 -19.5 | 55. Telegram From the United States Information Agency to the Embassy in Vietnam | Washington, March 11, 1963, 8:25 p.m.
+frus1961-63v01 d265 -19.5 | 265. Memorandum From the Assistant Director, Far East (Neilson), to the Director of the United States Informat | Washington, November 17, 1961.
+frus1949v08 d1422 -19.4 | The Consul General at Hankow (Callanan) to the Secretary of State | Hankow, July 15, 1949. [Received July 15—7:01 a. m.]
+frus1949v09 d893 -19.4 | The Consul General at Tientsin (Smyth) to the Secretary of State | Tientsin, July 26, 1949—5 p. m. [Received August 3—7:19 p. m
+frus1948v07 d43 -19.2 | The Ambassador in China (Stuart) to the Secretary of State | Nanking, January 28, 1948. [Received January 28—10:30 p. m.]
+frus1948v07 d386 -19.1 | The Consul at Shanghai (Styles) to the Secretary of State | Shanghai, October 8, 1948. [Received October 19.]
+frus1950v06 d115 -19.0 | Policy Statement Prepared in the Department of State | [Washington,] June 16, 1950.
+frus1947v07 d549 -19.0 | Draft Directive No. 2 by General Wedemeyer | [Nanking,] 22 July 1947.
+frus1948v07 d44 -18.9 | The Ambassador in China (Stuart) to the Secretary of State | Nanking, January 28, 1948. [Received January 28—1:31 p. m.]
+frus1949v08 d1564 -18.9 | The Consul General at Shanghai (Cabot) to the Secretary of State | Shanghai, July 15, 1949—11 a. m. [Received July 15—12:36 a. 
+frus1952-54v12p2 d401 -18.8 | No. 401 Memorandum by Robert Cutler, Special Assistant to the President for National Security Affairs, to the  | Washington, September 10, 1953.
+frus1961-63v04 d199 -18.7 | 199. Letter From the Acting Director of the United States Information Agency (Wilson) to the Counselor for Pub | Washington, October 18, 1963.
+frus1955-57v03 d212 -18.7 | 212. Telegram From Ambassador U. Alexis Johnson to the Department of State | Geneva, October 4, 1956—2 p.m.
+frus1945v07 d343 -18.6 | The Counselor of Embassy in China (Smyth) to the Secretary of State | Chungking, December 21, 1945—4 p.m. [Received December 21—10
+frus1949v08 d979 -18.5 | The Counselor of Embassy in China (Jones) to the Secretary of State | Nanking, August 18, 1949—4 p. m. [Received August 18—11:40 a
+frus1946v08 d646 -18.3 | The Consul General at Batavia (Foote) to the Secretary of State | Batavia, December 2, 1946—11 p.m. [Received December 3—9:55 
+frus1947v07 d555 -18.2 | The Consul General at Shanghai (Davis) to the Secretary of State | Shanghai, July 27, 1947. [Received July 27—6:02 a.m.]
+frus1949v09 d376 -18.1 | The Consul at Taipei (Edgar) to the Secretary of State | Taipei, May 12, 1949—noon. [Received May 13—6:48 a. m.]
+frus1952-54v12p2 d327 -18.1 | No. 327 The Ambassador in the Philippines (Spruance) to the Department of State | Manila, March 6, 1953—4 p.m.
+frus1964-68v27 d344 -18.1 | 344. Report of the Thai Working Group to the East Asia and Pacific Interdepartmental Regional Group | Washington, April 26, 1967.
+frus1955-57v22 d448 -17.9 | 448. Staff Study Prepared by an Interdepartmental Committee for the Operations Coordinating Board | Washington, December 14, 1955.
+frus1948v07 d455 -17.8 | The Ambassador in China (Stuart) to the Secretary of State | Nanking, November 11, 1948. [Received November 11—2:40 a. m.
+frus1961-63v23 d390 -17.8 | 390. Memorandum From President Kennedy to Secretary of State Rusk | Washington, August 12, 1963.
+frus1952-54v15p1 d99 -17.8 | Memorandum of Conversation, by the Deputy Assistant Secretary of State for Public Affairs (Sargeant) | [Washington,] April 24, 1952—3:50 p.m.
+frus1961-63v02 d278 -17.8 | 278. Letter From the Assistant Secretary of State for Congressional Relations (Dutton) to Congressman Odin Lan | Washington, September 8, 1962.
+frus1955-57v03mSupp d726 -17.7 | 726. Telegram 359 from Geneva | Geneva, October 4, 1956, 2 p.m.
+frus1969-76v08 d188 -17.7 | 188. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to President Nixon | Washington, June 12, 1972.
+frus1949v08 d1321 -17.7 | The Consul General at Peiping (Clubb) to the Secretary of State | Peiping, February 27, 1949. [Received February 27—2:11 a. m.
+frus1949v08 d1364 -17.7 | The Consul General at Peiping (Clubb) to the Secretary of State | Peiping, July 20, 1949—3 p. m. [Received July 21—3:14 p. m.]
+frus1955-57v03mSupp d725 -17.6 | 725. Telegram 374 to Geneva | Washington, October 2, 1956, 8:39 p.m.
+frus1948v06 d163 -17.5 | The Consul General at Batavia (Livengood) to the Secretary of State | Batavia, June 7, 1948—3 p. m.
+frus1951v06p1 d179 -17.4 | The Minister at Saigon (Heath) to the Secretary of State | Saigon, January 21, 1951—6 p. m.
+frus1947v07 d238 -17.4 | The Consul General at Shanghai (Davis) to the Secretary of State | Shanghai, September 30, 1947—1 p.m. [Received September 29—1
+frus1949v08 d50 -17.4 | The Consul General at Tientsin (Smyth) to the Secretary of State | Tientsin, January 14, 1949—1:30 p. m. [Received January 14—8
+frus1948v07 d468 -17.3 | The Acting Secretary of State to the Ambassador in China (Stuart) | Washington, November 16, 1948—5 p. m.
+frus1964-68v01 d124 -17.3 | 124. Summary Record of the 528th Meeting of the National Security Council, | Washington, April 22, 1964, 4:45 p.m.
+frus1952-54v12p1 d395 -17.3 | Memorandum by the Deputy Assistant Secretary of State for Far Eastern Affairs (Sebald) to the Under Secretary  | [Washington,] November 19, 1954.
+frus1948v06 d142 -17.2 | The Consul General at Batavia (Livengood) to the Secretary of State | Batavia, May 28, 1948—5 p. m. [Received May 31—7:11 a. m.]
+frus1955-57v22 d463 -17.2 | 463. Operations Coordinating Board Outline Plan | Washington, February 27, 1957.
+frus1961-63v03 d28 -17.2 | 28. Memorandum From the Deputy Assistant Director, Pacific and Far East Division, United States Information Ag | Washington, February 1, 1963.
+frus1949v08 d1572 -17.1 | The Consul at Shanghai (McConaughy) to the Secretary of State | Shanghai, July 18, 1949—8 p. m. [Received July 18—2:55 a. m.
+frus1950v07 d652 -17.1 | The Ambassador in Korea (Muccio) to the Secretary of State | Seoul, October 9, 1950. [Received October 10—3 a. m.]
+frus1949v08 d1668 -17.1 | The Vice Consul at Chungking (McGeary) to the Secretary of State | Chungking, August 9, 1949—2 p. m. [Received August 10—1:52 p
+frus1948v07 d619 -17.0 | The Ambassador in China (Stuart) to the Secretary of State | Nanking, September 25, 1948—1 p. m. [Received September 25—4
+frus1947v06 d13 -17.0 | The Chargé in the United Kingdom (Gallman) to the Secretary of State | London, February 5, 1947—6 p.m.
+frus1949v08 d1472 -16.9 | The Consul General at Shanghai (Cabot) to the Secretary of State | Shanghai, May 27, 1949. [Received May 27—12:32 p. m.]
+frus1969-76v09 d218 -16.9 | 218. Telegram From the Department of State to the Embassy in South Vietnam and the Commander in Chief, Pacific | Washington, December 23, 1972, 0042Z.
+frus1969-76v10 d141 -16.9 | 141. Memorandum From Rob Roy Ratliff of the National Security Council Staff to Secretary of State Kissinger | Washington, August 27, 1974.
+frus1948v07 d672 -16.8 | The Consul at Dairen (Paddock) to the Secretary of State | Dairen, August 28, 1948—9 a. m. [Received October 1—1:24 a. 
+frus1952-54v12p1 d409 -16.7 | Memorandum by the Counselor of the Department of State (MacArthur) to the Secretary of State | [Washington,] December 3, 1954.
+frus1951v06p2 d105 -16.7 | Memorandum by the Acting Assistant Secretary of State for Near Eastern, South Asian, and African Affairs (Berr | [Washington,] March 20, 1951.
+frus1947v07 d5 -16.7 | The Secretary of State to the Ambassador in China (Stuart) | Washington, January 4, 1947—2 p.m.
+frus1948v07 d740 -16.7 | The Consul General at Shanghai (Cabot) to the Secretary of State | Shanghai, November 11, 1948—7 p. m. [Received November 11—7:
+frus1949v08 d1285 -16.6 | The Consul General at Peiping (Clubb) to the Secretary of State | Peiping, December 5, 1949. [Received December 5—3:22 a. m.]
+frus1964-68v01 d219 -16.6 | 219. National Security Action Memorandum No. 308 | Washington, June 22, 1964.
+frus1949v08 d1302 -16.5 | The Consul General al Peiping (Clubb) to the Secretary of State | Peiping, January 18, 1949—5 p. m. [Received 10:07 p. m.]
+frus1955-57v23p2 d162 -16.4 | 162. Progress Report Prepared by the Operations Coordinating Board | Washington, July 18, 1956.
+frus1969-76v09 d64 -16.4 | 64. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to President Nixon | Washington, October 24, 1972.
+frus1961-63v02 d26 -16.4 | 26. National Security Action Memorandum No. 124 | Washington, January 18, 1962.
+frus1952-54v13p1 d606 -16.4 | Memorandum by the Chairman of the Operations Coordinating Board (Smith) to the President | [Washington,] March 11, 1954.
+frus1948v06 d157 -16.3 | The Consul General at Batavia (Livengood) to the Secretary of State | Batavia, June 3, 1948—7 p. m.
+frus1948v06 d106 -16.2 | The Consul General at Batavia (Livengood) to the Secretary of State | Batavia, April 6, 1948—2 p. m.
+frus1955-57v21 d252 -16.2 | 252. Letter From the Ambassador in Cambodia (Strom) to the Assistant Secretary of State for Far Eastern Affair | Phnom Penh, February 14, 1957.
+frus1947v07 d759 -16.1 | The Ambassador in the Soviet Union (Smith) to the Acting Secretary of State | Moscow, April 8, 1947—midnight. [Received April 8—5:56 p.m.]
+frus1949v08 d1565 -16.1 | The Consul General at Shanghai (Cabot) to the Secretary of State | Shanghai, July 15, 1949—3 p. m. [Received July 15—9:09 a. m.
+frus1948v07 d32 -16.1 | The Consul General at Shanghai (Cabot) to the Secretary of State | Shanghai, January 19, 1948—8 p. m. [Received January 19—7:52
+frus1946v10 d860 -16.1 | The Counselor of Embassy in China (Smyth) to the Secretary of State | Chungking, January 30, 1946—2 p.m. [Received January 31—1:12
+frus1949v08 d1363 -16.0 | The Minister-Counselor of Embassy in China (Clark) to the Secretary of State | Canton, July 20, 1949—2 p. m. [Received July 20—12:42 p. m.]
+frus1949v08 d990 -15.9 | The Counselor of Embassy in China (Jones) to the Secretary of State | Nanking, September 9, 1949—5 p. m. [Received September 10—6 
+frus1958-60v01 d220 -15.8 | 220. Telegram From the Ambassador in Vietnam (Durbrow) to the Department of State | Saigon, November 11, 1960.
+frus1952-54v12p1 d312 -15.5 | Note to the National Security Council by the Executive Secretary (Lay) | [Washington,] August 20, 1954.
+frus1947v07 d1157 -15.4 | The Ambassador in China (Stuart) to the Secretary of State | Nanking, March 11, 1947—7 p.m. [Received March 12—2:28 a.m.]
+frus1955-57v22 d484 -15.4 | 484. Staff Study Prepared by an Interdepartmental Working Group for the Operations Coordinating Board | Washington, January 4, 1956.
+frus1948v08 d627 -15.4 | The Ambassador in China (Stuart) to the Secretary of State | Nanking, October 11, 1948—6 p.m. [Received October 12—1:19 a
+frus1947v07 d129 -15.3 | The Consul General at Mukden (Ward) to the Secretary of State | Mukden, June 3, 1947—7 p.m. [Received June 5—3:35 a.m.]
+frus1955-57v22 d464 -15.2 | 464. Despatch From the Consulate General at Kuala Lumpur to the Department of State | Kuala Lumpur, August 1, 1957.
+frus1955-57v21 d91 -15.2 | 91. Telegram From the Delegation at the SEATO Council Meeting to the Department of State | Karachi, March 8, 1956—9 a.m.
+frus1947v07 d373 -15.2 | The Acting Secretary of State to the Consul General at Shanghai (Davis) | Washington, December 5, 1947.
+frus1961-63v03 d308 -15.1 | 308. Memorandum From the Director of the United States Information Agency(Murrow) to the President | Washington, August 28, 1963.
+frus1947v06 d55 -15.1 | The Acting Secretary of State to the Embassy in Burma | Washington, December 19, 1947—6 p.m.
+frus1952-54v13p2 d1351 -15.0 | The Chargé in Vietnam (Kidder) to the Department of State | Saigon, November 29, 1954—5 p.m.
+frus1961-63v03 d23 -15.0 | 23. Memorandum From the Deputy Director of the United States Information Agency (Wilson) to the Director (Murr | Washington, January 30, 1963.
+frus1950v07 d54 -15.0 | The Assistant Secretary of State for Far Eastern Affairs (Rusk) to the Ambassador in Korea (Muccio) | Washington, June 15, 1950.
+frus1947v07 d340 -15.0 | The Ambassador in China (Stuart) to the Secretary of State | Nanking, March 6, 1947—8 p.m. [Received March 7—3:15 a.m.]
+frus1947v07 d257 -15.0 | The Ambassador in China (Stuart) to the Secretary of State | Nanking, October 10, 1947—10 a.m. [Received October 10—3:35 
+frus1948v07 d327 -15.0 | The Consul at Peiping (Touchette) to the Secretary of State | Peiping, August 19, 1948—5 p. m. [Received August 20—3:05 a.
+frus1969-76v08 d261 -14.9 | 261. Memorandum From the Deputy Special Assistant for Vietnamese Affairs, Central Intelligence Agency (Horgan) | Washington, September 15, 1972.
+frus1955-57v02 d164 -14.9 | 164. Memorandum of Discussion of the 242d Meeting of the National Security Council, Washington, March 24, 1955 | Washington, March 24, 1955
+frus1951v06p1 d751 -14.9 | The United States Political Adviser to SCAP (Sebald) to the Planning Adviser of the Bureau of Far Eastern Affa | Tokyo, September 30, 1951.
+frus1951v06p1 d241 -14.8 | The Secretary of State to the Legation at Saigon | Washington, July 13, 1951.
+frus1964-68v02 d178 -14.8 | 178. Telegram From the Office of the Secretary of Defense to the Embassy in Vietnam | Washington, March 2, 1965, 2:07 p.m.
+frus1958-60v01 d122 -14.7 | 122. Memorandum From the Chief of Staff, United States Army (Lemnitzer) to the Joint Chiefs of Staff | Washington, March 24, 1960.
+frus1951v06p1 d228 -14.7 | The Minister at Saigon (Heath) to the Secretary of State | Saigon, June 14, 1951—4 p. m.
+frus1955-57v22 d115 -14.6 | 115. Memorandum From the Assistant Secretary of State for Far Eastern Affairs (Robertson) to the Under Secreta | Washington, September 20, 1955.
+frus1948v06 d172 -14.6 | The Consul General at Batavia (Livengood) to the Secretary of State | Batavia, June 12, 1948—7 p. m.
+frus1946v08 d541 -14.6 | The Economic Adviser in Korea (Bunce) to the Secretary of State | Seoul, August 26, 1946. [Received August 27—8:49 a.m.]
+frus1964-68v02 d176 -14.6 | 176. Draft Memorandum by the Assistant Secretary of Defense for International Security Affairs (McNaughton) | Washington, March 2, 1965.
+frus1964-68v26 d111 -14.5 | 111. Telegram From the Embassy in Indonesia to the Department of State | Djakarta, February 24, 1965, 2 p.m.
+frus1952-54v13p1 d515 -14.5 | Memorandum by the Assistant Secretary of State for Far Eastern Affairs (Robertson) to the Secretary of State | [Washington,] January 20, 1954,
+frus1955-57v21 d352 -14.4 | 352. Telegram From the Embassy in Laos to the Department of State | Vientiane, April 24, 1956—10 a.m.
+frus1945v07 d1128 -14.3 | The Consul General at Shanghai (Josselyn) to the Secretary of State | Shanghai, October 30, 1945—6 p.m. [Received November 26:30 a
+frus1961-63v02 d11 -14.2 | 11. Paper Prepared by the Task Force in Vietnam | Saigon, January 10, 1962.
+frus1948v07 d42 -14.1 | The Ambassador in China (Stuart) to the Secretary of State | Nanking, January 26, 1948. [Received February 11.]
+frus1949v07p1 d310 -14.0 | The Consul General at Batavia (Livengood) to the Secretary of State | Batavia, June 19, 1949—5 p. m.
+frus1947v07 d376 -14.0 | The Consul General at Taipei (Krentz) to the Secretary of State | Taipei, December 16, 1947—7 p.m. [Received December 18—8:40 
+frus1969-76v19p2 d67 -13.9 | 67. Memorandum From the Director of the U.S. Information Agency (Shakespeare) to the President’s Assistant for | Washington, February 16, 1971.
+frus1951v06p1 d171 -13.9 | The Minister at Saigon (Heath) to the Secretary of State | Saigon, January 5, 1951—10 p. m.
+frus1952-54v13p2 d1175 -13.8 | The Ambassador in Vietnam (Heath) to the Department of State | Saigon, September 13, 1954—9 p.m.
+frus1950v06 d31 -13.8 | Memorandum by the Officer in Charge of Public Affairs, Bureau of Far Eastern Affairs (Connors) to the Ambassad | [Washington,] March 28, 1950.
+frus1969-76v20 d34 -13.8 | 34. Memorandum From John H. Holdridge of the National Security Council Staff to the President’s Assistant for  | Washington, November 5, 1969.
+frus1958-60v01 d17 -13.8 | 17. Paper Prepared by the Operations Coordinating Board | Washington, June 4, 1958.
+frus1969-76v08 d172 -13.7 | 172. Memorandum From President Nixon to the President’s Deputy Assistant for National Security Affairs (Haig) | Washington, May 20, 1972.
+frus1961-63v03 d96 -13.7 | 96. Memorandum Prepared in the Department of State | Washington, April 18, 1963.
+frus1946v10 d780 -13.7 | The Treasury Representative in China (Adler) to the Secretary of the Treasury (Snyder) | Shanghai, 30 August 1946.
+frus1955-57v03mSupp d728 -13.7 | 728. Telegram 363 from Geneva | Geneva, October 4, 1956, 6 p.m.
+frus1947v07 d542 -13.7 | State Department Briefing for Wedemeyer Mission | [Washington, July 14, 1947.]
+frus1948v07 d203 -13.6 | The Consul General at Shanghai (Cabot) to the Secretary of State | Shanghai, May 27, 1948—4 p. m. [Received May 27—9:31 a. m.]
+frus1969-76v08 d197 -13.6 | 197. Memorandum From the Director, Joint Staff (Seignious) to the Assistant Secretary of Defense for Internati | Washington, June 30, 1972.
+frus1955-57v03 d210 -13.5 | 210. Telegram From Ambassador U. Alexis Johnson to the Department of State | Geneva, September 22, 1956—11 a.m.
+frus1949v08 d1087 -13.5 | The Consul at Dairen (Paddock) to the Secretary of State | Dairen, July 6, 1949—3 p. m. [Received July 9—4:25 a. m.]
+frus1964-68v27 d178 -13.5 | 178. Memorandum From the Presidentʼs Deputy Special Assistant for National Security Affairs (Komer) to Preside | Washington, March 11, 1966.
+frus1964-68v05 d390 -13.4 | 390. Summary of Notes of the 578th Meeting of the National Security Council | Washington, November 8, 1967, 10:05–10:55 a.m.
+frus1949v09 d274 -13.4 | The Chargé in Burma (Day) to the Secretary of State | Rangoon, December 27, 1949—noon. [Received 1:48 p. m.]
+frus1961-63v23 d414 -13.3 | 414. Telegram From the Department of State to the Embassy in Thailand | Washington, July 8, 1961, 6:03 p.m.
+frus1949v07p1 d405 -13.3 | The Secretary of State to the Consulate General at Batavia | Washington, December 15, 1949—7 p. m.
+frus1964-68v06 d254 -13.3 | 254. Notes of Meeting | Washington, May 28, 1968, 6:30 p.m.
+frus1964-68v26 d59 -13.3 | 59. Telegram From the Department of State to the Embassy in Indonesia | Washington, August 17, 1964, 6:45 p.m.
+frus1955-57v22 d159 -13.2 | 159. Memorandum of a Conversation Between Foreign Minister Abdulgani and the Ambassador to Indonesia (Cumming) | Utah, June 3, 1956
+frus1949v08 d251 -13.2 | The Ambassador in China (Stuart) to the Secretary of State | Nanking, March 30, 1949. [Received April 25.]
+frus1948v08 d626 -13.2 | The Ambassador in China (Stuart) to the Secretary of State | Nanking, August 11, 1948. [Received August 26.]
+frus1955-57v22 d449 -13.2 | 449. Circular Instruction From the Department of State to Certain Diplomatic Missions and Consular Offices | Washington, January 14, 1956.
+frus1964-68v26 d62 -13.1 | 62. Current Intelligence Memorandum | Washington, August 20, 1964.
+frus1961-63v02 d311 -13.0 | 311. Telegram From the Public Affairs Officer of the Embassy in Vietnam (Mecklin) to the United States Informa | Saigon, November 5, 1962—5 p.m.
+SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN R ON R.volume_id=d.volume_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND frus_documents MATCH ? (4376, 76)

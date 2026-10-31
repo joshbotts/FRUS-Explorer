@@ -1,0 +1,91 @@
+Documents cited list entries: 22
+
+== Documents cited list: resolution through manifest.json and document_cache ==
+  frus1950v06/d50: printed Document 50; document_cache number=50 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1950, East Asia and the Pacific, Volume VI' title-match=True
+  frus1964-68v01/d122: printed Document 122; document_cache number=122 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1964–1968, Volume I, Vietnam, 1964' title-match=True
+  frus1917-72PubDipv07/d85: printed Document 85; document_cache number=85 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1917–1972, Volume VII, Public Diplomacy, 1964–1968' title-match=True
+  frus1969-76v38p2/d105: printed Document 105; document_cache number=105 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1969–1976, Volume XXXVIII, Part 2, Organization an' title-match=True
+  frus1924v01/d540: printed Document 540; document_cache number=540 apparatus=(0, 0); number-match=True; manifest title='Papers Relating to the Foreign Relations of the United States, 1924, Volume I' title-match=True
+  frus1949v09/d558: printed Document 558; document_cache number=558 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1949, The Far East: China, Volume IX' title-match=True
+  frus1952-54v12p2/d403: printed Document 403; document_cache number=403 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1952–1954, East Asia and the Pacific, Volume XII, ' title-match=True
+  frus1917-72PubDipv07/d32: printed Document 32; document_cache number=32 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1917–1972, Volume VII, Public Diplomacy, 1964–1968' title-match=True
+  frus1917-72PubDipv08/d58: printed Document 58; document_cache number=58 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1917–1972, Volume VIII, Public Diplomacy, 1969–197' title-match=True
+  frus1917-72PubDipv08/d99: printed Document 99; document_cache number=99 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1917–1972, Volume VIII, Public Diplomacy, 1969–197' title-match=True
+  frus1955-57v22/d447: printed Document 447; document_cache number=447 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1955–1957, Southeast Asia, Volume XXII' title-match=True
+  frus1961-63v23/d289: printed Document 289; document_cache number=289 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1961–1963, Volume XXIII: Southeast Asia' title-match=True
+  frus1964-68v27/d386: printed Document 386; document_cache number=386 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1964–1968, Volume XXVII, Mainland Southeast Asia; ' title-match=True
+  frus1964-68v02/d160: printed Document 160; document_cache number=160 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1964–1968, Volume II, Vietnam, January–June 1965' title-match=True
+  frus1964-68v29p2/d46: printed Document 46; document_cache number=46 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1964–1968, Volume XXIX, Part 2, Japan' title-match=True
+  frus1964-68v26/d106: printed Document 106; document_cache number=106 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1964–1968, Volume XXVI, Indonesia; Malaysia-Singap' title-match=True
+  frus1917-72PubDipv08/d31: printed Document 31; document_cache number=31 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1917–1972, Volume VIII, Public Diplomacy, 1969–197' title-match=True
+  frus1955-57v23p2/d50: printed Document 50; document_cache number=50 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1955–1957, Korea, Volume XXIII, Part 2' title-match=True
+  frus1977-80v30/d79: printed Document 79; document_cache number=79 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1977–1980, Volume XXX, Public Diplomacy' title-match=True
+  frus1917-72PubDipv08/d146: printed Document 146; document_cache number=146 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1917–1972, Volume VIII, Public Diplomacy, 1969–197' title-match=True
+  frus1917-72PubDipv08/d149: printed Document 149; document_cache number=149 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1917–1972, Volume VIII, Public Diplomacy, 1969–197' title-match=True
+  frus1977-80v30/d152: printed Document 152; document_cache number=152 apparatus=(0, 0); number-match=True; manifest title='Foreign Relations of the United States, 1977–1980, Volume XXX, Public Diplomacy' title-match=True
+memo Q rows: 39
+
+== Overview quoted strings ==
+  NOT-A-DOCUMENT-QUOTATION (no memo Q row): "soft power"  next citation: 1950, Volume VI, Document 50
+  OK: Q13 memo-pair frus1964-68v01/d122 found=True (ok); overview cites 1964–1968, Volume I, Document 122 -> ('frus1964-68v01', 'd122') found-there=True; "the weakest part"
+  NOT-A-DOCUMENT-QUOTATION (no memo Q row): "came from"  next citation: 1924, Volume I, Document 540
+  NOT-A-DOCUMENT-QUOTATION (no memo Q row): "Subject Files"  next citation: 1924, Volume I, Document 540
+  NOT-A-DOCUMENT-QUOTATION (no memo Q row): "Subject and Special Files,"  next citation: 1924, Volume I, Document 540
+  NOT-A-DOCUMENT-QUOTATION (no memo Q row): "pointed at"  next citation: 1924, Volume I, Document 540
+  NOT-A-DOCUMENT-QUOTATION (no memo Q row): "soft power"  next citation: 1924, Volume I, Document 540
+  NOT-A-DOCUMENT-QUOTATION (no memo Q row): "Department of State,"  next citation: 1924, Volume I, Document 540
+  NOT-A-DOCUMENT-QUOTATION (no memo Q row): "soft power."  next citation: 1949, Volume IX, Document 558
+  NOT-A-DOCUMENT-QUOTATION (no memo Q row): "policymakers."  next citation: 1949, Volume IX, Document 558
+  OK: Q01 memo-pair frus1949v09/d558 found=True (ok); overview cites 1949, Volume IX, Document 558 -> ('frus1949v09', 'd558') found-there=True; "to foster possible rifts between Chinese Communists and the USSR"
+  OK: Q03 memo-pair frus1950v06/d50 found=True (ok); overview cites 1950, Volume VI, Document 50 -> ('frus1950v06', 'd50') found-there=True; "the generally meager knowledge and understanding of the United States "
+  OK: Q05 memo-pair frus1952-54v12p2/d403 found=True (ok); overview cites 1952–1954, Volume XII, Part 2, Document 403 -> ('frus1952-54v12p2', 'd403') found-there=True; "In projecting U.S. leadership, however, we must work with and through "
+  OK: Q10 memo-pair frus1917-72PubDipv07/d32 found=True (ok); overview cites 1917–1972, Volume VII, Document 32 -> ('frus1917-72PubDipv07', 'd32') found-there=True; "Vietnamese peasants are, in the main, going to be persuaded by other V"
+  OK: Q21 memo-pair frus1917-72PubDipv08/d58 found=True (ok); overview cites 1917–1972, Volume VIII, Document 58 -> ('frus1917-72PubDipv08', 'd58') found-there=True; "has, from the beginning, considered its psychological operations (PSYO"
+  OK: Q35 memo-pair frus1917-72PubDipv08/d99 found=True (ok); overview cites 1917–1972, Volume VIII, Document 99 -> ('frus1917-72PubDipv08', 'd99') found-there=True; "The President’s concept of partnership suggests that the U.S. will hav"
+  OK: Q38 memo-pair frus1961-63v23/d289 found=True (ok); overview cites 1961–1963, Volume XXIII, Document 289 -> ('frus1961-63v23', 'd289') found-there=True; "patient persistence"
+  OK: Q13 memo-pair frus1964-68v01/d122 found=True (ok); overview cites 1964–1968, Volume I, Document 122 -> ('frus1964-68v01', 'd122') found-there=True; "the weakest part of the war operation, both on our part and that of th"
+  OK: Q18 memo-pair frus1917-72PubDipv07/d85 found=True (ok); overview cites 1917–1972, Volume VII, Document 85 -> ('frus1917-72PubDipv07', 'd85') found-there=True; "will, needless to say, be effective primarily through what Americans, "
+  OK: Q19 memo-pair frus1964-68v29p2/d46 found=True (ok); overview cites 1964–1968, Volume XXIX, Part 2, Document 46 -> ('frus1964-68v29p2', 'd46') found-there=True; "has dropped from 52 percent to 38 percent since last December,"
+  OK: Q25 memo-pair frus1917-72PubDipv08/d31 found=True (ok); overview cites 1917–1972, Volume VIII, Document 31 -> ('frus1917-72PubDipv08', 'd31') found-there=True; "has not been worth the effort"
+  OK: Q12 memo-pair frus1917-72PubDipv07/d32 found=True (ok); overview cites 1917–1972, Volume VII, Document 32 -> ('frus1917-72PubDipv07', 'd32') found-there=True; "family-oriented, selfish and opportunistic even in the best of times,"
+  OK: Q22 memo-pair frus1917-72PubDipv08/d31 found=True (ok); overview cites 1917–1972, Volume VIII, Document 31 -> ('frus1917-72PubDipv08', 'd31') found-there=True; "Asians are, to varying degrees, America watchers,"
+  OK: Q07 memo-pair frus1955-57v23p2/d50 found=True (ok); overview cites 1955–1957, Volume XXIII, Part 2, Document 50 -> ('frus1955-57v23p2', 'd50') found-there=True; "the U.S. position in Asia rests in large part upon Asian appreciation "
+  OK: Q28 memo-pair frus1969-76v38p2/d105 found=True (ok); overview cites 1969–1976, Volume XXXVIII, Part 2, Document 105 -> ('frus1969-76v38p2', 'd105') found-there=True; "programs on U.S. security relations in Asia lack credibility and may i"
+  OK: Q30 memo-pair frus1977-80v30/d79 found=True (ok); overview cites 1977–1980, Volume XXX, Document 79 -> ('frus1977-80v30', 'd79') found-there=True; "real and necessary"
+  OK: Q27 memo-pair frus1917-72PubDipv08/d146 found=True (ok); overview cites 1917–1972, Volume VIII, Document 146 -> ('frus1917-72PubDipv08', 'd146') found-there=True; "build what is now a temporary psychological asset into a long-range on"
+  OK: Q31 memo-pair frus1977-80v30/d152 found=True (ok); overview cites 1977–1980, Volume XXX, Document 152 -> ('frus1977-80v30', 'd152') found-there=True; "The enlarged scope for ICA -funded activities is real and important to"
+  NOT-A-DOCUMENT-QUOTATION (no memo Q row): "clearing agreement"  next citation: None
+  NOT-A-DOCUMENT-QUOTATION (no memo Q row): "clear agreement"  next citation: None
+  NOT-A-DOCUMENT-QUOTATION (no memo Q row): "Persuasion in East Asia and the Pacific, 1924–1978,"  next citation: None
+overview: document quotations 19, ok 19, fabrications 0, mis-citations 0
+
+== Collection excerpts ==
+  OK: frus1924v01/d540 (ok) "At the moment this Government is demonstrating its friendship for Chin"
+  OK: frus1949v09/d558 (ok) "One of the objectives of the Voice of America and other informational "
+  OK: frus1950v06/d50 (ok) "the generally meager knowledge and understanding of the United States "
+  OK: frus1952-54v12p2/d403 (ok) "In projecting U.S. leadership, however, we must work with and through "
+  OK: frus1955-57v23p2/d50 (ok) "the U.S. position in Asia rests in large part upon Asian appreciation "
+  OK: frus1955-57v22/d447 (ok) "a fear of placing the U.S. in the position of appearing to support col"
+  OK: frus1961-63v23/d289 (ok) "patient persistence"
+  OK: frus1917-72PubDipv07/d32 (ok) "Vietnamese peasants are, in the main, going to be persuaded by other V"
+  OK: frus1917-72PubDipv07/d32 (ok) "the Vietnamese civil population, family-oriented, selfish and opportun"
+  OK: frus1964-68v27/d386 (ok) "The Thai Government has not given proper attention to the need for a n"
+  OK: frus1964-68v01/d122 (ok) "the weakest part of the war operation, both on our part and that of th"
+  OK: frus1964-68v26/d106 (ok) "We shall soon have nothing worthwhile left in the way of an informatio"
+  OK: frus1964-68v02/d160 (ok) "have not progressed to my satisfaction"
+  OK: frus1964-68v29p2/d46 (ok) "the number of persons naming the United States as one of their three f"
+  OK: frus1917-72PubDipv07/d85 (ok) "The psychological effect of the American presence in Viet-Nam will, ne"
+  OK: frus1917-72PubDipv08/d31 (ok) "Asians are, to varying degrees, America watchers."
+  OK: frus1917-72PubDipv08/d31 (ok) "But there was general agreement that US prestige is diminished when we"
+  OK: frus1917-72PubDipv08/d58 (ok) "USIA has, from the beginning, considered its psychological operations "
+  OK: frus1917-72PubDipv08/d99 (ok) "The President’s concept of partnership suggests that the U.S. will hav"
+  OK: frus1917-72PubDipv08/d99 (ok) "While the Agency still has a major commitment to programs in Southeast"
+  OK: frus1917-72PubDipv08/d146 (ok) "build what is now a temporary psychological asset into a long-range on"
+  OK: frus1917-72PubDipv08/d149 (ok) "The predominant mood is apolitical, seeking to be neutral, and concern"
+  OK: frus1969-76v38p2/d105 (ok) "programs on U.S. security relations in Asia lack credibility and may i"
+  OK: frus1977-80v30/d79 (ok) "shoring up the confidence of East Asians in America’s long-term stayin"
+  OK: frus1977-80v30/d152 (ok) "The enlarged scope for ICA -funded activities is real and important to"
+excerpts 25, ok 25, fabrications 0
+
+== Memo Q table, all rows ==
+memo Q rows checked 39, failing 0

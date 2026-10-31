@@ -1,0 +1,4 @@
+PHRASE information program        FTS MATCH "information program"          hits in REG: 135 ; checked 135 (whole set) ; STRICT 80 of 135 ; TOLERANT 134 of 135
+PHRASE psychological warfare      FTS MATCH "psychological warfare"        hits in REG: 252 ; checked 252 (whole set) ; STRICT 252 of 252 ; TOLERANT 252 of 252
+PHRASE psychological strategy     FTS MATCH "psychological strategy"       hits in REG: 15 ; checked 15 (whole set) ; STRICT 15 of 15 ; TOLERANT 15 of 15
+PHRASE United States Information  FTS MATCH "United States Information"    hits in REG: 114 ; checked 114 (whole set) ; STRICT 100 of 114 ; TOLERANT 101 of 114

@@ -1,0 +1,100 @@
+=== COLLECTION EXCERPTS: 38
+E01 frus1931v03/d939 FOUND segs=1 :: Mr. Peck referred to the interest taken by the American Government in 
+E02 frus1948v07/d55 FOUND segs=1 :: Embassy believes USIS (United States Information Service) is better in
+E03 frus1949v08/d1576 FOUND segs=1 :: The cessation of these cultural and technical services of the United S
+E04 frus1950v06/d32 FOUND segs=1 :: Both Pignon, the French High Commissioner for Indochina, and MacDonald
+E05 frus1952-54v13p1/d116 FOUND segs=1 :: Since many new customs FE can be traced to Amer films, must be assumed
+E06 frus1952-54v13p1/d116 FOUND segs=1 :: All factors recited must be viewed as effective though degree cannot b
+E07 frus1952-54v12p2/d403 FOUND segs=1 :: Through the stimulus of appropriate psychological programs, the ethnic
+E08 frus1955-57v09/d190 FOUND segs=1 :: In the Far East USIA was forced to deal with mixed emotions regarding 
+E09 frus1955-57v09/d190 FOUND segs=1 :: USIA concentrated on activities to strengthen the resolution of U.S. a
+E10 frus1964-68v01/d122 FOUND segs=1 :: I came to the conclusion that the weakest part of the war operation, b
+E11 frus1917-72PubDipv07/d32 FOUND segs=1 :: The number one problem in Vietnam is motivation.
+E12 frus1917-72PubDipv07/d32 FOUND segs=1 :: But the Vietnamese civil population, family-oriented, selfish and oppo
+E13 frus1964-68v02/d160 FOUND segs=1 :: efforts to develop among the South Vietnamese people a sense of nation
+E14 frus1964-68v02/d172 FOUND segs=1 :: The USIA researchers conclude that the population is largely apathetic
+E15 frus1917-72PubDipv07/d147 FOUND segs=1 :: Some of these tasks appear to lie outside the Agency’s appropriate sph
+E16 frus1917-72PubDipv07/d147 FOUND segs=1 :: In Laos, USIS is in effect the Ministry of Information for the Royal L
+E17 frus1917-72PubDipv06/d107 FOUND segs=1 :: There is considerable justification, I think, for the strong feeling i
+E18 frus1917-72PubDipv06/d126 FOUND segs=1 :: Such a note could serve as the opening gun in a campaign to set the re
+E19 frus1917-72PubDipv06/d133 FOUND segs=1 :: It has appeared questionable to us, however, whether it would be desir
+E20 frus1964-68v26/d106 FOUND segs=1 :: have created a situation that I can describe only as intolerable.
+E21 frus1964-68v26/d106 FOUND segs=1 :: We shall soon have nothing worthwhile left in the way of an informatio
+E22 frus1964-68v26/d109 FOUND segs=1 :: Despite what Sukarno, Subandrio and others have said, evidence is clea
+E23 frus1964-68v29p2/d46 FOUND segs=1 :: Similarly, the number of persons naming the United States as one of th
+E24 frus1917-72PubDipv07/d72 FOUND segs=1 :: He points out that our objectives in South Vietnam are being misunders
+E25 frus1917-72PubDipv07/d102 FOUND segs=1 :: He says the war is an uneven contest, as it is now being reported, bet
+E26 frus1917-72PubDipv08/d94 FOUND segs=1 :: The change in confidence in U.S. ability to deal wisely with world pro
+E27 frus1917-72PubDipv06/d127 FOUND segs=1 :: Glenn and his family, through the warmth and sincerity of their person
+E28 frus1917-72PubDipv07/d73 FOUND segs=1 :: In all cases, however, the image of American strength, reliability and
+E29 frus1917-72PubDipv07/d73 FOUND segs=1 :: In almost every country of the area, our programs are directed at elit
+E30 frus1917-72PubDipv07/d73 FOUND segs=1 :: Personal contact is accepted as our most effective medium, yet the nat
+E31 frus1917-72PubDipv08/d30 FOUND segs=1 :: Peace in Asia—which is a precondition to peace in the world—cannot res
+E32 frus1917-72PubDipv08/d31 FOUND segs=1 :: PAOs emphasized that the image of the US usually depended more on the 
+E33 frus1917-72PubDipv08/d31 FOUND segs=1 :: Assistant Secretary Green’s emphasis on “modesty, mutuality and multi-
+E34 frus1917-72PubDipv08/d34 FOUND segs=1 :: The moon landing improved considerably general opinion of the United S
+E35 frus1917-72PubDipv08/d149 FOUND segs=1 :: The predominant mood is apolitical, seeking to be neutral, and concern
+E36 frus1977-80v30/d79 FOUND segs=1 :: I don’t think there should be any serious doubt that this Administrati
+E37 frus1977-80v30/d81 FOUND segs=1 :: I would welcome any comments that you, in collaboration with your PAOs
+E38 frus1977-80v30/d83 FOUND segs=1 :: We still face deeply implanted and persistent feeling that new adminis
+excerpts not found: 0
+
+=== OVERVIEW QUOTED PASSAGES: 58
+O01 frus1955-57v09/d190 NOT FOUND :: soft power
+O02 frus1955-57v09/d190 FOUND :: information program
+O03 frus1955-57v09/d190 FOUND :: psychological
+O04 frus1955-57v09/d190 FOUND :: prestige
+O05 frus1955-57v09/d190 NOT FOUND :: image
+O06 frus1955-57v09/d190 NOT FOUND :: the weakest part of the war operation
+O07 frus1955-57v09/d190 NOT FOUND :: intolerable
+O08 NO-CITE :: Vietnam Special Caption Messages  [para: **2. Where FRUS points for the rest.** T]
+O09 NO-CITE :: Military Telegrams Relating to Korea  [para: **2. Where FRUS points for the rest.** T]
+O10 NO-CITE :: soft power  [para: **3. What this request cannot get from F]
+O11 NO-CITE :: Department of State  [para: **3. What this request cannot get from F]
+O12 NO-CITE :: psychological  [para: - **What counts as soft power.** I count]
+O13 frus1931v03/d939 FOUND :: to which special attention would be given
+O14 frus1948v07/d55 FOUND :: Embassy believes USIS (United States Information Service) is better instrument f
+O15 frus1949v08/d1576 FOUND :: a corresponding impoverishment of the cultural and technical resources available
+O16 frus1950v06/d32 FOUND :: the Asians are inclined by their psychology to wait and see who is winning
+O17 frus1952-54v13p1/d116 FOUND :: must be assumed
+O18 frus1952-54v13p1/d116 FOUND :: All factors recited must be viewed as effective though degree cannot be accurate
+O19 frus1952-54v12p2/d403 FOUND :: ethnic bonds of the Thai peoples
+O20 frus1955-57v09/d190 FOUND :: mixed emotions regarding the use of atomic weapons against Asiatic peoples
+O21 frus1955-57v09/d190 FOUND :: designed to stir up race hatred
+O22 frus1955-57v09/d190 FOUND :: orient Asian neutralists toward the U.S.
+O23 frus1964-68v01/d122 FOUND :: the weakest part of the war operation, both on our part and that of the Governme
+O24 frus1917-72PubDipv07/d32 FOUND :: The number one problem in Vietnam is motivation
+O25 frus1917-72PubDipv07/d32 FOUND :: family-oriented, selfish and opportunistic even in the best of times
+O26 frus1964-68v02/d160 FOUND :: have not progressed to my satisfaction
+O27 frus1964-68v02/d172 FOUND :: largely apathetic
+O28 frus1917-72PubDipv07/d147 FOUND :: appear to lie outside the Agency’s appropriate sphere of operations
+O29 frus1917-72PubDipv07/d147 FOUND :: in effect the Ministry of Information for the Royal Lao Government
+O30 frus1917-72PubDipv06/d107 FOUND :: the strong feeling in such countries that we take them for granted
+O31 frus1917-72PubDipv06/d126 FOUND :: set the record straight
+O32 frus1917-72PubDipv06/d126 FOUND :: imperialism
+O33 frus1917-72PubDipv06/d126 FOUND :: neo-colonialism
+O34 frus1917-72PubDipv07/d72 FOUND :: that we are not waging a racist war
+O35 frus1917-72PubDipv07/d102 FOUND :: an uneven contest
+O36 frus1917-72PubDipv07/d102 FOUND :: a tiny nation of farmers
+O37 frus1964-68v26/d106 FOUND :: a situation that I can describe only as intolerable
+O38 frus1964-68v26/d106 FOUND :: nothing worthwhile left in the way of an information operation
+O39 frus1917-72PubDipv08/d94 FOUND :: the most dramatic trend
+O40 frus1917-72PubDipv07/d73 FOUND :: Personal contact is accepted as our most effective medium
+O41 frus1917-72PubDipv08/d31 FOUND :: depended more on the state of bi-lateral relations (security treaty, Okinawa, Ko
+O42 frus1917-72PubDipv08/d31 FOUND :: modesty, mutuality and multi-lateralism
+O43 frus1917-72PubDipv08/d30 FOUND :: Asian initiatives
+O44 frus1917-72PubDipv08/d149 FOUND :: predominant mood
+O45 frus1917-72PubDipv08/d149 FOUND :: apolitical, seeking to be neutral, and concerned with economic and trade problem
+O46 frus1917-72PubDipv06/d127 FOUND :: effective demonstration of typical American virtues
+O47 frus1917-72PubDipv08/d34 FOUND :: a barely significant effect
+O48 frus1977-80v30/d81 FOUND :: the future role of public diplomacy in support of our policies in Asia
+O49 frus1977-80v30/d79 FOUND :: shoring up the confidence of East Asians in America’s long-term staying power
+O50 frus1977-80v30/d79 FOUND :: real and necessary
+O51 frus1977-80v30/d83 FOUND :: deeply implanted and persistent feeling
+O52 NO-CITE :: information program  [para: I defined the region from the series' ow]
+O53 NO-CITE :: psychological  [para: I defined the region from the series' ow]
+O54 NO-CITE :: prestige  [para: I defined the region from the series' ow]
+O55 NO-CITE :: propaganda  [para: I defined the region from the series' ow]
+O56 NO-CITE :: USIS  [para: I defined the region from the series' ow]
+O57 NO-CITE :: USI  [para: I defined the region from the series' ow]
+O58 NO-CITE :: American soft power in East Asia and Pacific - run f10  [para: The collection "American soft power in E]

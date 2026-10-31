@@ -1,0 +1,69 @@
+{
+ "run": "runs/cal-r8",
+ "termsTested": 6,
+ "dead": [],
+ "syntaxErrors": [],
+ "prefixes": [
+  {
+   "prefix": "recogn*",
+   "firstLogLine": 24,
+   "vocabLookupBefore": false
+  },
+  {
+   "prefix": "consult*",
+   "firstLogLine": 45,
+   "vocabLookupBefore": false
+  }
+ ],
+ "vocabLookupsInLog": 1,
+ "all": [
+  {
+   "term": "\"peace and amity\\\"",
+   "source": "queries.log",
+   "line": 24,
+   "returns": true,
+   "query": "\"peace and amity\\\"",
+   "nearestLive": null
+  },
+  {
+   "term": "recogn*",
+   "source": "queries.log",
+   "line": 24,
+   "returns": true,
+   "query": "\"recogn\"*",
+   "nearestLive": null
+  },
+  {
+   "term": "\"consent of the governed\\\"",
+   "source": "queries.log",
+   "line": 54,
+   "returns": true,
+   "query": "\"consent of the governed\\\"",
+   "nearestLive": null
+  },
+  {
+   "term": "acheson",
+   "source": "queries.log",
+   "line": 68,
+   "returns": true,
+   "query": "\"acheson\"",
+   "nearestLive": null
+  },
+  {
+   "term": "september",
+   "source": "queries.log",
+   "line": 68,
+   "returns": true,
+   "query": "\"september\"",
+   "nearestLive": null
+  },
+  {
+   "term": "consult*",
+   "source": "core_build.py",
+   "line": null,
+   "returns": true,
+   "query": "\"consult\"*",
+   "nearestLive": null
+  }
+ ]
+}

@@ -1,0 +1,107 @@
+lotFiles 1070 schemaVersion 3 generated 2026-09-10
+== lot 61D167 rows 1
+   {'lotNumber': '61D167', 'recordGroup': '59', 'title': 'Alphabetical Files', 'naId': '2198167', 'matchType': 'control', 'hmsMlrEntryNumbers': ['A1 1583A', 'A1 1583B']}
+     facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Policy Planning Council.', 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useRestrictions': ['Copyright'], 'useStatus': 'Restricted - Possibly', 'extent': '48 linear feet, 7 linear inches', 'inclusiveStartYear': 1948, 'inclusiveEndYear': 1961}
+== lot 63D351 rows 1
+   {'lotNumber': '63D351', 'recordGroup': '59', 'title': 'Records Relating to National Security Council Policy Papers', 'naId': '2839192', 'matchType': 'control', 'hmsMlrEntryNumbers': ['A1 1586E']}
+     facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useRestrictions': ['Copyright'], 'useStatus': 'Restricted - Possibly', 'extent': '26 linear feet, 3 linear inches', 'inclusiveStartYear': 1947, 'inclusiveEndYear': 1979}
+== lot 61D385 rows 0
+== lot 62D430 rows 1
+   {'lotNumber': '62D430', 'recordGroup': '59', 'title': 'Subject and Special Files', 'naId': '2839191', 'matchType': 'control', 'hmsMlrEntryNumbers': ['A1 1586C']}
+     facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Executive Secretariat.', 'coverageStartYear': 1952, 'coverageEndYear': 1961, 'findingAids': ['Index'], 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useRestrictions': ['Copyright'], 'useStatus': 'Restricted - Possibly', 'extent': '4 linear feet, 5 linear inches', 'inclusiveStartYear': 1953, 'inclusiveEndYear': 1961}
+== lot 58D726 rows 1
+   {'lotNumber': '58D726', 'recordGroup': '59', 'title': 'Subject Files', 'naId': '2544398', 'matchType': 'control', 'hmsMlrEntryNumbers': ['UD 53']}
+     facts: {'accessStatus': 'Restricted - Possibly', 'creator': 'Department of State. Bureau of Far Eastern Affairs. Office of Southeast Asian Affairs. Office of the Officer in Charge for Malaya Affairs.', 'predecessors': ['Department of State. Bureau of Far Eastern Affairs. Office of Philippine and Southeast Asian Affairs. Office of the Officer in Charge for Thai and Malaya Affairs.'], 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useStatus': 'Restricted - Possibly', 'extent': '5 linear inches', 'inclusiveStartYear': 1955, 'inclusiveEndYear': 1956}
+== lot 66D95 rows 1
+   {'lotNumber': '66D95', 'recordGroup': '59', 'title': 'Records Relating to National Security Council Policy Papers', 'naId': '2839192', 'matchType': 'control', 'hmsMlrEntryNumbers': ['A1 1586E']}
+     facts: {'accessRestrictions': ['FOIA (b)(1) National Security'], 'accessStatus': 'Restricted - Partly', 'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useRestrictions': ['Copyright'], 'useStatus': 'Restricted - Possibly', 'extent': '26 linear feet, 3 linear inches', 'inclusiveStartYear': 1947, 'inclusiveEndYear': 1979}
+== lot 64D563 rows 1
+   {'lotNumber': '64D563', 'recordGroup': '59', 'title': 'Chronological Files', 'naId': '1136548', 'matchType': 'control', 'hmsMlrEntryNumbers': ['A1 558-D']}
+     facts: {'accessStatus': 'Unrestricted', 'creator': 'Department of State. Policy Planning Council.', 'referenceUnit': 'National Archives at College Park - Textual Reference', 'useStatus': 'Unrestricted', 'extent': '5 linear feet, 3 linear inches', 'inclusiveStartYear': 1947, 'inclusiveEndYear': 1962}
+series-facts rows with creator naming 'Information Agency': 14
+   1254209 U.S. Information Agency. Office of Research and Analysis. Area Analysis Division. Latin American Branch. 1955 1962 Restricted - Partly 2 linear feet, 7 linear inches
+   1254251 U.S. Information Agency. Office of Research and Intelligence. Intelligence Production Division. 1954 1958 Restricted - Partly 9 linear feet, 2 linear inches
+   1254428 U.S. Information Agency. Office of Policy and Programs. 1952 1956 Restricted - Partly 3 linear feet,  6 linear inches
+   1257679 U.S. Information Agency. Office of Policy and Plans. 1953 1971 Restricted - Partly 47 linear feet
+   25777867 U.S. Information Agency. Information Center Service. Cultural Operations Division. 1953 1956 Unrestricted 1 linear foot
+   40910228 U.S. Information Agency. Office of Plans. 1953 1959 Unrestricted 11 linear feet, 8 linear inches
+   40943515 U.S. Information Agency. Office of Policy. 1953 1969 Restricted - Partly 20 linear feet, 5 linear inches
+   40967113 U.S. Information Agency. Office of the Director. Executive Secretariat. 1961 1966 Restricted - Partly 10 linear feet, 6 linear inches
+   40967285 U.S. Information Agency. Office of the Director. Executive Secretariat. 1956 1972 Restricted - Partly 103 linear feet, 1 linear inch
+   44264049 U.S. Information Agency. Office of the Assistant Director for Europe. 1945 1958 Restricted - Partly 83 linear feet, 8 linear inches
+   56190687 U.S. Information Agency. Office of the Assistant Director for Latin America. 1953 1970 Restricted - Partly 5 linear feet, 8 linear inches
+   5634081 U.S. Information Agency. Office of the Director. Executive Secretariat. 1953 1965 Unrestricted 1 linear foot, 3 linear inches
+lotFiles in RG 306/305: 17
+series-facts rows starting before 1940: 11 of 698
+306 56D581 ['UD-10D 4'] 25777867 Files Related to the McCarthy Committee Hearings on Book Censorship | (1953, 1956, 1)
+306 59D242 ['P 482'] 7542975 Records Relating to the Voice of America (VOA) | (1948, 1959, 2)
+306 59D260 ['UD-WW 151', 'UD-WW 197', 'UD-WW 234', 'UD-WW 264', 'UD-WW 287', 'UD-WW 288', 'UD-WW 365', 'UD-WW 366', 'UD-WW 372', 'UD-WW 379', 'UD-WW 382'] 1257679 Subject Files | (1953, 1971, 2)
+306 60D147 ['UD-WW 138', 'UD-WW 337', 'UD-WW 392'] 1254251 Program Files | (1954, 1958, 2)
+306 60D439 ['UD-16D 3', 'UD-WW 343'] 44264049 Country, Programs, and Operations Files | (1945, 1958, 2)
+306 61D233 ['P 256'] 6106829 Travel Files | (1953, 1960, 1)
+306 61D445 ['UD-WW 151', 'UD-WW 197', 'UD-WW 234', 'UD-WW 264', 'UD-WW 287', 'UD-WW 288', 'UD-WW 365', 'UD-WW 366', 'UD-WW 372', 'UD-WW 379', 'UD-WW 382'] 1257679 Subject Files | (1953, 1971, 2)
+306 64D171 None 40967113 Chronological Files | (1961, 1966, 2)
+306 64D423 ['P 259'] 1254428 Records Relating to Bacteriological Warfare Charges and the Korean War | (1952, 1956, 2)
+306 64D484 ['P 223'] 1254209 Latin American Program Files | (1955, 1962, 2)
+306 64D535 ['P 310'] 40910228 Policy Guidances | (1953, 1959, 1)
+306 67D317 None 40967285 Subject Files of the Director | (1956, 1972, 2)
+306 67D333 None 40967285 Subject Files of the Director | (1956, 1972, 2)
+306 68D393 None 5634081 Staff Meeting Notes | (1953, 1965, 1)
+306 70D398 ['P 311'] 40943515 Alphabetical Subject Files Containing Policy Guidance Records | (1953, 1969, 2)
+306 70D449 None 40967285 Subject Files of the Director | (1956, 1972, 2)
+306 71D483 ['P 430'] 56190687 Country Files for El Salvador | (1953, 1970, 2)
+True
+== accession-series-index.json ['byAccession', 'generated', 'legend', 'note', 'schemaVersion']
+== presidential-library-catalog.json ['generated', 'libraries', 'schemaVersion', 'source']
+== curated-lot-resolutions.json ['schemaVersion', 'generated', 'note', 'series', 'lots']
+== lot-claimants-index.json ['generated', 'harvestGenerated', 'lots', 'note', 'schemaVersion']
+{"a": "asPrinted \u2014 NARA's own spelling of the transfer number, verbatim", "i": "prefixInferred \u2014 true when the stored string carried no record-group prefix and the shard's own group was used; ABSENT means false", "n": "naId \u2014 NARA unique identifier for the series", "t": "title \u2014 the series title as NARA describes it"}
+Keys are `<record group>/<accession>`, the accession folded to letters and digits (`71 A 6682` -> `71A6682`). THE RECORD GROUP IS PART OF THE KEY AND MUST BE MATCHED: an accession number is unique only within its group — `68A5612` names 1 series in RG 59 and 18 in RG 84 — so a lookup that ignores it
+306/68A4933 [{"a": "306-68A4933", "n": "1102141", "t": "Subject Files of the Director"}, {"a": "306-68A4933", "n": "1126733", "t": "Speech Files"}, {"a": "306-68A4933", "n": "42125423", "t": "Vietnam Working Group Subject Files"}, {"a": "306-68A4933", "n": "4656106", "t": "Records Relating to Advisory Committees and Panels"}, {"a": "306-68A4933", "n": "4662423", "t": "Records Relating to the Appearances of Ca
+306/67A222 [{"a": "306-67A222", "n": "48349732", "t": "Regional Subject Files"}, {"a": "306-67A222", "n": "55275645", "t": "Subject and Country Files Relating to Culture"}, {"a": "306-67A222", "n": "63531119", "t": "Subject Files Relating to Youth Issues"}]
+84/67A677 null
+306/72A5121 [{"a": "306-72A-5121", "n": "1257679", "t": "Subject Files"}, {"a": "306-72A-5121", "n": "40943515", "t": "Alphabetical Subject Files Containing Policy Guidance Records"}, {"a": "306-72A-5121", "n": "4667751", "t": "Background Files"}, {"a": "306-72A5121", "n": "48349732", "t": "Regional Subject Files"}, {"a": "306-72A5121", "n": "51861375", "t": "Country Files for Bolivia"}, {"a": "306-72A5121", 
+306/69A3445 [{"a": "306-69A-3445", "n": "1257679", "t": "Subject Files"}, {"a": "306-69A3445", "n": "1274177", "t": "Subject Files"}, {"a": "306-69A3445", "n": "40943515", "t": "Alphabetical Subject Files Containing Policy Guidance Records"}, {"a": "306-69A3445", "n": "48349732", "t": "Regional Subject Files"}, {"a": "306-69A3445", "n": "53279603", "t": "Regional Country Files"}, {"a": "306-69A3445", "n": "55
+34/66A335 null
+306/84-0003 null
+305/306-84-0003 null
+['306/030003', '306/30672D4904', '306/36A190', '306/59A428', '306/60D0314', '306/60E314', '306/61A0226', '306/61A0226A', '306/61A0331', '306/61A0498', '306/61A0501', '306/61A0502'] 708
+<class 'list'> [None, None, None, None, None, None, None, None, None, None, None]
+{'citedAs': 'Eisenhower Library', 'collections': 462, 'prefix': 'DDE'}
+{'citedAs': 'Kennedy Library', 'collections': 398, 'prefix': 'JFK'}
+{'citedAs': 'Johnson Library', 'collections': 764, 'prefix': 'LBJ'}
+306/72A5121 series named: 18
+    1257679 Subject Files (1953, 1971, 'Restricted - Partly')
+    40943515 Alphabetical Subject Files Containing Policy Guidance Records (1953, 1969, 'Restricted - Partly')
+    4667751 Background Files None
+    48349732 Regional Subject Files None
+    51861375 Country Files for Bolivia None
+    53279603 Regional Country Files None
+    55029502 Country Files for Switzerland None
+    55159731 Country Files for Chile None
+    56190687 Country Files for El Salvador (1953, 1970, 'Restricted - Partly')
+306/69A3445 series named: 9
+    1257679 Subject Files (1953, 1971, 'Restricted - Partly')
+    1274177 Subject Files None
+    40943515 Alphabetical Subject Files Containing Policy Guidance Records (1953, 1969, 'Restricted - Partly')
+    48349732 Regional Subject Files None
+    53279603 Regional Country Files None
+    55275646 Correspondence Logs and Receipt Manifests None
+    56918827 Country Correspondence Files None
+    57596390 West European Special Study Group Files None
+    81547709 General Records and Country Files Relating to Latin America None
+306/68A4933 series named: 15
+    1102141 Subject Files of the Director None
+    1126733 Speech Files None
+    42125423 Vietnam Working Group Subject Files None
+    4656106 Records Relating to Advisory Committees and Panels None
+    4662423 Records Relating to the Appearances of Carl Thomas Rowan None
+    4662627 Records Relating to the Speaking Engagements of Carl Thomas Rowan None
+    4667502 Records Relating to the Declined Invitations of Carl Thomas Rowan None
+    4667607 Program Files None
+    4701166 Correspondence Files None
+306/67A222 series named: 3
+    48349732 Regional Subject Files None
+    55275645 Subject and Country Files Relating to Culture None
+    63531119 Subject Files Relating to Youth Issues None
+search done (hyphen and space variants); entries searched: ['UD WW 257', 'UD WW 193', 'A1 42', 'P 104', 'P 207', 'UD-UP 7']

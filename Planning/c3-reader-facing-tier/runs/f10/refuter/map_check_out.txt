@@ -1,0 +1,13 @@
+unclustered 88059 of 314616 (28.0%) (memo 88,059 of 314,616, 28.0%)
+  frus1950v06/d32 cluster 31 ['indochina', 'minh', 'bao', 'dai']
+  frus1952-54v13p1/d116 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+  frus1917-72PubDipv07/d32 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+  frus1917-72PubDipv06/d107 cluster 138 ['cia', 'nsc', 'usia', 'inglis']
+  frus1964-68v26/d106 cluster 32 ['sukarno', 'indonesian', 'indonesia', 'nasution']
+  frus1917-72PubDipv06/d127 cluster 138 ['cia', 'nsc', 'usia', 'inglis']
+  frus1917-72PubDipv07/d73 cluster 29 ['lao', 'vietnamese', 'vietnam', 'thieu']
+  frus1917-72PubDipv08/d31 cluster UNCLUSTERED 
+  frus1917-72PubDipv08/d34 cluster 138 ['cia', 'nsc', 'usia', 'inglis']
+  frus1977-80v30/d79 cluster UNCLUSTERED 
+30 docs clusters: {3: 3, 31: 1, 29: 10, 138: 5, 'UNCL': 6, 32: 4, 7: 1} (memo: 6 unclustered; 29:10, 138:5, 32:4, 3:3, 31:1, 7:1)
+cluster 138 size: 2189 ['cia', 'nsc', 'usia', 'inglis'] (memo 2,189)

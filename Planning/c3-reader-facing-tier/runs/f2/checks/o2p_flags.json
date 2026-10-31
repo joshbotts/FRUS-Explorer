@@ -1,0 +1,512 @@
+{
+ "run": "runs/f2",
+ "traceSource": "runs/f2/memo.md",
+ "traceTableLine": 227,
+ "traceRows": 27,
+ "mentions": 45,
+ "counts": {
+  "traced": 22,
+  "weak": 19,
+  "untraced": 4
+ },
+ "list": [
+  {
+   "text": "fifteen",
+   "values": [
+    "15"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"fifteen documents\" (Scope, part 1) | §4 quoted 15; coll.txt 14 + d190",
+   "sentence": "The answer rests on fifteen documents."
+  },
+  {
+   "text": "about three in five",
+   "values": [
+    "3",
+    "5"
+   ],
+   "next": "regionally",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "\"five Public Diplomacy volumes\" (part 3, How) | §1: six PD-titled volumes, one is WWI (frus1917-72PubDip); five cover 1961–1980",
+   "sentence": "Where FRUS points for the rest.** Series the printed documents came from (came-from channel; about three in five of the 119 regionally focused documents in the public diplomacy volumes came from the information agency's own records):"
+  },
+  {
+   "text": "119",
+   "values": [
+    "119"
+   ],
+   "next": "regionally",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"about three in five\" of 119 documents from the agency's own records (part 2) | §3 wide set: RG 306 74 of 119",
+   "sentence": "Where FRUS points for the rest.** Series the printed documents came from (came-from channel; about three in five of the 119 regionally focused documents in the public diplomacy volumes came from the information agency's own records):"
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "\"about three in five\" of 119 documents from the agency's own records (part 2) | §3 wide set: RG 306 74 of 119",
+   "sentence": "Information Agency, Office of the Director, Executive Secretariat — Record Group 306;"
+  },
+  {
+   "text": "42",
+   "values": [
+    "42"
+   ],
+   "next": "entry",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Record groups 306, 59; entries A1–42, UD WW 257, P–14; lots 62 D 430, 81D113; accession 72A5121 | §3 table and source notes in raw/ files",
+   "sentence": "FRUS cites it as \"Director's Subject Files,\" Entry A1–42 ( ) and Entry UD WW 257 ( );"
+  },
+  {
+   "text": "WW 257",
+   "values": [
+    "ww257"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record groups 306, 59; entries A1–42, UD WW 257, P–14; lots 62 D 430, 81D113; accession 72A5121 | §3 table and source notes in raw/ files",
+   "sentence": "FRUS cites it as \"Director's Subject Files,\" Entry A1–42 ( ) and Entry UD WW 257 ( );"
+  },
+  {
+   "text": "40967285",
+   "values": [
+    "40967285"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "NAIDs 40967285, 1257679, 2839191, 193936, 50827304, 1487627, 1127750, 721251, 1257657; dates 1956–1972, 1953–1971, 1953–1961, 1961–1964, 1965–1968, 1975–1981 | §3 resolution table",
+   "sentence": "NARA identifier 40967285; ; partly restricted."
+  },
+  {
+   "text": "eighteen",
+   "values": [
+    "18"
+   ],
+   "next": "serie",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"eighteen series\" under one transfer number (part 2) | §3 table: 306/72A5121 lists 18",
+   "sentence": "A likely match by title and creator only: the transfer number FRUS gives is listed under eighteen series and not under this one."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "\"about three in five\" of 119 documents from the agency's own records (part 2) | §3 wide set: RG 306 74 of 119",
+   "sentence": "Information Agency, Office of Policy and Plans — Record Group 306;"
+  },
+  {
+   "text": "1257679",
+   "values": [
+    "1257679"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "NAIDs 40967285, 1257679, 2839191, 193936, 50827304, 1487627, 1127750, 721251, 1257657; dates 1956–1972, 1953–1971, 1953–1961, 1961–1964, 1965–1968, 1975–1981 | §3 resolution table",
+   "sentence": "NARA identifier 1257679; ; partly restricted (also a likely match only, by transfer number)."
+  },
+  {
+   "text": "62 D 430",
+   "values": [
+    "62d430"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record groups 306, 59; entries A1–42, UD WW 257, P–14; lots 62 D 430, 81D113; accession 72A5121 | §3 table and source notes in raw/ files",
+   "sentence": "Operations Coordinating Board Files, Lot 62 D 430 — Record Group 59, Executive Secretariat;"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Operations Coordinating Board Files, Lot 62 D 430 — Record Group 59, Executive Secretariat;"
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "NAIDs 40967285, 1257679, 2839191, 193936, 50827304, 1487627, 1127750, 721251, 1257657; dates 1956–1972, 1953–1971, 1953–1961, 1961–1964, 1965–1968, 1975–1981 | §3 resolution table",
+   "sentence": "NARA identifier 2839191; ; partly restricted."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Central Decimal File, classes for Asia's internal and national defense affairs and for Philippine international relations (the printed documents date from and ) — Record Group 59; no identifier in the reference files I used."
+  },
+  {
+   "text": "193936",
+   "values": [
+    "193936"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "NAIDs 40967285, 1257679, 2839191, 193936, 50827304, 1487627, 1127750, 721251, 1257657; dates 1956–1972, 1953–1971, 1953–1961, 1961–1964, 1965–1968, 1975–1981 | §3 resolution table",
+   "sentence": "NARA identifier 193936; ."
+  },
+  {
+   "text": "50827304",
+   "values": [
+    "50827304"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "NAIDs 40967285, 1257679, 2839191, 193936, 50827304, 1487627, 1127750, 721251, 1257657; dates 1956–1972, 1953–1971, 1953–1961, 1961–1964, 1965–1968, 1975–1981 | §3 resolution table",
+   "sentence": "NARA identifier 50827304; ."
+  },
+  {
+   "text": "about one in eleven",
+   "values": [
+    "1",
+    "11"
+   ],
+   "next": "same",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "\"about one in eleven\" carry a footnote pointer (part 2) | §3: 11 of 119",
+   "sentence": "Series the editors cited without printing (pointed-at channel; only about one in eleven of the same 119 documents carries such a pointer):"
+  },
+  {
+   "text": "119",
+   "values": [
+    "119"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"about three in five\" of 119 documents from the agency's own records (part 2) | §3 wide set: RG 306 74 of 119",
+   "sentence": "Series the editors cited without printing (pointed-at channel; only about one in eleven of the same 119 documents carries such a pointer):"
+  },
+  {
+   "text": "50809179",
+   "values": [
+    "50809179"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "NARA identifier 50809179; ."
+  },
+  {
+   "text": "81D113",
+   "values": [
+    "81d113"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record groups 306, 59; entries A1–42, UD WW 257, P–14; lots 62 D 430, 81D113; accession 72A5121 | §3 table and source notes in raw/ files",
+   "sentence": "Records of the Deputy Secretary of State (Warren Christopher), Lot 81D113, Entry P–14 — Record Group 59;"
+  },
+  {
+   "text": "14",
+   "values": [
+    "14"
+   ],
+   "next": "record",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"fifteen documents\" (Scope, part 1) | §4 quoted 15; coll.txt 14 + d190",
+   "sentence": "Records of the Deputy Secretary of State (Warren Christopher), Lot 81D113, Entry P–14 — Record Group 59;"
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "untraced",
+   "row": null,
+   "sentence": "Records of the Deputy Secretary of State (Warren Christopher), Lot 81D113, Entry P–14 — Record Group 59;"
+  },
+  {
+   "text": "1487627",
+   "values": [
+    "1487627"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "NAIDs 40967285, 1257679, 2839191, 193936, 50827304, 1487627, 1127750, 721251, 1257657; dates 1956–1972, 1953–1971, 1953–1961, 1961–1964, 1965–1968, 1975–1981 | §3 resolution table",
+   "sentence": "NARA identifier 1487627; ; partly restricted."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"553 volumes\" / \"the whole series\" (Scope) | §0 canary",
+   "sentence": "I searched every one of the 553 volumes for the phrase and found none, while in the same search a control phrase was found in every one of the 109 volumes I scoped and an impossible one in none, so I searched instead in the officials' own terms (\"information program,\" \"psychological strategy,\" the agency's name, \"image of the United States\")."
+  },
+  {
+   "text": "109",
+   "values": [
+    "109"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"109 volumes\", \"about 62,000 documents\" (Scope) | §1 volume set: 109; 61,852",
+   "sentence": "I searched every one of the 553 volumes for the phrase and found none, while in the same search a control phrase was found in every one of the 109 volumes I scoped and an impossible one in none, so I searched instead in the officials' own terms (\"information program,\" \"psychological strategy,\" the agency's name, \"image of the United States\")."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "none",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"109 volumes\", \"about 62,000 documents\" (Scope) | §1 volume set: 109; 61,852",
+   "sentence": "I searched every one of the 553 volumes for the phrase and found none, while in the same search a control phrase was found in every one of the 109 volumes I scoped and an impossible one in none, so I searched instead in the officials' own terms (\"information program,\" \"psychological strategy,\" the agency's name, \"image of the United States\")."
+  },
+  {
+   "text": "nearly two in three",
+   "values": [
+    "2",
+    "3"
+   ],
+   "next": "document",
+   "kind": "ratio",
+   "class": "weak",
+   "row": "\"nearly two in three\" of agency-name finds in those volumes (part 3) | §2: 580 of 913",
+   "sentence": "FRUS prints the agency's own survey results only as summaries in memoranda; nearly two in three of the documents naming the agency in my scope sit in the five Public Diplomacy volumes, which select for policy, not for evidence of reception."
+  },
+  {
+   "text": "five",
+   "values": [
+    "5"
+   ],
+   "next": "public",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"five Public Diplomacy volumes\" (part 3, How) | §1: six PD-titled volumes, one is WWI (frus1917-72PubDip); five cover 1961–1980",
+   "sentence": "FRUS prints the agency's own survey results only as summaries in memoranda; nearly two in three of the documents naming the agency in my scope sit in the five Public Diplomacy volumes, which select for policy, not for evidence of reception."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "weak",
+   "row": "\"about three in five\" of 119 documents from the agency's own records (part 2) | §3 wide set: RG 306 74 of 119",
+   "sentence": "The surveys themselves are on the shelf: the agency's Vietnamese Public Opinion Surveys (Record Group 306, NARA identifier 1127750) and its International Survey Research Reports (identifier 721251)."
+  },
+  {
+   "text": "1127750",
+   "values": [
+    "1127750"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "NAIDs 40967285, 1257679, 2839191, 193936, 50827304, 1487627, 1127750, 721251, 1257657; dates 1956–1972, 1953–1971, 1953–1961, 1961–1964, 1965–1968, 1975–1981 | §3 resolution table",
+   "sentence": "The surveys themselves are on the shelf: the agency's Vietnamese Public Opinion Surveys (Record Group 306, NARA identifier 1127750) and its International Survey Research Reports (identifier 721251)."
+  },
+  {
+   "text": "721251",
+   "values": [
+    "721251"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "NAIDs 40967285, 1257679, 2839191, 193936, 50827304, 1487627, 1127750, 721251, 1257657; dates 1956–1972, 1953–1971, 1953–1961, 1961–1964, 1965–1968, 1975–1981 | §3 resolution table",
+   "sentence": "The surveys themselves are on the shelf: the agency's Vietnamese Public Opinion Surveys (Record Group 306, NARA identifier 1127750) and its International Survey Research Reports (identifier 721251)."
+  },
+  {
+   "text": "109",
+   "values": [
+    "109"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"109 volumes\", \"about 62,000 documents\" (Scope) | §1 volume set: 109; 61,852",
+   "sentence": "Audience views in Asian languages, and anything after , are beyond these volumes. **Scope.** I searched the 109 volumes whose titles name East Asia, the Pacific or Public Diplomacy, about 62,000 documents once front matter and editorial notes are excluded."
+  },
+  {
+   "text": "62,000",
+   "values": [
+    "62000"
+   ],
+   "next": "document",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"109 volumes\", \"about 62,000 documents\" (Scope) | §1 volume set: 109; 61,852",
+   "sentence": "Audience views in Asian languages, and anything after , are beyond these volumes. **Scope.** I searched the 109 volumes whose titles name East Asia, the Pacific or Public Diplomacy, about 62,000 documents once front matter and editorial notes are excluded."
+  },
+  {
+   "text": "fifteen",
+   "values": [
+    "15"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"fifteen documents\" (Scope, part 1) | §4 quoted 15; coll.txt 14 + d190",
+   "sentence": "The collection holds the fifteen documents the argument rests on, dated from to . ## Decisions this needs from you **What counts as soft power.** If it means only the information and cultural programs, the Vietnam psychological-warfare documents fall away and the story becomes the information agency's alone; if it includes the example set by American policy, the Tokyo embassy's reports on the war become central."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "million",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"109 volumes\", \"about 62,000 documents\" (Scope) | §1 volume set: 109; 61,852",
+   "sentence": "Asked to stress Hanoi's dependence on Peking, the agency's director warned that this \"may only serve to increase the dimensions of the threat that looms from the North,\" and that \"with over one million Chinese residents in South Viet-Nam who will also hear these broadcasts, we must exercise caution\" ."
+  },
+  {
+   "text": "million",
+   "values": [
+    "1000000"
+   ],
+   "next": "chinese",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"one million Chinese residents\" (Finding 2, Q8) | Q8",
+   "sentence": "Asked to stress Hanoi's dependence on Peking, the agency's director warned that this \"may only serve to increase the dimensions of the threat that looms from the North,\" and that \"with over one million Chinese residents in South Viet-Nam who will also hear these broadcasts, we must exercise caution\" ."
+  },
+  {
+   "text": "52",
+   "values": [
+    "52"
+   ],
+   "next": "to",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"from 52 to 38 percent\" (Finding 3) | §5 note, d46 raw text",
+   "sentence": "In the ambassador in Tokyo reported that the share of Japanese naming the United States among their favourite countries had fallen from 52 to 38 percent."
+  },
+  {
+   "text": "38 percent",
+   "values": [
+    "38"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"from 52 to 38 percent\" (Finding 3) | §5 note, d46 raw text",
+   "sentence": "In the ambassador in Tokyo reported that the share of Japanese naming the United States among their favourite countries had fallen from 52 to 38 percent."
+  },
+  {
+   "text": "26 percent",
+   "values": [
+    "26"
+   ],
+   "next": "public",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "\"only 26 percent\" (Finding 3) | §5 note, d88 raw text",
+   "sentence": "By the Saigon surveys found only 26 percent of the public rating the United States a dependable ally, the \"lowest point in thirteen Saigon surveys\" . ### Image follows the alliance: modesty, low visibility and segmented audiences ( ) The agency's regional officers concluded that image depended less on American life than on bilateral ties."
+  },
+  {
+   "text": "thirteen",
+   "values": [
+    "13"
+   ],
+   "next": "saigon",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"thirteen Saigon surveys\" (Finding 3, quotation Q18) | Q18",
+   "sentence": "By the Saigon surveys found only 26 percent of the public rating the United States a dependable ally, the \"lowest point in thirteen Saigon surveys\" . ### Image follows the alliance: modesty, low visibility and segmented audiences ( ) The agency's regional officers concluded that image depended less on American life than on bilateral ties."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "caveat",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"109 volumes\", \"about 62,000 documents\" (Scope) | §1 volume set: 109; 61,852",
+   "sentence": "\"One caveat:"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "i",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"109 volumes\", \"about 62,000 documents\" (Scope) | §1 volume set: 109; 61,852",
+   "sentence": "Each search was run beside a phrase expected everywhere and an impossible one, and I read samples of what each search found to check that it found the words meant."
+  },
+  {
+   "text": "One",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"109 volumes\", \"about 62,000 documents\" (Scope) | §1 volume set: 109; 61,852",
+   "sentence": "One document was found by its similarity to another, by no word search, and read before it was cited."
+  },
+  {
+   "text": "fifteen",
+   "values": [
+    "15"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"fifteen documents\" (Scope, part 1) | §4 quoted 15; coll.txt 14 + d190",
+   "sentence": "I traced the documents' archival sources from their source notes and resolved series through the reference files shipped with the application, labelling the likely matches as such. ## Read next The collection \"American soft power in East Asia — run f2\" holds the fifteen documents under the findings above, with a note on each and the passages quoted here."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "verified",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"109 volumes\", \"about 62,000 documents\" (Scope) | §1 volume set: 109; 61,852",
+   "sentence": "I checked before finishing that every quotation in this overview and every excerpt in the collection is one verified word for word against its document, and that every document cited here is in the collection."
+  }
+ ]
+}

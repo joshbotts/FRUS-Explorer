@@ -1,0 +1,3 @@
+The house rules' figures in cal-r8's memo and overview: 1 occurrences. A number that only coincides with one of them (a document number, say) is not one of them.
+
+memo.md:64 1910-12-06 (the pointed-at channel starts) [1910-12-06]: …**M14. Pointed-at** (`external_citations`, many rows per document; no row before 1910-12-06; holds lot, library and decimal anchors only): 160 rows over 118 core documents. Repository/collection: Department of State, no collection, 138 rows / 102 docs; Carter Library, National Security Affairs 16 / 12; Nixon P…

@@ -1,0 +1,142 @@
+manifest type list first record keys: ['dateRange', 'editors', 'filename', 'publicationDate', 'sizeBytes', 'status', 'subseries', 'tags', 'title', 'volumeId']
+straight-double-quoted spans in overview: 52
+
+=== OVERVIEW SPANS ===
+OK  | frus1949v07p2/d386 | url at +175 | 1 segment(s) found in order | memo:['Q1'] 
+      "the basic attitude of the peoples of Asia towards the United States"
+OK  | frus1917-72PubDipv08/d31 | url at +157 | 1 segment(s) found in order | memo:['Q2'] 
+      "usually depended more on the state of bi-lateral relations"
+NONDOC  | Asian
+NONDOC  | Oriental
+NONDOC  | Soft power
+NONDOC  | soft
+NONDOC  | Department of State
+NONDOC  | soft power
+NONDOC  | South and Southeast Asia
+NONDOC  | cultural relations program
+OK  | frus1949v07p2/d386 | url at +281 | 1 segment(s) found in order | memo:['Q1'] 
+      "the basic attitude of the peoples of Asia towards the United States"
+OK  | frus1949v07p2/d386 | url at +225 | 1 segment(s) found in order | memo:['Q1'] 
+      "any temporary ebb or flow in the political tide"
+OK  | frus1917-72PubDipv08/d31 | url at +240 | 1 segment(s) found in order | memo:['Q2'] 
+      "usually depended more on the state of bi-lateral relations (security treaty, Okinawa, Korean military moderniz"
+OK  | frus1917-72PubDipv08/d31 | url at +134 | 1 segment(s) found in order | memo:['Q3'] 
+      "that US prestige is diminished when we are not able to solve our own problems at home"
+OK  | frus1969-76v38p2/d105 | url at +193 | 1 segment(s) found in order | memo:['Q4'] 
+      "The results in Indochina have heightened the ever-present doubts on Taiwan about USG intentions and capabiliti"
+OK  | frus1977-80v30/d79 | url at +122 | 1 segment(s) found in order | memo:['Q6'] 
+      "shoring up the confidence of East Asians in America’s long-term staying power"
+OK  | frus1977-80v30/d83 | url at +218 | 1 segment(s) found in order | memo:['Q27', 'Q33'] 
+      "effective"
+OK  | frus1977-80v30/d83 | url at +122 | 1 segment(s) found in order | memo:['Q5'] 
+      "deeply implanted and persistent feeling that new administration is “withdrawing”"
+OK  | frus1952-54v13p1/d116 | url at +274 | 1 segment(s) found in order | memo:['Q30'] 
+      "are not a primary target group"
+OK  | frus1952-54v13p1/d116 | url at +125 | 1 segment(s) found in order | memo:['Q7'] 
+      "Yet they are primary target for VM propaganda which follows Soviet line of giving masses saturation treatment"
+OK  | frus1952-54v12p2/d403 | url at +249 | 1 segment(s) found in order | memo:['Q31'] 
+      "with and through indigenous leadership"
+OK  | frus1952-54v12p2/d403 | url at +140 | 1 segment(s) found in order | memo:['Q10'] 
+      "suitable information programs for the general public, taking into account local cultural attitudes"
+OK  | frus1955-57v09/d190 | url at +234 | 1 segment(s) found in order | memo:['Q32'] 
+      "saturated"
+OK  | frus1917-72PubDipv07/d32 | url at +133 | 1 segment(s) found in order | memo:['Q9'] 
+      "I believe the war is going to be won or lost out in the hamlets, where the VC are"
+OK  | frus1917-72PubDipv07/d73 | url at +265 | 1 segment(s) found in order | memo:['Q8'] 
+      "In almost every country of the area, our programs are directed at elite groups"
+OK  | frus1917-72PubDipv07/d73 | url at +133 | 1 segment(s) found in order | memo:['Q28'] 
+      "the image of American strength, reliability and friendship"
+OK  | frus1950v06/d31 | url at +125 | 1 segment(s) found in order | memo:['Q25'] 
+      "There is already evidence, however, of increased usage of USIE news and feature material in the local press th"
+OK  | frus1952-54v13p1/d116 | printed citation at +1; manifest title match: Foreign Relations of the United States, 1952–1954, Indochina,
+                    Volume XIII, Part 1 | 1 segment(s) found in order | memo:['Q27'] 
+      "All factors recited must be viewed as effective though degree cannot be accurately measured"
+OK  | frus1955-57v09/d185 | url at +191 | 1 segment(s) found in order | memo:['Q11'] 
+      "8,000 column inches a month"
+OK  | frus1917-72PubDipv06/d127 | url at +133 | 1 segment(s) found in order | memo:['Q13'] 
+      "probably the most successful visit by an American, from a public image standpoint"
+OK  | frus1955-57v09/d207 | url at +158 | 1 segment(s) found in order | memo:['Q14'] 
+      "meet heavy odds"
+OK  | frus1917-72PubDipv08/d88 | url at +134 | 1 segment(s) found in order | memo:['Q12'] 
+      "Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon surveys"
+OK  | frus1961-63v01/d265 | url at +118 | 1 segment(s) found in order | memo:['Q15'] 
+      "the spectre of charges that “U.S. imperialists are waging germ warfare on Asians” haunts me"
+OK  | frus1961-63v02/d16 | url at +118 | 1 segment(s) found in order | memo:['Q18'] 
+      "the image of the GVN in the world press can be no better than the face the GVN presents to the public"
+OK  | frus1917-72PubDipv07/d48 | url at +226 | 1 segment(s) found in order | memo:['Q16'] 
+      "The American presence is a “foreign” presence that unavoidably generates resentments which are likely to grow "
+OK  | frus1917-72PubDipv07/d48 | url at +133 | 1 segment(s) found in order | memo:[] 
+      "the Vietnamese people’s struggle"
+OK  | frus1917-72PubDipv08/d58 | url at +184 | 1 segment(s) found in order | memo:['Q17'] 
+      "short-term in nature"
+BAD | frus1955-57v09/d190 | printed citation at +286; manifest title match: Foreign Relations of the United States, 1955–1957, Foreign
+                    Economic Policy; Foreign Information Program, Volume IX | segment not found: orientalmind | memo:['Q34'] MIS-CITATION (found in memo pair [('frus1952-54v12p2', 'd60')])
+      "Oriental mind"
+OK  | frus1955-57v09/d190 | printed citation at +1; manifest title match: Foreign Relations of the United States, 1955–1957, Foreign
+                    Economic Policy; Foreign Information Program, Volume IX | 1 segment(s) found in order | memo:['Q19'] 
+      "was forced to deal with mixed emotions regarding the use of atomic weapons against Asiatic peoples, and to cou"
+OK  | frus1947v07/d245 | url at +121 | 1 segment(s) found in order | memo:['Q21'] 
+      "the product of a stupid or wicked government rather than the will of the American people"
+OK  | frus1917-72PubDipv08/d149 | url at +201 | 1 segment(s) found in order | memo:['Q20'] 
+      "proud of the achievements of Peking"
+OK  | frus1917-72PubDipv08/d149 | url at +135 | 1 segment(s) found in order | memo:['Q20'] 
+      "reluctant to accept communist political and economic models"
+OK  | frus1917-72PubDipv08/d31 | 'same volume' at +54; volume from preceding url frus1917-72PubDipv08 | 1 segment(s) found in order | memo:['Q26'] 
+      "the Japanese image in Southeast Asia is not good"
+NONDOC  | Oriental
+NONDOC  | Asian
+OK  | frus1952-54v12p2/d60 | url at +226 | 1 segment(s) found in order | memo:['Q34'] 
+      "failure or inability explain our motives convincingly to oriental mind"
+OK  | frus1952-54v12p2/d60 | url at +139 | 1 segment(s) found in order | memo:['Q29'] 
+      "Bulk of Burmese people simply unable understand aid in terms of altruism"
+OK  | frus1917-72PubDipv08/d143 | url at +135 | 1 segment(s) found in order | memo:['Q23'] 
+      "While we do not want to appear as having gone “soft” on Chinese Communism neither do we want to appear anti-Ch"
+OK  | frus1917-72PubDipv08/d146 | 'same volume' at +2; volume from preceding url frus1917-72PubDipv08 | 1 segment(s) found in order | memo:['Q22'] 
+      "a temporary psychological asset into a long-range one"
+OK  | frus1977-80v30/d152 | url at +123 | 1 segment(s) found in order | memo:['Q24'] 
+      "we have an opportunity to enhance the communication process to a significant degree"
+NONDOC  | USI
+NONDOC  | American soft power in East Asia and the Pacific — run f9
+
+overview: document spans 40, verified 39, fabrications 0, mis-citations 1, non-document spans 12
+
+=== COLLECTION EXCERPTS ===
+OK  | frus1949v07p2/d386 | 1 segment(s) found in order | "More important than any temporary ebb or flow in the political tide is the basic attitude "
+OK  | frus1917-72PubDipv08/d31 | 1 segment(s) found in order | "PAOs emphasized that the image of the US usually depended more on the state of bi-lateral "
+OK  | frus1917-72PubDipv08/d31 | 1 segment(s) found in order | "But there was general agreement that US prestige is diminished when we are not able to sol"
+OK  | frus1917-72PubDipv08/d31 | 1 segment(s) found in order | "PAOs noted that the Japanese image in Southeast Asia is not good."
+OK  | frus1969-76v38p2/d105 | 1 segment(s) found in order | "The results in Indochina have heightened the ever-present doubts on Taiwan about USG inten"
+OK  | frus1977-80v30/d79 | 1 segment(s) found in order | "this Administration believes shoring up the confidence of East Asians in America’s long-te"
+OK  | frus1977-80v30/d83 | 1 segment(s) found in order | "public diplomacy of the new administration in this area has been effective"
+OK  | frus1977-80v30/d83 | 1 segment(s) found in order | "We still face deeply implanted and persistent feeling that new administration is “withdraw"
+OK  | frus1952-54v13p1/d116 | 1 segment(s) found in order | "are not a primary target group"
+OK  | frus1952-54v13p1/d116 | 1 segment(s) found in order | "Yet they are primary target for VM propaganda which follows Soviet line of giving masses s"
+OK  | frus1952-54v12p2/d403 | 1 segment(s) found in order | "with and through indigenous leadership"
+OK  | frus1952-54v12p2/d403 | 1 segment(s) found in order | "suitable information programs for the general public, taking into account local cultural a"
+OK  | frus1955-57v09/d190 | 1 segment(s) found in order | "saturated"
+OK  | frus1917-72PubDipv07/d32 | 1 segment(s) found in order | "Granted, there is undeniable value in programs aimed at intellectuals, urban leaders and s"
+OK  | frus1917-72PubDipv07/d73 | 1 segment(s) found in order | "In almost every country of the area, our programs are directed at elite groups: government"
+OK  | frus1917-72PubDipv07/d73 | 1 segment(s) found in order | "the image of American strength, reliability and friendship is basic to our objectives"
+OK  | frus1950v06/d31 | 1 segment(s) found in order | "There is already evidence, however, of increased usage of USIE news and feature material i"
+OK  | frus1955-57v09/d185 | 1 segment(s) found in order | "Major Japanese newspapers continued to reprint from a translated wireless bulletin prepare"
+OK  | frus1955-57v09/d207 | 1 segment(s) found in order | "Lack of awareness in top Indonesian Government circles of the dangers of Communism and apa"
+OK  | frus1917-72PubDipv06/d127 | 1 segment(s) found in order | "Astronaut John Glenn and family left Japan last night after what was probably the most suc"
+OK  | frus1917-72PubDipv08/d88 | 1 segment(s) found in order | "Rating of the U.S. as a dependable ally of SVN reached the lowest point in thirteen Saigon"
+OK  | frus1952-54v13p1/d116 | 1 segment(s) found in order | "All factors recited must be viewed as effective though degree cannot be accurately measure"
+OK  | frus1961-63v01/d265 | 1 segment(s) found in order | "But the spectre of charges that “U.S. imperialists are waging germ warfare on Asians” haun"
+OK  | frus1961-63v02/d16 | 1 segment(s) found in order | "the image of the GVN in the world press can be no better than the face the GVN presents to"
+OK  | frus1917-72PubDipv07/d48 | 1 segment(s) found in order | "The American presence is a “foreign” presence that unavoidably generates resentments which"
+OK  | frus1917-72PubDipv08/d58 | 1 segment(s) found in order | "USIA has, from the beginning, considered its psychological operations (PSYOP) support prog"
+OK  | frus1947v07/d245 | 1 segment(s) found in order | "But American policy toward China, which they conceive to be the product of a stupid or wic"
+OK  | frus1952-54v12p2/d60 | 1 segment(s) found in order | "failure or inability explain our motives convincingly to oriental mind"
+OK  | frus1952-54v12p2/d60 | 1 segment(s) found in order | "Bulk of Burmese people simply unable understand aid in terms of altruism."
+OK  | frus1917-72PubDipv08/d149 | 1 segment(s) found in order | "Although the overseas Chinese appear proud of the achievements of Peking, they are relucta"
+OK  | frus1955-57v09/d190 | 1 segment(s) found in order | "In the Far East USIA was forced to deal with mixed emotions regarding the use of atomic we"
+OK  | frus1917-72PubDipv08/d143 | 1 segment(s) found in order | "While we do not want to appear as having gone “soft” on Chinese Communism neither do we wa"
+OK  | frus1917-72PubDipv08/d146 | 1 segment(s) found in order | "The President’s projected visit to Peking presents us with opportunities to build what is "
+OK  | frus1977-80v30/d152 | 1 segment(s) found in order | "But the Chinese appear to be determined to go down this road, and until the line changes—w"
+
+excerpts 34, verified 34, failed 0
+
+=== occurrence counts of excerpts in body_text (raw) ===
+done

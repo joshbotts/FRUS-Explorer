@@ -1,0 +1,11 @@
+documents: 38059 (38,059 claimed)
+families: {'USIA': 375, 'USIS': 402, 'VOA': 179, 'PD': 2, 'SP': 0, 'HM': 15} (claimed USIA 375, USIS 402, VOA 179, public diplomacy 2, soft power 0, hearts and minds 15)
+CORE: 864 (864 claimed)
+positive control volumes with >=1 'Department of State' doc: 77 of 77; docs: 14998 (14,998 claimed)
+  1940s: 196 of 13688 = 1 in 69.8; top volume ('frus1949v08', 88)
+  1950s: 293 of 12972 = 1 in 44.3; top volume ('frus1955-57v03mSupp', 30)
+  1960s: 330 of 7884 = 1 in 23.9; top volume ('frus1961-63v03', 41)
+  1970s: 45 of 3370 = 1 in 74.9; top volume ('frus1969-76v08', 12)
+  1980s: 0 of 106 = -; top volume None
+  undated: 0 of 39 = -; top volume None
+(claimed: 1940s 196 of 13,688; 1950s 293 of 12,972; 1960s 330 of 7,884; 1970s 45 of 3,370; 1980s 0 of 106)

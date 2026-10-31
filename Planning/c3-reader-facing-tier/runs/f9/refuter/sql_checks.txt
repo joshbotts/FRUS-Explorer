@@ -1,0 +1,76 @@
+R volumes 76 I volumes 8 R+I 84 distinct 84
+I = ['frus1917-72PubDipv06', 'frus1917-72PubDipv07', 'frus1917-72PubDipv08', 'frus1955-57v09', 'frus1961-63v25', 'frus1969-76v38p2', 'frus1977-80v30', 'frus1950-55Intel']
+
+[M1] coverage: (553, 321749, 1103, 8481)
+[M3] R non-apparatus: 37199
+[M3] I non-apparatus: 1816
+[M3] R+I non-apparatus: 39015
+[M3] date span R+I: ('1943-08-11', '1981-01-14')
+[M3] decade dist R+I: [(None, 41), ('1940s', 13688), ('1950s', 12545), ('1960s', 8725), ('1970s', 3894), ('1980s', 122)]
+Ed2 volumes in scope: []
+
+[M5] union family R: (1288, 76) I: (721, 8) R+I: (2009, 84)
+  POS Department of State: R (14315, 76) I (786, 8)
+  NEG: R (0, 0) I (0, 0)
+  soft power: R (0, 0) I (0, 0)
+  propaganda: R (2744, 76) I (228, 8)
+  psycholog: R (2229, 76) I (228, 8)
+  usia OR usi: R (849, 69) I (589, 8)
+  information program: R (140, 43) I (97, 8)
+  image of the United States: R (4, 3) I (8, 5)
+  prestig: R (1717, 76) I (80, 8)
+  public diplomacy: R (2, 2) I (78, 5)
+  cultural exchange: R (95, 31) I (102, 8)
+  Voice of America: R (75, 31) I (153, 8)
+  psychological warfare: R (260, 58) I (58, 6)
+  hearts and minds: R (20, 17) I (0, 0)
+  asian mind family: R (30, 22) I (0, 0)
+  POS lowest volumes: [('frus1969-76v08', 10), ('frus1969-76ve13', 11), ('frus1969-76v09', 12)] volumes with POS>0: (84,)
+
+[M9] gap queries over R+I:
+  POS: (15101, 84)
+  NEG: (0, 0)
+  soft power: (0, 0)
+  soft: (349, 76)
+  poll/survey+usia: (157, 36)
+  +japan: (38, 17)
+  usia+aus/nz: (69, 36)
+  usia+pacific: (6, 5)
+  fulbright: (381, 59)
+  fulbright+eval: (229, 50)
+  asian mind: (30, 22)
+  face: (494, 77)
+
+[M4] header queries:
+  I-header hits: 42 R-header hits: 99 union: 141 overlap: 0
+  candidate_set.txt: 141 equal to re-run: True
+
+[M11] came-from of the 141 by record group:
+  without row: 0
+   63 ('Department of State', '59')
+   40 ('National Archives', '306')
+   9 ('Johnson Library', None)
+   7 ('Kennedy Library', None)
+   7 ('National Archives', '84')
+   3 ('National Archives', '59')
+   2 ('Nixon Presidential Materials', None)
+   2 (None, None)
+   2 ('Eisenhower Library', None)
+   1 ('National Archives', '34')
+   1 ('Central Intelligence Agency', None)
+   1 ('Library of Congress', None)
+   1 ('National Archives', '330')
+   1 ('National Archives', '305')
+   1 ('Carter Library', None)
+  RG 59 total 66 (0.468), RG 306 total 40 (0.284)
+  citation_era: [('structured', 73), ('lot_file', 44), ('decimal', 14), ('subject_numeric', 5), ('cfpf', 3), ('named_series', 2)]
+
+[M8] ranked predicate count over R+I:
+   (1284, 84)
+
+[REACH] the 25 collection pairs against every logged MATCH predicate (over its logged volume scope):
+  scan_families.json type: dict keys/len: ['tot', 'res', 'F', 'SQL']
+Traceback (most recent call last):
+  File "/Users/jbotts/frus-analysis/c3f/runs/f9/refuter/sql_checks.py", line 106, in <module>
+    n = c.execute(f"SELECT COUNT(*) {J} WHERE frus_documents MATCH ? AND {NA} AND d.volume_id IN ({vols}) AND d.volume_id=? AND d.document_id=?", (m, v, d)).fetchone()[0]
+sqlite3.OperationalError: fts5: syntax error near "."

@@ -1,0 +1,44 @@
+ANCHOR frus1969-76v38p2/d105 ('105. Memorandum From the Assistant Director for East Asia and the Pacific, United Sta', 'Washington, May 9, 1975.')
+  ham  78 cos_raw 0.922 cal 0.870 frus1969-76v01/d54 | 54. Paper Prepared in the National Security Council Staff | Washington, undated.
+  ham  84 cos_raw 0.918 cal 0.863 frus1969-76v38p1/d54 | 54. Memorandum From the Counselor of the Department of State (Sonnenfeldt) and the Di | Washington, April 4, 1975.
+  ham  96 cos_raw 0.917 cal 0.862 frus1917-72PubDipv08/d31 | 31. Letter From the Assistant Director, East Asia and the Pacific, United States Info | Washington, August 5, 1969
+  ham  82 cos_raw 0.915 cal 0.858 frus1977-80v22/d104 | 104. Telegram From the Consulate in Hong Kong to the Department of State | Hong Kong, February 7, 1977, 0
+  ham  90 cos_raw 0.914 cal 0.856 frus1977-80v01/d88 | 88. Address by the Assistant Secretary of State for East Asian and Pacific Affairs (H | Honolulu, Hawaii, June 16, 197
+  ham  95 cos_raw 0.913 cal 0.855 frus1981-88v01/d229 | 229. Address by the Under Secretary of State for Political Affairs (Armacost) | New York, January 29, 1985
+  ham  80 cos_raw 0.913 cal 0.855 frus1969-76ve12/d16 | 16. Memorandum From Secretary of State Kissinger to President Ford, Washington, June  | Washington, June 13, 1975
+  ham  89 cos_raw 0.912 cal 0.853 frus1977-80v22/d107 | 107. Memorandum From Michael Armacost of the National Security Council Staff to the P | Washington, June 8, 1977
+  ham  76 cos_raw 0.910 cal 0.851 frus1969-76ve12/d10 | 10. Memorandum From W.R. Smyser of the National Security Council Staff to Secretary o | Washington, July 18, 1974
+  ham  86 cos_raw 0.904 cal 0.840 frus1951v06p1/d12 | Report to the National Security Council by the Executive Secretary (Lay) | Washington, May 17, 1951.
+ANCHOR frus1917-72PubDipv08/d31 ('31. Letter From the Assistant Director, East Asia and the Pacific, United States Info', 'Washington, August 5, 1969')
+  ham  81 cos_raw 0.920 cal 0.867 frus1917-72PubDipv07/d106 | 106. Minutes of a Meeting of the President’s General Advisory Committee on Foreign As | Washington, September 12, 1966
+  ham  96 cos_raw 0.917 cal 0.862 frus1969-76v38p2/d105 | 105. Memorandum From the Assistant Director for East Asia and the Pacific, United Sta | Washington, May 9, 1975.
+  ham  90 cos_raw 0.915 cal 0.858 frus1917-72PubDipv08/d99 | 99. Paper Prepared in the United States Information Agency | Washington, July 30, 1970
+  ham 100 cos_raw 0.908 cal 0.847 frus1955-57v09/d190 | 190. Report Prepared by the National Security Council | Washington, August 31, 1955.
+  ham  94 cos_raw 0.908 cal 0.847 frus1951v06p2/d105 | Memorandum by the Acting Assistant Secretary of State for Near Eastern, South Asian,  | [Washington,] March 20, 1951.
+  ham  88 cos_raw 0.906 cal 0.843 frus1952-54v13p1/d116 | The Ambassador at Saigon (Heath) to the Department of State | Saigon, September 20, 1952—3 p
+  ham 104 cos_raw 0.905 cal 0.842 frus1955-57v09/d185 | 185. Report Prepared by the National Security Council | Washington, March 2, 1955.
+  ham 102 cos_raw 0.905 cal 0.841 frus1961-63v25/d156 | 156. Memorandum From the Office of Public Information of the U.S. Information Agency  | Washington, October 28, 1963.
+  ham  99 cos_raw 0.905 cal 0.841 frus1917-72PubDipv06/d150 | 150. Memorandum From the Office of Public Information, United States Information Agen | Washington, October 28, 1963.
+  ham  95 cos_raw 0.904 cal 0.841 frus1917-72PubDipv07/d69 | 69. Memorandum From the Special Assistant to the Director of the United States Inform | Washington, January 7, 1966
+ANCHOR frus1952-54v12p2/d251 ('No. 251 Memorandum by the Secretary of State and the Acting Secretary of Defense (And', '[Washington,] August 27, 1953.')
+  ham  65 cos_raw 0.964 cal 0.939 frus1952-54v12p2/d255 | No. 255 Memorandum by the Executive Secretary (Lay) to the National Security Council | [Washington,] November 20, 195
+  ham  72 cos_raw 0.957 cal 0.928 frus1958-60v17/d293 | 293. National Security Council Report | Washington, December 19, 1960.
+  ham  81 cos_raw 0.954 cal 0.924 frus1958-60v17/d177 | 177. National Security Council Report | Washington, February 3, 1959.
+  ham  77 cos_raw 0.950 cal 0.916 frus1955-57v22/d95 | 95. National Security Council Report | Washington, May 3, 1955.
+  ham  83 cos_raw 0.936 cal 0.893 frus1950v06/d647 | Policy Statement on Indonesia. Prepared in the Department of State | Washington, July 27, 1950.
+  ham  78 cos_raw 0.934 cal 0.891 frus1964-68v26/d215 | 215. Memorandum From Secretary of State Rusk to President Johnson | Washington, August 1, 1966.
+  ham  78 cos_raw 0.930 cal 0.884 frus1964-68v26/d121 | 121. Report From Ambassador Ellsworth Bunker to President Johnson | Washington, undated.
+  ham  75 cos_raw 0.930 cal 0.883 frus1951v06p1/d463 | The Acting Assistant Secretary of State for Far Eastern Affairs (Allison) to Mr. Robe | Washington, December 31, 1951.
+  ham  78 cos_raw 0.929 cal 0.882 frus1961-63v23/d169 | 169. Memorandum From Robert H. Johnson of the National Security Council Staff to the  | Washington, April 21, 1961.
+  ham  81 cos_raw 0.927 cal 0.879 frus1961-63v23/d155 | 155. Memorandum From the Deputy Director for Plans, Central Intelligence Agency (Biss | Washington, March 27, 1961.
+ANCHOR frus1955-57v22/d447 ('447. Memorandum From the Assistant Secretary of State for Far Eastern Affairs (Robert', 'Washington, December 5, 1955.')
+  ham 106 cos_raw 0.882 cal 0.803 frus1955-57v22/d448 | 448. Staff Study Prepared by an Interdepartmental Committee for the Operations Coordi | Washington, December 14, 1955.
+  ham 111 cos_raw 0.875 cal 0.792 frus1955-57v22/d463 | 463. Operations Coordinating Board Outline Plan | Washington, February 27, 1957.
+  ham 112 cos_raw 0.874 cal 0.791 frus1955-57v22/d459 | 459. Memorandum From the Director of the Office of Southeast Asian Affairs (Young) to | Washington, May 23, 1956.
+  ham 108 cos_raw 0.874 cal 0.790 frus1955-57v22/d453 | 453. Memorandum of a Conversation, Department of State, Washington, February 14, 1956 | Washington, February 14, 1956
+  ham 113 cos_raw 0.873 cal 0.789 frus1955-57v22/d454 | 454. Memorandum From the Director of the Office of Philippine and Southeast Asian Aff | Washington, February 17, 1956.
+  ham 110 cos_raw 0.872 cal 0.787 frus1955-57v22/d446 | 446. Memorandum From the Assistant Secretary of State for Far Eastern Affairs (Robert | Washington, November 9, 1955.
+  ham 111 cos_raw 0.871 cal 0.786 frus1955-57v22/d444 | 444. Memorandum From the Director of the Office of Philippine and Southeast Asian Aff | Washington, June 30, 1955.
+  ham 107 cos_raw 0.868 cal 0.780 frus1955-57v22/d84 | 84. Memorandum From the Assistant Secretary of State for Far Eastern Affairs (Roberts | Washington, January 25, 1955.
+  ham 114 cos_raw 0.864 cal 0.774 frus1955-57v21/d65 | 65. Letter From the Chairman of the Joint Chiefs of Staff (Radford) to the Australian | Washington, July 28, 1955.
+  ham 112 cos_raw 0.864 cal 0.773 frus1955-57v22/d458 | 458. Memorandum of a Conversation, Department of State, Washington, April 4, 1956 | Washington, April 4, 1956

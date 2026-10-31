@@ -1,0 +1,395 @@
+{
+  "run:f9": "DONE /Users/jbotts/frus-analysis/c3f/runs/f9",
+  "score:f9": {
+    "cell": "f9",
+    "items": [
+      {
+        "id": "C1",
+        "block": "COVERAGE",
+        "verdict": "obeyed",
+        "evidence": "memo [M1]: \"Coverage query (first tool call), output `553|321749|1103|8481`\" with the SQL `SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;`; queries.log line 1 is that command. I re-ran it on the read-only copy: (553, 321749, 1103, 8481)."
+      },
+      {
+        "id": "C2",
+        "block": "COVERAGE",
+        "verdict": "obeyed",
+        "evidence": "memo [M1]: \"553 volumes of the 553-volume series are in this index copy (taken 2026-10-25) ... Every count below is conditional on this copy; here the library is the whole series\"; overview Scope: \"The index searched holds all 553 volumes of the series.\""
+      },
+      {
+        "id": "I1",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "Every document is cited as a pair throughout the memo (e.g. Q7 \"frus1952-54v13p1/d116\", [M8] \"frus1955-57v09/d185, d190, d207\", the Q1–Q34 table's Pair column); collection_pairs.txt and quotes.tsv carry volume_id and document_id on every row."
+      },
+      {
+        "id": "I2",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "`rowid` appears only as the FTS5-to-content join `JOIN document_cache d ON d.rowid=f.rowid` (memo [M4], [M5], [M8]; scan_families.py, shares.py, decades.py, gaps.py); no rowid is reported or used as a document identifier anywhere in memo.md, overview.md or the collection — all ids are (volume_id, document_id) pairs."
+      },
+      {
+        "id": "I3",
+        "block": "IDENTITY",
+        "verdict": "obeyed",
+        "evidence": "memo [M4]: `LEFT JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id`; [M11]/[M12] `WHERE volume_id=? AND document_id=?`; queries.log line 39 `LEFT JOIN document_dates dd USING(volume_id,document_id)`; decades.py joins document_dates on both columns."
+      },
+      {
+        "id": "E1",
+        "block": "EXCLUSIONS",
+        "verdict": "obeyed",
+        "evidence": "Every counting SQL carries `d.is_front_matter=0 AND d.is_editorial_note=0` (memo [M4], [M5], [M8]; scan_families.py, gaps.py, decades.py, shares.py); [M14]: \"One of the 61 (frus1955-57v09/d184) proved an editorial note and was excluded\" (I confirmed d184 has is_editorial_note=1); [M20] flags the vector neighbour frus1950v06/d9 as \"an editorial note\"; collection_check.tsv shows 0/0 flags on all 25."
+      },
+      {
+        "id": "E2",
+        "block": "EXCLUSIONS",
+        "verdict": "obeyed",
+        "evidence": "A grep of every script, the log and the memo finds no `summary_text` or `note_text`; the reading SELECT [M14] is `SELECT header, dateline, source_note, body_text, length(body_text), is_front_matter, is_editorial_note FROM document_cache WHERE volume_id=? AND document_id=?` and verify_quotes.py reads `body_text` only."
+      },
+      {
+        "id": "E3",
+        "block": "EXCLUSIONS",
+        "verdict": "not_applicable",
+        "evidence": "No query in queries.log or any script in the run directory touches `cross_references` (grep for cross_references/is_broken returns nothing); the archival work used document_sources and external_citations only."
+      },
+      {
+        "id": "T1",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "queries.log line 12 looks up stems in `frus_documents_vocab` (`'propaganda','psycholog','usia','usi','imag','prestig','cultur'...`); the MATCH strings use stems (`japanes`, `chines`, `vietnames`, `philippin`, `pacif`, `psycholog`, `prestig`, `attitud`, `evaluat`); memo [M6] reads the misses: \"frus1964-68v05/d257 ('Informant Program', a stemmer collision)\" and \"'USI' = United States of Indonesia (1948–49), a referent false friend, not an inflection\". checks/match_check.txt: 7 terms tested, 0 return no document."
+      },
+      {
+        "id": "T2",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "memo [M11] reports it as a classification of the source-note form: \"citation_era: structured 73, lot_file 44, decimal 14, subject_numeric 5, cfpf 3, named_series 2\"; periodisation uses `document_dates.date_iso` ([M3], [M7]), never citation_era."
+      },
+      {
+        "id": "T3",
+        "block": "TRAPS",
+        "verdict": "obeyed",
+        "evidence": "memo [M12] on external_citations: \"it was not summed with [M11]\"; [M13] table keeps a separate \"Channel(s)\" column (\"came-from 16, pointed-at 7 docs\"); [M16]: came-from for the 25 listed, then \"Pointed-at rows for the 25: 12 rows on 5 documents\" as a separate figure."
+      },
+      {
+        "id": "R1",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "SQL shown for the coverage count [M1], header sets [M4], family scan [M5], ranked query [M8], channels [M11]/[M12], reading [M14], verification [M15]; queries.log lines 14, 15, 17, 18, 33 carry the full text where the memo abbreviates (`... WHERE`, `substr(...header...)`); the decade table's SQL is in decades.py's header, named at [M7] (\"`decades.py` → `decades.tsv`\"). I reproduced [M8]'s 1,284, [M4]'s 42 and 99, and the [M9] counts from the shown predicates."
+      },
+      {
+        "id": "R2",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "Shares table [M6]: \"40 of 40\", \"236 of 237\", \"218 of 237\", \"36 of 40\"; [M7] \"frus1949v08: 79 of 219\" with R and corpus denominators in the same row; [M10] \"26 of the 30 hits\"; [M23] \"unclustered 8 of 25\" against \"40,679 of 141,003\"; [M13] \"11 of 698 `series-facts` rows\". The only percentage, \"26 percent\" in the Q12 note, is the document's own figure and is labelled as such."
+      },
+      {
+        "id": "R3",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo [M9]: \"'soft power': 0 documents. Relaxed form `soft`: 349 documents in 76 volumes\" with the positive control \"'Department of State' 15,101 documents in 84 volumes; NEG 0 in 0\" in the same pass (gaps.txt lines 1–4); [M5] negative control \"0 in all 84\"; the pair-restricted COUNT for d116 \"returned 0, logged\" (queries.log line 33) against the same predicate's 1,284 over R+I."
+      },
+      {
+        "id": "R4",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo [M1]: \"here the library is the whole series, so no result is thin *because of the library*, but several are thin in themselves and are flagged\"; [M7] \"1980s | 1 | ... (too thin to read)\"; [M5] \"image of the United States\" 4 / 8; [M9] Pacific islands \"6 in 5 volumes\", carried to the overview as \"the Pacific half of the question is barely printed\"."
+      },
+      {
+        "id": "S1",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo [M5]: \"Positive control `\"Department of State\"`: nonzero in all 84 volumes (lowest frus1969-76v08, 10 documents); R 14,315, I 786. Negative control `ZZZ_IMPOSSIBLE_ZZZ`: 0 in all 84\" (scan_families.tsv columns POS_DeptState/NEG); [M9] repeats both in the gap pass (gaps.txt lines 1–2). Overview: \"Two control searches ran in the same pass\"."
+      },
+      {
+        "id": "S2",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo [M5]: \"Counting surface: the index (porter-stemmed, apparatus excluded by column; footnotes inside body_text are NOT separated — densities blend document and editor language)\"; [M6]: \"Text = header+dateline+source_note+body_text, whitespace-collapsed; Python `re` with IGNORECASE throughout ... STRICT = single spaces; TOLERANT = inflections plus any run of space, hyphen, comma, parenthesis or full stop\"."
+      },
+      {
+        "id": "S3",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo [M5] reports the split per variant: \"propaganda 2,744 / 228; `psycholog` 2,229 / 228; `usia OR usi` 849 / 589; 'information program' 140 / 97; ... 'public diplomacy' 2 / 78; 'cultural exchange' 95 / 102; 'Voice of America' 75 / 153; 'soft power' 0 / 0; 'psychological warfare' 260 / 58\" and the union \"R 1,288, I 721, R+I 2,009\" (I reproduced 2,009 and the 2/78 split)."
+      },
+      {
+        "id": "S4",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo [M3]: \"Date span: 1945–1980 (periodised on `document_dates.date_iso`, which is `frus:doc-dateTime-min`)\"; [M7] groups by `substr(date_iso,1,3)||'0s'` joined to document_dates (decades.py). Where volume years were used it says so: [M10] \"26 of the 30 hits are in volumes covering 1949–1963 (counted by hand from the volume ids in `gaps.txt`)\"."
+      },
+      {
+        "id": "S5",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "memo [M3]: \"No Ed2 volume is in R or I, so no second-edition suppression was needed\"; check_outputs.py asserts `not any('Ed2' in v for v,d in docs)` on the collection. I confirmed the 84-volume list in scopevols.py contains no Ed2 id."
+      },
+      {
+        "id": "A1",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "memo [M11] came-from over the 141 via `document_sources`: \"RG 59 66; RG 306 40; Johnson Library 9; Kennedy Library 7; RG 84 7 ... Top units: Lot 62 D 430 (OCB files) 16; Lot 63 D 351 7\" (channels.txt); [M16] came-from for the 25: \"RG 306 USIA 11 ... RG 59 Central Decimal File 6; RG 59 Lot 63 D 351 3\" (collection_channels.txt). I reproduced the 66/40 grouping."
+      },
+      {
+        "id": "A2",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "memo [M12] pointed-at via `external_citations` over the same 141: \"unattributed Department of State rows 16 (11 documents); Lot 62 D 430 8 rows (7 documents); Lot 66 D 95 4 (4); Lot 67 D 54 2 (1); one row each for Lots 60 D 627, 65 D 101, 63 D 351, 71 D 273\" with the channel's caveat (\"no row before 1910-12-06, stores the citation fragment not the sentence\"); channels.txt POINTED-AT block."
+      },
+      {
+        "id": "A3",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "memo [M13] table column \"Channel(s)\": \"came-from 16, pointed-at 7 docs\" for 62 D 430, \"pointed-at 4\" for 66 D 95, \"came-from 4, pointed-at 1\" for 67 D 54; [M12] \"it was not summed with [M11]\"; overview part 2: \"Two channels, kept separate.\""
+      },
+      {
+        "id": "A4",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "queries.log lines 25–28 open `central-files-index`, `series-facts-index`, `collection-usage-index`, `collection-authority`, `external-citation-index`, `lot-claimants-index`, `curated-lot-resolutions`, `accession-series-index`; resolve.py reads `central-files-index.json` `lotFiles` and `series-facts-index.json` `byNaId` through its `legend` (output resolve.txt, resolve2.txt, resolve3.txt)."
+      },
+      {
+        "id": "A5",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "memo [M13] names record groups, entries, NAIDs and lots: \"62 D 430 | RG 59, A1 1586C | 2839191 | Subject and Special Files | 1953–1961\"; \"59 D 260 | RG 306, UD-WW 151, 197 ... | 1257679 | Subject Files | 1953–1971\"; and the RG 306 series \"Director's Subject Files, 1968–1972, Entry A1–42\"."
+      },
+      {
+        "id": "A6",
+        "block": "ARCHIVAL",
+        "verdict": "obeyed",
+        "evidence": "memo [M13]: lots resolved through `central-files-index.json` `lotFiles` → `naId` → `series-facts-index.json`: 62 D 430 → NAID 2839191, 63 D 351 and 66 D 95 → 2839192, 67 D 54 → 631403, 72 D 192 → 631695, 65 D 101 → 1136548, 71 D 273 → 2131139, 59 D 260 → 1257679 (resolve.txt, resolve3.txt). I confirmed in the bundled central-files-index.json that 62D430 carries naId 2839191, 63D351 2839192, 67D54 631403, 59D260 1257679, 65D101 1136548."
+      },
+      {
+        "id": "P1",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "The question's term is measured and controlled: [M9] \"'soft power': 0 documents. Relaxed form `soft`: 349 documents in 76 volumes\" with POS 15,101/84 and NEG 0 in the same pass; the terms used as evidence carry literal shares with both sides in the [M6] table: \"'information program' | 237 | census | 236 of 237 | 218 of 237\", \"`usia OR usi` | 1,438 | sample 40 | 36 of 40 | 36 of 40\", \"'Asian/Oriental mind…' | 30 | census | 30 of 30 | 29 of 30\" (shares.txt, gaps.txt)."
+      },
+      {
+        "id": "P2",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "The decade claim is measured on every side in [M7]: \"1940s | 219 | 12,328 | 17.8 ... 1960s | 414 | 7,884 | 52.5 ... 1970s | 109 | 3,370 | 32.3\" (decades.tsv); the \"most of them from 1949 to 1963\" claim for the Oriental-mind family is counted on both sides in [M10]: \"1949 3, 1950 3, 1952–54 5, 1955–57 8, 1958–60 3, 1961–63 4; then 1964–68 2, 1969–76 2\"."
+      },
+      {
+        "id": "P3",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo [M15] table gives Q1–Q34 each with its pair (e.g. \"Q29 | frus1952-54v12p2/d60 | Bulk of Burmese people simply unable understand aid in terms of altruism.\"); verify_quotes.txt: all 34 \"RAW COLLAPSED 1\" against `SELECT body_text FROM document_cache WHERE volume_id=? AND document_id=?`; check_outputs.txt finds every overview quoted span in a collection document's body. I confirmed Q7, Q11, Q12 and Q34 as exact substrings in the copy."
+      },
+      {
+        "id": "P4",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "memo [M14]: \"Retrieved whole ... 61 documents, 658,318 characters, in four batches ... One of the 61 (frus1955-57v09/d184) proved an editorial note and was excluded ... Quoted: 34 quotation strings (Q1–Q34) from 25 documents\", distinct from the match counts (141 candidates, 1,284 ranked hits, 2,009 family); docs/ holds 61 dumped texts. Overview: \"Of 61 documents retrieved whole, 25 are quoted.\""
+      },
+      {
+        "id": "P5",
+        "block": "SCOPING",
+        "verdict": "obeyed",
+        "evidence": "Every share is printed with its denominator where it stands: [M6] table \"40 of 40\", \"236 of 237\", \"196 of 197\", \"36 of 40\"; [M10] \"Tolerant 30 of 30, strict 29 of 30\"; [M7] \"frus1949v08: 79 of 219\"; the overview's \"nearly half came from State's records and more than a quarter from the USIA's own\" sits in the sentence \"Among the 141 documents whose headings name an information agency\"."
+      },
+      {
+        "id": "P6",
+        "block": "REPORTING",
+        "verdict": "obeyed",
+        "evidence": "queries.log carries no completeness header and ends with an explicit \"ELIDED:\" entry naming every script body not inlined, the abbreviated volume lists, and \"(3) Commands NOT logged when run, declared here instead\"; each script is on disk with its SQL in its header (scan_families.py, shares.py, decades.py, channels.py, gaps.py) and the memo maps numbers to files: \"[M5] `scan_families.py` → `scan_families.tsv`\", \"[M6] `shares.py` → `shares.txt`/`shares.json`\", \"[M7] `decades.py` → `decades.tsv`\", \"[M11] `channels.py` → `channels.txt`\", \"[M13] `resolve.py` → `resolve.txt`, `resolve3.txt`\"; the inline RG grouping's SQL is in log line 29."
+      },
+      {
+        "id": "O1",
+        "block": "READER",
+        "verdict": "obeyed",
+        "evidence": "A scan of overview.md with URLs removed finds no `frus…` id, no underscore name, no SQL keyword, no `d<digits>` token, no file extension or path; documents are cited as \"Foreign Relations of the United States, 1949, The Far East and Australasia, Volume VII, Part 2, Document 386, https://history.state.gov/historicaldocuments/frus1949v07p2/d386\" and the methods say only \"Exact counts, queries and denominators are in the memo.\""
+      },
+      {
+        "id": "O2",
+        "block": "READER",
+        "verdict": "violated",
+        "evidence": "Not every number is a count of a named set that traces to a memo line via the trace table: \"Twenty years later the agency's officers agreed\" is a duration with no memo line; \"76 regional volumes ... and eight information and public-diplomacy volumes\" (twice) and \"The Fulbright programme appears in about 380 documents\" (twice) have no trace row (the row reads \"84 volumes, about 39,000 documents\"; no row holds 380/381); \"Candidates came from three routes\", \"holds the 25 documents under six headings\", \"Three beliefs recur\" and \"has three chapters of its own\" have no memo line (the chapters are in headings_hits.txt, not the memo); Lot 66 D 95, Lot 65 D 101 (1136548), the three unplaced lots and \"47 linear feet\" are in [M13] but no trace row covers them."
+      },
+      {
+        "id": "O3",
+        "block": "READER",
+        "verdict": "obeyed",
+        "evidence": "The overview opens with \"## The bottom line\" in three numbered parts: \"**1. What FRUS answers directly.**\" citing documents by URL (frus1949v07p2/d386, frus1917-72PubDipv08/d31, frus1969-76v38p2/d105); \"**2. Where FRUS points for the rest.** Two channels, kept separate. *Where the printed documents came from* ... *What the editors cited without printing*\" with series, entries and NAIDs; \"**3. What this request cannot get from FRUS.** *The term itself.* 'Soft power' never appears in any of the 84 volumes searched ... Two control searches ran in the same pass\"."
+      },
+      {
+        "id": "V1",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "vectors.py asserts the pin before any vector is read: `assert blob[20:52].hex()==DIG` (binary), `assert bl[16:48].hex()==DIG` for every shard loaded, `assert mb[20:52].hex()==DIG` (map), with DIG the index's `provenanceDigest`; memo [M17] names it: \"index `provenanceDigest` 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101; identical at offset 20 of the binary and the map, at offset 16 of every shard read ... and in the shard folder's `.generation` ... One generation, no mixing.\" Caveat: the shards manifest was not consulted and the `.generation` read is not in the log (I confirmed the file holds the same digest)."
+      },
+      {
+        "id": "V2",
+        "block": "VECTORS",
+        "verdict": "violated",
+        "evidence": "The decode is shown (vectors.py `decode(segs)` with `assert s['s']==len(ids)`; vectors.txt \"roundtrip volumes ok 553 of 553\"; memo [M18] \"§A.3 decode round-trips 553 of 553 volumes. Every id below comes from the decoded segments\"), but the round-trip is only `len(ids)==v['n']`, a count check; no spot check of a known pair (frus1861/d111 or any other) against its row appears in vectors.py, vectors.txt, vec2.txt, the log or the memo. The item's `obeyed` requires \"a spot check of at least one known pair\"."
+      },
+      {
+        "id": "V3",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "vectors.txt prints both baselines before any neighbour list: \"random pairs: mean 167.2 sd 14.9 p1 131 min 90\" and \"kth-neighbour over 200 docs (Random(2026)): 1st median 83; 10th median 100 q1 94 q3 108; 25th median 106\"; memo [M19] precedes [M20], which reads the lists against them: \"all listed neighbours sit between Hamming 76 and 104, i.e. within the ordinary 1st-to-25th-neighbour band (medians 83 to 106), and far inside chance for random pairs (1st percentile 131)\"."
+      },
+      {
+        "id": "V4",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "No Ed2 volume appears in any list: the two anchors' top-15 in vectors.txt (frus1917-72PubDipv07, v06, frus1969-76v38p2, v38p1, v01, ve12, frus1977-80v22, v01, v30, frus1981-88v01, frus1955-57v09, frus1951v06p1, v06p2, frus1961-63v25, v02, frus1950v06), the centroid lists (frus1917-72PubDipv06/07, frus1977-80v30, frus1969-76v38p2, v02, ve01, frus1961-63v25, frus1964-68v33, v34, v09, v12) and the 25 collection pairs; memo [M3] states no Ed2 in R or I."
+      },
+      {
+        "id": "V5",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "memo [M23]: \"cluster 29 (terms lao, vietnamese, vietnam, thieu) 9 documents; cluster 138 ... 3; cluster 103 ... 3; ... unclustered 8 of 25. Era-matched baseline on this layout: 40,679 of 141,003 documents in volumes whose manifest midpoint year is 1945–1980 are unclustered\" (vec2.txt \"collection unclustered 8 of 25\", \"era baseline (volumes midpoint 1945-1980): unclustered 40679 of 141003\")."
+      },
+      {
+        "id": "V6",
+        "block": "VECTORS",
+        "verdict": "violated",
+        "evidence": "[M20]'s document cosines comply (\"Calibrated = (cosine − 0.40)/0.60, the index's `scoreCalibration.documentOffset`; raw cosines labelled raw ... raw 0.920, calibrated 0.867\"), but [M22] shows six cosines with neither: \"**Centroid similarity** (cosine of int8 centroids, normalised): frus1917-72PubDipv08 nearest volumes frus1917-72PubDipv07 0.981, PubDipv06 0.977, frus1977-80v30 0.976, frus1969-76v38p2 0.965, frus1969-76v02 0.962, frus1961-63v25 0.962\"; vectors.txt prints them unlabelled too (\"CENTROID neighbours of frus1917-72PubDipv08 [('frus1917-72PubDipv07', 0.981) ...\"). The item requires \"The offset named, or the word raw\" for every cosine."
+      },
+      {
+        "id": "V8",
+        "block": "VECTORS",
+        "verdict": "obeyed",
+        "evidence": "overview.md and the collection's introductionText, prose and notes contain no \"Hamming\", \"cosine\", \"bit\", \"cluster\" or \"vector\" (scanned); the only vector-derived words are \"the app's semantic neighbours, which link documents by overall similarity of content\" (overview) and \"Reached only through semantic neighbours of the 1969 Manila summary, then read\" (collection note on frus1952-54v13p1/d116), neither a \"neighbour at N\"."
+      },
+      {
+        "id": "O4",
+        "block": "READER",
+        "verdict": "obeyed",
+        "evidence": "The 42 text fields (introductionText, 7 headings, 7 prose entries, 25 notes, name, authorLine) hold no SQL keyword, table or column name, `frus…/d…` pair or file path (scanned); identifiers are archival only, e.g. introductionText \"OCB papers in Lot 62 D 430 (NAID 2839191, 1953–61, partly restricted)\"; notes open \"Agent finding, run f9, 2026-10-31: ...\"; the only `from`/`where` hits are English words (\"from Jessup's 1949 outline\")."
+      },
+      {
+        "id": "O2'",
+        "block": "READER",
+        "verdict": "violated",
+        "evidence": "checks/o2p_flags.txt: 54 flags read (30 UNTRACED, 24 WEAK by the script; trace table 23 rows). Decided: 24 TRACED — A1–42 and A1–31 (row \"RG 306 Director's Subject Files A1–42, JUSPAO A1–31 etc. have no identifier\"), UD WW 257 and P–207 (same row's \"etc.\", a group), A1 1586C, 2839191, A1 1586E, 2839192, A1 5305, A1 5414, 631403 and 1257679 (row \"Lot 62 D 430, Lot 63 D 351, Lot 67 D 54, Lot 59 D 260 and their NAIDs, dates, access\", a group), 2839192 as 66 D 95's (same row, 63 D 351's NAID), \"nearly half\" (row \"nearly half of the 141 from State (66)\"), 350 (row \"the plain word 'soft' in about 350\"), 40 (row \"about 40 also mention Japan\"), 6 and 70 (row \"Pacific islands ... 6 documents; Australia/New Zealand: about 70\"), 8,000 (row \"Quotations Q1–Q34\", Q11), thirteen (row \"Saigon 1970 survey figure (in Q12)\"), 553 (row \"553 volumes in the index\"), \"One false friend\" (row \"'USI' for United States of Indonesia trap\"), \"one document\" (row \"one document reached only through semantic neighbours\"), \"25 are quoted\" (row \"61 documents retrieved whole, 25 quoted\"); 2 NOT A NUMBER — \"makes no claim about one\", \"a long-range one\" (pronouns). 28 UNTRACED: \"Two channels\"; \"Lot 66 D 95\" (not among the four lots the row names); \"47 linear feet\" (an extent; the row covers NAIDs, dates, access); \"Lot 65 D 101\" and \"1136548\"; \"three USIA lots\", \"63 D 224\", \"62 D 255\", \"60 D 322\"; \"Two control searches\"; \"the Pacific half of the question\" (the only 'half' row is the 141's came-from); \"about 380\" Fulbright documents (twice; no row, M9 holds 381); \"76 regional volumes\" (twice) and \"eight ... volumes\" (twice; the row holds only \"84 volumes\"); \"three chapters\"; \"Twenty years later\"; \"Three beliefs recur\"; \"two sets of volumes\"; \"those two volumes\" (the USI row holds the trap, not a count); \"three routes\"; \"six headings\"; and the list enumerators (1), (2), (3), (4) in Read next, numerals with no row that the rubric's NOT A NUMBER category (pronoun 'one' only) does not admit — the verdict does not rest on these four."
+      }
+    ],
+    "obeyed": 39,
+    "violated": 4,
+    "notApplicable": 1,
+    "notes": "All four required files are present (memo.md, overview.md, collection.fruscollection, queries.log), plus the session's scripts and outputs; checks/ was read only for o2p_flags.txt and match_check.txt and was not credited to the session. The session did open vector artifacts (vectors.py/vec2.py over semantic-vectors-index.json, the binary, the map and Tier-2 shards), so V1–V6 and V8 are scored. Verifications I ran on the read-only copy and bundle: the coverage query reproduces 553|321749|1103|8481; the family counts (\\\"soft power\\\" 0, `soft` 349/76, union family 2,009, Fulbright 381/59, Pacific islands 6/5, polls+USIA 157/36, Oriental-mind 30/22, \\\"public diplomacy\\\" R 2 / I 78), the ranked COUNT 1,284, the header sets 42 and 99, the R/I denominators 37,199/1,816 and the 141's came-from grouping 66 RG 59 / 40 RG 306 all reproduce; Q7, Q11, Q12 and Q34 are exact substrings of body_text on non-apparatus rows; frus1952-54v13p1/d116 is absent from candidate_set.txt and returns 0 on the ranked predicate, so the \\\"reached only by vectors\\\" claim holds; the lot→NAID resolutions match central-files-index.json; the index digest equals semantic-shards-manifest.json's and SemanticVectors/.generation's. Judgement calls: I2 treats `d.rowid=f.rowid` as the FTS5 content join, not an identifier; V1 is obeyed on the code's asserts although the shards manifest was never consulted and the .generation read is a memo claim not in the log; V2 is violated because the only identity check is a per-volume count round-trip, with no spot check of a known pair; V6 is violated on [M22]'s six unlabelled centroid cosines alone; V8 is obeyed because the banned list names \\\"neighbour at N\\\", and the overview and one collection note use \\\"semantic neighbours\\\" with no distance or rank; O2' includes the four Read-next list enumerators among the UNTRACED by the rubric's letter, but 24 substantive numbers (two volume-set sizes, the Fulbright count, lots 66 D 95 and 65 D 101, the three unplaced lots, \\\"Twenty years later\\\", structural counts) are untraced regardless. The memo also has a trace row for a decade-rate claim (\\\"rate rises from about 18 per 1,000...\\\") that the overview text does not contain."
+  },
+  "refute:f9": {
+    "cell": "f9",
+    "scope": {
+      "volumes": 84,
+      "volumeIds": "R (76 regional East Asia & Pacific, 1945–1980): frus1945v06, frus1945v07, frus1946v08, frus1946v09, frus1946v10, frus1947v06, frus1947v07, frus1948v06, frus1948v07, frus1948v08, frus1949v07p1, frus1949v07p2, frus1949v08, frus1949v09, frus1950v06, frus1950v07, frus1951v06p1, frus1951v06p2, frus1951v07p1, frus1951v07p2, frus1952-54v12p1, frus1952-54v12p2, frus1952-54v13p1, frus1952-54v13p2, frus1952-54v14p1, frus1952-54v14p2, frus1952-54v15p1, frus1952-54v15p2, frus1955-57v01, frus1955-57v02, frus1955-57v03, frus1955-57v21, frus1955-57v22, frus1955-57v23p1, frus1955-57v23p2, frus1958-60v01, frus1958-60v15, frus1958-60v16, frus1958-60v17, frus1958-60v18, frus1958-60v19, frus1961-63v01, frus1961-63v02, frus1961-63v03, frus1961-63v04, frus1961-63v22, frus1961-63v23, frus1961-63v24, frus1964-68v01, frus1964-68v02, frus1964-68v03, frus1964-68v04, frus1964-68v05, frus1964-68v06, frus1964-68v07, frus1964-68v26, frus1964-68v27, frus1964-68v28, frus1964-68v29p1, frus1964-68v29p2, frus1964-68v30, frus1969-76v06, frus1969-76v07, frus1969-76v08, frus1969-76v09, frus1969-76v10, frus1969-76v17, frus1969-76v18, frus1969-76v19p1, frus1969-76v19p2, frus1969-76v20, frus1969-76v42, frus1969-76ve12, frus1969-76ve13, frus1977-80v13, frus1977-80v22. I (8 information/public-diplomacy): frus1917-72PubDipv06, frus1917-72PubDipv07, frus1917-72PubDipv08, frus1955-57v09, frus1961-63v25, frus1969-76v38p2, frus1977-80v30, frus1950-55Intel. Re-run: 76 + 8 = 84 distinct ids; 37,199 + 1,816 = 39,015 non-apparatus documents (memo [M3] 37,199 / 1,816 / 39,015 reproduced); no Ed2 volume among them.",
+      "dateSpan": "1945–1980 as the memo states ([M3], 'Date span: 1945–1980 (periodised on document_dates.date_iso)'): that is the volumes' coverage. Re-run over the 84 volumes' dated non-apparatus documents: 1943-08-11 to 1981-01-14 (1940s 13,688; 1950s 12,545; 1960s 8,725; 1970s 3,894; 1980s 122; 41 undated), so a handful of printed documents fall outside the stated span.",
+      "source": "Memo [M3] and the volume lists the session wrote (scopevols.py, R_in.txt, RI_in.txt), confirmed by the logged header and ranked queries (queries.log lines 14–18), which spell out the same 76 and 8 ids."
+    },
+    "headline": [
+      {
+        "claim": "\"The argument rests on 25 documents\" (bottom line, paragraph 1)",
+        "memoLine": "[M16] (collection_pairs.txt, collection_check.tsv); also [M14] '25 quoted'",
+        "reproduced": true,
+        "note": "collection.fruscollection holds 25 document entries (Counter: document 25); the overview cites 25 distinct (volume, document) pairs by URL, all 25 in collection_pairs.txt; all 25 are among the 61 reading-list pairs."
+      },
+      {
+        "claim": "\"from about 2,000 in the scope that use the information programme's vocabulary\"",
+        "memoLine": "[M5] union family usia OR usi OR \"information program\" OR \"psychological warfare\" OR \"Voice of America\" OR \"public diplomacy\" OR \"cultural exchange\" over R+I, non-apparatus (collection_channels.txt first three lines: R 1,288, I 721, R+I 2,009)",
+        "reproduced": true,
+        "note": "Re-run of the same MATCH with the same join and exclusions: R (1288, 76 vols), I (721, 8), R+I (2009, 84). 2,009 rounds to 'about 2,000'."
+      },
+      {
+        "claim": "\"Among the 141 documents whose headings name an information agency\"",
+        "memoLine": "[M4] header queries (i_asia_headers.txt 42 rows, r_info_headers.txt 99 rows) and [M11] 'All 141 have a row'",
+        "reproduced": true,
+        "note": "Re-run of both logged header queries: I-set header MATCH 42, R-set header MATCH 99, union 141, overlap 0, identical to candidate_set.txt. Wording caveat: 42 of the 141 were selected because their header names an East Asian place (they sit in the information volumes), not because it names an agency."
+      },
+      {
+        "claim": "\"nearly half came from State's records\" (of the 141)",
+        "memoLine": "[M11] came-from grouped by record group: RG 59 66",
+        "reproduced": true,
+        "note": "Re-run over document_sources for the 141: ('Department of State','59') 63 + ('National Archives','59') 3 = 66 RG 59 = 46.8% of 141; 0 of the 141 lack a row; citation_era structured 73, lot_file 44, decimal 14, subject_numeric 5, cfpf 3, named_series 2 as the memo prints."
+      },
+      {
+        "claim": "\"more than a quarter from the USIA's own\" (of the 141)",
+        "memoLine": "[M11] RG 306 40",
+        "reproduced": true,
+        "note": "Re-run: ('National Archives','306') 40 of 141 = 28.4%. The rest of the memo's breakdown also reproduces: Johnson Library 9, Kennedy 7, RG 84 7, Nixon 2, Eisenhower 2, unparsed (None,None) 2, one each RG 34, CIA, LoC, RG 330, RG 305, Carter."
+      }
+    ],
+    "numbersReproduced": 5,
+    "numbersTotal": 5,
+    "quotationsTotal": 73,
+    "quotationsVerified": 73,
+    "fabrications": 0,
+    "fabricationDetails": "None. overview.md holds 52 straight-double-quoted spans; 13 are not document quotations (the terms \"Asian\", \"Oriental\" twice each and \"Oriental mind\" in the Finding 5 heading; the search strings \"Soft power\", \"soft power\", \"soft\", \"Department of State\", \"USI\"; the volume title \"South and Southeast Asia\" = frus1958-60v15's manifest title; the chapter heading \"cultural relations program\", present in volume_structures of frus1942China, frus1943China, frus1944v05, frus1944v06; and the collection's name). The other 39 spans were each tested by the guide's rule (lower-case, [a-z0-9] only, segments in order) against header||dateline||source_note||body_text of the pair the overview's own citation resolves to: 39 of 39 found. All 34 collection excerpts tested the same way against their own (volumeId, documentId): 34 of 34 found, and each occurs exactly once in the raw body_text (the memo's 'each occurring once' holds). Script: refuter/quote_check.py, output refuter/quote_check.txt.",
+    "miscitations": 0,
+    "miscitationDetails": "None. Each overview citation resolves to the memo's trace pair (quotes.tsv Q1–Q34): 25 pairs by history.state.gov URL; two printed citations without a URL (\"…1952–1954, Indochina, Volume XIII, Part 1, Document 116\" and \"…1955–1957, Foreign Economic Policy; Foreign Information Program, Volume IX, Document 190\") I resolved through manifest.json titles to frus1952-54v13p1/d116 and frus1955-57v09/d190, the memo's pairs for Q27 and Q19; \"Document 31 of the same volume\" and \"Document 146 of the same volume\" resolve through the preceding frus1917-72PubDipv08 citation to d31 (Q26) and d146 (Q22). One span, \"the Vietnamese people’s struggle\" (Finding 4, cited to frus1917-72PubDipv07/d48), is in none of Q1–Q34 although memo [M25] says every overview quotation is; it is in d48's body (\"support the Vietnamese people’s struggle for freedom and independence\"), so verified, not a mis-citation. My nearest-citation heuristic first attached the heading term \"Oriental mind\" to the d190 citation that follows it; it is the phrase family's name ([M10]), not a credited quotation, and it does occur in frus1952-54v12p2/d60 (Q34).",
+    "identifiersChecked": 17,
+    "identifiersConfirmed": 17,
+    "identifierDetails": "All checked against /Applications/FRUS Explorer.app/Contents/Resources/{central-files-index.json lotFiles (1,070 lots, lotNumber folded), series-facts-index.json byNaId decoded through legend, collection-authority.json} and the index's document_sources / external_citations rows (refuter/archival_check.py → archival_check.txt; refuter/ca_nodes.txt). (1) RG 306: confirmed (document_sources record_group 306 for 11 of the 25 and 40 of the 141; lotFiles 59D260 recordGroup 306). (2) Director's Subject Files, 1968–1972, Entry A1–42: named in the source notes of frus1917-72PubDipv08 d58, d88, d146, d149; collection-authority node \"Director’s Subject Files\" (RG 306) has no naId key — the overview's 'no identifier' confirmed. (3) General Records Relating to JUSPAO, 1966–1975, Entry A1–31: source note of PubDipv07/d48; collection-authority node \"…( JUSPAO ), 1966–1975 (Entry A1–31)\" without naId — confirmed. (4) Director's Subject Files 1963–69, Entry UD WW 257: source note of PubDipv07/d32; node \"DIRCTR Subj Files\" without naId — confirmed. (5) Office of Policy and Plans subject files, Entry P–207: source note of PubDipv08/d31; node \"Office of Policy and Plans\" (children incl. Plans and Operational Policy Staff) without naId — confirmed. Of 46 RG 306 named collections in collection-authority only 5 (\"USIA Files: Lot 64 D 171/67 D 317/67 D 333/68 D 393/70 D 449\") carry a naId, none of them the four named. (6) RG 59: confirmed. (7) Lot 62 D 430 → lotFiles RG 59, entry A1 1586C, naId 2839191, title Subject and Special Files; series-facts: creator Department of State. Executive Secretariat, 1953–1961, Restricted - Partly (FOIA b1) — all as stated; came-from of 16 of the 141 (\"OCB Files: Lot 62 D 430\"). (8) Lot 63 D 351 → RG 59, A1 1586E, naId 2839192, Records Relating to National Security Council Policy Papers, 1947–1979, Restricted - Partly — confirmed; the three NSC status reports d185/d190/d207 came from it. (9) Lot 67 D 54 → RG 59, entries A1 5305 and A1 5414, naId 631403, Subject Files of the Vietnam Working Group, 1963–1974, Unrestricted — confirmed. (10) Central Decimal File: document_sources citation_era 'decimal' for 6 of the 25 and 14 of the 141 — confirmed. (11) Central Foreign Policy File: 'cfpf' for 2 of the 25 (d83 D770274–0868, d152 D780405–0724) and 3 of the 141 — confirmed. (12) Lot 66 D 95 → RG 59, A1 1586E, naId 2839192 (same series) — confirmed; pointed at by 4 candidate documents (frus1955-57v22 d484, d513; frus1955-57v23p2 d99; frus1958-60v01 d17). (13) Lot 59 D 260 → RG 306, naId 1257679, Subject Files, creator U.S. Information Agency. Office of Policy and Plans, 1953–1971, Restricted - Partly, extent '47 linear feet' — all confirmed; pointed at by frus1955-57v09/d207 (\"USIA /IOP Files: Lot 59 D 260\"). (14) Lot 65 D 101 → RG 59, A1 558-D, naId 1136548, Chronological Files, Policy Planning Council, 1947–1962, Unrestricted — confirmed; pointed at by frus1952-54v13p1/d606. (15) 63 D 224, (16) 62 D 255, (17) 60 D 322: absent from lotFiles — confirmed; d207's external_citations raw text shows them as USIA lots (\"USIA /IOP Files: Lot 63 D 224\", \"USIA /I/ R Files: Lot 62 D 255\", \"USIA /I Files: Lot 60 D 322\"), so 'three USIA lots the bundled data cannot place' holds. Not in paragraph 2 but checked: paragraph 3's 'Office of Research files in RG 306, which the bundled data names but gives no identifier' — collection-authority nodes \"Office of Research\", \"Office of Research and Assessment\", \"…and Evaluation\", \"…and Reference\" (RG 306) carry no naId; series-facts does hold NAIDs for two USIA research-office series (1254209 Office of Research and Analysis, Latin American Branch, 1955–62; 1254251 Office of Research and Intelligence, Intelligence Production Division, 1954–58), neither East Asian; the memo has no line for this lookup.",
+    "collection": {
+      "opens": true,
+      "checkerOutput": "python3 -I /Users/jbotts/frus-analysis/c3f/check_collection.py /Users/jbotts/frus-analysis/c3f/runs/f9/collection.fruscollection /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db → \"25 documents; all checks pass\"",
+      "documents": 25,
+      "headings": 7,
+      "prose": 7,
+      "excerpts": 34,
+      "generated": 1,
+      "documentsWithNotes": 25,
+      "citedInOverview": 25,
+      "citedAndPresent": 25,
+      "citedMissing": ""
+    },
+    "notes": "FILES PRESENT: memo.md (248 lines), overview.md (52), collection.fruscollection (74 entries), queries.log (47 lines) all present. Scratch: /Users/jbotts/frus-analysis/c3f/runs/f9/refuter/ (sql_checks.py/.txt, quote_check.py/.txt, archival_check.py/.txt, vector_rerun.py/.txt, reach_checks.py/.txt, ca_nodes.txt, final_bits.txt, checker_output.txt). Read-only URI throughout.\n\nCOMMANDS AND RESULTS (beyond the fields above). [M1] SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache → (553, 321749, 1103, 8481), as the memo. [M5] per-family counts R/I all reproduce: propaganda 2744/228, psycholog 2229/228, usia OR usi 849/589, \"information program\" 140/97, \"image of the United States\" 4/8, prestig 1717/80, \"public diplomacy\" 2/78, \"cultural exchange\" 95/102, \"Voice of America\" 75/153, \"soft power\" 0/0, \"psychological warfare\" 260/58, \"hearts and minds\" 20/0; positive control \"Department of State\" R 14,315 / I 786, nonzero in all 84 volumes, lowest frus1969-76v08 with 10; negative control 0. [M9] gaps over R+I reproduce exactly: POS 15,101/84; NEG 0; \"soft power\" 0; soft 349/76; (poll OR survey) AND (usia OR usi) 157/36; +japan 38/17; +australia/NZ 69/36; +Pacific islands 6/5; fulbright 381/59; fulbright AND (evaluat OR effect OR impact) 229/50; Asian/Oriental-mind family 30/22; face phrases 494/77 — so the overview's 'about 350', 'about 160', 'about 40', '6', 'about 70', 'about 380', '30 documents across 22 volumes' all hold; the hand count of the 30 hits by volume era from gaps.txt gives 26 in volumes covering 1949–1963 (3+3+5+8+3+4) and 4 later, as [M10] says. [M7] decade table re-run byte-for-byte (219/12,328/17.8 … 1/106/9.4); the trace table's row for it ('rate rises from about 18 per 1,000…') points at figures the final overview no longer prints — a stale trace row, not an error. [M8] COUNT over R+I = 1,284; top-45 as ranked1.txt. [M14] reading lists 46+12+2+1 = 61 distinct pairs, docs/ holds 61 dumps, SUM(length(body_text)) = 658,318, frus1955-57v09/d184 is '184. Editorial Note' (is_editorial_note=1) — matches. Vietnam share: 7 of 25 collection documents = 28%, 'about a quarter'. Collection: 25 documents each with a note opening 'Agent finding, run f9, 2026-10-31:'; kinds excerpt 34 / document 25 / heading 7 / prose 7 / generated 1 (archivalSources last).\n\nATTRIBUTION SPOT CHECKS (context pulled from body_text): d386 attaches an 'Outline of Far Eastern and Asian Policy for Review with the President' ('for the President' holds); d31 summarises the USIA East Asia and Pacific PAO Conference, Manila, May 9–11, 1969; d190's 'saturated' is 'Provinces in the north and south of Thailand were saturated … anti-Communist indoctrination program'; d16's GVN-image line is the Saigon PAO Anspacher's counsel reported by Neilson; d265 is Neilson, Assistant Director Far East, 17 Nov 1961; d48 is JUSPAO guidance, Saigon, 22 June 1965; d127 is Reischauer's appraisal of Glenn's visit, 1 June 1963; d88 (1 June 1970) reports the May 1970 survey: 637 interviews, 26 percent 'very' or 'rather dependable' as the memo's note says; d146 proposes moon rock specimens, an astronaut, a collection of books; d143 is the Tibetan film 'Man From A Missing Country'; d73 names Viet-Nam, Laos and Thailand as the rural-audience exceptions; d116 says 'concentrating on leader groups'. All consistent with the overview's framing.\n\nVECTORS: refuter/vector_rerun.py decodes the index's run-length segments independently (553/553 volumes, 314,616 rows = documentCount), confirms the digest 89481b18… at offset 20 of semantic-vectors-binary.bin (magic FRSV, ver 1, 512 dims, 314,616 docs, 660 centroids) and of semantic-map.bin and at offset 16 of the shards, then reproduces the d31 neighbour list exactly (see vectorUse).\n\nREACH/V7: refuter/reach_checks.py tests each of the 25 cited pairs against all 31 logged MATCH predicates over their logged scopes (15 scan_families.json families, 12 gaps.py queries, M8, the two header queries, the decades union). Every cited document is in at least one predicate's set. 20 are in a printed set (19 in the 141 candidate set, 4 in the ranked top-45 only: d386, d185, d190, d207; frus1952-54v12p2/d60 in the printed Asian-mind census). frus1952-54v13p1/d116 is in no printed set but in 9 predicates' sets; shares.py's 40-document samples for 'usia OR usi' (1,438 hits) and '\"psychological warfare\"' (318) do not contain it (re-computed with the script's evenly-spaced rule). The logged line-33 query that found d116 and frus1977-80v22/d104 absent from M8 dropped the apparatus and volume filters (only widening the set) and still returned 0; re-run with the memo's scope: 0.\n\nOTHER OBSERVATIONS: the memo's [M12] caveat figure 1910-12-06 is true in this copy but printed as the session's own statement without query or attribution; [M25]'s 'every quotation … is one of Q1–Q34' misses the verified span \"the Vietnamese people’s struggle\"; the overview's description of the 141 as documents 'whose headings name an information agency' covers 42 selected by place names instead; the memo's date span 1945–1980 is the volumes' coverage, not the documents' extremes (1943-08-11 to 1981-01-14 in the index). No wrong number, no quotation outside its document and no citation pointing at the wrong place were found; the one overstated claim is V7's.",
+    "vectorUse": {
+      "operations": [
+        "nearest neighbours of a document",
+        "semantic join",
+        "centroid similarity",
+        "the map",
+        "near-duplicates"
+      ],
+      "anchors": "Nearest neighbours: frus1917-72PubDipv08/d31 (1969 Manila PAO conference summary) and frus1969-76v38p2/d105 (1975 post-Indochina post reports), Hamming over the 512 sign bits to a pool of 800 (retrieval.rerankPool), reranked by Tier-2 int8 cosine, calibrated (cos−0.40)/0.60 (vectors.py → vectors.txt, log line 31). Semantic join: both anchors' top-15 joined to document_cache (header, apparatus flags), document_dates and document_sources (vectors.txt columns; memo [M21]). Centroid similarity: volume centroids of frus1917-72PubDipv08 and frus1917-72PubDipv07 against all volumes' centroids from the binary's centroid block ([M22]; numpy overflow warning noted by the memo). Map: the four anchors d31, d105, PubDipv07/d48, frus1955-57v09/d190 and all 25 collection documents placed and clustered, with an era-matched unclustered baseline of 40,679 of 141,003 (vec2.py → vec2.txt, [M23]). Near-duplicates: pairwise Hamming among the 25 collection documents, 300 pairs, closest d190–d185 32, d190–d207 50, d185–d207 56 ([M24]).",
+      "files": "semantic-vectors-index.json (ids by run-length segments; retrieval, scoreCalibration), semantic-vectors-binary.bin (the bundle's binary: sign bits for Hamming and the pool; centroids), Tier-2 shards /Users/jbotts/frus-analysis/c3/SemanticVectors/<volume>.vec (int8 codes × scale for the rerank), semantic-map.bin with semantic-map-index.json (140 clusters) — all from /Applications/FRUS Explorer.app/Contents/Resources/ and the c3 shard folder.",
+      "digestsCompared": true,
+      "baselinesUsed": "Yes ([M19]): random pairs (20,000, random.Random(1877): mean 167.2, sd 14.9, 1st percentile 131, min 90 bits of 512) and k-th neighbour over 200 documents (random.Random(2026): 1st median 83; 10th 100 (q 94–108); 25th 106 (q 100–113)); the neighbour Hamming distances 76–104 are read against them in [M20] ('within the ordinary 1st-to-25th-neighbour band … suggestions, not evidence'); the map's unclustered share (8 of 25) is read against the era-matched baseline. Refuter re-run of the random-pair baseline with the same seed: 167.2 / 14.9 / 131 / 90.",
+      "neighbourListReproduced": "Yes. Anchor frus1917-72PubDipv08/d31 (row 61222): my own decode of the index's segments (s/i/n run-length, d<n+k> ids), Hamming-800 pool over the binary's sign bits and int8-cosine rerank from the shards returns the same 15 pairs in the same order with the same figures: PubDipv07/d106 ham 81 cos 0.920 cal 0.867; frus1969-76v38p2/d105 96/0.917; PubDipv08/d99 90/0.915; frus1955-57v09/d190 100/0.908; frus1951v06p2/d105 94/0.908; frus1952-54v13p1/d116 88/0.906 cal 0.843; frus1955-57v09/d185 104/0.905; frus1961-63v25/d156 102; PubDipv06/d150 99; PubDipv07/d69 95; PubDipv07/d32 97; frus1950v06/d9 90; frus1977-80v30/d68 92; PubDipv07/d94 96; frus1955-57v09/d207 98. Also reproduced: Hamming(d190, d185) = 32; map cells d31 unclustered (65535) and d116 cluster 29.",
+      "notes": "The memo's provenance check holds: index provenanceDigest 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 equals the binary's bytes 20–52, the map's bytes 20–52 and each shard's bytes 16–48 (asserted in my re-run); index generated 2026-10-15. Recall caveat (measuredRecallAt10 0.9021) is stated and no absence is claimed from the lists. The one problem with the vector section is its headline claim that d116 was reached 'through no full-text query' — see v7."
+    },
+    "reach": {
+      "citedDocuments": 25,
+      "ftsReached": 25,
+      "strictVectorReached": 0,
+      "strictPairs": "",
+      "strictQuoted": 0,
+      "practicalVectorReached": 1,
+      "practicalPairs": "frus1952-54v13p1/d116 (Heath, Saigon, 20 Sept 1952; quoted in Findings 2 and 3: Q7, Q27, Q30). Log order: the family scans (line 13), header queries (14–15), ranked query (17–18), shares.py (21), decades.py (23) and the first gaps-style counts all printed counts or lists that did not include d116 (not in the 141 header hits, not in the ranked top-45, not in shares.py's two 40-document samples, re-computed); vectors.py (line 31) surfaced it as d31's 6th neighbour; dump.py (line 32, reading_list3.txt) read it; line 33 then tested it against M8 (0). So it was in no result set the session had read before the neighbour list.",
+      "untraced": 0,
+      "method": "For each of the 25 pairs the overview cites (all resolved to pairs through the URLs, two printed citations via manifest.json, two 'same volume' references), I re-ran all 31 logged MATCH predicates over their logged volume scopes and non-apparatus filter (scan_families.json 'F' families incl. the positive control, the 12 gaps.py queries, the M8 ranked predicate, the two header: queries, the decades union) and tested membership of the pair in each predicate's set (SELECT COUNT(*) … MATCH ? AND volume_id=? AND document_id=?). STRICT = member of at least one logged full-text or heading predicate's set. I also recorded which pairs were in a printed/saved document list (candidate_set.txt 141, ranked1.txt top-45, gaps.txt Asian-mind census) for the PRACTICAL reading. Result: 25 of 25 are in some logged predicate's set (20 in a printed set, plus d60 in the printed census; d386, d185, d190, d207 in the printed ranked top-45), so strictly none is vector-reached and none is untraced; practically d116 alone was surfaced first by the d31 neighbour list. Not cited in the overview but noted: frus1977-80v22/d104 was likewise surfaced by the d105 neighbour list and read, not used."
+    },
+    "v7": {
+      "memoClaimedStrict": "frus1952-54v13p1/d116 — memo VECTORS section: 'Reached through a vector operation and through no full-text query: frus1952-54v13p1/d116 … not in the 141-document candidate set and not in the 1,284 hits of [M8]'; trace row 'one document reached only through semantic neighbours (Saigon 1952)'; overview methods: 'The neighbours surfaced one document no word search had reached, the Saigon embassy's 1952 assessment.' The memo gives one reading, not two.",
+      "verdict": "violated",
+      "evidence": "Strict re-run: d116 is returned by nine logged full-text predicates over the logged R+I non-apparatus scope — `usia OR usi` (scan_families.py line 13, shares.py line 21, decades.py line 23; 1,438 hits over R+I), `propaganda`, `psycholog`, `\"information program\"`, `\"psychological warfare\"` (scan_families.py), `soft` (gaps.py line 35), the positive control `\"Department of State\"`, and the decades union over R. The memo's two supporting statements are true (d116 is in neither header set — re-run 42 + 99 = 141 without it — and not in M8's 1,284; COUNT of M8 restricted to the pair = 0 both as logged at line 33 and with the memo's scope), but the claim as worded, and the overview's 'no word search had reached', are made against all word searches, and the session's own logged searches contain it. The practical reading holds: those predicates were run as per-volume or per-decade counts or 40-document samples that never printed or saved d116, so the neighbour list did surface it first."
+    },
+    "zeros": {
+      "total": 17,
+      "relaxed": 1,
+      "other": 14,
+      "nothing": 2,
+      "list": "RELAXED (1): [Z1] \"soft power\" 0 documents in the 84 volumes (M5, M9; overview 'never appears') — beside it the relaxed `soft` 349 docs in 76 vols (M9) plus the positive/negative controls in the same pass; re-run 0 and 349/76. OTHER (14): [Z2] negative control ZZZ_IMPOSSIBLE_ZZZ 0 in all 84 (M5, M9; overview 'a nonsense string turned up nowhere') — positive control \"Department of State\" nonzero in all 84 (R 14,315 / I 786; 15,101) on the same surface; a zero by design. [Z3] \"hearts and minds\" in I: 0 (M5 '20 / 0') — positive control on I 786 (the R count 20 is another volume set). [Z4] Asian/Oriental-mind family in I: 0 (M10 'all in R'; scan_families I_total 0) — positive control on I 786. [Z5] Lot 61 D 385 'not in lotFiles' (M13) — the same lotFiles lookup resolved 62 D 430, 63 D 351, 67 D 54, 72 D 192, 66 D 95, 65 D 101, 71 D 273 (resolve.txt). [Z6] Lot 60 D 627 not in lotFiles (M13) — same run resolved the others; plus a 'possible' Conference Files match in curated-lot-resolutions.json. [Z7] Lot 63 D 224 not in lotFiles (M13, resolve3.txt) — 59 D 260 resolved in the same run; re-run confirms absent. [Z8] Lot 62 D 255 — same; confirmed absent. [Z9] Lot 60 D 322 — same; confirmed absent. [Z10] RG 306 series A1–42, A1–31, UD WW 257, UD WW 193, P–207 'appear in collection-authority.json as named collections without a NAID' (M13; overview) — the same lookup returned the named collections themselves (and the memo prints the accession-series-index mappings on another surface); re-run: nodes present, no naId key. [Z11] 'series-facts-index.json holds 14 series whose creator heading names the USIA; none is an East Asia/Far East area office' (M13) — the 14 rows are listed in resolve2.txt (same surface); re-run 14. [Z12] 0 of the 141 candidate documents without a document_sources row (M11 'All 141 have a row'; channels.txt) — the 141 rows grouped on the same surface; re-run 0 missing. [Z13] d116 and frus1977-80v22/d104 not among M8's hits: COUNT restricted to the two pairs = 0 (M24 text, log line 33) — the same predicate's 1,284 over R+I; re-run 0 and 1,284. [Z14] check_outputs: none of the 25 cited pairs missing from the collection, no collection document uncited (M26) — the 25 matched pairs; re-run 25/25. [Z15] no neighbour volume absent from document_cache, 'none needed a canonical-URL flag' (M20) — all 553 volumes present (M1). NOTHING (2): [Z16] 'No Ed2 volume is in R or I' (M3) / 'no Ed2 volume' in the collection (M16) — nothing printed beside the scan; my re-run over the 84 ids finds none. [Z17] overview paragraph 3: the USIA Office of Research files 'which the bundled data names but gives no identifier' — the memo records no lookup and prints nothing beside it; my check: collection-authority nodes 'Office of Research', '…and Assessment', '…and Evaluation', '…and Reference' (RG 306) carry no naId, while series-facts holds NAIDs for two USIA research-office series (1254209, 1254251), neither East Asian."
+    },
+    "houseFigures": {
+      "occurrences": 1,
+      "rederived": 0,
+      "attributed": 0,
+      "own": 1,
+      "notOne": 0,
+      "list": "memo.md:110, figure 1910-12-06 (the pointed-at channel starts): 'Caveat: this channel has no row before 1910-12-06, stores the citation fragment not the sentence, and holds lot, library and decimal anchors only' — stated as a property of the channel with no query, no output and no attribution to the guide or the house rules → OWN. Refuter re-derivation: SELECT MIN(dd.date_iso) FROM external_citations e JOIN document_dates dd ON (volume_id, document_id) → 1910-12-06, and 0 rows dated earlier, so the figure is true in this copy though not derived or credited by the session."
+    },
+    "deadTerms": {
+      "listed": 0,
+      "notATerm": 0,
+      "reportedFrom": 0,
+      "noticed": 0,
+      "list": "Harness (checks/match_check.txt): 7 full-text terms tested alone (the decades.py union's usia, usi, \"information program\", \"psychological warfare\", \"Voice of America\", \"public diplomacy\", \"cultural exchange\"), 0 return nothing, 0 prefixes, 1 frus_documents_vocab lookup in the log (line 12, 27 stems). Nothing listed, so listed/reportedFrom/noticed are 0. Refuter's own census, because the harness sees only unparameterised terms: the 73 atomic terms in all logged MATCH strings (scan_families.json F, gaps.py, the two header queries, M8) tested alone against frus_documents — 4 return nothing: (a) `evaluat`, in gaps.py's `fulbright AND (evaluat OR effect OR impact)` reported as 229 docs in 50 vols (M9, overview's Fulbright sentence does not quote this figure): the porter stem is `evalu` (6,392 docs; `fulbright AND evaluat` = 0; `fulbright AND evalu` = 36 in R+I; with `evalu` the query gives 237 in 53) — NOT NOTICED, and `evaluat` was not among the stems looked up at line 12; the reported 229 is carried by effect/impact and is reproducible as printed. (b) `\"Asian mentality\"`, one of the six OR'd phrases of M10 (0 docs anywhere): the 30 reported come from \"Oriental mind\" 14, \"Asian mind\" 7, \"Oriental psychology\" 5, \"Asian psychology\" 4, \"Oriental mentality\" 1 in R+I — not noticed, no count reported from it alone. (c) `\"soft power\"` — reported as 0 and relaxed to `soft` 349 with controls: NOTICED. (d) `ZZZ_IMPOSSIBLE_ZZZ` — the negative control, dead by design."
+    }
+  }
+}

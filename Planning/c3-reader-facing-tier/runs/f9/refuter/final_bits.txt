@@ -1,0 +1,18 @@
+evaluat vocab: [] MATCH alone: (0,)
+evalu vocab: [('evalu', 6392)] MATCH alone: (6392,)
+evaluation vocab: [] MATCH alone: (6392,)
+mental vocab: [('mental', 1391)] MATCH alone: (1391,)
+mentality vocab: [] MATCH alone: (1391,)
+  fulbright AND (evaluat OR effect OR impact): R+I (229, 50) | whole index (497,)
+  fulbright AND (evalu OR effect OR impact): R+I (237, 53) | whole index (511,)
+  fulbright AND evalu: R+I (36, 21) | whole index (77,)
+  fulbright AND evaluat: R+I (0, 0) | whole index (0,)
+  "Asian mentality": R+I (0, 0) | whole index (0,)
+  "Oriental mentality": R+I (1, 1) | whole index (3,)
+  "Asian psychology": R+I (4, 4) | whole index (4,)
+  "Oriental psychology": R+I (5, 4) | whole index (9,)
+  "Asian mind": R+I (7, 6) | whole index (13,)
+  "Oriental mind": R+I (14, 13) | whole index (25,)
+documents: 25 with non-empty notes: 25 all notes start with attribution: True
+Counter({'excerpt': 34, 'document': 25, 'heading': 7, 'prose': 7, 'generated': 1})
+Vietnam docs in collection: 7 of 25

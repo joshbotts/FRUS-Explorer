@@ -1,0 +1,32 @@
+decode: volumes 553 rows 314616 (round-trip ok)
+
+ANCHOR frus1969-76v38p2/d105 nearest 76 25th 90
+  ham  76  frus1969-76ve12/d10  10. Memorandum From W.R. Smyser of the National Security Council Staff to Secret
+  ham  77  frus1958-60v16/d65  65. National Security Council Report
+  ham  78  frus1969-76v01/d54  54. Paper Prepared in the National Security Council Staff
+  ham  80  frus1969-76ve12/d16  16. Memorandum From Secretary of State Kissinger to President Ford, Washington, 
+  ham  82  frus1969-76ve12/d15  15. Minutes of the Acting Secretary of State’s Staff Meeting, Washington, June 1
+  ham  82  frus1977-80v22/d104  104. Telegram From the Consulate in Hong Kong to the Department of State
+  ham  84  frus1949v07p2/d387  Memorandum by the Executive Secretary of the National Security Council (Souers) 
+  ham  84  frus1955-57v21/d119  119. National Security Council Report
+  ham  84  frus1969-76v38p1/d54  54. Memorandum From the Counselor of the Department of State (Sonnenfeldt) and t
+  ham  85  frus1949v07p2/d386  Memorandum by the Ambassador at Large (Jessup) to the Secretary of State
+  ham  85  frus1958-60v16/d12  12. National Security Council Report
+  ham  85  frus1969-76v38p1/d58  58. Telegram From the Department of State to All Diplomatic and Consular Posts
+
+ANCHOR frus1917-72PubDipv08/d31 nearest 81 25th 98
+  ham  81  frus1917-72PubDipv07/d106  106. Minutes of a Meeting of the President’s General Advisory Committee on Forei
+  ham  86  frus1917-72PubDipv06/d3  3. Report Prepared by Deputy Director-Designate Donald M. Wilson
+  ham  88  frus1917-72PubDipv06/d5  5. Report Prepared by the Task Force on the United States Information Agency
+  ham  88  frus1952-54v13p1/d116  The Ambassador at Saigon (Heath) to the Department of State
+  ham  89  frus1955-57v22/d275  275. Telegram From the Embassy in Indonesia to the Department of State
+  ham  90  frus1917-72PubDipv08/d99  99. Paper Prepared in the United States Information Agency
+  ham  90  frus1950v06/d9  Editorial Note
+  ham  91  frus1958-60v16/d65  65. National Security Council Report
+  ham  92  frus1917-72PubDipv07/d140  140. Letter From the Director of the United States Information Agency (Marks) to
+  ham  92  frus1952-54v02p2/d374  Memorandum for the National Security Council by the Executive Secretary (Lay)
+  ham  92  frus1977-80v30/d68  68. Memorandum From the Director of the United States Information Agency (Reinha
+  ham  94  frus1951v06p1/d12  Report to the National Security Council by the Executive Secretary (Lay)
+distance d105 -> ('frus1969-76ve12', 'd10') 76
+distance d105 -> ('frus1977-80v22', 'd104') 82
+random pairs (seed 1877): mean 167.1 sd 14.8 p1 132 min 95

@@ -1,0 +1,13 @@
+40967285 Subject Files of the Director {'creator': 'U.S. Information Agency. Office of the Director. Executive Secretariat.', 'access': 'Restricted - Partly', 'extent': '103 linear feet, 1 linear inch', 'years': (1956, 1972)}
+1257679 Subject Files (Policy and Plans) {'creator': 'U.S. Information Agency. Office of Policy and Plans.', 'access': 'Restricted - Partly', 'extent': '47 linear feet', 'years': (1953, 1971)}
+40967113 Chronological Files {'creator': 'U.S. Information Agency. Office of the Director. Executive Secretariat.', 'access': 'Restricted - Partly', 'extent': '10 linear feet, 6 linear inches', 'years': (1961, 1966)}
+1254251 Program Files {'creator': 'U.S. Information Agency. Office of Research and Intelligence. Intelligence Production Division.', 'access': 'Restricted - Partly', 'extent': '9 linear feet, 2 linear inches', 'years': (1954, 1958)}
+7542975 Records Relating to the VOA {'creator': 'U.S. Information Agency. Broadcasting Service. Office of the Director.', 'access': 'Restricted - Partly', 'extent': '6 linear feet, 6 linear inches', 'years': (1948, 1959)}
+2839192 Records Relating to NSC Policy Papers {'creator': 'Department of State. Office of the Secretary. Executive Secretariat.', 'access': 'Restricted - Partly', 'extent': '26 linear feet, 3 linear inches', 'years': (1947, 1979)}
+2839191 Subject and Special Files (OCB) {'creator': 'Department of State. Executive Secretariat.', 'access': 'Restricted - Partly', 'extent': '4 linear feet, 5 linear inches', 'years': (1953, 1961)}
+2198167 Alphabetical Files PPC {'creator': 'Department of State. Policy Planning Council.', 'access': 'Restricted - Partly', 'extent': '48 linear feet, 7 linear inches', 'years': (1948, 1961)}
+2838992 Records Relating to Activities with the NSC {'creator': 'Department of State. Policy Planning Council.', 'access': 'Restricted - Partly', 'extent': '3 linear feet, 1 linear inch', 'years': (1948, 1961)}
+42125423 Vietnam Working Group Subject Files (USIA) None
+1102141 Subject Files of the Director (68A4933) None
+external_citations rows naming RG 306 or the Information Agency (whole index): 11
+document_sources rows with record_group 306 (whole index): rows, docs (427, 427)

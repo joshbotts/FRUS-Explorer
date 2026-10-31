@@ -1,0 +1,182 @@
+=== A. COLLECTION EXCERPTS (45) against their own pair
+  excerpts: 45 pass: 45 fail: 0
+
+=== B. OVERVIEW quoted spans
+spans: 59
+[0] "soft power"
+     found_in=[]
+     near_urls=[]  para_urls_after=['frus1950v06/d32', 'frus1950v06/d15', 'frus1964-68v29p2/d123', 'frus1969-76v38p2/d105']
+[1] "weak on propaganda"
+     found_in=['frus1950v06/d32']
+     near_urls=['frus1950v06/d32', 'frus1950v06/d15']  para_urls_after=['frus1950v06/d32', 'frus1950v06/d15', 'frus1964-68v29p2/d123', 'frus1969-76v38p2/d105']
+[2] "not satisfactory"
+     found_in=['frus1950v06/d15', 'frus1955-57v22/d271']
+     near_urls=['frus1950v06/d32', 'frus1950v06/d15']  para_urls_after=['frus1950v06/d32', 'frus1950v06/d15', 'frus1964-68v29p2/d123', 'frus1969-76v38p2/d105']
+[3] "a strongly positive symbol"
+     found_in=['frus1964-68v29p2/d123']
+     near_urls=['frus1964-68v29p2/d123']  para_urls_after=['frus1964-68v29p2/d123', 'frus1969-76v38p2/d105']
+[4] "lack credibility"
+     found_in=['frus1969-76v38p2/d105']
+     near_urls=['frus1969-76v38p2/d105']  para_urls_after=['frus1969-76v38p2/d105']
+[5] "the Oriental mind"
+     found_in=['frus1952-54v14p2/d551', 'frus1952-54v13p2/d992', 'frus1958-60v01/d26']
+     near_urls=[]  para_urls_after=[]
+[6] "lots"
+     found_in=[]
+     near_urls=[]  para_urls_after=[]
+[7] "S/P-NSC files, lot 61 D 167"
+     found_in=['frus1952-54v12p2/d359']
+     near_urls=[]  para_urls_after=[]
+[8] "public opinion poll"
+     found_in=[]
+     near_urls=[]  para_urls_after=[]
+[9] "opinion survey"
+     found_in=[]
+     near_urls=[]  para_urls_after=[]
+[10] "Department of State"
+     found_in=['frus1950v06/d32', 'frus1952-54v12p2/d359', 'frus1952-54v12p2/d60', 'frus1952-54v13p2/d992', 'frus1955-57v22/d361', 'frus1958-60v01/d26', 'frus1952-54v12p1/d103', 'frus1955-57v22/d447', 'frus1955-57v22/d271', 'frus1964-68v29p2/d123', 'frus1977-80v30/d81', 'frus1977-80v30/d83']
+     near_urls=[]  para_urls_after=[]
+[11] "Program Files"
+     found_in=[]
+     near_urls=[]  para_urls_after=[]
+[12] "Records Relating to the Voice of America"
+     found_in=[]
+     near_urls=[]  para_urls_after=[]
+[13] "soft power"
+     found_in=[]
+     near_urls=[]  para_urls_after=[]
+[14] "prestige"
+     found_in=['frus1950v06/d15', 'frus1952-54v12p2/d359', 'frus1955-57v22/d271', 'frus1917-72PubDipv08/d31', 'frus1917-72PubDipv08/d146']
+     near_urls=[]  para_urls_after=[]
+[15] "image"
+     found_in=['frus1917-72PubDipv06/d127', 'frus1964-68v29p2/d123', 'frus1917-72PubDipv08/d31', 'frus1917-72PubDipv08/d24', 'frus1969-76v38p2/d105']
+     near_urls=[]  para_urls_after=[]
+[16] "propaganda"
+     found_in=['frus1950v06/d31', 'frus1950v06/d32', 'frus1955-57v22/d271', 'frus1917-72PubDipv07/d147', 'frus1917-72PubDipv08/d92', 'frus1917-72PubDipv08/d129', 'frus1917-72PubDipv08/d143', 'frus1917-72PubDipv08/d149']
+     near_urls=[]  para_urls_after=[]
+[17] "soft power."
+     found_in=[]
+     near_urls=[]  para_urls_after=[]
+[18] "policymakers'."
+     found_in=[]
+     near_urls=[]  para_urls_after=[]
+[19] "effective"
+     found_in=['frus1950v06/d15', 'frus1950v06/d32', 'frus1952-54v12p2/d403', 'frus1952-54v12p2/d359', 'frus1952-54v14p2/d551', 'frus1952-54v13p2/d992', 'frus1958-60v01/d26', 'frus1952-54v12p1/d103', 'frus1917-72PubDipv06/d127', 'frus1964-68v26/d106', 'frus1964-68v29p2/d123', 'frus1917-72PubDipv08/d31', 'frus1917-72PubDipv07/d147', 'frus1917-72PubDipv08/d92', 'frus1917-72PubDipv08/d129', 'frus1917-72PubDipv08/d127', 'frus1969-76v38p2/d105', 'frus1977-80v30/d83']
+     near_urls=[]  para_urls_after=[]
+[20] "stepped up to the limit of presently available funds,"
+     found_in=['frus1950v06/d31']
+     near_urls=['frus1950v06/d31']  para_urls_after=['frus1950v06/d31', 'frus1950v06/d32', 'frus1950v06/d15', 'frus1952-54v12p2/d359']
+[21] "weak on propaganda"
+     found_in=['frus1950v06/d32']
+     near_urls=['frus1950v06/d32']  para_urls_after=['frus1950v06/d32', 'frus1950v06/d15', 'frus1952-54v12p2/d359']
+[22] "USIE materials designed for world-wide or even area-wide distribution"
+     found_in=['frus1950v06/d15']
+     near_urls=['frus1950v06/d15']  para_urls_after=['frus1950v06/d15', 'frus1952-54v12p2/d359']
+[23] "not satisfactory"
+     found_in=['frus1950v06/d15', 'frus1955-57v22/d271']
+     near_urls=['frus1950v06/d15']  para_urls_after=['frus1950v06/d15', 'frus1952-54v12p2/d359']
+[24] "Oriental mind"
+     found_in=['frus1952-54v14p2/d551', 'frus1952-54v12p2/d60', 'frus1952-54v13p2/d992', 'frus1958-60v01/d26']
+     near_urls=['frus1950v06/d266']  para_urls_after=[]
+[25] "are inclined by their psychology to wait and see who is winning."
+     found_in=['frus1950v06/d32']
+     near_urls=['frus1950v06/d266']  para_urls_after=['frus1950v06/d266', 'frus1952-54v14p2/d551', 'frus1952-54v13p2/d992', 'frus1958-60v01/d26']
+[26] "it is in the pattern of the Oriental psychology to respect and follow aggressive, resolute"
+     found_in=['frus1950v06/d266']
+     near_urls=['frus1950v06/d266']  para_urls_after=['frus1950v06/d266', 'frus1952-54v14p2/d551', 'frus1952-54v13p2/d992', 'frus1958-60v01/d26']
+[27] "any feeling in the Oriental mind that our interest in Asia is casual, temporary or oversha"
+     found_in=['frus1952-54v14p2/d551']
+     near_urls=['frus1952-54v14p2/d551']  para_urls_after=['frus1952-54v14p2/d551', 'frus1952-54v13p2/d992', 'frus1958-60v01/d26']
+[28] "mistaken in the oriental mind"
+     found_in=['frus1952-54v13p2/d992']
+     near_urls=['frus1952-54v13p2/d992']  para_urls_after=['frus1952-54v13p2/d992', 'frus1958-60v01/d26']
+[29] "Not being Asians, Americans do not understand the Oriental mind and point of view."
+     found_in=['frus1958-60v01/d26']
+     near_urls=['frus1958-60v01/d26']  para_urls_after=['frus1958-60v01/d26']
+[30] "will make more difficult characterization of invasion as"
+     found_in=['frus1952-54v12p1/d103']
+     near_urls=['frus1952-54v12p1/d103']  para_urls_after=['frus1952-54v12p1/d103', 'frus1955-57v22/d447', 'frus1955-57v22/d271']
+[31] "a fear of placing the U.S. in the position of appearing to support colonialism"
+     found_in=['frus1955-57v22/d447']
+     near_urls=['frus1955-57v22/d447']  para_urls_after=['frus1955-57v22/d447', 'frus1955-57v22/d271']
+[32] "Asian minds"
+     found_in=['frus1952-54v12p1/d103', 'frus1955-57v22/d271']
+     near_urls=['frus1955-57v22/d271']  para_urls_after=['frus1955-57v22/d271']
+[33] "the most successful visit by an American, from a public image standpoint"
+     found_in=['frus1917-72PubDipv06/d127']
+     near_urls=['frus1917-72PubDipv06/d127']  para_urls_after=['frus1917-72PubDipv06/d127', 'frus1964-68v29p2/d123', 'frus1917-72PubDipv08/d31', 'frus1964-68v26/d106']
+[34] "popular respect for US political institutions, infatuation with many aspects of American m"
+     found_in=['frus1964-68v29p2/d123']
+     near_urls=['frus1964-68v29p2/d123']  para_urls_after=['frus1964-68v29p2/d123', 'frus1917-72PubDipv08/d31', 'frus1964-68v26/d106']
+[35] "Racial violence and social unrest in America"
+     found_in=['frus1964-68v29p2/d123']
+     near_urls=['frus1964-68v29p2/d123']  para_urls_after=['frus1964-68v29p2/d123', 'frus1917-72PubDipv08/d31', 'frus1964-68v26/d106']
+[36] "made American image a rather less positive political symbol"
+     found_in=['frus1964-68v29p2/d123']
+     near_urls=['frus1964-68v29p2/d123']  para_urls_after=['frus1964-68v29p2/d123', 'frus1917-72PubDipv08/d31', 'frus1964-68v26/d106']
+[37] "Asians are, to varying degrees, America watchers"
+     found_in=['frus1917-72PubDipv08/d31']
+     near_urls=[]  para_urls_after=['frus1917-72PubDipv08/d31', 'frus1964-68v26/d106']
+[38] "usually depended more on the state of bi-lateral relations (security treaty, Okinawa, Kore"
+     found_in=['frus1917-72PubDipv08/d31']
+     near_urls=['frus1917-72PubDipv08/d31']  para_urls_after=['frus1917-72PubDipv08/d31', 'frus1964-68v26/d106']
+[39] "We shall soon have nothing worthwhile left in the way of an information operation"
+     found_in=['frus1964-68v26/d106']
+     near_urls=['frus1964-68v26/d106']  para_urls_after=['frus1964-68v26/d106']
+[40] "appear to lie outside the Agency's appropriate sphere of operations,"
+     found_in=['frus1917-72PubDipv07/d147']
+     near_urls=['frus1917-72PubDipv07/d147']  para_urls_after=['frus1917-72PubDipv07/d147', 'frus1917-72PubDipv08/d58', 'frus1917-72PubDipv08/d88', 'frus1917-72PubDipv08/d129']
+[41] "nearly fifteen percent of the Agency's resources available for overseas programming"
+     found_in=['frus1917-72PubDipv07/d147']
+     near_urls=['frus1917-72PubDipv07/d147']  para_urls_after=['frus1917-72PubDipv07/d147', 'frus1917-72PubDipv08/d58', 'frus1917-72PubDipv08/d88', 'frus1917-72PubDipv08/d129']
+[42] "the lowest point in thirteen Saigon surveys,"
+     found_in=['frus1917-72PubDipv08/d88']
+     near_urls=['frus1917-72PubDipv08/d88']  para_urls_after=['frus1917-72PubDipv08/d88', 'frus1917-72PubDipv08/d129']
+[43] "is now engaged in a massive campaign"
+     found_in=['frus1917-72PubDipv08/d129']
+     near_urls=['frus1917-72PubDipv08/d129']  para_urls_after=['frus1917-72PubDipv08/d129']
+[44] "cannot result primarily from American conceptions but has to involve Asian initiatives"
+     found_in=['frus1917-72PubDipv08/d30']
+     near_urls=['frus1917-72PubDipv08/d30']  para_urls_after=['frus1917-72PubDipv08/d30', 'frus1917-72PubDipv08/d146', 'frus1917-72PubDipv08/d149', 'frus1969-76v38p2/d105']
+[45] "a long-range"
+     found_in=['frus1917-72PubDipv08/d146']
+     near_urls=['frus1917-72PubDipv08/d146', 'frus1917-72PubDipv08/d149']  para_urls_after=['frus1917-72PubDipv08/d146', 'frus1917-72PubDipv08/d149', 'frus1969-76v38p2/d105', 'frus1977-80v30/d83']
+[46] "a USIS audience"
+     found_in=['frus1917-72PubDipv08/d149']
+     near_urls=['frus1917-72PubDipv08/d146', 'frus1917-72PubDipv08/d149']  para_urls_after=['frus1917-72PubDipv08/d146', 'frus1917-72PubDipv08/d149', 'frus1969-76v38p2/d105', 'frus1977-80v30/d83']
+[47] "reluctant to accept communist political and economic models"
+     found_in=['frus1917-72PubDipv08/d149']
+     near_urls=['frus1917-72PubDipv08/d146', 'frus1917-72PubDipv08/d149']  para_urls_after=['frus1917-72PubDipv08/d146', 'frus1917-72PubDipv08/d149', 'frus1969-76v38p2/d105', 'frus1977-80v30/d83']
+[48] "still see us as friends and admire much in the American system,"
+     found_in=['frus1969-76v38p2/d105']
+     near_urls=['frus1969-76v38p2/d105']  para_urls_after=['frus1969-76v38p2/d105', 'frus1977-80v30/d83']
+[49] "very clearly in default,"
+     found_in=['frus1969-76v38p2/d105']
+     near_urls=['frus1969-76v38p2/d105']  para_urls_after=['frus1969-76v38p2/d105', 'frus1977-80v30/d83']
+[50] "has been effective"
+     found_in=['frus1977-80v30/d83']
+     near_urls=['frus1977-80v30/d83']  para_urls_after=['frus1977-80v30/d83']
+[51] "deeply implanted and persistent feeling"
+     found_in=['frus1977-80v30/d83']
+     near_urls=['frus1977-80v30/d83']  para_urls_after=['frus1977-80v30/d83']
+[52] "withdrawing"
+     found_in=['frus1977-80v30/d83']
+     near_urls=['frus1977-80v30/d83']  para_urls_after=['frus1977-80v30/d83']
+[53] "Oriental mind"
+     found_in=['frus1952-54v14p2/d551', 'frus1952-54v12p2/d60', 'frus1952-54v13p2/d992', 'frus1958-60v01/d26']
+     near_urls=[]  para_urls_after=[]
+[54] "prestige,"
+     found_in=['frus1950v06/d15', 'frus1952-54v12p2/d359', 'frus1955-57v22/d271', 'frus1917-72PubDipv08/d31', 'frus1917-72PubDipv08/d146']
+     near_urls=[]  para_urls_after=[]
+[55] "image"
+     found_in=['frus1917-72PubDipv06/d127', 'frus1964-68v29p2/d123', 'frus1917-72PubDipv08/d31', 'frus1917-72PubDipv08/d24', 'frus1969-76v38p2/d105']
+     near_urls=[]  para_urls_after=[]
+[56] "propaganda"
+     found_in=['frus1950v06/d31', 'frus1950v06/d32', 'frus1955-57v22/d271', 'frus1917-72PubDipv07/d147', 'frus1917-72PubDipv08/d92', 'frus1917-72PubDipv08/d129', 'frus1917-72PubDipv08/d143', 'frus1917-72PubDipv08/d149']
+     near_urls=[]  para_urls_after=[]
+[57] "East Asia and the Pacific: how U.S. officials judged their persuasion, 1950-1977"
+     found_in=[]
+     near_urls=[]  para_urls_after=[]
+[58] "Oriental mind"
+     found_in=['frus1952-54v14p2/d551', 'frus1952-54v12p2/d60', 'frus1952-54v13p2/d992', 'frus1958-60v01/d26']
+     near_urls=[]  para_urls_after=[]

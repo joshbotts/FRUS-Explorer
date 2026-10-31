@@ -1,0 +1,51 @@
+index digest: 89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 generated 2026-10-15 2026-10-15T06:55:14 documentCount 314616
+decode: 553 of 553 volumes decode to n with unique ids; rows assigned 314616; rows unfilled 0
+volume row offsets contiguous: True
+binary: b'FRSV' 1 512 314616 660 digest match index: True
+map digest match: True ; shards .generation match: True
+size check: 64 + docs*bpr + cents*dims + cents*4 = 20476048 file 20476048
+random pairs (20,000, Random(1877)): mean 167.1 sd 14.8 p1 132 min 95
+k-th neighbour over 200 random docs: nearest median 83 (q1 73 q3 92); 25th median 107 (q1 99 q3 114)
+
+Operation 2 re-run: 10 nearest of frus1917-72PubDipv08/d31 (Hamming-800, int8 cosine rerank, calibrated (cos-0.40)/0.60):
+  frus1917-72PubDipv07/d106 hamming 81 raw-cos 0.920 calibrated 87%
+  frus1969-76v38p2/d105 hamming 96 raw-cos 0.917 calibrated 86%
+  frus1917-72PubDipv08/d99 hamming 90 raw-cos 0.915 calibrated 86%
+  frus1955-57v09/d190 hamming 100 raw-cos 0.908 calibrated 85%
+  frus1951v06p2/d105 hamming 94 raw-cos 0.908 calibrated 85%
+  frus1952-54v13p1/d116 hamming 88 raw-cos 0.906 calibrated 84%
+  frus1955-57v09/d185 hamming 104 raw-cos 0.905 calibrated 84%
+  frus1961-63v25/d156 hamming 102 raw-cos 0.905 calibrated 84%
+  frus1917-72PubDipv06/d150 hamming 99 raw-cos 0.905 calibrated 84%
+  frus1917-72PubDipv07/d69 hamming 95 raw-cos 0.904 calibrated 84%
+session's list: [('frus1917-72PubDipv07/d106', 81, 0.92), ('frus1969-76v38p2/d105', 96, 0.917), ('frus1917-72PubDipv08/d99', 90, 0.915), ('frus1955-57v09/d190', 100, 0.908), ('frus1951v06p2/d105', 94, 0.908), ('frus1952-54v13p1/d116', 88, 0.906), ('frus1955-57v09/d185', 104, 0.905), ('frus1961-63v25/d156', 102, 0.905), ('frus1917-72PubDipv06/d150', 99, 0.905), ('frus1917-72PubDipv07/d69', 95, 0.904)]
+REPRODUCES (same 10 in the same order, same Hamming, same cosine to 3 d.p.): True
+pure Hamming top-10 (before rerank): [('frus1917-72PubDipv07/d106', 81), ('frus1917-72PubDipv06/d3', 86), ('frus1917-72PubDipv06/d5', 88), ('frus1952-54v13p1/d116', 88), ('frus1955-57v22/d275', 89), ('frus1917-72PubDipv08/d99', 90), ('frus1950v06/d9', 90), ('frus1958-60v16/d65', 91), ('frus1917-72PubDipv07/d140', 92), ('frus1952-54v02p2/d374', 92)]
+
+Operation 1 re-run (3 nearest Hamming neighbours):
+  frus1917-72PubDipv06/d146 [('frus1961-63v04/d199', 34), ('frus1917-72PubDipv06/d142', 93), ('frus1961-63v01/d339', 95)]
+  frus1917-72PubDipv06/d128 [('frus1961-63v03/d152', 42), ('frus1961-63v03/d108', 93), ('frus1958-60v01/d147', 98)]
+  frus1917-72PubDipv06/d140 [('frus1961-63v04/d81', 53), ('frus1961-63v01/d42', 73), ('frus1961-63v01/d207', 74)]
+  frus1917-72PubDipv06/d150 [('frus1961-63v25/d156', 21), ('frus1952-54v02p2/d366', 74), ('frus1955-57v09/d185', 83)]
+  PubDipv06/d150 vs frus1961-63v25/d156 Hamming (not measured by the session): 21
+  DIFF frus1950v06/d50 mine: ('frus1950v01/d145', 92), ('frus1950v06/d3', 93), ('frus1949v06/d3', 96) session: ('frus1950v01/d145', 92), ('frus1950v06/d3', 93), ('frus1958-60v15/d2', 96)
+  DIFF frus1952-54v03/d475 mine: ('frus1949v09/d77', 105), ('frus1955-57v03/d67', 105), ('frus1955-57v03/d268', 105) session: ('frus1955-57v03/d67', 105), ('frus1949v09/d77', 105), ('frus1955-57v03/d268', 105)
+  DIFF frus1952-54v12p2/d396 mine: ('frus1952-54v12p2/d403', 72), ('frus1952-54v12p2/d387', 90), ('frus1951v06p2/d69', 92) session: ('frus1952-54v12p2/d403', 72), ('frus1952-54v12p2/d387', 90), ('frus1961-63v23/d475', 92)
+  DIFF frus1955-57v22/d447 mine: ('frus1952-54v12p1/d3', 101), ('frus1952-54v13p2/d1113', 106), ('frus1955-57v22/d448', 106) session: ('frus1952-54v12p1/d3', 101), ('frus1955-57v22/d448', 106), ('frus1952-54v13p2/d1113', 106)
+  DIFF frus1955-57v23p1/d249 mine: ('frus1955-57v23p1/d205', 107), ('frus1955-57v20/d118', 112), ('frus1955-57v21/d389', 112) session: ('frus1955-57v23p1/d205', 107), ('frus1955-57v21/d389', 112), ('frus1955-57v20/d118', 112)
+  DIFF frus1917-72PubDipv06/d112 mine: ('frus1958-60v16/d395', 65), ('frus1961-63v24/d258', 72), ('frus1961-63v24/d440', 72) session: ('frus1958-60v16/d395', 65), ('frus1961-63v24/d440', 72), ('frus1961-63v24/d258', 72)
+  DIFF frus1917-72PubDipv07/d103 mine: ('frus1917-72PubDipv07/d57', 70), ('frus1917-72PubDipv08/d58', 95), ('frus1964-68v02/d160', 95) session: ('frus1917-72PubDipv07/d57', 70), ('frus1964-68v02/d160', 95), ('frus1917-72PubDipv08/d58', 95)
+  DIFF frus1917-72PubDipv07/d171 mine: ('frus1917-72PubDipv07/d37', 96), ('frus1917-72PubDipv07/d16', 97), ('frus1917-72PubDipv07/d169', 97) session: ('frus1917-72PubDipv07/d37', 96), ('frus1917-72PubDipv07/d169', 97), ('frus1917-72PubDipv07/d16', 97)
+  DIFF frus1964-68v26/d106 mine: ('frus1964-68v26/d67', 87), ('frus1964-68v26/d115', 87), ('frus1964-68v26/d113', 88) session: ('frus1964-68v26/d115', 87), ('frus1964-68v26/d67', 87), ('frus1964-68v26/d113', 88)
+  DIFF frus1917-72PubDipv08/d24 mine: ('frus1964-68v01/d127', 100), ('frus1964-68v01/d177', 102), ('frus1964-68v01/d197', 102) session: ('frus1964-68v01/d127', 100), ('frus1964-68v01/d197', 102), ('frus1964-68v01/d177', 102)
+  DIFF frus1917-72PubDipv08/d30 mine: ('frus1969-76ve12/d73', 109), ('frus1917-72PubDipv08/d65', 110), ('frus1952-54v11p2/d622', 110) session: ('frus1969-76ve12/d73', 109), ('frus1969-76ve12/d77', 110), ('frus1952-54v11p2/d622', 110)
+  DIFF frus1917-72PubDipv08/d92 mine: ('frus1969-76v06/d293', 105), ('frus1961-63v23/d80', 106), ('frus1964-68v27/d183', 106) session: ('frus1969-76v06/d293', 105), ('frus1969-76v20/d60', 106), ('frus1964-68v27/d183', 106)
+  DIFF frus1917-72PubDipv08/d121 mine: ('frus1917-72PubDipv07/d69', 101), ('frus1917-72PubDipv06/d3', 102), ('frus1958-60v05/d3', 102) session: ('frus1917-72PubDipv07/d69', 101), ('frus1958-60v05/d3', 102), ('frus1917-72PubDipv06/d3', 102)
+  DIFF frus1917-72PubDipv08/d146 mine: ('frus1969-76v13/d286', 91), ('frus1917-72PubDipv08/d162', 92), ('frus1969-76v17/d227', 98) session: ('frus1969-76v13/d286', 91), ('frus1917-72PubDipv08/d162', 92), ('frus1969-76ve13/d114', 98)
+  DIFF frus1917-72PubDipv08/d149 mine: ('frus1950v06/d185', 78), ('frus1969-76v05/d447', 78), ('frus1969-76v17/d105', 79) session: ('frus1969-76v05/d447', 78), ('frus1950v06/d185', 78), ('frus1969-76v17/d105', 79)
+dups lists reproduced for 31 of 46 anchors
+  join: ('frus1917-72PubDipv07', 'd106') in confirmed set: True
+  join: ('frus1917-72PubDipv08', 'd99') in confirmed set: True
+  join: ('frus1955-57v09', 'd190') in confirmed set: True
+  join: ('frus1955-57v09', 'd185') in confirmed set: True
+all 10 neighbours' volumes in the index: True

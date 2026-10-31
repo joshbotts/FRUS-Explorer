@@ -1,0 +1,756 @@
+You are doing one research session for a historian on a research question, using a local
+installation of the FRUS Explorer research corpus (the Foreign Relations of the United States
+series). Your cell label is fN; the label means nothing and you need not mention it.
+
+YOUR RUN DIRECTORY (yours alone; create it; write nothing outside it):
+     /Users/jbotts/frus-analysis/c3f/runs/fN
+
+RESOURCES — identical for every cell of this experiment.
+
+1. A SQLite copy of the FRUS Explorer search index (a 553-volume index, taken 2026-10-25):
+     /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db
+   Open it READ-ONLY. Either of these works on this machine:
+     sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT ..."
+     sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "SELECT ..."
+   In Python: sqlite3.connect("file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro", uri=True)
+   Do NOT pass `-uri`: this sqlite3 build rejects it with "unknown option".
+   Never write to it. Tables: document_cache, frus_documents (FTS5 over the corpus text),
+   user_content (FTS5 over the reader's own notes/summaries), cross_references, document_dates,
+   persons, person_mentions, person_rollup, person_rollup_member, document_sources,
+   external_citations, document_subject_refs, document_subject_volumes, document_subjects,
+   volume_sources, volume_structures, page_ranges, user_tags, terms.
+
+2. The TEI XML corpus the index was built from, one file per volume (553 files):
+     /Users/jbotts/Library/Containers/bottsywattsy.FRUS-Explorer/Data/Library/Application Support/FRUSExplorer/volumes/*.xml
+   (the path has a space in it: quote it)
+
+3. The bundled JSON reference data shipped with the app, build 1.0 (1776):
+     "/Applications/FRUS Explorer.app/Contents/Resources"/*.json
+   including manifest.json (volume titles, coverage dates, publication dates, subseries),
+   document-subject-index.json, volume-subject-profiles-index.json, semantic-map-index.json,
+   collection-usage-index.json, external-citation-index.json, central-files-index.json,
+   collection-authority.json, series-facts-index.json, lot-claimants-index.json,
+   presidential-library-catalog.json, volume-sources-index.json, decimal-class-labels.json,
+   subject-numeric-labels.json, provenance-flow-index.json, source-provenance-index.json,
+   digitized-ranges-index.json, roll-scans-index.json, curated-lot-resolutions.json,
+   curated-library-resolutions.json, person-authority-index.json, administrations.json.
+
+4. The app's semantic vector artifacts, which Appendix A below describes, read-only:
+     "/Applications/FRUS Explorer.app/Contents/Resources/semantic-vectors-index.json"     identity (run-length-encoded ids), provenance, calibration
+     "/Applications/FRUS Explorer.app/Contents/Resources/semantic-vectors-binary.bin"     Tier 1: 314,616 sign vectors of 512 bits, then 660 centroids
+     "/Applications/FRUS Explorer.app/Contents/Resources/semantic-map.bin"                the 2-D map placements
+     "/Applications/FRUS Explorer.app/Contents/Resources/semantic-map-index.json"         the map's cluster labels and era histograms
+     "/Applications/FRUS Explorer.app/Contents/Resources/semantic-shards-manifest.json"   one row per Tier-2 shard, with its SHA-256
+     /Users/jbotts/frus-analysis/c3/SemanticVectors/<volume>.vec          Tier 2: 553 int8 shards, one per volume (a copy of the
+                                              app's own folder; its .generation file holds the digest)
+   No embedder is available in this session: there is no way to turn words into a query vector,
+   so the vectors answer document-to-document questions only (Appendix A §A.5), never a free-text one.
+
+CANARY — your FIRST tool call is exactly this command, and its output must be exactly
+553|321749|1103|8481
+     sqlite3 "file:/Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db?mode=ro" "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+Your SECOND is the read-only proof, which must FAIL with "attempt to write a readonly database":
+     sqlite3 -readonly /Users/jbotts/frus-analysis/c3/frus-copy-2026-10-25.db "BEGIN; CREATE TABLE zz(x); ROLLBACK;"
+If either disagrees, stop and report it; do not improvise another way in.
+
+HARD CONSTRAINTS
+- Do NOT read anything under /Users/jbotts/Development/ (any folder in it), under
+  /Users/jbotts/Downloads/, or under any other folder of /Users/jbotts/frus-analysis/ than your
+  own run directory and the SemanticVectors folder named above. Those trees hold notes, memos and
+  kits about this corpus and about related questions, and reading one invalidates this run.
+- No network.
+- Write only inside your own run directory.
+
+TOOLING NOTES (this machine, measured on earlier runs; not under test)
+- A tool call that prints nothing for 180 seconds is killed, and a foreground call is killed at
+  about 120 seconds even while printing. Chunk long scans (one call per volume or per shard),
+  checkpoint to your run directory as you go, and flush (`python3 -u`). For anything longer, run it
+  in the background and poll a file.
+- `timeout` does not exist on macOS, and neither does `gtimeout`. Do not reach for either.
+- zsh does not word-split an unquoted $VAR; pass a file of ids, or an array.
+- `tee` buffers and `tee | head` SIGPIPEs the writer: poll the redirect target, not the tee.
+- Python is 3.9: no backslash inside an f-string expression; `csv.field_size_limit(10**9)`.
+- sqlite3 is 3.54.0. document_cache.body_text is large (about 1.8 GB over the corpus): aggregate
+  in SQL, read documents 5 to 15 at a time, keep the raw text you quote from on disk.
+- Python 3.9 has no `int.bit_count()` (it arrived in 3.10), so Appendix A's §A.5 loop fails as
+  printed; `bin(x).count("1")` is the 3.9 form. numpy 2.0.2 imports from the user's site
+  packages (so not under `python3 -I`), and its `np.bitwise_count` makes a full Hamming scan
+  of the 314,616 sign rows take milliseconds.
+
+HOUSE RULES — follow these throughout.
+
+You have read-only SQL access to a SQLite copy of the FRUS Explorer index — a full-text index of
+the Foreign Relations of the United States series. Follow these rules.
+
+SURFACES — there are three, and most rules below belong to exactly one
+- THIS DATABASE answers coverage, identity, exclusions, the citation graph, and every count of
+  documents.
+- THE TEI XML is the only surface that can answer a counting-surface question, a spelling-variant
+  scan, or an apparatus/document split. This index stores porter STEMS and a flattened text, so a
+  variant count run here silently answers a different question. Marked [TEI] below.
+- THE BUNDLED JSON resolves subjects, volume metadata, and EVERY archival question. Nothing in this
+  database turns a lot number or a collection name into a shelf. Marked [JSON] below.
+If a rule is marked [TEI] or [JSON] and you have not been given that surface, say so and stop —
+do not answer it in SQL. An approximation here is indistinguishable from an answer.
+- If your brief gives you a [HARVEST] path (the offline NARA record-group harvest the bundled
+  archival JSON is projected from — one machine, gitignored): label every count from it [HARVEST],
+  state its snapshot date, never sum it with a bundled count, and stream its shards in chunks
+  (rg_59.json is 3.56 GB). If you are not given the path, say the surface is unavailable.
+
+COVERAGE
+- Before anything else, run the coverage query and report it:
+  SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note)
+  FROM document_cache;
+- The full series is 553 volumes. This database has only what I downloaded. Every count is
+  conditional on that; say so in every summary, with the volume count.
+
+IDENTITY
+- Documents are keyed (volume_id, document_id). ALWAYS join on both. Never on document_id alone.
+- Cite every claim as volume_id/document_id. Never cite by title alone.
+- Never use or report document_cache.rowid as an identifier.
+
+EXCLUSIONS
+- Exclude is_front_matter = 1 and is_editorial_note = 1 unless I ask for them.
+- NEVER read or quote summary_text or note_text. They are my own AI summaries and notes, not
+  historical sources.
+- Exclude cross_references where is_broken = 1.
+
+KNOWN TRAPS — do not fall into these:
+- The FTS tokenizer is porter stemming and unicode61 drops punctuation. Index terms are stems
+  ('containment' -> 'contain'); a vocab lookup for a full word returning nothing means you used the
+  wrong form. The converse bites harder: a phrase MATCH also returns a DIFFERENT word with the same
+  stem ("commercial officer" returns "commercial office"; "national treatment" returns
+  "most-favored-nation treatment"). A phrase count therefore carries TWO obligations, and they fail
+  SEPARATELY. Measured over two rounds of a real investigation, all eight threads of the second
+  round breached this rule, in four different ways: a bare `share` column, a phrase count with no
+  share at all, an unlabelled share, and the correct form applied unevenly.
+  (a) PUBLISH NO PHRASE COUNT WITHOUT ITS LITERAL SHARE. Regex over header+dateline+source_note+
+      body_text concatenated and whitespace-collapsed, on an evenly spaced sample of 40 (never
+      fewer than 30) from the (volume_id, document_id)-sorted hit list; the whole set under 300,
+      and a census for a family you argue from. Run it TWICE and LABEL BOTH: STRICT = single
+      spaces between the words; TOLERANT = each word allowed its inflections, and any run of
+      space, hyphen, comma, parenthesis or full stop between them. Publish tolerant, strict beside
+      it. AN UNLABELLED SHARE IS THE FAILURE THAT BITES: in this run, both "refutations" of a
+      published 1.000 were just its strict share, every miss an inflection. Below 0.80 TOLERANT a
+      family is unusable in its published form; read the misses before condemning one; and a 1.000
+      share tests the stemmer, not the referent, so test the referent separately.
+  (b) PUBLISH NO SHARE WITHOUT ITS DENOMINATOR, as "N of M", at the point of use. A share is a
+      number a reader must be able to re-derive from what you printed; it is not a claim.
+- A `term*` prefix is matched against STEMS: `normaliz*` cannot reach `normalization` (stem
+  `normal`), and `communis*` misses `communism` (stem `commun`) while it still returns every
+  `communist`. Look the stem up in frus_documents_vocab and write the prefix no longer than it.
+- body_text INCLUDES editorial footnotes. Term frequencies blend document and editor language.
+- citation_era is a citation FORM (decimal, subject_numeric, lot_file, structured, cfpf, foreign,
+  published, named_series, unrecognized), NOT a date. Never plot it as a timeline. subject_numeric
+  is a Subject-Numeric File citation (February 1963–1973) in either wording, Department-led or
+  National-Archives-led; its repository and series_name are stored as before. decimal likewise
+  covers a decimal file number cited through the National Archives.
+- cross_references.reference_type defaults body references to 'footnote'. It cannot support a
+  body-vs-footnote split.
+- document_sources (where a document CAME FROM, one row per document) and external_citations
+  (what a footnote MENTIONS, many rows per document) must never be combined into one count.
+- person_rollup is name-based clustering biased to under-merge; person counts are lower bounds.
+- person_mentions covers TEI-tagged mentions only; tagging is uneven across volumes.
+- Subject tags come from string matching, not semantic analysis. Treat as candidates. A tag may be
+  a single bare word; verify with the literal-phrase query before counting.
+- subject_tag_ids is always NULL. Ignore it.
+- bm25() is negative; better matches are more negative. ORDER BY score ASC.
+- SQLite LIKE is case-INSENSITIVE for ASCII; Python's `re` is case-SENSITIVE by default. The same
+  literal test written once in SQL and once in Python returns two different sets and neither errors.
+  Say which you used, and use one of them for a whole family.
+- length(body_text) counts CHARACTERS; `wc -c` counts BYTES. This corpus is UTF-8 and the two
+  disagree — frus1977-80v28/d206 is 35,125 characters and 36,615 bytes, and `wc -c` on a dumped
+  file reports 36,616, counting the newline the dump added. The reading accounting the REPORTING
+  block asks for is in characters.
+
+REPORTING
+- Show the exact SQL for every number you report — including SQL a script ran for you: paste the
+  predicate, not just the script's name. WHERE A NUMBER DOES NOT COME FROM SQL AT ALL — a
+  multi-stage pass over the TEI, a script over the bundled JSON — name the script, keep it and its
+  output on disk, and say which file holds which number.
+- DO NOT CLAIM YOUR LOG IS COMPLETE. **Declare what you left out instead.** End the log with an
+  `ELIDED:` line naming every command body, id list or output you shortened, or `ELIDED: nothing`
+  if that is true. A blanket "every command, verbatim" header is a violation of this rule even when
+  it happens to be accurate, because it is unverifiable — and measured across twelve runs, every
+  single log that carried one had an elided command body underneath it, once hiding a list of 42
+  (volume_id, document_id) pairs where the memo said 43. You will need to elide a hundred-character
+  `python3 -c` body; that is expected and permitted. Saying you did not is the failure.
+- Give proportions as "N of M" with the denominator, never as a bare percentage.
+- If a query returns no rows, say so, and print beside it the relaxed form of the same query, on
+  the same surface, that did return rows (drop one term, or widen the date), with its count. A
+  zero printed with no such query beside it is an assertion, not a measurement.
+- A figure you take from these rules or from the guide is the guide's measurement at its date,
+  not yours: re-derive it or attribute it, and never present it as a result of this session.
+- Do not quote text you have not retrieved in a result set in this session.
+- Flag when a result is thin enough that it may reflect my partial library rather than the corpus.
+- If you say an earlier pass was wrong, silent, or never read something: grep its FINAL files
+  (after its fix pass), show the command, and put the change in a table with the decisive query
+  run on BOTH sides.
+- If you read documents, report how many you retrieved whole (captured length = length(body_text))
+  and how many you quoted; keep the reading SELECT and the raw text on disk.
+
+READER-FACING OUTPUT — the overview and the collection are for a historian, not for me
+- Write the overview in plain prose. No SQL, no table or column name, no volume_id/document_id
+  string, no file path, no issue number. Those belong in the memo, which keeps every one.
+- Open with three paragraphs, in this order, before any finding: (1) what FRUS answers directly,
+  with the documents cited; (2) where FRUS points for the rest, the series the documents came
+  from and the series the footnotes cite unprinted, as two lists, each series by title, record
+  group and entry, NARA identifier, dates and access; (3) what this request cannot get from FRUS,
+  each as a search you ran, with its terms, volumes and controls, and the shelf if one exists.
+- Cite as the printed edition — "Foreign Relations of the United States, 1958–1960, Volume VII,
+  Part 1, Document 12" — then the history.state.gov URL. The id pair is for the memo and the log.
+- Give every number as a count of a named set in words ("about one document in seven among the
+  43 volumes indexed"), rounded to what the comparison needs; put the exact N of M, the rate and
+  the denominator in the memo and say "see the memo" once, not at every number.
+- Every quotation in the overview is one the memo verified against its document; every document
+  the overview cites is in the collection. Check both before you finish, and say you did.
+- Explain a technical term the first time it appears, in the sentence, or do not use it: "the
+  index treats 'clearing agreement' and 'clear agreement' as the same words", not "stem".
+
+SCOPING — applies whenever you are scanning the corpus to decide what to search for
+- Run a POSITIVE control ("Department of State", expect nonzero in every volume) and a NEGATIVE
+  control ("ZZZ_IMPOSSIBLE_ZZZ", expect 0) in the SAME pass. Report both. An absence is not a
+  finding until the controls prove the scan works.
+- [TEI] State your COUNTING SURFACE with every number: raw TEI, tag-stripped, or word-bounded.
+  They disagree by up to 14% on this corpus. Prefer tag-stripped + whitespace-collapsed.
+- [TEI] Never query a single literal. Count every spelling, hyphenation, plural, acronym and case
+  variant and report the split. Acronyms often outnumber spelled forms. The index CANNOT do this:
+  porter stemming folds `chiefs of mission` and `chiefs of missions` to one stem.
+- FALSE-FRIEND TEST: for any term the question itself supplied, compute its share in the
+  on-topic volumes and compare that to a control phrase's share. A term matching the baseline
+  is measuring the corpus, not the question — say so and stop using it.
+- Never scan a bare surname. Full-name and inverted-index forms only; <persName> markup covers
+  only 4-10% of mentions and cannot disambiguate.
+- Periodise on frus:doc-dateTime-min, NOT on the volume's series year. Say which you used.
+- Never publish a term's decade shape as raw counts alone: the 1940s holds 74,043 dated documents
+  and the 1870s 5,798. Give per-1,000 of that decade's dated non-apparatus documents beside every
+  raw count, with the numerator's top-volume share — a small decade's rate can be one negotiation.
+- [TEI] Separate document text from apparatus (front matter, abbreviation lists, footnotes,
+  index) before publishing any density, or say explicitly that you have not. This database can
+  drop front matter and editorial notes by column; it cannot separate a footnote from a body,
+  because body_text contains both.
+- Read the editors' chapter headings before writing queries. My modern phrasing for a subject
+  is usually absent from the corpus; theirs is a repeating formula.
+- A negative built from vocabulary postdating the period is circular. Before claiming the corpus
+  lacks pre-YEAR coverage, scan terms contemporaries would have used — including the COUNTERPART's
+  vocabulary (merchants, chambers, the foreign ministry), not only earlier names for the office.
+  Head an absence by the name you tested, and put the founding document beside it if the thing is
+  printed under another name.
+- Suppress the SECOND edition where its first edition is also present: drop
+  frus1951-54IranEd2 and frus1969-76ve15p2Ed2, never the first editions their ids are built from,
+  and never frus1977-80v09Ed2, which has no first edition to duplicate. Say which surface you
+  counted: the overlap is 718 documents in the vector artifacts and 701 in this index with
+  apparatus excluded.
+
+ARCHIVAL SCOPE — do not stop at what FRUS printed
+- FRUS is a SELECTION. Scoping is not finished when you know which volumes hold the question.
+  Also establish which archival units those documents came out of, and which units their
+  footnotes point at. Report both, always labelled by channel, and NEVER summed.
+- [JSON] Resolve as far as the bundled indexes reach, and report what you got. They are in the
+  app bundle at /Applications/FRUS Explorer.app/Contents/Resources/ and in the public repository
+  at FRUSExplorer/Resources/:
+    collection-usage-index.json  -> ranked archival targets for any volume scope
+    external-citation-index.json -> what the editors cited and did NOT print
+    central-files-index.json     -> lot number -> record group + series NAID + entry number
+    collection-authority.json    -> collection identity across spellings
+    series-facts-index.json      -> creator, extent, inclusive date span, access status, facility
+    lot-claimants-index.json     -> lots NARA divides across several series and the NAIDs several
+                                    lots converge on
+    presidential-library-catalog.json, volume-sources-index.json, decimal-class-labels.json,
+    curated-lot-resolutions.json, digitized-ranges-index.json, accession-series-index.json
+  THE CONTAINER SHAPES ARE NOT WHAT A READER GUESSES, and guessing costs a whole pass — one agent
+    reported all eight of its target lots absent before it looked. `central-files-index.json` holds
+    `lotFiles` as a LIST of rows keyed on a `lotNumber` field with spaces folded (`68 D 451` ->
+    `68D451`), not a dict and not `lot`/`rawLot`. `lot-claimants-index.json` and
+    `curated-lot-resolutions.json` each hold `lots` as a LIST of rows — but
+    `volume-sources-index.json`'s top-level `lots` is a DICT and is EMPTY (those lots were folded
+    into `central-files-index.json`; read its `majorCollections` instead). `series-facts-index.json`
+    holds its rows under `byNaId` under one-letter keys that the top-level `legend` names; a key
+    dereferences into a top-level vocabulary array only where its `into` says so, and `x`, `y0`,
+    `y1`, `cy0`, `cy1` are literal values. In all of them the version key is `schemaVersion`; there
+    is no `schema`. Read the file's own top-level keys before writing the accessor.
+  accession-series-index.json keys on `<record group>/<accession>` and THE RECORD GROUP IS PART
+    OF THE KEY: an FRC accession number is unique only within its group (`68A5612` is 1 series
+    in RG 59 and 18 in RG 84). Match a FRUS "FRC Accession No. 71 A 6682" only against the group
+    that citation sits in. Nothing in the app reads this file.
+  decimal-class-labels.json gates itself: read `coverage.glossableYears` and gloss a key ONLY
+    when the DOCUMENT's own date falls inside a listed span. Outside them the file has no gloss
+    (`coverage.keyOutsideGlossableYears` says so) — composing anyway returns a plausible WRONG
+    reading, not a miss, because the classification was renumbered in 1950. `coverage.notShipped`
+    names the eras it could not parse, with the counts that fell short.
+- A CORPUS-SCOPING NEGATIVE IS NOT A RESEARCH NEGATIVE. "FRUS does not print this" is an
+  invitation to answer "and here is the series that does". Never publish the first without
+  having attempted the second.
+- Label every archival count with its CHANNEL (came-from / pointed-at / union) and its volume
+  set. Two channels over one scope are two different numbers.
+- NARA's creator attribution is a decoy surface like any other — measured at 56% precision on
+  one route. Verify a series' creator heading before calling it on-topic.
+- The offline stack barely reaches before 1940: the guide counted about one bundled series in
+  sixty starting before 1940. Re-derive the figure from series-facts-index.json before you print
+  one, and say so rather than reporting an empty pre-war roadmap as an archival absence.
+- The pointed-at channel (external_citations) has no row before 1910-12-06, stores the citation
+  fragment, not the sentence, and holds lot, library and decimal anchors only. Say so before
+  ranking anything on it.
+
+SEMANTIC VECTORS
+- Identity comes ONLY from semantic-vectors-index.json's id segments. Never derive an id from
+  an ordinal or a rowid.
+- Before scoring, compare the 32-byte provenance digest across every artifact you touch; on any
+  mismatch, stop and say so. Never mix generations.
+- Report semantic neighbors as suggestions with their distances, never as evidence of a
+  relationship. Similarity claims require reading the documents — and say which baseline each
+  distance is measured against (random pairs, or the k-th-neighbour distribution), both computed
+  at the digest in use.
+- Tier-1 covers all 553 volumes even when the SQLite index does not: flag any neighbor whose
+  volume is absent from document_cache, and cite it by its canonical URL.
+- Absence of a neighbor is not evidence of absence: the funnel's measured recall@10, the index's
+  retrieval.measuredRecallAt10, is below 1.
+- A cosine the reader sees goes through the index's `retrieval.scoreCalibration` offsets
+  (§A.7), or is labelled raw. Four runs of four skipped this in the 2026-10-27 measurement.
+
+APPENDIX A OF THE GUIDE — the semantic vector artifacts named in RESOURCES item 4: what they are,
+how to read them, what an agent can do with them and what they cannot tell you. Reference, not a
+second rule block; its closing addendum is written for the house rules above.
+
+## Appendix A: The semantic vector artifacts
+
+The database is not the only structured layer FRUS Explorer ships. The app also carries a set of
+**semantic vector artifacts** — a neural embedding of every document in the corpus, quantized and
+packed for on-device retrieval — and they are just as usable by an outside agent as the SQLite
+index is. Everything in this appendix was verified against the shipped files: the binary headers
+parse as documented, the id encoding round-trips for all 553 volumes, and every worked example
+below was executed as shown.
+
+One structural fact frames all of it: **the shipped artifacts are complete for document-to-document
+work with no embedding model at all** ([§A.5](#a5-what-an-agent-can-do-with-no-model)). Related
+documents and the map are anchored on an existing document, so an outside agent can reproduce every
+one of them from the bundled files alone.
+
+Free-text queries are the exception, and they need the embedder
+([§A.7](#a7-free-text-queries-require-the-embedder)). *(Corrected 2026-08-31: this paragraph used to
+say "the app itself never embeds free text." Build 44's Search by Meaning falsified that — the app
+now embeds queries on-device — and the query-side prompt it uses is named in §A.7 rather than left
+to you.)*
+
+This appendix is the reference. When a session should use the artifacts, on which documents, and
+what its memo and overview owe for them is
+[§14.17](#1417-the-second-finding-aid-when-the-vectors-enter-the-pass).
+
+### A.1 What ships, and where
+
+| Artifact | Contents | Where |
+|---|---|---|
+| `semantic-vectors-index.json` (~73 KB) | Identity and provenance: per-volume row offsets, run-length-encoded document ids, the provenance pin, measured retrieval parameters | App bundle `Resources/` |
+| `semantic-vectors-binary.bin` (~19.5 MB) | Tier 1: one 512-bit **sign vector** per document (314,616 of them), then 660 int8 **centroids** (553 volumes + 107 subseries) | App bundle `Resources/` |
+| `<volume>.vec` shards (~150 KB each) | Tier 2: full **int8 512-dim vectors** with a per-document scale, one file per volume | `…/Application Support/FRUSExplorer/SemanticVectors/` |
+| `semantic-map.bin` (~1.9 MB) | One `(int16 x, int16 y, uint16 cluster)` placement per document — a 2-D UMAP layout with HDBSCAN clusters | App bundle `Resources/` |
+| `semantic-map-index.json` (~25 KB) | Per-cluster labels (c-TF-IDF terms), centres, document counts, era histograms | App bundle `Resources/` |
+
+The bundle path on macOS is `/Applications/FRUS Explorer.app/Contents/Resources/`. The Tier-2
+shards live beside the database in Application Support and exist **only for volumes whose vectors
+have been fetched** (by default that tracks volume downloads; Settings ▸ Library ▸ Volumes & Storage
+▸ Semantic Vectors ▸ *Download With Volumes* controls it) — whereas Tier 1 and the map cover the
+**entire 553-volume corpus regardless of your library**. That asymmetry cuts both ways: semantic
+neighbors can point at documents you cannot open locally (resolve them via the canonical URL), and
+the semantic tier is the one place in the app's data where a claim about the *whole* corpus is
+actually possible.
+
+### A.2 The provenance pin, and the one family rule
+
+Every artifact carries the same 32-byte SHA-256 **provenance digest**, computed over everything
+that changes the numbers: model id, GGUF weight hash, native and shipping dims, chunking, the
+document prompt (trailing space included), the pooling rule, and the quantization rules. The
+index carries it as `provenanceDigest` (hex); each binary carries it in its header at offset 20.
+
+The family rule is: **no consumer may mix two generations.** A shard from one generation must
+never rescore candidates from another — refuse, re-fetch, or degrade, never blend. For an outside
+agent that means one check before any scoring: read the digest from each file you touch and
+compare. Verified on the shipped set: index, corpus binary, and map all carry the same digest.
+
+### A.3 Document identity: stored, never derived
+
+Rows in the binary tier are keyed by the index's `volumes` table: each volume states its
+`rowOffset` (`r`), its document count (`n`), and its ids as run-length-encoded segments (`seg`).
+**Do not guess ids from ordinals.** The obvious rule — document at ordinal *i* is `d{i+1}` — was
+measured against this corpus and mis-keys 15,097 documents (4.8%), because a single letter-suffixed
+id (`frus1865p1`'s `d373a`) shifts every document behind it. A wrong key here never fails: every
+vector still resolves and every score is plausible; the neighbors shown just belong to different
+documents than the ones named.
+
+The faithful decode (mirroring `SemanticVectorsKit/DocumentIDSegments.swift`): a run only ever
+forms over ids that are exactly `d` + digits with no redundant leading zero; anything else
+(`d373a`, `appA`) is a literal single-document segment.
+
+```python
+def numeric_part(doc_id):
+    if not doc_id.startswith("d"): return None
+    digits = doc_id[1:]
+    if not digits or not digits.isdigit(): return None
+    if len(digits) > 1 and digits[0] == "0": return None
+    return int(digits)
+
+def decode_segments(segments):          # one volume's "seg" array
+    ids = []
+    for seg in segments:
+        assert seg["s"] == len(ids)     # segments are in row order
+        ids.append(seg["i"])
+        if seg["n"] > 1:
+            base = numeric_part(seg["i"])
+            ids.extend(f"d{base + k}" for k in range(1, seg["n"]))
+    return ids
+```
+
+Run the round trip before trusting anything built on it — decoded length must equal `n` for every
+volume (verified: 553 of 553 on the shipped index).
+
+### A.4 Binary layouts
+
+All three binaries share the shape: a 64-byte little-endian header, then flat arrays. Read `dims`
+from the header rather than hard-coding 512 — the shipping width is a regeneration lever.
+
+```
+semantic-vectors-binary.bin                      <volume>.vec (Tier-2 shard)
+0   magic "FRSV"              4 B                0   magic "FRSS"              4 B
+4   version                   4 B  UInt32        4   version                   4 B  UInt32
+8   shipping dims             4 B  UInt32        8   shipping dims             4 B  UInt32
+12  document count            4 B  UInt32        12  document count            4 B  UInt32
+16  centroid count            4 B  UInt32        16  provenance digest        32 B
+20  provenance digest        32 B                48  zero padding             16 B
+52  zero padding             12 B                64  int8 codes      docs × dims B
+64  sign bits      docs × dims/8 B               ..  scales          docs × 4    B  Float32
+..  centroids  centroids × (dims+4) B
+    (int8 codes, then Float32 scale)
+
+semantic-map.bin
+0   magic "FRSM"              4 B
+4   version                   4 B  UInt32
+8   document count            4 B  UInt32
+12  cluster count             4 B  UInt32
+16  grid extent               4 B  UInt32
+20  provenance digest        32 B
+52  zero padding             12 B
+64  placements       docs × 6 B  (int16 x, int16 y, uint16 cluster; 0xFFFF = unclustered)
+```
+
+Sign bits are packed **MSB-first, and a zero component packs as a set bit** (the rule is `>= 0`).
+Centroids follow the sign-bit block in a fixed order: the 553 volumes in index order, then the 107
+subseries in the index's `subseries` order. Dequantize any int8 vector as `code × scale`.
+
+### A.5 What an agent can do with no model
+
+Every figure in this appendix is one generation's reading. An agent recomputes the ones it relies
+on at the digest in use, and the appendix is re-taken after each regeneration, as it was on
+2026-10-26.
+
+**Nearest neighbors of a document, corpus-wide.** XOR-and-popcount over the sign bits. Executed
+against the shipped binary (EmbeddingGemma 2, digest `89481b18…`, re-taken 2026-10-26), the ten
+nearest neighbors of `frus1861/d111` are:
+
+```
+hamming  57  frus1861/d119        hamming  77  frus1862/d262
+hamming  62  frus1861/d39         hamming  78  frus1861/d20
+hamming  70  frus1863p1/d254      hamming  78  frus1862/d111
+hamming  75  frus1862/d130        hamming  78  frus1862/d455
+hamming  77  frus1861/d203        hamming  79  frus1862/d118
+```
+
+— all Civil War-era diplomacy, which is what a working index looks like. (The 300m generation's
+list, which this paragraph carried until 2026-10-26, began `87 frus1862/d130`; three of its ten
+survive here at shorter distances. A regeneration moves every list, as §A.8 says.)
+
+Calibrate before reading any distance, against **two** baselines. Random pairs at this digest
+(20,000 pairs drawn with the standard library's `random.Random(1877)`): mean 167, sd 15, 1st
+percentile 132, minimum 95 of 512 — the list above at 57–79 is far outside chance. But every
+nearest-neighbour list is a tail of that distribution by construction, so a neighbour at 110 is
+not "top 0.1%" evidence of a link: over a 200-document sample the median document has its
+25th-nearest neighbour at 108 (quartiles 101 and 113), and one document whose nearest neighbour
+in the whole corpus sits at 130 is a semantic isolate. Judge a neighbour against the
+k-th-neighbour distribution and a set's cohesion against random pairs; a random 512-bit pattern has
+minimum 200 to 206 to the corpus (ten patterns). Recompute both after any regeneration: the 300m
+generation's figures were mean 193, sd 17, 25th neighbour 124 and pattern minimum 215, and
+EmbeddingGemma 2's distances run about 25 bits shorter throughout.
+
+The core loop, given the `row_of`/`doc_of` maps built from §A.3's decode:
+
+```python
+import struct, heapq
+blob = open("semantic-vectors-binary.bin", "rb").read()
+ver, dims, docs, cents = struct.unpack("<IIII", blob[4:20])
+bpr = dims // 8
+
+def sign_row(row):
+    o = 64 + row * bpr
+    return int.from_bytes(blob[o:o+bpr], "big")
+
+anchor = row_of[("frus1861", "d111")]
+q, best = sign_row(anchor), []
+for row in range(docs):
+    if row == anchor: continue
+    d = (q ^ sign_row(row)).bit_count()
+    if len(best) < 10: heapq.heappush(best, (-d, row))
+    elif -best[0][0] > d: heapq.heapreplace(best, (-d, row))
+```
+
+A full scan is milliseconds in a compiled language and a few seconds even in pure Python; no ANN
+index is needed at this scale (the app measured its own full scan at 1.43 ms and decided the same).
+`int.bit_count()` needs Python 3.10; on 3.9, which a Mac's system Python still is, write
+`bin(q ^ sign_row(row)).count("1")`, which is the same count at a few times the cost.
+
+**Semantic joins into the database.** This is where an agent goes past the app's own UI: take a
+neighbor set or a cluster's members, then join `(volume_id, document_id)` into `document_dates`,
+`document_sources`, or `person_mentions`. "Documents semantically near this memo but from a
+different decade / a different archive / never citing this person" are one query each — questions
+neither the vectors nor the database can answer alone. Vectors also recover what FTS structurally
+misses: vocabulary drift across 165 years, and the French and Spanish enclosures that porter
+stemming mangles.
+
+**Volume and subseries similarity, and outliers.** The centroid block gives every volume a vector.
+Executed against the shipped file, the volumes nearest `frus1861` by centroid cosine are
+`frus1862` (0.989), `frus1863p2` (0.986), `frus1864p4` (0.984) — the adjacent Civil War annuals,
+as they should be. A document's distance from its own volume's centroid is an off-the-shelf
+outlier detector: "the least typical document in this volume."
+
+**The map.** Six bytes per document give a 2-D position and a cluster; the map index names each
+cluster with sampled c-TF-IDF terms and an era histogram. Verified example, in the 2026-10-15
+layout (the EmbeddingGemma 2 generation, 140 clusters): `frus1881/d625`, the 1881 despatch from
+Constantinople, sits in cluster 73, whose terms are `constantinople, terrell, porte, sublime` and
+1,307 of whose 1,643 documents come from the layout's earliest era band; `frus1961-63v11/d1` sits
+in cluster 42, `castro, somoza, cuban, cuba`, 7,650 documents, with `frus1964-68v31/d512`, a Chile
+memorandum of 1964, beside it. (The example this paragraph gave until 2026-10-26, `frus1929v03/d17`
+in a cluster labelled `israel, israeli, arab, uar`, was a reading of the 2026-10-10 layout: that
+despatch is unclustered in this one, and so is `frus1913/d1028`. Before that the example was
+`frus1881/d625` in `shah, iran, iranian, mosadeq`, true of the 2026-08-16 layout alone. An example
+is a reading of one layout, like an id.) 88,059 of 314,616 placements (28.0%) are unclustered
+(`0xFFFF`); that share is a property of the corpus, not an error, and any figure built on clusters
+owes the reader the number. Its era dependence is a property of the layout, not a constant. Over
+all placements, with each volume dated by the mean of the first and last years of its range in the
+manifest, rounded down, 8,436 of the 34,046 documents of volumes dated 1861–1899 are unclustered in
+this layout (24.8%), against 26,875 of the 100,373 of volumes dated 1945–1964 (26.8%). By the same
+rule the 2026-10-10 layout left 12,776 of the 34,046 unclustered (37.5%) against 24,514 of the
+100,373 (24.4%); the 2026-08-16 layout, over a narrower working scope with apparatus excluded and
+Ed2 folded, gave 46.7% against 22.3%. Compare any set's unclustered share to an era-matched
+baseline computed on the layout in use, never to the corpus figure.
+
+**Near-duplicate detection.** FRUS reprints some documents across volumes, each copy under its own
+id. Very small Hamming distances flag reprints — worth running over any sample before counting
+anything, so a document printed twice is not counted twice. §14.9 gives the distances measured at
+this generation and the recipe.
+
+### A.6 Reranking with Tier-2 shards
+
+The bundled sign bits are the recall stage; the shards are precision. The app's measured funnel —
+take the ~800 best Hamming candidates, rerank by int8 cosine — reaches the recall@10 the index
+states as `retrieval.measuredRecallAt10`, with the measurement cited in `retrieval.measuredBy`:
+**0.902** at the 2026-10-15 generation, where the 300m before it reached 0.851. Read the index's
+figure, which changes with the generation. Scoring against a shard: for documents *a* and *b* with
+codes and scales,
+
+```
+cosine(a, b) ≈ scale_a · scale_b · dot(codes_a, codes_b)
+```
+
+(vectors are L2-normalized before quantization, so the dot product *is* the cosine up to
+quantization error). Shard rows are in the volume's row order — identity again comes from the
+index's segments, never from the shard, which deliberately carries no ids. Remember shards exist
+only for fetched volumes; a missing shard is *typed-unavailable*, not zero similarity.
+
+### A.7 Free-text queries require the embedder
+
+To ask the corpus a question in words ("naval blockade diplomacy") rather than by anchor document,
+you must produce a query vector in the same space, and the provenance pins exactly what that
+means: model `embeddinggemma-2-Q8_0` (Google's EmbeddingGemma 2, Apache 2.0, as the ggml-org Q8_0
+GGUF; builds 42 to 50 shipped EmbeddingGemma 300m, `text-embedding-embeddinggemma-300m-qat`, and a
+vector from one model is no use against the other's), the GGUF's SHA-256 (in the index — verify
+your download against it), document
+prompt `"title: none | text: "` with its trailing space, 3,200-character chunks with 480 overlap,
+char-length-weighted pooling of unit-norm chunk vectors, Matryoshka truncation to the shipping
+width, L2 renormalization — then int8- or sign-quantize by the rules in §A.4 to score.
+
+**The query-side prompt is now in the repo, and public** *(corrected 2026-08-31; this appendix
+previously said the app never embeds queries, which was true when it was written and stopped being
+true at build 44)*. The app ships on-device query embedding: it fetches the pinned EmbeddingGemma
+GGUF and encodes through `SemanticQueryEncoder.encodeQuery`
+(`FRUSExplorer/Semantic/SemanticQueryEncoder.swift:235`) under
+
+```
+SemanticQueryPrompt.queryPrefix = "task: search result | query: "
+```
+
+(`SemanticVectorsKit/SemanticQueryPrompt.swift:30`). Use it verbatim, trailing space included. It is
+asymmetric with the document prompt on purpose — that is EmbeddingGemma's convention, not an
+oversight — and a query embedded under a different prefix lands in a different region of the space,
+which does not fail so much as quietly return worse neighbours.
+
+**You probably already have the weights.** If you have used Search by Meaning, the app fetched the
+pinned GGUF and checked it against the published length and SHA-256 before keeping it. Rather than
+downloading 310 MB again and trusting a URL, reuse the copy the app validated:
+**Settings ▸ Library ▸ Volumes & Storage ▸ Natural-Language Search** shows the file's location, with
+*Show in Finder* and *Copy Path* on macOS. The path appears only while a verified copy is present,
+so a path you can see is a file that passed its check.
+
+The prompt itself is in the artifact too: `semantic-vectors-index.json`'s `provenance.queryPrefix`,
+so the index is self-describing on both sides. It is published but deliberately **not** part of the
+provenance digest — adding it changed no artifact's identity, and every previously downloaded shard
+stayed valid. An artifact generated before this field existed simply omits the key.
+
+**The caveat that stands:** the index's recall, 0.902 for EmbeddingGemma 2 (0.851 for the 300m),
+was measured **document-to-document**. Text-query retrieval has been measured only by the owner's
+25 judged queries, in August and for the 300m; EmbeddingGemma 2 shares 3.6 of its ten documents a
+query with those lists, and the rest are not yet judged. So validate on queries you can check by
+hand before trusting it in bulk. The prompt being pinned removes a source of variance; it does not
+supply the missing measurement.
+
+**The app's percentages are not raw cosines.** Since build 51 a Meaning match's "Semantic match ·
+N%" is the cosine through `retrieval.scoreCalibration` in the index, `(cosine − 0.47) / 0.53` for a
+question against a document and `(cosine − 0.40) / 0.60` between two documents, because
+EmbeddingGemma 2's cosines run about twenty points above the 300m's for the same closeness. A cosine
+you compute yourself reads higher than the app's figure for the same pair; apply the same offsets to
+compare them.
+
+### A.8 What the vectors cannot tell you
+
+The database caveats in §7 all still apply — and the semantic layer adds its own:
+
+- **Similarity is a lead, not evidence.** A neighbor is a reading suggestion. Nothing about
+  embedding distance supports "these documents are related" as a historical claim; the claim comes
+  from reading them, with the vector as the finding aid that got you there. Compare like statistics.
+  A minimum-to-a-set is not comparable to a mean over pairs; the matched control for 'candidates are
+  closer to the stratum than members are to each other' is min-to-nearest-member on both sides, and
+  it inverted the published sentence when run (88.3 for members, 123.5 for candidates).
+- **Vectors pool whole documents, footnotes included.** Each document is one vector — a weighted
+  mean over its chunks, editors' annotation and all. Long documents blur; the chunk vectors that
+  could localize a match are not shipped.
+- **The neural layer is not reproducible.** The embedding was produced by an owner-run harvest;
+  you cannot regenerate it, only cite it. Record the provenance digest and the index's `generated`
+  and `harvestGenerated` stamps the way you would cite an edition, and re-record them after any
+  app update — a regeneration changes every neighbor list.
+- **The map is a projection.** Clustering ran on the 2-D embedding, not the 512-dim space — the
+  layout's input was the 256-dim cut (`layout.sourceDims`), not the shipped 512-bit sign block; map
+  neighbours and Hamming neighbours are two measurements. 88,059 of the 314,616 placements are
+  unclustered in the 2026-10-15 layout; that share is corpus-wide, and how it falls by era depends
+  on the layout (§A.5: 8,436 of 34,046 documents of volumes dated 1861–1899 against 26,875 of
+  100,373 of 1945–1964 in this one, where earlier layouts put the nineteenth century far higher).
+  Compare any set's unclustered share to an era-matched baseline computed on the layout in use,
+  never to the corpus figure. Labels are c-TF-IDF over a *sample* of each cluster's members. Use
+  clusters to explore and to sample, not to measure.
+- **A recall below 1 means misses.** At the index's `retrieval.measuredRecallAt10`, 0.902 at the
+  2026-10-15 generation, about one of any document's ten true nearest neighbors is absent from the
+  shipped funnel's answer. Fine for discovery; fatal for any claim of the form "no similar
+  document exists."
+
+A short addendum for the §12 house-rules block, when a session touches the vectors. It states
+rules, not a method: what to run, and when, is §14.17.
+
+```text
+SEMANTIC VECTORS
+- Identity comes ONLY from semantic-vectors-index.json's id segments. Never derive an id from
+  an ordinal or a rowid.
+- Before scoring, compare the 32-byte provenance digest across every artifact you touch; on any
+  mismatch, stop and say so. Never mix generations.
+- Report semantic neighbors as suggestions with their distances, never as evidence of a
+  relationship. Similarity claims require reading the documents — and say which baseline each
+  distance is measured against (random pairs, or the k-th-neighbour distribution), both computed
+  at the digest in use.
+- Tier-1 covers all 553 volumes even when the SQLite index does not: flag any neighbor whose
+  volume is absent from document_cache, and cite it by its canonical URL.
+- Absence of a neighbor is not evidence of absence: the funnel's measured recall@10, the index's
+  retrieval.measuredRecallAt10, is below 1.
+- A cosine the reader sees goes through the index's `retrieval.scoreCalibration` offsets
+  (§A.7), or is labelled raw. Four runs of four skipped this in the 2026-10-27 measurement.
+```
+
+THE QUESTION
+How did policymakers assess American soft power in the east Asia and Pacific region? What messaging strategies did they use and how effective did they think they were? What beliefs about the regional audience contributed to those strategies?
+
+THE HISTORIAN'S DELIVERABLE — four files in your run directory, all required, written in ONE
+session (there is no second round: whatever you do not write now, nobody gets).
+
+1. memo.md — the scope memo: the scope you chose (volumes, date span, inclusion rule) and how you
+   found it; what you measured, with the audit form of every number (the query, the pair, the
+   counting surface, the share with its denominator); every quotation with the SELECT that
+   retrieved it and its (volume_id, document_id); a section headed VECTORS that names each of
+   Appendix A's operations you ran (nearest neighbours of a document, a semantic join, centroid
+   similarity, the map, near-duplicates), each with its anchor, the file it ran over, the baseline
+   it was read against and what it found, or the single word "none" if you ran none, and says
+   which documents in the overview you reached through a vector operation and through no
+   full-text query; and a TRACE TABLE: one row per number and per
+   quotation in the overview, giving the memo line it comes from. The memo is for the operator.
+
+2. overview.md — for the historian, who commissioned the question and never opens a terminal.
+   Use this skeleton:
+     # <The question, as asked>
+     ## The bottom line
+     **1. What FRUS answers directly** — one paragraph: the finding, with the documents it rests
+        on cited as the edition, and the size of the set in words.
+     **2. Where FRUS points for the rest** — one paragraph: the archival series the printed
+        documents came from and the ones the editors cited without printing, each named as a
+        series with its record group, entry, identifier, dates and access status; and which of
+        the two channels each is.
+     **3. What this request cannot get from FRUS** — one paragraph: each part of the question the
+        corpus does not hold, with what was searched to establish it (the terms, the volumes, the
+        controls) and, where one exists, the shelf that holds it anyway.
+     **Scope** — two sentences: which volumes, how many documents, what was excluded, in words.
+     ## Decisions this needs from you — the definitional choices the question leaves open, each in
+        one sentence with the consequence of each choice, and the inclusion rule you used meanwhile.
+     ## Findings — three to six, each a heading, a paragraph, and one to three quoted documents
+        cited as the edition
+     ## How this was done — one paragraph a methods section would accept
+     ## Read next — the collection, by name, and what the historian's additions would unlock
+   Cite as the printed edition — "Foreign Relations of the United States, 1958–1960, Volume VII,
+   Part 1, Document 12" — followed by the history.state.gov URL
+   (https://history.state.gov/historicaldocuments/<volume_id>/<document_id>).
+
+3. collection.fruscollection — the overview in the historian's own tool, a file the app opens.
+   Scope it by the rule "every document the argument rests on, and nothing else". Order it under
+   headings that follow the overview's findings, date order within each. The file carries: the
+   three-part bottom line on its title page (introductionText), the run's name and date
+   (authorLine), a `prose` entry under each heading saying why these documents and what thread
+   they follow, a `notes` entry on each document saying what it shows (every agent-written note
+   opens with an attribution line naming the run and the date), an `excerpt` for every quotation
+   the overview relies on (the app checks each excerpt's text against its document, so write the
+   passage exactly as retrieved), a closing `prose` block naming the threads you could not follow,
+   and a `generated` block of type `archivalSources` at the end. The format, shown by this example
+   (its ids and texts are placeholders; the keys and shape are the contract):
+{
+  "format": "fruscollection",
+  "formatVersion": 2,
+  "minimumReaderVersion": 1,
+  "name": "Escalation rhetoric — round 2",
+  "authorLine": "Agent run, round 2, 2026-10-14",
+  "introductionText": "What FRUS answers directly: … Where FRUS points for the rest: … What this request cannot get from FRUS: …",
+  "composition": {
+    "defaultBodyDepth": "full",
+    "footnoteStyle": "all",
+    "includeSourceNote": true,
+    "tocStyle": "citation",
+    "applyHighlights": false,
+    "includeNotes": true,
+    "includeWordCloud": false
+  },
+  "entries": [
+    { "kind": "heading", "text": "The channel of 1963", "level": 1 },
+    { "kind": "prose", "text": "Why these documents, and what thread they follow, in two or three sentences." },
+    { "kind": "document", "volumeId": "frus1961-63v11", "documentId": "d1",
+      "notes": ["Agent finding, round 2, 2026-10-14: what this document shows, in one short note."] },
+    { "kind": "excerpt", "volumeId": "frus1961-63v11", "documentId": "d1",
+      "text": "The passage, verbatim, as retrieved from the document." },
+    { "kind": "generated", "generatedBlockType": "archivalSources" }
+  ]
+}
+   Rules the app does not enforce and you must: `format` is exactly "fruscollection";
+   `formatVersion` 2 with `minimumReaderVersion` 1 (the file carries excerpts and notes); all six
+   composition keys present; EVERY `document` and `excerpt` entry carries BOTH `volumeId` and
+   `documentId` (an entry missing either imports as empty with no error); no duplicate document
+   pair; every pair verified to exist in document_cache before the file is written; never a volume
+   whose id ends in Ed2 beside its first edition. Save it with the `.fruscollection` extension.
+
+4. queries.log — every shell command you ran against the resources, one per line, in the order
+   you ran them. Append as you go; do not reconstruct it at the end. End it with the `ELIDED:`
+   line the house rules require.
+
+Before you finish, check two things and say in the overview that you did: every quotation in the
+overview and every excerpt in the collection is one the memo verified against its document, and
+every document the overview cites is in the collection.
+
+When all four files are written, return as your entire final message the single line:
+DONE /Users/jbotts/frus-analysis/c3f/runs/fN

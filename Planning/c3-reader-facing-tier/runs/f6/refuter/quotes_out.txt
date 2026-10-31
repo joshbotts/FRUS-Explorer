@@ -1,0 +1,71 @@
+Documents cited list entries: 27 distinct: 27
+
+Quotations in overview body: 35
+  FOUND        | 'has not thus far been effective' | (1954, Volume XIV, Part 2, Document 820) -> frus1952-54v14p2/d820 [year in list range]
+  FOUND        | 'not progressed to my satisfaction' | (1965, Volume II, Document 160) -> frus1964-68v02/d160 [year in list range]
+  NO CITATION  | 'effective.' | para: '- **What counts as "effective."** I used only what officials'
+  FOUND        | '[a] considerably expanded information program' | (1949, Volume VII, Part 2, Document 386) -> frus1949v07p2/d386 [year in list range]
+  FOUND        | 'are inclined by their psychology to wait and see who is winning' | (1950, Volume VI, Document 32) -> frus1950v06/d32 [year in list range]
+  FOUND        | 'thus gradually creating a climate of victory' | (1953, Volume XII, Part 2, Document 403) -> frus1952-54v12p2/d403 [year in list range]
+  FOUND        | 'sensationally represented in their press,' | (1954, Volume XIV, Part 2, Document 820) -> frus1952-54v14p2/d820 [year in list range]
+  FOUND        | 'has not thus far been effective' | (1954, Volume XIV, Part 2, Document 820) -> frus1952-54v14p2/d820 [year in list range]
+  FOUND        | 'a major propaganda campaign on Viet Cong insurgency' | (1961, Volume I, Document 49) -> frus1961-63v01/d49 [year in list range]
+  FOUND        | 'a harvest of ill-will' | (1961, Volume I, Document 265) -> frus1961-63v01/d265 [year in list range]
+  FOUND        | 'We cannot do more with the image of the GVN than is made available by the GVN it' | (1961, Volume I, Document 339) -> frus1961-63v01/d339 [year in list range]
+  FOUND        | 'to get my American propaganda from a source which restricts its outlets to its o' | (1962, Volume II, Document 5) -> frus1961-63v02/d5 [year in list range]
+  FOUND        | 'much of our audience would tend to regard it as mere words without deeds' | (1963, Public Diplomacy, Volume VI, Document 126) -> frus1917-72PubDipv06/d126 [year in list range]
+  FOUND        | 'questionable' | (1963, Public Diplomacy, Volume VI, Document 133) -> frus1917-72PubDipv06/d133 [year in list range]
+  FOUND        | 'virtually no sympathy for the Diem regime, except in South Korea and the Philipp' | (1963, Volume IV, Document 108) -> frus1961-63v04/d108 [year in list range]
+  FOUND        | 'there is no conceivable information program that will make defeats look like vic' | (1964, Volume I, Document 197) -> frus1964-68v01/d197 [year in list range]
+  MIS-CITED(in other cited doc) | 'Vietnamese audiences at USIS film showings last year totalled an estimated 28 mi' | (1965, Volume II, Document 160) -> frus1964-68v02/d160 [year in list range] others=[('frus1964-68v01', 'd197')]
+  FOUND        | 'have not progressed to my satisfaction' | (1965, Volume II, Document 160) -> frus1964-68v02/d160 [year in list range]
+  FOUND        | 'largely apathetic' | (1965, Volume II, Document 172) -> frus1964-68v02/d172 [year in list range]
+  FOUND        | 'inadequate security and ineffective Government' | (1965, Volume II, Document 172) -> frus1964-68v02/d172 [year in list range]
+  FOUND        | 'have also expanded and grown more effective' | (1965, Volume III, Document 138) -> frus1964-68v03/d138 [year in list range]
+  FOUND        | 'the effort should not be construed as a propaganda mechanism' | (1967, Public Diplomacy, Volume VII, Document 171) -> frus1917-72PubDipv07/d171 [year in list range]
+  FOUND        | 'patient persistence,' | (1962, Volume XXIII, Document 289) -> frus1961-63v23/d289 [year in list range]
+  FOUND        | 'a demonstrated respect for Indonesia’s neutral stance' | (1962, Volume XXIII, Document 289) -> frus1961-63v23/d289 [year in list range]
+  FOUND        | 'Such an action would be interpreted by both our enemies and friends as a retreat' | (1965, Volume XXVI, Document 106) -> frus1964-68v26/d106 [year in list range]
+  FOUND        | 'has not given proper attention to the need for a national information program de' | (1968, Volume XXVII, Document 386) -> frus1964-68v27/d386 [year in list range]
+  FOUND        | 'Asians are, to varying degrees, America watchers,' | (1969, Public Diplomacy, Volume VIII, Document 31) -> frus1917-72PubDipv08/d31 [year in list range]
+  FOUND        | 'a psychological threshold for economic frictions' | (1971, Volume XIX, Part 2, Document 67) -> frus1969-76v19p2/d67 [year in list range]
+  FOUND        | 'very clearly in default' | (1975, Volume XXXVIII, Part 2, Document 105) -> frus1969-76v38p2/d105 [year in list range]
+  FOUND        | 'lack credibility' | (1975, Volume XXXVIII, Part 2, Document 105) -> frus1969-76v38p2/d105 [year in list range]
+  FOUND        | 'our affirmations of good intentions are welcomed by all,' | (1975, Volume E–12, Document 16) -> frus1969-76ve12/d16 [year in list range]
+  FOUND        | 'is something that happens to other people' | (1975, Volume E–12, Document 17) -> frus1969-76ve12/d17 [year in list range]
+  FOUND        | 'have become accustomed to seeing the United States go through periodic cycles of' | (1977, Volume XXII, Document 3) -> frus1977-80v22/d3 [year in list range]
+  FOUND        | 'shoring up the confidence of East Asians in America’s long-term staying power' | (1977, Volume XXX, Document 79) -> frus1977-80v30/d79 [year in list range]
+  FOUND        | 'an especially close working relationship between State and USIA' | (1977, Volume XXX, Document 81) -> frus1977-80v30/d81 [year in list range]
+
+SUMMARY overview quotations: found=33 fabrication=0 miscited=1 nocitation=1 total=35
+collection excerpts: 31 of 31 found in their row
+cited pairs in collection: 27 of 27 ; not in: [] ; collection docs not cited: []
+
+pair | date_iso | document_number | fm | en
+frus1949v07p2 d386 1949-11-16 386 0 0
+frus1950v06 d32 1950-04-03 32 0 0
+frus1952-54v14p2 d820 1954-10-28 820 0 0
+frus1964-68v02 d160 1965-02-24 160 0 0
+frus1917-72PubDipv08 d31 1969-08-05 31 0 0
+frus1952-54v12p2 d403 1953-09-14 403 0 0
+frus1961-63v01 d49 1961-05-09 49 0 0
+frus1961-63v01 d265 1961-11-17 265 0 0
+frus1961-63v01 d339 1961-12-23 339 0 0
+frus1961-63v02 d5 1962-01-04 5 0 0
+frus1917-72PubDipv06 d126 1963-05-17 126 0 0
+frus1917-72PubDipv06 d133 1963-06-24 133 0 0
+frus1961-63v04 d108 1963-09-14 108 0 0
+frus1964-68v01 d197 1964-06-04 197 0 0
+frus1964-68v02 d172 1965-02-27 172 0 0
+frus1964-68v03 d138 1965-09-10 138 0 0
+frus1917-72PubDipv07 d171 1967-11-24 171 0 0
+frus1961-63v23 d289 1962-09-14 289 0 0
+frus1964-68v26 d106 1965-02-18 106 0 0
+frus1964-68v27 d386 1968-05-06 386 0 0
+frus1969-76v19p2 d67 1971-02-16 67 0 0
+frus1969-76v38p2 d105 1975-05-09 105 0 0
+frus1969-76ve12 d16 1975-06-13 16 0 0
+frus1969-76ve12 d17 1975-07-15 17 0 0
+frus1977-80v22 d3 1977-02-04 3 0 0
+frus1977-80v30 d79 1977-07-19 79 0 0
+frus1977-80v30 d81 1977-07-23 81 0 0

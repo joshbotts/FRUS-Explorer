@@ -1,0 +1,12 @@
+decoded volumes 553 rows with id 314616 of 314616
+anchor ('frus1917-72PubDipv07', 'd73') row 61073 hamming top10: [np.int32(87), np.int32(103), np.int32(104), np.int32(105), np.int32(108), np.int32(108), np.int32(109), np.int32(109), np.int32(109), np.int32(110)]
+  cos_raw 0.927 cal 0.878 ham  87  frus1917-72PubDipv07/d69
+  cos_raw 0.893 cal 0.822 ham 108  frus1917-72PubDipv08/d31
+  cos_raw 0.889 cal 0.816 ham 104  frus1952-54v13p1/d116
+  cos_raw 0.886 cal 0.810 ham 103  frus1917-72PubDipv07/d159
+  cos_raw 0.882 cal 0.803 ham 124  frus1977-80v30/d68
+  cos_raw 0.881 cal 0.802 ham 111  frus1917-72PubDipv07/d106
+  cos_raw 0.878 cal 0.796 ham 109  frus1917-72PubDipv07/d74
+  cos_raw 0.877 cal 0.796 ham 116  frus1917-72PubDipv07/d94
+  cos_raw 0.875 cal 0.791 ham 118  frus1917-72PubDipv08/d99
+  cos_raw 0.874 cal 0.791 ham 113  frus1917-72PubDipv07/d32

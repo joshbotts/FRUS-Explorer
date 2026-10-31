@@ -1,0 +1,608 @@
+{
+ "run": "runs/f4",
+ "traceSource": "runs/f4/memo.md",
+ "traceTableLine": 160,
+ "traceRows": 41,
+ "mentions": 54,
+ "counts": {
+  "traced": 35,
+  "weak": 19,
+  "untraced": 0
+ },
+ "list": [
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "what",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"from 1945 to 1980\" | section 1, inclusion rule (volume series years of R)",
+   "sentence": "What beliefs about the regional audience contributed to those strategies? ## The bottom line What FRUS answers directly.** The phrase \"soft power\" appears in no document of the series, so I read the question as one about what officials called information programs, psychological operations, and educational and cultural exchange."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "thousand",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about two thousand documents\" | M04 (1,984), M05 (literal share 35 of 40 tolerant, 33 of 40 strict)",
+   "sentence": "About two thousand documents in the East Asia and Pacific volumes use this vocabulary; those that carry the argument are cited below."
+  },
+  {
+   "text": "thousand",
+   "values": [
+    "1000"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about thirty-seven thousand documents\" | M02 (37,543 non-apparatus documents)",
+   "sentence": "About two thousand documents in the East Asia and Pacific volumes use this vocabulary; those that carry the argument are cited below."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "archival numbers: Record Group 306 (eight of the cited documents), accession 72 A 5121, entry UD WW 257, NARA 1257679, 1953-1971, 47 linear feet | section 4 (306/72A5121 and series-facts 1257679)",
+   "sentence": "Record Group 306, accession 72 A 5121, entry UD WW 257, National Archives at College Park."
+  },
+  {
+   "text": "72 A 5121",
+   "values": [
+    "72a5121"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "archival numbers: Record Group 306 (eight of the cited documents), accession 72 A 5121, entry UD WW 257, NARA 1257679, 1953-1971, 47 linear feet | section 4 (306/72A5121 and series-facts 1257679)",
+   "sentence": "Record Group 306, accession 72 A 5121, entry UD WW 257, National Archives at College Park."
+  },
+  {
+   "text": "WW 257",
+   "values": [
+    "ww257"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "archival numbers: Record Group 306 (eight of the cited documents), accession 72 A 5121, entry UD WW 257, NARA 1257679, 1953-1971, 47 linear feet | section 4 (306/72A5121 and series-facts 1257679)",
+   "sentence": "Record Group 306, accession 72 A 5121, entry UD WW 257, National Archives at College Park."
+  },
+  {
+   "text": "1257679",
+   "values": [
+    "1257679"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "archival numbers: Record Group 306 (eight of the cited documents), accession 72 A 5121, entry UD WW 257, NARA 1257679, 1953-1971, 47 linear feet | section 4 (306/72A5121 and series-facts 1257679)",
+   "sentence": "One of them, the Office of Policy and Plans \"Subject Files\" (NARA identifier 1257679), holds files for in 47 linear feet and is partly restricted for national security."
+  },
+  {
+   "text": "47",
+   "values": [
+    "47"
+   ],
+   "next": "linear",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "archival numbers: Record Group 306 (eight of the cited documents), accession 72 A 5121, entry UD WW 257, NARA 1257679, 1953-1971, 47 linear feet | section 4 (306/72A5121 and series-facts 1257679)",
+   "sentence": "One of them, the Office of Policy and Plans \"Subject Files\" (NARA identifier 1257679), holds files for in 47 linear feet and is partly restricted for national security."
+  },
+  {
+   "text": "42",
+   "values": [
+    "42"
+   ],
+   "next": "office",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "entries A1-42, P-104, P-207, accession 69 A 3445, entry UD WW 193 | section 4 (document_sources raw text of d58/d99/d146/d149, d79, d31, d85; unresolved)",
+   "sentence": "United States Information Agency, Director's Subject Files, (entry A1–42), the Office of the Director and Office of Policy and Plans files (entries P–104 and P–207), and the Director's files of (accession 69 A 3445, entry UD WW 193): all Record Group 306, none resolved to a series by the offline index."
+  },
+  {
+   "text": "104",
+   "values": [
+    "104"
+   ],
+   "next": "p",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "entries A1-42, P-104, P-207, accession 69 A 3445, entry UD WW 193 | section 4 (document_sources raw text of d58/d99/d146/d149, d79, d31, d85; unresolved)",
+   "sentence": "United States Information Agency, Director's Subject Files, (entry A1–42), the Office of the Director and Office of Policy and Plans files (entries P–104 and P–207), and the Director's files of (accession 69 A 3445, entry UD WW 193): all Record Group 306, none resolved to a series by the offline index."
+  },
+  {
+   "text": "207",
+   "values": [
+    "207"
+   ],
+   "next": "director",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "entries A1-42, P-104, P-207, accession 69 A 3445, entry UD WW 193 | section 4 (document_sources raw text of d58/d99/d146/d149, d79, d31, d85; unresolved)",
+   "sentence": "United States Information Agency, Director's Subject Files, (entry A1–42), the Office of the Director and Office of Policy and Plans files (entries P–104 and P–207), and the Director's files of (accession 69 A 3445, entry UD WW 193): all Record Group 306, none resolved to a series by the offline index."
+  },
+  {
+   "text": "69 A 3445",
+   "values": [
+    "69a3445"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "entries A1-42, P-104, P-207, accession 69 A 3445, entry UD WW 193 | section 4 (document_sources raw text of d58/d99/d146/d149, d79, d31, d85; unresolved)",
+   "sentence": "United States Information Agency, Director's Subject Files, (entry A1–42), the Office of the Director and Office of Policy and Plans files (entries P–104 and P–207), and the Director's files of (accession 69 A 3445, entry UD WW 193): all Record Group 306, none resolved to a series by the offline index."
+  },
+  {
+   "text": "WW 193",
+   "values": [
+    "ww193"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "entries A1-42, P-104, P-207, accession 69 A 3445, entry UD WW 193 | section 4 (document_sources raw text of d58/d99/d146/d149, d79, d31, d85; unresolved)",
+   "sentence": "United States Information Agency, Director's Subject Files, (entry A1–42), the Office of the Director and Office of Policy and Plans files (entries P–104 and P–207), and the Director's files of (accession 69 A 3445, entry UD WW 193): all Record Group 306, none resolved to a series by the offline index."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "archival numbers: Record Group 306 (eight of the cited documents), accession 72 A 5121, entry UD WW 257, NARA 1257679, 1953-1971, 47 linear feet | section 4 (306/72A5121 and series-facts 1257679)",
+   "sentence": "United States Information Agency, Director's Subject Files, (entry A1–42), the Office of the Director and Office of Policy and Plans files (entries P–104 and P–207), and the Director's files of (accession 69 A 3445, entry UD WW 193): all Record Group 306, none resolved to a series by the offline index."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59, decimal files 511.90, 790.5, 611.95, 611.98, 1964-1966, D780405-0724 | section 4 (document_sources for frus1950v06/d50, v12p2/d403, v23p2/d50, v23/d289, v29p2/d46, v30/d152)",
+   "sentence": "Department of State central files, Record Group 59: decimal files 511.90 ( ), 790.5 ( ), 611.95 ( ) and 611.98 ( ), the subject-numeric files and a file numbered D780405–0724; the index does not resolve a single file to a series."
+  },
+  {
+   "text": "511.90",
+   "values": [
+    "511.90"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59, decimal files 511.90, 790.5, 611.95, 611.98, 1964-1966, D780405-0724 | section 4 (document_sources for frus1950v06/d50, v12p2/d403, v23p2/d50, v23/d289, v29p2/d46, v30/d152)",
+   "sentence": "Department of State central files, Record Group 59: decimal files 511.90 ( ), 790.5 ( ), 611.95 ( ) and 611.98 ( ), the subject-numeric files and a file numbered D780405–0724; the index does not resolve a single file to a series."
+  },
+  {
+   "text": "790.5",
+   "values": [
+    "790.5"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59, decimal files 511.90, 790.5, 611.95, 611.98, 1964-1966, D780405-0724 | section 4 (document_sources for frus1950v06/d50, v12p2/d403, v23p2/d50, v23/d289, v29p2/d46, v30/d152)",
+   "sentence": "Department of State central files, Record Group 59: decimal files 511.90 ( ), 790.5 ( ), 611.95 ( ) and 611.98 ( ), the subject-numeric files and a file numbered D780405–0724; the index does not resolve a single file to a series."
+  },
+  {
+   "text": "611.95",
+   "values": [
+    "611.95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59, decimal files 511.90, 790.5, 611.95, 611.98, 1964-1966, D780405-0724 | section 4 (document_sources for frus1950v06/d50, v12p2/d403, v23p2/d50, v23/d289, v29p2/d46, v30/d152)",
+   "sentence": "Department of State central files, Record Group 59: decimal files 511.90 ( ), 790.5 ( ), 611.95 ( ) and 611.98 ( ), the subject-numeric files and a file numbered D780405–0724; the index does not resolve a single file to a series."
+  },
+  {
+   "text": "611.98",
+   "values": [
+    "611.98"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59, decimal files 511.90, 790.5, 611.95, 611.98, 1964-1966, D780405-0724 | section 4 (document_sources for frus1950v06/d50, v12p2/d403, v23p2/d50, v23/d289, v29p2/d46, v30/d152)",
+   "sentence": "Department of State central files, Record Group 59: decimal files 511.90 ( ), 790.5 ( ), 611.95 ( ) and 611.98 ( ), the subject-numeric files and a file numbered D780405–0724; the index does not resolve a single file to a series."
+  },
+  {
+   "text": "0724",
+   "values": [
+    "0724"
+   ],
+   "next": "index",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Record Group 59, decimal files 511.90, 790.5, 611.95, 611.98, 1964-1966, D780405-0724 | section 4 (document_sources for frus1950v06/d50, v12p2/d403, v23p2/d50, v23/d289, v29p2/d46, v30/d152)",
+   "sentence": "Department of State central files, Record Group 59: decimal files 511.90 ( ), 790.5 ( ), 611.95 ( ) and 611.98 ( ), the subject-numeric files and a file numbered D780405–0724; the index does not resolve a single file to a series."
+  },
+  {
+   "text": "61 D 385",
+   "values": [
+    "61d385"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lots 61 D 385, 62 D 430, NARA 2839191, 1953-1961 | section 4",
+   "sentence": "Department of State, Operations Coordinating Board files, Lots 61 D 385 and 62 D 430, Record Group 59; the second is the Executive Secretariat's \"Subject and Special Files,\" NARA identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "62 D 430",
+   "values": [
+    "62d430"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lots 61 D 385, 62 D 430, NARA 2839191, 1953-1961 | section 4",
+   "sentence": "Department of State, Operations Coordinating Board files, Lots 61 D 385 and 62 D 430, Record Group 59; the second is the Executive Secretariat's \"Subject and Special Files,\" NARA identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59, decimal files 511.90, 790.5, 611.95, 611.98, 1964-1966, D780405-0724 | section 4 (document_sources for frus1950v06/d50, v12p2/d403, v23p2/d50, v23/d289, v29p2/d46, v30/d152)",
+   "sentence": "Department of State, Operations Coordinating Board files, Lots 61 D 385 and 62 D 430, Record Group 59; the second is the Executive Secretariat's \"Subject and Special Files,\" NARA identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "2839191",
+   "values": [
+    "2839191"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Lots 61 D 385, 62 D 430, NARA 2839191, 1953-1961 | section 4",
+   "sentence": "Department of State, Operations Coordinating Board files, Lots 61 D 385 and 62 D 430, Record Group 59; the second is the Executive Secretariat's \"Subject and Special Files,\" NARA identifier 2839191, , partly restricted."
+  },
+  {
+   "text": "567979",
+   "values": [
+    "567979"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Johnson Library National Security File, NARA 567979 | section 4 (presidential-library-catalog LBJ-NSF)",
+   "sentence": "Johnson Library, National Security File (NARA identifier 567979) and Confidential File; the index gives no dates or access for them."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59, decimal files 511.90, 790.5, 611.95, 611.98, 1964-1966, D780405-0724 | section 4 (document_sources for frus1950v06/d50, v12p2/d403, v23p2/d50, v23/d289, v29p2/d46, v30/d152)",
+   "sentence": "Record Group 59, entry A1 1586E, NARA identifier 2839192 (Lots 63 D 351 and 66 D 95), , partly restricted."
+  },
+  {
+   "text": "A1 1586E",
+   "values": [
+    "a11586e"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "NARA 2839192, Lots 63 D 351 and 66 D 95, entry A1 1586E, 1947-1979 | section 4, S2 pointed-at",
+   "sentence": "Record Group 59, entry A1 1586E, NARA identifier 2839192 (Lots 63 D 351 and 66 D 95), , partly restricted."
+  },
+  {
+   "text": "2839192",
+   "values": [
+    "2839192"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "NARA 2839192, Lots 63 D 351 and 66 D 95, entry A1 1586E, 1947-1979 | section 4, S2 pointed-at",
+   "sentence": "Record Group 59, entry A1 1586E, NARA identifier 2839192 (Lots 63 D 351 and 66 D 95), , partly restricted."
+  },
+  {
+   "text": "63 D 351",
+   "values": [
+    "63d351"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "NARA 2839192, Lots 63 D 351 and 66 D 95, entry A1 1586E, 1947-1979 | section 4, S2 pointed-at",
+   "sentence": "Record Group 59, entry A1 1586E, NARA identifier 2839192 (Lots 63 D 351 and 66 D 95), , partly restricted."
+  },
+  {
+   "text": "66 D 95",
+   "values": [
+    "66d95"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "NARA 2839192, Lots 63 D 351 and 66 D 95, entry A1 1586E, 1947-1979 | section 4, S2 pointed-at",
+   "sentence": "Record Group 59, entry A1 1586E, NARA identifier 2839192 (Lots 63 D 351 and 66 D 95), , partly restricted."
+  },
+  {
+   "text": "567979",
+   "values": [
+    "567979"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Johnson Library National Security File, NARA 567979 | section 4 (presidential-library-catalog LBJ-NSF)",
+   "sentence": "Johnson Library, National Security File (NARA identifier 567979)."
+  },
+  {
+   "text": "1164",
+   "values": [
+    "1164"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Kennedy Library NARA 1164; Carter Library NARA 1104 | section 4",
+   "sentence": "Kennedy Library, National Security Files (NARA identifier 1164)."
+  },
+  {
+   "text": "Record Group 59",
+   "values": [
+    "rg59"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Record Group 59, decimal files 511.90, 790.5, 611.95, 611.98, 1964-1966, D780405-0724 | section 4 (document_sources for frus1950v06/d50, v12p2/d403, v23p2/d50, v23/d289, v29p2/d46, v30/d152)",
+   "sentence": "Record Group 59, Lot 62 D 1, NARA identifier 2838992, , partly restricted."
+  },
+  {
+   "text": "62 D 1",
+   "values": [
+    "62d1"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "Lot 62 D 1, NARA 2838992, 1948-1961 | section 4",
+   "sentence": "Record Group 59, Lot 62 D 1, NARA identifier 2838992, , partly restricted."
+  },
+  {
+   "text": "2838992",
+   "values": [
+    "2838992"
+   ],
+   "next": "partly",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "Lot 62 D 1, NARA 2838992, 1948-1961 | section 4",
+   "sentence": "Record Group 59, Lot 62 D 1, NARA identifier 2838992, , partly restricted."
+  },
+  {
+   "text": "1104",
+   "values": [
+    "1104"
+   ],
+   "next": "",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "Kennedy Library NARA 1164; Carter Library NARA 1104 | section 4",
+   "sentence": "Jimmy Carter Library, Zbigniew Brzezinski Collection (NARA identifier 1104)."
+  },
+  {
+   "text": "Record Group 306",
+   "values": [
+    "rg306"
+   ],
+   "next": "",
+   "kind": "identifier",
+   "class": "traced",
+   "row": "archival numbers: Record Group 306 (eight of the cited documents), accession 72 A 5121, entry UD WW 257, NARA 1257679, 1953-1971, 47 linear feet | section 4 (306/72A5121 and series-facts 1257679)",
+   "sentence": "Record Group 306 is where to ask."
+  },
+  {
+   "text": "seventy-six",
+   "values": [
+    "76"
+   ],
+   "next": "regional",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"Department of State\" appeared in \"every one of the seventy-six\" regional volumes; impossible string in none | M07 (76 of 76; 0)",
+   "sentence": "I tested \"soft power\" across the whole series and found it in no document, while a control phrase, \"Department of State,\" appeared in every one of the seventy-six regional volumes and an impossible string appeared in none."
+  },
+  {
+   "text": "553",
+   "values": [
+    "553"
+   ],
+   "next": "volume",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"553 volumes indexed\" | M01",
+   "sentence": "I did not read the educational-exchange record for Japan, Korea or the Philippines systematically, so those countries are thinly represented. **Scope.** I searched all 553 volumes indexed, drawing on seventy-six East Asia and Pacific volumes from to (about thirty-seven thousand documents) and the area memoranda in the public diplomacy and information volumes (about sixty)."
+  },
+  {
+   "text": "seventy-six",
+   "values": [
+    "76"
+   ],
+   "next": "east",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"seventy-six\" East Asia and Pacific volumes (Scope; How this was done; control sentence) | M02 (76 volumes)",
+   "sentence": "I did not read the educational-exchange record for Japan, Korea or the Philippines systematically, so those countries are thinly represented. **Scope.** I searched all 553 volumes indexed, drawing on seventy-six East Asia and Pacific volumes from to (about thirty-seven thousand documents) and the area memoranda in the public diplomacy and information volumes (about sixty)."
+  },
+  {
+   "text": "thirty-seven",
+   "values": [
+    "37"
+   ],
+   "next": "thousand",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about thirty-seven thousand documents\" | M02 (37,543 non-apparatus documents)",
+   "sentence": "I did not read the educational-exchange record for Japan, Korea or the Philippines systematically, so those countries are thinly represented. **Scope.** I searched all 553 volumes indexed, drawing on seventy-six East Asia and Pacific volumes from to (about thirty-seven thousand documents) and the area memoranda in the public diplomacy and information volumes (about sixty)."
+  },
+  {
+   "text": "thousand",
+   "values": [
+    "1000"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about thirty-seven thousand documents\" | M02 (37,543 non-apparatus documents)",
+   "sentence": "I did not read the educational-exchange record for Japan, Korea or the Philippines systematically, so those countries are thinly represented. **Scope.** I searched all 553 volumes indexed, drawing on seventy-six East Asia and Pacific volumes from to (about thirty-seven thousand documents) and the area memoranda in the public diplomacy and information volumes (about sixty)."
+  },
+  {
+   "text": "sixty",
+   "values": [
+    "60"
+   ],
+   "next": "",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"about sixty\" area memoranda | M06 (61)",
+   "sentence": "I did not read the educational-exchange record for Japan, Korea or the Philippines systematically, so those countries are thinly represented. **Scope.** I searched all 553 volumes indexed, drawing on seventy-six East Asia and Pacific volumes from to (about thirty-seven thousand documents) and the area memoranda in the public diplomacy and information volumes (about sixty)."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "development",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"from 1945 to 1980\" | section 1, inclusion rule (volume series years of R)",
+   "sentence": "If you also want aid, the Peace Corps and military civic action, the set grows and the argument becomes one about development policy;"
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "aim",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"from 1945 to 1980\" | section 1, inclusion rule (volume series years of R)",
+   "sentence": "If you want the period before or South Asia, the opening finding changes, because the earlier record uses other words. ## Findings Persuasion was meant to ride with aid and arms In the Under Secretary of State reported that Voice of America broadcasts to China had been expanded as Communist authorities ordered Information Service posts closed in Shanghai, Hankow, Nanking, Peiping and Tientsin, and that one aim was \"to foster possible rifts between Chinese Communists and the USSR\" ."
+  },
+  {
+   "text": "three",
+   "values": [
+    "3"
+   ],
+   "next": "favorite",
+   "kind": "word",
+   "class": "weak",
+   "row": "quotation Q03 (frus1950v06/d50) | quotation table, section 3",
+   "sentence": "In Japan the American embassy reported in that the number naming the United States among their three favorite countries \"has dropped from 52 percent to 38 percent since last December,\" even though the embassy and its information service had done their best ."
+  },
+  {
+   "text": "52 percent",
+   "values": [
+    "52"
+   ],
+   "next": "to",
+   "kind": "numeral",
+   "class": "traced",
+   "row": "\"52 percent to 38 percent\" | Q19",
+   "sentence": "In Japan the American embassy reported in that the number naming the United States among their three favorite countries \"has dropped from 52 percent to 38 percent since last December,\" even though the embassy and its information service had done their best ."
+  },
+  {
+   "text": "38 percent",
+   "values": [
+    "38"
+   ],
+   "next": "since",
+   "kind": "numeral",
+   "class": "weak",
+   "row": "years in running text: 1924, 1949, 1950, 1953, 1955, 1962, 1964, 1965, 1966, 1968, 1969, 1970, 1971, 1975, 1977, 1978 | section 7 datelines (1924 d540; 1949 d558; 1950 d50; 1953 d403; 1955 frus1955-57",
+   "sentence": "In Japan the American embassy reported in that the number naming the United States among their three favorite countries \"has dropped from 52 percent to 38 percent since last December,\" even though the embassy and its information service had done their best ."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"Department of State\" appeared in \"every one of the seventy-six\" regional volumes; impossible string in none | M07 (76 of 76; 0)",
+   "sentence": "China had become a new audience in , when the Agency's East Asia chief wrote that the President's projected visit offered opportunities to \"build what is now a temporary psychological asset into a long-range one\" ."
+  },
+  {
+   "text": "seventy-six",
+   "values": [
+    "76"
+   ],
+   "next": "east",
+   "kind": "word",
+   "class": "traced",
+   "row": "\"seventy-six\" East Asia and Pacific volumes (Scope; How this was done; control sentence) | M02 (76 volumes)",
+   "sentence": "By the Agency's East Asia chief, writing from Peking, reported that \"The enlarged scope for ICA -funded activities is real and important to the future of US – PRC relations and to perceptions of each other\" , ICA being the International Communication Agency, the name the Agency then bore. ## How this was done I searched the full text of seventy-six East Asia and Pacific volumes, to , for the vocabulary the officials used: information programs, the Information Service and Agency, psychological operations, exchanges and the Voice of America, and I added the area memoranda from the public diplomacy volumes."
+  },
+  {
+   "text": "forty",
+   "values": [
+    "40"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about two thousand documents\" | M04 (1,984), M05 (literal share 35 of 40 tolerant, 33 of 40 strict)",
+   "sentence": "I then read the strongest documents whole, keeping the text of each, and I checked a sample of forty documents from the full-text hits to confirm that the phrases actually occur and not only words that the search treats as the same."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "document",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"from 1945 to 1980\" | section 1, inclusion rule (volume series years of R)",
+   "sentence": "I also found one document, the Agency's program guidance, by its similarity to another document and by no word search, and I read it before citing it."
+  },
+  {
+   "text": "one",
+   "values": [
+    "1"
+   ],
+   "next": "i",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"from 1945 to 1980\" | section 1, inclusion rule (volume series years of R)",
+   "sentence": "Every quotation in this overview is one I verified against its document, and every document the overview cites is in the collection. ## Read next The collection, \"Persuasion in East Asia and the Pacific, ,\" holds each document the argument rests on, in date order under the findings above."
+  },
+  {
+   "text": "two",
+   "values": [
+    "2"
+   ],
+   "next": "thing",
+   "kind": "word",
+   "class": "weak",
+   "row": "\"about two thousand documents\" | M04 (1,984), M05 (literal share 35 of 40 tolerant, 33 of 40 strict)",
+   "sentence": "Your additions would unlock two things: any document on the educational-exchange program for Japan, Korea or the Philippines would test the thin part of this record, and the Agency's research and poll reports in the national archives would test the officials' beliefs about the audience."
+  }
+ ]
+}

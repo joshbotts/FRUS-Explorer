@@ -1,0 +1,554 @@
+{
+  "format": "fruscollection",
+  "formatVersion": 2,
+  "minimumReaderVersion": 1,
+  "name": "Soft power in East Asia and the Pacific: messaging and its limits, 1948-1980",
+  "authorLine": "Agent run, 2026-10-31",
+  "introductionText": "What FRUS answers directly: policymakers described their messages to East Asia and the Pacific as information programs and psychological operations, wrote down the tools and the audience beliefs behind them, and, from the early 1960s, judged the effort weak; thirty-one documents carry that argument. Where FRUS points for the rest: the printed documents came mostly from State Department central and Executive Secretariat files (record group 59, lots 61 D 167, 62 D 430, 63 D 351 and 61 D 385) and from the United States Information Agency's own files (record group 306, including the Director's subject files, accession 72 A 5121) and the Johnson Library's National Security File; the footnotes point at Nixon-era NSC Files, Executive Secretariat lot 66 D 95, and Johnson and Kennedy Library files that FRUS cites without printing. What this request cannot get from FRUS: the phrase soft power does not occur in any of the 553 volumes; measured audience reception is absent; USIA's research and field-post files at the National Archives (record group 306) hold the rest.",
+  "composition": {
+    "defaultBodyDepth": "full",
+    "footnoteStyle": "all",
+    "includeSourceNote": true,
+    "tocStyle": "citation",
+    "applyHighlights": false,
+    "includeNotes": true,
+    "includeWordCloud": false
+  },
+  "entries": [
+    {
+      "kind": "heading",
+      "text": "What they did: counter-propaganda, leaders first, and exchange (1948-1956)",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "These seven documents show the repertoire as the policymakers wrote it down: contrast the United States with the Soviet Union, reach educated and official leader groups before the masses, send Chinese-language material to the Chinese minorities of Southeast Asia, pair information with aid, and use broadcasting, libraries, film and exchanges. Each is chosen because it states an intended message or channel in the author's own words, not because it records a result."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1948v07",
+      "documentId": "d567",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): The Department's reply to Ambassador Stuart on the China information program: use the newsletter for the educated middle group, show what happens where communists take power, and keep 'moral leadership' by discussing America's own faults."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1948v07",
+      "documentId": "d567",
+      "text": "If the United States is to win and retain moral leadership it must continue to discuss domestic conditions in the United States."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1948v07",
+      "documentId": "d567",
+      "text": "The Department considers the USIS newsletter to be the most effective method for reaching the influential middle group of educated Chinese"
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1949v08",
+      "documentId": "d499",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Stuart asks for a large expansion of USIS in every Southeast Asian country, with Chinese-language print for the Chinese minorities."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1949v08",
+      "documentId": "d499",
+      "text": "we should immediately and substantially expand USIS activities in all Southeast Asian countries."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1949v07p2",
+      "documentId": "d386",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Jessup's November 1949 memorandum asks for a much larger information program in communist and non-communist Asia, built on sympathy for nationalism."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1949v07p2",
+      "documentId": "d386",
+      "text": "A considerably expanded information program both in Communist and non-Communist areas of Asia is called for, both to demonstrate our understanding and sympathy for the nationalist aspirations of the Asian peoples and to expose the menace to these aspirations created by Soviet imperialism."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1950v06",
+      "documentId": "d50",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Webb argues that information must accompany military and economic aid in Southeast Asia, and describes the audience as low in literacy and ignorant of American policy."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1950v06",
+      "documentId": "d50",
+      "text": "Comparatively few nationals understand the current policies of the United States or the history and tradition of this country."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1952-54v12p2",
+      "documentId": "d359",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): NSC 5413 for the Philippines lists USIA's tools (libraries, press, anti-communist films, radio) and states how far funding cuts reduced them in fiscal 1954."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1952-54v12p2",
+      "documentId": "d359",
+      "text": "During FY 1954 these services were reduced by approximately 65% because of lack of funds."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1955-57v09",
+      "documentId": "d190",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): The NSC's report on the foreign information program for 1955: USIA aims in the Far East after Geneva and Bandung, including orienting Asian neutralists toward the United States."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1955-57v09",
+      "documentId": "d190",
+      "text": "USIA concentrated on activities to strengthen the resolution of U.S. allies, orient Asian neutralists toward the U.S., and counter Communist attempts to soften Asian resistance to varied forms of penetration."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1955-57v22",
+      "documentId": "d484",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): OCB staff study on Thailand: the USIA program is described as anti-communist indoctrination working down from 28 top leaders to the rural border areas."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1955-57v22",
+      "documentId": "d484",
+      "text": "The USIA program emphasizes comprehensive anti-Communist indoctrination throughout Thailand."
+    },
+    {
+      "kind": "heading",
+      "text": "What they believed about the audience",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "Officials wrote of Asian audiences as sceptical of American words, quick to hear colonialism in a Western theme, hard to reach through weak media and low literacy, sensitive to 'face', and divided between leaders and masses. Those are the officials' beliefs, in the vocabulary of their day, collected here as beliefs and not as findings about Asian peoples."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1949v07p2",
+      "documentId": "d127",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Sebald in Tokyo reports that many Japanese found the Occupation ignorant of 'the Oriental'. It is an American official's belief about how the audience saw American methods."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1949v07p2",
+      "documentId": "d127",
+      "text": "Our insistence that our way is right and the Japanese way is wrong does not make sense to many Japanese who detect a latent ignorance and lack of understanding of the Oriental in our endeavors to impose American methods and way of life"
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1952-54v12p2",
+      "documentId": "d251",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Report on Indonesia: USIS works where people judge the United States by actions, not words, and distrust non-Asian propaganda. The same report gives the Public Affairs Officer's guess at the distribution of opinion."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1952-54v12p2",
+      "documentId": "d251",
+      "text": "which is more affected by our actions than our words and which is hostile to propaganda from any source, especially non-Asian."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1952-54v12p2",
+      "documentId": "d352",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): The Department rejects use of an 'Asia for Asians' theme by USIA because it recalls the Japanese wartime slogan and could be read as anti-Western."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1952-54v12p2",
+      "documentId": "d352",
+      "text": "widespread use in Philippines and elsewhere of slogan “Asia for Asians” would be most unfortunate."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1955-57v22",
+      "documentId": "d447",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Robertson records why USIA resisted expanding in Malaya: budget, a wish for the British to carry the work, and a fear of seeming to back colonialism."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1955-57v22",
+      "documentId": "d447",
+      "text": "a fear of placing the U.S. in the position of appearing to support colonialism."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1958-60v15",
+      "documentId": "d548",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): OCB report on Thailand: information work faces weak media and low means of communication, but a government already firmly anti-communist."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1958-60v15",
+      "documentId": "d548",
+      "text": "U.S. informational, cultural and educational activities in Thailand are conducted against the background of difficulties of communication and lack of adequate media of expression common to most underdeveloped Asian countries."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v04",
+      "documentId": "d81",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Mecklin's memorandum written en route from Saigon: its argument is about force and a coup, but it states a belief about Vietnamese leaders and 'Orientals' and capitulation."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v04",
+      "documentId": "d81",
+      "text": "With Orientals in general and notably with the Ngo Dinhs, capitulation is virtually impossible"
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1917-72PubDipv08",
+      "documentId": "d149",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): USIA's East Asia office, polling its posts in 1971, finds the overseas Chinese apolitical and neutral rather than ideological."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1917-72PubDipv08",
+      "documentId": "d149",
+      "text": "The predominant mood is apolitical, seeking to be neutral, and concerned with economic and trade problems rather than strong ideological convictions."
+    },
+    {
+      "kind": "heading",
+      "text": "How effective they thought it was",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "The assessments in this group are almost all made by the programme's own officers. The earliest say effect cannot be measured; from 1962 the language turns to failure: the weakest part of the war, a program that has not progressed, an operation with nothing worthwhile left."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1952-54v13p1",
+      "documentId": "d116",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Ambassador Heath answers a request for an assessment of the information program in Indochina: films, libraries and English classes are counted as effective, with the admission that the degree cannot be measured."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1952-54v13p1",
+      "documentId": "d116",
+      "text": "All factors recited must be viewed as effective though degree cannot be accurately measured."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1952-54v12p2",
+      "documentId": "d251",
+      "text": "2.5 percent may be opposed to United States aims, 1.5 percent favorable, and 96 percent “unsure”"
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v02",
+      "documentId": "d197",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Mecklin asks the PsyOps committee for a hard reading on how well Vietnamese government propaganda works, after hearing that its content is poor and too negative."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v02",
+      "documentId": "d197",
+      "text": "Replies to my superficial enquiries have been unanimous that the content of GVN propaganda is poor."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v02",
+      "documentId": "d197",
+      "text": "Does anyone have a really hard reading on how well GVN propaganda is working in the rural areas?"
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1964-68v01",
+      "documentId": "d122",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Rowan reports to the President that information and psychological warfare is the weakest part of the war effort, and that the program has failed in provinces for lack of small sums."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1964-68v01",
+      "documentId": "d122",
+      "text": "the weakest part of the war operation, both on our part and that of the Government of South Viet-Nam, is in the field of information and psychological warfare."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1964-68v01",
+      "documentId": "d122",
+      "text": "I was informed that the program is a failure in several provinces because of the lack of small bits of money to pay for such things as the running of a projector, or paper on which to print leaflets."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1917-72PubDipv07",
+      "documentId": "d32",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Tull's field review of USIS Vietnam: the government's information service is not doing its job and motivation is the number one problem."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1917-72PubDipv07",
+      "documentId": "d32",
+      "text": "The number one problem in Vietnam is motivation."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1964-68v26",
+      "documentId": "d106",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Rowan on the loss of USIS capability in Indonesia: attacks have left little worth keeping, and he argues for penalties rather than voluntary closure."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1964-68v26",
+      "documentId": "d106",
+      "text": "We shall soon have nothing worthwhile left in the way of an information operation."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1964-68v02",
+      "documentId": "d160",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Rowan to President Johnson on the psychological program in Vietnam: some headway in Hop Tac areas but national unity and will-to-fight efforts have not progressed to his satisfaction."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1964-68v02",
+      "documentId": "d160",
+      "text": "efforts to develop among the South Vietnamese people a sense of national unity and a determination to fight off Communist aggression, have not progressed to my satisfaction."
+    },
+    {
+      "kind": "heading",
+      "text": "The host government as messenger",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "In Vietnam and Thailand the Americans wanted the local government to speak to its own people. These documents show why that put the ceiling on the effort: the host service was weak or unmotivated, and Washington's response was to place advisers and money inside it."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v01",
+      "documentId": "d49",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): USIA's Far East office orders a major propaganda campaign on Viet Cong insurgency in May 1961 and asks Saigon to get material declassified."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v01",
+      "documentId": "d49",
+      "text": "We are in the process of cranking up a major propaganda campaign on Viet Cong insurgency in VietNam."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1961-63v02",
+      "documentId": "d16",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Neilson's briefing for the Ambassador: should USIS put American information advisers at the Presidency and in the provinces; the GVN's image abroad can be no better than the face it presents at home."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1961-63v02",
+      "documentId": "d16",
+      "text": "the image of the GVN in the world press can be no better than the face the GVN presents to the public"
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1917-72PubDipv07",
+      "documentId": "d32",
+      "text": "Vietnamese peasants are, in the main, going to be persuaded by other Vietnamese."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1964-68v01",
+      "documentId": "d177",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Rowan's list of fourteen steps: more USIA staff for Vietnam, Defense-trained province advisers, a petty-cash fund, and a large expansion of VOA broadcasting to the North."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1964-68v01",
+      "documentId": "d177",
+      "text": "Increased Voice of America broadcasting into North Viet-Nam and made arrangements for a broad expansion of VOA broadcasts in Vietnamese in early July."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1917-72PubDipv07",
+      "documentId": "d85",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Marlowe, after the 1966 Buddhist crisis: the Americans had not reckoned with the anti-Americanism under the surface in Vietnam."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1917-72PubDipv07",
+      "documentId": "d85",
+      "text": "I think it came as a surprise to most Americans that there is an unfortunately large amount of anti-Americanism under the surface in Viet-Nam."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1964-68v27",
+      "documentId": "d386",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Marks briefs President Johnson for a meeting with the Thai Prime Minister: Thailand lacks a national information program, and USIA runs programs it wants the Thai to take over."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1964-68v27",
+      "documentId": "d386",
+      "text": "The Thai Government has not given proper attention to the need for a national information program designed to gain popular support."
+    },
+    {
+      "kind": "heading",
+      "text": "After Vietnam: credibility follows policy",
+      "level": 1
+    },
+    {
+      "kind": "prose",
+      "text": "From 1969 USIA officers say the audience judges the United States by its policy and commitments, not by its programs. After the fall of Saigon they ask Washington to settle the policy first. The 1977 documents show the message becoming reassurance."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1917-72PubDipv08",
+      "documentId": "d31",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): The 1969 Manila conference of USIA's East Asia and Pacific public affairs officers: audiences watch America, and image depends on bilateral relations; officers are unsure what US commitments are."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1917-72PubDipv08",
+      "documentId": "d31",
+      "text": "Asians are, to varying degrees, America watchers."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1917-72PubDipv08",
+      "documentId": "d31",
+      "text": "PAOs emphasized that the image of the US usually depended more on the state of bi-lateral relations (security treaty, Okinawa, Korean military modernization, trade restrictions) than on developments within the US."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1917-72PubDipv08",
+      "documentId": "d31",
+      "text": "Many PAOs reported uncertainty as to the direction of US foreign policy and especially the strength of US commitments in Asia."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1917-72PubDipv08",
+      "documentId": "d99",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): USIA's first Agency Program Memorandum (1970): under the new partnership, the United States will have to lower its voice."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1917-72PubDipv08",
+      "documentId": "d99",
+      "text": "The President’s concept of partnership suggests that the U.S. will have to lower its voice."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76v19p2",
+      "documentId": "d67",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Shakespeare to Kissinger on Japan in 1971: opinion surveys confirm strains, and he proposes a new policy review that asks about the psychological effect of force reductions."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1969-76v19p2",
+      "documentId": "d67",
+      "text": "public opinion surveys and other assessments of Japanese attitudes have tended to confirm the seriousness of these strains."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1969-76v38p2",
+      "documentId": "d105",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): USIA's East Asia office abstracts its posts' reassessment after the fall of Vietnam: programs on security lack credibility until policy is stated; Burmese see the gap between words and deeds."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1969-76v38p2",
+      "documentId": "d105",
+      "text": "During this waiting period, programs on U.S. security relations in Asia lack credibility and may in fact do damage to our relations."
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1969-76v38p2",
+      "documentId": "d105",
+      "text": "contrast between USG words and deeds re Indochina are not lost on the Burmese."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1977-80v22",
+      "documentId": "d104",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): Sullivan from Hong Kong in 1977: the 1975 public position that nothing had changed did not reassure ASEAN or Japan."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1977-80v22",
+      "documentId": "d104",
+      "text": "Rather than being reassured, the ASEAN countries and Japan interpreted our apparent unwillingness to come to grips with the “new realities” as another indication that the United States, after twenty years of exaggerating the extent of its interests in Southeast Asia, might now decide it had no interest there at all."
+    },
+    {
+      "kind": "document",
+      "volumeId": "frus1977-80v30",
+      "documentId": "d79",
+      "notes": [
+        "Agent run of 2026-10-31 (soft power in East Asia and the Pacific): USIA's East Asia assistant director to the Deputy Director, July 1977: the Administration's statements are meant to shore up East Asians' confidence in American staying power."
+      ]
+    },
+    {
+      "kind": "excerpt",
+      "volumeId": "frus1977-80v30",
+      "documentId": "d79",
+      "text": "shoring up the confidence of East Asians in America’s long-term staying power and positive involvement in the area is real and necessary."
+    },
+    {
+      "kind": "prose",
+      "text": "Threads not followed. (1) USIA's own opinion-research reports and post-by-post reviews at the National Archives were not reached; FRUS prints only what the editors chose. (2) Japan, Korea and Australasia are thin in this set; the cultural and educational exchange programs (Fulbright, leader grants) were scanned but no printed document was selected, because the ones found describe exchanges without assessing them. (3) The reception of the messages in local press and by local audiences is not in FRUS. (4) What the Voice of America actually broadcast, and in which languages, was not read beyond the Vietnamese expansion of 1964. (5) The 1945-1947 volumes were scanned and nothing was selected. (6) The Chinese mainland as an audience, 1949-1950 and after 1971, was not followed. (7) Documents on policy toward South Asia and the Middle East were left out by the region rule."
+    },
+    {
+      "kind": "generated",
+      "generatedBlockType": "archivalSources"
+    }
+  ]
+}

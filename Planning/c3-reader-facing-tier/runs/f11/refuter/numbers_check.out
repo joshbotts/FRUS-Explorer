@@ -1,0 +1,39 @@
+scope_vols.txt lines: 76 REG: 69 PD: 7
+scope volumes not in index: []
+553 volumes in index: 553 | total rows / fm / en: (321749, 1103, 8481)
+N2 REG non-apparatus docs (overview 30,092): 30092
+N4 PD non-apparatus docs (overview 1,582): 1582
+N3 family A in REG (overview 1,176): 1176
+  REG soft power (0)                 -> 0
+  REG NEAR soft power 3 (0)          -> 0
+  REG public diplomacy (2)           -> 2
+  REG cultural diplomacy (0)         -> 0
+  REG Radio Free Asia (0)            -> 0
+  REG Department of State (13,470)   -> 13470
+  REG ZZZ_IMPOSSIBLE_ZZZ (0)         -> 0
+  REG soft AND power (127)           -> 127
+  REG Asia Foundation (12)           -> 12
+  REG Peace Corps (59)               -> 59
+  REG cultural exchange (92)         -> 92
+  REG educational exchange (54)      -> 54
+  REG Fulbright (278)                -> 278
+corpus-wide 'soft power' any row: 0
+N5 header-matched docs in the 7 PD volumes (overview 42): 42
+  record_group counts (overview 27 RG 306): {'306': 27, None: 6, '59': 8, '305': 1} | repositories: {'National Archives': 31, 'Kennedy Library': 3, 'Johnson Library': 1, 'Nixon Presidential Materials': 1, 'Department of State': 5, 'Carter Library': 1} | no row: 0
+  RG 306 with repository 'National Archives': 27
+set B docs with >=1 external_citations row (overview 322): 322 of 1176 rows 551 anchors {'centralFileClass': 296, 'lotFile': 134, 'presidentialLibrary': 121}
+  presidential library collections (36/25/18): [(('Johnson Library', 'National Security File'), 36), (('Nixon Presidential Materials', 'NSC Files'), 25), (('Kennedy Library', 'National Security Files'), 18), (('Johnson Library', 'President’s Daily Diary'), 5), (('Eisenhower Library', 'Eisenhower papers'), 3)]
+decade per 1,000 (overview 53/33/19): {'1940s': (303, 6608, 46), '1950s': (395, 12112, 33), '1960s': (414, 7884, 53), '1970s': (63, 3370, 19), '1980s': (1, 106, 9)}
+control volumes: 201 docs 77265
+  false-friend audience OR audiences  REG 247 (8.2/1000) control 915 (11.8/1000)
+  false-friend USIS OR USIA           REG 790 (26.3/1000) control 1388 (18.0/1000)
+  share information program      hits 135 strict 80 tolerant 134
+  share psychological warfare    hits 252 strict 252 tolerant 252
+  share psychological strategy   hits 15 strict 15 tolerant 15
+series-facts: 698 series, start before 1940: 11 (one in 63.5)
+collection documents: 25 date span: 1949-11-16 to 1978-10-04
+distinct documents quoted (with quotation marks) in the overview: 15
+distinct documents cited by URL in the overview: 25 ; in collection: 25
+scope (76 volumes) non-apparatus document date span: ('1947-06-22', '1981-01-14')
+REG volumes whose manifest title fails the inclusion regex: []
+REG volumes with Ed2/Supp or South Asia/Near East names: []
