@@ -8396,13 +8396,14 @@ Three harness fixes come with it: V4 exempts `frus1977-80v09Ed2`; the card gets 
 - **Runs:** two of each arm in each of O-med and S-high, twelve in four blocks.
 - **Instruments:** the rubric with V4 and O1 reworded; O2' by script; one judge a block, with J3 and J5 in the pilot's wording; three refuter steps for R7's, R8's and R10's occasions.
 - **Readings and adoption**, pre-registered, with a guard on the 35 items that tolerates one item.
-- **Budget lines**, proposed for the owner to set.
+- **Budget lines**, which the owner set as proposed.
 
-**The owner's answers, 2026-10-30.** Asked once, with the design otherwise ready:
+**The owner's answers, 2026-10-30.** The first four were asked once, with the design otherwise ready; the fifth after the pull request was opened:
 1. "Bullet in W, no card": R6's bullet goes at the end of §A.8's addendum in W. The card waits; its spot check is designed and measured in the design's §5.2.
 2. "Three arms, 12 runs".
 3. "One-item tolerance": a treatment arm loses at most one more of the 35 than A, and no run of it loses two.
 4. The question: one of the four unused candidates, its text given in chat. It is in no file and named nowhere here.
+5. "Set as recommended": the lines are the starting reading plus 32 weekly and plus 54 Fable points, and the tier starts after the meters reset on 2026-11-04.
 
 **Measured for the design**, read-only, from the bundle, the index copy and the records:
 - **Arm A:** its three guide texts at v1.38 (`848f3781`) are byte-identical to R16's arm A: the block (`c2f5511d…`), the addendum (`e8117cb8…`) and Appendix A (`4e11cc17…`). R1 there is 30 lines (`d08e51eb…`).
@@ -8418,7 +8419,6 @@ Three harness fixes come with it: V4 exempts `frus1977-80v09Ed2`; the card gets 
 - **The meters:** at about 23:20 they read 29% weekly and 44% Fable, both resetting on 2026-11-04.
 
 **Not done.**
-- **The lines and the date:** open, for the owner. Recommended: after the 2026-11-04 reset, at the starting reading plus 32 weekly and plus 54 Fable.
 - **Nothing in the design's §11 is built:** the two guide candidates, the generator, the five scripts and the working folder.
 - **The question's properties** are checked by the session that runs the tier, before the first cell, and nowhere before.
 - **The runbook's §7 cost table** still stops at the vectors tier. The design's record step adds rows for R16, the pilot and this tier.

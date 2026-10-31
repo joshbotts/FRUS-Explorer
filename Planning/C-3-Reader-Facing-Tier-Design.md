@@ -1,9 +1,8 @@
 # C-3, the reader-facing tier — R1's wording under research, and R7, R8 and R10 measured without the rest of arm B, Opus 5.5 at `medium` and Sonnet 5.5 at `high`
 
-**Status:** DRAFT, 2026-10-30. Nothing has run and nothing below is built. The owner answered four
-of the design's five choices the same evening (below). The fifth, the budget lines and the date,
-is open, and the owner sets the plan (§10). The design rests on two decisions of the owner's of
-2026-10-30:
+**Status:** DRAFT, 2026-10-30, with all five of its choices answered by the owner the same evening
+(below). Nothing has run and nothing below is built. The design rests on two decisions of the
+owner's of 2026-10-30:
 - **"Skip the full pass."** The revised R1, R2's template and J3's rewording go to the next full
   tier, which tests the wording while the agent also does the research
   (`Agentic-Guide-Reader-Facing-Style-Review-2026-10-30.md` §8).
@@ -25,6 +24,9 @@ not printed here** (§1).
    run of it loses two (§8).
 4. **The question:** the owner chose one of the four unused candidates and gave its text in chat.
    It is in no file (§1).
+5. *"Set as recommended"*: the lines are the starting reading plus 32 points of the weekly
+   all-models meter and plus 54 of the weekly Fable meter, and the tier starts after the meters
+   reset on 2026-11-04 (§7).
 
 **Numbering.** R1 to R3 are the style review's (§4). R6 to R10 are the steering review's
 (`Agentic-Guide-Steering-Review-2026-10-27.md` §3). The two documents number independently, and
@@ -420,13 +422,13 @@ them dearer. A run with its instruments is taken at R16's figures.
 |---|---|---|
 | twelve runs with their instruments | 22 to 26 | 38 to 44 |
 | with calibration and the canary | 24 to 28 | 42 to 48 |
-| **proposed lines**, above the starting reading | **plus 32** | **plus 54** |
+| **the lines** (the owner's answer 5), above the starting reading | **plus 32** | **plus 54** |
 
 **When.**
 - **The meters now.** At about 23:20 on 2026-10-30 they read 29% weekly and 44% Fable, both
   resetting on 2026-11-04 at 15:59 UTC (10:59 local, the clocks having gone back).
-- **Before the reset**, the tier would take the Fable meter to about 90%. Recommended: start
-  after the reset, when the lines would sit near 32% and 54%.
+- **Before the reset**, the tier would take the Fable meter to about 90%. So it starts after the
+  reset (the owner's answer 5), when the lines sit near 32% and 54%.
 - **Elapsed:** R16's runs took 26 to 45 minutes each with their instruments, so twelve take about
   seven to eight hours from the calibration to the last judge. Start in the morning.
 
@@ -512,11 +514,8 @@ reading 4. That tier's verdict stands: its rule was set before it ran.
 
 ## 10. What setting this plan confirms
 
-**Open: the lines and the date** (§7). Recommended: start after the reset of 2026-11-04, with
-lines at the starting reading plus 32 weekly and plus 54 Fable.
-
 **Answered on 2026-10-30** (at the head): R6's bullet in W and no card; three arms; the one-item
-guard; the question, given in chat.
+guard; the question, given in chat; and the lines and the date, as recommended (§7).
 
 **Setting the plan also confirms these:**
 - A is v1.38's text, which is R16's arm A (§2.1);
