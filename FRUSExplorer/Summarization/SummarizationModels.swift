@@ -83,6 +83,9 @@ struct SummarizationPromptSnapshot: Sendable {
 ///   1.0 — Session 19: initial implementation
 ///   1.1 — Session 32: added `Equatable` conformance (with manual `==`) to support
 ///          equality checks in unit tests without exposing associated values
+///   1.2 — #1765: `contentRefused`, the model's guardrails or refusal in a sentence a reader can act
+///          on, where the framework's own text (*The model's safety guardrails were triggered.*) reached
+///          the reader as it was
 enum SummarizationError: Error, LocalizedError, Equatable {
     /// The device does not have Apple Intelligence hardware or model assets available.
     case providerUnavailable
@@ -90,12 +93,20 @@ enum SummarizationError: Error, LocalizedError, Equatable {
     case emptyDocumentText
     /// The synthesis pass after chunking failed.
     case synthesisFailed(underlying: Error)
+    /// The on-device model would not summarize this content: its guardrails stopped the request, or it
+    /// declined to answer (#1765). `structured` says the prompt asked for a structured answer, which
+    /// Apple's guardrails treat more strictly than plain text (`AppleIntelligenceProvider.GuardrailMode`).
+    /// The model's own explanation of a refusal is not quoted (the owner's decision of 2026-10-31): it
+    /// is a second model call, and for the Long Telegram it read *I've already explained…*.
+    case contentRefused(structured: Bool)
 
     static func == (lhs: SummarizationError, rhs: SummarizationError) -> Bool {
         switch (lhs, rhs) {
         case (.providerUnavailable, .providerUnavailable): return true
         case (.emptyDocumentText, .emptyDocumentText): return true
         case (.synthesisFailed, .synthesisFailed): return true
+        case let (.contentRefused(lhsStructured), .contentRefused(rhsStructured)):
+            return lhsStructured == rhsStructured
         default: return false
         }
     }
@@ -113,9 +124,26 @@ enum SummarizationError: Error, LocalizedError, Equatable {
                 defaultValue: "The document contains no text to summarize."
             )
         case .synthesisFailed(let err):
+            // A refusal reads the same whichever pass met it: which pass it was is no use to the reader.
+            if let refused = err as? SummarizationError, case .contentRefused = refused {
+                return refused.errorDescription
+            }
             return String(
                 localized: "summ.error.synthesis",
                 defaultValue: "Summary synthesis failed: \(err.localizedDescription)"
+            )
+        case .contentRefused(let structured):
+            if structured {
+                let standardName = String(localized: "prompt.template.standard.name",
+                                          defaultValue: "Standard Summary")
+                return String(
+                    localized: "summ.error.refused.structured",
+                    defaultValue: "Apple Intelligence declined to summarize this document with a structured prompt, which it holds to stricter safety rules. A plain-text prompt such as “\(standardName)” may succeed."
+                )
+            }
+            return String(
+                localized: "summ.error.refused",
+                defaultValue: "Apple Intelligence declined to summarize this document. Its on-device safety rules stopped the request; nothing is wrong with the document or the app."
             )
         }
     }

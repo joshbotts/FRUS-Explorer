@@ -771,7 +771,9 @@ public final class DocumentViewModel {
         } catch {
             // Surface the failure to the UI — a guardrail rejection, model-busy
             // condition, or oversized document previously looked like "the spinner
-            // stopped and nothing happened".
+            // stopped and nothing happened". A guardrail stop or refusal arrives as
+            // `SummarizationError.contentRefused`, whose description is the plain
+            // sentence (#1765).
             summarizationError = error.localizedDescription
             #if DEBUG
             print("[SummarizationUI] Generation failed for \(entry.documentId): \(error)")

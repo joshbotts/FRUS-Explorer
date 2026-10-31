@@ -28,8 +28,18 @@ import FoundationModels
 /// The `FoundationModels` error enums are Apple-owned and not frozen, so every `switch` over them
 /// carries a `default` arm that falls through to retryable.
 ///
+/// ## Two error families
+/// An app built with the iOS and macOS 27 SDKs is thrown the new `LanguageModelError` (and
+/// `SystemLanguageModel.Error`) on those systems, and the deprecated
+/// `LanguageModelSession.GenerationError` under iOS and macOS 26. Measured on macOS 27.2 (#1765): a
+/// guardrail stop arrived as `LanguageModelError.guardrailViolation`, which the `GenerationError` arm
+/// does not match, so until 1.1 every deterministic model error on a 27 system was retried four times.
+/// Both families are classified alike.
+///
 /// Version history:
 ///   1.0 — #560: initial implementation
+///   1.1 — #1765: `SummarizationError.contentRefused` is terminal; `LanguageModelError` and
+///          `SystemLanguageModel.Error` are classified as `GenerationError` is
 enum SummarizationRetryPolicy {
 
     /// Whether retrying `error` could plausibly succeed.
@@ -57,8 +67,41 @@ enum SummarizationRetryPolicy {
             case .emptyDocumentText:
                 // A property of the document. It will be empty on every attempt.
                 return false
+            case .contentRefused:
+                // The provider's translation of a guardrail stop or refusal (#1765): a property of
+                // this content under these guardrails, like the framework errors it replaces below.
+                return false
             case .synthesisFailed:
                 return true   // unreachable: unwrapped above, but the switch must stay total
+            }
+        }
+
+        if #available(iOS 27.0, macOS 27.0, *) {
+            if let modelError = error as? LanguageModelError {
+                switch modelError {
+                case .contextSizeExceeded,
+                     .guardrailViolation,
+                     .refusal,
+                     .unsupportedCapability,
+                     .unsupportedTranscriptContent,
+                     .unsupportedGenerationGuide,
+                     .unsupportedLanguageOrLocale:
+                    // As for `GenerationError` below: this prompt or this content, not the moment.
+                    return false
+                case .rateLimited, .timeout:
+                    return true
+                @unknown default:
+                    return true
+                }
+            }
+            if let systemError = error as? SystemLanguageModel.Error {
+                switch systemError {
+                case .assetsUnavailable:
+                    // The model's assets are not on the device. Not a 30-second problem.
+                    return false
+                @unknown default:
+                    return true
+                }
             }
         }
 
@@ -101,6 +144,9 @@ enum SummarizationRetryPolicy {
         }
         if let generation = error as? LanguageModelSession.GenerationError {
             return "GenerationError.\(String(describing: generation))"
+        }
+        if #available(iOS 27.0, macOS 27.0, *), let modelError = error as? LanguageModelError {
+            return "LanguageModelError.\(String(describing: modelError))"
         }
         return String(describing: type(of: error))
     }

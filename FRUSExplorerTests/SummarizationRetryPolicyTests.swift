@@ -8,19 +8,28 @@
 
 import Testing
 import Foundation
+import FoundationModels
 @testable import FRUSExplorer
+
+/// Whether this system has `LanguageModelError`, which the framework throws from iOS and macOS 27.
+private let systemHasLanguageModelError: Bool = {
+    if #available(iOS 27.0, macOS 27.0, *) { return true }
+    return false
+}()
 
 // MARK: - SummarizationRetryPolicyTests
 
 /// The #560 retry classification.
 ///
-/// Apple Intelligence is not available in the test host, so nothing here can exercise a real
-/// `GenerationError`. What *is* testable — and is where the risk actually lives — is the policy's
-/// shape: that the default is to retry, that the `.synthesisFailed` wrapper is unwrapped before
-/// anything is judged, and that the errors this app raises itself are classified correctly.
+/// Apple Intelligence is not available in the test host, so nothing here runs the model. What *is*
+/// testable — and is where the risk actually lives — is the policy's shape: that the default is to
+/// retry, that the `.synthesisFailed` wrapper is unwrapped before anything is judged, and that the
+/// errors this app raises itself are classified correctly. The framework's errors are built from their
+/// public initialisers (#1765), which need no model.
 ///
 /// Version history:
 ///   1.0 — #560: initial implementation
+///   1.1 — #1765: `contentRefused`, and both framework error families
 @Suite("Summarization retry policy")
 struct SummarizationRetryPolicyTests {
 
@@ -73,6 +82,50 @@ struct SummarizationRetryPolicyTests {
         #expect(!SummarizationRetryPolicy.isRetryable(CancellationError()))
     }
 
+    /// The provider's translation of a guardrail stop or refusal (#1765) is as deterministic as the
+    /// framework errors it replaces, whichever pass met it.
+    @Test("A refused document is not retried, in either pass")
+    func refusalsAreTerminal() {
+        let refused = SummarizationError.contentRefused(structured: false)
+        #expect(!SummarizationRetryPolicy.isRetryable(refused))
+        #expect(!SummarizationRetryPolicy.isRetryable(SummarizationError.synthesisFailed(underlying: refused)))
+    }
+
+    /// iOS and macOS 26 throw `GenerationError`; the arms for it were never run before #1765, since the
+    /// errors were thought impossible to build in a test.
+    @Test("GenerationError's guardrail stop and refusal are terminal, its rate limit is not")
+    func generationErrorsAreClassified() {
+        let context = LanguageModelSession.GenerationError.Context(debugDescription: "test")
+        #expect(!SummarizationRetryPolicy.isRetryable(
+            LanguageModelSession.GenerationError.guardrailViolation(context)))
+        #expect(!SummarizationRetryPolicy.isRetryable(
+            LanguageModelSession.GenerationError.refusal(.init(transcriptEntries: []), context)))
+        #expect(SummarizationRetryPolicy.isRetryable(
+            LanguageModelSession.GenerationError.rateLimited(context)))
+    }
+
+    /// An app built with the 27 SDKs is thrown `LanguageModelError` on a 27 system (measured on macOS
+    /// 27.2, #1765). Before 1.1 the policy did not know the type, so every one was retried four times.
+    @Test("LanguageModelError is classified as GenerationError is",
+          .enabled(if: systemHasLanguageModelError, "LanguageModelError is iOS 27 and later"))
+    func languageModelErrorsAreClassified() {
+        guard #available(iOS 27.0, macOS 27.0, *) else { return }
+        #expect(!SummarizationRetryPolicy.isRetryable(
+            LanguageModelError.guardrailViolation(.init(debugDescription: "test"))))
+        #expect(!SummarizationRetryPolicy.isRetryable(
+            LanguageModelError.refusal(.init(explanation: "No.", debugDescription: "test"))))
+        #expect(!SummarizationRetryPolicy.isRetryable(
+            LanguageModelError.contextSizeExceeded(.init(contextSize: 4_096, tokenCount: 5_000,
+                                                         debugDescription: "test"))))
+        #expect(SummarizationRetryPolicy.isRetryable(
+            LanguageModelError.rateLimited(.init(resetDate: nil, debugDescription: "test"))))
+        #expect(SummarizationRetryPolicy.isRetryable(
+            LanguageModelError.timeout(.init(debugDescription: "test"))))
+        #expect(SummarizationRetryPolicy.describe(
+            LanguageModelError.guardrailViolation(.init(debugDescription: "test")))
+            .hasPrefix("LanguageModelError."))
+    }
+
     /// The failure list is diagnostic, so it has to say something usable for every error — an empty
     /// or identical string for two different failures would make the list worthless.
     @Test("Every error describes itself distinguishably")
@@ -80,6 +133,7 @@ struct SummarizationRetryPolicyTests {
         let cases: [any Error] = [
             SummarizationError.providerUnavailable,
             SummarizationError.emptyDocumentText,
+            SummarizationError.contentRefused(structured: false),
             SummarizationError.synthesisFailed(underlying: MysteryError()),
             CancellationError(),
             MysteryError(),
@@ -95,6 +149,86 @@ struct SummarizationRetryPolicyTests {
         #expect(SummarizationRetryPolicy
             .describe(SummarizationError.synthesisFailed(underlying: MysteryError()))
             .contains("MysteryError"))
+    }
+}
+
+// MARK: - SummarizationRefusalTests
+
+/// How a guardrail stop or refusal reaches the reader, and which guardrails a prompt runs under
+/// (#1765). The model is not run: the framework's errors are built from their public initialisers.
+@Suite("Summarization refusals (#1765)")
+struct SummarizationRefusalTests {
+
+    /// An error the translation must leave alone.
+    private struct MysteryError: Error {}
+
+    /// The owner's decision of 2026-10-31: a plain-text prompt on Apple's mode for transforming supplied
+    /// text, which turned the Long Telegram's 3-of-3 refusal into 3 of 3 summaries; a structured prompt
+    /// on the default, since Apple's mode behaves as the default for a non-`String` answer.
+    @Test("A plain-text prompt runs on the permissive guardrails, a structured one on the default")
+    func guardrailModeFollowsTheFormat() {
+        #expect(AppleIntelligenceProvider.guardrailMode(for: .general) == .permissiveContentTransformations)
+        let schema = StructuredSummarySchema(fields: [
+            StructuredSummarySchema.Field(name: "summary", description: "A summary"),
+        ])
+        #expect(AppleIntelligenceProvider.guardrailMode(for: .structured(schema: schema)) == .standard)
+    }
+
+    @Test("GenerationError's guardrail stop and refusal become contentRefused; other errors pass through")
+    func generationErrorTranslation() {
+        let context = LanguageModelSession.GenerationError.Context(debugDescription: "test")
+        let stopped = AppleIntelligenceProvider.translatingRefusal(
+            LanguageModelSession.GenerationError.guardrailViolation(context), structured: true)
+        #expect(stopped as? SummarizationError == .contentRefused(structured: true))
+        let refused = AppleIntelligenceProvider.translatingRefusal(
+            LanguageModelSession.GenerationError.refusal(.init(transcriptEntries: []), context), structured: false)
+        #expect(refused as? SummarizationError == .contentRefused(structured: false))
+
+        let tooLong = AppleIntelligenceProvider.translatingRefusal(
+            LanguageModelSession.GenerationError.exceededContextWindowSize(context), structured: false)
+        #expect(tooLong is LanguageModelSession.GenerationError)
+        let mystery = AppleIntelligenceProvider.translatingRefusal(MysteryError(), structured: false)
+        #expect(mystery is MysteryError)
+    }
+
+    /// What macOS 27.2 threw for the Long Telegram under the default guardrails.
+    @Test("LanguageModelError's guardrail stop and refusal become contentRefused",
+          .enabled(if: systemHasLanguageModelError, "LanguageModelError is iOS 27 and later"))
+    func languageModelErrorTranslation() {
+        guard #available(iOS 27.0, macOS 27.0, *) else { return }
+        let stopped = AppleIntelligenceProvider.translatingRefusal(
+            LanguageModelError.guardrailViolation(.init(debugDescription: "May contain unsafe content")),
+            structured: false)
+        #expect(stopped as? SummarizationError == .contentRefused(structured: false))
+
+        let refused = AppleIntelligenceProvider.translatingRefusal(
+            LanguageModelError.refusal(.init(explanation: "I can’t help with that.", debugDescription: "test")),
+            structured: true)
+        #expect(refused as? SummarizationError == .contentRefused(structured: true))
+
+        let tooLong = AppleIntelligenceProvider.translatingRefusal(
+            LanguageModelError.contextSizeExceeded(.init(contextSize: 4_096, tokenCount: 5_000,
+                                                         debugDescription: "test")),
+            structured: false)
+        #expect(tooLong is LanguageModelError)
+    }
+
+    /// The reader used to see the framework's own sentence, *The model's safety guardrails were
+    /// triggered.*: what stopped it, in the framework's words, and nothing about what to do.
+    @Test("A refusal reads as a plain sentence, the same whichever pass met it")
+    func refusalMessages() throws {
+        let plain = try #require(SummarizationError.contentRefused(structured: false).errorDescription)
+        #expect(plain == "Apple Intelligence declined to summarize this document. Its on-device safety rules stopped the request; nothing is wrong with the document or the app.")
+        #expect(!plain.localizedCaseInsensitiveContains("guardrail"))
+
+        let structured = try #require(SummarizationError.contentRefused(structured: true).errorDescription)
+        #expect(structured.contains("structured prompt"))
+        #expect(structured.contains("“Standard Summary”"))
+
+        let inSynthesis = SummarizationError.synthesisFailed(
+            underlying: SummarizationError.contentRefused(structured: false))
+        #expect(inSynthesis.errorDescription == plain)
+        #expect(inSynthesis.localizedDescription == plain)
     }
 }
 

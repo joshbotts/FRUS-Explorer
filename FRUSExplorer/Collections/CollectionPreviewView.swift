@@ -27,6 +27,15 @@ import WebKit
 /// first render and explicit user actions (Render All, download completion) skip the
 /// debounce. A superseded resolve is cancelled by SwiftUI and discards its result.
 ///
+/// ## Stored rows no entry holds (#1765)
+/// The page also draws rows the entries only point at — a document's summaries (its headnote,
+/// summary-only depth), its highlights, its notes and its tags — and those are written elsewhere: a
+/// summary by `SummarizationService` in a context of its own, a highlight or a note in the reader,
+/// in any window. A hidden, always-mounted `CollectionPreviewUserDataObserver` follows them with live
+/// `@Query`s scoped to the preview's documents, and a change it reports re-resolves the page through
+/// the same debounce. Before, the fingerprint saw none of them, and the Mac's Collections window kept
+/// *No stored summary for this document* beside an inspector that listed the summary.
+///
 /// ## Initial render cap
 /// At most `initialDocumentCap` document items are resolved/rendered initially; larger
 /// collections show a native bar with a **Render All** button that lifts the cap for the
@@ -96,6 +105,8 @@ import WebKit
 ///          "Untitled Collection" fallback — so the preview and the exported file carry one title
 ///   1.7 — 2026-10-25 (FRUS Explorer Light, S18a): the renderer is FRUSCoreKit's, and the preview hands it the
 ///          app's figure store, which was its default
+///   1.8 — #1765: the page re-resolves when a summary, highlight, note or tag assignment of one of its
+///          documents is stored, from any window (`CollectionPreviewUserDataObserver`)
 struct CollectionPreviewView: View {
 
     // MARK: - Inputs
@@ -174,6 +185,21 @@ struct CollectionPreviewView: View {
 
     /// Non-nil when the last resolve failed; shown natively in place of the page.
     @State private var resolveError: String?
+
+    /// A smart collection's documents as its last resolve found them: the user-data observer's scope,
+    /// which a static collection reads from its entries instead (#1765). `nil` before the first resolve.
+    @State private var smartScope: CollectionPreviewUserDataScope?
+
+    /// What the user-data observer last reported, which tells a change from a new scope's baseline.
+    @State private var userDataWatch = CollectionPreviewUserDataWatch()
+
+    /// The scope of stored rows the page draws: a smart collection's last-resolved documents, or a
+    /// static collection's document entries and the notes its entries name.
+    private var userDataScope: CollectionPreviewUserDataScope {
+        collection.savedSearchId != nil
+            ? (smartScope ?? .empty)
+            : CollectionPreviewUserDataScope(entries: entries)
+    }
 
     // MARK: - Fingerprint
 
@@ -267,6 +293,17 @@ struct CollectionPreviewView: View {
         // set; `.task`-scoped, so it cancels with the pane.
         .task(id: missingVolumeIds) {
             await pollForVolumeArrivals()
+        }
+        // #1765: a summary, highlight, note or tag assignment of one of the page's documents, stored
+        // from any window, re-resolves the page. Re-created when the scope moves, and a new scope's
+        // first report is a baseline, not a change: the resolve that moved it already read those rows.
+        .background {
+            CollectionPreviewUserDataObserver(scope: userDataScope) { scope, digest in
+                if userDataWatch.record(digest, over: scope) {
+                    refreshToken += 1
+                }
+            }
+            .id(userDataScope)
         }
     }
 
@@ -436,6 +473,7 @@ struct CollectionPreviewView: View {
                     purpose: .preview, fullRefs: refs)
                 if Task.isCancelled { return }
                 totalDocumentCount = docCount
+                smartScope = CollectionPreviewUserDataScope(refs: refs)
                 items = resolved
             } else {
                 // Static path: cap the entries *before* resolution so the parse cost of
@@ -570,6 +608,201 @@ struct CollectionPreviewView: View {
             }
         }
         downloadsInFlight = false
+    }
+}
+
+// MARK: - Stored rows the preview draws (#1765)
+
+/// The documents and notes whose stored rows a collection's preview draws without an entry holding
+/// them: their summaries, highlights, notes and tag assignments (#1765).
+struct CollectionPreviewUserDataScope: Hashable {
+
+    /// A document, by its volume and its id within the volume.
+    struct Document: Hashable {
+        /// The volume identifier.
+        let volumeId: String
+        /// The document identifier within the volume.
+        let documentId: String
+    }
+
+    /// Each document the preview resolves.
+    let documents: Set<Document>
+
+    /// The notes an entry names by id — a note entry, or a document's chosen notes — wherever they are
+    /// attached.
+    let noteIds: Set<UUID>
+
+    /// No documents and no notes: a smart collection's scope before its first resolve.
+    static let empty = CollectionPreviewUserDataScope(documents: [], noteIds: [])
+
+    /// A scope of exactly these documents and notes.
+    init(documents: Set<Document>, noteIds: Set<UUID>) {
+        self.documents = documents
+        self.noteIds = noteIds
+    }
+
+    /// A static collection's scope: its document entries, with the notes its entries name.
+    init(entries: [CollectionEntry]) {
+        var documents: Set<Document> = []
+        var notes: Set<UUID> = []
+        for entry in entries {
+            if entry.entryKind == .document, !entry.volumeId.isEmpty {
+                documents.insert(Document(volumeId: entry.volumeId, documentId: entry.documentId))
+            }
+            if let noteId = entry.researchNoteId { notes.insert(noteId) }
+            notes.formUnion(entry.selectedNoteIds)
+        }
+        self.init(documents: documents, noteIds: notes)
+    }
+
+    /// A smart collection's scope: every document its saved search returned, the capped-out ones too,
+    /// since the apparatus blocks read the whole result set.
+    init(refs: [SmartCollectionDocumentRef]) {
+        self.init(documents: Set(refs.map { Document(volumeId: $0.volumeId, documentId: $0.documentId) }),
+                  noteIds: [])
+    }
+
+    /// Whether the document `volumeId`/`documentId` is in the scope.
+    func covers(volumeId: String, documentId: String) -> Bool {
+        documents.contains(Document(volumeId: volumeId, documentId: documentId))
+    }
+
+    /// The scope's volumes, for a query's predicate; with ``documentIds`` a superset of the scope,
+    /// which ``digest(summaries:highlights:notes:assignments:tags:)`` narrows to it.
+    var volumeIds: [String] { Array(Set(documents.map(\.volumeId))) }
+
+    /// The scope's document ids, for a query's predicate (see ``volumeIds``).
+    var documentIds: [String] { Array(Set(documents.map(\.documentId))) }
+
+    /// One number for every stored row in the scope that the page draws, which moves when one of them
+    /// is added, removed or edited, and not when a row outside the scope is (#1765).
+    ///
+    /// Each row is read by the fields the page draws, never by `lastModified` alone: a field's `didSet`
+    /// that stamps it did not run in a test's model that no context holds, and the digest should not
+    /// rest on it. Every user tag is read by name, for the Thematic Index. The rows are combined without
+    /// regard to order, since a query gives them in none.
+    func digest(summaries: [GeneratedSummary],
+                highlights: [DocumentHighlight],
+                notes: [ResearchNote],
+                assignments: [DocumentTagAssignment],
+                tags: [UserTag]) -> Int {
+        var total = 0
+        func add(_ build: (inout Hasher) -> Void) {
+            var hasher = Hasher()
+            build(&hasher)
+            total &+= hasher.finalize()
+        }
+        for summary in summaries where covers(volumeId: summary.volumeId, documentId: summary.documentId) {
+            add {
+                $0.combine(0); $0.combine(summary.id); $0.combine(summary.responseText)
+                $0.combine(summary.promptId); $0.combine(summary.isHeadnoteDraft)
+                $0.combine(summary.authorship)
+            }
+        }
+        for highlight in highlights where covers(volumeId: highlight.volumeId, documentId: highlight.documentId) {
+            add {
+                $0.combine(1); $0.combine(highlight.id)
+                $0.combine(highlight.startOffset); $0.combine(highlight.endOffset)
+                $0.combine(highlight.colorTag); $0.combine(highlight.noteId)
+                $0.combine(highlight.renderingVersion)
+            }
+        }
+        for note in notes
+        where noteIds.contains(note.id) || covers(volumeId: note.volumeId, documentId: note.documentId) {
+            add {
+                $0.combine(2); $0.combine(note.id); $0.combine(note.bodyText); $0.combine(note.richText)
+                $0.combine(note.userTagIds)
+            }
+        }
+        for assignment in assignments
+        where covers(volumeId: assignment.volumeId, documentId: assignment.documentId) {
+            add { $0.combine(3); $0.combine(assignment.id); $0.combine(assignment.tagId) }
+        }
+        for tag in tags {
+            add { $0.combine(4); $0.combine(tag.id); $0.combine(tag.name) }
+        }
+        return total
+    }
+}
+
+/// What the user-data observer last reported, and whether a report is a change the page has not drawn
+/// (#1765).
+struct CollectionPreviewUserDataWatch: Equatable {
+
+    /// The scope of the last report; `nil` before the first.
+    private(set) var scope: CollectionPreviewUserDataScope?
+
+    /// The digest of the last report.
+    private(set) var digest: Int?
+
+    /// Records `digest` over `scope`. `true` when it differs from the last report over the same scope —
+    /// a row the page draws was stored, edited or removed — and `false` for the first report over a
+    /// scope, which only sets the baseline: a scope moves when the entries or a smart collection's
+    /// results do, and the resolve that follows reads the rows anyway.
+    mutating func record(_ digest: Int, over scope: CollectionPreviewUserDataScope) -> Bool {
+        defer {
+            self.scope = scope
+            self.digest = digest
+        }
+        return self.scope == scope && self.digest != digest
+    }
+}
+
+/// Follows the stored rows a collection's preview draws without an entry holding them, and reports a
+/// digest of them whenever one changes (#1765).
+///
+/// Mounted as the preview's background, so it lives exactly as long as the preview does, and live:
+/// `@Query` follows the shared container, so a summary `SummarizationService` saves from a context of
+/// its own, or a highlight made in another window, reaches it the moment it is stored — the pattern
+/// Search's checklist observer set (#189-D), never a navigation or scene-phase edge. Each query is
+/// limited to the scope's volumes and document ids, so a library's other summaries never run it.
+private struct CollectionPreviewUserDataObserver: View {
+
+    /// The documents and notes followed.
+    let scope: CollectionPreviewUserDataScope
+
+    /// Called with the scope and its digest when the observer appears and whenever the digest moves.
+    let onReport: (CollectionPreviewUserDataScope, Int) -> Void
+
+    @Query private var summaries: [GeneratedSummary]
+    @Query private var highlights: [DocumentHighlight]
+    @Query private var notes: [ResearchNote]
+    @Query private var assignments: [DocumentTagAssignment]
+    @Query private var tags: [UserTag]
+
+    /// Builds the scoped queries.
+    init(scope: CollectionPreviewUserDataScope,
+         onReport: @escaping (CollectionPreviewUserDataScope, Int) -> Void) {
+        self.scope = scope
+        self.onReport = onReport
+        let volumeIds = scope.volumeIds
+        let documentIds = scope.documentIds
+        let noteIds = Array(scope.noteIds)
+        _summaries = Query(filter: #Predicate<GeneratedSummary> {
+            volumeIds.contains($0.volumeId) && documentIds.contains($0.documentId)
+        })
+        _highlights = Query(filter: #Predicate<DocumentHighlight> {
+            volumeIds.contains($0.volumeId) && documentIds.contains($0.documentId)
+        })
+        _notes = Query(filter: #Predicate<ResearchNote> {
+            noteIds.contains($0.id) || (volumeIds.contains($0.volumeId) && documentIds.contains($0.documentId))
+        })
+        _assignments = Query(filter: #Predicate<DocumentTagAssignment> {
+            volumeIds.contains($0.volumeId) && documentIds.contains($0.documentId)
+        })
+    }
+
+    /// The digest of the rows the queries hold, narrowed to the scope.
+    private var digest: Int {
+        scope.digest(summaries: summaries, highlights: highlights, notes: notes,
+                     assignments: assignments, tags: tags)
+    }
+
+    var body: some View {
+        Color.clear
+            .accessibilityHidden(true)
+            .onAppear { onReport(scope, digest) }
+            .onChange(of: digest) { _, newDigest in onReport(scope, newDigest) }
     }
 }
 
