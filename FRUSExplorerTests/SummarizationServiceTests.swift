@@ -26,6 +26,8 @@ private actor MockSummarizationProvider: SummarizationProvider {
     private(set) var callCount: Int = 0
     private(set) var synthesisCalls: Int = 0
     private(set) var lastRequest: SummarizationRequest?
+    /// Every call's request and the prompt it ran under, in call order.
+    private(set) var calls: [(request: SummarizationRequest, prompt: SummarizationPromptSnapshot)] = []
 
     init(
         isAvailable: Bool = true,
@@ -44,6 +46,7 @@ private actor MockSummarizationProvider: SummarizationProvider {
         guard isAvailable else { throw SummarizationError.providerUnavailable }
         callCount += 1
         lastRequest = request
+        calls.append((request: request, prompt: prompt))
         if request.isSynthesisPass { synthesisCalls += 1 }
         return SummarizationResult(
             text: responseText,
@@ -497,5 +500,154 @@ struct SummarizationServiceTests {
         #expect(!summary.responseText.isEmpty)
         let synthCalls = await provider.synthesisCalls
         #expect(synthCalls >= 1)
+    }
+
+    // MARK: - Synthesis prompt (2026-10-31)
+
+    /// Drives the real reduce through the mock and reads what each call was given: the map calls
+    /// run the reader's prompt as it stands, and the synthesis call runs it wrapped, under the same
+    /// prompt id and response format, over the partials labelled 1 to n in order.
+    @Test("Synthesis wraps the reader's prompt and labels each partial with its part, in order")
+    func synthesisWrapsPromptAndLabelsParts() async throws {
+        let schema = StructuredSummarySchema(fields: [.init(name: "Parties", description: "Who")])
+        for format in [ResponseFormat.general, .structured(schema: schema)] {
+            let service = SummarizationService(modelContainer: try ModelContainer.makeTestContainer())
+            let provider = MockSummarizationProvider(tokenLimit: 512, responseText: "Partial.")
+            let prompt = makePromptSnapshot(responseFormat: format)
+
+            _ = try await service.generateSummaryText(
+                documentText: makeOversizedText(tokenLimit: 512),
+                prompt: prompt,
+                provider: provider,
+                documentId: "d475",
+                volumeId: "frus1946v06"
+            )
+
+            let calls = await provider.calls
+            let map = calls.filter { !$0.request.isSynthesisPass }
+            let synthesis = calls.filter { $0.request.isSynthesisPass }
+            let n = map.count
+            try #require(n > 1, "the fixture must chunk, or this asserts nothing")
+            try #require(synthesis.count == 1, "these partials fit one synthesis call")
+
+            #expect(map.allSatisfy { $0.prompt.promptText == prompt.promptText },
+                    "the map pass runs the reader's prompt unchanged")
+            let call = synthesis[0]
+            #expect(call.prompt.promptText == SummarizationService.synthesisPromptText(
+                wrapping: prompt.promptText, firstPart: 1, lastPart: n, partCount: n))
+            #expect(call.prompt.id == prompt.id)
+            #expect(call.prompt.responseFormat == format)
+            #expect(call.request.chunks == (1...n).map { "Summary of part \($0) of \(n):\nPartial." })
+        }
+    }
+
+    /// The wrapper's wording is the wording measured on 2026-10-31 (see
+    /// `SummarizationService.synthesisPromptText`). This pin is the reminder that a change to it is a
+    /// change the measurement no longer covers: re-measure, then bring the pin to the new text.
+    @Test("Synthesis prompt: the measured wording, with the reader's request and one placeholder")
+    func synthesisPromptWording() {
+        let text = SummarizationService.synthesisPromptText(
+            wrapping: "Summarize the following document in two to four sentences.\n\n{{DOCUMENT}}\n",
+            firstPart: 1, lastPart: 5, partCount: 5)
+        #expect(text == """
+            Below are summaries of parts 1 to 5, in order, of one long document that was read in 5 \
+            consecutive parts. Read them as one document, then carry out this request for all of it. \
+            Answer once, at the length the request asks for: combine the parts into the main line of \
+            the document from beginning to end, rather than going through them one by one or listing \
+            every detail, and keep the names the summaries give.
+
+            Summarize the following document in two to four sentences.
+
+            {{DOCUMENT}}
+            """)
+        #expect(text.components(separatedBy: "{{DOCUMENT}}").count == 2,
+                "one placeholder: the reader's own is removed")
+
+        #expect(SummarizationService.synthesisLabel(firstPart: 3, lastPart: 3, partCount: 5)
+                == "Summary of part 3 of 5:")
+        #expect(SummarizationService.synthesisLabel(firstPart: 1, lastPart: 6, partCount: 18)
+                == "Summary of part 1–6 of 18:")
+    }
+
+    /// A hierarchical reduce labels an intermediate summary with the span of parts it stands for,
+    /// and names that span in its own call's wrapper; the final call's spans run from part 1 to the
+    /// last without a gap.
+    @Test("Synthesis: a hierarchical reduce carries each summary's span of parts to the next level")
+    func hierarchicalReduceCarriesSpans() async throws {
+        let service = SummarizationService(modelContainer: try ModelContainer.makeTestContainer())
+        let provider = MockSummarizationProvider(tokenLimit: 80, responseText: "Concise partial summary text.")
+        let prompt = makePromptSnapshot()
+
+        _ = try await service.generateSummaryText(
+            documentText: makeOversizedText(tokenLimit: 80),
+            prompt: prompt,
+            provider: provider,
+            documentId: "dLong",
+            volumeId: "volLong"
+        )
+
+        let calls = await provider.calls
+        let n = calls.filter { !$0.request.isSynthesisPass }.count
+        let synthesis = calls.filter { $0.request.isSynthesisPass }
+        try #require(synthesis.count > 1, "the fixture must need a reduce level, or this asserts nothing")
+
+        func spans(_ chunks: [String]) -> [(Int, Int)] {
+            chunks.compactMap { chunk in
+                let label = chunk.prefix { $0 != "\n" }
+                guard let match = label.wholeMatch(of: /Summary of part (\d+)(?:–(\d+))? of (\d+):/),
+                      let first = Int(match.1), Int(match.3) == n else { return nil }
+                return (first, match.2.flatMap { Int($0) } ?? first)
+            }
+        }
+        for call in synthesis {
+            let s = spans(call.request.chunks)
+            try #require(s.count == call.request.chunks.count, "every summary is labelled with its part")
+            #expect(zip(s, s.dropFirst()).allSatisfy { $0.1 + 1 == $1.0 }, "spans are contiguous")
+            #expect(call.prompt.promptText == SummarizationService.synthesisPromptText(
+                wrapping: prompt.promptText, firstPart: s[0].0, lastPart: s[s.count - 1].1, partCount: n))
+        }
+        let last = spans(synthesis[synthesis.count - 1].request.chunks)
+        #expect(last.first?.0 == 1 && last.last?.1 == n, "the final call covers every part")
+    }
+
+    /// The wrapper is longer than the reader's prompt, so it is counted against the synthesis budget.
+    /// The fixture's five partials are sized to fit the reader's prompt's budget and not the wrapped
+    /// prompt's: counted, they take a reduce level; not counted, one call over the window's limit.
+    @Test("Synthesis: the wrapper is counted, so every synthesis call fits the window")
+    func synthesisBudgetCountsTheWrapper() async throws {
+        let limit = 3_072
+        let service = SummarizationService(modelContainer: try ModelContainer.makeTestContainer())
+        let prompt = makePromptSnapshot()
+        let mapBudget = await service.documentBudget(
+            promptText: prompt.promptText, responseFormat: .general, limit: limit)
+        let wrappedBudget = await service.documentBudget(
+            promptText: SummarizationService.synthesisPromptText(
+                wrapping: prompt.promptText, firstPart: 1, lastPart: 5, partCount: 5),
+            responseFormat: .general, limit: limit)
+        try #require(wrappedBudget + 40 < mapBudget, "the wrapper must cost the budget something")
+
+        // Five paragraphs, each nearly a whole map budget, so each is its own chunk.
+        let paragraph = String(repeating: "x", count: (mapBudget - 10) * 4)
+        let document = Array(repeating: paragraph, count: 5).joined(separator: "\n\n")
+        // Partials whose five labelled entries, joined, fall midway between the two budgets.
+        let label = SummarizationService.synthesisLabel(firstPart: 1, lastPart: 1, partCount: 5) + "\n"
+        let entryChars = ((wrappedBudget + mapBudget) / 2 * 4 - 4 * 2) / 5
+        let provider = MockSummarizationProvider(
+            tokenLimit: limit, responseText: String(repeating: "y", count: entryChars - label.count))
+
+        _ = try await service.generateSummaryText(
+            documentText: document, prompt: prompt, provider: provider,
+            documentId: "d1", volumeId: "vol1")
+
+        let calls = await provider.calls
+        try #require(calls.filter { !$0.request.isSynthesisPass }.count == 5)
+        let synthesis = calls.filter { $0.request.isSynthesisPass }
+        #expect(synthesis.count > 1, "five such partials need a reduce level once the wrapper is counted")
+        for call in synthesis {
+            let filled = call.prompt.promptText
+                .replacingOccurrences(of: "{{DOCUMENT}}", with: call.request.chunks.joined(separator: "\n\n"))
+            // The window less its safety margin; 2 for the estimate's rounding and a span's digits.
+            #expect(await service.estimateTokens(filled) <= limit - limit / 6 + 2)
+        }
     }
 }
