@@ -74,7 +74,7 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
 
 **The owner's instructions of 2026-10-29**, in the session that built #1767's lane A:
 
-102. **#1767's lane A is started now**: "start the person authority lane". It is built from `Person-Authority-Lane-Design-2026-10-28.md` §7, items 3 and 4 with §4.6. Its rollup version (v13) rebuilds every library's people at launch, so when it merges, before or after R3, is the owner's call at the merge.
+102. **#1767's lane A is started now**: "start the person authority lane". It is built from `Completed/Person-Authority-Lane-Design-2026-10-28.md` §7, items 3 and 4 with §4.6. Its rollup version (v13) rebuilds every library's people at launch, so when it merges, before or after R3, is the owner's call at the merge.
 103. **#1658's tie: a member that fits two reconciled people joins the one its exact name fits, when only one does, and neither otherwise** (`exactFirst`). The owner chose it over the memo's T1 and T2 after the census of one full library. T1 moved three entries away from the one person their exact name fits; T2 moved seven of Jimmy Carter's own entries.
 104. **Speaker Jim Wright's four entries are fixed in lane A**: "Address the Jim Wright finding in this PR." The census found them in Sir Oliver Wright's rollup, joined by name ("James" fits "J.", and the role check counts "from"); four assignments give them to his own record, 114818. The role check itself is unchanged: leaving its function words out would also break three right career rollups.
 
@@ -87,6 +87,10 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
 
 107. **Truman's nephew does not carry the President's item**: "Withhold from nephew". One overlay entry carries both men with Q11613, and a correction withholds from every id of an entry, so the corrections file gains `withheld`: an identifier kept off one record of an entry carrying several people. Its one entry keeps Q11613 off 116214; the President keeps it.
 108. **A country stays a role word, and the two wrong ids it let in are corrected by data**: "Correct the two by data". Left out of the role words with the nationalities, as the session's brief proposed, countries took 19 ids off the bundle, measured against the control and read one by one: Gustav Dahrendorf's son's item and Major General Inam-ul-Haq's namesake's, and 17 right ones whose only word in common with their item is the country (Kiichi Aichi, Liu Chieh, Pham Dang Lam among them). Two identifier-only corrections withhold the two.
+
+**The owner's word of 2026-11-01**, in the session that assessed #1764, #1765 and #1767:
+
+109. **#1767 is closed**: "Yes, close it out". Its five items, and what its two lanes found and left, are merged: #1815, #1816 and #1826, rollup v15. The device check of a library rebuilt at v15 and the filing of the three reports for `HistoryAtState/people` are the owner's (§4), and neither holds the issue open. The design memos leave the live set. The identifier assessment is marked complete in place, since the generator, its tests and the snapshot tool cite it by path; the overlay review and the lane design move to `Completed/`; the report drafts stay until they are filed.
 
 **Rules carried from the earlier plans and `CLAUDE.md`.** Each is the owner's.
 - **The queue is serial.** The next pull request is pushed when the owner has merged the one before. Auto-merge is never enabled.
@@ -249,6 +253,9 @@ The repository holds drafts for each.
 - **For A7** (#1723): the device check with Spike Reader. It is `App-Intents-Siri-Assessment-2026-10-18.md` §4, and `jolly-newton-d5828b`'s untracked `A6Spike/` holds the app.
 - **The manual review**, past build 52 (decision 94). `Manual-Revisions-Pending.md` and `Manual-Update-Build-49-Owner-Review.md` are its inputs and close with it.
 - **App Previews** for a later update (decision 89): recordings A, R and T are kept outside the repository.
+- **For #1767** (decision 109), closed with these left:
+  - the device check of a library rebuilt at rollup v15, from #1815's, #1816's and #1826's lists (among them Kissinger's Wikidata and VIAF links, Kirkpatrick across eleven volumes, E. Romney Wheeler apart from the General, and Truman keeping Q11613);
+  - whether to file the three reports drafted in `Person-Authority-Upstream-Reports-2026-11-01.md` with `HistoryAtState/people`.
 
 ---
 
@@ -256,10 +263,6 @@ The repository holds drafts for each.
 
 ### P2 — later
 
-- **#1767, the person authority's deferred work** (decision 96): the identifier rule (b4), the role text of overlay entries that carry several people, the nine held-apart members who rejoin by name, and #1658's undecided tie.
-  - **Lane A built on 2026-10-29** (decisions 102 to 104) from `v2` at `fb542514`, on `claude/person-authority-lane-c64504`, and **opened as #1815** on the owner's word of 2026-10-29: the nine and #1658's tie, with the design's §4.6. Kit and generator code, rollup v13, no index version, no CloudKit change; `person-authority-index.json` and `pocom-index.json` regenerated. Over S1's full library, 22 of 63,667 people entries change person. The nine stand apart (John Hughes and William G. Miller join their own records instead), five ties stand apart, Speaker Jim Wright's four entries leave Sir Oliver Wright for his own record, and Sir Oliver's vol. XLIV Part 1 entry leaves Jerauld Wright. The design memo's header has what the build corrected in it. Lane A merged as #1815 (`5c185a71`).
-  - **Lane B built on 2026-10-29** from `v2` at `5c185a71`, on `claude/strange-cohen-3a0b0b`: items 1 and 2, the identifier rule (b4) over a Wikidata snapshot committed beside the generator, with its refresh tool, and a multi-person entry's role text only for the records whose remarks hold it. Generator code, the snapshot, its tool and the assessment's reads (decision 105), and the bundle; rollup v14 (decision 106), no index version, no CloudKit change; `pocom-index.json` not owed (no slug moves). The file gains 1,859 Wikidata ids and 1,468 of the overlay's VIAF ids (142 → 1,610) and loses 33 role texts that were another record's, and nothing else changes. No member of a rollup moves; v14's rebuild writes the VIAF ids into a library. **Opened as #1816** on the owner's word of 2026-10-29 ("Push and open pr"), against `v2` at `5c185a71`, which had not moved since the branch was cut; it merged as `cb463e33`.
-  - **The follow-up, built on 2026-11-01** from `v2` at `3cc517fa`, on `claude/priceless-hopper-b53acf`: what the two lanes found and left (decisions 107 and 108). E. Romney Wheeler of USIA stands apart from General Earle G. Wheeler (a third list in the corrections file, `standsApart`, since his overlay entry carries no people-id); Luigi R. Einaudi takes his own item (an entry carrying several people's VIAF id, once the rule gives it to one of them, is not held against the item it offers another); five identifier-only corrections (Sir William Luce, Warren E. Thompson, General MacArthur's nephew's VIAF id, Gustav Dahrendorf, Inam-ul-Haq); and `withheld` for Truman's nephew. The bundle moves 10 identifiers (Wikidata 1,859 → 1,856, VIAF 1,610 → 1,607, the General taking his own item) and one anchor into `apart`; rollup v15. Drafts of three reports for `HistoryAtState/people` are in `Planning/Person-Authority-Upstream-Reports-2026-11-01.md`, unfiled. **Opened as #1826** on the owner's word of 2026-11-01 ("Push and open PR"), against `v2` at `3cc517fa`; not merged.
 - **Generators:** provenance flows count no page reference (`RefDestination.citedDocument` is nil for a page).
 - **Section vectors**, at the next vectors generation (decision 61).
 - **Smaller app items:**
@@ -316,12 +319,16 @@ The repository holds drafts for each.
 - **#234**, early-era people: deferred indefinitely (decision 92).
 - **#1696**: waits for the Office's subject export to reach Document 946. Nothing is posted to HistoryAtState/frus#469 (decision 71).
 - **For the corpus to fix:** `frus1945Malta/d273`'s year, 1945 by `@when` where its dateline says 1944.
-- **For HistoryAtState/people to fix:** the registry's own merges (Stevenson, Wilson, Fish).
+- **For HistoryAtState/people to fix:** the registry's own merges (Stevenson, Wilson, Fish), its duplicate records (Rowan, Regan, Tran Buu Kiem) and Sir Oliver Wright's two missing anchors. The three reports are drafted in `Person-Authority-Upstream-Reports-2026-11-01.md` and are not filed (§4).
 - **New volumes**, whenever the Office publishes, by `New-Volume-Release-Plan.md`.
 
 ### Closed or declined
 
 - **Closed:** #1690 and #1691 (decision 95).
+- **#1767, the person authority's deferred work, closed on 2026-11-01** (decisions 96 and 109): the identifier rule (b4), the role text of overlay entries that carry several people, the nine held-apart members who rejoin by name, and #1658's undecided tie.
+  - **Lane A built on 2026-10-29** (decisions 102 to 104) from `v2` at `fb542514`, on `claude/person-authority-lane-c64504`, and **opened as #1815** on the owner's word of 2026-10-29: the nine and #1658's tie, with the design's §4.6. Kit and generator code, rollup v13, no index version, no CloudKit change; `person-authority-index.json` and `pocom-index.json` regenerated. Over S1's full library, 22 of 63,667 people entries change person. The nine stand apart (John Hughes and William G. Miller join their own records instead), five ties stand apart, Speaker Jim Wright's four entries leave Sir Oliver Wright for his own record, and Sir Oliver's vol. XLIV Part 1 entry leaves Jerauld Wright. The design memo's header has what the build corrected in it. Lane A merged as #1815 (`5c185a71`).
+  - **Lane B built on 2026-10-29** from `v2` at `5c185a71`, on `claude/strange-cohen-3a0b0b`: items 1 and 2, the identifier rule (b4) over a Wikidata snapshot committed beside the generator, with its refresh tool, and a multi-person entry's role text only for the records whose remarks hold it. Generator code, the snapshot, its tool and the assessment's reads (decision 105), and the bundle; rollup v14 (decision 106), no index version, no CloudKit change; `pocom-index.json` not owed (no slug moves). The file gains 1,859 Wikidata ids and 1,468 of the overlay's VIAF ids (142 → 1,610) and loses 33 role texts that were another record's, and nothing else changes. No member of a rollup moves; v14's rebuild writes the VIAF ids into a library. **Opened as #1816** on the owner's word of 2026-10-29 ("Push and open pr"), against `v2` at `5c185a71`, which had not moved since the branch was cut; it merged as `cb463e33`.
+  - **The follow-up, built on 2026-11-01** from `v2` at `3cc517fa`, on `claude/priceless-hopper-b53acf`: what the two lanes found and left (decisions 107 and 108). E. Romney Wheeler of USIA stands apart from General Earle G. Wheeler (a third list in the corrections file, `standsApart`, since his overlay entry carries no people-id); Luigi R. Einaudi takes his own item (an entry carrying several people's VIAF id, once the rule gives it to one of them, is not held against the item it offers another); five identifier-only corrections (Sir William Luce, Warren E. Thompson, General MacArthur's nephew's VIAF id, Gustav Dahrendorf, Inam-ul-Haq); and `withheld` for Truman's nephew. The bundle moves 10 identifiers (Wikidata 1,859 → 1,856, VIAF 1,610 → 1,607, the General taking his own item) and one anchor into `apart`; rollup v15. Drafts of three reports for `HistoryAtState/people` are in `Planning/Person-Authority-Upstream-Reports-2026-11-01.md`, unfiled. **Opened as #1826** on the owner's word of 2026-11-01 ("Push and open PR"), against `v2` at `3cc517fa`; it merged as `4e6142c0`.
 - **Answered "keep as decided":** A10b's two residuals.
 - **Left as it is:** the method appendix's plain-text line, the record of what was typed. It stays the owner's call (decision 86).
 - **Declined:**
@@ -359,7 +366,8 @@ The review's §1 has each disposition with its reason. This change applies them.
   - the Visual Marketing Plan, the launch kit, the listing draft and `marketing-drafts/`, until submission;
   - `website-drafts/`, until the website's pages are published (decision 101);
   - the two manual-review documents, until the review;
-  - the A7, C-3 and person-authority designs, until their work runs;
+  - the A7 and C-3 designs, until their work runs;
+  - the person-authority designs, until #1767 closed on 2026-11-01 (decision 109). Since then the identifier assessment stays at the root marked complete, because code, tests and a tool cite it. The overlay review and the lane design are in `Completed/`. The upstream-report drafts stay until they are filed;
   - #234's documents (decision 92);
   - the generator output folders;
   - this plan's review, `Planning-Review-2026-10-21.md`.

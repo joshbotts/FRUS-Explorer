@@ -1,5 +1,12 @@
 # The name-authority overlay's other wrong merges: the A4c review, 2026-10-17
 
+**Moved to `Completed/` on 2026-11-01**, when #1767 closed (the live plan's decision 109). What this review left to the deferred work has been done:
+- the nine held-apart members and #1658's tie, in #1815 (rollup v13);
+- the identifier rule, in #1816 (v14);
+- E. Romney Wheeler, Einaudi and the five wrong ids, in #1826 (v15).
+
+What is still `HistoryAtState/people`'s to fix is drafted in `../Person-Authority-Upstream-Reports-2026-11-01.md`. The paths below name the Planning root as it was when this was written. The identifier assessment is still there, and the lane design is in this directory.
+
 **What this is.** The record of plan of record §6g's finding *"the name-authority overlay merges more people than
 #1657's two"*, worked on the owner's word of 2026-10-16 (the card A4 left, started after #1707 merged): every
 candidate read, what was corrected and why, what was left and why, what the bundle and a full library show, and
