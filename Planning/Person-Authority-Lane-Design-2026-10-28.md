@@ -14,6 +14,13 @@
 - **Luigi R. Einaudi does not keep his own item** under (b4), as the assessment's §7.2 says he does: his entry carries his grandfather's VIAF id, so the soft test withholds it. Only rule (b1) keeps it.
 - **The snapshot holds 4,331 items** (the assessment counted 4,306) and is 1,321,834 bytes (1.24 MB estimated), fetched 2026-10-30 UTC in about ten minutes: three SPARQL queries, 109 `wbgetentities` calls for the items and 127 for their labels.
 
+**The follow-up, 2026-11-01** (branch `claude/priceless-hopper-b53acf`; plan of record decisions 107 and 108). It took up what the two lanes found and left. The runbook's entry has every figure.
+- E. Romney Wheeler of USIA, whom the rollup joined by name to General Earle G. Wheeler, stands apart. His overlay entry carries no people-id, so no correction could name him, and the corrections file gains `standsApart`.
+- Luigi R. Einaudi takes his own item: the VIAF id of an entry carrying several people, once the rule gives it to one of them, is no longer held against the item the entry offers another.
+- The five reads lane B kept although they name someone else are all taken off by data: four identifier-only corrections, and `withheld`, a list that keeps an identifier off one record of a shared entry, for Truman's nephew. With them, General MacArthur takes his own item.
+- Countries stay role words. Left out, they took 17 right ids to take 2 wrong ones.
+- §4.5's registry merges, the duplicate records and §4.6's two Wright anchors are drafted as reports for `HistoryAtState/people` in `Planning/Person-Authority-Upstream-Reports-2026-11-01.md`, unfiled.
+
 ## 1. In brief
 
 - **Item 5 is done.** A4c's corrections already hold 1981-1988 vol. V's Taft anchor apart from President Taft and join it to Taft IV, and the shipped bundle sends it there (§3). Strike it from the issue.

@@ -29,9 +29,10 @@ import Foundation
 ///
 /// With the overlay, the run also reads `PersonAuthorityIndexGenerator/persons-complete-corrections.json`
 /// from the project root (`PersonsCompleteCorrections`, #1657): the overlay entries that merge two
-/// people, and what of each to hold apart, and the anchors no source answers with the records they
-/// belong to (#1767). A file it cannot read, or a correction or assignment that no longer fits the
-/// registry or the overlay, stops the run before anything is written.
+/// people, and what of each to hold apart, the anchors no source answers with the records they
+/// belong to (#1767), those that belong to no record and stand apart, and the identifiers it keeps off
+/// one record of an entry carrying several people. A file it cannot read, or an entry of any of these
+/// that no longer fits the registry or the overlay, stops the run before anything is written.
 ///
 /// It reads `PersonAuthorityIndexGenerator/wikidata-snapshot.json` as well (`WikidataSnapshot`, #1767),
 /// and takes the overlay's Wikidata and VIAF ids through `PersonIdentifierRule`, which stamps one only
@@ -114,12 +115,17 @@ public enum PersonAuthorityIndexRunner {
                     path: PersonsCompleteCorrections.defaultPath)
                 let assigned = try PersonsCompleteCorrections.loadAssignments(
                     path: PersonsCompleteCorrections.defaultPath)
+                let standingApart = try PersonsCompleteCorrections.loadStandingApart(
+                    path: PersonsCompleteCorrections.defaultPath)
+                let withheld = try PersonsCompleteCorrections.loadWithheld(
+                    path: PersonsCompleteCorrections.defaultPath)
                 // The facts each overlay identifier is tested against (#1767), read offline.
                 let snapshot = try WikidataSnapshot.load(path: WikidataSnapshot.defaultPath)
                 overlay = PersonAuthorityIndexBuilder.Overlay(
                     entries: entries, flaggedPeopleIds: flagged, roleCharacterLimit: limit,
                     corrections: corrections, takesIdentifiers: true, assigned: assigned,
-                    identifierRule: PersonIdentifierRule(snapshot: snapshot))
+                    identifierRule: PersonIdentifierRule(snapshot: snapshot), standingApart: standingApart,
+                    withheld: withheld)
                 // Pinned in provenance because it CANNOT be recomputed later: after the planned
                 // upstream xml:id re-mint, the same CSV rows name different people.
                 source += "; overlay frus-name-authority persons-complete.xml"
@@ -133,6 +139,16 @@ public enum PersonAuthorityIndexRunner {
                     source += "; assigned, by the same file: "
                         + assigned.map { "\($0.anchor) to \($0.peopleId)" }.sorted().joined(separator: ",")
                 }
+                if !standingApart.isEmpty {
+                    source += "; standing apart, by the same file: "
+                        + standingApart.map(\.anchor).sorted().joined(separator: ",")
+                }
+                if !withheld.isEmpty {
+                    let kept = withheld.map { entry in
+                        [entry.wikidata, entry.viaf].compactMap { $0 }.joined(separator: " ") + " off \(entry.peopleId)"
+                    }
+                    source += "; kept off one record, by the same file: " + kept.sorted().joined(separator: ",")
+                }
                 // Decision 55 took none: about 1,600 of the 3,769 Wikidata ids the overlay gave the
                 // bundle, and about 580 of the 2,186 of its VIAF ids that could be checked, named
                 // someone else. Since #1767 an id is taken where its item fits the record and agrees.
@@ -140,8 +156,10 @@ public enum PersonAuthorityIndexRunner {
                     + "snapshot of \(snapshot.fetched) fits the record and corroborates them"
                 print("Overlay: \(entries.count) entries; audit guard resolved "
                     + "\(flagged.count) people-ids to skip; \(corrections.count) corrections "
-                    + "hold apart what is not an entry's keyed person's, and \(assigned.count) "
-                    + "assignments place anchors no source answers; its Wikidata and VIAF ids "
+                    + "hold apart what is not an entry's keyed person's, \(assigned.count) "
+                    + "assignments place anchors no source answers, \(standingApart.count) such "
+                    + "anchors stand apart, and \(withheld.count) identifiers are kept off one record "
+                    + "of an entry carrying several people; its Wikidata and VIAF ids "
                     + "are tested against the Wikidata snapshot of \(snapshot.fetched) "
                     + "(\(snapshot.items.count) items).")
             } catch {
@@ -192,6 +210,7 @@ public enum PersonAuthorityIndexRunner {
                       anchors assigned:          \(stats.anchorsAssigned)
                       records kept for a join:   \(stats.recordsKeptForAJoin)
                       anchors standing apart:    \(stats.anchorsStandingApart)
+                      kept off one record:       \(stats.identifiersKeptOffOneRecord)
                       anchors where the two sources DISAGREE (registry kept): \(stats.crosswalkConflicts.count)
                     """)
                 if !stats.unknownOverlayIds.isEmpty {

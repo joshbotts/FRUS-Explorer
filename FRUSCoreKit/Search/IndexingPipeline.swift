@@ -509,6 +509,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.51 — 2026-10-29 (#1767 lane B): `currentPersonRollupVersion` → 14 — the bundled authority index
 ///         takes the overlay's VIAF ids where an identifier rule corroborates them, and the rebuild
 ///         writes each rollup's `viaf_id` from it; no member moves (see the v14 note). No index version
+///  4.52 — 2026-11-01 (#1767's follow-up): `currentPersonRollupVersion` → 15 — the bundled authority
+///         index lists one more anchor as `apart` and takes three VIAF ids off records not theirs; one
+///         member moves (see the v15 note). No index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1715,7 +1718,18 @@ public actor IndexingPipeline {
     /// against 13.0 s. Its own bump, though lane A's v13 had not shipped, so that a library a
     /// development build already rebuilt at v13 takes the VIAF ids too (the owner's choice,
     /// 2026-10-29). A rollup rebuild only; no index version.
-    public static let currentPersonRollupVersion: Int = 14
+    /// v15 (#1767's follow-up): the bundled `person-authority-index.json` lists Public Diplomacy vol.
+    /// VI's E. Romney Wheeler of USIA as `apart`, whom the rollup had joined by name to General Earle G.
+    /// Wheeler; his overlay entry carries no people-id and no record holds his name. It takes three VIAF
+    /// ids off records not theirs, which the rollup stores: Sir William Luce's and Warren E. Thompson's,
+    /// each a namesake's, and General MacArthur's, his nephew's. The Wikidata ids it gives and takes (Luigi
+    /// R. Einaudi's and the General's own items in, five out, Truman's nephew's among them) reach no rollup.
+    /// Measured over a full library (553 volumes at index v71, 63,667 members, S1's, 2026-11-01),
+    /// rebuilt with lane B's file and with this one: one member changes person, E. Romney Wheeler, from
+    /// the General's 61-member rollup to one of his own; the rollups go from 18,024 to 18,025, and the
+    /// candidate pairs from 171 to 172, the new one the two Wheelers; 1,607 rollups carry a `viaf_id`
+    /// where 1,610 did. A rebuild took 13.0 s, against 13.2 s. A rollup rebuild only; no index version.
+    public static let currentPersonRollupVersion: Int = 15
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
     /// UserDefaults key holding the fingerprint of the override set the rollup was last built with,
