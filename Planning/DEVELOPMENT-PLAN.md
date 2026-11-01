@@ -8952,3 +8952,34 @@ At `v2` the bundled file gives Kissinger Wikidata `Q66107` and VIAF `108958811`;
 **Not done.**
 - The device check and the upstream reports are the owner's (§4).
 - #1764's "found, not fixed" list (its log entry above) is not taken up here.
+
+## Session 2026-11-01 — The plan of record takes a second TestFlight build, 1.0 (1787) tagged `build-52`, a retake sitting of what changed since `build-51`, and the Agentic Analysis Guide's revision (decisions 110 to 113)
+
+From `v2` at `e47ca307`, in a cloud session. Documents only: no code, data file or version changed.
+
+**What was asked.** The owner's instruction, with #1823 and further summarization work under way in local sessions on the MacBook Air: "Update plan of record. Include another pre-release test flight build (1.0/1787) tomorrow that folds in work that is already underway today (issue 1823 and additional summarization work are in progress in local sessions on the MacBook Air). After 1787 is added to test flight, the plan should include recapturing screenshots that have been changed by PRs since 1.0/1776 were tagged as build 51. After that, the plan should pick up agentic analysis revision work."
+
+**What changed**, all in `Plan-Of-Record-2026-10-21.md`.
+- **The header.** The base is `v2` at `e47ca307`; the tree reads 1.0 (1776), tagged `build-51` at `f0479037`, with 40 pull requests merged since; rollup v15; five issues open and no pull request. The aim's line says what now comes before the submission.
+- **Decisions 110 to 113**, each with the owner's words: the 1787 build on 2026-11-02 (the upload decision 87 allowed for); the retake sitting after it; the guide's revision after that, with R3 keeping its place after 1787's device pass; and the tags, answered in the same session ("build 1787 will take the \"build 52\" tag and 1861 should be tagged \"1.0 release\""): `build-52` on 1787 and `1.0-release` on 1861, refining decision 99's `version-1.0`. So "build 52" written in the plan before today means the release after 1.0; those lines are left as written, and §3's candidates heading is renamed.
+- **§1** gains four rows and their briefs: **L9** (the work under way on the Mac: #1823, and what the six summarization pull requests of 2026-10-31 and 2026-11-01 left in their *Found, not fixed* and *Not done* lists); **R2b** (R2's checklist, with `swift test` owed for the kit code merged since `build-51`, the bump and both notes for 1787, what the notes name, and the owner's steps); **R4** (the captures listed so far: the two cross-reference graphs from L8 and #1764, `researchers-06`, and #1823's collection frames if it is in, with the session reading every merged pull request's entry for more); and **G1** (what the two reviews left untaken now that the READER-FACING OUTPUT section is adopted, what the tiers' rule closed, the owner's open choices, and the documents). L8's bullet says it merged as `36e7add7`.
+- **§3**: #1764, #1765 and the untitled page node are marked done, with their pull requests.
+- **§4**: R2b's owner steps and G1's scope.
+- **§5**: #1764's session's three findings and the summarization sessions' leftovers, unfiled, by the rule that a finding is filed on the owner's word.
+
+**Measured for the plan**, read-only, at `e47ca307`:
+- `git rev-list --count build-51..HEAD` is 40, and `git tag` resolves `build-51` to `f0479037` (the tag is annotated).
+- `project.yml` reads `CURRENT_PROJECT_VERSION: 1776`; `currentDateIndexVersion` is 71; the pipeline's version history ends at 4.52, rollup v15, "No index version".
+- `CloudKitSchemaInventory.swift` is unchanged since the tag (`git diff --stat` prints nothing for it). Nineteen files under `FRUSExplorer/Models/` changed, for #1786's, S17b's and S18a's moves into the kit and #1792; the lines removed from `ArchiveVisitPlan.swift` are `ArchiveVisitTier` and `ArchiveVisitDeliverables`, value types, not a `@Model`'s stored properties.
+- No committed capture shows a summary: the ledger says d474's and d476's were made in S4's home for the recordings. `ipad/collections-editor.png`, `macos/collections.png`, both `cross-reference-graph.png` files and the two `researchers-06` drafts exist.
+- The open issues are #1823, #1723, #1696, #1620 and #234, and no pull request is open.
+
+**Checked.**
+- The plan-of-record audit's two conditions, by hand: one `Plan-Of-Record-*.md` at the Planning root lacks `Status: SUPERSEDED`, and the struck-step line is unchanged.
+- Each edit was applied by exact match, every anchor found once.
+- No test reads this file beyond that audit, and no built target's file changed, so no build, unit run or `swift test` was owed.
+
+**Not done.**
+- Nothing is built for L9, R2b, R4 or G1; each is its own session.
+- The TestFlight notes are not rewritten here: R2b writes them for the code that merges by then.
+- Which lanes reach 1787 is decided by what has merged when R2b's checklist runs (decision 110).
