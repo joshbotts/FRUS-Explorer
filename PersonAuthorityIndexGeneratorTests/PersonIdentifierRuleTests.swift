@@ -169,6 +169,12 @@ struct PersonIdentifierRuleTests {
         #expect(rule(["Q1": item]).roleWords(of: record, in: "Q1") == ["navy"],
                 "american, department, state, head and 1961 are not role words, and ambassador is her surname")
         #expect(PersonIdentifierRule.roleTokens(["Président du Conseil"]) == ["president", "conseil"])
+        // A country is a role word, where its adjective is not (#1767's follow-up). Left out with the
+        // nationalities, measured against the control, it took 19 ids off the bundle: Gustav Dahrendorf's
+        // son's item and Major General Inam-ul-Haq's namesake's, and 17 right ones whose only word in
+        // common with their item is the country (Kiichi Aichi, Liu Chieh, Pham Dang Lam, J. A. Ankrah's VIAF
+        // id). The owner chose corrections for the two (2026-11-01).
+        #expect(PersonIdentifierRule.roleTokens(["Foreign Minister of Japan"]) == ["foreign", "minister", "japan"])
     }
 
     // MARK: - A VIAF id

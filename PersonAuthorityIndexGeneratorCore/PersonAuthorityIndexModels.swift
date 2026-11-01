@@ -289,8 +289,12 @@ public struct BuildStats: Sendable, Equatable {
     /// Registry records with no anchor in a kept volume, kept because a join or an assignment named
     /// them and placed an anchor (#1767).
     public var recordsKeptForAJoin = 0
-    /// Held-apart anchors in kept volumes that nothing answered, written to the index's `apart`.
+    /// Held-apart anchors in kept volumes that nothing answered, with the anchors the corrections file
+    /// lists as standing apart, written to the index's `apart`.
     public var anchorsStandingApart = 0
+    /// Identifiers an entry offered that the corrections file keeps off one of its records (#1767's
+    /// follow-up), counted once a record.
+    public var identifiersKeptOffOneRecord = 0
     public init() {}
 }
 

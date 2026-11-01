@@ -110,16 +110,38 @@ import Foundation
 /// person has a record, even one with no FRUS anchor of its own; held apart and listed, an anchor
 /// whose person does have a record would stand apart from it.
 ///
+/// ## Anchors that stand apart by name alone
+/// ``StandsApart`` names an anchor that no source gives to anyone and that no overlay entry carrying a
+/// people-id lists, so no correction can name it, and whose person has no registry record: Public
+/// Diplomacy vol. VI's "Wheeler, E. Romney", Director of the Television Service at USIA, whose overlay
+/// entry carries no people-id, and whom the app's rollup joined by name to General Earle G. Wheeler
+/// (#1767). The bundle lists it as `apart` with the held-apart anchors. A run refuses to write when a
+/// source answers for it: the registry, once upstream has a record for the person, or an overlay entry,
+/// which a correction holds apart from instead.
+///
+/// ## An identifier kept off one record of an entry
+/// ``Withheld`` names an identifier that an entry carrying several people offers, and the one record of
+/// the entry it is not the person of. A correction withholds from every people-id of the entry, so it
+/// cannot divide such an entry: `FRUS-28039` carries President Truman (113770) and his nephew (116214)
+/// with the President's item, which the identifier rule gives the nephew too, on the word *President*
+/// in his remark, "nephew of the President" (#1767). The identifier is not stamped on that record, and
+/// is not compared with the items offered to it. A run refuses to write when the registry names the
+/// record otherwise, when no entry carrying it offers the identifier, or when every entry that does
+/// carries no one else, which a correction is for.
+///
 /// ## The file
 /// `PersonAuthorityIndexGenerator/persons-complete-corrections.json` (``defaultPath``), committed
-/// beside the tool: an object whose `heldApart` lists the corrections and whose `assigned`, when
-/// present, lists the assignments. Any other key, such as the file's `about`, is for its readers.
+/// beside the tool: an object whose `heldApart` lists the corrections and whose `assigned`,
+/// `standsApart` and `withheld`, when present, list the assignments, the anchors that stand apart and
+/// the identifiers kept off one record. Any other key, such as the file's `about`, is for its readers.
 ///
 /// Version history:
 ///   1.0 — #1657: initial implementation
 ///   1.1 — A4c (plan of record §6g): a correction can withhold the entry's role text and name the
 ///         registry record its anchors join; eighty more corrections
 ///   1.2 — #1767: assignments (``Assigned``), and a join may name a record with no anchor of its own
+///   1.3 — #1767's follow-up: anchors that stand apart by name alone (``StandsApart``), and an
+///         identifier kept off one record of an entry carrying several people (``Withheld``)
 public enum PersonsCompleteCorrections {
 
     /// Where a run reads the corrections, relative to the project root, as the runner's default
@@ -220,11 +242,65 @@ public enum PersonsCompleteCorrections {
         }
     }
 
+    /// An anchor no source gives to anyone and no registry record is the person of, which no correction
+    /// can name: no overlay entry carrying a people-id lists it (#1767's follow-up).
+    public struct StandsApart: Codable, Sendable, Equatable {
+        /// The anchor, as the overlay writes one (`volume/persons#ref`).
+        public let anchor: String
+        /// The person, as the volume prints the name.
+        public let name: String
+        /// Why: the volume's entry for the anchor, the person the app joined it to by name, and what the
+        /// registry holds under the name.
+        public let reason: String
+
+        /// Creates an anchor that stands apart.
+        public init(anchor: String, name: String, reason: String) {
+            self.anchor = anchor
+            self.name = name
+            self.reason = reason
+        }
+
+        /// ``anchor`` parsed, or `nil` when it is not of the `volume/persons#ref` form, which
+        /// ``PersonsCompleteCorrections/loadStandingApart(path:)`` refuses.
+        var parsedAnchor: FRUSAnchor? {
+            PersonsCompleteOverlay.parseFRUSRef(anchor)
+        }
+    }
+
+    /// An identifier an entry carrying several people offers, kept off the one of them it is not the
+    /// person of (#1767's follow-up).
+    public struct Withheld: Codable, Sendable, Equatable {
+        /// The record the identifier is kept off, by `people-id`.
+        public let peopleId: String
+        /// The registry's preferred name for ``peopleId``, checked at build time as
+        /// ``HeldApart/registryName`` is.
+        public let registryName: String
+        /// The entry's Wikidata id to keep off the record, or `nil`.
+        public let wikidata: String?
+        /// The entry's VIAF id to keep off the record, or `nil`.
+        public let viaf: String?
+        /// Why: whose the identifier is, and why the rule cannot see it.
+        public let reason: String
+
+        /// Creates an identifier kept off one record.
+        public init(peopleId: String, registryName: String, wikidata: String?, viaf: String?, reason: String) {
+            self.peopleId = peopleId
+            self.registryName = registryName
+            self.wikidata = wikidata
+            self.viaf = viaf
+            self.reason = reason
+        }
+    }
+
     /// The file's shape.
     private struct File: Decodable {
         let heldApart: [HeldApart]
         /// Absent from a file written before #1767.
         let assigned: [Assigned]?
+        /// Absent from a file written before #1767's follow-up.
+        let standsApart: [StandsApart]?
+        /// Absent from a file written before #1767's follow-up.
+        let withheld: [Withheld]?
     }
 
     /// Why the corrections were not read, or do not fit the registry and overlay they were applied
@@ -269,6 +345,29 @@ public enum PersonsCompleteCorrections {
         case assignmentAnsweredByRegistry(anchor: String, peopleId: String, registry: Int)
         /// An overlay entry gives an assignment's anchor to another record.
         case assignmentAnsweredByOverlay(anchor: String, peopleId: String, overlay: Int)
+        /// An anchor that stands apart lacks the name or its reason.
+        case standsApartIncomplete(anchor: String)
+        /// An anchor that stands apart is not of the `volume/persons#ref` form.
+        case badStandsApartAnchor(anchor: String)
+        /// Two entries name one anchor that stands apart.
+        case duplicateStandsApart(anchor: String)
+        /// An anchor that stands apart is also a correction's or an assignment's.
+        case standsApartAlsoListed(anchor: String)
+        /// The registry answers for an anchor that stands apart.
+        case standsApartAnsweredByRegistry(anchor: String, registry: Int)
+        /// An overlay entry gives an anchor that stands apart to a record.
+        case standsApartAnsweredByOverlay(anchor: String, overlay: Int)
+        /// An identifier kept off one record lacks its people-id, the registry's name, the reason, or an
+        /// identifier.
+        case withheldIncomplete(peopleId: String)
+        /// Two entries keep identifiers off one people-id.
+        case duplicateWithheld(peopleId: String)
+        /// The registry has no record for the people-id an identifier is kept off, or names it otherwise.
+        case withheldNameDiffers(peopleId: String, expected: String, found: String?)
+        /// No overlay entry carrying the people-id offers the identifier.
+        case withheldNotOffered(peopleId: String, identifier: String)
+        /// Every entry that offers the identifier to the people-id carries no one else the registry knows.
+        case withheldNotShared(peopleId: String, identifier: String)
 
         /// What the run prints.
         public var description: String {
@@ -324,6 +423,33 @@ public enum PersonsCompleteCorrections {
                 return "an overlay entry gives \(anchor) to \(overlay), and an assignment to \(peopleId): read the "
                     + "entry, and hold the anchor apart from it with a correction that joins \(peopleId), or "
                     + "remove the assignment."
+            case .standsApartIncomplete(let anchor):
+                return "\"\(anchor)\" stands apart without the name the volume prints, or its reason."
+            case .badStandsApartAnchor(let anchor):
+                return "an anchor that stands apart is \"\(anchor)\", which is not volume/persons#ref."
+            case .duplicateStandsApart(let anchor):
+                return "\(anchor) stands apart twice."
+            case .standsApartAlsoListed(let anchor):
+                return "\(anchor) stands apart, and a correction or an assignment also lists it: keep one of the two."
+            case .standsApartAnsweredByRegistry(let anchor, let registry):
+                return "the registry gives \(anchor), which stands apart, to \(registry): read the record, and "
+                    + "remove the anchor from standsApart, or assign it."
+            case .standsApartAnsweredByOverlay(let anchor, let overlay):
+                return "an overlay entry gives \(anchor), which stands apart, to \(overlay): hold it apart from "
+                    + "that entry with a correction instead."
+            case .withheldIncomplete(let peopleId):
+                return "the identifier kept off \"\(peopleId)\" lacks a people-id, a name, its reason or an identifier."
+            case .duplicateWithheld(let peopleId):
+                return "two entries keep identifiers off people-id \(peopleId)."
+            case .withheldNameDiffers(let peopleId, let expected, let found):
+                return "an identifier kept off \(peopleId) expects the registry to name it \"\(expected)\"; "
+                    + "the registry names it \(found.map { "\"\($0)\"" } ?? "nothing")."
+            case .withheldNotOffered(let peopleId, let identifier):
+                return "\(identifier) is kept off \(peopleId), and no overlay entry carrying \(peopleId) offers it: "
+                    + "upstream may have changed the entry. Read it, and update or remove the entry."
+            case .withheldNotShared(let peopleId, let identifier):
+                return "\(identifier) is kept off \(peopleId), and the entries that offer it carry no one else: "
+                    + "withhold it with a correction instead."
             }
         }
     }
@@ -386,6 +512,76 @@ public enum PersonsCompleteCorrections {
             }
         }
         return file.assigned ?? []
+    }
+
+    /// Reads and checks the anchors that stand apart in the file at `path` (#1767's follow-up).
+    ///
+    /// - Parameter path: The corrections file, ``defaultPath`` for a run from the project root.
+    /// - Returns: The anchors, in the file's order; none for a file without a `standsApart` key.
+    /// - Throws: ``Problem`` when the file cannot be read or is not a list of corrections, or when an
+    ///   entry lacks its name or reason, names an anchor of the wrong form, repeats an anchor, or names
+    ///   one that a correction holds apart or an assignment places.
+    public static func loadStandingApart(path: String) throws -> [StandsApart] {
+        let file = try read(path: path)
+        let listed = Set(file.heldApart.flatMap(\.parsedAnchors))
+            .union((file.assigned ?? []).compactMap(\.parsedAnchor))
+        var seen = Set<FRUSAnchor>()
+        for entry in file.standsApart ?? [] {
+            let blank = [entry.name, entry.reason].contains { $0.trimmingCharacters(in: .whitespaces).isEmpty }
+            if blank { throw Problem.standsApartIncomplete(anchor: entry.anchor) }
+            guard let anchor = entry.parsedAnchor else { throw Problem.badStandsApartAnchor(anchor: entry.anchor) }
+            if listed.contains(anchor) { throw Problem.standsApartAlsoListed(anchor: entry.anchor) }
+            guard seen.insert(anchor).inserted else { throw Problem.duplicateStandsApart(anchor: entry.anchor) }
+        }
+        return file.standsApart ?? []
+    }
+
+    /// Reads and checks the identifiers kept off one record in the file at `path` (#1767's follow-up).
+    ///
+    /// - Parameter path: The corrections file, ``defaultPath`` for a run from the project root.
+    /// - Returns: The entries, in the file's order; none for a file without a `withheld` key.
+    /// - Throws: ``Problem`` when the file cannot be read or is not a list of corrections, or when an
+    ///   entry lacks its people-id, name, reason or an identifier, or repeats a people-id.
+    public static func loadWithheld(path: String) throws -> [Withheld] {
+        let file = try read(path: path)
+        var seen = Set<String>()
+        for entry in file.withheld ?? [] {
+            let blank = [entry.peopleId, entry.registryName, entry.reason]
+                .contains { $0.trimmingCharacters(in: .whitespaces).isEmpty }
+            if blank || (entry.wikidata == nil && entry.viaf == nil) {
+                throw Problem.withheldIncomplete(peopleId: entry.peopleId)
+            }
+            guard seen.insert(entry.peopleId).inserted else { throw Problem.duplicateWithheld(peopleId: entry.peopleId) }
+        }
+        return file.withheld ?? []
+    }
+
+    /// The first way the identifiers kept off one record do not fit the registry and overlay they are
+    /// applied to, or `nil` when every one does (#1767's follow-up).
+    ///
+    /// - Parameters:
+    ///   - withheld: The identifiers the run keeps off one record.
+    ///   - entries: The overlay's entries.
+    ///   - registryName: The registry's preferred name for a people-id, or `nil` when it has none.
+    ///   - isKnown: Whether the bundle has a record for a people-id, as an entry's other people are counted.
+    public static func misfit(ofWithheld withheld: [Withheld], entries: [PersonsCompleteOverlay.Entry],
+                              registryName: (String) -> String?, isKnown: (String) -> Bool) -> Problem? {
+        for entry in withheld {
+            let found = registryName(entry.peopleId)
+            guard found == entry.registryName else {
+                return .withheldNameDiffers(peopleId: entry.peopleId, expected: entry.registryName, found: found)
+            }
+            let carrying = entries.filter { $0.peopleIds.contains(entry.peopleId) }
+            for (identifier, offers) in [(entry.wikidata, { (e: PersonsCompleteOverlay.Entry) in e.wikidata == entry.wikidata }),
+                                         (entry.viaf, { (e: PersonsCompleteOverlay.Entry) in e.viaf == entry.viaf })] {
+                guard let identifier else { continue }
+                let offering = carrying.filter(offers)
+                guard !offering.isEmpty else { return .withheldNotOffered(peopleId: entry.peopleId, identifier: identifier) }
+                let shared = offering.contains { $0.peopleIds.contains { $0 != entry.peopleId && isKnown($0) } }
+                guard shared else { return .withheldNotShared(peopleId: entry.peopleId, identifier: identifier) }
+            }
+        }
+        return nil
     }
 
     /// The file at `path`, decoded and not yet checked.

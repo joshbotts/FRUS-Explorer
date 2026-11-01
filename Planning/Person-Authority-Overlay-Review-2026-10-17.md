@@ -356,7 +356,7 @@ his son's anchors as Senator, 1969-1980; 114659 (Charles Erwin Wilson, Secretary
 Wilson's (Director of Defense Mobilization) and Representative Charlie Wilson's 1977-1980 vol. II anchor; 104298
 (Hamilton Fish, 1808-1893) has the Secretary of State's years beside Hamilton Fish IV's only anchor; 109156 (G.
 William Miller) holds William G. Miller's 1969-1976 vol. XXXVIII Part 2 anchor; 102311 (Raul Castro Ruz) holds Raul
-H. Castro's 1977-1980 vol. XXVI anchor. They are `HistoryAtState/people`'s to fix upstream.
+H. Castro's 1977-1980 vol. XXVI anchor. They are `HistoryAtState/people`'s to fix upstream. Drafts of the reports, with every anchor's own entry, are in `Planning/Person-Authority-Upstream-Reports-2026-11-01.md` (unfiled). Read for them, 114659 also holds Charles Edward Wilson's Defense Mobilization anchors, and 102311 also holds 1977-1980 vol. XXX's Fidel Castro.
 
 ### 6.4 What the clusterer does with an uncovered member
 
