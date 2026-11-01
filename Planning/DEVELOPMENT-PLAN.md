@@ -8729,4 +8729,4 @@ Mutation, after a checkpoint commit: the synthesis budget taken from the reader'
 - **Runaway answers** are the owner's follow-up session (decision 3). One that fits is stored, and one that does not fails the summary, since the retry policy does not retry `contextSizeExceeded`.
 - **The service header's *Chunking algorithm* section** says an oversized paragraph gets its own chunk "rather than split mid-sentence". `splitOversized` splits it at sentences.
 
-**Not pushed.** Committed on `claude/summary-context-budget`; no pull request without the owner's word.
+**Pushed and opened as #1825** against `v2` on the owner's word ("Push and open PR", 2026-11-01).
