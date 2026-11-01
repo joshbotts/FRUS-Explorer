@@ -44,10 +44,11 @@ protocol SummarizationProvider: Actor {
     /// The UI should hide summarization entry points when `isAvailable == false`.
     var isAvailable: Bool { get }
 
-    /// Conservative token budget available for document content in a single request.
+    /// The token budget for a single request's prompt, the document's text and the template together.
     ///
     /// `SummarizationService` uses this value to decide whether to chunk a document.
-    /// The limit should reserve capacity for the system prompt and response overhead —
-    /// it represents usable document budget, not the raw model context window.
+    /// The limit should leave the rest of the model's window for the answer, which shares it:
+    /// it is the prompt's budget, not the raw model context window. Apple Intelligence's is three
+    /// quarters of the window the model states, read at each request.
     var contextWindowTokenLimit: Int { get }
 }

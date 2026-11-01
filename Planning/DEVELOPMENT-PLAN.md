@@ -8671,3 +8671,62 @@ Mutation, after a checkpoint commit: the synthesis budget taken from the reader'
 - **The app was not run with this build,** so no surface was looked at. The tests read the values, the markup, the PDF's faces and the stored text, not the drawn screens.
 
 **Pushed and opened as #1824** against `v2` on the owner's word ("Push and open PR", 2026-10-31).
+
+## Session 2026-10-31 — The summarizer's prompt budget is three quarters of the window the model states, 6,144 on an 8K model, and its token estimate counts digits and punctuation
+
+**What was asked.** A side session of the #1822 session. #1822's entry found the on-device model's window to be 8,192 tokens on macOS 27.2, while `AppleIntelligenceProvider.contextWindowTokenLimit` (3,072) assumed 4,096. Measure the case for a larger budget on long documents across eras, under the Standard Summary and one structured template. Check iOS 26 and 27, and ask the owner before changing anything. Cut from `v2` at `cf667b85` (#1824).
+
+**Measured** on this Mac (the M5 MacBook Air, macOS 27.2, Apple Intelligence on), by throwaway harnesses never committed (swiftc and FoundationModels). The record (the harnesses, the scoring scripts, every run) is in this session group's notes folder: `context-window-budget-findings.md` and `context-window-budget-measurement/`.
+- **The window differs by device.** `SystemLanguageModel.contextSize` reads 8,192 here, variant "AFM 3 Core Advanced". The SDK back-deploys it to 26.0, where it returns 4,096 before iOS and macOS 27. In the app on the iOS 27.0 simulator it reads 8,192 too, the Mac's model, by this change's log line. A command-line tool spawned into that simulator read **0**, and still answered a prompt of 7,414 tokens. The iOS 26.5 simulator cannot run the model on this Mac. Apple's reply on developer forum thread 843063 puts the iPhone 17 Pro, 17 Pro Max and Air on the advanced model under iOS 27, and the iPhone 15 Pro and 16 on a 3B model, which the poster reads as 4K. No iPhone was measured.
+- **The window holds the prompt and the answer.** A prompt of 8,012 tokens failed after 11 s with `contextSizeExceeded(8192, 8193)`; a prompt over the window is refused in 0.05 s. A request adds about 54 tokens of chat template, and the Meeting Record's instructions about 156.
+- **The comparison.** A harness ported this service's path as `v2` had it (the budget, paragraph chunks, the oversize split, map, the hierarchical reduce with #1821's wrapper and labels, #1765's guardrails, #1822's structured answers). It ran 14 documents under the Standard Summary and 8 under the Meeting Record, 1870 to 1988, 12,000 to 160,000 characters (NSC 68 the longest), once at each of four limits, one model call at a time: 88 runs.
+
+  | | 3,072 | 4,096 | 6,144 | 7,168 |
+  |---|---|---|---|---|
+  | Standard: total time | 488 s | 469 s | 333 s | 332 s |
+  | Standard: chunks / reduce levels / calls | 87 / 2 / 105 | 64 / 1 / 79 | 42 / 0 / 51 | 38 / 0 / 46 |
+  | Meeting: total time | 1,536 s | 1,110 s | 1,058 s | 898 s |
+  | Meeting: chunks / reduce levels / calls | 61 / 11 / 104 | 46 / 4 / 66 | 31 / 2 / 42 | 27 / 1 / 34 |
+  | Least room left for an answer in 8,192 | 5,415 | 4,505 | 2,668 | 1,794 |
+  | Failures | 0 | 0 | 0 | 1 |
+
+  At 7,168, NSC 68's first Meeting reduce failed after 119 s: a 3,598-token prompt, and an answer of about 4,400 tokens that ran past the window.
+- **Coverage, by one run per cell.** Each document was cut into eight equal parts at sentence boundaries. A part counts as kept when the final summary uses two or more words found in that part alone. Meeting Records kept 7.1, 7.8, 7.5 and 7.4 of 8 parts at the four limits. Standard Summaries kept 4.0, 3.8, 3.1 and 3.6, tracking their length (224, 193, 167 and 178 words): 1.8, 2.0, 1.9 and 2.0 parts per hundred words. The larger limits' finals are nearer the prompt's two to four sentences; at 3,072 one ran to 513 words after a reduce.
+- **Answers run away at every limit.** Standard answers had a median of 167 tokens and a p99 of 431. One ran to 2,595 tokens at 4,096, reproducing the ExComm transcript. Meeting answers had a median of 567, a p99 of 2,019 and a maximum of 2,679. The error that started this work came from the shipped 3,072.
+- **Number tables break `⌈characters ÷ 4⌉`.** The model's `tokenCount(for:)` was run over every chunk the service makes of 655 documents from 149 volumes: each volume's three longest, and three others of 2,000+ characters drawn at random. That is 8,215 counts in 4 minutes. Prose costs about four fifths of the estimate. Tables printed as running text cost about a token a digit: one chunk of the Chinese claimants' schedule (`frus1886/d65`) was 9,377 characters and 5,400 tokens. At 3,072 on a 4,096-token window, 4 of the 655 documents have a chunk whose prompt alone is over the window, so the summary fails: `frus1872p2v3/d37`, `frus1886/d65`, `frus1919Parisv10/d28` and `frus1921v01/d424`. At 6,144 with that estimate, 2 would fail on an 8K window, where they succeed at 3,072.
+- **A fitted estimate.** A digit costs 1, a punctuation mark ½, anything else ¼. Over the 4,456 chunks of 400+ characters, the real count was at most 1.23× the estimate (p99.9 1.16, median 0.78), against 2.96× for characters ÷ 4. Rechunked with it, with the hard split cutting by the same weights, no prompt of the 655 is over the window at 3,072 on 4K or at 6,144 on 8K. The least room left for an answer is 1,027 tokens (Standard, 3,072, 4K), 2,097 (Standard, 6,144, 8K) and 2,544 (Meeting, 6,144, 8K). Prose takes 3–5% more chunks.
+
+**The owner's decisions** (AskUserQuestion, 2026-10-31), each the recommended option:
+1. **"¾ of the window."** Read `contextSize` at each request: 6,144 on an 8K model, and 3,072 on a 4K one, on iOS 26, and where the window reads 0. Held to 6,144 until a larger window is measured.
+2. **"Count them."** The estimate counts digits and punctuation, and the hard split cuts by it.
+3. **Runaway answers: "Follow-up session."** Retry a call once when the answer, not the prompt, overran the window, with a capped-response check; measure both there.
+4. **"A log line."** Record the model's window, so the iPhone 17 Pro's figure can be read.
+
+**What changed.**
+- **`AppleIntelligenceProvider.contextWindowTokenLimit`** is computed at each request: `tokenLimit(forContextSize:)`, three quarters of `SystemLanguageModel.contextSize`, from `minimumTokenLimit` (3,072) to `maximumTokenLimit` (6,144). The first read of a launch logs a notice (subsystem `bottsywattsy.FRUS-Explorer`, category `Summarization`): the variant on iOS and macOS 27, the window and the budget. The header's *Context window* section states what was measured, where 3,072 had stood on an assumption; the protocol's doc comment says the limit is the prompt's.
+- **`SummarizationService.estimateTokens`** sums `tokenWeight(of:)` over the text's scalars. `hardSplit`, the forced synthesis's cap and `batch`'s cap cut by the estimate (`prefix(of:fittingTokens:)`), where each cut at `maxTokens × 4` characters. For letters and spaces both are the same as before; a run of digits is cut shorter.
+- **No stored summary changes.** A summary is not keyed by the budget, and only one made after this build is chunked by the new rule. Neither a manual nor `Docs/EditableContent/` states the budget.
+
+**Tests** (`SummarizationServiceTests.swift`).
+- **The estimate's weights**, letter, digit and punctuation.
+- **A number table**, a claims schedule's rows, which by characters ÷ 4 fit one call at 3,072: it is chunked, and every map call's estimate fits the budget.
+- **The hard split** cuts a run of digits at a quarter of prose's length, and the cap's prefix fits its budget.
+- **`AppleIntelligenceTokenLimitTests`:** 8,192 → 6,144, 4,096 → 3,072, 6,000 → 4,500, 0 and 2,048 → 3,072, 16,384 → 6,144, and the live provider's budget is its model's.
+
+**Checked.** Xcode 27.2 on macOS 27.2, each heavy job through `Scripts/heavy.sh`:
+- **The full unit target**, on the iPhone 17 simulator (iOS 27.0): "✔ Test run with 7827 tests in 937 suites passed after 438.278 seconds." That is #1824's 7,821 and the 6 new; the result bundle reads 0 failed and the same 37 environmental skips. The build showed no warning but the known `GeneratedSummary` residue.
+- **The log line, in that run**, read back from the simulator's log: "On-device model: AFM 3 Core Advanced, context 8192 tokens, prompt budget 6144". So the app on that simulator takes 6,144. After the run, the comments that had said the simulator reads 0 were corrected (a comment-only change, rebuilt by the Mac build below).
+- **`FRUSExplorerMac`**, DirectDistribution, unsigned: "** BUILD SUCCEEDED **", with only the same residue.
+- **No `swift test` owed:** no file under `FRUSCoreKit/` or a package target changed.
+- **Not run against the old code:** the number-table and hard-split tests. Under characters ÷ 4 the table is one call (the test's own `#require` checks that), and a run of digits is cut at 400 characters, so both would fail.
+
+**Not done.**
+- **No iPhone or iPad was measured,** and no iOS 26 device. The budget on an 8K iPhone is the rule's, not a measurement; the log line is there to read it.
+- **The app was not run with this build.** The harness drives this service's rules, not the app.
+
+**Found, not fixed.**
+- **On a 4,096-token window, a structured answer may not fit.** The limit bounds the prompt, so at 3,072 the answer has about 1,000 to 2,100 tokens. On this Mac at 3,072, 3 of 104 Meeting calls had input and answer over 4,096 (the largest 4,260, ExComm). If the 4K models write answers as long, those calls fail on every iOS 26 device and on the iPhone 15 Pro and 16 under iOS 27. A 4K model's answers cannot be measured here.
+- **Runaway answers** are the owner's follow-up session (decision 3). One that fits is stored, and one that does not fails the summary, since the retry policy does not retry `contextSizeExceeded`.
+- **The service header's *Chunking algorithm* section** says an oversized paragraph gets its own chunk "rather than split mid-sentence". `splitOversized` splits it at sentences.
+
+**Pushed and opened as #1825** against `v2` on the owner's word ("Push and open PR", 2026-11-01).

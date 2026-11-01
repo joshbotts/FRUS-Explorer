@@ -8,6 +8,7 @@
 
 import Foundation
 import FoundationModels
+import OSLog
 
 // MARK: - AppleIntelligenceProvider
 
@@ -19,12 +20,24 @@ import FoundationModels
 /// summarization entry points in that case. No API key or network connection required.
 ///
 /// ## Context window
-/// Apple does not publish the Apple Intelligence context window size. `contextWindowTokenLimit`
-/// is set to 3 072 — a conservative budget that reserves roughly 1 024 tokens for the
-/// system prompt and response overhead, based on a 4 096-token working assumption.
-/// Token estimation throughout the service layer uses a 4-characters-per-token heuristic
-/// (~250 words per 1 000 tokens for English prose); underestimation causes unnecessary
-/// chunking rather than exceeded-context errors.
+/// The model states its window as `SystemLanguageModel.contextSize`, and it differs by device: 8,192
+/// tokens on this project's M5 Mac under macOS 27.2 (variant "AFM 3 Core Advanced"), and the same in the
+/// app on the iOS 27.0 simulator, which runs the Mac's model; 4,096 on every device before iOS and
+/// macOS 27 (the SDK's back-deployed answer). A command-line tool spawned in that simulator read 0, and
+/// still answered a prompt of 7,414 tokens. Apple's forum reply on thread 843063 puts the iPhone 17
+/// Pro, 17 Pro Max and Air on the advanced model under iOS 27 and the iPhone 15 Pro and 16 on a 3B model
+/// with 4K. `contextWindowTokenLimit` is three quarters of that window, read at each request, and never
+/// below 3,072 or above 6,144 (``tokenLimit(forContextSize:)``): 6,144 on an 8K model, 3,072 on any
+/// other. It bounds the prompt only. The window holds the prompt and the answer together, so the other
+/// quarter is the answer's room, and an answer that runs past it throws
+/// `LanguageModelError.contextSizeExceeded` once it is written.
+///
+/// Measured 2026-10-31 on the Mac, against 3,072: 22 long documents, 1870 to 1988, under the Standard
+/// Summary and the Meeting Record, one run of each at each limit. 6,144 took 31% less time and made half
+/// the model calls, and its summaries named as much of each document: of eight equal parts, a Meeting
+/// Record kept 7.5 against 7.1, and a Standard Summary 1.9 for each hundred words against 1.8. 7,168 lost
+/// one run when an answer ran past the window. `Planning/DEVELOPMENT-PLAN.md` has the measurement.
+/// The service's estimate of a text's tokens is ``SummarizationService/estimateTokens(_:)``.
 ///
 /// ## Structured output
 /// A `.structured` prompt's answer is generated as plain text, its fields asked for as Markdown headings
@@ -53,6 +66,8 @@ import FoundationModels
 ///          thrown as `SummarizationError.contentRefused`
 ///   1.2 — 2026-10-31: a structured prompt is answered as plain text under headings on the permissive
 ///          guardrails and read back into its fields, where guided generation was declined
+///   1.3 — 2026-10-31: `contextWindowTokenLimit` is three quarters of the model's stated window, from
+///          3,072 to 6,144, where it was 3,072 on every device; the window is logged once a launch
 actor AppleIntelligenceProvider: SummarizationProvider {
 
     // MARK: - Shared Instance
@@ -60,10 +75,50 @@ actor AppleIntelligenceProvider: SummarizationProvider {
     static let shared = AppleIntelligenceProvider()
     private init() {}
 
+    /// The log the provider writes the model's window to, once a launch.
+    private static let log = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Summarization")
+
+    /// Whether this launch has logged the model's window.
+    private var hasLoggedContextSize = false
+
     // MARK: - SummarizationProvider
 
-    /// Conservative token budget for document content per request (see header comment).
-    let contextWindowTokenLimit: Int = 3_072
+    /// The prompt budget for one request: three quarters of the model's stated window, from 3,072 to
+    /// 6,144 (see header comment). The first read of a launch logs the window it was taken from.
+    var contextWindowTokenLimit: Int {
+        let contextSize = Self.model.contextSize
+        let limit = Self.tokenLimit(forContextSize: contextSize)
+        if !hasLoggedContextSize {
+            hasLoggedContextSize = true
+            Self.logContextSize(contextSize, limit: limit)
+        }
+        return limit
+    }
+
+    /// The least prompt budget: the one the app used on every device until 2026-10-31, kept for a
+    /// 4,096-token window and for a window the model states as 0 (as one process in the iOS 27.0
+    /// simulator read it) or anything under 4,096.
+    static let minimumTokenLimit = 3_072
+
+    /// The greatest prompt budget: three quarters of 8,192, the largest window measured. A larger window
+    /// is held to it until it is measured too.
+    static let maximumTokenLimit = 6_144
+
+    /// The prompt budget for a model whose window is `contextSize` tokens: three quarters of it, from
+    /// ``minimumTokenLimit`` to ``maximumTokenLimit``.
+    static func tokenLimit(forContextSize contextSize: Int) -> Int {
+        min(maximumTokenLimit, max(minimumTokenLimit, contextSize / 4 * 3))
+    }
+
+    /// Logs the model's window, its variant where the system names one, and the budget taken from it,
+    /// so a device's figure can be read from its log.
+    private static func logContextSize(_ contextSize: Int, limit: Int) {
+        var variant = "unnamed"
+        if #available(iOS 27.0, macOS 27.0, *) {
+            variant = model.variant.displayName
+        }
+        log.notice("On-device model: \(variant, privacy: .public), context \(contextSize, privacy: .public) tokens, prompt budget \(limit, privacy: .public)")
+    }
 
     /// `nonisolated` so DocumentView can read this from the `@MainActor` without an
     /// `await`. `SystemLanguageModel.default.isAvailable` is a safe synchronous read;
