@@ -99,10 +99,10 @@ struct PersonIdentifierRuleCorpusTests {
 
     /// `FRUS-07952` carries the President of Italy (103878) and his grandson Luigi R. Einaudi (103879),
     /// with the grandson's item and the President's VIAF id. The President keeps his VIAF id through its
-    /// holder. The grandson's own item is withheld from him: the entry's VIAF id, which he would carry,
-    /// is held by another item, and the rule cannot tell which of the entry's two ids is the wrong one
-    /// (the assessment's §7.2 says he keeps it, which holds only for its rule (b1)).
-    @Test("The Einaudis: the President keeps his VIAF id, and neither takes the grandson's item")
+    /// holder. Held against that VIAF id, the grandson's own item fails (`viaf-held-by-other-item`): the
+    /// rule alone cannot tell which of the entry's two ids is the wrong one. The builder can, since the
+    /// rule gives the VIAF id to the President (``einaudiThroughTheBuilder()``).
+    @Test("The Einaudis: the President keeps his VIAF id, and the grandson's item fails against it")
     func theEinaudis() throws {
         let rule = try Self.committedRule()
         let president = PersonIdentifierRule.Record(
@@ -125,9 +125,74 @@ struct PersonIdentifierRuleCorpusTests {
                 == .init(accepted: false, reason: "held by Q1242 birth-year"))
     }
 
+    /// The same entry through the builder (#1767's follow-up): the entry's VIAF id is the President's, whom
+    /// the rule gives it on its holder's facts, and it is no longer held against the item the entry offers
+    /// his grandson, who takes his own on the registry's year of birth.
+    @Test("The Einaudis through the builder: the grandson takes his own item, the President his VIAF id")
+    func einaudiThroughTheBuilder() throws {
+        let entry = PersonsCompleteOverlay.parseEntry("""
+            <person xml:id="FRUS-07952"><persName type="main">Einaudi, Luigi R.</persName>
+            <occupation>Non-career appointee. Permanent Representative of the U.S.A. to the Organization of
+                American States (Washington).</occupation>
+            <idno type="people-id">103878</idno><idno type="VIAF">56623995</idno>
+            <idno type="Wikidata">Q6700117</idno><idno type="people-id">103879</idno></person>
+            """)
+        var crosswalk: [String: [String: Int]] = [:]
+        var authority = ["103878": AuthorityEntry(n: "Einaudi, Luigi", b: nil, d: nil, v: nil),
+                         "103879": AuthorityEntry(n: "Einaudi, Luigi R.", b: 1936, d: nil, v: nil)]
+        let facts = ["103878": RegistryFacts(remarks: ["Governor of the Bank of Italy",
+                                                       "President of the Italian Republic, May 1948–April 1955.",
+                                                       "President of Italy until April 1955"], firstVolumeYear: 1946),
+                     "103879": RegistryFacts(remarks: ["Non-career appointee. Permanent Representative of the U.S.A. to the Organization of American States (Washington).",
+                                                       "Policy Planning Staff, Department of State"], firstVolumeYear: 1969)]
+        var stats = BuildStats()
+        PersonAuthorityIndexBuilder.applyOverlay(
+            .init(entries: [entry], flaggedPeopleIds: [], takesIdentifiers: true, identifierRule: try Self.committedRule()),
+            crosswalk: &crosswalk, authority: &authority, keepVolume: nil, stats: &stats, registryFacts: facts)
+        #expect(authority["103878"]?.v == "56623995" && authority["103878"]?.q == nil, "the President")
+        #expect(authority["103879"]?.q == "Q6700117" && authority["103879"]?.v == nil, "Luigi R. Einaudi")
+        #expect(stats.identifiersWithheldByRule.map { "\($0.peopleId) \($0.identifier)" }.sorted()
+                == ["103878 Q6700117", "103879 56623995"])
+    }
+
+    /// `FRUS-16841` carries the General (108250) with his own item, `Q127417`, and his nephew Douglas
+    /// MacArthur II's VIAF id, which `Q269483` holds. *Japan*, in both, lets the VIAF id in through its
+    /// holder, and held against it the General's own item fails: what the rule cannot see. The correction
+    /// that withholds the VIAF id (#1767's follow-up) leaves the item tested alone, and it passes.
+    @Test("General MacArthur takes his nephew's VIAF id on Japan, and his own item only with it withheld")
+    func generalMacArthur() throws {
+        let rule = try Self.committedRule()
+        let general = PersonIdentifierRule.Record(
+            name: "MacArthur, Douglas", birthYear: nil, deathYear: nil,
+            remarks: ["U. S. A., Commanding General, United States Army Forces, Pacific; Supreme Commander, Southwest Pacific Area.",
+                      "Commanding General, United States Armed Forces in the Pacific; Supreme Commander, Allied Powers in Japan"],
+            firstVolumeYear: 1945)
+        #expect(rule.decideVIAF("7088488", for: general, acceptedItem: nil)
+                == .init(accepted: true, reason: "held by Q269483: role words japan"))
+        #expect(rule.decideWikidata("Q127417", for: general, recordVIAF: "7088488")
+                == .init(accepted: false, reason: "viaf-held-by-other-item"))
+        #expect(rule.decideWikidata("Q127417", for: general, recordVIAF: nil)
+                == .init(accepted: true, reason: "role words army"))
+    }
+
+    /// 103111's entry carries his son Ralf's item, which meets his remark on the word *Germany* alone, and
+    /// "Ralf G." fits his given name by its initial. Countries stay role words (left out, they took 17 right
+    /// ids to take 2 wrong), so a correction withholds it (#1767's follow-up).
+    @Test("Gustav Dahrendorf's entry offers his son's item, which the rule takes on Germany")
+    func dahrendorf() throws {
+        let rule = try Self.committedRule()
+        let gustav = PersonIdentifierRule.Record(
+            name: "Dahrendorf, Gustav", birthYear: nil, deathYear: nil,
+            remarks: ["Vice President of the Economic Council in the U.S.–U.K. zones of occupation of Germany"],
+            firstVolumeYear: 1948)
+        #expect(rule.decideWikidata("Q76959", for: gustav, recordVIAF: nil)
+                == .init(accepted: true, reason: "role words germany"))
+    }
+
     /// `FRUS-28039` carries the President (113770) and his nephew (116214), with the President's item.
     /// What the rule cannot see: the nephew's own remark names the President, and nothing of the
-    /// registry's contradicts the item, so he takes it as well. Only a correction can hold it apart.
+    /// registry's contradicts the item, so he takes it as well. A correction would take it from both, so
+    /// the corrections file keeps it off the nephew alone (`withheld`, #1767's follow-up).
     @Test("Truman's nephew takes the President's item: two relatives of one name and era")
     func trumansNephew() throws {
         let rule = try Self.committedRule()
@@ -250,15 +315,16 @@ struct PersonIdentifierRuleCorpusTests {
 
     /// The 300 verdicts the assessment read on 2026-10-17 (rebuilt from that session's transcript, as the
     /// file's header says), held against the shipped file: a re-score of the rule on the links read by
-    /// hand. Over the three strata, weighted as the assessment weighted them, about 96% of the links the
-    /// rule keeps are right (the assessment's (b4)), none of the strata a test fails reaches the bundle,
-    /// and five reads are kept although they name someone else. Truman's nephew takes the President's
-    /// item on the word *President*, Sir William Luce an American librettist's whose VIAF id the overlay
-    /// took too, and Gustav Dahrendorf his son Ralf's on the word *Germany* (a country, where the
-    /// nationality list holds adjectives). Warren E. Thompson's entry took both its ids from one historian,
-    /// so the two agree. General MacArthur takes his nephew's VIAF id on the word *Japan*. A refreshed
-    /// snapshot or a changed word list moves these; read the rows that move before bringing the
-    /// expectations along.
+    /// hand. The rule alone kept about 96% right over the three strata, weighted as the assessment
+    /// weighted them (its (b4)), and none of the strata a test fails reaches the bundle. It also kept
+    /// five reads that name someone else, and #1767's follow-up takes all five off by data: Truman's
+    /// nephew (the President's item, on *President*; the file's `withheld`), Sir William Luce (a
+    /// librettist's item, whose VIAF id the overlay took too), Gustav Dahrendorf (his son Ralf's, on
+    /// *Germany*), Warren E. Thompson (both ids from one historian) and General MacArthur (his nephew's
+    /// VIAF id, on *Japan*), each by a correction. So the weighted share is now 100%, which is no longer
+    /// an estimate of the bundle: the corrections were chosen from these reads, and the links the reads
+    /// never sampled (the assessment's about 75 wrong, less these) are as they were. A refreshed snapshot
+    /// or a changed word list moves these; read the rows that move before bringing the expectations along.
     @Test("The rule, re-scored on the assessment's 300 reads")
     func reScoredOnTheReads() throws {
         let reads = try Self.reads()
@@ -282,8 +348,7 @@ struct PersonIdentifierRuleCorpusTests {
         #expect(!reads.contains { kept($0) && ($0.sample.hasSuffix(":soft") || $0.sample.hasSuffix(":hard")) },
                 "a link failing a test never reaches the bundle")
         let keptWrong = reads.filter { kept($0) && $0.verdict == "W" }.map { "\($0.peopleId) \($0.identifier)" }
-        #expect(keptWrong == ["116214 Q11613", "103111 Q76959", "113545 Q15429518", "108175 Q8014767", "108250 7088488"],
-                "Truman's nephew, Dahrendorf, Thompson, Luce and MacArthur's VIAF id")
+        #expect(keptWrong.isEmpty, "the five the rule kept, taken off by #1767's follow-up: \(keptWrong)")
     }
 
     // MARK: - The shipped file
@@ -304,10 +369,16 @@ struct PersonIdentifierRuleCorpusTests {
                 "Raul H. Castro: none of Raúl Castro's ids, nor his role")
         #expect(authority["103878"]?.v == "56623995" && authority["103878"]?.q == nil && authority["103878"]?.r == nil,
                 "the President of Italy: his VIAF id, and not his grandson's item or post")
-        #expect(authority["103879"]?.q == nil && authority["103879"]?.v == nil)
+        #expect(authority["103879"]?.q == "Q6700117" && authority["103879"]?.v == nil,
+                "Luigi R. Einaudi: his own item, since the entry's VIAF id is his grandfather's (#1767's follow-up)")
+        #expect(authority["108250"]?.q == "Q127417" && authority["108250"]?.v == nil,
+                "General MacArthur: his own item, and not his nephew's VIAF id (#1767's follow-up)")
         #expect(authority["113770"]?.q == "Q11613" && authority["113770"]?.r == "President of the United States, 1945-53.")
-        #expect(authority["116214"]?.q == "Q11613" && authority["116214"]?.r == nil,
-                "Truman's nephew: the President's item, which the rule cannot see, and not his role")
+        #expect(authority["116214"]?.q == nil && authority["116214"]?.r == nil,
+                "Truman's nephew: neither the President's item, kept off him alone, nor his role")
+        for id in ["103111", "105525", "108175", "113545"] {
+            #expect(authority[id]?.q == nil, "\(id): a namesake's or a relative's item, withheld by correction")
+        }
         for d in Self.duplicates {
             #expect(authority[d.lost]?.r == nil, "\(d.lost) loses its copy of the role")
             #expect(authority[d.kept]?.r == AuthorityEntry.truncatedRole(d.role, limit: 120), "\(d.kept) keeps it")

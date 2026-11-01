@@ -6720,6 +6720,14 @@ struct PersonRollupConsolidationTests {
         #expect(IndexingPipeline.currentPersonRollupVersion >= 14)
     }
 
+    /// #1767's follow-up regenerated the bundled authority index with E. Romney Wheeler's entry
+    /// standing apart, which the rollup had joined by name to General Earle G. Wheeler, and three VIAF
+    /// ids taken off records not theirs, which the rollup stores; v15 rebuilds it for both.
+    @Test("The person-rollup version is at least 15 (#1767's follow-up)")
+    func rollupVersionCoversTheFollowUp() {
+        #expect(IndexingPipeline.currentPersonRollupVersion >= 15)
+    }
+
     /// v12's census found entries held apart from a person who then rejoined that person by name,
     /// where their own person has no record: Hamilton Fish III under the Secretary of State, for one.
     @Test("A member the bundled index lists as apart is not rolled up with a reconciled namesake (#1767)")

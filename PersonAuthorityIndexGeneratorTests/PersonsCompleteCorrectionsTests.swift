@@ -563,6 +563,164 @@ struct PersonsCompleteCorrectionsTests {
         }
     }
 
+    // MARK: - Anchors that stand apart by name alone
+
+    /// Public Diplomacy vol. VI's E. Romney Wheeler of USIA, whose overlay entry carries no people-id, beside
+    /// General Earle G. Wheeler, whom the rollup joined him to by name.
+    private let romneyWheeler = PersonsCompleteCorrections.StandsApart(
+        anchor: "frus1917-72PubDipv06/persons#p_WER_1", name: "Wheeler, E. Romney", reason: "#1767")
+
+    @Test("An anchor the file lists as standing apart stands apart where no source answers it")
+    func standingApartIsApart() throws {
+        let crosswalk = ["frus1917-72PubDipv06": ["p_WEG_1": 114476]]
+        try PersonAuthorityIndexBuilder.checkStandingApart([romneyWheeler], registryCrosswalk: crosswalk,
+                                                           crosswalk: crosswalk)
+        #expect(PersonAuthorityIndexBuilder.apartAnchors(of: [], standingApart: [romneyWheeler],
+                                                         crosswalk: crosswalk, keepVolume: nil)
+                == ["frus1917-72PubDipv06": ["p_WER_1"]])
+        #expect(PersonAuthorityIndexBuilder.apartAnchors(of: [], standingApart: [romneyWheeler], crosswalk: crosswalk,
+                                                         keepVolume: { $0 != "frus1917-72PubDipv06" }).isEmpty,
+                "a volume the run does not keep lists nothing")
+    }
+
+    @Test("An anchor standing apart that a source answers is refused, not left to do nothing")
+    func answeredStandingApartIsRefused() {
+        let registryAnswers = ["frus1917-72PubDipv06": ["p_WER_1": 114477]]
+        #expect(throws: PersonsCompleteCorrections.Problem.standsApartAnsweredByRegistry(
+            anchor: romneyWheeler.anchor, registry: 114477)) {
+            try PersonAuthorityIndexBuilder.checkStandingApart([romneyWheeler], registryCrosswalk: registryAnswers,
+                                                               crosswalk: registryAnswers)
+        }
+        let overlayAnswers = ["frus1917-72PubDipv06": ["p_WER_1": 114476]]
+        #expect(throws: PersonsCompleteCorrections.Problem.standsApartAnsweredByOverlay(
+            anchor: romneyWheeler.anchor, overlay: 114476)) {
+            try PersonAuthorityIndexBuilder.checkStandingApart([romneyWheeler], registryCrosswalk: [:],
+                                                               crosswalk: overlayAnswers)
+        }
+        #expect(PersonsCompleteCorrections.Problem.standsApartAnsweredByOverlay(
+            anchor: romneyWheeler.anchor, overlay: 114476).description.contains("correction instead"))
+    }
+
+    @Test("A file's anchors standing apart that are incomplete, malformed, repeated or listed elsewhere are refused")
+    func loadStandingApartRefusesBadFiles() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("paig-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        func load(heldApart: String = "", assigned: String = "", _ apart: String?) throws
+            -> [PersonsCompleteCorrections.StandsApart] {
+            let url = dir.appendingPathComponent("\(UUID().uuidString).json")
+            let tail = apart.map { #","standsApart":[\#($0)]"# } ?? ""
+            try #"{"heldApart":[\#(heldApart)],"assigned":[\#(assigned)]\#(tail)}"#
+                .write(to: url, atomically: true, encoding: .utf8)
+            return try PersonsCompleteCorrections.loadStandingApart(path: url.path)
+        }
+        func entry(_ anchor: String = "frus1917-72PubDipv06/persons#p_WER_1", name: String = "Wheeler, E. Romney") -> String {
+            #"{"anchor":"\#(anchor)","name":"\#(name)","reason":"r"}"#
+        }
+        #expect(try load(nil).isEmpty, "a file written before #1767's follow-up has none")
+        #expect(try load(entry()) == [.init(anchor: "frus1917-72PubDipv06/persons#p_WER_1",
+                                            name: "Wheeler, E. Romney", reason: "r")])
+        #expect(throws: PersonsCompleteCorrections.Problem.standsApartIncomplete(anchor: "frus1917-72PubDipv06/persons#p_WER_1")) {
+            try load(entry(name: " "))
+        }
+        #expect(throws: PersonsCompleteCorrections.Problem.badStandsApartAnchor(anchor: "frus1917-72PubDipv06#p_WER_1")) {
+            try load(entry("frus1917-72PubDipv06#p_WER_1"))
+        }
+        #expect(throws: PersonsCompleteCorrections.Problem.duplicateStandsApart(anchor: "frus1917-72PubDipv06/persons#p_WER_1")) {
+            try load(entry() + "," + entry())
+        }
+        let held = #"{"peopleId":"114476","registryName":"n","otherPerson":"o","anchors":["frus1917-72PubDipv06/persons#p_WER_1"],"wikidata":null,"viaf":null,"reason":"r"}"#
+        #expect(throws: PersonsCompleteCorrections.Problem.standsApartAlsoListed(anchor: "frus1917-72PubDipv06/persons#p_WER_1")) {
+            try load(heldApart: held, entry())
+        }
+        let assigned = #"{"anchor":"frus1917-72PubDipv06/persons#p_WER_1","peopleId":"1","registryName":"n","reason":"r"}"#
+        #expect(throws: PersonsCompleteCorrections.Problem.standsApartAlsoListed(anchor: "frus1917-72PubDipv06/persons#p_WER_1")) {
+            try load(assigned: assigned, entry())
+        }
+    }
+
+    // MARK: - An identifier kept off one record of an entry
+
+    /// `FRUS-28039`: President Truman's nephew first, then the President, with the President's item.
+    private func trumanEntry(wikidata: String = "Q11613", ids: [String] = ["116214", "113770"]) -> PersonsCompleteOverlay.Entry {
+        PersonsCompleteOverlay.parseEntry("""
+            <person xml:id="FRUS-28039"><persName type="main">Truman, Harry S.</persName>
+            <occupation>President of the United States, 1945-53.</occupation>
+            \(ids.map { "<idno type=\"people-id\">\($0)</idno>" }.joined())<idno type="Wikidata">\(wikidata)</idno></person>
+            """)
+    }
+
+    private let nephew = PersonsCompleteCorrections.Withheld(
+        peopleId: "116214", registryName: "Truman, Harry", wikidata: "Q11613", viaf: nil, reason: "#1767")
+
+    @Test("An identifier kept off one record of an entry reaches the entry's other people")
+    func withheldReachesTheOthers() {
+        var crosswalk: [String: [String: Int]] = [:]
+        var authority = ["116214": AuthorityEntry(n: "Truman, Harry", b: nil, d: nil, v: nil),
+                         "113770": AuthorityEntry(n: "Truman, Harry S.", b: 1884, d: 1972, v: nil)]
+        var stats = BuildStats()
+        PersonAuthorityIndexBuilder.applyOverlay(
+            .init(entries: [trumanEntry()], flaggedPeopleIds: [], takesIdentifiers: true, withheld: [nephew]),
+            crosswalk: &crosswalk, authority: &authority, keepVolume: nil, stats: &stats)
+        #expect(authority["116214"]?.q == nil, "the nephew")
+        #expect(authority["113770"]?.q == "Q11613", "the President keeps his own item")
+        #expect(stats.identifiersKeptOffOneRecord == 1)
+    }
+
+    @Test("An identifier kept off one record that no longer fits is refused")
+    func withheldMisfits() {
+        let known: Set<String> = ["116214", "113770"]
+        func misfit(_ withheld: PersonsCompleteCorrections.Withheld,
+                    _ entries: [PersonsCompleteOverlay.Entry]) -> PersonsCompleteCorrections.Problem? {
+            PersonsCompleteCorrections.misfit(
+                ofWithheld: [withheld], entries: entries,
+                registryName: { ["116214": "Truman, Harry", "113770": "Truman, Harry S."][$0] },
+                isKnown: known.contains)
+        }
+        #expect(misfit(nephew, [trumanEntry()]) == nil)
+        let typo = PersonsCompleteCorrections.Withheld(
+            peopleId: "116214", registryName: "Truman, Harry S.", wikidata: "Q11613", viaf: nil, reason: "x")
+        #expect(misfit(typo, [trumanEntry()])
+                == .withheldNameDiffers(peopleId: "116214", expected: "Truman, Harry S.", found: "Truman, Harry"))
+        #expect(misfit(nephew, [trumanEntry(wikidata: "Q1")])
+                == .withheldNotOffered(peopleId: "116214", identifier: "Q11613"), "upstream changed the entry")
+        #expect(misfit(nephew, [trumanEntry(ids: ["116214"])])
+                == .withheldNotShared(peopleId: "116214", identifier: "Q11613"), "a correction is for that")
+        #expect(misfit(nephew, [trumanEntry(ids: ["116214", "999999"])])
+                == .withheldNotShared(peopleId: "116214", identifier: "Q11613"),
+                "an id the bundle has no record for is no one the entry carries")
+    }
+
+    @Test("A file's identifiers kept off one record that are incomplete or repeated are refused")
+    func loadWithheldRefusesBadFiles() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("paig-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        func load(_ withheld: String?) throws -> [PersonsCompleteCorrections.Withheld] {
+            let url = dir.appendingPathComponent("\(UUID().uuidString).json")
+            let tail = withheld.map { #","withheld":[\#($0)]"# } ?? ""
+            try #"{"heldApart":[]\#(tail)}"#.write(to: url, atomically: true, encoding: .utf8)
+            return try PersonsCompleteCorrections.loadWithheld(path: url.path)
+        }
+        func entry(wikidata: String = #""Q11613""#, reason: String = "r") -> String {
+            #"{"peopleId":"116214","registryName":"Truman, Harry","wikidata":\#(wikidata),"viaf":null,"reason":"\#(reason)"}"#
+        }
+        #expect(try load(nil).isEmpty, "a file written before #1767's follow-up has none")
+        #expect(try load(entry()) == [.init(peopleId: "116214", registryName: "Truman, Harry", wikidata: "Q11613",
+                                            viaf: nil, reason: "r")])
+        #expect(throws: PersonsCompleteCorrections.Problem.withheldIncomplete(peopleId: "116214")) {
+            try load(entry(wikidata: "null"))
+        }
+        #expect(throws: PersonsCompleteCorrections.Problem.withheldIncomplete(peopleId: "116214")) {
+            try load(entry(reason: " "))
+        }
+        #expect(throws: PersonsCompleteCorrections.Problem.duplicateWithheld(peopleId: "116214")) {
+            try load(entry() + "," + entry())
+        }
+    }
+
     // MARK: - The file
 
     @Test("A corrections file that is incomplete, has a malformed anchor, repeats an id or misplaces a join is refused")
@@ -614,12 +772,12 @@ struct PersonsCompleteCorrectionsTests {
         }
     }
 
-    @Test("The committed corrections hold apart the two entries #1657 names and A4c's eighty")
+    @Test("The committed corrections hold apart the two entries #1657 names, A4c's eighty and #1767's five")
     func committedCorrections() throws {
         let corrections = try PersonsCompleteCorrections.load(
             path: Self.repoRoot.appendingPathComponent(PersonsCompleteCorrections.defaultPath).path)
         #expect(Array(corrections.map(\.peopleId).prefix(2)) == ["107235", "107120"])
-        #expect(corrections.count == 82, "#1657's two and A4c's eighty")
+        #expect(corrections.count == 87, "#1657's two, A4c's eighty, and five that withhold identifiers alone (#1767)")
         #expect(corrections.reduce(0) { $0 + $1.anchors.count } == 156)
         #expect(corrections.count { $0.joins != nil } == 21,
                 "A4c's sixteen, and five #1767 found a record for: Jeane Kirkpatrick's, Mueller's, and three with no FRUS anchor")
@@ -629,8 +787,15 @@ struct PersonsCompleteCorrectionsTests {
                 "John Hughes, Richard T. McCormack and William G. Miller, known to the registry from POCOM alone")
         #expect(joined["109500"] == "109501")
         #expect(corrections.count { $0.role != nil } == 23)
-        #expect(corrections.count { $0.wikidata != nil } == 55)
-        #expect(corrections.count { $0.viaf != nil } == 45)
+        #expect(corrections.count { $0.wikidata != nil } == 59)
+        #expect(corrections.count { $0.viaf != nil } == 48)
+        // #1767's follow-up: identifiers only, read on wikidata.org, each a namesake's or a relative's
+        // that the identifier rule cannot see.
+        let identifiersOnly = corrections.filter(\.anchors.isEmpty)
+        #expect(identifiersOnly.map(\.peopleId) == ["108175", "113545", "108250", "103111", "105525"],
+                "Sir William Luce, Warren E. Thompson, General MacArthur, Gustav Dahrendorf, Inam-ul-Haq")
+        #expect(identifiersOnly.first { $0.peopleId == "108250" }?.wikidata == nil,
+                "Q127417 is the General's own item; only his nephew's VIAF id is withheld")
         let allen = try #require(corrections.first { $0.peopleId == "100307" })
         #expect(allen.registryName == "Allen, Richard F.")
         #expect(allen.anchors.count == 13, "Richard V. Allen's thirteen, none of Richard F.'s three")
@@ -657,6 +822,14 @@ struct PersonsCompleteCorrectionsTests {
                                            "frus1981-88v44p1/persons#p_WJ_3"])
         #expect(assigned.map(\.peopleId) == ["108264", "114825", "114825", "114818", "114818", "114818", "114818"],
                 "Donald G. MacDonald of AID, Sir Oliver Wright twice, and Speaker Jim Wright four times")
+
+        let standingApart = try PersonsCompleteCorrections.loadStandingApart(
+            path: Self.repoRoot.appendingPathComponent(PersonsCompleteCorrections.defaultPath).path)
+        #expect(standingApart.map(\.anchor) == ["frus1917-72PubDipv06/persons#p_WER_1"], "E. Romney Wheeler of USIA")
+        let withheld = try PersonsCompleteCorrections.loadWithheld(
+            path: Self.repoRoot.appendingPathComponent(PersonsCompleteCorrections.defaultPath).path)
+        #expect(withheld == [.init(peopleId: "116214", registryName: "Truman, Harry", wikidata: "Q11613", viaf: nil,
+                                   reason: withheld.first?.reason ?? "")], "the President's item, off his nephew")
     }
 
     /// The shipped file, read from the repository: regenerated with the corrections, it gives none of
@@ -711,7 +884,10 @@ struct PersonsCompleteCorrectionsTests {
             }
         }
         #expect(standingApart == 69)
-        #expect(index.apart?.values.reduce(0) { $0 + $1.count } == 69, "the list holds nothing a correction does not")
+        #expect(index.apart?.values.reduce(0) { $0 + $1.count } == 70,
+                "the list holds nothing a correction does not, and E. Romney Wheeler (#1767's follow-up)")
+        #expect(index.apart?["frus1917-72PubDipv06"] == ["p_WER_1"], "standing apart from General Earle G. Wheeler")
+        #expect(index.crosswalk["frus1917-72PubDipv06"]?["p_WEG_1"] == 114476 && index.authority["114476"]?.n == "Wheeler, Earle G.")
         #expect(index.apart?.values.allSatisfy { $0 == $0.sorted() } == true)
         #expect(index.apart?["frus1977-80v23"]?.contains("p_SAE_1") == true, "Adlai E. Stevenson III")
         #expect(index.apart?["frus1981-88v41"]?.contains("p_MDS_1") == true,
@@ -754,7 +930,9 @@ struct PersonsCompleteCorrectionsTests {
     /// (`Planning/Person-Authority-Identifier-Assessment-2026-10-17.md`). The rule takes back an id only
     /// where its item, in the committed Wikidata snapshot, fits the record and something independent
     /// agrees: 1,859 Wikidata ids of the 3,769, and 1,468 of the overlay's 3,010 VIAF ids beside the
-    /// registry's own 142, at people `63b537ad` and the snapshot fetched 2026-10-30. Every Wikidata id
+    /// registry's own 142, at people `63b537ad` and the snapshot fetched 2026-10-30. #1767's follow-up
+    /// gives Luigi R. Einaudi and General MacArthur their own items and takes seven wrong ids off by
+    /// correction and one by the file's withheld list: 1,856 and 1,465. Every Wikidata id
     /// is an item of the snapshot's that is a person. A regeneration against a newer registry or a
     /// refreshed snapshot may move the counts; the generator prints every id the rule withheld, and why.
     @Test("The bundled index takes the overlay's Wikidata and VIAF ids only through the rule")
@@ -766,9 +944,9 @@ struct PersonsCompleteCorrectionsTests {
             path: Self.repoRoot.appendingPathComponent(WikidataSnapshot.defaultPath).path)
         #expect(index.authority.count == 12_839, "the registry's 12,836 records, and three a join keeps (#1767)")
         let wikidata = index.authority.values.compactMap(\.q)
-        #expect(wikidata.count == 1_859)
+        #expect(wikidata.count == 1_856)
         #expect(wikidata.allSatisfy { snapshot.items[$0]?.human == true }, "each is a person in the snapshot")
-        #expect(index.authority.values.count { $0.v != nil } == 1_610, "the registry's 142, and 1,468 of the overlay's")
+        #expect(index.authority.values.count { $0.v != nil } == 1_607, "the registry's 142, and 1,465 of the overlay's")
         #expect(index.authority.values.count { $0.r != nil } == 12_754,
                 "the overlay's role texts, less the 33 an entry carrying several people gave to the wrong ones")
         #expect(index.source.contains("the overlay's Wikidata and VIAF ids are taken only where the Wikidata snapshot of \(snapshot.fetched)"),

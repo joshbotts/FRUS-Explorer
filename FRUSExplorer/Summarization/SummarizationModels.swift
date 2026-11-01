@@ -88,6 +88,8 @@ struct SummarizationPromptSnapshot: Sendable {
 ///          the reader as it was
 ///   1.3 — 2026-10-31: a structured prompt's refusal no longer says the model holds structured prompts
 ///          to stricter rules: they are answered as plain text on the same guardrails since that day
+///   1.4 — 2026-11-01: `answerOverranWindow`, an answer that ran past the model's window, which
+///          `SummarizationService` asks for once more
 enum SummarizationError: Error, LocalizedError, Equatable {
     /// The device does not have Apple Intelligence hardware or model assets available.
     case providerUnavailable
@@ -102,12 +104,19 @@ enum SummarizationError: Error, LocalizedError, Equatable {
     /// The model's own explanation of a refusal is not quoted (the owner's decision of 2026-10-31): it
     /// is a second model call, and for the Long Telegram it read *I've already explained…*.
     case contentRefused(structured: Bool)
+    /// The model's answer ran past the window it shares with the prompt, where the prompt fitted
+    /// (2026-11-01). The provider throws it in place of the framework's error once the answer is written,
+    /// and `SummarizationService` asks for that one answer once more; when the second runs past the
+    /// window too, the summary fails with this. The framework's error is left as it is when the prompt
+    /// itself was over the window (`AppleIntelligenceProvider.answerOverranWindow(promptTokens:contextSize:)`).
+    case answerOverranWindow
 
     static func == (lhs: SummarizationError, rhs: SummarizationError) -> Bool {
         switch (lhs, rhs) {
         case (.providerUnavailable, .providerUnavailable): return true
         case (.emptyDocumentText, .emptyDocumentText): return true
         case (.synthesisFailed, .synthesisFailed): return true
+        case (.answerOverranWindow, .answerOverranWindow): return true
         case let (.contentRefused(lhsStructured), .contentRefused(rhsStructured)):
             return lhsStructured == rhsStructured
         default: return false
@@ -127,9 +136,13 @@ enum SummarizationError: Error, LocalizedError, Equatable {
                 defaultValue: "The document contains no text to summarize."
             )
         case .synthesisFailed(let err):
-            // A refusal reads the same whichever pass met it: which pass it was is no use to the reader.
-            if let refused = err as? SummarizationError, case .contentRefused = refused {
-                return refused.errorDescription
+            // A refusal or an overlong answer reads the same whichever pass met it: which pass it was is
+            // no use to the reader.
+            if let inner = err as? SummarizationError {
+                switch inner {
+                case .contentRefused, .answerOverranWindow: return inner.errorDescription
+                default: break
+                }
             }
             return String(
                 localized: "summ.error.synthesis",
@@ -147,6 +160,11 @@ enum SummarizationError: Error, LocalizedError, Equatable {
             return String(
                 localized: "summ.error.refused",
                 defaultValue: "Apple Intelligence declined to summarize this document. Its on-device safety rules stopped the request; nothing is wrong with the document or the app."
+            )
+        case .answerOverranWindow:
+            return String(
+                localized: "summ.error.answerOverran",
+                defaultValue: "Apple Intelligence wrote more than it can hold while summarizing this document, and did again when asked once more. Summarizing it again may succeed."
             )
         }
     }

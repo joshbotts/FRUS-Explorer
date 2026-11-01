@@ -40,6 +40,8 @@ import FoundationModels
 ///   1.0 — #560: initial implementation
 ///   1.1 — #1765: `SummarizationError.contentRefused` is terminal; `LanguageModelError` and
 ///          `SystemLanguageModel.Error` are classified as `GenerationError` is
+///   1.2 — 2026-11-01: `SummarizationError.answerOverranWindow` is terminal, since the service has
+///          retried its call
 enum SummarizationRetryPolicy {
 
     /// Whether retrying `error` could plausibly succeed.
@@ -70,6 +72,11 @@ enum SummarizationRetryPolicy {
             case .contentRefused:
                 // The provider's translation of a guardrail stop or refusal (#1765): a property of
                 // this content under these guardrails, like the framework errors it replaces below.
+                return false
+            case .answerOverranWindow:
+                // `SummarizationService` has already asked for that one answer a second time. A
+                // whole-document retry would re-run every call before it to reach the same call (the
+                // owner's decision of 2026-11-01).
                 return false
             case .synthesisFailed:
                 return true   // unreachable: unwrapped above, but the switch must stay total

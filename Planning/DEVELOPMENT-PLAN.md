@@ -8731,6 +8731,111 @@ Mutation, after a checkpoint commit: the synthesis budget taken from the reader'
 
 **Pushed and opened as #1825** against `v2` on the owner's word ("Push and open PR", 2026-11-01).
 
+## Session 2026-11-01 — #1767's follow-up: E. Romney Wheeler stands apart, Luigi R. Einaudi and General MacArthur take their own items, five wrong ids leave the bundle, and the reports for upstream are drafted
+
+From `v2` at `3cc517fa`, on `claude/priceless-hopper-b53acf`, on the brief of the session that asked (the person-authority problems #1767's two lanes found and left: #1815's and #1816's bodies, and the assessment). Generator code, the corrections file, the regenerated `person-authority-index.json`, and the kit's rollup version (v15). No index version, no CloudKit change. #1767 stays open; the memos stay in `Planning/`.
+
+**The owner's answers** (decisions 107 and 108), asked in this session: "Withhold from nephew", and "Correct the two by data".
+
+**The control.** The generator at the base, in a detached worktree, run with the shipped file's `GENERATED_DATE=2026-10-30`, reproduced it byte for byte (SHA-256 `210c13e3…`; people `63b537ad`, still `master` by `git ls-remote`; name-authority at `51aa742`).
+
+**Item 1, E. Romney Wheeler.** Public Diplomacy vol. VI prints "Wheeler, E. Romney, Director, Television Service, United States Information Agency, until 1962" beside "Wheeler, Earle G." (114476). No other manifest volume prints him; no registry record holds the name, including those with no FRUS anchor; and his overlay entry, FRUS-29510, carries no people-id. So no correction can name the anchor, since a correction is keyed by the people-id of an entry that lists it, and no join or assignment has a record to name. The corrections file gains `standsApart`, whose anchors the bundle lists as `apart`; the run refuses to write when the registry or an overlay entry answers one.
+
+**Item 2, the countries.** Added to the role-word exclusions beside the nationalities, as the brief asked, they took 19 ids off the bundle against the control. Read one by one, 2 were wrong: Gustav Dahrendorf's son Ralf's item, and Q3149781, a diplomat born in 1940, on "Haq, Major General Inam-ul, Director General, Defense Procurement" of 1971. The other 17 were right, foreign officials whose only word in common with their item is their country: Kiichi Aichi, Jacques Andreani, J. A. Ankrah's and Aquilino Boyd's VIAF ids, Cheng Heng, Rafic Jouejati, Liu Chieh, Charles Malo, Tatsuo Murayama, Nguyen Xuan Phong, Pham Dang Lam, Nander Pitty Velásquez, Andrés Rozental, Saukam Khoy, Adonis Sepúlveda, Vo Van Sung and Yang Hsi-kun. The owner chose to leave the countries as role words and withhold the two by correction; a test pins a country as a role word, with the measurement.
+
+**Item 3, Truman's nephew** (116214, "U. S. A., nephew of the President"; no years; the Berlin volume II alone). FRUS-28039 carries him and the President with Q11613, and a correction withholds from every people-id of an entry. On the owner's word the file gains `withheld`, which keeps an identifier off one record of an entry carrying several people; its one entry keeps Q11613 off the nephew, and the President keeps it.
+
+**Item 4, Einaudi.** FRUS-07952 carries the President of Italy (103878) and Luigi R. Einaudi (103879), with the grandson's item and the grandfather's VIAF id. The rule gives the President the VIAF id through its holder, Q1242, and then, testing the grandson's own item against the VIAF id he would carry, the entry's, withheld it (`viaf-held-by-other-item`). The narrow fix is in the builder: on an entry carrying several people, the entry's VIAF id that one of them carries, or takes on its holder's facts with no item of the entry's, is not held against the item offered to another. Measured over the 31 entries carrying several known people, it moves Einaudi's item and nothing else.
+
+**Item 5, the five reads lane B kept although they name someone else.** All five are fixed by data:
+- Truman's nephew, by `withheld`;
+- Gustav Dahrendorf (Q76959), by a correction;
+- Warren E. Thompson, a chemist at the NSF, by a correction withholding Q15429518 and VIAF 117163651, both a historian born in 1938's;
+- Sir William Luce, by a correction withholding Q8014767 and VIAF 1449382, both an American librettist's (1931–2019);
+- General MacArthur's VIAF id 7088488, his nephew Douglas MacArthur II's, by a correction. Withheld, it leaves the General's own item, Q127417, tested alone, and the rule takes it on *army*.
+
+Each id was read on wikidata.org on 2026-11-01. viaf.org answered HTTP 500 to three cluster reads that day, and each VIAF id is held on Wikidata by the item named. Nothing stays wrong among the reads. The reads now score 100%, which no longer estimates the bundle: the corrections were chosen from them.
+
+**Item 6, upstream.** `Planning/Person-Authority-Upstream-Reports-2026-11-01.md` drafts three issues for `HistoryAtState/people`, each anchor beside its volume's own entry:
+- the merges at 113000 (Adlai Stevenson II, with ten of the Senator's anchors), 114659 (Charles Erwin Wilson, with Charles Edward Wilson's Defense Mobilization anchors and Representative Charlie Wilson's) and 104298 (the Secretary of State Hamilton Fish, whose one anchor is Hamilton Fish IV's);
+- the duplicate records for Leslie Rowan (111676, 116055), Donald Regan (116022, 116023) and Tran Buu Kiem (113344, misprinted "Tan", and 113686);
+- Sir Oliver Wright's two 1981–1988 anchors, which no record holds.
+
+Further findings the owner may add: Speaker Jim Wright's four anchors, 109156's William G. Miller anchor, and 102311's two (Raul H. Castro's, and Fidel Castro's). None is filed: filing on another repository waits for the owner's word.
+
+**The new file against the control**, record for record: 10 identifiers move and one anchor joins `apart`, and nothing else; the crosswalk, names, years, slugs and role texts are the control's.
+- Wikidata 1,859 → 1,856: Einaudi's and the General's own items in; Luce's, Thompson's, Dahrendorf's, Inam-ul-Haq's and the nephew's out.
+- VIAF 1,610 → 1,607: Luce's, Thompson's and the General's out.
+- `apart` 69 → 70.
+
+`pocom-index.json` is not owed.
+
+**The census (v15)**: S1's full library (553 volumes at index v71, 63,667 members) rebuilt through the kit with lane B's file and with this one, in a throwaway package test (not committed). One member changes person, E. Romney Wheeler, from General Earle G. Wheeler's 61-member rollup to one of his own; rollups 18,024 → 18,025; candidate pairs 171 → 172, the new one the two Wheelers ("name variant; era overlaps; role differs"); 1,607 rollups carry a `viaf_id` where 1,610 did. Every other member's rollup keeps its name. A rebuild took 13.0 s against 13.2 s. The control's rebuild gives lane B's v14 figures (18,024, 171, 1,610). The v15 note carries these.
+
+**Docs.** The generator's runbook entry; the three memos, each pointed here; the plan of record (decisions 107 and 108, and the #1767 line, which now says lane B merged as `cb463e33`); the version notes (`IndexingPipeline` 4.52 and v15, `PersonsCompleteCorrections` 1.3); the corrections file's `about`. The manuals are not owed: 1,856 of 12,839 records (about one in seven) carry a Wikidata link and 1,607 (about one in eight) a VIAF link, as their People sentence says.
+
+**For the web edition.** The kit's `currentPersonRollupVersion` is 15; nothing else in the kit changes. The bundled file gains one `apart` anchor and moves ten identifiers, in the same schema. The generator and the corrections file are not shared code.
+
+**Checks.**
+- The control at the base, above. The final file, written with `GENERATED_DATE=2026-11-01` (2,475,310 bytes, SHA-256 `16b601c5…`), equals the measured branch file apart from the stamp.
+- The shipped-file tests fail against the control's file (four tests, 19 issues: the re-score, both bundled-index tests and the held-apart test) and pass against the new one.
+- `swift build --target FRUSCoreKit`: clean.
+- `swift test`: exit 0; 38 runs, 3,267 tests in 394 suites, none failed (the generator's suites ran 89 tests in 5).
+- The full unit target on the iPhone 17 (iOS 27.0, `80CF0F18`): *Test run with 7828 tests in 937 suites passed*, 37 skipped, none failed, `** TEST SUCCEEDED **`, the v15 test in its log; its only warning lines the `GeneratedSummary` residue and the AppIntents note.
+- The Mac build: `FRUSExplorerMac`, DirectDistribution, unsigned: `** BUILD SUCCEEDED **`, with the same two residues.
+
+**Not done:** the UI suites, iOS 26.x, a device; the Mac app was built and not run, and no library's rollup was rebuilt by the app. Closing #1767, moving the memos to `Planning/Completed/` and filing the upstream reports wait for the owner.
+
+**Opened as #1826** on the owner's word of 2026-11-01 ("Push and open PR"), against `v2` at `3cc517fa`, which had not moved since the branch was cut; not merged. Its body is the draft kept in the session group's notes folder (`1767-follow-up-pr-draft.md`).
+
+## Session 2026-11-01 — A summary call whose answer runs past the model's window is made once more, and a second overrun reads as a sentence
+
+**What was asked.** The follow-up the owner chose on 2026-10-31 (the budget entry above, decision 3). The window holds the prompt and the answer together, and the budget bounds the prompt only. So now and then the model writes on until the window ends it, and the call throws `contextSizeExceeded` only once the whole answer is written. `SummarizationRetryPolicy` rightly does not retry that error for a prompt that is too long, so one runaway failed the whole summary. The task: measure it, design a retry for an answer that overran, consider a capped-response check, and ask the owner before changing anything. Measured against `claude/summary-context-budget` (a2facbb6), which merged as #1825 while this ran.
+
+**Measured** on this Mac (the M5 MacBook Air, macOS 27.2, `contextSize` 8,192). A throwaway harness, never committed, ported this service's path at a2facbb6 and, for the old prompts, at `9dab63cb`, and ran one model call at a time through `Scripts/heavy.sh`. The record is in this session group's notes folder: `runaway-answers-findings.md` and `runaway-answers-measurement/`.
+- **The two overflows differ.** A prompt of 13,194 tokens was refused in 0.1 s, as `contextSizeExceeded(8192, 13248)`: its own count with the chat template's 54. A prompt of 8,023 failed after 11.1 s, as `(8192, 8194)`, and NSC 68's reduce prompt of 3,598 after 119 s, as `(8192, 8193)`. A prompt under the window, by the model's `tokenCount(for:)` (26.4+), therefore means the answer overran.
+- **A retry is a fresh draw.** The model samples, and no two answers were alike. The four prompts of the budget session's longest answers were rebuilt exactly, and their real counts matched. NSC 68's first Meeting Record reduce at 7,168 had overflowed after 119 s, about 4,400 tokens, and lost a 332 s run. **Run five more times, it fitted 5 of 5**, at 871 to 1,657 tokens, in 28 to 51 s.
+- **Runaways are rare.** Across the budget session's 527 calls, these 23 and the pass below, one answer of 644 ran past the window, at the 7,168 budget. None did at 6,144 in 187 calls.
+- **The shipped settings.** 22 long documents, 1870 to 1988, under the Standard Summary and the Meeting Record, at 6,144 with the fitted estimate. Any runaway was retried live. **22 of 22 summarized, in 94 calls, with no runaway and no retry**, in 1,239 s. Standard answers had a median of 171 tokens and a maximum of 341; Meeting Record answers a median of 611 and a maximum of 2,015.
+- **A cap.** `GenerationOptions(maximumResponseTokens:)` cuts an answer silently: capped at 93, the answer came back cut mid-sentence in 10.2 s, with no error. Only iOS and macOS 27 report an answer's length (`usage.output`, 96 there). **A Meeting Record capped at 200 tokens kept all four headings, its last field cut mid-sentence**, and `StructuredSectionAnswer` would read it as whole. Over every measured call, caps of 1,024 tokens for plain text and 3,072 for a structured answer reached no answer that was not a runaway. They would have saved about 80 s of about 7,460, or 1%. The model writes about 45 tokens a second.
+- **Transcript copies.** Every Standard answer to one ExComm chunk (`frus1961-63v11/d21`) ended in a copied paragraph of the transcript, 128 words in 4 of 5 tries. The budget session's runaway of 2,595 tokens was the same habit running on. A retry shortens the copy but does not remove it. None of the pass's answers copied.
+
+**The owner's decisions** (AskUserQuestion, 2026-11-01), each the recommended option:
+1. **Retry: "Once, then a sentence."** A call whose answer, not its prompt, overran the window is made once more. If the second overruns too, the summary fails with a sentence of its own, which the background run does not retry by repeating the document.
+2. **Cap: "No cap."** The window stays the only cap.
+3. **Copies: "Separate follow-up."** A transcript copy that fits the window is stored as before.
+
+**What changed.**
+- **`SummarizationError.answerOverranWindow`**, whose sentence is *Apple Intelligence wrote more than it can hold while summarizing this document, and did again when asked once more. Summarizing it again may succeed.* A synthesis that fails on it reads the same, as a refusal does.
+- **`AppleIntelligenceProvider.summarize`** throws it in place of the framework's error when the error is a window overflow (`isContextOverflow`, in both error families). It does so only when the prompt, counted by the model on 26.4 and later, is under the window (`answerOverranWindow(promptTokens:contextSize:)`). With no count, or a window stated as 0, the overflow is taken as the answer's, and a wrong guess costs one more refusal of 0.1 s. A prompt over the window keeps the framework's error. The header's new *An answer past the window* section records the measurement and why no answer is capped.
+- **`SummarizationService`** makes every model call through `answer(from:request:prompt:)`, which asks once more on `answerOverranWindow`: the single call, each map, each reduce and the final synthesis. So one runaway costs one more call, not the run.
+- **`SummarizationRetryPolicy`** treats `answerOverranWindow` as terminal, since its call was already made twice.
+
+**Tests.**
+- **`SummarizationAnswerOverrunTests`** (`SummarizationServiceTests.swift`) drives the real map and synthesis path with a provider that overruns on the calls it is told. One overrun of map 2 of 3 costs one call, and map 1 is not repeated. A second overrun of map 2 fails the summary, and nothing after it is asked. The synthesis is retried too, and its second overrun reads as the same sentence. A single-call document is retried, not chunked.
+- **`SummarizationOverflowTests`** (`SummarizationRetryPolicyTests.swift`) covers the overflow in `GenerationError` and, on 27, in `LanguageModelError`. It checks the measured counts: 8,023 and 3,598 of 8,192 are the answer's, 13,194 and 8,192 the prompt's. With no count, or a window of 0, the overflow is the answer's. The sentence is checked too. The retry policy's suite adds `answerOverranWindow` as terminal in either pass, and to the descriptions.
+
+**Checked.** Xcode 27.2 on macOS 27.2, each heavy job through `Scripts/heavy.sh`:
+- **The full unit target**, on the iPhone 17 simulator (iOS 27.0): "✔ Test run with 7837 tests in 939 suites passed after 476.803 seconds." That is #1825's 7,827 and the 10 new. The result bundle reads 0 failed and the same 37 environmental skips. The first run failed one assertion of a new test: its three paragraphs were alike, so map 1 and map 2 could not be told apart. Each paragraph now opens with its own word.
+- **`FRUSExplorerMac`**, DirectDistribution, unsigned: "** BUILD SUCCEEDED **", with only the known `GeneratedSummary` residue.
+- **Mutation**, after a checkpoint commit, in a second worktree, with five mutants in one build:
+  - `answer(from:request:prompt:)` does not ask again;
+  - `answerOverranWindow` compares with `<=`;
+  - the policy retries the new error;
+  - `isContextOverflow` loses its `GenerationError` arm;
+  - the synthesis wrapper hides the new sentence.
+
+  Each failed a test only it reaches, 8 of the 18 tests in all. The first run of it found that a test read the calls by index after a failed count, which trapped the test process; the counts are now `#require`d first.
+- **No `swift test` owed:** no file under `FRUSCoreKit/` or a package target changed.
+- **Merged with `v2` at 3cc517fa (#1825).** Its tree is a2facbb6's but for one line of this plan, so the code these runs tested is the code merged.
+- **Merged with `v2` again at 4e6142c0 (#1826)** before the push. It conflicted only in this plan, where both entries are kept. #1826 touches none of this change's files, and the merged tree as a whole was not re-run.
+
+**Not done.**
+- **No device was measured,** and no iOS 26 system. On a 4,096-token window the 3,072 budget leaves an answer about 1,000 to 2,100 tokens (the budget entry's *Found, not fixed*). A long structured answer that overruns there is now asked for once more, and fails with the sentence if it overruns again.
+- **The app was not run with this build.** The service tests drive its retry; nothing here made the model overrun inside the app.
+
+**Pushed and opened as #1827** against `v2` on the owner's word ("Make sure this branch is caught up with V2 head, then push and open PR", 2026-11-01).
+
 ## Session 2026-11-01 — #1764: the cross-reference network at three hops lays out without corner stacks, labels by placement, and lists documents before page nodes
 
 **What was asked.** A side session of the build-1861 submission run-up. Fix #1764. From `frus1952-54v02p1` d16, the Network at three hops pinned four archival "hubs" to the canvas's corners, labelled only the focus, and listed the page node `frus1948v01p2/pg_507` first under Cited By This Document. The issue's rule moves it before App Store submission if the store's tenth frame, `researchers-06`, shows that view, and the iPad draft does (`Planning/marketing-drafts/researchers-06-cross-reference-ipad-13-landscape@0.5x.png`, cropped from `Docs/screenshots/ipad/cross-reference-graph.png`). Cut from `v2` at `3cc517fa` (#1825).

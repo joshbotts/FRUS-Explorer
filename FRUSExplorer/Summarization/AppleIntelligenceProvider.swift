@@ -32,6 +32,22 @@ import OSLog
 /// quarter is the answer's room, and an answer that runs past it throws
 /// `LanguageModelError.contextSizeExceeded` once it is written.
 ///
+/// ## An answer past the window (2026-11-01)
+/// The framework throws the same error for a prompt over the window and for an answer that ran past
+/// it. ``summarize(request:prompt:)`` throws `SummarizationError.answerOverranWindow` for the second,
+/// which `SummarizationService` asks for once more, and leaves the first as it is
+/// (``answerOverranWindow(promptTokens:contextSize:)``). Measured on the Mac under macOS 27.2:
+/// - a prompt of 13,194 tokens was refused in 0.1 s, as `contextSizeExceeded(8192, 13248)`, its own
+///   count with the chat template's 54;
+/// - a prompt of 8,023 failed after 11.1 s, as `contextSizeExceeded(8192, 8194)`, the window and the
+///   answer's first tokens past it.
+///
+/// No answer length is capped (`GenerationOptions.maximumResponseTokens`; the owner's decision of
+/// 2026-11-01). A capped answer comes back cut with no error, and only iOS and macOS 27 report its
+/// length. A Meeting Record capped at 200 tokens kept all four headings, its last field cut
+/// mid-sentence, and `StructuredSectionAnswer` would have read it as whole. Caps of 1,024 tokens for
+/// plain text and 3,072 for a structured answer would have saved about 1% of the time measured.
+///
 /// Measured 2026-10-31 on the Mac, against 3,072: 22 long documents, 1870 to 1988, under the Standard
 /// Summary and the Meeting Record, one run of each at each limit. 6,144 took 31% less time and made half
 /// the model calls, and its summaries named as much of each document: of eight equal parts, a Meeting
@@ -68,6 +84,8 @@ import OSLog
 ///          guardrails and read back into its fields, where guided generation was declined
 ///   1.3 — 2026-10-31: `contextWindowTokenLimit` is three quarters of the model's stated window, from
 ///          3,072 to 6,144, where it was 3,072 on every device; the window is logged once a launch
+///   1.4 — 2026-11-01: an answer that ran past the window, where the prompt fitted, is thrown as
+///          `SummarizationError.answerOverranWindow`
 actor AppleIntelligenceProvider: SummarizationProvider {
 
     // MARK: - Shared Instance
@@ -146,6 +164,9 @@ actor AppleIntelligenceProvider: SummarizationProvider {
                 text = try await structuredResponse(promptText: promptText, schema: schema)
             }
         } catch {
+            if await answerRanPastTheWindow(error, promptText: promptText) {
+                throw SummarizationError.answerOverranWindow
+            }
             let structured: Bool
             if case .structured = prompt.responseFormat { structured = true } else { structured = false }
             throw Self.translatingRefusal(error, structured: structured)
@@ -217,6 +238,47 @@ actor AppleIntelligenceProvider: SummarizationProvider {
             }
         }
         return error
+    }
+
+    // MARK: - An answer past the window
+
+    /// Whether `error` is the model's window overflowing, in either error family: iOS and macOS 27's
+    /// `LanguageModelError.contextSizeExceeded`, or 26's `GenerationError.exceededContextWindowSize`.
+    static func isContextOverflow(_ error: any Error) -> Bool {
+        if #available(iOS 27.0, macOS 27.0, *), let modelError = error as? LanguageModelError,
+           case .contextSizeExceeded = modelError {
+            return true
+        }
+        if let generationError = error as? LanguageModelSession.GenerationError,
+           case .exceededContextWindowSize = generationError {
+            return true
+        }
+        return false
+    }
+
+    /// Whether a window overflow was the answer's: true when the prompt's own count is under the window.
+    ///
+    /// A prompt over the window is refused before any answer is written, so a prompt under it means the
+    /// answer ran on. The count leaves out the chat template's 54 tokens and a structured prompt's
+    /// instructions, about 100 more. Only a prompt within those few tokens of the window could be
+    /// misread, and the budget keeps prompts well short of it: the largest of the 2026-10-31 sweep's
+    /// chunks was 5,961 tokens at 6,144 and 2,935 at 3,072, under three quarters of their windows. With
+    /// no count (`promptTokens` nil, before iOS and macOS 26.4), or no window stated (0), the overflow is
+    /// taken as the answer's. A wrong guess costs one more refusal, measured at 0.1 s.
+    static func answerOverranWindow(promptTokens: Int?, contextSize: Int) -> Bool {
+        guard let promptTokens, contextSize > 0 else { return true }
+        return promptTokens < contextSize
+    }
+
+    /// Whether `error` is an answer that ran past the window: a window overflow where the prompt,
+    /// counted by the model (iOS and macOS 26.4 and later), is under the window.
+    private func answerRanPastTheWindow(_ error: any Error, promptText: String) async -> Bool {
+        guard Self.isContextOverflow(error) else { return false }
+        var promptTokens: Int?
+        if #available(iOS 26.4, macOS 26.4, *) {
+            promptTokens = try? await Self.model.tokenCount(for: promptText)
+        }
+        return Self.answerOverranWindow(promptTokens: promptTokens, contextSize: Self.model.contextSize)
     }
 
     // MARK: - Private
