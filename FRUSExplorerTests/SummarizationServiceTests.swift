@@ -650,4 +650,80 @@ struct SummarizationServiceTests {
             #expect(await service.estimateTokens(filled) <= limit - limit / 6 + 2)
         }
     }
+
+    // MARK: - Token estimate (2026-10-31)
+
+    @Test("Estimate: a letter or space costs a quarter of a token, a digit one, a punctuation mark half")
+    func estimateWeighsDigitsAndPunctuation() async throws {
+        let service = SummarizationService(modelContainer: try ModelContainer.makeTestContainer())
+        #expect(await service.estimateTokens("abcd") == 1)
+        #expect(await service.estimateTokens("diplomatic note") == 4)    // 15 characters, as ⌈15 ÷ 4⌉
+        #expect(await service.estimateTokens("1234") == 4)
+        #expect(await service.estimateTokens(",;.:") == 2)
+        #expect(await service.estimateTokens("$507 50") == 6)            // 5 digits and 2 others: 5.5
+    }
+
+    /// A claims schedule printed as running text, the form that broke `⌈characters ÷ 4⌉`: by its
+    /// characters it fits one call at the 3,072 limit, and by its digits, which the model counts about a
+    /// token each, it does not. The old estimate sent it whole, a prompt over a 4,096-token window.
+    @Test("A number table is chunked by what its digits cost, so each chunk's estimate fits the budget")
+    func numberTableIsChunkedByItsDigits() async throws {
+        let service = SummarizationService(modelContainer: try ModelContainer.makeTestContainer())
+        let row = "No. 561. Leo Tsock Yen, 989 50; 627. Leo Seh Tim, 123 75; 562. Leo Yew Lung, 1,821 10. "
+        let table = String(repeating: row, count: 100)
+        let prompt = makePromptSnapshot()
+        let budget = await service.documentBudget(
+            promptText: prompt.promptText, responseFormat: .general, limit: 3_072)
+        try #require(table.count / 4 < budget, "by characters ÷ 4 the table is one call")
+
+        let provider = MockSummarizationProvider(tokenLimit: 3_072, responseText: "Claims.")
+        let result = try await service.generateSummaryText(
+            documentText: table, prompt: prompt, provider: provider, documentId: "d65", volumeId: "frus1886")
+        #expect(result.wasChunked)
+        for call in await provider.calls where !call.request.isSynthesisPass {
+            #expect(await service.estimateTokens(call.request.chunks.joined(separator: "\n\n")) <= budget)
+        }
+    }
+
+    @Test("Hard split: a run of digits is cut shorter than prose, and every piece fits the budget")
+    func hardSplitCutsByTheEstimate() async throws {
+        let service = SummarizationService(modelContainer: try ModelContainer.makeTestContainer())
+        let digits = await service.hardSplit(String(repeating: "7", count: 1_000), maxTokens: 100)
+        let prose = await service.hardSplit(String(repeating: "x", count: 1_000), maxTokens: 100)
+        #expect(digits.map(\.count) == Array(repeating: 100, count: 10))
+        #expect(prose.map(\.count) == [400, 400, 200])
+        let capped = await service.prefix(of: String(repeating: "1,", count: 500), fittingTokens: 30)
+        #expect(await service.estimateTokens(capped) <= 30)
+        #expect(capped.count == 40)
+    }
+}
+
+// MARK: - Apple Intelligence's prompt budget (2026-10-31)
+
+/// Three quarters of the window the model states, from 3,072 to 6,144: the rule the owner chose on
+/// 2026-10-31 after the budget comparison in `Planning/DEVELOPMENT-PLAN.md`.
+struct AppleIntelligenceTokenLimitTests {
+
+    @Test("The budget is three quarters of an 8,192- or 4,096-token window")
+    func threeQuartersOfTheWindow() {
+        #expect(AppleIntelligenceProvider.tokenLimit(forContextSize: 8_192) == 6_144)
+        #expect(AppleIntelligenceProvider.tokenLimit(forContextSize: 4_096) == 3_072)
+        #expect(AppleIntelligenceProvider.tokenLimit(forContextSize: 6_000) == 4_500)
+    }
+
+    /// A command-line tool spawned in the iOS 27.0 simulator read a window of 0, and still answered a
+    /// prompt of 7,414 tokens; a window larger than 8,192 has not been measured.
+    @Test("A window stated as 0 or under 4,096 keeps 3,072, and one over 8,192 is held to 6,144")
+    func theBudgetIsBounded() {
+        #expect(AppleIntelligenceProvider.tokenLimit(forContextSize: 0) == 3_072)
+        #expect(AppleIntelligenceProvider.tokenLimit(forContextSize: 2_048) == 3_072)
+        #expect(AppleIntelligenceProvider.tokenLimit(forContextSize: 16_384) == 6_144)
+    }
+
+    @Test("The live provider's budget is the one its model's window gives")
+    func theLiveProviderReadsItsModel() async {
+        let expected = AppleIntelligenceProvider.tokenLimit(
+            forContextSize: AppleIntelligenceProvider.model.contextSize)
+        #expect(await AppleIntelligenceProvider.shared.contextWindowTokenLimit == expected)
+    }
 }

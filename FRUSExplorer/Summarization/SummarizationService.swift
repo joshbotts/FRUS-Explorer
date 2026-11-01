@@ -49,10 +49,10 @@ public enum SummarizationStep: Sendable, Equatable {
 /// `maxTokens` individually are placed in their own chunk rather than split mid-sentence.
 ///
 /// ## Token estimation
-/// Token count is approximated as `⌈characters ÷ 4⌉` — a common English-prose heuristic
-/// (~250 words ≈ 1 000 tokens, 4 characters per word on average). The heuristic is
-/// intentionally conservative: underestimating causes unnecessary chunking rather than
-/// context-window errors.
+/// A text's tokens are estimated by ``estimateTokens(_:)``: a quarter of a token a character, as
+/// `⌈characters ÷ 4⌉` was, except that a decimal digit costs a whole token and a punctuation mark
+/// half of one. Prose is overestimated: the model's own count runs to about four fifths of it.
+/// That way an error makes an extra chunk rather than exceeding the context window.
 ///
 /// ## Sendability
 /// The public `summarize` method accepts a `SummarizationPromptSnapshot` (a `Sendable`
@@ -77,6 +77,8 @@ public enum SummarizationStep: Sendable, Equatable {
 ///          with its part, so a long document's summary covers the whole document
 ///   1.4 — 2026-10-31: `summarize` pushes the summary's `indexedText` (a structured summary's fields as
 ///          plain text) into FTS5, where it pushed the stored JSON
+///   1.5 — 2026-10-31: `estimateTokens` costs a digit a token and a punctuation mark half of one, and
+///          every split and cap cuts by the estimate, where they assumed four characters a token
 actor SummarizationService {
 
     // MARK: - Init
@@ -237,9 +239,47 @@ actor SummarizationService {
 
     // MARK: - Internal (visible for tests)
 
-    /// Estimates token count using the 4-characters-per-token heuristic.
+    /// Estimates a text's tokens on the on-device model: the sum of its scalars' ``tokenWeight(of:)``,
+    /// rounded up.
+    ///
+    /// Letters and spaces cost a quarter of a token each, as under `⌈characters ÷ 4⌉`, the estimate
+    /// this replaced on 2026-10-31. The digits and punctuation are what that missed. FRUS prints many
+    /// tables as running text: claims schedules, tariff schedules, relief tonnages. These cost the model
+    /// about a token a digit, and by its own `tokenCount(for:)` one such chunk of 9,377 characters was
+    /// 5,400 tokens, 2.30× characters ÷ 4. On a 4,096-token window that prompt is refused. Over 4,456
+    /// chunks of 655 documents from 149 volumes, the model's count was at most 1.23× this estimate, which
+    /// ``documentBudget(promptText:responseFormat:limit:)``'s one-sixth reserve covers, and at the median
+    /// 0.78×. Prose takes 3–5% more chunks than under characters ÷ 4.
     func estimateTokens(_ text: String) -> Int {
-        Int((Double(text.count) / 4.0).rounded(.up))
+        Int(text.unicodeScalars.reduce(0.0) { $0 + Self.tokenWeight(of: $1) }.rounded(.up))
+    }
+
+    /// What one Unicode scalar costs in ``estimateTokens(_:)``: a decimal digit 1, a punctuation mark ½,
+    /// anything else ¼.
+    static func tokenWeight(of scalar: Unicode.Scalar) -> Double {
+        if CharacterSet.decimalDigits.contains(scalar) { return 1 }
+        if CharacterSet.punctuationCharacters.contains(scalar) { return 0.5 }
+        return 0.25
+    }
+
+    /// The end of the longest run of `text` from `start` whose estimate fits `maxTokens`, and never
+    /// less than one character, so a split always makes progress.
+    private func endOfFittingRun(in text: String, from start: String.Index, maxTokens: Int) -> String.Index {
+        let limit = Double(max(1, maxTokens))
+        var weight = 0.0
+        var index = start
+        while index < text.endIndex {
+            let characterWeight = text[index].unicodeScalars.reduce(0.0) { $0 + Self.tokenWeight(of: $1) }
+            if index > start && weight + characterWeight > limit { break }
+            weight += characterWeight
+            index = text.index(after: index)
+        }
+        return index
+    }
+
+    /// The longest prefix of `text` whose estimate fits `maxTokens`.
+    func prefix(of text: String, fittingTokens maxTokens: Int) -> String {
+        String(text[..<endOfFittingRun(in: text, from: text.startIndex, maxTokens: maxTokens)])
     }
 
     /// The conservative content-token budget for one model call, given the prompt
@@ -264,9 +304,10 @@ actor SummarizationService {
     ///
     /// Accumulates whole paragraphs (`\n\n`-separated) until the next would exceed the
     /// budget. A paragraph that alone exceeds the budget is hard-split — first at
-    /// sentence boundaries, then by character count for a runaway sentence — so **no
-    /// chunk can exceed `maxTokens`** (a giant table or unbroken block can't overflow
-    /// the model window).
+    /// sentence boundaries, then by the estimate for a runaway sentence — so **no
+    /// chunk's estimate exceeds `maxTokens`**, and a giant table or unbroken block is cut
+    /// to fit like any other text (``estimateTokens(_:)`` says how near the model's own
+    /// count the estimate stays).
     func chunk(text: String, maxTokens: Int) -> [String] {
         let paragraphs = text
             .components(separatedBy: "\n\n")
@@ -305,7 +346,7 @@ actor SummarizationService {
     }
 
     /// Splits a paragraph that exceeds `maxTokens` into fitting pieces — at sentence
-    /// boundaries where possible, falling back to a character split for a single
+    /// boundaries where possible, falling back to ``hardSplit(_:maxTokens:)`` for a single
     /// sentence that still overflows.
     func splitOversized(_ paragraph: String, maxTokens: Int) -> [String] {
         var sentences: [String] = []
@@ -346,13 +387,13 @@ actor SummarizationService {
         return pieces.isEmpty ? [paragraph] : pieces
     }
 
-    /// Last-resort character split for text with no usable sentence boundaries.
+    /// Last-resort split for text with no usable sentence boundaries: pieces whose estimate fits
+    /// `maxTokens`, so a run of digits is cut shorter than prose.
     func hardSplit(_ text: String, maxTokens: Int) -> [String] {
-        let maxChars = max(1, maxTokens * 4)
         var pieces: [String] = []
         var index = text.startIndex
         while index < text.endIndex {
-            let end = text.index(index, offsetBy: maxChars, limitedBy: text.endIndex) ?? text.endIndex
+            let end = endOfFittingRun(in: text, from: index, maxTokens: maxTokens)
             pieces.append(String(text[index..<end]))
             index = end
         }
@@ -519,7 +560,7 @@ actor SummarizationService {
             // call can't overflow — graceful degradation rather than failure.
             var chunks = labelled(level)
             if estimateTokens(chunks.joined(separator: "\n\n")) > budget {
-                chunks = [String(chunks.joined(separator: "\n\n").prefix(max(1, budget * 4)))]
+                chunks = [prefix(of: chunks.joined(separator: "\n\n"), fittingTokens: budget)]
             }
             let req = SummarizationRequest(
                 documentId: documentId, volumeId: volumeId,
@@ -585,8 +626,8 @@ actor SummarizationService {
     }
 
     /// Groups summaries into batches whose joined token estimate each stays within
-    /// `maxTokens`. A single summary larger than the budget is character-capped so it
-    /// can fit, guaranteeing the reduce always makes progress.
+    /// `maxTokens`. A single summary larger than the budget is cut to the budget's estimate so
+    /// it can fit, guaranteeing the reduce always makes progress.
     func batch(_ summaries: [String], maxTokens: Int) -> [[String]] {
         var batches: [[String]] = []
         var current: [String] = []
@@ -596,7 +637,7 @@ actor SummarizationService {
             var piece = summary
             var pieceTokens = estimateTokens(piece)
             if pieceTokens > maxTokens {
-                piece = String(piece.prefix(max(1, maxTokens * 4)))
+                piece = prefix(of: piece, fittingTokens: maxTokens)
                 pieceTokens = estimateTokens(piece)
             }
             if !current.isEmpty && currentTokens + pieceTokens > maxTokens {
