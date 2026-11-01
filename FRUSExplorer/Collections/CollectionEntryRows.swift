@@ -13,7 +13,7 @@ import SwiftData
 
 /// An editable section-heading entry in the collection (Phase 3a). Shared by the iOS editor
 /// and the macOS manager. `onDelete`, when provided, renders an inline delete control —
-/// macOS supplies it (the List has no swipe-to-delete); iOS omits it (swipe handles deletion).
+/// macOS supplies it (a Mac List's swipe-to-delete needs a trackpad, #1823); iOS omits it (swipe handles deletion).
 ///
 /// The heading also carries an optional **section body depth** (Phase 3c): documents under
 /// this heading use it unless they have their own per-entry override. Stored in the heading
@@ -57,7 +57,7 @@ struct CollectionHeadingRow: View {
     /// when `showsInlineDelete` is set, the trailing trash button.
     var onDelete: (() -> Void)? = nil
     /// Whether to render the inline trailing trash for `onDelete` — macOS passes `true`
-    /// (its List has no swipe-to-delete); iOS keeps deletion on swipe + context menu.
+    /// (a Mac List's swipe-to-delete needs a trackpad, #1823); iOS keeps deletion on swipe + context menu.
     var showsInlineDelete: Bool = false
     /// The heading's resolved outline depth (`1...CollectionOutline.maxLevel`), stepping
     /// the title typography. Defaults to 1 (the pre-Phase-4 appearance).

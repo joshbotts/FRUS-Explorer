@@ -78,6 +78,7 @@ is the index, not the entry.
 | `TopicIndexArrivalTests` | iPad Pro 13-inch (M5), two-pane, and iPhone 17 | 3 passed on each; it never skips, so one device alone is not the guard |
 | `CollectionEditorTitleTests` | iPhone 17 and iPad Pro 13-inch (M5), both `OS=27.0`; iPad Air 11-inch (M4), `OS=26.5` | 9 tests: 0, 3 and 3 skipped; allow 600 s a test; only the Air folds ＋ Add into the overflow; only the iPads guard Link to Saved Search… (#1704) |
 | `CollectionProseRowRestTests` (in `CollectionEditorTitleTests.swift`) | iPad Air 11-inch (M4) and iPhone Air, both `OS=26.5` | 5 tests, 0 skipped on each; allow 600 s a test |
+| `CollectionListManagementTests` (in `CollectionEditorTitleTests.swift`) | iPhone 17 and iPad Pro 13-inch (M5), both `OS=27.0` | 4 tests, 0 skipped on each; never skips; the dialog is an action sheet on the iPhone and a popover on the iPad (#1823); allow 600 s a test |
 | `SelectionEditMenuTests` (in `ResearchReadingStaysInTabTests.swift`) | iPhone 17 and iPad Pro 13-inch (M5) | 4 tests, 0 skipped on each |
 | `ResearchReadingDepthTests` | iPad mini (A17 Pro) | skips on an iPad whose portrait is already two-pane |
 | `AnalyticsKeyboardTests`, `KeyboardDismissBarReachTests`, `ToolbarOverflowAccessibilityTests` | iPad mini (A17 Pro), `OS=26.5` | 9 tests, 0 skipped; green on iPhone 17 and iPad Pro 13-inch too, but only the mini catches a restored analytics window (#1279); under iOS 27.0 an iPad simulator kills each test that opens Corpus Analytics (#1620) |

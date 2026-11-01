@@ -13103,3 +13103,237 @@ struct CollectionPreviewUserDataTests {
         #expect(reports == [false, false, true, false, true, false])
     }
 }
+
+// MARK: - Renaming and deleting a collection (#1823)
+
+/// Both Collections managers rename, duplicate and delete a collection, and every delete asks first (#1823).
+///
+/// The Mac window's one delete was Manage Collections' `.onDelete`, which on macOS 27.2 is a trackpad swipe and
+/// VoiceOver's Delete only, and asked nothing; the iPhone and iPad list deleted on a full swipe, also without asking, and
+/// renamed only inside the editor. The model half is driven here; the views' wiring is read from source, since the
+/// unit target cannot present a dialog.
+@Suite("A collection is renamed, duplicated and deleted from either manager, and a delete asks first (#1823)",
+       .serialized)
+@MainActor
+struct CollectionDeletionTests {
+
+    /// A collection holding a document with an edited headnote draft, a heading, a note block and a document whose
+    /// headnote is the document's own summary, with a note and a highlight on its document; and a second collection
+    /// that names the same document.
+    private struct Fixture {
+        let context: ModelContext
+        let collection: Collection
+        let other: Collection
+        let draft: GeneratedSummary
+        let realSummary: GeneratedSummary
+        let note: ResearchNote
+        let highlight: DocumentHighlight
+    }
+
+    private func makeFixture(in container: ModelContainer) throws -> Fixture {
+        let context = ModelContext(container)
+        let collection = Collection(name: "Cold War Readers")
+        let other = Collection(name: "Containment")
+        context.insert(collection)
+        context.insert(other)
+
+        let draft = GeneratedSummary(documentId: "d475", volumeId: "frus1946v06", promptId: UUID(),
+                                     responseText: "Kennan's case, in brief.", authorship: .userWritten,
+                                     isHeadnoteDraft: true)
+        let realSummary = GeneratedSummary(documentId: "d476", volumeId: "frus1946v06", promptId: UUID(),
+                                           responseText: "The document's own summary.")
+        context.insert(draft)
+        context.insert(realSummary)
+
+        func entry(_ documentId: String, _ order: Int, in owner: Collection) -> CollectionEntry {
+            let e = CollectionEntry(collectionId: owner.id, documentId: documentId, volumeId: "frus1946v06",
+                                    sortOrder: order)
+            e.collection = owner
+            context.insert(e)
+            return e
+        }
+        entry("d475", 0, in: collection).headnoteSummaryId = draft.id
+        let heading = entry("", 1, in: collection)
+        heading.entryKind = .heading
+        heading.text = "The Long Telegram"
+        let prose = entry("", 2, in: collection)
+        prose.entryKind = .prose
+        prose.text = "The reader's own paragraph."
+        entry("d476", 3, in: collection).headnoteSummaryId = realSummary.id
+        entry("d475", 0, in: other)
+
+        let note = ResearchNote(documentId: "d475", volumeId: "frus1946v06", bodyText: "Read against NSC 68.")
+        let highlight = DocumentHighlight(volumeId: "frus1946v06", documentId: "d475",
+                                          startOffset: 10, endOffset: 40, renderingVersion: "v1")
+        context.insert(note)
+        context.insert(highlight)
+        try context.save()
+        return Fixture(context: context, collection: collection, other: other, draft: draft,
+                       realSummary: realSummary, note: note, highlight: highlight)
+    }
+
+    @Test("A delete takes the collection's entries and headnote draft, and leaves the rest of the reader's work")
+    func deleteTakesTheCollectionsOwnRowsOnly() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let f = try makeFixture(in: container)
+        let deletedId = f.collection.id
+
+        CollectionDeletion.delete([f.collection], in: f.context)
+
+        let reader = ModelContext(container)
+        let collections = try reader.fetch(FetchDescriptor<Collection>())
+        #expect(collections.map(\.name) == ["Containment"], "the other collection went too, or this one stayed")
+        let entries = try reader.fetch(FetchDescriptor<CollectionEntry>())
+        #expect(!entries.contains { $0.collectionId == deletedId },
+                "the collection's entries stayed behind, pointing at no collection (the relationship is .nullify)")
+        #expect(entries.count == 1, "the other collection's entry went too")
+        let summaries = try reader.fetch(FetchDescriptor<GeneratedSummary>()).map(\.id)
+        #expect(!summaries.contains(f.draft.id), "the collection's headnote draft stayed")
+        #expect(summaries.contains(f.realSummary.id), "the document's own summary went with the collection")
+        #expect(try reader.fetch(FetchDescriptor<ResearchNote>()).map(\.id) == [f.note.id], "a note went")
+        #expect(try reader.fetch(FetchDescriptor<DocumentHighlight>()).map(\.id) == [f.highlight.id], "a highlight went")
+    }
+
+    @Test("Deleting several collections at once takes each one's entries")
+    func deleteTakesSeveral() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let f = try makeFixture(in: container)
+
+        CollectionDeletion.delete([f.collection, f.other], in: f.context)
+
+        let reader = ModelContext(container)
+        #expect(try reader.fetch(FetchDescriptor<Collection>()).isEmpty)
+        #expect(try reader.fetch(FetchDescriptor<CollectionEntry>()).isEmpty)
+    }
+
+    @Test("The dialog names one collection, counts several, and says what goes and what stays")
+    func dialogWording() {
+        let named = Collection(name: "  Cold War Readers ")
+        let untitled = Collection(name: "")
+        #expect(CollectionDeletion.title(for: [named]) == "Delete “Cold War Readers”?")
+        #expect(CollectionDeletion.title(for: [untitled]) == "Delete “Untitled Collection”?")
+        #expect(CollectionDeletion.title(for: [named, untitled, Collection(name: "Third")],
+                                         locale: Locale(identifier: "en_US")) == "Delete 3 collections?")
+        #expect(CollectionDeletion.title(for: []) == "Delete Collection?")
+
+        let one = CollectionDeletion.message(count: 1)
+        let many = CollectionDeletion.message(count: 2)
+        #expect(one != many)
+        for message in [one, many] {
+            #expect(message.contains("note blocks") && message.contains("other devices"),
+                    "the message no longer says the reader's writing goes, on every device: \(message)")
+            #expect(message.contains("notes and highlights"), "the message no longer says what stays: \(message)")
+        }
+    }
+
+    @Test("Rename trims the name, and an empty name keeps the old one")
+    func renameRule() {
+        let collection = Collection(name: "Cold War Readers")
+        #expect(!CollectionEditorCommit.rename("   ", to: collection))
+        #expect(collection.name == "Cold War Readers")
+        #expect(!CollectionEditorCommit.rename(" Cold War Readers ", to: collection), "a padded copy of the name wrote")
+        #expect(CollectionEditorCommit.rename("  Containment ", to: collection))
+        #expect(collection.name == "Containment")
+    }
+
+    @Test("A duplicate is its own collection, and deleting it leaves the original whole")
+    func duplicateThenDelete() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let f = try makeFixture(in: container)
+        let copy = f.collection.duplicate(in: f.context)
+        try f.context.save()
+
+        CollectionDeletion.delete([copy], in: f.context)
+
+        let reader = ModelContext(container)
+        let original = try #require(try reader.fetch(FetchDescriptor<Collection>()).first { $0.id == f.collection.id })
+        #expect((original.documentEntries ?? []).count == 4, "deleting the copy took the original's entries")
+        #expect(try reader.fetch(FetchDescriptor<GeneratedSummary>()).contains { $0.id == f.draft.id },
+                "deleting the copy took the original's headnote draft")
+    }
+
+    // MARK: The views' wiring, read from source
+
+    private static func source(_ path: String) throws -> String {
+        try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent(path), encoding: .utf8)
+    }
+
+    /// The text of the declaration that `header` opens in `source`.
+    private static func block(_ header: String, in source: String) throws -> String {
+        let start = try #require(source.range(of: header), "no «\(header)» — re-derive this test")
+        let block = try #require(WindowTargetingTests.balancedBlock(in: source, from: start.lowerBound))
+        return String(source[block.startIndex..<block.endIndex])
+    }
+
+    @Test("No Collections manager deletes a collection except through the confirmation")
+    func everyDeleteAsks() throws {
+        for path in ["FRUSExplorer/Collections/CollectionListView.swift",
+                     "FRUSExplorer/Collections/MacCollectionManagerView.swift"] {
+            let text = try Self.source(path)
+            let lines = text.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            // A bare delete of a collection, which no dialog asked about, is what both lists did before #1823.
+            #expect(!lines.contains { $0.contains("modelContext.delete(c)") || $0.contains("deleteWithChildren(") },
+                    "\(path) deletes a collection without CollectionDeletion")
+            let deletes = lines.filter { $0.contains("CollectionDeletion.delete(") }.count
+            let asks = lines.filter { $0.contains(".collectionDeleteConfirmation(") }.count
+            #expect(deletes >= 1 && asks >= deletes,
+                    "\(path) deletes \(deletes) way(s) and asks \(asks): every delete hangs from a confirmation")
+        }
+    }
+
+    @Test("The iPhone and iPad list's swipe asks, and its menu renames and deletes")
+    func iOSListWiring() throws {
+        let list = try Self.source("FRUSExplorer/Collections/CollectionListView.swift")
+        let row = try Self.block("private func row(_ collection: Collection) -> some View {", in: list)
+        #expect(!list.contains(".onDelete"), "the list deletes on a swipe again, with no dialog")
+        #expect(row.contains(".swipeActions(edge: .trailing, allowsFullSwipe: false)"),
+                "a full swipe deletes without the reader tapping Delete")
+        let menu = try Self.block(".contextMenu {", in: row)
+        #expect(menu.contains("\"common.rename\"") && menu.contains("renaming = collection"), "the menu has no Rename")
+        #expect(menu.contains("Button(role: .destructive)") && menu.contains("pendingDeletionId = collection.id"),
+                "the menu has no Delete, or its Delete does not ask")
+        #expect(list.contains(".collectionRenameAlert($renaming, name: $renameText)"))
+        let bulk = try Self.block("private var bulkDeleteButton: some View {", in: list)
+        #expect(bulk.contains(".collectionDeleteConfirmation(isPresented: $isConfirmingBulkDeletion"),
+                "Edit's Delete does not ask, or its dialog does not hang from it")
+    }
+
+    @Test("The Mac's Manage Collections rows delete by right-click, and the swipe asks")
+    func macManageSheetWiring() throws {
+        let mac = try Self.source("FRUSExplorer/Collections/MacCollectionManagerView.swift")
+        let sheet = try Self.block("private struct MacManageCollectionsSheet: View {", in: mac)
+        let onDelete = try Self.block(".onDelete { offsets in", in: sheet)
+        #expect(onDelete.contains("deleting = offsets.map") && !onDelete.contains("CollectionDeletion.delete"),
+                "the swipe deletes without asking")
+        let row = try Self.block("private struct ManageCollectionRow: View {", in: mac)
+        let menu = try Self.block(".contextMenu {", in: row)
+        #expect(menu.contains("Button(role: .destructive, action: onDelete)"), "the right-click menu has no Delete")
+        #expect(menu.contains("\"common.rename\""), "the right-click menu has no Rename")
+        #expect(!row.contains("$collection.name"), "the rename field writes the name untrimmed again")
+        #expect(row.contains("CollectionEditorCommit.name(newValue, to: collection)"))
+    }
+
+    @Test("The Collection menu renames, duplicates and deletes the shown collection, and Delete has no ⌘⌫")
+    func macCollectionMenuWiring() throws {
+        let app = try Self.source("FRUSExplorer/App/FRUSExplorerApp.swift")
+        let menu = try Self.block("struct CollectionMenuContent: View {", in: app)
+        for (key, call) in [("menu.collection.manage", "manager?.manageCollections()"),
+                            ("menu.collection.rename", "manager?.renameCollection()"),
+                            ("menu.collection.duplicate", "manager?.duplicateCollection()"),
+                            ("menu.collection.delete", "manager?.deleteCollection()")] {
+            let start = try #require(menu.range(of: "\"\(key)\""), "the Collection menu has no «\(key)»")
+            let rest = menu[start.upperBound...]
+            let next = rest.range(of: "Button(")?.lowerBound ?? rest.endIndex
+            let item = rest[..<next]
+            #expect(item.contains(call), "«\(key)» does not call \(call)")
+            #expect(!item.contains(".keyboardShortcut"),
+                    "«\(key)» has a key equivalent; ⌘⌫ belongs to the outline's text fields")
+        }
+        let mac = try Self.source("FRUSExplorer/Collections/MacCollectionManagerView.swift")
+        #expect(mac.contains(".focusedSceneValue(\\.collectionManagerCommands, managerCommands"))
+        let commands = try Self.block("private var managerCommands: CollectionManagerCommandActions {", in: mac)
+        #expect(commands.contains("pendingDeletion = [c]") && !commands.contains("CollectionDeletion.delete"),
+                "the menu's Delete deletes without asking")
+    }
+}

@@ -1193,3 +1193,226 @@ final class CollectionProseRowRestTests: XCTestCase {
         return condition()
     }
 }
+
+// MARK: - CollectionListManagementTests
+
+/// The iPhone and iPad Collections list renames and deletes a collection, and every delete asks first (#1823).
+///
+/// Before #1823 a full swipe deleted a collection at once, with its headings and note blocks, and the list renamed
+/// nothing: a row's menu offered Duplicate, Word Cloud and Create Static Snapshot. Each test here names the route it
+/// drives — the row's menu, its swipe, Edit — and requires the dialog before anything is deleted, and the collection gone
+/// only after its Delete.
+///
+/// **Run it on iPhone 17 and iPad Pro 13-inch (M5), both `OS=27.0`.** On the iPhone the dialog is an action sheet with
+/// a Cancel; on the iPad it is a popover hanging from the row or from Edit's Delete, with no Cancel, closed by a tap
+/// outside it. Nothing skips. The two collections are the launch's own seeds: `FRUS_UI_TEST_SEED_PROJECT`'s unattached
+/// collection and `FRUS_UI_TEST_SEED_SAVED_SEARCH=linked`'s smart one. The store is in memory, so each launch has both.
+///
+/// Version history:
+///   1.0 — #1823: initial implementation
+@MainActor
+final class CollectionListManagementTests: XCTestCase {
+
+    /// `UITestProjectSeeder.collectionName`, repeated because a UI-test target cannot import the app.
+    private static let unattached = "UI Test Unattached Collection"
+    /// `UITestSavedSearchSeeder.collectionName`.
+    private static let smart = "UI Test Smart Collection"
+    /// The name the rename test gives the unattached collection.
+    private static let renamed = "Renamed From the List"
+    private static let listTitle = "Collections"
+    private static let emptyListTitle = "No Collections"
+    /// XCTest's first check of a slow `.any` query waits a second; see `CollectionEditorTitleTests.patience`.
+    private static let patience: TimeInterval = 30
+
+    var app: XCUIApplication!
+
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    /// The row's menu Delete asks; closing the dialog keeps the collection; its Delete deletes that collection and no
+    /// other.
+    func testTheRowsMenuDeleteAsksFirst() throws {
+        launch()
+        openMenu(on: Self.unattached)
+        tapMenuItem("Delete")
+        requireDialog(titled: "Delete “\(Self.unattached)”?")
+        closeDialogWithoutDeleting()
+        XCTAssertTrue(listRow(Self.unattached).exists, "Closing the dialog deleted \"\(Self.unattached)\"")
+
+        openMenu(on: Self.unattached)
+        tapMenuItem("Delete")
+        requireDialog(titled: "Delete “\(Self.unattached)”?")
+        XCTAssertTrue(listRow(Self.unattached).exists, "The collection went before its dialog's Delete was tapped")
+        try dialogButton("Delete").tap()
+        waitForAbsence(of: listRow(Self.unattached), "\"\(Self.unattached)\" is still listed after its Delete")
+        XCTAssertTrue(listRow(Self.smart).exists, "Deleting one collection took \"\(Self.smart)\" too")
+    }
+
+    /// A swipe offers Delete, which asks too: the swipe alone, however far, deletes nothing.
+    func testASwipeAsksFirst() throws {
+        launch()
+        let row = listRow(Self.unattached)
+        row.swipeLeft()
+        let swipeDelete = app.buttons["Delete"].firstMatch
+        XCTAssertTrue(swipeDelete.waitForExistence(timeout: Self.patience), "The swipe offered no Delete")
+        XCTAssertTrue(row.exists, "The swipe deleted the collection without its Delete being tapped")
+        swipeDelete.tap()
+        requireDialog(titled: "Delete “\(Self.unattached)”?")
+        XCTAssertTrue(row.exists, "The swipe's Delete deleted the collection without asking")
+        try dialogButton("Delete").tap()
+        waitForAbsence(of: row, "\"\(Self.unattached)\" is still listed after its Delete")
+    }
+
+    /// The row's menu Rename asks for the name, and the row reads it.
+    func testTheRowsMenuRenames() throws {
+        launch()
+        openMenu(on: Self.unattached)
+        tapMenuItem("Rename")
+        let field = app.alerts.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: Self.patience), "Rename opened no alert with a name field")
+        XCTAssertEqual(field.value as? String, Self.unattached, "The Rename field does not start from the name")
+        // At the field's end, then one delete per character: the cursor lands where the tap does.
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: Self.unattached.count + 2)
+                       + Self.renamed)
+        app.alerts.buttons["Save"].firstMatch.tap()
+        XCTAssertTrue(listRow(Self.renamed).waitForExistence(timeout: Self.patience),
+                      "The list shows no row named \"\(Self.renamed)\". Rows: \(listRowLabels())")
+        XCTAssertFalse(listRow(Self.unattached).exists, "The old name is still listed. Rows: \(listRowLabels())")
+    }
+
+    /// Edit chooses rows rather than opening them; its Delete asks, names how many, and deletes every one chosen.
+    func testEditDeletesTheChosenCollections() throws {
+        launch()
+        let bar = app.navigationBars[Self.listTitle]
+        let edit = bar.buttons["Edit"]
+        XCTAssertTrue(edit.waitForExistence(timeout: Self.patience), "The list offers no Edit")
+        edit.tap()
+        let delete = bar.buttons["Delete"]
+        XCTAssertTrue(delete.waitForExistence(timeout: Self.patience), "Edit put no Delete in the bar")
+        XCTAssertFalse(delete.isEnabled, "Edit's Delete is enabled with nothing chosen")
+
+        listRow(Self.unattached).tap()
+        listRow(Self.smart).tap()
+        XCTAssertTrue(bar.exists, "A tap in Edit opened a collection rather than choosing it. Bars: \(barTitles())")
+        XCTAssertTrue(waitUntil { delete.isEnabled }, "Choosing two rows did not enable Edit's Delete")
+        delete.tap()
+        requireDialog(titled: "Delete 2 collections?")
+        XCTAssertTrue(listRow(Self.unattached).exists && listRow(Self.smart).exists,
+                      "Edit's Delete deleted before its dialog's Delete was tapped")
+        try dialogButton("Delete").tap()
+        XCTAssertTrue(app.staticTexts[Self.emptyListTitle].waitForExistence(timeout: Self.patience),
+                      "The list does not read \"\(Self.emptyListTitle)\" after both were deleted. Rows: \(listRowLabels())")
+        XCTAssertFalse(bar.buttons["Done"].exists, "The list stayed in Edit after its Delete")
+    }
+
+    // MARK: - Steps
+
+    private func launch() {
+        continueAfterFailure = false
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_PROJECT"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_SAVED_SEARCH"] = "linked"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped,
+                      "Could not open the Collections tab, so this suite would read another screen")
+        XCTAssertTrue(app.navigationBars[Self.listTitle].waitForExistence(timeout: Self.patience),
+                      "The Collections list is not showing. Bars: \(barTitles())")
+        for name in [Self.unattached, Self.smart] {
+            XCTAssertTrue(listRow(name).waitForExistence(timeout: Self.patience),
+                          "The seeded \"\(name)\" is not listed. Rows: \(listRowLabels())")
+        }
+    }
+
+    /// Touches and holds `name`'s row until its menu opens.
+    private func openMenu(on name: String) {
+        listRow(name).press(forDuration: 1.2)
+    }
+
+    private func tapMenuItem(_ label: String) {
+        let item = app.buttons[label].firstMatch
+        XCTAssertTrue(item.waitForExistence(timeout: Self.patience),
+                      "The row's menu has no \"\(label)\". Buttons: \(visibleButtonLabels())")
+        item.tap()
+    }
+
+    /// Requires the delete dialog, titled `title`, to be up, in whichever form the idiom presents it.
+    private func requireDialog(titled title: String) {
+        let heading = app.staticTexts[title].firstMatch
+        XCTAssertTrue(heading.waitForExistence(timeout: Self.patience), """
+            No dialog titled "\(title)" opened. Texts: \
+            \(app.staticTexts.allElementsBoundByIndex.prefix(30).map(\.label))
+            """)
+    }
+
+    /// The open dialog's button `label`: in a popover on an iPad, an action sheet on an iPhone.
+    private func dialogButton(_ label: String) throws -> XCUIElement {
+        let candidates = [app.popovers.buttons[label], app.sheets.buttons[label], app.alerts.buttons[label]]
+        var found: XCUIElement?
+        let deadline = Date().addingTimeInterval(Self.patience)
+        repeat {
+            found = candidates.first { $0.exists }
+            if found == nil { Thread.sleep(forTimeInterval: 0.25) }
+        } while found == nil && Date() < deadline
+        return try XCTUnwrap(found, "The dialog offered no \"\(label)\" in a popover, sheet or alert. Tree:\n\(app.debugDescription)")
+    }
+
+    /// Closes the dialog without deleting: its Cancel on an iPhone, a tap outside the popover on an iPad, where a
+    /// dialog's Cancel is not drawn.
+    private func closeDialogWithoutDeleting() {
+        let cancel = app.sheets.buttons["Cancel"].firstMatch
+        if cancel.exists {
+            cancel.tap()
+        } else {
+            let regions = app.otherElements.matching(identifier: "PopoverDismissRegion")
+            XCTAssertGreaterThan(regions.count, 0, "The dialog has no Cancel and no popover to tap outside")
+            regions.element(boundBy: regions.count - 1)
+                .coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.97)).tap()
+        }
+        XCTAssertTrue(app.staticTexts["Delete “\(Self.unattached)”?"].firstMatch.waitForNonExistence(timeout: Self.patience),
+                      "The dialog did not close")
+    }
+
+    // MARK: - Queries
+
+    /// The list's row whose name is `name`.
+    private func listRow(_ name: String) -> XCUIElement {
+        app.collectionViews.staticTexts[name].firstMatch
+    }
+
+    private func listRowLabels() -> [String] {
+        app.collectionViews.staticTexts.allElementsBoundByIndex.map(\.label).filter { !$0.isEmpty }
+    }
+
+    private func waitForAbsence(of element: XCUIElement, _ message: String) {
+        XCTAssertTrue(element.waitForNonExistence(timeout: Self.patience), message)
+    }
+
+    /// Polls `condition` until it holds or `timeout` passes, and reports whether it held.
+    private func waitUntil(_ timeout: TimeInterval = CollectionListManagementTests.patience,
+                           _ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if condition() { return true }
+            Thread.sleep(forTimeInterval: 0.25)
+        }
+        return condition()
+    }
+
+    private func barTitles() -> String {
+        app.navigationBars.allElementsBoundByIndex.map(\.identifier).joined(separator: " | ")
+    }
+
+    private func visibleButtonLabels() -> String {
+        app.buttons.allElementsBoundByIndex.prefix(30).map(\.label).filter { !$0.isEmpty }.joined(separator: " | ")
+    }
+}

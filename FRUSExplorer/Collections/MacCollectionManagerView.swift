@@ -15,12 +15,18 @@ import UniformTypeIdentifiers
 
 /// Root view for the "Collections" window on macOS.
 ///
-/// Presents a `NavigationSplitView`:
-///   - **Sidebar** — list of all collections (filtered to active project); supports
-///     selection, deletion via context menu, and creating new collections.
+/// Presents (Composer v2 §B, which replaced the `NavigationSplitView` sidebar):
+///   - **Collection picker** (toolbar) — switches collections, and offers New Collection…, Import
+///     Collection… and Manage Collections…, a sheet that renames, duplicates and deletes them.
 ///   - **Detail** — inline editor for the selected collection: editable name and note
 ///     (auto-saved), reorderable document list, per-document note management, and
 ///     toolbar actions for Add Documents, Sort by Date, and Export.
+///
+/// The Collection menu renames, duplicates and deletes the collection the window shows (#1823), and
+/// every delete — the menu's, and Manage Collections' right-click Delete and swipe — asks first
+/// (`collectionDeleteConfirmation`). Composer v2 had left the window one delete, Manage Collections'
+/// `.onDelete`, which on macOS 27.2 is a trackpad swipe and VoiceOver's Delete only (measured with a
+/// scratch app): a mouse, a right-click, the menu bar and ⌫ reached none, and the swipe asked nothing.
 ///
 /// Version history:
 ///   1.0 — Session 73: initial implementation replacing CollectionListView in the
@@ -143,6 +149,9 @@ import UniformTypeIdentifiers
 ///          under one id, so an entry's notes, the exports and Link to Saved Search… list each once
 ///   1.27 — 2026-10-27 (FRUS Explorer Light, S18b): Snapshot runs the saved search through FRUSCoreKit's
 ///          `SmartCollectionSnapshot.documentRefs`, at the same ceiling
+///   1.28 — 2026-11-01: #1823 — the Collection menu gains Manage Collections…, Rename Collection…, Duplicate
+///          Collection and Delete Collection…; Manage Collections' rows gain Rename and Delete in their right-click
+///          menu, a Duplicate there selects the copy, every delete asks first, and a row's rename is trimmed and saved
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -172,6 +181,12 @@ struct MacCollectionManagerView: View {
     /// Composer v2 (§B): the "Manage Collections…" sheet (rename / delete), reached from the toolbar
     /// collection picker.
     @State private var showManageCollections = false
+    /// The collection Collection ▸ Rename Collection… renames; `nil` while its alert is closed (#1823).
+    @State private var renaming: Collection? = nil
+    /// The Rename alert's field, seeded with the collection's name as the alert opens.
+    @State private var renameText = ""
+    /// The collections Collection ▸ Delete Collection… is asking about; empty while it is not asking (#1823).
+    @State private var pendingDeletion: [Collection] = []
 
     private var filteredCollections: [Collection] {
         Collection.visibleCollections(allCollections,
@@ -369,16 +384,60 @@ struct MacCollectionManagerView: View {
         .onChange(of: appState.pendingCollectionSelection) { _, id in
             if id != nil { consumePendingCollectionSelection() }
         }
+        // #1823: the Collection menu's Rename Collection… and Delete Collection… present here.
+        .collectionRenameAlert($renaming, name: $renameText)
+        .collectionDeleteConfirmation(
+            isPresented: Binding(get: { !pendingDeletion.isEmpty }, set: { if !$0 { pendingDeletion = [] } }),
+            deleting: pendingDeletion
+        ) { doomed in
+            delete(doomed)
+        }
         // "Collection" menu wiring (UI audit gap 5): New Collection is published
         // from the window root — it must work while nothing is selected — and is
         // therefore available whenever this window is key. The selection-dependent
-        // items are published separately by CollectionDetailPane. Optional-typed so
-        // the Equatable focusedSceneValue overload is selected.
-        .focusedSceneValue(
-            \.collectionManagerCommands,
-            CollectionManagerCommandActions(newCollection: { showNewCollection = true })
-                as CollectionManagerCommandActions?
-        )
+        // authoring items are published separately by CollectionDetailPane; the
+        // collection's own Rename / Duplicate / Delete (#1823) are published here,
+        // where the selection and its dialogs live. Optional-typed so the Equatable
+        // focusedSceneValue overload is selected.
+        .focusedSceneValue(\.collectionManagerCommands, managerCommands as CollectionManagerCommandActions?)
+    }
+
+    /// The Collection menu's actions on the window's collections (#1823).
+    ///
+    /// While one of the window's sheets or dialogs is up, `canPresent` is `false` and no collection is named: a sheet or
+    /// dialog the menu presented from here would wait behind the open one (one sheet per presenter), and Manage
+    /// Collections renames and deletes from inside itself.
+    private var managerCommands: CollectionManagerCommandActions {
+        let isPresenting = showNewCollection || showManageCollections || isImporting
+            || renaming != nil || !pendingDeletion.isEmpty
+        return CollectionManagerCommandActions(
+            canPresent: !isPresenting,
+            selectedCollectionId: isPresenting ? nil : selectedCollection?.id,
+            newCollection: { showNewCollection = true },
+            manageCollections: { showManageCollections = true },
+            renameCollection: {
+                guard let c = selectedCollection else { return }
+                renameText = c.name
+                renaming = c
+            },
+            duplicateCollection: {
+                guard let c = selectedCollection else { return }
+                let copy = c.duplicate(in: modelContext)
+                try? modelContext.save()
+                selectedId = copy.id
+            },
+            deleteCollection: {
+                guard let c = selectedCollection else { return }
+                pendingDeletion = [c]
+            })
+    }
+
+    /// Deletes `doomed`, which the reader has just confirmed from the Collection menu, clearing the selection when it
+    /// was among them.
+    private func delete(_ doomed: [Collection]) {
+        pendingDeletion = []
+        if doomed.contains(where: { $0.id == selectedId }) { selectedId = nil }
+        CollectionDeletion.delete(doomed, in: modelContext)
     }
 
     /// Applies a `pendingCollectionSelection` hand-off to the sidebar selection, then
@@ -561,9 +620,18 @@ private struct NewCollectionSheet: View {
 
 // MARK: - MacManageCollectionsSheet (Composer v2 §B)
 
-/// The "Manage Collections…" sheet reached from the toolbar collection picker — the full list of
-/// collections with inline rename and delete (keeping the current sort; no manual reorder). Takes
-/// over the permanent sidebar's management role.
+/// The "Manage Collections…" sheet reached from the toolbar collection picker and the Collection menu — the full list
+/// of collections with inline rename, duplicate and delete (keeping the current sort; no manual reorder). Takes over the
+/// permanent sidebar's management role.
+///
+/// Every delete asks first (#1823): the right-click menu's Delete and the list's swipe (`.onDelete`, which on a Mac is a
+/// trackpad swipe and VoiceOver's Delete) arm the same `collectionDeleteConfirmation`. Composer v2 rehomed the sidebar's
+/// Word Cloud and Create Static Snapshot here and not its Delete Collection, so the swipe, which asked nothing, was the
+/// window's only delete. The dialog hangs on the sheet: on the Mac it is window-modal, with no source to point at.
+///
+/// Version history:
+///   1.0 — Composer v2 Phase 3: initial implementation
+///   1.1 — #1823: Rename, Duplicate and Delete in a row's right-click menu; Duplicate selects the copy; deletes ask first
 private struct MacManageCollectionsSheet: View {
     /// The collections to manage (already project-filtered by the caller).
     let collections: [Collection]
@@ -575,6 +643,9 @@ private struct MacManageCollectionsSheet: View {
     let onSnapshot: (Collection) -> Void
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+
+    /// The collections the sheet is asking whether to delete; empty while it is not asking (#1823).
+    @State private var deleting: [Collection] = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -598,40 +669,75 @@ private struct MacManageCollectionsSheet: View {
                     ForEach(collections) { c in
                         ManageCollectionRow(
                             collection: c,
+                            onDuplicate: { duplicate(c) },
                             onWordCloud: { onWordCloud(c) },
-                            onSnapshot: c.savedSearchId != nil ? { onSnapshot(c) } : nil)
+                            onSnapshot: c.savedSearchId != nil ? { onSnapshot(c) } : nil,
+                            onDelete: { deleting = [c] })
                     }
+                    // A trackpad swipe and VoiceOver's Delete: asks, like the right-click menu's Delete (#1823).
                     .onDelete { offsets in
-                        for i in offsets {
-                            let c = collections[i]
-                            if selectedId == c.id { selectedId = nil }
-                            GeneratedSummary.deleteHeadnoteDrafts(for: c, in: modelContext)
-                            for entry in c.documentEntries ?? [] { modelContext.delete(entry) }
-                            modelContext.delete(c)
-                        }
-                        try? modelContext.save()
+                        deleting = offsets.map { collections[$0] }
                     }
                 }
             }
         }
         .frame(minWidth: 440, minHeight: 420)
+        .collectionDeleteConfirmation(
+            isPresented: Binding(get: { !deleting.isEmpty }, set: { if !$0 { deleting = [] } }),
+            deleting: deleting
+        ) { doomed in
+            delete(doomed)
+        }
+    }
+
+    /// Duplicates `collection` (`Collection.duplicate(in:)`) and selects the copy, as the Archives Visits sheet does.
+    private func duplicate(_ collection: Collection) {
+        let copy = collection.duplicate(in: modelContext)
+        try? modelContext.save()
+        selectedId = copy.id
+    }
+
+    /// Deletes `doomed`, which the reader has just confirmed, clearing the manager's selection when it was among them.
+    private func delete(_ doomed: [Collection]) {
+        deleting = []
+        if doomed.contains(where: { $0.id == selectedId }) { selectedId = nil }
+        CollectionDeletion.delete(doomed, in: modelContext)
     }
 }
 
-/// One editable row in the Manage Collections sheet: an inline rename field + the document count.
+/// One editable row in the Manage Collections sheet: an inline rename field + the document count, with Rename,
+/// Duplicate, Word Cloud, Create Static Snapshot (a smart collection's) and Delete in its right-click menu.
+///
+/// The field commits as the reader types, through the editor's `CollectionEditorCommit.name` — trimmed, and only when
+/// the name changes — and saves (#1823); it was bound to `name` itself, which wrote the field untrimmed and left the
+/// save to autosave. It follows a rename made elsewhere, as the detail pane's Name does.
 private struct ManageCollectionRow: View {
-    @Bindable var collection: Collection
+    /// The collection the row manages.
+    let collection: Collection
     @Environment(\.modelContext) private var modelContext
+    /// Duplicates this collection and selects the copy.
+    let onDuplicate: () -> Void
     /// Opens a word cloud for this collection (rehomed from the removed sidebar context menu).
     let onWordCloud: () -> Void
     /// Snapshots this smart collection into a static one; `nil` for a non-smart collection.
     let onSnapshot: (() -> Void)?
+    /// Asks whether to delete this collection.
+    let onDelete: () -> Void
+
+    /// The rename field's text, seeded from the collection's name.
+    @State private var draftName = ""
+    /// Whether the rename field has focus — the right-click menu's Rename gives it focus.
+    @FocusState private var isNameFocused: Bool
 
     var body: some View {
         HStack {
             TextField(String(localized: "collection.untitled.name", defaultValue: "Untitled Collection"),
-                      text: $collection.name)
+                      text: Binding(get: { draftName }, set: { newValue in
+                          draftName = newValue
+                          if CollectionEditorCommit.name(newValue, to: collection) { try? modelContext.save() }
+                      }))
                 .textFieldStyle(.plain)
+                .focused($isNameFocused)
             Spacer()
             // #1619: a smart collection's count is of entries everything it produces ignores.
             if collection.savedSearchId == nil {
@@ -645,11 +751,17 @@ private struct ManageCollectionRow: View {
             }
         }
         .padding(.vertical, 2)
+        .task(id: collection.id) { draftName = collection.name }
+        .onChange(of: collection.name) { _, saved in
+            if !CollectionEditorNaming.fieldAgrees(draftName, withSavedName: saved) { draftName = saved }
+        }
         .contextMenu {
             Button {
-                _ = collection.duplicate(in: modelContext)
-                try? modelContext.save()
+                isNameFocused = true
             } label: {
+                Label(String(localized: "common.rename", defaultValue: "Rename"), systemImage: "pencil")
+            }
+            Button(action: onDuplicate) {
                 Label(String(localized: "collection.duplicate.action", defaultValue: "Duplicate"),
                       systemImage: "plus.square.on.square")
             }
@@ -664,6 +776,10 @@ private struct ManageCollectionRow: View {
                                  defaultValue: "Create Static Snapshot"),
                           systemImage: "camera")
                 }
+            }
+            Divider()
+            Button(role: .destructive, action: onDelete) {
+                Label(CollectionDeletion.action, systemImage: "trash")
             }
         }
     }

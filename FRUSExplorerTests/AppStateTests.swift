@@ -623,14 +623,34 @@ struct CommandFocusedValueTests {
         #expect(detailActions(collectionId: id, takesHandAddedEntries: false) != base)   // #1619
     }
 
-    @Test("CollectionManagerCommandActions: stateless — any two instances are interchangeable")
-    func managerActionsAreStateless() {
-        let a = CollectionManagerCommandActions(newCollection: {})
-        var fired = false
-        let b = CollectionManagerCommandActions(newCollection: { fired = true })
-        #expect(a == b)
+    /// The manager's actions with every closure counting into `fired`, so a test can tell which one ran.
+    private func managerActions(canPresent: Bool = true, selectedCollectionId: UUID? = nil,
+                                onFire: @escaping (String) -> Void = { _ in }) -> CollectionManagerCommandActions {
+        CollectionManagerCommandActions(
+            canPresent: canPresent, selectedCollectionId: selectedCollectionId,
+            newCollection: { onFire("new") }, manageCollections: { onFire("manage") },
+            renameCollection: { onFire("rename") }, duplicateCollection: { onFire("duplicate") },
+            deleteCollection: { onFire("delete") })
+    }
+
+    /// Equal when the menu would draw the same (#1823): the closures do not take part, and the two flags the menu
+    /// enables its items by do.
+    @Test("CollectionManagerCommandActions: equal by what the menu draws, and each action calls its own closure")
+    func managerActionsCompareByWhatTheMenuDraws() {
+        let id = UUID()
+        var fired: [String] = []
+        let a = managerActions(selectedCollectionId: id)
+        let b = managerActions(selectedCollectionId: id) { fired.append($0) }
+        #expect(a == b, "the closures broke equality")
+        #expect(managerActions(selectedCollectionId: UUID()) != a)
+        #expect(managerActions(selectedCollectionId: nil) != a)
+        #expect(managerActions(canPresent: false, selectedCollectionId: id) != a)
         b.newCollection()
-        #expect(fired)
+        b.manageCollections()
+        b.renameCollection()
+        b.duplicateCollection()
+        b.deleteCollection()
+        #expect(fired == ["new", "manage", "rename", "duplicate", "delete"])
     }
 
     #if os(iOS)

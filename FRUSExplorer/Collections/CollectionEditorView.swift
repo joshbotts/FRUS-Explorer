@@ -1194,8 +1194,9 @@ struct CollectionEditorView: View {
                 }
                 #if os(iOS)
                 // EditButton toggles edit mode so drag-handles and swipe-to-delete appear.
-                // On macOS, onMove and onDelete are accessible without explicit edit mode
-                // (drag handles appear automatically; Delete key / context menu handles deletion).
+                // On macOS, onMove works without explicit edit mode (drag handles appear automatically).
+                // A Mac List's onDelete is a trackpad swipe and VoiceOver's Delete only, which no mouse
+                // or key reaches (measured on macOS 27.2, #1823), so each row there carries its own delete.
                 // Only over rows it can edit: the entries from before a smart collection's link take neither.
                 if !rows.isEmpty {
                     EditButton()
@@ -2751,6 +2752,8 @@ struct SmartCollectionEntriesFromBeforeLink: View {
 ///   1.0 — #1415 / #1413: initial implementation, replacing `CollectionEditorView.saveLive()`
 ///   1.1 — MACCOL: the Mac detail pane commits through these too, replacing its `saveMetadata()`
 ///   1.2 — #1619 review: the Mac pane's ⚙ popover unlinks a smart collection through `savedSearch`
+///   1.3 — #1823: `rename`, the Rename alert's commit on the iPhone and iPad Collections list and the Mac window's
+///          Collection menu, and the Mac's Manage Collections rows commit through `name`
 enum CollectionEditorCommit {
 
     /// Whether a text field and the optional value saved for it say the same thing: equal once both are trimmed, with
@@ -2765,6 +2768,13 @@ enum CollectionEditorCommit {
         guard !CollectionEditorNaming.fieldAgrees(fieldText, withSavedName: collection.name) else { return false }
         collection.name = fieldText.trimmingCharacters(in: .whitespacesAndNewlines)
         return true
+    }
+
+    /// Writes the Rename alert's text onto `collection` as `name(_:to:)` does, except that a name left empty keeps the
+    /// one it had: the alert renames, and a list's New Collection asks for a name too (#1823). Returns whether it wrote.
+    static func rename(_ fieldText: String, to collection: Collection) -> Bool {
+        guard !fieldText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        return name(fieldText, to: collection)
     }
 
     /// Writes an optional text field — the description (`note`), subtitle or author line — onto `collection`: trimmed,

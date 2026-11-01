@@ -772,7 +772,7 @@ Collections work in two halves, and the split keeps you honest about where decis
 
 ### 12.1 The Collections Window
 
-The window has no permanent sidebar; you switch collections from the **collection picker** at the left of the toolbar — a pop-up menu listing every collection with its document count, or **Smart collection** for a smart one (a long name is cut short on the toolbar, and listed whole in the menu; on the toolbar a smart collection shows a bolt where the count would be), plus **New Collection…** (⌥⌘N), **Import Collection…**, and **Manage Collections…** (a sheet where a collection's name is an inline field; right-click a collection there for **Duplicate** — a fully independent copy including composition, sections, and prose — **Word Cloud**, or, on a smart collection, **Create Static Snapshot**). The middle column is the **Contents** outline; the **live preview** sits beside it. The rest of the toolbar carries the authoring verbs:
+The window has no permanent sidebar; you switch collections from the **collection picker** at the left of the toolbar — a pop-up menu listing every collection with its document count, or **Smart collection** for a smart one (a long name is cut short on the toolbar, and listed whole in the menu; on the toolbar a smart collection shows a bolt where the count would be), plus **New Collection…** (⌥⌘N), **Import Collection…**, and **Manage Collections…** (a sheet where a collection's name is an inline field; right-click a collection there for **Rename**, **Duplicate** — a fully independent copy including composition, sections, and prose, which the window then shows — **Word Cloud**, on a smart collection **Create Static Snapshot**, and **Delete**). The middle column is the **Contents** outline; the **live preview** sits beside it. The rest of the toolbar carries the authoring verbs:
 
 | Control | What it does |
 |---------|--------------|
@@ -781,6 +781,8 @@ The window has no permanent sidebar; you switch collections from the **collectio
 | **⚙ Collection** | The collection-settings popover — name, a note that prints under the title of an export, title-page front matter, composition presets and settings (12.6), and the **Smart Collection** section: **Link to Saved Search…**, or a smart collection's link with **Unlink** (12.8) |
 | **Export…** | The export sheet — format + destination (12.9) |
 | **Document inspector** | Show or hide the trailing inspector for the selected document (12.5) |
+
+**Renaming, duplicating and deleting.** The **Collection** menu acts on the collection the window shows: **Rename Collection…** asks for the new name (leaving it empty keeps the old one), **Duplicate Collection** makes the copy and shows it, and **Delete Collection…** deletes it. **Manage Collections…** is in that menu too. A collection can also be deleted from **Manage Collections…** — right-click it and choose **Delete**, or swipe its row left with two fingers on a trackpad. Wherever you delete from, the app asks first, naming the collection: its section headings, note blocks and headnotes go with it, on your other devices too once they sync, while the documents and your notes and highlights on them stay.
 
 **Which collections the window lists.** Every collection across all your projects, by default; with a project active, a banner offers **Scope to "\<project\>"**, and **Show All** brings the rest back (a per-session choice). A collection you create, import, or snapshot while a project is active is attached to that project automatically.
 
