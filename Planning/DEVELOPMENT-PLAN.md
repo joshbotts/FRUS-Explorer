@@ -8670,3 +8670,5 @@ Mutation, after a checkpoint commit: the synthesis budget taken from the reader'
 **Not done.**
 - **The app was not run with this build,** so no surface was looked at. The tests read the values, the markup, the PDF's faces and the stored text, not the drawn screens.
 - **No push or PR**, without the owner's word.
+
+**Pushed and opened as #1824** against `v2` on the owner's word ("Push and open PR", 2026-10-31).
