@@ -1,5 +1,12 @@
 # The person authority's deferred work (#1767): what a cloud session could settle, and the lane the Mac runs, 2026-10-28
 
+**Moved to `Completed/` on 2026-11-01**, when #1767 closed (the live plan's decision 109). §7's lanes were built and merged:
+- lane A as #1815 (`5c185a71`, rollup v13);
+- lane B as #1816 (`cb463e33`, v14);
+- the follow-up on what both found and left as #1826 (`4e6142c0`, v15).
+
+The reports for `HistoryAtState/people` are drafted in `../Person-Authority-Upstream-Reports-2026-11-01.md` and are not filed. The paths below name the Planning root as it was when this was written. The overlay review is in this directory now, and the identifier assessment is still at the root.
+
 **What this is.** The planning for #1767 that a cloud session can do, worked on the owner's word of 2026-10-28, based on `v2` at `32e295e`. The issue gathers the person authority's deferred work from the 2026-10-14 plan's §6g (plan of record decision 96, P2): the identifier rule, the role text of overlay entries that carry several people, nine held-apart members who rejoin by name, #1658's undecided tie, and one check. Its designs are `Planning/Person-Authority-Identifier-Assessment-2026-10-17.md` and `Planning/Person-Authority-Overlay-Review-2026-10-17.md`; this memo adds what could be read from the data reachable here, settles the two items those memos left open, and gives the Mac its runbook. Nothing in it changed the generator, the kit, the bundle or any version.
 
 **Lane A built, 2026-10-29** (items 3 and 4 with §4.6, on the owner's word "start the person authority lane"; branch `claude/person-authority-lane-c64504`). Four things the build found correct this memo; the session entry in `DEVELOPMENT-PLAN.md` has every figure.

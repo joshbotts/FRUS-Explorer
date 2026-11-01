@@ -8912,3 +8912,43 @@ Further findings the owner may add: Speaker Jim Wright's four anchors, 109156's 
 - Outside this file, the lane's patch and `v2`'s each kept their patch id across the merge.
 - The merged tree's full unit target, on the iPhone 17 simulator (iOS 27.0): "✔ Test run with 7848 tests in 940 suites passed after 445.119 seconds" (0 failed, 37 skips).
 - Then pushed and opened against `v2`.
+
+## Session 2026-11-01 — #1767 is closed: the plan of record, the person-authority memos and the screenshot notes say so
+
+From `v2` at `3fd3b4ee`, on `claude/assess-issues-1767-1765-1764-8dd1ae`. Documents only: no code, data file or version changed.
+
+**What was asked.** The owner asked whether #1767 could be closed, then said "Yes, close it out" (the plan's decision 109). Everything the issue gathered is merged:
+- its items 3 and 4 in #1815 (`5c185a71`, rollup v13);
+- items 1 and 2 in #1816 (`cb463e33`, v14);
+- what the two lanes found and left in #1826 (`4e6142c0`, v15);
+- item 5, Taft IV, by A4c's correction (the issue's comment of 2026-10-28).
+
+At `v2` the bundled file gives Kissinger Wikidata `Q66107` and VIAF `108958811`; at `5c185a71` it gave him neither.
+
+**What changed.**
+- **`Plan-Of-Record-2026-10-21.md`.**
+  - Decision 109 is added.
+  - The #1767 entry moves from §5's P2 to Closed, and its last line now says #1826 merged.
+  - §4 lists the owner's two steps: the device check of a library rebuilt at v15, from the three pull requests' lists, and whether to file the upstream reports.
+  - §5's HistoryAtState/people line names all three reports.
+  - §6's kept-live line says where the person-authority designs went.
+  - Decision 102 points at the lane design's new path.
+- **The memos**, by §6's rule (a finished document moves to `Completed/` unless code, a test or a tool cites it):
+  - `Person-Authority-Identifier-Assessment-2026-10-17.md` stays at the root, marked COMPLETE in its head. `PersonIdentifierRule.swift`, `PersonAuthorityIndexBuilder.swift`, the generator's tests, the snapshot tool, the snapshot and the reads TSV cite it.
+  - `Person-Authority-Overlay-Review-2026-10-17.md` and `Person-Authority-Lane-Design-2026-10-28.md` move to `Completed/`, each with a dated note at its head.
+  - `Person-Authority-Upstream-Reports-2026-11-01.md` stays until its reports are filed.
+- **The memos' pointers.**
+  - These were re-pointed: the identifier assessment, the report drafts, `Generators-Runbook.md`'s `PersonAuthorityIndexGenerator` entry, and `Completed/README.md`, which has a cluster for the move and its "not here" lists brought up to date.
+  - These were left as written: this log's entries, the archived plans and `Planning-Review-2026-10-21.md`.
+- **`Docs/screenshots/README.md`**: recipe 11 and rows 24 and 49 carry a dated note that since v14 Kissinger's record has both ids. The build-51 record above each note is unchanged.
+
+**Checked.**
+- No test reads any file this change touches: the scans under `FRUSExplorerTests/` and the package suites were searched for each path. So no test was run.
+- The plan-of-record audit's two conditions were checked by hand:
+  - exactly one `Plan-Of-Record-*.md` at the Planning root lacks `Status: SUPERSEDED`;
+  - the struck-step line (line 13) is unchanged.
+- No live file still cites either memo at the Planning root.
+
+**Not done.**
+- The device check and the upstream reports are the owner's (§4).
+- #1764's "found, not fixed" list (its log entry above) is not taken up here.

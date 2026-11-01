@@ -226,6 +226,24 @@ the live plan of record — the one `../Plan-Of-Record-*.md` not marked SUPERSED
     `DEVELOPMENT-PLAN.md`'s entries, the archived plans, and the cross-platform package's Mac and
     iPad reviews (Markdown and HTML), which name the OS 27 design at the Planning root.
 
+- **The 2026-11-01 move (2 documents)**: the person authority's deferred work, moved when #1767
+  closed (the live plan's decision 109). Its lanes merged as #1815, #1816 and #1826 (rollup v13 to
+  v15). **Residue is carried by the live plan's §4**: the owner's device check of a library rebuilt
+  at v15, and the filing of the reports for `HistoryAtState/people`.
+  - **`Person-Authority-Overlay-Review-2026-10-17.md`**: A4c's review of the overlay's wrong merges
+    (#1709), with every correction and every candidate read.
+  - **`Person-Authority-Lane-Design-2026-10-28.md`**: the cloud session's planning for #1767 and the
+    lanes its §7 gave the Mac, with what each build corrected in its header.
+  - **Kept at the Planning root**:
+    - `Person-Authority-Identifier-Assessment-2026-10-17.md`, marked COMPLETE in its head. The
+      identifier rule's source, its tests, the snapshot tool and the committed snapshot cite it by
+      path.
+    - `Person-Authority-Upstream-Reports-2026-11-01.md`, until its reports are filed.
+  - **Pointers to these files.** The live plan's decision 102 and §6, the identifier assessment, the
+    report drafts and `Generators-Runbook.md`'s `PersonAuthorityIndexGenerator` entry. Dated records
+    were left as written: `DEVELOPMENT-PLAN.md`'s entries, the archived plans and
+    `Planning-Review-2026-10-21.md`.
+
 **Deliberately NOT here** (live at `Planning/` root — verified 2026-10-21, by listing the
 directory):
 - **the plan of record** — the one `Plan-Of-Record-*.md` there (`Plan-Of-Record-2026-10-21`; every
@@ -241,16 +259,21 @@ directory):
   `New-Volume-Release-Plan`, `nara-record-group-catalog-runbook`, `Agentic-Harness-Runbook`,
   `Generators-Runbook` and `UI-Test-Destinations-Runbook` (the two `CLAUDE.md` indexes);
 - **the designs of work not yet run** — `App-Intents-Siri-Assessment-2026-10-18` (A7, #1723),
-  `Keyword-Snippet-Assessment-2026-10-20` (until #1760 lands; source cites it), the two
-  person-authority memos of 2026-10-17 (#1767) and `C-3-Reader-Test-Design` (C-3, after
-  submission);
+  `Keyword-Snippet-Assessment-2026-10-20` (until #1760 lands; source cites it) and
+  `C-3-Reader-Test-Design` (C-3, after submission). The two person-authority memos of 2026-10-17
+  were listed here until #1767 closed on 2026-11-01; one is in this directory now, and the other
+  is a finished record that source cites, below;
 - **the report filed with the Office of the Historian** — `OH-Report-2026-10-01` and its folder
   of CSVs (HistoryAtState/frus#469, still open; `tools/oh-report/` re-checks it at a commit);
+- **the reports drafted for HistoryAtState/people** — `Person-Authority-Upstream-Reports-2026-11-01`,
+  until the owner files them;
 - **finished records that source cites by path**, each marked COMPLETE in its head —
   `Vector-Embeddings-Semantic-Design` (every phase shipped; four source files cite it),
   `Lexical-Axis-Addressable-Market` (cited by `SimilarityModel.swift`), `Index-Bump-Brief-2026-10-11`
   (`IndexingPipeline.swift` cites it in four places), `Issue-1648-Stopping-A-Replaced-Search-2026-10-15`
-  (`IndexingPipeline.swift`) and `Cross-Volume-Page-Citations-Assessment-2026-10-20`
+  (`IndexingPipeline.swift`), `Person-Authority-Identifier-Assessment-2026-10-17` (since
+  2026-11-01; the identifier rule's source, its tests and the snapshot tool) and
+  `Cross-Volume-Page-Citations-Assessment-2026-10-20`
   (`PageSpanResolver.swift` and `IndexingPipeline.swift`);
 - **the W-19 agentic-loop program** — `Agentic-Loop-Development-Plan` (C-1 stays gated),
   `Agentic-Guide-Revisions` and the C-0b, C-0c and C-0d records (the guide cites them; each is
@@ -274,4 +297,6 @@ PreIndex assessments, `308-Subject-Integration-Design`, `BigPicture-Analytics-Co
 assessments, `Wave-R-Research-Trail-2026-08`, `Eight-Issue-Plan-2026-08`, `Dynamic-Type-Worklist`,
 `Archival-Analytics-Adversarial-Review` and the trip-packet scope; and, since 2026-10-21,
 `Issue-1577-Search-Within-Results-Assessment`, `Map-Figure-Export-And-Visual-Outputs`,
-`OS27-Semantic-Retrieval-Design`, `W15-Geographic-Analytics-Assessment` and the C-0 and C-2 memos.
+`OS27-Semantic-Retrieval-Design`, `W15-Geographic-Analytics-Assessment` and the C-0 and C-2 memos;
+and, since 2026-11-01, `Person-Authority-Overlay-Review-2026-10-17` and
+`Person-Authority-Lane-Design-2026-10-28`.
