@@ -1768,7 +1768,7 @@ Partially Published
 
 #### `graph.panel.close.a11y`
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.panel.close.a11y | ships at: CrossReferenceGraphView.swift:1232, ReferenceListPanel.swift:362, ReferenceListPanel.swift:554 | same text also in: FRUSExplorer/CrossReference/ReferenceListPanel.swift -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.panel.close.a11y | ships at: CrossReferenceGraphView.swift:1241, ReferenceListPanel.swift:367, ReferenceListPanel.swift:559 | same text also in: FRUSExplorer/CrossReference/ReferenceListPanel.swift -->
 
 Close details
 
@@ -1818,7 +1818,7 @@ Entire Corpus
 
 #### `graph.resetView.a11y`
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.resetView.a11y | ships at: CrossReferenceGraphView.swift:1510 -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.resetView.a11y | ships at: CrossReferenceGraphView.swift:1519 -->
 
 Reset view
 

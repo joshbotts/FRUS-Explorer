@@ -146,6 +146,24 @@ struct DisplayNode: Identifiable, Sendable {
         }
     }
 
+    /// The document or page id a document node stands for: from metadata, or the
+    /// `"volumeId/documentId"` node key. `nil` for a cluster, a unit and a central-file class,
+    /// which stand for no one document.
+    var documentId: String? {
+        switch kind {
+        case .central, .inbound, .outbound, .extended:
+            if let id = metadata?.documentId { return id }
+            let parts = id.split(separator: "/", maxSplits: 1)
+            return parts.count == 2 ? String(parts[1]) : nil
+        default:
+            return nil
+        }
+    }
+
+    /// Whether the node is a page the index left on its volume (#1799) — `pg_507`, or a roman or
+    /// front-matter page (`pg_III`) — rather than a document. A page node opens nothing.
+    var isPageNode: Bool { documentId?.hasPrefix("pg_") ?? false }
+
     var accessibilityLabel: String {
         switch kind {
         case .central:
@@ -361,6 +379,10 @@ struct NavigationHistoryEntry: Sendable {
 ///   1.6 — #1799: a node dated by a span is labelled with it, its volume's at the precision of
 ///          years, and placed at its middle; `makeEntry` gives a page node no entry, since its id
 ///          names a page
+///   1.7 — #1764: `forceDirectedLayout` is Fruchterman–Reingold with a cutoff, scaled to the
+///          canvas, and its animated batches follow one cooling schedule; `labelPriority` orders
+///          the canvas's labels; `precedesInReferenceList` orders the reference list, with
+///          `DisplayNode.documentId` and `isPageNode`
 @Observable
 @MainActor
 final class CrossReferenceGraphViewModel {
@@ -871,6 +893,86 @@ final class CrossReferenceGraphViewModel {
         }
     }
 
+    // MARK: - Label priority (#1764)
+
+    /// The order the canvas offers node labels to `GraphNodeLabels.place(_:avoiding:settling:)`
+    /// (#1764), which places each where it keeps clear of the labels before it and of every disc,
+    /// and draws the first, the central document's, whatever lies under it, on its plate.
+    ///
+    /// After the central document come the node the reader has selected or points at, then its
+    /// neighbours, then volume and date clusters, whose labels carry their counts, then every other
+    /// node: the most connected first, as the canvas sizes it, then the nearest in hops, then in
+    /// the reference list's order (``precedesInReferenceList(_:_:)``), which makes the order total.
+    ///
+    /// Until #1764 the canvas drew every node's label on a graph of 40 nodes or fewer, overlapping
+    /// or not, and above 40 only the central, cluster and focused nodes' labels. A17's archival nodes
+    /// and A18b's pages took `frus1952-54v02p1` d16 at three hops to 247 nodes, and the iPad capture
+    /// labelled the focus alone.
+    /// - Parameters:
+    ///   - nodes: The nodes the canvas draws.
+    ///   - connectionCounts: Each document's corpus-wide connection count, which sizes its disc.
+    ///   - selectedKey: The node selected or pointed at, or `nil`.
+    ///   - focusKeys: The selected node and its neighbours, or `nil` when nothing is selected.
+    /// - Returns: Every node's id, highest priority first.
+    nonisolated static func labelPriority(nodes: [DisplayNode], connectionCounts: [String: Int],
+                                          selectedKey: String?, focusKeys: Set<String>?) -> [String] {
+        func tier(_ node: DisplayNode) -> Int {
+            if node.isCentral { return 0 }
+            if node.id == selectedKey { return 1 }
+            if focusKeys?.contains(node.id) ?? false { return 2 }
+            if node.isCluster || node.isDateCluster { return 3 }
+            return 4
+        }
+        return nodes.sorted { a, b in
+            let ta = tier(a), tb = tier(b)
+            if ta != tb { return ta < tb }
+            let ca = connectionCounts[a.id] ?? 0, cb = connectionCounts[b.id] ?? 0
+            if ca != cb { return ca > cb }
+            if a.degree != b.degree { return a.degree < b.degree }
+            return precedesInReferenceList(a, b)
+        }.map(\.id)
+    }
+
+    /// One placement request per drawn node, for `GraphNodeLabels.place(_:avoiding:settling:)`
+    /// (#1764): the nodes with a label in `order`, then the nodes without one (an archival unit, a
+    /// central-file class) at no size, so every label keeps clear of their discs and none gives way
+    /// to them. The first node in `order`, the central document, stays first whether or not it has a
+    /// label, since the first request is placed whatever lies under it. A node with no position is
+    /// left out, since the canvas draws neither its disc nor its label.
+    /// - Parameters:
+    ///   - order: Every node's id, highest priority first (``labelPriority(focusKeys:)``).
+    ///   - positions: Each node's position on the canvas.
+    ///   - radii: Each node's disc radius as drawn; 18 pt where none is given.
+    ///   - sizes: Each labelled node's measured label block; a node with none has no label.
+    /// - Returns: The requests, highest priority first.
+    nonisolated static func labelRequests(order: [String], positions: [String: CGPoint],
+                                          radii: [String: CGFloat],
+                                          sizes: [String: CGSize]) -> [GraphLabelRequest<String>] {
+        var labelled: [GraphLabelRequest<String>] = []
+        var unlabelled: [GraphLabelRequest<String>] = []
+        for (rank, id) in order.enumerated() {
+            guard let center = positions[id] else { continue }
+            let radius = radii[id] ?? 18
+            if let size = sizes[id] {
+                labelled.append(GraphLabelRequest(id: id, center: center, radius: radius, size: size))
+            } else if rank == 0 {
+                labelled.append(GraphLabelRequest(id: id, center: center, radius: radius, size: .zero))
+            } else {
+                unlabelled.append(GraphLabelRequest(id: id, center: center, radius: radius, size: .zero))
+            }
+        }
+        return labelled + unlabelled
+    }
+
+    /// ``labelPriority(nodes:connectionCounts:selectedKey:focusKeys:)`` over the canvas's nodes, with
+    /// the node selected or pointed at.
+    /// - Parameter focusKeys: The selected node and its neighbours, or `nil`.
+    /// - Returns: Every displayed node's id, highest priority first.
+    func labelPriority(focusKeys: Set<String>?) -> [String] {
+        Self.labelPriority(nodes: displayNodes, connectionCounts: nodeConnectionCounts,
+                           selectedKey: resolvedNodeKey, focusKeys: focusKeys)
+    }
+
     /// Visual radius for a node. Central and cluster nodes have fixed sizes;
     /// document nodes scale logarithmically with their corpus-wide connection
     /// count so heavily referenced documents read as hubs at a glance.
@@ -1158,10 +1260,13 @@ final class CrossReferenceGraphViewModel {
         )
         // #837: unit nodes hang off whichever document nodes survived the display build, so a
         // clustered-away document contributes none — the canvas never carries a unit whose
-        // citing document is not on it.
+        // citing document is not on it. By citing document's key (#1764): a dictionary's order is
+        // seeded per launch, and the network layout starts each node from its place in this order,
+        // so in the dictionary's order the same graph settled differently at every launch.
         if !unitsByDocument.isEmpty {
             let onCanvas = Set(nodes.map(\.id))
-            for (documentKey, units) in unitsByDocument where onCanvas.contains(documentKey) {
+            for (documentKey, units) in unitsByDocument.sorted(by: { $0.key < $1.key })
+            where onCanvas.contains(documentKey) {
                 for unit in units {
                     nodes.append(unit)
                     // `.footnote`: every external citation this reads comes from a body
@@ -1310,27 +1415,32 @@ final class CrossReferenceGraphViewModel {
 
         let initial = Self.initialPositions(nodes: nodes, centralKey: central, canvasSize: size)
 
+        let total = Self.layoutIterations
         if reduceMotion {
             nodePositions = Self.forceDirectedLayout(
                 nodes: nodes, edges: edges,
                 initialPositions: initial,
-                centralKey: central, canvasSize: size, iterations: 200
+                centralKey: central, canvasSize: size, iterations: total
             )
             return
         }
 
-        // Animated settling: run in batches, yielding to the main thread each frame.
-        // Each batch runs 20 iterations (~1 visual frame of progress).
+        // Animated settling: run in batches, yielding to the main thread each frame. The batches
+        // take the one cooling schedule's steps in order (#1764), so the last frame is the layout
+        // Reduce Motion draws at once.
         nodePositions = initial
         isAnimatingLayout = true
         layoutTask = Task { [weak self] in
             var current = initial
-            for _ in 0..<10 {
+            let batches = CrossReferenceGraphViewModel.layoutBatches
+            let perBatch = total / batches
+            for batch in 0..<batches {
                 guard !Task.isCancelled else { break }
                 current = CrossReferenceGraphViewModel.forceDirectedLayout(
                     nodes: nodes, edges: edges,
                     initialPositions: current,
-                    centralKey: central, canvasSize: size, iterations: 20
+                    centralKey: central, canvasSize: size, iterations: perBatch,
+                    startingAt: batch * perBatch, of: total
                 )
                 guard !Task.isCancelled else { break }
                 await MainActor.run { [weak self] in
@@ -1406,73 +1516,210 @@ final class CrossReferenceGraphViewModel {
         return positions
     }
 
-    /// Force-directed spring-repulsion layout.
+    /// How many steps the network layout takes to settle: all at once under Reduce Motion, or in
+    /// `layoutBatches` batches published a frame apart.
+    nonisolated static let layoutIterations = 200
+
+    /// How many batches an animated network layout publishes, each `layoutIterations / layoutBatches`
+    /// steps of the same cooling schedule, so its last frame is the layout Reduce Motion draws at once.
+    nonisolated static let layoutBatches = 10
+
+    /// The space the network layout keeps between a node's centre and the canvas's edge.
+    nonisolated static let layoutPad: CGFloat = 32
+
+    /// The longest ideal distance the network layout gives two nodes (#1764), however much canvas
+    /// each node's share of it is. See `forceDirectedLayout`'s *The model*.
+    nonisolated static let layoutMaximumDistance: CGFloat = 100
+
+    /// How strongly the canvas's edges repel a node in the network layout, against a node of weight 1
+    /// at the same distance (#1764). See `forceDirectedLayout`'s *The canvas's edges*.
+    nonisolated static let layoutEdgeRepulsion: CGFloat = 0.5
+
+    /// How much the central document and its direct references weigh in the network layout's
+    /// repulsion, against 1 for every other node (#1764). See ``layoutWeight(for:)``.
+    nonisolated static let directReferenceWeight: CGFloat = 4
+
+    /// A node's weight in the network layout's repulsion (#1764): ``directReferenceWeight`` for the
+    /// central document and the documents and volume clusters it cites or is cited by, which are what
+    /// the graph is drawn around, and 1 for a node two or three hops out, an archival unit or a
+    /// central-file class.
+    /// - Parameter kind: The node's kind.
+    /// - Returns: The weight.
+    nonisolated static func layoutWeight(for kind: DisplayNode.Kind) -> CGFloat {
+        switch kind {
+        case .central, .inbound, .outbound, .clusterInbound, .clusterOutbound: return directReferenceWeight
+        case .extended, .dateCluster, .unit, .centralFileClass: return 1
+        }
+    }
+
+    /// The network layout: Fruchterman–Reingold, with its repulsion cut off at twice the ideal
+    /// distance (#1764).
     ///
-    /// **Physics model**:
-    /// - **Spring force** (connected node pairs): `F = k_s × (d − L₀)` where `d` is the
-    ///   current distance and `L₀` is the rest length. Attractive when `d > L₀`.
-    /// - **Repulsion force** (all node pairs): `F = k_r / d²`. Always repulsive.
-    /// - **Central node** is pinned to the canvas centre — no force is applied to it.
-    /// - **Damped velocity integration**: `v ← (v + F × dt) × damping`, then `p ← p + v`.
-    ///   Positions are clamped to canvas bounds each iteration.
+    /// **The model.** The ideal distance between nodes is `k = √(area / n)`, the side of each node's
+    /// share of the canvas inside `layoutPad`, so a large graph settles to fill the canvas rather
+    /// than outgrow it, and at most `layoutMaximumDistance`, so a small one does not spread to its
+    /// edges: at three hops the Long Telegram (`frus1946v06` d475) has 37 nodes, a share 156 pt on a
+    /// side, and uncapped it put 15 at an edge where the old layout put 8; capped at 100, tried with
+    /// 160, 120 and 80, and with the edges' repulsion below, it puts none there and draws 31 of its
+    /// 35 labels (measured in a harness port of this layout and of `GraphNodeLabels`, which gives
+    /// d16's figures below exactly). Every edge attracts with `d² / k`. Two nodes of weights `wᵢ` and `wⱼ`
+    /// (``layoutWeight(for:)``) repel with `k′² wᵢwⱼ / d` while closer than `2k′√(wᵢwⱼ)`, where
+    /// `k′ = k / w̄` and `w̄` is the mean weight, so a graph whose nodes all weigh the same is laid
+    /// out as plain Fruchterman–Reingold would lay it out. Each step moves a node along its net force
+    /// by at most the temperature, which cools linearly from a tenth of the canvas's shorter side to
+    /// nothing over `totalIterations`, so the layout comes to rest. The central node stays pinned at
+    /// the centre.
+    ///
+    /// **What it replaced.** Until #1764 the layout was a damped spring–repulsion simulation with
+    /// fixed constants (a 120 pt rest length, repulsion `5000 / d²` between all pairs), clamped to
+    /// the canvas with the velocity left running into the wall. A graph of a few dozen nodes fitted;
+    /// `frus1952-54v02p1` d16 at three hops has 247 since A17's archival nodes and A18b's pages: 155
+    /// documents three hops out, 72 archival units, 9 central-file classes, and 152 of the 247 with
+    /// one edge. All-pairs repulsion drove those leaves out to the clamp, the clamp caught each one
+    /// where both its coordinates ran out, and two nodes on one point repel in no direction, so they
+    /// never parted. Measured on S1's index at the iPad capture's 1055 × 861 pt canvas, in three
+    /// orders of the graph's archival nodes (two launches', and the order `rebuildDisplay()` now
+    /// fixes), 173 to 185 of the 247 settled in four stacks of up to 52 on the canvas's corners,
+    /// drawn as four dark-ringed "hubs" with every edge running to them; 189 or 196 were at an edge,
+    /// and 3,781 to 4,256 pairs of discs overlapped. This layout settles it, in the order
+    /// `rebuildDisplay()` now fixes, with none at an edge and one overlapping pair, the closest two
+    /// 19.5 pt apart. NSC 68 (`frus1950v01` d85) at three hops has 1,259 nodes: the old layout put
+    /// 1,225 at an edge, 1,211 of them in four corner stacks of up to 337, and this one, measured in
+    /// a harness port of it, puts none at an edge, though 1,259 discs on that canvas cannot all keep
+    /// apart.
+    ///
+    /// **The cutoff** is the grid variant of Fruchterman and Reingold's own paper. Without it, the
+    /// same model settled 175 of d16's nodes on the canvas's edges, if none in a stack: every node's
+    /// repulsion reaches every leaf, whose one edge cannot hold it against them all. A pull towards
+    /// the centre, tried with it, kept every node off the edges and crowded the middle instead.
+    ///
+    /// **The weights** give the central document's own references room for their labels. With every
+    /// node weighing the same, d16's ten references settled in a knot around it, every one of their
+    /// labels crowded out by a neighbour's disc (`GraphNodeLabels` keeps a label clear of every
+    /// disc), and the labels that fitted were three hops out. Weighing them and the centre 4, chosen
+    /// on that graph from 2 to 8, labels 7 of the 10 at the capture's canvas, where 24 labels are
+    /// placed in all, and all 10 at the iPad's full width (the harness port). A node's degree as its weight, as
+    /// ForceAtlas2 weighs it, labelled more but lined the canvas's edges with leaves.
+    ///
+    /// **The canvas's edges** repel a node within `2k′` of one, with `k′² / 2d` from the nearest
+    /// point on it (`layoutEdgeRepulsion`), so the leaves pushed out of a large graph settle short of
+    /// the edge rather than in a row along it, where the clamp held them with their discs
+    /// overlapping. d16 at three hops put 19 nodes on the edges of the capture's 1055 × 861 pt canvas
+    /// without it, and 33 in rows along the top and bottom of the iPad's full width, 1376 × 860; with
+    /// it, none at either. Strengths of 1 and 2 cleared the edges too and labelled fewer.
+    ///
+    /// **Coincident nodes** are pushed apart along a direction fixed by their pair, so two nodes
+    /// that land on one point (two leaves clamped at one corner) separate, where `dx / d` and
+    /// `dy / d` alone are both zero, and the result stays the same from run to run.
+    ///
+    /// - Parameters:
+    ///   - nodes: The nodes to place.
+    ///   - edges: The edges that attract their ends; an edge to a node not in `nodes` is ignored.
+    ///   - initialPositions: Where each node starts; a node with none starts at the centre.
+    ///   - centralKey: The node pinned at the canvas's centre.
+    ///   - canvasSize: The canvas, whose edges inset by `layoutPad` bound every node.
+    ///   - iterations: How many steps to take.
+    ///   - firstIteration: The step of the cooling schedule to start from, for an animated layout's
+    ///     later batches.
+    ///   - totalIterations: The schedule's length, `iterations` when `nil`. Batches that take a
+    ///     schedule's steps in order end where one call taking all of them would.
+    /// - Returns: Every node's position.
     static func forceDirectedLayout(
         nodes: [DisplayNode],
         edges: [DisplayEdge],
         initialPositions: [String: CGPoint],
         centralKey: String,
         canvasSize: CGSize,
-        iterations: Int
+        iterations: Int,
+        startingAt firstIteration: Int = 0,
+        of totalIterations: Int? = nil
     ) -> [String: CGPoint] {
-        let k_s:     CGFloat = 0.012   // spring constant
-        let L0:      CGFloat = 120     // spring rest length (pt)
-        let k_r:     CGFloat = 5_000   // repulsion constant
-        let damping: CGFloat = 0.85
-        let dt:      CGFloat = 1.0
-        let pad:     CGFloat = 32
+        let count = nodes.count
+        guard count > 0 else { return [:] }
+        let schedule = CGFloat(max(totalIterations ?? iterations, 1))
+        let pad = layoutPad
+        let minX = pad, maxX = max(canvasSize.width - pad, pad)
+        let minY = pad, maxY = max(canvasSize.height - pad, pad)
+        let k = min((max(maxX - minX, 1) * max(maxY - minY, 1) / CGFloat(count)).squareRoot(),
+                    layoutMaximumDistance)
+        let weights = nodes.map { layoutWeight(for: $0.kind) }
+        let repulsionK = k / (weights.reduce(0, +) / CGFloat(count))
+        let repulsionKSquared = repulsionK * repulsionK
+        let startTemperature = min(maxX - minX, maxY - minY) / 10
 
-        var pos = initialPositions
-        var vel: [String: CGVector] = nodes.reduce(into: [:]) { $0[$1.id] = .zero }
+        // Arrays by index: the step is all pairs, and a dictionary lookup per pair cost seconds.
         let ids = nodes.map(\.id)
-        let edgePairs = edges.map { ($0.source, $0.target) }
+        let index = Dictionary(ids.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+        let centre = CGPoint(x: canvasSize.width / 2, y: canvasSize.height / 2)
+        var x = ids.map { initialPositions[$0]?.x ?? centre.x }
+        var y = ids.map { initialPositions[$0]?.y ?? centre.y }
+        let pinned = index[centralKey]
+        let springs: [(Int, Int)] = edges.compactMap { edge in
+            guard let a = index[edge.source], let b = index[edge.target], a != b else { return nil }
+            return (a, b)
+        }
+        var forceX = [CGFloat](repeating: 0, count: count)
+        var forceY = [CGFloat](repeating: 0, count: count)
+        /// The push away from one edge on a node `gap` points from it, nothing beyond `2k′`.
+        func edgeRepulsion(_ gap: CGFloat) -> CGFloat {
+            let d = max(gap, 0.5)
+            return d < 2 * repulsionK ? layoutEdgeRepulsion * repulsionKSquared / d : 0
+        }
 
-        for _ in 0..<iterations {
-            var forces: [String: CGVector] = ids.reduce(into: [:]) { $0[$1] = .zero }
+        for step in firstIteration..<(firstIteration + max(iterations, 0)) {
+            let temperature = startTemperature * max(0, 1 - CGFloat(step) / schedule)
+            for i in 0..<count { forceX[i] = 0; forceY[i] = 0 }
 
-            // Spring forces between connected nodes.
-            for (src, tgt) in edgePairs {
-                guard let ps = pos[src], let pt = pos[tgt] else { continue }
-                let dx = pt.x - ps.x, dy = pt.y - ps.y
-                let d = max(hypot(dx, dy), 1)
-                let f = k_s * (d - L0)
-                let ux = dx / d, uy = dy / d
-                forces[src]?.dx += ux * f;  forces[src]?.dy += uy * f
-                forces[tgt]?.dx -= ux * f;  forces[tgt]?.dy -= uy * f
-            }
-
-            // Repulsion between all node pairs.
-            for i in 0..<ids.count {
-                for j in (i + 1)..<ids.count {
-                    guard let pa = pos[ids[i]], let pb = pos[ids[j]] else { continue }
-                    let dx = pa.x - pb.x, dy = pa.y - pb.y
-                    let d = max(hypot(dx, dy), 1)
-                    let f = k_r / (d * d)
-                    let ux = dx / d, uy = dy / d
-                    forces[ids[i]]?.dx += ux * f;  forces[ids[i]]?.dy += uy * f
-                    forces[ids[j]]?.dx -= ux * f;  forces[ids[j]]?.dy -= uy * f
+            // Repulsion between every pair within reach, which grows with the pair's weight.
+            for i in 0..<count {
+                for j in (i + 1)..<count {
+                    let weight = weights[i] * weights[j]
+                    var dx = x[i] - x[j], dy = y[i] - y[j]
+                    var d = (dx * dx + dy * dy).squareRoot()
+                    if d < 0.01 {
+                        // A direction fixed by the pair: the golden angle times a number of its own.
+                        let angle = (CGFloat(i * count + j) * 2.399_963_229_728_653)
+                            .truncatingRemainder(dividingBy: 2 * .pi)
+                        dx = cos(angle) * 0.01; dy = sin(angle) * 0.01; d = 0.01
+                    }
+                    guard d < 2 * repulsionK * weight.squareRoot() else { continue }
+                    let f = repulsionKSquared * weight / d
+                    let fx = dx / d * f, fy = dy / d * f
+                    forceX[i] += fx; forceY[i] += fy
+                    forceX[j] -= fx; forceY[j] -= fy
                 }
             }
 
-            // Integrate velocity and position (central node stays pinned).
-            for id in ids where id != centralKey {
-                guard var v = vel[id], var p = pos[id], let f = forces[id] else { continue }
-                v.dx = (v.dx + f.dx * dt) * damping
-                v.dy = (v.dy + f.dy * dt) * damping
-                p.x  = max(pad, min(canvasSize.width  - pad, p.x + v.dx))
-                p.y  = max(pad, min(canvasSize.height - pad, p.y + v.dy))
-                vel[id] = v;  pos[id] = p
+            // Attraction along every edge.
+            for (a, b) in springs {
+                let dx = x[a] - x[b], dy = y[a] - y[b]
+                let d = max((dx * dx + dy * dy).squareRoot(), 0.01)
+                let f = d * d / k
+                let fx = dx / d * f, fy = dy / d * f
+                forceX[a] -= fx; forceY[a] -= fy
+                forceX[b] += fx; forceY[b] += fy
+            }
+
+            // The canvas's edges, each repelling a node from its nearest point on it.
+            for i in 0..<count {
+                let gaps = (x[i] - minX, maxX - x[i], y[i] - minY, maxY - y[i])
+                forceX[i] += edgeRepulsion(gaps.0) - edgeRepulsion(gaps.1)
+                forceY[i] += edgeRepulsion(gaps.2) - edgeRepulsion(gaps.3)
+            }
+
+            // Each node moves along its force by at most the temperature, inside the canvas.
+            for i in 0..<count where i != pinned {
+                let length = (forceX[i] * forceX[i] + forceY[i] * forceY[i]).squareRoot()
+                guard length > 0 else { continue }
+                let scale = min(length, temperature) / length
+                x[i] = min(maxX, max(minX, x[i] + forceX[i] * scale))
+                y[i] = min(maxY, max(minY, y[i] + forceY[i] * scale))
             }
         }
-        return pos
+
+        var positions: [String: CGPoint] = [:]
+        for (i, id) in ids.enumerated() { positions[id] = CGPoint(x: x[i], y: y[i]) }
+        return positions
     }
 
     /// Parses each node's `dateISO` into a numeric value for the timeline layout.
@@ -1889,6 +2136,49 @@ final class CrossReferenceGraphViewModel {
             }
         }
         return ticks
+    }
+
+    // MARK: - Reference list order (#1764)
+
+    /// Whether `a` comes before `b` in a section of the reference list, and in the graph's VoiceOver
+    /// list (#1764, the owner's decision of 2026-11-01): every document before every page node, the
+    /// documents in catalogue order — by volume, then by printed number — and the pages by volume,
+    /// then page.
+    ///
+    /// Until #1764 both lists showed their nodes in the order the display builder made them, by the
+    /// key `volume/document` as a string, so a page node in an earlier volume came first: at three
+    /// hops from `frus1952-54v02p1` d16, Cited By This Document opened on `frus1948v01p2/pg_507`,
+    /// which opens nothing (#1799), and listed d11, d41, d5. Volumes and numbers compare as the
+    /// collection bibliography compares them (`CollectionGeneratedBlocks`), the way Finder compares
+    /// names, so d5 comes before d41 and `373a` between 373 and 374. A document with no printed number
+    /// comes after its volume's numbered ones, by its id; a volume cluster takes its volume's place.
+    /// - Parameters:
+    ///   - a: A node of the section.
+    ///   - b: Another node of the section.
+    /// - Returns: Whether `a` is listed first.
+    nonisolated static func precedesInReferenceList(_ a: DisplayNode, _ b: DisplayNode) -> Bool {
+        if a.isPageNode != b.isPageNode { return !a.isPageNode }
+        if let order = finderOrder(a.volumeId ?? a.id, b.volumeId ?? b.id) { return order }
+        switch (a.metadata?.documentNumber, b.metadata?.documentNumber) {
+        case (let x?, let y?):
+            if let order = finderOrder(x, y) { return order }
+        case (_?, nil): return true
+        case (nil, _?): return false
+        case (nil, nil): break
+        }
+        if let order = finderOrder(a.documentId ?? a.id, b.documentId ?? b.id) { return order }
+        return a.id < b.id
+    }
+
+    /// Whether `a` comes before `b` as Finder orders names, or `nil` when the two are the same.
+    /// Character order breaks a tie Finder's order leaves (`d05` and `d5`), so the order is total.
+    private nonisolated static func finderOrder(_ a: String, _ b: String) -> Bool? {
+        guard a != b else { return nil }
+        switch a.localizedStandardCompare(b) {
+        case .orderedAscending: return true
+        case .orderedDescending: return false
+        case .orderedSame: return a < b
+        }
     }
 
     // MARK: - Display node builder (static for testability)

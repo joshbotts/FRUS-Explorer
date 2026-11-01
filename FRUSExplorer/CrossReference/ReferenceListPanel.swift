@@ -35,6 +35,9 @@ import SwiftUI
 ///          menu's name, `CrossReferenceGraphView.openDocumentActionName`: "View Document" on
 ///          iPhone and iPad, where it read "Open in Main Window"
 ///   1.4 — #1799: a row's open button is drawn as disabled whenever it is, as for a page node
+///   1.5 — #1764: each section lists its documents in catalogue order and its page nodes after them
+///          (`CrossReferenceGraphViewModel.precedesInReferenceList`), where it listed every node by
+///          its key as a string
 struct ReferenceListPanel: View {
 
     @Bindable var vm: CrossReferenceGraphViewModel
@@ -127,11 +130,13 @@ struct ReferenceListPanel: View {
 
     // MARK: - Sections
 
-    /// Non-central nodes matching `predicate`, in display order. Reads the
-    /// *base* (unclustered) nodes so the list always shows real documents,
+    /// Non-central nodes matching `predicate`, documents in catalogue order and page nodes after
+    /// them (#1764). Reads the *base* (unclustered) nodes so the list always shows real documents,
     /// even while the canvas folds some into timeline date clusters.
     private func nodes(matching predicate: (DisplayNode) -> Bool) -> [DisplayNode] {
-        vm.baseDisplayNodes.filter { !$0.isCentral && predicate($0) }
+        vm.baseDisplayNodes
+            .filter { !$0.isCentral && predicate($0) }
+            .sorted(by: CrossReferenceGraphViewModel.precedesInReferenceList)
     }
 
     @ViewBuilder

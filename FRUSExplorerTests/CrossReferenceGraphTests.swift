@@ -1597,3 +1597,420 @@ struct CrossReferenceGraphHelpTests {
         #expect(CrossReferenceGraphView.interactHelp.contains("or open it"))
     }
 }
+
+// MARK: - The network at three hops (#1764)
+
+/// The graph the cross-reference canvas laid out at three hops from `frus1952-54v02p1` d16, as its
+/// topology: the display nodes and edges `CrossReferenceGraphViewModel.loadGraph()` built over S1's
+/// full index (553 volumes, index version 71, 2026-10-21), the library the iPad capture of #1764 was
+/// taken from, read on 2026-11-01 at `3cc517fa`.
+///
+/// `kinds` has one character per node in build order — `c` the central document, `i` inbound, `o`
+/// outbound, `e` three hops out, `u` an archival unit, `k` a central-file class — and `edges` one
+/// `source-target` pair of indexes per display edge. `connectionCounts` are the corpus-wide counts
+/// that size each disc. Node 7 is the outbound page node `frus1948v01p2/pg_507`. The archival units
+/// and classes come last, grouped by citing document in key order, as `rebuildDisplay()` appends them
+/// since #1764; two launches over the same index built the same graph in two orders of those groups.
+@MainActor
+enum D16ThreeHopFixture {
+    static let kinds =
+        "ciiiiiiooooeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" +
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeuuuuuuuuukkuuuuuuk" +
+        "uuuuuuuuuuuuuuuuuuuuuuuuuuuukuukkkkuukuuuuuuuuuuuuuuuuuuuuuuuuu"
+
+    static let edges =
+        "1-0 2-0 3-0 4-0 5-0 6-0 0-7 0-8 0-1 0-9 0-10 11-7 11-12 13-14 15-16 16-17 16-18 16-15 16-19 " +
+        "16-20 16-1 16-21 16-22 19-16 23-24 24-23 24-25 24-26 24-9 27-25 27-28 27-29 27-26 27-30 27-9 " +
+        "27-31 27-32 27-33 27-34 27-35 27-36 37-27 38-39 38-9 38-31 38-32 38-40 38-41 38-42 38-43 " +
+        "38-44 39-45 39-23 39-24 39-46 39-29 39-27 39-37 39-47 39-38 39-48 39-49 39-26 39-50 39-9 " +
+        "39-31 39-32 39-51 39-52 53-54 55-54 56-54 57-54 58-54 59-54 60-54 61-54 62-54 63-54 64-54 " +
+        "65-54 66-54 67-54 68-54 69-54 69-70 70-71 70-72 70-69 70-73 70-74 70-75 70-76 77-69 78-70 " +
+        "79-70 80-54 81-82 83-82 84-82 85-82 86-82 87-82 88-54 89-54 90-82 14-54 14-77 14-82 14-91 " +
+        "14-10 92-93 8-54 8-77 8-82 8-10 1-14 1-94 1-95 1-96 94-1 94-95 2-94 95-1 3-95 4-8 4-1 4-95 " +
+        "4-3 5-95 5-4 97-4 6-4 6-98 99-14 99-95 99-4 99-100 100-8 100-95 100-4 100-6 100-99 100-101 " +
+        "100-10 101-6 102-103 102-104 102-69 102-91 102-105 102-1 102-106 102-107 108-14 108-100 " +
+        "109-4 109-5 109-97 109-100 109-110 111-100 111-109 111-110 110-95 110-4 110-100 110-109 " +
+        "110-111 110-112 113-14 113-100 113-110 114-14 114-110 10-54 10-70 10-82 10-115 10-96 116-14 " +
+        "117-110 118-110 119-100 93-9 120-93 121-7 121-68 121-69 121-10 121-122 123-93 124-100 96-1 " +
+        "96-10 96-122 125-93 126-110 126-96 127-82 128-121 35-14 35-94 35-95 35-100 35-110 35-93 " +
+        "129-14 130-14 44-93 131-132 133-132 134-132 132-1 132-107 132-135 132-136 137-7 137-138 " +
+        "137-139 137-140 141-137 142-137 143-137 144-100 145-146 146-147 146-1 146-148 146-145 " +
+        "146-149 146-146 146-150 151-146 152-146 153-146 154-150 155-115 150-156 150-157 150-1 " +
+        "150-158 150-159 160-1 161-115 162-146 163-146 164-146 165-146 17-166 16-167 25-168 27-169 " +
+        "27-170 27-171 49-172 49-173 26-174 55-175 56-176 64-177 66-178 68-179 68-180 69-181 70-182 " +
+        "86-183 14-184 92-185 30-186 30-187 94-188 4-189 98-190 6-191 99-192 100-193 109-194 111-195 " +
+        "9-196 9-197 110-198 110-199 112-200 116-201 120-202 121-203 123-204 126-205 126-206 127-207 " +
+        "35-208 129-209 129-210 130-211 135-212 137-213 141-214 140-215 136-216 136-217 143-218 " +
+        "148-219 148-220 159-221 146-222 146-223 151-224 153-225 153-226 153-227 155-228 150-229 " +
+        "150-230 160-231 36-232 36-233 36-234 36-235 161-236 162-237 162-238 163-239 163-240 163-241 " +
+        "164-242 164-243 164-244 165-245 165-246 "
+
+    static let connectionCounts =
+        "13 17 3 3 12 4 5 4 8 12 13 2 1 2 17 8 13 68 5 2 58 1 1 8 7 6 9 23 5 10 22 4 4 3 3 70 9 2 12 " +
+        "21 2 2 1 2 4 1 9 1 4 16 3 1 2 3 22 2 2 1 8 1 1 5 3 8 11 7 7 4 33 29 12 6 8 6 8 5 1 3 3 2 3 5 " +
+        "11 30 22 4 13 2 1 10 1 7 16 10 7 17 6 2 1 5 17 2 8 28 2 3 2 32 2 10 16 5 5 6 3 3 14 1 4 6 2 " +
+        "7 3 5 20 8 5 3 2 8 10 2 7 4 6 2 4 7 52 8 9 1 8 2 5 4 17 10 5 3 10 2 1 5 17 1 7 6 4 12 1 1 12 " +
+        "8 6 14 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 " +
+        "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "
+
+    /// The canvas of the iPad capture: the iPad Pro 13-inch in landscape with the reference list
+    /// open, measured from the corner nodes the clamp held 32 pt from each edge.
+    static let canvas = CGSize(width: 1055, height: 861)
+
+    /// The central document's key.
+    static let centralKey = "frus1952-54v02p1/d16"
+
+    /// The node id at `index`: the central document's key, or a stand-in.
+    static func id(_ index: Int) -> String { index == 0 ? centralKey : "fixture/n\(index)" }
+
+    /// The display nodes, in build order.
+    static func nodes() -> [DisplayNode] {
+        kinds.enumerated().map { index, code in
+            let kind: DisplayNode.Kind
+            switch code {
+            case "c": kind = .central
+            case "i": kind = .inbound
+            case "o": kind = .outbound
+            case "e": kind = .extended
+            case "u": kind = .unit(collectionId: "unit-\(index)", name: "Unit \(index)")
+            default:  kind = .centralFileClass(key: "class-\(index)", gloss: nil)
+            }
+            return DisplayNode(id: id(index), kind: kind, metadata: nil, isDownloaded: true,
+                               degree: code == "c" ? 0 : code == "e" ? 3 : 1)
+        }
+    }
+
+    /// The display edges.
+    static func displayEdges() -> [DisplayEdge] {
+        edges.split(separator: " ").map { pair in
+            let ends = pair.split(separator: "-").compactMap { Int($0) }
+            return DisplayEdge(source: id(ends[0]), target: id(ends[1]), referenceType: .footnote, context: nil)
+        }
+    }
+
+    /// The corpus-wide connection counts, by node id.
+    static func counts() -> [String: Int] {
+        Dictionary(uniqueKeysWithValues: connectionCounts.split(separator: " ").enumerated().map {
+            (id($0.offset), Int($0.element) ?? 0)
+        })
+    }
+
+    /// The network layout the canvas draws for the graph, settled as Reduce Motion settles it.
+    static func settledLayout() -> [String: CGPoint] {
+        let nodes = nodes()
+        return CrossReferenceGraphViewModel.forceDirectedLayout(
+            nodes: nodes, edges: displayEdges(),
+            initialPositions: CrossReferenceGraphViewModel.initialPositions(
+                nodes: nodes, centralKey: centralKey, canvasSize: canvas),
+            centralKey: centralKey, canvasSize: canvas,
+            iterations: CrossReferenceGraphViewModel.layoutIterations)
+    }
+}
+
+/// What a layout looks like at the canvas's edges: the figures #1764 was measured by.
+struct NetworkLayoutCensus: CustomStringConvertible {
+    /// Nodes held at an edge of the canvas (inside `layoutPad`).
+    let atEdge: Int
+    /// Nodes held at a corner: at an edge in both directions.
+    let atCorner: Int
+    /// Pairs of nodes within half a point of each other: drawn as one.
+    let coincidentPairs: Int
+    /// Pairs whose 12 pt discs, the smallest the canvas draws, overlap.
+    let overlappingPairs: Int
+    /// The distance between the closest two nodes.
+    let closestPair: CGFloat
+
+    /// Counts `positions` on `canvas`.
+    init(_ positions: [String: CGPoint], canvas: CGSize) {
+        let pad = CrossReferenceGraphViewModel.layoutPad
+        let points = Array(positions.values)
+        func onEdge(_ value: CGFloat, _ length: CGFloat) -> Bool {
+            abs(value - pad) < 0.5 || abs(value - (length - pad)) < 0.5
+        }
+        atEdge = points.count { onEdge($0.x, canvas.width) || onEdge($0.y, canvas.height) }
+        atCorner = points.count { onEdge($0.x, canvas.width) && onEdge($0.y, canvas.height) }
+        var coincident = 0, overlapping = 0
+        var closest = CGFloat.infinity
+        for i in points.indices {
+            for j in points.indices where j > i {
+                let d = hypot(points[i].x - points[j].x, points[i].y - points[j].y)
+                closest = min(closest, d)
+                if d < 0.5 { coincident += 1 }
+                if d < 24 { overlapping += 1 }
+            }
+        }
+        coincidentPairs = coincident
+        overlappingPairs = overlapping
+        closestPair = closest
+    }
+
+    var description: String {
+        "\(atEdge) at an edge, \(atCorner) in a corner, \(coincidentPairs) coincident pairs, "
+            + "\(overlappingPairs) overlapping pairs, closest pair \(closestPair) pt"
+    }
+}
+
+@Suite("The cross-reference network at three hops (#1764)")
+@MainActor
+struct NetworkAtThreeHopsTests {
+
+    @Test("At three hops from d16 the network layout stacks no nodes and holds none in a corner")
+    func theD16NetworkStacksNothing() {
+        let positions = D16ThreeHopFixture.settledLayout()
+        let census = NetworkLayoutCensus(positions, canvas: D16ThreeHopFixture.canvas)
+        print("[#1764] d16 at three hops, 1055 × 861: \(census)")
+        #expect(positions.count == 247)
+        // Before #1764, over this order: 189 at an edge, 173 in four stacks on the corners (up to
+        // 52 a stack), 3,788 overlapping pairs, the closest at 0 pt. Measured: none at an edge, one
+        // overlapping pair, the closest 19.5 pt apart.
+        #expect(census.coincidentPairs == 0, "\(census)")
+        #expect(census.atCorner == 0, "\(census)")
+        #expect(census.atEdge == 0, "\(census)")
+        #expect(census.overlappingPairs <= 3, "\(census)")
+        let pad = CrossReferenceGraphViewModel.layoutPad
+        let canvas = D16ThreeHopFixture.canvas
+        for (id, point) in positions {
+            #expect((pad...(canvas.width - pad)).contains(point.x) && (pad...(canvas.height - pad)).contains(point.y),
+                    "\(id) at \(point)")
+        }
+        #expect(positions[D16ThreeHopFixture.centralKey] == CGPoint(x: canvas.width / 2, y: canvas.height / 2))
+    }
+
+    @Test("The animated layout's batches end where Reduce Motion's one call does")
+    func theAnimatedBatchesEndAtTheReduceMotionLayout() {
+        let nodes = D16ThreeHopFixture.nodes()
+        let edges = D16ThreeHopFixture.displayEdges()
+        let canvas = D16ThreeHopFixture.canvas
+        let central = D16ThreeHopFixture.centralKey
+        let total = CrossReferenceGraphViewModel.layoutIterations
+        let batches = CrossReferenceGraphViewModel.layoutBatches
+        var current = CrossReferenceGraphViewModel.initialPositions(nodes: nodes, centralKey: central,
+                                                                     canvasSize: canvas)
+        for batch in 0..<batches {
+            current = CrossReferenceGraphViewModel.forceDirectedLayout(
+                nodes: nodes, edges: edges, initialPositions: current, centralKey: central,
+                canvasSize: canvas, iterations: total / batches,
+                startingAt: batch * (total / batches), of: total)
+        }
+        #expect(current == D16ThreeHopFixture.settledLayout())
+    }
+
+    @Test("The central document and its direct references weigh 4 in the layout, and a graph of them alone still fits the canvas")
+    func directReferencesWeighMoreAndAGraphOfThemAloneFits() {
+        for kind: DisplayNode.Kind in [.central, .inbound, .outbound,
+                                       .clusterInbound(volumeId: "v", count: 2), .clusterOutbound(volumeId: "v", count: 2)] {
+            #expect(CrossReferenceGraphViewModel.layoutWeight(for: kind) == 4)
+        }
+        for kind: DisplayNode.Kind in [.extended, .unit(collectionId: "u", name: "U"),
+                                       .centralFileClass(key: "711.00", gloss: nil),
+                                       .dateCluster(label: "Jun 1967", count: 3, memberKeys: [])] {
+            #expect(CrossReferenceGraphViewModel.layoutWeight(for: kind) == 1)
+        }
+        // Forty-nine single-document volume clusters around the central document: every node weighs
+        // 4, so the weights cancel (`k′ = k / w̄`) and the star fills the canvas as an unweighted one
+        // would. Without that division, measured on this star in a harness, all 49 settled at the
+        // canvas's edge.
+        let graph = makeTestGraph(inboundCount: 25, outboundCount: 24,
+                                  inboundVolumeIds: (0..<25).map { "vol-in-\($0)" },
+                                  outboundVolumeIds: (0..<24).map { "vol-out-\($0)" })
+        let vm = CrossReferenceGraphViewModel(centralDocumentId: "d0", centralVolumeId: "vol1")
+        vm.graph = graph
+        vm.rebuildDisplay()
+        let canvas = CGSize(width: 800, height: 600)
+        vm.onCanvasSizeChanged(canvas, reduceMotion: true)
+        #expect(vm.displayNodes.allSatisfy { CrossReferenceGraphViewModel.layoutWeight(for: $0.kind) == 4 })
+        let census = NetworkLayoutCensus(vm.nodePositions, canvas: canvas)
+        #expect(vm.nodePositions.count == 50)
+        #expect(census.atEdge == 0, "\(census)")
+        #expect(census.overlappingPairs == 0, "\(census)")
+    }
+
+    @Test("A small graph stays near the central document rather than spreading to the canvas's edges")
+    func aSmallGraphStaysCompact() {
+        // Ten documents citing the central one, on the iPad capture's canvas: each node's share of it
+        // is 268 pt on a side, and the ideal distance is held to `layoutMaximumDistance`.
+        let graph = makeTestGraph(inboundCount: 10, outboundCount: 0)
+        let vm = CrossReferenceGraphViewModel(centralDocumentId: "d0", centralVolumeId: "vol1")
+        vm.graph = graph
+        vm.rebuildDisplay()
+        let canvas = D16ThreeHopFixture.canvas
+        let nodes = vm.displayNodes
+        #expect(nodes.count == 11)
+        let positions = CrossReferenceGraphViewModel.forceDirectedLayout(
+            nodes: nodes, edges: vm.displayEdges,
+            initialPositions: CrossReferenceGraphViewModel.initialPositions(nodes: nodes, centralKey: "vol1/d0",
+                                                                             canvasSize: canvas),
+            centralKey: "vol1/d0", canvasSize: canvas, iterations: CrossReferenceGraphViewModel.layoutIterations)
+        let centre = CGPoint(x: canvas.width / 2, y: canvas.height / 2)
+        let farthest = positions.values.map { hypot($0.x - centre.x, $0.y - centre.y) }.max() ?? 0
+        let census = NetworkLayoutCensus(positions, canvas: canvas)
+        print("[#1764] ten citing documents, 1055 × 861: \(census), the farthest \(farthest) pt from the centre")
+        #expect(census.atEdge == 0, "\(census)")
+        #expect(farthest < 2 * CrossReferenceGraphViewModel.layoutMaximumDistance, "\(farthest)")
+    }
+
+    @Test("Two nodes that start on one point move apart")
+    func coincidentNodesSeparate() throws {
+        // Two leaves of the central document on one point, as the old layout's clamp left them in
+        // a corner: their repulsion had no direction, and they stayed one disc.
+        let canvas = CGSize(width: 600, height: 400)
+        let nodes = [DisplayNode(id: "v/c", kind: .central, metadata: nil, isDownloaded: true, degree: 0),
+                     DisplayNode(id: "v/a", kind: .outbound, metadata: nil, isDownloaded: true),
+                     DisplayNode(id: "v/b", kind: .outbound, metadata: nil, isDownloaded: true)]
+        let edges = [DisplayEdge(source: "v/c", target: "v/a", referenceType: .footnote, context: nil),
+                     DisplayEdge(source: "v/c", target: "v/b", referenceType: .footnote, context: nil)]
+        let corner = CGPoint(x: 32, y: 32)
+        let positions = CrossReferenceGraphViewModel.forceDirectedLayout(
+            nodes: nodes, edges: edges,
+            initialPositions: ["v/c": CGPoint(x: 300, y: 200), "v/a": corner, "v/b": corner],
+            centralKey: "v/c", canvasSize: canvas, iterations: CrossReferenceGraphViewModel.layoutIterations)
+        let a = try #require(positions["v/a"])
+        let b = try #require(positions["v/b"])
+        #expect(hypot(a.x - b.x, a.y - b.y) > 50, "a \(a), b \(b)")
+    }
+
+    @Test("The archival nodes join the graph by citing document's key, so a graph is laid out the same at every launch")
+    func archivalNodesJoinInKeyOrder() {
+        let graph = makeTestGraph(inboundCount: 8, outboundCount: 0)
+        let vm = CrossReferenceGraphViewModel(centralDocumentId: "d0", centralVolumeId: "vol1")
+        vm.graph = graph
+        // One unit per citing document, seeded in reverse key order.
+        let citing = (0..<8).map { "vol-src/d-in-\($0)" }
+        for key in citing.reversed() {
+            vm.unitsByDocument[key] = [DisplayNode(id: "unit/\(key)/u", kind: .unit(collectionId: "u", name: "U"),
+                                                   metadata: nil, isDownloaded: true)]
+        }
+        vm.rebuildDisplay()
+        #expect(vm.baseDisplayNodes.filter(\.isUnit).map(\.id) == citing.sorted().map { "unit/\($0)/u" })
+        #expect(vm.baseDisplayEdges.suffix(8).map(\.source) == citing.sorted())
+    }
+
+    // MARK: Labels
+
+    @Test("Over the settled d16 network, labels keep clear of each other and of every disc, 24 are placed where the focus's alone was, and 7 of them name its 10 direct references")
+    func theD16NetworkPlacesClearLabels() {
+        let positions = D16ThreeHopFixture.settledLayout()
+        let nodes = D16ThreeHopFixture.nodes()
+        let counts = D16ThreeHopFixture.counts()
+        let central = D16ThreeHopFixture.centralKey
+        let order = CrossReferenceGraphViewModel.labelPriority(nodes: nodes, connectionCounts: counts,
+                                                               selectedKey: nil, focusKeys: nil)
+        #expect(order.first == central)
+        // A document's label as the canvas draws it, its number over its date, at the canvas's font
+        // sizes; an archival unit or a class has none. The sizes are `estimatedSize`'s, not a font's.
+        var sizes: [String: CGSize] = [:]
+        var radii: [String: CGFloat] = [:]
+        for (index, node) in nodes.enumerated() {
+            radii[node.id] = CrossReferenceGraphViewModel.radius(for: node.kind,
+                                                                 connectionCount: counts[node.id] ?? 1)
+            guard !node.terminatesWalk else { continue }
+            let fontSize: CGFloat = node.isCentral ? 10 : 8
+            let title = GraphNodeLabelTests.estimatedSize("Doc. \(index)", fontSize: fontSize)
+            let date = GraphNodeLabelTests.estimatedSize("Aug 15, 1952", fontSize: fontSize - 1)
+            sizes[node.id] = CGSize(width: max(title.width, date.width), height: title.height + 1 + date.height)
+        }
+        let requests = CrossReferenceGraphViewModel.labelRequests(order: order, positions: positions,
+                                                                  radii: radii, sizes: sizes)
+        #expect(requests.count == 247)
+        #expect(requests.first?.id == central)
+        // The 166 labelled nodes come first, and the 81 units and classes after them.
+        #expect(sizes.count == 166)
+        #expect(requests.prefix(166).allSatisfy { sizes[$0.id] != nil })
+        #expect(requests.dropFirst(166).allSatisfy { sizes[$0.id] == nil && $0.size == .zero })
+
+        let placed = GraphNodeLabels.place(requests).filter { sizes[$0.key] != nil }
+        print("[#1764] d16 at three hops, 1055 × 861: \(placed.count) of \(sizes.count) labels placed")
+        // Before #1764 the canvas labelled the central document alone on a graph this size. Pinned,
+        // so the count cannot drift unnoticed; the sizes are `estimatedSize`'s, not a font's.
+        #expect(placed[central] == GraphNodeLabels.labelRect(for: requests[0]))
+        #expect(placed.count == 24, "placed \(placed.count) of \(sizes.count)")
+        // The central document's own references: with every node weighing the same in the layout's
+        // repulsion, none of the ten had room for its label.
+        let direct = nodes.filter { if case .inbound = $0.kind { true } else if case .outbound = $0.kind { true } else { false } }
+        let labelledDirect = direct.filter { placed[$0.id] != nil }.count
+        print("[#1764] d16 at three hops: \(labelledDirect) of \(direct.count) direct references labelled")
+        #expect(direct.count == 10)
+        #expect(labelledDirect == 7, "\(labelledDirect) of \(direct.count)")
+        let violations = GraphNodeLabelTests.clearanceViolations(placed: placed, requests: requests)
+        #expect(violations.isEmpty, "\(violations.count) violation(s): \(violations.prefix(5))")
+        #expect(GraphNodeLabelTests.plateOverlaps(placed: placed, requests: requests).isEmpty)
+        // While the layout animates, the central document's label alone.
+        #expect(Set(GraphNodeLabels.place(requests, settling: true).keys) == [central])
+    }
+
+    @Test("Labels are offered the central document first, then the selected node, its neighbours, clusters, and the rest by connections, hops and list order")
+    func labelsAreOfferedInPriorityOrder() {
+        func node(_ id: String, _ kind: DisplayNode.Kind, degree: Int = 1) -> DisplayNode {
+            DisplayNode(id: id, kind: kind, metadata: nil, isDownloaded: true, degree: degree)
+        }
+        let nodes = [node("v1/d9", .extended, degree: 3), node("v1/d8", .outbound), node("v1/d7", .inbound),
+                     node("cluster/inbound/v2", .clusterInbound(volumeId: "v2", count: 4)),
+                     node("v1/d6", .inbound), node("v1/d5", .outbound), node("v1/d10", .inbound),
+                     node("v1/d1", .central, degree: 0)]
+        // d8 and d9 tie on connections, and d8 is fewer hops out; d7 and d10 tie on both, and d7
+        // comes first in the list, as d5 does before d6.
+        let counts = ["v1/d9": 50, "v1/d8": 50, "v1/d7": 2, "v1/d10": 2, "v1/d6": 1, "v1/d5": 1]
+        #expect(CrossReferenceGraphViewModel.labelPriority(nodes: nodes, connectionCounts: counts,
+                                                           selectedKey: nil, focusKeys: nil)
+                == ["v1/d1", "cluster/inbound/v2", "v1/d8", "v1/d9", "v1/d7", "v1/d10", "v1/d5", "v1/d6"])
+        // Selecting d6, which d5 and the central document neighbour.
+        #expect(CrossReferenceGraphViewModel.labelPriority(nodes: nodes, connectionCounts: counts,
+                                                           selectedKey: "v1/d6",
+                                                           focusKeys: ["v1/d6", "v1/d5", "v1/d1"])
+                == ["v1/d1", "v1/d6", "v1/d5", "cluster/inbound/v2", "v1/d8", "v1/d9", "v1/d7", "v1/d10"])
+    }
+
+    @Test("A node with no label is offered last at no size, the central document stays first, and a node with no position is left out")
+    func labelRequestsPutUnlabelledDiscsLast() {
+        let size = CGSize(width: 30, height: 20)
+        let point = CGPoint(x: 100, y: 100)
+        let requests = CrossReferenceGraphViewModel.labelRequests(
+            order: ["c", "unit-1", "a", "b", "unit-2"],
+            positions: ["c": point, "unit-1": point, "a": point, "unit-2": point],
+            radii: ["c": 24, "a": 15],
+            sizes: ["a": size, "b": size])
+        #expect(requests.map(\.id) == ["c", "a", "unit-1", "unit-2"])
+        #expect(requests.map(\.size) == [.zero, size, .zero, .zero])
+        #expect(requests.map(\.radius) == [24, 15, 18, 18])
+    }
+
+    // MARK: The reference list's order
+
+    @Test("A section lists its documents in catalogue order, by volume and printed number, and its page nodes after them")
+    func aSectionListsDocumentsInCatalogueOrderAndPagesLast() {
+        func node(_ id: String, number: String? = nil, kind: DisplayNode.Kind = .outbound) -> DisplayNode {
+            let parts = id.split(separator: "/", maxSplits: 1).map(String.init)
+            let metadata = number.map {
+                CrossReferenceNodeMetadata(documentId: parts[1], volumeId: parts[0], documentNumber: $0,
+                                           header: "Document \($0)", dateline: nil)
+            }
+            return DisplayNode(id: id, kind: kind, metadata: metadata, isDownloaded: true)
+        }
+        // d16's Cited By This Document as the display builder made it, by key as a string: the page
+        // node first, and d41 before d5.
+        let citedByD16 = [node("frus1948v01p2/pg_507"), node("frus1952-54v02p1/d11"),
+                          node("frus1952-54v02p1/d41"), node("frus1952-54v02p1/d5")]
+        #expect(citedByD16.sorted(by: CrossReferenceGraphViewModel.precedesInReferenceList).map(\.id)
+                == ["frus1952-54v02p1/d5", "frus1952-54v02p1/d11", "frus1952-54v02p1/d41",
+                    "frus1948v01p2/pg_507"])
+
+        // Volumes in Finder's order; within one, printed numbers in Finder's order (373a between 373
+        // and 374), then a document with none; a cluster in its volume's place; pages by volume, then
+        // page.
+        let mixed = [node("frus1952-54v02p1/pg_328"), node("frus1952-54v10/d1", number: "1"),
+                     node("frus1952-54v02p1/d1", number: "374"), node("frus1952-54v02p1/d0"),
+                     node("frus1952-54v02p1/d2", number: "373a"), node("frus1952-54v02p1/pg_49"),
+                     node("frus1952-54v02p1/d3", number: "373"), node("frus1948v01p2/pg_507"),
+                     node("cluster/outbound/frus1951v01", kind: .clusterOutbound(volumeId: "frus1951v01", count: 3)),
+                     node("frus1952-54v02p2/d1", number: "1")]
+        #expect(mixed.sorted(by: CrossReferenceGraphViewModel.precedesInReferenceList).map(\.id)
+                == ["cluster/outbound/frus1951v01",
+                    "frus1952-54v02p1/d3", "frus1952-54v02p1/d2", "frus1952-54v02p1/d1", "frus1952-54v02p1/d0",
+                    "frus1952-54v02p2/d1", "frus1952-54v10/d1",
+                    "frus1948v01p2/pg_507", "frus1952-54v02p1/pg_49", "frus1952-54v02p1/pg_328"])
+        // A page node is one whatever its page is called.
+        #expect(node("frus1952-54v02p1/pg_III").isPageNode)
+        #expect(!node("frus1952-54v02p1/d16").isPageNode)
+        #expect(!node("cluster/outbound/frus1951v01", kind: .clusterOutbound(volumeId: "frus1951v01", count: 3)).isPageNode)
+    }
+}
