@@ -8784,4 +8784,6 @@ Further findings the owner may add: Speaker Jim Wright's four anchors, 109156's 
 - The full unit target on the iPhone 17 (iOS 27.0, `80CF0F18`): *Test run with 7828 tests in 937 suites passed*, 37 skipped, none failed, `** TEST SUCCEEDED **`, the v15 test in its log; its only warning lines the `GeneratedSummary` residue and the AppIntents note.
 - The Mac build: `FRUSExplorerMac`, DirectDistribution, unsigned: `** BUILD SUCCEEDED **`, with the same two residues.
 
-**Not done:** the UI suites, iOS 26.x, a device; the Mac app was built and not run, and no library's rollup was rebuilt by the app. Closing #1767, moving the memos to `Planning/Completed/` and filing the upstream reports wait for the owner. Not pushed; no pull request.
+**Not done:** the UI suites, iOS 26.x, a device; the Mac app was built and not run, and no library's rollup was rebuilt by the app. Closing #1767, moving the memos to `Planning/Completed/` and filing the upstream reports wait for the owner.
+
+**Opened as #1826** on the owner's word of 2026-11-01 ("Push and open PR"), against `v2` at `3cc517fa`, which had not moved since the branch was cut; not merged. Its body is the draft kept in the session group's notes folder (`1767-follow-up-pr-draft.md`).
