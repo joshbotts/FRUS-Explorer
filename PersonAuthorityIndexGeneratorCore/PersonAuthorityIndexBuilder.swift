@@ -133,6 +133,12 @@ public enum PersonAuthorityIndexBuilder {
         /// The rule each Wikidata and VIAF id passes before it is stamped, when ``takesIdentifiers``
         /// (#1767): ``PersonIdentifierRule``, over the committed Wikidata snapshot.
         public let identifierRule: PersonIdentifierRule?
+        /// Anchors no source answers and no record is the person of, which no correction can name
+        /// (#1767's follow-up): `PersonsCompleteCorrections.StandsApart`.
+        public let standingApart: [PersonsCompleteCorrections.StandsApart]
+        /// Identifiers an entry carrying several people offers, each kept off the one record it is not
+        /// the person of (#1767's follow-up): `PersonsCompleteCorrections.Withheld`.
+        public let withheld: [PersonsCompleteCorrections.Withheld]
 
         public init(entries: [PersonsCompleteOverlay.Entry],
                     flaggedPeopleIds: Set<String>,
@@ -140,7 +146,9 @@ public enum PersonAuthorityIndexBuilder {
                     corrections: [PersonsCompleteCorrections.HeldApart] = [],
                     takesIdentifiers: Bool = false,
                     assigned: [PersonsCompleteCorrections.Assigned] = [],
-                    identifierRule: PersonIdentifierRule? = nil) {
+                    identifierRule: PersonIdentifierRule? = nil,
+                    standingApart: [PersonsCompleteCorrections.StandsApart] = [],
+                    withheld: [PersonsCompleteCorrections.Withheld] = []) {
             self.entries = entries
             self.flaggedPeopleIds = flaggedPeopleIds
             self.roleCharacterLimit = roleCharacterLimit
@@ -148,6 +156,8 @@ public enum PersonAuthorityIndexBuilder {
             self.takesIdentifiers = takesIdentifiers
             self.assigned = assigned
             self.identifierRule = identifierRule
+            self.standingApart = standingApart
+            self.withheld = withheld
         }
     }
 
@@ -163,12 +173,14 @@ public enum PersonAuthorityIndexBuilder {
     /// the registry always wins a disagreement — the overlay is a different pipeline carrying
     /// 1,662 unreviewed auto-merges, and it fills gaps rather than overwriting reconciled answers.
     /// The overlay's assignments are written after it (`applyAssignments`), and the anchors its
-    /// corrections hold apart that nothing answered are the index's `apart` (#1767).
+    /// corrections hold apart that nothing answered, with those it lists as standing apart, are the
+    /// index's `apart` (#1767).
     ///
-    /// - Throws: `PersonsCompleteCorrections.Problem` when one of the overlay's corrections does not
-    ///   fit the registry or the overlay (#1657), before anything is applied, or when an assignment
-    ///   does not fit them (#1767); `WikidataSnapshot.Problem` when the identifier rule would test an
-    ///   overlay id the snapshot has no facts for (#1767), before anything is applied; or a read error.
+    /// - Throws: `PersonsCompleteCorrections.Problem` when one of the overlay's corrections, or an
+    ///   identifier it keeps off one record, does not fit the registry or the overlay (#1657, #1767),
+    ///   before anything is applied, or when an assignment or an anchor that stands apart does not fit
+    ///   them (#1767); `WikidataSnapshot.Problem` when the identifier rule would test an overlay id the
+    ///   snapshot has no facts for (#1767), before anything is applied; or a read error.
     public static func build(dataDirectory: URL, version: Int, generated: String,
                              source: String, keepVolume: ((String) -> Bool)? = nil,
                              overlay: Overlay? = nil)
@@ -217,6 +229,11 @@ public enum PersonAuthorityIndexBuilder {
                 registryName: { registry[$0]?.n }) {
                 throw misfit
             }
+            if let misfit = PersonsCompleteCorrections.misfit(
+                ofWithheld: overlay.withheld, entries: overlay.entries,
+                registryName: { registry[$0]?.n }, isKnown: { authority[$0] != nil }) {
+                throw misfit
+            }
             // An id the snapshot has no facts for would be withheld unread: the overlay or the registry
             // has moved since it was fetched, and a refresh reads it (#1767).
             if overlay.takesIdentifiers, let rule = overlay.identifierRule {
@@ -233,7 +250,10 @@ public enum PersonAuthorityIndexBuilder {
             try applyAssignments(overlay.assigned, registryCrosswalk: registryCrosswalk,
                                  crosswalk: &crosswalk, authority: &authority, registry: registry,
                                  keepVolume: keepVolume, stats: &stats)
-            apart = apartAnchors(of: overlay.corrections, crosswalk: crosswalk, keepVolume: keepVolume)
+            try checkStandingApart(overlay.standingApart, registryCrosswalk: registryCrosswalk,
+                                   crosswalk: crosswalk)
+            apart = apartAnchors(of: overlay.corrections, standingApart: overlay.standingApart,
+                                 crosswalk: crosswalk, keepVolume: keepVolume)
             stats.anchorsStandingApart = apart.values.reduce(0) { $0 + $1.count }
         }
 
@@ -269,7 +289,8 @@ public enum PersonAuthorityIndexBuilder {
     /// be stamped on, and stamped only where the rule takes it (#1767, item 1). An entry carrying several
     /// people the registry knows gives its role text only to those whose own remarks hold it (#1767,
     /// item 2): its role is one person's, and the registry writes each remark beside the anchor it came
-    /// from. Both read `registryFacts`.
+    /// from. Its VIAF id is one person's too, and is not held against the item it offers another
+    /// (`peopleTakingVIAF`). All three read `registryFacts`.
     static func applyOverlay(_ overlay: Overlay,
                              crosswalk: inout [String: [String: Int]],
                              authority: inout [String: AuthorityEntry],
@@ -281,6 +302,8 @@ public enum PersonAuthorityIndexBuilder {
         stats.overlayEntriesRead = overlay.entries.count
         var correctionsByPeopleId: [String: PersonsCompleteCorrections.HeldApart] = [:]
         for correction in overlay.corrections { correctionsByPeopleId[correction.peopleId] = correction }
+        var withheldByPeopleId: [String: PersonsCompleteCorrections.Withheld] = [:]
+        for entry in overlay.withheld { withheldByPeopleId[entry.peopleId] = entry }
 
         for entry in overlay.entries {
             // Every people-id, not just the first: 64 entries are auto-merges carrying several,
@@ -312,18 +335,31 @@ public enum PersonAuthorityIndexBuilder {
             }
             // An entry carrying several people the registry knows is one person's role text.
             let carriesSeveral = ids.count { authority[$0] != nil } > 1
+            // And its VIAF id is one person's: those of its people who carry it, or whom the rule gives it
+            // on its own holder's facts, before this entry stamps anything.
+            let viafTakers = carriesSeveral ? peopleTakingVIAF(viaf, of: ids, overlay: overlay, authority: authority,
+                                                               registryFacts: registryFacts,
+                                                               withheld: withheldByPeopleId) : []
 
             for id in ids {
                 guard let current = authority[id] else { continue }
                 var stampedWikidata: String?
                 var stampedVIAF: String?
+                // What of this entry's identifiers the file keeps off this record alone (#1767's follow-up).
+                let keptOff = withheldByPeopleId[id]
+                let offeredWikidata = wikidata == keptOff?.wikidata ? nil : wikidata
+                let offeredVIAF = viaf == keptOff?.viaf ? nil : viaf
+                stats.identifiersKeptOffOneRecord += [offeredWikidata != wikidata, offeredVIAF != viaf].count { $0 }
                 if overlay.takesIdentifiers {
                     if let rule = overlay.identifierRule {
                         let record = PersonIdentifierRule.Record(entry: current, facts: registryFacts[id])
                         // The VIAF id the record would carry: its own (the registry's, which wins, or an
                         // earlier entry's), else this entry's, whose agreement with the item corroborates it.
-                        let recordVIAF = current.v ?? viaf
-                        if current.q == nil, let wikidata {
+                        // Not this entry's when it is another of the entry's people's: Luigi R. Einaudi's own
+                        // item was withheld from him for not holding his grandfather's VIAF id.
+                        let entryVIAF = viafTakers.isEmpty || viafTakers.contains(id) ? offeredVIAF : nil
+                        let recordVIAF = current.v ?? entryVIAF
+                        if current.q == nil, let wikidata = offeredWikidata {
                             let decision = rule.decideWikidata(wikidata, for: record, recordVIAF: recordVIAF)
                             if decision.accepted {
                                 stampedWikidata = wikidata
@@ -333,7 +369,7 @@ public enum PersonAuthorityIndexBuilder {
                                     reason: decision.reason))
                             }
                         }
-                        if current.v == nil, let viaf {
+                        if current.v == nil, let viaf = offeredVIAF {
                             let decision = rule.decideVIAF(viaf, for: record,
                                                            acceptedItem: current.q ?? stampedWikidata)
                             if decision.accepted {
@@ -345,8 +381,8 @@ public enum PersonAuthorityIndexBuilder {
                             }
                         }
                     } else {
-                        stampedWikidata = wikidata
-                        stampedVIAF = viaf
+                        stampedWikidata = offeredWikidata
+                        stampedVIAF = offeredVIAF
                     }
                 }
                 var stampedRole = role
@@ -410,6 +446,29 @@ public enum PersonAuthorityIndexBuilder {
             return carried != withheld.identifier && listed.insert(key).inserted
         }
         stats.crosswalkVolumesAdded = Set(crosswalk.keys).subtracting(volumesBefore).count
+    }
+
+    /// Which of an entry's people its VIAF id `viaf` is: those who already carry it, and those the rule
+    /// stamps it on from its holders' facts, with no item this entry offers (#1767's follow-up). Empty
+    /// when the entry offers none, when the overlay takes no identifiers through a rule, or when none of
+    /// them takes it. A record the file keeps the VIAF id off (`withheld`) never takes it.
+    ///
+    /// An entry carrying several people gives its VIAF id to one of them, as it gives its role text: the
+    /// rule then compares the item it offers another with that person's VIAF id no more. `FRUS-07952`
+    /// carries the President of Italy (103878) and his grandson Luigi R. Einaudi (103879), with the
+    /// grandson's item and the President's VIAF id, which the President takes through its holder, `Q1242`;
+    /// held against the grandson's own item, the VIAF id withheld it (`viaf-held-by-other-item`).
+    static func peopleTakingVIAF(_ viaf: String?, of ids: [String], overlay: Overlay,
+                                 authority: [String: AuthorityEntry],
+                                 registryFacts: [String: RegistryFacts],
+                                 withheld: [String: PersonsCompleteCorrections.Withheld] = [:]) -> Set<String> {
+        guard let viaf, overlay.takesIdentifiers, let rule = overlay.identifierRule else { return [] }
+        return Set(ids.filter { id in
+            guard let current = authority[id], withheld[id]?.viaf != viaf else { return false }
+            if let own = current.v { return own == viaf }
+            let record = PersonIdentifierRule.Record(entry: current, facts: registryFacts[id])
+            return rule.decideVIAF(viaf, for: record, acceptedItem: current.q).accepted
+        })
     }
 
     /// The entry's Wikidata id, VIAF id and role text, less what its corrections withhold (#1657).
@@ -494,8 +553,9 @@ public enum PersonAuthorityIndexBuilder {
     }
 
     /// The anchors that belong to no reconciled person (#1767): each anchor a correction holds apart,
-    /// in a kept volume, that no source answered and no join or assignment placed. No record could be
-    /// shown to be their person's: where one is, the correction joins it or an assignment names it.
+    /// in a kept volume, that no source answered and no join or assignment placed, and each the file
+    /// lists as standing apart. No record could be shown to be their person's: where one is, the
+    /// correction joins it or an assignment names it.
     ///
     /// Left uncovered and unmarked, the app's clusterer can join such an anchor by name to the person
     /// it was held apart from: nine did, among them Hamilton Fish III and IV under the Secretary of
@@ -504,16 +564,40 @@ public enum PersonAuthorityIndexBuilder {
     ///
     /// - Returns: `volumeId → [ref]`, refs sorted; empty when every held-apart anchor is answered.
     static func apartAnchors(of corrections: [PersonsCompleteCorrections.HeldApart],
+                             standingApart: [PersonsCompleteCorrections.StandsApart] = [],
                              crosswalk: [String: [String: Int]],
                              keepVolume: ((String) -> Bool)?) -> [String: [String]] {
         var apart: [String: Set<String>] = [:]
-        for correction in corrections {
-            for anchor in correction.parsedAnchors
-            where (keepVolume?(anchor.volumeId) ?? true) && crosswalk[anchor.volumeId]?[anchor.ref] == nil {
-                apart[anchor.volumeId, default: []].insert(anchor.ref)
-            }
+        let anchors = corrections.flatMap(\.parsedAnchors) + standingApart.compactMap(\.parsedAnchor)
+        for anchor in anchors
+        where (keepVolume?(anchor.volumeId) ?? true) && crosswalk[anchor.volumeId]?[anchor.ref] == nil {
+            apart[anchor.volumeId, default: []].insert(anchor.ref)
         }
         return apart.mapValues { $0.sorted() }
+    }
+
+    /// Checks the anchors the file lists as standing apart against every source's answer (#1767's
+    /// follow-up), so that one a source has since answered never stands apart silently.
+    ///
+    /// - Parameters:
+    ///   - registryCrosswalk: The crosswalk the registry alone gave, before the overlay.
+    ///   - crosswalk: The crosswalk after the overlay, its joins and the assignments.
+    /// - Throws: `PersonsCompleteCorrections.Problem` when the registry answers for one, or an overlay
+    ///   entry gives one to a record.
+    static func checkStandingApart(_ standingApart: [PersonsCompleteCorrections.StandsApart],
+                                   registryCrosswalk: [String: [String: Int]],
+                                   crosswalk: [String: [String: Int]]) throws {
+        for entry in standingApart {
+            guard let anchor = entry.parsedAnchor else { continue }
+            if let answer = registryCrosswalk[anchor.volumeId]?[anchor.ref] {
+                throw PersonsCompleteCorrections.Problem.standsApartAnsweredByRegistry(
+                    anchor: entry.anchor, registry: answer)
+            }
+            if let answer = crosswalk[anchor.volumeId]?[anchor.ref] {
+                throw PersonsCompleteCorrections.Problem.standsApartAnsweredByOverlay(
+                    anchor: entry.anchor, overlay: answer)
+            }
+        }
     }
 
     /// Puts the registry's record for `peopleId` in `authority` when a join or an assignment has

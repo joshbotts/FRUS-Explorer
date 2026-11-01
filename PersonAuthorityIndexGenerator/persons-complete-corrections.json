@@ -1,5 +1,5 @@
 {
-  "about" : "Entries of frus-name-authority's persons-complete.xml that merge two people, and what of each belongs to someone other than the person the entry is keyed to. PersonAuthorityIndexGenerator reads this file whenever it applies the overlay: for an entry carrying peopleId, the listed anchors join none of the entry's people-ids, and the listed Wikidata or VIAF id, and the listed role text, are stamped on none of them; the rest of the entry applies as before. Where joins names the other person's registry record, the listed anchors join it wherever no source answers for them. An identifier or role text is listed when it is not the keyed person's: the other person's, or someone else's that the reconciliation matched by name (each read on wikidata.org or viaf.org). A run refuses to write when the registry names peopleId otherwise than registryName or names joins.peopleId otherwise than joins.registryName, or when no entry carrying peopleId lists an anchor, identifier or role text given here. A listed anchor that no source answers and no join places belongs to no reconciled person, and the bundle lists it as apart, so the app never joins it to one by name. A join may name a registry record with no FRUS anchor of its own, which the bundle then keeps for the anchors it receives. assigned names anchors that no source gives to anyone, each with the registry record it belongs to, and each is written there; a run refuses to write when the registry names peopleId otherwise than registryName, when the registry answers for the anchor, or when an overlay entry gives it to another record. See PersonsCompleteCorrections.swift and Planning/Generators-Runbook.md.",
+  "about" : "Entries of frus-name-authority's persons-complete.xml that merge two people, and what of each belongs to someone other than the person the entry is keyed to. PersonAuthorityIndexGenerator reads this file whenever it applies the overlay: for an entry carrying peopleId, the listed anchors join none of the entry's people-ids, and the listed Wikidata or VIAF id, and the listed role text, are stamped on none of them; the rest of the entry applies as before. Where joins names the other person's registry record, the listed anchors join it wherever no source answers for them. An identifier or role text is listed when it is not the keyed person's: the other person's, or someone else's that the reconciliation matched by name (each read on wikidata.org or viaf.org). A run refuses to write when the registry names peopleId otherwise than registryName or names joins.peopleId otherwise than joins.registryName, or when no entry carrying peopleId lists an anchor, identifier or role text given here. A listed anchor that no source answers and no join places belongs to no reconciled person, and the bundle lists it as apart, so the app never joins it to one by name. A join may name a registry record with no FRUS anchor of its own, which the bundle then keeps for the anchors it receives. assigned names anchors that no source gives to anyone, each with the registry record it belongs to, and each is written there; a run refuses to write when the registry names peopleId otherwise than registryName, when the registry answers for the anchor, or when an overlay entry gives it to another record. standsApart names anchors that no source gives to anyone, that no overlay entry carrying a people-id lists, and whose person has no registry record; the bundle lists each as apart, and a run refuses to write when the registry or an overlay entry answers for one. withheld names an identifier that an entry carrying several people offers, kept off the one record of the entry it is not the person of, where a correction would withhold it from all of them; a run refuses to write when the registry names peopleId otherwise than registryName, when no entry carrying peopleId offers the identifier, or when every entry that does carries no one else. See PersonsCompleteCorrections.swift and Planning/Generators-Runbook.md.",
   "heldApart" : [
     {
       "peopleId" : "107235",
@@ -1203,6 +1203,61 @@
       "viaf" : null,
       "role" : null,
       "reason" : "Entry FRUS-07370 carries people-ids 115397, Donovan, James (Colonel, USAF, Center for Defense Information), and 103588, Donovan, James B. Its 1961-1963 microfiche supplement anchor,\"Donovan, James B., New York lawyer\" of the Bay of Pigs prisoner release, went to 115397. Held apart from both, it joins 103588; the entry's role text and identifiers are not divided here."
+    },
+    {
+      "peopleId" : "108175",
+      "registryName" : "Luce, William",
+      "otherPerson" : "Luce, William Aubert (1931-2019), American writer, playwright and librettist (Q8014767)",
+      "anchors" : [],
+      "joins" : null,
+      "wikidata" : "Q8014767",
+      "viaf" : "1449382",
+      "role" : null,
+      "reason" : "Entry FRUS-16687 carries people-id 108175, Luce, William (Sir William Luce: \"British Political Resident in the Persian Gulf from 1961\"; \"Deputy Undersecretary in the British Foreign Office, Ambassador and Special Representative to the Persian Gulf\"; 1961-1963 vols. XVII and XVIII, 1969-1976 vol. XXIV), with Wikidata Q8014767 and VIAF 1449382. Both are the American writer William Aubert Luce's (1931-2019; librettist and playwright), whose item holds the VIAF id, read on wikidata.org on 2026-11-01. The two agree with each other, so the identifier rule keeps both; the identifier assessment read Q8014767 as someone else's (#1767)."
+    },
+    {
+      "peopleId" : "113545",
+      "registryName" : "Thompson, Warren E.",
+      "otherPerson" : "Thompson, Warren E. (born 1938), American historian (Q15429518)",
+      "anchors" : [],
+      "joins" : null,
+      "wikidata" : "Q15429518",
+      "viaf" : "117163651",
+      "role" : null,
+      "reason" : "Entry FRUS-27581 carries people-id 113545, Thompson, Warren E. (\"chemist, National Science Foundation; member, National Security Council Ad Hoc Group on Population Policy\", 1977-1980 vol. II), with Wikidata Q15429518 and VIAF 117163651. Both are a namesake's, Warren E. Thompson, American historian, born 1938, whose item holds the VIAF id, read on wikidata.org on 2026-11-01. The two agree with each other, so the identifier rule keeps both; the identifier assessment read Q15429518 as someone else's (#1767)."
+    },
+    {
+      "peopleId" : "108250",
+      "registryName" : "MacArthur, Douglas",
+      "otherPerson" : "MacArthur, Douglas, II (registry 108251), the diplomat, 1909-1997 (Q269483)",
+      "anchors" : [],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : "7088488",
+      "role" : null,
+      "reason" : "Entry FRUS-16841 carries people-id 108250, MacArthur, Douglas (the General: \"Commanding General, United States Armed Forces in the Pacific; Supreme Commander, Allied Powers in Japan\"), with Wikidata Q127417, the General's own item (United States Army general, 1880-1964), and VIAF 7088488, which Q269483 holds, Douglas MacArthur II, his nephew, the diplomat (1909-1997; Ambassador to Japan), read on wikidata.org on 2026-11-01. The nephew's own entry gives the same VIAF id to his record, 108251. The identifier rule stamped the VIAF id on the General through the word Japan, and held his own item against it and withheld it (viaf-held-by-other-item). With the VIAF id withheld, the item is tested alone (#1767)."
+    },
+    {
+      "peopleId" : "103111",
+      "registryName" : "Dahrendorf, Gustav",
+      "otherPerson" : "Dahrendorf, Ralf (1929-2009), his son, German-British sociologist and politician (Q76959)",
+      "anchors" : [],
+      "joins" : null,
+      "wikidata" : "Q76959",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-06357 carries people-id 103111, Dahrendorf, Gustav (\"Vice President of the Economic Council in the U.S.–U.K. zones of occupation of Germany\", 1948 vol. II), with Wikidata Q76959, his son's: Ralf Dahrendorf, German-British sociologist and politician (1929-2009), read on wikidata.org on 2026-11-01. The identifier rule takes it: \"Ralf G.\" fits Gustav by its initial, and Germany is the one word the remark and the item share. Leaving countries out of the role words would also have withheld it, with 17 right ids (#1767; the owner chose this correction on 2026-11-01)."
+    },
+    {
+      "peopleId" : "105525",
+      "registryName" : "Haq, Inam-ul",
+      "otherPerson" : "Inam-ul-Haq (born 1940), Pakistani diplomat, Foreign Secretary of Pakistan (Q3149781)",
+      "anchors" : [],
+      "joins" : null,
+      "wikidata" : "Q3149781",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-11306 carries people-id 105525, Haq, Inam-ul, whom 1969-1976 vols. XI and E-7 print as \"Haq, Major General Inam-ul, Director General, Defense Procurement, Pakistan Ministry of Defense\" (1971), with Wikidata Q3149781, a namesake's: Inam-ul-Haq, Pakistani diplomat born in 1940, later Foreign Secretary, read on wikidata.org on 2026-11-01. The identifier rule takes it on the one word the remark and the item share, Pakistan (#1767; the owner chose this correction on 2026-11-01)."
     }
   ],
   "assigned" : [
@@ -1247,6 +1302,22 @@
       "peopleId" : "114818",
       "registryName" : "Wright, Jim",
       "reason" : "1981-1988 vol. XLIV Part 1's \"Wright, James, member, U.S. House of Representatives (D–Texas); Speaker of the House from January 6, 1987\". No source gives the anchor to anyone, and the app's rollup joined it by name to Sir Oliver Wright (114825): \"James\" fits his \"J.\", and the role check counted \"from\" as a word this role shares with 1981-1988 vol. XIII's \"Wright, Sir J. Oliver, British Ambassador to the United States from September 1982\". Registry 114818, Wright, Jim, holds 1977-1980 vol. XXI's \"Wright, Jim, member, U.S. House of Representatives (D-Texas); House Majority Leader\", which \"James\" never fits, since the clusterer folds no nickname (#1767)."
+    }
+  ],
+  "standsApart" : [
+    {
+      "anchor" : "frus1917-72PubDipv06/persons#p_WER_1",
+      "name" : "Wheeler, E. Romney",
+      "reason" : "Public Diplomacy vol. VI's \"Wheeler, E. Romney, Director, Television Service, United States Information Agency, until 1962\", printed in no other volume of the manifest. No registry record holds the name, among those with no FRUS anchor too, and his overlay entry, FRUS-29510, carries no people-id, so no correction can name the anchor. The app's rollup joined it by name to General Earle G. Wheeler (114476, Chief of Staff of the Army, then Chairman of the Joint Chiefs of Staff), whose entry in the same list sits beside it (#1767)."
+    }
+  ],
+  "withheld" : [
+    {
+      "peopleId" : "116214",
+      "registryName" : "Truman, Harry",
+      "wikidata" : "Q11613",
+      "viaf" : null,
+      "reason" : "Entry FRUS-28039 carries people-id 116214, Truman, Harry (\"U. S. A., nephew of the President\", the Berlin (Potsdam) Conference volume II), and 113770, Truman, Harry S., the President, with Q11613, the President's own item (1884-1972), read on wikidata.org on 2026-11-01. The identifier rule gives it to the nephew as well, on the word President in his remark, and a correction would take it from the President too. Kept off the nephew alone (#1767; the owner's decision of 2026-11-01)."
     }
   ]
 }

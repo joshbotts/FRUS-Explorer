@@ -8731,6 +8731,63 @@ Mutation, after a checkpoint commit: the synthesis budget taken from the reader'
 
 **Pushed and opened as #1825** against `v2` on the owner's word ("Push and open PR", 2026-11-01).
 
+## Session 2026-11-01 — #1767's follow-up: E. Romney Wheeler stands apart, Luigi R. Einaudi and General MacArthur take their own items, five wrong ids leave the bundle, and the reports for upstream are drafted
+
+From `v2` at `3cc517fa`, on `claude/priceless-hopper-b53acf`, on the brief of the session that asked (the person-authority problems #1767's two lanes found and left: #1815's and #1816's bodies, and the assessment). Generator code, the corrections file, the regenerated `person-authority-index.json`, and the kit's rollup version (v15). No index version, no CloudKit change. #1767 stays open; the memos stay in `Planning/`.
+
+**The owner's answers** (decisions 107 and 108), asked in this session: "Withhold from nephew", and "Correct the two by data".
+
+**The control.** The generator at the base, in a detached worktree, run with the shipped file's `GENERATED_DATE=2026-10-30`, reproduced it byte for byte (SHA-256 `210c13e3…`; people `63b537ad`, still `master` by `git ls-remote`; name-authority at `51aa742`).
+
+**Item 1, E. Romney Wheeler.** Public Diplomacy vol. VI prints "Wheeler, E. Romney, Director, Television Service, United States Information Agency, until 1962" beside "Wheeler, Earle G." (114476). No other manifest volume prints him; no registry record holds the name, including those with no FRUS anchor; and his overlay entry, FRUS-29510, carries no people-id. So no correction can name the anchor, since a correction is keyed by the people-id of an entry that lists it, and no join or assignment has a record to name. The corrections file gains `standsApart`, whose anchors the bundle lists as `apart`; the run refuses to write when the registry or an overlay entry answers one.
+
+**Item 2, the countries.** Added to the role-word exclusions beside the nationalities, as the brief asked, they took 19 ids off the bundle against the control. Read one by one, 2 were wrong: Gustav Dahrendorf's son Ralf's item, and Q3149781, a diplomat born in 1940, on "Haq, Major General Inam-ul, Director General, Defense Procurement" of 1971. The other 17 were right, foreign officials whose only word in common with their item is their country: Kiichi Aichi, Jacques Andreani, J. A. Ankrah's and Aquilino Boyd's VIAF ids, Cheng Heng, Rafic Jouejati, Liu Chieh, Charles Malo, Tatsuo Murayama, Nguyen Xuan Phong, Pham Dang Lam, Nander Pitty Velásquez, Andrés Rozental, Saukam Khoy, Adonis Sepúlveda, Vo Van Sung and Yang Hsi-kun. The owner chose to leave the countries as role words and withhold the two by correction; a test pins a country as a role word, with the measurement.
+
+**Item 3, Truman's nephew** (116214, "U. S. A., nephew of the President"; no years; the Berlin volume II alone). FRUS-28039 carries him and the President with Q11613, and a correction withholds from every people-id of an entry. On the owner's word the file gains `withheld`, which keeps an identifier off one record of an entry carrying several people; its one entry keeps Q11613 off the nephew, and the President keeps it.
+
+**Item 4, Einaudi.** FRUS-07952 carries the President of Italy (103878) and Luigi R. Einaudi (103879), with the grandson's item and the grandfather's VIAF id. The rule gives the President the VIAF id through its holder, Q1242, and then, testing the grandson's own item against the VIAF id he would carry, the entry's, withheld it (`viaf-held-by-other-item`). The narrow fix is in the builder: on an entry carrying several people, the entry's VIAF id that one of them carries, or takes on its holder's facts with no item of the entry's, is not held against the item offered to another. Measured over the 31 entries carrying several known people, it moves Einaudi's item and nothing else.
+
+**Item 5, the five reads lane B kept although they name someone else.** All five are fixed by data:
+- Truman's nephew, by `withheld`;
+- Gustav Dahrendorf (Q76959), by a correction;
+- Warren E. Thompson, a chemist at the NSF, by a correction withholding Q15429518 and VIAF 117163651, both a historian born in 1938's;
+- Sir William Luce, by a correction withholding Q8014767 and VIAF 1449382, both an American librettist's (1931–2019);
+- General MacArthur's VIAF id 7088488, his nephew Douglas MacArthur II's, by a correction. Withheld, it leaves the General's own item, Q127417, tested alone, and the rule takes it on *army*.
+
+Each id was read on wikidata.org on 2026-11-01. viaf.org answered HTTP 500 to three cluster reads that day, and each VIAF id is held on Wikidata by the item named. Nothing stays wrong among the reads. The reads now score 100%, which no longer estimates the bundle: the corrections were chosen from them.
+
+**Item 6, upstream.** `Planning/Person-Authority-Upstream-Reports-2026-11-01.md` drafts three issues for `HistoryAtState/people`, each anchor beside its volume's own entry:
+- the merges at 113000 (Adlai Stevenson II, with ten of the Senator's anchors), 114659 (Charles Erwin Wilson, with Charles Edward Wilson's Defense Mobilization anchors and Representative Charlie Wilson's) and 104298 (the Secretary of State Hamilton Fish, whose one anchor is Hamilton Fish IV's);
+- the duplicate records for Leslie Rowan (111676, 116055), Donald Regan (116022, 116023) and Tran Buu Kiem (113344, misprinted "Tan", and 113686);
+- Sir Oliver Wright's two 1981–1988 anchors, which no record holds.
+
+Further findings the owner may add: Speaker Jim Wright's four anchors, 109156's William G. Miller anchor, and 102311's two (Raul H. Castro's, and Fidel Castro's). None is filed: filing on another repository waits for the owner's word.
+
+**The new file against the control**, record for record: 10 identifiers move and one anchor joins `apart`, and nothing else; the crosswalk, names, years, slugs and role texts are the control's.
+- Wikidata 1,859 → 1,856: Einaudi's and the General's own items in; Luce's, Thompson's, Dahrendorf's, Inam-ul-Haq's and the nephew's out.
+- VIAF 1,610 → 1,607: Luce's, Thompson's and the General's out.
+- `apart` 69 → 70.
+
+`pocom-index.json` is not owed.
+
+**The census (v15)**: S1's full library (553 volumes at index v71, 63,667 members) rebuilt through the kit with lane B's file and with this one, in a throwaway package test (not committed). One member changes person, E. Romney Wheeler, from General Earle G. Wheeler's 61-member rollup to one of his own; rollups 18,024 → 18,025; candidate pairs 171 → 172, the new one the two Wheelers ("name variant; era overlaps; role differs"); 1,607 rollups carry a `viaf_id` where 1,610 did. Every other member's rollup keeps its name. A rebuild took 13.0 s against 13.2 s. The control's rebuild gives lane B's v14 figures (18,024, 171, 1,610). The v15 note carries these.
+
+**Docs.** The generator's runbook entry; the three memos, each pointed here; the plan of record (decisions 107 and 108, and the #1767 line, which now says lane B merged as `cb463e33`); the version notes (`IndexingPipeline` 4.52 and v15, `PersonsCompleteCorrections` 1.3); the corrections file's `about`. The manuals are not owed: 1,856 of 12,839 records (about one in seven) carry a Wikidata link and 1,607 (about one in eight) a VIAF link, as their People sentence says.
+
+**For the web edition.** The kit's `currentPersonRollupVersion` is 15; nothing else in the kit changes. The bundled file gains one `apart` anchor and moves ten identifiers, in the same schema. The generator and the corrections file are not shared code.
+
+**Checks.**
+- The control at the base, above. The final file, written with `GENERATED_DATE=2026-11-01` (2,475,310 bytes, SHA-256 `16b601c5…`), equals the measured branch file apart from the stamp.
+- The shipped-file tests fail against the control's file (four tests, 19 issues: the re-score, both bundled-index tests and the held-apart test) and pass against the new one.
+- `swift build --target FRUSCoreKit`: clean.
+- `swift test`: exit 0; 38 runs, 3,267 tests in 394 suites, none failed (the generator's suites ran 89 tests in 5).
+- The full unit target on the iPhone 17 (iOS 27.0, `80CF0F18`): *Test run with 7828 tests in 937 suites passed*, 37 skipped, none failed, `** TEST SUCCEEDED **`, the v15 test in its log; its only warning lines the `GeneratedSummary` residue and the AppIntents note.
+- The Mac build: `FRUSExplorerMac`, DirectDistribution, unsigned: `** BUILD SUCCEEDED **`, with the same two residues.
+
+**Not done:** the UI suites, iOS 26.x, a device; the Mac app was built and not run, and no library's rollup was rebuilt by the app. Closing #1767, moving the memos to `Planning/Completed/` and filing the upstream reports wait for the owner.
+
+**Opened as #1826** on the owner's word of 2026-11-01 ("Push and open PR"), against `v2` at `3cc517fa`, which had not moved since the branch was cut; not merged. Its body is the draft kept in the session group's notes folder (`1767-follow-up-pr-draft.md`).
+
 ## Session 2026-11-01 — A summary call whose answer runs past the model's window is made once more, and a second overrun reads as a sentence
 
 **What was asked.** The follow-up the owner chose on 2026-10-31 (the budget entry above, decision 3). The window holds the prompt and the answer together, and the budget bounds the prompt only. So now and then the model writes on until the window ends it, and the call throws `contextSizeExceeded` only once the whole answer is written. `SummarizationRetryPolicy` rightly does not retry that error for a prompt that is too long, so one runaway failed the whole summary. The task: measure it, design a retry for an answer that overran, consider a capped-response check, and ask the owner before changing anything. Measured against `claude/summary-context-budget` (a2facbb6), which merged as #1825 while this ran.

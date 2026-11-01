@@ -39,7 +39,8 @@ import Foundation
 /// What agrees: the registry's life years (a birth or death year within one of the item's), the VIAF id
 /// the record would carry, held by the item, or a word of the record's own registry remarks in the item's
 /// description, positions, occupations or employers (four letters or more, not a stopword, a nationality
-/// or the record's surname).
+/// or the record's surname). A country is a role word: left out with the nationalities, it took 17 right
+/// ids off the bundle to take 2 wrong ones (#1767's follow-up, measured 2026-11-01).
 ///
 /// ## A VIAF id
 /// Kept when the item the record carries, or is about to, holds it; or when an item that holds it passes
