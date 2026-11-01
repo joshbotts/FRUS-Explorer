@@ -32,6 +32,8 @@ private let systemHasLanguageModelError: Bool = {
 ///   1.1 — #1765: `contentRefused`, and both framework error families
 ///   1.2 — 2026-10-31: a structured answer without its headings is a refusal; the structured sentence
 ///          without its stricter-rules clause
+///   1.3 — 2026-11-01: an answer that ran past the window is terminal for the document, is told from a
+///          prompt over it, and reads as a plain sentence
 @Suite("Summarization retry policy")
 struct SummarizationRetryPolicyTests {
 
@@ -93,6 +95,15 @@ struct SummarizationRetryPolicyTests {
         #expect(!SummarizationRetryPolicy.isRetryable(SummarizationError.synthesisFailed(underlying: refused)))
     }
 
+    /// `SummarizationService` has already made that call a second time (2026-11-01): retrying the
+    /// document would re-run every call before it to reach the same one.
+    @Test("An answer that ran past the window twice is not retried, in either pass")
+    func overrunsAreTerminal() {
+        let overran = SummarizationError.answerOverranWindow
+        #expect(!SummarizationRetryPolicy.isRetryable(overran))
+        #expect(!SummarizationRetryPolicy.isRetryable(SummarizationError.synthesisFailed(underlying: overran)))
+    }
+
     /// iOS and macOS 26 throw `GenerationError`; the arms for it were never run before #1765, since the
     /// errors were thought impossible to build in a test.
     @Test("GenerationError's guardrail stop and refusal are terminal, its rate limit is not")
@@ -136,6 +147,7 @@ struct SummarizationRetryPolicyTests {
             SummarizationError.providerUnavailable,
             SummarizationError.emptyDocumentText,
             SummarizationError.contentRefused(structured: false),
+            SummarizationError.answerOverranWindow,
             SummarizationError.synthesisFailed(underlying: MysteryError()),
             CancellationError(),
             MysteryError(),
@@ -242,6 +254,78 @@ struct SummarizationRefusalTests {
 
         let inSynthesis = SummarizationError.synthesisFailed(
             underlying: SummarizationError.contentRefused(structured: false))
+        #expect(inSynthesis.errorDescription == plain)
+        #expect(inSynthesis.localizedDescription == plain)
+    }
+}
+
+// MARK: - SummarizationOverflowTests
+
+/// How the provider tells an answer that ran past the model's window from a prompt that was over it,
+/// and how the first reaches the reader (2026-11-01). The model is not run: the framework's errors are
+/// built from their public initialisers, and the counts are the ones measured on a Mac under macOS 27.2.
+@Suite("Summarization window overflows")
+struct SummarizationOverflowTests {
+
+    /// An error that is not an overflow.
+    private struct MysteryError: Error {}
+
+    @Test("GenerationError's window overflow is an overflow; its other errors are not")
+    func generationErrorOverflow() {
+        let context = LanguageModelSession.GenerationError.Context(debugDescription: "test")
+        #expect(AppleIntelligenceProvider.isContextOverflow(
+            LanguageModelSession.GenerationError.exceededContextWindowSize(context)))
+        #expect(!AppleIntelligenceProvider.isContextOverflow(
+            LanguageModelSession.GenerationError.guardrailViolation(context)))
+        #expect(!AppleIntelligenceProvider.isContextOverflow(
+            LanguageModelSession.GenerationError.rateLimited(context)))
+        #expect(!AppleIntelligenceProvider.isContextOverflow(MysteryError()))
+        #expect(!AppleIntelligenceProvider.isContextOverflow(SummarizationError.answerOverranWindow))
+    }
+
+    @Test("LanguageModelError's window overflow is an overflow; its other errors are not",
+          .enabled(if: systemHasLanguageModelError, "LanguageModelError is iOS 27 and later"))
+    func languageModelErrorOverflow() {
+        guard #available(iOS 27.0, macOS 27.0, *) else { return }
+        #expect(AppleIntelligenceProvider.isContextOverflow(
+            LanguageModelError.contextSizeExceeded(.init(contextSize: 8_192, tokenCount: 8_194,
+                                                         debugDescription: "test"))))
+        #expect(!AppleIntelligenceProvider.isContextOverflow(
+            LanguageModelError.refusal(.init(explanation: "No.", debugDescription: "test"))))
+        #expect(!AppleIntelligenceProvider.isContextOverflow(
+            LanguageModelError.timeout(.init(debugDescription: "test"))))
+    }
+
+    /// Measured: a prompt of 13,194 tokens was refused in 0.1 s as `contextSizeExceeded(8192, 13248)`;
+    /// one of 8,023 failed after 11.1 s as `contextSizeExceeded(8192, 8194)`, and NSC 68's reduce prompt
+    /// of 3,598 after 119 s as `(8192, 8193)`.
+    @Test("An overflow is the answer's when the prompt's own count is under the window")
+    func answerOrPrompt() {
+        #expect(AppleIntelligenceProvider.answerOverranWindow(promptTokens: 8_023, contextSize: 8_192))
+        #expect(AppleIntelligenceProvider.answerOverranWindow(promptTokens: 3_598, contextSize: 8_192))
+        #expect(!AppleIntelligenceProvider.answerOverranWindow(promptTokens: 13_194, contextSize: 8_192))
+        #expect(!AppleIntelligenceProvider.answerOverranWindow(promptTokens: 8_192, contextSize: 8_192))
+        #expect(AppleIntelligenceProvider.answerOverranWindow(promptTokens: 2_900, contextSize: 4_096))
+        #expect(!AppleIntelligenceProvider.answerOverranWindow(promptTokens: 5_400, contextSize: 4_096))
+    }
+
+    /// Before iOS and macOS 26.4 the model cannot count a prompt, and `GenerationError` carries no
+    /// counts; a command-line tool in the iOS 27.0 simulator read the window as 0. A wrong guess costs
+    /// one more refusal, measured at 0.1 s.
+    @Test("With no count, or no window stated, the overflow is taken as the answer's")
+    func noCountMeansTheAnswer() {
+        #expect(AppleIntelligenceProvider.answerOverranWindow(promptTokens: nil, contextSize: 4_096))
+        #expect(AppleIntelligenceProvider.answerOverranWindow(promptTokens: 5_000, contextSize: 0))
+    }
+
+    @Test("An answer that ran past the window reads as a plain sentence, the same whichever pass met it")
+    func overrunMessage() throws {
+        let plain = try #require(SummarizationError.answerOverranWindow.errorDescription)
+        #expect(plain == "Apple Intelligence wrote more than it can hold while summarizing this document, and did again when asked once more. Summarizing it again may succeed.")
+        #expect(!plain.localizedCaseInsensitiveContains("context"))
+        #expect(!plain.localizedCaseInsensitiveContains("token"))
+
+        let inSynthesis = SummarizationError.synthesisFailed(underlying: SummarizationError.answerOverranWindow)
         #expect(inSynthesis.errorDescription == plain)
         #expect(inSynthesis.localizedDescription == plain)
     }
