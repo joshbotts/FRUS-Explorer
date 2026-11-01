@@ -727,3 +727,129 @@ struct AppleIntelligenceTokenLimitTests {
         #expect(await AppleIntelligenceProvider.shared.contextWindowTokenLimit == expected)
     }
 }
+
+// MARK: - An answer past the window (2026-11-01)
+
+/// A provider whose answers to the calls it is told run past the model's window, as
+/// `AppleIntelligenceProvider` reports one: `SummarizationError.answerOverranWindow`.
+private actor OverrunningProvider: SummarizationProvider {
+
+    var isAvailable: Bool { true }
+    let contextWindowTokenLimit: Int
+    /// The calls, counted from 1, whose answer runs past the window.
+    let overrunningCalls: Set<Int>
+    /// Every call's request, in call order.
+    private(set) var requests: [SummarizationRequest] = []
+
+    init(tokenLimit: Int, overrunningCalls: Set<Int>) {
+        self.contextWindowTokenLimit = tokenLimit
+        self.overrunningCalls = overrunningCalls
+    }
+
+    func summarize(
+        request: SummarizationRequest,
+        prompt: SummarizationPromptSnapshot
+    ) async throws -> SummarizationResult {
+        requests.append(request)
+        if overrunningCalls.contains(requests.count) { throw SummarizationError.answerOverranWindow }
+        return SummarizationResult(text: "Partial.", responseFormat: prompt.responseFormat, wasChunked: false)
+    }
+}
+
+/// The owner's decision of 2026-11-01: a call whose answer ran past the model's window is made once
+/// more, and a second overrun fails the summary with a sentence of its own. Measured, the one answer of
+/// 644 calls that ran past the window came after 119 s of a run that was then lost; asked again five
+/// times, it fitted every time.
+struct SummarizationAnswerOverrunTests {
+
+    /// The prompt budget these tests run at, which makes each paragraph of ``threeParts`` a call.
+    private let tokenLimit = 100
+
+    /// Three paragraphs of 60 estimated tokens each, each opening with its own word so their calls can
+    /// be told apart: a 75-token budget takes one at a time, so the document is three map calls and one
+    /// synthesis.
+    private var threeParts: String {
+        ["alpha", "bravo", "delta"].map { $0 + " " + String(repeating: "word ", count: 47) }
+            .joined(separator: "\n\n")
+    }
+
+    @Test("An answer that ran past the window is asked for once more, and the run goes on")
+    func oneOverrunCostsOneCall() async throws {
+        let service = SummarizationService(modelContainer: try ModelContainer.makeTestContainer())
+        let prompt = makePromptSnapshot()
+        #expect(await service.documentBudget(promptText: prompt.promptText, responseFormat: .general,
+                                             limit: tokenLimit) == 75)
+        try #require(await service.chunk(text: threeParts, maxTokens: 75).count == 3)
+
+        let provider = OverrunningProvider(tokenLimit: tokenLimit, overrunningCalls: [2])
+        let result = try await service.generateSummaryText(
+            documentText: threeParts, prompt: prompt, provider: provider, documentId: "d1", volumeId: "v")
+        #expect(result.text == "Partial.")
+        #expect(result.wasChunked)
+
+        // Map 1, map 2 overrunning, map 2 again, map 3, the synthesis: the first part is not repeated.
+        let requests = await provider.requests
+        try #require(requests.count == 5)
+        #expect(requests[1].chunks == requests[2].chunks)
+        #expect(requests[0].chunks != requests[1].chunks)
+        #expect(requests.map(\.isSynthesisPass) == [false, false, false, false, true])
+    }
+
+    @Test("A second overrun of the same call fails the summary, and nothing after it is asked")
+    func aSecondOverrunFails() async throws {
+        let service = SummarizationService(modelContainer: try ModelContainer.makeTestContainer())
+        let provider = OverrunningProvider(tokenLimit: tokenLimit, overrunningCalls: [2, 3])
+        await #expect(throws: SummarizationError.answerOverranWindow) {
+            _ = try await service.generateSummaryText(
+                documentText: threeParts, prompt: makePromptSnapshot(), provider: provider,
+                documentId: "d1", volumeId: "v")
+        }
+        let requests = await provider.requests
+        try #require(requests.count == 3)
+        #expect(requests[1].chunks == requests[2].chunks)
+        // The background run does not repeat the document for it: the call was already made twice.
+        #expect(!SummarizationRetryPolicy.isRetryable(SummarizationError.answerOverranWindow))
+    }
+
+    @Test("The synthesis is asked once more too, and a second overrun reads as the same sentence")
+    func theSynthesisIsRetried() async throws {
+        let service = SummarizationService(modelContainer: try ModelContainer.makeTestContainer())
+        let once = OverrunningProvider(tokenLimit: tokenLimit, overrunningCalls: [4])
+        let result = try await service.generateSummaryText(
+            documentText: threeParts, prompt: makePromptSnapshot(), provider: once, documentId: "d1", volumeId: "v")
+        #expect(result.text == "Partial.")
+        let requests = await once.requests
+        try #require(requests.map(\.isSynthesisPass) == [false, false, false, true, true])
+        #expect(requests[3].chunks == requests[4].chunks)
+
+        let twice = OverrunningProvider(tokenLimit: tokenLimit, overrunningCalls: [4, 5])
+        do {
+            _ = try await service.generateSummaryText(
+                documentText: threeParts, prompt: makePromptSnapshot(), provider: twice, documentId: "d1", volumeId: "v")
+            Issue.record("a second overrun of the synthesis did not fail the summary")
+        } catch {
+            // `==` on `synthesisFailed` ignores what it wraps, so the wrapped error is read.
+            let wrapped = try #require(error as? SummarizationError)
+            guard case .synthesisFailed(let underlying) = wrapped else {
+                Issue.record("expected synthesisFailed, got \(wrapped)")
+                return
+            }
+            #expect(underlying as? SummarizationError == .answerOverranWindow)
+            #expect(wrapped.errorDescription == SummarizationError.answerOverranWindow.errorDescription)
+            #expect(!SummarizationRetryPolicy.isRetryable(wrapped))
+        }
+        #expect(await twice.requests.count == 5)
+    }
+
+    @Test("A document of one call is asked once more, and is not chunked for it")
+    func aSingleCallIsRetried() async throws {
+        let service = SummarizationService(modelContainer: try ModelContainer.makeTestContainer())
+        let provider = OverrunningProvider(tokenLimit: 3_072, overrunningCalls: [1])
+        let result = try await service.generateSummaryText(
+            documentText: "A short telegram.", prompt: makePromptSnapshot(), provider: provider,
+            documentId: "d1", volumeId: "v")
+        #expect(result.text == "Partial.")
+        #expect(!result.wasChunked)
+        #expect(await provider.requests.count == 2)
+    }
+}

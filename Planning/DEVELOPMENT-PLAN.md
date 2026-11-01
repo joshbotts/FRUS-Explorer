@@ -8787,3 +8787,51 @@ Further findings the owner may add: Speaker Jim Wright's four anchors, 109156's 
 **Not done:** the UI suites, iOS 26.x, a device; the Mac app was built and not run, and no library's rollup was rebuilt by the app. Closing #1767, moving the memos to `Planning/Completed/` and filing the upstream reports wait for the owner.
 
 **Opened as #1826** on the owner's word of 2026-11-01 ("Push and open PR"), against `v2` at `3cc517fa`, which had not moved since the branch was cut; not merged. Its body is the draft kept in the session group's notes folder (`1767-follow-up-pr-draft.md`).
+
+## Session 2026-11-01 — A summary call whose answer runs past the model's window is made once more, and a second overrun reads as a sentence
+
+**What was asked.** The follow-up the owner chose on 2026-10-31 (the budget entry above, decision 3). The window holds the prompt and the answer together, and the budget bounds the prompt only. So now and then the model writes on until the window ends it, and the call throws `contextSizeExceeded` only once the whole answer is written. `SummarizationRetryPolicy` rightly does not retry that error for a prompt that is too long, so one runaway failed the whole summary. The task: measure it, design a retry for an answer that overran, consider a capped-response check, and ask the owner before changing anything. Measured against `claude/summary-context-budget` (a2facbb6), which merged as #1825 while this ran.
+
+**Measured** on this Mac (the M5 MacBook Air, macOS 27.2, `contextSize` 8,192). A throwaway harness, never committed, ported this service's path at a2facbb6 and, for the old prompts, at `9dab63cb`, and ran one model call at a time through `Scripts/heavy.sh`. The record is in this session group's notes folder: `runaway-answers-findings.md` and `runaway-answers-measurement/`.
+- **The two overflows differ.** A prompt of 13,194 tokens was refused in 0.1 s, as `contextSizeExceeded(8192, 13248)`: its own count with the chat template's 54. A prompt of 8,023 failed after 11.1 s, as `(8192, 8194)`, and NSC 68's reduce prompt of 3,598 after 119 s, as `(8192, 8193)`. A prompt under the window, by the model's `tokenCount(for:)` (26.4+), therefore means the answer overran.
+- **A retry is a fresh draw.** The model samples, and no two answers were alike. The four prompts of the budget session's longest answers were rebuilt exactly, and their real counts matched. NSC 68's first Meeting Record reduce at 7,168 had overflowed after 119 s, about 4,400 tokens, and lost a 332 s run. **Run five more times, it fitted 5 of 5**, at 871 to 1,657 tokens, in 28 to 51 s.
+- **Runaways are rare.** Across the budget session's 527 calls, these 23 and the pass below, one answer of 644 ran past the window, at the 7,168 budget. None did at 6,144 in 187 calls.
+- **The shipped settings.** 22 long documents, 1870 to 1988, under the Standard Summary and the Meeting Record, at 6,144 with the fitted estimate. Any runaway was retried live. **22 of 22 summarized, in 94 calls, with no runaway and no retry**, in 1,239 s. Standard answers had a median of 171 tokens and a maximum of 341; Meeting Record answers a median of 611 and a maximum of 2,015.
+- **A cap.** `GenerationOptions(maximumResponseTokens:)` cuts an answer silently: capped at 93, the answer came back cut mid-sentence in 10.2 s, with no error. Only iOS and macOS 27 report an answer's length (`usage.output`, 96 there). **A Meeting Record capped at 200 tokens kept all four headings, its last field cut mid-sentence**, and `StructuredSectionAnswer` would read it as whole. Over every measured call, caps of 1,024 tokens for plain text and 3,072 for a structured answer reached no answer that was not a runaway. They would have saved about 80 s of about 7,460, or 1%. The model writes about 45 tokens a second.
+- **Transcript copies.** Every Standard answer to one ExComm chunk (`frus1961-63v11/d21`) ended in a copied paragraph of the transcript, 128 words in 4 of 5 tries. The budget session's runaway of 2,595 tokens was the same habit running on. A retry shortens the copy but does not remove it. None of the pass's answers copied.
+
+**The owner's decisions** (AskUserQuestion, 2026-11-01), each the recommended option:
+1. **Retry: "Once, then a sentence."** A call whose answer, not its prompt, overran the window is made once more. If the second overruns too, the summary fails with a sentence of its own, which the background run does not retry by repeating the document.
+2. **Cap: "No cap."** The window stays the only cap.
+3. **Copies: "Separate follow-up."** A transcript copy that fits the window is stored as before.
+
+**What changed.**
+- **`SummarizationError.answerOverranWindow`**, whose sentence is *Apple Intelligence wrote more than it can hold while summarizing this document, and did again when asked once more. Summarizing it again may succeed.* A synthesis that fails on it reads the same, as a refusal does.
+- **`AppleIntelligenceProvider.summarize`** throws it in place of the framework's error when the error is a window overflow (`isContextOverflow`, in both error families). It does so only when the prompt, counted by the model on 26.4 and later, is under the window (`answerOverranWindow(promptTokens:contextSize:)`). With no count, or a window stated as 0, the overflow is taken as the answer's, and a wrong guess costs one more refusal of 0.1 s. A prompt over the window keeps the framework's error. The header's new *An answer past the window* section records the measurement and why no answer is capped.
+- **`SummarizationService`** makes every model call through `answer(from:request:prompt:)`, which asks once more on `answerOverranWindow`: the single call, each map, each reduce and the final synthesis. So one runaway costs one more call, not the run.
+- **`SummarizationRetryPolicy`** treats `answerOverranWindow` as terminal, since its call was already made twice.
+
+**Tests.**
+- **`SummarizationAnswerOverrunTests`** (`SummarizationServiceTests.swift`) drives the real map and synthesis path with a provider that overruns on the calls it is told. One overrun of map 2 of 3 costs one call, and map 1 is not repeated. A second overrun of map 2 fails the summary, and nothing after it is asked. The synthesis is retried too, and its second overrun reads as the same sentence. A single-call document is retried, not chunked.
+- **`SummarizationOverflowTests`** (`SummarizationRetryPolicyTests.swift`) covers the overflow in `GenerationError` and, on 27, in `LanguageModelError`. It checks the measured counts: 8,023 and 3,598 of 8,192 are the answer's, 13,194 and 8,192 the prompt's. With no count, or a window of 0, the overflow is the answer's. The sentence is checked too. The retry policy's suite adds `answerOverranWindow` as terminal in either pass, and to the descriptions.
+
+**Checked.** Xcode 27.2 on macOS 27.2, each heavy job through `Scripts/heavy.sh`:
+- **The full unit target**, on the iPhone 17 simulator (iOS 27.0): "✔ Test run with 7837 tests in 939 suites passed after 476.803 seconds." That is #1825's 7,827 and the 10 new. The result bundle reads 0 failed and the same 37 environmental skips. The first run failed one assertion of a new test: its three paragraphs were alike, so map 1 and map 2 could not be told apart. Each paragraph now opens with its own word.
+- **`FRUSExplorerMac`**, DirectDistribution, unsigned: "** BUILD SUCCEEDED **", with only the known `GeneratedSummary` residue.
+- **Mutation**, after a checkpoint commit, in a second worktree, with five mutants in one build:
+  - `answer(from:request:prompt:)` does not ask again;
+  - `answerOverranWindow` compares with `<=`;
+  - the policy retries the new error;
+  - `isContextOverflow` loses its `GenerationError` arm;
+  - the synthesis wrapper hides the new sentence.
+
+  Each failed a test only it reaches, 8 of the 18 tests in all. The first run of it found that a test read the calls by index after a failed count, which trapped the test process; the counts are now `#require`d first.
+- **No `swift test` owed:** no file under `FRUSCoreKit/` or a package target changed.
+- **Merged with `v2` at 3cc517fa (#1825).** Its tree is a2facbb6's but for one line of this plan, so the code these runs tested is the code merged.
+- **Merged with `v2` again at 4e6142c0 (#1826)** before the push. It conflicted only in this plan, where both entries are kept. #1826 touches none of this change's files, and the merged tree as a whole was not re-run.
+
+**Not done.**
+- **No device was measured,** and no iOS 26 system. On a 4,096-token window the 3,072 budget leaves an answer about 1,000 to 2,100 tokens (the budget entry's *Found, not fixed*). A long structured answer that overruns there is now asked for once more, and fails with the sentence if it overruns again.
+- **The app was not run with this build.** The service tests drive its retry; nothing here made the model overrun inside the app.
+
+**Pushed and opened as #1827** against `v2` on the owner's word ("Make sure this branch is caught up with V2 head, then push and open PR", 2026-11-01).

@@ -54,6 +54,16 @@ public enum SummarizationStep: Sendable, Equatable {
 /// half of one. Prose is overestimated: the model's own count runs to about four fifths of it.
 /// That way an error makes an extra chunk rather than exceeding the context window.
 ///
+/// ## An answer that runs past the window
+/// The budget bounds a call's prompt only; the answer shares the model's window with it, and now and
+/// then the model writes on until the window ends it. A provider throws
+/// `SummarizationError.answerOverranWindow` for such an answer, and every model call this service
+/// makes goes through ``answer(from:request:prompt:)``, which asks for that one answer once more. So
+/// one runaway costs one more call, not the run. Measured on a Mac under macOS 27.2 (2026-11-01): the
+/// one answer of 644 calls that ran past the window, in NSC 68's first reduce at a 7,168 budget, came
+/// after 119 s, and the same prompt asked five more times fitted every time, in 28 to 51 s. The model
+/// samples, so a second answer is a fresh draw.
+///
 /// ## Sendability
 /// The public `summarize` method accepts a `SummarizationPromptSnapshot` (a `Sendable`
 /// value type) rather than the `SummarizationPrompt` SwiftData model. Callers on the
@@ -79,6 +89,8 @@ public enum SummarizationStep: Sendable, Equatable {
 ///          plain text) into FTS5, where it pushed the stored JSON
 ///   1.5 — 2026-10-31: `estimateTokens` costs a digit a token and a punctuation mark half of one, and
 ///          every split and cap cuts by the estimate, where they assumed four characters a token
+///   1.6 — 2026-11-01: a call whose answer ran past the model's window is made once more
+///          (``answer(from:request:prompt:)``)
 actor SummarizationService {
 
     // MARK: - Init
@@ -209,7 +221,7 @@ actor SummarizationService {
                 isSynthesisPass: false
             )
             onStep?(.singleCall)
-            let result = try await provider.summarize(request: req, prompt: prompt)
+            let result = try await answer(from: provider, request: req, prompt: prompt)
             return (result.text, false)
         } else {
             let chunks = chunk(text: documentText, maxTokens: budget)
@@ -452,6 +464,28 @@ actor SummarizationService {
 
     // MARK: - Private
 
+    /// One model call, made once more when its answer ran past the model's window
+    /// (`SummarizationError.answerOverranWindow`; see the type's *An answer that runs past the window*).
+    ///
+    /// A second overrun is thrown, and the retry policy does not repeat the document for it. Any other
+    /// error is thrown at once, as before: a prompt over the window is the framework's own error, which
+    /// would be refused again.
+    private func answer(
+        from provider: any SummarizationProvider,
+        request: SummarizationRequest,
+        prompt: SummarizationPromptSnapshot
+    ) async throws -> SummarizationResult {
+        do {
+            return try await provider.summarize(request: request, prompt: prompt)
+        } catch SummarizationError.answerOverranWindow {
+            #if DEBUG
+            print("[SummarizationService] An answer ran past the model's window; asking once more")
+            #endif
+            try Task.checkCancellation()
+            return try await provider.summarize(request: request, prompt: prompt)
+        }
+    }
+
     private func summarizeChunks(
         _ chunks: [String],
         documentId: String,
@@ -472,7 +506,7 @@ actor SummarizationService {
                 chunks: [chunkText],
                 isSynthesisPass: false
             )
-            let result = try await provider.summarize(request: req, prompt: prompt)
+            let result = try await answer(from: provider, request: req, prompt: prompt)
             partials.append(result.text)
         }
         return partials
@@ -548,8 +582,8 @@ actor SummarizationService {
                     let req = SummarizationRequest(
                         documentId: documentId, volumeId: volumeId,
                         chunks: group, isSynthesisPass: true)
-                    let text = try await provider.summarize(
-                        request: req, prompt: wrapped(firstPart: first, lastPart: last)).text
+                    let text = try await answer(
+                        from: provider, request: req, prompt: wrapped(firstPart: first, lastPart: last)).text
                     next.append((text: text, first: first, last: last))
                 }
                 level = next
@@ -565,8 +599,8 @@ actor SummarizationService {
             let req = SummarizationRequest(
                 documentId: documentId, volumeId: volumeId,
                 chunks: chunks, isSynthesisPass: true)
-            return try await provider.summarize(
-                request: req, prompt: wrapped(firstPart: 1, lastPart: partCount)).text
+            return try await answer(
+                from: provider, request: req, prompt: wrapped(firstPart: 1, lastPart: partCount)).text
         } catch {
             throw SummarizationError.synthesisFailed(underlying: error)
         }
