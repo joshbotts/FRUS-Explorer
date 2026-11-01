@@ -30,16 +30,19 @@ private enum CompactGraphContent {
 ///   [Inbound nodes] → [Central document] → [Outbound nodes]
 ///
 /// For graphs with ≤20 cross-references the columns are statically distributed.
-/// For 21–100 cross-references a force-directed spring layout is used with animated
-/// settling that respects the system Reduce Motion setting.
+/// Larger graphs, and any with nodes two or three hops out, take the force-directed
+/// layout (`CrossReferenceGraphViewModel.forceDirectedLayout`, Fruchterman–Reingold
+/// since #1764), with animated settling that respects the system Reduce Motion setting.
 ///
 /// When the total node count exceeds 30, same-volume nodes are grouped into cluster
 /// nodes. Clusters expand on tap/click.
 ///
 /// ## Node Labels
-/// Each node displays a short text label: the document number (e.g. "42") or the
-/// first 20 characters of the document header, rendered below the node circle.
-/// Cluster nodes show "N refs".
+/// A node's label is its number ("Doc. 42"), its page ("p. 531") or its header cut to 20
+/// characters, with its date under it; a cluster's is its count ("12 docs"). Labels are
+/// placed by `GraphNodeLabels` in `labelPriority` order (#1764): the central document's
+/// always, every other below or above its node only where it keeps clear of the labels
+/// already placed and of every other disc.
 ///
 /// ## Edge Labels
 /// When there are 10 or fewer visible edges and an edge carries context text,
@@ -146,6 +149,10 @@ private enum CompactGraphContent {
 ///          reference list's row item too, which read "Open in Main Window" on iPhone and iPad
 ///   2.11 — #1799: a page node is labelled by its page ("p. 531"), and the node panel's View
 ///          Document is disabled where the list's Open is, for a node with no document to open
+///   2.12 — #1764: labels are placed by `GraphNodeLabels` in the view model's `labelPriority`
+///          order (`drawLabels(_:in:)`), where a graph of more than 40 nodes labelled only the
+///          central, cluster and focused nodes and a smaller one drew every label wherever it fell;
+///          the VoiceOver list takes the reference list's order
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -492,21 +499,23 @@ struct CrossReferenceGraphView: View {
     @ViewBuilder
     private var graphAccessibilityList: some View {
         // Reads the *base* nodes so VoiceOver always lists real documents, even
-        // while the canvas folds some of them into timeline date clusters.
+        // while the canvas folds some of them into timeline date clusters; in the
+        // reference list's order (#1764), so VoiceOver reads the rows the eye sees.
+        let order = CrossReferenceGraphViewModel.precedesInReferenceList
         let inbound = vm.baseDisplayNodes.filter {
             if case .inbound = $0.kind { return true }
             if case .clusterInbound = $0.kind { return true }
             return false
-        }
+        }.sorted(by: order)
         let outbound = vm.baseDisplayNodes.filter {
             if case .outbound = $0.kind { return true }
             if case .clusterOutbound = $0.kind { return true }
             return false
-        }
+        }.sorted(by: order)
         let extended = vm.baseDisplayNodes.filter {
             if case .extended = $0.kind { return true }
             return false
-        }
+        }.sorted(by: order)
 
         VStack(alignment: .leading, spacing: 0) {
             if !inbound.isEmpty {
@@ -585,9 +594,12 @@ struct CrossReferenceGraphView: View {
         let ticks: [TimelineTick]
         let axisY: CGFloat
         let hasParkedNodes: Bool
-        /// Below this node count every node gets its text labels; above it only
-        /// the central, focused, and cluster nodes do (dense-graph thinning).
-        let showAllLabels: Bool
+        /// Every node's id in the order its label is offered for placement (#1764):
+        /// `CrossReferenceGraphViewModel.labelPriority(focusKeys:)`.
+        let labelOrder: [String]
+        /// Whether the network layout is still animating, while only the central
+        /// document's label is placed (#1434's rule, which #1764 brought here).
+        let isSettling: Bool
         /// When the user has a node or edge active: that element's key set plus
         /// every adjacent node. Everything outside the set draws dimmed so the
         /// active neighbourhood pops out of a dense graph. `nil` = no focus.
@@ -632,7 +644,8 @@ struct CrossReferenceGraphView: View {
             ticks: vm.timelineTicks,
             axisY: vm.timelineAxisY,
             hasParkedNodes: vm.timelineHasParkedNodes,
-            showAllLabels: vm.displayNodes.count <= 40,
+            labelOrder: vm.labelPriority(focusKeys: focusKeys),
+            isSettling: vm.isAnimatingLayout,
             focusKeys: focusKeys
         )
     }
@@ -667,16 +680,12 @@ struct CrossReferenceGraphView: View {
                 let isFocused = snapshot.isFocused(node.id)
                 var nodeContext = context
                 if !isFocused { nodeContext.opacity = 0.3 }
-                let showLabels = snapshot.showAllLabels
-                    || node.isCentral
-                    || node.isCluster
-                    || (snapshot.focusKeys?.contains(node.id) ?? false)
                 drawNode(&nodeContext, node: node, at: pos,
                          isSelected: snapshot.resolvedNodeKey == node.id,
-                         radius: snapshot.radii[node.id] ?? 18,
-                         dateLabel: snapshot.dateLabels[node.id],
-                         showLabels: showLabels)
+                         radius: snapshot.radii[node.id] ?? 18)
             }
+            // Labels last, above every disc and edge (#1764).
+            drawLabels(snapshot, in: &context)
         }
         .accessibilityHidden(true)
         .allowsHitTesting(false)
@@ -1810,9 +1819,7 @@ struct CrossReferenceGraphView: View {
         node: DisplayNode,
         at pos: CGPoint,
         isSelected: Bool,
-        radius: CGFloat,
-        dateLabel: String?,
-        showLabels: Bool
+        radius: CGFloat
     ) {
         let r = radius
         let rect = CGRect(x: pos.x - r, y: pos.y - r, width: r * 2, height: r * 2)
@@ -1871,27 +1878,37 @@ struct CrossReferenceGraphView: View {
         let symbolRect = rect.insetBy(dx: r * 0.3, dy: r * 0.3)
         let image = Image(systemName: symbolName)
         ctx.draw(image, in: symbolRect)
+    }
 
-        // Node label — document number or truncated header drawn below the circle,
-        // with the document date (when known) on a second line. Suppressed on
-        // dense graphs except for central/cluster/focused nodes (`showLabels`).
-        guard showLabels else { return }
-        let labelText: String
+    // MARK: - Node labels (#1764)
+
+    /// A node's label as the canvas draws it: its number or title, and its date under it, measured
+    /// together so `GraphNodeLabels.place(_:avoiding:settling:)` keeps the whole block clear.
+    private struct NodeLabelBlock {
+        /// The node's number, page or title, or `nil` when it has none.
+        let title: GraphicsContext.ResolvedText?
+        /// The node's date, or `nil` when it has none.
+        let date: GraphicsContext.ResolvedText?
+        /// The height the title line takes, from the top of the block to the top of the date.
+        let titleHeight: CGFloat
+        /// The block's measured size: the wider line by both lines' heights.
+        let size: CGSize
+    }
+
+    /// The text of a node's first label line: a cluster's count, a page's number (#1799), a
+    /// document's number, or its title cut by `GraphNodeLabels.shortLabel(_:limit:)`; empty for a
+    /// node with none, an archival unit's or a class's, whose names are in their VoiceOver labels and
+    /// panels.
+    private func labelText(for node: DisplayNode) -> String {
         switch node.kind {
-        case .clusterInbound(_, let count):
-            labelText = String(
-                format: String(localized: "graph.node.cluster.docsLabel %lld",
-                               defaultValue: "%lld docs"),
-                Int64(count)
-            )
-        case .clusterOutbound(_, let count):
-            labelText = String(
+        case .clusterInbound(_, let count), .clusterOutbound(_, let count):
+            return String(
                 format: String(localized: "graph.node.cluster.docsLabel %lld",
                                defaultValue: "%lld docs"),
                 Int64(count)
             )
         case .dateCluster(let periodLabel, let count, _):
-            labelText = String(
+            return String(
                 format: String(localized: "graph.node.dateCluster.label %lld %@",
                                defaultValue: "%lld docs · %@"),
                 Int64(count), periodLabel
@@ -1900,48 +1917,92 @@ struct CrossReferenceGraphView: View {
             if let page = node.metadata?.citedPage {
                 // A page the index left on its volume (#1799), named as a document is by its
                 // number; the panel's title names the volume too.
-                labelText = String(
+                return String(
                     format: String(localized: "graph.node.page %lld",
                                    defaultValue: "p. %lld"),
                     Int64(page)
                 )
             } else if let num = node.metadata?.documentNumber {
-                labelText = String(
+                return String(
                     format: String(localized: "graph.node.docNumber %@",
                                    defaultValue: "Doc. %@"),
                     num
                 )
             } else if let header = node.metadata?.header {
                 let trimmed = header.trimmingCharacters(in: .whitespaces)
-                labelText = trimmed.count > 20
-                    ? String(trimmed.prefix(18)) + "…"
-                    : trimmed
-            } else {
-                labelText = ""
+                return GraphNodeLabels.shortLabel(trimmed, limit: 20)
             }
+            return ""
         }
+    }
 
+    /// A node's label block, styled and measured as the canvas draws it: the central document's in
+    /// 10 pt, every other in 8 pt, a node three hops out in a fainter colour, and the date a point
+    /// smaller under the title. `nil` for a node with neither a title nor a date.
+    private func labelBlock(for node: DisplayNode, dateLabel: String?,
+                            in context: GraphicsContext) -> NodeLabelBlock? {
+        let text = labelText(for: node)
+        guard !text.isEmpty || dateLabel != nil else { return nil }
         let isExtendedNode: Bool
         if case .extended = node.kind { isExtendedNode = true } else { isExtendedNode = false }
         let primaryStyle: AnyShapeStyle = isExtendedNode
             ? AnyShapeStyle(Color.secondary.opacity(0.6))
             : AnyShapeStyle(Color.primary.opacity(0.75))
         let fontSize: CGFloat = node.isCentral ? 10 : 8
-        var labelY = pos.y + r + 4
+        let unbounded = CGSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude)
 
-        if !labelText.isEmpty {
-            let label = Text(verbatim: labelText)
-                .font(.system(size: fontSize))
-                .foregroundStyle(primaryStyle)
-            ctx.draw(label, at: CGPoint(x: pos.x, y: labelY), anchor: .top)
-            labelY += fontSize + 3
-        }
-
-        if let dateText = dateLabel {
-            let dateLabelText = Text(verbatim: dateText)
+        let title = text.isEmpty ? nil : context.resolve(
+            Text(verbatim: text).font(.system(size: fontSize)).foregroundStyle(primaryStyle))
+        let date = dateLabel.map {
+            context.resolve(Text(verbatim: $0)
                 .font(.system(size: fontSize - 1))
-                .foregroundStyle(Color.secondary.opacity(isExtendedNode ? 0.6 : 0.9))
-            ctx.draw(dateLabelText, at: CGPoint(x: pos.x, y: labelY), anchor: .top)
+                .foregroundStyle(Color.secondary.opacity(isExtendedNode ? 0.6 : 0.9)))
+        }
+        let titleSize = title?.measure(in: unbounded) ?? .zero
+        let dateSize = date?.measure(in: unbounded) ?? .zero
+        let titleHeight = title == nil ? 0 : titleSize.height + 1
+        return NodeLabelBlock(title: title, date: date, titleHeight: titleHeight,
+                              size: CGSize(width: max(titleSize.width, dateSize.width),
+                                           height: titleHeight + dateSize.height))
+    }
+
+    /// Places and draws the node labels (#1764), as the co-mention, volume and archival network
+    /// graphs do (#1384, #1434, #1438): in `labelOrder`, the central document's always, on a plate
+    /// over whatever lies under it, and every other only under or over its node where it keeps
+    /// clear of the labels already placed and of every other disc, a node with no label's included
+    /// (`CrossReferenceGraphViewModel.labelRequests(order:positions:radii:sizes:)`). While the layout
+    /// animates, only the central document's label is placed. A label outside the selected node's
+    /// neighbourhood is dimmed with its node.
+    ///
+    /// Until #1764 a graph of 40 nodes or fewer drew every label wherever it fell and a larger one
+    /// drew only the central, cluster and focused nodes' labels; at three hops from
+    /// `frus1952-54v02p1` d16, 247 nodes, the iPad capture labelled the focus alone.
+    private func drawLabels(_ snapshot: GraphRenderSnapshot, in context: inout GraphicsContext) {
+        var blocks: [String: NodeLabelBlock] = [:]
+        for node in snapshot.nodes {
+            if let block = labelBlock(for: node, dateLabel: snapshot.dateLabels[node.id], in: context) {
+                blocks[node.id] = block
+            }
+        }
+        let requests = CrossReferenceGraphViewModel.labelRequests(
+            order: snapshot.labelOrder, positions: snapshot.positions, radii: snapshot.radii,
+            sizes: blocks.mapValues(\.size))
+        let placed = GraphNodeLabels.place(requests, settling: snapshot.isSettling)
+        if let first = requests.first, blocks[first.id] != nil,
+           let plate = GraphNodeLabels.plate(for: requests, placed: placed) {
+            GraphNodeLabels.drawPlate(&context, in: plate)
+        }
+        for (id, rect) in placed {
+            guard let block = blocks[id] else { continue }
+            var labelContext = context
+            if !snapshot.isFocused(id) { labelContext.opacity = 0.3 }
+            if let title = block.title {
+                labelContext.draw(title, at: CGPoint(x: rect.midX, y: rect.minY), anchor: .top)
+            }
+            if let date = block.date {
+                labelContext.draw(date, at: CGPoint(x: rect.midX, y: rect.minY + block.titleHeight),
+                                  anchor: .top)
+            }
         }
     }
 }

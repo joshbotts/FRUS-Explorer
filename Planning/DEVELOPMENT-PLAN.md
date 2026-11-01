@@ -8730,3 +8730,76 @@ Mutation, after a checkpoint commit: the synthesis budget taken from the reader'
 - **The service header's *Chunking algorithm* section** says an oversized paragraph gets its own chunk "rather than split mid-sentence". `splitOversized` splits it at sentences.
 
 **Pushed and opened as #1825** against `v2` on the owner's word ("Push and open PR", 2026-11-01).
+
+## Session 2026-11-01 — #1764: the cross-reference network at three hops lays out without corner stacks, labels by placement, and lists documents before page nodes
+
+**What was asked.** A side session of the build-1861 submission run-up. Fix #1764. From `frus1952-54v02p1` d16, the Network at three hops pinned four archival "hubs" to the canvas's corners, labelled only the focus, and listed the page node `frus1948v01p2/pg_507` first under Cited By This Document. The issue's rule moves it before App Store submission if the store's tenth frame, `researchers-06`, shows that view, and the iPad draft does (`Planning/marketing-drafts/researchers-06-cross-reference-ipad-13-landscape@0.5x.png`, cropped from `Docs/screenshots/ipad/cross-reference-graph.png`). Cut from `v2` at `3cc517fa` (#1825).
+
+**The owner's decisions** (AskUserQuestion, 2026-11-01), each the recommended option:
+1. **"Fix now, retake frame."** #1764 moves before submission. The iPad capture and `researchers-06` are retaken from the fixed build.
+2. **"Volume, then doc number."** Each reference-list section is in catalogue order (volume, then printed number), with page nodes after every document.
+
+**Measured, before.** S1's library (`~/Library/Caches/FRUS-Explorer/s1/snapshot-A`, 553 volumes, index version 71, the one the capture was taken from) was `cp -c` copied into the scratchpad. A throwaway app-target test loaded d16 at three hops through `CrossReferenceGraphViewModel.loadGraph()` and dumped the display nodes, edges and positions. A standalone harness carried a verbatim copy of `forceDirectedLayout` and reproduced the app's positions exactly. The canvas, 1055 × 861 pt, was read from the capture: the corner nodes sit at the 32 pt clamp.
+- **The graph is 247 nodes, not the ~70 the capture seems to show.** It has 155 documents three hops out, 72 archival units, 9 central-file classes, 6 inbound and 4 outbound, and 330 edges. 152 of the nodes are leaves, with one edge each.
+- **The four "hubs" are stacks, not hubs.** A unit node is made per citing document (`unit/<document>/<record>`, #837), so none has more than one edge. All-pairs repulsion drove the leaves to the clamp. The clamp caught each where both coordinates ran out. Two nodes on one point repel in no direction (`dx = dy = 0`), so they never parted. The capture's dark rings are 39 to 52 translucent discs drawn on one point, each with its own edge.
+- **In three orders of the graph**, 173 to 185 of the 247 sat in four corner stacks, and 189 or 196 at an edge. 3,781 to 4,256 pairs of discs overlapped, and the closest pair was 0 pt apart. The three orders were two launches' and the sorted one below.
+- **The order changed per launch.** `rebuildDisplay()` appended the units by iterating `unitsByDocument`, a dictionary, whose order Swift seeds per process. The layout starts each node from its place in that order.
+- **NSC 68 (`frus1950v01` d85) at three hops** has 1,259 nodes. The old layout put 1,225 at an edge, 1,211 of them in four corner stacks of up to 337. The Long Telegram (`frus1946v06` d475) has 37 nodes, and the old layout put 8 at an edge and none in a stack.
+- **The list.** Cited By This Document was built as `pg_507, d11, d41, d5`: by key as a string.
+
+**What changed.**
+- **`CrossReferenceGraphViewModel.forceDirectedLayout`** is Fruchterman–Reingold, with the same signature plus a cooling schedule (`startingAt:of:`). Each choice was measured in the harness on d16, NSC 68 and the Long Telegram, at 1055 × 861 and the iPad's full width (1376 × 860), against renders:
+  - The ideal distance is `k = √(area / n)`, at most `layoutMaximumDistance` (100 pt). Uncapped, the Long Telegram put 15 nodes at an edge; capped at 100 it puts none. 160, 120 and 80 were tried.
+  - Repulsion is cut off at `2k`, the grid variant of the original paper. Without the cutoff, 175 of d16's nodes lined the edges.
+  - The central document and its direct references (documents and volume clusters) weigh 4 in the repulsion (`layoutWeight(for:)`), divided by the mean weight, so a uniformly weighted graph is laid out as plain FR. With equal weights none of d16's ten references had room for a label. Weights from 2 to 8 were tried. Weighting by degree, as ForceAtlas2 does, lined the edges with leaves. Without the division, the 50-node star of `forceDirectedLayoutPositionsWithinBounds` put all 49 outer nodes at the edge.
+  - The canvas's edges repel at half a node's strength (`layoutEdgeRepulsion`). Without that, d16 put 19 nodes on the clamp line at 1055 × 861 and 33 in rows at full width; with it, none. Strengths 1 and 2 labelled fewer.
+  - Coincident nodes separate along a direction fixed by their pair.
+  - The step runs over index arrays. The old step's string-keyed dictionaries took about 3.5 s for d16 in the harness (optimized, with another session's build running), against 17 ms for the new layout. The Reduce Motion path runs it on the main actor.
+  - The animated batches take one schedule's steps in order, so the last frame is the Reduce Motion layout.
+- **`rebuildDisplay()`** appends the archival nodes by citing document's key, so a graph settles the same at every launch.
+- **Labels** (`CrossReferenceGraphView.drawLabels(_:in:)`) are placed by `GraphNodeLabels.place(_:avoiding:settling:)`, as the co-mention, volume and archival network graphs place theirs (#1384, #1434, #1438). This retires the 40-node rule.
+  - A node's number or title and its date are measured as one block.
+  - `labelPriority` orders the blocks: the central document, the selected node, its neighbours, clusters, then connection count, hop and list order.
+  - `labelRequests(order:positions:radii:sizes:)` offers unlabelled nodes (units, classes) last at no size, so labels keep clear of their discs.
+  - Only the central label is placed while the layout animates.
+  - A header label is cut by `GraphNodeLabels.shortLabel(_:limit:)`.
+- **The reference list and the VoiceOver list** sort each section by `precedesInReferenceList`. Documents come before page nodes (`DisplayNode.isPageNode`, from the new `documentId`). Then volume, then printed number, compared in Finder's order as `CollectionGeneratedBlocks`' bibliography compares them.
+
+**Measured, after,** through the app's code on the fixture: d16 at 1055 × 861 has none at an edge or in a corner, one overlapping pair, and its closest pair 19.5 pt apart. Labels went from 1 to 24 placed, and 7 of the 10 direct references are labelled. The harness port of this layout and of `GraphNodeLabels` reproduces those figures exactly. In it, d16 at full width labels all 10 references and 45 nodes. NSC 68 puts none at an edge, though 1,259 discs cannot all keep apart (about 3,200 overlapping pairs). The Long Telegram puts none at an edge and labels 31 of 35.
+
+**The iPad, by eye.** A throwaway XCUITest ran on a new iPad Pro 13-inch (M5) simulator under iOS 27.0, holding a `cp -c` clone of S1's library. It opened d16, the rail's Graph, Network and 3 hops, and attached screenshots; the simulator is kept. At full width the graph has no corner stacks. The focus's references Doc. 12, 17, 19, 21, 24, 26, 11 and 41 are labelled, as is the page node p. 507, among dozens of three-hop labels. The graph's outline of leaves sits 8 to 18 pt inside the clamp line. Timeline at 1 hop draws its date cluster's label ("5 docs · Aug 1952") above the cluster, where it had pressed on Doc. 16's disc. The pictures are in this session group's notes folder, `1764-pictures/`.
+
+**Tests** (`FRUSExplorerTests/CrossReferenceGraphTests.swift`).
+- **`D16ThreeHopFixture`** is d16's 247-node graph as its topology, in the order the app now builds.
+- **`NetworkAtThreeHopsTests`:**
+  - the d16 layout has no coincident pair, none in a corner, none at an edge, at most 3 overlapping pairs, and every node inside the pad;
+  - the animated batches equal the Reduce Motion layout;
+  - two nodes started on one point end more than 50 pt apart;
+  - a ten-document star stays within 200 pt of the centre (146 measured; 439 without the cap, in the harness);
+  - the weights, and a 50-node star of direct references with none at an edge;
+  - the units join in key order;
+  - on the d16 layout, 24 labels with no clearance violation, 7 of 10 direct references among them, and only the central label while settling;
+  - the label priority and the request order;
+  - the list order: d16's Cited By sorts to `d5, d11, d41, pg_507`, with printed numbers, volumes, a cluster, roman pages and the page tests.
+- **`NetworkLayoutCensus`** counts nodes at an edge and in a corner, coincident and overlapping pairs, and the closest pair.
+
+**`Docs/EditableContent/`.** 12 ranged blocks citing `CrossReferenceGraphView.swift` are re-pointed, each down 9: 9 in `05-Analytics.md`, 3 in `08-Reading-Research-Collections.md`. So are four `ships at:` line numbers in `09-Settings-and-App.md`. The Amendment Log has a bullet. No string was added or changed.
+
+**Checked.** Xcode 27.2 on macOS 27.2, each heavy job through `Scripts/heavy.sh`:
+- **The full unit target**, on the iPhone 17 simulator (iOS 27.0): "✔ Test run with 7837 tests in 938 suites passed after 436.207 seconds." That is #1825's 7,827 and the 10 new, in one new suite. The result bundle reads 0 failed and the same 37 skips. No warning was in a file this change touched.
+- **`FRUSExplorerMac`**, DirectDistribution, unsigned: "** BUILD SUCCEEDED **", with only the `GeneratedSummary` residue.
+- **No `swift test` owed:** no file under `FRUSCoreKit/` or a package target changed.
+- **The tests against the old code**, not run against it. The harness's verbatim copy of the old layout puts 173 of the d16 fixture in corner stacks, its closest pair at 0 pt. Under the old step, two nodes on one point take the same forces at every step, so the coincident pair cannot part. So the layout tests fail on it. The list-order test sorts the order the old builder made, `pg_507, d11, d41, d5`, and expects `d5, d11, d41, pg_507`.
+
+**Not done.**
+- **The retakes.** The iPad's `cross-reference-graph.png` and `researchers-06` are to be retaken from this build (decision 1). The Mac frame (Timeline, 1 hop) changes too, its date cluster's label moving above the cluster, so it should be retaken or checked. The throwaway iPad simulator above is kept for it: "1764 iPad Pro 13 (throwaway)", `34F01AA6-CE00-49BF-83BF-2063C114FC7B`.
+- **`AuxWindowCloseTests`** was not run. The walk opened the graph from the rail on an iPad, which is its path, and this change does not touch closing.
+- **The list's order was not seen on screen.** In the walk, the tap on Toggle reference list did not open the panel; the order is tested.
+- **The Mac and the iPhone** were built and not looked at.
+
+**Found, not fixed.**
+- **A graph of 1,259 nodes cannot be read on an iPad canvas** under any layout tried. NSC 68 at three hops places 11 labels, and about 3,200 pairs of discs overlap. Clustering, or a cap on what three hops draws, is a design question.
+- **One-line labels** (the number without the date) placed about twice as many on d16 in the harness, before the weights: 62 against 26. What a label carries is the owner's call.
+- **The walk's list toggle** opened nothing on two taps. Whether the reference-list tip's popover takes the first tap was not checked.
+
+**Not pushed:** waiting on the owner's word, since the merge queue is serial.
