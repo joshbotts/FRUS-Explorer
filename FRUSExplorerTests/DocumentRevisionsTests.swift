@@ -779,6 +779,27 @@ struct DocumentRevisionsTests {
         #expect(h.cacheColumn("summary_text", vol, "d1") == "fresh")
     }
 
+    /// 2026-10-31: the column holds what the reader reads. A structured summary's JSON put its keys in
+    /// the index, so a search over summaries matched `KeyParticipants`, and Related Documents' rows and
+    /// Suggested Next's lines showed the braces.
+    @Test("updateSummary writes a structured summary's fields as plain text, and a prose summary as it is")
+    func updateSummaryWritesFields() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        _ = try await h.index(vol)
+        let schema = StructuredSummarySchema(fields: [.init(name: "KeyParticipants", description: ""),
+                                                      .init(name: "Topics", description: "")])
+        let structured = GeneratedSummary(documentId: "d1", volumeId: vol, promptId: UUID(),
+                                          responseText: #"{"Topics": "Tariffs.", "KeyParticipants": "The Minister."}"#,
+                                          responseFormat: .structured(schema: schema))
+        try await h.pipeline.updateSummary(structured)
+        #expect(h.cacheColumn("summary_text", vol, "d1") == "Key Participants: The Minister.\n\nTopics: Tariffs.")
+        let prose = GeneratedSummary(documentId: "d1", volumeId: vol, promptId: UUID(),
+                                     responseText: "The Minister discussed tariffs.")
+        try await h.pipeline.updateSummary(prose)
+        #expect(h.cacheColumn("summary_text", vol, "d1") == "The Minister discussed tariffs.")
+    }
+
     /// Design Q-11 (f), for indexes built before the vanished-row delete reached this table: a
     /// source row with no cache row is swept on the next open, and a legitimate row is not.
     @Test("A ghost document_sources row is swept when the database is reopened")

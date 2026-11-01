@@ -108,6 +108,9 @@ import Foundation
 ///          `HTMLTemplate.documentCSS` forward to, so the page is the same to the byte; a figure's
 ///          image comes from the `FigureImageSource` the host passes in (`figureImages`), where it
 ///          came from the app's `FigureImageStore.shared`, which the app now passes
+///   1.16 — 2026-10-31: a structured summary, in a `.summaryOnly` body or a headnote, prints as its
+///          fields (`StructuredSummaryDisplay`), a paragraph each opening with its label in
+///          `<strong>`, where it printed its stored JSON; a `.general` summary prints as before
 public struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -312,7 +315,7 @@ public struct CollectionItemHTMLRenderer {
         // every body mode (including the citation-only preview card); a requested
         // headnote with nothing stored renders the placeholder note instead.
         if doc.includeHeadnote {
-            body += headnoteHTML(doc.headnoteText, authorship: doc.headnoteAuthorship)
+            body += headnoteHTML(doc.headnoteText, format: doc.headnoteFormat, authorship: doc.headnoteAuthorship)
         }
 
         if citationOnlyVolumeIds.contains(doc.volumeId) {
@@ -354,11 +357,8 @@ public struct CollectionItemHTMLRenderer {
             if let summary = doc.summaryText, !summary.isEmpty {
                 body += "  <div class=\"summary-block\">\n"
                 body += "    <p class=\"summary-label\">Summary</p>\n"
-                let summaryParas = summary
-                    .components(separatedBy: "\n\n")
-                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-                for para in summaryParas {
-                    body += "    <p>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</p>\n"
+                for para in summaryParagraphsHTML(summary, format: doc.summaryFormat) {
+                    body += "    <p>\(para)</p>\n"
                 }
                 // AI attribution (v1.9) — generated text is always labeled in exports,
                 // mirroring the in-app "AI summary" badge.
@@ -442,19 +442,18 @@ public struct CollectionItemHTMLRenderer {
     /// renders instead, in exports and preview alike, so the author sees exactly what
     /// the artifact will carry.
     ///
-    /// - Parameter text: The resolved headnote (stored `GeneratedSummary` text), if any.
+    /// - Parameters:
+    ///   - text: The resolved headnote (stored `GeneratedSummary` text), if any.
+    ///   - format: The format `text` was written in; a structured headnote prints as its fields.
     /// - Returns: The `<div class="headnote">…</div>` HTML fragment.
-    private func headnoteHTML(_ text: String?, authorship: SummaryAuthorship) -> String {
+    private func headnoteHTML(_ text: String?, format: ResponseFormat, authorship: SummaryAuthorship) -> String {
         let label = String(localized: "collection.headnote.label", defaultValue: "Headnote")
         var body = ""
         body += "  <div class=\"headnote\">\n"
         body += "    <p class=\"headnote-label\">\(escaped(label))</p>\n"
         if let text, !text.isEmpty {
-            let paragraphs = text
-                .components(separatedBy: "\n\n")
-                .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-            for para in paragraphs {
-                body += "    <p><em>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</em></p>\n"
+            for para in summaryParagraphsHTML(text, format: format) {
+                body += "    <p><em>\(para)</em></p>\n"
             }
             // Attribution honors the headnote's authorship (Composer redesign): an AI headnote keeps
             // the AI label, an AI-edited one discloses the edit, a user-written one shows none.
@@ -468,6 +467,27 @@ public struct CollectionItemHTMLRenderer {
         }
         body += "  </div>\n"
         return body
+    }
+
+    /// A stored summary's paragraphs, escaped, without their `<p>`: a structured summary's fields, each
+    /// opening with its label in `<strong>` (`StructuredSummaryDisplay`), else the text's own
+    /// paragraphs (split at blank lines and trimmed), as they printed before 2026-10-31.
+    ///
+    /// - Parameters:
+    ///   - text: The summary's stored text.
+    ///   - format: The format it was written in.
+    /// - Returns: The inner HTML of each paragraph, in order.
+    private func summaryParagraphsHTML(_ text: String, format: ResponseFormat) -> [String] {
+        if let fields = StructuredSummaryDisplay.fields(responseText: text, format: format) {
+            return fields.map { field in
+                let label = "<strong>\(escaped(field.label)):</strong>"
+                return field.text.isEmpty ? label : "\(label) \(escaped(field.text))"
+            }
+        }
+        return text
+            .components(separatedBy: "\n\n")
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .map { escaped($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
     }
 
     /// The placeholder card emitted (preview only) for a `.summaryOnly` document with no

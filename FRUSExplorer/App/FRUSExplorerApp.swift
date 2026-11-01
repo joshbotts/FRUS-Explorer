@@ -2615,6 +2615,9 @@ struct FRUSExplorerApp: App {
             // Cost: in the steady state this is nearly free — updateCacheColumns
             // skips rows whose values are already current (zero-row UPDATE, no FTS5
             // trigger fires), so only new or changed records cause index writes.
+            // The text pushed is each summary's `indexedText`: a structured summary's fields as
+            // plain text since 2026-10-31, so the first launch after that rewrites each row that
+            // still held its JSON, once.
             let container = modelContainer
             // #1280: read here, on the main actor, so the boot Task can decide whether it may sweep
             // without touching `appState` from off-main.
@@ -2629,7 +2632,7 @@ struct FRUSExplorerApp: App {
                 for summary in summaries {
                     let vid = summary.volumeId
                     let did = summary.documentId
-                    let text = summary.responseText
+                    let text = summary.indexedText
                     try? await pipeline.updateSummaryText(volumeId: vid, documentId: did, responseText: text)
                 }
                 // A document whose only summaries are drafts had its draft text pushed by the old
@@ -2750,7 +2753,7 @@ struct FRUSExplorerApp: App {
                     let summaries = GeneratedSummary.newestNonDraftPerDocument(volumeSummaries)
                     for summary in summaries {
                         let did = summary.documentId
-                        let text = summary.responseText
+                        let text = summary.indexedText
                         try? await pipeline.updateSummaryText(volumeId: vid, documentId: did, responseText: text)
                     }
                     for doc in GeneratedSummary.draftOnlyDocuments(volumeSummaries) {

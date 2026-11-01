@@ -26,6 +26,8 @@ import OSLog
 ///   1.0 — Session 2026-10-04 (FRUSCoreKit, part 2): the Spotlight section, `updateSummary(_:)` and
 ///          the pipeline's old initialiser, moved out of `IndexingPipeline.swift` when it moved into
 ///          the kit; `IndexingResources.bundled` and `SpotlightDonor`, new with the kit's seams
+///   1.1 — 2026-10-31: `updateSummary(_:)` writes the summary's `indexedText`, a structured summary's
+///          fields as plain text, where it wrote the stored JSON
 extension IndexingPipeline {
 
     /// Creates a pipeline over the app's bundled resources, its settings and Spotlight.
@@ -52,13 +54,13 @@ extension IndexingPipeline {
 
     /// Updates the summary text for a document that is already in the index.
     ///
-    /// Writes `summary.responseText` to `document_cache`; the `user_content` FTS5
-    /// sync trigger makes the new text immediately searchable.
+    /// Writes `summary.indexedText` to `document_cache` (a structured summary's fields as plain
+    /// text); the `user_content` FTS5 sync trigger makes the new text immediately searchable.
     func updateSummary(_ summary: GeneratedSummary) async throws {
         try await updateSummaryText(
             volumeId: summary.volumeId,
             documentId: summary.documentId,
-            responseText: summary.responseText
+            responseText: summary.indexedText
         )
     }
 

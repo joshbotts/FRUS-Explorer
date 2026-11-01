@@ -75,6 +75,8 @@ public enum SummarizationStep: Sendable, Equatable {
 ///          into FTS5 immediately after SwiftData save for in-session searchability
 ///   1.3 — 2026-10-31: a synthesis call wraps the reader's prompt and labels each partial summary
 ///          with its part, so a long document's summary covers the whole document
+///   1.4 — 2026-10-31: `summarize` pushes the summary's `indexedText` (a structured summary's fields as
+///          plain text) into FTS5, where it pushed the stored JSON
 actor SummarizationService {
 
     // MARK: - Init
@@ -150,7 +152,7 @@ actor SummarizationService {
         // Push the new summary into FTS5 immediately so it is searchable in this session.
         let vid = summary.volumeId
         let did = summary.documentId
-        let text = summary.responseText
+        let text = summary.indexedText
         try? await indexingPipeline?.updateSummaryText(volumeId: vid, documentId: did, responseText: text)
 
         #if DEBUG

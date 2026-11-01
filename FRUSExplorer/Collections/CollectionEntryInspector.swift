@@ -79,6 +79,10 @@ import SwiftData
 ///   1.9 — #1406: that citation is `exportCitation(documentId:volumeId:manifestEntry:pipeline:)`,
 ///          naming the volume's printed number (`CitableDocumentNumber`), as the export now does
 ///   1.10 — #1791: the per-note include rows are one copy of each note, however many are stored
+///   1.11 — 2026-10-31: a structured summary shows as its labelled fields, not its stored JSON, in the headnote
+///          card and the AI summary preview; Edit opens on the fields as *Label: text* paragraphs and saves plain
+///          text, and Regenerate stores the format its prompt answers in, which it had dropped to `.general`
+///          (`headnoteSeedText(_:)`)
 struct CollectionEntryInspector: View {
 
     /// One highlight row offered for excerpt insertion (Authoring Phase 5).
@@ -174,7 +178,8 @@ struct CollectionEntryInspector: View {
     /// the real export-heading fallback (M3, finding 1); empty until `load()` resolves it.
     @State private var resolvedCitation = ""
     @State private var sourceNote: String?
-    @State private var summaryPreview: String?
+    /// The AI summary row's text, as the reader shows it (``GeneratedSummary/readerText``).
+    @State private var summaryPreview: AttributedString?
     @State private var summaryPromptName: String?
     /// The editable-headnote card's draft buffer + edit mode (Composer redesign).
     @State private var headnoteDraft: String = ""
@@ -539,7 +544,7 @@ struct CollectionEntryInspector: View {
                     icon: { Image(systemName: "tag") }
             }
 
-            if let summaryPreview, !summaryPreview.isEmpty {
+            if let summaryPreview, !summaryPreview.characters.isEmpty {
                 Label {
                     VStack(alignment: .leading, spacing: 2) {
                         // Prompt-aware label (Phase 5): name the producing prompt when known.
@@ -987,8 +992,8 @@ struct CollectionEntryInspector: View {
                 }
                 .font(.caption)
             } else {
-                if let text = summary?.responseText, !text.isEmpty {
-                    Text(text).font(.callout).italic()
+                if let summary, !summary.responseText.isEmpty {
+                    Text(summary.readerText).font(.callout).italic()
                 } else {
                     Text(String(localized: "collection.inspector.headnote.empty",
                                 defaultValue: "No headnote yet. Edit to write a key takeaway, or generate a document summary to seed one."))
@@ -1032,7 +1037,7 @@ struct CollectionEntryInspector: View {
     @ViewBuilder private func headnoteActionRow(summary: GeneratedSummary?) -> some View {
         HStack(spacing: 14) {
             Button {
-                headnoteDraft = summary?.responseText ?? ""
+                headnoteDraft = Self.headnoteSeedText(summary)
                 isEditingHeadnote = true
             } label: {
                 Label(String(localized: "collection.inspector.headnote.edit", defaultValue: "Edit"),
@@ -1105,8 +1110,9 @@ struct CollectionEntryInspector: View {
         let trimmed = headnoteDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         // Compare trimmed-to-trimmed so a whitespace-only edit of the seed is a genuine no-op and does
         // not spuriously mint a new draft (which would also flip attribution).
+        // The seed as Edit showed it: a structured seed's fields, not its JSON.
         guard !trimmed.isEmpty,
-              seed?.responseText.trimmingCharacters(in: .whitespacesAndNewlines) != trimmed else { return }
+              Self.headnoteSeedText(seed).trimmingCharacters(in: .whitespacesAndNewlines) != trimmed else { return }
         // AI-derived text — whether a fresh AI draft or one already AI-edited — stays labeled as
         // AI-assisted across further edits; only a nil seed or the user's own text yields `.userWritten`.
         let seedAuthorship = seed.map { $0.authorship ?? .aiGenerated }
@@ -1116,12 +1122,20 @@ struct CollectionEntryInspector: View {
         swapHeadnoteDraft(text: trimmed, authorship: authorship)
     }
 
+    /// The text Edit opens a headnote on: a structured summary's fields as *Label: text* paragraphs, so
+    /// the reader edits prose and never the stored JSON, and any other summary's text as stored; empty
+    /// with no summary. What Edit saves is plain text (`.general`), shown and exported as written.
+    nonisolated static func headnoteSeedText(_ summary: GeneratedSummary?) -> String {
+        summary?.plainReaderText() ?? ""
+    }
+
     /// Deletes any prior **dedicated** headnote draft (never a real document summary), mints a fresh
-    /// `isHeadnoteDraft` `GeneratedSummary` with `text` + `authorship`, repoints
+    /// `isHeadnoteDraft` `GeneratedSummary` with `text` + `authorship` + `format`, repoints
     /// `entry.headnoteSummaryId` to it (a new id flips the preview fingerprint, which hashes
     /// `headnoteSummaryId` not the text, so the preview refreshes), and saves. Shared by Edit
     /// (`commitHeadnote`) and Regenerate (`regenerateHeadnote`).
-    private func swapHeadnoteDraft(text: String, authorship: SummaryAuthorship) {
+    private func swapHeadnoteDraft(text: String, authorship: SummaryAuthorship,
+                                   format: ResponseFormat = .general) {
         if let sid = entry.headnoteSummaryId,
            let existing = try? modelContext.fetch(FetchDescriptor<GeneratedSummary>(
                predicate: #Predicate { $0.id == sid })).first,
@@ -1130,6 +1144,7 @@ struct CollectionEntryInspector: View {
         }
         let draft = GeneratedSummary(documentId: entry.documentId, volumeId: entry.volumeId,
                                      promptId: Self.headnoteDraftPromptId, responseText: text,
+                                     responseFormat: format,
                                      authorship: authorship, isHeadnoteDraft: true)
         modelContext.insert(draft)
         entry.headnoteSummaryId = draft.id
@@ -1181,7 +1196,8 @@ struct CollectionEntryInspector: View {
                                     defaultValue: "The summarizer returned no text. Try again.")
                 return
             }
-            swapHeadnoteDraft(text: clean, authorship: .aiGenerated)
+            // The prompt's format, so a structured answer (its JSON) shows and exports as its fields.
+            swapHeadnoteDraft(text: clean, authorship: .aiGenerated, format: snapshot.responseFormat)
         } catch {
             regenError = error.localizedDescription
         }
@@ -1340,7 +1356,7 @@ struct CollectionEntryInspector: View {
         let collectionPromptId = entry.collection?.summaryPromptId
         let shown = collectionPromptId.flatMap { pid in summaries.first { $0.promptId == pid } }
             ?? summaries.first
-        summaryPreview = shown?.responseText
+        summaryPreview = shown?.readerText
         summaryPromptName = shown.flatMap { promptNames[$0.promptId] }
 
         if let store = appState.crossReferenceStore {

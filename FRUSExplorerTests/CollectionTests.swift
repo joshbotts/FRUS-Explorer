@@ -8807,6 +8807,34 @@ struct TableCaptionExportTests {
         #expect(raised?.intValue == 1, "footnote 7's marker must print raised, as a marker: \(String(describing: raised))")
     }
 
+    /// The PDF's twin of `CollectionRenderingPinTests.structuredSummaryFields` (2026-10-31): a structured summary
+    /// prints a line a field, each label bold, where it printed its stored JSON. PDFKit reads no face back, so this
+    /// reads `summaryAttributedString`, the step the summary body and the headnote both call.
+    @Test("PDF prints a structured summary a line a field, each label bold, and a prose summary as stored")
+    @MainActor
+    func pdfPrintsAStructuredSummarysFields() {
+        let schema = StructuredSummarySchema(fields: [.init(name: "Subject", description: ""),
+                                                      .init(name: "KeyDecision", description: "")])
+        let exporter = PDFCollectionExporter()
+        let headnote = exporter.summaryAttributedString(#"{"KeyDecision": "It stands.", "Subject": "Cuba."}"#,
+                                                        format: .structured(schema: schema),
+                                                        fontSize: 10, italic: true, gray: 0.15)
+        #expect(headnote.string == "Subject: Cuba.\nKey Decision: It stands.")
+        let text = headnote.string as NSString
+        #expect(faces(in: headnote, over: text.range(of: "Subject:")) == ["Helvetica-BoldOblique"])
+        #expect(faces(in: headnote, over: text.range(of: "Key Decision:")) == ["Helvetica-BoldOblique"])
+        #expect(faces(in: headnote, over: text.range(of: " It stands.")) == ["Helvetica-Oblique"])
+
+        let body = exporter.summaryAttributedString(#"{"Subject": "Cuba."}"#, format: .structured(schema: schema),
+                                                    fontSize: 10, italic: false, gray: 0)
+        #expect(faces(in: body, over: (body.string as NSString).range(of: "Subject:")) == ["Helvetica-Bold"])
+
+        let prose = exporter.summaryAttributedString(#"{"Subject": "Cuba."}"#, format: .general,
+                                                     fontSize: 10, italic: false, gray: 0)
+        #expect(prose.string == #"{"Subject": "Cuba."}"#, "a summary written as prose prints as it is stored")
+        #expect(faces(in: prose, over: NSRange(location: 0, length: prose.length)) == ["Helvetica"])
+    }
+
     /// The PDF's twin of `docxBreaksAMultiLineCaption`: `inlineAttributedString` sets a `.lineBreak` as a newline.
     @Test("PDF prints ve07 d85's three-line caption as three lines above its rows, note a's marker after the title")
     @MainActor
