@@ -8828,9 +8828,10 @@ Further findings the owner may add: Speaker Jim Wright's four anchors, 109156's 
   Each failed a test only it reaches, 8 of the 18 tests in all. The first run of it found that a test read the calls by index after a failed count, which trapped the test process; the counts are now `#require`d first.
 - **No `swift test` owed:** no file under `FRUSCoreKit/` or a package target changed.
 - **Merged with `v2` at 3cc517fa (#1825).** Its tree is a2facbb6's but for one line of this plan, so the code these runs tested is the code merged.
+- **Merged with `v2` again at 4e6142c0 (#1826)** before the push. It conflicted only in this plan, where both entries are kept. #1826 touches none of this change's files, and the merged tree as a whole was not re-run.
 
 **Not done.**
 - **No device was measured,** and no iOS 26 system. On a 4,096-token window the 3,072 budget leaves an answer about 1,000 to 2,100 tokens (the budget entry's *Found, not fixed*). A long structured answer that overruns there is now asked for once more, and fails with the sentence if it overruns again.
 - **The app was not run with this build.** The service tests drive its retry; nothing here made the model overrun inside the app.
 
-**Not pushed.** Committed on `claude/quizzical-almeida-ce1da4`, on `v2` at 3cc517fa; no pull request without the owner's word.
+**Pushed and opened as #1827** against `v2` on the owner's word ("Make sure this branch is caught up with V2 head, then push and open PR", 2026-11-01).
