@@ -143,6 +143,9 @@ import ImageIO
 ///   1.25 — 2026-10-25 (FRUS Explorer Light, S18a): a prose item carries the spans the resolver decoded, which
 ///          `proseAttributedString` sets as it set `CollectionProse`'s; the colophon is dated by
 ///          `CollectionExportMetadata.exportDate`, `nil` being now, as before. The payloads it renders are FRUSCoreKit's
+///   1.26 — 2026-10-31: a structured summary, in a `.summaryOnly` body or a headnote, prints as its fields
+///          (`StructuredSummaryDisplay`), a line each opening with its label in bold, where it printed its stored
+///          JSON (`summaryAttributedString`); a `.general` summary prints as before
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -730,8 +733,8 @@ final class PDFCollectionExporter: CollectionExporter {
                 // a small gray caption line after the summary, mirroring the in-app
                 // "AI summary" badge.
                 let labeled = NSMutableAttributedString(
-                    string: summary,
-                    attributes: makeAttrs(fontSize: 10, bold: false))
+                    attributedString: summaryAttributedString(summary, format: doc.summaryFormat,
+                                                              fontSize: 10, italic: false, gray: 0))
                 labeled.append(NSAttributedString(string: "\n\n",
                                                   attributes: makeAttrs(fontSize: 4, bold: false)))
                 labeled.append(NSAttributedString(
@@ -764,7 +767,8 @@ final class PDFCollectionExporter: CollectionExporter {
         // Prepending shifts the painted highlight attribute ranges with their text, so
         // highlight shading stays aligned.
         let headnotedBody = doc.includeHeadnote
-            ? headnoteAttributedString(doc.headnoteText, authorship: doc.headnoteAuthorship, thenBody: bodyAttrStr)
+            ? headnoteAttributedString(doc.headnoteText, format: doc.headnoteFormat,
+                                       authorship: doc.headnoteAuthorship, thenBody: bodyAttrStr)
             : bodyAttrStr
 
         // Related documents (A10, Authoring Phase 5): a small trailing "See also:" line
@@ -897,6 +901,7 @@ final class PDFCollectionExporter: CollectionExporter {
     ///   - body: The already-built body attributed string to follow the headnote.
     /// - Returns: The combined attributed string.
     private func headnoteAttributedString(_ text: String?,
+                                          format: ResponseFormat,
                                           authorship: SummaryAuthorship,
                                           thenBody body: NSAttributedString) -> NSAttributedString {
         let combined = NSMutableAttributedString()
@@ -905,9 +910,9 @@ final class PDFCollectionExporter: CollectionExporter {
             string: label + "\n",
             attributes: makeAttrs(fontSize: 8, bold: true, gray: 0.35)))
         if let text, !text.isEmpty {
-            combined.append(NSAttributedString(
-                string: text + "\n",
-                attributes: makeStyledAttrs(fontSize: 10, bold: false, italic: true, gray: 0.15)))
+            let attrs = makeStyledAttrs(fontSize: 10, bold: false, italic: true, gray: 0.15)
+            combined.append(summaryAttributedString(text, format: format, fontSize: 10, italic: true, gray: 0.15))
+            combined.append(NSAttributedString(string: "\n", attributes: attrs))
             // Attribution honors the headnote's authorship (Composer redesign): AI keeps the
             // caption, an AI-edited headnote discloses the edit, a user-written one shows none.
             if let attribution = CollectionAIAttribution.headnoteLabel(authorship: authorship) {
@@ -926,6 +931,33 @@ final class PDFCollectionExporter: CollectionExporter {
                                            attributes: makeAttrs(fontSize: 4, bold: false)))
         combined.append(body)
         return combined
+    }
+
+    /// A stored summary's text in `fontSize` and `gray`, italic when `italic` (a headnote's): a structured
+    /// summary's fields a line each, the label and colon bold (`StructuredSummaryDisplay`), else the text as
+    /// it is stored, as it printed before 2026-10-31.
+    ///
+    /// - Parameters:
+    ///   - text: The summary's stored text.
+    ///   - format: The format it was written in.
+    /// - Returns: The attributed text, with no line break after it.
+    func summaryAttributedString(_ text: String, format: ResponseFormat,
+                                 fontSize: CGFloat, italic: Bool, gray: CGFloat) -> NSAttributedString {
+        // Not italic, `makeStyledAttrs` is `makeAttrs`, which the summary body printed in until now.
+        let plain = makeStyledAttrs(fontSize: fontSize, bold: false, italic: italic, gray: gray)
+        guard let fields = StructuredSummaryDisplay.fields(responseText: text, format: format) else {
+            return NSAttributedString(string: text, attributes: plain)
+        }
+        let label = makeStyledAttrs(fontSize: fontSize, bold: true, italic: italic, gray: gray)
+        let result = NSMutableAttributedString()
+        for (index, field) in fields.enumerated() {
+            if index > 0 { result.append(NSAttributedString(string: "\n", attributes: plain)) }
+            result.append(NSAttributedString(string: field.label + ":", attributes: label))
+            if !field.text.isEmpty {
+                result.append(NSAttributedString(string: " " + field.text, attributes: plain))
+            }
+        }
+        return result
     }
 
     // MARK: - Excerpt (Authoring Phase 5)

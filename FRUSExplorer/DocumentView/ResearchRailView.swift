@@ -507,8 +507,9 @@ struct ResearchRailView: View {
     @ViewBuilder private var summaryAccordion: some View {
         if appState.summarizationService != nil || vm.activeSummary != nil {
             Divider()
+            // A structured summary's fields on one line (*Label: text Label: text*), not its JSON.
             let preview = vm.activeSummary.map {
-                String($0.responseText.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
+                String($0.plainReaderText(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
             }
             accordionHeader(
                 title: String(localized: "panel.summary.title", defaultValue: "Summary"),

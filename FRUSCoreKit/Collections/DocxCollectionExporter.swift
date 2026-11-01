@@ -191,6 +191,9 @@ import Foundation
 ///          app's `FigureImageStore.shared` and `WordCloudExporter`: the app's `ExportFormat.makeExporter()` passes both,
 ///          and an exporter given none draws no cloud. `documentData(metadata:items:options:wordCloud:)` gives the
 ///          bytes `export` writes, with the cloud as data, for a host that keeps them
+///   1.26 — 2026-10-31: a structured summary, in a `.summaryOnly` body or a headnote, prints as its fields
+///          (`StructuredSummaryDisplay`), a paragraph each opening with its label in a bold run, where it printed
+///          its stored JSON; a `.general` summary prints as before
 public final class DocxCollectionExporter: CollectionExporter {
 
     /// Where figure images come from (#1516): the app's store, which `ExportFormat.makeExporter()`
@@ -695,7 +698,7 @@ public final class DocxCollectionExporter: CollectionExporter {
         // requested headnote with no stored summary renders the placeholder note
         // (headnote resolution never generates on demand).
         if doc.includeHeadnote {
-            body += headnoteXML(doc.headnoteText, authorship: doc.headnoteAuthorship)
+            body += headnoteXML(doc.headnoteText, format: doc.headnoteFormat, authorship: doc.headnoteAuthorship)
         }
 
         // Body — controlled by doc.bodyDepth (per-entry effective depth).
@@ -732,13 +735,19 @@ public final class DocxCollectionExporter: CollectionExporter {
         case .summaryOnly:
             if let summary = doc.summaryText, !summary.isEmpty {
                 body += styledPara("Summary", styleId: "Heading3")
-                let summaryParas = summary
-                    .components(separatedBy: "\n\n")
-                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-                for para in summaryParas {
-                    body += styledPara(
-                        escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)),
-                        styleId: "Normal")
+                if let fields = StructuredSummaryDisplay.fields(responseText: summary, format: doc.summaryFormat) {
+                    for field in fields {
+                        body += wPara(runs: fieldRuns(field, italic: false), styleId: "Normal")
+                    }
+                } else {
+                    let summaryParas = summary
+                        .components(separatedBy: "\n\n")
+                        .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                    for para in summaryParas {
+                        body += styledPara(
+                            escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)),
+                            styleId: "Normal")
+                    }
                 }
                 // AI attribution (v1.14): generated text is always labeled in exports —
                 // a caption paragraph in the existing DocURL apparatus style, so
@@ -2023,15 +2032,39 @@ public final class DocxCollectionExporter: CollectionExporter {
         + "    </w:p>\n"
     }
 
+    /// A structured summary's field as the runs of one paragraph: its label and colon in a bold run,
+    /// then its text, every run italic when `italic` (a headnote's). A line break in the text, which a
+    /// summary stored before 2026-10-31 can hold, prints as a space, as a headnote's always has.
+    private func fieldRuns(_ field: StructuredSummaryDisplay.Field, italic: Bool) -> String {
+        let slant = italic ? "<w:i/>" : ""
+        var runs = "<w:r><w:rPr><w:b/>\(slant)</w:rPr><w:t xml:space=\"preserve\">\(escaped(field.label)):</w:t></w:r>"
+        if !field.text.isEmpty {
+            let text = field.text.replacingOccurrences(of: "\n", with: " ")
+            let properties = italic ? "<w:rPr><w:i/></w:rPr>" : ""
+            runs += "<w:r>\(properties)<w:t xml:space=\"preserve\"> \(escaped(text))</w:t></w:r>"
+        }
+        return runs
+    }
+
     /// Emits the headnote block (Authoring Phase 5): a small bold "Headnote" label
     /// paragraph followed by the abstract in italic runs — or, when `text` is nil/empty
     /// (a requested headnote with no stored summary), the italic placeholder note.
-    /// Paragraph breaks in the abstract split into separate paragraphs.
-    private func headnoteXML(_ text: String?, authorship: SummaryAuthorship) -> String {
+    /// Paragraph breaks in the abstract split into separate paragraphs; a structured headnote
+    /// (`format`) prints a paragraph per field, its label bold.
+    private func headnoteXML(_ text: String?, format: ResponseFormat, authorship: SummaryAuthorship) -> String {
         let label = String(localized: "collection.headnote.label", defaultValue: "Headnote")
         var xml = wPara(
             runs: "<w:r><w:rPr><w:b/></w:rPr><w:t xml:space=\"preserve\">\(escaped(label))</w:t></w:r>",
             styleId: "Normal")
+        if let text, let fields = StructuredSummaryDisplay.fields(responseText: text, format: format) {
+            for field in fields {
+                xml += wPara(runs: fieldRuns(field, italic: true), styleId: "Normal")
+            }
+            if let attribution = CollectionAIAttribution.headnoteLabel(authorship: authorship) {
+                xml += styledPara(escaped(attribution), styleId: "DocURL")
+            }
+            return xml
+        }
         let content: String
         if let text, !text.isEmpty {
             content = text

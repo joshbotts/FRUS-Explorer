@@ -445,84 +445,84 @@ Document tools
 <!-- END SOURCE: researchRail.tools.info.heading -->
 
 #### Cite — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1070–1070 | key: researchRail.tile.cite | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1071–1071 | key: researchRail.tile.cite | shared: iOS+macOS (single edit point) -->
 
 Cite
 
 <!-- END SOURCE: researchRail.tile.cite -->
 
 #### Cite — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1071–1072 | key: researchRail.tile.cite.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1072–1073 | key: researchRail.tile.cite.help | shared: iOS+macOS (single edit point) -->
 
 Cite this document — copy a formatted citation or export BibTeX/RIS
 
 <!-- END SOURCE: researchRail.tile.cite.help -->
 
 #### Word Cloud — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1077–1077 | key: researchRail.tile.wordCloud | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1078–1078 | key: researchRail.tile.wordCloud | shared: iOS+macOS (single edit point) -->
 
 Word Cloud
 
 <!-- END SOURCE: researchRail.tile.wordCloud -->
 
 #### Word Cloud — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1078–1079 | key: researchRail.tile.wordCloud.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1079–1080 | key: researchRail.tile.wordCloud.help | shared: iOS+macOS (single edit point) -->
 
 Show a word cloud of this document’s most frequent terms
 
 <!-- END SOURCE: researchRail.tile.wordCloud.help -->
 
 #### Sources — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1084–1084 | key: researchRail.tile.sources | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1085–1085 | key: researchRail.tile.sources | shared: iOS+macOS (single edit point) -->
 
 Sources
 
 <!-- END SOURCE: researchRail.tile.sources -->
 
 #### Sources — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1085–1086 | key: researchRail.tile.sources.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1086–1087 | key: researchRail.tile.sources.help | shared: iOS+macOS (single edit point) -->
 
 Resolve this document’s source note in the NARA Catalog or RG-59 records
 
 <!-- END SOURCE: researchRail.tile.sources.help -->
 
 #### Graph — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1091–1091 | key: researchRail.tile.graph | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1092–1092 | key: researchRail.tile.graph | shared: iOS+macOS (single edit point) -->
 
 Graph
 
 <!-- END SOURCE: researchRail.tile.graph -->
 
 #### Graph — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1092–1093 | key: researchRail.tile.graph.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1093–1094 | key: researchRail.tile.graph.help | shared: iOS+macOS (single edit point) -->
 
 Show this document’s cross-reference graph
 
 <!-- END SOURCE: researchRail.tile.graph.help -->
 
 #### Related — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1098–1098 | key: researchRail.tile.related | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1099–1099 | key: researchRail.tile.related | shared: iOS+macOS (single edit point) -->
 
 Related
 
 <!-- END SOURCE: researchRail.tile.related -->
 
 #### Related — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1099–1100 | key: researchRail.tile.related.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1100–1101 | key: researchRail.tile.related.help | shared: iOS+macOS (single edit point) -->
 
 Find related documents by archival provenance, cross-references, date, and shared people
 
 <!-- END SOURCE: researchRail.tile.related.help -->
 
 #### Share — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1105–1105 | key: researchRail.tile.share | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1106–1106 | key: researchRail.tile.share | shared: iOS+macOS (single edit point) -->
 
 Share
 
 <!-- END SOURCE: researchRail.tile.share -->
 
 #### Share — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1106–1107 | key: researchRail.tile.share.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1107–1108 | key: researchRail.tile.share.help | shared: iOS+macOS (single edit point) -->
 
 Share or export this document
 
@@ -593,28 +593,28 @@ mistag the app went on quoting the old reading — and the Undo beside it put th
 into the index. Both now read FRUS's parse as it stands.
 
 #### When FRUS adopts the reader's correction
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1188–1189 | key: panel.classification.overrideNowRedundant | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1189–1190 | key: panel.classification.overrideNowRedundant | shared: iOS+macOS (single edit point) -->
 
 FRUS now tags this the same way, so your correction no longer changes anything. You can restore FRUS’s classification.
 
 <!-- END SOURCE: panel.classification.overrideNowRedundant -->
 
 #### FRUS's own tagging, beside the reader's correction
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1191–1192 | key: panel.classification.overridden %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1192–1193 | key: panel.classification.overridden %@ | shared: iOS+macOS (single edit point) -->
 
 FRUS tags this as %@ — reclassified by you.
 
 <!-- END SOURCE: panel.classification.overridden %@ -->
 
 #### The inline noun for an editorial note
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1194–1195 | key: panel.classification.note.inline | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1195–1196 | key: panel.classification.note.inline | shared: iOS+macOS (single edit point) -->
 
 an editorial note
 
 <!-- END SOURCE: panel.classification.note.inline -->
 
 #### The inline noun for a document
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1196–1197 | key: panel.classification.document.inline | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1197–1198 | key: panel.classification.document.inline | shared: iOS+macOS (single edit point) -->
 
 a document
 
@@ -1555,7 +1555,7 @@ corpus). Softening the "cannot see this change" sentence would turn a disclosed 
 silent inconsistency.*
 
 #### The override confirmation warning
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | reclassify confirmation | lines: 1226–1227 | key: classification.override.warning.v2 -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | reclassify confirmation | lines: 1227–1228 | key: classification.override.warning.v2 -->
 
 The document’s body styling, badges, search filters, counts, and exports will follow the new classification on all your devices. Bundled series-analytics dashboards are computed from the published corpus and cannot see this change, and other open windows reflect it when reopened. You can restore FRUS’s own classification at any time from here or from Settings ▸ Search.
 
@@ -1759,7 +1759,7 @@ Artifact: drawn from the bundled source-provenance aggregate generated %@. Every
 *Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, the notice for a link that only works inside a document, and the line a volume's page in Browse shows when a page link opened it.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3186–3187 | key: deepLink.inAppOnly %@ -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3189–3190 | key: deepLink.inAppOnly %@ -->
 
 This is a “%@” link from inside a FRUS document. It works while reading that document in the app, not on its own.
 
@@ -2192,7 +2192,7 @@ Detected automatically from the text, not editorial subject headings — so some
 <!-- END SOURCE: panel.subjects.caveat -->
 
 #### Apple Intelligence is not available on this device, so new…
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | ResearchRailView.summaryAccordion | lines: 558–559 | key: panel.summary.unavailable | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | ResearchRailView.summaryAccordion | lines: 559–560 | key: panel.summary.unavailable | shared: iOS only -->
 
 Apple Intelligence is not available on this device, so new summaries cannot be generated. Summaries from your other devices still appear here via iCloud.
 
@@ -2657,56 +2657,56 @@ Search the index, browse volumes, paste citations or history.state.gov links, or
 <!-- END SOURCE: collection.editor.addDocuments.footer -->
 
 #### Field prompt — Overrides the document title in the table of contents and…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.identitySection | lines: 375–376 | key: collection.inspector.titleOverride.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.identitySection | lines: 380–381 | key: collection.inspector.titleOverride.caption -->
 
 Overrides the document title in the table of contents and the export heading. Leave blank to use the derived title.
 
 <!-- END SOURCE: collection.inspector.titleOverride.caption -->
 
 #### Checked notes are included when research notes apply to…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 446–447 | key: collection.inspector.note.selectionCaption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 451–452 | key: collection.inspector.note.selectionCaption -->
 
 Checked notes are included when research notes apply to this document. Unselecting every note turns notes off for it.
 
 <!-- END SOURCE: collection.inspector.note.selectionCaption -->
 
 #### Checked passages are included when highlights apply to this…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 531–532 | key: collection.inspector.highlight.selectionCaption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 536–537 | key: collection.inspector.highlight.selectionCaption -->
 
 Checked passages are included when highlights apply to this document. Unselecting every passage turns highlights off for it.
 
 <!-- END SOURCE: collection.inspector.highlight.selectionCaption -->
 
 #### Adds a “See also” line listing cross-referenced documents…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overrideControls | lines: 715–716 | key: collection.inspector.override.related.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overrideControls | lines: 720–721 | key: collection.inspector.override.related.caption -->
 
 Adds a “See also” line listing cross-referenced documents that are also in this collection. Off unless turned on here or on the section.
 
 <!-- END SOURCE: collection.inspector.override.related.caption -->
 
 #### Default follows the section’s setting when its heading sets…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overridesSection | lines: 767–768 | key: collection.inspector.overrides.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overridesSection | lines: 772–773 | key: collection.inspector.overrides.caption -->
 
 Default follows the section’s setting when its heading sets one, else the collection’s composition.
 
 <!-- END SOURCE: collection.inspector.overrides.caption -->
 
 #### Documents in this section use these settings unless they…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.sectionDefaultsSection | lines: 780–781 | key: collection.inspector.sectionDefaults.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.sectionDefaultsSection | lines: 785–786 | key: collection.inspector.sectionDefaults.caption -->
 
 Documents in this section use these settings unless they set their own. Default falls through to the collection’s composition.
 
 <!-- END SOURCE: collection.inspector.sectionDefaults.caption -->
 
 #### Reorder or delete excerpts in the collection list. Insert…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.excerptsSection | lines: 896–897 | key: collection.inspector.excerpts.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.excerptsSection | lines: 901–902 | key: collection.inspector.excerpts.caption -->
 
 Reorder or delete excerpts in the collection list. Insert new ones from the highlight rows above.
 
 <!-- END SOURCE: collection.inspector.excerpts.caption -->
 
 #### No headnote yet. Edit to write a key takeaway, or generate…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.headnoteCard | lines: 993–994 | key: collection.inspector.headnote.empty -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.headnoteCard | lines: 998–999 | key: collection.inspector.headnote.empty -->
 
 No headnote yet. Edit to write a key takeaway, or generate a document summary to seed one.
 
@@ -2729,7 +2729,7 @@ Connect a Zotero account to send with your tags & research notes. Without one th
 #### Send to Zotero Library — the Zotero collection made for a collection with no name
 <!-- #1497, your decision D16 (2026-09-28): new in lane EXPORT. Only the Zotero send uses it; a file
      export of the same collection keeps "Untitled Collection". -->
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1526–1527 | key: export.zotero.collection.untitled %@ -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1542–1543 | key: export.zotero.collection.untitled %@ -->
 
 FRUS Explorer Collection - %@
 
@@ -2749,14 +2749,14 @@ Untitled section
 <!-- END SOURCE: collection.inspector.section.untitled -->
 
 #### Compiled with FRUS Explorer · \(…) document\(…) from \(…)…
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 948–949 | key: export.colophon.line -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 964–965 | key: export.colophon.line -->
 
 Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") from \(volCount) volume\(volCount == 1 ? "" : "s") · \(df.string(from: date))
 
 <!-- END SOURCE: export.colophon.line -->
 
 #### No stored summary for this document — generate one in the…
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteHTML | lines: 465–466 | key: collection.headnote.missing | same text also in: FRUSCoreKit/Collections/DocxCollectionExporter.swift, FRUSExplorer/Collections/PDFCollectionExporter.swift -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteHTML | lines: 464–465 | key: collection.headnote.missing | same text also in: FRUSCoreKit/Collections/DocxCollectionExporter.swift, FRUSExplorer/Collections/PDFCollectionExporter.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 No stored summary for this document — generate one in the document view to fill this headnote.

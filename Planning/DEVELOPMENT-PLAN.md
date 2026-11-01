@@ -8623,3 +8623,50 @@ Mutation, after a checkpoint commit: the synthesis budget taken from the reader'
 - **Guided generation could run away** (one chunk of `frus1964-68v04/d77`: 199 s, then the context limit). Plain text did not in 713 answers, but one JSON-as-text answer did (165 s); no answer length is capped.
 
 **Pushed and opened as #1822** against `v2` on the owner's word ("Yes", 2026-10-31), as a pull request of its own; the follow-ups stay separate.
+
+## Session 2026-10-31 — A structured summary shows as its fields on every surface that showed its JSON: the collection inspector and exports, the note editor, the Research rail and the search index
+
+**What was asked.** #1822 left a structured summary's stored JSON (`{"KeyParticipants": "…", …}`) on the surfaces outside the two readers, as *Found, not fixed* in its entry above. Show the fields there, asking the owner surface by surface first. A build-52 candidate.
+
+**The owner's decisions** (AskUserQuestion, 2026-10-31), each the recommended option:
+1. Collection inspector: "Fields, and fix Edit". The headnote card and the AI summary preview show the fields. **Edit** opens on them as *Label: text* lines and saves plain text, and **Regenerate** stores the format its prompt answers in.
+2. Collection exports: "Bold labels". One paragraph per field, its label bold, as the readers show it.
+3. Note editor: "Label: text lines". The Generated Summaries row shows the fields, and **Insert into note** adds one *Label: text* paragraph per field.
+4. Also: "Rail's 80-char preview" and "Search index's summary text". The index surface was not on #1822's list.
+
+**What changed.**
+- **FRUSCoreKit.** `StructuredSummaryDisplay` moved into the kit, public (`FRUSCoreKit/Models/StructuredSummaryDisplay.swift`), so the exporters read the fields. Its `label(for:)` is the rule `StructuredSectionAnswer.heading(for:)` now forwards to. It adds `plainText(responseText:format:separator:)`: each field as *Label: text*, or *Label:* alone when empty. The app keeps the bold `AttributedString` drawing as an extension (`StructuredSummaryText.swift`), with `GeneratedSummary.plainReaderText(separator:)` and `indexedText`.
+- **The export values carry each summary's format.** `CollectionExportDocument` gains `summaryFormat` and `headnoteFormat`, both `.general` by default. The assembly sets them from each summary's record: a headnote, a stored summary attached to a preview or to a refreshed row, and a summary the data source answers an export with. To carry that last one, `CollectionContentDataSource.generateSummaries` answers with `GeneratedSummaryExport` records, not text; the app's resolver maps its `GeneratedSummary`s.
+- **`withSummary(_:format:)` keeps the headnote's authorship.** The copy had dropped it to `.aiGenerated`. So a summary-depth document's headnote the reader wrote or edited was labelled *AI-generated summary* in the preview and the exports. Found here, because the copy is where the new format had to be carried; the resolution test below pins it.
+- **The exporters.** HTML (`CollectionItemHTMLRenderer`), Word (`DocxCollectionExporter`) and PDF (`PDFCollectionExporter`, the app's) print a structured summary as one paragraph per field, opening with *Label:* in bold (`<strong>`, a bold run, a bold font). This covers a summary-depth body and a headnote, whose fields stay italic. A `.general` summary prints byte for byte as before. The preview is the HTML renderer's, so it follows.
+- **The collection inspector.** The headnote card and the AI summary preview draw `readerText`. **Edit** opens on `headnoteSeedText(_:)`, the fields as *Label: text* paragraphs. A Save that leaves that text unchanged is still a no-op, since it compares with the same text. **Regenerate** passes the prompt's `responseFormat` to the draft. It had stored a structured answer as `.general`, so no surface could have read its fields.
+- **The note editor.** `SummaryPromotionRow` draws `readerText`. `promoteSummary` inserts `plainReaderText()`.
+- **The Research rail.** The Summary accordion's preview is `plainReaderText(separator: " ")`, cut at 80 characters.
+- **The search index.** Every writer of `summary_text` writes `indexedText`: `SummarizationService.summarize`, the launch's sync, the sync after a volume indexes, and `updateSummary(_:)`. A structured summary's keys are no longer searchable words. Related Documents' rows and Project Home's Suggested Next lines (`documentSnippets`) read as the fields. The launch's sync skips a row already current, so the first launch of this build rewrites each structured row once. No index version: the column is the reader's content, which the sync keeps level.
+- **The manuals** (iOS and macOS) say a structured headnote shows its fields and Edit opens on them as plain lines, that exports print the fields with bold names, and that Insert into note adds one *Name: text* paragraph per field.
+- **`Docs/EditableContent/`:** 35 ranged blocks in four files were moved by this diff's line shifts. Each was mapped through the diff's hunks, and all 39 keys they cite are inside their new ranges. No string was added or changed; `Amendment-Log.md` records the re-point.
+
+**Tests.**
+- **`StructuredSummaryDisplayTests`** (kit, new file, run by Xcode and `swift test`; 4 tests). Labels; the schema's order then the rest; no fields for prose or non-JSON text; the plain text with either separator, an empty field, and prose as stored. Two of these moved from the app's suite, now `StructuredSummaryReaderTextTests`. That suite adds a test of `plainReaderText`, `indexedText` and the inspector's Edit seed, for a structured summary and a prose one.
+- **`CollectionResolutionTests.summaryFormatAndHeadnoteAuthorship`.** The format reaches the headnote and the summary body in a preview, a single-row refresh and an export. The headnote stays `.userWritten` through the summary phase. The resolved page prints the fields and not the JSON. The items dump shows a structured format; `.general` adds nothing, so the pinned items digest held.
+- **`CollectionRenderingPinTests.structuredSummaryFields`.** The everything fixture gains `d11`: a structured summary-depth body with a structured headnote, members out of order, an empty field, and text to escape. The test reads its paragraphs and runs in the page and the package.
+- **The pins.** `everything.html` and `everything.docx` were re-taken for `d11`, with the reason above them. With `d11` taken out, the new code matched both 2026-10-25 pins, so no byte of the documents already pinned moved. BibTeX and RIS held.
+- **`ResearchNoteEditorTests`:** a structured summary inserted after the body's own text.
+- **`DocumentRevisionsTests`:** `updateSummary(_:)` writes the fields to `summary_text`, and a prose summary as it is.
+- **Mutation**, five at once in a second worktree, over the kit's suites (`swift test --filter FRUSCoreKitTests`: 17 issues, each mutation caught):
+  - the HTML ignores the format: `structuredSummaryFields`, the resolution test's page, and the `everything.html` pin;
+  - the summary phase drops the format: the resolution test's preview, dump and export;
+  - `withSummary` drops the headnote's authorship again: the resolution test's preview and export;
+  - Word's label loses its bold: the `everything.docx` pin (the readable Word assertions did not run, since the first mutation had stopped that test at its `#require`);
+  - the plain text ignores its separator: `StructuredSummaryDisplayTests.plainText`.
+- **`CollectionTests.pdfPrintsAStructuredSummarysFields`:** the PDF's `summaryAttributedString`, a line a field, read by its faces (Helvetica-BoldOblique for a headnote's label, Helvetica-Bold for a body's), and a prose summary in Helvetica as stored.
+
+**Checked.** Xcode 27.2 on macOS 27.2, each heavy job through `Scripts/heavy.sh`:
+- **`swift build --target FRUSCoreKit`:** "Build complete!".
+- **`swift test`**, the whole package: exit 0, 38 `Test run with` lines, each passed, 3,257 tests in all.
+- **The full unit target**, on the iPhone 17 simulator (iOS 27.0), built from empty in this worktree: "✔ Test run with 7821 tests in 936 suites passed after 420.426 seconds." That is #1822's 7,812 and the 9 new; the result bundle reads 0 failed and 37 skipped, the same 37 environmental skips. Its build showed one new warning, the test's call into the inspector's main-actor `headnoteSeedText`, which is now `nonisolated`; that suite rebuilt and ran again, 4 of 4, with no warning but the known `GeneratedSummary` residue.
+- **`FRUSExplorerMac`**, DirectDistribution, unsigned, built from empty: "** BUILD SUCCEEDED **", with only the same residue.
+
+**Not done.**
+- **The app was not run with this build,** so no surface was looked at. The tests read the values, the markup, the PDF's faces and the stored text, not the drawn screens.
+- **No push or PR**, without the owner's word.

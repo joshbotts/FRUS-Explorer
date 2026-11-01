@@ -33,7 +33,22 @@ import Crypto
 /// Version history:
 ///   1.0 — 2026-10-25 (FRUS Explorer Light, S18a): initial implementation, with the exporters'
 ///          move into the kit
+///   1.1 — 2026-10-31: the everything collection holds a structured summary (`d11`, `meeting`), at
+///          summary depth with a structured headnote
 enum CollectionRenderingFixtures {
+
+    /// The Meeting Record template's fields, as `SummarizationPromptSeeder` seeds them.
+    static let meeting = StructuredSummarySchema(fields: [
+        .init(name: "KeyParticipants", description: "Principal speakers"),
+        .init(name: "Topics", description: "Main subjects discussed"),
+        .init(name: "Agreements", description: "Points of consensus"),
+        .init(name: "Disagreements", description: "Points of divergence"),
+    ])
+
+    /// A headnote's fields.
+    static let headnoteFields = StructuredSummarySchema(fields: [
+        .init(name: "Subject", description: ""), .init(name: "Outcome", description: ""),
+    ])
 
     /// 2026-10-25 at noon UTC, written in `en_US`, read in UTC.
     static let exportDate = CollectionExportDate(
@@ -194,6 +209,17 @@ enum CollectionRenderingFixtures {
                 highlights: [try highlight("this morning", in: flat, color: .green)],
                 includeHeadnote: true, headnoteText: nil,
                 applyHighlightsOverride: false, includeFootnotesOverride: false)),
+            // A structured summary and headnote, stored as their JSON: members out of the schema's
+            // order, an empty field, and text the page and the package escape.
+            .document(CollectionExportDocument(
+                documentId: "d11", volumeId: volume, sortOrder: 6, bodyDepth: .summaryOnly,
+                title: "Cuban Missile Crisis — d11", bodyText: "",
+                citation: "Foreign Relations of the United States, 1961–1963, _Volume XI_, Document 11.",
+                historyStateGovURL: "https://history.state.gov/historicaldocuments/\(volume)/d11",
+                summaryText: #"{"Disagreements": "", "Topics": "The quarantine & its <terms>", "KeyParticipants": "The President; Bundy"}"#,
+                summaryFormat: .structured(schema: meeting),
+                includeHeadnote: true, headnoteText: #"{"Outcome": "Agreed.", "Subject": "The \"quarantine\""}"#,
+                headnoteFormat: .structured(schema: headnoteFields), headnoteAuthorship: .aiGenerated)),
             .excerpt(CollectionExportExcerpt(text: "An unattributed passage.", documentId: "", volumeId: "",
                                              citation: "", colorTag: nil)),
             .generated(CollectionGeneratedBlock(type: .archivalSources, title: "Sources & Archives", rows: [
@@ -254,8 +280,15 @@ enum CollectionRenderingFixtures {
 /// exports, compared byte for byte before and after the move, showed changes no byte. A change to
 /// what an export prints moves them: re-take each from the failure message, and say why here.
 ///
+/// Re-taken 2026-10-31 for `everything.html` and `everything.docx`, because the everything collection
+/// gained `d11`, a structured summary at summary depth with a structured headnote, which the exporters
+/// print as its fields from that day. Rendered by the new code with `d11` taken out, both matched their
+/// 2026-10-25 pins (42,639 and 36,190 bytes), so no byte of the documents already pinned moved; BibTeX
+/// and RIS print no summary, and `d11` has no Zotero item, so their pins hold.
+///
 /// Version history:
 ///   1.0 — 2026-10-25 (FRUS Explorer Light, S18a): initial implementation
+///   1.1 — 2026-10-31: `structuredSummaryFields`; the page and the package re-pinned for `d11`
 @Suite("A collection renders the same HTML, Word, BibTeX and RIS from the same values")
 struct CollectionRenderingPinTests {
 
@@ -263,8 +296,8 @@ struct CollectionRenderingPinTests {
 
     /// Each output's SHA-256 and byte count.
     static let pins: [String: (sha256: String, bytes: Int)] = [
-        "everything.html": ("bc54a86dcf13ee0432db167548b6528aa1a3aba47cd744688a5a338a8a303355", 42_639),
-        "everything.docx": ("13f840be58970d519029ad0063a353b554e0cb7e63ca15526e1d810ed9fa2279", 36_190),
+        "everything.html": ("96c80c78cae33b6bd8ebdf8aa1bb5251b55c51f69e5e5159d9c40766dfe11eb1", 43_927),
+        "everything.docx": ("93c70b760ebc3b07076c052dcac71e64adb2119aa408df746b71286aaeb1943b", 38_622),
         "everything.bib": ("e04c1eb921acae782e6113bcc18055dc81e9e43dbb9eca97848c6356c78df7ad", 1_061),
         "everything.ris": ("25e92393bdda73437bfcf1879d65cb790eb62df10c964a135d596faabcdc4fbc", 810),
         "plain.html": ("5d4be78dba1e92b929c95e99e0dea797efda25287c99a8ddcc91564e46a5b661", 28_266),
@@ -307,6 +340,38 @@ struct CollectionRenderingPinTests {
         #expect(package.contains("word/media/wordcloud.png") && package.contains("word/media/figure1.png"))
         #expect(package.contains("<w:highlight w:val=\"yellow\"/>"))
         Self.expectPin("everything.docx", data)
+    }
+
+    /// A structured summary was printed as its stored JSON until 2026-10-31; the readers showed its
+    /// fields from that day, and the exports print them as the readers do: a paragraph a field, in the
+    /// schema's order, each opening with its label in bold, the headnote's in italics as well.
+    @Test("A structured summary and headnote print as their fields, in the page and the package")
+    func structuredSummaryFields() async throws {
+        let (metadata, items, options) = try await F.everything()
+        let html = CollectionItemHTMLRenderer(options: options).pageHTML(metadata: metadata, items: items)
+        for paragraph in ["<p><strong>Key Participants:</strong> The President; Bundy</p>",
+                          "<p><strong>Topics:</strong> The quarantine &amp; its &lt;terms&gt;</p>",
+                          "<p><strong>Disagreements:</strong></p>",
+                          "<p><em><strong>Subject:</strong> The &quot;quarantine&quot;</em></p>",
+                          "<p><em><strong>Outcome:</strong> Agreed.</em></p>"] {
+            #expect(html.contains(paragraph), "\(paragraph)")
+        }
+        let subject = try #require(html.range(of: "<strong>Subject:</strong>"))
+        let outcome = try #require(html.range(of: "<strong>Outcome:</strong>"))
+        #expect(subject.lowerBound < outcome.lowerBound, "the headnote's fields are not in the schema's order")
+        #expect(!html.contains("{&quot;"), "a stored JSON object is printed")
+
+        let package = String(decoding: DocxCollectionExporter().documentData(metadata: metadata, items: items,
+                                                                              options: options),
+                             as: UTF8.self)
+        let bold = #"<w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">"#
+        let boldItalic = #"<w:r><w:rPr><w:b/><w:i/></w:rPr><w:t xml:space="preserve">"#
+        for runs in [bold + #"Key Participants:</w:t></w:r><w:r><w:t xml:space="preserve"> The President; Bundy</w:t></w:r>"#,
+                     bold + "Disagreements:</w:t></w:r>\n",
+                     boldItalic + #"Subject:</w:t></w:r><w:r><w:rPr><w:i/></w:rPr><w:t xml:space="preserve"> The &quot;quarantine&quot;</w:t></w:r>"#] {
+            #expect(package.contains(runs), "\(runs)")
+        }
+        #expect(!package.contains("{&quot;") && !package.contains(#"{"Outcome""#), "a stored JSON object is printed")
     }
 
     @Test("The everything collection's BibTeX and RIS")

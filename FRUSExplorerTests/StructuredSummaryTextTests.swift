@@ -227,32 +227,19 @@ struct StructuredSectionAnswerTests {
 
 // MARK: - StructuredSummaryDisplayTests
 
-/// A stored summary as the reader shows it (2026-10-31).
+/// A stored summary as the reader draws it (2026-10-31). The fields themselves are FRUSCoreKit's, and
+/// so are their tests (`FRUSCoreKit/StructuredSummaryDisplayTests.swift`).
 ///
 /// Version history:
 ///   1.0 — 2026-10-31: initial implementation
-@Suite("Structured summary display")
-struct StructuredSummaryDisplayTests {
+///   1.1 — 2026-10-31: the field tests moved into the kit's suite with `StructuredSummaryDisplay`; the
+///          plain text a summary is inserted and indexed as, and the inspector's Edit seed, added
+@Suite("Structured summary reader text")
+struct StructuredSummaryReaderTextTests {
 
-    /// Guided generation stored its members in no fixed order; the reader shows the schema's.
-    @Test("A structured summary's fields come labelled, in the schema's order, then any others by name")
-    func fieldsInSchemaOrder() throws {
-        let stored = #"{"Disagreements": "D", "Extra": "E", "KeyParticipants": "K", "Topics": "T", "Agreements": "A", "Aside": "S"}"#
-        let fields = try #require(StructuredSummaryDisplay.fields(responseText: stored, format: .structured(schema: meeting)))
-        #expect(fields.map(\.label) == ["Key Participants", "Topics", "Agreements", "Disagreements", "Aside", "Extra"])
-        #expect(fields.map(\.text) == ["K", "T", "A", "D", "S", "E"])
-    }
-
-    @Test("Plain text, and text that is not a JSON object of strings, is shown as stored")
+    @Test("Text that is not a structured summary's object is drawn as stored")
     func storedTextAsIs() {
-        let structured = ResponseFormat.structured(schema: meeting)
-        #expect(StructuredSummaryDisplay.fields(responseText: #"{"Topics": "T"}"#, format: .general) == nil)
-        #expect(StructuredSummaryDisplay.fields(responseText: "An edited headnote.", format: structured) == nil)
-        #expect(StructuredSummaryDisplay.fields(responseText: #"{"Topics": 3}"#, format: structured) == nil)
-        #expect(StructuredSummaryDisplay.fields(responseText: "{}", format: structured) == nil)
-        #expect(StructuredSummaryDisplay.fields(responseText: #"["Topics"]"#, format: structured) == nil)
-
-        let edited = StructuredSummaryDisplay.text(responseText: "An edited headnote.", format: structured)
+        let edited = StructuredSummaryDisplay.text(responseText: "An edited headnote.", format: .structured(schema: meeting))
         #expect(String(edited.characters) == "An edited headnote.")
     }
 
@@ -275,5 +262,27 @@ struct StructuredSummaryDisplayTests {
         let fields = try #require(StructuredSummaryDisplay.fields(responseText: json, format: .structured(schema: meeting)))
         #expect(fields == [.init(label: "Key Participants", text: "K."), .init(label: "Topics", text: "T."),
                            .init(label: "Agreements", text: "A."), .init(label: "Disagreements", text: "D.")])
+    }
+
+    /// Insert into note, the search index and the rail's preview read the summary's plain text; the
+    /// collection inspector's Edit opens on it.
+    @Test("A summary's plain text, index text and Edit seed are its fields, and a prose summary's its text")
+    func plainReaderText() {
+        let structured = GeneratedSummary(
+            documentId: "d1", volumeId: "frus1969-76v01", promptId: UUID(),
+            responseText: #"{"Topics": "Tariffs.", "KeyParticipants": "The Minister."}"#,
+            responseFormat: .structured(schema: meeting))
+        let fields = "Key Participants: The Minister.\n\nTopics: Tariffs."
+        #expect(structured.plainReaderText() == fields)
+        #expect(structured.plainReaderText(separator: " ") == "Key Participants: The Minister. Topics: Tariffs.")
+        #expect(structured.indexedText == fields)
+        #expect(CollectionEntryInspector.headnoteSeedText(structured) == fields)
+
+        let prose = GeneratedSummary(documentId: "d1", volumeId: "frus1969-76v01", promptId: UUID(),
+                                     responseText: "The Minister discussed tariffs.")
+        #expect(prose.plainReaderText() == "The Minister discussed tariffs.")
+        #expect(prose.indexedText == "The Minister discussed tariffs.")
+        #expect(CollectionEntryInspector.headnoteSeedText(prose) == "The Minister discussed tariffs.")
+        #expect(CollectionEntryInspector.headnoteSeedText(nil) == "")
     }
 }

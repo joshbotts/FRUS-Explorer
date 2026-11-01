@@ -579,6 +579,11 @@ public struct CollectionExportOptions: Sendable {
 ///          untouched collection — render byte-identically
 ///   1.7 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, so a host outside
 ///          the app resolves a document into the payload the app's exporters render
+///   1.8 — 2026-10-31: added `summaryFormat` and `headnoteFormat`, the formats the two summaries
+///          were written in, so the exporters print a structured one as its labelled fields
+///          (`StructuredSummaryDisplay`) and not as its stored JSON. Both default to `.general`,
+///          which prints as before. `withSummary(_:format:)` takes the summary's format, and now
+///          keeps the headnote's authorship, which the copy had dropped to `.aiGenerated`
 public struct CollectionExportDocument: Sendable {
     /// The FRUS document identifier (e.g. `"d1"`).
     public let documentId: String
@@ -615,9 +620,12 @@ public struct CollectionExportDocument: Sendable {
     public let header: String
     /// The dateline extracted from the TEI body.
     public let dateline: String?
-    /// AI-generated summary text for this document. Populated when
+    /// AI-generated summary text for this document, as stored. Populated when
     /// `options.bodyDepth == .summaryOnly`; `nil` otherwise.
     public let summaryText: String?
+    /// The format `summaryText` was written in: a structured summary's text is a JSON object, which
+    /// the exporters print as its labelled fields (`StructuredSummaryDisplay`). `.general` by default.
+    public let summaryFormat: ResponseFormat
     /// User highlights to annotate inline in the body. Populated when
     /// `options.applyHighlights == true`; empty otherwise.
     public let highlights: [ExportHighlight]
@@ -631,6 +639,9 @@ public struct CollectionExportDocument: Sendable {
     /// The resolved headnote text — the chosen (or fallback) stored `GeneratedSummary`.
     /// Rendered as an italic abstract above the body when `includeHeadnote` is `true`.
     public let headnoteText: String?
+    /// The format `headnoteText` was written in, printed as `summaryFormat` is. `.general` by default,
+    /// and for a headnote the reader edited, which is saved as plain text.
+    public let headnoteFormat: ResponseFormat
     /// The headnote summary's provenance (Composer redesign) — drives the export attribution so a
     /// user-edited/-written headnote is not labeled "AI-generated". `.aiGenerated` when no headnote.
     public let headnoteAuthorship: SummaryAuthorship
@@ -707,10 +718,12 @@ public struct CollectionExportDocument: Sendable {
         header: String = "",
         dateline: String? = nil,
         summaryText: String? = nil,
+        summaryFormat: ResponseFormat = .general,
         highlights: [ExportHighlight] = [],
         sourceNoteText: String? = nil,
         includeHeadnote: Bool = false,
         headnoteText: String? = nil,
+        headnoteFormat: ResponseFormat = .general,
         headnoteAuthorship: SummaryAuthorship = .aiGenerated,
         applyHighlightsOverride: Bool? = nil,
         includeNotesOverride: Bool? = nil,
@@ -740,10 +753,12 @@ public struct CollectionExportDocument: Sendable {
         self.header = header
         self.dateline = dateline
         self.summaryText = summaryText
+        self.summaryFormat = summaryFormat
         self.highlights = highlights
         self.sourceNoteText = sourceNoteText
         self.includeHeadnote = includeHeadnote
         self.headnoteText = headnoteText
+        self.headnoteFormat = headnoteFormat
         self.headnoteAuthorship = headnoteAuthorship
         self.applyHighlightsOverride = applyHighlightsOverride
         self.includeNotesOverride = includeNotesOverride
@@ -753,18 +768,19 @@ public struct CollectionExportDocument: Sendable {
         self.zoteroItem = zoteroItem
     }
 
-    /// Returns a copy of this document with `summaryText` set — used after on-demand
-    /// summary generation, which only runs for entries whose effective `bodyDepth`
+    /// Returns a copy of this document with `summaryText` set, written in `format` — used after
+    /// on-demand summary generation, which only runs for entries whose effective `bodyDepth`
     /// is `.summaryOnly`. All other fields (including `bodyDepth`) are preserved.
-    public func withSummary(_ text: String) -> CollectionExportDocument {
+    public func withSummary(_ text: String, format: ResponseFormat = .general) -> CollectionExportDocument {
         CollectionExportDocument(
             documentId: documentId, volumeId: volumeId, sortOrder: sortOrder,
             bodyDepth: bodyDepth, title: title, titleOverride: titleOverride,
             date: date, bodyText: bodyText,
             noteTexts: noteTexts, citation: citation, historyStateGovURL: historyStateGovURL,
             renderModel: renderModel, header: header, dateline: dateline,
-            summaryText: text, highlights: highlights, sourceNoteText: sourceNoteText,
+            summaryText: text, summaryFormat: format, highlights: highlights, sourceNoteText: sourceNoteText,
             includeHeadnote: includeHeadnote, headnoteText: headnoteText,
+            headnoteFormat: headnoteFormat, headnoteAuthorship: headnoteAuthorship,
             applyHighlightsOverride: applyHighlightsOverride,
             includeNotesOverride: includeNotesOverride,
             includeFootnotesOverride: includeFootnotesOverride,

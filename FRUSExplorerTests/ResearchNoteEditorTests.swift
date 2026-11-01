@@ -100,6 +100,33 @@ struct ResearchNoteEditorTests {
         #expect(vm.selectedSummaryIds.contains(summary.id))
     }
 
+    /// Not its stored JSON (2026-10-31): a structured summary goes into the note as its fields.
+    @Test("Promoting a structured summary inserts its fields, a Label: text paragraph each")
+    func structuredSummaryPromotionInsertsFields() {
+        let schema = StructuredSummarySchema(fields: [
+            .init(name: "Subject", description: "The document's subject"),
+            .init(name: "KeyDecision", description: "What was decided"),
+        ])
+        let summary = GeneratedSummary(
+            documentId: "d1",
+            volumeId: "frus1969-76v01",
+            promptId: UUID(),
+            responseText: #"{"KeyDecision": "The quarantine stands.", "Subject": "Cuba."}"#,
+            responseFormat: .structured(schema: schema)
+        )
+        let vm = ResearchNoteEditorViewModel(
+            documentId: "d1",
+            volumeId: "frus1969-76v01",
+            activeProjectId: nil
+        )
+        vm.bodyText = "My reading."
+
+        vm.promoteSummary(summary)
+
+        #expect(vm.bodyText == "My reading.\n\nSubject: Cuba.\n\nKey Decision: The quarantine stands.")
+        #expect(vm.selectedSummaryIds.contains(summary.id))
+    }
+
     @Test("Promoting the same summary twice is idempotent")
     func summaryPromotionIdempotent() {
         let summary = GeneratedSummary(

@@ -28,6 +28,8 @@ import SwiftData
 ///   1.0 — Session 14: initial implementation
 ///   1.1 — #1791: a save is written to every stored copy of the note, and a delete removes every
 ///          copy
+///   1.2 — 2026-10-31: Insert into note adds a structured summary as its fields, a *Label: text*
+///          paragraph each (``GeneratedSummary/plainReaderText(separator:)``), not its stored JSON
 @Observable
 @MainActor
 final class ResearchNoteEditorViewModel {
@@ -231,15 +233,16 @@ final class ResearchNoteEditorViewModel {
     // MARK: - Summary Promotion
 
     /// Appends the summary's text to `bodyText` and records its ID in `selectedSummaryIds`.
-    /// Idempotent: calling twice for the same summary is a no-op.
+    /// Idempotent: calling twice for the same summary is a no-op. A structured summary goes in as its
+    /// fields, a *Label: text* paragraph each, and any other summary as its text.
     func promoteSummary(_ summary: GeneratedSummary) {
         guard !selectedSummaryIds.contains(summary.id) else { return }
         selectedSummaryIds.append(summary.id)
         // Through `replaceBody`, so the rich-text editor remounts and the reader actually SEES the
         // summary land. Appending to `bodyText` alone changed the model and left the screen as it
         // was — a button that appeared to do nothing.
-        replaceBody(with: bodyText.isEmpty ? summary.responseText
-                                           : bodyText + "\n\n" + summary.responseText)
+        let text = summary.plainReaderText()
+        replaceBody(with: bodyText.isEmpty ? text : bodyText + "\n\n" + text)
         #if DEBUG
         print("[ResearchNoteEditor] Promoted summary \(summary.id)")
         #endif

@@ -143,6 +143,8 @@ import SwiftData
 ///          its volumes before the collection is read. `CollectionResolveError` moved with the assembly, the generated
 ///          blocks' live data source is the assembly's, and `ResolvePurpose` and `SmartDocumentRef` name the kit's
 ///          types
+///   1.16 — 2026-10-31: the data source's `generateSummaries` answers with each summary's record, stored or
+///          generated, so a structured summary's format reaches the exporters, which print its fields
 @MainActor
 class CollectionContentResolver {
 
@@ -605,8 +607,9 @@ class CollectionContentResolver {
         }
 
         func generateSummaries(for documents: [CollectionExportDocument], promptId: UUID,
-                               bodyTexts: [String: String]) async throws -> [String: String] {
+                               bodyTexts: [String: String]) async throws -> [String: GeneratedSummaryExport] {
             try await resolver.resolveSummaries(for: documents, promptId: promptId, bodyTexts: bodyTexts)
+                .mapValues(Self.values)
         }
 
         /// A stored summary's values: what the assembly reads of it is its text, its prompt and its
@@ -748,16 +751,17 @@ class CollectionContentResolver {
         return try? modelContext.fetch(descriptor).first
     }
 
-    /// Returns the stored `GeneratedSummary` text for a document under `promptId`, or
-    /// `nil` when none exists (or it is empty). Never generates.
-    private func storedSummary(volumeId: String, documentId: String, promptId: UUID) -> String? {
+    /// Returns the stored `GeneratedSummary` for a document under `promptId`, or
+    /// `nil` when none exists (or its text is empty). Never generates.
+    private func storedSummary(volumeId: String, documentId: String, promptId: UUID) -> GeneratedSummary? {
         guard let existing = storedSummaryRecord(volumeId: volumeId, documentId: documentId, promptId: promptId),
               !existing.responseText.isEmpty else { return nil }
-        return existing.responseText
+        return existing
     }
 
     /// Generates or fetches summaries for all entries when bodyDepth == .summaryOnly.
-    /// Returns a [key: summaryText] map. Throws if any generation fails. Export only —
+    /// Returns a [key: summary] map, each summary's text and format what its document prints.
+    /// Throws if any generation fails. Export only —
     /// `.preview` uses `storedSummary` and never reaches this path. The data source's
     /// `generateSummaries(for:promptId:bodyTexts:)`, which the assembly's summary phase calls for each
     /// group of documents under one prompt.
@@ -765,7 +769,7 @@ class CollectionContentResolver {
         for docs: [CollectionExportDocument],
         promptId: UUID,
         bodyTexts: [String: String]
-    ) async throws -> [String: String] {
+    ) async throws -> [String: GeneratedSummary] {
         guard AppleIntelligenceProvider.shared.isAvailable else {
             throw ExportError.renderingFailed
         }
@@ -780,7 +784,7 @@ class CollectionContentResolver {
         }
         let snapshot = SummarizationPromptSnapshot(from: prompt)
 
-        var result: [String: String] = [:]
+        var result: [String: GeneratedSummary] = [:]
         let total = docs.count
 
         for (i, doc) in docs.enumerated() {
@@ -809,7 +813,7 @@ class CollectionContentResolver {
                 provider:      AppleIntelligenceProvider.shared,
                 activeProjectId: appState.activeProjectId
             )
-            result[key] = generated.responseText
+            result[key] = generated
         }
         onSummaryStatus?(nil)
         return result

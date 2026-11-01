@@ -43,6 +43,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — 2026-10-31: initial implementation
+///   1.1 — 2026-10-31: ``heading(for:)`` forwards to FRUSCoreKit's `StructuredSummaryDisplay.label(for:)`,
+///          which the collection exporters read too
 enum StructuredSectionAnswer {
 
     /// The heading a field is asked for under, and the label the reader shows it with: its name with a
@@ -52,12 +54,7 @@ enum StructuredSectionAnswer {
     /// Asked for under its run-together name, as `KeyParticipants: description`, the model wrote the
     /// colon and dropped the name in all 8 answers of the first try.
     static func heading(for name: String) -> String {
-        var heading = ""
-        for character in name {
-            if character.isUppercase, let last = heading.last, last.isLowercase { heading.append(" ") }
-            heading.append(character)
-        }
-        return heading
+        StructuredSummaryDisplay.label(for: name)
     }
 
     /// The session instructions that ask for `schema`'s fields as Markdown headings, in its order, each
@@ -181,50 +178,19 @@ enum StructuredSectionAnswer {
     }
 }
 
-// MARK: - StructuredSummaryDisplay
+// MARK: - StructuredSummaryDisplay (the reader's text)
 
-/// A stored summary as the reader shows it: a structured summary's fields as labelled lines, and any
-/// other summary's text as it is stored (2026-10-31).
+/// The reader's drawing of a stored summary (2026-10-31): a structured summary's fields one to a line,
+/// each opening with its label in bold, or the stored text as it is.
 ///
-/// Until 2026-10-31 both readers showed a structured summary's stored JSON as it stands, braces and
-/// quotes included. Few readers met it while the model declined most structured prompts; once those
-/// prompts were answered (``StructuredSectionAnswer``), the owner chose to show the fields.
-///
-/// The fields come in the order of the schema the summary was made with, then any member the schema
-/// does not name, by name. Text that is not a JSON object of strings (a headnote the reader edited,
-/// say) is shown as it is stored.
+/// The fields themselves are FRUSCoreKit's (``StructuredSummaryDisplay``, moved there the same day so
+/// the collection exporters read them); this half stays in the app because it builds the
+/// `AttributedString` SwiftUI's `Text` draws.
 ///
 /// Version history:
 ///   1.0 — 2026-10-31: initial implementation
-enum StructuredSummaryDisplay {
-
-    /// A labelled field of a structured summary.
-    struct Field: Equatable {
-        /// The field's name as words (``StructuredSectionAnswer/heading(for:)``).
-        let label: String
-        /// The field's text.
-        let text: String
-    }
-
-    /// The fields of a structured summary's stored text, or `nil` for a plain-text summary and for text
-    /// that is not a JSON object of strings.
-    static func fields(responseText: String, format: ResponseFormat) -> [Field]? {
-        guard case .structured(let schema) = format,
-              let object = try? JSONSerialization.jsonObject(with: Data(responseText.utf8)) as? [String: Any],
-              !object.isEmpty
-        else { return nil }
-        var strings: [String: String] = [:]
-        for (key, value) in object {
-            guard let string = value as? String else { return nil }
-            strings[key] = string
-        }
-        let named = schema.fields.map(\.name).filter { strings[$0] != nil }
-        let others = strings.keys.filter { !named.contains($0) }.sorted()
-        return (named + others).map {
-            Field(label: StructuredSectionAnswer.heading(for: $0),
-                  text: strings[$0]!.trimmingCharacters(in: .whitespacesAndNewlines))
-        }
-    }
+///   1.1 — 2026-10-31: the fields moved into FRUSCoreKit; this extension keeps the drawing
+extension StructuredSummaryDisplay {
 
     /// The text the reader draws for a summary: a structured summary's fields one to a line, each
     /// opening with its label in bold, or the stored text as it is.
@@ -249,4 +215,19 @@ extension GeneratedSummary {
     var readerText: AttributedString {
         StructuredSummaryDisplay.text(responseText: responseText, format: responseFormat)
     }
+
+    /// This summary as plain text: a structured summary's fields each as *Label: text*, joined by
+    /// `separator` (a blank line by default), or the stored text as it is
+    /// (``StructuredSummaryDisplay/plainText(responseText:format:separator:)``).
+    func plainReaderText(separator: String = "\n\n") -> String {
+        StructuredSummaryDisplay.plainText(responseText: responseText, format: responseFormat,
+                                           separator: separator)
+    }
+
+    /// The text the search index holds for this summary (`summary_text`): its fields as plain text
+    /// (``plainReaderText(separator:)``), so a search over summaries matches what the reader reads and
+    /// not a structured summary's JSON keys, and the lines the index serves (Related Documents' rows,
+    /// Project Home's Suggested Next) read as the fields. Every writer of the column takes it; the
+    /// launch's sync rewrites a row that still holds the JSON (2026-10-31).
+    var indexedText: String { plainReaderText() }
 }

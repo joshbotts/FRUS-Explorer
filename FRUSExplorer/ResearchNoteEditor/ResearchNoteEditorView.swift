@@ -37,6 +37,8 @@ import SwiftData
 ///          itself is unchanged — `dismiss()` closes the sheet on iOS and the
 ///          composer window on macOS. Sheet presentations remain on iOS and in
 ///          macOS list-management surfaces (Settings notes list, All Activity).
+///   1.2 — 2026-10-31: a structured summary in Generated Summaries shows as its labelled fields
+///          (``GeneratedSummary/readerText``), not its stored JSON
 struct ResearchNoteEditorView: View {
 
     @Environment(\.modelContext) private var modelContext
@@ -507,6 +509,8 @@ struct NoteComposerWindowView: View {
 
 // MARK: - SummaryPromotionRow
 
+/// One of the document's summaries in Generated Summaries, as the reader shows it (a structured
+/// summary's fields, each label bold), with its Insert into note or Remove from note button.
 private struct SummaryPromotionRow: View {
     let summary: GeneratedSummary
     let isPromoted: Bool
@@ -515,7 +519,7 @@ private struct SummaryPromotionRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(summary.responseText)
+            Text(summary.readerText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(3)

@@ -226,6 +226,8 @@ final class FixtureContentStore: CollectionContentDataSource {
     var tagNamesByDocument: [String: [String]] = [:]
     var smartRefs: [SmartCollectionDocumentRef] = []
     var generated: [String: String] = [:]
+    /// The format every summary in `generated` is written in.
+    var generatedFormat: ResponseFormat = .general
 
     private(set) var preparedVolumeIds: [Set<String>] = []
     private(set) var fetchedImages: [[FigureImageName]] = []
@@ -274,13 +276,15 @@ final class FixtureContentStore: CollectionContentDataSource {
     func fetchAbsentFigureImages(_ images: [FigureImageName]) async { fetchedImages.append(images) }
 
     func generateSummaries(for documents: [CollectionExportDocument], promptId: UUID,
-                           bodyTexts: [String: String]) async throws -> [String: String] {
+                           bodyTexts: [String: String]) async throws -> [String: GeneratedSummaryExport] {
         generationPrompts.append(promptId)
-        var result: [String: String] = [:]
+        var result: [String: GeneratedSummaryExport] = [:]
         for doc in documents {
             let key = "\(doc.volumeId)/\(doc.documentId)"
             guard let text = generated[key] else { throw ExportError.renderingFailed }
-            result[key] = text
+            result[key] = GeneratedSummaryExport(id: UUID(), documentId: doc.documentId, volumeId: doc.volumeId,
+                                                 promptId: promptId, responseText: text,
+                                                 responseFormat: generatedFormat, wasChunked: false)
         }
         return result
     }
@@ -345,6 +349,13 @@ enum ResolvedItemsDump {
         items.map(text(of:)).joined(separator: "\n")
     }
 
+    /// A summary's format after its text: nothing for `.general`, which every pinned summary is, so the
+    /// pin taken before the formats were carried (2026-10-31) still holds; a structured one's field names.
+    static func format(_ format: ResponseFormat) -> String {
+        guard case .structured(let schema) = format else { return "" }
+        return " structured(\(schema.fields.map(\.name).joined(separator: ",")))"
+    }
+
     static func text(of item: CollectionExportItem) -> String {
         switch item {
         case .heading(let title, let level):
@@ -369,8 +380,9 @@ enum ResolvedItemsDump {
             lines.append("  notes=\(doc.noteTexts)")
             lines.append("  highlights=\(doc.highlights.map { "\($0.startOffset)-\($0.endOffset) \($0.color.rawValue)" })")
             lines.append("  source=\(doc.sourceNoteText ?? "-")")
-            lines.append("  headnote=\(doc.includeHeadnote) \(doc.headnoteText ?? "-") \(doc.headnoteAuthorship.rawValue)")
-            lines.append("  summary=\(doc.summaryText ?? "-")")
+            lines.append("  headnote=\(doc.includeHeadnote) \(doc.headnoteText ?? "-") \(doc.headnoteAuthorship.rawValue)"
+                + format(doc.headnoteFormat))
+            lines.append("  summary=\(doc.summaryText ?? "-")" + format(doc.summaryFormat))
             lines.append("  overrides hl=\(String(describing: doc.applyHighlightsOverride)) "
                 + "notes=\(String(describing: doc.includeNotesOverride)) "
                 + "fn=\(String(describing: doc.includeFootnotesOverride)) "
@@ -504,6 +516,64 @@ struct CollectionResolutionTests {
             // d7 is the one document at full depth with a figure.
             #expect(store.fetchedImages.count == 1)
             #expect(store.fetchedImages.first?.map(\.graphic) == ["fig1"], "\(store.fetchedImages)")
+        }
+    }
+
+    /// 2026-10-31: the exporters print a structured summary as its fields, so the format it was written
+    /// in must reach them from every place a summary comes from: a headnote, a stored summary attached to
+    /// a preview, and a summary the store answers an export with. Until then the copy the summary phase
+    /// makes (`withSummary`) also dropped the headnote's authorship, so a summary-depth document's
+    /// headnote the reader had written was labelled AI-generated.
+    @Test("A summary's format reaches its headnote and its summary body, and the headnote keeps its authorship")
+    func summaryFormatAndHeadnoteAuthorship() async throws {
+        try await withResolutionDirectory { dir in
+            let store = try await FixtureContentStore.make(in: dir)
+            let schema = StructuredSummarySchema(fields: [.init(name: "Subject", description: ""),
+                                                          .init(name: "Outcome", description: "")])
+            let json = #"{"Outcome": "Agreed.", "Subject": "The proclamation"}"#
+            let structured = ResponseFormat.structured(schema: schema)
+            // d8's summary under the collection's prompt, which is its headnote too, structured.
+            store.summaries = store.summaries.map { summary in
+                guard summary.documentId == "d8", summary.promptId == CollectionResolutionFixtures.promptA
+                else { return summary }
+                var record = summary
+                record.responseText = json
+                record.responseFormat = structured
+                return record
+            }
+            let collection = CollectionResolutionFixtures.staticCollection(defaultBodyDepth: "summaryOnly")
+            let entries = CollectionResolutionFixtures.entries(of: collection)
+
+            let preview = try await assembly(collection, store: store)
+                .resolve(entries: entries, introduction: nil, purpose: .preview)
+            let d8 = try #require(preview.documents.first { $0.documentId == "d8" })
+            #expect(d8.headnoteText == json && d8.headnoteFormat == structured)
+            #expect(d8.summaryText == json && d8.summaryFormat == structured)
+            #expect(d8.headnoteAuthorship == .userWritten, "the summary phase dropped the headnote's authorship")
+            #expect(ResolvedItemsDump.text(of: [.document(d8)])
+                        .contains("  summary=\(json) structured(Subject,Outcome)"))
+
+            // One entry at a time, as the preview refreshes a row.
+            let d8Entry = try #require(entries.first { $0.documentId == "d8" })
+            let single = try #require(await assembly(collection, store: store).resolveItem(d8Entry))
+            guard case .document(let refreshed) = single else { Issue.record("not a document"); return }
+            #expect(refreshed.summaryFormat == structured && refreshed.headnoteFormat == structured)
+
+            store.generated = ["\(CollectionResolutionFixtures.volume)/d7": json,
+                               "\(CollectionResolutionFixtures.volume)/d8": json]
+            store.generatedFormat = structured
+            let export = try await assembly(collection, store: store)
+                .resolve(entries: entries, introduction: nil, purpose: .export)
+            #expect(export.documents.filter { $0.bodyDepth == .summaryOnly }.map(\.summaryFormat)
+                        == [structured, structured])
+            #expect(export.documents.first { $0.documentId == "d8" }?.headnoteAuthorship == .userWritten)
+
+            // And the page prints the fields, not the JSON.
+            let html = CollectionItemHTMLRenderer(options: CollectionExportOptions())
+                .pageHTML(metadata: CollectionExportMetadata(name: "Fields", note: nil), items: export)
+            #expect(html.contains("<p><strong>Subject:</strong> The proclamation</p>"))
+            #expect(html.contains("<p><em><strong>Outcome:</strong> Agreed.</em></p>"))
+            #expect(!html.contains("{&quot;Outcome&quot;"), "the stored JSON is printed")
         }
     }
 

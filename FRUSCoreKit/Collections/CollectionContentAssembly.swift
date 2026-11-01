@@ -62,6 +62,8 @@ public enum CollectionResolveError: Error, LocalizedError {
 /// Version history:
 ///   1.0 — 2026-10-27 (FRUS Explorer Light, S18b): the reads `CollectionContentResolver` made of `AppState`
 ///          and its model context, behind a protocol
+///   1.1 — 2026-10-31: `generateSummaries` answers with each summary's record, so its format reaches
+///          the exporters
 @MainActor
 public protocol CollectionContentDataSource {
 
@@ -141,8 +143,11 @@ public protocol CollectionContentDataSource {
     /// `"volumeId/documentId"`: a stored one where there is one, else one generated, or the reason none
     /// can be — the app throws `ExportError.renderingFailed` when Apple Intelligence is unavailable.
     /// `bodyTexts` holds each document's plain body, keyed the same way. Asked only for `.export`.
+    ///
+    /// Each answer is the summary's record, whose text and format the document prints (a structured
+    /// summary as its fields, 2026-10-31); until then it was the text alone.
     func generateSummaries(for documents: [CollectionExportDocument], promptId: UUID,
-                           bodyTexts: [String: String]) async throws -> [String: String]
+                           bodyTexts: [String: String]) async throws -> [String: GeneratedSummaryExport]
 }
 
 // MARK: - CollectionEntryExport.entryKind
@@ -217,6 +222,10 @@ extension CollectionEntryExport {
 ///          highlights an entry takes, the overrides cascaded through sections, body depth, headnotes,
 ///          excerpts, the related-documents line, the five apparatus blocks, the Zotero items and the
 ///          summary phase. The resolver's own history, 1.0 to 1.14, is in `CollectionContentResolver.swift`
+///   1.1 — 2026-10-31: a headnote and a `.summaryOnly` body carry the format their summary was written
+///          in (`CollectionExportDocument.headnoteFormat`, `summaryFormat`), so the exporters print a
+///          structured summary as its labelled fields; `generateSummaries` answers with the summaries'
+///          records, not their text alone, so a summary generated for an export carries its format too
 @MainActor
 public struct CollectionContentAssembly {
 
@@ -414,7 +423,7 @@ public struct CollectionContentAssembly {
            let promptId = doc.summaryPromptIdOverride ?? collection.summaryPromptId,
            let stored = storedSummary(volumeId: doc.volumeId, documentId: doc.documentId,
                                       promptId: promptId) {
-            return .document(doc.withSummary(stored))
+            return .document(doc.withSummary(stored.responseText, format: stored.responseFormat))
         }
         return item
     }
@@ -1081,6 +1090,8 @@ public struct CollectionContentAssembly {
                            preferredPromptId: promptOverride ?? batch.options.summaryPromptId)
             : nil
         let resolvedHeadnote = resolvedHeadnotePair?.text
+        // A structured headnote prints as its fields; an edited one is plain text.
+        let resolvedHeadnoteFormat = resolvedHeadnotePair?.format ?? .general
         // The headnote's provenance drives its export attribution (a user-edited/-written headnote
         // is not labeled AI). Absent a stored summary, .aiGenerated is inert (no attribution shows).
         let resolvedHeadnoteAuthorship = resolvedHeadnotePair?.authorship ?? .aiGenerated
@@ -1142,6 +1153,7 @@ public struct CollectionContentAssembly {
             sourceNoteText: resolvedSourceNote,
             includeHeadnote: effectiveHeadnote,
             headnoteText: resolvedHeadnote,
+            headnoteFormat: resolvedHeadnoteFormat,
             headnoteAuthorship: resolvedHeadnoteAuthorship,
             applyHighlightsOverride: highlightsOverride,
             includeNotesOverride: notesOverride,
@@ -1333,9 +1345,9 @@ public struct CollectionContentAssembly {
         }
     }
 
-    /// Resolves the stored summary text for a headnote: the explicitly chosen
-    /// `summaryId` when set (and non-empty), else the document's summary for
-    /// `preferredPromptId` (the collection's prompt), else any non-empty stored summary.
+    /// Resolves the stored summary text for a headnote, with its authorship and the format it was
+    /// written in: the explicitly chosen `summaryId` when set (and non-empty), else the document's
+    /// summary for `preferredPromptId` (the collection's prompt), else any non-empty stored summary.
     /// Returns `nil` when nothing is stored — headnote resolution **never** generates
     /// (renderers emit a placeholder note instead; see the type doc).
     private func headnoteText(
@@ -1343,10 +1355,15 @@ public struct CollectionContentAssembly {
         documentId: String,
         summaryId: UUID?,
         preferredPromptId: UUID?
-    ) -> (text: String, authorship: SummaryAuthorship)? {
+    ) -> (text: String, authorship: SummaryAuthorship, format: ResponseFormat)? {
+        /// The three a headnote prints.
+        func printed(_ summary: GeneratedSummaryExport) -> (text: String, authorship: SummaryAuthorship,
+                                                            format: ResponseFormat) {
+            (summary.responseText, summary.authorship ?? .aiGenerated, summary.responseFormat)
+        }
         if let sid = summaryId {
             if let chosen = source.summary(id: sid), !chosen.responseText.isEmpty {
-                return (chosen.responseText, chosen.authorship ?? .aiGenerated)
+                return printed(chosen)
             }
             // The chosen summary no longer exists (deleted / not yet synced): fall
             // through to the stored-summary fallback rather than silently dropping
@@ -1359,9 +1376,9 @@ public struct CollectionContentAssembly {
         let stored = source.headnoteSummaries(volumeId: volumeId, documentId: documentId)
             .filter { !$0.responseText.isEmpty }
         if let pid = preferredPromptId, let preferred = stored.first(where: { $0.promptId == pid }) {
-            return (preferred.responseText, preferred.authorship ?? .aiGenerated)
+            return printed(preferred)
         }
-        return stored.first.map { ($0.responseText, $0.authorship ?? .aiGenerated) }
+        return stored.first.map(printed)
     }
 
     // MARK: - Summary phase
@@ -1394,7 +1411,7 @@ public struct CollectionContentAssembly {
             "\(doc.volumeId)/\(doc.documentId)|\(effectivePrompt(doc)?.uuidString ?? "")"
         }
 
-        var summaries: [String: String] = [:]
+        var summaries: [String: GeneratedSummaryExport] = [:]
         switch purpose {
         case .export:
             // Deterministic group order (by prompt id) so progress and failures are stable.
@@ -1411,8 +1428,8 @@ public struct CollectionContentAssembly {
                     uniquingKeysWith: { first, _ in first })
                 let generated = try await source.generateSummaries(for: docs, promptId: promptId,
                                                                    bodyTexts: bodyTexts)
-                for (docKey, text) in generated {
-                    summaries["\(docKey)|\(promptId.uuidString)"] = text
+                for (docKey, summary) in generated {
+                    summaries["\(docKey)|\(promptId.uuidString)"] = summary
                 }
             }
         case .preview:
@@ -1423,26 +1440,26 @@ public struct CollectionContentAssembly {
                 guard let promptId = effectivePrompt(doc) else { continue }
                 let key = summaryKey(doc)
                 if summaries[key] == nil,
-                   let text = storedSummary(volumeId: doc.volumeId, documentId: doc.documentId,
-                                            promptId: promptId) {
-                    summaries[key] = text
+                   let stored = storedSummary(volumeId: doc.volumeId, documentId: doc.documentId,
+                                              promptId: promptId) {
+                    summaries[key] = stored
                 }
             }
         }
 
         return items.map { item in
             guard case .document(let doc) = item, doc.bodyDepth == .summaryOnly,
-                  let text = summaries[summaryKey(doc)] else { return item }
-            return .document(doc.withSummary(text))
+                  let summary = summaries[summaryKey(doc)] else { return item }
+            return .document(doc.withSummary(summary.responseText, format: summary.responseFormat))
         }
     }
 
-    /// Returns the stored summary text for a document under `promptId`, or
-    /// `nil` when none exists (or it is empty). Never generates.
-    private func storedSummary(volumeId: String, documentId: String, promptId: UUID) -> String? {
+    /// Returns the stored summary for a document under `promptId`, or
+    /// `nil` when none exists (or its text is empty). Never generates.
+    private func storedSummary(volumeId: String, documentId: String, promptId: UUID) -> GeneratedSummaryExport? {
         guard let existing = source.summary(volumeId: volumeId, documentId: documentId, promptId: promptId),
               !existing.responseText.isEmpty else { return nil }
-        return existing.responseText
+        return existing
     }
 
     // MARK: - Render Model Extraction Helpers
