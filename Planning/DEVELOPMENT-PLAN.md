@@ -8907,4 +8907,8 @@ Further findings the owner may add: Speaker Jim Wright's four anchors, 109156's 
 - **One-line labels** (the number without the date) placed about twice as many on d16 in the harness, before the weights: 62 against 26. What a label carries is the owner's call.
 - **The walk's list toggle** opened nothing on two taps. Whether the reference-list tip's popover takes the first tap was not checked.
 
-**Not pushed:** waiting on the owner's word, since the merge queue is serial.
+**Caught up and pushed on the owner's word** ("Catch up branch to V2 head before pushing and opening PR", 2026-11-01).
+- `v2` at `e16bf4e7` (#1827) was merged in. The one conflict was this log's tail, resolved by keeping both sides.
+- Outside this file, the lane's patch and `v2`'s each kept their patch id across the merge.
+- The merged tree's full unit target, on the iPhone 17 simulator (iOS 27.0): "✔ Test run with 7848 tests in 940 suites passed after 445.119 seconds" (0 failed, 37 skips).
+- Then pushed and opened against `v2`.
