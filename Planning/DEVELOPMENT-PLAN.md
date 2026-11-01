@@ -8952,3 +8952,53 @@ At `v2` the bundled file gives Kissinger Wikidata `Q66107` and VIAF `108958811`;
 **Not done.**
 - The device check and the upstream reports are the owner's (§4).
 - #1764's "found, not fixed" list (its log entry above) is not taken up here.
+
+## Session 2026-11-01 — #1823: both Collections managers rename, duplicate and delete a collection, and every delete asks first
+
+**What was asked.** #1823 (the owner's, 2026-11-01): the Mac's Collections manager lacks the create, read, update and delete a manager needs, and the iOS one has only part of them. The owner chose "Yes, fix both" after the investigation below.
+
+**Found.**
+- **The Mac had one delete, and no mouse reached it.** It was Manage Collections' `.onDelete`. A scratch SwiftUI app on macOS 27.2 (built with `swiftc`, never committed) read the list's `NSOutlineView` delegate and its rows' accessibility actions. `.onDelete` gives each row one trailing row action, "Delete", destructive, and a VoiceOver custom action "Delete". Invoking that action ran the closure at once. A destructive `.swipeActions` gives the same; a list with neither gives none. So a two-finger trackpad swipe deleted a collection, with no confirmation, and a mouse, a right-click, the menu bar and ⌫ never could: ⌫ needs a selection, and that list had none. This settles M5-002 in `Manual-Update-Build-49-Owner-Review.md`, and two comments that said otherwise (`CollectionEntryRows.swift`, `CollectionEditorView.swift`) now say so.
+- **How it was lost.** Before Composer v2 Phase 3 (`515c12c2`, 2026-07-12) the Mac sidebar's right-click menu had **Delete Collection**. The phase removed the sidebar and moved Word Cloud and Create Static Snapshot into the Manage sheet's menu, but not Delete, on the plan's reading that the sheet's `.onDelete` covered it.
+- **iOS** deleted only by a swipe, at once on a full swipe, and renamed only inside the editor's Collection settings. The row's menu held Duplicate, Word Cloud and Create Static Snapshot.
+- **The Mac's Manage row** bound its field to `name` itself, which wrote each keystroke untrimmed and left the save to autosave; its Duplicate did not show the copy.
+
+**What changed.**
+- **`Collection.deleteWithChildren(in:)`** deletes a collection with its entries and their headnote drafts. Both lists had a copy of those three lines. **`CollectionDeletion`** (`Models/Collection.swift`) holds the dialog's title (the collection's name for one, a count for more), its message, its button, and the delete, which saves.
+- **`View.collectionDeleteConfirmation`** and **`View.collectionRenameAlert`** (`CollectionListView.swift`) are the one dialog and the one alert both platforms present. Rename commits through **`CollectionEditorCommit.rename`**: the editor's `name`, except that an empty field keeps the old name.
+- **iPhone and iPad** (`CollectionListView`):
+  - The row's menu gains Rename and Delete.
+  - The swipe's Delete no longer completes on a full swipe.
+  - **Edit**, in the bar's leading slot, chooses rows: the List's own selection, with the row's tap gesture turned off by its mask so that a tap chooses rather than opens. Its Delete replaces ＋ in the bar.
+  - Every route asks. The row's dialog hangs from the row, and Edit's from its button, so the iPad popover points at what asked (#1357's rule).
+- **Mac** (`MacCollectionManagerView`, `FRUSExplorerApp`):
+  - Manage Collections' right-click menu gains Rename, which focuses the row's field, and Delete. Its Duplicate selects the copy. Its swipe asks. The row's field commits through `CollectionEditorCommit.name` and saves, and follows a rename made elsewhere.
+  - The Collection menu gains **Manage Collections…**, **Rename Collection…**, **Duplicate Collection** and **Delete Collection…**, published by the window root through `CollectionManagerCommandActions`, which now carries `canPresent` and `selectedCollectionId`. The items are disabled while one of the window's own sheets or dialogs is up, which a second presentation would wait behind. Delete has no key equivalent, because ⌘⌫ deletes to a line's start in the outline's headings and note blocks.
+- **No CloudKit schema change, no index version.** No stored property moved.
+- **Docs.** Both manuals (§12.1). Seven blocks in `08-Reading-Research-Collections.md`, and 18 ranged blocks re-pointed (`Amendment-Log.md`). The new suite's row in `CLAUDE.md`'s table and its entry in the runbook. M5-002 is marked settled.
+
+**Tests.**
+- **`CollectionDeletionTests`** (`CollectionTests.swift`, 9 tests). The model half drives the real store: a delete takes the collection's entries and its headnote draft, and leaves another collection's entry, the document's own summary, a note and a highlight. Deleting two takes both. A duplicate's delete leaves the original whole. The dialog's wording, and the rename rule, are checked. The views' half reads source: no manager deletes a collection except through `CollectionDeletion.delete`, beside at least as many confirmations; the iOS swipe is not a full swipe; each menu has Rename and Delete; the Mac's swipe and Collection menu only ask; and no Collection-menu item takes a key equivalent.
+- **`AppStateTests.managerActionsCompareByWhatTheMenuDraws`** replaces the test that called the manager's actions stateless.
+- **`CollectionListManagementTests`** (UI, `CollectionEditorTitleTests.swift`, 4 tests). Each drives one route — the row's menu Delete (closing the dialog keeps the collection; its Delete takes that one only), the swipe, Rename, and Edit over two rows — and requires the dialog before anything goes.
+
+**Checked.** Xcode 27.2 on macOS 27.2, each heavy job through `Scripts/heavy.sh`, on `v2` at `e47ca307` (#1829):
+- **The full unit target**, iPhone 17, iOS 27.0: "✔ Test run with 7857 tests in 941 suites passed after 438.512 seconds." The result bundle reads 0 failed and 37 skipped, the same environmental skips. A scoped run before it failed one test, `EditableContentKeyTests`' ranges, which named the 18 blocks re-pointed above.
+- **The UI suites**, each with `CollectionEditorTitleTests`, whose list toolbar this change shares:
+  - iPhone 17, iOS 27.0: 13 tests, 0 failed. The new 4 took 64 s.
+  - iPad Pro 13-inch (M5), iOS 27.0: 13 tests, 3 skipped (the suite's own iPad skips), 0 failed. The new 4 took 65 s. Its menu test closed the dialog by tapping outside the popover, so the dialog was a popover there.
+- **`FRUSExplorerMac`**, Debug: built, with only the known `GeneratedSummary` residue.
+- **No `swift test` owed:** no file under `FRUSCoreKit/` or a package target changed.
+- **The Mac window, walked** in the check copy (`tools/mac-check-copy`, this tree as `1741f3c5`, a fake home of its own in the session's scratchpad), once the owner was back to approve the grant. Every check below behaved as intended:
+  - With nothing shown, the Collection menu enables New Collection… and Manage Collections… and dims Rename, Duplicate and Delete.
+  - Rename Collection… opened *Rename Collection* with the name selected, and Return saved it: the picker, the window's title and the preview read the new name.
+  - Duplicate Collection made "… copy" and showed it.
+  - Delete Collection… opened *Delete "Cold War Readers copy"?* with the message. Cancel kept the collection; Delete deleted it and the window read *No Collection Selected*.
+  - With Manage Collections open, all five of the menu's collection items were dimmed.
+  - A row's right-click menu read Rename, Duplicate, Word Cloud and Delete (the system adds Ask Siri). Rename and a typed name renamed the row, which then sorted first: the save stamped it. Duplicate added "Beta copy" and the window behind showed it. Delete asked *Delete "Beta copy"?* and, confirmed, removed the row, and the window behind went to no selection.
+
+**Not done.**
+- **Manage Collections' trackpad swipe was not driven:** computer use cannot make a two-finger swipe. The scratch app measured that `.onDelete` gives it, and the sheet's `.onDelete` only arms the dialog (`CollectionDeletionTests.macManageSheetWiring`).
+- **Whether the right-click Rename moves focus itself** is not shown: the right-click had already put a focus ring on the row's field.
+- **No control run on the code before the change.** That the four UI tests fail there is read from that code (no Rename or Delete in the menu, no Edit, and a swipe's Delete that deleted at once), not measured.
+- **No device was used.**

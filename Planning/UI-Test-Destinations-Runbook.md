@@ -597,6 +597,35 @@ xcodebuild test \
   -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 ```
 
+**`CollectionListManagementTests` (#1823) must run on an iPhone AND an iPad; it lives in
+`CollectionEditorTitleTests.swift`.** It drives the Collections list's three delete routes — a row's menu, its swipe,
+and Edit's Delete over two chosen rows — and its Rename, and requires the delete dialog before anything goes and the
+collection gone only after the dialog's Delete. The idioms present that dialog differently, which is why it needs both:
+on the iPhone an action sheet with a Cancel, on the iPad a popover hanging from the row (or from Edit's Delete) with no
+Cancel, which the menu test closes by tapping outside it. Its two collections are the launch's own seeds,
+`FRUS_UI_TEST_SEED_PROJECT=1`'s unattached collection and `FRUS_UI_TEST_SEED_SAVED_SEARCH=linked`'s smart one, in the
+in-memory store, so each launch has both and nothing is left behind. Nothing skips: expect **4 tests, 0 skipped** on
+each. On the code before #1823 every test fails, by reading rather than by a run: the row's menu had no Rename and no
+Delete, the list had no Edit, and the swipe's Delete deleted at once, so no dialog appeared. Measured 2026-11-01, Xcode
+27.2: **iPhone 17, iOS 27.0, 4 tests, 0 failed, in 64 s** (13–20 s a test), and **iPad Pro 13-inch (M5), iOS 27.0, 4 tests,
+0 failed, in 65 s**, each beside `CollectionEditorTitleTests`' 9, which passed with their expected skips (0 and 3). Give it 600 s a test, as for the suite it shares a file with.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/CollectionListManagementTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
+  -only-testing FRUSExplorerUITests/CollectionListManagementTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+```
+
 **`BrowseWithinScopeTests` (#1364) must run on an iPhone AND an iPad, and neither is a control.**
 Its first two tests failed on the unfixed code on each idiom (measured on `v2` with the suite's
 seams, as first written), and the first and third, `testAnotherScopeOffersBrowseWithinWhileNarrowed`,

@@ -29,10 +29,16 @@ import UniformTypeIdentifiers
 /// Tapping a row navigates to `CollectionEditorView` for that collection.
 /// The "+" toolbar button creates a new collection and navigates to its editor.
 ///
-/// ## Deletion
-/// Swipe-to-delete removes the collection and all its entries. Entries are deleted
-/// explicitly before the parent collection because `deleteRule: .nullify` is used for
-/// CloudKit compatibility (cascade rules are not supported by CloudKit).
+/// ## Rename, duplicate and delete (#1823)
+/// A row's menu (touch and hold) offers Rename, Duplicate, Word Cloud and, on a smart collection,
+/// Create Static Snapshot, then Delete. Rename asks for the name in an alert
+/// (`collectionRenameAlert`); an empty name keeps the old one. Delete is reached three ways — a
+/// row's swipe, which no longer completes on a full swipe; its menu; and Edit, which chooses several
+/// rows for the toolbar's Delete — and every route asks first (`collectionDeleteConfirmation`),
+/// because a collection's headings, note blocks and headnotes go with it on every device. A row's
+/// dialog hangs from the row, and Edit's from its Delete button, so that on an iPad the popover points
+/// at what asked (#1357's rule). The delete itself is `Collection.deleteWithChildren(in:)`: the
+/// relationship is `.nullify` for CloudKit, so entries are deleted explicitly.
 ///
 /// Version history:
 ///   1.0 — Session 22: initial implementation
@@ -57,6 +63,8 @@ import UniformTypeIdentifiers
 ///          above its date, so "Smart collection" no longer breaks inside a word at the largest size
 ///   1.11 — 2026-10-27 (FRUS Explorer Light, S18b): Snapshot runs the saved search through FRUSCoreKit's
 ///          `SmartCollectionSnapshot.documentRefs`, at the same ceiling
+///   1.12 — 2026-11-01: #1823 — a row's menu gains Rename and Delete; swipe, menu and Edit's Delete all
+///          ask first; Edit chooses several collections to delete at once
 struct CollectionListView: View {
 
     /// Pass `false` when this view is the root content of a `Window` scene; in that
@@ -82,6 +90,21 @@ struct CollectionListView: View {
     @State private var importError: String? = nil
     /// Non-nil to present a smart-collection snapshot-failure alert.
     @State private var snapshotError: String? = nil
+    /// The collection the Rename alert renames; `nil` while the alert is closed (#1823).
+    @State private var renaming: Collection? = nil
+    /// The Rename alert's field, seeded with the collection's name as the alert opens.
+    @State private var renameText = ""
+    /// The collection whose row is asking whether to delete it — its swipe or its menu's Delete asked (#1823). The
+    /// dialog hangs from that row.
+    @State private var pendingDeletionId: UUID? = nil
+    #if os(iOS)
+    /// Whether the list is in Edit, where rows are chosen to delete several collections at once (#1823).
+    @State private var isEditing = false
+    /// The collections chosen in Edit, by id.
+    @State private var selection = Set<UUID>()
+    /// Whether Edit's Delete is asking whether to delete the chosen collections.
+    @State private var isConfirmingBulkDeletion = false
+    #endif
 
     /// User override of the active-project filter, toggled from `projectFilterBanner`.
     ///
@@ -137,16 +160,22 @@ struct CollectionListView: View {
                     }
                 }
                 #endif
+                #if os(iOS)
+                // #1823: Edit, while there is a collection to choose (or Edit is on, so Done stays reachable).
+                if isEditing || !filteredCollections.isEmpty {
+                    ToolbarItem(placement: .topBarLeading) { editButton }
+                }
+                #endif
                 ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        isCreating = true
-                    } label: {
-                        Label(String(localized: "collections.toolbar.new",
-                                     defaultValue: "New Collection"),
-                              systemImage: "plus")
+                    #if os(iOS)
+                    if isEditing {
+                        bulkDeleteButton
+                    } else {
+                        newCollectionButton
                     }
-                    .accessibilityLabel(String(localized: "collections.toolbar.new.accessibility",
-                                               defaultValue: "Create new collection"))
+                    #else
+                    newCollectionButton
+                    #endif
                 }
                 ToolbarItem(placement: .secondaryAction) {
                     Button {
@@ -206,6 +235,13 @@ struct CollectionListView: View {
             } message: {
                 Text(snapshotError ?? "")
             }
+            .collectionRenameAlert($renaming, name: $renameText)
+            #if os(iOS)
+            // #1823: Edit ends when the last collection goes, so the list never sits in Edit with nothing to choose.
+            .onChange(of: filteredCollections.isEmpty) { _, isEmpty in
+                if isEmpty { endEditing() }
+            }
+            #endif
         }
     }
 
@@ -272,49 +308,155 @@ struct CollectionListView: View {
     // MARK: - Subviews
 
     private var collectionList: some View {
-        List {
-            ForEach(filteredCollections) { collection in
-                CollectionRow(collection: collection)
-                    .contentShape(Rectangle())
-                    .onTapGesture { collectionToEdit = collection }
-                    .contextMenu {
-                        Button {
-                            _ = collection.duplicate(in: modelContext)
-                            try? modelContext.save()
-                        } label: {
-                            Label(String(localized: "collection.duplicate.action", defaultValue: "Duplicate"),
-                                  systemImage: "plus.square.on.square")
-                        }
-                        Divider()
-                        Button {
-                            appState.openWordCloud(.collection(id: collection.id), from: sceneID)
-                        } label: {
-                            Label { Text(String(localized: "collection.wordCloud",
-                                                defaultValue: "Word Cloud")) }
-                                icon: { Image(systemName: WordCloudGlyph.symbol) }
-                        }
-                        if collection.savedSearchId != nil {
-                            Divider()
-                            Button {
-                                Task { await snapshotSmartCollection(collection) }
-                            } label: {
-                                Label(String(localized: "collection.snapshot.action",
-                                             defaultValue: "Create Static Snapshot"),
-                                      systemImage: "camera")
-                            }
-                        }
-                    }
-            }
-            .onDelete { indexSet in
-                deleteCollections(at: indexSet)
-            }
-        }
         #if os(iOS)
+        // #1823: Edit chooses rows (the List's own selection, by id), and the toolbar's Delete deletes them.
+        List(selection: isEditing ? $selection : nil) {
+            ForEach(filteredCollections) { collection in row(collection) }
+        }
+        // On the List, never a Section (the measured reorder trap), and constant: the List's swipe must not turn Edit on.
+        .environment(\.editMode, .constant(isEditing ? .active : .inactive))
         .listStyle(.insetGrouped)
         #else
+        List {
+            ForEach(filteredCollections) { collection in row(collection) }
+        }
         .listStyle(.inset)
         #endif
     }
+
+    /// One collection's row: a tap opens its editor (in Edit the List chooses the row instead), a swipe or the menu's
+    /// Delete asks before deleting it, and the menu renames, duplicates, opens a word cloud and snapshots a smart one.
+    @ViewBuilder
+    private func row(_ collection: Collection) -> some View {
+        CollectionRow(collection: collection)
+            .contentShape(Rectangle())
+            // Off in Edit (`.subviews` turns this gesture off and leaves the List's own row selection), where a tap on
+            // the row's text would otherwise open the editor rather than choose the row.
+            .gesture(TapGesture().onEnded { collectionToEdit = collection },
+                     including: isEditingList ? .subviews : .all)
+            // Asks rather than deleting on a full swipe (#1823): a collection's headings and note blocks go with it.
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                Button(role: .destructive) {
+                    pendingDeletionId = collection.id
+                } label: {
+                    Label(CollectionDeletion.action, systemImage: "trash")
+                }
+            }
+            .contextMenu {
+                Button {
+                    renameText = collection.name
+                    renaming = collection
+                } label: {
+                    Label(String(localized: "common.rename", defaultValue: "Rename"), systemImage: "pencil")
+                }
+                Button {
+                    _ = collection.duplicate(in: modelContext)
+                    try? modelContext.save()
+                } label: {
+                    Label(String(localized: "collection.duplicate.action", defaultValue: "Duplicate"),
+                          systemImage: "plus.square.on.square")
+                }
+                Divider()
+                Button {
+                    appState.openWordCloud(.collection(id: collection.id), from: sceneID)
+                } label: {
+                    Label { Text(String(localized: "collection.wordCloud",
+                                        defaultValue: "Word Cloud")) }
+                        icon: { Image(systemName: WordCloudGlyph.symbol) }
+                }
+                if collection.savedSearchId != nil {
+                    Button {
+                        Task { await snapshotSmartCollection(collection) }
+                    } label: {
+                        Label(String(localized: "collection.snapshot.action",
+                                     defaultValue: "Create Static Snapshot"),
+                              systemImage: "camera")
+                    }
+                }
+                Divider()
+                Button(role: .destructive) {
+                    pendingDeletionId = collection.id
+                } label: {
+                    Label(CollectionDeletion.action, systemImage: "trash")
+                }
+            }
+            // On the row, so an iPad's popover points at the row that asked (#1357's rule); the swipe button cannot be
+            // the source, since the swipe closes when it is tapped.
+            .collectionDeleteConfirmation(
+                isPresented: Binding(get: { pendingDeletionId == collection.id },
+                                     set: { if !$0, pendingDeletionId == collection.id { pendingDeletionId = nil } }),
+                deleting: [collection]
+            ) { doomed in
+                delete(doomed)
+            }
+    }
+
+    /// Whether the list is in Edit — always `false` where Edit does not exist.
+    private var isEditingList: Bool {
+        #if os(iOS)
+        isEditing
+        #else
+        false
+        #endif
+    }
+
+    /// The toolbar's New Collection button.
+    private var newCollectionButton: some View {
+        Button {
+            isCreating = true
+        } label: {
+            Label(String(localized: "collections.toolbar.new",
+                         defaultValue: "New Collection"),
+                  systemImage: "plus")
+        }
+        .accessibilityLabel(String(localized: "collections.toolbar.new.accessibility",
+                                   defaultValue: "Create new collection"))
+    }
+
+    #if os(iOS)
+    /// Edit / Done (#1823): Edit chooses rows to delete several collections at once; Done ends it and forgets the choice.
+    private var editButton: some View {
+        Button {
+            if isEditing {
+                endEditing()
+            } else {
+                withAnimation { isEditing = true }
+            }
+        } label: {
+            Text(isEditing
+                 ? String(localized: "collections.toolbar.edit.done", defaultValue: "Done")
+                 : String(localized: "collections.toolbar.edit", defaultValue: "Edit"))
+                .fontWeight(isEditing ? .semibold : .regular)
+        }
+    }
+
+    /// The collections chosen in Edit, in the list's order — only those the list still shows.
+    private var chosenCollections: [Collection] {
+        filteredCollections.filter { selection.contains($0.id) }
+    }
+
+    /// Edit's Delete: deletes the chosen collections once the reader confirms. Its dialog hangs from the button, so an
+    /// iPad's popover points at it (#1357's rule).
+    private var bulkDeleteButton: some View {
+        Button(role: .destructive) {
+            isConfirmingBulkDeletion = true
+        } label: {
+            Text(CollectionDeletion.action)
+        }
+        .disabled(chosenCollections.isEmpty)
+        .collectionDeleteConfirmation(isPresented: $isConfirmingBulkDeletion,
+                                      deleting: chosenCollections) { doomed in
+            delete(doomed)
+            endEditing()
+        }
+    }
+
+    /// Leaves Edit and forgets the rows it chose.
+    private func endEditing() {
+        withAnimation { isEditing = false }
+        selection = []
+    }
+    #endif
 
     private var emptyState: some View {
         ContentUnavailableView {
@@ -427,14 +569,13 @@ struct CollectionListView: View {
 
     // MARK: - Actions
 
-    private func deleteCollections(at indexSet: IndexSet) {
-        for index in indexSet {
-            let c = filteredCollections[index]
-            GeneratedSummary.deleteHeadnoteDrafts(for: c, in: modelContext)
-            for entry in c.documentEntries ?? [] { modelContext.delete(entry) }
-            modelContext.delete(c)
-        }
-        try? modelContext.save()
+    /// Deletes `doomed`, which the reader has just confirmed, and drops them from Edit's choice.
+    private func delete(_ doomed: [Collection]) {
+        pendingDeletionId = nil
+        #if os(iOS)
+        selection.subtract(doomed.map(\.id))
+        #endif
+        CollectionDeletion.delete(doomed, in: modelContext)
     }
 }
 
@@ -492,5 +633,58 @@ private struct CollectionRow: View {
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - Rename and delete, shared with the Mac Collections window (#1823)
+
+extension View {
+    /// Presents the Rename Collection alert while `renaming` names a collection: a field holding `name`, which the caller
+    /// seeds with the collection's name as it sets `renaming`, and Save, which commits it through
+    /// `CollectionEditorCommit.rename` (trimmed, and an empty field keeps the old name) and saves.
+    ///
+    /// The iPhone and iPad Collections list's Rename and the Mac Collections window's Collection ▸ Rename Collection… both
+    /// present it.
+    func collectionRenameAlert(_ renaming: Binding<Collection?>, name: Binding<String>) -> some View {
+        modifier(CollectionRenameAlert(renaming: renaming, name: name))
+    }
+
+    /// Asks before `collections` are deleted, with `CollectionDeletion`'s title, message and Delete; `onDelete` runs with
+    /// them when the reader confirms, and does the deleting (`CollectionDeletion.delete(_:in:)`).
+    ///
+    /// Every surface that deletes a collection asks through this (#1823). Hang it where the delete was asked: on an iPad
+    /// a confirmation dialog is a popover whose arrow points at the view that carries it (#1357).
+    func collectionDeleteConfirmation(isPresented: Binding<Bool>, deleting collections: [Collection],
+                                      onDelete: @escaping ([Collection]) -> Void) -> some View {
+        confirmationDialog(CollectionDeletion.title(for: collections), isPresented: isPresented,
+                           titleVisibility: .visible, presenting: collections) { doomed in
+            Button(CollectionDeletion.action, role: .destructive) { onDelete(doomed) }
+            Button(String(localized: "common.cancel", defaultValue: "Cancel"), role: .cancel) {}
+        } message: { doomed in
+            Text(CollectionDeletion.message(count: doomed.count))
+        }
+    }
+}
+
+/// The Rename Collection alert behind `View.collectionRenameAlert(_:name:)`, which reads the context it saves from the
+/// environment.
+private struct CollectionRenameAlert: ViewModifier {
+    /// The collection being renamed; `nil` closes the alert.
+    @Binding var renaming: Collection?
+    /// The alert's field.
+    @Binding var name: String
+    @Environment(\.modelContext) private var modelContext
+
+    func body(content: Content) -> some View {
+        content.alert(String(localized: "collection.rename.title", defaultValue: "Rename Collection"),
+                      isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } }),
+                      presenting: renaming) { collection in
+            TextField(String(localized: "collection.editor.name.placeholder", defaultValue: "Collection Name"),
+                      text: $name)
+            Button(String(localized: "common.cancel", defaultValue: "Cancel"), role: .cancel) {}
+            Button(String(localized: "common.save", defaultValue: "Save")) {
+                if CollectionEditorCommit.rename(name, to: collection) { try? modelContext.save() }
+            }
+        }
     }
 }

@@ -873,6 +873,82 @@ extension Collection {
     }
 }
 
+// MARK: - Deletion (#1823)
+
+extension Collection {
+    /// Deletes this collection from `context` with what belongs to it alone: every entry — documents, section headings,
+    /// note blocks, passages and apparatus blocks — and each entry's own headnote draft. The caller saves.
+    ///
+    /// `documentEntries` is `.nullify` for CloudKit, so a bare `context.delete(self)` would leave every entry behind,
+    /// pointing at no collection. The documents an entry names, and the reader's notes, highlights and document summaries,
+    /// are not the collection's and stay (`GeneratedSummary.deleteHeadnoteDraft(for:in:)` deletes only a draft).
+    func deleteWithChildren(in context: ModelContext) {
+        GeneratedSummary.deleteHeadnoteDrafts(for: self, in: context)
+        for entry in documentEntries ?? [] { context.delete(entry) }
+        context.delete(self)
+    }
+}
+
+// MARK: - CollectionDeletion
+
+/// What deleting a collection asks first, on every surface that deletes one (#1823): the iPhone and iPad Collections list
+/// (swipe, the row's menu, and Edit's Delete), and the Mac Collections window's Manage Collections sheet and Collection
+/// menu.
+///
+/// A delete takes the collection's section headings, note blocks and headnotes with it, which are the reader's own
+/// writing, and reaches the reader's other devices once they sync, so it asks, as deleting an Archives Visit does. Before
+/// #1823 the iOS list's swipe deleted at once, and the Mac's only delete was the same swipe on a trackpad.
+///
+/// Version history:
+///   1.0 — #1823: initial implementation
+enum CollectionDeletion {
+
+    /// The dialog's title: "Delete “Cold War Readers”?" for one collection, "Delete 3 collections?" for more, and
+    /// "Delete Collection?" for none.
+    ///
+    /// - Parameters:
+    ///   - collections: The collections the dialog deletes.
+    ///   - locale: The locale that groups the number; the user's own unless a test passes one.
+    static func title(for collections: [Collection], locale: Locale = .autoupdatingCurrent) -> String {
+        // A dialog redraws once more as it closes, after the caller has emptied what it was deleting.
+        if collections.isEmpty {
+            return String(localized: "collection.delete.confirm.title.none", defaultValue: "Delete Collection?")
+        }
+        if collections.count == 1, let only = collections.first {
+            let name = CollectionEditorNaming.listName(savedName: only.name)
+            return String(localized: "collection.delete.confirm.title.named",
+                          defaultValue: "Delete “\(name)”?")
+        }
+        return CountCopy.phrase(
+            collections.count,
+            one: String(localized: "collection.delete.confirm.title.one", defaultValue: "Delete %@ collection?"),
+            many: String(localized: "collection.delete.confirm.title.many", defaultValue: "Delete %@ collections?"),
+            locale: locale)
+    }
+
+    /// The dialog's message: what goes with the collection, and what stays.
+    ///
+    /// - Parameter count: How many collections the dialog deletes.
+    static func message(count: Int) -> String {
+        count == 1
+            ? String(localized: "collection.delete.confirm.message.one",
+                     defaultValue: "Its section headings, note blocks and headnotes go with it, on your other devices too once they sync. The documents in it, and your notes and highlights on them, stay.")
+            : String(localized: "collection.delete.confirm.message.many",
+                     defaultValue: "Their section headings, note blocks and headnotes go with them, on your other devices too once they sync. The documents in them, and your notes and highlights on them, stay.")
+    }
+
+    /// The dialog's destructive button, and the menu items and swipe action that open the dialog.
+    static var action: String {
+        String(localized: "common.delete", defaultValue: "Delete")
+    }
+
+    /// Deletes `collections` with their children (`Collection.deleteWithChildren(in:)`) and saves `context`.
+    static func delete(_ collections: [Collection], in context: ModelContext) {
+        for collection in collections { collection.deleteWithChildren(in: context) }
+        try? context.save()
+    }
+}
+
 // MARK: - CollectionEditorNaming
 
 /// The collection editor's naming rules are FRUSCoreKit's (`FRUSCoreKit/Collections/CollectionEditorNaming.swift`);

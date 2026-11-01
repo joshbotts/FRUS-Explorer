@@ -289,6 +289,8 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          collection linked to it, beside the scopes (DEBUG-only; inert without `FRUS_UI_TEST_SEED_SAVED_SEARCH`).
 ///   4.31 — #1757: the download manager's `onTransferFinished` also tells the indexing queue how each
 ///          transfer ended (`AppState.indexingQueueTransferDidFinish(_:outcome:)`).
+///   4.32 — #1823: the Collection menu gains Manage Collections…, Rename Collection…, Duplicate Collection and
+///          Delete Collection…, through `CollectionManagerCommandActions`
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -3594,16 +3596,45 @@ struct DocumentCommandActions: Equatable {
 ///
 /// Separate from `CollectionDetailCommandActions` because "New Collection" must
 /// work while no collection is selected — the root view always exists while the
-/// window is key, whereas the detail pane exists only with a selection.
+/// window is key, whereas the detail pane exists only with a selection. The
+/// collection's own Rename, Duplicate and Delete (#1823) are here too, because
+/// the root holds the selection they change and presents their dialogs.
+///
+/// Version history:
+///   1.0 — UI audit gap 5: New Collection
+///   1.1 — #1823: Manage Collections, Rename, Duplicate and Delete, with `canPresent` and
+///          `selectedCollectionId`
 struct CollectionManagerCommandActions: Equatable {
 
-    /// Opens the New Collection sheet (the sidebar toolbar's "+" button).
+    /// Whether the window can present what the menu asks for: `false` while one of its own sheets or dialogs is up,
+    /// which a second would wait behind.
+    let canPresent: Bool
+
+    /// The collection the window shows, which Rename, Duplicate and Delete act on; `nil` while it shows none, or while
+    /// `canPresent` is `false`.
+    let selectedCollectionId: UUID?
+
+    /// Opens the New Collection sheet (the picker's New Collection…).
     let newCollection: @MainActor () -> Void
 
-    /// Stateless by design — the struct carries no menu-rendered state, so any
-    /// two published instances are interchangeable (the closure captures only
-    /// the window's stable `@State` storage).
-    static func == (lhs: Self, rhs: Self) -> Bool { true }
+    /// Opens the Manage Collections sheet (the picker's Manage Collections…).
+    let manageCollections: @MainActor () -> Void
+
+    /// Asks for the shown collection's new name.
+    let renameCollection: @MainActor () -> Void
+
+    /// Duplicates the shown collection and shows the copy.
+    let duplicateCollection: @MainActor () -> Void
+
+    /// Asks whether to delete the shown collection.
+    let deleteCollection: @MainActor () -> Void
+
+    /// Equal when the menu would draw the same: the closures capture only the
+    /// window's stable `@State` storage, so two instances with the same flags
+    /// are interchangeable.
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.canPresent == rhs.canPresent && lhs.selectedCollectionId == rhs.selectedCollectionId
+    }
 }
 
 /// Actions the Collections window's detail pane publishes for the "Collection"
@@ -3941,10 +3972,12 @@ struct FindMenuContent: View {
 /// Body of the "Collection" CommandMenu (UI audit gap 5).
 ///
 /// Reads two focused values published by the Collections window:
-/// `\.collectionManagerCommands` (root view — New Collection works with nothing
-/// selected) and `\.collectionDetailCommands` (detail pane — everything else
-/// requires a selected collection). Both are nil while any other window is key,
-/// disabling the whole menu. Shortcut choices, checked for collisions:
+/// `\.collectionManagerCommands` (root view — New Collection and Manage Collections
+/// work with nothing selected, and since #1823 Rename, Duplicate and Delete act on
+/// the shown collection) and `\.collectionDetailCommands` (detail pane — the
+/// authoring and export items, which require a selected collection). Both are nil
+/// while any other window is key, disabling the whole menu. Shortcut choices,
+/// checked for collisions:
 ///   - ⌥⌘N new collection: ⌘N is the system "New Window" item the main
 ///     WindowGroup contributes, so the audit's suggested ⌘N was taken.
 ///   - ⌘⇧A add documents: moved from the detail pane's toolbar button (which
@@ -3968,7 +4001,35 @@ struct CollectionMenuContent: View {
             manager?.newCollection()
         }
         .keyboardShortcut("n", modifiers: [.command, .option])
-        .disabled(manager == nil)
+        .disabled(manager?.canPresent != true)
+
+        Button(String(localized: "menu.collection.manage",
+                      defaultValue: "Manage Collections…")) {
+            manager?.manageCollections()
+        }
+        .disabled(manager?.canPresent != true)
+
+        Divider()
+
+        // #1823: the shown collection's own Rename, Duplicate and Delete. No key equivalent for Delete: ⌘⌫ deletes to
+        // the line's start in the outline's headings and note blocks, and a menu equivalent would take it first.
+        Button(String(localized: "menu.collection.rename",
+                      defaultValue: "Rename Collection…")) {
+            manager?.renameCollection()
+        }
+        .disabled(manager?.selectedCollectionId == nil)
+
+        Button(String(localized: "menu.collection.duplicate",
+                      defaultValue: "Duplicate Collection")) {
+            manager?.duplicateCollection()
+        }
+        .disabled(manager?.selectedCollectionId == nil)
+
+        Button(String(localized: "menu.collection.delete",
+                      defaultValue: "Delete Collection…")) {
+            manager?.deleteCollection()
+        }
+        .disabled(manager?.selectedCollectionId == nil)
 
         Divider()
 

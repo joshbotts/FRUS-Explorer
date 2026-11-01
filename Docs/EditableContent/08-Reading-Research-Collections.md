@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §10, §18.5, §18.10–§18.12, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 314 blocks · no ⚑ wording issues
+**In this file:** 325 blocks · no ⚑ wording issues
 
 ---
 
@@ -1759,7 +1759,7 @@ Artifact: drawn from the bundled source-provenance aggregate generated %@. Every
 *Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, the notice for a link that only works inside a document, and the line a volume's page in Browse shows when a page link opened it.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3189–3190 | key: deepLink.inAppOnly %@ -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3191–3192 | key: deepLink.inAppOnly %@ -->
 
 This is a “%@” link from inside a FRUS document. It works while reading that document in the app, not on its own.
 
@@ -2440,7 +2440,7 @@ This is a smart collection. Its documents are resolved from the linked saved sea
 <!-- END SOURCE: collection.editor.docs.smartEmpty -->
 
 #### Smart collection. Its documents come from its saved search.
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.sentence | lines: 994–995 | key: collection.picker.smart -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.sentence | lines: 1070–1071 | key: collection.picker.smart -->
 
 *The line under a smart collection's name in Add to Collection and Add Excerpt to Collection, on iPhone, iPad and Mac, where an ordinary collection's row prints its document count; the row is listed and does not take a tap (#1593). Since #1619 it is also the first row of a smart collection's Contents, in the iPhone and iPad editor and in the Mac's Collections window, whose Add menus then take no hand-added document, section heading, note block or passage.*
 
@@ -2449,7 +2449,7 @@ Smart collection. Its documents come from its saved search.
 <!-- END SOURCE: collection.picker.smart -->
 
 #### Smart collection
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1002–1002 | key: collection.smart.listLabel -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1078–1078 | key: collection.smart.listLabel -->
 
 *What a smart collection's row prints where an ordinary collection's prints its document count (#1619): in the Collections list on iPhone and iPad, in the Mac Collections window's collection picker and its Manage Collections sheet, and since #1687 in Project Home's Collections sheet (**Manage**), on every platform. On the Mac's toolbar the picker shows a bolt in its place, which VoiceOver reads as these words.*
 
@@ -2458,7 +2458,7 @@ Smart collection
 <!-- END SOURCE: collection.smart.listLabel -->
 
 #### Not part of the smart collection: added before it was…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.entriesFromBeforeLinkHeading | lines: 957–958 | key: collection.smart.earlier.heading -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.entriesFromBeforeLinkHeading | lines: 1033–1034 | key: collection.smart.earlier.heading -->
 
 *The dimmed heading over a smart collection's entries from before its link (#1619; decision 22 of the 2026-10-14 plan of record), in a section of its own under the collection's Contents: in the iPhone and iPad editor, which is also the Mac's New Collection sheet, and in the Mac's Collections window. A smart collection takes no hand-added document, section heading, note block or passage, so an entry of those kinds is one it held before it was linked, and every export, the preview and the Archives Visit list leave it out. The section shows only while there is such an entry; each is listed dimmed, by its title or its words.*
 
@@ -2467,7 +2467,7 @@ Not part of the smart collection: added before it was linked to its saved search
 <!-- END SOURCE: collection.smart.earlier.heading -->
 
 #### Remove These Entries
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLink | lines: 963–963 | key: collection.smart.earlier.remove -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLink | lines: 1039–1039 | key: collection.smart.earlier.remove -->
 
 *The button under those entries, on iPhone, iPad and Mac, and the destructive button of the dialog it opens. It removes nothing itself: the dialog asks first, and only its button removes them. Nothing else removes them; unlinked, the collection counts them again.*
 
@@ -2476,7 +2476,7 @@ Remove These Entries
 <!-- END SOURCE: collection.smart.earlier.remove -->
 
 #### Remove These Entries?
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkTitle | lines: 968–968 | key: collection.smart.earlier.remove.confirm.title -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkTitle | lines: 1044–1044 | key: collection.smart.earlier.remove.confirm.title -->
 
 *The title of the dialog that asks before the entries from before the link are removed. Its message is the next block, or the one after it for more than one entry.*
 
@@ -2485,7 +2485,7 @@ Remove These Entries?
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.title -->
 
 #### Removes the entry added before this collection was linked…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 979–980 | key: collection.smart.earlier.remove.confirm.message.one -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1055–1056 | key: collection.smart.earlier.remove.confirm.message.one -->
 
 *The dialog's message when one entry would go.*
 
@@ -2494,7 +2494,7 @@ Removes the entry added before this collection was linked to its saved search.
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.message.one -->
 
 #### Removes the %@ entries added before this collection was…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 981–982 | key: collection.smart.earlier.remove.confirm.message.many -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1057–1058 | key: collection.smart.earlier.remove.confirm.message.many -->
 
 *The dialog's message when more than one entry would go. `%@` is the count, grouped: "Removes the 1,204 entries added before…".*
 
@@ -2503,7 +2503,7 @@ Removes the %@ entries added before this collection was linked to its saved sear
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.message.many -->
 
 #### Empty note block
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.emptyNoteBlock | lines: 988–988 | key: collection.smart.earlier.emptyNote -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.emptyNoteBlock | lines: 1064–1064 | key: collection.smart.earlier.emptyNote -->
 
 *What a row in that section prints for a note block that holds no text. A section heading with none reads "Untitled section", as it does in the entry inspector.*
 
@@ -2512,7 +2512,7 @@ Empty note block
 <!-- END SOURCE: collection.smart.earlier.emptyNote -->
 
 #### Saved search not found
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2343–2343 | key: collection.editor.smart.missing -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2344–2344 | key: collection.editor.smart.missing -->
 
 *Where a smart collection's Smart Collection section names its saved search, when no saved search has the linked one's id any more (#1619 review): in Collection settings on iPhone and iPad, and in the Mac Collections window's ⚙ Collection popover. Unlink sits beside it either way.*
 
@@ -2764,7 +2764,7 @@ No stored summary for this document — generate one in the document view to fil
 <!-- END SOURCE: collection.headnote.missing -->
 
 #### Showing collections from every project, including ones…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 393–394 | key: collections.filterBanner.showingAll | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 535–536 | key: collections.filterBanner.showingAll | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Showing collections from every project, including ones outside “\(activeProjectDisplayName)”.
@@ -2772,29 +2772,92 @@ Showing collections from every project, including ones outside “\(activeProjec
 <!-- END SOURCE: collections.filterBanner.showingAll -->
 
 #### Showing collections for “\(…)” — \(…) other collection\(…)…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 406–407 | key: collections.filterBanner.filtered.withHidden | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 548–549 | key: collections.filterBanner.filtered.withHidden | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Showing collections for “\(activeProjectDisplayName)” — \(hidden) other collection\(hidden == 1 ? "" : "s") hidden.
 
 <!-- END SOURCE: collections.filterBanner.filtered.withHidden -->
 
+#### Rename Collection
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionRenameAlert.body | lines: 679–679 | key: collection.rename.title -->
+
+*The title of the alert that asks for a collection's new name (#1823): from a row's menu in the Collections list on iPhone and iPad, and from Collection ▸ Rename Collection… on the Mac. Leaving the name empty keeps the old one.*
+
+Rename Collection
+
+<!-- END SOURCE: collection.rename.title -->
+
+#### Delete “\(…)”?
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 919–920 | key: collection.delete.confirm.title.named -->
+
+*The title of the dialog that asks before one collection is deleted (#1823), naming it. It asks wherever a collection is deleted: a row's swipe, its menu or Edit's Delete in the Collections list on iPhone and iPad, and Manage Collections and Collection ▸ Delete Collection… on the Mac. Its message follows the title blocks below.*
+
+Delete “\(name)”?
+
+<!-- END SOURCE: collection.delete.confirm.title.named -->
+
+#### Delete %@ collection?
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 924–924 | key: collection.delete.confirm.title.one -->
+
+*The count form of the title for one collection. The dialog names a single collection instead (the block above), so this form is the grammar's and is not drawn today.*
+
+Delete %@ collection?
+
+<!-- END SOURCE: collection.delete.confirm.title.one -->
+
+#### Delete %@ collections?
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 925–925 | key: collection.delete.confirm.title.many -->
+
+*The title when Edit's Delete in the Collections list on iPhone and iPad deletes several collections at once; `%@` is the count, grouped for the reader's locale.*
+
+Delete %@ collections?
+
+<!-- END SOURCE: collection.delete.confirm.title.many -->
+
+#### Delete Collection?
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 915–915 | key: collection.delete.confirm.title.none -->
+
+*What the title reads for the moment the dialog takes to close after its Delete, once there is nothing left for it to name.*
+
+Delete Collection?
+
+<!-- END SOURCE: collection.delete.confirm.title.none -->
+
+#### Its section headings, note blocks and headnotes go with it…
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.message(count:) | lines: 934–935 | key: collection.delete.confirm.message.one -->
+
+*The dialog's message when one collection would go. A collection's headings, note blocks and headnotes are the reader's own writing, and the delete reaches every device, which is why the dialog asks at all.*
+
+Its section headings, note blocks and headnotes go with it, on your other devices too once they sync. The documents in it, and your notes and highlights on them, stay.
+
+<!-- END SOURCE: collection.delete.confirm.message.one -->
+
+#### Their section headings, note blocks and headnotes go with them…
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.message(count:) | lines: 936–937 | key: collection.delete.confirm.message.many -->
+
+*The dialog's message when several collections would go.*
+
+Their section headings, note blocks and headnotes go with them, on your other devices too once they sync. The documents in them, and your notes and highlights on them, stay.
+
+<!-- END SOURCE: collection.delete.confirm.message.many -->
+
 #### No content yet. Use the Add menu in the toolbar to add…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1185–1186 | key: collection.documents.empty | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1301–1302 | key: collection.documents.empty | shared: macOS only -->
 
 No content yet. Use the Add menu in the toolbar to add documents, headings, notes, and apparatus.
 
 <!-- END SOURCE: collection.documents.empty -->
 
 #### Tooltip — Export this collection as a PDF, HTML page, or Word…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1620–1621 | key: collection.toolbar.export.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1736–1737 | key: collection.toolbar.export.help | shared: macOS only -->
 
 Export this collection as a PDF, HTML page, or Word document — includes document text and any attached research notes
 
 <!-- END SOURCE: collection.toolbar.export.help -->
 
 #### Tooltip — Show this document’s notes, highlights, tags, and…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 1918–1919 | key: collection.entry.inspect.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 2034–2035 | key: collection.entry.inspect.help | shared: macOS only -->
 
 Show this document’s notes, highlights, tags, and provenance in the inspector panel — click again to close it
 
