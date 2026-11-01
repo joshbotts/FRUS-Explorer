@@ -853,3 +853,221 @@ struct SummarizationAnswerOverrunTests {
         #expect(await provider.requests.count == 2)
     }
 }
+
+// MARK: - An answer that copies the document (2026-11-01)
+
+/// A provider that answers every part with `partAnswer` and every synthesis with `synthesisAnswer`.
+private actor PartsAndSynthesisProvider: SummarizationProvider {
+
+    var isAvailable: Bool { true }
+    let contextWindowTokenLimit: Int
+    let partAnswer: String
+    let synthesisAnswer: String
+    /// Every call's request, in call order.
+    private(set) var requests: [SummarizationRequest] = []
+
+    init(tokenLimit: Int, partAnswer: String, synthesisAnswer: String) {
+        self.contextWindowTokenLimit = tokenLimit
+        self.partAnswer = partAnswer
+        self.synthesisAnswer = synthesisAnswer
+    }
+
+    func summarize(
+        request: SummarizationRequest,
+        prompt: SummarizationPromptSnapshot
+    ) async throws -> SummarizationResult {
+        requests.append(request)
+        return SummarizationResult(text: request.isSynthesisPass ? synthesisAnswer : partAnswer,
+                                   responseFormat: prompt.responseFormat, wasChunked: false)
+    }
+}
+
+/// The owner's decision of 2026-11-01: under a built-in template, an answer to a part of the document
+/// loses what it copied of that part word for word. A plain answer loses each paragraph at least half
+/// of whose ten-word runs the part holds; a structured answer, each field of 200 copied words or more
+/// at that share. Measured, the copies were transcripts' speaker turns, pasted after the model's own
+/// paragraph or filling a Meeting Record's Key Participants (``CopiedPassages``).
+struct CopiedPassageTests {
+
+    /// Four speaker turns of a meeting.
+    private let transcript = """
+        Rusk: We have to decide tonight whether the message goes to Havana before the President speaks.
+
+        McNamara: The air strike cannot be ready before Saturday morning, and the blockade needs the fleet in position first.
+
+        Bundy: If we send word to Castro we lose surprise, and the missiles may be operational by the time he answers.
+
+        Martin: We will give him a day to respond, and we will keep close surveillance of every site meanwhile.
+        """
+
+    /// The model's own paragraph about ``transcript``, which shares no run with it.
+    private let own = "The meeting weighs warning Castro before acting against the Soviet missiles, and settles on a "
+        + "deadline of one day while reconnaissance of the sites goes on."
+
+    /// The last three turns of ``transcript``, word for word, as the model pastes them.
+    private var pasted: String { transcript.components(separatedBy: "\n\n").dropFirst().joined(separator: "\n\n") }
+
+    /// Twenty-one turns of fourteen words, each turn naming its own question.
+    private var longTranscript: String {
+        let speakers = ["Rusk", "McNamara", "Bundy", "Taylor"]
+        let questions = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth",
+                         "tenth", "eleventh", "twelfth", "thirteenth", "fourteenth", "fifteenth", "sixteenth",
+                         "seventeenth", "eighteenth", "nineteenth", "twentieth", "last"]
+        return questions.enumerated().map { index, question in
+            "\(speakers[index % speakers.count]): On the \(question) question the department holds that the reply must wait."
+        }.joined(separator: "\n\n")
+    }
+
+    /// A built-in template, Standard Summary or Meeting Record, as the prompt the service is handed.
+    private func builtIn(meeting: Bool) throws -> SummarizationPromptSnapshot {
+        let template = try #require(SummarizationPromptSeeder.standardTemplates.first {
+            meeting ? $0.fields.contains { $0.name == "KeyParticipants" } : $0.fields.isEmpty
+        })
+        return SummarizationPromptSnapshot(id: UUID(), promptText: template.promptText,
+                                           responseFormat: template.responseFormat)
+    }
+
+    /// The summary of `document` when every call is answered `answer`, and the provider that answered.
+    private func summary(
+        of document: String,
+        answer: String,
+        prompt: SummarizationPromptSnapshot
+    ) async throws -> (text: String, provider: MockSummarizationProvider) {
+        let service = SummarizationService(modelContainer: try ModelContainer.makeTestContainer())
+        let provider = MockSummarizationProvider(responseText: answer)
+        let result = try await service.generateSummaryText(
+            documentText: document, prompt: prompt, provider: provider, documentId: "d21", volumeId: "frus1961-63v11")
+        return (result.text, provider)
+    }
+
+    @Test("A run is ten words in a row, a text's words its letters and digits, lowercased")
+    func theMeasure() {
+        #expect(CopiedPassages.words(in: "Rusk: We’ve—uh, DECIDED 24 hours.") == ["rusk", "we", "ve", "uh", "decided", "24", "hours"])
+        let held = CopiedPassages.runs(in: transcript)
+        let copy = CopiedPassages.measure(pasted, against: held)
+        #expect(copy.share == 1)
+        #expect(copy.copiedWords == copy.words)
+        let mine = CopiedPassages.measure(own, against: held)
+        #expect(mine.share == 0 && mine.copiedWords == 0)
+        // Under ten words there is no run, so nothing in it counts as copied.
+        let short = CopiedPassages.measure("Rusk: We have to decide tonight.", against: held)
+        #expect(short == .init(words: 6, copiedWords: 0, share: 0))
+    }
+
+    @Test("Every built-in template is checked, and no other prompt")
+    func whichPromptsAreChecked() throws {
+        for template in SummarizationPromptSeeder.standardTemplates {
+            let prompt = SummarizationPromptSnapshot(id: UUID(), promptText: template.promptText,
+                                                     responseFormat: template.responseFormat)
+            #expect(CopiedPassages.applies(to: prompt), "\(template.name)")
+        }
+        let meeting = try builtIn(meeting: true)
+        #expect(!CopiedPassages.applies(to: SummarizationPromptSnapshot(
+            id: UUID(), promptText: meeting.promptText, responseFormat: .general)))
+        #expect(!CopiedPassages.applies(to: makePromptSnapshot()))
+    }
+
+    @Test("A Standard answer loses the turns it pasted after its own paragraph")
+    func aStandardAnswerLosesItsPaste() async throws {
+        let (text, provider) = try await summary(of: transcript, answer: own + "\n\n" + pasted,
+                                                 prompt: try builtIn(meeting: false))
+        #expect(text == own)
+        #expect(await provider.callCount == 1)
+    }
+
+    /// A reader's own prompt may ask for a quotation, and was not measured.
+    @Test("A reader's own prompt, or a template edited, keeps what its answer copied")
+    func aReadersPromptKeepsItsQuotation() async throws {
+        let answer = own + "\n\n" + pasted
+        #expect(try await summary(of: transcript, answer: answer, prompt: makePromptSnapshot()).text == answer)
+        let template = try builtIn(meeting: false)
+        let edited = SummarizationPromptSnapshot(
+            id: UUID(), promptText: template.promptText + "\nQuote the passage that decides it.", responseFormat: .general)
+        #expect(try await summary(of: transcript, answer: answer, prompt: edited).text == answer)
+    }
+
+    @Test("A paragraph that quotes a little of the part stays, and an answer that is all copy is kept whole")
+    func whatStays() async throws {
+        let prompt = try builtIn(meeting: false)
+        // Two turns quoted in a paragraph of the model's own: a share above the most a measured Standard
+        // paragraph reached (0.43), and under the rule's.
+        let quoting = "The meeting weighs warning Castro before acting against the Soviet missiles. McNamara put it "
+            + "plainly: the air strike cannot be ready before Saturday morning, and the blockade needs the fleet in "
+            + "position first. Bundy added that if we send word to Castro we lose surprise, and the missiles may be "
+            + "operational by the time he answers."
+        let share = CopiedPassages.measure(quoting, against: CopiedPassages.runs(in: transcript)).share
+        try #require(share > 0.43 && share < CopiedPassages.paragraphShare)
+        // After a paragraph of the model's own, so dropping it would not leave the answer empty.
+        let answer = own + "\n\n" + quoting
+        #expect(try await summary(of: transcript, answer: answer, prompt: prompt).text == answer)
+        #expect(try await summary(of: transcript, answer: pasted, prompt: prompt).text == pasted)
+    }
+
+    @Test("A Meeting Record field of 200 copied words or more is emptied, and its other fields stay")
+    func aCopiedFieldIsEmptied() async throws {
+        let prompt = try builtIn(meeting: true)
+        guard case .structured(let schema) = prompt.responseFormat else {
+            Issue.record("the Meeting Record template is not structured")
+            return
+        }
+        let turns = longTranscript.components(separatedBy: "\n\n")
+        let held = CopiedPassages.runs(in: longTranscript)
+        var values = ["KeyParticipants": turns.prefix(16).joined(separator: " "), "Topics": own,
+                      "Agreements": "A deadline of one day.", "Disagreements": "Whether to warn Castro at all."]
+        try #require(CopiedPassages.measure(values["KeyParticipants"] ?? "", against: held).copiedWords >= CopiedPassages.fieldWords)
+
+        let text = try await summary(of: longTranscript, answer: StructuredSectionAnswer.jsonString(values, schema: schema),
+                                     prompt: prompt).text
+        values["KeyParticipants"] = ""
+        #expect(text == StructuredSectionAnswer.jsonString(values, schema: schema))
+        #expect(StructuredSummaryDisplay.plainText(responseText: text, format: prompt.responseFormat)
+                    .hasPrefix("Key Participants:\n\nTopics: " + own))
+
+        // A participants list the document prints, copied whole but short, stays.
+        values["KeyParticipants"] = turns.prefix(8).joined(separator: " ")
+        let short = CopiedPassages.measure(values["KeyParticipants"] ?? "", against: held)
+        try #require(short.share == 1 && short.copiedWords < CopiedPassages.fieldWords)
+        let listed = StructuredSectionAnswer.jsonString(values, schema: schema)
+        #expect(try await summary(of: longTranscript, answer: listed, prompt: prompt).text == listed)
+    }
+
+    @Test("Each part's answer is measured against that part, and the synthesis is left as it is")
+    func eachPartAgainstItsOwnText() async throws {
+        let prompt = try builtIn(meeting: false)
+        let service = SummarizationService(modelContainer: try ModelContainer.makeTestContainer())
+        let tokenLimit = 3_072
+        let budget = await service.documentBudget(promptText: prompt.promptText, responseFormat: .general,
+                                                  limit: tokenLimit)
+        // Three paragraphs of over half the budget each, so each is a part of its own. Each phrase is
+        // eight words, so every run of a part holds that part's marker.
+        var parts: [String] = []
+        for marker in ["alpha", "bravo", "delta"] {
+            let phrase = "\(marker) told the committee the reply must wait. "
+            let perPhrase = await service.estimateTokens(phrase)
+            let repeats = budget * 3 / 5 / perPhrase
+            parts.append(String(repeating: phrase, count: repeats).trimmingCharacters(in: .whitespaces))
+        }
+        let document = parts.joined(separator: "\n\n")
+        try #require(await service.chunk(text: document, maxTokens: budget).count == 3)
+
+        let copied = String(repeating: "alpha told the committee the reply must wait. ", count: 3)
+            .trimmingCharacters(in: .whitespaces)
+        let answer = own + "\n\n" + copied
+        // A paragraph of its own, then the parts' words: checked like a part's, it would lose the second.
+        let combinedAnswer = "Across its three parts the record has the committee waiting on the reply.\n\n" + copied
+        let provider = PartsAndSynthesisProvider(tokenLimit: tokenLimit, partAnswer: answer,
+                                                 synthesisAnswer: combinedAnswer)
+        let result = try await service.generateSummaryText(
+            documentText: document, prompt: prompt, provider: provider, documentId: "d1", volumeId: "v")
+        #expect(result.text == combinedAnswer)
+
+        let requests = await provider.requests
+        try #require(requests.map(\.isSynthesisPass) == [false, false, false, true])
+        let combined = requests[3].chunks
+        try #require(combined.count == 3)
+        // The first part's answer lost its copy of the first part; the others hold none of theirs.
+        #expect(combined[0].hasSuffix("\n" + own))
+        #expect(combined[1].hasSuffix("\n" + answer))
+        #expect(combined[2].hasSuffix("\n" + answer))
+    }
+}
