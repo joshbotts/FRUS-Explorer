@@ -1,6 +1,6 @@
 # Plan of record — from 2026-10-21
 
-**Base:** `v2` @ `e47ca307` (2026-11-01). The tree reads version 1.0, build 1776, the TestFlight build tagged `build-51` at `f0479037`; 40 pull requests have merged since the tag. Index **v71**, person rollup **v15**, and EmbeddingGemma 2 vectors under digest `89481b18`. Five issues are open (#1823, #1723, #1696, #1620, #234), and no pull request. *(The line read `f962077e`, 1861 and v12 until 2026-11-01.)*
+**Base:** `v2` @ `e47ca307` (2026-11-01). The tree reads version 1.0, build 1776, the TestFlight build tagged `build-51` at `f0479037`; 40 pull requests have merged since the tag. Index **v71**, person rollup **v15**, and EmbeddingGemma 2 vectors under digest `89481b18`. Three issues are open (#1723, #1696, #234), and no pull request. *(The line read `f962077e`, 1861 and v12 until 2026-11-01, and named five open issues, #1823 and #1620 among them, until both closed that day.)*
 
 **Status: LIVE — the plan of record from 2026-10-21.** It supersedes `Completed/Plan-Of-Record-2026-10-14.md`, whose work is done: Track A (A1 to A19, all but A7, which its decision 57 deferred), Track B and the build-51 screenshot sweep S0 to S5 (#1670 to #1755).
 
@@ -28,7 +28,7 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
 - 55: build 51 takes none of the name-authority overlay's Wikidata and VIAF ids.
 - 57: A7 is deferred.
 - 61: sections stay out of Meaning search.
-- 72: #1620 is re-tested on iOS 27.1.
+- 72: #1620 is re-tested on iOS 27.1. Settled on 2026-11-01 without it (decision 114).
 - 82: the sittings' findings go to this plan.
 - 83: 1861 stays until the app is ready for submission. Decision 87 refines it.
 
@@ -105,6 +105,10 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
     - This refines decision 99, which named `version-1.0` for 1861; no tag of that name has been pushed. "1.0 release" is spelled `1.0-release`, since a git tag name cannot contain a space, as "build 51" is `build-51`.
     - The owner tags the commit uploaded as 1.0 (1787) `build-52` after the upload (R2b), and the commit submitted as 1.0 (1861) `1.0-release` (R3). Should the device pass need another upload before 1861, its tag is the owner's call then.
     - So build 52 is 1787, and **"build 52" written in this plan before 2026-11-01 means the release after 1.0**: decisions 90, 91 and 94, §0's index-bump rule, §3's candidates list and §4's manual-review line, and the issues that say "past build 51" or "build 52". They are left as written, with §3's heading renamed; the next plan numbers that release.
+
+**The owner's word of 2026-11-01**, in the session that re-tested #1620:
+
+114. **#1620 is closed**: "Post and close". No iOS 27.1 runtime was installed (decision 72's re-test); the host moved instead, to Xcode 27.2 and macOS 27.2, with the same iOS 27.0 runtime (24A434). On it, none of the issue's three triggers reproduced: a plain launch on the iPad Pro 11-inch that had ended `backboardd` 3 of 3, the analytics and keyboard suites on the iPad mini, and the Stage Manager switch on a newly created iPad Pro 13-inch. The aborting frame is `MTLSimDevice`, the simulator's bridge to the host's Metal; whether the update or the Mac's restart cleared it was not separated. `CLAUDE.md`'s index and `UI-Test-Destinations-Runbook.md` read the analytics and toolbar suites on an iPad under iOS 27.0 again. The same run found something else: under 27.0 `KeyboardDismissBarReachTests`' Browse-root test fails, 2 runs of 2, because the tab shell's banner stays up with the keyboard; under 26.5 it passes. So that suite's row stays on 26.5. The failure is not filed.
 
 **Rules carried from the earlier plans and `CLAUDE.md`.** Each is the owner's.
 - **The queue is serial.** The next pull request is pushed when the owner has merged the one before. Auto-merge is never enabled.
@@ -301,7 +305,6 @@ The repository holds drafts for each.
 - **R2b, 2026-11-02** (decision 110): the archive and upload of 1.0 (1787) in the checkout the two scripts ran in, the `build-52` tag (decision 113), and the device pass on an iPhone, an iPad and the Mac, on a library that had 1776, so the People rebuild at v15 is seen.
 - **G1's scope** (decision 112): which of §1's G1 items are taken, and whether a measurement tier follows the text, with its budget line.
 - **The website's pages** (decision 101): the pastes into frusexplorer.app, and whether the home page and the tour become copies of record.
-- **For #1620** (decision 72): install iOS 27.1's simulator runtime. A session then re-runs the affected suites, starting from the Stage Manager switch (#1620's comment of 2026-10-21).
 - **For A7** (#1723): the device check with Spike Reader. It is `App-Intents-Siri-Assessment-2026-10-18.md` §4, and `jolly-newton-d5828b`'s untracked `A6Spike/` holds the app.
 - **The manual review**, past build 52 (decision 94). `Manual-Revisions-Pending.md` and `Manual-Update-Build-49-Owner-Review.md` are its inputs and close with it.
 - **App Previews** for a later update (decision 89): recordings A, R and T are kept outside the repository.
@@ -379,6 +382,7 @@ The repository holds drafts for each.
 ### Closed or declined
 
 - **Closed:** #1690 and #1691 (decision 95).
+- **#1620, the iPad simulator's render server under iOS 27.0, closed on 2026-11-01** (decisions 72 and 114), once the host's update had ended it.
 - **#1767, the person authority's deferred work, closed on 2026-11-01** (decisions 96 and 109): the identifier rule (b4), the role text of overlay entries that carry several people, the nine held-apart members who rejoin by name, and #1658's undecided tie.
   - **Lane A built on 2026-10-29** (decisions 102 to 104) from `v2` at `fb542514`, on `claude/person-authority-lane-c64504`, and **opened as #1815** on the owner's word of 2026-10-29: the nine and #1658's tie, with the design's §4.6. Kit and generator code, rollup v13, no index version, no CloudKit change; `person-authority-index.json` and `pocom-index.json` regenerated. Over S1's full library, 22 of 63,667 people entries change person. The nine stand apart (John Hughes and William G. Miller join their own records instead), five ties stand apart, Speaker Jim Wright's four entries leave Sir Oliver Wright for his own record, and Sir Oliver's vol. XLIV Part 1 entry leaves Jerauld Wright. The design memo's header has what the build corrected in it. Lane A merged as #1815 (`5c185a71`).
   - **Lane B built on 2026-10-29** from `v2` at `5c185a71`, on `claude/strange-cohen-3a0b0b`: items 1 and 2, the identifier rule (b4) over a Wikidata snapshot committed beside the generator, with its refresh tool, and a multi-person entry's role text only for the records whose remarks hold it. Generator code, the snapshot, its tool and the assessment's reads (decision 105), and the bundle; rollup v14 (decision 106), no index version, no CloudKit change; `pocom-index.json` not owed (no slug moves). The file gains 1,859 Wikidata ids and 1,468 of the overlay's VIAF ids (142 → 1,610) and loses 33 role texts that were another record's, and nothing else changes. No member of a rollup moves; v14's rebuild writes the VIAF ids into a library. **Opened as #1816** on the owner's word of 2026-10-29 ("Push and open pr"), against `v2` at `5c185a71`, which had not moved since the branch was cut; it merged as `cb463e33`.

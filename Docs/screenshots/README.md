@@ -269,7 +269,11 @@ sitting knows what to look for; the rows below carry the detail.
   from 27.0's only in the system's own drawing, which the manuals do not describe.
 - **iOS 27.1's runtime is not installed** on 2026-10-21 (26.3, 26.4, 26.5 and 27.0 are), so
   decision 72's re-test of #1620 has not run and the split above stands. The owner's iPad under
-  iOS 27 is the alternative for the seven (the plan's §5); the ledger says which.
+  iOS 27 is the alternative for the seven (the plan's §5); the ledger says which. **Since
+  2026-11-01 #1620 is closed** (the live plan's decision 114): on Xcode 27.2 and macOS 27.2, with
+  the same iOS 27.0 runtime, a plain launch on `27A97343`, the analytics suites on an iPad mini and
+  the Stage Manager switch on a new iPad Pro 13-inch all left the render server alive. A later
+  sitting can take the seven on its 27.0 device, and the 26.5 split stands only as S1's record.
 - **S2** is a second 13-inch simulator, erased, no volumes: `onboarding-volumes`,
   `series-production`, and the kit's pass A (the splash and onboarding recording).
 - **S3** is an iPhone 17 Pro under iOS 27.0, portrait, the full corpus; the kit's three iPhone
@@ -674,7 +678,9 @@ in both manuals from the bundled files (#1762).
 6. **#1620 is open and iOS 27.1's runtime is not installed**, so the seven analytics captures are
    taken under iOS 26.5 (or on the owner's iPad); decision 72's re-test is still owed. *Why it
    matters:* not a defect a user sees — the owner's iPad under iOS 27 runs these screens — but
-   the simulator cannot be trusted for the seven until the re-test says so.
+   the simulator cannot be trusted for the seven until the re-test says so. *Answered on
+   2026-11-01 without iOS 27.1: on Xcode and macOS 27.2 the 27.0 runtime runs all three of
+   #1620's triggers clean, and the issue is closed (the live plan's decision 114).*
 7. **The Mac check copy's status chip reads Local Only** without the never-committed patch: S4
    patches or crops, and the ledger says which. *Why it matters:* a Mac capture with *Local Only*
    in the status bar would contradict Mac §4.4's healthy chip; cosmetic to the sitting, nothing

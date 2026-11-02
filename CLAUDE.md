@@ -81,7 +81,7 @@ is the index, not the entry.
 | `CollectionListManagementTests` (in `CollectionEditorTitleTests.swift`) | iPhone 17 and iPad Pro 13-inch (M5), both `OS=27.0` | 4 tests, 0 skipped on each; never skips; the dialog is an action sheet on the iPhone and a popover on the iPad (#1823); allow 600 s a test |
 | `SelectionEditMenuTests` (in `ResearchReadingStaysInTabTests.swift`) | iPhone 17 and iPad Pro 13-inch (M5) | 4 tests, 0 skipped on each |
 | `ResearchReadingDepthTests` | iPad mini (A17 Pro) | skips on an iPad whose portrait is already two-pane |
-| `AnalyticsKeyboardTests`, `KeyboardDismissBarReachTests`, `ToolbarOverflowAccessibilityTests` | iPad mini (A17 Pro), `OS=26.5` | 9 tests, 0 skipped; green on iPhone 17 and iPad Pro 13-inch too, but only the mini catches a restored analytics window (#1279); under iOS 27.0 an iPad simulator kills each test that opens Corpus Analytics (#1620) |
+| `AnalyticsKeyboardTests`, `KeyboardDismissBarReachTests`, `ToolbarOverflowAccessibilityTests` | iPad mini (A17 Pro), `OS=26.5` | 9 tests, 0 skipped; green on iPhone 17 and iPad Pro 13-inch too, but only the mini catches a restored analytics window (#1279); under iOS 27.0 the analytics and toolbar suites pass since #1620 closed, and `KeyboardDismissBarReachTests`' Browse-root test fails: the tab shell's banner stays up with the keyboard (2026-11-01) |
 | `SearchActionsBarFitTests` | iPhone 17 and iPhone SE (3rd generation), iOS 27 | iPhone-only; self-skips at iPad width |
 | `AuxWindowCloseTests` | iPad Pro 13-inch (M5), `OS=27.0`, in Windowed Apps | iPad-only; which cases guard depends on the multitasking mode |
 | `VolumeRemovalTests` | an iPad on iOS 27 and one on iOS 26, full screen | 5 tests, 0 skipped; an iPhone skips the 2 popover-anchor tests |
@@ -91,7 +91,7 @@ is the index, not the entry.
 | `CrossReferenceRankingChartTests` (same file) | any iPhone or iPad | 3 tests, 3 passed; never skips; two tap a bar and its title and find the document open (#1797) |
 | `BrowseWithinScopeTests` | iPad Pro 11-inch (M5) and iPhone 17 Pro, both `OS=26.4` | 3 passed on each; neither is a control |
 | `SummarizationPromptCopyTests` | iPhone 17 or iPad Pro 11-inch (M5), `OS=27.0` | 1 test, 1 passed on each; never skips; its test must stay the pane's first action |
-| `AnalyticsCompareFromTableTests` | iPhone 17, `OS=27.0`, or iPad mini (A17 Pro), `OS=26.5` | 1 test, 1 passed on each; never skips; needs no index; on an iPad simulator under iOS 27.0 the run is killed at teardown (#1620) |
+| `AnalyticsCompareFromTableTests` | iPhone 17 or iPad mini (A17 Pro), `OS=27.0` | 1 test, 1 passed on each; never skips; needs no index; an iPad under iOS 27.0 has run it clean since #1620 closed (2026-11-01) |
 | `TabShellBannerClearanceTests` | iPhone 17 and iPad Pro 11-inch (M5) | 6 tests: 1 skipped on the iPhone, 0 on the iPad, which the suite turns to landscape |
 | `SearchResultAddToCollectionTests` | iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0` | 2 tests, 2 passed on each; never skips; only the iPad's wide sheet guards the picker row's tap |
 | `SearchResultVoiceOverTests` | iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0` | 3 tests, 3 passed on each; nothing skips under iOS 27 (two tests skip below it); listens through iOS 27's VoiceOver service, which returns 64 characters of speech and cannot make VoiceOver do an action; fails on the code before #1684; allow 600 s a test |
