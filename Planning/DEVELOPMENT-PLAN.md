@@ -9073,3 +9073,30 @@ From `v2` at `e47ca307`, in a cloud session. Documents only: no code, data file 
 - **No device was measured.** A 4K device's 3,072 budget was emulated on the Mac's 8K model, which may copy more or less than a 4K one.
 - **The app was not run with this build.** The tests drive the real service with the built-in templates; nothing here had the model copy inside the app.
 - **Found, not fixed:** d21's final Meeting Record under the old estimate named "Secretary of Defense: Carter", an office the document does not state (it calls him General Carter).
+
+## Session 2026-11-01 — #1620 is closed: the iPad simulator under iOS 27.0 runs its three triggers clean on Xcode and macOS 27.2
+
+From `v2` at `c5e0608a`, on `claude/investigate-1620-fe4c15`. Documents only: no code, data file or version changed.
+
+**What was asked.** "investigate 1620", then "Check the stage manager comment", then "Post and close", then "Yes, update docs" (the plan's decision 114).
+
+**What was measured.** The host had changed since every earlier measurement: Xcode 27.2 (27B52) and macOS 27.2, where the issue's runs were on Xcode 27.0 (27A266a) and macOS 27.0.1, and the Mac had been restarted. The iOS 27.0 runtime was the same, 24A434, and no 27.1 runtime was installed.
+- **A plain launch**: on the iPad Pro 11-inch (M5) under 27.0, `27A97343`, the device that ended `backboardd` 3 of 3 on 2026-10-11, three `simctl launch`es of 20 s each. `backboardd` kept one PID (68863), and no crash report was written.
+- **The analytics suites**: on the iPad mini (A17 Pro) under 27.0, `22BCEC47`, `AnalyticsKeyboardTests` and `AnalyticsCompareFromTableTests` ran 4 tests, 4 passed, and no report was written.
+- **The Stage Manager switch**: on a newly created iPad Pro 13-inch (M5) under 27.0, as S1's was. The control tool's access request went unanswered, so a throwaway XCUITest appended to `SummarizationPromptCopyTests.swift` drove Settings ▸ Multitasking & Gestures ▸ Stage Manager. The switch took: the screenshot shows Stage Manager checked, and SpringBoard recorded `SBChamoisWindowingEnabled = 1` with its switch date a second after the tap. `backboardd` kept one PID (71123) through the switch and through a launch of the app, which drew in Stage Manager. No report was written. The test was removed, and the device was deleted.
+- **Not separated**: whether the 27.2 update or the restart ended the crash. The aborting frame is `MTLSimDevice`, the simulator's bridge to the host's Metal, which fits the host. No device was used.
+
+**Found on the way, not #1620's, and not filed.** Before the docs could send the keyboard row back to 27.0, its three suites with `AnalyticsCompareFromTableTests` were run on the iPad mini under 27.0: 10 tests, 9 passed, no `backboardd` report. `KeyboardDismissBarReachTests.testDismissBarRendersOnTheBrowseRootSearchField` failed at its #1070 assertion (`KeyboardDismissBarReachTests.swift:223`): the tab shell's banner, up before focus, stayed on screen after the keyboard rose. A second run of that suite under 27.0 failed the same way. The same build under iOS 26.5 on the iPad mini `0093684B` passed it 2 of 2, and the assertion ran there (the banner was up before focus and gone at the first poll). So under iOS 27.0 the keyboard does not hide the banner on that iPad. Not looked into: why, and whether a device does it.
+
+**What changed.**
+- **#1620**: a comment with the three measurements, then closed.
+- **`CLAUDE.md`**: the keyboard row stays on `OS=26.5` and gives the reason above in place of #1620's; `AnalyticsCompareFromTableTests` runs on an iPhone 17 or an iPad mini under `OS=27.0`.
+- **`UI-Test-Destinations-Runbook.md`**: the keyboard suites' entry leads with 2026-11-01's runs, and #1620's measurement stays below it as history. `AnalyticsCompareFromTableTests`' entry says an iPad under 27.0 runs it.
+- **`Plan-Of-Record-2026-10-21.md`**: decision 114. Decision 72 is marked settled by it, the header's open issues are three (#1823 had closed the same day), §4's #1620 step is removed, and §5's Closed list has #1620.
+- **`Docs/screenshots/README.md`**: the device notes and S0's finding 6 carry a dated note that #1620 is closed, and the 26.5 split stands as S1's record.
+
+**Checked.**
+- `CodingStandardsAuditTests` on the iPhone 17 under iOS 27.0: "✔ Test run with 63 tests in 1 suite passed". It is the one test that reads a file this change touches, the plan of record; no test reads `CLAUDE.md`'s table, the runbook or the screenshot notes.
+
+**Not done.**
+- The banner failure under 27.0 is not filed.

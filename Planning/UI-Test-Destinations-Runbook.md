@@ -275,8 +275,21 @@ passing on iPhone 17 and iPad Pro 13-inch — a suite ending with an analytics w
 launch restoring it, and four bare tab guards that reported the wrong cause. They are green on all
 three devices now; run them on the mini, because that is the one that catches this class.
 
-**Run them on `OS=26.5`: under iOS 27.0 an iPad simulator kills each test that opens Corpus
-Analytics (#1620).** Measured on 2026-10-09 on this Mac, one build, an iPad mini (A17 Pro) shut down
+**Run them on `OS=26.5`. #1620 no longer holds them there; `KeyboardDismissBarReachTests` does.**
+Measured on 2026-11-01 on this Mac, now Xcode 27.2 (27B52) and macOS 27.2 with the same iOS 27.0
+runtime (24A434), one build of `v2` at `c5e0608a`, the iPad mini (A17 Pro) under 27.0 (`22BCEC47`)
+booted for each run: the three suites with `AnalyticsCompareFromTableTests` ran **10 tests, 9
+passed**, with no `backboardd` report, so #1620's crash is gone and the issue is closed. The one
+failure is `KeyboardDismissBarReachTests.testDismissBarRendersOnTheBrowseRootSearchField`, at its
+#1070 assertion: the tab shell's banner, up before the field was focused, was still on screen
+after the keyboard rose, through 19 polls. A second run of that suite under 27.0 failed the same
+way, 1 of 2. The same build on the iPad mini under **iOS 26.5** (`0093684B`) passed it 2 of 2, and
+there the assertion did run: the banner was up before focus and gone at the first poll. So under
+iOS 27.0 the keyboard does not hide the banner on that iPad. Not looked into: why, and whether a
+device does it. Until then this row is read on 26.5, and its analytics and toolbar suites can be
+read under 27.0 as well.
+
+**History: #1620 (closed 2026-11-01).** Measured on 2026-10-09 on this Mac, one build, an iPad mini (A17 Pro) shut down
 and booted for each run. Under **iOS 27.0**, `AnalyticsKeyboardTests` ended 3 tests of 3 with
 "Restarting after unexpected exit, crash, or test timeout", "Executed 0 tests" and three new
 `backboardd` crash reports, as the issue filed it. Under **iOS 26.5** the same suite passed 3 of 3
@@ -834,9 +847,10 @@ xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
   -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300
 ```
 
-**`AnalyticsCompareFromTableTests` (#1583) needs no index; on an iPad simulator under iOS 27.0 its
-run is killed at teardown, as every suite that opens Corpus Analytics is (#1620), so an iPad run
-is made on `OS=26.5`.** It
+**`AnalyticsCompareFromTableTests` (#1583) needs no index, and runs on an iPhone or an iPad under
+iOS 27.0.** Until 2026-11-01 an iPad run under 27.0 was killed at teardown (#1620, below); on
+Xcode and macOS 27.2 it passed on the iPad mini (A17 Pro) under 27.0, twice, and the issue is
+closed. It
 opens Corpus Analytics, commits one term, switches the Display control to **Table**, commits a
 second term, and reads two things before asserting either: the Display control's **Chart** segment
 is the selected one, and the two **Values** choices (Raw count, % of documents) are enabled. On an
@@ -852,8 +866,8 @@ failed, and then the simulator's `backboardd` aborted about two seconds after `t
 terminated the app and took the test runner with it** ("Test crashed with signal kill"). That is
 not this suite's: `v2`'s own `AnalyticsKeyboardTests` does the same on a newly booted iPad mini, 3
 tests of 3 (#1620). **On an iPad mini (A17 Pro) under iOS 26.5 it passed, 1 test, later the same
-day**, in the run of ten the keyboard suites' entry above records. An iPad run under iOS 27.0 still
-says nothing either way.
+day**, in the run of ten the keyboard suites' entry above records. *(That paragraph is the record
+of #1620; since 2026-11-01 an iPad run under iOS 27.0 is read like any other.)*
 ```bash
 xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
