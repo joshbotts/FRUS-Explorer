@@ -285,7 +285,7 @@ failure is `KeyboardDismissBarReachTests.testDismissBarRendersOnTheBrowseRootSea
 after the keyboard rose, through 19 polls. A second run of that suite under 27.0 failed the same
 way, 1 of 2. The same build on the iPad mini under **iOS 26.5** (`0093684B`) passed it 2 of 2, and
 there the assertion did run: the banner was up before focus and gone at the first poll. So under
-iOS 27.0 the keyboard does not hide the banner on that iPad. Not looked into: why, and whether a
+iOS 27.0 the keyboard does not hide the banner on that iPad (#1835). Not looked into: why, and whether a
 device does it. Until then this row is read on 26.5, and its analytics and toolbar suites can be
 read under 27.0 as well.
 
