@@ -30,7 +30,10 @@ editorial skill and technological innovation in the Office of the Historian, by 
 and its publication as open TEI, and never set against anything else. FRUS Explorer Light, the web
 edition, is an Office of the Historian initiative and appears in no public marketing (§6). The copy
 changed is in §1 (the line, the pitch, two table cells, *What it is not*), §1a's table, §5.1, §5.2,
-§5.3's first post, §5.4 and §5.5's first answer.
+§5.3's first post, §5.4 and §5.5's first answer. *The store frames' disclaimer followed on 2026-11-02,
+in R4, on the owner's word: frame 01's foot in `tools/marketing/shots.json`, on all four presets, reads
+"FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the
+Office of the Historian or the U.S. Department of State."*
 
 **What this session could and could not do.** This was written on a Linux container with no simulator
 and no Mac, so **no capture was taken**. Every composed frame in `Planning/marketing-drafts/` stands
@@ -583,7 +586,11 @@ record's embed pass: 34 frames at the presets' sizes, 14 iPad, 14 Mac and 6 iPho
 build 1861; the ledger's S5 entry has the run.* *Since 2026-10-22 (#1763) the stamp sits in the
 frame's top margin, so a draft lays out as its store frame does, and `STAMP=0` leaves it out.* *Run
 again on 2026-10-22 in R1, the retake sitting, with `STAMP=0`: the 34 frames in `~/Desktop/store`,
-none stamped, and the drafts rendered again; the ledger's R1 entry has the run.*
+none stamped, and the drafts rendered again; the ledger's R1 entry has the run.* *Run again on
+2026-11-02 in R4, the retake sitting after 1.0 (1787), with `STAMP=0`: six frames changed (06 on the
+iPad and the Mac from the two retaken graphs, and 01's foot on all four presets), the other 28 byte for
+byte as R1's, and the drafts rendered again, the two frame-06 shots stamped build 1787; the ledger's R4
+entry has the run.*
 
 ---
 
