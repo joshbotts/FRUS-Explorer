@@ -84,7 +84,7 @@
       "subline": "Full-text search with phrases, proximity and exact words, faceted by year, volume, person, document type and subject.",
       "capture": "Docs/screenshots/ipad/search-results.png",
       "status": "build 1861",
-      "foot": "FRUS Explorer is an independent research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
+      "foot": "FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
     },
     {
       "id": "search",
@@ -95,7 +95,7 @@
       "subline": "Full-text search with phrases, proximity and exact words, faceted by year, volume, person, document type and subject.",
       "capture": "Docs/screenshots/macos/search.png",
       "status": "build 1861",
-      "foot": "FRUS Explorer is an independent research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
+      "foot": "FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
     },
     {
       "id": "search",
@@ -106,7 +106,7 @@
       "subline": "Full-text search, offline, with facets by year, volume, person and subject.",
       "capture": "Docs/screenshots/ios/search-results.png",
       "status": "build 1861",
-      "foot": "FRUS Explorer is an independent research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
+      "foot": "FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
     },
     {
       "id": "search-facets",
@@ -117,7 +117,7 @@
       "subline": "Full-text search, offline, with facets by year, volume, person and subject.",
       "capture": "Docs/screenshots/ios/search-facets.png",
       "status": "build 1861",
-      "foot": "FRUS Explorer is an independent research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
+      "foot": "FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
     },
     {
       "id": "reader",
@@ -248,7 +248,7 @@
       "headline": "Follow what the editors cited.",
       "subline": "The editors' own cross-references around any document, as a timeline or a network, one to three hops out. Files they cited without printing open their collection record.",
       "capture": "Docs/screenshots/ipad/cross-reference-graph.png",
-      "status": "build 1861"
+      "status": "build 1787"
     },
     {
       "id": "cross-reference",
@@ -258,7 +258,7 @@
       "headline": "Follow what the editors cited.",
       "subline": "The editors' own cross-references around any document, as a timeline or a network, one to three hops out. Files they cited without printing open their collection record.",
       "capture": "Docs/screenshots/macos/cross-reference-graph.png",
-      "status": "build 1861"
+      "status": "build 1787"
     },
     {
       "id": "cite",
