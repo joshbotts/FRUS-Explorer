@@ -360,7 +360,12 @@ it left out. Everything is made through the app's own UI.
     (#1816, 2026-10-29; v15 since #1826), his record carries Wikidata `Q66107` and VIAF
     `108958811`. His sheet should show both links once a library has rebuilt at v14 or later, but no
     device had been checked by 2026-11-01 (the live plan's §4). If a build-52 retake shows them,
-    its caption may name them again.
+    its caption may name them again. **R4 (2026-11-02) left all three People frames as committed**,
+    `ipad/people-detail`, `people-detail-records` and `macos/people-detail`, on the owner's word
+    ("Leave all three"). In 1.0 (1787) the sheet draws **View on VIAF** and **View on Wikidata**
+    right after **Find all mentions**, in its section (`PersonIndexView`, read; the sheet was not
+    opened in R4): the iPad's first frame ends at that row and the other two start at Career, so each
+    composition leaves both links just outside it, and no caption names them.
 12. **The searches**: *Berlin blockade* for `search-results` (iPad) and `search` (Mac; the kit's
     frame 01 route names it on every device). The Meaning question for `semantic-search` is free;
     the zero-result question for P2 can be the manual's own, *Why did the Marshall Plan happen?*,
@@ -425,7 +430,7 @@ took those seven on the 27.0 device and row 3 under iOS 26.5: the sittings' ledg
 | 21 | `browse-clusters-map` **26.5** | §6.1h, l. 433 | The semantic map focused on a cluster after *See on the semantic map*, its region card ready | B4's relayout | From 20's cluster |
 | 22 | `topic-index` | §6.2a, l. 445 | The index narrowed to one topic area: the area chip with its ✕, each topic with its reach across the series. §6.2a: 491 topics; the chip's form *Topic area: Cold War — 6 topics* | One sentence changed (an area such as *Warfare · General* holds ten topics) | Browse ▸ Topics ▸ a Cold War topic ▸ All Cold War topics (recipe 10) |
 | 23 | `people-list` | §6.5, l. 473 | One alphabetical list of reconciled identities, role · active-years subtitles, mention counts. §6.5: a question-mark badge marks a possible duplicate | A4, A4c, A4d (rollup v12: counts and roles move); the badge sentence changed | After the consolidation settles (the People note above) |
-| 24 | `people-detail` | §6.5, l. 477 | Kissinger's sheet: the reconciled-identity seal, mention count and active years, subjects, Find all mentions | A4d: no Wikidata link, and no VIAF link for him (recipe 11); the caption does not name the links, so it stands. Since rollup v14 (#1816) his record carries both ids (recipe 11) | The sheet's top |
+| 24 | `people-detail` | §6.5, l. 477 | Kissinger's sheet: the reconciled-identity seal, mention count and active years, subjects, Find all mentions | A4d: no Wikidata link, and no VIAF link for him (recipe 11); the caption does not name the links, so it stands. Since rollup v14 (#1816) his record carries both ids (recipe 11); R4 left the frame on the owner's word (recipe 11) | The sheet's top |
 | 25 | `people-detail-records` | §6.5, l. 479 | Further down: the Career section and the underlying volume records, each with its Separate action | A4's rollups; the Career section is the register's (1,240 people) | Scrolled |
 | 26 | `search-results` | §7, l. 504 | **Caption changed since build 48**: the query field, the actions bar, the ranked list with headings, datelines, volume identifiers and highlighted snippets. §7.1: a snippet begins a few words before the first match in the text, past the heading, source note and dateline | A10b (where the snippet starts), A5 (More's items, Sort ▸ Closest to a Question…), A13; the build-47 file is the owner's device | *Berlin blockade* in Keywords; the kit's frame 01 is this file |
 | 27 | `semantic-search` | §7.12a, l. 730 | The Keywords \| Meaning control, the disclosure strip, ranked matches each with its semantic-match score. §7.12a: the header counts *N closest matches*; the strip's sentences (A9's decision-61 sentence among them); at the largest text sizes the strip is one line with an ⓘ (#1721) | §7.12a rewritten (61 diff lines); the model is EmbeddingGemma 2 (B4); the build-47 file is the owner's | **Needs the 310 MB encoder downloaded in the simulator.** Take after P2's offer frame (below), which needs it absent. The kit's frame 12 is this file |
@@ -476,7 +481,7 @@ below.)
 | 46 | `browser` | §6, l. 294 | The Corpus Browser: the sidebar's Browse, Your sets and Subseries sections, a volume's page with its Top subjects, front matter and contents | Text unchanged; A3c's *Working on:* bar now heads the detail column (#1701); A18's Read rows where a volume has prose sections | A volume page |
 | 47 | `browse-all-volumes` | §6.1, l. 300 | Browse ▸ All Volumes in Published order, each volume with its print year, document count and download status | §6.1 changed (three sections; eleven doors; 140 clusters; the Read rows) | — |
 | 48 | `people-list` | §6.3, l. 316 | An alphabetical list of reconciled identities with role · active-years subtitles and mention counts | **Stale** (the entry above: #1370/#1441); A4, A4c, A4d; the badge sentence changed | After the rollup settles; `screencapture -o -l` on the Corpus Browser window |
-| 49 | `people-detail` | §6.3, l. 320 | **The caption names VIAF and Wikidata links that Kissinger's sheet no longer shows** (recipe 11): the Career section — Secretary of State, 1973–1977, from the register — is what the frame can bear out. S5 rewrites the caption | A4d; §6.3's link sentence rewritten; stale per the entry above. Since rollup v14 (#1816) his record carries both ids (recipe 11) | Scrolled to Career |
+| 49 | `people-detail` | §6.3, l. 320 | **The caption names VIAF and Wikidata links that Kissinger's sheet no longer shows** (recipe 11): the Career section — Secretary of State, 1973–1977, from the register — is what the frame can bear out. S5 rewrites the caption | A4d; §6.3's link sentence rewritten; stale per the entry above. Since rollup v14 (#1816) his record carries both ids (recipe 11); R4 left the frame on the owner's word (recipe 11) | Scrolled to Career |
 | 50 | `topic-index` | §6.4, l. 345 | The Topics window narrowed to the Cold War area (*Topic area: Cold War — 6 topics*), Berlin crisis open: its documents and volumes in the series and on this Mac, its covering volumes | Text unchanged; still 6 topics (recipe 10) | — |
 | 51 | `search` | §7, l. 363 | *Berlin blockade* in Keywords mode, the ranked results with highlighted snippets, citations and dates, the Facets panel open on its Subjects section | A10b (snippets), A5 lane 5 (Search Within Results; the engine label), A13 (a facet's volumes; the Within picker), #1726 | Also the README's first hero slot and the kit's frame 01; capture at 1440×900 points |
 | 52 | `search-tips` | §7.2, l. 381 | The Search window with the Tips panel open under the results | §7.2: the panel follows the engine the field runs (lane 7) | Keywords mode |
@@ -579,7 +584,12 @@ sizes, and the drafts re-run into `Planning/marketing-drafts/`. **Done in S5, 20
 wrote them twice, the drafts into `Planning/marketing-drafts/` and the store sizes into
 `~/Desktop/store` (the sittings' ledger, S5). **Composed again in R1, 2026-10-22**, with
 `SCALE=1 STAMP=0` (#1763): the 34 frames for App Store Connect are in `~/Desktop/store`, none
-stamped, and the drafts are rendered again (the sittings' ledger, R1).
+stamped, and the drafts are rendered again (the sittings' ledger, R1). **Composed again in R4,
+2026-11-02**, the same way: six frames changed, 06 on the iPad and the Mac from the two
+cross-reference retakes, and 01 on all four presets, whose foot reads *an independent,
+private-capacity research tool* on the owner's word; the other 28 came out byte for byte as R1's.
+The two frame-06 shots are stamped *build 1787* in the drafts, the other 32 *build 1861* (the
+sittings' ledger, R4).
 
 ### Caption and sentence fixes S5 already owes
 
@@ -1219,6 +1229,110 @@ in both manuals from the bundled files (#1762).
     were. R1's builds, raw and erased frames, bursts, the Mac's app and home, the preference exports,
     the pre-R1 container clones and S5's store set are under `~/Library/Caches/FRUS-Explorer/r1/`
     (about 4 GB on the disk, most of it APFS clones) until the owner says.
+- **R4 — run 2026-11-02, 08:11 to 08:58; the retake sitting after 1.0 (1787) of the plan of record
+  from 2026-10-21 (decision 111), started by R2b's session on the owner's "Start a new session for
+  R4. Claude captures the screenshots"; the session captured, and drove the Mac on the owner's word
+  of 08:48 ("Ask again, I'll allow").** Version 1.0, build **1787**, the `AppStore` configuration
+  built for the simulator as R1's, from **`eb5b1304`**, R4's first commit, which adds records to
+  `v2`'s `f2f08e93` (`build-52` is `05297767`, and the commits after it add records only, so the code
+  is 1787's), built 08:11:39 to 08:14:45 under `Scripts/heavy.sh` with build 48's local-only banner
+  patch, never committed and reverted in the worktree once the build was made. No lane since
+  `build-51` changed the index version (v71); the person rollup is v15 (#1815, #1816, #1826), so
+  each library, at S1's v12, rebuilt People once at launch. **Both files are 1787's: a screen that a
+  fix after `f2f08e93` changes is retaken.**
+  - **Two files, both on the lanes' lists**: `ipad/cross-reference-graph` and
+    `macos/cross-reference-graph`, which L8 (#1801) and #1764 (#1828) changed. Each was diffed by
+    pixel against the frame it replaces and differs where those lanes said, and where its line below
+    says. The 47 pull requests since `build-51` were read for the rest:
+    - **Read, with an A/B on the device where the plan named the frame.** `ipad/collections-editor`
+      (#1823, merged as #1831) differs from S1's frame in 2 pixels, the toolbar glass's
+      anti-aliasing: #1831 changed the Collections list, its menus and its dialogs, none of them in
+      this frame. `ipad/research-rail` (L9's summaries) differs from R1's only in the status bar's
+      app name, at S1's column 349 where R1's sat at 345, and in the note's age, *11 days, 18 hr*:
+      no summary is stored for d475 in `snapshot-A`, so the Summary accordion offers **Summarize
+      this Document** as before. `ipad/person-analytics-network` (store frame 13), on the library
+      rebuilt at v15, differs in 0 pixels: Kennan's 24 neighbours, and *56 shared documents* for
+      Acheson.
+    - **Read and left.** `macos/collections`, by #1831's diff (the Collection menu, Manage
+      Collections' sheet and the dialogs, none drawn in the window) and by #1824's (d475, the
+      frame's selection, has no summary); S4's home has carried the recordings' Briefing packet
+      preset since, so no A/B was taken there. Kissinger's three People frames, on the owner's word
+      (recipe 11). The People lists and the Mac's person analytics: between the tags the authority
+      file moved only identifiers on their rows' records, and the lanes' censuses name none of their
+      members among the 23 that moved. The two word-cloud frames show a scope's cloud, not the
+      corpus count's note (`wordcloud.loading.corpus.v2`, L8).
+  - **The iPad under iOS 27.0, S1's `3D2607D9`**: its container cloned aside first, the build
+    installed, S1's `snapshot-A` restored into it, the device rebooted and turned to landscape on its
+    home screen by S2's rotator; Windowed Apps; the launch with `-hasCompletedOnboarding 1
+    -FRUSScreenshotHideSyncBanner YES`. **The demo status bar's flags were set first and the time
+    last**, `--time 2020-10-21T13:41:00.000Z`: an ISO time sets the iPad's date as well, and this
+    one draws S1's *9:41 AM Wed Oct 21*, so after the erase *FRUS Explorer* sits at column 349, as
+    in S1's frames. 2026-10-21 itself drew *Sat Oct 21*, and so does an override call made after the
+    time's, which re-applies the stored time without its year. The throwaway "1764 iPad Pro 13"
+    (`34F01AA6`) that #1764's session kept was not used: S1's device holds the same library in
+    `snapshot-A`, with the store and the preferences every other iPad frame was taken in, and one
+    simulator runs at a time.
+    - `cross-reference-graph` (08:20:00): d16 (Search, *"Reappraisal of United States Objectives
+      and Strategy"*, 16 results), the rail's **Graph**, **Network**, **3 hops**, the reference list
+      open as S1's. The network spreads with no corner stacks; the focus's references Docs. 12, 17,
+      19, 21, 24, 26, 11 and 41 are labelled, and 28 nodes two and three hops out, 37 labels with
+      the focus's (counted on the frame); *Cited By This Document* opens on Doc. 5, where S1's
+      opened on the page node `frus1948v01p2/pg_507`, which now follows the documents, below the
+      frame's edge. Against S1's
+      frame it differs in two regions, the canvas and that row; the status bar is S1's pixel for
+      pixel. Two screenshots 5 s apart were identical before it was taken. On the way, Timeline at 1
+      hop drew *p. 507* on the axis, dated *Oct 20, 1947 – Dec 31, 1948*, and *5 docs · Aug 1952*
+      above its cluster.
+    - Then `snapshot-A` was restored again, the rotator's runner uninstalled, the status bar's
+      override cleared, and the device shut down at 08:26:08.
+  - **The time and date erased** by S1's script unchanged (SHA-256 `58d052de…`): 2,382 pixels
+    changed, all inside the box, alpha untouched.
+  - **The Mac, in the check copy**: no build. The shared copy's product is 1.0 (1787), built by R2b
+    from `3070263f`, and no app, kit or project file differs between that commit and `build-52`; it
+    was copied to R4's folder, launched from there with `open -n --env CFFIXED_USER_HOME=…`, and
+    unregistered from Launch Services afterwards. **The fake home** is R4's own, an APFS clone of
+    S4's (553 volumes, index v71, S4's demo data); the copy rebuilt People at v15 at launch. **The
+    preferences**: the domain's 126 keys exported, R1's 15 set for the sitting, and the 126 put back
+    afterwards with `prefs-restore`, which read them back identical. No chip patch: the frame shows
+    no status bar. Computer use drove the copy, its bundle id alone, in the background, on the
+    owner's second grant (the first came back denied); full-screen control brought the copy to the
+    front for the capture alone, since a window behind another draws its chrome inactive.
+    - `cross-reference-graph` (08:50:58, 1440×900): d16 (Search, the same phrase, 16 results),
+      **Graph**, **Timeline**, **1 hop**, the list open: S4's composition. *p. 507* sits on the
+      axis, dated *Oct 20, 1947 – Dec 31, 1948*, where S4's frame put the page node in the Undated
+      column, which now holds the four archival nodes alone; the axis runs from May 1948 to Jan
+      1953, where it ran from Jan 1952; *6 docs · Aug 1952* sits above its cluster, where S4's *4
+      docs · Aug 1952* sat below it against Doc. 16; and *Cited By* opens on Docs. 5, 11 and 41,
+      where S4's opened on `frus1948v01p2/pg_507`. R2b's walk, on the shared home's 68 volumes, saw
+      *6 docs · Aug 1952* below its cluster; on this home's 553 it is above. Beyond the lanes,
+      macOS 27.2's drawing (S4 shot on 27.0.1): the depth control's segments are narrower, and the
+      title and the list's separators are one grey level lighter.
+  - **The store frames**: `SCALE=1 STAMP=0 OUT_DIR=~/Desktop/store python3
+    tools/marketing/compose.py` under the lock, 08:52:25 to 08:54:39, after `shots.json`'s frame-01
+    foot took *independent, private-capacity* on the owner's word: the kit's framing of 2026-10-27,
+    which #1802 carried to every disclaimer but the app's About screen and not to the composer's
+    spec. **Six of the 34 frames changed**: `researchers-06` on the iPad and the Mac, from the two
+    retakes, and frame 01 on all four presets, in the foot row alone (one line on the iPad and the
+    Mac, two on the iPhone, as L7 left it); with them the `all` and `researchers` contact sheets.
+    The other 28 frames and two sheets came out byte for byte as R1's, which are kept at
+    `~/Library/Caches/FRUS-Explorer/r4/store-R1-2026-10-22/`. None is stamped: each changed frame
+    differs from R1's only inside its foot or its capture. The drafts, 08:55:23 to 08:58:05: eight
+    files in `Planning/marketing-drafts/` changed, the same six frames and two sheets, each the size
+    it was; the other 30 rendered byte for byte. The two frame-06 shots' `status` reads *build
+    1787*, which only a draft's stamp prints; composed unstamped again, both store frames came out
+    byte for byte.
+  - **The manuals**: both retakes read against their captions and the sentences around their slots
+    (iOS §8.6, Mac §8.5, whose Timeline sentence L8 wrote); neither changes, and both keep the *AI
+    Generated* notice (decision 94).
+  - **Recordings A, R and T and the App Previews were not taken again** (decision 89). No beat
+    shows the graph. T's headnote beat (22–34 s) and A's Briefing packet beat (64–70 s) show AI
+    summaries, which the summarization lanes since `build-51` change how the app asks for and shows
+    (#1820 to #1825, #1827, #1832).
+  - **Left**: `3D2607D9` holds `snapshot-A` and 1.0 (1787); `34F01AA6` is as #1764's session left
+    it; no simulator is booted. The shared check copy and its home are untouched, its preferences
+    as they were. R4's build, raw and erased frames, the A/B frames, the iPad's pre-R4 container,
+    the Mac's app and home, the preference exports, R1's store set and the logs are under
+    `~/Library/Caches/FRUS-Explorer/r4/` until the owner says.
 
 ### Found by R1 — for the owner
 
@@ -1230,6 +1344,18 @@ rule).
    `5ED7E25B`, the new window drew its text and left the Research rail's column black; moving the
    window by its top bar drew the rail. Seen twice, not measured; whether iOS 27 or a device does
    it is not established. *The app or the simulator.*
+
+### Found by R4 — for the owner
+
+Seen in the sitting; not fixed and not filed. It goes to the plan of record's §5 (decision 82's
+rule).
+
+1. **On the iPad, a collection's row in the Collections list opens the collection only where its
+   text is.** On `3D2607D9` under 1.0 (1787), two taps on the row's blank part, right of *The Long
+   Telegram and Its Readers*, opened nothing, and one on the name opened the editor. By the code it
+   is older than #1823: `CollectionRow`'s stack has no full-width frame, so the row's content shape,
+   and the tap gesture on it, cover only its text, as before #1831 rewrote the gesture. Seen twice,
+   not tried on 1.0 (1776) or a device. *The app.*
 
 ### Found by S1 — for the new plan of record
 
@@ -1248,6 +1374,9 @@ gives the routes T5 to T7 took (**Export…** ▸ the PDF card ▸ **Export PDF*
 documents ↗**), with a note under its table. A retake of T7 reads 2,833 on the link (L3). *After R1
 (2026-10-22):* the frames 9, 10 and 13 changed are retaken (`ipad/browse-administrations-truman`,
 `ipad/browse-clusters-detail`, `macos/analytics` and `analytics-table`); recording T is not (decision 89).
+*After R4 (2026-11-02):* 14 is fixed (#1764, as #1828), and `ipad/cross-reference-graph` is retaken
+on 1.0 (1787): no corner stacks, 37 labels, and *Cited By* opening on Doc. 5, the page node after the
+documents (the sittings' ledger).
 
 **The manuals against the screen.**
 
@@ -1435,7 +1564,9 @@ cloud runs unbroken through the hand-off. The splash's Concepts cloud no longer 
 *After L7 (2026-10-22):* 9 is done (#1763): `tools/mac-check-copy/README.md` gives both notes, with
 S4's two helpers beside `axread.swift` (`prefs-restore.swift`, `apprec.swift`), and the kit's §4 names
 the ScreenCaptureKit recording where it named QuickTime. *After R1 (2026-10-22):* the two frames 1 and 2
-changed are retaken (the sittings' ledger).
+changed are retaken (the sittings' ledger). *After R4 (2026-11-02):* 5 and 6 were fixed by #1820
+(2026-10-31), with #1821 to #1825 after it: the Long Telegram summarizes, and the preview follows a
+summary made in the reader. No committed frame shows a summary, so R4 retook nothing for them.
 
 1. **One unresolvable reference reads as a plural.** Cross-Reference Analytics over 1961–1963 says
    *1 unresolvable references are excluded from this analysis*: `crossRefAnalytics.excludedBrokenCaption`
