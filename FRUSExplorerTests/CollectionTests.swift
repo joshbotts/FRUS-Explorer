@@ -13160,7 +13160,7 @@ struct CollectionDeletionTests {
         prose.entryKind = .prose
         prose.text = "The reader's own paragraph."
         entry("d476", 3, in: collection).headnoteSummaryId = realSummary.id
-        entry("d475", 0, in: other)
+        _ = entry("d475", 0, in: other)
 
         let note = ResearchNote(documentId: "d475", volumeId: "frus1946v06", bodyText: "Read against NSC 68.")
         let highlight = DocumentHighlight(volumeId: "frus1946v06", documentId: "d475",
