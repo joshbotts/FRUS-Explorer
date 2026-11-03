@@ -1,0 +1,12 @@
+TEI XML (volumes/*.xml)                       553 files   3,339,186,418 bytes (  3.339 GB) on disk   3.340 GB
+figure images (volumes/*.figures/)            553 files     140,994,857 bytes (  0.141 GB) on disk   0.142 GB
+figure completion record                        1 files          24,185 bytes (  0.000 GB) on disk   0.000 GB
+Tier-2 shards (SemanticVectors/*.vec)         553 files     162,377,248 bytes (  0.162 GB) on disk   0.164 GB
+SemanticVectors/ other files                    2 files          45,869 bytes (  0.000 GB) on disk   0.000 GB
+SemanticModel/ (query encoder)                  2 files     309,855,520 bytes (  0.310 GB) on disk   0.310 GB
+frus.db                                         1 files   3,743,547,392 bytes (  3.744 GB) on disk   3.744 GB
+frus.db-wal                                     1 files         317,272 bytes (  0.000 GB) on disk   0.000 GB
+frus.db-shm                                     1 files          32,768 bytes (  0.000 GB) on disk   0.000 GB
+bundle Resources/*.json                        38 files      29,136,429 bytes (  0.029 GB) on disk   0.008 GB
+bundle Resources/semantic-*.bin                 2 files      22,363,808 bytes (  0.022 GB) on disk   0.022 GB
+bundle Resources/ (everything)                 46 files      54,294,289 bytes (  0.054 GB) on disk   0.033 GB
