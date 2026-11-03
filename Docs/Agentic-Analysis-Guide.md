@@ -78,11 +78,14 @@ covers however many you have indexed. There is no row anywhere that says "and 41
 missing." Every count you compute is conditional on your library, and it is your job — not the
 agent's — to say so. Start every session with the coverage query in [§6.1](#61-establish-coverage-first).
 
-**One number has two truthful values right now.** The repository tree carries a **553**-volume
-manifest; no shipped build reflects it yet, because FRUS 1981–1988 vol. XVI is fully ingested and
-held until the Office of the Historian publishes it. Measuring from the tree gives 553; measuring
-from an installed app or a device index gives **552**. Say which you read — and note that the
-subject artifacts still cover 552 either way, because the upstream tagging drop has not caught up.
+**The volume count is 553, with two cautions.** The manifest lists **553** volumes, in the
+repository and in the installed app, and a full device index holds all 553. The subject artifacts
+still cover 552: they lack FRUS 1981–1988 vol. XVI, because the upstream tagging drop has not
+caught up, so note it in any subject count that reaches that volume. And three volumes are
+published only in part: 1969–1976 vol. E–10, 1977–1980 vol. XXVII and 1981–1988 vol. XVI are
+`partiallyPublished` in the manifest, and each one's TEI `revisionDesc` names the chapters still
+being cleared, so a count over them is a count of what the Office of the Historian has released
+so far.
 
 **It contains your own writing.** `document_cache.summary_text` and `document_cache.note_text` hold
 your AI-generated summaries and your research notes, mirrored out of SwiftData so search can reach
@@ -357,25 +360,46 @@ one, or use one as an identifier across two copies of the database** — it is n
 ### 4.2 Corpus text
 
 **`document_cache`** — one row per document, keyed `(volume_id, document_id)`. The spine of
-everything. Not every row is a `<div type="document">`. On a full index at version 70, 6,677 rows
-in 328 volumes that are not front matter carry an id that is not `d` and a number (`ch1`,
-`ch10subch1`, `s05sub04`; 3,152 in 229 volumes at version 69). They are of three kinds: a section
-that is prose alone; from index version 68, **the text a section prints at its own level when it
-also holds documents** — a meeting's list of those present, a treaty's signature and ratification
-dates, the statement of a case (1,337 rows in 139 volumes); and from version 70 **a section whose
-only text of its own is a footnote on its heading**, "For previous documentation, see…" (3,517
-rows in 280 volumes: 2,440 chapters, 783 subchapters and 294 compilations). A row of the second or
-third kind holds the section's heading and its own text and none of its documents' text, so a word
-in a document is never also counted in the section around it. Version 70 also promotes the prose
-the index left out — the 45 Notes on U.S. Covert Actions, the Presidents' annual messages of the
-1860s–1890s, the editors' chapter introductions in `frus1945-50Intel` and eight pieces more, 81 rows
-— so a Note on U.S. Covert Actions is a front-matter row of its volume. `is_editorial_note` is 1 on
-an `editorial-note` section (12 rows, 4 of them in front matter) and 0 on the other kinds, and
-`is_front_matter` follows the section's kind, so the usual
-`is_front_matter = 0 AND is_editorial_note = 0` keeps the heading and own-text rows: to count
-documents, also keep `document_id GLOB 'd[0-9]*'`. A `<back>` appendix div is stored as a document
-with `is_editorial_note = 0` (`frus1944v01/appendix`). Reconcile any TEI document count against this
-table with those classes named.
+everything. Not every row is a `<div type="document">`, and not every document's id is `d` and a
+number. On a full index at version 70, 6,677 rows in 328 volumes that are not front matter carry an
+id that is not `d` and a number (`ch1`, `ch10subch1`, `s05sub04`; 3,152 in 229 volumes at version
+69; the same 6,677 at version 71). 647 of them are documents (below). The other 6,030 are of three
+kinds: a section that is prose alone; from index version 68, **the text a section prints at its
+own level when it also holds documents** — a meeting's list of those present, a treaty's signature
+and ratification dates, the statement of a case (1,337 rows in 139 volumes); and from version 70
+**a section whose only text of its own is a footnote on its heading**, "For previous
+documentation, see…" (3,517 rows in 280 volumes: 2,440 chapters, 783 subchapters and 294
+compilations). A row of the second or third kind holds the section's heading and its own text and
+none of its documents' text, so a word in a document is never also counted in the section around
+it. Version 70 also promotes the prose the index left out — the 45 Notes on U.S. Covert Actions,
+the Presidents' annual messages of the 1860s–1890s, the editors' chapter introductions in
+`frus1945-50Intel` and eight pieces more, 81 rows — so a Note on U.S. Covert Actions is a
+front-matter row of its volume. `is_editorial_note` is 1 on an `editorial-note` section (12 rows, 4
+of them in front matter) and 0 on the other kinds, and `is_front_matter` follows the section's
+kind, so the usual `is_front_matter = 0 AND is_editorial_note = 0` keeps the heading and own-text
+rows. A `<back>` appendix div is stored as a document with `is_editorial_note = 0`
+(`frus1944v01/appendix`). Reconcile any TEI document count against this table with those classes
+named.
+
+**To count documents, keep a row whose id is `d` and a number, or that has a start row in
+`page_ranges`** ([§4.3](#43-derived-structure)):
+
+```sql
+(dc.document_id GLOB 'd[0-9]*'
+ OR EXISTS (SELECT 1 FROM page_ranges p
+            WHERE p.volume_id = dc.volume_id AND p.document_id = dc.document_id
+              AND p.is_start = 1))
+```
+
+At index version 71 this keeps exactly the TEI's 314,616 `<div type="document">`s, matched by id:
+none is front matter, and 8,468 are editorial notes, so add `is_editorial_note = 0` for the
+306,148 historical documents. Neither half is enough alone. The id test misses 647 documents: all
+628 of `frus1958-60v05mSupp`, whose ids carry their chapter's prefix (`bl_d1`, `eta_d1`, `ve_d53`),
+and 19 that five 1981–1988 volumes print as appendices (`appendix-A` in `frus1981-88v01`, `appxA`
+in `v04`, `appA` in `v05`, `v11` and `v44p1`), Shultz's handwritten notes and a letter from Reagan
+to Andropov among them. The start test misses 103 documents that have no start row, 102 of them in
+the three volumes published only in part ([§1](#1-what-you-are-working-with)).
+`frus1944v01/appendix` passes neither.
 
 | Column | Meaning |
 |---|---|
@@ -414,8 +438,12 @@ analysis.
 | `date_precision`, `date_certainty` | Qualifiers where the editors' encoding supplies them; frequently `NULL`. |
 
 Dates come from the editorial `frus:doc-dateTime-min`/`-max` attributes — the *editors'* judgment
-about when a document was created, which for undated memoranda is an inference. A meaningful share
-of the corpus is undated; measure it rather than assuming (see [§6.4](#64-time-series-with-an-honest-denominator)).
+about when a document was created, which for undated memoranda is an inference. Every
+`<div type="document">` carries one, so at index version 71 no document has a `NULL` `date_iso`:
+the 1,187 rows outside front matter that do are all sections (§4.2). A `NULL` is a section with no
+date of its own, not a document the editors could not date, and whether a document *prints* a
+date is a question for the TEI. Measure it on your copy rather than assuming (see
+[§6.4](#64-time-series-with-an-honest-denominator)).
 
 A section's row — a division's own text, a heading's footnote (§4.2) — prints a date of its own
 only where its text does. From index version 70 such a row with none is dated by the **span of the
@@ -425,7 +453,7 @@ one day (a meeting's list of those present). A section holding no dated document
 So a chapter's row can span years, and a time series over `document_dates` that does not exclude
 section rows counts a chapter once at its first day; the usual
 `is_front_matter = 0 AND is_editorial_note = 0` does not exclude them, so join `document_cache` and
-keep `document_id GLOB 'd[0-9]*'` where you mean documents.
+keep [§4.2](#42-corpus-text)'s document predicate where you mean documents.
 
 An editorial-note div (`is_editorial_note = 1`) is dated to the **opening of the span it narrates**:
 a 1951 note on the Torquay Round carries `date_iso` 1948-07-02. Exclude editorial notes from any
@@ -882,6 +910,11 @@ FROM document_cache dc
 LEFT JOIN document_dates dd USING (volume_id, document_id)
 WHERE dc.is_front_matter = 0;
 ```
+
+At index version 71 it reads 1,187 of 320,646, and every one of the 1,187 is a section row
+([§4.2](#42-corpus-text)): no document is undated. The series above counts the dated section rows
+too, 4,843 of its 310,991 rows ([§4.3](#43-derived-structure)), until you add §4.2's document
+predicate to it.
 
 **The decades are not the same size, so a term's raw decade counts are a chart of this table before
 they are a chart of the term.** Dated, non-apparatus documents per decade, second editions folded,
@@ -2106,16 +2139,20 @@ correspondents is one to read before you count it; cite one copy, say which, and
 The lines are this generation's distances: recompute the random-pair baseline at the digest in use
 ([§A.5](#a5-what-an-agent-can-do-with-no-model)) and expect them to move with it.
 
-Related, and worth stating once: the semantic artifacts count **314,616** documents, while this
-project's own settled corpus figure from its query work is **316,839**. The two count different
-surfaces. Whichever you use, name it — a run that publishes densities to two decimals owes the reader
-its denominator.
+Related, and worth stating once: the TEI's `<div type="document">`s, the semantic artifacts' rows
+and the index's documents under [§4.2](#42-corpus-text)'s predicate all count **314,616**, matched
+by id, at index version 71 and the 2026-10-15 generation. `document_cache` has **321,749** rows,
+because front matter (1,103) and sections (6,030) have rows too, and a `COUNT(*)` over it counts
+them: the 316,839 some of this project's documents give was that count on 2026-07-30, not a count
+of documents. Whichever you use, name it — a run that publishes densities to two decimals owes the
+reader its denominator.
 
 ### 14.10 Two bundled artifacts that scope the corpus
 
-The app ships 34 bundled JSON resources. Two of them scope a question against the *corpus*, and
-neither is obvious from the schema; the fifteen that scope it against the *archives* (and one
-citation-graph index, `resolved-edge-index.json`, tabled beside them) are
+The app ships 38 bundled JSON resources (29,136,429 bytes in version 1.0, build 1787). Two of them
+scope a question against the *corpus*, and neither is obvious from the schema; the fifteen that
+scope it against the *archives* (and one citation-graph index, `resolved-edge-index.json`, tabled
+beside them) are
 [§14.11](#1411-the-second-half-of-scoping-where-the-documents-came-from-and-point-at).
 
 **`volume-subject-profiles-index.json`** carries the Office of the Historian's own subject
@@ -2188,10 +2225,10 @@ counterpart.
 
 **This section exists because all three 2026-08 runs failed it.** Each treated the printed document
 as the only target. Between them they resolved zero record groups, zero NAIDs, zero series titles,
-zero entry numbers — and of the fifteen bundled archival-resolution artifacts (11.83 MB of the 24.79 MB
-the app ships), exactly one was ever opened, as a dictionary for glossing a filing code. The
-omission was invisible from inside the work; it took someone asking whether the runs had used the
-archival layer at all.
+zero entry numbers — and of the fifteen bundled archival-resolution artifacts (11.83 of the
+24.79 MiB of JSON the app shipped then; version 1.0, build 1787, ships 29,136,429 bytes), exactly
+one was ever opened, as a dictionary for glossing a filing code. The omission was invisible from
+inside the work; it took someone asking whether the runs had used the archival layer at all.
 
 **Where they are, since the runs that skipped them were never told.** Every one is in the app
 bundle at `/Applications/FRUS Explorer.app/Contents/Resources/` — the directory
@@ -3312,6 +3349,28 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.43 — 2026-11-02: **five statements wrong under the guide's present premise, corrected, and a
+  sixth found right** (`Planning/Agentic-Guide-Full-Corpus-Premise-Assessment-2026-11-02.md` §7),
+  each figure re-measured read-only that day on a copy of the owner's Mac index (index version 71,
+  553 volumes), the TEI on that Mac and the bundle of version 1.0, build 1787. **§4.2's way to count
+  documents** adds a `page_ranges` start row to `document_id GLOB 'd[0-9]*'`: the id test alone
+  dropped 647 of the TEI's 314,616 documents, all 628 of `frus1958-60v05mSupp` and 19 appendix
+  documents in five 1981–1988 volumes, which §4.2's 6,677 rows with another id had counted as
+  sections. The two tests together give the TEI's set exactly, by id, and §4.3 points to them.
+  **§4.3 no longer says a meaningful share of the corpus is undated**: every document is dated,
+  and the 1,187 rows §6.4's undated query counts are sections, which §6.4 now says. **§1's third
+  truth** gave 552 for an installed app and a device index; the manifest has listed 553 in every
+  build since build 47 (2026-09-18, when 1981–1988 vol. XVI was published in part), so §1 now
+  gives 553, keeps the subject artifacts' 552 and names the three volumes published in part.
+  **§14.9's 316,839** was `document_cache`'s row count on 2026-07-30: the TEI, the vectors and the
+  index's documents agree on 314,616, and the table holds 321,749 rows. **§14.10's 34 bundled JSON
+  resources** are 38 in builds 51 and 52, and **§14.11's "11.83 MB of the 24.79 MB the app ships"**
+  were mebibytes of the bundle of 2026-08-31 (12,405,532 of 25,994,350 bytes); §14.11 now says so
+  beside build 1787's 29,136,429 bytes. **§1's path stays `Volumes/`**: the assessment read
+  `volumes/` in the owner's container, a folder created on 2026-05-01, before this repository's
+  first commit, while the app has created `FRUSExplorer/Volumes` since the code first named it
+  (Session 05), and the 42 simulator containers and five saved app folders on the owner's Mac all
+  hold `Volumes/`. The §12 block and the §15.1 and §15.1a blocks are unchanged.
 - 1.42 — 2026-11-02: **the vector artifacts named as a surface, on the owner's word** ("Yes, add
   it"), after the owner asked why §12 does not include the vector embeddings as a surface. The
   routing table after the §12 block, "Which surface answers which block", gains a row for §A.8's
