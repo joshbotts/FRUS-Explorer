@@ -9220,8 +9220,8 @@ From `v2` at `c5e0608a`, on `claude/investigate-1620-fe4c15`. Documents only: no
 
 **Checks.**
 - The block between its fences: 221 lines, none over 100 characters.
-- The tests that read the guide: `CollectionTests`' two, which read §15.1 and §15.1a, unchanged, so they were not run; and `ResearchDataExporterTests`' check that an export names the guide's path. `CodingStandardsAuditTests` reads the plan of record, so it runs on the final commit.
+- The tests that read the guide: `CollectionTests`' two, which read §15.1 and §15.1a, unchanged, so they were not run; and `ResearchDataExporterTests`' check that an export names the guide's path. `CodingStandardsAuditTests` reads the plan of record, so it ran on the work's last commit, `079e149d`, named by type on iPhone 17 under iOS 27.0 (`80CF0F18`), 20:45:47 to 20:47:07: *Test run with 63 tests in 1 suite passed*, `** TEST SUCCEEDED **` (63 passed, 0 failed, 0 skipped). It runs again on the commit that records the pull request.
 
 **Not done, and for the owner.**
-- **The pull request**: drafted in the session group's notes folder (`G1-pr-draft.md`), pushed and opened on the owner's word.
+- **Opened as #1840** on the owner's word of 2026-11-02, 20:51 EST ("Push and open PR"), against `v2` at `50ca586b`, which had not moved since the branch was cut. Its body is the draft kept in the session group's notes folder (`G1-pr-draft.md`), with the owner's word at its head. Auto-merge is not enabled; the owner turned the app's Auto-fix on for the session, and GitHub reported no checks on the pull request.
 - **No tier** (decision 115): §3a's second question waits in the plan's §5, under the guard the decision sets.
