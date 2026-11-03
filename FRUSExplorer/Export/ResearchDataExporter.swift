@@ -760,7 +760,7 @@ enum ResearchDataExporter {
 ///    discipline, which is exactly the kind of step §13 exists to remove.
 /// 5. **Four rules stop being remembered and start being structural.** `research_documents`,
 ///    `research_cross_references` and `research_suppressed_volumes` pre-apply the guide's
-///    EXCLUSIONS block and its Ed2 fold. See `installResearchViews`.
+///    EXCLUSIONS block and its edition fold. See `installResearchViews`.
 /// 6. **The copy is built away from the destination, and only handed over once it is complete
 ///    (#1538).** The Mac's save panel grants the sandbox ONE path, the file the reader chose.
 ///    SQLite cannot write a database through that grant alone: its first write transaction creates
@@ -1065,14 +1065,15 @@ enum IndexDatabaseExporter {
     ///   rather than a plausible identifier. That is the whole of §12's third identity rule.
     /// - **KNOWN TRAPS.** `subject_tag_ids` is always NULL and the block says to ignore it, so the
     ///   view does not offer it either.
-    /// - **SCOPING.** `research_suppressed_volumes` folds the second-edition twins.
+    /// - **SCOPING.** `research_suppressed_volumes` folds the first edition of each edition pair.
     ///
-    /// **The fold is computed, never hard-coded, and it is conditional on this copy.** A second
-    /// edition is suppressed only where its first edition is also present *in this database*. The
-    /// series ships three second editions and only two have a first edition to duplicate
+    /// **The fold is computed, never hard-coded, and it is conditional on this copy.** A first
+    /// edition is suppressed only where its second edition is also present *in this database*. The
+    /// series ships three second editions and only two have a first edition beside them
     /// (`frus1977-80v09Ed2` has none), and a reader's library may hold either, both or neither.
-    /// Hard-coding the two known pairs would delete documents that are not duplicates — a worse
-    /// error than the double-count it set out to fix.
+    /// Hard-coding the two known first editions would delete documents that are not duplicates
+    /// wherever a reader holds one without its second — a worse error than the double-count it set
+    /// out to fix.
     ///
     /// **The fold is a view of its own rather than an inlined clause, because an agent that cannot
     /// see what was suppressed cannot report it.** `SELECT * FROM research_suppressed_volumes`
@@ -1080,15 +1081,16 @@ enum IndexDatabaseExporter {
     /// `sqlite_master` carries every definition verbatim, so a reader can read the exact clause
     /// they are working under.
     ///
-    /// **Two limits, both measured, both worth knowing before trusting the fold.** It keeps the
-    /// first edition, which is the EARLIER text — in `manifest.json` both `Ed2` volumes were
-    /// published after their twins, 2018 over 2017 and 2021 over 2014 — and the two editions are
-    /// not interchangeable: over the author's full 552-volume index the Iran pair shares 377
-    /// document ids and only 277 of them carry identical text. A claim resting on the wording of a
-    /// re-edited document belongs to the volume, not to this view. And `research_cross_references`
-    /// folds nothing: it removes broken edges, which is the rule §12 states, and inventing an
-    /// edition policy for edges that no rule asks for would be this artifact making history rather
-    /// than serving it.
+    /// **It keeps the second edition, the LATER text, as the guide does since v1.44.** In
+    /// `manifest.json` both `Ed2` volumes were published after their twins, 2018 over 2017 and
+    /// 2021 over 2014, and at index version 71 each prints every document of its first edition and
+    /// the `ve15p2` one 39 more, which this view's earlier fold (suppressing the `Ed2`) left out of
+    /// every count. **Two limits, both measured, both worth knowing before trusting the fold.** The
+    /// two editions are not interchangeable: the Iran pair shares 377 document ids and 350 of them
+    /// carry identical text, so a claim resting on how a first edition worded a re-edited document
+    /// belongs to that volume, not to this view. And `research_cross_references` folds nothing: it
+    /// removes broken edges, which is the rule §12 states, and inventing an edition policy for
+    /// edges that no rule asks for would be this artifact making history rather than serving it.
     private static func installResearchViews(_ db: OpaquePointer) throws {
         try exec(db, step: "preparing the research views", sql: """
             DROP VIEW IF EXISTS research_documents;
@@ -1096,7 +1098,7 @@ enum IndexDatabaseExporter {
             DROP VIEW IF EXISTS research_suppressed_volumes;
 
             CREATE VIEW research_suppressed_volumes AS
-            SELECT DISTINCT later.volume_id AS volume_id
+            SELECT DISTINCT substr(later.volume_id, 1, length(later.volume_id) - 3) AS volume_id
             FROM document_cache AS later
             WHERE later.volume_id GLOB '*Ed[0-9]'
               AND EXISTS (SELECT 1 FROM document_cache AS first_edition
