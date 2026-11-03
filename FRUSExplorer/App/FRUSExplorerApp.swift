@@ -1965,7 +1965,7 @@ struct FRUSExplorerApp: App {
             // rather than the app menu since it's reference content, not
             // settings or app metadata. `replacing:` retires the system's
             // "FRUS Explorer Help" item, which opens a help book and the app
-            // has none; its ⌘? goes to the quick start (2026-11-03).
+            // has none. ⌘? stays macOS's Show Help menu (2026-11-03, #1848).
             CommandGroup(replacing: .help) {
                 QuickStartHelpMenuItem()
                 Button(String(localized: "menu.researchGuide",
@@ -3793,7 +3793,7 @@ struct OpenDocumentInNewWindowMenuItem: View {
     }
 }
 
-/// Help ▸ FRUS Explorer Quick Start (⌘?): the Mac quick start (`AboutLinks.macQuickStart`,
+/// Help ▸ FRUS Explorer Quick Start: the Mac quick start (`AboutLinks.macQuickStart`,
 /// rendered on GitHub as the manuals are) in the default browser. A `View` so it can read
 /// `\.openURL`, whose default opens a link the way the system does.
 struct QuickStartHelpMenuItem: View {
@@ -3806,7 +3806,7 @@ struct QuickStartHelpMenuItem: View {
                 openURL(url)
             }
         }
-        .keyboardShortcut("?", modifiers: .command)
+        // No shortcut: ⌘? (⇧⌘/) is macOS's Show Help menu and never reaches an item (#1848).
     }
 }
 

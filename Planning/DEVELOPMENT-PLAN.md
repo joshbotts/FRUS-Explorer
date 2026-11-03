@@ -9442,7 +9442,7 @@ From `v2` at `43fd5fb` (#1847 merged), on `claude/quick-start-links`. App and do
   - `AboutLinks.iosQuickStart` and `macQuickStart`: the GitHub copies, the form the manuals' links take, live since #1847 merged.
   - About's Resources lists the platform's quick start above its manual, on both platforms (`about.resources.quickStart.ios`, `….mac`).
   - iOS: a **Quick Start** row on the Research tab, beneath the FRUS Research Guide's (`research.sidebar.quickStart` and its caption), opening the quick start in `InAppBrowserView`, the sheet About's links use.
-  - Mac: `CommandGroup(replacing: .help)` puts **FRUS Explorer Quick Start** (⌘?, `QuickStartHelpMenuItem`, `menu.help.quickStart`) above **FRUS Research Guide**. `replacing:` retires the system's help-book item, which had nothing to open: the project names no help book.
+  - Mac: `CommandGroup(replacing: .help)` puts **FRUS Explorer Quick Start** (`QuickStartHelpMenuItem`, `menu.help.quickStart`) above **FRUS Research Guide**, with no shortcut: ⌘? is macOS's own Show Help menu (the local test, below). `replacing:` retires the system's help-book item, which had nothing to open: the project names no help book.
   - `AboutViewTests.linkedDocumentsExist`: every GitHub document `AboutLinks` names is a file in the repository.
 - **The mirror.** 18 ranged blocks in `Docs/EditableContent/` re-pointed for the lines the three Swift files moved, with the amendment log's bullet. The new strings have no blocks, as the rows and menu item beside them have none.
 - **The manuals.** iOS §2.4, §9.4, §16, §17.1 and §19.1, and Mac §4.1a, §17.1 and §19, say where the quick start opens. The quick starts themselves are unchanged: they describe 1.0 (1787), which has none of these places.
@@ -9455,6 +9455,11 @@ From `v2` at `43fd5fb` (#1847 merged), on `claude/quick-start-links`. App and do
 - A Python copy of `EditableContentKeyTests.rangeDrift` read 1,174 ranged blocks with no failure at `43fd5fb`, 20 after the Swift edits, and none after the re-pointing.
 - Every relative link and anchor in both manuals, both quick starts, the Support page, the Website README and the README resolves.
 - **Not built or run.** The session ran on Linux, with no Swift toolchain: neither app was compiled, and no unit or UI suite ran, `AboutViewTests` and `EditableContentKeyTests` included. The changes follow code beside them (About's `resourceLink`, the Research Guide's row and sheet, the File menu's `View` items), and the Mac build is owed for the Help group and `QuickStartHelpMenuItem`.
+- **Tested locally** on 2026-11-03 by the owner's session (#1848's first comment), with Xcode 27.2, macOS 27.2 and the iOS 27.0 simulator:
+  - both apps and the Mac check copy built, with no warning in the PR's files;
+  - `AboutViewTests`, `EditableContentKeyTests` and `CodingStandardsAuditTests` passed 90 of 90;
+  - the unit target passed 7,828, failed none and skipped 37, each skip an environment gate;
+  - every check by hand passed but one. The item first carried ⌘?, and ⌘? never reached it: macOS keeps ⇧⌘/ as Show Help menu, which opened the Help menu with its search field. The follow-up commit drops the shortcut, with a comment where it was, and the manual's Help row and shortcut table no longer name it.
 
 **Not done, and for the owner.**
 - **Opened as #1848** on the owner's word of 2026-11-03 ("Yes. Flag this PR for testing in a local session."), against `v2` at `43fd5fb`. It carries the label `needs local testing`, new to the repository, and its description opens with the local pass it needs: both builds, the three suites by name and the unit target, and the hand checks. A suggested local session to run that pass was queued for the owner. The merge is the owner's.
