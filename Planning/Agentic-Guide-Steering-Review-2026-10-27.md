@@ -1,7 +1,9 @@
 # Agentic Analysis Guide — steering one agent to the full-text and the vector strategies together: recommendations from the two C-3 tiers
 
-**Status:** REVIEW, 2026-10-27. Recommendations only; nothing in the guide is changed by this
-document.
+**Status: COMPLETE, kept in place** (marked so on 2026-11-02, when G1 decided the last of its
+recommendations, below). `Docs/Agentic-Analysis-Guide.md` cites this file by its path, so it stays
+at the Planning root, where a finished review would otherwise move to `Completed/`. Written as a
+REVIEW on 2026-10-27: recommendations only; nothing in the guide is changed by this document.
 
 **Applied in part, 2026-10-29 (guide v1.37).** The recommendations that leave the §12 block and the
 deliverable as measured are in the guide: R1 (§14.16, §13), R2 with R3's naming and R4 (a new
@@ -46,6 +48,16 @@ nothing. R7, R8 and R10 are owed a measurement alone.
 **R7, R8 and R10 measured 2026-10-31** (`C-3-Reader-Facing-Tier-Results-2026-10-31.md`), with R6's
 vocabulary bullet in that tier's reader-facing arm. By that tier's rule none is adopted, and the
 owner followed it (guide v1.39).
+
+**Closed 2026-11-02 by G1** (decision 115 of `Plan-Of-Record-2026-10-21.md`, guide v1.41). R9's
+two clauses are in the block, with no run of their own: the ban on an id pair excepts the
+history.state.gov URL after an edition citation, and the numbers bullet names a count read in a
+document, a count of the method and a comparison as numbers and ends "Add the row for any you
+cannot find, or take the number out, and say you did." R11's and R13's other parts were already
+in the guide through the style review's R1 (v1.40), which names the collection's prose and notes,
+cites by a short form that a closing Documents cited list resolves, and says nothing of the memo.
+R11's vector vocabulary is R6's bullet, which stays unadopted. Every recommendation here is now
+decided.
 
 Written against `Docs/Agentic-Analysis-Guide.md` v1.36 (3,574 lines, `v2` @ `e85cef7`),
 the two results files (`C-3-Results-2026-10-26.md`, twelve runs of the §12 block on the

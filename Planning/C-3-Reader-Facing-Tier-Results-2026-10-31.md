@@ -120,6 +120,11 @@ numbers reproduced, every collection opens.
 4. **The numbers. Fails.** O2' held in none of the four W runs (nor in any A or K run); O2 held in 4
    of 4 W runs, against 3 of 4 in A. The last clause, W's untraced numerals summed against A's, is
    left unsettled: the scorers report their counts in prose, not uniformly enough to sum by script.
+   *Read by hand on 2026-11-02 (G1), in the table's run order: W left 1, 1, 1 and 2 numbers
+   untraced (5 in all), A 3, 11, 2 and 8 (24), and K 11, 6, 28 and 6 (51; run 7's 28 include four
+   list markers its scorer did not rest on). Of W's five, three were counts of its own work (one
+   document found by similarity, two volumes of mixed scope, one abbreviation set aside), one an
+   archival identifier its table left out, and one a count of the overview's own parts.*
 5. **The cost. Fails.** W lost 6 of the 35 against A's 4, more than A plus one, and two W runs lost
    two or more (run 9 three, run 11 two).
 6. **The vocabulary. Holds.** V8 in 4 of 4 W runs.
@@ -211,10 +216,16 @@ Things that bear on that decision, none of which changes the rule's verdict:
     alone, judged on the same research (the pilot's design) rather than across sessions. *Run the
     same day on the owner's word (`C-3-Reader-Facing-Rewrite-Test-2026-10-31.md`): all six readings
     hold, and the blind judge preferred R1 and R2 in 7 of 8 pairs;*
-  - whether the guard's per-run clause stays, given that the control breached it.
+  - whether the guard's per-run clause stays, given that the control breached it. *Answered
+    2026-11-02 (G1, decision 115 of `Plan-Of-Record-2026-10-21.md`): it is replaced by "no run
+    loses more than the control's worst run", beside the arm's total of at most one item more
+    than the control.*
 - **The soft-power question is now used.** It joins the ten used before, by the rule that a test
   question appears in no planning document before its run. Three of the owner's candidates remain
   unused.
+- **G1, 2026-11-02** (decision 115; guide v1.41): the steering review's R9 went into the block
+  with no run of its own, and no tier follows. The harness's O2' is left as it is, so a later tier
+  compares with the 21 runs that scored it.
 
 ## 8. Record
 
