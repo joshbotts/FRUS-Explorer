@@ -1,0 +1,52 @@
+name: A6Spike
+options:
+  bundleIdPrefix: bottsywattsy
+  deploymentTarget:
+    iOS: "26.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    DEVELOPMENT_TEAM: 828S8SXVLC
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  A6Spike:
+    type: application
+    platform: iOS
+    sources: [Sources]
+    info:
+      path: Generated/Info.plist
+      properties:
+        CFBundleDisplayName: Spike Reader
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+        NSUserActivityTypes:
+          - bottsywattsy.A6Spike.document
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: bottsywattsy.A6Spike
+        PRODUCT_NAME: A6Spike
+        TARGETED_DEVICE_FAMILY: "1,2"
+  A6SpikeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: A6Spike
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: bottsywattsy.A6Spike.UITests
+        TEST_TARGET_NAME: A6Spike
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  A6Spike:
+    build:
+      targets:
+        A6Spike: all
+        A6SpikeUITests: [test]
+    test:
+      targets:
+        - A6SpikeUITests

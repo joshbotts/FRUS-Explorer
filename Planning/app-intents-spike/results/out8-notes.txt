@@ -1,0 +1,41 @@
+2026-10-19T00:48:47Z spotlight-Quillmere p0: Identifier:SectionHeader,Section:0,Title:Suggestions | 
+2026-10-19T00:48:47Z spotlight-Quillmere p0: Identifier:SectionHeader,Section:1,Title:Websites | 
+2026-10-19T00:48:47Z spotlight-Quillmere p0: Identifier:ResultCell,Section:1,Row:0 | 152. Telegram From the Embassy in Vietnam to the Department of State1, history.state.gov › historicaldocuments › frus v
+2026-10-19T00:48:47Z spotlight-Quillmere p0: Identifier:ResultCell,Section:1,Row:1 | 353. Telegram From the Embassy in Jordan to the Department of State1, history.state.gov › historicaldocuments › frus v
+2026-10-19T00:48:47Z spotlight-Quillmere p0: Identifier:ResultCell,Section:1,Row:2 | 162. Telegram From the Embassy in the Soviet Union to the Department of State, avalon.law.yale.edu › th Century › vx
+2026-10-19T00:48:47Z spotlight-Quillmere p0: Identifier:SectionHeader,Section:2,Title:Maps | 
+2026-10-19T00:48:47Z spotlight-Quillmere p0: Identifier:ResultCell,Section:2,Row:0 | car
+2026-10-19T00:48:47Z spotlight-Quillmere p0: Identifier:ResultCell,Section:2,Row:1 | car
+2026-10-19T00:48:56Z spotlight-Quillmere p1: Identifier:SectionHeader,Section:3,Title:Search in Apps | 
+2026-10-19T00:49:26Z spotlight-Quillmere: no app result cell
+2026-10-19T00:49:44Z spotlight-Varrowind p0: Identifier:SectionHeader,Section:0,Title:Suggestions | 
+2026-10-19T00:49:44Z spotlight-Varrowind p0: Identifier:SectionHeader,Section:1,Title:Websites | 
+2026-10-19T00:49:44Z spotlight-Varrowind p0: Identifier:ResultCell,Section:1,Row:0 | 152. Telegram From the Embassy in Vietnam to the Department of State1, history.state.gov › historicaldocuments › frus v
+2026-10-19T00:49:44Z spotlight-Varrowind p0: Identifier:ResultCell,Section:1,Row:1 | 72. Telegram From the Embassy in Iran to the Department of State1, history.state.gov › historicaldocuments › frus Iran
+2026-10-19T00:49:44Z spotlight-Varrowind p0: Identifier:ResultCell,Section:1,Row:2 | 280. Telegram From the Embassy in Iran to the Department of State1, history.state.gov › historicaldocuments › frus IranEd
+2026-10-19T00:49:44Z spotlight-Varrowind p0: Identifier:SectionHeader,Section:2,Title:Maps | 
+2026-10-19T00:49:44Z spotlight-Varrowind p0: Identifier:ResultCell,Section:2,Row:0 | car
+2026-10-19T00:49:45Z spotlight-Varrowind p0: Identifier:ResultCell,Section:2,Row:1 | car
+2026-10-19T00:49:53Z spotlight-Varrowind p1: Identifier:SectionHeader,Section:3,Title:Search in Apps | 
+2026-10-19T00:50:22Z spotlight-Varrowind: no app result cell
+2026-10-19T00:50:40Z spotlight-Tessaloon p0: Identifier:SectionHeader,Section:0,Title:Suggestions | 
+2026-10-19T00:50:41Z spotlight-Tessaloon p0: Identifier:SectionHeader,Section:1,Title:Maps | 
+2026-10-19T00:50:41Z spotlight-Tessaloon p0: Identifier:ResultCell,Section:1,Row:0 | car
+2026-10-19T00:50:41Z spotlight-Tessaloon p0: Identifier:ResultCell,Section:1,Row:1 | car
+2026-10-19T00:50:41Z spotlight-Tessaloon p0: Identifier:ResultCell,Section:1,Row:2 | car
+2026-10-19T00:50:41Z spotlight-Tessaloon p0: Identifier:SectionHeader,Section:2,Title:Search in Apps | 
+2026-10-19T00:51:18Z spotlight-Tessaloon: no app result cell
+2026-10-19T00:51:36Z spotlight-Ombrevale p0: Identifier:SectionHeader,Section:0,Title:Suggestions | 
+2026-10-19T00:51:36Z spotlight-Ombrevale p0: Identifier:SectionHeader,Section:1,Title:Websites | 
+2026-10-19T00:51:36Z spotlight-Ombrevale p0: Identifier:ResultCell,Section:1,Row:0 | 152. Telegram From the Embassy in Vietnam to the Department of State1, history.state.gov › historicaldocuments › frus v
+2026-10-19T00:51:36Z spotlight-Ombrevale p0: Identifier:ResultCell,Section:1,Row:1 | 36. Telegram From the Embassy in Afghanistan to the Department of State1, history.state.gov › historicaldocuments › frus v
+2026-10-19T00:51:36Z spotlight-Ombrevale p0: Identifier:ResultCell,Section:1,Row:2 | 92. Telegram From the Embassy in India to the Department of State1, history.state.gov › historicaldocuments › frus v
+2026-10-19T00:51:36Z spotlight-Ombrevale p0: Identifier:SectionHeader,Section:2,Title:Search in Apps | 
+2026-10-19T00:52:08Z spotlight-Ombrevale: no app result cell
+2026-10-19T00:52:26Z spotlight-Corvantis p0: Identifier:SectionHeader,Section:0,Title:Suggestions | 
+2026-10-19T00:52:26Z spotlight-Corvantis p0: Identifier:SectionHeader,Section:1,Title:Websites | 
+2026-10-19T00:52:26Z spotlight-Corvantis p0: Identifier:ResultCell,Section:1,Row:0 | 152. Telegram From the Embassy in Vietnam to the Department of State1, history.state.gov › historicaldocuments › frus v
+2026-10-19T00:52:26Z spotlight-Corvantis p0: Identifier:ResultCell,Section:1,Row:1 | 65. Telegram From the Embassy in the Soviet Union to the Department of State0, history.state.gov › historicaldocuments › frus v
+2026-10-19T00:52:26Z spotlight-Corvantis p0: Identifier:ResultCell,Section:1,Row:2 | 162. Telegram From the Embassy in the Soviet Union to the Department of State, avalon.law.yale.edu › th Century › vx
+2026-10-19T00:52:26Z spotlight-Corvantis p0: Identifier:SectionHeader,Section:2,Title:Search in Apps | 
+2026-10-19T00:52:57Z spotlight-Corvantis: no app result cell

@@ -1,0 +1,51 @@
+2026-10-19T00:44:43Z spotlight-Quillmere p0: Identifier:SectionHeader,Section:0,Title:Top Hit | 
+2026-10-19T00:44:43Z spotlight-Quillmere p0: Identifier:AppViewResultCell,Section:0,Row:0 | Telegram From the Embassy in Quillmere to the Department of State, Plain Text Document
+2026-10-19T00:44:43Z spotlight-Quillmere p0: Identifier:SectionHeader,Section:1,Title:Suggestions | 
+2026-10-19T00:44:43Z spotlight-Quillmere p0: Identifier:SectionHeader,Section:2,Title:Spike Reader | 
+2026-10-19T00:44:43Z spotlight-Quillmere p0: Identifier:AppViewResultCell,Section:2,Row:0 | Telegram From the Embassy in Quillmere to the Department of State
+2026-10-19T00:44:43Z spotlight-Quillmere p0: Identifier:SectionHeader,Section:3,Title:Websites | 
+2026-10-19T00:44:43Z spotlight-Quillmere p0: Identifier:ResultCell,Section:3,Row:0 | 152. Telegram From the Embassy in Vietnam to the Department of State1, history.state.gov › historicaldocuments › frus v
+2026-10-19T00:44:43Z spotlight-Quillmere p0: Identifier:SectionHeader,Section:4,Title:Maps | 
+2026-10-19T00:44:43Z spotlight-Quillmere p0: Identifier:ResultCell,Section:4,Row:0 | car, Call
+2026-10-19T00:44:43Z spotlight-Quillmere p0: Identifier:ResultCell,Section:4,Row:1 | car, Call
+2026-10-19T00:44:48Z spotlight-Quillmere: tapping Identifier:AppViewResultCell,Section:0,Row:0 'Telegram From the Embassy in Quillmere to the Department of State, Plain Text Document'
+2026-10-19T00:45:11Z spotlight-Varrowind p0: Identifier:SectionHeader,Section:0,Title:Top Hit | 
+2026-10-19T00:45:11Z spotlight-Varrowind p0: Identifier:AppViewResultCell,Section:0,Row:0 | Telegram From the Embassy in Varrowind to the Department of State, Lyrics
+2026-10-19T00:45:11Z spotlight-Varrowind p0: Identifier:SectionHeader,Section:1,Title:Suggestions | 
+2026-10-19T00:45:11Z spotlight-Varrowind p0: Identifier:SectionHeader,Section:2,Title:Spike Reader | 
+2026-10-19T00:45:11Z spotlight-Varrowind p0: Identifier:AppViewResultCell,Section:2,Row:0 | Telegram From the Embassy in Varrowind to the Department of State
+2026-10-19T00:45:11Z spotlight-Varrowind p0: Identifier:SectionHeader,Section:3,Title:Websites | 
+2026-10-19T00:45:11Z spotlight-Varrowind p0: Identifier:ResultCell,Section:3,Row:0 | 152. Telegram From the Embassy in Vietnam to the Department of State1, history.state.gov › historicaldocuments › frus v
+2026-10-19T00:45:11Z spotlight-Varrowind p0: Identifier:SectionHeader,Section:4,Title:Maps | 
+2026-10-19T00:45:11Z spotlight-Varrowind p0: Identifier:ResultCell,Section:4,Row:0 | car, Call
+2026-10-19T00:45:11Z spotlight-Varrowind p0: Identifier:ResultCell,Section:4,Row:1 | car, Call
+2026-10-19T00:45:16Z spotlight-Varrowind: tapping Identifier:AppViewResultCell,Section:0,Row:0 'Telegram From the Embassy in Varrowind to the Department of State, Lyrics'
+2026-10-19T00:45:41Z spotlight-Tessaloon p0: Identifier:SectionHeader,Section:0,Title:Top Hit | 
+2026-10-19T00:45:41Z spotlight-Tessaloon p0: Identifier:AppViewResultCell,Section:0,Row:0 | Telegram From the Embassy in Tessaloon to the Department of State, Plain Text Document
+2026-10-19T00:45:41Z spotlight-Tessaloon p0: Identifier:SectionHeader,Section:1,Title:Suggestions | 
+2026-10-19T00:45:42Z spotlight-Tessaloon p0: Identifier:SectionHeader,Section:2,Title:Spike Reader | 
+2026-10-19T00:45:42Z spotlight-Tessaloon p0: Identifier:AppViewResultCell,Section:2,Row:0 | Telegram From the Embassy in Tessaloon to the Department of State
+2026-10-19T00:45:42Z spotlight-Tessaloon p0: Identifier:SectionHeader,Section:3,Title:Maps | 
+2026-10-19T00:45:42Z spotlight-Tessaloon p0: Identifier:ResultCell,Section:3,Row:0 | car
+2026-10-19T00:45:42Z spotlight-Tessaloon p0: Identifier:ResultCell,Section:3,Row:1 | car
+2026-10-19T00:45:42Z spotlight-Tessaloon p0: Identifier:ResultCell,Section:3,Row:2 | car
+2026-10-19T00:45:46Z spotlight-Tessaloon: tapping Identifier:AppViewResultCell,Section:0,Row:0 'Telegram From the Embassy in Tessaloon to the Department of State, Plain Text Document'
+2026-10-19T00:46:08Z spotlight-Ombrevale p0: Identifier:SectionHeader,Section:0,Title:Top Hit | 
+2026-10-19T00:46:08Z spotlight-Ombrevale p0: Identifier:AppViewResultCell,Section:0,Row:0 | Telegram From the Embassy in Ombrevale to the Department of State, Lyrics
+2026-10-19T00:46:08Z spotlight-Ombrevale p0: Identifier:SectionHeader,Section:1,Title:Suggestions | 
+2026-10-19T00:46:08Z spotlight-Ombrevale p0: Identifier:SectionHeader,Section:2,Title:Spike Reader | 
+2026-10-19T00:46:08Z spotlight-Ombrevale p0: Identifier:AppViewResultCell,Section:2,Row:0 | Telegram From the Embassy in Ombrevale to the Department of State
+2026-10-19T00:46:09Z spotlight-Ombrevale p0: Identifier:SectionHeader,Section:3,Title:Websites | 
+2026-10-19T00:46:09Z spotlight-Ombrevale p0: Identifier:ResultCell,Section:3,Row:0 | 152. Telegram From the Embassy in Vietnam to the Department of State1, history.state.gov › historicaldocuments › frus v
+2026-10-19T00:46:09Z spotlight-Ombrevale p0: Identifier:ResultCell,Section:3,Row:1 | 36. Telegram From the Embassy in Afghanistan to the Department of State1, history.state.gov › historicaldocuments › frus v
+2026-10-19T00:46:09Z spotlight-Ombrevale p0: Identifier:SectionHeader,Section:4,Title:Search in Apps | 
+2026-10-19T00:46:12Z spotlight-Ombrevale: tapping Identifier:AppViewResultCell,Section:0,Row:0 'Telegram From the Embassy in Ombrevale to the Department of State, Lyrics'
+2026-10-19T00:46:37Z spotlight-Corvantis p0: Identifier:SectionHeader,Section:0,Title:Top Hit | 
+2026-10-19T00:46:37Z spotlight-Corvantis p0: Identifier:AppViewResultCell,Section:0,Row:0 | Telegram From the Embassy in Corvantis to the Department of State, Lyrics
+2026-10-19T00:46:37Z spotlight-Corvantis p0: Identifier:SectionHeader,Section:1,Title:Suggestions | 
+2026-10-19T00:46:37Z spotlight-Corvantis p0: Identifier:SectionHeader,Section:2,Title:Spike Reader | 
+2026-10-19T00:46:37Z spotlight-Corvantis p0: Identifier:AppViewResultCell,Section:2,Row:0 | Telegram From the Embassy in Corvantis to the Department of State
+2026-10-19T00:46:37Z spotlight-Corvantis p0: Identifier:SectionHeader,Section:3,Title:Websites | 
+2026-10-19T00:46:37Z spotlight-Corvantis p0: Identifier:ResultCell,Section:3,Row:0 | 152. Telegram From the Embassy in Vietnam to the Department of State1, history.state.gov › historicaldocuments › frus v
+2026-10-19T00:46:37Z spotlight-Corvantis p0: Identifier:SectionHeader,Section:4,Title:Search in Apps | 
+2026-10-19T00:46:40Z spotlight-Corvantis: tapping Identifier:AppViewResultCell,Section:0,Row:0 'Telegram From the Embassy in Corvantis to the Department of State, Lyrics'

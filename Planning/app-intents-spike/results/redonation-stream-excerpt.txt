@@ -1,0 +1,1 @@
+2026-10-18 21:14:52.129 I  FRUS Explorer[35247:77869] [bottsywattsy.FRUS-Explorer:IndexingPipeline] rebuildSpotlightIndex: resubmitted 318104 items

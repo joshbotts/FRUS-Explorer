@@ -4,7 +4,7 @@
 
 **How.**
 - **The SDK.** Read on Xcode 27.1 (27A9275): the iOS 27.1 and macOS 27.0 SDKs' `AppIntents` and `CoreSpotlight` interfaces, their headers, the documentation compiled into `AppIntents.swiftdoc`, and the toolchain's App Schema database (`AppIntentSchemas.sqlite`).
-- **A throwaway spike, run on an iPhone 17 simulator under iOS 27.0 (24A434).** An app of its own, "Spike Reader" (`bottsywattsy.A6Spike`), donated fictional FRUS-shaped documents five ways and offered four intents. It was driven by launch arguments and by a UI-test target through Spotlight, Shortcuts and Siri. Its code is not committed; §2 records what it measured.
+- **A throwaway spike, run on an iPhone 17 simulator under iOS 27.0 (24A434).** An app of its own, "Spike Reader" (`bottsywattsy.A6Spike`), donated fictional FRUS-shaped documents five ways and offered four intents. It was driven by launch arguments and by a UI-test target through Spotlight, Shortcuts and Siri. Its code is in `Planning/app-intents-spike/` (since 2026-11-03); §2 records what it measured.
 - **The owner's iPhone is not yet tried** (§4).
 
 ## 1. In brief
@@ -156,7 +156,7 @@ That is the M5's simulator, and a phone is slower. Nothing of it reaches the rea
 No declaration settles whether Siri surfaces an associated document, and the simulator's Siri did not reach the app. The check needs the owner's go-ahead, an iPhone and about fifteen minutes.
 
 **Install.**
-- **Install the spike, not FRUS Explorer.** Spike Reader has its own bundle identifier, so it cannot touch FRUS Explorer's container. Generate its project from `project.yml` with XcodeGen, open it in Xcode, choose the iPhone, and Run. The sources are in this worktree's `A6Spike/`, and a copy is in the session group's notes folder (`a6-spike/`).
+- **Install the spike, not FRUS Explorer.** Spike Reader has its own bundle identifier, so it cannot touch FRUS Explorer's container. Generate its project from `project.yml` with XcodeGen, open it in Xcode, choose the iPhone, and Run. The sources are in `Planning/app-intents-spike/`.
 - **Signing registers a new App ID**, `bottsywattsy.A6Spike`, on team 828S8SXVLC.
 - **`devicectl device install app` serves as well, but never with `--remove-existing-content`**: that flag emptied FRUS Explorer's container on this phone on 2026-10-15.
 
@@ -287,15 +287,11 @@ Filed on 2026-10-18 as #1723, labelled enhancement, iOS and Mac, after the owner
 
 ## 9. Redoing it
 
-- **The spike's sources** (`project.yml`, `Sources/`, `UITests/` and `redonation-timing2.sh`) are copied to the session group's notes folder (`a6-spike/`), since this worktree may not outlive the merge.
-- **The spike** stays in this worktree's `A6Spike/`, untracked:
-  - the app, the UI-test target and `project.yml` (generated with XcodeGen);
-  - the logs;
-  - every screenshot and element tree under `out*/`;
-  - the re-donation timing's script (`redonation-timing2.sh`) and its logs under `redonation/`.
+- **The spike is in `Planning/app-intents-spike/`** since 2026-11-03: `project.yml`, `Sources/`, `UITests/`, the re-donation timing's script (`redonation-timing.sh`, which was `redonation-timing2.sh`) and the runs' step logs under `results/`. Its `README.md` says how to build it. The copy this section first named, in the session group's notes folder (`a6-spike/`), could not be found on 2026-11-03.
+- **The screenshots and element trees** under `out*/` were not kept.
 - **The simulator** is "A6 Spike iPhone 17" (`21484F90-A531-4A30-9786-A58DC8C47F6D`), iOS 27.0.
-- **The re-donation timing's clone was deleted afterwards.** To redo it:
-  - clone A4's simulator (`8BE32D39`);
+- **The re-donation timing's clone was deleted afterwards, and A4's simulator is gone too.** To redo it:
+  - clone a simulator that holds a full library (A4's, `8BE32D39`, was the one used);
   - install the app on the clone before launching anything, since straight after a clone the app's container still resolves to the source device;
   - shut the clone down and set `spotlightSchemaVersionApplied` to 3 in the new container's preferences;
   - boot it and launch with `-hasCompletedOnboarding YES`, streaming the `IndexingPipeline` category.
