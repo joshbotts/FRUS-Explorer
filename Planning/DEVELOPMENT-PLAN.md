@@ -9227,3 +9227,64 @@ From `v2` at `c5e0608a`, on `claude/investigate-1620-fe4c15`. Documents only: no
 - **No tier** (decision 115): §3a's second question waits in the plan's §5, under the guard the decision sets.
 
 **After the merge, 2026-11-02.** `CodingStandardsAuditTests` passed again on the records commit, `751c13bc`, 20:52:11 to 20:53:19: *Test run with 63 tests in 1 suite passed*, `** TEST SUCCEEDED **`. The owner merged #1840 as `58cc97ac` at 20:54 EST; `v2`'s tree there, `6c1cad59`, is #1840's head's. The owner then asked why §12 does not include the vector embeddings as a surface. The block's SURFACES preamble and the routing table after it were written at v1.10 (2026-08-31) to route the base block's own rules, for an agent handed only the database; the vector rules came with Appendix A two days earlier (v1.1, #1134) as §A.8's opt-in SEMANTIC VECTORS addendum, and a vectors section inside the block was measured on 2026-10-30 and not adopted. The table had never named the addendum's surface. On the owner's "Yes, add it", asked as a row in #1840, it gains one (guide v1.42): the vector artifacts as the addendum's surface, and "none" in the memo's VECTORS section without them. #1840 had merged by then, so the row is on `claude/g1-vectors-row-5bd31c` from `v2` at `58cc97ac`. `CodingStandardsAuditTests` passed on its commit, `50e94735`, 21:33:28 to 21:34:45 (63 tests). Opened as #1841 on the owner's word of 2026-11-02, 21:37 EST ("Push and open PR"), against `v2` at `58cc97ac`; its body is the draft in the session group's notes folder (`G1-vectors-row-pr-draft.md`), with the owner's word at its head, and auto-merge is not enabled. Asked how the guide would change if its premise were all the app's data across a full corpus download, the session answered and proposed an assessment, which the owner started as a session of its own.
+
+## Session 2026-11-03 — A plan for ADST's oral histories, as a basis for discussion with ADST: a passage database, one semantic space with FRUS, and ADST's interviewees measured against FRUS's people
+
+From `v2` at `50ca586`, on `claude/vigilant-cerf-y2l0g2`. Documents only: no code, data file or version changed.
+
+**What was asked.** The owner asked for a plan for an app that helps researchers use the Association for Diplomatic Studies and Training's oral history interviews, which the Library of Congress also publishes. The interviews are to be analysed into a database of smaller coherent chunks, searchable by country, role (domestic and overseas), date and other scopes drawn from their content. The owner also asked whether the same embedding model with the same configuration would let a single query encoder find results in FRUS and in the interviews at once.
+
+Then the owner decided the plan will be published in the repository as a basis for discussion with ADST, not under consideration for unilateral implementation. Before that, they asked for the app's person rollup to be compared with ADST's list of interviews, and for the three overlapping people with the most FRUS mentions. They saved ADST's archive page as a PDF for it, and will supply those people's interviews for a pilot.
+
+The owner then supplied four transcripts (Kissinger, Vance, Brzezinski and U. Alexis Johnson) and asked how far each speaker's recollections overlap with the documents FRUS published. They also asked for the embeddings test: the passages embedded with the shipped encoder and searched against FRUS's shipped vectors. For that test they asked for llama.cpp to be built.
+
+**What changed.**
+- `Planning/ADST-Oral-History-Plan-2026-11-03.md`, new. It sets out:
+  - the units: interview, session, career segment, passage and turn;
+  - the scopes, the pipeline, and the semantic contract with what it leaves out;
+  - the model pass's cost, the gold sets and their gates;
+  - eight phases and five owner decisions.
+- Its answer to the second question is yes, under the nine fields the provenance digest covers, with each corpus's funnel recall and score calibration measured on its own.
+- After the owner's decision, the plan:
+  - opens with a callout that it is a basis for discussion with ADST, not for unilateral implementation, and its status reads DISCUSSION DRAFT;
+  - takes from the saved page the collection's size, its annual additions, its oral histories from universities and presidential libraries, ADST's citation form and the transcripts' address;
+  - gains §1.3, the overlap measured: 770 of the list's 2,488 people match by name a person whom FRUS documents mention, 161 in at least 100 documents. The most documented are Henry A. Kissinger (13,091 documents), Cyrus R. Vance (4,190), U. Alexis Johnson (3,497) and Zbigniew Brzezinski (3,473);
+  - adds a three-interview pilot to Phase 0, and records §11's first decision as made.
+- After the pilot, the plan:
+  - gains §1.4, the four interviews read against FRUS. None of their 87 in-scope passages and claims went unfound; 17 differ from the record, almost all on dates and sequence. Each touches only a small part of its speaker's FRUS record;
+  - gains §6.6, the single-encoder test measured: the control, the register gap, the funnel's recall on interviews, typed questions over both corpora, and the cross-check against the readers. The sizes section becomes §6.7;
+  - corrects §1.3: U. Alexis Johnson's count includes tags that sit on President Johnson's name, so Brzezinski ranks third;
+  - adds FRUS's noisy person tags to §12's risks, and the four transcripts to §13.
+
+**Checked.**
+- Every figure about the shipped semantic stack was read from the repository:
+  - the provenance, digest and retrieval block of `semantic-vectors-index.json`, and the 553 shards in `semantic-shards-manifest.json`;
+  - `SemanticVectorsArtifacts.Provenance.digest`, `SemanticQuantization` and `SemanticModelStore`;
+  - the harvester's one-window rule;
+  - the run time, rate and parity figures in the stage-2 and B4 memos.
+- The plan's tables were checked mechanically: every row has its header's column count.
+- No test reads the new file. `CodingStandardsAuditTests`' two scans of `Planning/` read only `Plan-Of-Record-*.md` and `.mjs` or `.js` scripts, so no test was run.
+- The overlap was measured with scripts in the session's scratch space, not committed:
+  - The saved page has 2,582 transcript links. Names were read from each link's position, because the page's menu overlaps the list on its first pages.
+  - All 553 volumes were read from `raw.githubusercontent.com` at HistoryAtState/frus `216cdb76`, with the app's mention rule (`IndexingPipeline.extractPersonRefs` and `annotatedPersonRefs`).
+  - The reconstruction found 314,616 documents, the semantic index's count, and 89.1% of the 62,896 persons-list entries are in the bundled crosswalk.
+- Two wrong answers were caught and are excluded:
+  - Walter B. Smith II had matched General Walter Bedell Smith until generational suffixes were made binding.
+  - The list's Dwight D. Eisenhower entry links to a symposium's transcript, not an interview.
+- The pilot, in the session's scratch space:
+  - The transcripts were cut by the plan's §3.2 rules into 121 passages.
+  - 90 volumes (34,620 documents) were extracted with the harvester's own `extract_documents` and indexed in FTS5.
+  - Four language-model readers, one per interview, judged every passage. Twenty of their quotations and claims were checked by hand against both sources, and all held.
+- The embeddings test:
+  - llama.cpp `a0e6dc7384edb8f5d927155e1d26c10b4a310e6d` was built for CPU, and the pinned GGUF's SHA-256 matched `2188ac1d…40b09135`. All 553 shards matched their manifest.
+  - The FRUS control reproduced the shipped vectors: cosine 0.99975–0.99986, and all 24 documents found themselves first among 314,616.
+- U. Alexis Johnson's tags were audited in all 127 of his volume entries: 3,367 of 3,497 documents carry a tag not preceded by "President".
+
+**Not done.**
+- **Opened as #1843** on the owner's word of 2026-11-03 ("open the PR"), against `v2` at `9f384db`, after `v2` was merged into the branch. Its one conflict, at this log's end, was resolved by keeping `v2`'s entries ahead of this one. The merge is the owner's.
+- This session's network policy refused adst.org and www.loc.gov, so nothing was fetched from either. The owner supplied ADST's list and the four transcripts the pilot read. The plan's other facts about the two collections stay marked [U] for its Phase 0.
+- The figures reconstruct the rollup from the TEI; no device's index was read.
+- The pilot's verdicts are a model's, spot-checked, not a historian's gold set (the plan's §8). Its reports, scripts and indexes stay in the session's scratch space, uncommitted, because they quote ADST's transcripts at length.
+- The four transcripts, and the FRUS documents the readers opened, were read in this Claude Code session, which sends text to Anthropic; the owner asked for it.
+- The four tagging defects the pilot found in FRUS's TEI (the plan's §1.4) are not yet reported upstream.
+- The plan of record is unchanged. The plan is the basis for a discussion with ADST, not a commitment.
