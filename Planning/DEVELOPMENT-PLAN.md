@@ -9281,8 +9281,8 @@ The owner then supplied four transcripts (Kissinger, Vance, Brzezinski and U. Al
 - U. Alexis Johnson's tags were audited in all 127 of his volume entries: 3,367 of 3,497 documents carry a tag not preceded by "President".
 
 **Not done.**
-- This session's network policy refused adst.org and www.loc.gov. The transcripts were not opened, and the plan's other facts about the two collections stay marked [U] for its Phase 0.
-- The pilot waits for the owner's copies of the three interviews.
+- **Opened as #1843** on the owner's word of 2026-11-03 ("open the PR"), against `v2` at `9f384db`, after `v2` was merged into the branch. Its one conflict, at this log's end, was resolved by keeping `v2`'s entries ahead of this one. The merge is the owner's.
+- This session's network policy refused adst.org and www.loc.gov, so nothing was fetched from either. The owner supplied ADST's list and the four transcripts the pilot read. The plan's other facts about the two collections stay marked [U] for its Phase 0.
 - The figures reconstruct the rollup from the TEI; no device's index was read.
 - The pilot's verdicts are a model's, spot-checked, not a historian's gold set (the plan's §8). Its reports, scripts and indexes stay in the session's scratch space, uncommitted, because they quote ADST's transcripts at length.
 - The four transcripts, and the FRUS documents the readers opened, were read in this Claude Code session, which sends text to Anthropic; the owner asked for it.
