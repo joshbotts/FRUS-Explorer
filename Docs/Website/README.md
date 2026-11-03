@@ -1,12 +1,19 @@
-# The Privacy Policy and Support pages
+# The website's pages: Privacy Policy, Support and the quick starts
 
 App Store Connect requires a Privacy Policy URL and a Support URL. Plan of record decision 36
-(2026-10-15) keeps each page in two copies, in step, with the store's fields naming the domain's:
+(2026-10-15) keeps each page in two copies, in step, with the store's fields naming the domain's.
+The two quick starts are kept the same way since 2026-11-03, on the owner's word that they should
+be on frusexplorer.app when the site launches; the Support page links to them there.
 
-| Page | GitHub copy (edited) | Domain copy (written from it) | Address App Store Connect names |
+| Page | GitHub copy (edited) | Domain copy (written from it) | Address |
 |---|---|---|---|
-| Privacy Policy | `Docs/Privacy-Policy.md` | `Docs/Website/privacy.html` | `https://frusexplorer.app/privacy` |
-| Support | `Docs/Support.md` | `Docs/Website/support.html` | `https://frusexplorer.app/support` |
+| Privacy Policy | `Docs/Privacy-Policy.md` | `Docs/Website/privacy.html` | `https://frusexplorer.app/privacy`, App Store Connect's Privacy Policy URL |
+| Support | `Docs/Support.md` | `Docs/Website/support.html` | `https://frusexplorer.app/support`, its Support URL |
+| Quick start, iPad and iPhone | `Docs/iOS-Quick-Start.md` | `Docs/Website/quick-start-ios.html` | `https://frusexplorer.app/quick-start-ios` |
+| Quick start, Mac | `Docs/macOS-Quick-Start.md` | `Docs/Website/quick-start-mac.html` | `https://frusexplorer.app/quick-start-mac` |
+
+The two quick-start addresses are proposals, not yet the owner's: a different slug is a change to
+`PAGES` in the script and to the two links in `Docs/Support.md`, and the pages are written again.
 
 The GitHub copies are read at `https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/…`, the
 form `AboutLinks` uses for the manuals, so they are live once merged to `v2`, the default branch.
@@ -19,9 +26,16 @@ Edit the Markdown, never the HTML, then run
 python3 Scripts/build_website_pages.py
 ```
 
-and commit the Markdown and the HTML together. `--check` writes nothing and exits 1 when either
-HTML file is not what its Markdown makes. The script reads only the Markdown these two pages use;
+and commit the Markdown and the HTML together. `--check` writes nothing and exits 1 when any
+HTML file is not what its Markdown makes. The script reads only the Markdown these pages use;
 a construct it does not know passes through as text, so it shows in the HTML diff.
+
+A quick start differs from the other two in three ways. A relative link becomes the linked file's
+page here when it has one (the other quick start) and its GitHub copy otherwise (the manuals). Its
+screenshots are not copied to the site: each loads from `raw.githubusercontent.com` at the default
+branch's head, so a retaken capture shows on the site with no new paste, and the repository has to
+stay public for the pictures to load. And the page carries a short `<style>`, scoped to its own
+wrapper, that sizes the screenshots and rules the tables; type and colour stay the site's.
 
 A published page is a third copy the repository cannot see: after a change lands, the owner
 pastes the new HTML into the site, and the two copies are in step again only then.
@@ -35,11 +49,15 @@ site behind a password). The pages' addresses are in place, named by the owner o
 addresses (`SemanticFeedbackMail.address`). A change to either is made in the Markdown, in the
 script's `ADDRESSES` and, for feedback@, in that constant. For each page:
 
-1. Make a page whose URL slug is `privacy` (or `support`), add a Code Block, and paste everything
-   between `<main>` and `</main>` of the HTML file. The site's own type and colours apply; the
-   file's `<style>` is only for viewing it on its own.
+1. Make a page whose URL slug is `privacy` (or `support`, `quick-start-ios`, `quick-start-mac`),
+   add a Code Block, and paste everything between `<main>` and `</main>` of the HTML file. The
+   site's own type and colours apply; the `<style>` in the file's `<head>` is only for viewing it
+   on its own. A quick start's `<main>` opens with a `<style>` of its own, which is pasted with
+   the rest.
 2. Make the site public before the submission. App Review opens both URLs, and on 2026-10-15
    both answered 401. `https://frusexplorer.app/privacy` redirects to `www.`, keeping the path.
+3. Publish the two quick starts with the Support page, or at least before it: the Support page
+   links to both, and until they are up those two links fail.
 
 ## What each factual sentence rests on
 
@@ -89,12 +107,23 @@ record** does.
 seller); how the developer handles an email (used only to answer and improve the app, not sold or
 shared, deleted on request); and that the page changes when the app's handling of data does.
 
+### The quick starts
+
+Their labels, paths and shortcuts were read in the source at `f02b330` (the 2026-11-03 entry of
+`Planning/DEVELOPMENT-PLAN.md` names each). A change to the onboarding's steps, the Research
+rail's tiles, the selection verbs, the menus and their shortcuts, the Settings tree, the Citation
+sheet or popover, the search actions bar, Source Explorer's Add to Archives Visit or the status
+bar owes them an edit. `Docs/screenshots/README.md` names the twenty captures they embed.
+
 ### The support page
 
 | Claim | Where it is true |
 |---|---|
 | The disclaimer | `Planning/Store-Listing-Draft.md` §2, the listing's wording, word for word (since 2026-10-27 *independent, private-capacity*, and personal views *about historical research methodology* that make *no interpretive claims about the history of U.S. foreign policy*); the app's own, `about.dos.disclaimer`, keeps the earlier wording by the owner's decision of 2026-10-27 |
-| Manual titles and links; About links to both | `Docs/iOS-User-Manual.md` and `Docs/macOS-User-Manual.md` line 1; `AboutLinks.iosManual`, `AboutLinks.macManual` (`Settings/AboutView.swift`, the Resources section) |
+| Manual titles and links | `Docs/iOS-User-Manual.md` and `Docs/macOS-User-Manual.md` line 1 |
+| Quick-start titles, and their addresses here | `Docs/iOS-Quick-Start.md` and `Docs/macOS-Quick-Start.md` line 1; `PAGES` in `Scripts/build_website_pages.py` |
+| About links to the platform's quick start and manual | `AboutLinks.iosQuickStart`, `iosManual`, `macQuickStart` and `macManual`, each under its platform's branch of the Resources section (`Settings/AboutView.swift`) |
+| The quick start opens from the Research tab on iPhone and iPad, and from Help on a Mac | `research.sidebar.quickStart`, the row beside the Research Guide's (`Research/ResearchView.swift`, iOS only), which opens `AboutLinks.iosQuickStart` in `InAppBrowserView`; `QuickStartHelpMenuItem` (`App/FRUSExplorerApp.swift`), first in the Help group, `menu.help.quickStart`, ⌘? |
 | Where the Research Guide is | iOS manual §16 (Research tab row; Settings → System → About → FRUS Research Guide); macOS manual's menu table (Help → FRUS Research Guide) |
 | Version and build in About, as *Version 1.0 (1861)* | `AboutView.appVersion` (`"\(v) (\(b))"`) and `about.version`; decision 25 |
 | The Sync Log path, Export…, and what it holds | `SettingsPaneModel` (System group: Connections, Data & Recovery, About); `DataRecoveryView` (`settings.dataRecovery.syncLog`); `SyncDiagnosticsView` |

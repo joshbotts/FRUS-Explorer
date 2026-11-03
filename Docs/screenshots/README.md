@@ -12,7 +12,10 @@ these files and take no capture of their own: on iOS `ipad/onboarding-volumes`, 
 `source-explorer`, `research` and `collections`. Four of them, `ipad/cite-sheet`, `ios/document`,
 `ios/search-results` and `macos/cite-popover`, are store frames the manuals do not embed (S5's
 ledger entry below). Each quick start writes its own caption and alt text for a frame, so a
-retake of one of these twenty reads the quick start's lines as well as the manual's.
+retake of one of these twenty reads the quick start's lines as well as the manual's. The
+quick starts' website copies (`../Website/quick-start-ios.html`, `quick-start-mac.html`) load
+the same files from `raw.githubusercontent.com` at the default branch's head, so a retake shows
+on frusexplorer.app as soon as it merges.
 
 > **Owner decision, 2026-08-23 (issue #1081): every committed capture is treated as stale.** The
 > 31 files on disk date from the build 26–42 era and the UI has moved under all of them. Nothing

@@ -15,10 +15,12 @@ For help with the app, write to its developer, not to the Office of the Historia
 
 ## Manuals and guides
 
+- [FRUS Explorer for iPad and iPhone — Quick Start](https://frusexplorer.app/quick-start-ios)
+- [FRUS Explorer for macOS — Quick Start](https://frusexplorer.app/quick-start-mac)
 - [FRUS Explorer for iPad and iPhone — User Manual](https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md)
 - [FRUS Explorer for macOS — User Manual](https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/macOS-User-Manual.md)
 
-The app links to both from **Settings → System → About**. Its **FRUS Research Guide**, an introduction to the series itself, is in the app: on iPhone and iPad, a row on the Research tab or **Settings → System → About → FRUS Research Guide**; on a Mac, **Help → FRUS Research Guide**.
+A quick start takes you through a first session, with screenshots; a manual covers everything. In the app, **Settings → System → About** links to your platform's quick start and manual. The quick start also opens from the Research tab on iPhone and iPad, and from **Help → FRUS Explorer Quick Start** on a Mac. The app's **FRUS Research Guide**, an introduction to the series itself, is in the app: on iPhone and iPad, a row on the Research tab or **Settings → System → About → FRUS Research Guide**; on a Mac, **Help → FRUS Research Guide**.
 
 ## Contact
 

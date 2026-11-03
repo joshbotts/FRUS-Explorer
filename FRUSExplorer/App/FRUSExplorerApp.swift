@@ -1958,13 +1958,16 @@ struct FRUSExplorerApp: App {
                         openWindow.fronting(id: "frus.sourceExplorer")
                     }
                 }
-            // Append a "FRUS Research Guide" item to the Help menu (after the
-            // system search field) so the standalone primer is reachable
+            // The Help menu, after the system search field: the quick start, then the
+            // "FRUS Research Guide" item, so the standalone primer is reachable
             // independently of the first-run indexing flow — mirroring the
             // dedicated About Window pattern above, but surfaced from Help
             // rather than the app menu since it's reference content, not
-            // settings or app metadata.
-            CommandGroup(after: .help) {
+            // settings or app metadata. `replacing:` retires the system's
+            // "FRUS Explorer Help" item, which opens a help book and the app
+            // has none; its ⌘? goes to the quick start (2026-11-03).
+            CommandGroup(replacing: .help) {
+                QuickStartHelpMenuItem()
                 Button(String(localized: "menu.researchGuide",
                               defaultValue: "FRUS Research Guide")) {
                     openWindow(value: ResearchGuideWindowID())   // #363 #7: value-based guide window
@@ -3787,6 +3790,23 @@ struct OpenDocumentInNewWindowMenuItem: View {
             commands?.openInNewWindow()
         }
         .disabled(commands == nil)
+    }
+}
+
+/// Help ▸ FRUS Explorer Quick Start (⌘?): the Mac quick start (`AboutLinks.macQuickStart`,
+/// rendered on GitHub as the manuals are) in the default browser. A `View` so it can read
+/// `\.openURL`, whose default opens a link the way the system does.
+struct QuickStartHelpMenuItem: View {
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        Button(String(localized: "menu.help.quickStart",
+                      defaultValue: "FRUS Explorer Quick Start")) {
+            if let url = URL(string: AboutLinks.macQuickStart) {
+                openURL(url)
+            }
+        }
+        .keyboardShortcut("?", modifiers: .command)
     }
 }
 

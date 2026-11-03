@@ -9422,3 +9422,42 @@ From `v2` at `f02b330`, on `claude/quick-start-guides`. Documents only: no code,
 - **Opened as #1847** on the owner's word of 2026-11-03 ("Open PR"), against `v2` at `f02b330`, which had not moved since the branch was made. The merge is the owner's.
 - `Docs/Support.md`, its `support.html`, and the app's About links (`AboutLinks`) still name the manuals alone. Adding the quick starts there is the owner's call, since the published Support page is a copy the owner pastes.
 - The guides describe the Mac's onboarding and its selection bar in words: no capture shows either.
+
+## Session 2026-11-03 — The quick starts on frusexplorer.app, in the Mac's Help menu and on the iOS Research tab
+
+From `v2` at `43fd5fb` (#1847 merged), on `claude/quick-start-links`. App and documents; no data file, capture, index or version changed.
+
+**What was asked.** The owner asked for the quick starts to be available on frusexplorer.app when the site launches, through the Mac app's Help menu, and in an appropriate place in the iOS app.
+
+**What changed.**
+- **The website.** `Scripts/build_website_pages.py` writes the two quick starts as it writes the Privacy Policy and Support pages: `Docs/Website/quick-start-ios.html` and `quick-start-mac.html`, for `https://frusexplorer.app/quick-start-ios` and `/quick-start-mac`. Those slugs are proposals, not yet the owner's.
+  - The script reads what the quick starts use beyond the other two pages: `1. ` lists, `|` tables, and a line holding only an image (Markdown, or `<img>` tags with a width).
+  - A relative link becomes the linked file's page here when it has one (the other quick start) and its GitHub copy otherwise (the manuals).
+  - Each image loads from `raw.githubusercontent.com` at the default branch's head, with its size and `loading="lazy"`, so a retaken capture shows on the site with no new paste.
+  - A quick start's `<main>` opens with a short `<style>`, scoped to its wrapper, that sizes the screenshots and rules the tables; type and colour stay the site's.
+  - The Privacy Policy's HTML comes out byte for byte as before, and so would the Support page's without its edit.
+- **The Support page** (`Docs/Support.md`, its HTML) lists the two quick starts above the manuals, at their frusexplorer.app addresses, and says where the app opens them.
+- **`Docs/Website/README.md`**: the table names the four pages, a paragraph says how a quick start differs, the publishing steps add the two slugs and a third step (publish the quick starts with the Support page, whose links need them), and the claims tables trace the new sentences to the code.
+- **The app.**
+  - `AboutLinks.iosQuickStart` and `macQuickStart`: the GitHub copies, the form the manuals' links take, live since #1847 merged.
+  - About's Resources lists the platform's quick start above its manual, on both platforms (`about.resources.quickStart.ios`, `….mac`).
+  - iOS: a **Quick Start** row on the Research tab, beneath the FRUS Research Guide's (`research.sidebar.quickStart` and its caption), opening the quick start in `InAppBrowserView`, the sheet About's links use.
+  - Mac: `CommandGroup(replacing: .help)` puts **FRUS Explorer Quick Start** (⌘?, `QuickStartHelpMenuItem`, `menu.help.quickStart`) above **FRUS Research Guide**. `replacing:` retires the system's help-book item, which had nothing to open: the project names no help book.
+  - `AboutViewTests.linkedDocumentsExist`: every GitHub document `AboutLinks` names is a file in the repository.
+- **The mirror.** 18 ranged blocks in `Docs/EditableContent/` re-pointed for the lines the three Swift files moved, with the amendment log's bullet. The new strings have no blocks, as the rows and menu item beside them have none.
+- **The manuals.** iOS §2.4, §9.4, §16, §17.1 and §19.1, and Mac §4.1a, §17.1 and §19, say where the quick start opens. The quick starts themselves are unchanged: they describe 1.0 (1787), which has none of these places.
+- **`Docs/screenshots/README.md`**: the website copies load the twenty captures from GitHub, so a retake shows on the site when it merges.
+
+**Checked.**
+- `python3 Scripts/build_website_pages.py --check`: every page in step. `privacy.html` has the SHA-256 it had at `43fd5fb` (`1120a9a0…`).
+- All 20 image addresses in the two pages answered `200 image/png` from `raw.githubusercontent.com`.
+- Both pages rendered in Chromium with the images read from the working tree: 20 of 20 load, and neither page scrolls sideways at 900 or 390 pixels wide, light or dark.
+- A Python copy of `EditableContentKeyTests.rangeDrift` read 1,174 ranged blocks with no failure at `43fd5fb`, 20 after the Swift edits, and none after the re-pointing.
+- Every relative link and anchor in both manuals, both quick starts, the Support page, the Website README and the README resolves.
+- **Not built or run.** The session ran on Linux, with no Swift toolchain: neither app was compiled, and no unit or UI suite ran, `AboutViewTests` and `EditableContentKeyTests` included. The changes follow code beside them (About's `resourceLink`, the Research Guide's row and sheet, the File menu's `View` items), and the Mac build is owed for the Help group and `QuickStartHelpMenuItem`.
+
+**Not done, and for the owner.**
+- The two slugs, and the publishing: paste each page's `<main>` into a Code Block, with the Support page.
+- The app's quick-start links go to GitHub, as the manuals' do. Pointing them at the domain is a change to `AboutLinks`, once the site is public.
+- The iPad's own menu bar has no Help item for the quick start; iPhone and iPad reach it from the Research tab and About.
+- The Support page's sentence about where the app opens the quick starts holds from the first build with this change.

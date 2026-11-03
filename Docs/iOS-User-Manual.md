@@ -93,7 +93,7 @@ Choosing *Subseries* or *Volume* opens a scrolling list above the panel — ever
 
 ### 2.4 The Embedded Browser
 
-Links inside **About** and the **FRUS Research Guide** — including the copy of the guide that opens while your first volumes index (Section 4.8) — open in a built-in browser sheet rather than leaving the app. The sheet has Back and Forward arrows and an **Open in Browser** button (the compass) for a page that needs the real thing; tap **Close** (or swipe the sheet down) and you are exactly where you were. Links that lead out of a document, **Source Explorer**, or a **NARA Catalog** lookup — catalog records, finding aids, digitized scans — open in your default browser instead.
+Links inside **About** and the **FRUS Research Guide** — including the copy of the guide that opens while your first volumes index (Section 4.8) — open in a built-in browser sheet rather than leaving the app, and so does the Research tab's **Quick Start** row (Section 16). The sheet has Back and Forward arrows and an **Open in Browser** button (the compass) for a page that needs the real thing; tap **Close** (or swipe the sheet down) and you are exactly where you were. Links that lead out of a document, **Source Explorer**, or a **NARA Catalog** lookup — catalog records, finding aids, digitized scans — open in your default browser instead.
 
 ---
 
@@ -904,7 +904,7 @@ The **Research** tab is the single workspace for everything you've marked. Its r
 - **By Highlight** — grouped by which highlight colors appear in them
 - **Changed by an update** — the documents you have marked that a corrected volume has since changed, and that you have not yet reviewed (9.1). The row appears only when there is something waiting.
 
-Above the categories sit up to three doors: **Project Home** for the active project (hidden while no project is active — Section 10.4), **Archives Visits** (Section 14.8), and the **FRUS Research Guide** (Section 16).
+Above the categories sit up to four doors: **Project Home** for the active project (hidden while no project is active — Section 10.4), **Archives Visits** (Section 14.8), the **FRUS Research Guide** (Section 16), and the **Quick Start** beneath it.
 
 Tap a category to see the matching documents. Each row carries the document's title and volume, up to three of your highlighted passages as colored strips showing the verbatim text, a preview of your latest note, and the document's tags and collections. Tapping a row opens the document right here in the Research tab, and **Back** returns to the list.
 
@@ -1410,7 +1410,7 @@ Nearly every analytics chart can leave the app as a **figure** (PNG or PDF) or a
 
 The **FRUS Research Guide** is a standalone, in-app guide to historical research methodology: how to approach the series as a primary source, how to frame a research question against it, how to cite rigorously, and how to work with declassified diplomatic records. If you are teaching with the app, the Guide doubles as assignable methods reading; if the series is newer to you than the app is, start here.
 
-Open it from the **Research** tab — the **FRUS Research Guide** row, below Archives Visits — or from **Settings → System → About → FRUS Research Guide**. It opens as a sheet you read at your own pace: eleven pages, turned with **Next** and **Back** or a swipe, with a row of dots showing where you are and **Close** at the top. The first four pages are about the series (*The Official Record of American Foreign Policy*, *165 Years of Documenting U.S. Foreign Policy*, *Understanding What You're Reading*, *Using FRUS for Research*), the next three are about the app (*Finding What You Need in FRUS Explorer*, *Seeing the Bigger Picture in FRUS Explorer*, *Working With Documents in FRUS Explorer*), and the last four are the About the Series dashboards (16.1). Contextual links into it also appear where guidance is most useful — **Learn About Source Notes** in Source Explorer, **Learn About NARA Lookup** in the lookup view, and **About Archival Sourcing** in Archival Analytics each open the Guide at the page that explains what you are looking at — and links inside its pages open in the embedded browser (Section 2.4), so you never leave the Guide.
+Open it from the **Research** tab — the **FRUS Research Guide** row, below Archives Visits — or from **Settings → System → About → FRUS Research Guide**. The **Quick Start** row beneath the guide's opens the app's own [quick start](iOS-Quick-Start.md) — a first session, step by step, with screenshots — in the built-in browser (Section 2.4); **Settings → System → About** links to it too, above this manual. It opens as a sheet you read at your own pace: eleven pages, turned with **Next** and **Back** or a swipe, with a row of dots showing where you are and **Close** at the top. The first four pages are about the series (*The Official Record of American Foreign Policy*, *165 Years of Documenting U.S. Foreign Policy*, *Understanding What You're Reading*, *Using FRUS for Research*), the next three are about the app (*Finding What You Need in FRUS Explorer*, *Seeing the Bigger Picture in FRUS Explorer*, *Working With Documents in FRUS Explorer*), and the last four are the About the Series dashboards (16.1). Contextual links into it also appear where guidance is most useful — **Learn About Source Notes** in Source Explorer, **Learn About NARA Lookup** in the lookup view, and **About Archival Sourcing** in Archival Analytics each open the Guide at the page that explains what you are looking at — and links inside its pages open in the embedded browser (Section 2.4), so you never leave the Guide.
 
 ### 16.1 About the Series — Four Offline Dashboards
 
@@ -1447,7 +1447,7 @@ The **Settings** tab opens with your iCloud sync status — when sync has a prob
 | | **Search** | Default scope, default document type, result snippet length (1–10 lines), and **Classification Corrections…**, where every document you reclassified is listed with a per-row **Undo** |
 | **System** | **Connections** | NARA Catalog and Zotero (17.4) |
 | | **Data & Recovery** | Getting your work out, diagnostics, and recovery (17.6) |
-| | **About** | Version, what FRUS is, the Research Guide, attribution, legal notices |
+| | **About** | Version, what FRUS is, the Research Guide, the quick start and this manual, attribution, legal notices |
 
 ### 17.2 Volumes & Storage
 
@@ -1594,6 +1594,7 @@ Ready-made demonstrations that need nothing but the app and a screen:
 | Open any analytics surface | Browse toolbar → **Analysis Tools** menu |
 | Manage volumes and storage | Settings → Library → **Volumes & Storage** |
 | Export your research data or method appendix | Settings → System → **Data & Recovery** |
+| Read the quick start again | Research tab → **Quick Start** |
 
 ### 19.2 Touch Gestures
 

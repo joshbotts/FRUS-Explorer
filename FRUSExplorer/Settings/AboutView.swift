@@ -29,6 +29,13 @@ enum AboutLinks {
     static let iosManual     = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md"
     static let macManual     = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/macOS-User-Manual.md"
 
+    /// The iPad and iPhone quick start (`Docs/iOS-Quick-Start.md`), rendered on GitHub like the
+    /// manuals. About's Resources and the Research tab's Quick Start row open it.
+    static let iosQuickStart = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-Quick-Start.md"
+    /// The Mac quick start (`Docs/macOS-Quick-Start.md`). About's Resources and Help ▸ FRUS
+    /// Explorer Quick Start open it.
+    static let macQuickStart = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/macOS-Quick-Start.md"
+
     // The on-device model's open-source row (B4): Google's model card, which states its licence.
     // The two Gemma Terms links it replaced went with the 300m, whose terms needed them.
     static let embeddingGemma2   = "https://huggingface.co/google/embeddinggemma-2"
@@ -43,6 +50,8 @@ enum AboutLinks {
         frusExplorerRepo,
         iosManual,
         macManual,
+        iosQuickStart,
+        macQuickStart,
         embeddingGemma2,
         llamaCpp,
     ]
@@ -56,8 +65,8 @@ enum AboutLinks {
 /// ## Sections
 /// 1. **App** — icon, name, and version
 /// 2. **About FRUS** — bundled series description prose
-/// 3. **Resources** — the FRUS Research Guide, the platform manual, history.state.gov, and
-///    HistoryAtState on GitHub
+/// 3. **Resources** — the FRUS Research Guide, the platform quick start and manual,
+///    history.state.gov, and HistoryAtState on GitHub
 /// 4. **Attribution** — code generation credit and contributor note
 /// 5. **Legal** — one row to `FullNoticesView` (open-source licenses + the two disclaimers)
 ///
@@ -75,6 +84,7 @@ enum AboutLinks {
 ///          Research Guide moves here from its own Settings row; the three legal essays move
 ///          behind one Legal row into `FullNoticesView` — a push on iOS, a sheet on macOS,
 ///          because the Settings detail column has no back button of its own.
+///   1.5 — 2026-11-03: the platform's quick start above its manual in Resources.
 struct AboutView: View {
 
     @Environment(AppState.self) private var appState
@@ -388,11 +398,15 @@ challenges and the United States's role in the world.
         Section(String(localized: "about.resources.header",
                        defaultValue: "Resources")) {
             researchGuideRow
-            // Platform user manual(s) — rendered Markdown on GitHub.
+            // The platform's quick start and user manual — rendered Markdown on GitHub.
             #if os(macOS)
+            resourceLink(String(localized: "about.resources.quickStart.mac", defaultValue: "macOS Quick Start"),
+                         urlString: AboutLinks.macQuickStart, systemImage: "list.number")
             resourceLink(String(localized: "about.resources.manual.mac", defaultValue: "macOS User Manual"),
                          urlString: AboutLinks.macManual, systemImage: "book")
             #else
+            resourceLink(String(localized: "about.resources.quickStart.ios", defaultValue: "iOS & iPadOS Quick Start"),
+                         urlString: AboutLinks.iosQuickStart, systemImage: "list.number")
             resourceLink(String(localized: "about.resources.manual.ios", defaultValue: "iOS & iPadOS User Manual"),
                          urlString: AboutLinks.iosManual, systemImage: "book")
             #endif
