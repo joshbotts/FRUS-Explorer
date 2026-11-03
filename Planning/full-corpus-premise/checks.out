@@ -1,0 +1,26 @@
+1. Footnote share of document-division text, by era band (volume dated by the mean of the
+   first and last years of its manifest range, rounded down; guide §A.5's rule)
+   all 553 volumes: 314,616 documents; notes 75,952,743 of 1,329,530,881 characters (0.0571); source notes 24,616,006 (0.0185)
+   1861-1899: 60 volumes, 34,046 documents; notes 840,628 of 163,136,829 (0.0052); source notes (0.0002)
+   1900-1944: 162 volumes, 132,698 documents; notes 11,940,973 of 369,182,324 (0.0323); source notes (0.0076)
+   1945-1964: 181 volumes, 100,373 documents; notes 39,704,162 of 461,056,316 (0.0861); source notes (0.0174)
+   1965-1988: 141 volumes, 44,947 documents; notes 23,194,405 of 315,212,029 (0.0736); source notes (0.0434)
+2. The second editions' overlap on the TEI (guide §14.9)
+   frus1951-54Iran 375 (358 historical), frus1951-54IranEd2 375 (358 historical), shared ids 375
+   frus1969-76ve15p2 343 (343 historical), frus1969-76ve15p2Ed2 382 (382 historical), shared ids 343
+3. The guide's document predicate, GLOB 'd[0-9]*' (§4.2, §4.3), against the TEI
+   index rows matching the predicate: 313,969
+   TEI documents in the six volumes with a non-d id: 647; non-d rows with a page_ranges start row: 647; identical: True
+   non-d TEI documents in frus1958-60v05mSupp: 628; the others: ['appA', 'appA', 'appA', 'appB', 'appB', 'appC', 'appC', 'appD', 'appE', 'appF', 'appG', 'appendix-A', 'appendix-B', 'appendix-C', 'appxA', 'appxB', 'appxC', 'appxD', 'appxE']
+   d rows with no start row: 103
+   rows matching GLOB 'd[0-9]*' OR a start row: 314,616
+4. Undated rows (guide §4.3, §6.4)
+   d rows outside front matter and editorial notes, with date_iso NULL: (305594, 0)
+   §6.4's undated query (every row outside front matter): (1187, 320646)
+   its NULL rows by (id is d and a digit, is_editorial_note): [(0, 0, 1178), (0, 1, 9)]
+5. The TEI files against the installed manifest's sizeBytes
+   553 volumes in the manifest, 0 whose file size differs
+6. The Tier-2 shards against semantic-shards-manifest.json
+   553 shards, 0 differing; folder .generation equals the manifest's digest: True
+7. The on-device query encoder against the index's pin
+   computed equals provenance.modelFileSHA256: True
