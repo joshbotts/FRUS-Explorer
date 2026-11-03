@@ -9194,3 +9194,30 @@ From `v2` at `c5e0608a`, on `claude/investigate-1620-fe4c15`. Documents only: no
 - **Opened as #1839** on the owner's word of 2026-11-02, 09:18 ("Push and open PR"), against `v2` at `f2f08e93`, which had not moved since the branch was cut; not merged. Its body is the draft kept in the session group's notes folder (`R4-pr-draft.md`), with the owner's word at its head. Auto-merge off.
 - **`~/Library/Caches/FRUS-Explorer/r4/`** (about 14 GB logically, most of it APFS clones of S1's container and S4's home): the build, raw and erased frames, the A/B frames, the iPad's pre-R4 container, the Mac's app, home and preference exports, R1's store set and the logs, until the owner says. The throwaway `34F01AA6` is as #1764's session left it, unused here.
 - **§4's #1767 line** (the device check of a library rebuilt at v15: Kissinger's links, Kirkpatrick across eleven volumes, E. Romney Wheeler apart from the General, Truman keeping Q11613) stands: the owner's device pass was to read #1826's list, and their words do not say whether it did.
+
+## Session 2026-11-03 — A plan for ADST's oral histories: a passage database, and one semantic space with FRUS
+
+From `v2` at `50ca586`, on `claude/vigilant-cerf-y2l0g2`. Documents only: no code, data file or version changed.
+
+**What was asked.** The owner asked for a plan for an app that helps researchers use the Association for Diplomatic Studies and Training's oral history interviews, which the Library of Congress also publishes. The interviews are to be analysed into a database of smaller coherent chunks, searchable by country, role (domestic and overseas), date and other scopes drawn from their content. The owner also asked whether the same embedding model with the same configuration would let a single query encoder find results in FRUS and in the interviews at once.
+
+**What changed.**
+- `Planning/ADST-Oral-History-Plan-2026-11-03.md`, new. It sets out:
+  - the units: interview, session, career segment, passage and turn;
+  - the scopes, the pipeline, and the semantic contract with what it leaves out;
+  - the model pass's cost, the gold sets and their gates;
+  - eight phases and five owner decisions.
+- Its answer to the second question is yes, under the nine fields the provenance digest covers, with each corpus's funnel recall and score calibration measured on its own.
+
+**Checked.**
+- Every figure about the shipped semantic stack was read from the repository:
+  - the provenance, digest and retrieval block of `semantic-vectors-index.json`, and the 553 shards in `semantic-shards-manifest.json`;
+  - `SemanticVectorsArtifacts.Provenance.digest`, `SemanticQuantization` and `SemanticModelStore`;
+  - the harvester's one-window rule;
+  - the run time, rate and parity figures in the stage-2 and B4 memos.
+- The plan's tables were checked mechanically: every row has its header's column count.
+- No test reads the new file. `CodingStandardsAuditTests`' two scans of `Planning/` read only `Plan-Of-Record-*.md` and `.mjs` or `.js` scripts, so no test was run.
+
+**Not done.**
+- This session's network policy refused adst.org and www.loc.gov, so nothing about the two collections was measured. The plan marks those facts [U], and its Phase 0 measures them.
+- The plan of record is unchanged. Whether to take the plan up is the owner's decision (the plan's §11).
