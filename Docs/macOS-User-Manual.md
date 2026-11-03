@@ -6,6 +6,8 @@
 
 This manual is written for a first-time user coming to FRUS Explorer for graduate-level research and teaching. It assumes you know your way around historical research — footnotes, finding aids, Zotero, Chicago style — but that you have never opened this app before. The Mac app is the desk-workstation version of FRUS Explorer: the same corpus, annotations, and analytics as the iPad and iPhone app (covered in a separate [iOS manual](iOS-User-Manual.md)), presented as a windowed, keyboard-driven environment where a document, a search, a graph, and your notes can all be on screen at once. Your research data syncs between the two through iCloud, so nothing in this manual asks you to choose.
 
+New to the app? The [quick start](macOS-Quick-Start.md) covers a first session — downloading, reading, marking up, citing, searching and tracing a document to the archives — in a few pages with screenshots, and points back to the sections here.
+
 ---
 
 ## Table of Contents
