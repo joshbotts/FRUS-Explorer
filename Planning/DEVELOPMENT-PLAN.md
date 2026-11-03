@@ -9389,3 +9389,35 @@ From `v2` at `beaf250d`, on `claude/east-asia-soft-power-synthesis-f59c2e`, brou
 - A copy exported by 1.0 (1787) or earlier folds the second editions; §4.7 says to count from `document_cache` there.
 - The app's Meaning search and Related lists are unchanged. They fold edition twins by rank, not by edition: `SemanticEditionTwins.foldingTwins` keeps the better-scored copy.
 - The Mac build was not run. The app change is a string and comments, in a file both app targets compile.
+
+## Session 2026-11-03 — Quick starts for both platforms, made from the manuals' current screenshots
+
+From `v2` at `f02b330`, on `claude/quick-start-guides`. Documents only: no code, data file, capture or version changed.
+
+**What was asked.** The owner asked for "quick start" guides to the app on both platforms, made from the existing screenshots, that can be added to `Docs/`.
+
+**What changed.**
+- `Docs/iOS-Quick-Start.md` and `Docs/macOS-Quick-Start.md`, new. Each runs in twelve short sections from the first launch to a document read, marked up, cited and traced to the archives, then a table of the manual's sections to read next and the manuals' disclaimer. The iOS guide is iPad-first, as its manual is, with a section on what differs on iPhone; the Mac guide adds the main window's toolbar and a table of fourteen shortcuts. Each carries the manuals' *AI Generated* notice, naming 1.0 (1787).
+- They embed 20 committed captures and take none: 11 on iOS (8 `ipad/`, 3 `ios/`) and 9 on the Mac. They are the build-51 sweep's frames as R1 and R4 left them; R4 read the pull requests since `build-51` against them and retook only the two cross-reference graphs, which the guides do not use. Four are store frames that no manual embeds: `ipad/cite-sheet`, `ios/document`, `ios/search-results` and `macos/cite-popover`.
+- The three iPhone frames are `<img>` tags with a width (480 for the banner strip, 300 each for the two portrait frames, side by side), since a portrait frame at full width runs about 1,900 pixels tall on GitHub. Every other image is plain Markdown, as in the manuals.
+- `Docs/screenshots/README.md`: a paragraph under its opening names the 20 files and says a retake of one reads the quick starts' captions and alt text too.
+- Both manuals: one sentence after the opening paragraph, pointing at the quick start. The AI Generated notices stay.
+- `README.md`, with its mirror, the whole-file `repo.readme` block of `Docs/EditableContent/03-Repository-README.md`: the Documentation list's first bullet links the two quick starts. The amendment log has its bullet.
+
+**Checked.**
+- Every label, menu, path and shortcut the guides name was read in the source at `f02b330`, not taken from the manuals:
+  - the onboarding's copy and its segment labels (`OnboardingView.swift`): *Corpus*, *Subseries* and *Volume* on iOS; *Entire Corpus*, *A Subseries* and *A Single Volume* on the Mac;
+  - the selection verbs and their order (`SelectionVerb.allInOrder`) and the selection bar's names;
+  - the Document, Find, Collection, Analytics and Research menus with their shortcuts (`FRUSExplorerApp.swift`), and the Mac toolbar (`MainWindowView.swift`);
+  - the Settings groups and panes (`SettingsPaneModel.swift`) and the Citation Style picker in Display;
+  - the iOS Citation sheet, the Mac Citation popover, the search actions bar and its More menu, and the Mac Search window's two bookmark buttons;
+  - the Browse toolbar's project picker, downloaded-only filter and Analysis Tools menu;
+  - the status bar's indexing label and Learn button, Source Explorer's Add to Archives Visit menu, and where the FRUS Research Guide opens (the Research tab's row; Help on the Mac).
+- Every capture was looked at before its caption and alt text were written.
+- By script: every relative link and anchor in both guides (70), in the manuals and in the README resolves under GitHub's heading slugs; every image path exists; the README and its mirror are identical; no table changes its column count.
+- Both guides were rendered with pandoc and Chromium: all 20 images load, and the iPhone pair sits side by side.
+- No test reads the new files. `EditableContentKeyTests` reads only blocks that name a Swift file, so the README block is outside it; `readmeStatesCurrentBuild` and `ResearchGuideCoverageTests` read lines this change keeps. No Xcode suite was run: the session ran on Linux.
+
+**Not done, and for the owner.**
+- `Docs/Support.md`, its `support.html`, and the app's About links (`AboutLinks`) still name the manuals alone. Adding the quick starts there is the owner's call, since the published Support page is a copy the owner pastes.
+- The guides describe the Mac's onboarding and its selection bar in words: no capture shows either.

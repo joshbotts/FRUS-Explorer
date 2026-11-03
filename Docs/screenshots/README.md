@@ -4,6 +4,16 @@ Screenshots embedded in the user manuals (`../iOS-User-Manual.md`, `../macOS-Use
 A manual carries a `` `[SCREENSHOT: …]` `` placeholder wherever an image has not been captured yet;
 since S5 of the build-51 sweep (2026-10-21, below) neither manual carries one.
 
+The two quick starts (`../iOS-Quick-Start.md`, `../macOS-Quick-Start.md`, 2026-11-03) embed 20 of
+these files and take no capture of their own: on iOS `ipad/onboarding-volumes`, `browse-root`,
+`document`, `research-rail`, `cite-sheet`, `search-results`, `source-explorer` and
+`collections-editor`, with `ios/indexing-banner`, `document` and `search-results`; on the Mac
+`macos/toolbar`, `browser`, `document`, `research-strip`, `cite-popover`, `search`,
+`source-explorer`, `research` and `collections`. Four of them, `ipad/cite-sheet`, `ios/document`,
+`ios/search-results` and `macos/cite-popover`, are store frames the manuals do not embed (S5's
+ledger entry below). Each quick start writes its own caption and alt text for a frame, so a
+retake of one of these twenty reads the quick start's lines as well as the manual's.
+
 > **Owner decision, 2026-08-23 (issue #1081): every committed capture is treated as stale.** The
 > 31 files on disk date from the build 26–42 era and the UI has moved under all of them. Nothing
 > on disk is presumed current: every slot a manual or the repo README references gets a fresh

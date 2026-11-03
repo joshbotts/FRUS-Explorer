@@ -6,6 +6,8 @@
 
 This manual is written for a first-time user coming to FRUS Explorer for graduate-level research and teaching. It assumes you know your way around historical research — footnotes, finding aids, Zotero, Chicago style — but that you have never opened this app before. It is written for the **iPad first**, because a full-screen iPad with a keyboard is the best portable environment the app runs in; everything here also works on iPhone, and the places where the iPhone presents things differently are called out as they come up. (If you work on a Mac, there is a separate [macOS manual](macOS-User-Manual.md) covering the same features in that app's windowed interface.)
 
+New to the app? The [quick start](iOS-Quick-Start.md) covers a first session — downloading, reading, marking up, citing, searching and tracing a document to the archives — in a few pages with screenshots, and points back to the sections here.
+
 ---
 
 ## Table of Contents
