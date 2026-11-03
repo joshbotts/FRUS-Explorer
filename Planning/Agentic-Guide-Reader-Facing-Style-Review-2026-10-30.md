@@ -1,6 +1,10 @@
 # Agentic Analysis Guide — the reader-facing text's style and language: a review of 25 measured runs
 
-**Status:** REVIEW, 2026-10-30, written on the owner's word ("Start the review"). It is step 1 of
+**Status: COMPLETE, kept in place** (marked so on 2026-11-02, when G1 answered §7's third
+question: the collection's notes are left to R1's first bullet, which names them; decision 115 of
+`Plan-Of-Record-2026-10-21.md`). `Docs/Agentic-Analysis-Guide.md` cites this file by its path, so
+it stays at the Planning root, where a finished review would otherwise move to `Completed/`.
+REVIEW, 2026-10-30, written on the owner's word ("Start the review"). It is step 1 of
 the reader-facing pass in `C-3-Steering-Tier-Design.md` §8. Recommendations only: nothing in the
 guide changes because of this document, and the test in §5 decides. **Its pilot ran the same day
 (§8):** the judge preferred R1 in 4 of 4 pairs, and the reading on traced numbers failed, so R1's
@@ -247,6 +251,10 @@ one under R1. A blind judge compares the pair.
 1. Whether R1, with R2's template and J3 change, is the wording to test.
 2. The pilot's lines on the weekly and Fable meters, and when it runs.
 3. Whether the collection's notes are rewritten in the full pass, or only the overview.
+   *Answered 2026-11-02 (G1, decision 115): only the overview. The notes are left to R1's first
+   bullet, which names them. O4 held in all 21 runs that scored it, and of the reader-facing
+   tier's 301 notes two carried a tool word and none named the memo. Their remaining fault is the
+   vector method's words, which R6's bullet addresses and which stays unadopted.*
 
 ## 8. The pilot, run 2026-10-30
 

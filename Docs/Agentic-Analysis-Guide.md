@@ -317,6 +317,23 @@ then held the research fixed (`Planning/C-3-Reader-Facing-Rewrite-Test-2026-10-3
 revised section's overviews preferred in 7 of 8 pairs, and on the owner's word the revised section
 and its template were adopted at v1.40. The three revised rules were not.
 
+**The revision of 2026-11-02 (v1.41)** read the steering review's remaining recommendations
+against v1.40 and, on the owner's word (decision 115 of `Planning/Plan-Of-Record-2026-10-21.md`),
+changed the block with no run of its own. The READER-FACING OUTPUT section's ban on a volume and
+document id now excepts the history.state.gov URL its Documents cited list requires, which the
+harness's scorers already excepted. Its numbers bullet now names a count read in a document, a
+count of the method and a comparison as numbers, and says what to do with a number the trace
+table lacks: add the row, or take the number out, and say so. In the reader-facing tier the
+revised section left one or two numbers a run with no row, against two to eleven under the text
+before it, and three of the five it left were counts of the session's own work, the kind the new
+words name; whether they bring an overview to none is not measured. No second question has been
+run for the table above. The two cells have since been the only ones run, on three more
+questions: in the last two tiers Opus at `medium` obeyed all 34 items in each of its four control
+runs, in 12 to 15 minutes, and Sonnet at `high` lost one, none, three and one items, in 17 to 28
+minutes. Those tiers' judges compared arms within a cell, never one cell with another, so the
+ranking above stands as it was measured. At v1.42 the routing table after the block gained a row
+for §A.8's addendum, naming the vector artifacts as its surface, outside the block's measured text.
+
 ---
 
 ## 4. Schema reference
@@ -1529,7 +1546,8 @@ REPORTING
 READER-FACING OUTPUT — the overview and the collection are for a historian, not for me
 - Write the overview, and the collection's introduction, prose and notes, in plain prose for a
   reader who never sees the memo. No SQL, no table or column name, no volume_id/document_id
-  string, no file path, no issue number. Those belong in the memo, which keeps every one.
+  string except inside a history.state.gov URL after an edition citation, no file path, no issue
+  number. Those belong in the memo, which keeps every one.
 - Nothing comes before the bottom line but the title. Its three parts, in this order, before
   any finding: (1) what FRUS answers directly, in one paragraph of about 150 words, citing the
   documents it rests on; (2) where FRUS points for the rest, as two bulleted lists, one series
@@ -1543,10 +1561,12 @@ READER-FACING OUTPUT — the overview and the collection are for a historian, no
   the history.state.gov URL. Never cite by title, date or correspondent alone.
 - Give every number as a count of a named set in words ("about one document in seven among the
   43 volumes indexed"), rounded to what the comparison needs, and only the numbers the argument
-  needs. "Three ways" and "four governments" are numbers too. Do not count the overview's or the
-  collection's own parts ("the collection's sections", not "its six sections"), and say nothing
-  of the memo. Before you finish, list every numeral and number-word in the overview and find
-  each in the memo's trace table.
+  needs. "Three ways" and "four governments" are numbers too, and so are a count read in a
+  document, a count of your own method ("one abbreviation set aside") and a comparison
+  ("doubles"). Do not count the overview's or the collection's own parts ("the collection's
+  sections", not "its six sections"), and say nothing of the memo. Before you finish, list every
+  numeral and number-word in the overview and find each in the memo's trace table. Add the row
+  for any you cannot find, or take the number out, and say you did.
 - One claim to a sentence, and few sentences over 30 words. Put a quotation in its sentence or as
   a block quote with the short citation, and do not repeat a citation the paragraph gave.
 - Write "I" for what you did and decided; let the documents' own actors carry what the record
@@ -1653,9 +1673,10 @@ not one of the 26 items carried from C-0b lost a single run under the block, and
 block arm's six violations falls on the two items scoring the rules v1.20 rewrote.** One of those,
 the SQL/log rule, scored **0 of 4** there; v1.21 rewrote it again and **C-0d measured the 184-line
 text at 99.2%, with that rule at 4 of 4**. Records: `Planning/C0c-Falsifier-2026-09-06.md` and
-`Planning/C0d-Falsifier-2026-09-06.md`. Since v1.40 the block is 218 lines: its READER-FACING
+`Planning/C0d-Falsifier-2026-09-06.md`. Since v1.41 the block is 221 lines: its READER-FACING
 OUTPUT section is the one the reader-facing tier ran as arm W, which over four runs lost two more
-of the 35 items than the 205-line text (`Planning/C-3-Reader-Facing-Tier-Results-2026-10-31.md`).
+of the 35 items than the 205-line text (`Planning/C-3-Reader-Facing-Tier-Results-2026-10-31.md`),
+with three lines that v1.41 added and no run has measured (§3a).
 It was separately measured to hold across a doubled
 session at its v1.10 length (C-2); that survival test has not been repeated on the longer text. Its
 blocks are not equally reachable in any case. This is what an agent handed only the database can and cannot do:
@@ -1669,6 +1690,7 @@ blocks are not equally reachable in any case. This is what an agent handed only 
 | SCOPING: counting surface, variant expansion, apparatus split | **The TEI XML** | Say the number is unavailable. A stem count is not a variant count. |
 | ARCHIVAL SCOPE, and §5's subject and volume-metadata joins | **The bundled JSON** | Say the archival half did not run. Do not report it as an archival absence — see [§14.11](#1411-the-second-half-of-scoping-where-the-documents-came-from-and-point-at). |
 | ARCHIVAL SCOPE: a `[HARVEST]` count | **The offline record-group harvest**, only when the brief names its path | Say the surface is unavailable. A bundled count is a projection of it, not a substitute — see [§14.11](#1411-the-second-half-of-scoping-where-the-documents-came-from-and-point-at). |
+| SEMANTIC VECTORS, [§A.8](#a8-what-the-vectors-cannot-tell-you)'s addendum, pasted in when the brief hands over the artifacts | **The vector artifacts** ([§A.1](#a1-what-ships-and-where)): the bundle's index, sign vectors and map for all 553 volumes, and Tier-2 shards for fetched volumes only | The memo's VECTORS section reads "none" ([§14.16](#1416-what-a-round-owes-the-historian-beyond-the-memo)). A missing neighbour is not evidence that none exists ([§A.8](#a8-what-the-vectors-cannot-tell-you)). |
 
 Four of these stop depending on the agent's memory when the copy comes from the app's own export,
 because a view enforces them. The rest do not, and no wording of the block changes that.
@@ -2548,8 +2570,9 @@ history.state.gov URL, in the order first cited. In the text a document is cited
 volume and document number, and this list resolves the short form.
 
 Three rules hold throughout the overview, and the §12 block states them to the agent. **No SQL,
-no table or column name, no `volume_id/document_id` string, no file path and no issue number
-appears in it**; the memo keeps all of those. **No table whose header is a column name.** **No
+no table or column name, no `volume_id/document_id` string except inside a history.state.gov URL
+after an edition citation, no file path and no issue number appears in it**; the memo keeps all
+of those. **No table whose header is a column name.** **No
 number without its base in words**: a proportion is a count of a named set ("about one document
 in seven among the 43 volumes indexed", never "14.3%"); a rate is a comparison ("the 1930s is the
 denser decade: about 9 documents in every 1,000 use the phrase, against about 8 in the 1940s,
@@ -2571,15 +2594,15 @@ raw; per 1,000 dated documents 9.06 / 7.86.* Reader's form: *More documents from
 phrase "commercial policy" than from the 1930s, 582 against 355. But the 1940s volumes hold nearly
 twice as many documents. Measured against each decade's size, the 1930s is the denser decade:
 about 9 documents in every 1,000, against about 8.* Audit form (§7.1): *"clearing agreement" 157
-of 229 tolerant.* Reader's form: *The search for "clearing agreement" returned 229 documents. The
-index treats "clear agreement" as the same words, so we read a sample; about seven in ten used the
-phrase. Take 229 as an upper bound, and the memo lists the sample.* Audit form (§14.13): *"all 24
+of 229 tolerant.* Reader's form: *The search for "clearing agreement" found 229 documents. The
+search treats "clear agreement" as the same words, so I read a sample; about seven in ten used the
+phrase. Take 229 as an upper bound.* Audit form (§14.13): *"all 24
 dated 1961–63" (nine were 1964–67).* Reader's form: *Of the 24 documents on this thread, 15 date
 from 1961 to 1963 and nine from 1964 to 1967.* Audit form (§14.17): *`frus1874/d552`, Hamming 61
 to the anchor `frus1898/d490`; no logged query returns it (strict).* Reader's form: *One document,
-Fish's instruction to Cushing of February 1874, was found by its similarity to a later instruction
-already in hand and by no word search. A similarity of this kind is a lead for reading, not
-evidence, and the instruction was read in full before it was cited.*
+Fish's instruction to Cushing of February 1874 (1874, Document 552), was found by its similarity
+to a later instruction already in hand and by no word search. A similarity of this kind is a lead
+for reading, not evidence, and the instruction was read in full before it was cited.*
 
 **3 — a `.fruscollection` the historian opens in the app** (§15 is the format; §15.1a is what a
 reading round's file carries). **Scope it by a rule, not by a number.** The rule that works is
@@ -3289,6 +3312,34 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.42 — 2026-11-02: **the vector artifacts named as a surface, on the owner's word** ("Yes, add
+  it"), after the owner asked why §12 does not include the vector embeddings as a surface. The
+  routing table after the §12 block, "Which surface answers which block", gains a row for §A.8's
+  SEMANTIC VECTORS addendum: its surface is the vector artifacts (§A.1), the bundle's index, sign
+  vectors and map for all 553 volumes and Tier-2 shards for fetched volumes only, and without them
+  the memo's VECTORS section reads "none" (§14.16). The table was written at v1.10 to route the
+  base block's own rules, and never named the addendum's surface. The block itself is unchanged: a
+  vectors section inside it was measured on 2026-10-30 and not adopted (§3a).
+- 1.41 — 2026-11-02: **the steering review's remaining recommendations, read against v1.40, on the
+  owner's word** ("Take your picks", decision 115 of `Planning/Plan-Of-Record-2026-10-21.md`). The
+  §12 block's READER-FACING OUTPUT section takes R9's two clauses
+  (`Planning/Agentic-Guide-Steering-Review-2026-10-27.md`), with no run of their own: its ban on a
+  `volume_id/document_id` string excepts the history.state.gov URL after an edition citation, which
+  its Documents cited list requires and the harness's O1 and O4 already excepted; and its numbers
+  bullet names a count read in a document, a count of the method and a comparison as numbers, and
+  ends "Add the row for any you cannot find, or take the number out, and say you did." The block is
+  221 lines in place of 218. R11's and R13's other parts were in the style review's R1 at v1.40,
+  R12 has been in §14.16 and §15.1a since v1.37, and R11's vector vocabulary is R6's bullet, which
+  stays unadopted.
+  §14.16's reader's form for §7.1 says "found", "the search treats" and "I", and no longer points
+  to the memo; its §14.17 pair cites the document by year and number, as history.state.gov numbers
+  it; and its restatement of the overview's rules takes the URL exception. §3a records the
+  revision, and what the later tiers showed of the two recommended cells; no second question has
+  been run. The §15.1 and §15.1a blocks are unchanged: the twelve reader-facing runs had §15.1a's
+  example in their prompts and none copied a placeholder, and the style review's R3 left the
+  collection's format as it was. The collection's notes are left to the section's first bullet,
+  which names them (`Planning/Agentic-Guide-Reader-Facing-Style-Review-2026-10-30.md` §7,
+  question 3).
 - 1.40 — 2026-10-31: **the reader-facing section's revision adopted, on the owner's word** ("Include
   in 1819, along with adopting R1 and R2"). The §12 block's READER-FACING OUTPUT section becomes the
   style review's R1 (`Planning/Agentic-Guide-Reader-Facing-Style-Review-2026-10-30.md` §4): 30 lines
