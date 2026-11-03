@@ -1,0 +1,20 @@
+01:14:55 35051 0.0 02:33 searchd
+01:14:55 35247 0.0 02:00 FRUS Explorer -hasCompletedOnboarding YES
+01:15:25 35051 0.0 03:03 searchd
+01:15:25 35247 0.0 02:30 FRUS Explorer -hasCompletedOnboarding YES
+01:15:55 35051 0.0 03:33 searchd
+01:15:55 35247 0.0 03:00 FRUS Explorer -hasCompletedOnboarding YES
+01:16:25 35051 0.0 04:03 searchd
+01:16:25 35247 0.0 03:30 FRUS Explorer -hasCompletedOnboarding YES
+01:16:55 35051 0.0 04:33 searchd
+01:16:55 35247 0.0 04:00 FRUS Explorer -hasCompletedOnboarding YES
+01:17:25 35051 0.0 05:03 searchd
+01:17:25 35247 0.0 04:30 FRUS Explorer -hasCompletedOnboarding YES
+01:17:55 35051 0.0 05:33 searchd
+01:17:55 35247 0.0 05:00 FRUS Explorer -hasCompletedOnboarding YES
+01:18:25 35051 0.0 06:04 searchd
+01:18:25 35247 0.0 05:31 FRUS Explorer -hasCompletedOnboarding YES
+01:18:56 35051 0.0 06:34 searchd
+01:18:56 35247 0.0 06:01 FRUS Explorer -hasCompletedOnboarding YES
+01:19:26 35051 27.0 07:04 searchd
+01:19:26 35247 0.0 06:31 FRUS Explorer -hasCompletedOnboarding YES
