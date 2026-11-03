@@ -9457,6 +9457,7 @@ From `v2` at `43fd5fb` (#1847 merged), on `claude/quick-start-links`. App and do
 - **Not built or run.** The session ran on Linux, with no Swift toolchain: neither app was compiled, and no unit or UI suite ran, `AboutViewTests` and `EditableContentKeyTests` included. The changes follow code beside them (About's `resourceLink`, the Research Guide's row and sheet, the File menu's `View` items), and the Mac build is owed for the Help group and `QuickStartHelpMenuItem`.
 
 **Not done, and for the owner.**
+- **Opened as #1848** on the owner's word of 2026-11-03 ("Yes. Flag this PR for testing in a local session."), against `v2` at `43fd5fb`. It carries the label `needs local testing`, new to the repository, and its description opens with the local pass it needs: both builds, the three suites by name and the unit target, and the hand checks. A suggested local session to run that pass was queued for the owner. The merge is the owner's.
 - The two slugs, and the publishing: paste each page's `<main>` into a Code Block, with the Support page.
 - The app's quick-start links go to GitHub, as the manuals' do. Pointing them at the domain is a change to `AboutLinks`, once the site is public.
 - The iPad's own menu bar has no Help item for the quick start; iPhone and iPad reach it from the Research tab and About.
