@@ -9419,5 +9419,6 @@ From `v2` at `f02b330`, on `claude/quick-start-guides`. Documents only: no code,
 - No test reads the new files. `EditableContentKeyTests` reads only blocks that name a Swift file, so the README block is outside it; `readmeStatesCurrentBuild` and `ResearchGuideCoverageTests` read lines this change keeps. No Xcode suite was run: the session ran on Linux.
 
 **Not done, and for the owner.**
+- **Opened as #1847** on the owner's word of 2026-11-03 ("Open PR"), against `v2` at `f02b330`, which had not moved since the branch was made. The merge is the owner's.
 - `Docs/Support.md`, its `support.html`, and the app's About links (`AboutLinks`) still name the manuals alone. Adding the quick starts there is the owner's call, since the published Support page is a copy the owner pastes.
 - The guides describe the Mac's onboarding and its selection bar in words: no capture shows either.
