@@ -880,9 +880,10 @@ struct IndexDatabaseExporterTests {
 
     // MARK: - Provenance stamp and research views (W-19 L-8 residue)
 
-    /// A fixture shaped like the places the views have to make a decision: a second edition whose
-    /// first edition is present, a second edition whose first edition is NOT (the corpus ships one
-    /// of those, `frus1977-80v09Ed2`), a promoted front-matter section, an editorial note, and a
+    /// A fixture shaped like the places the views have to make a decision: a first edition whose
+    /// second edition is present, a second edition whose first edition is NOT (the corpus ships one
+    /// of those, `frus1977-80v09Ed2`), a first edition whose second edition is NOT (a reader's
+    /// library can hold one), a promoted front-matter section, an editorial note, and a
     /// cross-reference.
     private func makeCorpusShaped() async throws -> (dir: URL, db: URL, pipeline: IndexingPipeline) {
         let dir = FileManager.default.temporaryDirectory
@@ -920,14 +921,18 @@ struct IndexDatabaseExporterTests {
             xml += "</body></text></TEI>"
             try xml.data(using: .utf8)!.write(to: volDir.appendingPathComponent("\(name).xml"))
         }
-        try write("frus1951-54Iran", apparatus: true)
-        try write("frus1951-54IranEd2", apparatus: false)
+        // The apparatus sits in the edition the fold keeps, so that the view's apparatus filter,
+        // not the fold, is what has to remove it.
+        try write("frus1951-54Iran", apparatus: false)
+        try write("frus1951-54IranEd2", apparatus: true)
+        try write("frus1969-76ve15p2", apparatus: false)
         try write("frus1977-80v09Ed2", apparatus: false)
 
         let fts5 = try FTS5Store(databaseURL: dbURL)
         let pipeline = try IndexingPipeline(
             fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
-        for volume in ["frus1951-54Iran", "frus1951-54IranEd2", "frus1977-80v09Ed2"] {
+        for volume in ["frus1951-54Iran", "frus1951-54IranEd2", "frus1969-76ve15p2",
+                       "frus1977-80v09Ed2"] {
             try await pipeline.indexVolume(volume)
         }
         return (dir, dbURL, pipeline)
@@ -1004,7 +1009,7 @@ struct IndexDatabaseExporterTests {
             """).isEmpty)
     }
 
-    @Test("research_documents drops the apparatus and the Ed2 twin that has a first edition")
+    @Test("research_documents drops the apparatus and the first edition whose Ed2 is here")
     func researchViewsApplyTheExclusions() async throws {
         let (dir, live, pipeline) = try await makeCorpusShaped()
         defer { try? FileManager.default.removeItem(at: dir) }
@@ -1017,18 +1022,19 @@ struct IndexDatabaseExporterTests {
         #expect(query(out, "SELECT COUNT(*) FROM document_cache WHERE is_editorial_note=1").first == "1")
         #expect(query(out, "SELECT COUNT(*) FROM document_cache WHERE is_front_matter=1").first == "1")
 
-        // The fold names exactly the twin whose first edition is here. `frus1977-80v09Ed2` has no
-        // first edition — in this fixture as in the shipped corpus — and must survive, or the view
-        // would be deleting documents that are not duplicates.
+        // The fold names exactly the first edition whose second edition is here, and keeps the
+        // second (the guide's rule since v1.44). `frus1977-80v09Ed2` has no first edition — in this
+        // fixture as in the shipped corpus — and `frus1969-76ve15p2` has no second edition here:
+        // both must survive, or the view would be deleting documents that are not duplicates.
         #expect(query(out, "SELECT volume_id FROM research_suppressed_volumes")
-                    == ["frus1951-54IranEd2"])
+                    == ["frus1951-54Iran"])
 
         let volumes = query(out, "SELECT DISTINCT volume_id FROM research_documents ORDER BY 1")
-        #expect(volumes == ["frus1951-54Iran", "frus1977-80v09Ed2"])
+        #expect(volumes == ["frus1951-54IranEd2", "frus1969-76ve15p2", "frus1977-80v09Ed2"])
 
         // 3 documents in each surviving volume; the editorial note and the preface are gone.
-        #expect(query(out, "SELECT COUNT(*) FROM research_documents").first == "6")
-        #expect(query(out, "SELECT COUNT(*) FROM document_cache").first == "11")
+        #expect(query(out, "SELECT COUNT(*) FROM research_documents").first == "9")
+        #expect(query(out, "SELECT COUNT(*) FROM document_cache").first == "14")
         #expect(query(out, "SELECT document_id FROM research_documents WHERE document_id='dNote'")
                     .isEmpty)
     }

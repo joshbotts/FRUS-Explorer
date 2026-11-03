@@ -710,12 +710,15 @@ rows to ask.
 |---|---|
 | `research_documents` | `document_cache` minus front matter, editorial notes and suppressed volumes — and **without** `summary_text`, `note_text` or `subject_tag_ids`. A view has no `rowid`, so `SELECT rowid FROM research_documents` is an error rather than a plausible identifier. |
 | `research_cross_references` | `cross_references` minus `is_broken = 1`. Only that: it does not apply the edition fold, because no rule asks it to. |
-| `research_suppressed_volumes` | The second editions this copy is folding, and nothing else. |
+| `research_suppressed_volumes` | The first editions this copy is folding, and nothing else. |
 
-The fold is **computed against this copy**, not hard-coded: a second edition is suppressed only where
-its first edition is also present here. `frus1977-80v09Ed2` ships with no first edition and survives;
-so does an `Ed2` you downloaded on its own. Read `research_suppressed_volumes` and report it —
-[§14.9](#149-where-the-corpus-double-counts-itself) explains why the choice is not neutral.
+The fold is **computed against this copy**, not hard-coded: a first edition is suppressed only where
+its second edition is also present here. `frus1977-80v09Ed2` ships with no first edition and has
+nothing to fold; a first edition you downloaded without its `Ed2` survives. Read
+`research_suppressed_volumes` and report it — [§14.9](#149-where-the-corpus-double-counts-itself)
+explains why the choice is not neutral. A copy whose view names an `Ed2` was exported by an earlier
+build, which folded the second editions as this guide did until v1.44: there, count from
+`document_cache` with §12's exclusions and its fold.
 
 Nothing here is hidden. `SELECT sql FROM sqlite_master WHERE type='view'` prints the exact exclusion
 clause you are working under, which is the only reason it is safe to work under one.
@@ -857,7 +860,7 @@ SELECT COUNT(*) AS docs, COUNT(DISTINCT volume_id) AS vols
 FROM document_cache
 WHERE rowid IN (SELECT rowid FROM frus_documents WHERE frus_documents MATCH '"department of state"')
   AND is_front_matter = 0 AND is_editorial_note = 0
-  AND volume_id NOT IN ('frus1951-54IranEd2', 'frus1969-76ve15p2Ed2');
+  AND volume_id NOT IN ('frus1951-54Iran', 'frus1969-76ve15p2');
 ```
 The tell in `EXPLAIN QUERY PLAN` is `SEARCH dc USING COVERING INDEX idx_document_cache_facet`
 appearing *above* `SCAN frus_documents VIRTUAL TABLE`. Where you need the join's columns, `CROSS
@@ -920,7 +923,9 @@ predicate to it.
 they are a chart of the term.** Dated, non-apparatus documents per decade, second editions folded,
 measured 2026-09-02 over 552 volumes: **1860s 11,250 · 1870s 5,798 · 1880s 6,472 · 1890s 9,712 ·
 1900s 9,924 · 1910s 30,359 · 1920s 19,733 · 1930s 39,196 · 1940s 74,043 · 1950s 42,296 · 1960s
-27,650 · 1970s 22,259 · 1980s 5,949** — a 12.8× spread. Measured: `"commercial policy"` runs 1930s
+27,650 · 1970s 22,259 · 1980s 5,949** — a 12.8× spread. Folding the first editions instead, as
+[§12](#12-a-house-rules-block-to-paste-into-your-agent) has since v1.44, adds 39 to the 1970s and
+moves no other decade (§14.9, at index version 71). Measured: `"commercial policy"` runs 1930s
 355 / 1940s 582 raw and one investigation published the 1940s as its peak; per 1,000 dated documents
 of each decade it is 9.06 / 7.86 and the 1930s is the peak. `"chamber of commerce"` has its largest
 raw count in the 1930s and is, per 10,000, densest in the 1900s and only fourth in the 1930s.
@@ -934,14 +939,14 @@ in this build is 41 volumes' worth of a partially-published subseries — bound 
 the last fully-published year, or drop it, and say which.
 
 ```sql
--- denominator: dated, non-apparatus documents per decade, Ed2 folded (§14.9)
+-- denominator: dated, non-apparatus documents per decade, first editions folded (§14.9)
 SELECT substr(dd.date_iso, 1, 3) || '0s' AS decade,
        COUNT(*) AS docs, COUNT(DISTINCT dc.volume_id) AS vols
 FROM document_dates dd
 JOIN document_cache dc USING (volume_id, document_id)
 WHERE dd.date_iso IS NOT NULL
   AND dc.is_front_matter = 0 AND dc.is_editorial_note = 0
-  AND dc.volume_id NOT IN ('frus1951-54IranEd2', 'frus1969-76ve15p2Ed2')
+  AND dc.volume_id NOT IN ('frus1951-54Iran', 'frus1969-76ve15p2')
 GROUP BY decade ORDER BY decade;
 
 -- numerator for one phrase: same scope, same grouping (the count form is §6.2's IN-subquery)
@@ -952,7 +957,7 @@ JOIN document_dates dd USING (volume_id, document_id)
 WHERE dc.rowid IN (SELECT rowid FROM frus_documents WHERE frus_documents MATCH '"commercial policy"')
   AND dd.date_iso IS NOT NULL
   AND dc.is_front_matter = 0 AND dc.is_editorial_note = 0
-  AND dc.volume_id NOT IN ('frus1951-54IranEd2', 'frus1969-76ve15p2Ed2')
+  AND dc.volume_id NOT IN ('frus1951-54Iran', 'frus1969-76ve15p2')
 GROUP BY decade ORDER BY decade;
 ```
 
@@ -1639,11 +1644,11 @@ SCOPING — applies whenever you are scanning the corpus to decide what to searc
   vocabulary (merchants, chambers, the foreign ministry), not only earlier names for the office.
   Head an absence by the name you tested, and put the founding document beside it if the thing is
   printed under another name.
-- Suppress the SECOND edition where its first edition is also present: drop
-  frus1951-54IranEd2 and frus1969-76ve15p2Ed2, never the first editions their ids are built from,
-  and never frus1977-80v09Ed2, which has no first edition to duplicate. Say which surface you
-  counted: the overlap is 718 documents in the vector artifacts and 701 in this index with
-  apparatus excluded.
+- Suppress the FIRST edition where its second edition is also present: drop frus1951-54Iran
+  and frus1969-76ve15p2, never the Ed2s that revise them (each prints every document of its
+  first edition, and the ve15p2 Ed2 39 more); frus1977-80v09Ed2 has no first edition to fold.
+  Say which surface you counted: the overlap is 718 documents in the vector artifacts and 701
+  in this index with apparatus excluded.
 
 ARCHIVAL SCOPE — do not stop at what FRUS printed
 - FRUS is a SELECTION. Scoping is not finished when you know which volumes hold the question.
@@ -1719,7 +1724,7 @@ blocks are not equally reachable in any case. This is what an agent handed only 
 | COVERAGE, IDENTITY, REPORTING | This database | — |
 | EXCLUSIONS | This database — and **already applied** in the app's export, see [§4.7](#47-what-the-apps-export-adds) | — |
 | KNOWN TRAPS | This database, except the stemming trap, which is a *warning about* the database | — |
-| SCOPING: controls, false-friend test, surnames, periodisation, editors' headings, Ed2 fold | This database | — |
+| SCOPING: controls, false-friend test, surnames, periodisation, editors' headings, edition fold | This database | — |
 | SCOPING: counting surface, variant expansion, apparatus split | **The TEI XML** | Say the number is unavailable. A stem count is not a variant count. |
 | ARCHIVAL SCOPE, and §5's subject and volume-metadata joins | **The bundled JSON** | Say the archival half did not run. Do not report it as an archival absence — see [§14.11](#1411-the-second-half-of-scoping-where-the-documents-came-from-and-point-at). |
 | ARCHIVAL SCOPE: a `[HARVEST]` count | **The offline record-group harvest**, only when the brief names its path | Say the surface is unavailable. A bundled count is a projection of it, not a substitute — see [§14.11](#1411-the-second-half-of-scoping-where-the-documents-came-from-and-point-at). |
@@ -1841,6 +1846,10 @@ index and the manifest's 552 TEI files, `Department of State`:
 | titled `volume_structures` nodes (all levels, front and index included) | 450 of 25,103 |
 | body chapter / subchapter / compilation / section `<head>`s | 260 in 107 volumes |
 | `external_citations.raw_text LIKE '%RG 59%'` | 781 rows |
+
+The first two rows drop the second editions, as §12 did until v1.44. Dropping the first editions
+instead adds 4 documents to the first (93,824 against 93,828 at index version 71) and 9
+occurrences to the second (in the TEI of 2026-11-03).
 
 A scan of a bundled artifact needs its own positive control (consular roll titles: `despatch` 3,355
 of 3,357). A random control is reported with its seed and as a mean over several draws — one
@@ -2102,13 +2111,13 @@ the corpus's own words for your subject.
 The 553 bundled volumes include **three second editions** — `frus1951-54IranEd2`,
 `frus1969-76ve15p2Ed2`, `frus1977-80v09Ed2` — and for two of them the first edition ships as well.
 Both editions appear in `manifest.json` and in `semantic-vectors-index.json`; this is deliberate
-publishing, not a defect — but suppress the second edition where a first edition is present before
-computing any share.
+publishing, not a defect — but suppress the first edition where its second edition is present
+before computing any share.
 
 **And name your surface when you state the size of the overlap**, because §14.3 applies to this
 number too and the two available surfaces disagree:
 
-| Surface | Iran pair | ve15p2 pair | Overlap |
+| Surface | Iran pair, first / second | ve15p2 pair, first / second | Overlap |
 |---|---|---|---|
 | `semantic-vectors-index.json` | 375 / 375 | 343 / 382 | **718** |
 | `document_cache`, apparatus excluded | 358 / 358 | 343 / 382 | **701** |
@@ -2117,9 +2126,18 @@ number too and the two available surfaces disagree:
 neutral.** Measured over a full 553-volume index at index version 71: the Iran pair shares **377
 document ids** and **350** of them carry identical `body_text`, and the `ve15p2` pair shares 346
 ids with 335 identical. In both pairs the `Ed2` is the *later* publication (2018 over 2017; 2021
-over 2014). So the conventional fold — suppress the `Ed2` — keeps the earlier text, which is right
-for a count and wrong for a quote. If a claim turns on the wording of a document in either pair,
-read the volume.
+over 2014), and it prints every document of its first edition, counted by
+[§4.2](#42-corpus-text)'s predicate: the Iran editions print the same 375, and the `ve15p2` `Ed2`
+prints the first edition's 343 and **39 more** (`d344` to `d382`, 17 April 1973 to 6 December
+1976). So the fold — suppress the first edition — loses no document and keeps the editors' later
+text. The fold this guide gave until v1.44, suppressing the `Ed2`, kept the earlier text and left
+the 39 out of every count. Changing it adds them to the 1970s' dated documents and moves no other
+decade ([§6.4](#64-time-series-with-an-honest-denominator)). Of the shared documents, 34 differ in
+text (25 Iran, 9 `ve15p2`), 23 in their stored date (8 and 15), and 12 in their subject tags (6
+and 6), 9 of those with the same text and date. So a figure this guide states with the second
+editions folded can differ from yours in those documents and the 39: re-run it under the fold you
+use before you compare. If a claim turns on how a first edition worded a document, read that
+volume.
 
 **The vectors find the copies the ids do not.** The second editions are the only copies that share
 an id. Elsewhere one document is printed twice under two ids: an annual volume's despatch again in
@@ -2908,8 +2926,8 @@ known = set(con.execute("SELECT volume_id, document_id FROM document_cache"))
 absent = [p for p in pairs if p not in known]
 if absent: problems.append(f"{len(absent)} pairs not in document_cache, e.g. {absent[:3]}")
 vols = {v for v, _ in known}
-twins = sorted({v for v, _ in pairs if v.endswith("Ed2") and v[:-3] in vols})
-if twins: problems.append(f"Ed2 beside its first edition (§14.9): {twins}")
+twins = sorted({v for v, _ in pairs if v + "Ed2" in vols})
+if twins: problems.append(f"first edition beside its Ed2 (§14.9): {twins}")
 print(len(docs), "documents;", "; ".join(problems) or "all checks pass")
 sys.exit(1 if problems else 0)
 ```
@@ -3318,7 +3336,7 @@ terms are here because they appear in the outputs.
 | counting surface | Which text was counted: the raw XML, the text with tags removed, or whole words; the three differ. | §14.3 |
 | document date, volume year | When the editors say a document was written, against the years a volume covers; a periodisation must say which. | §14.7 |
 | came-from, pointed-at | Where a printed document came from (its source note) against what a footnote cites and did not print; two channels, never summed. | §8, §14.11 |
-| second edition, fold | Two volumes exist in two editions; a count drops one of them and says which. | §14.9 |
+| second edition, fold | Two volumes exist in two editions; a count keeps the second, drops the first and says so. | §14.9 |
 | volume id, document id | The database's names for a volume and a document (`frus1958-60v07p1`, `d12`); they resolve to a history.state.gov address and are not the citation. | §4.1, §8 |
 | record group, entry, lot file, NAID | How the National Archives shelves State Department records: the record group (RG 59 is the Department), the series entry number staff use, the Department's own lot-file number, and the catalog's identifier. | §4.4, §14.11 |
 | decimal class, subject-numeric file | The Department's two central filing systems: numbers like 611.41 to January 1963, letters-and-numbers like POL 27 VIET S after. | §4.4 |
@@ -3349,6 +3367,26 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.44 — 2026-11-03: **the edition fold reversed, on the owner's word**: "The rule for second
+  editions should always prefer second editions over first editions" (2026-11-02), then "Yes,
+  revise the guide to use second editions instead of first editions when both are available".
+  The §12 block's SCOPING rule now drops `frus1951-54Iran` and `frus1969-76ve15p2` and keeps their
+  second editions, in the five lines the old rule took, so the block stays 221 lines. §4.7, §6.2's
+  and §6.4's queries, §14.9, §15.2's check, the routing table and the glossary say the same, and
+  the app's export (`ResearchDataExporter.installResearchViews`) folds the first editions in the
+  same change, so a copy's `research_suppressed_volumes` now names them; a copy exported by an
+  earlier build names the second editions, and §4.7 says what to do with one. Measured read-only
+  that day on C-3's copy of the owner's index (index version 71, 553 volumes) and the TEI on the
+  owner's Mac: by §4.2's predicate each second edition prints every document of its first, and
+  the `ve15p2` one 39 more (`d344` to `d382`, 1973–1976), which the old fold left out of every
+  count. The change adds them to §6.4's 1970s and moves no other decade, adds 4 documents and 9
+  raw occurrences to §14.2's two `Department of State` references, and moves no figure the block
+  states (the overlaps, 718 and 701, are the same either way). §6.4's decades, §7.7's tag counts,
+  §14.2's references and §A.5's 2026-08-16 shares were measured with the second editions folded;
+  each still says so, and §14.9 names the documents in which the editions differ (34 in text, 23
+  in date, 12 in subject tags, 9 of those with the same text and date) and says to re-run such a
+  figure under the fold in use before comparing. No tier has run the revised rule: the C-3 runs
+  folded the second editions, and their harnesses and records under `Planning/` are unchanged.
 - 1.43 — 2026-11-02: **five statements wrong under the guide's present premise, corrected, and a
   sixth found right** (`Planning/Agentic-Guide-Full-Corpus-Premise-Assessment-2026-11-02.md` §7),
   each figure re-measured read-only that day on a copy of the owner's Mac index (index version 71,

@@ -9281,7 +9281,7 @@ The owner then supplied four transcripts (Kissinger, Vance, Brzezinski and U. Al
 - U. Alexis Johnson's tags were audited in all 127 of his volume entries: 3,367 of 3,497 documents carry a tag not preceded by "President".
 
 **Not done.**
-- **Opened as #1843** on the owner's word of 2026-11-03 ("open the PR"), against `v2` at `9f384db`, after `v2` was merged into the branch. Its one conflict, at this log's end, was resolved by keeping `v2`'s entries ahead of this one. The merge is the owner's.
+- **Opened as #1843** on the owner's word of 2026-11-03 ("open the PR"), against `v2` at `9f384db`, after `v2` was merged into the branch. Its one conflict, at this log's end, was resolved by keeping `v2`'s entries ahead of this one. The merge is the owner's. **Merged as `bacca0c9`** by the owner at 03:22:16 UTC on 2026-11-03 (22:22:16 EST on the 2nd), two minutes after #1842. `v2`'s tree there (`5b6d622d`) is the head's (`21b45481`) with #1842's twelve files added, and the change the merge made over `91193900` has the head's patch-id over its base (recorded by the edition-fold session, the last entry).
 - This session's network policy refused adst.org and www.loc.gov, so nothing was fetched from either. The owner supplied ADST's list and the four transcripts the pilot read. The plan's other facts about the two collections stay marked [U] for its Phase 0.
 - The figures reconstruct the rollup from the TEI; no device's index was read.
 - The pilot's verdicts are a model's, spot-checked, not a historian's gold set (the plan's §8). Its reports, scripts and indexes stay in the session's scratch space, uncommitted, because they quote ADST's transcripts at length.
@@ -9340,6 +9340,52 @@ From `v2` at `bacca0c9`, on `claude/agentic-guide-premise-fixes`. The branch was
 - No other test reads what changed: `CollectionTests` reads the §15.1 and §15.1a blocks, which are unchanged.
 
 **Not done, and for the owner.**
-- **Opened as #1844** on the owner's word of 2026-11-02, 22:51 EST ("Push and open PR"), against `v2` at `bacca0c9`, which had not moved since the branch was brought there. Its body is the draft kept in the session group's notes folder (`guide-premise-fixes-pr-draft.md`), with the owner's word at its head. Auto-merge is not enabled; the owner turned the app's Auto-fix on for the session, and GitHub reported no checks on the pull request.
+- **Opened as #1844** on the owner's word of 2026-11-02, 22:51 EST ("Push and open PR"), against `v2` at `bacca0c9`, which had not moved since the branch was brought there. Its body is the draft kept in the session group's notes folder (`guide-premise-fixes-pr-draft.md`), with the owner's word at its head. Auto-merge is not enabled; the owner turned the app's Auto-fix on for the session, and GitHub reported no checks on the pull request. **Merged as `beaf250d`** by the owner at 22:56:14 EST that day, `v2`'s tree there (`80c490c2`) being #1844's head's (`e34ef14a`) (recorded by the edition-fold session, the next entry).
 - Found in passing and left: §6.4's series and decade queries do not apply the document predicate, and its decade table was measured on 2026-09-02, before version 68's and 70's section rows. Re-taking it is a measurement of its own.
 - #1843's merge (`bacca0c9`, 22:22:16 EST) is not recorded here: the owner's word named #1841 and #1842.
+
+## Session 2026-11-03 — The edition fold reversed: the guide keeps the second editions (v1.44) and the app's export folds the first, and #1843's and #1844's merges recorded
+
+From `v2` at `beaf250d`, on `claude/east-asia-soft-power-synthesis-f59c2e`, brought there from `bacca0c9` before any change. The guide, the export's research views and their test, and this log: no kit code, no index version, no CloudKit change, no tier.
+
+**What was asked.** The session first wrote a synthesis of the twelve reader-facing runs of 2026-10-31 on the owner's East Asia soft-power question, outside the repository (`~/frus-analysis/c3f/synthesis/`: an overview in the adopted form, a collection of 110 documents, and a memo whose trace table re-derives every quotation, count and identifier). Midway the owner gave a rule: "The rule for second editions should always prefer second editions over first editions." The synthesis followed it, and the session asked whether the guide and its collection check, which still said to drop the second editions, should change too. The owner: "Yes, revise the guide to use second editions instead of first editions when both are available."
+
+**Measured**, read-only, on 2026-11-03, on C-3's copy of the owner's index (index version 71, 553 volumes; its counts for the two pairs are §14.9's, 377 shared ids with 350 identical and 346 with 335), the TEI in the owner's Mac library and the bundled `semantic-vectors-index.json`:
+- By §4.2's predicate each second edition prints every document of its first: the Iran editions the same 375, and the `ve15p2` second edition the first's 343 and 39 more (`d344` to `d382`, 17 April 1973 to 6 December 1976, none an editorial note). The vectors index's decoded ids agree: 375 and 375, 343 and 382.
+- Of the shared documents, 34 differ in text (25 Iran, 9 `ve15p2`), 23 in their stored date (8 and 15) and 12 in their subject tags (6 and 6), 9 of those with the same text and date.
+- Folding the first editions in place of the second adds the 39 to the 1970s' dated, non-apparatus documents and moves no other decade. It moves `"department of state"`'s apparatus-excluded count from 93,824 to 93,828 documents, in 550 volumes either way, and adds 9 raw occurrences of `Department of State` (174 in each Iran file; 106 and 115 in the `ve15p2` files).
+- The app's new view text, read out of `ResearchDataExporter.swift` and created as TEMP views on the copy, names exactly `frus1951-54Iran` and `frus1969-76ve15p2` (0.02 s), and `research_documents` keeps the second editions' 358 and 382.
+
+**Done.**
+- **The guide, v1.44** (`Docs/Agentic-Analysis-Guide.md`):
+  - the §12 block's SCOPING rule drops the first editions and keeps the second, in the five lines the old rule took, so the block stays 221 lines;
+  - §4.7's view table and paragraph, with what to do with a copy an earlier build exported;
+  - §6.2's count query and §6.4's two decade queries;
+  - §6.4's decade table and §14.2's control references are left as records of the old fold, with the difference beside them;
+  - §14.9's rule, its table's columns named, and why the second edition is the one to keep;
+  - §15.2's printed check, the routing table, the glossary, and the version history's 1.44.
+- **The app's export** (`FRUSExplorer/Export/ResearchDataExporter.swift`): `research_suppressed_volumes` now names the first edition of each pair whose second edition is in the copy, by the same scan as before, so `research_documents` keeps the second editions. The doc comments say so. Their Iran figure, 277 identical documents (which the guide had already corrected), is now 350 of 377 at index version 71.
+- **Its test** (`IndexDatabaseExporterTests.researchViewsApplyTheExclusions`, in `ResearchDataExporterTests.swift`):
+  - the fixture's apparatus moves into the edition the fold keeps, so the apparatus filter, not the fold, is what removes it;
+  - the fixture gains a first edition with no second edition beside it, which must survive.
+- **Outside the repository**: `~/frus-analysis/c3f/check_collection.py`, the copy of §15.2's check the synthesis ran, takes the new rule and matches the guide's text byte for byte. The committed record's copy (`Planning/c3-reader-facing-tier/check_collection.py`) is unchanged. No collection of the twelve runs holds a volume of either pair, so neither copy's rule ever fired on them.
+
+**The records.**
+- The ADST plan's entry takes #1843's merge: `bacca0c9`, 03:22:16 UTC on 2026-11-03 (22:22:16 EST on the 2nd), two minutes after #1842's. `v2`'s tree there is the head's (`21b45481`) with #1842's twelve files added, and the change the merge made over `91193900` has the head's patch-id over its base.
+- The guide-fixes entry takes #1844's merge: `beaf250d`, 22:56:14 EST on 2026-11-02, its tree the head's (`e34ef14a`).
+- The times are GitHub's `mergedAt`.
+
+**Checks**, on iPhone 17 under iOS 27.0 (`80CF0F18`) through `Scripts/heavy.sh`:
+- `IndexDatabaseExporterTests`, `ResearchStateRecordTests` and `DuplicateCopiesTests` ran 06:46:25 to 06:46:32 EST: *Test run with 29 tests in 3 suites passed*, and the result bundle gives 29 passed, 0 failed, 0 skipped. The bundle lists the changed test by name ("research_documents drops the apparatus and the first edition whose Ed2 is here") and the broken-edges test that shares its fixture.
+- An earlier run named `ResearchDataExporterTests` and `CodingStandardsAuditTests` (06:40:45 to 06:44:45; 79 passed, 0 failed). It did not include the changed test, which is in another suite of the same file; the result bundle's case names showed it.
+- The changed test does discriminate. Over rows shaped like its fixture, the expectations fail on `v2`'s view text and hold on the new.
+- The block is 221 lines by `generate_f.py`'s own `block_of`, and the rule's five lines are its only change. No prose line the change wrote is over 100 characters.
+- The new check, run against the copy on one-document collections, fails a document of `frus1951-54Iran` or `frus1969-76ve15p2` and passes one of `frus1951-54IranEd2` or `frus1977-80v09Ed2`.
+- No other test reads what changed. `CollectionTests` reads §15.1 and §15.1a, which are unchanged, and `CodingStandardsAuditTests` reads the plan of record, which is unchanged.
+
+**Not done, and for the owner.**
+- **Opened** on the owner's word of 2026-11-03, 06:54 EST ("Yes, open the PR"), against `v2` at `beaf250d`, which had not moved since the branch was brought there. Auto-merge is not enabled.
+- No tier has run the revised block. The C-3 runs folded the second editions, and their harnesses and records under `Planning/` are unchanged.
+- A copy exported by 1.0 (1787) or earlier folds the second editions; §4.7 says to count from `document_cache` there.
+- The app's Meaning search and Related lists are unchanged. They fold edition twins by rank, not by edition: `SemanticEditionTwins.foldingTwins` keeps the better-scored copy.
+- The Mac build was not run. The app change is a string and comments, in a file both app targets compile.
