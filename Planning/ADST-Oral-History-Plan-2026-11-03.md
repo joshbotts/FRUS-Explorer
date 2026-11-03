@@ -1,6 +1,12 @@
 # ADST oral histories: a passage database, and one semantic space with FRUS
 
-**Date:** 2026-11-03 · **Status:** PROPOSAL. Nothing is built; §11 lists the owner's decisions. ·
+> **A basis for discussion with ADST.** This plan is written to open a conversation with the
+> Association for Diplomatic Studies and Training. It is **not under consideration for unilateral
+> implementation**: nothing in it is to be harvested, built or shipped without ADST's agreement,
+> and §2 lists what that agreement would need to cover.
+
+**Date:** 2026-11-03 · **Status:** DISCUSSION DRAFT, for ADST. Nothing is built; §11 lists the
+owner's decisions. ·
 **Owner ask (2026-11-03):** an app that helps researchers use the Association for Diplomatic
 Studies and Training's Foreign Affairs Oral History collection, which the Library of Congress also
 publishes with catalogue enrichment. Two parts: a plan for analysing the interviews into a database
@@ -10,8 +16,9 @@ lets a single query encoder find results in FRUS and in the interviews at once.
 
 **What this rests on.** Every figure about FRUS Explorer's semantic stack is read from this
 repository and cited. This session could not reach adst.org or www.loc.gov: the environment's
-network policy refused both hosts. What §1 says about the two collections comes from web-search
-results (§13) or is marked **[U]**, unverified; Phase 0 (§10) measures it. "OH" in this repository
+network policy refused both hosts. The list of interviews is ADST's own archive page, which the
+owner saved as a PDF on 2026-11-02 (§1.3). Everything else §1 says about the two collections comes
+from web-search results (§13) or is marked **[U]**, unverified; Phase 0 (§10) measures it. "OH" in this repository
 means the Office of the Historian (`OH-Report-2026-10-01.md`), so this plan says *the interviews*
 and names its artifacts `adst-…`.
 
@@ -51,6 +58,9 @@ machine).
     apart;
   - three times: when served, the period discussed, and when interviewed;
   - from the text: events, topics in FRUS's own vocabularies, people, and the kind of testimony.
+- **The overlap with FRUS is large** (§1.3). Of the 2,488 people on ADST's list, 770 match by
+  name a person that FRUS documents mention, 161 of them in at least 100 documents. The most
+  documented are Henry A. Kissinger, Cyrus R. Vance, U. Alexis Johnson and Zbigniew Brzezinski.
 - **Rules first, a model second, gold always.** Parsing, gazetteers and the bundled authorities
   (HistoryAtState's places and topics, POCOM, the person authority) do what they can. A language
   model normalises irregular tables of contents and tags passages. Nothing a model or detector
@@ -70,9 +80,14 @@ machine).
 
 ### 1.1 What the search found
 
-- **ADST** says its Foreign Affairs Oral History Program has recorded more than 2,600 interviews
-  since 1986, and it still adds them; a 2012 article put the pace at about 80 a year. Charles
-  Stuart Kennedy (1928–2022) conducted more than a thousand of them.
+- **ADST's archive page** (as saved on 2026-11-02) says the Foreign Affairs Oral History Program
+  has recorded more than 2,600 interviews since 1986, spanning over 80 years, and adds about 60 a
+  year. The series "also contains some significant oral histories dealing with American
+  diplomacy, which were provided by universities and presidential libraries". ADST asks that the
+  material be cited as "INTERVIEWEE FULL NAME Oral History, Interviewed by INTERVIEWER FULL NAME,
+  Foreign Affairs Oral History Collection, Association for Diplomatic Studies and Training,
+  Arlington, VA, adst.org." Charles Stuart Kennedy (1928–2022) conducted more than a thousand of
+  the interviews.
 - **The Library of Congress's collection** was donated by ADST. It was first published as
   *Frontline Diplomacy* in American Memory and is now the *Foreign Affairs Oral History Collection
   of the Association for Diplomatic Studies and Training*. It opened with 1,301 transcripts, held
@@ -94,7 +109,9 @@ machine).
 
 ### 1.2 What this plan assumes, and Phase 0 measures
 
-- **[U] Layout.** Each ADST transcript is a PDF in three parts:
+- **Files.** Each transcript is a PDF under `https://adst.org/OH%20TOCs/`, most named
+  `<Surname>, <Given>.toc.pdf` (§1.3 counts them).
+- **[U] Layout.** Each ADST transcript has three parts:
   - a header: interviewee, interviewer, initial interview date and a copyright line;
   - a TABLE OF CONTENTS whose entries name a post or office, a role and years, with the subjects
     discussed beneath;
@@ -112,6 +129,51 @@ machine).
 - **[U] Size.** 0.4–1.2 billion characters, central 0.85 billion: 2,600 interviews averaging 60 to
   150 single-spaced pages. At FRUS's 4.16 characters a token that is about 100–290 M tokens,
   central ~200 M. Every size and cost below scales with this number.
+
+### 1.3 The overlap with FRUS's people, measured
+
+Measured on 2026-11-03 from two inputs:
+
+- **ADST's list**: the archive page as the owner saved it (2026-11-02, 21:02). It holds 2,582
+  links to transcripts in 2,562 distinct files: 2,488 distinct people once joint interviews are
+  split and a person's repeat interviews are merged. The names were read from each link's
+  position on the page.
+- **FRUS's people**: the TEI at HistoryAtState/frus `216cdb76`, read with the app's mention rule.
+  A mention is a `persName`'s `@corresp` or `@ref` inside a document, or a document's `@ana`
+  pointer to a listed person, counted once per person per document. The documents are joined to
+  people through `person-authority-index.json`'s crosswalk, as `person_rollup` joins them. The
+  reconstruction found 314,616 documents, the semantic index's own count, and the crosswalk covers
+  89.1% of the 62,896 persons-list entries.
+
+| Interviewees who match a FRUS person by name, in … | Count |
+|---|---|
+| at least 1 document | 770 |
+| at least 10 | 475 |
+| at least 100 | 161 |
+| at least 500 | 51 |
+| at least 1,000 | 19 |
+
+Another 140 match only a persons-list entry that the authority does not cover.
+
+**The caveats.**
+- These are name matches, not verified identities. Surnames must agree exactly and given names
+  token by token, initials allowed, and generational suffixes are binding: Walter B. Smith II is
+  not General Walter Bedell Smith. 30 of the 770 have more than one candidate. The people named
+  below were checked by hand against the authority's roles. Their transcripts have not been
+  opened (adst.org is unreachable from this session), so whether each file is the person's own
+  interview is checked when it is read.
+- Not every entry is an ADST interview. Some come from universities and presidential libraries
+  (above). One, under Dwight D. Eisenhower's name, links to a symposium's transcript and is left
+  out.
+- The figures reconstruct the app's rollup from the TEI; they are not read from a device's
+  index. A device holding another corpus or index version may differ by a few documents.
+
+**The most-documented interviewees** are Henry A. Kissinger (13,091 documents in 99 volumes),
+Cyrus R. Vance (4,190), U. Alexis Johnson (3,497), Zbigniew Brzezinski (3,473), W. Averell
+Harriman (2,947), C. Douglas Dillon (2,774), Walt W. Rostow (2,697) and George W. Ball (2,326).
+813 of Johnson's documents are in the 1955–57 China microfiche supplement (`frus1955-57v03mSupp`),
+the record of the Geneva ambassadorial talks he conducted. Without it he would rank below
+Brzezinski.
 
 ## 2. Rights: the first gate
 
@@ -494,7 +556,7 @@ tools, outside them.
 
 | Phase | Work | Exit gate |
 |---|---|---|
-| 0. Survey and permission | Enumerate both collections. On ~60 interviews stratified by decade and source, measure size, text layer or scan, table-of-contents formats, speaker conventions, LoC field coverage, overlap and versions. Open the conversation with ADST. | A survey memo that replaces this plan's [U] marks, and ADST's answer |
+| 0. Survey and permission | Enumerate both collections (ADST's list is done: §1.3). On ~60 interviews stratified by decade and source, measure size, text layer or scan, table-of-contents formats, speaker conventions, LoC field coverage, overlap and versions. A pilot: three interviews read against the FRUS documents that name their interviewees. Open the conversation with ADST. | A survey memo that replaces this plan's [U] marks; the pilot's findings; ADST's answer |
 | 1. Acquisition and text | Harvest, reconcile, text layer, page map | Header and footer residue and OCR error, measured on a sample, under thresholds set beforehand |
 | 2. Structure | Header, segments, turns, sessions, alignment | Segments checked against the hand-checked tables of contents and POCOM; alignment against the Country Readers |
 | 3. Semantic spike | Passages for a ~5% stratified sample, embedded in one session with a FRUS control sample | The control reproduces FRUS's raw vectors; the interviews' recall measured; the judged queries scored; calibration fitted; the blind panel graded |
@@ -505,7 +567,8 @@ tools, outside them.
 
 ## 11. Owner decisions
 
-1. Whether to approach ADST, and for which of §2's five uses.
+1. **Decided 2026-11-03: approach ADST, with this plan as the basis for the discussion.** Which of
+   §2's five uses to ask for is still open.
 2. Inside FRUS Explorer or a new app (§9), after Phase 3.
 3. Whether the text may go to a model API (which depends on 1), and each field's tier once the
    gold sets have scored them.
@@ -529,8 +592,12 @@ tools, outside them.
 
 ## 13. Sources
 
-Web search on 2026-11-03. The figures are as the search results reported them; the pages
-themselves could not be read (see *What this rests on*).
+ADST's archive page, *ADST Oral History Archive*
+(https://adst.org/oral-history/oral-history-interviews/), saved as a PDF by the owner on
+2026-11-02 at 21:02 and read for §1.1 and §1.3. The PDF is not committed.
+
+The rest come from web search on 2026-11-03. The figures are as the search results reported them;
+the pages themselves could not be read (see *What this rests on*).
 
 - ADST, *Oral History*: https://adst.org/oral-history/
 - ADST, *Country and Subject Reader Series*: https://adst.org/oral-history/country-reader-series/

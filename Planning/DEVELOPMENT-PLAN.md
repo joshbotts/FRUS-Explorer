@@ -9195,11 +9195,13 @@ From `v2` at `c5e0608a`, on `claude/investigate-1620-fe4c15`. Documents only: no
 - **`~/Library/Caches/FRUS-Explorer/r4/`** (about 14 GB logically, most of it APFS clones of S1's container and S4's home): the build, raw and erased frames, the A/B frames, the iPad's pre-R4 container, the Mac's app, home and preference exports, R1's store set and the logs, until the owner says. The throwaway `34F01AA6` is as #1764's session left it, unused here.
 - **§4's #1767 line** (the device check of a library rebuilt at v15: Kissinger's links, Kirkpatrick across eleven volumes, E. Romney Wheeler apart from the General, Truman keeping Q11613) stands: the owner's device pass was to read #1826's list, and their words do not say whether it did.
 
-## Session 2026-11-03 — A plan for ADST's oral histories: a passage database, and one semantic space with FRUS
+## Session 2026-11-03 — A plan for ADST's oral histories, as a basis for discussion with ADST: a passage database, one semantic space with FRUS, and ADST's interviewees measured against FRUS's people
 
 From `v2` at `50ca586`, on `claude/vigilant-cerf-y2l0g2`. Documents only: no code, data file or version changed.
 
 **What was asked.** The owner asked for a plan for an app that helps researchers use the Association for Diplomatic Studies and Training's oral history interviews, which the Library of Congress also publishes. The interviews are to be analysed into a database of smaller coherent chunks, searchable by country, role (domestic and overseas), date and other scopes drawn from their content. The owner also asked whether the same embedding model with the same configuration would let a single query encoder find results in FRUS and in the interviews at once.
+
+Then the owner decided the plan will be published in the repository as a basis for discussion with ADST, not under consideration for unilateral implementation. Before that, they asked for the app's person rollup to be compared with ADST's list of interviews, and for the three overlapping people with the most FRUS mentions. They saved ADST's archive page as a PDF for it, and will supply those people's interviews for a pilot.
 
 **What changed.**
 - `Planning/ADST-Oral-History-Plan-2026-11-03.md`, new. It sets out:
@@ -9208,6 +9210,11 @@ From `v2` at `50ca586`, on `claude/vigilant-cerf-y2l0g2`. Documents only: no cod
   - the model pass's cost, the gold sets and their gates;
   - eight phases and five owner decisions.
 - Its answer to the second question is yes, under the nine fields the provenance digest covers, with each corpus's funnel recall and score calibration measured on its own.
+- After the owner's decision, the plan:
+  - opens with a callout that it is a basis for discussion with ADST, not for unilateral implementation, and its status reads DISCUSSION DRAFT;
+  - takes from the saved page the collection's size, its annual additions, its oral histories from universities and presidential libraries, ADST's citation form and the transcripts' address;
+  - gains §1.3, the overlap measured: 770 of the list's 2,488 people match by name a person whom FRUS documents mention, 161 in at least 100 documents. The most documented are Henry A. Kissinger (13,091 documents), Cyrus R. Vance (4,190), U. Alexis Johnson (3,497) and Zbigniew Brzezinski (3,473);
+  - adds a three-interview pilot to Phase 0, and records §11's first decision as made.
 
 **Checked.**
 - Every figure about the shipped semantic stack was read from the repository:
@@ -9217,7 +9224,16 @@ From `v2` at `50ca586`, on `claude/vigilant-cerf-y2l0g2`. Documents only: no cod
   - the run time, rate and parity figures in the stage-2 and B4 memos.
 - The plan's tables were checked mechanically: every row has its header's column count.
 - No test reads the new file. `CodingStandardsAuditTests`' two scans of `Planning/` read only `Plan-Of-Record-*.md` and `.mjs` or `.js` scripts, so no test was run.
+- The overlap was measured with scripts in the session's scratch space, not committed:
+  - The saved page has 2,582 transcript links. Names were read from each link's position, because the page's menu overlaps the list on its first pages.
+  - All 553 volumes were read from `raw.githubusercontent.com` at HistoryAtState/frus `216cdb76`, with the app's mention rule (`IndexingPipeline.extractPersonRefs` and `annotatedPersonRefs`).
+  - The reconstruction found 314,616 documents, the semantic index's count, and 89.1% of the 62,896 persons-list entries are in the bundled crosswalk.
+- Two wrong answers were caught and are excluded:
+  - Walter B. Smith II had matched General Walter Bedell Smith until generational suffixes were made binding.
+  - The list's Dwight D. Eisenhower entry links to a symposium's transcript, not an interview.
 
 **Not done.**
-- This session's network policy refused adst.org and www.loc.gov, so nothing about the two collections was measured. The plan marks those facts [U], and its Phase 0 measures them.
-- The plan of record is unchanged. Whether to take the plan up is the owner's decision (the plan's §11).
+- This session's network policy refused adst.org and www.loc.gov. The transcripts were not opened, and the plan's other facts about the two collections stay marked [U] for its Phase 0.
+- The pilot waits for the owner's copies of the three interviews.
+- The figures reconstruct the rollup from the TEI; no device's index was read.
+- The plan of record is unchanged. The plan is the basis for a discussion with ADST, not a commitment.
