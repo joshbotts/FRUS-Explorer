@@ -9272,6 +9272,8 @@ From `v2` at `bacca0c9`, on `claude/agentic-guide-premise-fixes`. The branch was
 **Checks.**
 - The §12 block, and the §15.1 and §15.1a blocks, are unchanged, byte for byte against `v2`'s; so are §12 up to its routing table and all of §15.
 - No line the guide change wrote is over 100 characters.
+- `CodingStandardsAuditTests`, which reads the plan of record, named by type on iPhone 17 under iOS 27.0 (`80CF0F18`) through `Scripts/heavy.sh`, on `9c3aee47`, 22:39:37 to 22:43:19: *Test run with 63 tests in 1 suite passed*, `** TEST SUCCEEDED **` (the result bundle: 63 passed, 0 failed, 0 skipped). The commit that adds this line touches only this log, which the suite does not read.
+- No other test reads what changed: `CollectionTests` reads the §15.1 and §15.1a blocks, which are unchanged.
 
 **Not done, and for the owner.**
 - Push and open, on the owner's word. The draft is in the session group's notes folder (`guide-premise-fixes-pr-draft.md`).
