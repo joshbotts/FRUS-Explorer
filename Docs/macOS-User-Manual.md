@@ -146,7 +146,7 @@ Five of the app's menus are its own, and most windows and commands in this manua
 | **Analytics** | The same seven windows as the toolbar's Analytics ▾ menu (Section 15) |
 | **Research** | **Project Home** (⌘⇧P), **New Project…**, **Switch Project ▸**, **Research** (⌘⌥R), **Collections** (⌘⇧K), **Archives Visits**, and **History ▸** — **Documents Visited**, **Searches Executed**, **Complete History…** |
 | **Window** | Besides the standard items, cold doors to the **Cross-Reference Graph** and **Source Explorer** windows, and an item for each single window the app has — among them **Search**, **Citation Lookup**, **Corpus Browser**, **People**, **Topics**, **Research**, **Collections**, **Archives Visits**, **History**, and the Analytics windows |
-| **Help** | **FRUS Research Guide** (Section 16.3) |
+| **Help** | **FRUS Explorer Quick Start**, which opens the app's [quick start](macOS-Quick-Start.md) in your browser, and **FRUS Research Guide** (Section 16.3) |
 
 ### 4.2 The Research Rail
 
@@ -1276,7 +1276,7 @@ Open Settings with **⌘,**. The window is a sidebar of panes in four groups —
 | **System** | **iCloud Sync** | The **Sync Settings Across Devices** toggle — mirrors your word-cloud filters and stop lists, citation style, default document mode, and research-logging preference to your other devices; off by default. (Live sync status is in the main window's status bar, not here) |
 | | **Connections** | NARA Catalog and Zotero (17.3) |
 | | **Data & Recovery** | Getting your work out, diagnostics, and recovery (17.5) |
-| | **About** | Version, what FRUS is, the Research Guide, attribution, legal notices |
+| | **About** | Version, what FRUS is, the Research Guide, the quick start and this manual, attribution, legal notices |
 
 ### 17.2 Volumes & Storage
 
@@ -1401,6 +1401,7 @@ Ready-made demonstrations that need nothing but the app and a screen:
 | Print the document you're reading | ⌘P |
 | New main (document) window | ⌘N |
 | Open Complete History window | My Research ▾ → Complete History…, or Research ▸ History |
+| Open the quick start | Help menu |
 | Open FRUS Research Guide | Help menu |
 | Open Settings | ⌘, |
 

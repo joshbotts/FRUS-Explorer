@@ -228,6 +228,8 @@ struct ResearchView: View {
     @State private var projectHomePath: [DocumentBrowserEntry] = []
     /// Whether the Research Guide sheet is up (UI review F-14).
     @State private var showResearchGuide = false
+    /// Whether the quick start (`AboutLinks.iosQuickStart`) is up in the in-app browser.
+    @State private var showQuickStart = false
     /// Presents the Archive Visits list (Phase 3, §4a) — a sheet, like Project Home, to stay
     /// clear of the typed navigation path.
     @State private var showArchiveVisits = false
@@ -393,6 +395,12 @@ struct ResearchView: View {
                 ResearchGuideView()
                     .environment(appState)
                     .environment(\.sceneID, sceneID)
+            }
+            // The quick start, rendered on GitHub, in the built-in browser About's links use.
+            .sheet(isPresented: $showQuickStart) {
+                if let url = URL(string: AboutLinks.iosQuickStart) {
+                    InAppBrowserView(url: url)
+                }
             }
             #endif
     }
@@ -682,6 +690,26 @@ struct ResearchView: View {
                         }
                     } icon: {
                         Image(systemName: "book")
+                    }
+                }
+                // The quick start beside the guide: the app's own steps where the guide is the
+                // series', in the place a new reader looks for either.
+                Button {
+                    showQuickStart = true
+                } label: {
+                    Label {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(String(localized: "research.sidebar.quickStart",
+                                        defaultValue: "Quick Start"))
+                                .foregroundStyle(.primary)
+                            Text(String(localized: "research.sidebar.quickStart.caption",
+                                        defaultValue: "The app’s essentials, step by step, with screenshots"))
+                                .font(FRUSTheme.captionFont)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+                    } icon: {
+                        Image(systemName: "list.number")
                     }
                 }
             }

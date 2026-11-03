@@ -42,6 +42,24 @@ struct AboutViewTests {
         #expect(!hosts.contains("ai.google.dev"))
     }
 
+    /// The manuals and quick starts that About, the Research tab and the Mac's Help menu open are
+    /// files in this repository, read on GitHub at the default branch's head. A rename that left
+    /// a link behind would open GitHub's 404 page.
+    @Test("AboutScreenLinksTest: every GitHub document it links is in the repository")
+    func linkedDocumentsExist() {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()   // FRUSExplorerTests
+            .deletingLastPathComponent()   // repo root
+        let prefix = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/"
+        let documents = AboutLinks.allURLStrings.filter { $0.hasPrefix(prefix) }
+        // The two manuals and the two quick starts: fewer means the prefix no longer matches.
+        #expect(documents.count >= 4)
+        for link in documents {
+            let path = root.appendingPathComponent(String(link.dropFirst(prefix.count))).path
+            #expect(FileManager.default.fileExists(atPath: path), "\(link) names no file in the repository")
+        }
+    }
+
     // MARK: - EmptyStateTest
 
     @Test("EmptyStateTest: ProjectContextViewModel with no data has empty projects list")
