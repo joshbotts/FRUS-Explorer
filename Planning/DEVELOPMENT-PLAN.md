@@ -9384,7 +9384,7 @@ From `v2` at `beaf250d`, on `claude/east-asia-soft-power-synthesis-f59c2e`, brou
 - No other test reads what changed. `CollectionTests` reads §15.1 and §15.1a, which are unchanged, and `CodingStandardsAuditTests` reads the plan of record, which is unchanged.
 
 **Not done, and for the owner.**
-- **Opened** on the owner's word of 2026-11-03, 06:54 EST ("Yes, open the PR"), against `v2` at `beaf250d`, which had not moved since the branch was brought there. Auto-merge is not enabled.
+- **Opened as #1845** on the owner's word of 2026-11-03, 06:54 EST ("Yes, open the PR"), against `v2` at `beaf250d`, which had not moved since the branch was brought there. Auto-merge is not enabled.
 - No tier has run the revised block. The C-3 runs folded the second editions, and their harnesses and records under `Planning/` are unchanged.
 - A copy exported by 1.0 (1787) or earlier folds the second editions; §4.7 says to count from `document_cache` there.
 - The app's Meaning search and Related lists are unchanged. They fold edition twins by rank, not by edition: `SemanticEditionTwins.foldingTwins` keeps the better-scored copy.
