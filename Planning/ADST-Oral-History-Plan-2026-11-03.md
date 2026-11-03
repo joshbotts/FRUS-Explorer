@@ -41,12 +41,15 @@ machine).
   accepts only the GGUF the bundled index names (`SemanticModelStore`). Embed the interviews under
   the same nine values and their artifacts carry the shipped digest, `89481b18…`. The one query
   vector, encoded under `task: search result | query: `, then scores FRUS documents and interview
-  passages alike. FRUS's artifacts and the encoder do not change.
+  passages alike. FRUS's artifacts and the encoder do not change. A pilot confirmed it on 121
+  passages from four interviews (§6.6).
 - **One space is not one scale.** A query's cosine against a 1962 telegram and its cosine against
   a 1998 recollection of the same day are not comparable numbers. The display calibration (offsets
   0.47 and 0.40) and the funnel's recall@10 of 0.902 were measured on FRUS alone. Each corpus runs
   its own funnel with the same query vector. Results show in two lanes by default; a merged list
-  waits for a per-corpus calibration that a judged query set has validated (§6.4).
+  waits for a per-corpus calibration that a judged query set has validated (§6.4). The pilot
+  measured the gap: a passage's nearest FRUS document sits at a median cosine of 0.847, against
+  0.920 between FRUS documents.
 - **The database's spine is each interview's table of contents** [U for its format]. Its entries
   (post or office, role, years) become career segments aligned to the transcript, and every
   passage inherits its segment's place, role and dates. Passages are cut at the interviewer's
@@ -60,7 +63,11 @@ machine).
   - from the text: events, topics in FRUS's own vocabularies, people, and the kind of testimony.
 - **The overlap with FRUS is large** (§1.3). Of the 2,488 people on ADST's list, 770 match by
   name a person that FRUS documents mention, 161 of them in at least 100 documents. The most
-  documented are Henry A. Kissinger, Cyrus R. Vance, U. Alexis Johnson and Zbigniew Brzezinski.
+  documented are Henry A. Kissinger, Cyrus R. Vance, Zbigniew Brzezinski and U. Alexis Johnson.
+- **A four-interview pilot** (§1.4). Where a recollection falls in FRUS's scope, FRUS documents
+  it: none of 87 passages and claims went unfound. About one in five differs from the record,
+  almost always on dates and sequence. Each interview touches only a small part of its speaker's
+  FRUS record.
 - **Rules first, a model second, gold always.** Parsing, gazetteers and the bundled authorities
   (HistoryAtState's places and topics, POCOM, the person authority) do what they can. A language
   model normalises irregular tables of contents and tags passages. Nothing a model or detector
@@ -169,11 +176,88 @@ Another 140 match only a persons-list entry that the authority does not cover.
   index. A device holding another corpus or index version may differ by a few documents.
 
 **The most-documented interviewees** are Henry A. Kissinger (13,091 documents in 99 volumes),
-Cyrus R. Vance (4,190), U. Alexis Johnson (3,497), Zbigniew Brzezinski (3,473), W. Averell
-Harriman (2,947), C. Douglas Dillon (2,774), Walt W. Rostow (2,697) and George W. Ball (2,326).
-813 of Johnson's documents are in the 1955–57 China microfiche supplement (`frus1955-57v03mSupp`),
-the record of the Geneva ambassadorial talks he conducted. Without it he would rank below
-Brzezinski.
+Cyrus R. Vance (4,190), Zbigniew Brzezinski (3,473), U. Alexis Johnson (about 3,370; below),
+W. Averell Harriman (2,947), C. Douglas Dillon (2,774), Walt W. Rostow (2,697) and George W. Ball
+(2,326).
+
+**Johnson's count needs a correction.** His tags give 3,497, but some sit on President Johnson's
+name. In the 1964–68 Korea volume (`frus1964-68v29p1`) his id marks 434 occurrences of "Johnson",
+most of them after "President", and only 70 of the 157 documents it tags carry a tag that does not
+follow "President". Across all 127
+of his list entries, 3,367 documents carry at least one tag that does not follow "President". 813 of
+his documents are in the 1955–57 China microfiche supplement (`frus1955-57v03mSupp`), the record of
+the Geneva ambassadorial talks he conducted.
+
+### 1.4 A pilot: four interviews read against FRUS
+
+On 2026-11-03 the owner supplied four transcripts from ADST's archive: the three interviews at the
+top of §1.3, and U. Alexis Johnson's. None is one of ADST's own interviews:
+
+- three are Lyndon B. Johnson Library oral histories by Paige E. Mulhollan, which ADST hosts:
+  Johnson (14 June 1969), Vance (3 November 1969) and Brzezinski (12 November 1971);
+- the fourth is Henry Kissinger's interview with Susan Johnson for AFSA (25 July 2012), about China.
+
+**The method.**
+- Each transcript was cut into passages by §3.2's rules: 121 in all.
+- 90 volumes were indexed for full-text search, 34,620 documents: all of 1958–60, 1961–63 and
+  1964–68, and the China volumes of 1969–80.
+- A reader judged every passage:
+  - whether it falls in FRUS's scope;
+  - if it does, whether FRUS documents it: DOCUMENTED, PARTLY or NOT FOUND;
+  - where documented, whether the recollection agrees: CONSISTENT, DIFFERS or CAN'T TELL, with a
+    quotation of at most 20 words from each side.
+- The readers were language-model agents, one per interview. Twenty of their quotations and claims
+  were checked against the sources by hand, and all held. The verdicts are candidates in §8's
+  sense, not a historian's gold set.
+
+| Interview | Passages | In FRUS's scope | Documented / partly / not found | Consistent / differs / can't tell | His FRUS record that the interview touches |
+|---|---|---|---|---|---|
+| Vance, 1969 | 54 | 31 (59% of the text) | 26 / 5 / 0 | 22 / 9 / 0 | 3 of the 30 volumes that tag him in 1961–68, 11–13% of his 685 documents; and the Korea volume, which names him in 33 documents and tags him in none |
+| Johnson, 1969 | 37 | 25 (71%) | 21 / 4 / 0 | 18 / 6 / 1 | about 24% of his 1,064 documents in the interview's years (about 29% without the misattributed tags) |
+| Brzezinski, 1971 | 22 | 16 (79%) | 7 / 9 / 0 | 14 / 1 / 1 | 1 of his 3 tagged 1964–68 documents |
+| Kissinger, 2012 | 8 (27 claims) | 15 claims (about a quarter of his words) | 9 / 6 / 0 | 11 / 1 / 3 | 16% of his 649 documents in the China volumes directly, 33% indirectly |
+
+**What it shows.**
+- **Where a recollection falls in FRUS's scope, FRUS documents it.** None of the 87 in-scope
+  passages and claims went unfound: 63 are fully documented and 24 partly.
+- **About one in five differs from the record**, 17 of 87, almost always on dates, sequence or who
+  was where. Memory compresses:
+  - Vance has the emissary team chosen "the next morning" after the 28 April 1965 landing
+    decision. FRUS has it meeting on 14 May (1964–68 v32 d69, d71).
+  - Brzezinski places Humphrey's bombing statement "two and a half weeks before the election". It
+    was made on 30 September 1968 (v07 d40).
+  - One differs on a position. Johnson recalled "strong opposition" to the December 1965 bombing
+    pause. FRUS's notes of the 18 December meeting have him telling the President "I'd take the
+    pause" (v03 d235).
+  - Kissinger's differs in degree. He says "a quasi-alliance posture. We couldn't go that far";
+    his November 1973 memorandum speaks of "tacit alliance with Peking" (1969–76 v18 d62).
+- **The overlap is narrow on the record's side.** Each interview touches only a small part of its
+  speaker's FRUS record:
+  - Vance's discusses 3 of the 30 volumes that tag him (Vietnam and the Paris talks were held over
+    to a later session);
+  - Johnson's touches about a quarter of his documents;
+  - Kissinger's reflections on China never reach Taiwan (67 documents).
+
+  The two are complements more than duplicates. An interview adds what FRUS leaves out: who
+  telephoned whom, the internal argument, who drafted a speech. FRUS holds far more than any
+  interview recalls.
+- **Some of each interview is beyond FRUS altogether**: 21–41% of each LBJ Library interview. It
+  covers Senate hearings, domestic crises such as Detroit in 1967, appointments, and the President's
+  character.
+- **FRUS's person tags are noisy.** The pilot found four defects in the TEI:
+  - the Korea volume's misattributed tags (§1.3);
+  - the same volume's missing tags for Vance;
+  - Vietnam 1964 (`frus1964-68v01`), which tags Johnson in 7 documents while at least 41 name him
+    (as Alexis, Alex or the Deputy Ambassador);
+  - `frus1964-68v17 d116`, which tags an "Ambassador Zbigniew Bidzinski" as Brzezinski.
+
+  A link through a person inherits such defects, so §9's "FRUS documents that name this
+  interviewee" needs the same precision-first gate as every facet. The defects are worth reporting
+  upstream, as `OH-Report-2026-10-01.md` reported others.
+
+**What left the machine.** The four transcripts, and the FRUS documents the readers opened, were
+read in a Claude Code session, which sends text to Anthropic. The owner asked for it. For the full
+collection, §2's item 4 asks ADST.
 
 ## 2. Rights: the first gate
 
@@ -355,7 +439,7 @@ raw store byte for byte, as `SemanticVectorsGenerator` is from the embedding sto
    - `adst-manifest.json`: interviews, versions, hashes, sizes.
    - The segment index, and the passage index: offsets, pages, and facets with their evidence and
      confidence.
-   - The semantic tiers (§6.6) and the cross-corpus link index (§9).
+   - The semantic tiers (§6.7) and the cross-corpus link index (§9).
 
    A bundled file follows the repository's bundled-artifact rules (CLAUDE.md, *Rules that span
    entries*).
@@ -459,7 +543,50 @@ pin, so they always move together. The semantic map is a later option: it needs 
 new points into a fitted layout, which `tools/semantic-map/build_layout.py` does not have (it runs
 `fit_transform` only).
 
-### 6.6 Sizes
+### 6.6 Measured: the single-encoder test
+
+On 2026-11-03, with the owner's go-ahead, llama.cpp `a0e6dc73` was built for CPU on Linux. It served
+the pinned file, its SHA-256 verified against `2188ac1d…`, with the shipped harvest's settings. All
+553 shards were fetched from `generations/89481b18/` and verified against their manifest.
+
+- **The control passes (§6.3).** 24 FRUS documents were re-embedded through the harvester's own
+  extraction, windows and pooling: 8 under 1,500 characters, 8 of one full window, and 8 of two to
+  six windows.
+  - Against their shipped int8 vectors: cosine 0.99975–0.99986 (median 0.99982); 80–94% of the
+    int8 codes identical; 0–6 of the 512 sign bits different.
+  - Each is its own nearest neighbour among the 314,616.
+  - The gap is of the order B4 measured between the device's CPU encoder and the Metal reference
+    (0.999862).
+- **The interviews are in the space, at a distance.** 121 passages were embedded under the shipped
+  contract. A passage's nearest FRUS document has a median cosine of 0.847. For FRUS documents, the
+  nearest other document has 0.920 (121 drawn at random). This is §6.4's register gap, measured.
+- **The funnel misses more on interviews.** Recall@10 of Hamming-800 into the int8 rerank, against
+  an exact int8 scan, is 0.937 for the passages and 0.990 for the FRUS documents. By interview it
+  runs 0.914–0.988, and one passage scored 0.4. The interviews need a wider pool, which the
+  corpus-gates sweep should measure in Phase 3.
+- **One question searches both corpora.** Eight typed questions were each encoded once under the
+  query prompt. Each returned FRUS documents on the episode and the interview passages that recount
+  it:
+  - Cyprus in November 1967 found 1964–68 v16 d334 and d339, and Vance's passages on the mission;
+  - Okinawa found the January 1965 Johnson–Sato memoranda, and Johnson's passages at the same score.
+
+  In seven of the eight, the interview passages scored below the FRUS documents. That is the case
+  for lanes and per-corpus calibration (§6.4).
+- **Dates are weakly encoded.** The Cyprus question's best FRUS hit was a 1977–80 document, and a
+  1905 document came third for the Dominican one. A period filter belongs with every semantic
+  search, as §4.2 assumes.
+- **A passage does not find its own documents.** Take the 77 passages the readers judged
+  documented:
+  - across all of FRUS, a document they cited was in the semantic top 10 for 12 of them, and the
+    right episode (same volume, within a month) for 33;
+  - within the cited document's own volume (a median of 375 documents), it was in the top 10 for
+    29, at a median rank of 22.
+
+  So §9's "documents from the same time and place that read close to this passage" are candidates,
+  to be narrowed by the passage's period to the month, its people and its places. They are never to
+  be shown as the documents the passage describes.
+
+### 6.7 Sizes
 
 | | FRUS, shipped | The interviews, central [U] (range) |
 |---|---|---|
@@ -556,7 +683,7 @@ tools, outside them.
 
 | Phase | Work | Exit gate |
 |---|---|---|
-| 0. Survey and permission | Enumerate both collections (ADST's list is done: §1.3). On ~60 interviews stratified by decade and source, measure size, text layer or scan, table-of-contents formats, speaker conventions, LoC field coverage, overlap and versions. A pilot: three interviews read against the FRUS documents that name their interviewees. Open the conversation with ADST. | A survey memo that replaces this plan's [U] marks; the pilot's findings; ADST's answer |
+| 0. Survey and permission | Enumerate both collections (ADST's list is done: §1.3). On ~60 interviews stratified by decade and source, measure size, text layer or scan, table-of-contents formats, speaker conventions, LoC field coverage, overlap and versions. A pilot, done on 2026-11-03: four interviews read against FRUS (§1.4) and embedded in its space (§6.6). Open the conversation with ADST. | A survey memo that replaces this plan's [U] marks; the pilot's findings; ADST's answer |
 | 1. Acquisition and text | Harvest, reconcile, text layer, page map | Header and footer residue and OCR error, measured on a sample, under thresholds set beforehand |
 | 2. Structure | Header, segments, turns, sessions, alignment | Segments checked against the hand-checked tables of contents and POCOM; alignment against the Country Readers |
 | 3. Semantic spike | Passages for a ~5% stratified sample, embedded in one session with a FRUS control sample | The control reproduces FRUS's raw vectors; the interviews' recall measured; the judged queries scored; calibration fitted; the blind panel graded |
@@ -587,6 +714,8 @@ tools, outside them.
   govern.
 - **One corpus crowding out the other**: lanes by default, per-corpus calibration.
 - **Tags drawn to famous events**: stratified gold sets.
+- **FRUS's own person tags are noisy**: the pilot found one man's id on another's name across a
+  whole volume (§1.4). Links through people pass the same gates as facets.
 - **ADST's site changing under the harvester**: each file is fetched once into the raw store, and
   versions are found by hash.
 
@@ -607,3 +736,8 @@ the pages themselves could not be read (see *What this rests on*).
 - CLIR Hidden Collections Registry, *Foreign Affairs Oral History Program: Digitization for Improved Access*: https://registry.clir.org/projects/2112/
 - AFSA, *Telling Our Stories: The Foreign Affairs Oral History Collection*: https://afsa.org/telling-our-stories-foreign-affairs-oral-history-collection
 - Wikipedia, *Charles Stuart Kennedy*: https://en.wikipedia.org/wiki/Charles_Stuart_Kennedy
+
+The pilot's four transcripts (§1.4), downloaded by the owner from ADST's archive on 2026-11-03 and
+not committed:
+`https://adst.org/OH%20TOCs/Vance,%20Cyrus%20R.pdf`, `…/Johnson,%20U.%20Alexis.pdf`,
+`…/Brzezinski,%20Dr.%20Zbigniew.toc.pdf` and `…/Kissinger-Henry.pdf`.

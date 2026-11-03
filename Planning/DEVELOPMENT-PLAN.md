@@ -9203,6 +9203,8 @@ From `v2` at `50ca586`, on `claude/vigilant-cerf-y2l0g2`. Documents only: no cod
 
 Then the owner decided the plan will be published in the repository as a basis for discussion with ADST, not under consideration for unilateral implementation. Before that, they asked for the app's person rollup to be compared with ADST's list of interviews, and for the three overlapping people with the most FRUS mentions. They saved ADST's archive page as a PDF for it, and will supply those people's interviews for a pilot.
 
+The owner then supplied four transcripts (Kissinger, Vance, Brzezinski and U. Alexis Johnson) and asked how far each speaker's recollections overlap with the documents FRUS published. They also asked for the embeddings test: the passages embedded with the shipped encoder and searched against FRUS's shipped vectors. For that test they asked for llama.cpp to be built.
+
 **What changed.**
 - `Planning/ADST-Oral-History-Plan-2026-11-03.md`, new. It sets out:
   - the units: interview, session, career segment, passage and turn;
@@ -9215,6 +9217,11 @@ Then the owner decided the plan will be published in the repository as a basis f
   - takes from the saved page the collection's size, its annual additions, its oral histories from universities and presidential libraries, ADST's citation form and the transcripts' address;
   - gains §1.3, the overlap measured: 770 of the list's 2,488 people match by name a person whom FRUS documents mention, 161 in at least 100 documents. The most documented are Henry A. Kissinger (13,091 documents), Cyrus R. Vance (4,190), U. Alexis Johnson (3,497) and Zbigniew Brzezinski (3,473);
   - adds a three-interview pilot to Phase 0, and records §11's first decision as made.
+- After the pilot, the plan:
+  - gains §1.4, the four interviews read against FRUS. None of their 87 in-scope passages and claims went unfound; 17 differ from the record, almost all on dates and sequence. Each touches only a small part of its speaker's FRUS record;
+  - gains §6.6, the single-encoder test measured: the control, the register gap, the funnel's recall on interviews, typed questions over both corpora, and the cross-check against the readers. The sizes section becomes §6.7;
+  - corrects §1.3: U. Alexis Johnson's count includes tags that sit on President Johnson's name, so Brzezinski ranks third;
+  - adds FRUS's noisy person tags to §12's risks, and the four transcripts to §13.
 
 **Checked.**
 - Every figure about the shipped semantic stack was read from the repository:
@@ -9231,9 +9238,20 @@ Then the owner decided the plan will be published in the repository as a basis f
 - Two wrong answers were caught and are excluded:
   - Walter B. Smith II had matched General Walter Bedell Smith until generational suffixes were made binding.
   - The list's Dwight D. Eisenhower entry links to a symposium's transcript, not an interview.
+- The pilot, in the session's scratch space:
+  - The transcripts were cut by the plan's §3.2 rules into 121 passages.
+  - 90 volumes (34,620 documents) were extracted with the harvester's own `extract_documents` and indexed in FTS5.
+  - Four language-model readers, one per interview, judged every passage. Twenty of their quotations and claims were checked by hand against both sources, and all held.
+- The embeddings test:
+  - llama.cpp `a0e6dc7384edb8f5d927155e1d26c10b4a310e6d` was built for CPU, and the pinned GGUF's SHA-256 matched `2188ac1d…40b09135`. All 553 shards matched their manifest.
+  - The FRUS control reproduced the shipped vectors: cosine 0.99975–0.99986, and all 24 documents found themselves first among 314,616.
+- U. Alexis Johnson's tags were audited in all 127 of his volume entries: 3,367 of 3,497 documents carry a tag not preceded by "President".
 
 **Not done.**
 - This session's network policy refused adst.org and www.loc.gov. The transcripts were not opened, and the plan's other facts about the two collections stay marked [U] for its Phase 0.
 - The pilot waits for the owner's copies of the three interviews.
 - The figures reconstruct the rollup from the TEI; no device's index was read.
+- The pilot's verdicts are a model's, spot-checked, not a historian's gold set (the plan's §8). Its reports, scripts and indexes stay in the session's scratch space, uncommitted, because they quote ADST's transcripts at length.
+- The four transcripts, and the FRUS documents the readers opened, were read in this Claude Code session, which sends text to Anthropic; the owner asked for it.
+- The four tagging defects the pilot found in FRUS's TEI (the plan's §1.4) are not yet reported upstream.
 - The plan of record is unchanged. The plan is the basis for a discussion with ADST, not a commitment.
