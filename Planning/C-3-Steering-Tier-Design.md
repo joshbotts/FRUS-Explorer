@@ -1,6 +1,6 @@
 # C-3, the steering tier (R16) — the revised block and the vectors card against the guide as it stands, Opus 5.5 at `medium` and Sonnet 5.5 at `high`
 
-**Status:** RUN 2026-10-30, 09:50 to 15:32, as set by the owner that morning. Results:
+**Status: COMPLETE, kept in place** (marked so on 2026-11-02, when G1 decided that no further tier follows, decision 115 of `Plan-Of-Record-2026-10-21.md`; `Docs/Agentic-Analysis-Guide.md` cites this file, so it stays at the Planning root rather than moving to `Completed/`). RUN 2026-10-30, 09:50 to 15:32, as set by the owner that morning. Results:
 **`C-3-Steering-Tier-Results-2026-10-30.md`**; record `c3-steering-tier/`. By the rule in §6, arm B
 is not adopted: reading 4 failed by one item. The owner followed the rule ("Follow the rule"), and
 the guide records the measurement at v1.38. Drafted the same morning on the owner's

@@ -1,6 +1,6 @@
 # C-3, the reader-facing tier — R1's wording under research, and R7, R8 and R10 measured without the rest of arm B, Opus 5.5 at `medium` and Sonnet 5.5 at `high`
 
-**Status:** RUN 2026-10-31, 00:16 to 04:46, on the owner's word ("Build and run"). Results:
+**Status: COMPLETE, kept in place** (marked so on 2026-11-02, when G1 decided that no further tier follows, decision 115 of `Plan-Of-Record-2026-10-21.md`; `Docs/Agentic-Analysis-Guide.md` cites this file, so it stays at the Planning root rather than moving to `Completed/`). Its guard on the 35 items is replaced for later tiers by that decision: a treatment arm still loses at most one more item than the control, and no run of it loses more than the control's worst run, where "no run loses two" stood and the control's own run 6 broke it. RUN 2026-10-31, 00:16 to 04:46, on the owner's word ("Build and run"). Results:
 **`C-3-Reader-Facing-Tier-Results-2026-10-31.md`**; record `c3-reader-facing-tier/`. By §8's rule
 nothing is adopted: W failed readings 1 and 5, and K reading 12. As built, four things differ from
 the text below:

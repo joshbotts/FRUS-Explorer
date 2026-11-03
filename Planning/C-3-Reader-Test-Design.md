@@ -1,6 +1,6 @@
 # C-3 — the reader-facing revisions under the block, and model × effort on one question
 
-**Status:** RUN as designed on 2026-10-25/26, on the owner's Mac, on the owner's word of 2026-10-25
+**Status: COMPLETE, kept in place** (marked so on 2026-11-02, when G1 decided that no further tier follows, decision 115 of `Plan-Of-Record-2026-10-21.md`; `Docs/Agentic-Analysis-Guide.md` cites this file, so it stays at the Planning root rather than moving to `Completed/`). RUN as designed on 2026-10-25/26, on the owner's Mac, on the owner's word of 2026-10-25
 ("start C-3 now with build 1776"), before the submission decision 91 had put first. The results are
 **`C-3-Results-2026-10-26.md`** and the record is `c3-reader-test/`. Two things differed from the text
 below, both recorded there:

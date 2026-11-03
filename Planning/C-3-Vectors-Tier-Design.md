@@ -1,6 +1,6 @@
 # C-3, the vectors tier — Sonnet 5.5 at `high` and Opus 5.5 at `medium` with Appendix A and the vector artifacts added
 
-**Status:** RUN 2026-10-26/27 under the four decisions below; results in
+**Status: COMPLETE, kept in place** (marked so on 2026-11-02, when G1 decided that no further tier follows, decision 115 of `Plan-Of-Record-2026-10-21.md`; `Docs/Agentic-Analysis-Guide.md` cites this file, so it stays at the Planning root rather than moving to `Completed/`). RUN 2026-10-26/27 under the four decisions below; results in
 **`C-3-Vectors-Tier-Results-2026-10-27.md`**, record in `c3-vectors-tier/`. Written 2026-10-26 on the
 owner's instruction ("Plan but do not start a follow-up tier for Sonnet high and Opus medium that
 adds in Appendix A and the vector artifacts"). The figures quoted below are C-3's
