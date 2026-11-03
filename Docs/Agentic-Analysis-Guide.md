@@ -331,7 +331,8 @@ run for the table above. The two cells have since been the only ones run, on thr
 questions: in the last two tiers Opus at `medium` obeyed all 34 items in each of its four control
 runs, in 12 to 15 minutes, and Sonnet at `high` lost one, none, three and one items, in 17 to 28
 minutes. Those tiers' judges compared arms within a cell, never one cell with another, so the
-ranking above stands as it was measured.
+ranking above stands as it was measured. At v1.42 the routing table after the block gained a row
+for §A.8's addendum, naming the vector artifacts as its surface, outside the block's measured text.
 
 ---
 
@@ -1689,6 +1690,7 @@ blocks are not equally reachable in any case. This is what an agent handed only 
 | SCOPING: counting surface, variant expansion, apparatus split | **The TEI XML** | Say the number is unavailable. A stem count is not a variant count. |
 | ARCHIVAL SCOPE, and §5's subject and volume-metadata joins | **The bundled JSON** | Say the archival half did not run. Do not report it as an archival absence — see [§14.11](#1411-the-second-half-of-scoping-where-the-documents-came-from-and-point-at). |
 | ARCHIVAL SCOPE: a `[HARVEST]` count | **The offline record-group harvest**, only when the brief names its path | Say the surface is unavailable. A bundled count is a projection of it, not a substitute — see [§14.11](#1411-the-second-half-of-scoping-where-the-documents-came-from-and-point-at). |
+| SEMANTIC VECTORS, [§A.8](#a8-what-the-vectors-cannot-tell-you)'s addendum, pasted in when the brief hands over the artifacts | **The vector artifacts** ([§A.1](#a1-what-ships-and-where)): the bundle's index, sign vectors and map for all 553 volumes, and Tier-2 shards for fetched volumes only | The memo's VECTORS section reads "none" ([§14.16](#1416-what-a-round-owes-the-historian-beyond-the-memo)). A missing neighbour is not evidence that none exists ([§A.8](#a8-what-the-vectors-cannot-tell-you)). |
 
 Four of these stop depending on the agent's memory when the copy comes from the app's own export,
 because a view enforces them. The rest do not, and no wording of the block changes that.
@@ -3310,6 +3312,14 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.42 — 2026-11-02: **the vector artifacts named as a surface, on the owner's word** ("Yes, add
+  it"), after the owner asked why §12 does not include the vector embeddings as a surface. The
+  routing table after the §12 block, "Which surface answers which block", gains a row for §A.8's
+  SEMANTIC VECTORS addendum: its surface is the vector artifacts (§A.1), the bundle's index, sign
+  vectors and map for all 553 volumes and Tier-2 shards for fetched volumes only, and without them
+  the memo's VECTORS section reads "none" (§14.16). The table was written at v1.10 to route the
+  base block's own rules, and never named the addendum's surface. The block itself is unchanged: a
+  vectors section inside it was measured on 2026-10-30 and not adopted (§3a).
 - 1.41 — 2026-11-02: **the steering review's remaining recommendations, read against v1.40, on the
   owner's word** ("Take your picks", decision 115 of `Planning/Plan-Of-Record-2026-10-21.md`). The
   §12 block's READER-FACING OUTPUT section takes R9's two clauses
