@@ -374,10 +374,10 @@ none of its documents' text, so a word in a document is never also counted in th
 it. Version 70 also promotes the prose the index left out — the 45 Notes on U.S. Covert Actions,
 the Presidents' annual messages of the 1860s–1890s, the editors' chapter introductions in
 `frus1945-50Intel` and eight pieces more, 81 rows — so a Note on U.S. Covert Actions is a
-front-matter row of its volume. `is_editorial_note` is 1 on an `editorial-note` section (12 rows, 4
-of them in front matter) and 0 on the other kinds, and `is_front_matter` follows the section's
-kind, so the usual `is_front_matter = 0 AND is_editorial_note = 0` keeps the heading and own-text
-rows. A `<back>` appendix div is stored as a document with `is_editorial_note = 0`
+front-matter row of its volume. `is_editorial_note` is 1 on an `editorial-note` section (13 rows at
+version 71, 4 of them in front matter) and 0 on the other kinds, and `is_front_matter` follows the
+section's kind, so the usual `is_front_matter = 0 AND is_editorial_note = 0` keeps the heading and
+own-text rows. A `<back>` appendix div is stored as a document with `is_editorial_note = 0`
 (`frus1944v01/appendix`). Reconcile any TEI document count against this table with those classes
 named.
 
@@ -2150,9 +2150,9 @@ reader its denominator.
 ### 14.10 Two bundled artifacts that scope the corpus
 
 The app ships 38 bundled JSON resources (29,136,429 bytes in version 1.0, build 1787). Two of them
-scope a question against the *corpus*, and neither is obvious from the schema; the fifteen that
-scope it against the *archives* (and one citation-graph index, `resolved-edge-index.json`, tabled
-beside them) are
+scope a question against the *corpus*, and neither is obvious from the schema; the seventeen that
+scope it against the *archives*, in fifteen rows, and the two cross-reference files tabled beside
+them (`resolved-edge-index.json` and `cited-page-map.json`) are
 [§14.11](#1411-the-second-half-of-scoping-where-the-documents-came-from-and-point-at).
 
 **`volume-subject-profiles-index.json`** carries the Office of the Historian's own subject
@@ -3366,7 +3366,11 @@ terms are here because they appear in the outputs.
   index's documents agree on 314,616, and the table holds 321,749 rows. **§14.10's 34 bundled JSON
   resources** are 38 in builds 51 and 52, and **§14.11's "11.83 MB of the 24.79 MB the app ships"**
   were mebibytes of the bundle of 2026-08-31 (12,405,532 of 25,994,350 bytes); §14.11 now says so
-  beside build 1787's 29,136,429 bytes. **§1's path stays `Volumes/`**: the assessment read
+  beside build 1787's 29,136,429 bytes. Two figures found in passing are corrected as well, on the
+  owner's word ("Add two fixes first"): §4.2's `editorial-note` sections are 13 rows at index
+  version 71, 4 of them in front matter, where it said 12, and §14.10 says that §14.11 tables
+  seventeen archival files, in fifteen rows, and two cross-reference files, where it said fifteen
+  and one. **§1's path stays `Volumes/`**: the assessment read
   `volumes/` in the owner's container, a folder created on 2026-05-01, before this repository's
   first commit, while the app has created `FRUSExplorer/Volumes` since the code first named it
   (Session 05), and the 42 simulator containers and five saved app folders on the owner's Mac all
