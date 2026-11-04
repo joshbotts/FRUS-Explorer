@@ -378,7 +378,9 @@ it left out. Everything is made through the app's own UI.
     ("Leave all three"). In 1.0 (1787) the sheet draws **View on VIAF** and **View on Wikidata**
     right after **Find all mentions**, in its section (`PersonIndexView`, read; the sheet was not
     opened in R4): the iPad's first frame ends at that row and the other two start at Career, so each
-    composition leaves both links just outside it, and no caption names them.
+    composition leaves both links just outside it, and no caption names them. **P1 (2026-11-04)
+    retook all three for the people source's label** (#1849: *FRUS + OH people data*, where the
+    chip read *FRUS + OH people register*), each at R4's framing; see P1's entry in the ledger.
 12. **The searches**: *Berlin blockade* for `search-results` (iPad) and `search` (Mac; the kit's
     frame 01 route names it on every device). The Meaning question for `semantic-search` is free;
     the zero-result question for P2 can be the manual's own, *Why did the Marshall Plan happen?*,
@@ -443,8 +445,8 @@ took those seven on the 27.0 device and row 3 under iOS 26.5: the sittings' ledg
 | 21 | `browse-clusters-map` **26.5** | §6.1h, l. 433 | The semantic map focused on a cluster after *See on the semantic map*, its region card ready | B4's relayout | From 20's cluster |
 | 22 | `topic-index` | §6.2a, l. 445 | The index narrowed to one topic area: the area chip with its ✕, each topic with its reach across the series. §6.2a: 491 topics; the chip's form *Topic area: Cold War — 6 topics* | One sentence changed (an area such as *Warfare · General* holds ten topics) | Browse ▸ Topics ▸ a Cold War topic ▸ All Cold War topics (recipe 10) |
 | 23 | `people-list` | §6.5, l. 473 | One alphabetical list of reconciled identities, role · active-years subtitles, mention counts. §6.5: a question-mark badge marks a possible duplicate | A4, A4c, A4d (rollup v12: counts and roles move); the badge sentence changed | After the consolidation settles (the People note above) |
-| 24 | `people-detail` | §6.5, l. 477 | Kissinger's sheet: the reconciled-identity seal, mention count and active years, subjects, Find all mentions | A4d: no Wikidata link, and no VIAF link for him (recipe 11); the caption does not name the links, so it stands. Since rollup v14 (#1816) his record carries both ids (recipe 11); R4 left the frame on the owner's word (recipe 11) | The sheet's top |
-| 25 | `people-detail-records` | §6.5, l. 479 | Further down: the Career section and the underlying volume records, each with its Separate action | A4's rollups; the Career section is the register's (1,240 people) | Scrolled |
+| 24 | `people-detail` | §6.5, l. 477 | Kissinger's sheet: the reconciled-identity seal, mention count and active years, subjects, Find all mentions | A4d: no Wikidata link, and no VIAF link for him (recipe 11); the caption does not name the links, so it stands. Since rollup v14 (#1816) his record carries both ids (recipe 11); R4 left the frame on the owner's word (recipe 11). P1 retook it for the chip's label (#1849) | The sheet's top |
+| 25 | `people-detail-records` | §6.5, l. 479 | Further down: the Career section and the underlying volume records, each with its Separate action | A4's rollups; the Career section is the register's (1,240 people). P1 retook it for the chip's label (#1849) | Scrolled |
 | 26 | `search-results` | §7, l. 504 | **Caption changed since build 48**: the query field, the actions bar, the ranked list with headings, datelines, volume identifiers and highlighted snippets. §7.1: a snippet begins a few words before the first match in the text, past the heading, source note and dateline | A10b (where the snippet starts), A5 (More's items, Sort ▸ Closest to a Question…), A13; the build-47 file is the owner's device | *Berlin blockade* in Keywords; the kit's frame 01 is this file |
 | 27 | `semantic-search` | §7.12a, l. 730 | The Keywords \| Meaning control, the disclosure strip, ranked matches each with its semantic-match score. §7.12a: the header counts *N closest matches*; the strip's sentences (A9's decision-61 sentence among them); at the largest text sizes the strip is one line with an ⓘ (#1721) | §7.12a rewritten (61 diff lines); the model is EmbeddingGemma 2 (B4); the build-47 file is the owner's | **Needs the 310 MB encoder downloaded in the simulator.** Take after P2's offer frame (below), which needs it absent. The kit's frame 12 is this file |
 | 28 | `document` | §8, l. 763 | A rendered document in landscape: heading, dateline, body with linked person names, footnote markers | #1578 (underlined links, contrast), #1665 (the measure), #1516 (a figure, if the document prints one; §8 now describes figures) | The Long Telegram with the rail hidden (Read mode), so the Standard measure and the faint edge chevrons (§4.4) show |
@@ -494,7 +496,7 @@ below.)
 | 46 | `browser` | §6, l. 294 | The Corpus Browser: the sidebar's Browse, Your sets and Subseries sections, a volume's page with its Top subjects, front matter and contents | Text unchanged; A3c's *Working on:* bar now heads the detail column (#1701); A18's Read rows where a volume has prose sections | A volume page |
 | 47 | `browse-all-volumes` | §6.1, l. 300 | Browse ▸ All Volumes in Published order, each volume with its print year, document count and download status | §6.1 changed (three sections; eleven doors; 140 clusters; the Read rows) | — |
 | 48 | `people-list` | §6.3, l. 316 | An alphabetical list of reconciled identities with role · active-years subtitles and mention counts | **Stale** (the entry above: #1370/#1441); A4, A4c, A4d; the badge sentence changed | After the rollup settles; `screencapture -o -l` on the Corpus Browser window |
-| 49 | `people-detail` | §6.3, l. 320 | **The caption names VIAF and Wikidata links that Kissinger's sheet no longer shows** (recipe 11): the Career section — Secretary of State, 1973–1977, from the register — is what the frame can bear out. S5 rewrites the caption | A4d; §6.3's link sentence rewritten; stale per the entry above. Since rollup v14 (#1816) his record carries both ids (recipe 11); R4 left the frame on the owner's word (recipe 11) | Scrolled to Career |
+| 49 | `people-detail` | §6.3, l. 320 | **The caption names VIAF and Wikidata links that Kissinger's sheet no longer shows** (recipe 11): the Career section — Secretary of State, 1973–1977, from the register — is what the frame can bear out. S5 rewrites the caption | A4d; §6.3's link sentence rewritten; stale per the entry above. Since rollup v14 (#1816) his record carries both ids (recipe 11); R4 left the frame on the owner's word (recipe 11). P1 retook it for the chip's label (#1849); the sheet now draws both links, above Career and outside the frame | Scrolled to Career |
 | 50 | `topic-index` | §6.4, l. 345 | The Topics window narrowed to the Cold War area (*Topic area: Cold War — 6 topics*), Berlin crisis open: its documents and volumes in the series and on this Mac, its covering volumes | Text unchanged; still 6 topics (recipe 10) | — |
 | 51 | `search` | §7, l. 363 | *Berlin blockade* in Keywords mode, the ranked results with highlighted snippets, citations and dates, the Facets panel open on its Subjects section | A10b (snippets), A5 lane 5 (Search Within Results; the engine label), A13 (a facet's volumes; the Within picker), #1726 | Also the README's first hero slot and the kit's frame 01; capture at 1440×900 points |
 | 52 | `search-tips` | §7.2, l. 381 | The Search window with the Tips panel open under the results | §7.2: the panel follows the engine the field runs (lane 7) | Keywords mode |
@@ -1346,6 +1348,60 @@ in both manuals from the bundled files (#1762).
     as they were. R4's build, raw and erased frames, the A/B frames, the iPad's pre-R4 container,
     the Mac's app and home, the preference exports, R1's store set and the logs are under
     `~/Library/Caches/FRUS-Explorer/r4/` until the owner says.
+
+- **P1 — run 2026-11-03 23:52 to 2026-11-04 00:13; the People chip's retake, started from #1849's
+  session on the owner's word that the session captures.** #1849 renamed the people source's chip
+  from *FRUS + OH people register* to *FRUS + OH people data*: the owner ruled on 2026-11-03 that
+  the Office of the Historian has published no people register (HistoryAtState/people is working
+  data toward one). The chip is drawn on Kissinger's sheet twice (under his post, and under Career)
+  and on a Source Explorer row whose addressee rule named a chief of mission; no other committed
+  frame shows a Source Explorer row with it, and Person Analytics names the source only in its
+  export's methods. Built from **`edb1011a`** (#1849's branch on `653c5918`, 1.0 (1787)'s code
+  with the label), the `AppStore` configuration for the simulator under `Scripts/heavy.sh`
+  (23:52:06 to 23:55:06) with build 48's local-only banner patch, never committed and reverted in
+  the worktree as the build ended. The scripts are R1's and R4's, copied to
+  `~/Library/Caches/FRUS-Explorer/p1/`, with R4's `prep-ipad.sh` setting the status bar's flags
+  first and its time last.
+  - **Three files**: `ipad/people-detail`, `ipad/people-detail-records` and
+    `macos/people-detail`, each at R4's framing, scrolled until a row-shift search against the
+    committed frame read 0, and each diffed by pixel against it. **Beyond the chip** (rows 803–837
+    of the iPad's first frame, 811–845 of its second, 555–588 of the Mac's), each differs only
+    where its line says. Kissinger still reads 13,177 documents, active 1961–1988, on both
+    libraries at rollup v15.
+    - `ipad/people-detail` (00:00:35): scrolled 45 pt, as S1's; 181 pixels of the charging glyph
+      at the status bar's right, and 42 of one separator's anti-aliasing at row 1673.
+    - `ipad/people-detail-records` (00:02:11): scrolled to Career; the charging glyph's 181 pixels,
+      and 33 under the sheet's blurred top bar, where *View on Wikidata* now passes under it in
+      place of *Find all mentions*: since rollup v14 the sheet draws **View on VIAF** and **View on
+      Wikidata** after *Find all mentions* (recipe 11), and this frame first shows them there.
+    - `macos/people-detail` (00:12:22, 620×532, the People window by Window ▸ People): scrolled
+      to Career, the last point by a one-pixel `CGEvent` scroll since a wheel step is 24 pt; 576
+      pixels at the window's close button, which macOS 27.2 draws lighter than S4's 27.0.1 frame
+      with a sheet open, the copy in front or not. Its caption names no link and stands.
+  - **The iPad under iOS 27.0, S1's `3D2607D9`**: its container cloned aside first, the build
+    installed, S1's `snapshot-A` restored, the device rebooted and turned to landscape on its home
+    screen by S2's rotator, the launch with `-hasCompletedOnboarding 1
+    -FRUSScreenshotHideSyncBanner YES`. `snapshot-A`'s Continue reading named *122. Memorandum of
+    Conversation*, so the Long Telegram was opened once (`simctl openurl`) to put S1's *The Chargé
+    in the Soviet Union (Kennan)…* back behind the sheet. The time and date erased by S1's script
+    unchanged (SHA-256 `58d052de…`): 2,382 pixels each, all inside the box. Then `snapshot-A`
+    restored again, the status bar's override cleared, and the device shut down.
+  - **The Mac, in the check copy**: `setup.sh --ref HEAD --no-fetch` at `edb1011a` and `build.sh
+    --no-launch`, the product copied aside to the sitting's folder and launched from there with
+    `open -n --env CFFIXED_USER_HOME=…` on an APFS clone of S4's home (553 volumes, index v71; the
+    copy rebuilt People at v15 at launch). The preferences: the domain's 126 keys exported, R1's 15
+    set for the sitting, and the 126 put back with `prefs-restore` after the copy quit, read back
+    identical. The copy was unregistered from Launch Services afterwards. A macOS prompt asking
+    whether Claude may record the screen without the window picker came up during the sitting; it
+    was left for the owner, unanswered.
+  - **The tour's People sheet**, `Planning/website-drafts/tour/img/people.jpg`, cropped from the
+    new `ipad/people-detail` (the sheet, 1160×1320 pixels from (796, 372)) and scaled to the
+    tour's 1000×1138 at JPEG quality 82, the old file's tables; its alt text, caption and
+    production note in `tour.html`, and the drafts' README, say so.
+  - **Left**: `3D2607D9` holds `snapshot-A` and P1's build; no simulator is booted. The shared check
+    copy's source and build are `edb1011a`'s; its home and preferences are as they were. P1's
+    build, raw and erased frames, the iPad's pre-P1 container and the Mac's app and home are under
+    `~/Library/Caches/FRUS-Explorer/p1/` until the owner says.
 
 ### Found by R1 — for the owner
 
