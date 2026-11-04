@@ -113,7 +113,7 @@ struct AnalyticsProvenance: Sendable, Equatable {
     /// Defaults to the volumes alone, which is true of most analytics — the counts come from the
     /// corpus index. A surface joining or computing anything else must say so, and until the
     /// 2026-09-28 audit none did. Now the word cloud adds this app's word lists, the semantic map its
-    /// model, Person Analytics the OH people register, regional emphasis the OH subjects, and a class
+    /// model, Person Analytics the OH people data, regional emphasis the OH subjects, and a class
     /// ranking the State Department's schedule where it reads it
     /// (`ArchivalAnalyticsExport.rankingSources`). The rest of the archival family adds nothing: it
     /// reads authority clusters by identity, all FRUS-derived (see `BundledArtifactProvenance`).

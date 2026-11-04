@@ -1384,7 +1384,7 @@ FRUS + NARA catalog
 #### provenance.source.ohPeople
 <!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 115–116 | key: provenance.source.ohPeople | shared: iOS+macOS (single edit point) -->
 
-FRUS + OH people register
+FRUS + OH people data
 
 <!-- END SOURCE: provenance.source.ohPeople -->
 
@@ -1461,7 +1461,7 @@ the National Archives catalog
 #### provenance.partner.ohPeople
 <!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 163–164 | key: provenance.partner.ohPeople | shared: iOS+macOS (single edit point) -->
 
-the Office of the Historian's people register
+the Office of the Historian's working data on people (its HistoryAtState/people repository) and its Principal Officers and Chiefs of Mission
 
 <!-- END SOURCE: provenance.partner.ohPeople -->
 
