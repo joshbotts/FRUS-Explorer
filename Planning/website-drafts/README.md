@@ -72,14 +72,15 @@ soften them is the owner's call.
 
 - **Figures.** Recount each against 1.0 (1861)'s shipped artifacts before publishing: 553 volumes;
   264,598 source notes matched to documents, in 502 volumes; 51 volumes with none; 8,637
-  cross-references between volumes; 314,616 documents on the semantic map; the 13,174 documents of
-  the People capture. Index versions 70 and 71 (A18, A18b) changed what the index stores, so the
-  cross-reference figure in particular may have moved.
-- **Screens.** The tour's captures come from builds 47 and 48, and its People sheet from before
-  #1370 and #1441. Retake each from the submitted build; R1's retakes (decision 88) and
-  `Docs/screenshots/` are the sources. Steps 18 to 20 have no capture, and the meaning-search, map and
-  Chronology screens predate EmbeddingGemma 2, build 51's map layout and #1422. Each step's
-  production note names what it needs.
+  cross-references between volumes; 314,616 documents on the semantic map; the 13,177 documents of
+  the People capture (retaken 2026-11-04). Index versions 70 and 71 (A18, A18b) changed what the
+  index stores, so the cross-reference figure in particular may have moved.
+- **Screens.** The tour's captures come from builds 47 and 48, except its People sheet, cropped from
+  `Docs/screenshots/ipad/people-detail` as retaken on 2026-11-04 for the people source's label.
+  Retake each from the submitted build; R1's retakes (decision 88) and `Docs/screenshots/` are the
+  sources. Steps 18 to 20 have no capture, and the meaning-search, map and Chronology screens
+  predate EmbeddingGemma 2, build 51's map layout and #1422. Each step's production note names what
+  it needs.
 - **The kit's rules.** Read each page against the launch kit's §6 checklist.
 - **The copies of record.** Fold the Support and Privacy drafts in, run
   `python3 Scripts/build_website_pages.py`, check that `--check` passes, and add the TEI row.
