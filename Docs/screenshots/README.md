@@ -198,7 +198,7 @@ line at Medium text on iPad, and fills the page beside the Research rail on a 13
 Mac has its own default). Every search capture: a keyword snippet starts a few words before the
 first match in the prose, past the heading, source note and dateline (A10b); the More menu and
 Sort ▸ Closest to a Question… (A5); the dimmed bulk actions' reason (A13). Every People capture:
-rollup v12 (A4, A4c), no Wikidata link and a VIAF link only from the register's own identifier
+rollup v12 (A4, A4c), no Wikidata link and a VIAF link only from the OH people data's own identifier
 (A4d). Browse: a chapter's **Read** row (#1536) and the prose rows A18 promoted; the Archives door's
 eleven provenance doors (#1543) and the classes read in words across both handbooks (A16, A18);
 the regenerated authority (3,977 records, A18). The graph and Cross-Reference Analytics: labels

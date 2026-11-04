@@ -50,10 +50,9 @@ public enum ProvenanceTier: Int, Comparable, CaseIterable, Sendable {
 /// something up; "FRUS + NARA catalog" *is* the answer to what they must cite. The cost is a
 /// vocabulary to learn, and it is paid once.
 ///
-/// **Three collapses are deliberate.** POCOM folds into the people register, `volume-tag-taxonomy`
-/// folds into subjects, and the owner's curated archival resolutions fold into the NARA catalogue
-/// — the last is *disclosed by name* where it applies rather than taking a ninth label, which is
-/// the Q-3 decision.
+/// **Three collapses are deliberate.** POCOM folds into the people data, `volume-tag-taxonomy` folds
+/// into subjects, and the owner's curated archival resolutions fold into the NARA catalogue — the
+/// last is *disclosed by name* where it applies rather than taking a ninth label (the Q-3 decision).
 ///
 /// Version history:
 ///   1.0 — PV-0: initial implementation
@@ -63,6 +62,7 @@ public enum ProvenanceTier: Int, Comparable, CaseIterable, Sendable {
 ///   1.2 — #1514: documentation only — the overall residual reads 5,465 since #1514; the bands quoted are unchanged
 ///   1.3 — Session 2026-10-25 (FRUS Explorer Light, S17b and S18a): moved into FRUSCoreKit, public, unchanged, for the
 ///          sources blocks of the web edition's method appendix and collection colophon
+///   1.4 — 2026-11-03: the people source's words no longer claim an OH "people register", which the Office has not published
 public enum ProvenanceSource: String, CaseIterable, Sendable {
 
     /// The volumes themselves: their text, their apparatus, and anything read from them alone.
@@ -71,7 +71,7 @@ public enum ProvenanceSource: String, CaseIterable, Sendable {
     /// NARA's catalogue — central files, series facts, presidential libraries, digitised ranges.
     case naraCatalog
 
-    /// The Office of the Historian's CC0 people register, and POCOM's career records with it.
+    /// The Office of the Historian's CC0 working data on people (HistoryAtState/people), and POCOM's career records.
     case ohPeopleRegister
 
     /// The Office of the Historian's subject taxonomy and the document-level subject drop.
@@ -113,7 +113,7 @@ public enum ProvenanceSource: String, CaseIterable, Sendable {
             return String(localized: "provenance.source.nara", defaultValue: "FRUS + NARA catalog")
         case .ohPeopleRegister:
             return String(localized: "provenance.source.ohPeople",
-                          defaultValue: "FRUS + OH people register")
+                          defaultValue: "FRUS + OH people data")
         case .ohSubjects:
             return String(localized: "provenance.source.ohSubjects",
                           defaultValue: "FRUS + OH subjects")
@@ -161,7 +161,7 @@ public enum ProvenanceSource: String, CaseIterable, Sendable {
                           defaultValue: "the National Archives catalog")
         case .ohPeopleRegister:
             return String(localized: "provenance.partner.ohPeople",
-                          defaultValue: "the Office of the Historian's people register")
+                          defaultValue: "the Office of the Historian's working data on people (its HistoryAtState/people repository) and its Principal Officers and Chiefs of Mission")
         case .ohSubjects:
             return String(localized: "provenance.partner.ohSubjects",
                           defaultValue: "the Office of the Historian's subject taxonomy")
