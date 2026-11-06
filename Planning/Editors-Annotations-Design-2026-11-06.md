@@ -1,6 +1,6 @@
 # Editors' annotations: what each volume carries, on its page and in Browse — a design, 2026-11-06
 
-**Status: PROPOSED, 2026-11-06.** Nothing is built. §9 lists the decisions it needs from the owner.
+**Status: BUILDING, 2026-11-06.** Lane A merged as #1859; lane B, the volume page, follows it. The owner's "proceed with annotations design plan" took §9's recommendations 1–4, and lane B takes decision 5 as B shipping alone. Decision 6 is open. §11 records where each lane departs from the design.
 
 **Amended the same day, after #1853 (index version 72).** That pull request closed the gap §3 found, so §3 now records it.
 - Classification is now counted by the marking the index stores, re-counted from a full index at version 72.
@@ -557,3 +557,21 @@ For each fixture, the generator's people, abbreviation, source-note, classificat
 - `tables.py` and `tables.out`, every figure above;
 - `editorial-annotations-by-volume.csv`, one row per volume;
 - `README.md`, the inputs, commands, definitions and limits.
+
+## 11. As built
+
+Where the lanes depart from §4 to §8, each for a reason measured on the way.
+
+**Lane A (#1859), the data.**
+- **A full index, not one parse.** The generator counts the categories the app reads from a full index built through the kit's own pipeline, so the labels agree with the People browser and the chips by construction. No kit function was made public, so §4's and §8's "made public" are moot.
+- **A source note's form is where the TEI prints it** (`note[@rend="inline"]`, a file number above the heading), not the note's opening word. Read by its opening, the microfiche supplements' summary notes ("NSC Actions 2374–2377 on Polaris program. Confidential. 3 pp. …") went with the file numbers.
+- **A despatch number holds no "/".** The grammar had taken seven file numbers printed "No. 8130/11." or "No. 711.1215/448a." (1909–1917) for serials.
+- **The parity suite is an end-to-end fixture** indexed through the pipeline, with every category, and a corpus-wide cross-check against this design's extracts, in place of §8's trimmed real volumes.
+
+**Lane B, the volume page.**
+- **The Mac's section is a disclosure,** collapsed until the reader clicks its title or its triangle, and open from then on. Open, its rows take at most half the room below Top subjects, between about two rows and 200 pt, and scroll; the volume's structure keeps the rest. §5.1's "height-bounded as `BoundedSubjectsBlock` is" was built first, as a fixed 200 pt, and in the 440 pt minimum window it left the structure no room: in the check copy, Front Matter and Contents fell below the window's edge.
+- **Every line counts documents.** "Senders and recipients" reads "161 documents" for China, not "502 document headings"; "Meeting participants" reads "67 documents"; "Editorial notes" reads "12 editorial notes". "Numbered documents" reads "280 of 280 documents": the file holds a count, not the first and last numbers that "Documents 1–280" needs. Each part of the cross-reference line names its documents ("131 documents cite others in this volume").
+- **A source-note line with both forms** reads "archival citations and file numbers".
+- **The printed aids** list only the kinds a reader knows by name. The containers, the table of contents and a President's message are left out.
+- **The symbols are §5.2's,** drawn in a column as wide as the widest of them, `person.3`, so that every row's text starts at the same place.
+- **A row opens nothing** until lane C builds the category pages (decision 5).
