@@ -1906,6 +1906,16 @@ final class AppState {
     /// producers target `.macCorpusBrowser` (the singleton corpus-browser window).
     var pendingBrowseVolume: Handoff<String>? = nil
 
+    /// A layer's page on the Editors’ Annotations axis to open in Browse, by the layer's id
+    /// (`AnnotationLayer`), set by ``openAnnotationLayer(_:from:)`` (the editors' annotations design,
+    /// lane D): the People browser's and Person analytics' "Volumes that tag people".
+    ///
+    /// On macOS `CorpusBrowserWindowView` consumes it, selects the axis in its sidebar and, once the
+    /// split view shows the axis, pushes the page, as it does a ``pendingBrowseVolume``. On iOS
+    /// `BrowserView` consumes it and opens the axis with the page above it: the page is a level of
+    /// the axis, not of wherever Browse stood, as ``pendingSubjectExplorer``'s index is not.
+    var pendingBrowseAnnotationLayer: Handoff<String>? = nil
+
     /// The page a link was to when it opened its volume's page in Browse because the volume is not on
     /// the device and the bundled page map does not list that page (#1766, `PageLink.volume`).
     ///
@@ -3682,6 +3692,19 @@ extension AppState {
         }
         #endif
         pendingBrowseVolume = Handoff(target: sceneID ?? .anyWindow, payload: volumeId)
+        #endif
+    }
+
+    /// Opens a layer's page on the Editors’ Annotations axis in Browse, as a scene-addressed hand-off
+    /// (``pendingBrowseAnnotationLayer``): on macOS the singleton corpus-browser window, which the
+    /// producer then fronts; on iPad the producing window's `\.sceneID`, which an iOS producer pairs
+    /// with `openTab(.browse, from:)` when it is not in Browse already. Pass the producer view's
+    /// `@Environment(\.sceneID)`.
+    func openAnnotationLayer(_ layer: AnnotationLayer, from sceneID: SceneID?) {
+        #if os(macOS)
+        pendingBrowseAnnotationLayer = Handoff(target: .macCorpusBrowser, payload: layer.rawValue)
+        #else
+        pendingBrowseAnnotationLayer = Handoff(target: sceneID ?? .anyWindow, payload: layer.rawValue)
         #endif
     }
 

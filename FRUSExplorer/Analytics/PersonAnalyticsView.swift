@@ -331,6 +331,8 @@ enum PersonRelationshipMath {
 ///   1.5 — #1433: the Network Focus bar reads the graph's own focus, through `PersonNetworkFocus`,
 ///         which holds the graph's view model, so Explore connections and Back move it; a person
 ///         picked in the focus search always re-centres the graph, the seed person included
+///   1.6 — 2026-11-06: the editors' annotations design, lane D — `PeopleTaggingCaption` under the
+///         scope bar, its door (`taggedVolumesDoor`) opening People tagged's page on the axis
 struct PersonAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -727,6 +729,11 @@ struct PersonAnalyticsView: View {
                 } else {
                     VStack(spacing: 0) {
                         scopeBar
+                        // How many volumes tag their people, which is all these charts can read
+                        // (the editors' annotations design, lane D).
+                        PeopleTaggingCaption(onOpen: taggedVolumesDoor)
+                            .padding(.horizontal)
+                            .padding(.vertical, 6)
                         Divider()
                         switch mode {
                         case .trends:  content
@@ -793,6 +800,29 @@ struct PersonAnalyticsView: View {
             networkFocus.follow(topRanked: ranking.first,
                                 storesGeneration: appState.readOnlyStoresGeneration)
         }
+    }
+
+    /// The caption's door to People tagged's page on the Editors’ Annotations axis (lane D), or `nil`
+    /// where the hand-off cannot reach the reader.
+    ///
+    /// The Topic-index door's rule (`AnalyticsScopeBar.topicIndexDoor`): on iOS the host is notified
+    /// first, so a sheet closes before Browse moves under it, and the door is withheld where
+    /// `SceneID.tabHandoffOpensInFront(from:)` says the window cannot receive it; on the Mac the
+    /// Corpus Browser comes forward.
+    private var taggedVolumesDoor: (@MainActor () -> Void)? {
+        #if os(macOS)
+        return {
+            appState.openAnnotationLayer(.people, from: sceneID)
+            openWindow.fronting(id: "frus.corpusBrowser")
+        }
+        #else
+        guard SceneID.tabHandoffOpensInFront(from: sceneID) else { return nil }
+        return {
+            onNavigate?()
+            appState.openAnnotationLayer(.people, from: sceneID)
+            appState.openTab(.browse, from: sceneID)
+        }
+        #endif
     }
 
     // MARK: - Scope

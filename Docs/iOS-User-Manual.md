@@ -449,6 +449,8 @@ Tap a layer for its page:
 
 A volume that prints a List of Persons but links none of its names to it is marked in its list, as is one that prints a List of Abbreviations without links. Like the volume page's section, the axis ships with the app, so it covers volumes you have not downloaded.
 
+On an iPad the strips stack into a matrix: the eras' first years head each group, and each cell opens that era's volumes that carry the layer, such as the 114 volumes covering 1955–1968 that tag people. With VoiceOver, a cell reads its layer, its era and its count.
+
 ### 6.2 Top Subjects
 
 Every volume's page carries a **Top subjects** section — the subjects most characteristic of that volume, derived from experimental subject data and grouped by category. These are automatically detected topics, not editorial subject headings, so an occasional mistag is possible; but because the profiles ship with the app, they appear even for volumes you haven't downloaded — a fast way to size up an unfamiliar volume before committing 6 MB to it. Tap a subject to see every *other* FRUS volume covering it across the whole corpus, and navigate straight to any of them. That sheet also offers **Archival profile of these volumes**, which opens Archival Analytics (Section 15.5) on the collections those volumes draw on.
@@ -494,6 +496,8 @@ An **Analysis Tools** menu (a chart icon) in the Browse toolbar gathers the corp
 ### 6.5 The People Browser
 
 Near the top of the Browse root, below the search field, is a **People** row: a reconciled, corpus-wide index of everyone named across the volumes you've indexed — one alphabetical list, not a per-volume one.
+
+A line at the top says how many volumes tag their people, *People are tagged in 288 of 553 volumes*: only those volumes' people appear here. A figure who appears only in untagged volumes, such as those of the 1890s, is not missing from the record; search for the name instead. **Volumes that tag people** opens the list of them on the Editors’ Annotations axis (Section 6.1i).
 
 The same person often appears across many volumes under different name forms ("Kissinger, Henry A.", "Kissinger, Henry", "Kissinger, Henry A. Laurence"). FRUS Explorer consolidates these into **one identity**, so you aren't chasing one person through a dozen entries. Each row shows the canonical name; a subtitle with the **role** a volume's List of Persons gives and the **active years** (*Secretary of State · 1973–1977*); and a **mention count** — the number of distinct documents referencing this identity across your indexed corpus. The active years run from the earliest to the latest year the volumes themselves give for the person: the years in their Lists of Persons, read by the words around them (*until January 3, 1979* — or *until his resignation on April 22, 1959* — is when someone left, *from June 13, 1982* when they began, and a post held *until his death on November 22, 1963* ends that year), and the dates of the indexed documents that mention them. They are never a preface or other front matter, which is dated when the volume was prepared; never a year a List of Persons gives only as a death (*died 1896*); and never the birth and death years of the name-authority data, which the detail sheet shows as life years instead. A search field filters by name.
 
@@ -1341,6 +1345,8 @@ A corpus-wide cloud reads every indexed document, and on a full library that tak
 ### 15.3 Person Analytics
 
 Person Analytics turns the People browser's reconciled identities (Section 6.5) into data: who is mentioned, when, and alongside whom. A **Trends / Network** picker splits the surface:
+
+Under the scope bar, the People browser's line says how many volumes tag their people, which are all these charts can read. On iPhone, **Volumes that tag people** closes Person Analytics and opens the list of them in Browse; in its own window on iPad the line has no link.
 
 **Trends** is two collapsible sections, each with its own controls:
 

@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §7, §16, §17, §18.1, §18.7, §18.8, §19, §20. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 515 blocks · no ✎ edits held or changed · no ⚑ wording issues
+**In this file:** 519 blocks · no ✎ edits held or changed · no ⚑ wording issues
 
 ---
 
@@ -2845,14 +2845,14 @@ The model could not be downloaded. You can try again from the button above, or f
 *Coverage captions and empty states on the Browse axes that §16 does not carry, and the Browse root's tile tooltips.*
 
 #### You can browse this volume’s contents now. Re-index it to…
-<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1468–1469 | key: corpus.volume.indexInterrupted.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1521–1522 | key: corpus.volume.indexInterrupted.detail | shared: macOS only -->
 
 You can browse this volume’s contents now. Re-index it to restore full search coverage and document text.
 
 <!-- END SOURCE: corpus.volume.indexInterrupted.detail -->
 
 #### You can browse this volume’s contents now. Index it to…
-<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1470–1471 | key: corpus.volume.indexRequired.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1523–1524 | key: corpus.volume.indexRequired.detail | shared: macOS only -->
 
 You can browse this volume’s contents now. Index it to search inside it and open its documents.
 
@@ -3112,21 +3112,21 @@ Merges and separations you make in the People browser appear here, where you can
 <!-- END SOURCE: people.corrections.empty.detail -->
 
 #### \(…)–\(…)
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonLifespan.text | lines: 472–473 | key: people.detail.lifespan -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonLifespan.text | lines: 493–494 | key: people.detail.lifespan -->
 
 \(born, format: plain)–\(died, format: plain)
 
 <!-- END SOURCE: people.detail.lifespan -->
 
 #### Born \(…)
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonLifespan.text | lines: 475–476 | key: people.detail.lifespan.born -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonLifespan.text | lines: 496–497 | key: people.detail.lifespan.born -->
 
 Born \(born, format: plain)
 
 <!-- END SOURCE: people.detail.lifespan.born -->
 
 #### Died \(…)
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonLifespan.text | lines: 478–479 | key: people.detail.lifespan.died -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonLifespan.text | lines: 499–500 | key: people.detail.lifespan.died -->
 
 Died \(died, format: plain)
 
@@ -3145,35 +3145,35 @@ until \(end, format: plain)
 <!-- END SOURCE: people.era.until -->
 
 #### Volume-level: subjects characteristic of the volumes where…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 809–810 | key: people.detail.subjects.note -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 830–831 | key: people.detail.subjects.note -->
 
 Volume-level: subjects characteristic of the volumes where this person is mentioned — not per-document tags.
 
 <!-- END SOURCE: people.detail.subjects.note -->
 
 #### This person has no indexed document mentions to open — they…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 845–846 | key: people.detail.findMentions.noMentions -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 866–867 | key: people.detail.findMentions.noMentions -->
 
 This person has no indexed document mentions to open — they appear only in a volume’s front-matter person list.
 
 <!-- END SOURCE: people.detail.findMentions.noMentions -->
 
 #### Footer — Use this when one person appears under different names and…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 893–894 | key: people.detail.mergeManual.footer -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 914–915 | key: people.detail.mergeManual.footer -->
 
 Use this when one person appears under different names and the app kept them apart. The change syncs across your devices and can be undone from Corrections.
 
 <!-- END SOURCE: people.detail.mergeManual.footer -->
 
 #### “%1$@” and “%2$@” will become a single identity. Merging is…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1127–1128 | key: people.detail.mergeConfirm.message %1$@ %2$@ -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1148–1149 | key: people.detail.mergeConfirm.message %1$@ %2$@ -->
 
 “%1$@” and “%2$@” will become a single identity. Merging is transitive — if you later merge a third record with either one, all three become one identity. You can undo this from Corrections.
 
 <!-- END SOURCE: people.detail.mergeConfirm.message %1$@ %2$@ -->
 
 #### These records match different entries in the bundled…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1131–1132 | key: people.detail.mergeConfirm.authorityWarning -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1152–1153 | key: people.detail.mergeConfirm.authorityWarning -->
 
 These records match different entries in the bundled name-authority data, so they may be distinct. Merge only if you’re sure.
 
@@ -4032,3 +4032,31 @@ Prints a List of Abbreviations, but none of its documents links a term to it.
 Opens what the editors did, and the volumes that carry it.
 
 <!-- END SOURCE: browser.volume.annotations.row.hint -->
+
+### 20.6 The matrix, and the line the People browser and Person analytics carry
+
+On an iPad's regular width and on the Mac, the axis's strips stack into a matrix whose cells each open an era's volumes; the first two blocks title such a list and name a cell to VoiceOver. The other two are the line the People browser and Person analytics carry, and its link to People tagged's page (the editors' annotations design, lane D).
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.era.drill.title -->
+
+%1$@, %2$@
+
+<!-- END SOURCE: browser.annotations.era.drill.title -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.cell.spoken -->
+
+%1$@, %2$@
+
+<!-- END SOURCE: browser.annotations.cell.spoken -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxisViews.swift | key: people.tagging.caption -->
+
+People are tagged in %@, and only those volumes' people appear here. In the others, search for the names.
+
+<!-- END SOURCE: people.tagging.caption -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxisViews.swift | key: people.tagging.link -->
+
+Volumes that tag people
+
+<!-- END SOURCE: people.tagging.link -->

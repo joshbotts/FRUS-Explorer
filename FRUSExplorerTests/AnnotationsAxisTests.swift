@@ -19,6 +19,7 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane C
+///   1.1 — 2026-11-06: lane D — a matrix cell's drill, and the People captions' line
 @Suite("Editors’ Annotations axis — each layer's reach, its page and its drills")
 struct AnnotationsAxisTests {
 
@@ -193,7 +194,43 @@ struct AnnotationsAxisTests {
         #expect(introduction.spec.caption == "2 of 3 volumes. A volume counts when it prints this aid.")
     }
 
+    @Test("A matrix cell opens its era's volumes that carry the layer, the era in its title and caption")
+    func eraDrills() throws {
+        let volumes = index([
+            "frus1955-57v02": volume(.from1955, documents: 2, [.people: 2]),
+            "frus1955-57v10": volume(.from1955, documents: 2, [.people: 2]),
+            "frus1958-60v01": volume(.from1955, documents: 2),
+            "frus1969-76v17": volume(.from1969, documents: 2, [.people: 2]),
+            "frus1917-72PubDipv06": volume(.retrospective, documents: 2, [.people: 2]),
+        ])
+        let drill = AnnotationsAxis.eraDrill(for: .people, era: .from1955, in: volumes, locale: locale)
+        #expect(drill.count == 2)
+        #expect(drill.spec.axisKey == "annotation:people:era:1955-1968")
+        #expect(drill.spec.title == "People tagged, 1955–1968")
+        #expect(drill.spec.volumeIds == ["frus1955-57v02", "frus1955-57v10"])
+        #expect(drill.spec.caption
+                == "1955–1968: 2 of 3 volumes. A volume counts when at least half its documents link a name to its List of Persons.")
+        let retro = AnnotationsAxis.eraDrill(for: .people, era: .retrospective, in: volumes, locale: locale)
+        #expect(retro.spec.title == "People tagged, the late retrospectives")
+        #expect(retro.spec.caption?.hasPrefix("Late retrospectives: 1 of 1 volume. ") == true)
+        // An era none of whose volumes carries it opens nothing to list.
+        #expect(AnnotationsAxis.eraDrill(for: .people, era: .from1861, in: volumes, locale: locale).count == 0)
+    }
+
     // MARK: The shipped file
+
+    @Test("The shipped file's matrix cell and the People captions' line")
+    func shippedCellAndCaption() throws {
+        let index = try #require(VolumeAnnotationsStore.shared)
+        let people = AnnotationsAxis.reach(of: .people, in: index)
+        let band = try #require(people.bands.first { $0.era == .from1955 })
+        #expect(AnnotationsAxis.spokenCell(.people, band, locale: locale)
+                == "People tagged, 1955–1968: 114 of 114 volumes")
+        #expect(AnnotationsAxis.eraDrill(for: .people, era: .from1955, in: index, locale: locale).count == 114)
+        #expect(PeopleTaggingCaption.text(index: index, locale: locale)
+                == "People are tagged in 288 of 553 volumes, and only those volumes' people appear here. In the others, search for the names.")
+        #expect(PeopleTaggingCaption.text(index: nil, locale: locale) == nil)
+    }
 
     @Test("The shipped file: people tagged in 288 of 553 volumes from 1955 on, two Lists of Persons unlinked")
     func theShippedFile() throws {

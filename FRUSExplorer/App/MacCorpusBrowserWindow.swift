@@ -137,6 +137,10 @@ enum CorpusSidebarItem: Hashable {
 ///   1.12 — 2026-11-06: the editors' annotations design, lane C — BROWSE gains Editors’
 ///          Annotations (`AnnotationsIndexView`); a layer pushes `CorpusNavValue.annotationCategory`
 ///          (`AnnotationCategoryView`), whose drills push the R-1 list in place
+///   1.13 — 2026-11-06: lane D — the axis's matrix cells push their era's list, and the window
+///          consumes `AppState.pendingBrowseAnnotationLayer` (`consumePendingAnnotationLayer`): the
+///          People and Person Analytics windows' "Volumes that tag people" select the axis and push
+///          the page once the split view shows it, as a volume hand-off waits for its subseries
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
@@ -154,6 +158,9 @@ struct CorpusBrowserWindowView: View {
     /// stack to its root after the sidebar's selection changes: a path set before AppKit shows
     /// the new selection's root is lost (see the `.onChange(of: selection)` observer).
     @State private var pendingVolumePush: String? = nil
+    /// The layer whose page a hand-off opens on the Editors’ Annotations axis, until the page is
+    /// pushed (`consumePendingAnnotationLayer`): it waits for the split view as a volume does.
+    @State private var pendingLayerPush: String? = nil
     /// Which selection's root the detail stack shows, as AppKit has it: how the deferred push
     /// knows that the split view has finished with a change of subseries
     /// (`DetailStackRootPresence`).
@@ -297,9 +304,12 @@ struct CorpusBrowserWindowView: View {
                             detailPath.append(.clusterDocuments(id: id, label: label))
                         })
                     case .annotations?:
-                        AnnotationsIndexView(index: VolumeAnnotationsStore.shared, onSelect: { layer in
-                            detailPath.append(.annotationCategory(id: layer.rawValue, fromVolume: nil))
-                        })
+                        AnnotationsIndexView(
+                            index: VolumeAnnotationsStore.shared,
+                            onSelect: { layer in
+                                detailPath.append(.annotationCategory(id: layer.rawValue, fromVolume: nil))
+                            },
+                            onSelectEra: { spec in detailPath.append(.axisList(spec)) })
                     case .myScopes?:
                         ScopeIndexView(
                             manifestIds: Set(allEntries.map(\.volumeId)),
@@ -439,6 +449,14 @@ struct CorpusBrowserWindowView: View {
         // list took 350 ms to draw.
         .onChange(of: selection) { _, _ in
             detailPath = []
+            // A layer's page waits for the axis's root as a volume's waits for its subseries'.
+            if pendingLayerPush != nil {
+                if selection == .annotations {
+                    stackRoot.onceShowing(.annotations) { pushPendingLayer() }
+                } else {
+                    pendingLayerPush = nil    // another row was chosen before the page was pushed
+                }
+            }
             guard let volumeId = pendingVolumePush else { return }
             guard let target = selection, target == subseriesSelection(ofVolume: volumeId) else {
                 pendingVolumePush = nil    // another row was chosen before the page was pushed
@@ -452,6 +470,7 @@ struct CorpusBrowserWindowView: View {
         // mirroring MacSearchWindowView's pendingSearch pattern.
         .task {
             consumePendingVolume()
+            consumePendingAnnotationLayer()
             // Warm the lazy volume-subject-profiles decode off the main thread while
             // the user is at the subseries/volume lists (see BrowserView's twin note).
             Task.detached(priority: .utility) { _ = VolumeSubjectProfilesStore.shared }
@@ -460,7 +479,41 @@ struct CorpusBrowserWindowView: View {
             guard volumeId != nil else { return }
             consumePendingVolume()
         }
+        .onChange(of: appState.pendingBrowseAnnotationLayer) { _, handoff in
+            guard handoff != nil else { return }
+            consumePendingAnnotationLayer()
+        }
         .frame(minWidth: 540, minHeight: 440)
+    }
+
+    /// Applies (and clears) `AppState.pendingBrowseAnnotationLayer`: selects the Editors’ Annotations
+    /// axis in the sidebar and pushes the layer's page, waiting for the split view as
+    /// `consumePendingVolume` does when the selection has to change.
+    private func consumePendingAnnotationLayer() {
+        guard let handoff = appState.pendingBrowseAnnotationLayer, handoff.target == .macCorpusBrowser,
+              AnnotationLayer(rawValue: handoff.payload) != nil else { return }
+        appState.pendingBrowseAnnotationLayer = nil
+        if selection != .annotations {
+            pendingLayerPush = handoff.payload
+            selection = .annotations
+        } else if pendingLayerPush != nil {
+            // An earlier hand-off's push is still waiting for the split view: it opens this one.
+            pendingLayerPush = handoff.payload
+        } else {
+            detailPath = [.annotationCategory(id: handoff.payload, fromVolume: nil)]
+        }
+        #if DEBUG
+        print("[CorpusBrowserWindowView] pendingBrowseAnnotationLayer consumed: \(handoff.payload)")
+        #endif
+    }
+
+    /// Pushes the hand-off's layer page once the split view shows the axis (see the selection
+    /// observer), unless another row has been chosen since.
+    private func pushPendingLayer() {
+        guard let id = pendingLayerPush else { return }
+        pendingLayerPush = nil
+        guard selection == .annotations else { return }
+        detailPath = [.annotationCategory(id: id, fromVolume: nil)]
     }
 
     /// Applies (and clears) `AppState.pendingBrowseVolume`: selects the volume's

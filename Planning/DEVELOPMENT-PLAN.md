@@ -9659,3 +9659,70 @@ From `v2` at `dcf178e` (#1853 merged), on `claude/cool-borg-34f5fa`, a side sess
 **Not done, and for the owner.**
 - **Lane D** (the regular-width matrix; the People browser's and Person analytics' captions linking here; the Research Guide's sentence) and §9's decision 6.
 - **VoiceOver aloud, dark mode and Full Keyboard Access on the Mac** stay the owner's.
+
+## Session 2026-11-06 — The editors' annotations design, lane D: the matrix, the people links, the guide's sentence
+
+**What and why.** Lane D, the last of `Planning/Editors-Annotations-Design-2026-11-06.md` (§6, §7, §8), on the owner's "Yes, after merge" once lane C (#1861) had merged: the regular-width matrix, the People browser's and Person analytics' captions linking to the axis, and the Research Guide's sentence.
+
+**Built.**
+- **The matrix** (`AnnotationsMatrixHeader`, `AnnotationsMatrixRow`): on an iPad's regular width and on the Mac, the axis's groups open with the eras' first years, and each layer's row is its name beside eleven cells, each a button that opens the era's volumes carrying the layer (`AnnotationsAxis.eraDrill`, with `spokenCell` for VoiceOver). An iPhone keeps the strip as a picture.
+- **`PeopleTaggingCaption`**, "People are tagged in 288 of 553 volumes, and only those volumes' people appear here. In the others, search for the names.", over the People browser's list and in its empty state, and under Person analytics' scope bar, with its link "Volumes that tag people".
+- **The link's hand-off:** `AppState.openAnnotationLayer` and `pendingBrowseAnnotationLayer`, consumed by `BrowserView` on iOS (the axis selected, the page pushed; on change and in the appear-time drain) and by the Corpus Browser on the Mac (`consumePendingAnnotationLayer`, the page pushed once the split view shows the axis, as a volume's waits for its subseries). The People window and Person analytics bring the Corpus Browser forward; Person analytics on iOS closes its sheet first and switches to Browse, and withholds the link in an iPad window.
+- **The guide's sentence**, ending its People section (`IndexingEducationView.swift` and its mirror).
+- **Copy:** 4 keys in `07-Search-and-Browse.md` §20.6, the guide's mirror changed, 25 ranged blocks re-pointed (the Amendment-Log has all three). Both manuals: the matrix (iOS §6.1i, the Mac's sidebar paragraph) and the caption (the People browser and Person Analytics on each).
+- **Tests:** `AnnotationsAxisTests` gains a cell's drill and the caption's line; `AnnotationsAxisBrowseTests` gains a matrix cell's list (iPad) and the People browser's caption and link, with its runbook entry and `CLAUDE.md` row updated.
+
+**Where lane D departs from the design**, and what stays for later, is in its §11; its status line names lane D.
+
+**Checked**, every heavy job through `Scripts/heavy.sh`, on Xcode 27.2 and macOS 27.2.
+- **The unit target** on an iPhone 17 under iOS 27.0 (`80CF0F18`), `-only-testing FRUSExplorerTests`, at `b0607989` (the lane's last code): **TEST SUCCEEDED**, 7,894 tests, 7,857 passed, none failed, 37 skipped (the environment gates): lane C's 7,892 and `AnnotationsAxisTests`' two new ones.
+- **`AnnotationsAxisBrowseTests` and `VolumeAnnotationsSectionTests`** under iOS 27.0, each device alone, at `b0607989`: **iPhone 17 (`80CF0F18…`): 7 tests, 6 passed, 1 skipped (the matrix); iPad Pro 13-inch (M5) (`9AB3A0C9…`): 7 of 7.** The screenshots were read: the iPad's matrix, its cell's list, the People browser's empty state with the line and link (the line centred since), and the line under Person Analytics' scope bar. A round between failed to compile its UI target: the tearDown named the dismissal helper on `AnalysisToolsMenu`, where `UITestPresentation` declares it.
+- **The Mac in the check copy** (the AppStore configuration, **BUILD SUCCEEDED** at `1ca21e35` and `568a01d0`), walked with computer use: the matrix and a cell's list ("People tagged, 1955–1968", "1955–1968: 114 of 114 volumes."); the People window's line and its link, which brought the Corpus Browser forward on People tagged's page with the axis already selected; and Person Analytics' link with the browser on All Volumes, which switched the sidebar to the axis and pushed the page once the split view showed it.
+- **No build warned in the lane's files.**
+- **`swift build` and `swift test` are not owed:** the lane touches no FRUSCoreKit or package file.
+
+**Not done, and for the owner.**
+- **Combining layers into one filter** (§6, "Later") and §9's decision 6.
+- **VoiceOver aloud, dark mode and Full Keyboard Access on the Mac** stay the owner's.
+
+## Session 2026-11-06 — A note to the Office of the Historian, drafted: the editors' annotations design's decision 6
+
+**What and why.** The owner's "Draft it", for §9's decision 6 of `Planning/Editors-Annotations-Design-2026-11-06.md`, what to report to the Office of the Historian. The draft is `Planning/OH-Note-2026-11-06.md`. Part A is for the Office, Part B for the owner, as in `OH-Report-2026-10-01.md`. It is not filed: the owner files it, as a new issue on HistoryAtState/frus (decision 71 keeps #469 closed to posts).
+
+**What it reports**, each figure from one run of `Planning/OH-Note-2026-11-06/check.py` (output `check.out`) at corpus `6170e4b32`. `volumes/` and `schema/` are unchanged from there to `master` at `216cdb764`.
+1. **`frus1870`: papers 216, 284 and 303 are encoded inside the paper before them, as `frus:attachment`s** (confirmed).
+   - The volume's own List of Papers numbers 303 papers against 300 documents.
+   - Each misfiled paper is dated after the one it is filed in.
+   - From `d216` on, every document's `@n` is one or two below its printed number.
+   - This is the class HistoryAtState/frus#25 described in 2016; its 52 volumes did not include `frus1870`, whose checklist is #223 (2018).
+   - Also: `d131`'s and `d230`'s number notes, and "Mr. Be Long".
+2. **`frus1977-80v27`'s List of Persons (153) and List of Abbreviations (143) have no link from any document** (confirmed). Every other volume with such lists links them. Both came with the commit that published the volume, `e008aee30`, and no later commit adds a link.
+3. **`frus1981-88v16` names its people and terms only by a document-level `@ana`** (a question): 1,041 pointers, added by `5b6aa8608`. It is the only volume that does.
+4. **Printed numbers as `note[@type="source"]`** (a question):
+   - `frus1870`'s 295;
+   - `frus1872p2v5`'s 73;
+   - 14 in 7 more volumes.
+
+   Against these, 57 of the era's 62 volumes put such a number in the opener's `seg`, 23,124 times.
+5. **`frus1870`: 21 dates whose `@when` contradicts the text** (confirmed).
+   - In 16, `@when` is the printed day in the month of the dateline's "(Received …)".
+   - The other 5 are Chinese and Japanese dates beside a Western one.
+   - Comparing the List of Papers' dates with the documents' found them; #469's dates rows hold none for the volume.
+
+**What the check corrected.**
+- **Decision 6 called `frus1870`'s notes despatch numbers.** They are its paper numbers: the List of Papers' own in 293 of 295 documents, and 183 of those print a despatch number in the opener as well. The design's §2.1, §9 and §11, and its folder's README, now say so.
+- **Lane C's §11 bullet was wrong on two of its four marks.**
+  - `frus1941-43`'s "List of Persons" is an Index of Persons: 350 entries with page references and no ids. The parser keys an entry with no id by its text and keeps 6 of them.
+  - `frus1981-88v16`'s List of Abbreviations is pointed at 419 times by `@ana`. The index reads those pointers for people (#1599) and not for terms.
+  - The app shows both as lists that nothing links to, and `frus1941-43`'s page says "6 people listed". The note's B.3 has the causes, and `AnnotationsAxisTests.theShippedFile` expects the first mark. The fixes are the owner's to schedule.
+
+**Checked.**
+- `check.py` ran through `Scripts/heavy.sh` in about 30 seconds over all 553 volumes.
+- Every number in Part A was matched against `check.out`. The ones it does not print are quoted from #25, #223 and #469, or are arithmetic on the run's figures, and the note's head says which.
+- HistoryAtState/frus's issues were searched, read-only.
+- Nothing was posted.
+
+**Not done, and for the owner.**
+- **Filing the note.**
+- **The two app fixes.**
+- **A sweep of the other volumes for items 1 and 5.** Only `frus1870` was compared against its List of Papers, and only its dates were read.
