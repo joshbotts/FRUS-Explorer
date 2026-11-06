@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-# Per-volume figures read from a copy of the app's index (2026-11-06).
-# argv: <frus.db copy> <manifest.json> <out.json>
-# Opens the copy read-only (`?mode=ro`); never the live store. The copy measured was made on
-# 2026-11-04 from the Mac app's container with the app not running: `cp` of frus.db and its -wal,
-# then `PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode=DELETE` on the copy. Index version 71,
-# 553 volumes. Every count is over `document_cache` rows with is_front_matter = 0.
+# Per-volume figures read from an index (2026-11-06).
+# argv: <frus.db> <manifest.json> <out.json>
+# Opens the index read-only (`?mode=ro`); never the live store. Run twice:
+#   index-extract.json      a copy of the Mac app's index at version 71, made on 2026-11-04 from
+#                           the app's container with the app not running: `cp` of frus.db and its
+#                           -wal, then `PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode=DELETE`
+#                           on the copy. 553 volumes.
+#   index-extract-v72.json  a full index at version 72 (#1853), built from the 553 volumes by
+#                           ResolvedEdgeIndexGenerator at v2 dcf178ed with INDEX_DIR, which keeps it.
+# Every count is over `document_cache` rows with is_front_matter = 0.
 #   docs            rows
 #   people_docs     rows with a person_mentions row whose ref resolves to a persons row of the
 #                   same volume: the rule the People browser and Person analytics read
@@ -12,7 +16,8 @@
 #   numbered        rows whose stored header opens with a printed number ("12. ")
 #   despatch        rows with a despatch_serial (#965)
 #   classified      rows with a non-empty document_sources.classification
-import json, re, sqlite3, sys
+# and, over the whole index, `values`: how many of those rows store each classification value.
+import collections, json, re, sqlite3, sys
 
 def main():
     db_path, manifest, out = sys.argv[1:4]
@@ -44,8 +49,16 @@ def main():
             WHERE ds.classification IS NOT NULL AND TRIM(ds.classification) <> ''
             GROUP BY 1"""):
         if vid in res: res[vid]["classified"] = n
+    values = collections.Counter()      # one count per (document, value)
+    for vid, _doc, value in db.execute("""
+            SELECT DISTINCT ds.volume_id, ds.document_id, TRIM(ds.classification) FROM document_sources ds
+            JOIN document_cache d ON d.volume_id = ds.volume_id AND d.document_id = ds.document_id
+                                 AND d.is_front_matter = 0
+            WHERE ds.classification IS NOT NULL AND TRIM(ds.classification) <> ''"""):
+        if vid in res: values[value] += 1
     indexed = db.execute("SELECT COUNT(DISTINCT volume_id) FROM document_cache").fetchone()[0]
-    json.dump(dict(indexed_volumes=indexed, volumes=res), open(out, "w"), indent=0, sort_keys=True)
+    json.dump(dict(indexed_volumes=indexed, volumes=res, values=values), open(out, "w"),
+              indent=0, sort_keys=True)
     print("volumes", len(res), "indexed", indexed)
 
 if __name__ == "__main__":

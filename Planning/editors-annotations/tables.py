@@ -1,26 +1,37 @@
 #!/usr/bin/env python3
-# Every figure in Planning/Editors-Annotations-Design-2026-11-06.md, from the two committed
+# Every figure in Planning/Editors-Annotations-Design-2026-11-06.md, from the three committed
 # extracts beside this script (2026-11-06).
-# argv: <inventory.json> <index-extract.json> <manifest.json> <out.csv>     (stdout → tables.out)
+# argv: <inventory.json> <index-extract.json> <index-extract-v72.json> <note-marking-gap.json>
+#       <manifest.json> <out.csv>     (stdout → tables.out)
 # inventory.json comes from inventory.py over the TEI; index-extract.json from index_extract.py
-# over a copy of the app's index. Nothing here reads the corpus or the index itself, so the
-# tables can be re-made from the repository alone.
+# over a copy of the app's index at version 71; index-extract-v72.json from the same script over
+# a full index at version 72 (#1853); note-marking-gap.json from note_marking_gap.py over that
+# index. Nothing here reads the corpus or an index itself, so the tables can be re-made from the
+# repository alone.
 #
 # Bases. "Documents" are the TEI's <div type="document"> elements inside <body> (314,510) unless a
 # line says "index rows" (document_cache rows outside front matter, 320,646, which also counts a
 # section's own printed text). A volume CARRIES a pervasive category when at least half its
 # documents do; a counted category (cross-references, excisions, editorial notes, Subject lines,
 # participant lists, marginal notes) when one document does; a section when the volume prints it.
+# Classification is the marking the index stores at version 72 (the source note's, else the
+# opener's), counted in index rows; inventory.json's word search is kept only as §7's comparison.
 # Era bands are keyed by the subseries' FIRST year, not the manifest's earliest date, which
 # reaches back to enclosures centuries older than the volume. The nine late retrospective
 # volumes (Public Diplomacy, the two Intelligence volumes, Iran and its second edition, Guatemala)
 # are their own band, since their editors worked in the modern format whatever the era covered.
 import csv, json, re, statistics, sys, collections
 
-INV, IDX, MANIFEST, OUT_CSV = sys.argv[1:5]
+INV, IDX, IDX72, GAP, MANIFEST, OUT_CSV = sys.argv[1:7]
 inv = json.load(open(INV))
 idx = json.load(open(IDX))["volumes"]
+ext72 = json.load(open(IDX72))
+idx72, values72 = ext72["volumes"], ext72["values"]
+gapx = json.load(open(GAP))
 man = {v["volumeId"]: v for v in json.load(open(MANIFEST))}
+# inventory.py's word search, copied, to count the stored values its vocabulary cannot match.
+CLASSIF = re.compile(r"\b(top secret|secret|confidential|limited official use|unclassified|"
+                     r"eyes only|nodis|exdis|limdis|strictly confidential)\b", re.I)
 
 BANDS = [(1861, 1898), (1899, 1913), (1914, 1919), (1920, 1931), (1932, 1944), (1945, 1950),
          (1951, 1954), (1955, 1968), (1969, 1980), (1981, 1992)]
@@ -76,8 +87,8 @@ CATS = [
      half(lambda v: feat(v, "source_note_inline"))),
     ("source-citation", " \"Source:\" form", "provenance", lambda v: feat(v, "source_note_footnote"),
      half(lambda v: feat(v, "source_note_footnote"))),
-    ("classification", "Classification markings", "provenance", lambda v: feat(v, "classification"),
-     half(lambda v: feat(v, "classification"))),
+    ("classification", "Classification stored (rows)", "provenance", lambda v: idx72[v]["classified"],
+     lambda v: idx72[v]["classified"] >= 0.5 * max(idx72[v]["docs"], 1)),
     ("excisions", "Excisions marked", "provenance", lambda v: feat(v, "not_declassified"),
      anyd(lambda v: feat(v, "not_declassified"))),
     ("despatch", "Despatch numbers (>=10% rows)", "provenance", lambda v: idx[v]["despatch"],
@@ -133,6 +144,13 @@ print("== 1. Bases")
 print(f"manifest volumes {len(vols)}; TEI body documents {TD:,}; index rows outside front matter {TI:,}")
 print("band sizes:", ", ".join(f"{b} {nB[b]}" for b in B))
 print("retrospective band:", ", ".join(v for v in vols if band(v) == "retro"))
+# The version-72 index was built by a generator, not the app: every per-volume figure but the
+# classification #1853 adds must equal the app's index at 71.
+same = {k: sum(1 for v in vols if idx[v][k] == idx72[v][k])
+        for k in ("docs", "people_docs", "persons_rows", "numbered", "despatch")}
+print("index at 72 against the app's at 71, volumes equal on each figure:",
+      ", ".join(f"{k} {n}/{len(vols)}" for k, n in same.items()),
+      f"| classified only grows: {all(idx72[v]['classified'] >= idx[v]['classified'] for v in vols)}")
 
 print("\n== 2. People, by the index's rule")
 tagged = [v for v in vols if idx[v]["people_docs"] > 0]
@@ -145,7 +163,7 @@ print(f"TEI rule (>=50% of documents linked, or @ana): {sum(1 for v in vols if C
 print("\n== 3. Totals: volumes carrying each category, and documents carrying it (TEI basis)")
 for cid, label, fam, dcount, pred in CATS:
     n = sum(1 for v in vols if pred(v)); d = sum(dcount(v) for v in vols)
-    basis = "index rows" if cid in ("numbered", "despatch") else "docs"
+    basis = "index rows" if cid in ("numbered", "despatch", "classification") else "docs"
     tot = TI if basis == "index rows" else TD
     print(f"{label:34} {n:4} volumes   {d:8,} {basis} ({100 * d / tot:.1f}%)")
 for sid, label, pred in SECTIONS:
@@ -198,17 +216,36 @@ for sid, label, pred in SECTIONS:
 early_terms = [v for v in vols if inv[v]["vol"]["terms_entries"] > 0 and start(v) < 1945 and band(v) != "retro"]
 print("abbreviation lists before 1945:", ", ".join(early_terms))
 
-print("\n== 7. Classification markings: printed (TEI) against stored (index), by era")
+print("\n== 7. Classification markings: the word search (TEI) against what the index stores, at 71 "
+      "and at 72 (#1853), by era")
+CAT = {c[0]: c for c in CATS}
+word = lambda v: feat(v, "classification")
 print(hdr(B, short=bshort))
-for name, f in (("documents (TEI)", docs), ("printed in note or opener", lambda v: feat(v, "classification")),
-                ("index rows", lambda v: idx[v]["docs"]), ("stored by the index", lambda v: idx[v]["classified"])):
+for name, f in (("documents (TEI)", docs), ("word search, note or opener", word),
+                ("index rows", lambda v: idx[v]["docs"]),
+                ("stored at 71 (app's index)", lambda v: idx[v]["classified"]),
+                ("stored at 72 (#1853)", lambda v: idx72[v]["classified"])):
     agg = collections.Counter()
     for v in vols: agg[band(v)] += f(v)
     print(name[:29].ljust(30) + "".join(f"{agg[b]:,}".rjust(9) for b in B))
+for name, pred in (("volumes, word search >=50%", lambda v: word(v) >= 0.5 * max(docs(v), 1)),
+                   ("volumes, stored at 72 >=50%", CAT["classification"][4])):
+    print(row(name, pred, band, B, nB))
 gap = [v for v in vols if 1932 <= start(v) <= 1954 and band(v) != "retro"]
-print(f"1932-54 (retrospectives excluded): printed {sum(feat(v, 'classification') for v in gap):,} documents, "
-      f"stored {sum(idx[v]['classified'] for v in gap):,}; volumes printing in >=50% of documents: "
-      f"{sum(1 for v in gap if feat(v, 'classification') >= 0.5 * docs(v))}")
+print(f"1932-54 (retrospectives excluded, {len(gap)} volumes): word search {sum(word(v) for v in gap):,} "
+      f"documents; stored at 71 {sum(idx[v]['classified'] for v in gap):,}, at 72 "
+      f"{sum(idx72[v]['classified'] for v in gap):,}; volumes at half or more: word search "
+      f"{sum(1 for v in gap if word(v) >= 0.5 * docs(v))}, stored at 72 "
+      f"{sum(1 for v in gap if CAT['classification'][4](v))}")
+grew = [v for v in vols if idx72[v]["classified"] > idx[v]["classified"]]
+print(f"all volumes: stored at 71 {sum(idx[v]['classified'] for v in vols):,}, at 72 "
+      f"{sum(idx72[v]['classified'] for v in vols):,}; volumes whose stored count grew: {len(grew)}, "
+      f"outside 1932-54's regular volumes: "
+      + ", ".join(f"{v} +{idx72[v]['classified'] - idx[v]['classified']}" for v in grew if v not in gap))
+outside = {k: n for k, n in values72.items() if not CLASSIF.search(k)}
+print(f"stored at 72 with a value the word search's vocabulary cannot match: {sum(outside.values()):,} "
+      f"documents, {len(outside)} of {len(values72):,} distinct values; the commonest: "
+      + "; ".join(f"{k} {n:,}" for k, n in sorted(outside.items(), key=lambda kv: (-kv[1], kv[0]))[:6]))
 
 print("\n== 8. The three example volumes")
 for v in ("frus1890", "frus1952-54v13p1", "frus1969-76v17"):
@@ -300,3 +337,37 @@ columnar = {"categories": names, "sections": secnames,
 print(f"artifact size: keyed {len(json.dumps(keyed, separators=(',', ':'))):,} bytes compact; "
       f"columnar {len(json.dumps(columnar, separators=(',', ':'))):,} bytes compact "
       f"({len(names)} counts a volume, {len(secnames)} section names)")
+
+# ── 12. The markings the notes print in a sentence the note parser does not read.
+print("\n== 12. Markings source notes print that the index does not store (note_marking_gap.py, index at 72)")
+rep, gv = gapx["replica"], gapx["volumes"]
+print(f"replica of SourceNoteParser.classificationMarking(fromSourceNote:): equals the stored value "
+      f"{rep['agree']:,} times, differs {rep['disagree']}")
+by_band = collections.Counter()
+for v, n in gv.items(): by_band[band(v)] += n
+print(f"in the gap: {sum(gv.values()):,} documents in {len(gv)} volumes; by era: "
+      + ", ".join(f"{b} {by_band[b]:,}" for b in B if by_band[b]))
+print("causes: " + ", ".join(f"{k} {n:,}" for k, n in sorted(gapx["causes"].items(), key=lambda kv: -kv[1])))
+print("a period inside the citation, by how sentence 1 ends: " + ", ".join(
+      f"{k} {n:,}" for k, n in sorted(gapx["citation_periods"].items(), key=lambda kv: -kv[1])))
+ms = {v: n for v, n in gv.items() if "mSupp" in v}
+print(f"the microfiche supplements: {sum(ms.values()):,} notes in the gap; by cause: "
+      + ", ".join(f"{k} {n:,}" for k, n in sorted(gapx["causes_microfiche"].items(), key=lambda kv: -kv[1])))
+print("most: " + ", ".join(f"{v} {n}" for v, n in sorted(gv.items(), key=lambda kv: (-kv[1], kv[0]))[:8]))
+printed = lambda v: idx72[v]["classified"] + gv.get(v, 0)
+carry_p = lambda v: printed(v) >= 0.5 * max(idx72[v]["docs"], 1)
+print(row("volumes, stored + gap >=50%", carry_p, band, B, nB))
+print("modern volumes under half, stored: " + ", ".join(v for v in modern if not CAT["classification"][4](v)))
+print("modern volumes under half, stored + gap: " + ", ".join(
+      f"{v} {printed(v)}/{idx72[v]['docs']}" for v in modern if not carry_p(v)))
+for v in ("frus1952-54v13p1", "frus1969-76v17", "frus1917-72PubDipv06"):
+    print(f"{v}: stored {idx72[v]['classified']}, gap {gv.get(v, 0)}, of {idx72[v]['docs']} rows")
+share_p = {s: sum(1 for v in vols if man[v]["subseries"] == s and band(v) != "retro" and carry_p(v))
+           / sum(1 for v in vols if man[v]["subseries"] == s and band(v) != "retro") for s in subs}
+share_s = {s: sum(1 for v in vols if man[v]["subseries"] == s and band(v) != "retro"
+                  and CAT["classification"][4](v))
+           / sum(1 for v in vols if man[v]["subseries"] == s and band(v) != "retro") for s in subs}
+onset90 = lambda sh: next((s for i, s in enumerate(subs) if all(sh[t] >= 0.9 for t in subs[i:])), "-")
+print(f"the tighter onset (every later subseries at 90%): stored {onset90(share_s)}, stored + gap "
+      f"{onset90(share_p)}; subseries under 90% from 1955, stored: "
+      + ", ".join(f"{s} {100 * share_s[s]:.0f}%" for s in subs if int(s[:4]) >= 1955 and share_s[s] < 0.9))

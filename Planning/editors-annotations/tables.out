@@ -2,6 +2,7 @@
 manifest volumes 553; TEI body documents 314,510; index rows outside front matter 320,646
 band sizes: 1861-1898 62, 1899-1913 20, 1914-1919 35, 1920-1931 32, 1932-1944 77, 1945-1950 59, 1951-1954 38, 1955-1968 114, 1969-1980 93, 1981-1992 14, retro 9
 retrospective band: frus1917-72PubDip, frus1917-72PubDipv06, frus1917-72PubDipv07, frus1917-72PubDipv08, frus1945-50Intel, frus1950-55Intel, frus1951-54Iran, frus1951-54IranEd2, frus1952-54Guat
+index at 72 against the app's at 71, volumes equal on each figure: docs 553/553, people_docs 553/553, persons_rows 553/553, numbered 553/553, despatch 553/553 | classified only grows: True
 
 == 2. People, by the index's rule
 tagged volumes 288 (120,063 index rows); not tagged 265 (200,583 rows); list but no links: frus1941-43, frus1977-80v27
@@ -16,7 +17,7 @@ Meeting participants                297 volumes     12,798 docs (4.1%)
 Source notes (either form)          479 volumes    265,103 docs (84.3%)
  file-number form                   249 volumes    191,170 docs (60.8%)
  "Source:" form                     230 volumes     74,702 docs (23.8%)
-Classification markings             295 volumes    105,488 docs (33.5%)
+Classification stored (rows)        302 volumes    105,265 index rows (32.8%)
 Excisions marked                    208 volumes      6,724 docs (2.1%)
 Despatch numbers (>=10% rows)       147 volumes     45,145 index rows (14.1%)
 Numbered in print (index rows)      229 volumes     78,902 index rows (24.6%)
@@ -53,7 +54,7 @@ Meeting participants               3/62     2/20    15/35    15/32     6/77     
 Source notes (either form)         1/62     8/20    34/35    32/32    77/77    59/59    38/38  114/114    93/93    14/14      9/9  | 479
  file-number form                  1/62     8/20    34/35    32/32    77/77    59/59    38/38    0/114     0/93     0/14      0/9  | 249
  "Source:" form                    0/62     0/20     0/35     0/32     0/77     0/59     0/38  114/114    93/93    14/14      9/9  | 230
-Classification markings            0/62     0/20     0/35     0/32     3/77    41/59    35/38  111/114    87/93    13/14      5/9  | 295
+Classification stored (rows)       0/62     0/20     0/35     0/32     3/77    40/59    38/38  110/114    89/93    13/14      9/9  | 302
 Excisions marked                   0/62     0/20     0/35     0/32     0/77     2/59     5/38   89/114    91/93    14/14      7/9  | 208
 Despatch numbers (>=10% rows)     55/62    18/20    13/35    25/32    33/77     1/59     2/38    0/114     0/93     0/14      0/9  | 147
 Numbered in print (index rows      0/62     0/20     0/35     0/32     0/77     0/59     0/38  113/114    93/93    14/14      9/9  | 229
@@ -86,7 +87,7 @@ Meeting participants               3/61     2/20    12/33    19/42     5/46     
 Source notes (either form)         1/61     7/20    33/33    41/42    46/46    38/38    49/49    21/21    33/33    73/73  137/137  | 479
  file-number form                  1/61     7/20    33/33    41/42    46/46    38/38    49/49    21/21    13/33     0/73    0/137  | 249
  "Source:" form                    0/61     0/20     0/33     0/42     0/46     0/38     0/49     0/21    20/33    73/73  137/137  | 230
-Classification markings            0/61     0/20     0/33     0/42     1/46     7/38    40/49    19/21    31/33    71/73  126/137  | 295
+Classification stored (rows)       0/61     0/20     0/33     0/42     1/46     6/38    40/49    21/21    33/33    71/73  130/137  | 302
 Excisions marked                   0/61     0/20     0/33     0/42     0/46     0/38     3/49     2/21     3/33    67/73  133/137  | 208
 Despatch numbers (>=10% rows)     54/61    18/20    19/33    23/42    23/46     8/38     0/49     0/21     2/33     0/73    0/137  | 147
 Numbered in print (index rows      0/61     0/20     0/33     0/42     0/46     0/38     0/49     0/21    20/33    72/73  137/137  | 229
@@ -115,7 +116,7 @@ Abbreviations explained            missing in 3 of 230: frus1955-57v03mSupp, fru
 Subject lines                      missing in 2 of 230: frus1969-76ve12, frus1969-76ve14p1
 Meeting participants               missing in 2 of 230: frus1917-72PubDip, frus1969-76ve14p1
  "Source:" form                    missing in 0 of 230: 
-Classification markings            missing in 14 of 230: frus1917-72PubDip, frus1917-72PubDipv06, frus1917-72PubDipv07, frus1917-72PubDipv08, frus1955-57v09, frus1958-60v04, frus1961-63v06, frus1969-76v01, frus1969-76v13, frus1969-76v38p1, frus1977-80v01, frus1977-80v28, frus1977-80v30, frus1981-88v01
+Classification stored (rows)       missing in 9 of 230: frus1958-60v03mSupp, frus1961-63v07-09mSupp, frus1961-63v10-12mSupp, frus1964-68v07, frus1969-76v01, frus1969-76v29, frus1969-76v38p1, frus1977-80v01, frus1989-92v31
 Numbered in print (index rows)     missing in 1 of 230: frus1958-60v05mSupp
 Cross-refs to documents            missing in 4 of 230: frus1955-57v03mSupp, frus1958-60v05mSupp, frus1961-63v10-12mSupp, frus1969-76v42
 List of Persons                    missing in 0 of 230: 
@@ -123,23 +124,28 @@ List of Abbreviations              missing in 1 of 230: frus1955-57v03mSupp
 Note on Sources                    missing in 1 of 230: frus1955-57v03mSupp
 abbreviation lists before 1945: frus1941-43, frus1943, frus1943CairoTehran, frus1944Quebec
 
-== 7. Classification markings: printed (TEI) against stored (index), by era
+== 7. Classification markings: the word search (TEI) against what the index stores, at 71 and at 72 (#1853), by era
                                   61-98    99-13    14-19    20-31    32-44    45-50    51-54    55-68    69-80    81-92    retro
 documents (TEI)                  32,500   16,327   24,836   26,114   67,013   46,306   21,923   44,845   27,798    4,545    2,303
-printed in note or opener           151       30       19        3    1,157   21,640   16,146   37,555   23,222    3,824    1,741
+word search, note or opener         151       30       19        3    1,157   21,640   16,146   37,555   23,222    3,824    1,741
 index rows                       32,791   16,871   25,439   27,017   69,107   47,462   22,287   44,983   27,810    4,564    2,315
-stored by the index                   0        0        0        0        0        0        0   34,558   22,068    3,603    1,865
-1932-54 (retrospectives excluded): printed 38,943 documents, stored 0; volumes printing in >=50% of documents: 79
+stored at 71 (app's index)            0        0        0        0        0        0        0   34,558   22,068    3,603    1,865
+stored at 72 (#1853)                  0        0        8        0    1,117   22,786   19,260   34,558   22,068    3,603    1,865
+volumes, word search >=50%         0/62     0/20     0/35     0/32     3/77    41/59    35/38  111/114    87/93    13/14      5/9  | 295
+volumes, stored at 72 >=50%        0/62     0/20     0/35     0/32     3/77    40/59    38/38  110/114    89/93    13/14      9/9  | 302
+1932-54 (retrospectives excluded, 174 volumes): word search 38,943 documents; stored at 71 0, at 72 43,163; volumes at half or more: word search 79, stored at 72 81
+all volumes: stored at 71 62,094, at 72 105,265; volumes whose stored count grew: 90, outside 1932-54's regular volumes: frus1919Parisv12 +1, frus1919v01 +1, frus1919v02 +6
+stored at 72 with a value the word search's vocabulary cannot match: 7,201 documents, 54 of 1,942 distinct values; the commonest: No classification marking 4,793; Restricted 1,288; Official Use Only 674; Official Use Only; Priority 96; Restricted; Priority 73; Restricted; US Urgent 72
 
 == 8. The three example volumes
 frus1890 | documents 502 | editorial notes 0 | persons listed 0 | terms listed 0 | numbered in print 0 of 502 rows | despatch numbers 347
     people 0, abbreviations 0, correspondents 502, subjects 0, participants 0, source-notes 1, source-file-number 1, source-citation 0, classification 0, excisions 0, despatch 347, numbered 0, xref-documents 0, xref-footnotes 0, xref-volumes 0, xref-pages 12, editorial-notes 0, footnotes 27, marginal-notes 1, figures 3
     sections: front message (Message.); front foreign-relations (Foreign Relations.); front index (List of papers with an analysis of their contents.); back index (Alphabetical Index.)
 frus1952-54v13p1 | documents 801 | editorial notes 47 | persons listed 176 | terms listed 264 | numbered in print 0 of 801 rows | despatch numbers 1
-    people 787, abbreviations 633, correspondents 601, subjects 130, participants 81, source-notes 759, source-file-number 759, source-citation 0, classification 591, excisions 0, despatch 1, numbered 0, xref-documents 60, xref-footnotes 72, xref-volumes 91, xref-pages 226, editorial-notes 47, footnotes 650, marginal-notes 0, figures 0
+    people 787, abbreviations 633, correspondents 601, subjects 130, participants 81, source-notes 759, source-file-number 759, source-citation 0, classification 736, excisions 0, despatch 1, numbered 0, xref-documents 60, xref-footnotes 72, xref-volumes 91, xref-pages 226, editorial-notes 47, footnotes 650, marginal-notes 0, figures 0
     sections: front preface (Preface); front table-of-contents (Contents); front preface (Introduction); front sources (List of Sources); front index (List of Abbreviations and Symbol); front index (List of Persons)
 frus1969-76v17 | documents 280 | editorial notes 12 | persons listed 325 | terms listed 470 | numbered in print 280 of 280 rows | despatch numbers 0
-    people 279, abbreviations 278, correspondents 161, subjects 137, participants 67, source-notes 268, source-file-number 5, source-citation 263, classification 245, excisions 31, despatch 0, numbered 280, xref-documents 131, xref-footnotes 65, xref-volumes 89, xref-pages 0, editorial-notes 12, footnotes 243, marginal-notes 0, figures 0
+    people 279, abbreviations 278, correspondents 161, subjects 137, participants 67, source-notes 268, source-file-number 5, source-citation 263, classification 182, excisions 31, despatch 0, numbered 280, xref-documents 131, xref-footnotes 65, xref-volumes 89, xref-pages 0, editorial-notes 12, footnotes 243, marginal-notes 0, figures 0
     sections: front preface (Preface); front table-of-contents (Contents); front sources (Sources); front index (Abbreviations); front index (Persons); front note-on-covert-actions (Note on U.S. Covert Actions); back index (Index); back errata (Errata)
 
 == 9. Discovery: markup whose mean share of documents moves 15 points or more across eras
@@ -210,7 +216,7 @@ Meeting participants               onset 1952-54    first frus1879              
 Source notes (either form)         onset 1907       first frus1870               carriers 479: median 97.2%, lowest 53.8%, below 90%: 72
  file-number form                  onset -          first frus1870               carriers 249
  "Source:" form                    onset 1955-57    first frus1955-57v01         carriers 230
-Classification markings            onset 1981-88    first frus1943               carriers 295
+Classification stored (rows)       onset -          first frus1943               carriers 302
 Excisions marked                   onset 1964-68    first frus1949v05            carriers 208
 Despatch numbers (>=10% rows)      onset -          first frus1861               carriers 147
 Numbered in print (index rows)     onset 1955-57    first frus1955-57v01         carriers 229: median 100.0%, lowest 95.5%, below 90%: 0
@@ -232,7 +238,7 @@ Meeting participants               1955-1968  5 10 43 47 8 2 71 100 99 100
 Source notes (either form)         1914-1919  2 40 97 100 100 100 100 100 100 100
  file-number form                  -          2 40 97 100 100 100 100 0 0 0
  "Source:" form                    1955-1968  0 0 0 0 0 0 0 100 100 100
-Classification markings            1951-1954  0 0 0 0 4 69 92 97 94 93
+Classification stored (rows)       1951-1954  0 0 0 0 4 68 100 96 96 93
 Excisions marked                   1955-1968  0 0 0 0 0 3 13 78 98 100
 Despatch numbers (>=10% rows)      -          89 90 37 78 43 2 5 0 0 0
 Numbered in print (index rows)     1955-1968  0 0 0 0 0 0 0 99 100 100
@@ -260,3 +266,18 @@ lowest people coverage: frus1873p1v2 72.5%
 documents with a date the corpus build inferred (date@ana): 13,142 (4.2%)
 frus1977-80v27: persons listed 153, linked docs 0; terms listed 143, linked docs 0
 artifact size: keyed 257,796 bytes compact; columnar 55,326 bytes compact (19 counts a volume, 74 section names)
+
+== 12. Markings source notes print that the index does not store (note_marking_gap.py, index at 72)
+replica of SourceNoteParser.classificationMarking(fromSourceNote:): equals the stored value 62,094 times, differs 0
+in the gap: 8,865 documents in 218 volumes; by era: 1955-1968 4,642, 1969-1980 3,449, 1981-1992 528, retro 246
+causes: a period inside the citation 4,679, volume or part number 2,216, digit-led remark 1,970
+a period inside the citation, by how sentence 1 ends: a short abbreviation 2,401, an initial 1,417, a full word 451, a dotted abbreviation 410
+the microfiche supplements: 1,613 notes in the gap; by cause: digit-led remark 1,535, a period inside the citation 78
+most: frus1961-63v10-12mSupp 684, frus1958-60v03mSupp 520, frus1961-63v07-09mSupp 408, frus1969-76v29 198, frus1964-68v31 190, frus1964-68v25 185, frus1964-68v24 182, frus1969-76ve10 142
+volumes, stored + gap >=50%        0/62     0/20     0/35     0/32     3/77    40/59    38/38  114/114    91/93    14/14      9/9  | 309
+modern volumes under half, stored: frus1958-60v03mSupp, frus1961-63v07-09mSupp, frus1961-63v10-12mSupp, frus1964-68v07, frus1969-76v01, frus1969-76v29, frus1969-76v38p1, frus1977-80v01, frus1989-92v31
+modern volumes under half, stored + gap: frus1969-76v01 40/123, frus1977-80v01 74/163
+frus1952-54v13p1: stored 736, gap 0, of 801 rows
+frus1969-76v17: stored 182, gap 78, of 280 rows
+frus1917-72PubDipv06: stored 139, gap 11, of 154 rows
+the tighter onset (every later subseries at 90%): stored -, stored + gap 1950; subseries under 90% from 1955, stored: 1989-92 0%
