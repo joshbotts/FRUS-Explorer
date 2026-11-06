@@ -65,23 +65,43 @@ final class VolumeAnnotationsSectionTests: XCTestCase {
 
     /// Browse → the Subseries tile → 1961–63 → the seeded volume's page, failing with a distinct
     /// message at each step.
+    ///
+    /// At AX5 on an iPhone 17 under iOS 27.0 (the runs of 2026-11-06), the tab shell's "Local Only"
+    /// banner covers the lower 323 pt of the screen, and the Subseries tile sat under it in one run;
+    /// in another the tile was clear of it and the first tap was lost. So each try brings the tile
+    /// above the banner and taps it, then waits for what the walk needs, the subseries row, scrolling
+    /// the list in case the row is below the fold: three tries at most. Leaving the root is not the
+    /// test, since an iPad keeps the root on screen beside the list.
     private func openSeededVolume() {
         _ = navigator.select(.browse).tapped
         let tile = app.buttons["browse.root.subseriesTile"].firstMatch
         XCTAssertTrue(tile.waitForExistence(timeout: 15), "The Browse root's Subseries tile did not appear.")
-        tile.tap()
+
         let subseries = app.buttons.matching(
             NSPredicate(format: "label BEGINSWITH %@", Self.seededSubseriesLabel)).firstMatch
-        XCTAssertTrue(subseries.waitForExistence(timeout: 15), """
-            No 1961–63 subseries row with filterDownloadedOnly=YES: the volume was probably not seeded \
-            (look for a [UITestVolumeSeeder] line in the app log).
+        for _ in 0..<3 {
+            scrollUntilHittable(tile, attempts: 4)
+            if tile.exists && tile.isHittable { tile.tap() }
+            if subseries.waitForExistence(timeout: 5) { break }
+            scrollUntilHittable(subseries, attempts: 4)
+            if subseries.exists { break }
+        }
+        XCTAssertTrue(subseries.exists, """
+            No 1961–63 subseries row with filterDownloadedOnly=YES after three taps on the Subseries \
+            tile: the volume was probably not seeded (look for a [UITestVolumeSeeder] line in the app \
+            log), or the tile's taps never reached it.
             """)
+        scrollUntilHittable(subseries, attempts: 6)
         subseries.tap()
+        Thread.sleep(forTimeInterval: 0.8)
+
         let volume = app.buttons.matching(
             NSPredicate(format: "label CONTAINS[c] 'Kennedy-Khrushchev'")).firstMatch
-        XCTAssertTrue(volume.waitForExistence(timeout: 10),
-                      "The seeded volume's row did not appear in the subseries list.")
+        if !volume.waitForExistence(timeout: 10) { scrollUntilHittable(volume, attempts: 6) }
+        XCTAssertTrue(volume.exists, "The seeded volume's row did not appear in the subseries list.")
+        scrollUntilHittable(volume, attempts: 6)
         volume.tap()
+        Thread.sleep(forTimeInterval: 0.8)
     }
 
     /// The element with `identifier`, of any type.
