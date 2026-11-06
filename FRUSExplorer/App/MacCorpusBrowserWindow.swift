@@ -212,8 +212,16 @@ struct CorpusBrowserWindowView: View {
                     Label(String(localized: "browser.clusters.title", defaultValue: "Clusters"),
                           systemImage: SemanticGlyph.clusters)
                         .tag(CorpusSidebarItem.clusters)
-                    Label(VolumeAnnotationsPresentation.title, systemImage: "pencil.line")
-                        .tag(CorpusSidebarItem.annotations)
+                    // Two lines where one will not do: at the sidebar's 170 pt the name is 122 pt
+                    // of about 110 and truncated to "Editors’ Annotat…" (the check copy, 2026-11-06),
+                    // and a reader's saved column width outlives any change to the ideal width.
+                    Label {
+                        Text(VolumeAnnotationsPresentation.title)
+                            .lineLimit(2)
+                    } icon: {
+                        Image(systemName: "pencil.line")
+                    }
+                    .tag(CorpusSidebarItem.annotations)
                 }
                 Section(String(localized: "corpus.sidebar.yourSets", defaultValue: "Your sets")) {
                     Label(String(localized: "browser.scopes.title", defaultValue: "My Scopes"),

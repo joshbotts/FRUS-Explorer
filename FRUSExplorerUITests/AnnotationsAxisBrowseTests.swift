@@ -16,8 +16,9 @@ import XCTest
 /// - a row of a volume page's section opens its layer's page, whose drill lists that volume first,
 ///   with the note that says the reader came from it.
 ///
-/// The counts are the shipped file's, which `AnnotationsAxisTests.theShippedFile` pins as well. Each
-/// test keeps a screenshot of the list it reaches.
+/// The counts are the shipped file's, which `AnnotationsAxisTests.theShippedFile` pins as well. The
+/// tests keep screenshots of the axis, a layer's page and each list they reach, for a reader to check
+/// the strips and rows by eye.
 ///
 /// Devices: an iPhone 17 and an iPad Pro 13-inch (M5), both under iOS 27.0
 /// (`Planning/UI-Test-Destinations-Runbook.md`, `AnnotationsAxisBrowseTests`). Neither test skips.
@@ -123,11 +124,13 @@ final class AnnotationsAxisBrowseTests: XCTestCase {
         XCTAssertTrue(people.waitForExistence(timeout: 10), "The axis lists no People tagged row.")
         XCTAssertEqual(people.label, Self.peopleRowSpoken,
                        "VoiceOver must read the axis's row as one sentence with the shipped file's counts.")
+        keepScreenshot(named: "The Editors’ Annotations axis")
         people.tap()
 
         let reach = element("annotations.category.reach")
         XCTAssertTrue(reach.waitForExistence(timeout: 10), "People tagged's page did not open.")
         XCTAssertTrue(reach.label.hasPrefix("288 of 553 volumes"), "The page's reach reads \(reach.label)")
+        keepScreenshot(named: "People tagged's page")
 
         let without = element("annotations.drill.without")
         scrollUntilHittable(without, attempts: 8)

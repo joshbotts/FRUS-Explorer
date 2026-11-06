@@ -260,10 +260,10 @@ extension AnnotationLayer {
                           defaultValue: "Where a memorandum of conversation lists who took part, the editors marked the list.")
         case .sourceNotes:
             return String(localized: "browser.annotations.practice.sourceNotes",
-                          defaultValue: "A source note says where the editors found a document. The older volumes print a file number above the heading; the later ones, a note that begins “Source:” with the full archival citation.")
+                          defaultValue: "A source note says where the editors found a document. It was printed first as a file number above the heading, and later as a note that begins “Source:” with the full archival citation. The earliest volumes print none: a despatch there carries the post's own number instead.")
         case .classification:
             return String(localized: "browser.annotations.practice.classification",
-                          defaultValue: "The editors printed each document's security classification: above the dateline in the older volumes, and in the source note in the later ones.")
+                          defaultValue: "The editors printed each document's security classification, first above the dateline and later in the source note.")
         case .excisions:
             return String(localized: "browser.annotations.practice.excisions",
                           defaultValue: "Where text was still classified when the volume was published, the editors marked the gap: “[… not declassified]”.")
