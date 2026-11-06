@@ -1144,6 +1144,50 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - VolumeAnnotationsIndexGenerator
+
+        /// Builds `volume-annotations-index.json` — what editorial annotation each catalogue volume
+        /// carries: people tagged, abbreviations, source notes and their form, classification
+        /// markings, numbering, references and the rest, as document counts
+        /// (`Planning/Editors-Annotations-Design-2026-11-06.md`). The categories the app reads are
+        /// counted from a full index built through the kit's own pipeline, so a volume's label and
+        /// the People browser agree; the rest by one SAX pass over each volume's TEI. Writes through
+        /// FRUSCoreKit's `VolumeAnnotationsIndex`, which the app decodes.
+        .target(
+            name: "VolumeAnnotationsIndexGeneratorCore",
+            dependencies: [
+                .target(name: "GeneratorKit"),
+                .target(name: "FRUSCoreKit"),
+                .target(name: "FTS5Store"),
+                // `DespatchSerialGrammar`, which keeps a despatch number out of the source notes.
+                .target(name: "SourceNoteKit"),
+            ],
+            path: "VolumeAnnotationsIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)],
+            linkerSettings: [.linkedLibrary("sqlite3")]
+        ),
+
+        /// Thin entry point — calls VolumeAnnotationsIndexRunner.run() and exits.
+        .executableTarget(
+            name: "VolumeAnnotationsIndexGenerator",
+            dependencies: [.target(name: "VolumeAnnotationsIndexGeneratorCore")],
+            path: "VolumeAnnotationsIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Tests for VolumeAnnotationsIndexGeneratorCore: the TEI scan's rules, the counting over a
+        /// volume indexed through the kit's own pipeline, the file's determinism and the refusals.
+        .testTarget(
+            name: "VolumeAnnotationsIndexGeneratorTests",
+            dependencies: [
+                .target(name: "VolumeAnnotationsIndexGeneratorCore"),
+                .target(name: "FRUSCoreKit"),
+                .target(name: "FTS5Store"),
+            ],
+            path: "VolumeAnnotationsIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - CollectionUsageIndexGenerator
 
         /// Builds `collection-usage-index.json` (#763) — document-grain usage counts for the

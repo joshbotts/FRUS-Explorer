@@ -97,7 +97,7 @@ not a discovery. See D-4.
 38 bundled data resources (36 `.json`, 2 `.bin`; counted in `FRUSExplorer/Resources` on
 2026-10-01). Classified by what a new volume does to them.
 
-### Tier 1 — corpus-derived, must be regenerated (18 artifacts, 12 generator runs)
+### Tier 1 — corpus-derived, must be regenerated (19 artifacts, 13 generator runs)
 
 | Artifact | Generator | Notes / cost |
 |---|---|---|
@@ -108,6 +108,7 @@ not a discovery. See D-4.
 | `external-citation-index.json` | `ExternalCitationIndexGenerator -c release` | Reads the authority **and** `decimal-class-labels.json`. |
 | `provenance-flow-index.json` | `ProvenanceFlowIndexGenerator -c release` | Reads the authority. |
 | `resolved-edge-index.json` | `ResolvedEdgeIndexGenerator -c release` | **Changes for existing volumes too**: cross-volume citations *into* the new volume become resolvable, and the new volume's own outbound citations add inbound edges to documents in volumes already shipped. |
+| `volume-annotations-index.json` | `VolumeAnnotationsIndexGenerator -c release` (`CORPUS_COMMIT` required) | What each volume's editors annotated (`Planning/Editors-Annotations-Design-2026-11-06.md`). The new volume needs its row. The categories the app reads are counted from a full index of the catalogue: run it after `ResolvedEdgeIndexGenerator` with `INDEX_DB` set to the index that run kept with `INDEX_DIR`, so the corpus is indexed once. **Every index bump regenerates it too**, since the version it records must be the current one. |
 | `broken-refs-index.json` | `CrossRefValidationGenerator -c release`, then `cp Planning/cross-ref-validation/broken-refs-index.json FRUSExplorer/Resources/` | Same two-way effect: refs that were `unknownVolume` may now resolve. Do **not** point `OUTPUT_DIR` at `Resources` — that dumps the CSV and report into the bundle. |
 | `source-provenance-index.json` | `SourceProvenanceIndexGenerator -c release` | Schema 2; per-volume table must gain a row or `supportsVolumeScope` degrades. |
 | `administration-profiles-index.json` | `AdministrationProfilesIndexGenerator -c release` | `administrations.json` already runs through Trump-2, so no table edit is needed for any volume OH could plausibly publish. |
@@ -549,7 +550,9 @@ Steps marked **[owner]** cannot be done from this repository.
 
 **Phase C — corpus analytics** (independent of each other; any order)
 7. `ExternalCitationIndexGenerator`, `ProvenanceFlowIndexGenerator`, `ResolvedEdgeIndexGenerator`,
-   `SourceProvenanceIndexGenerator`, `AdministrationProfilesIndexGenerator`.
+   `SourceProvenanceIndexGenerator`, `AdministrationProfilesIndexGenerator`. Give the edge run
+   `INDEX_DIR=<dir>`, then run `VolumeAnnotationsIndexGenerator` with `INDEX_DB=<dir>/frus.db` and
+   `CORPUS_COMMIT=<sha>`, so the two share one full index.
 8. `CrossRefValidationGenerator`, then copy **only** `broken-refs-index.json` into `Resources/`.
 9. `CloudVectorsGenerator` (about 21 min on the M5 MacBook, ~50–60 on the Mac of August 2026; writes four files since #1608).
 

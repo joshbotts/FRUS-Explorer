@@ -2293,6 +2293,7 @@ The stack, and the question each artifact answers:
 | `provenance-flow-index.json` | where the editors sent the reader when they cross-referenced one document from another, as (unit → unit) pairs | 77,898 edges, 4,913 collection pairs; **95.3% are footnotes**, so it describes annotation practice |
 | `resolved-edge-index.json` | the inbound half of the citation graph for volumes you have not downloaded (§6.6) | 38,600 cross-volume edges into 20,273 documents from 513 volumes: 9,209 by a document's id (572 of them from a section's own text — an introduction, an errata list, a heading's footnote — whose id is the section's) and, since index version 71, 29,391 by a printed page of another volume under rule C (a single page, or a range within one document; "ff." and a range across documents are not here), resolved through `cited-page-map.json` exactly as a device's index resolves them. Its `volumes` array (537) is a shared vocabulary of target *and* citing volumes, not a target list, and 33 of its targets are sections printed on a cited page. 33,235 of its 35,901 citing pairs (92.6%) cite through a note |
 | `cited-page-map.json` | what a printed page of another volume names, so a page reference resolves whether or not you hold the volume (§4.3) | 16,364 pages in 380 volumes naming 18,832 documents, 3,938 of the pages naming several (with each one's printed number and day for the tie-break); an entry for every page a single-page reference cites and for both ends of each range within one document, none for a page naming nothing; regenerated with each build's corpus from a full index the generator builds, and a device resolves from it alone, so two devices store the same row |
+| `volume-annotations-index.json` | what editorial annotation each volume carries, whether or not you hold it: people tagged, abbreviations, source notes and their form, classification markings, numbered documents, references, editorial notes and more, as counts of documents, and from which era the series made each practice standard. **The categories the app reads are counted by the index's own rules, at the index version the file records**, so a volume's people count is the People browser's and its classification count the chips' | 553 volumes, 314,510 documents (index version 73): people tagged in 288 volumes, abbreviations linked in 309, source notes in 478, classification markings in 310, documents numbered in print in 229 |
 | `source-provenance-index.json` | the provenance *mix* — how many documents came from a decimal file, the Subject-Numeric file, a lot file, a library — per decade and per volume | 269,288 notes, 523 volumes, 16 decades |
 
 Three rules govern using them, and the second is easy to get backwards.
@@ -3367,6 +3368,8 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.47 — 2026-11-06: §14.11's table gains `volume-annotations-index.json`, what editorial annotation
+  each volume carries, counted by the index's own rules (the editors' annotations design, lane A).
 - 1.46 — 2026-11-06: §4.4's `classification` row says what index version 73 adds (#1856): the
   marking a source note prints past its second sentence, where a stop inside the citation or a
   remark opening with a digit kept it out, 8,865 rows in 218 volumes, with the totals at 73 and the

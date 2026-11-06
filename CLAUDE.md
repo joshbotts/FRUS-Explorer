@@ -153,6 +153,7 @@ measured failure).
 | `CollectionUsageIndexGenerator` | `collection-usage-index.json` | the authority, the manifest |
 | `ProvenanceFlowIndexGenerator` | `provenance-flow-index.json` | the authority, the manifest |
 | `ResolvedEdgeIndexGenerator` | `resolved-edge-index.json`, `cited-page-map.json` (one run writes both, from a full index it builds of the corpus through the kit's pipeline) | the manifest |
+| `VolumeAnnotationsIndexGenerator` | `volume-annotations-index.json` (what each volume's editors annotated; regenerated with every index bump) | the manifest, `CORPUS_COMMIT` (required); a full index it builds through the kit's pipeline, or `INDEX_DB` |
 | `ExternalCitationIndexGenerator` | `external-citation-index.json` | the authority, `decimal-class-labels.json` |
 | `SourceProvenanceIndexGenerator` | `source-provenance-index.json` | the manifest |
 | `AdministrationProfilesIndexGenerator` | `administration-profiles-index.json` | `administrations.json` |
@@ -335,7 +336,7 @@ The `#if os(iOS)` / `#if os(macOS)` conditional compilation pattern is used exte
   **downloaded volumes only** — `published − onDisk` would tell a 12-volume library it was missing
   544.
 
-**SPM package targets** (`Package.swift`, package name `FRUSExplorerTools`, macOS 15+). This is a build-tool package, not a library distribution: it declares **no `products:` block at all**, so nothing here is linkable from outside — the app reaches the shared code by compiling the same source directories through `project.yml`. It currently declares **39 library targets, 31 executables and 38 test targets** (108, `swift package describe`, counted 2026-10-04 when FRUSCoreKit and FRUSCoreKitTests were added; 38, 31 and 37 from 2026-10-01; the line read 37, 30 and 36 until then); every generator indexed under *Build & Test Commands* above, and documented in `Planning/Generators-Runbook.md`, lives here. Do not read the list below as an inventory — read `Package.swift`.
+**SPM package targets** (`Package.swift`, package name `FRUSExplorerTools`, macOS 15+). This is a build-tool package, not a library distribution: it declares **no `products:` block at all**, so nothing here is linkable from outside — the app reaches the shared code by compiling the same source directories through `project.yml`. It currently declares **40 library targets, 32 executables and 39 test targets** (111, `swift package describe`, counted 2026-11-06 when VolumeAnnotationsIndexGenerator was added; 39, 31 and 38 from 2026-10-04, when FRUSCoreKit and FRUSCoreKitTests were added; 38, 31 and 37 from 2026-10-01; the line read 37, 30 and 36 until then); every generator indexed under *Build & Test Commands* above, and documented in `Planning/Generators-Runbook.md`, lives here. Do not read the list below as an inventory — read `Package.swift`.
 
 The **shared** (non-per-tool) library targets are the ones worth knowing by name:
 - `FTS5Store` — the reusable SQLite FTS5 actor. `LinuxLogger.swift` stands in for `os.Logger` on Linux and compiles to nothing on Apple platforms, so keep FTS5Store's logging to `debug`, `info`, `notice`, `warning` and `error` with plain `privacy:` interpolation.
@@ -360,7 +361,7 @@ All of these except `CrossRefKit` and `GeneratorKit` are ALSO compiled directly 
   counts every word as printed (`accumulate(from:into:printedInto:)`), for the keyness reference a
   launch with no lemmatiser compares with; `WordCloudPrintedFormParityTests` holds that tally to a
   `.printed` tokenizer's, and the generator's `VERIFY_PRINTED_WALK=1` run holds it over the corpus.
-- Test targets: **38 of them**, one per tool plus one per shared kit — `FRUSCoreKitTests` compiled from `FRUSExplorerTests/FRUSCoreKit/` — except `TEIHeaderKit`, whose grammar is exercised from `ManifestGeneratorTests` (`TEIHeaderParserTests`, `ManifestStatusPolicyTests`) rather than a suite of its own. The shape is uniform — each tool is a `<Name>GeneratorCore` library (all logic, testable), a thin `<Name>Generator` executable (entry point only) and a `<Name>GeneratorTests` suite that imports the Core. `swift test` runs the lot; there is no curated subset to know by heart.
+- Test targets: **39 of them**, one per tool plus one per shared kit — `FRUSCoreKitTests` compiled from `FRUSExplorerTests/FRUSCoreKit/` — except `TEIHeaderKit`, whose grammar is exercised from `ManifestGeneratorTests` (`TEIHeaderParserTests`, `ManifestStatusPolicyTests`) rather than a suite of its own. The shape is uniform — each tool is a `<Name>GeneratorCore` library (all logic, testable), a thin `<Name>Generator` executable (entry point only) and a `<Name>GeneratorTests` suite that imports the Core. `swift test` runs the lot; there is no curated subset to know by heart.
 
 ## Coding Standards
 
