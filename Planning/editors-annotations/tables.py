@@ -348,6 +348,11 @@ for v, n in gv.items(): by_band[band(v)] += n
 print(f"in the gap: {sum(gv.values()):,} documents in {len(gv)} volumes; by era: "
       + ", ".join(f"{b} {by_band[b]:,}" for b in B if by_band[b]))
 print("causes: " + ", ".join(f"{k} {n:,}" for k, n in sorted(gapx["causes"].items(), key=lambda kv: -kv[1])))
+print("a period inside the citation, by how sentence 1 ends: " + ", ".join(
+      f"{k} {n:,}" for k, n in sorted(gapx["citation_periods"].items(), key=lambda kv: -kv[1])))
+ms = {v: n for v, n in gv.items() if "mSupp" in v}
+print(f"the microfiche supplements: {sum(ms.values()):,} notes in the gap; by cause: "
+      + ", ".join(f"{k} {n:,}" for k, n in sorted(gapx["causes_microfiche"].items(), key=lambda kv: -kv[1])))
 print("most: " + ", ".join(f"{v} {n}" for v, n in sorted(gv.items(), key=lambda kv: (-kv[1], kv[0]))[:8]))
 printed = lambda v: idx72[v]["classified"] + gv.get(v, 0)
 carry_p = lambda v: printed(v) >= 0.5 * max(idx72[v]["docs"], 1)

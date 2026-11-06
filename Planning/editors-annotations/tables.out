@@ -270,7 +270,9 @@ artifact size: keyed 257,796 bytes compact; columnar 55,326 bytes compact (19 co
 == 12. Markings source notes print that the index does not store (note_marking_gap.py, index at 72)
 replica of SourceNoteParser.classificationMarking(fromSourceNote:): equals the stored value 62,094 times, differs 0
 in the gap: 8,865 documents in 218 volumes; by era: 1955-1968 4,642, 1969-1980 3,449, 1981-1992 528, retro 246
-causes: another abbreviation 4,679, volume or part number 2,216, digit-led remark 1,970
+causes: a period inside the citation 4,679, volume or part number 2,216, digit-led remark 1,970
+a period inside the citation, by how sentence 1 ends: a short abbreviation 2,401, an initial 1,417, a full word 451, a dotted abbreviation 410
+the microfiche supplements: 1,613 notes in the gap; by cause: digit-led remark 1,535, a period inside the citation 78
 most: frus1961-63v10-12mSupp 684, frus1958-60v03mSupp 520, frus1961-63v07-09mSupp 408, frus1969-76v29 198, frus1964-68v31 190, frus1964-68v25 185, frus1964-68v24 182, frus1969-76ve10 142
 volumes, stored + gap >=50%        0/62     0/20     0/35     0/32     3/77    40/59    38/38  114/114    91/93    14/14      9/9  | 309
 modern volumes under half, stored: frus1958-60v03mSupp, frus1961-63v07-09mSupp, frus1961-63v10-12mSupp, frus1964-68v07, frus1969-76v01, frus1969-76v29, frus1969-76v38p1, frus1977-80v01, frus1989-92v31

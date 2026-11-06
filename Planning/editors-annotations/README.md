@@ -51,7 +51,9 @@ the note form the app always read (`tables.out` §12). No other figure moved.
 - `note_marking_gap.py` → `note-marking-gap.json`, from the index at 72. It replicates
   `SourceNoteParser.classificationMarking(fromSourceNote:)` and checks the replica against every
   stored value. It then counts, per volume and by cause, the notes whose marking the parser does
-  not reach but its own gates accept in a later sentence. It also keeps one sample note per volume.
+  not reach but its own gates accept in a later sentence. It also records how sentence 1 ends where
+  a period inside the citation is the cause, the causes in the microfiche supplements alone, and one
+  sample note per volume. Its figures are #1856's.
 - `tables.py` → `tables.out` and `editorial-annotations-by-volume.csv` (one row per volume, with
   every category's document count and every section's presence).
 

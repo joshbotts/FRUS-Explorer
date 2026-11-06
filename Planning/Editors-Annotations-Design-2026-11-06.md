@@ -5,7 +5,7 @@
 **Amended the same day, after #1853 (index version 72).** That pull request closed the gap §3 found, so §3 now records it.
 - Classification is now counted by the marking the index stores, re-counted from a full index at version 72.
 - The word search that stood in for it missed what the app stores, and wrongly listed the four Public Diplomacy volumes as unmarked (§2.4, §3.2).
-- The re-count found a second gap, in the note form the app always read: 8,865 markings the notes print are not stored (§3.3, decision 7).
+- The re-count found a second gap, in the note form the app always read: 8,865 markings the notes print are not stored (§3.3, #1856).
 - No other figure moved.
 
 **What this is.** The owner asked two questions, two days apart.
@@ -253,8 +253,8 @@ The note's parser, `SourceNoteParser.classificationMarking(fromSourceNote:)`, ta
 
 | Notes | Why the parser misses the marking | For example |
 |---:|---|---|
-| 4,679 | another abbreviation's period moves it out of second place | "…Lot 61 D 167, Iran, U.S. Policy Towards (NSC 5504). Top Secret." |
-| 2,216 | a volume or part number's period does | "…Country Files, Far East, China, Vol. I. Secret. Sent for action." |
+| 4,679 | a period inside the citation moves it out of second place: an abbreviation ("Gen.", "Vol. IX"), an initial, "U.S." | "…Lot 61 D 167, Iran, U.S. Policy Towards (NSC 5504). Top Secret." |
+| 2,216 | the citation ends on a volume or part number | "…Country Files, Far East, China, Vol. I. Secret. Sent for action." |
 | 1,970 | it is second, but a remark that opens with a digit joins its sentence, and the parser refuses digits | "…China. Secret; Sensitive; Eyes Only. 1 page of source text not declassified." |
 
 - **How it was counted.** `note_marking_gap.py` replicates the parser.
@@ -264,7 +264,10 @@ The note's parser, `SourceNoteParser.classificationMarking(fromSourceNote:)`, ta
 - **Where it falls.**
   - China, 1969–1972, prints a marking in at least 260 of its 280 documents and stores 182.
   - The three microfiche supplements print one in at least 553, 418 and 703 documents, and store 33, 10 and 19.
-- **The fix** belongs to `classificationMarking(fromSourceNote:)` alone. The boundary regex it uses also splits the citation sentence, which keys `collection-authority.json`, so the regex must not move. The fix is an index bump, as #1853 was. Decision 7 asks whether to file it.
+- **Filed as #1856.** Its constraints on the fix:
+  - It belongs to the classification reading. The boundary regex also splits the citation sentence, which keys `collection-authority.json`, so the regex must not move.
+  - The Archives Visit packet's designation cut (`TripPacketBuilder.centralFileDesignation(_:)`) relies on `classificationMarking(fromSourceNote:)` reading sentence 2 alone. Read later sentences there, and "…China, Vol. I. Secret." would be cut at "Vol.". So that caller keeps a sentence-2 test of its own.
+  - The chips follow the fix at once, since every surface re-parses the note before it reads the stored value. The stored column follows with an index bump, as #1853's did.
 
 ### 3.4 What this means for the design
 
@@ -538,7 +541,7 @@ For each fixture, the generator's people, abbreviation, source-note, classificat
    - `frus1870`: despatch numbers encoded as `note[@type="source"]`.
 
    These are corpus facts. The labels state them faithfully whether or not upstream changes.
-7. **The note parser's gap (§3.3):** 8,865 markings the notes print are not stored, so their chips are missing, and so would this design's counts be. *Recommended:* file it now, as an index-bump lane like #1853. Lane A need not wait: the generator calls the same parser, so the artifact is regenerated whenever the fix lands.
+7. **The note parser's gap (§3.3, filed as #1856):** 8,865 markings the notes print are not stored, so their chips are missing, and so would this design's counts be. *Recommended:* fix it as a lane of its own. Lane A need not wait: the generator calls the same parser, so the artifact is regenerated whenever the fix lands.
 
 ## 10. Files
 
