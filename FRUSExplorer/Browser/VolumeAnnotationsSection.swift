@@ -24,10 +24,12 @@ import SwiftUI
 ///   subjects with the volume's structure (`BoundedVolumeAnnotationsBlock`).
 ///
 /// It renders for every volume the bundled file holds, downloaded or not, and nothing for one it
-/// does not. Each row is one accessibility element; the group headings are headers.
+/// does not. Each row is one accessibility element; the group headings are headers. Given `onOpen`,
+/// a row, and an absent row too, opens its layer's page on the Editors’ Annotations axis (§5.4).
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane B
+///   1.1 — 2026-11-06: lane C — `onOpen`: each row opens its layer's page on the axis
 struct VolumeAnnotationsSection: View {
 
     /// Where the section is mounted.
@@ -43,20 +45,22 @@ struct VolumeAnnotationsSection: View {
     let volumeId: String
     /// Where the section is mounted.
     let host: Host
+    /// Opens a layer's page on the axis; `nil` leaves the rows still.
+    var onOpen: (@MainActor (AnnotationLayer) -> Void)? = nil
 
     var body: some View {
         if let presentation = VolumeAnnotationsPresentation(volumeId: volumeId) {
             switch host {
             case .list:
                 Section {
-                    VolumeAnnotationsRows(presentation: presentation)
+                    VolumeAnnotationsRows(presentation: presentation, onOpen: onOpen)
                 } header: {
                     Text(VolumeAnnotationsPresentation.title)
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityIdentifier("volume.annotations.header")
                 }
             case .column(let room):
-                BoundedVolumeAnnotationsBlock(presentation: presentation, room: room)
+                BoundedVolumeAnnotationsBlock(presentation: presentation, room: room, onOpen: onOpen)
             }
         }
     }
@@ -69,6 +73,8 @@ struct VolumeAnnotationsSection: View {
 struct VolumeAnnotationsRows: View {
     /// What the rows say.
     let presentation: VolumeAnnotationsPresentation
+    /// Opens a layer's page on the axis; `nil` leaves the rows still.
+    var onOpen: (@MainActor (AnnotationLayer) -> Void)? = nil
 
     /// Whether the disclosure is open; collapsed by default (§5.2).
     @State private var showsAbsent = false
@@ -82,24 +88,31 @@ struct VolumeAnnotationsRows: View {
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier("volume.annotations.group.\(group.id.rawValue)")
             ForEach(group.rows) { row in
-                VolumeAnnotationsRowView(row: row)
+                opening(row.layer, label: row.accessibilityLabel,
+                        identifier: "volume.annotations.\(row.id)") {
+                    VolumeAnnotationsRowView(row: row, opens: onOpen != nil)
+                }
             }
         }
         if !presentation.absent.isEmpty {
             DisclosureGroup(isExpanded: $showsAbsent) {
                 ForEach(presentation.absent) { row in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(row.label)
-                        if !row.note.isEmpty {
-                            Text(row.note)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
+                    opening(row.layer, label: row.accessibilityLabel,
+                            identifier: "volume.annotations.absent.\(row.id)") {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(row.label)
+                                if !row.note.isEmpty {
+                                    Text(row.note)
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer(minLength: 0)
+                            if onOpen != nil { VolumeAnnotationsRowView.chevron }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(row.accessibilityLabel)
-                    .accessibilityIdentifier("volume.annotations.absent.\(row.id)")
                 }
             } label: {
                 Text(presentation.absentTitle)
@@ -108,15 +121,56 @@ struct VolumeAnnotationsRows: View {
             .accessibilityIdentifier("volume.annotations.absent")
         }
     }
+
+    /// A row as one accessibility element: a button that opens `layer`'s page when the host passed
+    /// `onOpen`, and a still row otherwise.
+    @ViewBuilder
+    private func opening<Content: View>(_ layer: AnnotationLayer, label: String, identifier: String,
+                                        @ViewBuilder content: () -> Content) -> some View {
+        if let onOpen {
+            Button {
+                onOpen(layer)
+                #if DEBUG
+                print("[VolumeAnnotationsRows] Open → \(layer.rawValue)")
+                #endif
+            } label: {
+                content()
+                    // Both modifiers, in this order — the #312 full-row tap-target idiom.
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(label)
+            .accessibilityHint(String(localized: "browser.volume.annotations.row.hint",
+                                      defaultValue: "Opens what the editors did, and the volumes that carry it."))
+            .accessibilityIdentifier(identifier)
+        } else {
+            content()
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(label)
+                .accessibilityIdentifier(identifier)
+        }
+    }
 }
 
 // MARK: - VolumeAnnotationsRowView
 
-/// One layer: its symbol, its name and its counts, read by VoiceOver as one sentence. The text
-/// wraps at any size and is never truncated.
+/// One layer: its symbol, its name and its counts, and, when the row opens the layer's page, a
+/// chevron. The text wraps at any size and is never truncated. What VoiceOver reads is set by the
+/// row's container (`VolumeAnnotationsRows`), as one sentence.
 struct VolumeAnnotationsRowView: View {
     /// The layer.
     let row: VolumeAnnotationsPresentation.Row
+    /// `true` when the row opens the layer's page.
+    var opens: Bool = false
+
+    /// The trailing mark of a row that opens a page, as Browse's rows draw it.
+    static var chevron: some View {
+        Image(systemName: "chevron.right")
+            .font(.caption)
+            .foregroundStyle(.tertiary)
+            .accessibilityHidden(true)
+    }
 
     // The symbols' column, as wide as the widest of the fifteen, `person.3`, at the body size, so
     // every row's text starts at the same place: 28 pt at the Mac's 13 pt body and 36 at iOS's
@@ -140,11 +194,12 @@ struct VolumeAnnotationsRowView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+            if opens {
+                Spacer(minLength: 8)
+                Self.chevron
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(row.accessibilityLabel)
-        .accessibilityIdentifier("volume.annotations.\(row.id)")
     }
 }
 
@@ -168,6 +223,8 @@ struct BoundedVolumeAnnotationsBlock: View {
 
     /// The column's height below the blocks above this one, shared with the volume's structure.
     let room: CGFloat
+    /// Opens a layer's page on the axis; `nil` leaves the rows still.
+    var onOpen: (@MainActor (AnnotationLayer) -> Void)? = nil
 
     /// Whether the reader has opened the section; it stays open for the next volume.
     @AppStorage("frus.browser.volumeAnnotations.expanded") private var isExpanded = false
@@ -195,7 +252,7 @@ struct BoundedVolumeAnnotationsBlock: View {
         DisclosureGroup(isExpanded: $isExpanded) {
             ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 6) {
-                    VolumeAnnotationsRows(presentation: presentation)
+                    VolumeAnnotationsRows(presentation: presentation, onOpen: onOpen)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { naturalHeight = $0 }

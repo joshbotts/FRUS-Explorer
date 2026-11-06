@@ -42,6 +42,10 @@ enum CorpusNavValue: Hashable {
     /// ARTIFACT's cluster id — valid only for the loaded generation, and this stack is
     /// in-memory state, never persisted; the label rides along for display.
     case clusterDocuments(id: Int, label: String)
+    /// One layer's page on the Editors’ Annotations axis (the editors' annotations design, lane C),
+    /// by the layer's id (`AnnotationLayer`), with the volume whose page opened it, if one did,
+    /// to be marked in its drills.
+    case annotationCategory(id: String, fromVolume: String?)
 }
 
 // MARK: - CorpusSidebarItem
@@ -67,6 +71,8 @@ enum CorpusSidebarItem: Hashable {
     case archives
     /// The Semantic Clusters axis (#1051 A-8, B-7).
     case clusters
+    /// The Editors’ Annotations axis (the editors' annotations design, lane C).
+    case annotations
     /// The My Scopes level (#1051 A-5).
     case myScopes
     /// The Working Corpora level (#1051 A-6).
@@ -128,6 +134,9 @@ enum CorpusSidebarItem: Hashable {
 ///          opens the volume's page whatever the browser shows. Its push waits until the split
 ///          view's own pop of the detail stack is done (`DetailStackRootPresence`); pushed from
 ///          the selection observer, it showed the new subseries' list and no page
+///   1.12 — 2026-11-06: the editors' annotations design, lane C — BROWSE gains Editors’
+///          Annotations (`AnnotationsIndexView`); a layer pushes `CorpusNavValue.annotationCategory`
+///          (`AnnotationCategoryView`), whose drills push the R-1 list in place
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
@@ -203,6 +212,16 @@ struct CorpusBrowserWindowView: View {
                     Label(String(localized: "browser.clusters.title", defaultValue: "Clusters"),
                           systemImage: SemanticGlyph.clusters)
                         .tag(CorpusSidebarItem.clusters)
+                    // Two lines where one will not do: at the sidebar's 170 pt the name is 122 pt
+                    // of about 110 and truncated to "Editors’ Annotat…" (the check copy, 2026-11-06),
+                    // and a reader's saved column width outlives any change to the ideal width.
+                    Label {
+                        Text(VolumeAnnotationsPresentation.title)
+                            .lineLimit(2)
+                    } icon: {
+                        Image(systemName: "pencil.line")
+                    }
+                    .tag(CorpusSidebarItem.annotations)
                 }
                 Section(String(localized: "corpus.sidebar.yourSets", defaultValue: "Your sets")) {
                     Label(String(localized: "browser.scopes.title", defaultValue: "My Scopes"),
@@ -276,6 +295,10 @@ struct CorpusBrowserWindowView: View {
                     case .clusters?:
                         ClustersIndexView(onSelectCluster: { id, label in
                             detailPath.append(.clusterDocuments(id: id, label: label))
+                        })
+                    case .annotations?:
+                        AnnotationsIndexView(index: VolumeAnnotationsStore.shared, onSelect: { layer in
+                            detailPath.append(.annotationCategory(id: layer.rawValue, fromVolume: nil))
                         })
                     case .myScopes?:
                         ScopeIndexView(
@@ -372,6 +395,26 @@ struct CorpusBrowserWindowView: View {
                                         localized: "browser.archives.collection.unavailable.detail",
                                         defaultValue: "This collection is not in the bundled archival authority."))
                                 )
+                            }
+                        case .annotationCategory(let id, let fromVolume):
+                            // A layer's page: its drills push the R-1 list in place, as every axis
+                            // here does; People opens its window, as the toolbar's button does, and
+                            // Archives is the sidebar's own axis.
+                            if let layer = AnnotationLayer(rawValue: id) {
+                                AnnotationCategoryView(
+                                    layer: layer,
+                                    index: VolumeAnnotationsStore.shared,
+                                    fromVolumeId: fromVolume,
+                                    onDrill: { spec in detailPath.append(.axisList(spec)) },
+                                    onOpenLink: { link in
+                                        switch link {
+                                        case .people:
+                                            appState.bindTool(.people, to: appState.provenance(of: .corpusBrowser))
+                                            openWindow.fronting(id: "frus.people")
+                                        case .archives:
+                                            selection = .archives
+                                        }
+                                    })
                             }
                         }
                     }
@@ -1048,6 +1091,8 @@ private struct BoundedSubjectsBlock: View {
 ///          subjects (`VolumeAnnotationsSection`, `.column`), collapsed until opened; the column
 ///          measures its height and the title's and subjects' so that, open, the block shares the
 ///          room below them with the phase content
+///   1.10 — 2026-11-06: lane C — a row of Editors’ Annotations pushes its layer's page
+///          (`CorpusNavValue.annotationCategory`), with this volume marked in its lists
 private struct CorpusVolumeDetailView: View {
     let volume: VolumeManifestEntry
     /// The window's detail-column path; opening a section pushes onto it.
@@ -1105,7 +1150,11 @@ private struct CorpusVolumeDetailView: View {
             // replaced in place.
             if VolumeAnnotationsPresentation.hasContent(forVolumeId: volume.volumeId) {
                 VolumeAnnotationsSection(volumeId: volume.volumeId,
-                                         host: .column(room: max(0, columnHeight - headerHeight)))
+                                         host: .column(room: max(0, columnHeight - headerHeight)),
+                                         onOpen: { layer in
+                                             path.append(.annotationCategory(id: layer.rawValue,
+                                                                             fromVolume: volume.volumeId))
+                                         })
                     .id(volume.volumeId)
                 Divider()
             }

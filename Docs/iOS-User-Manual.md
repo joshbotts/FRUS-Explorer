@@ -326,8 +326,9 @@ The root of the Browse tab opens with a **search field** over all 553 volumes �
 - **Editors** — volumes filed by the editors named on their title pages (Section 6.1d).
 - **Archives** — volumes filed by where their documents came from (Section 6.1g).
 - **Clusters** — documents grouped by the language they share, computed from the text (Section 6.1h).
+- **Editors’ Annotations** — below the grid at full width: volumes filed by what their editors annotated, such as tagged people or source notes, and the era each practice became standard (Section 6.1i).
 
-Below the grid, **Your sets** holds the collections you assemble yourself — **My Scopes** (Section 6.1e) and **Working Corpora** (Section 6.1f).
+Below the doors, **Your sets** holds the collections you assemble yourself — **My Scopes** (Section 6.1e) and **Working Corpora** (Section 6.1f).
 
 ### 6.1a The Hierarchy
 
@@ -436,6 +437,18 @@ Clusters are an **experimental, computed** view: the groups come from how docume
 
 ![The semantic map focused on a cluster after "See on the semantic map".](screenshots/ipad/browse-clusters-map.png)
 
+### 6.1i Editors’ Annotations
+
+The **Editors’ Annotations** door browses the series by what its editors did to the documents: the same layers a volume's page lists (Section 6.2b), in the same three groups. Each row shows how many volumes carry the layer, such as *288 of 553 volumes* for tagged people, and a strip of the eras, earliest first and the late retrospective volumes last, each era shaded by the share of its volumes that carry the layer. The strips show where a practice began and where it never took hold.
+
+Tap a layer for its page:
+- **What the editors did**, in a sentence or two.
+- **Era by era**: when the series made the layer standard (*Standard in the volumes covering 1955 on*), or, for a practice no era made standard, where it is most common; and the strip at full size, each era under its first year. With VoiceOver, each era reads its own count.
+- **In the app**: what the app does with the layer, or that nothing reads it yet. People tagged links to the People browser (Section 6.5), and source notes to Archives (Section 6.1g).
+- **Volumes**: the volumes with it and the volumes without it, each with its count, such as *279/280* documents. Source notes add a list for each form, and the printed aids have one list per aid. Each list says how many volumes it holds and by what rule a volume counts, and its toolbar has **Save as Scope…**.
+
+A volume that prints a List of Persons but links none of its names to it is marked in its list, as is one that prints a List of Abbreviations without links. Like the volume page's section, the axis ships with the app, so it covers volumes you have not downloaded.
+
 ### 6.2 Top Subjects
 
 Every volume's page carries a **Top subjects** section — the subjects most characteristic of that volume, derived from experimental subject data and grouped by category. These are automatically detected topics, not editorial subject headings, so an occasional mistag is possible; but because the profiles ship with the app, they appear even for volumes you haven't downloaded — a fast way to size up an unfamiliar volume before committing 6 MB to it. Tap a subject to see every *other* FRUS volume covering it across the whole corpus, and navigate straight to any of them. That sheet also offers **Archival profile of these volumes**, which opens Archival Analytics (Section 15.5) on the collections those volumes draw on.
@@ -466,7 +479,7 @@ Every volume's page also says what its editors annotated, under **Editors’ Ann
 - **Where it came from:** source notes, and whether they are archival citations (*Source: …*) or file numbers printed above the heading; classification markings; excisions marked as not declassified; and despatch numbers.
 - **How it connects:** documents numbered in print, cross-references, editorial notes, footnotes, marginal notes, and the printed aids the volume opens and closes with, such as its Preface, Sources, Persons and Index.
 
-A layer is listed when the volume carries it. For one that most documents can carry, such as tagged people, that means at least half the volume's documents; a count shows how many. **Not in this volume** lists the standard layers the volume lacks, each with the era from which the series made it standard, so you know before you download whether, for example, the People browser and Person analytics will find the people in it. Like Top subjects, the section ships with the app, so it appears for volumes you have not downloaded.
+A layer is listed when the volume carries it. For one that most documents can carry, such as tagged people, that means at least half the volume's documents; a count shows how many. **Not in this volume** lists the standard layers the volume lacks, each with the era from which the series made it standard, so you know before you download whether, for example, the People browser and Person analytics will find the people in it. Like Top subjects, the section ships with the app, so it appears for volumes you have not downloaded. Tap a layer, present or not, to open its page on the Editors’ Annotations axis (Section 6.1i), whose lists put this volume first.
 
 ### 6.3 The Project Picker
 

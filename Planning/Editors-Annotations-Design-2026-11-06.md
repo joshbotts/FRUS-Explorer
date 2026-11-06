@@ -1,6 +1,6 @@
 # Editors' annotations: what each volume carries, on its page and in Browse — a design, 2026-11-06
 
-**Status: BUILDING, 2026-11-06.** Lane A merged as #1859; lane B, the volume page, follows it. The owner's "proceed with annotations design plan" took §9's recommendations 1–4, and lane B takes decision 5 as B shipping alone. Decision 6 is open. §11 records where each lane departs from the design.
+**Status: BUILDING, 2026-11-06.** Lanes A and B merged as #1859 and #1860; lane C, the Browse axis, follows them, and lane D is next. The owner's "proceed with annotations design plan" took §9's recommendations 1–4, and lane B took decision 5 as B shipping alone. Decision 6 is open. §11 records where each lane departs from the design.
 
 **Amended the same day, after #1853 (index version 72).** That pull request closed the gap §3 found, so §3 now records it.
 - Classification is now counted by the marking the index stores, re-counted from a full index at version 72.
@@ -575,3 +575,15 @@ Where the lanes depart from §4 to §8, each for a reason measured on the way.
 - **The printed aids** list only the kinds a reader knows by name. The containers, the table of contents and a President's message are left out.
 - **The symbols are §5.2's,** drawn in a column as wide as the widest of them, `person.3`, so that every row's text starts at the same place.
 - **A row opens nothing** until lane C builds the category pages (decision 5).
+
+**Lane C, the Browse axis.**
+- **One table of layers.** The axis's categories are a volume page's fifteen rows, read from one table (`AnnotationLayer`) that the page now reads too, so the two cannot disagree on a layer's name, symbol or rule.
+- **The iPhone and iPad door is full width,** below the grid, as Subseries' is. A grid tile holds one line, and in the iPad's list pane "Editors’ Annotations" would truncate to "Editors’ A…".
+- **A row says its sentence itself.** "People tagged: 288 of 553 volumes. Standard in the volumes covering 1955 on." is the row's VoiceOver label, and the strip is hidden from VoiceOver in a row; on a layer's page each era's cell reads its own count ("1955–1968: 114 of 114 volumes").
+- **"In the app" links within Browse.** People links to the People browser, and source notes to the Archives axis, which is built from them; Source Explorer is named in the text. On iOS Source Explorer opens from a document, scoped to it, and has no entry of its own to link to. Every layer says what the app does with it, or that nothing reads it yet, rather than a bare "Not used by the app yet".
+- **For a practice no era made standard,** the page names the era where it is most common.
+- **The printed aids have one drill per aid,** not "with" and "without": nearly every volume prints one.
+- **A drill's title** reads "With: People tagged" or "Without: People tagged"; its caption is §6's. Its rows show "279/280" for a layer that runs through a volume, "37 docs" for one found here and there, "12 notes" for editorial notes, and nothing for references and aids, which no one count says.
+- **The marked volume comes first.** Opened from a volume's row, a drill lists that volume first, with "You came here from this volume." In the 288 volumes that tag people, `frus1961-63v06` would otherwise be the 126th row.
+- **Two Lists of Persons are marked unlinked, not one.** The amber line is computed: a volume whose index holds a List of Persons and none of whose documents links a name to it. Besides `frus1977-80v27`'s 153 names it finds `frus1941-43`, *The Conferences at Washington, 1941–1942, and Casablanca, 1943*, whose six names the app's section rule finds and §2.1's section ids did not (its row in `editorial-annotations-by-volume.csv` reads 0). The same rule marks two Lists of Abbreviations, `frus1977-80v27`'s and `frus1981-88v16`'s.
+- **The regular-width matrix is lane D's,** as §8 planned.

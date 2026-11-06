@@ -96,6 +96,8 @@ import Observation
 ///          heard no indexing until a relaunch. `indexingProgress` is kept from
 ///          `AppState.currentIndexingProgress` by `updateIndexingProgress(from:)`, for the volume
 ///          `indexingVolumeId` names
+///   1.15 — 2026-11-06: the editors' annotations design, lane C — the `.annotations` axis and the
+///          `.annotationCategory` page levels
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -149,6 +151,12 @@ public final class BrowserViewModel {
         /// cluster id — in-memory navigation only, never persisted (ids re-mint per
         /// artifact generation); the label rides along for the breadcrumb.
         case clusterDocuments(id: Int, label: String)
+        /// The Editors’ Annotations axis (the editors' annotations design, lane C): every layer
+        /// of editorial annotation, with how many volumes carry it, era by era.
+        case annotations
+        /// One layer's page on that axis. Identity is the layer's id (`AnnotationLayer`); the
+        /// volume whose page opened it, if one did, rides along to be marked in its drills.
+        case annotationCategory(id: String, fromVolume: String?)
 
         public func hash(into hasher: inout Hasher) {
             switch self {
@@ -173,6 +181,8 @@ public final class BrowserViewModel {
             case .archivalCollection(let id, _): hasher.combine(17); hasher.combine(id)
             case .clusters:            hasher.combine(18)
             case .clusterDocuments(let id, _): hasher.combine(19); hasher.combine(id)
+            case .annotations:         hasher.combine(20)
+            case .annotationCategory(let id, _): hasher.combine(21); hasher.combine(id)
             }
         }
 
@@ -199,6 +209,8 @@ public final class BrowserViewModel {
             case (.archivalCollection(let a, _), .archivalCollection(let b, _)): return a == b
             case (.clusters, .clusters): return true
             case (.clusterDocuments(let a, _), .clusterDocuments(let b, _)): return a == b
+            case (.annotations, .annotations): return true
+            case (.annotationCategory(let a, _), .annotationCategory(let b, _)): return a == b
             default: return false
             }
         }

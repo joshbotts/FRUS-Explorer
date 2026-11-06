@@ -80,6 +80,8 @@ import SwiftData
 ///          People, Topics, Continue reading and search-result rows gain accessibility identifiers
 ///   2.7 — #1363 review round 1: the search is the view model's `rootSearch`, so the list pane the
 ///          iPad two-pane brings back beside a document's parent, or across its gate, still holds it
+///   2.8 — 2026-11-06: the editors' annotations design, lane C — a full-width "Editors’ Annotations"
+///          door below the grid, opening the `.annotations` axis
 struct CorpusView: View {
 
     let vm: BrowserViewModel
@@ -480,6 +482,28 @@ struct CorpusView: View {
                     .help(String(localized: "browser.corpus.tile.clusters.help",
                                  defaultValue: "Documents grouped by the language they share, computed from the text — labels are sampled terms, not subject headings"))
                 }
+
+                // Full width, as Subseries is: a half-width tile holds one line, and in the iPad's
+                // list pane "Editors’ Annotations" would truncate to "Editors’ A…".
+                BrowseAxisTile(
+                    title: VolumeAnnotationsPresentation.title,
+                    caption: String(localized: "browser.corpus.tile.annotations.caption",
+                                    defaultValue: "What each volume's editors annotated, era by era"),
+                    systemImage: "pencil.line",
+                    accessibilityIdentifier: "browse.root.annotationsTile",
+                    isOpen: isOpen(.annotations)
+                ) {
+                    vm.select(.annotations)
+                    #if DEBUG
+                    print("[BrowserView] Navigate → editors' annotations axis")
+                    #endif
+                }
+                .accessibilityLabel(
+                    String(localized: "browser.corpus.tile.annotations.a11y",
+                           defaultValue: "Browse by editors' annotations")
+                )
+                .help(String(localized: "browser.corpus.tile.annotations.help",
+                             defaultValue: "Volumes filed by what their editors annotated — people tagged, source notes, classification and more — and the era each practice became standard"))
             }
             .listRowInsets(EdgeInsets())
             .listRowBackground(Color.clear)

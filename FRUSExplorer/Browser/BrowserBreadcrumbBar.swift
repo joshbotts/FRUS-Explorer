@@ -43,6 +43,8 @@ import SwiftUI
 ///   1.5 — #1491 review round 1: a document crumb names a document the volume prints without a
 ///          number "Unnumbered (d710a-1)" (`CitableDocumentNumber.unnumberedLabel`), where it
 ///          printed "Doc. [Unnumbered document following …]"
+///   1.6 — 2026-11-06: the editors' annotations design, lane C — crumbs for the Editors’
+///          Annotations axis and a layer's page, by the layer's name
 struct BrowserBreadcrumbBar: View {
 
     let path: [BrowserViewModel.BrowserLevel]
@@ -302,6 +304,10 @@ extension BrowserViewModel.BrowserLevel {
             return String(localized: "browser.breadcrumb.clusters", defaultValue: "Clusters")
         case .clusterDocuments(_, let label):
             return label
+        case .annotations:
+            return VolumeAnnotationsPresentation.title
+        case .annotationCategory(let id, _):
+            return AnnotationLayer(rawValue: id)?.label ?? id
         }
     }
 }

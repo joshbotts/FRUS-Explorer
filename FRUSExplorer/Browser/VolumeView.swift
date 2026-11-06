@@ -67,6 +67,8 @@ import SwiftUI
 ///          `FollowedPageLink.notice`)
 ///   2.10 — 2026-11-06: the editors' annotations design, lane B — the "Editors’ Annotations"
 ///          section (`VolumeAnnotationsSection`) right after the metadata header
+///   2.11 — 2026-11-06: lane C — a row of that section opens its layer's page on the axis
+///          (`.annotationCategory`), with this volume marked in its lists
 struct VolumeView: View {
 
     let vm: BrowserViewModel
@@ -106,8 +108,11 @@ struct VolumeView: View {
             }
 
             // Editors’ Annotations: what the volume's editors annotated, from the bundled
-            // `volume-annotations-index.json`, so it renders before download too.
-            VolumeAnnotationsSection(volumeId: volume.volumeId, host: .list)
+            // `volume-annotations-index.json`, so it renders before download too. A row opens its
+            // layer's page on the axis, with this volume marked in its lists.
+            VolumeAnnotationsSection(volumeId: volume.volumeId, host: .list, onOpen: { [vm, volume] layer in
+                vm.navigationPath.append(.annotationCategory(id: layer.rawValue, fromVolume: volume.volumeId))
+            })
 
             // Tag chips
             let chips = vm.tagChips(for: volume)
