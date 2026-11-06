@@ -20,20 +20,22 @@ import XCTest
 /// tests keep screenshots of the axis, a layer's page and each list they reach, for a reader to check
 /// the strips and rows by eye.
 ///
-/// Lane D adds two more:
+/// Lane D adds three more:
 /// - at regular width the axis is a matrix, and a cell opens its era's volumes that carry the layer
 ///   (an iPad only: an iPhone draws no matrix, and the test skips there, naming why);
 /// - the People browser says how many volumes tag their people, and its link opens People tagged's
-///   page on the axis.
+///   page on the axis;
+/// - Person Analytics says it too: on an iPhone its link closes the sheet and opens the page in
+///   Browse, and in an iPad window, where Browse is in another window, it offers no link.
 ///
 /// Devices: an iPhone 17 and an iPad Pro 13-inch (M5), both under iOS 27.0
-/// (`Planning/UI-Test-Destinations-Runbook.md`, `AnnotationsAxisBrowseTests`): four tests, the
+/// (`Planning/UI-Test-Destinations-Runbook.md`, `AnnotationsAxisBrowseTests`): five tests, the
 /// matrix test skipping on the iPhone.
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane C
 ///   1.1 — 2026-11-06: lane D — `testAMatrixCellOpensItsErasVolumes`,
-///          `testThePeopleBrowserSaysWhichVolumesTagPeople`
+///          `testThePeopleBrowserSaysWhichVolumesTagPeople`, `testPersonAnalyticsSaysWhichVolumesTagPeople`
 //
 // Note: the XCUI APIs are main-actor isolated, so the class is `@MainActor` and overrides the ASYNC
 // `setUp`/`tearDown` (see the note at the head of `UIObstructionTests`).
@@ -66,6 +68,8 @@ final class AnnotationsAxisBrowseTests: XCTestCase {
     }
 
     override func tearDown() async throws {
+        // Person Analytics opens as a sheet on an iPhone; the next launch would restore it.
+        AnalysisToolsMenu.dismissAnyPresentation(in: app)
         app = nil
     }
 
@@ -222,5 +226,40 @@ final class AnnotationsAxisBrowseTests: XCTestCase {
         let reach = element("annotations.category.reach")
         XCTAssertTrue(reach.waitForExistence(timeout: 10), "The link did not open People tagged's page.")
         XCTAssertTrue(reach.label.hasPrefix("288 of 553 volumes"), "The page's reach reads \(reach.label)")
+    }
+
+    /// On an iPhone Person Analytics is a sheet over Browse: its link must close the sheet and open
+    /// People tagged's page in Browse. On an iPad it is a window of its own, where Browse is in
+    /// another window, and the line must offer no link (the Topic-index door's rule).
+    func testPersonAnalyticsSaysWhichVolumesTagPeople() throws {
+        app.launch()
+        _ = navigator.select(.browse).tapped
+        try AnalysisToolsMenu.open("Person Analytics", in: app, through: navigator)
+        let isPad = UIDevice.current.userInterfaceIdiom == .pad
+        if isPad {
+            let trends = app.buttons["Trends"].firstMatch
+            XCTAssertTrue(trends.waitForExistence(timeout: 10), "Person Analytics offers no Trends window.")
+            trends.tap()
+        }
+
+        let caption = element("people.tagging.caption")
+        XCTAssertTrue(caption.waitForExistence(timeout: 15), "Person Analytics does not say which volumes tag people.")
+        XCTAssertTrue(caption.label.hasPrefix("People are tagged in 288 of 553 volumes"),
+                      "Person Analytics' line reads \(caption.label)")
+        keepScreenshot(named: "Person Analytics' line")
+
+        let link = element("people.tagging.link")
+        if isPad {
+            XCTAssertFalse(link.exists, "In its own iPad window, where Browse is in another window, the line must offer no link.")
+            let done = app.navigationBars.buttons["Done"].firstMatch
+            if done.exists { done.tap() }
+            return
+        }
+        XCTAssertTrue(link.exists && link.isHittable, "Person Analytics' line offers no way to the volumes.")
+        link.tap()
+        let reach = element("annotations.category.reach")
+        XCTAssertTrue(reach.waitForExistence(timeout: 10),
+                      "The link did not close the sheet and open People tagged's page in Browse.")
+        XCTAssertFalse(caption.exists, "The sheet is still over Browse.")
     }
 }

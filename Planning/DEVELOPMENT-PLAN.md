@@ -9659,3 +9659,23 @@ From `v2` at `dcf178e` (#1853 merged), on `claude/cool-borg-34f5fa`, a side sess
 **Not done, and for the owner.**
 - **Lane D** (the regular-width matrix; the People browser's and Person analytics' captions linking here; the Research Guide's sentence) and §9's decision 6.
 - **VoiceOver aloud, dark mode and Full Keyboard Access on the Mac** stay the owner's.
+
+## Session 2026-11-06 — The editors' annotations design, lane D: the matrix, the people links, the guide's sentence
+
+**What and why.** Lane D, the last of `Planning/Editors-Annotations-Design-2026-11-06.md` (§6, §7, §8), on the owner's "Yes, after merge" once lane C (#1861) had merged: the regular-width matrix, the People browser's and Person analytics' captions linking to the axis, and the Research Guide's sentence.
+
+**Built.**
+- **The matrix** (`AnnotationsMatrixHeader`, `AnnotationsMatrixRow`): on an iPad's regular width and on the Mac, the axis's groups open with the eras' first years, and each layer's row is its name beside eleven cells, each a button that opens the era's volumes carrying the layer (`AnnotationsAxis.eraDrill`, with `spokenCell` for VoiceOver). An iPhone keeps the strip as a picture.
+- **`PeopleTaggingCaption`**, "People are tagged in 288 of 553 volumes, and only those volumes' people appear here. In the others, search for the names.", over the People browser's list and in its empty state, and under Person analytics' scope bar, with its link "Volumes that tag people".
+- **The link's hand-off:** `AppState.openAnnotationLayer` and `pendingBrowseAnnotationLayer`, consumed by `BrowserView` on iOS (the axis selected, the page pushed; on change and in the appear-time drain) and by the Corpus Browser on the Mac (`consumePendingAnnotationLayer`, the page pushed once the split view shows the axis, as a volume's waits for its subseries). The People window and Person analytics bring the Corpus Browser forward; Person analytics on iOS closes its sheet first and switches to Browse, and withholds the link in an iPad window.
+- **The guide's sentence**, ending its People section (`IndexingEducationView.swift` and its mirror).
+- **Copy:** 4 keys in `07-Search-and-Browse.md` §20.6, the guide's mirror changed, 25 ranged blocks re-pointed (the Amendment-Log has all three). Both manuals: the matrix (iOS §6.1i, the Mac's sidebar paragraph) and the caption (the People browser and Person Analytics on each).
+- **Tests:** `AnnotationsAxisTests` gains a cell's drill and the caption's line; `AnnotationsAxisBrowseTests` gains a matrix cell's list (iPad) and the People browser's caption and link, with its runbook entry and `CLAUDE.md` row updated.
+
+**Where lane D departs from the design**, and what stays for later, is in its §11; its status line names lane D.
+
+**Checked**, every heavy job through `Scripts/heavy.sh`: LANE_D_CHECKED
+
+**Not done, and for the owner.**
+- **Combining layers into one filter** (§6, "Later") and §9's decision 6.
+- **VoiceOver aloud, dark mode and Full Keyboard Access on the Mac** stay the owner's.

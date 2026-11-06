@@ -481,13 +481,16 @@ struct AnnotationCategoryView: View {
 struct PeopleTaggingCaption: View {
     /// Opens People tagged's page on the Editors’ Annotations axis, or `nil` where the host cannot.
     var onOpen: (@MainActor () -> Void)? = nil
+    /// `true` under an empty state's centred title and description, which it then matches.
+    var isCentered: Bool = false
 
     var body: some View {
         if let text = Self.text() {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: isCentered ? .center : .leading, spacing: 6) {
                 Text(text)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(isCentered ? .center : .leading)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("people.tagging.caption")
                 if let onOpen {
@@ -503,7 +506,7 @@ struct PeopleTaggingCaption: View {
                     .accessibilityIdentifier("people.tagging.link")
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: isCentered ? .center : .leading)
         }
     }
 

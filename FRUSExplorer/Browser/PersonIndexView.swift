@@ -105,7 +105,7 @@ struct PersonIndexView: View {
                             localized: "people.empty.detail",
                             defaultValue: "Index some volumes to see people mentioned across the corpus."))
                     } actions: {
-                        PeopleTaggingCaption(onOpen: openTaggedVolumes)
+                        PeopleTaggingCaption(onOpen: openTaggedVolumes, isCentered: true)
                     }
                 } else {
                     ContentUnavailableView.search(text: searchText)

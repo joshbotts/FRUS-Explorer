@@ -1,6 +1,6 @@
 # Editors' annotations: what each volume carries, on its page and in Browse — a design, 2026-11-06
 
-**Status: BUILDING, 2026-11-06.** Lanes A and B merged as #1859 and #1860; lane C, the Browse axis, follows them, and lane D is next. The owner's "proceed with annotations design plan" took §9's recommendations 1–4, and lane B took decision 5 as B shipping alone. Decision 6 is open. §11 records where each lane departs from the design.
+**Status: BUILDING, 2026-11-06.** Lanes A, B and C merged as #1859, #1860 and #1861; lane D, the matrix and the links and the last lane, follows them. The owner's "proceed with annotations design plan" took §9's recommendations 1–4, and lane B took decision 5 as B shipping alone. Decision 6 is open. §11 records where each lane departs from the design.
 
 **Amended the same day, after #1853 (index version 72).** That pull request closed the gap §3 found, so §3 now records it.
 - Classification is now counted by the marking the index stores, re-counted from a full index at version 72.
@@ -587,3 +587,10 @@ Where the lanes depart from §4 to §8, each for a reason measured on the way.
 - **The marked volume comes first.** Opened from a volume's row, a drill lists that volume first, with "You came here from this volume." In the 288 volumes that tag people, `frus1961-63v06` would otherwise be the 126th row.
 - **Two Lists of Persons are marked unlinked, not one.** The amber line is computed: a volume whose index holds a List of Persons and none of whose documents links a name to it. Besides `frus1977-80v27`'s 153 names it finds `frus1941-43`, *The Conferences at Washington, 1941–1942, and Casablanca, 1943*, whose six names the app's section rule finds and §2.1's section ids did not (its row in `editorial-annotations-by-volume.csv` reads 0). The same rule marks two Lists of Abbreviations, `frus1977-80v27`'s and `frus1981-88v16`'s.
 - **The regular-width matrix is lane D's,** as §8 planned.
+
+**Lane D, the matrix and the links.**
+- **The matrix is the axis's own rows at regular width.** On an iPad's regular width and on the Mac, each group opens with the eras' first years, and each layer's row is its name, which opens its page, beside eleven cells. A cell opens its era's volumes that carry the layer, its list's caption naming the era ("1955–1968: 114 of 114 volumes." and the rule). A cell no volume of its era fills is drawn, read and disabled, never hidden. On an iPhone the strip stays a picture: a cell there would be about 20 pt wide, under a tap's 44.
+- **One line for both people surfaces.** "People are tagged in 288 of 553 volumes, and only those volumes' people appear here. In the others, search for the names." It sits over the People browser's list and in its empty state, which a reader whose volumes tag no one used to reach with only "Index some volumes", and under Person analytics' scope bar.
+- **Its link is a hand-off,** `AppState.openAnnotationLayer`, as a volume's is. On the Mac the Corpus Browser comes forward, selects the axis and pushes People tagged's page once the split view shows the axis. On iOS Browse opens the axis with the page above it, assigned rather than appended, as the topic index is, so the crumbs read the axis and not People. In Person analytics' own iPad window, where Browse is in another window, the link is withheld, the Topic-index door's rule.
+- **The guide's sentence** ends the People section: "For any volume you can see whether its editors tagged its people, and list the volumes that do, era by era." It says what a reader can do and names no control.
+- **Not built:** combining layers into one filter (§6, "Later").
