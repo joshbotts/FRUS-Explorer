@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §7, §16, §17, §18.1, §18.7, §18.8. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 370 blocks · no ✎ edits held or changed · no ⚑ wording issues
+**In this file:** 434 blocks · no ✎ edits held or changed · no ⚑ wording issues
 
 ---
 
@@ -2845,14 +2845,14 @@ The model could not be downloaded. You can try again from the button above, or f
 *Coverage captions and empty states on the Browse axes that §16 does not carry, and the Browse root's tile tooltips.*
 
 #### You can browse this volume’s contents now. Re-index it to…
-<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1395–1396 | key: corpus.volume.indexInterrupted.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1405–1406 | key: corpus.volume.indexInterrupted.detail | shared: macOS only -->
 
 You can browse this volume’s contents now. Re-index it to restore full search coverage and document text.
 
 <!-- END SOURCE: corpus.volume.indexInterrupted.detail -->
 
 #### You can browse this volume’s contents now. Index it to…
-<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1397–1398 | key: corpus.volume.indexRequired.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1407–1408 | key: corpus.volume.indexRequired.detail | shared: macOS only -->
 
 You can browse this volume’s contents now. Index it to search inside it and open its documents.
 
@@ -3178,3 +3178,357 @@ Use this when one person appears under different names and the app kept them apa
 These records match different entries in the bundled name-authority data, so they may be distinct. Merge only if you’re sure.
 
 <!-- END SOURCE: people.detail.mergeConfirm.authorityWarning -->
+
+## 19. Browse — a volume page's Editors’ Annotations (the editors' annotations design, 2026-11-06)
+
+The section on every volume's page, on iPhone and iPad below the volume's details and on the Mac below Top subjects, that says what the volume's editors annotated (`Planning/Editors-Annotations-Design-2026-11-06.md`, §5). A `%@` or `%1$@` is where a number or a name goes and must stay; every count and year comes from the bundled file, never from this copy.
+
+### 19.1 The section, its groups, and what a missing layer says
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.row.spoken -->
+
+%1$@: %2$@.
+
+<!-- END SOURCE: browser.volume.annotations.row.spoken -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.absent.spoken -->
+
+Not in this volume: %@.
+
+<!-- END SOURCE: browser.volume.annotations.absent.spoken -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.header -->
+
+Editors’ Annotations
+
+<!-- END SOURCE: browser.volume.annotations.header -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.absent.header -->
+
+Not in this volume (%@)
+
+<!-- END SOURCE: browser.volume.annotations.absent.header -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.absent.people.hint -->
+
+Search the names instead.
+
+<!-- END SOURCE: browser.volume.annotations.absent.people.hint -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.absent.onset -->
+
+Standard in the volumes covering %@ on.
+
+<!-- END SOURCE: browser.volume.annotations.absent.onset -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.group.named -->
+
+Who is named
+
+<!-- END SOURCE: browser.volume.annotations.group.named -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.group.provenance -->
+
+Where it came from
+
+<!-- END SOURCE: browser.volume.annotations.group.provenance -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.group.connects -->
+
+How it connects
+
+<!-- END SOURCE: browser.volume.annotations.group.connects -->
+
+### 19.2 The layers' names
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.people -->
+
+People tagged
+
+<!-- END SOURCE: browser.volume.annotations.people -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.abbreviations -->
+
+Abbreviations explained
+
+<!-- END SOURCE: browser.volume.annotations.abbreviations -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.correspondents -->
+
+Senders and recipients
+
+<!-- END SOURCE: browser.volume.annotations.correspondents -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.subjects -->
+
+Subject lines
+
+<!-- END SOURCE: browser.volume.annotations.subjects -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.participants -->
+
+Meeting participants
+
+<!-- END SOURCE: browser.volume.annotations.participants -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.sourceNotes -->
+
+Source notes
+
+<!-- END SOURCE: browser.volume.annotations.sourceNotes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.classification -->
+
+Classification markings
+
+<!-- END SOURCE: browser.volume.annotations.classification -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.excisions -->
+
+Excisions marked
+
+<!-- END SOURCE: browser.volume.annotations.excisions -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.despatch -->
+
+Despatch numbers
+
+<!-- END SOURCE: browser.volume.annotations.despatch -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.numbered -->
+
+Numbered documents
+
+<!-- END SOURCE: browser.volume.annotations.numbered -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.crossReferences -->
+
+Cross-references
+
+<!-- END SOURCE: browser.volume.annotations.crossReferences -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.referencesToDocuments -->
+
+References to documents
+
+<!-- END SOURCE: browser.volume.annotations.referencesToDocuments -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.editorialNotes -->
+
+Editorial notes
+
+<!-- END SOURCE: browser.volume.annotations.editorialNotes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.footnotes -->
+
+Footnotes
+
+<!-- END SOURCE: browser.volume.annotations.footnotes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.marginalNotes -->
+
+Marginal notes
+
+<!-- END SOURCE: browser.volume.annotations.marginalNotes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.printedAids -->
+
+Printed aids
+
+<!-- END SOURCE: browser.volume.annotations.printedAids -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.noteOnSources -->
+
+Note on Sources
+
+<!-- END SOURCE: browser.volume.annotations.noteOnSources -->
+
+### 19.3 The counts
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.ofDocuments.one -->
+
+%2$@ of %1$@ document
+
+<!-- END SOURCE: browser.volume.annotations.ofDocuments.one -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.ofDocuments.many -->
+
+%2$@ of %1$@ documents
+
+<!-- END SOURCE: browser.volume.annotations.ofDocuments.many -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.people.listed.one -->
+
+%@ person listed
+
+<!-- END SOURCE: browser.volume.annotations.people.listed.one -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.people.listed.many -->
+
+%@ people listed
+
+<!-- END SOURCE: browser.volume.annotations.people.listed.many -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.terms.listed.one -->
+
+%@ term listed
+
+<!-- END SOURCE: browser.volume.annotations.terms.listed.one -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.terms.listed.many -->
+
+%@ terms listed
+
+<!-- END SOURCE: browser.volume.annotations.terms.listed.many -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.sourceNotes.citations -->
+
+archival citations (“Source: …”)
+
+<!-- END SOURCE: browser.volume.annotations.sourceNotes.citations -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.sourceNotes.fileNumbers -->
+
+file numbers above the heading
+
+<!-- END SOURCE: browser.volume.annotations.sourceNotes.fileNumbers -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.sourceNotes.both -->
+
+archival citations and file numbers
+
+<!-- END SOURCE: browser.volume.annotations.sourceNotes.both -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.excisions.one -->
+
+%@ document with text not declassified
+
+<!-- END SOURCE: browser.volume.annotations.excisions.one -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.excisions.many -->
+
+%@ documents with text not declassified
+
+<!-- END SOURCE: browser.volume.annotations.excisions.many -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.editorialNotes.one -->
+
+%@ editorial note
+
+<!-- END SOURCE: browser.volume.annotations.editorialNotes.one -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.editorialNotes.many -->
+
+%@ editorial notes
+
+<!-- END SOURCE: browser.volume.annotations.editorialNotes.many -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.xrefs.documents.one -->
+
+%@ document cites another in this volume
+
+<!-- END SOURCE: browser.volume.annotations.xrefs.documents.one -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.xrefs.documents.many -->
+
+%@ documents cite others in this volume
+
+<!-- END SOURCE: browser.volume.annotations.xrefs.documents.many -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.xrefs.volumes.one -->
+
+%@ document cites other volumes
+
+<!-- END SOURCE: browser.volume.annotations.xrefs.volumes.one -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.xrefs.volumes.many -->
+
+%@ documents cite other volumes
+
+<!-- END SOURCE: browser.volume.annotations.xrefs.volumes.many -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.xrefs.pages.one -->
+
+%@ document cites printed pages
+
+<!-- END SOURCE: browser.volume.annotations.xrefs.pages.one -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.xrefs.pages.many -->
+
+%@ documents cite printed pages
+
+<!-- END SOURCE: browser.volume.annotations.xrefs.pages.many -->
+
+### 19.4 The printed aids' names
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.aid.preface -->
+
+Preface
+
+<!-- END SOURCE: browser.volume.annotations.aid.preface -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.aid.foreword -->
+
+Foreword
+
+<!-- END SOURCE: browser.volume.annotations.aid.foreword -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.aid.introduction -->
+
+Introduction
+
+<!-- END SOURCE: browser.volume.annotations.aid.introduction -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.aid.sources -->
+
+Sources
+
+<!-- END SOURCE: browser.volume.annotations.aid.sources -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.aid.terms -->
+
+Abbreviations
+
+<!-- END SOURCE: browser.volume.annotations.aid.terms -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.aid.persons -->
+
+Persons
+
+<!-- END SOURCE: browser.volume.annotations.aid.persons -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.aid.listOfPapers -->
+
+List of Papers
+
+<!-- END SOURCE: browser.volume.annotations.aid.listOfPapers -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.aid.covertActions -->
+
+Note on U.S. Covert Actions
+
+<!-- END SOURCE: browser.volume.annotations.aid.covertActions -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.aid.pressRelease -->
+
+Press Release
+
+<!-- END SOURCE: browser.volume.annotations.aid.pressRelease -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.aid.volumeSummary -->
+
+Volume Summary
+
+<!-- END SOURCE: browser.volume.annotations.aid.volumeSummary -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.aid.index -->
+
+Index
+
+<!-- END SOURCE: browser.volume.annotations.aid.index -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.aid.errata -->
+
+Errata
+
+<!-- END SOURCE: browser.volume.annotations.aid.errata -->

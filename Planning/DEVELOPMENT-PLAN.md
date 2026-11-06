@@ -9593,3 +9593,21 @@ From `v2` at `dcf178e` (#1853 merged), on `claude/cool-borg-34f5fa`, a side sess
 - **Lanes B, C and D** (the volume page, the Browse axis, the matrix and links), and §9's decisions 5 and 6.
 - **The design doc** is to record lane A's departures above once #1858 has merged.
 - **Nothing on screen yet**: the store is read only by `VolumeAnnotationsTests` until lane B.
+
+## Session 2026-11-06 — The editors' annotations design, lane B: "Editors’ Annotations" on every volume's page
+
+**What and why.** Lane B of `Planning/Editors-Annotations-Design-2026-11-06.md` (§5, §8), on the owner's "Merged, start B" once lane A (#1859) had merged: the section that says, on a volume's page, what its editors annotated. It reads lane A's bundled `volume-annotations-index.json` through `VolumeAnnotationsStore`, so it renders before download too. Decision 5's "should B ship alone?" is taken as yes: a row opens nothing until lane C builds the category pages.
+
+**Built.**
+- **`VolumeAnnotationsPresentation`** (`FRUSExplorer/Browser/`): the rows in three groups (who is named, where it came from, how it connects), each a symbol, a name and one line of counts; the standard layers the volume lacks, each with the era its onset rule gives ("Standard in the volumes covering 1955 on.") and, for people, "Search the names instead."; and what VoiceOver reads for each. A layer is in the volume or not, by FRUSCoreKit's `carries(_:)`; every count goes through `CountCopy`, the year through `String(_:)`, and no count or year is written into copy.
+- **`VolumeAnnotationsSection`**, one view with two hosts: a `Section` in `VolumeView` right after the metadata header (iPhone and iPad), and, in the Mac's `CorpusVolumeDetailView` below Top subjects, a disclosure collapsed until opened (and remembered once opened) whose rows are bounded in height. The Mac's column does not scroll: with its 440 pt minimum window it already holds a title of up to 120 pt and Top subjects of up to 180 pt, so an always-open block would crowd the structure out, the failure `BoundedSubjectsBlock`'s history records.
+- **Copy:** 57 keys, each with its block in `07-Search-and-Browse.md` §19 (no `lines:` ranges), the file's count corrected (it said 370 and held 377; now 434), and two Mac ranges re-pointed for the moved lines. Both manuals describe the section (iOS §6.2b, the Mac's volume view).
+- **Tests:** `VolumeAnnotationsPresentationTests` (the rows' copy and spoken labels, the absent layers' onsets, no partial state, grouping, the shipped file for China 1969–1972, 1890 and `frus1961-63v06`) and the UI suite `VolumeAnnotationsSectionTests` (the section on a real page, and the rows inside the window at AX5), with its runbook entry and `CLAUDE.md` row.
+
+**Departures from the design**, each for a reason: the Mac's section is a disclosure, collapsed until opened (above); "Numbered documents" reads "N of M documents", since the file holds the count and not the first and last numbers "Documents 1–280" would need; the cross-reference line names its documents in each part; and the printed aids list only the kinds a reader knows by name (the containers, the table of contents and a President's message are left out).
+
+**Checked**, every heavy job through `Scripts/heavy.sh`: LANE_B_CHECKED
+
+**Not done, and for the owner.**
+- **Lanes C and D** (the Browse axis with its category pages, and the matrix and links). Until C, a row opens nothing.
+- **VoiceOver aloud, dark mode and Full Keyboard Access on the Mac** stay the owner's, as the check-copy walk cannot do them.

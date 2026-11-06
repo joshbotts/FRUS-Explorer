@@ -1044,6 +1044,8 @@ private struct BoundedSubjectsBlock: View {
 ///          previous volume's structure under the new volume's header
 ///   1.8 — 2026-10-22: #1766 — the not-downloaded view names the page a page link was to when
 ///          the link opened this page (`AppState.followedPageLink`, `FollowedPageLink.notice`)
+///   1.9 — 2026-11-06: the editors' annotations design, lane B — "Editors’ Annotations" below Top
+///          subjects (`VolumeAnnotationsSection`, `.column`), collapsed until opened
 private struct CorpusVolumeDetailView: View {
     let volume: VolumeManifestEntry
     /// The window's detail-column path; opening a section pushes onto it.
@@ -1086,6 +1088,14 @@ private struct CorpusVolumeDetailView: View {
             // download/index state (the profiles are bundled, not index-derived).
             if VolumeSubjectsChips.hasContent(forVolumeId: volume.volumeId) {
                 BoundedSubjectsBlock(volume: volume)
+                Divider()
+            }
+            // Editors’ Annotations: bundled, so it shows in every phase, as Top subjects does;
+            // collapsed until opened, since this column does not scroll. Keyed to the volume, as
+            // the path element is replaced in place.
+            if VolumeAnnotationsPresentation.hasContent(forVolumeId: volume.volumeId) {
+                VolumeAnnotationsSection(volumeId: volume.volumeId, host: .column)
+                    .id(volume.volumeId)
                 Divider()
             }
             phaseContent
