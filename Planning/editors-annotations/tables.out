@@ -1,0 +1,262 @@
+== 1. Bases
+manifest volumes 553; TEI body documents 314,510; index rows outside front matter 320,646
+band sizes: 1861-1898 62, 1899-1913 20, 1914-1919 35, 1920-1931 32, 1932-1944 77, 1945-1950 59, 1951-1954 38, 1955-1968 114, 1969-1980 93, 1981-1992 14, retro 9
+retrospective band: frus1917-72PubDip, frus1917-72PubDipv06, frus1917-72PubDipv07, frus1917-72PubDipv08, frus1945-50Intel, frus1950-55Intel, frus1951-54Iran, frus1951-54IranEd2, frus1952-54Guat
+
+== 2. People, by the index's rule
+tagged volumes 288 (120,063 index rows); not tagged 265 (200,583 rows); list but no links: frus1941-43, frus1977-80v27
+TEI rule (>=50% of documents linked, or @ana): 288 volumes
+
+== 3. Totals: volumes carrying each category, and documents carrying it (TEI basis)
+People tagged                       288 volumes    115,302 docs (36.7%)
+Abbreviations explained             309 volumes    112,938 docs (35.9%)
+Senders and recipients marked       432 volumes    239,793 docs (76.2%)
+Subject lines                       256 volumes     32,645 docs (10.4%)
+Meeting participants                297 volumes     12,798 docs (4.1%)
+Source notes (either form)          479 volumes    265,103 docs (84.3%)
+ file-number form                   249 volumes    191,170 docs (60.8%)
+ "Source:" form                     230 volumes     74,702 docs (23.8%)
+Classification markings             295 volumes    105,488 docs (33.5%)
+Excisions marked                    208 volumes      6,724 docs (2.1%)
+Despatch numbers (>=10% rows)       147 volumes     45,145 index rows (14.1%)
+Numbered in print (index rows)      229 volumes     78,902 index rows (24.6%)
+Cross-refs to documents             254 volumes     31,493 docs (10.0%)
+Cross-refs to footnotes             231 volumes     12,653 docs (4.0%)
+Cross-refs to other volumes         390 volumes      8,644 docs (2.7%)
+Page references (see p.)            407 volumes     51,489 docs (16.4%)
+Editorial notes                     296 volumes      8,466 docs (2.7%)
+Footnotes (>=50% docs)              427 volumes    186,665 docs (59.4%)
+Marginal notes                       76 volumes      1,517 docs (0.5%)
+Figures in documents                 83 volumes        185 docs (0.1%)
+List of Persons                     284 volumes
+List of Abbreviations               313 volumes
+Note on Sources                     259 volumes
+Preface                             377 volumes
+List of Papers (analytical)         152 volumes
+Printed index (back)                456 volumes
+Note on U.S. Covert Actions          45 volumes
+Press release                        56 volumes
+Volume summary                       23 volumes
+Errata                               57 volumes
+source notes before 1906 (element present in >=50% of documents): frus1870 (295 of 300 documents); without them: 478 volumes; file-number form 248 volumes, 190,875 docs (60.7%)
+Note on Sources by @subtype alone: 258 volumes (by the parser's rule, @subtype else @xml:id: 259)
+page breaks with a printed number: 552 volumes; with a page scan (@facs or <surface>): 551 volumes
+the manifest's earliest date, at its oldest: frus1872p2v5 1620-11-03 (subseries 1872)
+
+== 4. Volumes carrying each category, by era covered (subseries' first year)
+                                  61-98    99-13    14-19    20-31    32-44    45-50    51-54    55-68    69-80    81-92    retro
+People tagged                      2/62     0/20    14/35     0/32     7/77     8/59    28/38  114/114    92/93    14/14      9/9  | 288
+Abbreviations explained            0/62     0/20     0/35     0/32     3/77    41/59    38/38  113/114    92/93    13/14      9/9  | 309
+Senders and recipients marked     58/62    18/20    27/35    31/32    76/77    55/59    37/38   98/114    29/93     0/14      3/9  | 432
+Subject lines                      0/62     0/20     0/35     0/32     0/77     2/59    26/38  114/114    91/93    14/14      9/9  | 256
+Meeting participants               3/62     2/20    15/35    15/32     6/77     1/59    27/38  114/114    92/93    14/14      8/9  | 297
+Source notes (either form)         1/62     8/20    34/35    32/32    77/77    59/59    38/38  114/114    93/93    14/14      9/9  | 479
+ file-number form                  1/62     8/20    34/35    32/32    77/77    59/59    38/38    0/114     0/93     0/14      0/9  | 249
+ "Source:" form                    0/62     0/20     0/35     0/32     0/77     0/59     0/38  114/114    93/93    14/14      9/9  | 230
+Classification markings            0/62     0/20     0/35     0/32     3/77    41/59    35/38  111/114    87/93    13/14      5/9  | 295
+Excisions marked                   0/62     0/20     0/35     0/32     0/77     2/59     5/38   89/114    91/93    14/14      7/9  | 208
+Despatch numbers (>=10% rows)     55/62    18/20    13/35    25/32    33/77     1/59     2/38    0/114     0/93     0/14      0/9  | 147
+Numbered in print (index rows      0/62     0/20     0/35     0/32     0/77     0/59     0/38  113/114    93/93    14/14      9/9  | 229
+Cross-refs to documents            2/62     0/20     0/35     0/32     0/77     4/59    22/38  111/114    92/93    14/14      9/9  | 254
+Cross-refs to footnotes            0/62     0/20     0/35     0/32     0/77     2/59    21/38  110/114    75/93    14/14      9/9  | 231
+Cross-refs to other volumes       13/62    10/20    12/35     7/32    52/77    53/59    34/38   97/114    90/93    14/14      8/9  | 390
+Page references (see p.)          38/62    19/20    35/35    32/32    77/77    59/59    38/38   99/114     8/93     0/14      2/9  | 407
+Editorial notes                    1/62     0/20     3/35     0/32     6/77    43/59    38/38  110/114    76/93    11/14      8/9  | 296
+Footnotes (>=50% docs)             1/62     0/20    15/35    27/32    72/77    58/59    38/38  110/114    83/93    14/14      9/9  | 427
+Marginal notes                    27/62    18/20    21/35     9/32     0/77     0/59     1/38    0/114     0/93     0/14      0/9  | 76
+Figures in documents              21/62     5/20     6/35     1/32     4/77    13/59     5/38    3/114    20/93     3/14      2/9  | 83
+List of Persons                    0/62     0/20    12/35     0/32     6/77     8/59    28/38  114/114    93/93    14/14      9/9  | 284
+List of Abbreviations              0/62     0/20     0/35     0/32     4/77    42/59    38/38  113/114    93/93    14/14      9/9  | 313
+Note on Sources                    0/62     0/20     0/35     0/32     0/77     1/59    29/38  113/114    93/93    14/14      9/9  | 259
+Preface                            0/62     0/20    11/35     3/32    42/77    59/59    34/38  114/114    92/93    13/14      9/9  | 377
+List of Papers (analytical)       48/62    17/20    23/35    32/32    28/77     4/59     0/38    0/114     0/93     0/14      0/9  | 152
+Printed index (back)              34/62    18/20    33/35    32/32    74/77    58/59    24/38  110/114    62/93     6/14      5/9  | 456
+Note on U.S. Covert Actions        0/62     0/20     0/35     0/32     0/77     0/59     0/38    9/114    33/93     3/14      0/9  | 45
+Press release                      0/62     0/20     1/35     0/32     0/77     0/59     0/38    8/114    37/93     7/14      3/9  | 56
+Volume summary                     0/62     0/20     0/35     0/32     0/77     0/59     0/38   18/114     5/93     0/14      0/9  | 23
+Errata                             4/62     0/20     0/35     0/32     1/77     4/59     8/38   16/114    23/93     1/14      0/9  | 57
+
+== 5. The same, by publication year
+                                  61-99    00-19    20-39    40-49    50-59    60-69    70-79    80-84    85-89    90-99    00-26
+People tagged                      2/61     0/20    13/33     6/42     2/46     4/38     5/49    15/21    32/33    73/73  136/137  | 288
+Abbreviations explained            0/61     0/20     0/33     0/42     0/46     7/38    41/49    21/21    32/33    73/73  135/137  | 309
+Senders and recipients marked     57/61    18/20    33/33    33/42    44/46    38/38    46/49    20/21    32/33    60/73   51/137  | 432
+Subject lines                      0/61     0/20     0/33     0/42     0/46     0/38     3/49    15/21    30/33    73/73  135/137  | 256
+Meeting participants               3/61     2/20    12/33    19/42     5/46     0/38     2/49    15/21    31/33    73/73  135/137  | 297
+Source notes (either form)         1/61     7/20    33/33    41/42    46/46    38/38    49/49    21/21    33/33    73/73  137/137  | 479
+ file-number form                  1/61     7/20    33/33    41/42    46/46    38/38    49/49    21/21    13/33     0/73    0/137  | 249
+ "Source:" form                    0/61     0/20     0/33     0/42     0/46     0/38     0/49     0/21    20/33    73/73  137/137  | 230
+Classification markings            0/61     0/20     0/33     0/42     1/46     7/38    40/49    19/21    31/33    71/73  126/137  | 295
+Excisions marked                   0/61     0/20     0/33     0/42     0/46     0/38     3/49     2/21     3/33    67/73  133/137  | 208
+Despatch numbers (>=10% rows)     54/61    18/20    19/33    23/42    23/46     8/38     0/49     0/21     2/33     0/73    0/137  | 147
+Numbered in print (index rows      0/61     0/20     0/33     0/42     0/46     0/38     0/49     0/21    20/33    72/73  137/137  | 229
+Cross-refs to documents            2/61     0/20     0/33     0/42     0/46     2/38     2/49    11/21    30/33    72/73  135/137  | 254
+Cross-refs to footnotes            0/61     0/20     0/33     0/42     0/46     2/38     0/49    10/21    30/33    71/73  118/137  | 231
+Cross-refs to other volumes       13/61    10/20    15/33     8/42    26/46    35/38    44/49    21/21    20/33    65/73  133/137  | 390
+Page references (see p.)          37/61    19/20    33/33    42/42    46/46    38/38    49/49    21/21    32/33    67/73   23/137  | 407
+Editorial notes                    1/61     0/20     3/33     0/42     3/46     8/38    42/49    21/21    32/33    70/73  116/137  | 296
+Footnotes (>=50% docs)             1/61     0/20    13/33    33/42    44/46    38/38    48/49    21/21    32/33    71/73  126/137  | 427
+Marginal notes                    26/61    18/20    16/33    15/42     0/46     0/38     0/49     1/21     0/33     0/73    0/137  | 76
+Figures in documents              21/61     5/20     2/33     5/42     2/46     5/38    10/49     3/21     3/33     1/73   26/137  | 83
+List of Persons                    0/61     0/20    11/33     5/42     2/46     4/38     5/49    15/21    32/33    73/73  137/137  | 284
+List of Abbreviations              0/61     0/20     0/33     0/42     2/46     7/38    41/49    21/21    32/33    73/73  137/137  | 313
+Note on Sources                    0/61     0/20     0/33     0/42     0/46     0/38     3/49    17/21    29/33    73/73  137/137  | 259
+Preface                            0/61     0/20     8/33     7/42    18/46    37/38    48/49    19/21    32/33    73/73  135/137  | 377
+List of Papers (analytical)       47/61    17/20    30/33    33/42    20/46     3/38     2/49     0/21     0/33     0/73    0/137  | 152
+Printed index (back)              33/61    18/20    31/33    42/42    45/46    38/38    45/49    13/21    27/33    71/73   93/137  | 456
+Note on U.S. Covert Actions        0/61     0/20     0/33     0/42     0/46     0/38     0/49     0/21     0/33     1/73   44/137  | 45
+Press release                      0/61     0/20     1/33     0/42     0/46     0/38     0/49     0/21     0/33     0/73   55/137  | 56
+Volume summary                     0/61     0/20     0/33     0/42     0/46     0/38     0/49     0/21     1/33     8/73   14/137  | 23
+Errata                             4/61     0/20     0/33     0/42     0/46     1/38     5/49     1/21     6/33    10/73   30/137  | 57
+
+== 6. Exceptions inside the modern format (subseries from 1955, and the retrospectives)
+People tagged                      missing in 1 of 230: frus1977-80v27
+Abbreviations explained            missing in 3 of 230: frus1955-57v03mSupp, frus1977-80v27, frus1981-88v16
+Subject lines                      missing in 2 of 230: frus1969-76ve12, frus1969-76ve14p1
+Meeting participants               missing in 2 of 230: frus1917-72PubDip, frus1969-76ve14p1
+ "Source:" form                    missing in 0 of 230: 
+Classification markings            missing in 14 of 230: frus1917-72PubDip, frus1917-72PubDipv06, frus1917-72PubDipv07, frus1917-72PubDipv08, frus1955-57v09, frus1958-60v04, frus1961-63v06, frus1969-76v01, frus1969-76v13, frus1969-76v38p1, frus1977-80v01, frus1977-80v28, frus1977-80v30, frus1981-88v01
+Numbered in print (index rows)     missing in 1 of 230: frus1958-60v05mSupp
+Cross-refs to documents            missing in 4 of 230: frus1955-57v03mSupp, frus1958-60v05mSupp, frus1961-63v10-12mSupp, frus1969-76v42
+List of Persons                    missing in 0 of 230: 
+List of Abbreviations              missing in 1 of 230: frus1955-57v03mSupp
+Note on Sources                    missing in 1 of 230: frus1955-57v03mSupp
+abbreviation lists before 1945: frus1941-43, frus1943, frus1943CairoTehran, frus1944Quebec
+
+== 7. Classification markings: printed (TEI) against stored (index), by era
+                                  61-98    99-13    14-19    20-31    32-44    45-50    51-54    55-68    69-80    81-92    retro
+documents (TEI)                  32,500   16,327   24,836   26,114   67,013   46,306   21,923   44,845   27,798    4,545    2,303
+printed in note or opener           151       30       19        3    1,157   21,640   16,146   37,555   23,222    3,824    1,741
+index rows                       32,791   16,871   25,439   27,017   69,107   47,462   22,287   44,983   27,810    4,564    2,315
+stored by the index                   0        0        0        0        0        0        0   34,558   22,068    3,603    1,865
+1932-54 (retrospectives excluded): printed 38,943 documents, stored 0; volumes printing in >=50% of documents: 79
+
+== 8. The three example volumes
+frus1890 | documents 502 | editorial notes 0 | persons listed 0 | terms listed 0 | numbered in print 0 of 502 rows | despatch numbers 347
+    people 0, abbreviations 0, correspondents 502, subjects 0, participants 0, source-notes 1, source-file-number 1, source-citation 0, classification 0, excisions 0, despatch 347, numbered 0, xref-documents 0, xref-footnotes 0, xref-volumes 0, xref-pages 12, editorial-notes 0, footnotes 27, marginal-notes 1, figures 3
+    sections: front message (Message.); front foreign-relations (Foreign Relations.); front index (List of papers with an analysis of their contents.); back index (Alphabetical Index.)
+frus1952-54v13p1 | documents 801 | editorial notes 47 | persons listed 176 | terms listed 264 | numbered in print 0 of 801 rows | despatch numbers 1
+    people 787, abbreviations 633, correspondents 601, subjects 130, participants 81, source-notes 759, source-file-number 759, source-citation 0, classification 591, excisions 0, despatch 1, numbered 0, xref-documents 60, xref-footnotes 72, xref-volumes 91, xref-pages 226, editorial-notes 47, footnotes 650, marginal-notes 0, figures 0
+    sections: front preface (Preface); front table-of-contents (Contents); front preface (Introduction); front sources (List of Sources); front index (List of Abbreviations and Symbol); front index (List of Persons)
+frus1969-76v17 | documents 280 | editorial notes 12 | persons listed 325 | terms listed 470 | numbered in print 280 of 280 rows | despatch numbers 0
+    people 279, abbreviations 278, correspondents 161, subjects 137, participants 67, source-notes 268, source-file-number 5, source-citation 263, classification 245, excisions 31, despatch 0, numbered 280, xref-documents 131, xref-footnotes 65, xref-volumes 89, xref-pages 0, editorial-notes 12, footnotes 243, marginal-notes 0, figures 0
+    sections: front preface (Preface); front table-of-contents (Contents); front sources (Sources); front index (Abbreviations); front index (Persons); front note-on-covert-actions (Note on U.S. Covert Actions); back index (Index); back errata (Errata)
+
+== 9. Discovery: markup whose mean share of documents moves 15 points or more across eras
+                                     61-98   99-13   14-19   20-31   32-44   45-50   51-54   55-68   69-80   81-92   retro
+cell                                     3       4      20       1       2       8       5       1       2       2       2
+closer                                  93      81      91      97      92      72      63      59      35      38      55
+date@ana                                 7       6      22       3       2       9       5       4       7       7       7
+date@when                               99      99      99     100      99      95      92      89      82      83      91
+dateline@rendition                      96      99      89      97      98      89      92      91      76      96      44
+frus:attachment                         32      24      23       6       3       4       5       4       4       9       7
+gloss                                    3      54      68      89      83      84      92      90      94      90      93
+gloss@target                             0       0       0       0       3      53      86      88      94      90      93
+gloss@type                               3      54      68      89      81      67      60      38       7       0       9
+gloss@type=from                          2      37      29      36      27      25      22      33       7       0       7
+gloss@type=to                            2      44      48      58      57      55      56      36       7       0       8
+hi                                     100     100     100     100     100     100     100      87      72      89      78
+hi@rend                                100     100     100     100     100     100     100      87      72      89      78
+item                                    10      11      30      15      15      25      44      57      62      67      50
+label                                    5       7      24      12      14      23      32      35      16      23      22
+lb                                      64      88      56      55      56      34      49       4       6       5       8
+list                                    10      11      30      15      15      25      44      57      62      67      50
+list@type                                0       0      18       0       0       0      17      33      53      61      39
+list@type=participants                   0       0      18       0       0       0       7      13      17      14       4
+list@type=subject                        0       0       0       0       0       0      14      29      46      58      36
+note                                    11      43      99     100      99      97      92      92      95      96      94
+note@n                                   6      15      55      54      64      79      85      91      95      96      93
+note@rend                                5      35      95      99      99      96      92       3       3       9       5
+note@type                                5      34      96     100      99      97      92      92      95      96      94
+note@type=source                         5      34      96     100      99      97      92      92      95      96      94
+note@x:id                                6      15      55      54      64      79      85      91      95      96      93
+opener                                  95      95      85      95      96      90      93      92      77      96      42
+p@rend                                  22      19      33      11      10      25      24      23      28      39      34
+pb                                      59      45      61      54      59      73      82      84      88      93      82
+pb@facs                                 59      45      61      54      59      73      82      84      88      86      82
+pb@n                                    59      45      61      54      59      73      82      84      88      93      82
+pb@x:id                                 59      45      61      54      59      73      82      84      88      86      82
+persName                                91      62      67      89      86      70      85      98      98      96      97
+persName@corresp                         3       0      38       0       9      13      71      97      97      92      96
+persName@type                           90      62      64      89      85      64      52      30      17       0      15
+persName@type=from                      90      52      44      57      61      52      48      28      16       0      14
+persName@type=to                        89      46      26      37      31      22      15      25      16       0      13
+postscript                              36       7       6       1       1       1       0       1       0       0       0
+quote                                    7      10      31      20      14      14      12       6       3       9      10
+quote@rend                               7      10      31      20      14      14      12       5       1       0       3
+ref                                      2       4      36      21      24      38      50      44      49      58      51
+ref@target                               2       4      36      21      24      38      50      44      49      58      51
+row                                      3       4      20       1       2       8       5       1       2       2       2
+seg                                     81      82      65      36      18      62      89       6      10      13       9
+seg@rendition                           76      81      54      36      18      62      89       6       2      13       9
+seg@type                                 6       1      19       0       0       0       0       0       7       0       0
+seg@type=margin                          6       1      19       0       0       0       0       0       0       0       0
+signed                                  93      80      83      94      89      70      62      59      35      38      53
+signed@corresp                           0       0       0       0       0       0       0       1       6       0      32
+table                                    3       4      20       1       2       8       5       1       2       2       2
+table@cols                               3       4      20       1       1       2       2       1       2       2       2
+table@rend                               0       0      18       0       1       1       0       0       0       0       0
+table@rendition                          0       0      18       0       1       1       0       0       0       0       0
+table@rows                               2       4      20       1       1       2       2       1       1       0       1
+
+wrote editorial-annotations-by-volume.csv: 553 rows
+
+== 10. Onset, and coverage inside the volumes that carry a category
+People tagged                      onset 1955-57    first frus1873p1v1           carriers 288: median 98.0%, lowest 72.5%, below 90%: 15
+Abbreviations explained            onset 1950       first frus1943               carriers 309: median 91.5%, lowest 53.8%, below 90%: 135
+Senders and recipients marked      onset -          first frus1861               carriers 432: median 85.5%, lowest 50.0%, below 90%: 265
+Subject lines                      onset 1952-54    first frus1948v09            carriers 256
+Meeting participants               onset 1952-54    first frus1879               carriers 297
+Source notes (either form)         onset 1907       first frus1870               carriers 479: median 97.2%, lowest 53.8%, below 90%: 72
+ file-number form                  onset -          first frus1870               carriers 249
+ "Source:" form                    onset 1955-57    first frus1955-57v01         carriers 230
+Classification markings            onset 1981-88    first frus1943               carriers 295
+Excisions marked                   onset 1964-68    first frus1949v05            carriers 208
+Despatch numbers (>=10% rows)      onset -          first frus1861               carriers 147
+Numbered in print (index rows)     onset 1955-57    first frus1955-57v01         carriers 229: median 100.0%, lowest 95.5%, below 90%: 0
+Cross-refs to documents            onset 1955-57    first frus1886               carriers 254
+Cross-refs to footnotes            onset 1977-80    first frus1945Berlinv01      carriers 231
+Cross-refs to other volumes        onset 1964-68    first frus1875v01            carriers 390
+Page references (see p.)           onset -          first frus1872p2v1           carriers 407
+Editorial notes                    onset 1989-92    first frus1873p1v2           carriers 296
+Footnotes (>=50% docs)             onset 1977-80    first frus1872p2v3           carriers 427: median 80.6%, lowest 50.2%, below 90%: 367
+Marginal notes                     onset -          first frus1862               carriers 76
+Figures in documents               onset -          first frus1864p1             carriers 83
+
+== 11. Onset by era band (retrospectives excluded): the first band from which every later band has >=75% of its volumes carrying the category
+People tagged                      1955-1968  3 0 40 0 9 14 74 100 99 100
+Abbreviations explained            1951-1954  0 0 0 0 4 69 100 99 99 93
+Senders and recipients marked      -          94 90 77 97 99 93 97 86 31 0
+Subject lines                      1955-1968  0 0 0 0 0 3 68 100 98 100
+Meeting participants               1955-1968  5 10 43 47 8 2 71 100 99 100
+Source notes (either form)         1914-1919  2 40 97 100 100 100 100 100 100 100
+ file-number form                  -          2 40 97 100 100 100 100 0 0 0
+ "Source:" form                    1955-1968  0 0 0 0 0 0 0 100 100 100
+Classification markings            1951-1954  0 0 0 0 4 69 92 97 94 93
+Excisions marked                   1955-1968  0 0 0 0 0 3 13 78 98 100
+Despatch numbers (>=10% rows)      -          89 90 37 78 43 2 5 0 0 0
+Numbered in print (index rows)     1955-1968  0 0 0 0 0 0 0 99 100 100
+Cross-refs to documents            1955-1968  3 0 0 0 0 7 58 97 99 100
+Cross-refs to footnotes            1955-1968  0 0 0 0 0 3 55 96 81 100
+Cross-refs to other volumes        1945-1950  21 50 34 22 68 90 89 85 97 100
+Page references (see p.)           -          61 95 100 100 100 100 100 87 9 0
+Editorial notes                    1951-1954  2 0 9 0 8 73 100 96 82 79
+Footnotes (>=50% docs)             1920-1931  2 0 43 84 94 98 100 96 89 100
+Marginal notes                     -          44 90 60 28 0 0 3 0 0 0
+Figures in documents               -          34 25 17 3 5 22 13 3 22 21
+List of Persons                    1955-1968  0 0 34 0 8 14 74 100 100 100
+List of Abbreviations              1951-1954  0 0 0 0 5 71 100 99 100 100
+Note on Sources                    1951-1954  0 0 0 0 0 2 76 99 100 100
+Preface                            1945-1950  0 0 31 9 55 100 89 100 99 93
+List of Papers (analytical)        -          77 85 66 100 36 7 0 0 0 0
+Printed index (back)               -          55 90 94 100 96 98 63 96 67 43
+Note on U.S. Covert Actions        -          0 0 0 0 0 0 0 8 35 21
+Press release                      -          0 0 3 0 0 0 0 7 40 50
+Volume summary                     -          0 0 0 0 0 0 0 16 5 0
+Errata                             -          6 0 0 0 1 7 21 14 25 7
+
+people: 284 Lists of Persons by the section ids; tagged without such a list: frus1873p1v1, frus1873p1v2, frus1917Supp02v02, frus1918Supp01v02, frus1932v04; listed but not tagged: frus1977-80v27
+lowest people coverage: frus1873p1v2 72.5%
+documents with a date the corpus build inferred (date@ana): 13,142 (4.2%)
+frus1977-80v27: persons listed 153, linked docs 0; terms listed 143, linked docs 0
+artifact size: keyed 257,796 bytes compact; columnar 55,326 bytes compact (19 counts a volume, 74 section names)
