@@ -15,7 +15,7 @@ import SwiftUI
 ///
 /// The marking text is `IndexingPipeline.classificationMarking(sourceNote:stored:)`'s:
 /// the source note's, extracted by `SourceNoteParser.classificationMarking(fromSourceNote:)`
-/// — sentence 2 of the note when it matches the marking vocabulary (e.g. "Secret; Nodis",
+/// — the note's first sentence after the citation that passes the marking gates (e.g. "Secret; Nodis",
 /// "No classification marking") — else the one `document_sources.classification`
 /// stores, which since index version 72 is the marking a document of the volumes
 /// covering 1932–1954 prints in its opener, above the dateline, where its note prints

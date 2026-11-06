@@ -588,6 +588,13 @@ public struct ArchiveCitation: Sendable {
 ///          covering 1932–1954 print in a document's opener above the dateline, read from one
 ///          `<seg>`'s lines against a closed vocabulary and written as a source note writes its
 ///          marking ("Secret; Priority"); the index stores it where the note prints none
+///   1.19 — index version 73 (#1856): `classificationMarking(fromSourceNote:)` offers its gates,
+///          unchanged, every sentence after the first, each as far as a stop before a remark that
+///          opens with a digit, and returns the first that passes, so a stop inside the citation
+///          ("U.S.", "Vol. I.", an initial) or a digit-led remark ("Eyes Only. 1 page of source text
+///          not declassified.") no longer hides the marking; sentence 2 is offered first, so no
+///          marking read before changes. `secondSentenceClassificationMarking(fromSourceNote:)` is the
+///          reading as it was, for the Archives Visit packet's test of where a citation ends
 public struct SourceNoteParser {
 
     public init() {}
@@ -1480,14 +1487,32 @@ public struct SourceNoteParser {
         options: []
     )
 
-    /// Extracts the classification-markings sentence from a source note, per the
-    /// frus-sources sentence model (`import/import.xq`): sentence 1 is the archival
-    /// citation, sentence 2 is classification markings (a short, semicolon-separated
-    /// marking vocabulary — "Secret; Nodis", "Top Secret; Sensitive; Exclusively Eyes
-    /// Only", "No classification marking"), and the remainder is remarks.
+    /// The classification markings a source note prints, per the frus-sources sentence model
+    /// (`import/import.xq`): sentence 1 is the archival citation, sentence 2 is classification
+    /// markings (a short, semicolon-separated marking vocabulary — "Secret; Nodis", "Top Secret;
+    /// Sensitive; Exclusively Eyes Only", "No classification marking"), and the remainder is
+    /// remarks. This is the reading the index stores in `document_sources.classification` and every
+    /// chip shows.
     ///
-    /// Deliberately conservative — returns `nil` rather than junk when sentence 2 does
-    /// not look like markings. Gates applied to the candidate sentence:
+    /// The sentence split (``sentenceBoundaryRegex``) has no abbreviation model, so the marking a
+    /// note prints is not always its sentence 2 by that split (#1856, index version 73). Each
+    /// sentence after the first is offered to the gates below in order, and the first that passes
+    /// is the marking:
+    /// - **A stop inside the citation** moves the marking past sentence 2. An abbreviation, an
+    ///   initial or `U.S.`: `frus1955-57v12` d365, "…Lot 61 D 167, Iran, U.S. Policy Towards (NSC
+    ///   5504). Top Secret. Drafted by Hannah." A citation ending on a volume or part number:
+    ///   `frus1969-76v17` d1, "…Far East, China, Vol. I. Secret. Sent for action."
+    /// - **A remark that opens with a digit joins the marking's sentence**, since a digit is no
+    ///   boundary: `frus1969-76v17` d107, "…Subject Files, China. Secret; Sensitive; Eyes Only. 1
+    ///   page of source text not declassified.", and the microfiche supplements' abstracts,
+    ///   "…with Coolidge. Secret. 2 pp. Eisenhower Library, …". So a sentence is offered as far as
+    ///   its first stop that whitespace and a digit follow (``digitLedRemarkRegex``).
+    ///
+    /// Sentence 2 is offered first, and a sentence the gates accept holds no digit and so is never
+    /// cut, so every note whose sentence 2 passed reads as it did.
+    ///
+    /// The gates are deliberately conservative — `nil` rather than junk — and are sentence 2's
+    /// (``secondSentenceClassificationMarking(fromSourceNote:)``), unchanged:
     /// - ≤ 100 characters and contains no digits (dates/times/box numbers are remarks);
     /// - the first semicolon-separated fragment begins with a classification level
     ///   (`Top Secret`, `Secret`, `Confidential`, `Unclassified`, `Limited Official
@@ -1504,28 +1529,69 @@ public struct SourceNoteParser {
     ///
     /// - Parameter note: The stored source-note text (wrapper already normalised).
     /// - Returns: The marking sentence with the trailing period stripped and fragments
-    ///   rejoined with `"; "`, or `nil` when no confident marking sentence exists.
+    ///   rejoined with `"; "`, or `nil` when no sentence after the first passes the gates.
     public static func classificationMarking(fromSourceNote note: String) -> String? {
-        let text = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, let boundary = sentenceBoundaryRegex else { return nil }
+        for sentence in classificationSentences(of: note).dropFirst() {
+            if let marking = gatedClassificationMarking(headBeforeDigitLedRemark(of: sentence)) {
+                return marking
+            }
+        }
+        return nil
+    }
 
-        // Split into sentences on terminal punctuation followed by a capitalized word.
-        let ns = text as NSString
-        var sentences: [String] = []
-        var start = 0
-        for match in boundary.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
-            let end = match.range.location + match.range.length
-            sentences.append(ns.substring(with: NSRange(location: start, length: end - start))
-                .trimmingCharacters(in: .whitespacesAndNewlines))
-            start = end
-        }
-        if start < ns.length {
-            sentences.append(ns.substring(from: start).trimmingCharacters(in: .whitespacesAndNewlines))
-        }
+    /// The classification markings a source note prints as its sentence 2 by the sentence split,
+    /// read through the same gates as ``classificationMarking(fromSourceNote:)``, and nothing else:
+    /// no later sentence, and no cut before a remark that opens with a digit. This is the reading
+    /// the index stored until version 73.
+    ///
+    /// For a caller that uses the marking as a test of where the citation's first sentence ends:
+    /// the Archives Visit packet cuts a central-file designation at its first boundary when the next
+    /// sentence is a marking (`TripPacketBuilder.centralFileDesignation(_:)`). With the later
+    /// sentences read too, "…China, Vol. I. Secret." would pass, and the cut would end the
+    /// designation at "Vol.".
+    ///
+    /// - Parameter note: The stored source-note text (wrapper already normalised).
+    /// - Returns: Sentence 2 as a marking (trailing period stripped, fragments rejoined with
+    ///   `"; "`), or `nil` when the note has no sentence 2 or it does not pass the gates.
+    public static func secondSentenceClassificationMarking(fromSourceNote note: String) -> String? {
+        let sentences = classificationSentences(of: note)
         guard sentences.count >= 2 else { return nil }
+        return gatedClassificationMarking(sentences[1])
+    }
 
-        // Sentence 2 is the classification candidate (sentence 1 is the citation).
-        var candidate = sentences[1]
+    /// A stop, then whitespace and a digit: where a remark that opens with a digit begins inside
+    /// one sentence of a source note ("Eyes Only. 1 page of source text not declassified."), which
+    /// the sentence split leaves joined because its lookahead wants a capital.
+    private static let digitLedRemarkRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"(?<=\.)\s+(?=\d)"#,
+        options: []
+    )
+
+    /// A source note's sentences for the classification reading, each trimmed, split by
+    /// ``sentenceBoundaryRegex``; empty for an empty note.
+    private static func classificationSentences(of note: String) -> [String] {
+        let text = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, sentenceBoundaryRegex != nil else { return [] }
+        return sentences(of: text).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+    }
+
+    /// A sentence as far as its first stop that whitespace and a digit follow
+    /// (``digitLedRemarkRegex``), or the whole sentence when it has none. What comes after such a
+    /// stop opens with a digit, which the gates refuse, so the head is the only piece that can be a
+    /// marking.
+    private static func headBeforeDigitLedRemark(of sentence: String) -> String {
+        guard let regex = digitLedRemarkRegex,
+              let match = regex.firstMatch(in: sentence, range: NSRange(sentence.startIndex..., in: sentence)),
+              let head = Range(NSRange(location: 0, length: match.range.location), in: sentence)
+        else { return sentence }
+        return String(sentence[head])
+    }
+
+    /// One candidate sentence through the classification gates (see
+    /// ``classificationMarking(fromSourceNote:)``): the marking with the trailing period stripped
+    /// and fragments rejoined with `"; "`, or `nil` when any gate refuses it.
+    private static func gatedClassificationMarking(_ sentence: String) -> String? {
+        var candidate = sentence.trimmingCharacters(in: .whitespacesAndNewlines)
         while candidate.hasSuffix(".") { candidate = String(candidate.dropLast()) }
         candidate = candidate.trimmingCharacters(in: .whitespaces)
         guard !candidate.isEmpty, candidate.count <= 100,

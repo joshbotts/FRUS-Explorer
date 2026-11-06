@@ -84,6 +84,9 @@ import Foundation
 ///          reads none), so 688 notes keyed on their text key on their file
 ///   1.12 — 2026-10-27 (FRUS Explorer Light, S18b): the comments name the collection blocks' data source and
 ///          citation path where they now are, FRUSCoreKit's `CollectionContentAssembly`; no code changes
+///   1.13 — 2026-11-06 (#1856, index version 73): `centralFileDesignation(_:)` tests sentence 2 alone,
+///          through `SourceNoteParser.secondSentenceClassificationMarking(fromSourceNote:)`, now that
+///          the note's marking is also read from later sentences; what it returns is unchanged
 @MainActor
 enum TripPacketBuilder {
 
@@ -634,9 +637,12 @@ enum TripPacketBuilder {
     ///
     /// 1. **After the first boundary, when the next sentence is a classification marking** — the
     ///    frus-sources sentence model's test,
-    ///    `SourceNoteParser.classificationMarking(fromSourceNote:)`. "POL 15 VIET S. Secret;
-    ///    Limdis." → "POL 15 VIET S". A subject-numeric designator has no slash, so this is the
-    ///    only rule that reaches it.
+    ///    `SourceNoteParser.secondSentenceClassificationMarking(fromSourceNote:)`. "POL 15 VIET S.
+    ///    Secret; Limdis." → "POL 15 VIET S". A subject-numeric designator has no slash, so this is
+    ///    the only rule that reaches it. The test reads sentence 2 alone: the index's reading
+    ///    (`classificationMarking(fromSourceNote:)`) also reads later sentences since #1856, and a
+    ///    marking found past a stop inside the citation would end the designation at that stop
+    ///    ("…China, Vol. I. Secret." cut at "Vol.").
     /// 2. **Otherwise, only after the LAST "/"**, where the item number has ended: "751G.00/5–355.
     ///    Drafted by Young" → "751G.00/5–355". Before that point a "boundary" is an abbreviation
     ///    inside a pre-1950 class infix — "740.0011 (E. W.)/11–742", "882.6351 V. S. Steel
@@ -665,7 +671,7 @@ enum TripPacketBuilder {
         var cut = text
         let firstSentence = SourceNoteParser.firstSentence(of: text)
         if firstSentence.count < text.count,
-           SourceNoteParser.classificationMarking(fromSourceNote: text) != nil {
+           SourceNoteParser.secondSentenceClassificationMarking(fromSourceNote: text) != nil {
             cut = firstSentence
         } else if let slash = text.lastIndex(of: "/") {
             let item = String(text[text.index(after: slash)...])

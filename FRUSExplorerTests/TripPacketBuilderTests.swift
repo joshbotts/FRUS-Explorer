@@ -525,6 +525,15 @@ struct TripPacketBuilderTests {
         #expect(TripPacketBuilder.fileDesignation(from: .centralFiles(
             recordGroup: "RG-59",
             fileIdentifier: "751G.00/3–155. Secret. Drafted by Young and Kidder.")) == "751G.00/3–155")
+        // #1856: the marking cut tests sentence 2 alone. The index's reading also reads later
+        // sentences, and finds "Secret" past the infix's "E." — so a cut at the FIRST boundary on
+        // that reading would leave "740.0011 (E", as it would leave "…China, Vol" of a note ending
+        // "China, Vol. I. Secret.". The slash rule cuts this one where the item ends.
+        let infixed = "740.0011 (E. W.)/11–742. Secret."
+        #expect(SourceNoteParser.classificationMarking(fromSourceNote: infixed) == "Secret",
+                "fixture drift: the index's reading no longer finds the marking past the infix")
+        #expect(SourceNoteParser.secondSentenceClassificationMarking(fromSourceNote: infixed) == nil)
+        #expect(TripPacketBuilder.centralFileDesignation(infixed) == "740.0011 (E. W.)/11–742")
     }
 
     // MARK: - A drawn-from line names a file only when the note names one (build 48)

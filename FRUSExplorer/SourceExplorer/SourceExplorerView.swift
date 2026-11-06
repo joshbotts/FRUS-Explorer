@@ -736,8 +736,8 @@ struct SourceExplorerView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
-                // Phase 5: the S1 classification markings (sentence 2 of the note when
-                // it matches the marking vocabulary), as a quiet semantic chip; where the note
+                // Phase 5: the S1 classification markings (the note's first sentence after the
+                // citation that passes the marking gates), as a quiet semantic chip; where the note
                 // prints none, the marking the index stores, which since index version 72 is the
                 // one a 1932–1954 document prints in its opener. Mirrors the Mac twin.
                 if let marking = IndexingPipeline.classificationMarking(
