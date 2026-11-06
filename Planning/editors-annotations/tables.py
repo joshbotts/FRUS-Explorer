@@ -14,8 +14,9 @@
 # section's own printed text). A volume CARRIES a pervasive category when at least half its
 # documents do; a counted category (cross-references, excisions, editorial notes, Subject lines,
 # participant lists, marginal notes) when one document does; a section when the volume prints it.
-# Classification is the marking the index stores at version 72 (the source note's, else the
-# opener's), counted in index rows; inventory.json's word search is kept only as §7's comparison.
+# Classification is the marking the index stores at version 73 (the source note's, from any
+# sentence after the first, else the opener's), counted in index rows; inventory.json's word search
+# is kept only as §7's comparison. The figures at 73 are derived, see stored73() below.
 # Era bands are keyed by the subseries' FIRST year, not the manifest's earliest date, which
 # reaches back to enclosures centuries older than the volume. The nine late retrospective
 # volumes (Public Diplomacy, the two Intelligence volumes, Iran and its second edition, Guatemala)
@@ -68,6 +69,12 @@ def has_section(v, *names):
 def people_docs(v):          # inline links, or the document-level @ana one volume uses instead
     return feat(v, "pers_linked") or feat(v, "ana_persons")
 
+# Index version 73 (#1857, cc1fea21) stores, beyond 72, exactly the notes note_marking_gap.py finds:
+# #1857 built both indexes and matched its 8,865 new markings to that gap note for note and value
+# for value, with no value stored at 72 changed. So a volume's count at 73 is its count at 72 plus
+# its gap.
+def stored73(v): return idx72[v]["classified"] + gapx["volumes"].get(v, 0)
+
 # (id, label, family, documents carrying it per volume, does the volume carry it)
 half = lambda f: (lambda v: f(v) >= 0.5 * max(docs(v), 1))
 anyd = lambda f: (lambda v: f(v) > 0)
@@ -87,8 +94,8 @@ CATS = [
      half(lambda v: feat(v, "source_note_inline"))),
     ("source-citation", " \"Source:\" form", "provenance", lambda v: feat(v, "source_note_footnote"),
      half(lambda v: feat(v, "source_note_footnote"))),
-    ("classification", "Classification stored (rows)", "provenance", lambda v: idx72[v]["classified"],
-     lambda v: idx72[v]["classified"] >= 0.5 * max(idx72[v]["docs"], 1)),
+    ("classification", "Classification at 73 (rows)", "provenance", stored73,
+     lambda v: stored73(v) >= 0.5 * max(idx72[v]["docs"], 1)),
     ("excisions", "Excisions marked", "provenance", lambda v: feat(v, "not_declassified"),
      anyd(lambda v: feat(v, "not_declassified"))),
     ("despatch", "Despatch numbers (>=10% rows)", "provenance", lambda v: idx[v]["despatch"],
@@ -216,31 +223,34 @@ for sid, label, pred in SECTIONS:
 early_terms = [v for v in vols if inv[v]["vol"]["terms_entries"] > 0 and start(v) < 1945 and band(v) != "retro"]
 print("abbreviation lists before 1945:", ", ".join(early_terms))
 
-print("\n== 7. Classification markings: the word search (TEI) against what the index stores, at 71 "
-      "and at 72 (#1853), by era")
+print("\n== 7. Classification markings: the word search (TEI) against what the index stores, at 71, "
+      "at 72 (#1853) and at 73 (#1857), by era")
 CAT = {c[0]: c for c in CATS}
 word = lambda v: feat(v, "classification")
+at72 = lambda v: idx72[v]["classified"] >= 0.5 * max(idx72[v]["docs"], 1)
 print(hdr(B, short=bshort))
 for name, f in (("documents (TEI)", docs), ("word search, note or opener", word),
                 ("index rows", lambda v: idx[v]["docs"]),
                 ("stored at 71 (app's index)", lambda v: idx[v]["classified"]),
-                ("stored at 72 (#1853)", lambda v: idx72[v]["classified"])):
+                ("stored at 72 (#1853)", lambda v: idx72[v]["classified"]),
+                ("stored at 73 (#1857)", stored73)):
     agg = collections.Counter()
     for v in vols: agg[band(v)] += f(v)
     print(name[:29].ljust(30) + "".join(f"{agg[b]:,}".rjust(9) for b in B))
 for name, pred in (("volumes, word search >=50%", lambda v: word(v) >= 0.5 * max(docs(v), 1)),
-                   ("volumes, stored at 72 >=50%", CAT["classification"][4])):
+                   ("volumes, stored at 72 >=50%", at72),
+                   ("volumes, stored at 73 >=50%", CAT["classification"][4])):
     print(row(name, pred, band, B, nB))
 gap = [v for v in vols if 1932 <= start(v) <= 1954 and band(v) != "retro"]
 print(f"1932-54 (retrospectives excluded, {len(gap)} volumes): word search {sum(word(v) for v in gap):,} "
       f"documents; stored at 71 {sum(idx[v]['classified'] for v in gap):,}, at 72 "
-      f"{sum(idx72[v]['classified'] for v in gap):,}; volumes at half or more: word search "
-      f"{sum(1 for v in gap if word(v) >= 0.5 * docs(v))}, stored at 72 "
-      f"{sum(1 for v in gap if CAT['classification'][4](v))}")
+      f"{sum(idx72[v]['classified'] for v in gap):,}, at 73 {sum(stored73(v) for v in gap):,}; volumes at "
+      f"half or more: word search {sum(1 for v in gap if word(v) >= 0.5 * docs(v))}, stored at 72 "
+      f"{sum(1 for v in gap if at72(v))}, at 73 {sum(1 for v in gap if CAT['classification'][4](v))}")
 grew = [v for v in vols if idx72[v]["classified"] > idx[v]["classified"]]
 print(f"all volumes: stored at 71 {sum(idx[v]['classified'] for v in vols):,}, at 72 "
-      f"{sum(idx72[v]['classified'] for v in vols):,}; volumes whose stored count grew: {len(grew)}, "
-      f"outside 1932-54's regular volumes: "
+      f"{sum(idx72[v]['classified'] for v in vols):,}, at 73 {sum(stored73(v) for v in vols):,}; "
+      f"volumes whose stored count grew at 72: {len(grew)}, outside 1932-54's regular volumes: "
       + ", ".join(f"{v} +{idx72[v]['classified'] - idx[v]['classified']}" for v in grew if v not in gap))
 outside = {k: n for k, n in values72.items() if not CLASSIF.search(k)}
 print(f"stored at 72 with a value the word search's vocabulary cannot match: {sum(outside.values()):,} "
@@ -338,8 +348,9 @@ print(f"artifact size: keyed {len(json.dumps(keyed, separators=(',', ':'))):,} b
       f"columnar {len(json.dumps(columnar, separators=(',', ':'))):,} bytes compact "
       f"({len(names)} counts a volume, {len(secnames)} section names)")
 
-# ── 12. The markings the notes print in a sentence the note parser does not read.
-print("\n== 12. Markings source notes print that the index does not store (note_marking_gap.py, index at 72)")
+# ── 12. The markings the notes print in a sentence the note parser did not read until #1857.
+print("\n== 12. Markings source notes print that the index at 72 did not store, and 73 does "
+      "(note_marking_gap.py, index at 72; #1856, #1857)")
 rep, gv = gapx["replica"], gapx["volumes"]
 print(f"replica of SourceNoteParser.classificationMarking(fromSourceNote:): equals the stored value "
       f"{rep['agree']:,} times, differs {rep['disagree']}")
@@ -354,20 +365,18 @@ ms = {v: n for v, n in gv.items() if "mSupp" in v}
 print(f"the microfiche supplements: {sum(ms.values()):,} notes in the gap; by cause: "
       + ", ".join(f"{k} {n:,}" for k, n in sorted(gapx["causes_microfiche"].items(), key=lambda kv: -kv[1])))
 print("most: " + ", ".join(f"{v} {n}" for v, n in sorted(gv.items(), key=lambda kv: (-kv[1], kv[0]))[:8]))
-printed = lambda v: idx72[v]["classified"] + gv.get(v, 0)
-carry_p = lambda v: printed(v) >= 0.5 * max(idx72[v]["docs"], 1)
-print(row("volumes, stored + gap >=50%", carry_p, band, B, nB))
-print("modern volumes under half, stored: " + ", ".join(v for v in modern if not CAT["classification"][4](v)))
-print("modern volumes under half, stored + gap: " + ", ".join(
-      f"{v} {printed(v)}/{idx72[v]['docs']}" for v in modern if not carry_p(v)))
+carry73 = CAT["classification"][4]
+print("modern volumes under half at 72: " + ", ".join(v for v in modern if not at72(v)))
+print("modern volumes under half at 73: " + ", ".join(
+      f"{v} {stored73(v)}/{idx72[v]['docs']}" for v in modern if not carry73(v)))
 for v in ("frus1952-54v13p1", "frus1969-76v17", "frus1917-72PubDipv06"):
-    print(f"{v}: stored {idx72[v]['classified']}, gap {gv.get(v, 0)}, of {idx72[v]['docs']} rows")
-share_p = {s: sum(1 for v in vols if man[v]["subseries"] == s and band(v) != "retro" and carry_p(v))
-           / sum(1 for v in vols if man[v]["subseries"] == s and band(v) != "retro") for s in subs}
-share_s = {s: sum(1 for v in vols if man[v]["subseries"] == s and band(v) != "retro"
-                  and CAT["classification"][4](v))
-           / sum(1 for v in vols if man[v]["subseries"] == s and band(v) != "retro") for s in subs}
+    print(f"{v}: stored at 72 {idx72[v]['classified']}, gap {gv.get(v, 0)}, at 73 {stored73(v)}, "
+          f"of {idx72[v]['docs']} rows")
+def share(pred):
+    return {s: sum(1 for v in vols if man[v]["subseries"] == s and band(v) != "retro" and pred(v))
+            / sum(1 for v in vols if man[v]["subseries"] == s and band(v) != "retro") for s in subs}
+share72, share73 = share(at72), share(carry73)
 onset90 = lambda sh: next((s for i, s in enumerate(subs) if all(sh[t] >= 0.9 for t in subs[i:])), "-")
-print(f"the tighter onset (every later subseries at 90%): stored {onset90(share_s)}, stored + gap "
-      f"{onset90(share_p)}; subseries under 90% from 1955, stored: "
-      + ", ".join(f"{s} {100 * share_s[s]:.0f}%" for s in subs if int(s[:4]) >= 1955 and share_s[s] < 0.9))
+print(f"the tighter onset (every later subseries at 90%): at 72 {onset90(share72)}, at 73 "
+      f"{onset90(share73)}; subseries under 90% from 1955, at 72: "
+      + ", ".join(f"{s} {100 * share72[s]:.0f}%" for s in subs if int(s[:4]) >= 1955 and share72[s] < 0.9))

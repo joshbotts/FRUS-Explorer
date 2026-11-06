@@ -11,6 +11,15 @@ over the TEI, which #1853 and this re-count showed to miss what the app stores (
 `values` tally, and `tables.out` and the CSV were regenerated. The re-count found a second gap, in
 the note form the app always read (`tables.out` §12). No other figure moved.
 
+**Amended again after #1857 (index version 73).** Classification is now counted at 73.
+- **How the figures are derived:** a volume's figure at 73 is its figure in `index-extract-v72.json`
+  plus its count in `note-marking-gap.json` (`tables.py`'s `stored73`).
+- **Why that holds:** #1857 built indexes at 72 and 73 and found the 8,865 markings 73 adds to be
+  exactly that gap, note for note and value for value.
+- **No index at 73 was built for this folder.**
+- **What moved:** `tables.out` and the CSV were regenerated, and only classification's figures and
+  the artifact size estimate changed.
+
 **The inputs.**
 - **The TEI:** the 553 volumes of `FRUSExplorer/Resources/manifest.json` at `v2` `7ac8ee00`. They
   were read from the corpus clone `~/Development/frus/volumes` at commit `6170e4b32`
@@ -105,15 +114,16 @@ section's own printed text.
 | `doc_dated`, `date_when`, `place` | the corpus build's `frus:doc-dateTime-min`, a `date` with `@when`, `@from` or `@notBefore`, and a `placeName` |
 
 **Limits the design states.**
-- **Classification is the marking the index stores,** read from the index at 72: the source
-  note's, else the opener's (#1853). `inventory.json`'s word search, which the design first
+- **Classification is the marking the index stores at version 73:** the source note's, from any
+  sentence after the first (#1857), else the opener's (#1853), derived as above. `inventory.json`'s word search, which the design first
   counted with, is kept only as `tables.out` §7's comparison. It went wrong in two ways:
   - its vocabulary lacked "No classification marking", "Restricted" and "Official Use Only",
     which 7,201 stored documents read;
   - `itertext()` glued the lines of an `<lb/>` nested in `<hi>` into one word.
-- **The stored marking undercounts what the notes print.** `note_marking_gap.py` finds 8,865 notes
-  from 1955 on whose marking sits in a sentence the parser does not read (`tables.out` §12).
-  - Its replica of the parser reproduces every marking the index stores from a note (62,094).
+- **Until #1857 the stored marking undercounted what the notes print.** Over the index at 72,
+  `note_marking_gap.py` finds 8,865 notes from 1955 on whose marking sat in a sentence the parser
+  did not read (`tables.out` §12). Version 73 stores them.
+  - Its replica of the parser at 72 reproduces every marking that index stores from a note (62,094).
   - Its relaxed reading is a measurement, not the app's rule. Twenty of its notes drawn at random
     all print a real marking.
 - **One volume's "source notes" are despatch numbers.** `frus1870` encodes "No. 3." as
