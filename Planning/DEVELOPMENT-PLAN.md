@@ -9674,7 +9674,12 @@ From `v2` at `dcf178e` (#1853 merged), on `claude/cool-borg-34f5fa`, a side sess
 
 **Where lane D departs from the design**, and what stays for later, is in its §11; its status line names lane D.
 
-**Checked**, every heavy job through `Scripts/heavy.sh`: LANE_D_CHECKED
+**Checked**, every heavy job through `Scripts/heavy.sh`, on Xcode 27.2 and macOS 27.2.
+- **The unit target** on an iPhone 17 under iOS 27.0 (`80CF0F18`), `-only-testing FRUSExplorerTests`, at `b0607989` (the lane's last code): **TEST SUCCEEDED**, 7,894 tests, 7,857 passed, none failed, 37 skipped (the environment gates): lane C's 7,892 and `AnnotationsAxisTests`' two new ones.
+- **`AnnotationsAxisBrowseTests` and `VolumeAnnotationsSectionTests`** under iOS 27.0, each device alone, at `b0607989`: **iPhone 17 (`80CF0F18…`): 7 tests, 6 passed, 1 skipped (the matrix); iPad Pro 13-inch (M5) (`9AB3A0C9…`): 7 of 7.** The screenshots were read: the iPad's matrix, its cell's list, the People browser's empty state with the line and link (the line centred since), and the line under Person Analytics' scope bar. A round between failed to compile its UI target: the tearDown named the dismissal helper on `AnalysisToolsMenu`, where `UITestPresentation` declares it.
+- **The Mac in the check copy** (the AppStore configuration, **BUILD SUCCEEDED** at `1ca21e35` and `568a01d0`), walked with computer use: the matrix and a cell's list ("People tagged, 1955–1968", "1955–1968: 114 of 114 volumes."); the People window's line and its link, which brought the Corpus Browser forward on People tagged's page with the axis already selected; and Person Analytics' link with the browser on All Volumes, which switched the sidebar to the axis and pushed the page once the split view showed it.
+- **No build warned in the lane's files.**
+- **`swift build` and `swift test` are not owed:** the lane touches no FRUSCoreKit or package file.
 
 **Not done, and for the owner.**
 - **Combining layers into one filter** (§6, "Later") and §9's decision 6.

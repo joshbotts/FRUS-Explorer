@@ -1137,7 +1137,7 @@ Lane D added three, so the suite holds five, and one skips on an iPhone:
 
 The tests keep screenshots of the axis, People tagged's page and both lists, the only way a run shows the era strips. The Mac's half, the Corpus Browser's sidebar item and pushed page, has no UI test; it was walked in the check copy. Run it with `VolumeAnnotationsSectionTests`, whose rows lane C turned into buttons.
 
-Measured on 2026-11-06 under iOS 27.0, each device alone under the heavy-job lock, the two suites together: at `1e42de2c`, **iPhone 17 (`80CF0F18…`): 4 tests, 4 passed (this suite's in 22 and 16 s); iPad Pro 13-inch (M5) (`9AB3A0C9…`): 4 tests, 4 passed (21 and 14 s)**; and at `2e515e11`, the lane's last code, **4 of 4 on each (this suite's in 26 and 17 s on the iPhone, 24 and 15 s on the iPad)**. Not run against `v2`, which has no such axis.
+Measured on 2026-11-06 under iOS 27.0, each device alone under the heavy-job lock, the two suites together: at `1e42de2c`, **iPhone 17 (`80CF0F18…`): 4 tests, 4 passed (this suite's in 22 and 16 s); iPad Pro 13-inch (M5) (`9AB3A0C9…`): 4 tests, 4 passed (21 and 14 s)**; and at `2e515e11`, the lane's last code, **4 of 4 on each (this suite's in 26 and 17 s on the iPhone, 24 and 15 s on the iPad)**. With lane D's three, at `b0607989`, the two suites together: **iPhone 17: 7 tests, 6 passed, 1 skipped (the matrix); iPad Pro 13-inch (M5): 7 of 7** (Person Analytics' test in 18 and 21 s). Not run against `v2`, which has no such axis.
 ```bash
 Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
