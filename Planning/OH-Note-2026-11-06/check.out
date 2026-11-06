@@ -1,0 +1,237 @@
+corpus: 6170e4b32c1224002db2fe0c5d8d910597cddc2e 2026-10-14
+volumes (the inventory's, the app's manifest): 553
+
+== 0. The commits and checks the note cites
+  e008aee30 2025-08-21 fix: publish frus1977-80v27
+  5b6aa8608 2026-09-14 fix: apply persons & terms, finish xref enrichment
+  5b6aa8608 in frus1981-88v16.xml: added lines with ana="#p_ 88, with corresp="#p_ 0, with gloss target="#t_ 0
+  frus1977-80v27's persons list first appears in: e008aee30 2025-08-21 fix: publish frus1977-80v27
+  commits to frus1977-80v27.xml adding or removing corresp="#p_: none
+  commits to frus1977-80v27.xml adding or removing gloss target="#t_: none
+  schema/add-front-matter-section-subtype.xsl: line 81 (\[Pp\]ersons\|)
+  schema/frus-ids.sch: line 173 (tei:persName\[starts-with\(@corresp, '#'\)\])
+
+== 1. Lists of persons and terms, and the links to them
+frus1977-80v27: 100 documents
+  persons: "Persons", subtype "", xml:id="persons" at line 871; 20 entries, 153 persName ids
+  terms: "Abbreviations and Terms", subtype "", xml:id="terms" at line 482; 20 entries, 143 term ids
+  documents linking a name (persName/@corresp): 0 (0 links, 0 to this volume's list)
+  documents linking a term (gloss/@target): 0 (0 links)
+  names tagged with no @corresp: 30 in 30 documents; {'signed': 30}
+  documents with a document-level @ana: 0; 0 pointers, 0 resolving to the lists {}
+frus1981-88v16: 88 documents
+  persons: "Persons", subtype "index", xml:id="persons" at line 741; 20 entries, 120 persName ids
+  terms: "Abbreviations and Terms", subtype "index", xml:id="terms" at line 450; 19 entries, 108 term ids
+  documents linking a name (persName/@corresp): 0 (0 links, 0 to this volume's list)
+  documents linking a term (gloss/@target): 0 (0 links)
+  names tagged with no @corresp: 47 in 47 documents; {'signed': 47}
+  documents with a document-level @ana: 88; 1041 pointers, 1041 resolving to the lists {'persons': 622, 'terms': 419}
+  first: d368 at line 3813 (pattern ana="#p_): ana="#p_ARVD_1 #p_BF_1 #p_BJA_1 #p_FRW_1 #p_HAMJ_1 #p_RRW_1 #p_VAB_1 #t_EXDIS_1 #t_OAS_1 #t_SS_1 #t_SSO_1 #t_USG_1"
+frus1977-80v26: 501 documents
+  persons: "Persons", subtype "index", xml:id="persons" at line 12476; 164 entries, 164 persName ids
+  terms: "Abbreviations and Terms", subtype "index", xml:id="terms" at line 11584; 243 entries, 243 term ids
+  documents linking a name (persName/@corresp): 485 (5560 links, 5560 to this volume's list)
+  documents linking a term (gloss/@target): 497 (10971 links)
+  names tagged with no @corresp: 54 in 51 documents; {'signed': 54}
+  documents with a document-level @ana: 0; 0 pointers, 0 resolving to the lists {}
+frus1969-76v17: 280 documents
+  persons: "Persons", subtype "index", xml:id="persons" at line 13730; 325 entries, 325 persName ids
+  terms: "Abbreviations", subtype "index", xml:id="terms" at line 11974; 470 entries, 470 term ids
+  documents linking a name (persName/@corresp): 279 (11639 links, 11639 to this volume's list)
+  documents linking a term (gloss/@target): 278 (6938 links)
+  names tagged with no @corresp: 892 in 136 documents; {'elsewhere': 842, 'head': 44, 'signed': 6}
+  documents with a document-level @ana: 0; 0 pointers, 0 resolving to the lists {}
+frus1969-76ve09p2: 231 documents
+  persons: "Persons", subtype "", xml:id="persons" at line 7823; 25 entries, 155 persName ids
+  terms: "Abbreviations and Terms", subtype "", xml:id="terms" at line 7102; 24 entries, 282 term ids
+  documents linking a name (persName/@corresp): 223 (4416 links, 4416 to this volume's list)
+  documents linking a term (gloss/@target): 226 (5092 links)
+  names tagged with no @corresp: 0 in 0 documents; {}
+  documents with a document-level @ana: 0; 0 pointers, 0 resolving to the lists {}
+frus1941-43: 452 documents
+  persons: "Index of Persons", subtype "index", xml:id="persons" at line 80163; 350 entries, 0 persName ids
+  terms: "List of Abbreviations, Symbols, and Code Names", subtype "index", xml:id="terms" at line 8227; 103 entries, 108 term ids
+  documents linking a name (persName/@corresp): 0 (0 links, 0 to this volume's list)
+  documents linking a term (gloss/@target): 196 (1515 links)
+  names tagged with no @corresp: 312 in 172 documents; {'head': 312}
+  documents with a document-level @ana: 0; 0 pointers, 0 resolving to the lists {}
+
+== 2. Every volume's lists (inventory.json): volumes whose list has entries, by the
+   division's subtype and whether any document links an entry inline
+  persons frus1969-76ve09p2: subtype (none), 155 entries, 223 documents link inline
+  persons frus1977-80v27: subtype (none), 153 entries, 0 documents link inline
+  persons frus1981-88v16: subtype index, 120 entries, 0 documents link inline
+  persons: 283 volumes; [(('(none)', False), 1), (('(none)', True), 1), (('index', False), 1), (('index', True), 280)]
+  persons: other than frus1977-80v27, 282 volumes, of which 281 link inline
+  terms frus1969-76ve09p2: subtype (none), 282 entries, 226 documents link inline
+  terms frus1977-80v27: subtype (none), 143 entries, 0 documents link inline
+  terms frus1981-88v16: subtype index, 108 entries, 0 documents link inline
+  terms: 313 volumes; [(('(none)', False), 1), (('(none)', True), 1), (('index', False), 1), (('index', True), 310)]
+  terms: other than frus1977-80v27, 312 volumes, of which 311 link inline
+  volumes whose documents point at their persons by a document-level @ana: ['frus1981-88v16']
+
+== 3. Numbers in the form 'No. 7.': elements whose whole text is one (margin notes and
+   footnotes set aside), and the source notes that hold one, at a document's head or in an inclosure
+  frus1861: 312 documents, 142 source notes, 0 reading only a despatch number; carriers {'opener/seg': 286, '{http://history.state.gov/frus/ns/1.0}attachment/head': 2}
+  frus1862: 720 documents, 36 source notes, 0 reading only a despatch number; carriers {'opener/seg': 598, '{http://history.state.gov/frus/ns/1.0}attachment/head': 3, 'div/p': 2}
+  frus1863p1: 695 documents, 17 source notes, 0 reading only a despatch number; carriers {'opener/seg': 362, '{http://history.state.gov/frus/ns/1.0}attachment/head': 2, 'note[@type=None]': 1}
+  frus1863p2: 641 documents, 50 source notes, 0 reading only a despatch number; carriers {'opener/seg': 591, '{http://history.state.gov/frus/ns/1.0}attachment/head': 5}
+  frus1864p1: 398 documents, 19 source notes, 0 reading only a despatch number; carriers {'opener/seg': 329, '{http://history.state.gov/frus/ns/1.0}attachment/head': 2}
+  frus1864p2: 594 documents, 11 source notes, 0 reading only a despatch number; carriers {'opener/seg': 199, '{http://history.state.gov/frus/ns/1.0}attachment/head': 28}
+  frus1864p3: 529 documents, 75 source notes, 0 reading only a despatch number; carriers {'opener/seg': 508, '{http://history.state.gov/frus/ns/1.0}attachment/head': 16, 'hi/seg': 1}
+  frus1864p4: 484 documents, 9 source notes, 0 reading only a despatch number; carriers {'opener/seg': 407}
+  frus1865p1: 391 documents, 12 source notes, 0 reading only a despatch number; carriers {'opener/seg': 395, '{http://history.state.gov/frus/ns/1.0}attachment/p': 1}
+  frus1865p2: 675 documents, 59 source notes, 0 reading only a despatch number; carriers {'opener/seg': 289, '{http://history.state.gov/frus/ns/1.0}attachment/head': 61}
+  frus1865p3: 3 source notes hold only a number: {'in an inclosure': 2, "at the document's head": 1}
+  frus1865p3: 766 documents, 43 source notes, 3 reading only a despatch number; carriers {'opener/seg': 634, '{http://history.state.gov/frus/ns/1.0}attachment/head': 17, 'note[@type=source]': 3}
+  frus1865p4: 1146 documents, 496 source notes, 0 reading only a despatch number; carriers {'div/p': 71}
+  frus1866p1: 6 source notes hold only a number: {"at the document's head": 6}
+  frus1866p1: 516 documents, 106 source notes, 6 reading only a despatch number; carriers {'opener/seg': 361, 'note/hi': 5, 'postscript/p': 2, 'note[@type=source]': 1}
+  frus1866p2: 558 documents, 124 source notes, 0 reading only a despatch number; carriers {'opener/seg': 520}
+  frus1866p3: 179 source notes hold only a number: {'in an inclosure': 179}
+  frus1866p3: 223 documents, 201 source notes, 179 reading only a despatch number; carriers {'opener/seg': 339, 'note[@type=source]': 179}
+  frus1867p1: 2 source notes hold only a number: {"at the document's head": 2}
+  frus1867p1: 640 documents, 17 source notes, 2 reading only a despatch number; carriers {'opener/seg': 438, '{http://history.state.gov/frus/ns/1.0}attachment/head': 7, 'note[@type=source]': 2}
+  frus1867p2: 515 documents, 61 source notes, 0 reading only a despatch number; carriers {'opener/seg': 419, '{http://history.state.gov/frus/ns/1.0}attachment/head': 61, 'div/p': 6}
+  frus1868p1: 11 source notes hold only a number: {'in an inclosure': 11}
+  frus1868p1: 399 documents, 53 source notes, 11 reading only a despatch number; carriers {'opener/seg': 332, '{http://history.state.gov/frus/ns/1.0}attachment/head': 19, 'note[@type=source]': 11, '{http://history.state.gov/frus/ns/1.0}attachment/p': 6}
+  frus1868p2: 668 documents, 54 source notes, 0 reading only a despatch number; carriers {'opener/seg': 522, '{http://history.state.gov/frus/ns/1.0}attachment/head': 24, '{http://history.state.gov/frus/ns/1.0}attachment/p': 7, 'div/p': 3}
+  frus1870: 299 source notes hold only a number: {"at the document's head": 298, 'in an inclosure': 1}
+  frus1870: 300 documents, 301 source notes, 299 reading only a despatch number; carriers {'note[@type=source]': 295, 'opener/seg': 228, 'note/hi': 4, 'dateline/seg': 3, 'seg/hi': 2, '{http://history.state.gov/frus/ns/1.0}attachment/head': 1}
+  frus1871: 436 documents, 22 source notes, 0 reading only a despatch number; carriers {'opener/seg': 824, '{http://history.state.gov/frus/ns/1.0}attachment/head': 43, 'div/head': 2, 'note[@type=None]': 1}
+  frus1872p1: 502 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 459, 'div/head': 13, '{http://history.state.gov/frus/ns/1.0}attachment/head': 1}
+  frus1872p2v1: 512 documents, 1 source notes, 0 reading only a despatch number; carriers {'quote/p': 1, 'div/p': 1, '{http://history.state.gov/frus/ns/1.0}attachment/p': 1}
+  frus1872p2v2: 272 documents, 2 source notes, 0 reading only a despatch number; carriers {'opener/seg': 24, 'div/head': 19, 'div/p': 2}
+  frus1872p2v3: 40 documents, 0 source notes, 0 reading only a despatch number; carriers {}
+  frus1872p2v4: 50 documents, 0 source notes, 0 reading only a despatch number; carriers {}
+  frus1872p2v5: 73 source notes hold only a number: {"at the document's head": 73}
+  frus1872p2v5: 163 documents, 79 source notes, 73 reading only a despatch number; carriers {'note[@type=source]': 73, 'div/head': 28, 'opener/seg': 26, 'head/seg': 1}
+  frus1873p1v1: 309 documents, 3 source notes, 0 reading only a despatch number; carriers {'opener/seg': 293, 'div/head': 3, '{http://history.state.gov/frus/ns/1.0}attachment/p': 1}
+  frus1873p1v2: 324 documents, 1 source notes, 0 reading only a despatch number; carriers {'opener/seg': 179, '{http://history.state.gov/frus/ns/1.0}attachment/p': 5, 'div/head': 2, '{http://history.state.gov/frus/ns/1.0}attachment/head': 1}
+  frus1873p2v3: 84 documents, 3 source notes, 0 reading only a despatch number; carriers {'opener/seg': 1}
+  frus1874: 816 documents, 1 source notes, 0 reading only a despatch number; carriers {'opener/seg': 622, 'div/head': 9, '{http://history.state.gov/frus/ns/1.0}attachment/p': 2}
+  frus1875v01: 308 documents, 2 source notes, 0 reading only a despatch number; carriers {'opener/seg': 292}
+  frus1875v02: 399 documents, 1 source notes, 0 reading only a despatch number; carriers {'opener/seg': 344, 'note[@type=None]': 2, 'div/head': 1}
+  frus1876: 349 documents, 3 source notes, 0 reading only a despatch number; carriers {'opener/seg': 288, 'div/head': 3, '{http://history.state.gov/frus/ns/1.0}attachment/head': 2, '{http://history.state.gov/frus/ns/1.0}attachment/p': 2}
+  frus1877: 354 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 307, 'div/head': 4}
+  frus1877app: 46 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 42}
+  frus1878: 550 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 483, 'div/head': 1}
+  frus1879: 535 documents, 2 source notes, 0 reading only a despatch number; carriers {'opener/seg': 480, 'div/head': 4, 'postscript/head': 1, 'quote/p': 1}
+  frus1880: 667 documents, 1 source notes, 0 reading only a despatch number; carriers {'opener/seg': 564, '{http://history.state.gov/frus/ns/1.0}attachment/p': 3, 'div/head': 2, '{http://history.state.gov/frus/ns/1.0}attachment/head': 1}
+  frus1881: 755 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 596, '{http://history.state.gov/frus/ns/1.0}attachment/p': 4, 'postscript/p': 3, 'quote/p': 1}
+  frus1882: 405 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 254, 'note[@type=None]': 3}
+  frus1883: 600 documents, 1 source notes, 0 reading only a despatch number; carriers {'opener/seg': 483, '{http://history.state.gov/frus/ns/1.0}attachment/p': 1}
+  frus1884: 474 documents, 1 source notes, 0 reading only a despatch number; carriers {'opener/seg': 357}
+  frus1885: 715 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 1246, 'div/head': 1}
+  frus1886: 452 documents, 1 source notes, 0 reading only a despatch number; carriers {'opener/seg': 260, '{http://history.state.gov/frus/ns/1.0}attachment/head': 4, 'div/head': 2}
+  frus1887: 701 documents, 4 source notes, 0 reading only a despatch number; carriers {'opener/seg': 547, 'div/head': 1, '{http://history.state.gov/frus/ns/1.0}attachment/head': 1}
+  frus1888p1: 1 source notes hold only a number: {"at the document's head": 1}
+  frus1888p1: 715 documents, 3 source notes, 1 reading only a despatch number; carriers {'opener/seg': 581, '{http://history.state.gov/frus/ns/1.0}attachment/p': 3, 'note[@type=source]': 1}
+  frus1888p2: 644 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 452, 'div/head': 1}
+  frus1889: 350 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 224}
+  frus1890: 502 documents, 1 source notes, 0 reading only a despatch number; carriers {'opener/seg': 395}
+  frus1891: 688 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 312, 'quote/p': 1, 'seg/hi': 1}
+  frus1892: 536 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 374, '{http://history.state.gov/frus/ns/1.0}attachment/head': 5}
+  frus1893: 698 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 424, 'p/hi': 1}
+  frus1894: 825 documents, 1 source notes, 0 reading only a despatch number; carriers {'opener/seg': 482}
+  frus1894Nicaragua: 138 documents, 0 source notes, 0 reading only a despatch number; carriers {'note[@type=None]': 1}
+  frus1894app1: 812 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 180, 'div/p': 13, 'p/hi': 1}
+  frus1894app2: 522 documents, 1 source notes, 0 reading only a despatch number; carriers {'opener/seg': 308, 'div/head': 20, '{http://history.state.gov/frus/ns/1.0}attachment/p': 9, 'quote/p': 2, 'div/p': 1}
+  frus1895p1: 686 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 428, '{http://history.state.gov/frus/ns/1.0}attachment/p': 11}
+  frus1895p2: 767 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 504}
+  frus1896: 897 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 584, 'quote/p': 2}
+  frus1897: 621 documents, 0 source notes, 0 reading only a despatch number; carriers {'opener/seg': 432}
+  frus1898: 1194 documents, 1 source notes, 0 reading only a despatch number; carriers {'opener/seg': 716, 'quote/p': 5, '{http://history.state.gov/frus/ns/1.0}attachment/p': 3, '{http://history.state.gov/frus/ns/1.0}attachment/head': 1}
+  frus1915: 2 source notes hold only a number: {"at the document's head": 2}  (OUTSIDE 1861-1898)
+  frus1915Supp: 1 source notes hold only a number: {"at the document's head": 1}  (OUTSIDE 1861-1898)
+  frus1917Supp01v01: 1 source notes hold only a number: {"at the document's head": 1}  (OUTSIDE 1861-1898)
+  the era: 62 volumes; despatch numbers by carrier, all volumes: {'opener/seg': 23124, 'note[@type=source]': 565, '{http://history.state.gov/frus/ns/1.0}attachment/head': 307, 'div/head': 116, 'div/p': 99, '{http://history.state.gov/frus/ns/1.0}attachment/p': 59, 'quote/p': 13, 'note/hi': 9, 'note[@type=None]': 8, 'postscript/p': 5, 'seg/hi': 3, 'dateline/seg': 3, 'p/hi': 2, 'hi/seg': 1, 'head/seg': 1, 'postscript/head': 1}
+  volumes holding any in each carrier: {'opener/seg': 57, '{http://history.state.gov/frus/ns/1.0}attachment/head': 23, 'div/head': 18, '{http://history.state.gov/frus/ns/1.0}attachment/p': 15, 'div/p': 8, 'note[@type=source]': 8, 'quote/p': 7, 'note[@type=None]': 5, 'postscript/p': 2, 'note/hi': 2, 'seg/hi': 2, 'p/hi': 2, 'hi/seg': 1, 'dateline/seg': 1, 'head/seg': 1, 'postscript/head': 1}
+  the era's source notes that are not a number, commonest: [('[Translation.]', 436), ('A.', 115), ('[Extract.]', 101), ('B.', 94), ('C.', 63), ('[Extracts.]', 42), ('D.', 41), ('[Translation]', 36)]
+  number-only source notes at a document's head, outside frus1870 (87 in 8 volumes):
+    frus1865p3 d711 (@n 711, line 84635): No. 50.]; a number in its opener: False
+    frus1866p1 d147 (@n 147, line 25985): No. 1823.]; a number in its opener: False
+    frus1866p1 d148 (@n 148, line 26017): No. 1248.]; a number in its opener: False
+    frus1866p1 d149 (@n 149, line 26059): No. 1249.]; a number in its opener: False
+    frus1866p1 d152 (@n 152, line 26568): No. 1258.]; a number in its opener: False
+    frus1866p1 d153 (@n 153, line 26705): No. 1259.]; a number in its opener: False
+    frus1866p1 d154 (@n 154, line 26737): No. 1260.]; a number in its opener: False
+    frus1867p1 d250 (@n 250, line 31959): No.62]; a number in its opener: False
+    frus1867p1 d606 (@n 606, line 72969): No.101]; a number in its opener: False
+    frus1888p1 d241 (@n 241, line 46442): No. 241.; a number in its opener: False
+    frus1915 d1006 (@n 1006, line 99459): No. 1315.]; a number in its opener: False
+    frus1915 d1030 (@n 1030, line 100325): No. 1315.]; a number in its opener: False
+    frus1915Supp d1288 (@n 1288, line 135675): No. 2285; a number in its opener: False
+    frus1917Supp01v01 d240 (@n 240, line 46292): No. 1364; a number in its opener: False
+    frus1872p2v5: 73 documents, d12 to d162; @n equal to the note's number in 0; a number in the opener too in 17
+
+== 4. frus1870's List of Papers against its documents
+  "List of papers, with their contents." at line 4201: 303 numbered rows, 1 to 303, none twice
+  documents: 300, d1 to d300
+  the paper number a document's first source note prints, against @n (from, note, shift): [('d3', 'No. 3.', 0), ('d216', 'No. 217.', 1), ('d283', 'No. 285.', 2)]
+  documents opening with a number-only source note: 295; it is the List of Papers number in 293 (@n to d215, @n + 1 to d282, @n + 2 after); the others (document, note, paper): [('d131', 'No. 92.]', 131), ('d230', 'No. 23.', 231)]
+  of those, 183 also print a despatch number in the opener; the first: ('d5', 'No. 5.', 'No. 162.]')
+  documents after d215, which a paper of its own for No. 216 renumbers: 85
+  of those 293 the shift explains, the List of Papers' date is the document's own in 258; differs in 17 [('d44', 'July 18', '1870-08-18'), ('d45', 'July 19', '1870-07-18'), ('d50', 'July 26', '1870-08-26'), ('d53', 'July 29', '1870-08-29'), ('d54', 'July 29', '1870-08-29'), ('d66', 'Aug. 26', '1870-09-26'), ('d67', 'Aug. 26', '1870-09-26'), ('d68', 'Aug. 29', '1870-09-29'), ('d86', 'Sept. 21', '1870-10-21'), ('d87', 'Sept. 26', '1870-10-26'), ('d93', 'Oct. 24', '1870-11-24'), ('d94', 'Oct. 24', '1870-11-24'), ('d114', 'Aug. 24', '1870-09-24'), ('d150', 'July 16', '1870-08-16'), ('d162', 'Sept. 21', '1870-10-21'), ('d166', 'Sept. 29', '1870-10-29'), ('d300', 'July 17', '1870-08-17')]; no date to compare in 18
+  <date> elements whose printed date contradicts @when: 21; of them, @when is the printed day in the month of the dateline's "Received" in 16
+    d44 line 9710: "July 18, 1870" encoded 1870-08-18; the month of receipt: True
+    d50 line 10103: "July 26, 1870" encoded 1870-08-26; the month of receipt: True
+    d53 line 10566: "July 29, 1870" encoded 1870-08-29; the month of receipt: True
+    d54 line 10642: "July 29, 1870" encoded 1870-08-29; the month of receipt: True
+    d66 line 12281: "August 26, 1870" encoded 1870-09-26; the month of receipt: True
+    d67 line 12378: "August 26, 1870" encoded 1870-09-26; the month of receipt: True
+    d68 line 12443: "August 29, 1870" encoded 1870-09-29; the month of receipt: True
+    d86 line 13532: "September 21, 1870" encoded 1870-10-21; the month of receipt: True
+    d87 line 13614: "September 26, 1870" encoded 1870-10-26; the month of receipt: True
+    d93 line 14329: "October 24, 1870" encoded 1870-11-24; the month of receipt: True
+    d94 line 14363: "October 24, 1870" encoded 1870-11-24; the month of receipt: True
+    d114 line 15545: "August 24, 1870" encoded 1870-09-24; the month of receipt: True
+    d150 line 19823: "July 16, 1870" encoded 1870-08-16; the month of receipt: True
+    d162 line 20620: "September 21, 1870" encoded 1870-10-21; the month of receipt: True
+    d166 line 21137: "September 29, 1870" encoded 1870-10-29; the month of receipt: True
+    d215 line 29448: "7th Year, 11th Moon, 4th Day. (December 17, 1868.)" encoded 1868-12-07; the month of receipt: False
+    d228 line 34062: "9th Year, 6th Moon, 27th Day, (July 29, 1870.)" encoded 1870-07-09; the month of receipt: False
+    d228 line 34198: "9th Year, 7th Moon, 14th Day, (August 10, 1870.)" encoded 1870-08-09; the month of receipt: False
+    d282 line 40118: "the 30th of the 11th Month, (January 1, 1870.)" encoded 1870-01-30; the month of receipt: False
+    d282 line 40518: "the 15th loth of the 12th Month, Meije, ( January 16, 1870.)" encoded 1870-01-15; the month of receipt: False
+    d300 line 45620: "July 17, 1870" encoded 1870-08-17; the month of receipt: True
+  documents with no number-only source note: ['d1', 'd2', 'd98', 'd106', 'd197']
+  No. 216 (List of Papers line 6470): Baron Gerolt to Mr. Fish. | Feb. 19 | Proposing combined action of the maritime powers for the extermination of piracy. Inclosure: Count Bismarck to Baron Gerolt, January 29, 1870. | 329
+    inside d215 (line 27794), which the List of Papers gives as No. 215: Mr. Fish to Mr. Low. | Dec. 3 | 303; its opener: "No. 2.] DEPARTMENT OF STATE, Washington, December 3, 1869."
+    its head at line 30237: "Baron Gerolt to Mr. Fish."; its opener: "Legation of the North German Union, Washington, February 19, 1870. (Received February 19.)"
+  No. 284 (List of Papers line 7248): do | Jan. 22 | Deportation of native Christians and separation of families. Inclosures: 1. Protocol of a conference, January 19, 1870. 2. The consul of the Netherlands, Nagasaki, January 14, 1870. | 460
+    inside d282 (line 40063), which the List of Papers gives as No. 283: Mr. De Long to Mr. Fish. | Jan. 17 | 455; its opener: "No. 10.] Legation of the United States in Japan, Yokohama, January 17, 1870. (Received Feb"
+    its head at line 40555: "Mr. Be Long to Mr. Fish."; its opener: "United States Legation, Yokohama, Japan, January 22, 1870. (Received February 24.)"
+  No. 303 (List of Papers line 7488): .do | Aug. 31 | Municipal reforms in the Russian empire. Inclosure: Abstract of the law of such reforms. | 521
+    inside d300 (line 45611), which the List of Papers gives as No. 302: Mr. Schuyler to Mr. Fish. | July 17 | 520; its opener: "No. 54.] Legation of the United States, St. Petersburg, July 17, 1870. (Received August 3."
+    its head at line 45645: "Mr. Schuyler to Mr. Fish."; its opener: "No. 66.] Legation of the United States, St. Petersburg, August 31, 1870. (Received Sept. 2"
+  d131 (line 19064): source note "No. 92.]" at line 19065; opener "United States Legation Yokohama, Japan, October 10, 1870. (R"; List of Papers No. 131: Mr. De Long to Mr. Fish. | Oct. 10; "No. 131" printed in the document: False
+  d230 (line 34902): source note "No. 23." at line 34903; opener "No. 31.] Legation of the United States, Pekin, September 26,"; List of Papers No. 231: do | Sept. 26; "No. 231" printed in the document: False
+
+== 5. The examples the note quotes
+  frus1870 line 7796 (type="source">No\. 3\.</note>):
+    7796: <note rend="inline" type="source">No. 3.</note>
+    7797: <opener><seg rendition="#center">[Telegram.]</seg></opener>
+    7798: <head><persName type="from">Mr. Jay</persName> to <persName type="to">Mr.
+    7799: Fish</persName>.</head>
+  frus1870 line 7815 (type="source">No\. 4\.</note>):
+    7815: <note rend="inline" type="source">No. 4.</note>
+    7816: <opener><seg rendition="#center">[Telegram.—Received at Washington August
+    7817: 22.]</seg></opener>
+    7818: <head><persName type="from">Mr. Jay</persName> to <persName type="to">Mr.
+  frus1872p2v5 line 5074 (type="source">No\. 7\.</note>):
+    5074: <note rend="inline" type="source">No. 7.</note>
+    5075: <opener>
+    5076: <seg rendition="#center">[Extract.]</seg>
+    5077: </opener>
+  frus1872p2v5 line 5147 (type="source">\*No\. 9\.):
+    5147: <note rend="inline" type="source">*No. 9.<seg type="margin"
+    5148: >[11]</seg></note>
+    5149: <opener>
+    5150: <seg rendition="#center">[Extract.]</seg>
+  frus1871 line 26170 (<seg rendition="#left">No\. 74\.\]</seg>):
+    26170: <seg rendition="#left">No. 74.]</seg>
+    26171: <dateline rendition="#right">
+    26172: <placeName><hi rend="smallcaps">On board Flag-ship Colorado</hi>, <hi
+    26173: rend="italic">Near Boisée Island, Corea</hi></placeName>, <date
+  frus1870: 300 documents, 295 with a source note, 301 source notes; not a despatch number: [('d42', 'THE UNITED STATES LEGATION IN PARIS TO THE DEPARTMENT OF STATE.'), ('d48', 'A.')]

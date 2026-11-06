@@ -126,8 +126,10 @@ section's own printed text.
   - Its replica of the parser at 72 reproduces every marking that index stores from a note (62,094).
   - Its relaxed reading is a measurement, not the app's rule. Twenty of its notes drawn at random
     all print a real marking.
-- **One volume's "source notes" are despatch numbers.** `frus1870` encodes "No. 3." as
-  `note[@type="source"]` in 295 of its 300 documents, and every one is "unrecognized" in
-  `source-provenance-index.json`. `tables.out` gives the source-note count with and without it.
+- **One volume's "source notes" are its paper numbers.** `frus1870` encodes "No. 3.", the number
+  its List of Papers gives, as `note[@type="source"]` in 295 of its 300 documents, and every one
+  is "unrecognized" in `source-provenance-index.json`. `tables.out` gives the source-note count
+  with and without it. This entry called them despatch numbers until `../OH-Note-2026-11-06.md`
+  read them against the list.
 - **Sections:** read by the app's own rule, `FRUSDocumentParser.structuralKind`: `@subtype`, else
   `@xml:id`. The second clause is what finds `frus1969-76ve09p2`'s Sources.

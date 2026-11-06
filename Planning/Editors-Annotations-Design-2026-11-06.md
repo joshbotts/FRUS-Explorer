@@ -1,6 +1,6 @@
 # Editors' annotations: what each volume carries, on its page and in Browse — a design, 2026-11-06
 
-**Status: BUILDING, 2026-11-06.** Lanes A, B and C merged as #1859, #1860 and #1861; lane D, the matrix and the links and the last lane, follows them. The owner's "proceed with annotations design plan" took §9's recommendations 1–4, and lane B took decision 5 as B shipping alone. Decision 6 is open. §11 records where each lane departs from the design.
+**Status: BUILDING, 2026-11-06.** Lanes A, B and C merged as #1859, #1860 and #1861; lane D, the matrix and the links and the last lane, follows them. The owner's "proceed with annotations design plan" took §9's recommendations 1–4, and lane B took decision 5 as B shipping alone. Decision 6 is drafted and not filed: `OH-Note-2026-11-06.md`, for the owner to file. §11 records where each lane departs from the design.
 
 **Amended the same day, after #1853 (index version 72).** That pull request closed the gap §3 found, so §3 now records it.
 - Classification is now counted by the marking the index stores, re-counted from a full index at version 72.
@@ -96,7 +96,7 @@ The figures above need five readings:
   - One list has no links: `frus1977-80v27`'s.
   - Five tagged volumes have no list under those ids. Three are the split-set second parts that borrow a sibling's list. The other two are the 1873 parts, whose lists the indexer finds under other ids.
   - `frus1981-88v16` names its people in a document-level `@ana` and is counted with the 288.
-- **Source notes:** `frus1870` is left out. It encodes its despatch numbers ("No. 3.") as source notes in 295 of 300 documents, and every one is "unrecognized" in `source-provenance-index.json`.
+- **Source notes:** `frus1870` is left out. It encodes its paper numbers ("No. 3.", the number its List of Papers gives) as source notes in 295 of 300 documents, and every one is "unrecognized" in `source-provenance-index.json`. This line called them despatch numbers until the note to the Office (`OH-Note-2026-11-06.md`) read them against the list; the despatch grammar reads both forms alike, so the rule below keeps them out either way.
 - **Note on Sources** is read by the app's own section rule (`FRUSDocumentParser.structuralKind`). That rule finds `frus1969-76ve09p2`'s untyped one, which a `@subtype`-only rule misses (258).
 - **Classification** is the marking the index stores at version 73: the source note's, from any sentence after the first, or else the opener's. That is what Search's rows and Source Explorer show. A word search over the TEI stood here until #1855 (§3.2).
 - **Editorial notes** are what the TEI tags as such. 138 of them carry their own source note, and 119 of those print an opener and a dateline: they are printed documents, 132 of them in the volumes covering 1932–1954 (#1854).
@@ -528,7 +528,7 @@ It follows #1051's axis pattern:
 - `frus1969-76v17`;
 - `frus1932v04`, a borrower, with its sibling's list;
 - `frus1981-88v16`, with `@ana`;
-- `frus1870`, with despatch numbers as source notes;
+- `frus1870`, with its paper numbers as source notes;
 - `frus1917-72PubDipv06`, whose notes record "No classification marking";
 - a document whose opener nests an `<lb/>` inside `<hi>` (#1853's `OpenerClassificationTests` names them), and one from `frus1941-43` that the TEI wraps as an editorial note (#1854).
 
@@ -541,11 +541,14 @@ For each fixture, the generator's people, abbreviation, source-note, classificat
 3. **No partial state:** in or not, with counts (§5.2). *Recommended.*
 4. **The thresholds:** half the documents for a pervasive layer, and 75% by band for the onset. *Recommended,* with the figures in §2.3 and §4 behind them.
 5. **The order:** A, then B, then C, then D. Should B or C ship alone if the other slips?
-6. **What to report to the Office of the Historian:**
+6. **What to report to the Office of the Historian: drafted, not filed** (`OH-Note-2026-11-06.md`, 2026-11-06, at the owner's "Draft it"). The owner files it; its B.1 says where. The draft reports:
+   - `frus1870`: three papers, Nos. 216, 284 and 303, encoded inside the paper before them, which its own List of Papers settles, so that from `d216` each document's `@n` is one or two below its printed number; and two numbers and a name misread;
    - `frus1977-80v27`: a 153-name List of Persons and a 143-entry List of Abbreviations, with no inline links to either;
-   - `frus1870`: despatch numbers encoded as `note[@type="source"]`.
+   - `frus1981-88v16`: people and terms named only by a document-level `@ana`, as a question;
+   - printed numbers encoded as `note[@type="source"]` in `frus1870`, `frus1872p2v5` and seven more volumes, as a question. `frus1870`'s are its paper numbers, not the despatch numbers this list first called them.
+   - `frus1870`: 21 `@when` values that contradict the date they mark, 16 of them taking their month from the dateline's "(Received …)".
 
-   These are corpus facts. The labels state them faithfully whether or not upstream changes.
+   These are corpus facts. The app states `frus1977-80v27`'s faithfully whether or not upstream changes. The draft's B.3 names two lines that do not state their volume faithfully, `frus1941-43`'s and `frus1981-88v16`'s (§11, lane C).
 7. **The note parser's gap (§3.3, #1856): resolved.** #1857 stores the 8,865 markings at index version 73, which ships with 72 in the next release (plan of record decision 118). The counts in this design are version 73's.
 
 ## 10. Files
@@ -585,7 +588,11 @@ Where the lanes depart from §4 to §8, each for a reason measured on the way.
 - **The printed aids have one drill per aid,** not "with" and "without": nearly every volume prints one.
 - **A drill's title** reads "With: People tagged" or "Without: People tagged"; its caption is §6's. Its rows show "279/280" for a layer that runs through a volume, "37 docs" for one found here and there, "12 notes" for editorial notes, and nothing for references and aids, which no one count says.
 - **The marked volume comes first.** Opened from a volume's row, a drill lists that volume first, with "You came here from this volume." In the 288 volumes that tag people, `frus1961-63v06` would otherwise be the 126th row.
-- **Two Lists of Persons are marked unlinked, not one.** The amber line is computed: a volume whose index holds a List of Persons and none of whose documents links a name to it. Besides `frus1977-80v27`'s 153 names it finds `frus1941-43`, *The Conferences at Washington, 1941–1942, and Casablanca, 1943*, whose six names the app's section rule finds and §2.1's section ids did not (its row in `editorial-annotations-by-volume.csv` reads 0). The same rule marks two Lists of Abbreviations, `frus1977-80v27`'s and `frus1981-88v16`'s.
+- **The amber line is computed, and two of its four marks are wrong.** It marks a volume whose index holds a List of Persons, or of Abbreviations, and none of whose documents links one to it. It finds `frus1977-80v27`'s two lists, as it should. It also marks:
+  - `frus1941-43`'s "Index of Persons", a back-of-book index of 350 entries with page references and no ids. The persons-list parser keys an entry with no id by its text and keeps the 6 that pass its name heuristic, so the volume's page also says "6 people listed";
+  - `frus1981-88v16`'s List of Abbreviations, whose 88 documents point at it 419 times by `@ana`. The index reads those pointers for people (#1599) but not for terms.
+
+  Until the check for the note to the Office (`OH-Note-2026-11-06.md`, B.3), this bullet called both lists that nothing links to. The fixes are the owner's to schedule.
 - **The regular-width matrix is lane D's,** as §8 planned.
 
 **Lane D, the matrix and the links.**

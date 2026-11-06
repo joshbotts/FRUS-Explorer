@@ -9684,3 +9684,45 @@ From `v2` at `dcf178e` (#1853 merged), on `claude/cool-borg-34f5fa`, a side sess
 **Not done, and for the owner.**
 - **Combining layers into one filter** (§6, "Later") and §9's decision 6.
 - **VoiceOver aloud, dark mode and Full Keyboard Access on the Mac** stay the owner's.
+
+## Session 2026-11-06 — A note to the Office of the Historian, drafted: the editors' annotations design's decision 6
+
+**What and why.** The owner's "Draft it", for §9's decision 6 of `Planning/Editors-Annotations-Design-2026-11-06.md`, what to report to the Office of the Historian. The draft is `Planning/OH-Note-2026-11-06.md`. Part A is for the Office, Part B for the owner, as in `OH-Report-2026-10-01.md`. It is not filed: the owner files it, as a new issue on HistoryAtState/frus (decision 71 keeps #469 closed to posts).
+
+**What it reports**, each figure from one run of `Planning/OH-Note-2026-11-06/check.py` (output `check.out`) at corpus `6170e4b32`. `volumes/` and `schema/` are unchanged from there to `master` at `216cdb764`.
+1. **`frus1870`: papers 216, 284 and 303 are encoded inside the paper before them, as `frus:attachment`s** (confirmed).
+   - The volume's own List of Papers numbers 303 papers against 300 documents.
+   - Each misfiled paper is dated after the one it is filed in.
+   - From `d216` on, every document's `@n` is one or two below its printed number.
+   - This is the class HistoryAtState/frus#25 described in 2016; its 52 volumes did not include `frus1870`, whose checklist is #223 (2018).
+   - Also: `d131`'s and `d230`'s number notes, and "Mr. Be Long".
+2. **`frus1977-80v27`'s List of Persons (153) and List of Abbreviations (143) have no link from any document** (confirmed). Every other volume with such lists links them. Both came with the commit that published the volume, `e008aee30`, and no later commit adds a link.
+3. **`frus1981-88v16` names its people and terms only by a document-level `@ana`** (a question): 1,041 pointers, added by `5b6aa8608`. It is the only volume that does.
+4. **Printed numbers as `note[@type="source"]`** (a question):
+   - `frus1870`'s 295;
+   - `frus1872p2v5`'s 73;
+   - 14 in 7 more volumes.
+
+   Against these, 57 of the era's 62 volumes put such a number in the opener's `seg`, 23,124 times.
+5. **`frus1870`: 21 dates whose `@when` contradicts the text** (confirmed).
+   - In 16, `@when` is the printed day in the month of the dateline's "(Received …)".
+   - The other 5 are Chinese and Japanese dates beside a Western one.
+   - Comparing the List of Papers' dates with the documents' found them; #469's dates rows hold none for the volume.
+
+**What the check corrected.**
+- **Decision 6 called `frus1870`'s notes despatch numbers.** They are its paper numbers: the List of Papers' own in 293 of 295 documents, and 183 of those print a despatch number in the opener as well. The design's §2.1, §9 and §11, and its folder's README, now say so.
+- **Lane C's §11 bullet was wrong on two of its four marks.**
+  - `frus1941-43`'s "List of Persons" is an Index of Persons: 350 entries with page references and no ids. The parser keys an entry with no id by its text and keeps 6 of them.
+  - `frus1981-88v16`'s List of Abbreviations is pointed at 419 times by `@ana`. The index reads those pointers for people (#1599) and not for terms.
+  - The app shows both as lists that nothing links to, and `frus1941-43`'s page says "6 people listed". The note's B.3 has the causes, and `AnnotationsAxisTests.theShippedFile` expects the first mark. The fixes are the owner's to schedule.
+
+**Checked.**
+- `check.py` ran through `Scripts/heavy.sh` in about 30 seconds over all 553 volumes.
+- Every number in Part A was matched against `check.out`. The ones it does not print are quoted from #25, #223 and #469, or are arithmetic on the run's figures, and the note's head says which.
+- HistoryAtState/frus's issues were searched, read-only.
+- Nothing was posted.
+
+**Not done, and for the owner.**
+- **Filing the note.**
+- **The two app fixes.**
+- **A sweep of the other volumes for items 1 and 5.** Only `frus1870` was compared against its List of Papers, and only its dates were read.
