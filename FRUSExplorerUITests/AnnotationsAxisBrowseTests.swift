@@ -69,7 +69,7 @@ final class AnnotationsAxisBrowseTests: XCTestCase {
 
     override func tearDown() async throws {
         // Person Analytics opens as a sheet on an iPhone; the next launch would restore it.
-        AnalysisToolsMenu.dismissAnyPresentation(in: app)
+        UITestPresentation.dismissAnyPresentation(in: app)
         app = nil
     }
 
