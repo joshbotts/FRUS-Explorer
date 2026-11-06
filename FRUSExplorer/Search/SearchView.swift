@@ -2747,10 +2747,10 @@ private struct SearchResultRow: View {
                     .padding(.top, 1)
             }
 
-            // Classification chip (Source Explorer Phase 5) — derived from the
-            // result's already-loaded source note, so no per-row query is added.
-            if let note = result.sourceNote,
-               let marking = SourceNoteParser.classificationMarking(fromSourceNote: note) {
+            // Classification chip (Source Explorer Phase 5) — the source note's marking, else
+            // the one the index stores, which since index version 72 is the marking a 1932–1954
+            // document prints in its opener. Both are on the row, so no per-row query is added.
+            if let marking = result.classificationMarking {
                 ClassificationChip(marking: marking)
                     .padding(.top, 1)
             }

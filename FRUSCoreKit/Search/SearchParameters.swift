@@ -483,6 +483,10 @@ public extension SearchParameters {
 ///   1.3 — Session 2026-06-08: `isFrontMatter` field added. Populated from
 ///          `document_cache.is_front_matter`. Used by search result rows to show a
 ///          teal "Front Matter" badge distinct from the purple editorial-note badge.
+///   1.4 — index version 72: `indexedClassification`, the marking the index stores for the
+///          document (`document_sources.classification`), and `classificationMarking`, the one a
+///          row shows, which is the stored value where the source note prints none: the marking
+///          the volumes covering 1932–1954 print in the opener
 public struct SearchResult: Sendable, Identifiable {
 
     /// Document identifier (e.g. `"d1"`), unique within its volume.
@@ -551,7 +555,19 @@ public struct SearchResult: Sendable, Identifiable {
     /// field to carry correct values).
     public let isFrontMatter: Bool
 
+    /// The classification marking the index stores for the document (`document_sources.classification`),
+    /// or `nil`: the source note's, or since index version 72 the one the document prints in its opener
+    /// where the note prints none. A row shows ``classificationMarking``, not this.
+    public let indexedClassification: String?
+
     public var id: String { "\(volumeId)/\(documentId)" }
+
+    /// The classification marking the row shows ("Secret; Nodis"), or `nil`: the source note's, read
+    /// from ``sourceNote``, else ``indexedClassification``, which holds the marking the volumes
+    /// covering 1932–1954 print in the opener (`IndexingPipeline.classificationMarking(sourceNote:stored:)`).
+    public var classificationMarking: String? {
+        IndexingPipeline.classificationMarking(sourceNote: sourceNote, stored: indexedClassification)
+    }
 
     public init(
         documentId: String,
@@ -569,7 +585,8 @@ public struct SearchResult: Sendable, Identifiable {
         subjectTagIds: [String] = [],
         userTagIds: [String] = [],
         isEditorialNote: Bool = false,
-        isFrontMatter: Bool = false
+        isFrontMatter: Bool = false,
+        indexedClassification: String? = nil
     ) {
         self.documentId = documentId
         self.volumeId = volumeId
@@ -587,6 +604,7 @@ public struct SearchResult: Sendable, Identifiable {
         self.userTagIds = userTagIds
         self.isEditorialNote = isEditorialNote
         self.isFrontMatter = isFrontMatter
+        self.indexedClassification = indexedClassification
     }
 
     /// The day or span the index dates the row by, for a row whose text prints no dateline

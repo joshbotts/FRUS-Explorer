@@ -46,6 +46,7 @@ import Crypto
 ///
 /// Version history:
 ///   1.0 — FRUS Explorer Light S17a: initial implementation
+///   1.1 — index version 72: the pin re-taken for the rows' stored classification marking
 @Suite("FRUSCoreKit — the app's search statements on its user half, by their text")
 struct SearchStatementTextTests {
 
@@ -188,7 +189,12 @@ struct SearchStatementTextTests {
         // Taken at `v2` 9fa4375d with the trace hook copied in, and nothing else changed: the property
         // `statementTrace`, `setStatementTraceForTesting(_:)`, the line in `auxPrepare` that notes each
         // statement prepared, and `StatementTraceForTesting`.
-        let pinned = (count: 365, sha256: "c80c2976ba5d98412cea13e3254dfebcbdff44783f76be08ceb55af3c48a2fbb")
+        // Re-taken for index version 72, when a search row began carrying the classification marking
+        // the index stores (`IndexedSearchRow.classification`): the record at `v2` 7ac8ee00 (365
+        // statements, `c80c2976…`) and this one differ in 85 statements, each the rows' select list
+        // gaining `ds.classification` and a `LEFT JOIN document_sources ds` on the row's
+        // `(volume_id, document_id)`, and in nothing else. The user half reads as it did.
+        let pinned = (count: 365, sha256: "ab7a4ce9873413e2d6576a60eda688798a8bcfa23ae32c33fa046f44e12e30d7")
         if statements.count != pinned.count || digest != pinned.sha256 {
             let record = FileManager.default.temporaryDirectory
                 .appendingPathComponent("SearchStatementText-\(digest.prefix(12)).txt")

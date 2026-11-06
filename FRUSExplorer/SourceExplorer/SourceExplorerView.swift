@@ -122,6 +122,10 @@ import SwiftUI
 ///           the list calls a decimal number worded through the National Archives a decimal
 ///           file, where #1543 had left it the collection's name over a list drawn by class.
 ///           Mirrors MacSourceExplorerView 1.16.
+///   1.18 — index version 72: the chip beside the note shows the marking the index stores where
+///           the note prints none, the one a 1932–1954 document prints in its opener, read in
+///           `load()` through `SourceExplorerDocumentContext.storedClassification`. Mirrors
+///           MacSourceExplorerView 1.17.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -188,6 +192,11 @@ struct SourceExplorerView: View {
     /// a date-form file year against (#1407 review). `nil` until `load()` has read it, and for a
     /// document the index does not date to the day.
     @State private var documentDay: DecimalFileSegment.DocumentDay? = nil
+
+    /// The classification marking the index stores for the document, which the chip beside the note
+    /// shows where the note prints none: the marking a document of the 1932–1954 volumes prints in
+    /// its opener (index version 72). `nil` until `load()` has read it.
+    @State private var indexedClassification: String? = nil
 
     /// What the pre-1906 section knows: loading, not checked (and why), no match, not applicable, or
     /// the homes found (Phase 2).
@@ -728,8 +737,11 @@ struct SourceExplorerView: View {
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
                 // Phase 5: the S1 classification markings (sentence 2 of the note when
-                // it matches the marking vocabulary), as a quiet semantic chip.
-                if let marking = SourceNoteParser.classificationMarking(fromSourceNote: rawSourceNote) {
+                // it matches the marking vocabulary), as a quiet semantic chip; where the note
+                // prints none, the marking the index stores, which since index version 72 is the
+                // one a 1932–1954 document prints in its opener. Mirrors the Mac twin.
+                if let marking = IndexingPipeline.classificationMarking(
+                    sourceNote: rawSourceNote, stored: indexedClassification) {
                     ClassificationChip(marking: marking)
                 }
             }
@@ -2711,6 +2723,7 @@ struct SourceExplorerView: View {
         // the whole of the load, and "not checked yet" would outlive the pipeline it was waiting for.
         documentContext = nil
         documentDay = nil
+        indexedClassification = nil
         countrySeriesOutcome = .loading
 
         let note = SourceNoteParser().parse(rawSourceNote)
@@ -2736,6 +2749,12 @@ struct SourceExplorerView: View {
         let day = await SourceExplorerDocumentContext.documentDay(
             pipeline: indexingPipeline, volumeId: documentVolumeId, documentId: documentId)
         if !Task.isCancelled { documentDay = day }
+
+        // The marking the index stores (index version 72), for the chip beside the note: one read,
+        // through the same function as the Mac twin, after the other read of the document's row.
+        let stored = await SourceExplorerDocumentContext.storedClassification(
+            pipeline: indexingPipeline, volumeId: documentVolumeId, documentId: documentId)
+        if !Task.isCancelled { indexedClassification = stored }
 
         await loadUnprintedPointers(sourceNote: note)
 

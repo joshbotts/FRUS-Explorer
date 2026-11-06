@@ -534,6 +534,7 @@ struct UserTagAssignIndexTests {
 ///   1.0 — #1576 lane 5: initial implementation
 ///   1.1 — A18 (index version 70): `dateISOMax` and `datePrecision`, 14 → 16 fields; the whole unit
 ///          run caught both copies dropping them
+///   1.2 — index version 72: `indexedClassification`, 16 → 17 fields, which both copies carry
 @Suite("A result row's tags, refreshed (#1576 lane 5)")
 struct SearchResultTagRefreshTests {
 
@@ -546,7 +547,7 @@ struct SearchResultTagRefreshTests {
         dateline: "Washington, May 1", dateISO: "1971-05-01", dateISOMax: "1971-05-03", datePrecision: .month,
         sourceNote: "Source: National Archives.",
         snippet: "a snippet", bm25Score: -3.5, semanticScore: 0.75, subjectTagIds: ["s1", "s2"],
-        userTagIds: ["old"], isEditorialNote: true, isFrontMatter: true)
+        userTagIds: ["old"], isEditorialNote: true, isFrontMatter: true, indexedClassification: "Secret; Priority")
 
     @Test("A row is copied with its new tags, in the index's order, and nothing else changed")
     func everyOtherFieldIsCarried() {
@@ -562,8 +563,8 @@ struct SearchResultTagRefreshTests {
 
         let before = Mirror(reflecting: Self.full).children.map { ($0.label ?? "?", String(describing: $0.value)) }
         let after = Mirror(reflecting: copy).children.map { ($0.label ?? "?", String(describing: $0.value)) }
-        #expect(before.count == 16, """
-            SearchResult has \(before.count) stored fields where it had 16. `replacingUserTagIds` and \
+        #expect(before.count == 17, """
+            SearchResult has \(before.count) stored fields where it had 17. `replacingUserTagIds` and \
             `replacingScores` name each field they carry: add the new one to both and to `full` above, \
             then change this count.
             """)
@@ -572,12 +573,14 @@ struct SearchResultTagRefreshTests {
             #expect(old.0 == new.0 && old.1 == new.1, "\(old.0) was \(old.1) and is \(new.1)")
             compared += 1
         }
-        #expect(compared == 15)
+        #expect(compared == 16)
         // The other copy the app makes, a layer's rescoring (#1577 lane 4), carries the two date
-        // fields index version 70 added, which the whole unit run found both copies dropping.
+        // fields index version 70 added, which the whole unit run found both copies dropping, and
+        // the stored classification marking version 72 added.
         let rescored = Self.full.replacingScores(bm25: -1, semantic: nil)
         #expect(rescored.dateISOMax == "1971-05-03" && rescored.datePrecision == .month)
         #expect(rescored.drawnDate == Self.full.drawnDate)
+        #expect(rescored.indexedClassification == "Secret; Priority")
     }
 
     @Test("A document left with no tag has a row with none")

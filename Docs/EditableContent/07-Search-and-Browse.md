@@ -1776,7 +1776,7 @@ Save this search or its results, select results to act on several at once, searc
 *The lines shown above the results after a command on the picked results (#1576), on iPhone and iPad. Each is also announced to VoiceOver. Mark Reviewed's two lines are the checklist strip's own announcements, "25 results marked reviewed" and "25 results are back in the list".*
 
 ##### Added %1$@ to “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 687–688 | key: search.selection.outcome.added %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 688–689 | key: search.selection.outcome.added %@ %@ -->
 
 *The line after Add to Collection added documents: "Added 31 documents to “Chile”." `%1$@` is the number added, with its noun, and `%2$@` the collection's name. When some were already in the collection, one of the two sentences below follows it.*
 
@@ -1785,7 +1785,7 @@ Added %1$@ to “%2$@”.
 <!-- END SOURCE: search.selection.outcome.added %@ %@ -->
 
 ##### %@ was already in it.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 693–694 | key: search.selection.outcome.already.one %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 694–695 | key: search.selection.outcome.already.one %@ -->
 
 *Follows the line above when one of the documents was already in the collection: "1 was already in it." `%@` is the number.*
 
@@ -1794,7 +1794,7 @@ Added %1$@ to “%2$@”.
 <!-- END SOURCE: search.selection.outcome.already.one %@ -->
 
 ##### %@ were already in it.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 695–696 | key: search.selection.outcome.already.many %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 696–697 | key: search.selection.outcome.already.many %@ -->
 
 *The same for more than one: "6 were already in it."*
 
@@ -1803,7 +1803,7 @@ Added %1$@ to “%2$@”.
 <!-- END SOURCE: search.selection.outcome.already.many %@ -->
 
 ##### Nothing added: %1$@ was already in “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 681–682 | key: search.selection.outcome.noneAdded.one %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 682–683 | key: search.selection.outcome.noneAdded.one %@ %@ -->
 
 *The line when every picked document was already in the collection, for one document. `%1$@` is the number and `%2$@` the collection's name. No Undo is offered beside it.*
 
@@ -1812,7 +1812,7 @@ Nothing added: %1$@ was already in “%2$@”.
 <!-- END SOURCE: search.selection.outcome.noneAdded.one %@ %@ -->
 
 ##### Nothing added: %1$@ were already in “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 683–684 | key: search.selection.outcome.noneAdded.many %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 684–685 | key: search.selection.outcome.noneAdded.many %@ %@ -->
 
 *The same for more than one: "Nothing added: 6 were already in “Chile”."*
 
@@ -1821,7 +1821,7 @@ Nothing added: %1$@ were already in “%2$@”.
 <!-- END SOURCE: search.selection.outcome.noneAdded.many %@ %@ -->
 
 ##### Removed %1$@ from “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.removed(_:from:locale:) | lines: 708–709 | key: search.selection.outcome.removed %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.removed(_:from:locale:) | lines: 709–710 | key: search.selection.outcome.removed %@ %@ -->
 
 *The line after Undo took an add back: "Removed 31 documents from “Chile”." `%1$@` is the number removed, with its noun, and `%2$@` the collection's name.*
 
@@ -1830,7 +1830,7 @@ Removed %1$@ from “%2$@”.
 <!-- END SOURCE: search.selection.outcome.removed %@ %@ -->
 
 ##### %@ selected result is not in this list now.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.dropped(_:locale:) | lines: 721–722 | key: search.selection.outcome.dropped.one %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.dropped(_:locale:) | lines: 722–723 | key: search.selection.outcome.dropped.one %@ -->
 
 *The line when the same search was run again, under a changed filter, and one picked result is no longer in the list. `%@` is the number.*
 
@@ -1839,7 +1839,7 @@ Removed %1$@ from “%2$@”.
 <!-- END SOURCE: search.selection.outcome.dropped.one %@ -->
 
 ##### %@ selected results are not in this list now.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.dropped(_:locale:) | lines: 723–724 | key: search.selection.outcome.dropped.many %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.dropped(_:locale:) | lines: 724–725 | key: search.selection.outcome.dropped.many %@ -->
 
 *The same for more than one: "12 selected results are not in this list now."*
 
@@ -1848,7 +1848,7 @@ Removed %1$@ from “%2$@”.
 <!-- END SOURCE: search.selection.outcome.dropped.many %@ -->
 
 ##### Select %@ or fewer
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.overLimit(_:locale:) | lines: 595–596 | key: search.selection.overLimit.v3 %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.overLimit(_:locale:) | lines: 596–597 | key: search.selection.overLimit.v3 %@ -->
 
 *Why Add to Collection and Add Tags are dimmed, when more results are picked than one of them takes: "Select 1,000 documents or fewer". `%@` is the limit, with its noun. It is said beside each of the two, under its name: in the Actions menu on iPhone and iPad, under the two buttons of the Mac's selection strip, and in a checked result's menu on the Mac. Mark Reviewed stays live. Re-keyed for #1683 (decision 69): it was a line above the results, "Select %@ or fewer to add them to a collection or to tag them.", and beside the commands it no longer says what they are for. Re-keyed in #1576 lane 5 too, when the line came to speak for Add Tags as well.*
 
@@ -1857,7 +1857,7 @@ Select %@ or fewer
 <!-- END SOURCE: search.selection.overLimit.v3 %@ -->
 
 ##### Undo did not finish: %@
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.undoFailed(_:) | lines: 734–735 | key: search.selection.outcome.undoFailed %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.undoFailed(_:) | lines: 735–736 | key: search.selection.outcome.undoFailed %@ -->
 
 *The line when the Undo of an add threw. `%@` is the system's own description of the failure. No Undo is offered beside it. It does not say that nothing changed: a removal whose save failed has already taken the documents out of the collection in memory.*
 
@@ -1870,7 +1870,7 @@ Undo did not finish: %@
 *The line shown after Add Tags on search results (#1576 lane 5): above the results on iPhone and iPad, in the strip on the Mac. With one tag the tag is named; with more than one the tags are counted. An Undo is offered beside a line that says something was added.*
 
 ##### Added “%1$@” to %2$@.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 631–632 | key: search.selection.outcome.tagged %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 632–633 | key: search.selection.outcome.tagged %@ %@ -->
 
 *One tag was added: "Added “Chile” to 31 documents." `%1$@` is the tag's name and `%2$@` the documents that gained it, with their noun.*
 
@@ -1879,7 +1879,7 @@ Added “%1$@” to %2$@.
 <!-- END SOURCE: search.selection.outcome.tagged %@ %@ -->
 
 ##### Added %1$@ tags to %2$@.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 635–636 | key: search.selection.outcome.tagged.tags %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 636–637 | key: search.selection.outcome.tagged.tags %@ %@ -->
 
 *More than one tag was added: "Added 3 tags to 31 documents." `%1$@` is the number of tags and `%2$@` the documents that gained at least one, with their noun.*
 
@@ -1888,7 +1888,7 @@ Added %1$@ tags to %2$@.
 <!-- END SOURCE: search.selection.outcome.tagged.tags %@ %@ -->
 
 ##### %@ already had it.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 643–644 | key: search.selection.outcome.alreadyTagged %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 644–645 | key: search.selection.outcome.alreadyTagged %@ -->
 
 *Follows the line for one tag when some of the documents carried it already: "6 already had it." `%@` is how many. One form serves one and many.*
 
@@ -1897,7 +1897,7 @@ Added %1$@ tags to %2$@.
 <!-- END SOURCE: search.selection.outcome.alreadyTagged %@ -->
 
 ##### %@ already had them.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 644–645 | key: search.selection.outcome.alreadyTagged.tags %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 645–646 | key: search.selection.outcome.alreadyTagged.tags %@ -->
 
 *Follows the line for several tags when some of the documents carried every one of them already: "6 already had them."*
 
@@ -1906,7 +1906,7 @@ Added %1$@ tags to %2$@.
 <!-- END SOURCE: search.selection.outcome.alreadyTagged.tags %@ -->
 
 ##### Nothing added: %1$@ document already had “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 615–616 | key: search.selection.outcome.noneTagged.one %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 616–617 | key: search.selection.outcome.noneTagged.one %@ %@ -->
 
 *The one document carried the one tag already. No Undo is offered. `%1$@` is the number and `%2$@` the tag's name.*
 
@@ -1915,7 +1915,7 @@ Nothing added: %1$@ document already had “%2$@”.
 <!-- END SOURCE: search.selection.outcome.noneTagged.one %@ %@ -->
 
 ##### Nothing added: %1$@ documents already had “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 617–618 | key: search.selection.outcome.noneTagged.many %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 618–619 | key: search.selection.outcome.noneTagged.many %@ %@ -->
 
 *Every document carried the one tag already: "Nothing added: 37 documents already had “Chile”."*
 
@@ -1924,7 +1924,7 @@ Nothing added: %1$@ documents already had “%2$@”.
 <!-- END SOURCE: search.selection.outcome.noneTagged.many %@ %@ -->
 
 ##### Nothing added: %@ document already had those tags.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 623–624 | key: search.selection.outcome.noneTagged.tags.one %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 624–625 | key: search.selection.outcome.noneTagged.tags.one %@ -->
 
 *The one document carried every one of several tags already.*
 
@@ -1933,7 +1933,7 @@ Nothing added: %@ document already had those tags.
 <!-- END SOURCE: search.selection.outcome.noneTagged.tags.one %@ -->
 
 ##### Nothing added: %@ documents already had those tags.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 625–626 | key: search.selection.outcome.noneTagged.tags.many %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 626–627 | key: search.selection.outcome.noneTagged.tags.many %@ -->
 
 *Every document carried every one of several tags already.*
 
@@ -1942,7 +1942,7 @@ Nothing added: %@ documents already had those tags.
 <!-- END SOURCE: search.selection.outcome.noneTagged.tags.many %@ -->
 
 ##### Removed “%1$@” from %2$@.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.untagged(_:tagNames:locale:) | lines: 659–660 | key: search.selection.outcome.untagged %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.untagged(_:tagNames:locale:) | lines: 660–661 | key: search.selection.outcome.untagged %@ %@ -->
 
 *After Undo of an Add Tags that gave one tag: "Removed “Chile” from 31 documents." Only the tags the command added are taken off. `%2$@` can be fewer than were tagged, when some of those tags were removed another way first.*
 
@@ -1951,7 +1951,7 @@ Removed “%1$@” from %2$@.
 <!-- END SOURCE: search.selection.outcome.untagged %@ %@ -->
 
 ##### Removed %1$@ tags from %2$@.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.untagged(_:tagNames:locale:) | lines: 663–664 | key: search.selection.outcome.untagged.tags %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.untagged(_:tagNames:locale:) | lines: 664–665 | key: search.selection.outcome.untagged.tags %@ %@ -->
 
 *After Undo of an Add Tags that gave several tags: "Removed 3 tags from 31 documents."*
 
@@ -1964,7 +1964,7 @@ Removed %1$@ tags from %2$@.
 *The help the Mac Search window's Select button shows when the pointer rests on it (#1576 lane 4). The button is in the titlebar beside Checklist; on, every result has a checkbox and a strip above the list holds the commands.*
 
 ##### Select results, to add several to a collection or mark them reviewed at once
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.selectToggleOnHelp | lines: 463–464 | key: search.selection.toggle.on.help -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.selectToggleOnHelp | lines: 464–465 | key: search.selection.toggle.on.help -->
 
 *While selection is off.*
 
@@ -1973,7 +1973,7 @@ Select results, to add several to a collection or mark them reviewed at once
 <!-- END SOURCE: search.selection.toggle.on.help -->
 
 ##### Leave selection and clear the checkboxes
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.selectToggleOffHelp | lines: 469–470 | key: search.selection.toggle.off.help -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.selectToggleOffHelp | lines: 470–471 | key: search.selection.toggle.off.help -->
 
 *While selection is on.*
 

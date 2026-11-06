@@ -31,6 +31,8 @@ import Foundation
 ///         fills in the header, dateline and serial a route did not supply
 ///   1.2 — 2026-09-26: #1407 review, round 1 — `SourceExplorerDocumentContext.documentDay`, the one
 ///         read both views make of the document's own day
+///   1.3 — index version 72: `SourceExplorerDocumentContext.storedClassification`, the one read both
+///         views make of the marking the index stores, for a document that prints it in its opener
 enum MacSourceExplorerLoadIdentity {
 
     /// A key that changes whenever anything `load()` reads changes.
@@ -119,6 +121,20 @@ struct SourceExplorerDocumentContext: Sendable, Equatable {
                             documentId: String?) async -> DecimalFileSegment.DocumentDay? {
         guard let pipeline, let volumeId, let documentId else { return nil }
         return (try? await pipeline.documentDay(volumeId: volumeId, documentId: documentId)) ?? nil
+    }
+
+    /// The classification marking the index stores for the document
+    /// (`IndexingPipeline.storedClassification`), or `nil` when there is no pipeline, no document key,
+    /// no stored marking, or the read fails.
+    ///
+    /// Both views read it in `load()` and show `IndexingPipeline.classificationMarking(sourceNote:stored:)`
+    /// beside the note, so a document of the volumes covering 1932–1954, which prints its marking in
+    /// its opener rather than its note (index version 72), has its chip, as its search row does. One
+    /// function, so the two views cannot read it two ways.
+    static func storedClassification(pipeline: IndexingPipeline?, volumeId: String?,
+                                     documentId: String?) async -> String? {
+        guard let pipeline, let volumeId, let documentId else { return nil }
+        return (try? await pipeline.storedClassification(volumeId: volumeId, documentId: documentId)) ?? nil
     }
 
     /// `value`, or `nil` when it is absent, empty, or only whitespace.

@@ -512,6 +512,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.52 — 2026-11-01 (#1767's follow-up): `currentPersonRollupVersion` → 15 — the bundled authority
 ///         index lists one more anchor as `apart` and takes three VIAF ids off records not theirs; one
 ///         member moves (see the v15 note). No index version
+///  4.53 — 2026-11-06: `currentDateIndexVersion` → 72 — `document_sources.classification` holds the
+///         marking a document prints in its opener (`extractOpenerClassification(from:)`) where its
+///         source note prints none (see the v72 note); a search row carries the stored value
+///         (`IndexedSearchRow.classification`), and `storedClassification(volumeId:documentId:)` reads
+///         it for one document, for Source Explorer
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1550,7 +1555,22 @@ public actor IndexingPipeline {
     ///     `target_volume_id`: 46 rows at version 70, all 46 resolving.
     ///   Without the bump an installed index keeps every one of the 48,577 rows on the volume.
     ///   A library still re-indexes once at build 51, for 70 and 71 together.
-    public static let currentDateIndexVersion: Int = 71
+    /// - v71→72 — the classification marking printed in the opener. The volumes covering 1932–1954
+    ///   print a document's marking above its dateline (`<opener><seg><hi rend="smallcaps">secret
+    ///   </hi></seg><dateline>…`), where later volumes put it in the source note's second sentence,
+    ///   the only place the index read it. A re-index stores the opener's marking in
+    ///   `document_sources.classification` where the note prints none
+    ///   (``extractOpenerClassification(from:)``, `SourceNoteParser.classificationMarking(fromOpenerLines:)`);
+    ///   no value stored before moves, since no document prints one in both places. Measured on two
+    ///   full indexes of the 553 catalogue volumes at corpus `6170e4b32`, at 71 and at 72: 43,171
+    ///   rows go from `NULL` to a marking, in 90 volumes, and nothing else in the table moves; the
+    ///   volumes covering 1932–1954 go from 1,422 of their 140,869 documents with a stored marking
+    ///   to 44,585, those before 1932 from 443 to 451, and the later ones not at all. 135 documents
+    ///   print a marking with no source row to hold it: 107 the TEI calls editorial notes, whose
+    ///   notes the index does not read as a source note, and 28 with no note it reads as theirs.
+    ///   Search rows and Source Explorer show the stored value where the note prints none. Without
+    ///   the bump an installed index keeps the 1932–1954 documents unmarked.
+    public static let currentDateIndexVersion: Int = 72
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -3901,7 +3921,8 @@ public actor IndexingPipeline {
                     dateISO: auxColumnString(stmt, 11),
                     score: sqlite3_column_double(stmt, 12),
                     dateISOMax: auxColumnString(stmt, 13),
-                    datePrecision: auxColumnString(stmt, 14)
+                    datePrecision: auxColumnString(stmt, 14),
+                    classification: auxColumnString(stmt, 15)
                 ))
             }
             searchStatementTestHook?(.ranToItsEnd)
@@ -3964,10 +3985,12 @@ public actor IndexingPipeline {
                 SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
                        dc.source_note, '' AS body_text, dc.subject_tag_ids, \(rowTags.sql),
                        dc.is_editorial_note, dc.is_front_matter, dd.date_iso, 0.0 AS score,
-                       dd.date_iso_max, dd.date_precision
+                       dd.date_iso_max, dd.date_precision, ds.classification
                 FROM document_cache dc
                 LEFT JOIN document_dates dd
                     ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                LEFT JOIN document_sources ds
+                    ON ds.volume_id = dc.volume_id AND ds.document_id = dc.document_id
                 \(clause.whereClause)
                 ORDER BY dc.volume_id, dc.document_id
                 LIMIT \(limit) OFFSET \(offset)
@@ -3985,11 +4008,13 @@ public actor IndexingPipeline {
                 SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
                        dc.source_note, dc.body_text, dc.subject_tag_ids, \(rowTags.sql),
                        dc.is_editorial_note, dc.is_front_matter, dd.date_iso, m.score,
-                       dd.date_iso_max, dd.date_precision
+                       dd.date_iso_max, dd.date_precision, ds.classification
                 FROM merged m
                 JOIN document_cache dc ON dc.rowid = m.docrowid
                 LEFT JOIN document_dates dd
                     ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                LEFT JOIN document_sources ds
+                    ON ds.volume_id = dc.volume_id AND ds.document_id = dc.document_id
                 \(clause.whereClause)
                 ORDER BY m.score
                 LIMIT \(limit) OFFSET \(offset)
@@ -4061,6 +4086,9 @@ public actor IndexingPipeline {
                     LEFT JOIN document_dates dd
                         ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
                 """
+            // Phase two reads the stored classification marking (index version 72) with one PRIMARY
+            // KEY seek into `document_sources` per row of the window. No filter reads it, so phase
+            // one never joins it.
             sql = """
                 \(matchCTE),
                 ranked AS (
@@ -4076,11 +4104,13 @@ public actor IndexingPipeline {
                 SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
                        dc.source_note, dc.body_text, dc.subject_tag_ids, \(rowTags.sql),
                        dc.is_editorial_note, dc.is_front_matter, dd.date_iso, r.score,
-                       dd.date_iso_max, dd.date_precision
+                       dd.date_iso_max, dd.date_precision, ds.classification
                 FROM ranked r
                 JOIN document_cache dc ON dc.rowid = r.docrowid
                 LEFT JOIN document_dates dd
                     ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                LEFT JOIN document_sources ds
+                    ON ds.volume_id = dc.volume_id AND ds.document_id = dc.document_id
                 ORDER BY r.ordinal
                 """
             binds = matchBinds + clause.binds + rowTags.binds
@@ -6256,6 +6286,9 @@ public actor IndexingPipeline {
         var cacheRows: [DocumentCacheRow] = []
         var revisionRows: [DocumentRevisionRow] = []
         var personMentionRows: [PersonMentionRow] = []
+        // Index version 72: the classification marking each document prints in its opener, by
+        // document id, which its source row stores where the note prints none.
+        var openerClassifications: [String: String] = [:]
         // Every volume a person ref in this volume names (`personRefListVolume`), across all documents.
         var personListVolumes: Set<String> = []
         // #1599: the ids of the volume's own persons list, which say which of a document's `@ana`
@@ -6289,6 +6322,9 @@ public actor IndexingPipeline {
             let header     = Self.extractHeader(from: astDoc.nodes)
             let dateline   = Self.extractDateline(from: astDoc.nodes)
             let sourceNote = Self.extractSourceNote(from: astDoc.nodes)
+            if let marking = Self.extractOpenerClassification(from: astDoc.nodes) {
+                openerClassifications[did] = marking
+            }
             // #965: pre-1906 only in practice — the serial is a pre-decimal-file convention, so
             // this returns nil for the overwhelming majority of the corpus at the cost of one
             // traversal that stops at the first accepted segment.
@@ -6487,8 +6523,14 @@ public actor IndexingPipeline {
             )
             // S1 (Source Explorer Phase 1): sentence 2 of the note is classification
             // markings when it matches the marking vocabulary; conservative — nil
-            // rather than junk. Store-only this phase.
+            // rather than junk. Index version 72: where the note prints none, the marking the
+            // document prints in its opener, which is where the volumes covering 1932–1954 print
+            // it. No document prints one in both places (measured over the 553 manifest volumes
+            // at corpus `6170e4b32`); the note's comes first, so no value stored before 72 moves.
+            // A document with no source note has no row, and its opener's marking is not stored:
+            // a row here counts as provenance.
             sourceRow.classification = SourceNoteParser.classificationMarking(fromSourceNote: raw)
+                ?? openerClassifications[row.documentId]
             return sourceRow
         }
 
@@ -6936,6 +6978,58 @@ public actor IndexingPipeline {
             }
         }
         return nil
+    }
+
+    /// The classification marking a document prints in its own opener, above the dateline, as the
+    /// volumes covering 1932–1954 do (index version 72): `SECRET` beside `Saigon, February 1, 1952`
+    /// in `frus1952-54v13p1` d12, encoded `<opener><seg rendition="#left"><hi rend="smallcaps">secret
+    /// </hi></seg><dateline …>`.
+    ///
+    /// Reads only the `<seg>`s that are children of the document's own `<opener>`: never the
+    /// dateline, whose place names are printed in small capitals too (`<placeName><hi
+    /// rend="smallcaps">Saigon</hi></placeName>`), and never an enclosure's opener, which marks the
+    /// enclosure rather than the document. The first seg that reads as a marking
+    /// (`SourceNoteParser.classificationMarking(fromOpenerLines:)`) gives it; measured over the 553
+    /// manifest volumes at corpus `6170e4b32`, no opener holds two.
+    ///
+    /// - Parameter nodes: The document's nodes, as the parse gives them.
+    /// - Returns: The marking ("Secret; Priority"), or `nil` when the opener prints none.
+    nonisolated static func extractOpenerClassification(from nodes: [FRUSASTNode]) -> String? {
+        for node in nodes {
+            guard case .opener(let openerChildren) = node else { continue }
+            for child in openerChildren {
+                guard case .unknown(let name, _, let segChildren) = child, name == "seg" else { continue }
+                if let marking = SourceNoteParser.classificationMarking(fromOpenerLines: openerSegLines(segChildren)) {
+                    return marking
+                }
+            }
+        }
+        return nil
+    }
+
+    /// A seg's printed lines: its text split at every `<lb/>`, at any depth, since the volumes put one
+    /// inside a `<hi>` as well as between two (`<hi rend="smallcaps">confidential
+    /// personal<lb/>official–informal</hi>`, `frus1952-54v11p1` d95). Each line is joined by the
+    /// printed rule (``PrintedText``) and has its whitespace collapsed; a footnote's text is in no
+    /// line, and an empty line is dropped.
+    nonisolated static func openerSegLines(_ nodes: [FRUSASTNode]) -> [String] {
+        var lines = [PrintedText()]
+        func walk(_ nodes: [FRUSASTNode]) {
+            for node in nodes {
+                switch node {
+                case .lineBreak:
+                    lines.append(PrintedText())
+                case .footnote:
+                    continue
+                case .text(let text), .formula(let text):
+                    lines[lines.count - 1].append(text)
+                default:
+                    walk(node.children)
+                }
+            }
+        }
+        walk(nodes)
+        return lines.map(\.string.normalizedWhitespace).filter { !$0.isEmpty }
     }
 
     /// One enclosure's own opener — the head and dateline printed above its text.
@@ -10922,11 +11016,13 @@ public actor IndexingPipeline {
                        dc.dateline, dc.source_note, substr(dc.body_text, 1, 3000),
                        dc.subject_tag_ids, \(rowTags.sql),
                        dc.is_editorial_note, dc.is_front_matter, dd.date_iso,
-                       dd.date_iso_max, dd.date_precision
+                       dd.date_iso_max, dd.date_precision, ds.classification
                 FROM document_cache dc
                 JOIN wanted ON wanted.v = dc.volume_id AND wanted.d = dc.document_id
                 LEFT JOIN document_dates dd
                     ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                LEFT JOIN document_sources ds
+                    ON ds.volume_id = dc.volume_id AND ds.document_id = dc.document_id
                 """
             let stmt = try auxPrepare(sql)
             defer { sqlite3_finalize(stmt) }
@@ -10955,7 +11051,8 @@ public actor IndexingPipeline {
                     dateISO: auxColumnString(stmt, 11),
                     score: 0,
                     dateISOMax: auxColumnString(stmt, 12),
-                    datePrecision: auxColumnString(stmt, 13))
+                    datePrecision: auxColumnString(stmt, 13),
+                    classification: auxColumnString(stmt, 14))
                 result["\(row.volumeId)/\(row.documentId)"] = row
             }
         }
@@ -13261,6 +13358,44 @@ public actor IndexingPipeline {
             precision: auxColumnString(stmt, 1).flatMap(DatePrecision.init(rawValue:)))
     }
 
+    /// The classification marking the index stores for one document (`document_sources.classification`),
+    /// or `nil` when the document has no source row or its row stores none.
+    ///
+    /// Both Source Explorer twins read it in `load()`, beside ``documentDay(volumeId:documentId:)``,
+    /// for the marking a document of the 1932–1954 volumes prints in its opener rather than its note
+    /// (index version 72), which the note they are given cannot show. One PRIMARY KEY seek.
+    func storedClassification(volumeId: String, documentId: String) throws -> String? {
+        let stmt = try auxPrepare(
+            "SELECT classification FROM document_sources WHERE volume_id = ? AND document_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+        guard try auxStep(stmt) else { return nil }
+        return auxColumnString(stmt, 0)
+    }
+
+    /// The classification marking a surface shows for a document: the one its source note prints, read
+    /// from the note the surface holds, else the one the index stores (``storedClassification(volumeId:documentId:)``,
+    /// `IndexedSearchRow.classification`).
+    ///
+    /// The note comes first because it is what every surface showed before index version 72, from the
+    /// same function the index stores it by, so a document whose note prints a marking shows what it did.
+    /// The stored value answers where the note prints none: since 72, the marking the document prints in
+    /// its opener, which the volumes covering 1932–1954 use and the note cannot show. No document prints
+    /// one in both places, so the two never disagree in the corpus as published.
+    ///
+    /// - Parameters:
+    ///   - sourceNote: The document's source note as the surface holds it, or `nil`.
+    ///   - stored: The value the index stores for the document, or `nil`.
+    /// - Returns: The marking ("Secret; Priority"), or `nil` when neither gives one.
+    nonisolated static func classificationMarking(sourceNote: String?, stored: String?) -> String? {
+        if let sourceNote, let marking = SourceNoteParser.classificationMarking(fromSourceNote: sourceNote) {
+            return marking
+        }
+        guard let stored, !stored.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return stored
+    }
+
     /// The stored printed document numbers (`document_cache.document_number` — the document
     /// div's trimmed `@n`) for a batch of documents, keyed `"volumeId/documentId"` (#1406).
     ///
@@ -13580,6 +13715,10 @@ public struct IndexedSearchRow: Sendable {
     public var dateISOMax: String? = nil
     /// The row's date precision as stored (`day`, `month`, `year`), if known.
     public var datePrecision: String? = nil
+    /// The classification marking the index stores for the document (`document_sources.classification`),
+    /// if any: the source note's, or since index version 72 the one its opener prints where the note
+    /// prints none. A row shows it through `IndexingPipeline.classificationMarking(sourceNote:stored:)`.
+    public var classification: String? = nil
 }
 
 /// Structured filters applied inside the SQL of

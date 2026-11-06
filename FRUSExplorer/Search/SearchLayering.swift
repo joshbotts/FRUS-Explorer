@@ -1088,7 +1088,8 @@ extension SearchResult {
             subjectTagIds: subjectTagIds,
             userTagIds: userTagIds,
             isEditorialNote: isEditorialNote,
-            isFrontMatter: isFrontMatter)
+            isFrontMatter: isFrontMatter,
+            indexedClassification: indexedClassification)
     }
 }
 

@@ -268,7 +268,8 @@ public actor SearchService {
                 subjectTagIds: Self.splitTagIds(row.subjectTagIds),
                 userTagIds: Self.splitTagIds(row.userTagIds),
                 isEditorialNote: row.isEditorialNote,
-                isFrontMatter: row.isFrontMatter
+                isFrontMatter: row.isFrontMatter,
+                indexedClassification: row.classification
             ))
         }
         // And after the last row, so that a task cancelled at any point gets no answer.
