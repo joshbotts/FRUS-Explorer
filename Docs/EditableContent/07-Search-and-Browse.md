@@ -1,8 +1,8 @@
 # EditableContent — Search & Browse
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §7, §16, §17, §18.1, §18.7, §18.8. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §7, §16, §17, §18.1, §18.7, §18.8, §19, §20. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 434 blocks · no ✎ edits held or changed · no ⚑ wording issues
+**In this file:** 515 blocks · no ✎ edits held or changed · no ⚑ wording issues
 
 ---
 
@@ -2845,14 +2845,14 @@ The model could not be downloaded. You can try again from the button above, or f
 *Coverage captions and empty states on the Browse axes that §16 does not carry, and the Browse root's tile tooltips.*
 
 #### You can browse this volume’s contents now. Re-index it to…
-<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1419–1420 | key: corpus.volume.indexInterrupted.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1460–1461 | key: corpus.volume.indexInterrupted.detail | shared: macOS only -->
 
 You can browse this volume’s contents now. Re-index it to restore full search coverage and document text.
 
 <!-- END SOURCE: corpus.volume.indexInterrupted.detail -->
 
 #### You can browse this volume’s contents now. Index it to…
-<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1421–1422 | key: corpus.volume.indexRequired.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1462–1463 | key: corpus.volume.indexRequired.detail | shared: macOS only -->
 
 You can browse this volume’s contents now. Index it to search inside it and open its documents.
 
@@ -2959,42 +2959,42 @@ The closest match of a Meaning search
 <!-- END SOURCE: browser.corpora.meaning.one -->
 
 #### Tooltip — Browse an alphabetical index of all people mentioned across…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 319–320 | key: browser.corpus.people.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 321–322 | key: browser.corpus.people.help -->
 
 Browse an alphabetical index of all people mentioned across your indexed volumes — tap a name to search for every document where they appear
 
 <!-- END SOURCE: browser.corpus.people.help -->
 
 #### Tooltip — Browse an index of the topics detected across the whole…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 350–351 | key: browser.corpus.subjects.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 352–353 | key: browser.corpus.subjects.help -->
 
 Browse an index of the topics detected across the whole series — including volumes you have not downloaded. Tap one to see its reach and find documents on it
 
 <!-- END SOURCE: browser.corpus.subjects.help -->
 
 #### Tooltip — One catalogue of every volume — search it, or arrange it by…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 404–405 | key: browser.corpus.tile.catalogue.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 406–407 | key: browser.corpus.tile.catalogue.help -->
 
 One catalogue of every volume — search it, or arrange it by title, publication year, era, or length
 
 <!-- END SOURCE: browser.corpus.tile.catalogue.help -->
 
 #### Tooltip — Volumes filed by the kind of file their documents came…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 461–462 | key: browser.corpus.tile.archives.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 463–464 | key: browser.corpus.tile.archives.help -->
 
 Volumes filed by the kind of file their documents came from, and the archival collections FRUS drew on
 
 <!-- END SOURCE: browser.corpus.tile.archives.help -->
 
 #### Tooltip — Documents grouped by the language they share, computed from…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 480–481 | key: browser.corpus.tile.clusters.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 482–483 | key: browser.corpus.tile.clusters.help -->
 
 Documents grouped by the language they share, computed from the text — labels are sampled terms, not subject headings
 
 <!-- END SOURCE: browser.corpus.tile.clusters.help -->
 
 #### Tooltip — Fixed document sets captured from Search results or the…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.yourSetsSection | lines: 559–560 | key: browser.corpus.corpora.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.yourSetsSection | lines: 583–584 | key: browser.corpus.corpora.help -->
 
 Fixed document sets captured from Search results or the semantic map — browse each one’s documents, grouped by volume
 
@@ -3532,3 +3532,503 @@ Index
 Errata
 
 <!-- END SOURCE: browser.volume.annotations.aid.errata -->
+
+## 20. Browse — the Editors’ Annotations axis (the editors' annotations design, lane C, 2026-11-06)
+
+The Browse axis of the same name, on iPhone and iPad a door below the Browse by grid and on the Mac a sidebar item: each layer with how many volumes carry it and a strip of its eras, and a page for each layer, which a row of a volume's Editors’ Annotations opens too (`Planning/Editors-Annotations-Design-2026-11-06.md`, §6). In §20.3 each layer has three blocks: what the editors did, when a volume counts as carrying it, and what the app does with it; one sentence says that for the five layers nothing in the app reads yet. A `%@` or `%1$@` is where a number, a name or an era goes and must stay; every count and year comes from the bundled file, never from this copy.
+
+### 20.1 The door, the axis and its rows
+
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | key: browser.corpus.tile.annotations.caption -->
+
+What each volume's editors annotated, era by era
+
+<!-- END SOURCE: browser.corpus.tile.annotations.caption -->
+
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | key: browser.corpus.tile.annotations.a11y -->
+
+Browse by editors' annotations
+
+<!-- END SOURCE: browser.corpus.tile.annotations.a11y -->
+
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | key: browser.corpus.tile.annotations.help -->
+
+Volumes filed by what their editors annotated — people tagged, source notes, classification and more — and the era each practice became standard
+
+<!-- END SOURCE: browser.corpus.tile.annotations.help -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.index.caption -->
+
+What the editors of %@ annotated, layer by layer. A layer that runs through a volume, such as people tagged, counts when it reaches at least half the volume's documents; one found here and there, such as an editorial note, when one document carries it. Each strip shades the eras, earliest first and the late retrospectives last, by the share of their volumes that carry the layer.
+
+<!-- END SOURCE: browser.annotations.index.caption -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.ofVolumes.one -->
+
+%2$@ of %1$@ volume
+
+<!-- END SOURCE: browser.annotations.ofVolumes.one -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.ofVolumes.many -->
+
+%2$@ of %1$@ volumes
+
+<!-- END SOURCE: browser.annotations.ofVolumes.many -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.row.spoken -->
+
+%1$@: %2$@.
+
+<!-- END SOURCE: browser.annotations.row.spoken -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxisViews.swift | key: browser.annotations.row.help -->
+
+What the editors did, when it became standard, and the volumes that carry it
+
+<!-- END SOURCE: browser.annotations.row.help -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.standard.none -->
+
+No era made it standard. It is most common in the volumes covering %@.
+
+<!-- END SOURCE: browser.annotations.standard.none -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.standard.none.retrospective -->
+
+No era made it standard. It is most common in the late retrospective volumes.
+
+<!-- END SOURCE: browser.annotations.standard.none.retrospective -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.era.span -->
+
+%1$@–%2$@
+
+<!-- END SOURCE: browser.annotations.era.span -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.era.from -->
+
+%@ on
+
+<!-- END SOURCE: browser.annotations.era.from -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.era.retrospective -->
+
+the late retrospectives
+
+<!-- END SOURCE: browser.annotations.era.retrospective -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.era.retrospective.title -->
+
+Late retrospectives
+
+<!-- END SOURCE: browser.annotations.era.retrospective.title -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.era.retrospective.short -->
+
+Retro.
+
+<!-- END SOURCE: browser.annotations.era.retrospective.short -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.band.spoken -->
+
+%1$@: %2$@
+
+<!-- END SOURCE: browser.annotations.band.spoken -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxisViews.swift | key: browser.annotations.unavailable.title -->
+
+Editors’ Annotations Unavailable
+
+<!-- END SOURCE: browser.annotations.unavailable.title -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxisViews.swift | key: browser.annotations.unavailable.detail -->
+
+The bundled annotation data could not be loaded. Reinstalling the app restores it.
+
+<!-- END SOURCE: browser.annotations.unavailable.detail -->
+
+### 20.2 A layer's page
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxisViews.swift | key: browser.annotations.category.practice -->
+
+What the editors did
+
+<!-- END SOURCE: browser.annotations.category.practice -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxisViews.swift | key: browser.annotations.category.eras -->
+
+Era by era
+
+<!-- END SOURCE: browser.annotations.category.eras -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxisViews.swift | key: browser.annotations.category.app -->
+
+In the app
+
+<!-- END SOURCE: browser.annotations.category.app -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxisViews.swift | key: browser.annotations.category.volumes -->
+
+Volumes
+
+<!-- END SOURCE: browser.annotations.category.volumes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.link.people -->
+
+Open People
+
+<!-- END SOURCE: browser.annotations.link.people -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.link.archives -->
+
+Open Archives
+
+<!-- END SOURCE: browser.annotations.link.archives -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.drill.with -->
+
+Volumes with it
+
+<!-- END SOURCE: browser.annotations.drill.with -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.drill.without -->
+
+Volumes without it
+
+<!-- END SOURCE: browser.annotations.drill.without -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.drill.sourceCitation -->
+
+Archival citations (“Source: …”)
+
+<!-- END SOURCE: browser.annotations.drill.sourceCitation -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.drill.sourceFileNumber -->
+
+File numbers above the heading
+
+<!-- END SOURCE: browser.annotations.drill.sourceFileNumber -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxisViews.swift | key: browser.annotations.drill.spoken -->
+
+%1$@: %2$@
+
+<!-- END SOURCE: browser.annotations.drill.spoken -->
+
+### 20.3 Each layer: what the editors did, when a volume counts, and what the app does with it
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.people -->
+
+The editors linked each person a document names to the volume's List of Persons, where the person is identified.
+
+<!-- END SOURCE: browser.annotations.practice.people -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.people -->
+
+A volume counts when at least half its documents link a name to its List of Persons.
+
+<!-- END SOURCE: browser.annotations.rule.people -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.app.people -->
+
+The People browser and Person analytics read these links. Where a volume does not link its names, search for them instead.
+
+<!-- END SOURCE: browser.annotations.app.people -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.abbreviations -->
+
+The editors linked each abbreviation in a document to the volume's List of Abbreviations, where it is spelled out.
+
+<!-- END SOURCE: browser.annotations.practice.abbreviations -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.abbreviations -->
+
+A volume counts when at least half its documents link a term to its List of Abbreviations.
+
+<!-- END SOURCE: browser.annotations.rule.abbreviations -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.app.abbreviations -->
+
+The reader opens a linked abbreviation's meaning.
+
+<!-- END SOURCE: browser.annotations.app.abbreviations -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.correspondents -->
+
+The editors marked who sent each document, and to whom, in its heading.
+
+<!-- END SOURCE: browser.annotations.practice.correspondents -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.correspondents -->
+
+A volume counts when at least half its documents mark a sender or a recipient in the heading.
+
+<!-- END SOURCE: browser.annotations.rule.correspondents -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.subjects -->
+
+Where a memorandum carried a Subject line, the editors printed it with the memorandum.
+
+<!-- END SOURCE: browser.annotations.practice.subjects -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.subjects -->
+
+A volume counts when one of its documents prints a Subject line.
+
+<!-- END SOURCE: browser.annotations.rule.subjects -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.participants -->
+
+Where a memorandum of conversation lists who took part, the editors marked the list.
+
+<!-- END SOURCE: browser.annotations.practice.participants -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.participants -->
+
+A volume counts when one of its documents lists who attended a meeting.
+
+<!-- END SOURCE: browser.annotations.rule.participants -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.sourceNotes -->
+
+A source note says where the editors found a document. The older volumes print a file number above the heading; the later ones, a note that begins “Source:” with the full archival citation.
+
+<!-- END SOURCE: browser.annotations.practice.sourceNotes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.sourceNotes -->
+
+A volume counts when at least half its documents carry a source note, of either form.
+
+<!-- END SOURCE: browser.annotations.rule.sourceNotes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.app.sourceNotes -->
+
+Source Explorer and the Archives axis read them, and a chapter's list of documents shows the first line of each note.
+
+<!-- END SOURCE: browser.annotations.app.sourceNotes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.classification -->
+
+The editors printed each document's security classification: above the dateline in the older volumes, and in the source note in the later ones.
+
+<!-- END SOURCE: browser.annotations.practice.classification -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.classification -->
+
+A volume counts when at least half its documents carry a classification marking, as the app reads them.
+
+<!-- END SOURCE: browser.annotations.rule.classification -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.app.classification -->
+
+Search's results and Source Explorer show a document's marking.
+
+<!-- END SOURCE: browser.annotations.app.classification -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.excisions -->
+
+Where text was still classified when the volume was published, the editors marked the gap: “[… not declassified]”.
+
+<!-- END SOURCE: browser.annotations.practice.excisions -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.excisions -->
+
+A volume counts when one of its documents marks text as not declassified.
+
+<!-- END SOURCE: browser.annotations.rule.excisions -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.despatch -->
+
+Older volumes print the number a diplomatic post gave each despatch it sent, “No. 74.”, by which the despatch is found in the archives.
+
+<!-- END SOURCE: browser.annotations.practice.despatch -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.despatch -->
+
+A volume counts when at least a tenth of its documents carry a despatch number.
+
+<!-- END SOURCE: browser.annotations.rule.despatch -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.app.despatch -->
+
+Source Explorer shows a document's despatch number with its archival series.
+
+<!-- END SOURCE: browser.annotations.app.despatch -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.numbered -->
+
+The editors numbered the documents in print, so that each heading opens with its number: “12. Telegram From …”.
+
+<!-- END SOURCE: browser.annotations.practice.numbered -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.numbered -->
+
+A volume counts when at least half its documents print a document number.
+
+<!-- END SOURCE: browser.annotations.rule.numbered -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.app.numbered -->
+
+Document titles and citations give the number the volume prints.
+
+<!-- END SOURCE: browser.annotations.app.numbered -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.crossReferences -->
+
+The editors' notes point to other documents in the volume, to other volumes and to printed pages: “See Document 12”, “see p. 123”.
+
+<!-- END SOURCE: browser.annotations.practice.crossReferences -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.crossReferences -->
+
+A volume counts when one of its documents cites another of its documents, another volume or a printed page.
+
+<!-- END SOURCE: browser.annotations.rule.crossReferences -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.app.crossReferences -->
+
+The reader follows each one, and the Cross-Reference graph and Cross-Volume Connections draw them.
+
+<!-- END SOURCE: browser.annotations.app.crossReferences -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.editorialNotes -->
+
+Where no single document tells the story, the editors wrote a note of their own, set between the documents.
+
+<!-- END SOURCE: browser.annotations.practice.editorialNotes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.editorialNotes -->
+
+A volume counts when it prints an editorial note.
+
+<!-- END SOURCE: browser.annotations.rule.editorialNotes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.app.editorialNotes -->
+
+Search can limit its results to editorial notes.
+
+<!-- END SOURCE: browser.annotations.app.editorialNotes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.footnotes -->
+
+The editors' footnotes explain a document: who it names, what it answered, what became of it.
+
+<!-- END SOURCE: browser.annotations.practice.footnotes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.footnotes -->
+
+A volume counts when at least half its documents carry a footnote.
+
+<!-- END SOURCE: browser.annotations.rule.footnotes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.app.footnotes -->
+
+The reader shows each footnote with its document.
+
+<!-- END SOURCE: browser.annotations.app.footnotes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.marginalNotes -->
+
+A few volumes print the notes written in a document's margin, set off from its text.
+
+<!-- END SOURCE: browser.annotations.practice.marginalNotes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.marginalNotes -->
+
+A volume counts when one of its documents prints a marginal note.
+
+<!-- END SOURCE: browser.annotations.rule.marginalNotes -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.printedAids -->
+
+Besides its documents, a volume prints aids to reading it: a preface, lists of sources, abbreviations and persons, an index.
+
+<!-- END SOURCE: browser.annotations.practice.printedAids -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.printedAids -->
+
+A volume counts when it prints one of the aids listed below.
+
+<!-- END SOURCE: browser.annotations.rule.printedAids -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.app.printedAids -->
+
+A volume's page lists them under Front Matter and Back Matter, and the reader opens each one.
+
+<!-- END SOURCE: browser.annotations.app.printedAids -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.app.none -->
+
+The reader shows these as printed. Nothing else in the app reads them yet.
+
+<!-- END SOURCE: browser.annotations.app.none -->
+
+### 20.4 A drill's list
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.drill.with.title -->
+
+With: %@
+
+<!-- END SOURCE: browser.annotations.drill.with.title -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.drill.without.title -->
+
+Without: %@
+
+<!-- END SOURCE: browser.annotations.drill.without.title -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.drill.caption -->
+
+%1$@. %2$@
+
+<!-- END SOURCE: browser.annotations.drill.caption -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.sourceForm -->
+
+A volume counts when at least half its documents carry a source note of this form.
+
+<!-- END SOURCE: browser.annotations.rule.sourceForm -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.aid -->
+
+A volume counts when it prints this aid.
+
+<!-- END SOURCE: browser.annotations.rule.aid -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.accessory.notes.one -->
+
+%@ note
+
+<!-- END SOURCE: browser.annotations.accessory.notes.one -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.accessory.notes.many -->
+
+%@ notes
+
+<!-- END SOURCE: browser.annotations.accessory.notes.many -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.note.from -->
+
+You came here from this volume.
+
+<!-- END SOURCE: browser.annotations.note.from -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.note.people.unlinked -->
+
+Prints a List of Persons, but none of its documents links a name to it.
+
+<!-- END SOURCE: browser.annotations.note.people.unlinked -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.note.abbreviations.unlinked -->
+
+Prints a List of Abbreviations, but none of its documents links a term to it.
+
+<!-- END SOURCE: browser.annotations.note.abbreviations.unlinked -->
+
+### 20.5 A volume page's rows
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsSection.swift | key: browser.volume.annotations.row.hint -->
+
+Opens what the editors did, and the volumes that carry it.
+
+<!-- END SOURCE: browser.volume.annotations.row.hint -->

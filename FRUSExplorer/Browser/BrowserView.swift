@@ -126,6 +126,8 @@ import SwiftData
 ///   2.19 — lane HYG (2026-10-01): `splitLayout` and the `SubseriesListView` / `SubseriesRowView`
 ///          it alone drew are deleted. Nothing had called them since 2.4 kept them "for easy
 ///          revert"; F-2's `twoPaneLayout` is the iPad layout that revert would have restored
+///   2.20 — 2026-11-06: the editors' annotations design, lane C — `levelView` mounts the
+///          `.annotations` axis and a layer's `.annotationCategory` page
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -1048,6 +1050,11 @@ struct BrowserView: View {
             case .clusterDocuments(let id, let label):
                 BrowseClusterDocumentsLevel(vm: vm, clusterId: id, label: label,
                                             onSeeMap: { presentSemanticMap($0) })
+            case .annotations:       BrowseAnnotationsLevel(vm: vm)
+            case .annotationCategory(let id, let fromVolume):
+                if let layer = AnnotationLayer(rawValue: id) {
+                    BrowseAnnotationCategoryLevel(vm: vm, layer: layer, fromVolumeId: fromVolume)
+                }
             }
         }
         // #377 Phase 5 follow-up: keep the "Working on:" research-question subtitle visible at every

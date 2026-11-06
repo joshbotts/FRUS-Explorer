@@ -9624,3 +9624,24 @@ From `v2` at `dcf178e` (#1853 merged), on `claude/cool-borg-34f5fa`, a side sess
 **Not done, and for the owner.**
 - **Lanes C and D** (the Browse axis with its category pages, and the matrix and links). Until C, a row opens nothing.
 - **VoiceOver aloud, dark mode and Full Keyboard Access on the Mac** stay the owner's, as the check-copy walk cannot do them.
+
+## Session 2026-11-06 — The editors' annotations design, lane C: the Editors’ Annotations axis in Browse
+
+**What and why.** Lane C of `Planning/Editors-Annotations-Design-2026-11-06.md` (§6, §8), on the owner's "Yes, after merge" once lane B (#1860) had merged: the Browse axis of the same name, and a volume page's rows opening it (§5.4).
+
+**Built.**
+- **`AnnotationLayer`** (`FRUSExplorer/Browser/AnnotationsAxis.swift`): the fifteen layers in one table, with each layer's group, symbol, name and rule for which volumes carry it, and its page's copy (what the editors did, the rule, what the app does with it). A volume's page (`VolumeAnnotationsPresentation`) now builds its rows from the same table, so the page and the axis cannot disagree.
+- **`AnnotationsAxis`**, pure: a layer's reach (its volumes in id order, each era's share, the onset), the sentence that says when it became standard or where a practice no era made standard is most common, and the R-1 drill specs (with and without; source notes by form; the printed aids by aid), with each volume's count, the amber line for a List of Persons or Abbreviations nothing links to, and the volume a page was opened from, listed first.
+- **The views** (`AnnotationsAxisViews.swift`): the era strip, compact in a row and labelled on a page; the axis (`AnnotationsIndexView`); a layer's page (`AnnotationCategoryView`); and the iOS mounts.
+- **iPhone and iPad:** a full-width door below the Browse by grid, `BrowserLevel.annotations` and `.annotationCategory(id:fromVolume:)`, their breadcrumbs, and `VolumeView`'s rows opening a layer's page.
+- **Mac:** the Corpus Browser's sidebar item, `CorpusNavValue.annotationCategory`, and the volume column's rows opening a layer's page in place. The People link opens the People window; Archives selects the sidebar's axis.
+- **Copy:** 81 keys, each with its block in `07-Search-and-Browse.md` §20, and 10 ranged blocks re-pointed for moved lines (the Amendment-Log has both). Both manuals: iOS §6.1i and the root's door list, the Mac's sidebar paragraph, and both volume-page passages.
+- **Tests:** `AnnotationsAxisTests` (one table, reach, standard lines, era names, drills, the shipped file) and the UI suite `AnnotationsAxisBrowseTests` (the door to a layer's page to its list; a volume's row to its layer's page, the volume first), with its runbook entry and `CLAUDE.md` row.
+
+**Where lane C departs from the design** is recorded in its §11, and its status line now names lane C. Among them, a finding: the unlinked-list line marks two Lists of Persons, not the one §2.1 counted, since the app's section rule finds `frus1941-43`'s list of six names that §2.1's section ids did not.
+
+**Checked**, every heavy job through `Scripts/heavy.sh`: LANE_C_CHECKED
+
+**Not done, and for the owner.**
+- **Lane D** (the regular-width matrix; the People browser's and Person analytics' captions linking here; the Research Guide's sentence) and §9's decision 6.
+- **VoiceOver aloud, dark mode and Full Keyboard Access on the Mac** stay the owner's.

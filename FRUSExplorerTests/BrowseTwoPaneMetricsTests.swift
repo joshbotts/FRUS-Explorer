@@ -284,6 +284,8 @@ struct BrowseOpenDoorTests {
 ///          level it lands rather than by name, so #1364's Browse Within passes; the model's own root
 ///          selectors are pinned; the resume row's hold on its document is pinned
 ///   1.2 — #1431, on merging #1364: the sweep must read Browse Within's `select(.subseriesIndex)`, by name
+///   1.3 — 2026-11-06: the editors' annotations design, lane C, adds the Editors’ Annotations door
+///          (`.annotations`), which carries the open mark as the others do
 @Suite("Browse root — every door's open mark, as written")
 struct BrowseRootOpenMarkSourceTests {
 
@@ -294,10 +296,11 @@ struct BrowseRootOpenMarkSourceTests {
     private static let scopeBrowseView = "FRUSExplorer/Browser/ScopeBrowseView.swift"
 
     /// The level each door #1431 lists opens, spelled as the source spells it — plus the "Continue
-    /// reading" row's `.document(entry)`, a root door the issue's list left out.
+    /// reading" row's `.document(entry)`, a root door the issue's list left out, and the Editors’
+    /// Annotations door the editors' annotations design's lane C added.
     private static let expectedDoorLevels: Set<String> = [
         ".document(entry)", ".volume(entry)", ".people", ".subjects", ".subseriesIndex", ".catalogue",
-        ".administrations", ".editors", ".archives", ".clusters", ".scopes", ".corpora",
+        ".administrations", ".editors", ".archives", ".clusters", ".scopes", ".corpora", ".annotations",
     ]
 
     /// The levels of the doors the root ALWAYS draws: every door but the search results and Continue

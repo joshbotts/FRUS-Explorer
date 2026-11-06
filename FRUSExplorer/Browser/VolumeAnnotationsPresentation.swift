@@ -22,18 +22,23 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane B
+///   1.1 — 2026-11-06: lane C — the rows are `AnnotationLayer`'s, the table the Browse axis reads
+///          too, and each row and absent row names the layer it opens on the axis
 struct VolumeAnnotationsPresentation: Equatable {
 
     /// One layer the volume carries.
     struct Row: Identifiable, Equatable {
-        /// The layer's stable id, also the tail of the row's accessibility identifier.
-        let id: String
-        /// The row's SF Symbol.
-        let symbol: String
-        /// The layer's name.
-        let label: String
+        /// The layer, whose page on the axis the row opens.
+        let layer: AnnotationLayer
         /// Its counts, in one line, the parts joined by ``VolumeAnnotationsPresentation/separator``.
         let detail: String
+
+        /// The layer's stable id, also the tail of the row's accessibility identifier.
+        var id: String { layer.rawValue }
+        /// The row's SF Symbol.
+        var symbol: String { layer.symbol }
+        /// The layer's name.
+        var label: String { layer.label }
 
         /// What VoiceOver reads: the name and the counts as one sentence, the parts joined by
         /// semicolons ("People tagged: 279 of 280 documents; 325 people listed.").
@@ -63,6 +68,8 @@ struct VolumeAnnotationsPresentation: Equatable {
         /// From which era the series made it standard, with, for people, where to look instead.
         /// Empty when the layer has no onset.
         let note: String
+        /// The layer whose page on the axis the row opens: the page explains the practice.
+        let layer: AnnotationLayer
 
         /// What VoiceOver reads ("Not in this volume: People tagged. Standard in the volumes covering
         /// 1955 on. Search the names instead.").
@@ -108,96 +115,38 @@ struct VolumeAnnotationsPresentation: Equatable {
     /// The section for one volume's `annotations`, its absent layers' onsets read from `index`.
     init(annotations: VolumeAnnotations, index: VolumeAnnotationsIndex, locale: Locale = .autoupdatingCurrent) {
         let copy = Copy(annotations: annotations, locale: locale)
-        var named: [Row] = []
-        var provenance: [Row] = []
-        var connects: [Row] = []
-
-        if annotations.carries(.people) {
-            named.append(Row(id: "people", symbol: "person.2", label: Labels.people,
-                             detail: copy.coverage(.people, listed: copy.personsListed)))
+        // The layers the volume carries, in the table's order, which is the page's (§5.2).
+        var rows: [AnnotationCategory.Family: [Row]] = [:]
+        for layer in AnnotationLayer.allCases where layer.isCarried(by: annotations) {
+            rows[layer.family, default: []].append(Row(layer: layer, detail: copy.detail(of: layer)))
         }
-        if annotations.carries(.abbreviations) {
-            named.append(Row(id: "abbreviations", symbol: "character.book.closed", label: Labels.abbreviations,
-                             detail: copy.coverage(.abbreviations, listed: copy.termsListed)))
-        }
-        if annotations.carries(.correspondents) {
-            named.append(Row(id: "correspondents", symbol: "arrow.left.arrow.right",
-                             label: Labels.correspondents, detail: copy.documents(.correspondents)))
-        }
-        if annotations.carries(.subjects) {
-            named.append(Row(id: "subjects", symbol: "text.alignleft", label: Labels.subjects,
-                             detail: copy.documents(.subjects)))
-        }
-        if annotations.carries(.participants) {
-            named.append(Row(id: "participants", symbol: "person.3", label: Labels.participants,
-                             detail: copy.documents(.participants)))
-        }
-
-        if annotations.carriesSourceNotes {
-            provenance.append(Row(id: "sourceNotes", symbol: "archivebox", label: Labels.sourceNotes,
-                                  detail: copy.sourceNotes))
-        }
-        if annotations.carries(.classification) {
-            provenance.append(Row(id: "classification", symbol: "lock", label: Labels.classification,
-                                  detail: copy.coverage(.classification)))
-        }
-        if annotations.carries(.excisions) {
-            provenance.append(Row(id: "excisions", symbol: "eye.slash", label: Labels.excisions,
-                                  detail: copy.excisions))
-        }
-        if annotations.carries(.despatch) {
-            provenance.append(Row(id: "despatch", symbol: "number.circle", label: Labels.despatch,
-                                  detail: copy.documents(.despatch)))
-        }
-
-        if annotations.carries(.numbered) {
-            connects.append(Row(id: "numbered", symbol: "number", label: Labels.numbered,
-                                detail: copy.coverage(.numbered)))
-        }
-        if let references = copy.crossReferences {
-            connects.append(Row(id: "crossReferences", symbol: "arrow.triangle.branch",
-                                label: Labels.crossReferences, detail: references))
-        }
-        if annotations.carries(.editorialNotes) {
-            connects.append(Row(id: "editorialNotes", symbol: "text.bubble", label: Labels.editorialNotes,
-                                detail: copy.editorialNotes))
-        }
-        if annotations.carries(.footnotes) {
-            connects.append(Row(id: "footnotes", symbol: "note.text", label: Labels.footnotes,
-                                detail: copy.coverage(.footnotes)))
-        }
-        if annotations.carries(.marginalNotes) {
-            connects.append(Row(id: "marginalNotes", symbol: "text.append", label: Labels.marginalNotes,
-                                detail: copy.documents(.marginalNotes)))
-        }
-        let aids = Self.printedAids(in: annotations.sections)
-        if !aids.isEmpty {
-            connects.append(Row(id: "printedAids", symbol: "books.vertical", label: Labels.printedAids,
-                                detail: aids.joined(separator: Self.separator)))
-        }
-
         groups = [
-            Group(id: .named, title: Labels.named, rows: named),
-            Group(id: .provenance, title: Labels.provenance, rows: provenance),
-            Group(id: .connects, title: Labels.connects, rows: connects),
+            Group(id: .named, title: Labels.named, rows: rows[.named] ?? []),
+            Group(id: .provenance, title: Labels.provenance, rows: rows[.provenance] ?? []),
+            Group(id: .connects, title: Labels.connects, rows: rows[.connects] ?? []),
         ].filter { !$0.rows.isEmpty }
 
         // The standard layers, in the order the groups show them (§5.2); an era-bound practice is
         // never listed as missing.
-        let standard: [(id: String, label: String, carried: Bool, onset: () -> AnnotationEra?)] = [
-            ("people", Labels.people, annotations.carries(.people), { index.onset(of: .people) }),
-            ("abbreviations", Labels.abbreviations, annotations.carries(.abbreviations),
+        // Each with the layer its row opens on the axis: two are narrower than a layer, and open the
+        // layer that holds them ("References to documents" Cross-references, "Note on Sources" the
+        // printed aids).
+        let standard: [(id: String, label: String, layer: AnnotationLayer, carried: Bool,
+                        onset: () -> AnnotationEra?)] = [
+            ("people", Labels.people, .people, annotations.carries(.people), { index.onset(of: .people) }),
+            ("abbreviations", Labels.abbreviations, .abbreviations, annotations.carries(.abbreviations),
              { index.onset(of: .abbreviations) }),
-            ("sourceNotes", Labels.sourceNotes, annotations.carriesSourceNotes,
+            ("sourceNotes", Labels.sourceNotes, .sourceNotes, annotations.carriesSourceNotes,
              { index.onset(where: \.carriesSourceNotes) }),
-            ("classification", Labels.classification, annotations.carries(.classification),
+            ("classification", Labels.classification, .classification, annotations.carries(.classification),
              { index.onset(of: .classification) }),
-            ("numbered", Labels.numbered, annotations.carries(.numbered), { index.onset(of: .numbered) }),
-            ("referencesToDocuments", Labels.referencesToDocuments, annotations.carries(.xrefDocuments),
-             { index.onset(of: .xrefDocuments) }),
-            ("editorialNotes", Labels.editorialNotes, annotations.carries(.editorialNotes),
+            ("numbered", Labels.numbered, .numbered, annotations.carries(.numbered),
+             { index.onset(of: .numbered) }),
+            ("referencesToDocuments", Labels.referencesToDocuments, .crossReferences,
+             annotations.carries(.xrefDocuments), { index.onset(of: .xrefDocuments) }),
+            ("editorialNotes", Labels.editorialNotes, .editorialNotes, annotations.carries(.editorialNotes),
              { index.onset(of: .editorialNotes) }),
-            ("noteOnSources", Labels.noteOnSources, annotations.prints(section: "sources"),
+            ("noteOnSources", Labels.noteOnSources, .printedAids, annotations.prints(section: "sources"),
              { index.onset { $0.prints(section: "sources") } }),
         ]
         absent = standard.filter { !$0.carried }.map { layer in
@@ -207,7 +156,7 @@ struct VolumeAnnotationsPresentation: Equatable {
                                   defaultValue: "Search the names instead.")
                 note = note.isEmpty ? hint : note + " " + hint
             }
-            return AbsentRow(id: layer.id, label: layer.label, note: note)
+            return AbsentRow(id: layer.id, label: layer.label, note: note, layer: layer.layer)
         }
     }
 
@@ -367,6 +316,29 @@ struct VolumeAnnotationsPresentation: Equatable {
         /// "N documents".
         func documents(_ category: AnnotationCategory) -> String {
             CountCopy.documents(annotations.count(category), locale: locale)
+        }
+
+        /// A carried layer's line: its coverage, its count, or its parts, as each layer says it.
+        func detail(of layer: AnnotationLayer) -> String {
+            switch layer {
+            case .people: return coverage(.people, listed: personsListed)
+            case .abbreviations: return coverage(.abbreviations, listed: termsListed)
+            case .correspondents: return documents(.correspondents)
+            case .subjects: return documents(.subjects)
+            case .participants: return documents(.participants)
+            case .sourceNotes: return sourceNotes
+            case .classification: return coverage(.classification)
+            case .excisions: return excisions
+            case .despatch: return documents(.despatch)
+            case .numbered: return coverage(.numbered)
+            case .crossReferences: return crossReferences ?? ""
+            case .editorialNotes: return editorialNotes
+            case .footnotes: return coverage(.footnotes)
+            case .marginalNotes: return documents(.marginalNotes)
+            case .printedAids:
+                return VolumeAnnotationsPresentation.printedAids(in: annotations.sections)
+                    .joined(separator: VolumeAnnotationsPresentation.separator)
+            }
         }
 
         /// "325 people listed", or `nil` when the volume prints no List of Persons the index read.
