@@ -20,7 +20,8 @@ import SwiftUI
 /// - **`.column`:** a block in the Mac's `CorpusVolumeDetailView`, below Top subjects. That column
 ///   does not scroll, and within its 440 pt minimum window it already holds a title of up to 120 pt
 ///   and Top subjects of up to 180 pt, so here the section is a disclosure, collapsed until the
-///   reader opens it (which it then remembers), and bounded in height when open.
+///   reader opens it (which it then remembers). Open, its rows share the room left below Top
+///   subjects with the volume's structure (`BoundedVolumeAnnotationsBlock`).
 ///
 /// It renders for every volume the bundled file holds, downloaded or not, and nothing for one it
 /// does not. Each row is one accessibility element; the group headings are headers.
@@ -101,6 +102,7 @@ struct VolumeAnnotationsRows: View {
                 }
             } label: {
                 Text(presentation.absentTitle)
+                    .togglesDisclosure($showsAbsent)
             }
             .accessibilityIdentifier("volume.annotations.absent")
         }
@@ -115,11 +117,21 @@ struct VolumeAnnotationsRowView: View {
     /// The layer.
     let row: VolumeAnnotationsPresentation.Row
 
+    // The symbols' column, as wide as the widest of the fifteen, `person.3`, at the body size, so
+    // every row's text starts at the same place: 28 pt at the Mac's 13 pt body and 36 at iOS's
+    // 17 (measured with AppKit, 2026-11-06). A floor of 22 let five symbols push their text right
+    // on iOS, by up to 14 pt, and `person.3` on the Mac. It scales with the text, as the symbols do.
+    #if os(macOS)
+    @ScaledMetric(relativeTo: .body) private var symbolWidth: CGFloat = 28
+    #else
+    @ScaledMetric(relativeTo: .body) private var symbolWidth: CGFloat = 36
+    #endif
+
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Image(systemName: row.symbol)
                 .foregroundStyle(.secondary)
-                .frame(minWidth: 22)
+                .frame(width: symbolWidth)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(row.label)
@@ -138,10 +150,16 @@ struct VolumeAnnotationsRowView: View {
 // MARK: - BoundedVolumeAnnotationsBlock
 
 /// The section in a column that does not scroll: a disclosure headed "Editors’ Annotations",
-/// collapsed until the reader opens it and remembered once they have, whose rows are bounded in
-/// height so they can never crowd the volume's structure out of the Mac's `CorpusVolumeDetailView`.
-/// As `BoundedSubjectsBlock` does, the open block hugs a short section and scrolls inside a tall
-/// one, the cap scaled with the user's text size.
+/// collapsed until the reader opens it and remembered once they have, whose rows can never crowd the
+/// volume's structure out of the Mac's `CorpusVolumeDetailView`.
+///
+/// Open, the rows hug a short section and scroll inside a tall one, as `BoundedSubjectsBlock`'s
+/// chips do, but their height is not fixed: it may fall from the cap to a floor of about two rows.
+/// The column's `VStack` gives its fixed blocks their height first and then shares what is left
+/// between its flexible children, these rows and the structure list, so in a short window the two
+/// split the room below Top subjects, and in a tall one the rows reach their cap. A fixed cap of 200
+/// left the structure no room at all in the 440 pt minimum window: measured in the check copy on
+/// 2026-11-06, Front Matter and Contents fell below the window's edge.
 struct BoundedVolumeAnnotationsBlock: View {
     /// What the rows say.
     let presentation: VolumeAnnotationsPresentation
@@ -149,11 +167,18 @@ struct BoundedVolumeAnnotationsBlock: View {
     /// Whether the reader has opened the section; it stays open for the next volume.
     @AppStorage("frus.browser.volumeAnnotations.expanded") private var isExpanded = false
 
-    /// The tallest the open block may grow before it scrolls internally.
+    /// The tallest the open rows may grow before they scroll internally.
     @ScaledMetric(relativeTo: .body) private var maxHeight: CGFloat = 200
+
+    /// The least the open rows are given when the column is short: about two rows, so the block still
+    /// shows what it holds and scrolls to the rest.
+    @ScaledMetric(relativeTo: .body) private var minHeight: CGFloat = 64
 
     /// The rows' natural height at the current column width, measured live.
     @State private var naturalHeight: CGFloat = 0
+
+    /// The height the rows were given, measured live, so that they scroll only when they need to.
+    @State private var shownHeight: CGFloat = 0
 
     var body: some View {
         DisclosureGroup(isExpanded: $isExpanded) {
@@ -164,16 +189,36 @@ struct BoundedVolumeAnnotationsBlock: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { naturalHeight = $0 }
             }
-            // Hug a short section (height == natural), cap a tall one (scrolls internally).
-            .frame(height: min(naturalHeight, maxHeight))
-            .scrollDisabled(naturalHeight <= maxHeight)
+            // Hug a short section; give a tall one what the column can spare, between the floor and
+            // the cap, and let it scroll. Both bounds start at 0 before the first measurement.
+            .frame(minHeight: min(naturalHeight, minHeight), maxHeight: min(naturalHeight, maxHeight))
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { shownHeight = $0 }
+            .scrollDisabled(naturalHeight <= shownHeight + 0.5)
         } label: {
             Text(VolumeAnnotationsPresentation.title)
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier("volume.annotations.header")
+                .togglesDisclosure($isExpanded)
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
+    }
+}
+
+// MARK: - Disclosure titles
+
+private extension View {
+    /// On the Mac, a click on a disclosure's title opens and closes it, as one on its triangle does.
+    /// A Mac `DisclosureGroup` toggles from the triangle alone, a target a few points wide, and the
+    /// walk of the check copy on 2026-11-06 clicked "Editors’ Annotations" first, to no effect.
+    /// iOS toggles from the whole row already, so there this changes nothing.
+    func togglesDisclosure(_ isExpanded: Binding<Bool>) -> some View {
+        #if os(macOS)
+        contentShape(Rectangle())
+            .onTapGesture { withAnimation { isExpanded.wrappedValue.toggle() } }
+        #else
+        self
+        #endif
     }
 }
