@@ -1034,7 +1034,7 @@ Live catalog lookups use a free NARA Catalog API key, entered once in **Settings
 
 ### 14.7 Classification Chips
 
-When a source note records the original document's classification markings (*"Secret; Nodis"*, or *"No classification marking"*), the app separates them from the archival citation and shows them as a quiet capsule chip — in the Source Explorer window, next to the source footnote in the reading view, and on search results. The chip is historical metadata about how the record was originally handled, not a property of the published, declassified text — a distinction students in particular should hear once.
+When a source note records the original document's classification markings (*"Secret; Nodis"*, or *"No classification marking"*), the app separates them from the archival citation and shows them as a quiet capsule chip — in the Source Explorer window, next to the source footnote in the reading view, and on search results. Most volumes covering 1946 to 1954, and the wartime conference volumes before them, print the marking above the dateline instead (*SECRET*, or *TOP SECRET* over *PRIORITY*): the reading view shows it there, as the volume prints it, and the Source Explorer window and search results show it in the same chip. The chip is historical metadata about how the record was originally handled, not a property of the published, declassified text — a distinction students in particular should hear once.
 
 ### 14.8 The Archives Visit Packet
 
