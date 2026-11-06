@@ -1,0 +1,653 @@
+{
+"causes": {
+"another abbreviation": 4679,
+"digit-led remark": 1970,
+"volume or part number": 2216
+},
+"replica": {
+"agree": 62094,
+"disagree": 0
+},
+"samples": [
+{
+"cause": "another abbreviation",
+"document": "d13",
+"marking": "No classification marking",
+"note": "Source: National Archives, RG 63, Entry 111, Correspondence of Arthur Wood, Box 2, R.H. Van Deman. No classification marking. An unknown hand made minor editorial revisions throughout the memorandum, which have been incorporated into the te",
+"volume": "frus1917-72PubDip"
+},
+{
+"cause": "another abbreviation",
+"document": "d116",
+"marking": "Confidential",
+"note": "Source: Kennedy Library, National Security Files, Meetings and Memoranda Series, Box 319A, Staff Memoranda, Samuel E. Belk, 3/62\u20136/63. Confidential.",
+"volume": "frus1917-72PubDipv06"
+},
+{
+"cause": "another abbreviation",
+"document": "d11",
+"marking": "No classification marking",
+"note": "Source: National Archives, RG 306, USIA Historical Collection, Agency History Program, Subject Files, 1926\u20131975, Entry A1\u20131072, Box 13, Speeches, Carl T. Rowan, 1964. No classification marking. Rowan delivered these remarks at the Waldorf A",
+"volume": "frus1917-72PubDipv07"
+},
+{
+"cause": "another abbreviation",
+"document": "d1",
+"marking": "Confidential",
+"note": "Source: National Archives, RG 306, Office of Administration and Management, Assistant Director\u2019s Correspondence File, SUBJ 1968\u20131972, Entry UD\u2013164, Box 1, INF 14\u20131 Briefing Papers, Transition Books\u2014Vol. I and II 1968. Confidential. The port",
+"volume": "frus1917-72PubDipv08"
+},
+{
+"cause": "another abbreviation",
+"document": "d149",
+"marking": "Secret",
+"note": "Source: Truman Library, Papers of Harry S. Truman, President\u2019s Secretary\u2019s Files. Secret. Truman had directed General Eisenhower, the Army Chief of Staff, to recommend a successor to Souers. Eisenhower proposed General Bonesteel. (Letter, E",
+"volume": "frus1945-50Intel"
+},
+{
+"cause": "digit-led remark",
+"document": "d10",
+"marking": "Top Secret",
+"note": "Source: National Archives, RG 59, Central Files 1950\u201354, 103.1102/ 6\u2013650. Top Secret. 2 pages not declassified.",
+"volume": "frus1950-55Intel"
+},
+{
+"cause": "another abbreviation",
+"document": "d115",
+"marking": "Confidential",
+"note": "Source: National Archives, RG 469, Records of U.S. Foreign Assistance Agencies 1948\u20131961, Mission to Iran, Executive Office Subject Files (Central Files) 1951\u20131961, Box 6, Folder 7, Travel Development\u2014Political 1952. Confidential.",
+"volume": "frus1951-54Iran"
+},
+{
+"cause": "another abbreviation",
+"document": "d115",
+"marking": "Confidential",
+"note": "Source: National Archives, RG 469, Records of U.S. Foreign Assistance Agencies 1948\u20131961, Mission to Iran, Executive Office Subject Files (Central Files) 1951\u20131961, Box 6, Folder 7, Travel Development\u2014Political 1952. Confidential.",
+"volume": "frus1951-54IranEd2"
+},
+{
+"cause": "digit-led remark",
+"document": "d149",
+"marking": "Secret",
+"note": "Source: Central Intelligence Agency, Job 79\u201301025A, Box 80, Folder 5. Secret. 3 pages of source text not declassified.",
+"volume": "frus1952-54Guat"
+},
+{
+"cause": "another abbreviation",
+"document": "d56",
+"marking": "Secret",
+"note": "Source: Collins Papers, Vietnam File, Series VIII, Dr. Fishel. Secret.",
+"volume": "frus1955-57v01"
+},
+{
+"cause": "another abbreviation",
+"document": "d276",
+"marking": "Top Secret",
+"note": "Source: Department of State, Central Files, 396.1 GE/6\u20132355. Extract. Top Secret. Apparently prepared by the Secretary, although the source text is unsigned and bears no indication of the drafter. The conversation took place during and afte",
+"volume": "frus1955-57v02"
+},
+{
+"cause": "another abbreviation",
+"document": "d231",
+"marking": "Top Secret; Official\u2013Informal",
+"note": "Source: Department of State, Geneva Talks Files: Lot 72 D 415, Geneva, US\u2013 PRC Talks, Misc. Docs. 1956\u20131957. Top Secret; Official\u2013Informal.",
+"volume": "frus1955-57v03"
+},
+{
+"cause": "another abbreviation",
+"document": "d236",
+"marking": "Official Use Only",
+"note": "Source: Department of State, RA Files: Lot 60 D 402, Common Market\u2014U.S. Business Attitude. Official Use Only. Also addressed to Kalijarvi.",
+"volume": "frus1955-57v04"
+},
+{
+"cause": "another abbreviation",
+"document": "d235",
+"marking": "Secret; Priority",
+"note": "Source: Department of State, Central Files, 396.1\u2013GE/7\u20132355. Drafted by Beam. Repeated to London, Paris, Moscow, and Bonn. Secret; Priority. The U.S. Delegation verbatim record, USDEL /Verb/M\u20135, July 22, which indicates that the meeting beg",
+"volume": "frus1955-57v05"
+},
+{
+"cause": "another abbreviation",
+"document": "d251",
+"marking": "Confidential",
+"note": "Source: Department of State, Sugar Files: Lot 65 D 212, Revision of Sugar Act, 1955, Mem. Con. II. Confidential. Sent also to the Under Secretary of State.",
+"volume": "frus1955-57v06"
+},
+{
+"cause": "another abbreviation",
+"document": "d176",
+"marking": "Top Secret",
+"note": "Source: Eisenhower Library, Sp. Asst. for Nat. Sec. Affairs Records, Gordon Gray Chronological File. Top Secret. Copies of this memorandum were sent to Dulles, Hughes, Adams, Goodpaster, Lay, Gleason, and Boggs.",
+"volume": "frus1955-57v07"
+},
+{
+"cause": "volume or part number",
+"document": "d35",
+"marking": "Confidential",
+"note": "Source: Department of State, Presidential Correspondence: Lot 66 D 204, Eden to Eisenhower, 1955\u20131956, vol. I. Confidential.",
+"volume": "frus1955-57v09"
+},
+{
+"cause": "another abbreviation",
+"document": "d183",
+"marking": "Secret",
+"note": "Source: Department of State, S/S \u2013 NSC Files: Lot 62 D 1, U.S. Economic Defense Policy. Secret.",
+"volume": "frus1955-57v10"
+},
+{
+"cause": "another abbreviation",
+"document": "d340",
+"marking": "Secret",
+"note": "Source: Eisenhower Library, Sp. Asst. for Nat. Sec. Affairs Records. Secret. Notations on the source text indicate that this report is \u201cCopy 1\u201d for \u201cThe President.\u201d No copy of NSC 5520 was found in Department of State files. Copies were sen",
+"volume": "frus1955-57v11"
+},
+{
+"cause": "another abbreviation",
+"document": "d104",
+"marking": "Top Secret",
+"note": "Source: Eisenhower Library, Sp. Asst. for Nat. Sec. Affairs Records. Top Secret. Gordon Gray sent a copy of this memorandum to Secretary Dulles on April 2. (Department of State, Central Files, 780.5/4\u2013256) Secretary of Defense Wilson forwar",
+"volume": "frus1955-57v12"
+},
+{
+"cause": "another abbreviation",
+"document": "d209",
+"marking": "Top Secret",
+"note": "Source: Department of State, Presidential Correspondence: Lot 66 D 204, UK officials corres. with Secy. Dulles / Herter 7/54 thru 3/57 Vol. I incoming. Top Secret. Ambassador Makins conveyed the message to the Department on January 23. A no",
+"volume": "frus1955-57v13"
+},
+{
+"cause": "another abbreviation",
+"document": "d159",
+"marking": "Top Secret; Alpha",
+"note": "Source: Department of State, NEA Files: Lot 59 D 518, Alpha: 1) Paris: Memo of Conv. betw. S and Macmillan, July 14; 2) Paris: Memo on Procedure, July 15, signed by Shuckburgh and FSR. Top Secret; Alpha.",
+"volume": "frus1955-57v14"
+},
+{
+"cause": "another abbreviation",
+"document": "d103",
+"marking": "Top Secret",
+"note": "Source: Department of State, NEA Files: Lot 59 D 518, Alpha\u2014 Anderson Talks w/ BG & Nasser. Jan. \u201956\u2014memos, etc. Top Secret. Drafted on February 21 by Russell.",
+"volume": "frus1955-57v15"
+},
+{
+"cause": "another abbreviation",
+"document": "d108",
+"marking": "Confidential; Personal and Private",
+"note": "Source: Eisenhower Library, Dulles Papers, General Memoranda of Conversation. Drafted by Dulles. Confidential; Personal and Private.",
+"volume": "frus1955-57v16"
+},
+{
+"cause": "another abbreviation",
+"document": "d10",
+"marking": "Confidential",
+"note": "Source: Department of State, IO / ODA Files: Lot 62 D 225, U.S. Representative in the Trusteeship Council. Confidential. Enclosure to a letter from Lodge to Dulles, February 15, in which Lodge wrote: \u201cMason Sears may have irritated a few of",
+"volume": "frus1955-57v18"
+},
+{
+"cause": "another abbreviation",
+"document": "d125",
+"marking": "Top Secret",
+"note": "Source: Department of State, S/S \u2013 NSC (Miscellaneous) Files: Lot 66 D 95, U.S. Security Effort Overseas. Top Secret. The words \u201crevised draft\u201d are typed on the source text next to the date. An earlier draft, dated June 19, is in the Eisenh",
+"volume": "frus1955-57v19"
+},
+{
+"cause": "another abbreviation",
+"document": "d144",
+"marking": "Top Secret",
+"note": "Source: Eisenhower Library, Sp. Asst. for Nat. Sec. Affairs Records. Top Secret.",
+"volume": "frus1955-57v20"
+},
+{
+"cause": "another abbreviation",
+"document": "d153",
+"marking": "Secret",
+"note": "Source: Department of State, FE /SPA Files: Lot 65 D 141, Australian\u2013U.S. Defense Relations, Feb.\u2013June 1957. Secret.",
+"volume": "frus1955-57v21"
+},
+{
+"cause": "another abbreviation",
+"document": "d12",
+"marking": "Confidential",
+"note": "Source: Department of State, Central Files, 890B.00/6\u20132955. Drafted by Sebald on July 5. Confidential.",
+"volume": "frus1955-57v22"
+},
+{
+"cause": "another abbreviation",
+"document": "d185",
+"marking": "Top Secret",
+"note": "Source: Department of State, S/P Files: Lot 62 D 1, Korea, U.S. Objectives and Courses of Action (NSC 5514). Top Secret. Drafted by Nes and Norred and cleared with Jones and Sebald. Hoover was serving as Acting Secretary during Secretary Du",
+"volume": "frus1955-57v23p2"
+},
+{
+"cause": "another abbreviation",
+"document": "d219",
+"marking": "Confidential",
+"note": "Source: Department of State, Presidential Correspondence: Lot 66 D 204, UK Officials Corres. With Secy Dulles / Herter 7/54 thru 3/57 Vol. I Incoming. Confidential. Sent under cover of a note dated February 8 from Caccia to Dulles.",
+"volume": "frus1955-57v24"
+},
+{
+"cause": "another abbreviation",
+"document": "d117",
+"marking": "Secret; Official\u2013Informal",
+"note": "Source: Department of State, Vietnam Working Group Files: Lot 66 D 193, 100. VN 1960, Internal Security. Secret; Official\u2013Informal. Drafted by Wood and cleared by Cleveland.",
+"volume": "frus1958-60v01"
+},
+{
+"cause": "another abbreviation",
+"document": "d83",
+"marking": "Confidential",
+"note": "Source: Eisenhower Library, Whitman File, Administration Series, Dillon, C. Douglas. Confidential. On July 24, Wilcox and Parsons sent Dillon a memorandum on Chinese representation at the 14th General Assembly. Much of this information was ",
+"volume": "frus1958-60v02"
+},
+{
+"cause": "another abbreviation",
+"document": "d146",
+"marking": "Top Secret",
+"note": "Source: Eisenhower Library, Whitman File, Administrative Series, Cutler, Gen. Robert L., 1958. Top Secret.",
+"volume": "frus1958-60v03"
+},
+{
+"cause": "digit-led remark",
+"document": "d10",
+"marking": "Secret",
+"note": "Source: Transmittal letter for progress report on ballistic missile programs. Secret. 1 p. Eisenhower Library, White House Office Files, Additional Records of the Office of the Special Assistant for Science and Technology.",
+"volume": "frus1958-60v03mSupp"
+},
+{
+"cause": "another abbreviation",
+"document": "d122",
+"marking": "Official Use Only",
+"note": "Source: National Archives and Records Administration, RG 56, Records of the Office of the Secretary of the Treasury, Robert B. Anderson, Subject Files, Office of International Finance. Official Use Only. The source text, which was sent thro",
+"volume": "frus1958-60v04"
+},
+{
+"cause": "another abbreviation",
+"document": "d196",
+"marking": "Official Use Only",
+"note": "Source: Department of State, Central Files, 103. XMB/6\u20133059. Official Use Only. Drafted by Vaky.",
+"volume": "frus1958-60v05"
+},
+{
+"cause": "digit-led remark",
+"document": "co_d36",
+"marking": "Secret; Official-Informal",
+"note": "Source: Department of State, Central Files. Secret; Official-Informal. 2 pages not declassified.",
+"volume": "frus1958-60v05mSupp"
+},
+{
+"cause": "volume or part number",
+"document": "d244",
+"marking": "Top Secret",
+"note": "Source: Department of State, State\u2013 JCS Meetings: Lot 61 D 417, vol. VII. Top Secret. Drafted by Dwight J. Porter. A note on the source text indicates that it was not cleared with the Department of Defense. A cover sheet lists the participa",
+"volume": "frus1958-60v06"
+},
+{
+"cause": "digit-led remark",
+"document": "d112",
+"marking": "Secret; Limit Distribution",
+"note": "Source: Department of State, Central Files, 375.42/3\u20132560. Secret; Limit Distribution. 1 page of source text not declassified.",
+"volume": "frus1958-60v07p1"
+},
+{
+"cause": "digit-led remark",
+"document": "d104",
+"marking": "Secret",
+"note": "Source: Department of State, WE Files: Lot 61 D 30, Memoranda of Conversation\u20141959. Secret. 2 pages of source text not declassified.",
+"volume": "frus1958-60v07p2"
+},
+{
+"cause": "digit-led remark",
+"document": "d110",
+"marking": "Secret",
+"note": "Source: Department of State, Central Files, 762.00/12\u20131558. Secret. 2\u20131/2 pages of source text not declassified.",
+"volume": "frus1958-60v08"
+},
+{
+"cause": "digit-led remark",
+"document": "d131",
+"marking": "Secret; Priority; Limited Distribution",
+"note": "Source: Department of State, Central Files, 396.1\u2013PA/4\u20132160. Secret; Priority; Limited Distribution. 2 pages of source text not declassified.",
+"volume": "frus1958-60v09"
+},
+{
+"cause": "digit-led remark",
+"document": "d198",
+"marking": "Top Secret",
+"note": "Source: Department of State, Conference Files: Lot 63 D 123, CF 1006. Top Secret. 1 page of source text not declassified.",
+"volume": "frus1958-60v10p1"
+},
+{
+"cause": "digit-led remark",
+"document": "d146",
+"marking": "Secret; Noforn; Limit Distribution",
+"note": "Source: Department of State, Central Files, 668.81/6\u20132559. Secret; Noforn; Limit Distribution. 2-1/2 pages of source text not declassified.",
+"volume": "frus1958-60v10p2"
+},
+{
+"cause": "digit-led remark",
+"document": "d113",
+"marking": "Secret",
+"note": "Source: Department of State, Central Files, 787.00/7\u20131458. Secret. 1-1/2 pages of source text not declassified.",
+"volume": "frus1958-60v12"
+},
+{
+"cause": "another abbreviation",
+"document": "d187",
+"marking": "Secret",
+"note": "Source: Department of State, AF/AFC Files: Lot 65 D 261, U.S. Intelligence Board. Secret. A covering memorandum from Chester L. Cooper, Acting Assistant Director of National Estimates, indicated that the memorandum was intended for the U.S.",
+"volume": "frus1958-60v14"
+},
+{
+"cause": "another abbreviation",
+"document": "d210",
+"marking": "Secret; Official\u2013Informal",
+"note": "Source: Department of State, SOA Files: Lot 60 D 449. Official\u2013Informal Correspondence. Secret; Official\u2013Informal. On June 20, Bunker sent a copy of this letter to Bartlett. (Ibid., SOA Files: Lot 62 D 43, India Economic\u20141958)",
+"volume": "frus1958-60v15"
+},
+{
+"cause": "another abbreviation",
+"document": "d107",
+"marking": "Secret",
+"note": "Source: Department of State, FE/SEA (Cambodia) Files: Lot 63 D 73, 16.6 U.S. Cambodian Relations. Secret. Drafted by Askew and sent through Parsons.",
+"volume": "frus1958-60v16"
+},
+{
+"cause": "another abbreviation",
+"document": "d77",
+"marking": "Secret; Priority",
+"note": "Source: Department of State, Central Files, 756. D.00/5\u2013258. Secret; Priority. Transmitted in two sections and repeated to The Hague, Manila, Canberra, Bangkok, Kuala Lumpur, and Singapore,",
+"volume": "frus1958-60v17"
+},
+{
+"cause": "digit-led remark",
+"document": "d100",
+"marking": "Confidential; Limit Distribution",
+"note": "Source: Department of State, Central Files, 794.5/10\u20131059. Confidential; Limit Distribution. 5 pages of source text not declassified.",
+"volume": "frus1958-60v18"
+},
+{
+"cause": "digit-led remark",
+"document": "d149",
+"marking": "Top Secret; Personal and Private",
+"note": "Source: Eisenhower Library, Dulles Papers, Meetings with the President. Top Secret; Personal and Private. 1 page of source text not declassified.",
+"volume": "frus1958-60v19"
+},
+{
+"cause": "another abbreviation",
+"document": "d128",
+"marking": "Secret",
+"note": "Source: Department of State, S/P Files: Lot 67 D 548, R. Johnson Chron. Secret.",
+"volume": "frus1961-63v01"
+},
+{
+"cause": "another abbreviation",
+"document": "d12",
+"marking": "Secret",
+"note": "Source: Department of State, S/P Files: Lot 69 D 121, R. Johnson Chron. Secret. Johnson, who had just left the National Security Council Staff for the Department of State, indicated in a covering memorandum that he had prepared the study in",
+"volume": "frus1961-63v02"
+},
+{
+"cause": "another abbreviation",
+"document": "d125",
+"marking": "Secret; Limit Distribution",
+"note": "Source: Department of State, Vietnam Working Group Files: Lot 67 D 54, POL -1 (Gen. Pol. Secret; Limit Distribution.",
+"volume": "frus1961-63v03"
+},
+{
+"cause": "volume or part number",
+"document": "d53",
+"marking": "Secret",
+"note": "Source: National Defense University, Taylor Papers, Vietnam, chap. XXIII. Secret. The source text bears a notation that Taylor handcarried the memorandum to the President. Taylor among others saw the President on September 3 for the noon me",
+"volume": "frus1961-63v04"
+},
+{
+"cause": "another abbreviation",
+"document": "d4",
+"marking": "No classification marking",
+"note": "Source: Princeton University, Stevenson Papers, Box 832, John F. Kennedy. No classification marking.",
+"volume": "frus1961-63v05"
+},
+{
+"cause": "another abbreviation",
+"document": "d204",
+"marking": "Secret",
+"note": "Source: Kennedy Library, National Security Files, Kaysen Series, Nuclear Testing, Vol. II, 7/62-2/63. Secret. In a July 28 note to McNamara, attached to a carbon copy of this memorandum, Harold Brown wrote that Adam Yarmolinsky, Special Ass",
+"volume": "frus1961-63v07"
+},
+{
+"cause": "digit-led remark",
+"document": "d1",
+"marking": "Top Secret",
+"note": "NSC Actions 2374\u20132377 on Polaris program, U.S. arms control/nuclear testing policy, disclosure of classified military information to foreign governments, and foreign intelligence activities. Top Secret. 2 pp. Department of State, S/S \u2013 NSC ",
+"volume": "frus1961-63v07-09mSupp"
+},
+{
+"cause": "another abbreviation",
+"document": "d11",
+"marking": "Top Secret",
+"note": "Source: Kennedy Library, National Security Files, Chester V. Clifton Series, Conferences with the President, Volume I. Top Secret. Drafted by Clifton.",
+"volume": "frus1961-63v08"
+}
+],
+"volumes": {
+"frus1917-72PubDip": 3,
+"frus1917-72PubDipv06": 11,
+"frus1917-72PubDipv07": 37,
+"frus1917-72PubDipv08": 34,
+"frus1945-50Intel": 46,
+"frus1950-55Intel": 31,
+"frus1951-54Iran": 41,
+"frus1951-54IranEd2": 39,
+"frus1952-54Guat": 4,
+"frus1955-57v01": 2,
+"frus1955-57v02": 5,
+"frus1955-57v03": 2,
+"frus1955-57v04": 1,
+"frus1955-57v05": 1,
+"frus1955-57v06": 6,
+"frus1955-57v07": 2,
+"frus1955-57v09": 2,
+"frus1955-57v10": 5,
+"frus1955-57v11": 1,
+"frus1955-57v12": 3,
+"frus1955-57v13": 1,
+"frus1955-57v14": 6,
+"frus1955-57v15": 66,
+"frus1955-57v16": 6,
+"frus1955-57v18": 3,
+"frus1955-57v19": 5,
+"frus1955-57v20": 10,
+"frus1955-57v21": 2,
+"frus1955-57v22": 3,
+"frus1955-57v23p2": 1,
+"frus1955-57v24": 2,
+"frus1958-60v01": 16,
+"frus1958-60v02": 1,
+"frus1958-60v03": 4,
+"frus1958-60v03mSupp": 520,
+"frus1958-60v04": 16,
+"frus1958-60v05": 3,
+"frus1958-60v05mSupp": 1,
+"frus1958-60v06": 3,
+"frus1958-60v07p1": 20,
+"frus1958-60v07p2": 17,
+"frus1958-60v08": 5,
+"frus1958-60v09": 10,
+"frus1958-60v10p1": 11,
+"frus1958-60v10p2": 16,
+"frus1958-60v12": 24,
+"frus1958-60v14": 2,
+"frus1958-60v15": 2,
+"frus1958-60v16": 4,
+"frus1958-60v17": 2,
+"frus1958-60v18": 36,
+"frus1958-60v19": 5,
+"frus1961-63v01": 3,
+"frus1961-63v02": 9,
+"frus1961-63v03": 7,
+"frus1961-63v04": 1,
+"frus1961-63v05": 1,
+"frus1961-63v07": 18,
+"frus1961-63v07-09mSupp": 408,
+"frus1961-63v08": 7,
+"frus1961-63v09": 2,
+"frus1961-63v10": 22,
+"frus1961-63v10-12mSupp": 684,
+"frus1961-63v11": 65,
+"frus1961-63v12": 27,
+"frus1961-63v13": 5,
+"frus1961-63v14": 2,
+"frus1961-63v15": 2,
+"frus1961-63v16": 2,
+"frus1961-63v17": 15,
+"frus1961-63v18": 22,
+"frus1961-63v19": 12,
+"frus1961-63v20": 2,
+"frus1961-63v21": 12,
+"frus1961-63v22": 17,
+"frus1961-63v23": 51,
+"frus1961-63v24": 17,
+"frus1961-63v25": 25,
+"frus1964-68v01": 76,
+"frus1964-68v02": 77,
+"frus1964-68v03": 94,
+"frus1964-68v04": 69,
+"frus1964-68v05": 52,
+"frus1964-68v06": 22,
+"frus1964-68v07": 56,
+"frus1964-68v08": 41,
+"frus1964-68v09": 44,
+"frus1964-68v10": 29,
+"frus1964-68v11": 34,
+"frus1964-68v12": 3,
+"frus1964-68v13": 14,
+"frus1964-68v14": 52,
+"frus1964-68v15": 3,
+"frus1964-68v16": 3,
+"frus1964-68v18": 91,
+"frus1964-68v19": 98,
+"frus1964-68v20": 129,
+"frus1964-68v21": 51,
+"frus1964-68v22": 50,
+"frus1964-68v23": 87,
+"frus1964-68v24": 182,
+"frus1964-68v25": 185,
+"frus1964-68v26": 104,
+"frus1964-68v27": 71,
+"frus1964-68v28": 78,
+"frus1964-68v29p1": 70,
+"frus1964-68v29p2": 24,
+"frus1964-68v30": 64,
+"frus1964-68v31": 190,
+"frus1964-68v32": 122,
+"frus1964-68v33": 34,
+"frus1964-68v34": 52,
+"frus1969-76v01": 5,
+"frus1969-76v02": 55,
+"frus1969-76v03": 1,
+"frus1969-76v04": 1,
+"frus1969-76v05": 134,
+"frus1969-76v06": 95,
+"frus1969-76v07": 50,
+"frus1969-76v08": 34,
+"frus1969-76v09": 135,
+"frus1969-76v10": 13,
+"frus1969-76v11": 37,
+"frus1969-76v12": 74,
+"frus1969-76v13": 42,
+"frus1969-76v14": 16,
+"frus1969-76v15": 18,
+"frus1969-76v16": 1,
+"frus1969-76v17": 78,
+"frus1969-76v18": 13,
+"frus1969-76v19p1": 81,
+"frus1969-76v19p2": 50,
+"frus1969-76v20": 129,
+"frus1969-76v21": 89,
+"frus1969-76v22": 3,
+"frus1969-76v23": 103,
+"frus1969-76v24": 39,
+"frus1969-76v25": 86,
+"frus1969-76v26": 14,
+"frus1969-76v27": 42,
+"frus1969-76v28": 13,
+"frus1969-76v29": 198,
+"frus1969-76v30": 26,
+"frus1969-76v31": 63,
+"frus1969-76v32": 41,
+"frus1969-76v33": 4,
+"frus1969-76v34": 16,
+"frus1969-76v35": 4,
+"frus1969-76v36": 48,
+"frus1969-76v37": 9,
+"frus1969-76v38p1": 5,
+"frus1969-76v38p2": 45,
+"frus1969-76v39": 51,
+"frus1969-76v40": 83,
+"frus1969-76v41": 130,
+"frus1969-76v42": 23,
+"frus1969-76ve01": 27,
+"frus1969-76ve02": 68,
+"frus1969-76ve03": 19,
+"frus1969-76ve04": 37,
+"frus1969-76ve05p1": 96,
+"frus1969-76ve05p2": 35,
+"frus1969-76ve06": 18,
+"frus1969-76ve07": 67,
+"frus1969-76ve08": 11,
+"frus1969-76ve09p1": 6,
+"frus1969-76ve09p2": 7,
+"frus1969-76ve10": 142,
+"frus1969-76ve11p1": 25,
+"frus1969-76ve11p2": 6,
+"frus1969-76ve12": 23,
+"frus1969-76ve13": 22,
+"frus1969-76ve14p1": 11,
+"frus1969-76ve14p2": 11,
+"frus1969-76ve15p1": 9,
+"frus1969-76ve15p2": 62,
+"frus1969-76ve15p2Ed2": 71,
+"frus1969-76ve16": 36,
+"frus1977-80v02": 6,
+"frus1977-80v03": 51,
+"frus1977-80v04": 7,
+"frus1977-80v06": 14,
+"frus1977-80v08": 17,
+"frus1977-80v09Ed2": 36,
+"frus1977-80v11p1": 56,
+"frus1977-80v12": 18,
+"frus1977-80v13": 2,
+"frus1977-80v15": 13,
+"frus1977-80v16": 31,
+"frus1977-80v17p1": 3,
+"frus1977-80v17p2": 2,
+"frus1977-80v17p3": 3,
+"frus1977-80v18": 6,
+"frus1977-80v19": 20,
+"frus1977-80v20": 20,
+"frus1977-80v21": 38,
+"frus1977-80v22": 10,
+"frus1977-80v23": 3,
+"frus1977-80v24": 14,
+"frus1977-80v26": 29,
+"frus1977-80v27": 2,
+"frus1977-80v28": 2,
+"frus1977-80v29": 29,
+"frus1977-80v30": 11,
+"frus1981-88v01": 16,
+"frus1981-88v03": 2,
+"frus1981-88v04": 13,
+"frus1981-88v05": 3,
+"frus1981-88v06": 7,
+"frus1981-88v10": 129,
+"frus1981-88v11": 20,
+"frus1981-88v13": 67,
+"frus1981-88v16": 15,
+"frus1981-88v24": 48,
+"frus1981-88v38": 35,
+"frus1981-88v41": 32,
+"frus1981-88v44p1": 14,
+"frus1989-92v31": 127
+}
+}

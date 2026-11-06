@@ -2,6 +2,12 @@
 
 **Status: PROPOSED, 2026-11-06.** Nothing is built. §9 lists the decisions it needs from the owner.
 
+**Amended the same day, after #1853 (index version 72).** That pull request closed the gap §3 found, so §3 now records it.
+- Classification is now counted by the marking the index stores, re-counted from a full index at version 72.
+- The word search that stood in for it missed what the app stores, and wrongly listed the four Public Diplomacy volumes as unmarked (§2.4, §3.2).
+- The re-count found a second gap, in the note form the app always read: 8,865 markings the notes print are not stored (§3.3, decision 7).
+- No other figure moved.
+
 **What this is.** The owner asked two questions, two days apart.
 - **2026-11-04:** when people tagging began, and in which volumes. The answer went into the Research Guide (#1851).
 - **2026-11-06:**
@@ -19,6 +25,7 @@
 - **The index:**
   - A copy of the Mac app's index at version 71, holding the same 553 volumes.
   - It answers what the TEI pass cannot: people tagging by the People browser's own rule, printed document numbers, despatch serials, and the classification the app stores.
+  - For classification, a full index at version 72, built by `ResolvedEdgeIndexGenerator` through the kit's own pipeline at `v2` `dcf178ed`. It agrees with the copy at 71, volume by volume, on rows, people, persons, numbering and despatch serials.
 - **The bases:**
   - 314,510 documents in the TEI, or 320,646 index rows wherever a figure says "rows". The rows also count a section's own printed text.
   - A volume **carries** a category in one of three ways:
@@ -41,9 +48,11 @@
   - **1945–1954:** abbreviations, classification markings and editorial notes arrive; from 1951 also Lists of Persons, Notes on Sources, Subject lines and participant lists.
   - **1955 on:** the modern format, with numbered documents, "Source:" citations, marked excisions and document-to-document references.
 - **What the app reads.**
-  - It reads people, abbreviations, source notes, cross-references, editorial notes, despatch numbers and footnotes.
+  - It reads people, abbreviations, source notes, classification markings, cross-references, editorial notes, despatch numbers and footnotes.
   - It does not yet read Subject lines, participant lists, senders and recipients, or excisions.
-  - It reads classification only in its 1955-on form. 38,943 documents covering 1932–1954 print a marking the index does not store (§3). A separate lane, opened 2026-11-06, takes that up.
+  - Classification had two gaps (§3).
+    - The opener's marking, which the volumes covering 1932–1954 print, has been stored since index version 72 (#1853), a lane this survey opened.
+    - In volumes from 1955 on, 8,865 notes print a marking in a sentence the parser does not read, and the index stores none.
 - **The proposal:**
   - one bundled artifact, `volume-annotations-index.json`, from a new Tier 1 generator;
   - an **Editors' Annotations** section on every volume's page, on both platforms, before download;
@@ -65,7 +74,7 @@
 | **Meeting participants** | `list type="participants"` | 297 | 12,798 (4.1%) |
 | **Source notes, file-number form** | `note type="source" rend="inline"` above the heading: `File No. 763.72119/1098` | 248 | 190,875 (60.7%) |
 | **Source notes, "Source:" form** | a source footnote with the full archival citation | 230 | 74,702 (23.8%) |
-| **Classification markings** | in the opener above the dateline (to 1954), then inside the source note | 295 | 105,488 (33.5%) |
+| **Classification markings** | in the opener above the dateline (to 1954), then inside the source note | 302 | 105,265 rows (32.8%) |
 | **Excisions marked** | "[… not declassified]" | 208 | 6,724 (2.1%) |
 | **Despatch numbers** | the post's own serial, `No. 74.]` (#965) | 147 | 45,145 rows (14.1%) |
 | **Documents numbered in print** | the heading opens "12. Telegram From …" | 229 | 78,902 rows (24.6%) |
@@ -79,14 +88,15 @@
 
 The front and back matter changes too: List of Persons 284 volumes (by the three section ids the parser names), List of Abbreviations 313, Note on Sources 259, Preface 377, the analytical List of Papers 152, a printed index 456, the Note on U.S. Covert Actions 45, a press release 56, a volume summary 23, errata 57.
 
-The figures above need four readings:
+The figures above need five readings:
 - **People tagged:** 288 is the People browser's rule, read from the index, and the TEI rule picks out the same 288 volumes. Against the 284 Lists of Persons:
   - One list has no links: `frus1977-80v27`'s.
   - Five tagged volumes have no list under those ids. Three are the split-set second parts that borrow a sibling's list. The other two are the 1873 parts, whose lists the indexer finds under other ids.
   - `frus1981-88v16` names its people in a document-level `@ana` and is counted with the 288.
 - **Source notes:** `frus1870` is left out. It encodes its despatch numbers ("No. 3.") as source notes in 295 of 300 documents, and every one is "unrecognized" in `source-provenance-index.json`.
 - **Note on Sources** is read by the app's own section rule (`FRUSDocumentParser.structuralKind`). That rule finds `frus1969-76ve09p2`'s untyped one, which a `@subtype`-only rule misses (258).
-- **Classification** is a word search over the source note and the opener (`Planning/editors-annotations/README.md`). §3 is its exact meaning.
+- **Classification** is the marking the index stores at version 72, the note's or else the opener's. That is what Search's rows and Source Explorer show. It misses 8,865 that notes print (§3.3). A word search over the TEI stood here until this amendment.
+- **Editorial notes** are what the TEI tags as such. 138 of them carry their own source note, and 119 of those print an opener and a dateline: they are printed documents, 132 of them in the volumes covering 1932–1954 (#1854).
 
 ### 2.2 By era covered
 
@@ -102,7 +112,7 @@ Volumes carrying each category, out of the volumes in each era (`tables.out` §4
 | Meeting participants | 3 | 2 | 15 | 15 | 6 | 1 | 27 | 114 | 92 | 14 | 8 |
 | Source notes, file numbers | 0 | 8 | 34 | 32 | 77 | 59 | 38 | 0 | 0 | 0 | 0 |
 | Source notes, "Source:" | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 114 | 93 | 14 | 9 |
-| Classification markings | 0 | 0 | 0 | 0 | 3 | 41 | 35 | 111 | 87 | 13 | 5 |
+| Classification markings | 0 | 0 | 0 | 0 | 3 | 40 | 38 | 110 | 89 | 13 | 9 |
 | Excisions marked | 0 | 0 | 0 | 0 | 0 | 2 | 5 | 89 | 91 | 14 | 7 |
 | Despatch numbers | 55 | 18 | 13 | 25 | 33 | 1 | 2 | 0 | 0 | 0 | 0 |
 | Numbered in print | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 113 | 93 | 14 | 9 |
@@ -120,6 +130,8 @@ Volumes carrying each category, out of the volumes in each era (`tables.out` §4
 
 The file-number row's first cell is 1 in `tables.out`: `frus1870`, whose "source notes" are despatch numbers (§2.1).
 
+The classification row counts what the index stores. §3.3's gap is what holds four volumes for 1955–68, two for 1969–80 and one for 1981–92 under half. Counted with it, those cells read 114, 91 and 14 (`tables.out` §12).
+
 **Read as four generations:**
 
 1. **1861–1906, the annual "Papers Relating…".**
@@ -134,13 +146,13 @@ The file-number row's first cell is 1 in `tables.out`: `frus1870`, whose "source
    - Prefaces appear (42 of 77 for 1932–44), and the List of Papers fades (28 of 77).
    - Lists of Persons appear only in special volumes: the WWI supplements and the Russia volumes (12 of 35 for 1914–19), and 6 of 77 for 1932–44.
 3. **1945–1954.**
-   - **From 1945:** abbreviations are listed and linked (41 of 59). Classification markings are printed above the dateline (41 of 59), and editorial notes appear (43 of 59).
+   - **From 1945:** abbreviations are listed and linked (41 of 59). Classification markings are printed above the dateline (40 of 59), and editorial notes appear (43 of 59).
    - **From 1951:** Lists of Persons (28 of 38), the Note on Sources (29), Subject lines (26), participant lists (27) and references to documents (22).
    - **What stays:** source notes keep the file-number form, documents stay unnumbered, and page references remain (38 of 38).
 4. **1955 on, the modern format.**
    - **New:**
      - Documents are numbered in print (113 of 114 for 1955–68, all after).
-     - Source notes become "Source:" citations that carry the classification (all).
+     - Source notes become "Source:" citations (all), which carry the classification (§2.4 has the exceptions).
      - Excisions are marked (89 of 114; 91 of 93; 14 of 14).
    - **Fading:**
      - Page references (8 of 93 for 1969–80).
@@ -166,7 +178,10 @@ Of the 230 volumes covering 1955 on, retrospectives included (`tables.out` §6):
 - **Abbreviations:** missing in `frus1955-57v03mSupp`, `frus1977-80v27`, and `frus1981-88v16`. The last names abbreviations in its document-level `@ana`, which the app reads for people only.
 - **Numbered in print:** missing only in `frus1958-60v05mSupp`.
 - **Cross-references to documents:** missing in the three microfiche supplements and `frus1969-76v42`.
-- **Classification:** missing in 14 volumes, the four Public Diplomacy volumes among them.
+- **Classification:** under half the rows store a marking in 9 volumes.
+  - **Seven print one** in at least half their documents (50% to 96%), in a note sentence the parser does not read (§3.3): the three microfiche supplements, `frus1964-68v07`, `frus1969-76v29`, `frus1969-76v38p1` and `frus1989-92v31`.
+  - **Two print few:** `frus1969-76v01` (40 of 123 rows, counting the gap's) and `frus1977-80v01` (74 of 163).
+  - **The word search listed 14,** the four Public Diplomacy volumes among them. It had no word for "No classification marking", which half of PubDip Vol. VI's stored markings read.
 - **Abbreviation lists before 1945:** four volumes, `frus1941-43`, `frus1943`, `frus1943CairoTehran` and `frus1944Quebec`.
 
 ### 2.5 Layers that need no label
@@ -186,7 +201,7 @@ Machine-derived layers stay out too: the Topic Index's string-matched subjects, 
 | People tagged | The People browser, Person analytics, name links in the reader, related documents by shared people |
 | Abbreviations | Term definitions in the reader (`gloss` → `glossLookup`), the `terms` table |
 | Source notes | Source Explorer, the Archives axis, archival facets (`document_sources`) |
-| Classification | `ClassificationChip` in search results and Source Explorer: **the "Source:" form only** (§3) |
+| Classification | `ClassificationChip`: in the reader beside the source note, for the note's marking; in Search's rows and Source Explorer for either form, the opener's since index version 72 (#1853, §3.1). The reader prints the opener's marking as the volume does |
 | Despatch numbers | `document_cache.despatch_serial` (#965, index v45) |
 | Numbered documents | `document_number` is HSG's `@n` for every document (index v10); nothing records whether the volume printed it |
 | Cross-references | The cross-reference graph, page links, whole-volume links |
@@ -197,7 +212,9 @@ Machine-derived layers stay out too: the Topic Index's string-matched subjects, 
 | Subject lines, participant lists | **Not read.** `ListType` knows `ordered`, `unordered` and `simple`, so both render as plain lists |
 | Excisions | **Not read** as a category |
 
-## 3. A gap found on the way: classification printed in the opener
+## 3. Gaps found on the way: classification the index did not store
+
+### 3.1 The opener's marking, closed by #1853
 
 The marking moved. Volumes covering 1932–1954 print it above the dateline:
 
@@ -205,18 +222,54 @@ The marking moved. Volumes covering 1932–1954 print it above the dateline:
 <opener><seg rendition="#left"><hi rend="smallcaps">secret</hi></seg>…
 ```
 
-From the 1955–57 subseries on, it is inside the "Source:" note instead. The index reads only the second form (`tables.out` §7):
+From the 1955–57 subseries on, it is a sentence of the "Source:" note instead, and until index version 72 the index read only that form. This survey found the gap, and a lane of its own closed it.
+- **#1853** (`dcf178ed`) reads the opener's marking and stores it where the note prints none.
+- **Where it shows:** Search's rows and Source Explorer. The reader prints the marking as the volume does.
+
+Documents with a marking, by era (`tables.out` §7):
 
 | | 1932–44 | 1945–50 | 1951–54 | 1955–68 | 1969–80 | 1981–92 | retro |
 |---|---|---|---|---|---|---|---|
-| marking printed | 1,157 | 21,640 | 16,146 | 37,555 | 23,222 | 3,824 | 1,741 |
-| stored by the index | 0 | 0 | 0 | 34,558 | 22,068 | 3,603 | 1,865 |
+| stored at version 71 | 0 | 0 | 0 | 34,558 | 22,068 | 3,603 | 1,865 |
+| **stored at version 72** | 1,117 | 22,786 | 19,260 | 34,558 | 22,068 | 3,603 | 1,865 |
+| this survey's word search | 1,157 | 21,640 | 16,146 | 37,555 | 23,222 | 3,824 | 1,741 |
 
-So **38,943 documents covering 1932–1954 print a classification, and none show a chip.** In 79 of those volumes, at least half the documents print one.
+- **The gain:** the 174 regular volumes covering 1932–1954 went from no stored marking to 43,163, and 81 of them now have one in at least half their rows. Three volumes for 1919 gained 8 more.
+- **What #1853 leaves unstored**, by its own count:
+  - 107 marked documents the TEI wraps as editorial notes (#1854);
+  - 18 whose only typed source note is a footnote on a lot designation;
+  - 10 with no source note;
+  - 83 whose marking is an enclosure's.
 
-This is not part of this design. The fix is a source-reader change and an index bump. It is a lane of its own, opened 2026-11-06: "Read classification markings printed in openers (1932–54)". Two consequences for this design:
-- §4's generator counts classification by that lane's reader once it lands.
-- Until then, the label must not imply the app shows a chip for these volumes (§5.4).
+### 3.2 The word search this design first counted with
+
+It found 38,943 marked documents in those 174 volumes, where the index now stores 43,163. It made two errors:
+- **Vocabulary.** 7,201 documents store a value it had no word for (`tables.out` §7). The commonest are "No classification marking" (4,793), "Restricted" (1,288) and "Official Use Only" (674), and their compounds. That is how it listed the four Public Diplomacy volumes as unmarked.
+- **Tokenizing.** It read text with `itertext()`, which glues the lines of an `<lb/>` nested in `<hi>` into one word ("secretpriority"). #1853 counts 2,841 markings printed that way.
+
+### 3.3 A second gap, in the note form the app always read
+
+The note's parser, `SourceNoteParser.classificationMarking(fromSourceNote:)`, takes the marking from the note's second sentence. A sentence ends at any `.` followed by a space and a capital. So **8,865 notes in 218 volumes, all from 1955 on, print a marking the index does not store** (`tables.out` §12):
+
+| Notes | Why the parser misses the marking | For example |
+|---:|---|---|
+| 4,679 | another abbreviation's period moves it out of second place | "…Lot 61 D 167, Iran, U.S. Policy Towards (NSC 5504). Top Secret." |
+| 2,216 | a volume or part number's period does | "…Country Files, Far East, China, Vol. I. Secret. Sent for action." |
+| 1,970 | it is second, but a remark that opens with a digit joins its sentence, and the parser refuses digits | "…China. Secret; Sensitive; Eyes Only. 1 page of source text not declassified." |
+
+- **How it was counted.** `note_marking_gap.py` replicates the parser.
+  - The replica reproduces all 62,094 markings the index stores from notes.
+  - It then reads every later sentence, and a sentence's head before a digit-led remark, through the parser's own gates.
+  - Twenty notes drawn at random from the 8,865 all print a real marking.
+- **Where it falls.**
+  - China, 1969–1972, prints a marking in at least 260 of its 280 documents and stores 182.
+  - The three microfiche supplements print one in at least 553, 418 and 703 documents, and store 33, 10 and 19.
+- **The fix** belongs to `classificationMarking(fromSourceNote:)` alone. The boundary regex it uses also splits the citation sentence, which keys `collection-authority.json`, so the regex must not move. The fix is an index bump, as #1853 was. Decision 7 asks whether to file it.
+
+### 3.4 What this means for the design
+
+- §4's generator counts what the index stores, through the index's own extractors, so a label and the chips agree. A fix to either gap raises both, and regenerates the artifact.
+- Until §3.3's gap is fixed, a label undercounts in the 218 volumes it touches (§5.4).
 
 ## 4. The data: `volume-annotations-index.json`
 
@@ -235,7 +288,7 @@ This is not part of this design. The fix is a source-reader change and an index 
       "lists": { "persons": 325, "terms": 470 },
       "counts": { "people": 279, "abbreviations": 278, "correspondents": 161,
                   "subjects": 137, "participants": 67,
-                  "sourceCitation": 263, "sourceFileNumber": 5, "classification": 245,
+                  "sourceCitation": 263, "sourceFileNumber": 5, "classification": 182,
                   "excisions": 31, "despatch": 0, "numbered": 280,
                   "xrefDocuments": 131, "xrefFootnotes": 65, "xrefVolumes": 89, "xrefPages": 0,
                   "editorialNotes": 12, "footnotes": 243, "marginalNotes": 0 },
@@ -257,7 +310,10 @@ The columnar form is recommended.
 - **Abbreviations:** a `gloss` link that resolves into the volume's List of Abbreviations.
 - **Source notes:** a `note[@type="source"]`, unless the despatch grammar reads its whole text as a despatch number. That rule is what keeps `frus1870` out.
   - **The form:** "Source:" when the note opens with that word, otherwise the file-number form. The TEI pass split them by `@rend="inline"`; the lane checks that the two rules agree.
-- **Classification:** once §3's lane lands, what its reader stores. Until then, the source-note marking alone.
+- **Classification:** a document the index stores a marking for, since version 72. Into the document's `document_sources` row, the index writes the source note's marking (`SourceNoteParser.classificationMarking(fromSourceNote:)`) or, where the note prints none, the opener's (`IndexingPipeline.extractOpenerClassification(from:)` over the parser's nodes, through `SourceNoteParser.classificationMarking(fromOpenerLines:)`).
+  - **What that leaves out:** a document with no source note has no row, so stores none. Nor does one the TEI wraps as an editorial note, whose nodes the extractors do not enter (#1854). §3.1 lists the four groups #1853 leaves unstored. The generator calls the same extractors on the same nodes, so it leaves out the same documents.
+  - **Lane A makes two kit functions public.** `IndexingPipeline.extractSourceNote(from:)` and `extractOpenerClassification(from:)` are internal to FRUSCoreKit, and the generator is a package target outside it. The two `SourceNoteParser` functions are public already.
+  - **Never a copy of the rule.** The word search this design first counted with missed thousands of the markings the app shows (§3.2).
 - **Numbered in print:** the heading opens with the document's number. This is the same test `index_extract.py` applies to the stored heading.
 - **Sections:** `FRUSDocumentParser.structuralKind`.
 
@@ -267,6 +323,7 @@ The columnar form is recommended.
 - A re-run at a pinned commit and `GENERATED_DATE` is byte-identical.
 - It refuses to write on a manifest volume missing from `VOLUMES_DIR`, or on a corpus where no volume carries people tagging.
 - The run is one parse of each volume. The Python pass that measured this design took 51 seconds.
+- It calls the index's own extractors, so an index bump that changes one of them regenerates it, as every bump regenerates `cited-page-map.json`.
 - It joins Tier 1 of `New-Volume-Release-Plan.md` §3, which becomes 19 artifacts and 13 runs.
 
 **In the code:**
@@ -279,12 +336,12 @@ The columnar form is recommended.
 |---|---|
 | Source notes | 1914–19 (first carried in 1907) |
 | Abbreviations, Note on Sources | 1951–54 |
-| Classification | 1951–54 (69% for 1945–50) |
+| Classification | 1951–54 (68% for 1945–50) |
 | Editorial notes | 1951–54 (82% and 79% in the last two bands) |
 | People | 1955–68 (28 of 38 for 1951–54 is 74%, just under the line) |
 | Numbering, "Source:" notes, document references, excisions | 1955–68 |
 
-The tighter rule, every later *subseries* at 90%, lands classification on 1981–88 and editorial notes on 1989–92, because of a handful of exceptions. That is why the rule works by band.
+The tighter rule, every later *subseries* at 90%, lands editorial notes on 1989–92 because of a handful of exceptions. It finds no onset for classification at all: the last subseries, 1989–92, is one volume, which §3.3's gap holds under half. Counted with that gap, classification's onset is the 1950 subseries (`tables.out` §12). That is why the rule works by band.
 
 ## 5. On each volume's page: "Editors' Annotations"
 
@@ -313,7 +370,7 @@ Three groups, each row a symbol, a label and one line of counts. The symbols are
 | | Subject lines | `text.alignleft` | 137 documents |
 | | Meeting participants | `person.3` | 67 documents list who attended |
 | Where it came from | Source notes | `archivebox` | 268 documents · archival citations ("Source: …"), *or* · file numbers above the heading |
-| | Classification markings | `lock` | 245 documents |
+| | Classification markings | `lock` | 182 documents |
 | | Excisions marked | `eye.slash` | 31 documents with text not declassified |
 | | Despatch numbers | `number.circle` | 347 documents |
 | How it connects | Numbered documents | `number` | Documents 1–280 |
@@ -341,7 +398,7 @@ WHO IS NAMED
   Meeting participants     67 documents list who attended
 WHERE IT CAME FROM
   Source notes             268 documents · archival citations (“Source: …”)
-  Classification markings  245 documents
+  Classification markings  182 documents
   Excisions marked         31 documents with text not declassified
 HOW IT CONNECTS
   Numbered documents       Documents 1–280
@@ -360,7 +417,7 @@ WHO IS NAMED
   Subject lines            130 documents · Meeting participants 81
 WHERE IT CAME FROM
   Source notes             759 documents · file numbers above the heading
-  Classification markings  591 documents
+  Classification markings  736 documents
 HOW IT CONNECTS
   Cross-references         60 cite this volume’s documents · 91 cite other volumes ·
                            226 cite printed pages
@@ -392,8 +449,9 @@ HOW IT CONNECTS
 - **VoiceOver:** each row is one element. It reads "People tagged: 279 of 280 documents; 325 people listed." An absent row reads "Not in this volume: people tagged. Standard in the volumes covering 1955 on." The group headers are headers.
 - **Dynamic Type:** rows wrap and never truncate.
 - **The rows describe the volume, never the app.**
-  - "Classification markings 591 documents" says what the editors printed in vol. XIII.
-  - It does not promise a chip, which §3's lane has yet to deliver. The category page says what the app does with each layer.
+  - "Classification markings 736 documents" says what the editors printed in vol. XIII.
+  - Where the app reads less than the print, the count is the app's, so a row never claims a marking the app cannot show. China's row reads 182, though at least 260 of its documents print one, until §3.3's gap is fixed.
+  - It promises nothing about the app. Since #1853 a marked document in vol. XIII does show a chip, in Search's rows and Source Explorer, but the category page is where the app's use of each layer is said.
 - **Copy:**
   - Every new string is `String(localized:)` and brings its EditableContent block (`07-Search-and-Browse.md`), with a line in `Amendment-Log.md`.
   - The category explanations are owner-editable prose.
@@ -450,7 +508,7 @@ It follows #1051's axis pattern:
 
 | Lane | What | Depends on | Gates |
 |---|---|---|---|
-| **A. Data** | The kit's `VolumeAnnotations`; the generator, its tests and the artifact; the provenance row; `VolumeAnnotationsStore`; the runbook, `CLAUDE.md` and release-plan rows; `xcodegen` for the new resource, then the scheme restore | — | `swift build --target FRUSCoreKit`, `swift test`, the unit target, the Mac build. No index bump, no CloudKit change |
+| **A. Data** | The kit's `VolumeAnnotations`; `IndexingPipeline.extractSourceNote(from:)` and `extractOpenerClassification(from:)` made public (§4); the generator, its tests and the artifact; the provenance row; `VolumeAnnotationsStore`; the runbook, `CLAUDE.md` and release-plan rows; `xcodegen` for the new resource, then the scheme restore | — | `swift build --target FRUSCoreKit`, `swift test`, the unit target, the Mac build. No index bump, no CloudKit change |
 | **B. Volume page** | `VolumeAnnotationsSection` on both platforms; copy and EditableContent; both manuals | A | iPhone 17 and iPad Pro 13-inch (M5) UI runs, `OS=27.0`; the Mac in the check copy; VoiceOver labels; AX5 |
 | **C. Browse axis** | `AnnotationsAxis`, the tile, the sidebar item, the category page, the drills | A | The same devices. C touches `MacCorpusBrowserWindow.swift`, as B does, so B and C run one after the other, not side by side |
 | **D. Matrix and links** | The regular-width matrix; the People browser and Person analytics captions; the guide's sentence | B, C | The same |
@@ -462,9 +520,11 @@ It follows #1051's axis pattern:
 - `frus1969-76v17`;
 - `frus1932v04`, a borrower, with its sibling's list;
 - `frus1981-88v16`, with `@ana`;
-- `frus1870`, with despatch numbers as source notes.
+- `frus1870`, with despatch numbers as source notes;
+- `frus1917-72PubDipv06`, whose notes record "No classification marking";
+- a document whose opener nests an `<lb/>` inside `<hi>` (#1853's `OpenerClassificationTests` names them), and one from `frus1941-43` that the TEI wraps as an editorial note (#1854).
 
-For each fixture, the generator's people, abbreviation, source-note and numbering counts must equal what `IndexingPipeline` stores for the same file. Package tests can run the pipeline (`IndexingTestSupport.swift`). A label that disagrees with the People browser is the failure this suite exists to catch.
+For each fixture, the generator's people, abbreviation, source-note, classification and numbering counts must equal what `IndexingPipeline` stores for the same file. Package tests can run the pipeline (`IndexingTestSupport.swift`). A label that disagrees with the People browser is the failure this suite exists to catch.
 
 ## 9. Decisions for the owner
 
@@ -478,12 +538,14 @@ For each fixture, the generator's people, abbreviation, source-note and numberin
    - `frus1870`: despatch numbers encoded as `note[@type="source"]`.
 
    These are corpus facts. The labels state them faithfully whether or not upstream changes.
+7. **The note parser's gap (§3.3):** 8,865 markings the notes print are not stored, so their chips are missing, and so would this design's counts be. *Recommended:* file it now, as an index-bump lane like #1853. Lane A need not wait: the generator calls the same parser, so the artifact is regenerated whenever the fix lands.
 
 ## 10. Files
 
 `Planning/editors-annotations/`:
 - `inventory.py` and its output `inventory.json`, the TEI pass;
-- `index_extract.py` and `index-extract.json`, the index copy's figures;
+- `index_extract.py`, with `index-extract.json`, the figures of the app's index at 71, and `index-extract-v72.json`, those of a full index at 72, which classification is counted from;
+- `note_marking_gap.py` and `note-marking-gap.json`, the notes' markings the index does not store (§3.3);
 - `tables.py` and `tables.out`, every figure above;
 - `editorial-annotations-by-volume.csv`, one row per volume;
 - `README.md`, the inputs, commands, definitions and limits.
