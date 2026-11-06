@@ -352,10 +352,10 @@ struct MacSourceExplorerView: View {
                             .foregroundStyle(.secondary)
                             .textSelection(.enabled)
                             .fixedSize(horizontal: false, vertical: true)
-                        // Phase 5: the S1 classification markings (sentence 2 of the
-                        // note when it matches the marking vocabulary), as a quiet chip; where
-                        // the note prints none, the marking the index stores, which since index
-                        // version 72 is the one a 1932–1954 document prints in its opener.
+                        // Phase 5: the S1 classification markings (the note's first sentence
+                        // after the citation that passes the marking gates), as a quiet chip;
+                        // where the note prints none, the marking the index stores, which since
+                        // index version 72 is the one a 1932–1954 document prints in its opener.
                         // Mirrors the iOS twin.
                         if hasSourceNote,
                            let marking = IndexingPipeline.classificationMarking(

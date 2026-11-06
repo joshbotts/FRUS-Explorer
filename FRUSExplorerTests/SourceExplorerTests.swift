@@ -830,7 +830,10 @@ struct SourceNoteExtractionTests {
 /// Verifies `SourceNoteParser.classificationMarking(fromSourceNote:)` — the S1
 /// sentence-2 split (frus-sources sentence model): sentence 1 = archival citation,
 /// sentence 2 = classification markings, remainder = remarks. The extractor must be
-/// conservative: nil rather than junk when sentence 2 is not markings.
+/// conservative: nil rather than junk when sentence 2 is not markings. Since #1856 (index
+/// version 73) it also offers its gates the sentences after sentence 2, where a stop inside
+/// the citation or a digit-led remark moved the marking; every note here reads as before, and
+/// `SourceNoteKitTests`' `ClassificationMarkingReachTests` pins how far the reading reaches.
 @Suite("ClassificationMarkingTests")
 struct ClassificationMarkingTests {
 

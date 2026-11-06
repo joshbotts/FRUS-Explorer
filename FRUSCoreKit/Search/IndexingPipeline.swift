@@ -517,6 +517,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         source note prints none (see the v72 note); a search row carries the stored value
 ///         (`IndexedSearchRow.classification`), and `storedClassification(volumeId:documentId:)` reads
 ///         it for one document, for Source Explorer
+///  4.54 — 2026-11-06 (#1856): `currentDateIndexVersion` → 73 — `document_sources.classification`
+///         holds the marking a source note prints past its sentence 2, behind a stop inside the
+///         citation or before a remark that opens with a digit (`SourceNoteParser.classificationMarking(fromSourceNote:)`,
+///         see the v73 note)
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1570,7 +1574,28 @@ public actor IndexingPipeline {
     ///   notes the index does not read as a source note, and 28 with no note it reads as theirs.
     ///   Search rows and Source Explorer show the stored value where the note prints none. Without
     ///   the bump an installed index keeps the 1932–1954 documents unmarked.
-    public static let currentDateIndexVersion: Int = 72
+    /// - v72→73 — the marking a source note prints past its sentence 2 (#1856). The note's marking
+    ///   was read from its sentence 2 alone, as `[.!?]\s+(?=[A-Z\[“"])` splits it, and that split
+    ///   has no abbreviation model: a stop inside the citation (an abbreviation, an initial, `U.S.`,
+    ///   a citation ending on `Vol. I.`) moved the marking to a later sentence, and a remark that
+    ///   opens with a digit joined the marking's sentence ("Eyes Only. 1 page of source text not
+    ///   declassified."), which the no-digit gate refused. A re-index stores the first sentence
+    ///   after the first that passes the same gates, each offered as far as its first stop before a
+    ///   digit (`SourceNoteParser.classificationMarking(fromSourceNote:)`); the split itself, which
+    ///   also keys `collection-authority.json` through `citationSentence(of:)`, is unchanged. No
+    ///   value stored before moves: sentence 2 is offered first, and no note newly read belongs to
+    ///   a document whose opener's marking 72 stored. Measured on two full indexes of the 553
+    ///   catalogue volumes at corpus `6170e4b32`, at 72 and at 73: 8,865 rows go from `NULL` to a
+    ///   marking, in 218 volumes, and nothing else in the table moves; 105,265 rows carry one at
+    ///   72 and 114,130 at 73. The volumes from 1955 on gain the most: those covering 1955–1968 go
+    ///   from 34,558 to 39,200, those from 1969 on from 25,671 to 29,648, and the three microfiche
+    ///   supplements whose abstracts print "Secret. 2 pp." (`frus1958-60v03mSupp`,
+    ///   `frus1961-63v07-09mSupp`, `frus1961-63v10-12mSupp`) from 62 to 1,674. The chips follow the
+    ///   reading at once, since every surface that shows one re-parses the note
+    ///   (``classificationMarking(sourceNote:stored:)``); the stored column, which the research
+    ///   database export carries, follows only with the bump, so without it an installed index
+    ///   keeps `NULL` for these documents.
+    public static let currentDateIndexVersion: Int = 73
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -6523,10 +6548,13 @@ public actor IndexingPipeline {
             )
             // S1 (Source Explorer Phase 1): sentence 2 of the note is classification
             // markings when it matches the marking vocabulary; conservative — nil
-            // rather than junk. Index version 72: where the note prints none, the marking the
-            // document prints in its opener, which is where the volumes covering 1932–1954 print
-            // it. No document prints one in both places (measured over the 553 manifest volumes
-            // at corpus `6170e4b32`); the note's comes first, so no value stored before 72 moves.
+            // rather than junk. Index version 73 (#1856): or the first later sentence that passes
+            // the same gates, where a stop inside the citation or a digit-led remark kept the
+            // marking out of sentence 2. Index version 72: where the note prints none, the marking
+            // the document prints in its opener, which is where the volumes covering 1932–1954
+            // print it. No document prints one in both places, at 72 or at 73 (measured over the
+            // 553 manifest volumes at corpus `6170e4b32`); the note's comes first, so no value
+            // stored before 72 moves.
             // A document with no source note has no row, and its opener's marking is not stored:
             // a row here counts as provenance.
             sourceRow.classification = SourceNoteParser.classificationMarking(fromSourceNote: raw)
@@ -13382,7 +13410,9 @@ public actor IndexingPipeline {
     /// same function the index stores it by, so a document whose note prints a marking shows what it did.
     /// The stored value answers where the note prints none: since 72, the marking the document prints in
     /// its opener, which the volumes covering 1932–1954 use and the note cannot show. No document prints
-    /// one in both places, so the two never disagree in the corpus as published.
+    /// one in both places, so the two never disagree in the corpus as published; that held again when
+    /// the note's reading came to read past sentence 2 (#1856, index version 73). Because the note is
+    /// read here, a surface shows a marking the reading newly finds before the index is rebuilt.
     ///
     /// - Parameters:
     ///   - sourceNote: The document's source note as the surface holds it, or `nil`.
@@ -14039,9 +14069,11 @@ private struct DocumentSourceRow: Sendable {
     let seriesName: String?
     let citationEra: String
     let rawText: String
-    /// Classification markings from sentence 2 of the source note (frus-sources sentence
-    /// model), e.g. `"Secret; Nodis"`. `nil` when the second sentence does not look like
-    /// markings (Source Explorer Phase 1; store-only, no UI yet).
+    /// Classification markings the source note prints (frus-sources sentence model), e.g.
+    /// `"Secret; Nodis"`: its first sentence after the citation that passes the marking gates
+    /// (`SourceNoteParser.classificationMarking(fromSourceNote:)`, which reads past sentence 2
+    /// since index version 73), else, since 72, the marking the document prints in its opener.
+    /// `nil` when neither gives one.
     var classification: String? = nil
     /// Canonical compact lot key (`SourceNoteParser.lotFileNorm`, e.g. `"64D199"`),
     /// set for lot-bearing rows only (Source Explorer Phase 2; the Phase 3 matcher
