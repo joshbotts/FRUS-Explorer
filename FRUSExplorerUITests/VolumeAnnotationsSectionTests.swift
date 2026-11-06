@@ -109,6 +109,15 @@ final class VolumeAnnotationsSectionTests: XCTestCase {
         app.descendants(matching: .any)[identifier].firstMatch
     }
 
+    /// Keeps a screenshot of the page in the result bundle, for a reader to check the rows by eye: a
+    /// run reads their labels and frames, not whether their symbols line up or their text wraps well.
+    private func keepScreenshot(named name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+
     /// Swipes up until `element` is present and hittable. A SwiftUI `List` is lazy, so a row below
     /// the fold is absent from the accessibility tree, not merely invisible.
     private func scrollUntilHittable(_ element: XCUIElement, attempts: Int) {
@@ -130,6 +139,7 @@ final class VolumeAnnotationsSectionTests: XCTestCase {
         XCTAssertTrue(people.exists, "The section has no People row.")
         XCTAssertEqual(people.label, Self.peopleSpoken,
                        "VoiceOver must read the People row as one sentence with the bundled counts.")
+        keepScreenshot(named: "Editors’ Annotations")
 
         for group in ["named", "provenance", "connects"] {
             let heading = element("volume.annotations.group.\(group)")
@@ -162,5 +172,6 @@ final class VolumeAnnotationsSectionTests: XCTestCase {
             At AX5 the People row runs past the window's right edge (row \(row), window \(window)): its \
             text must wrap, not overflow.
             """)
+        keepScreenshot(named: "Editors’ Annotations at AX5")
     }
 }
