@@ -34,8 +34,9 @@ struct VolumeAnnotationsSection: View {
     enum Host {
         /// A `Section` of a `List`.
         case list
-        /// A height-bounded block in a column that does not scroll.
-        case column
+        /// A height-bounded block in a column that does not scroll. `room` is the column's height
+        /// below the blocks above this one, which the block shares with what follows it.
+        case column(room: CGFloat)
     }
 
     /// The volume whose annotations are shown.
@@ -54,8 +55,8 @@ struct VolumeAnnotationsSection: View {
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityIdentifier("volume.annotations.header")
                 }
-            case .column:
-                BoundedVolumeAnnotationsBlock(presentation: presentation)
+            case .column(let room):
+                BoundedVolumeAnnotationsBlock(presentation: presentation, room: room)
             }
         }
     }
@@ -154,15 +155,19 @@ struct VolumeAnnotationsRowView: View {
 /// volume's structure out of the Mac's `CorpusVolumeDetailView`.
 ///
 /// Open, the rows hug a short section and scroll inside a tall one, as `BoundedSubjectsBlock`'s
-/// chips do, but their height is not fixed: it may fall from the cap to a floor of about two rows.
-/// The column's `VStack` gives its fixed blocks their height first and then shares what is left
-/// between its flexible children, these rows and the structure list, so in a short window the two
-/// split the room below Top subjects, and in a tall one the rows reach their cap. A fixed cap of 200
-/// left the structure no room at all in the 440 pt minimum window: measured in the check copy on
-/// 2026-11-06, Front Matter and Contents fell below the window's edge.
+/// chips do, but their cap is not fixed: they take at most half the room the column has below Top
+/// subjects, less the block's own title and padding, so the structure keeps the other half; never
+/// more than 200 pt, and never less than about two rows. The host measures that room and passes it
+/// in. A fixed cap of 200 left the structure no room in the 440 pt minimum window: measured in the
+/// check copy on 2026-11-06, Front Matter and Contents fell below the window's edge. Nor could the
+/// column's `VStack` share the room by itself: given a flexible height, the rows still took their
+/// full 200 inside the Mac's `DisclosureGroup`, which lays its content out at its ideal size.
 struct BoundedVolumeAnnotationsBlock: View {
     /// What the rows say.
     let presentation: VolumeAnnotationsPresentation
+
+    /// The column's height below the blocks above this one, shared with the volume's structure.
+    let room: CGFloat
 
     /// Whether the reader has opened the section; it stays open for the next volume.
     @AppStorage("frus.browser.volumeAnnotations.expanded") private var isExpanded = false
@@ -174,11 +179,17 @@ struct BoundedVolumeAnnotationsBlock: View {
     /// shows what it holds and scrolls to the rest.
     @ScaledMetric(relativeTo: .body) private var minHeight: CGFloat = 64
 
+    /// The block's own title, the disclosure's spacing and the padding, which the room pays for too.
+    @ScaledMetric(relativeTo: .headline) private var chromeHeight: CGFloat = 40
+
     /// The rows' natural height at the current column width, measured live.
     @State private var naturalHeight: CGFloat = 0
 
-    /// The height the rows were given, measured live, so that they scroll only when they need to.
-    @State private var shownHeight: CGFloat = 0
+    /// The most the open rows may take: half the room, less the block's chrome, within the floor and
+    /// the cap.
+    private var rowsCap: CGFloat {
+        min(maxHeight, max(minHeight, room / 2 - chromeHeight))
+    }
 
     var body: some View {
         DisclosureGroup(isExpanded: $isExpanded) {
@@ -189,11 +200,10 @@ struct BoundedVolumeAnnotationsBlock: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { naturalHeight = $0 }
             }
-            // Hug a short section; give a tall one what the column can spare, between the floor and
-            // the cap, and let it scroll. Both bounds start at 0 before the first measurement.
-            .frame(minHeight: min(naturalHeight, minHeight), maxHeight: min(naturalHeight, maxHeight))
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { shownHeight = $0 }
-            .scrollDisabled(naturalHeight <= shownHeight + 0.5)
+            // Hug a short section (height == natural), cap a tall one (scrolls internally). Starts at
+            // 0 before the first measurement, as `BoundedSubjectsBlock` does.
+            .frame(height: min(naturalHeight, rowsCap))
+            .scrollDisabled(naturalHeight <= rowsCap)
         } label: {
             Text(VolumeAnnotationsPresentation.title)
                 .font(.headline)

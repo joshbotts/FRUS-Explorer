@@ -118,6 +118,23 @@ final class VolumeAnnotationsSectionTests: XCTestCase {
         add(shot)
     }
 
+    /// Drags the list up until `row`'s foot is just above the tab shell's banner, which a simulator
+    /// with no iCloud account always shows, so that a screenshot shows the end of the row's wrapped
+    /// text, and the whole row where it fits. At AX5 on an iPhone 17 the strip between the pinned
+    /// breadcrumb and the banner is about 190 pt, shorter than the row (2026-11-06). The drag holds
+    /// before it lifts, so that the list does not coast on (`CollectionEditorTitleTests.reveal`).
+    private func liftAboveTheBanner(_ row: XCUIElement) {
+        let banner = app.descendants(matching: .any).matching(identifier: "tabShell.syncBanner").firstMatch
+        guard banner.exists else { return }
+        let lift = row.frame.maxY - banner.frame.minY + 12
+        guard lift > 0 else { return }
+        // Frames are in the screen's coordinates, whose origin is the app element's.
+        let origin = app.coordinate(withNormalizedOffset: .zero)
+        let start = origin.withOffset(CGVector(dx: row.frame.midX, dy: banner.frame.minY - 10))
+        let end = origin.withOffset(CGVector(dx: row.frame.midX, dy: banner.frame.minY - 10 - lift))
+        start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.3)
+    }
+
     /// Swipes up until `element` is present and hittable. A SwiftUI `List` is lazy, so a row below
     /// the fold is absent from the accessibility tree, not merely invisible.
     private func scrollUntilHittable(_ element: XCUIElement, attempts: Int) {
@@ -172,6 +189,7 @@ final class VolumeAnnotationsSectionTests: XCTestCase {
             At AX5 the People row runs past the window's right edge (row \(row), window \(window)): its \
             text must wrap, not overflow.
             """)
+        liftAboveTheBanner(people)
         keepScreenshot(named: "Editors’ Annotations at AX5")
     }
 }
