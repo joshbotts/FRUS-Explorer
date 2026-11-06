@@ -65,6 +65,8 @@ import SwiftUI
 ///   2.9 — 2026-10-22: #1766 — when a page link opened this page, the "Download Required"
 ///          placeholder comes first and names the page the link was to (`AppState.followedPageLink`,
 ///          `FollowedPageLink.notice`)
+///   2.10 — 2026-11-06: the editors' annotations design, lane B — the "Editors’ Annotations"
+///          section (`VolumeAnnotationsSection`) right after the metadata header
 struct VolumeView: View {
 
     let vm: BrowserViewModel
@@ -102,6 +104,10 @@ struct VolumeView: View {
                         .documentCount(forVolumeId: volume.volumeId)
                 )
             }
+
+            // Editors’ Annotations: what the volume's editors annotated, from the bundled
+            // `volume-annotations-index.json`, so it renders before download too.
+            VolumeAnnotationsSection(volumeId: volume.volumeId, host: .list)
 
             // Tag chips
             let chips = vm.tagChips(for: volume)

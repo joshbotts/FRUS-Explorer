@@ -104,6 +104,7 @@ is the index, not the entry.
 | `SaveSearchSheetTests` (in `SearchWithinResultsTests.swift`) | iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0` | 1 test, 1 passed on each; never skips; fails on the code before the Save Search sheet's fix; its test must stay the launch's first Save this search; allow 600 s a test |
 | `SearchWithinTheWholeMatchTests` (in `SearchWithinResultsTests.swift`) | iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0` | 1 test, 1 passed on each; never skips; cuts the fixture at four rows (`FRUS_UI_TEST_SEARCH_CEILING`); fails on the code before #1577 lane 6; allow 600 s a test |
 | `MeaningStripFitTests` (in `MeaningResultsSeamTests.swift`) | iPhone 17 and iPhone SE (3rd generation), `OS=27.0` | 6 tests, 6 passed on each; iPhone-only, self-skips at iPad width; needs no search model (`FRUS_UI_TEST_SEED_MEANING`); fails when the tab shell's banner is not showing; on the code before #1721 it fails at every accessibility size (no ⓘ), with the bars off the screen at AX3 and AX5 on the iPhone 17 and from AX1 on the SE |
+| `VolumeAnnotationsSectionTests` | iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0` | 2 tests, 2 passed on each; never skips; each test keeps a screenshot of the section; the Mac's half is walked in the check copy |
 | `WordCloudLensTests`, `NaturalLanguageReadinessWarmUpTests` (unit target) | iPad Pro 13-inch (M5), `OS=27.0` | a guard only on iOS 27.0; a control elsewhere |
 
 Five rules hold for every UI run, and the runbook gives the measurement behind each:

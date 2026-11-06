@@ -1044,6 +1044,10 @@ private struct BoundedSubjectsBlock: View {
 ///          previous volume's structure under the new volume's header
 ///   1.8 — 2026-10-22: #1766 — the not-downloaded view names the page a page link was to when
 ///          the link opened this page (`AppState.followedPageLink`, `FollowedPageLink.notice`)
+///   1.9 — 2026-11-06: the editors' annotations design, lane B — "Editors’ Annotations" below Top
+///          subjects (`VolumeAnnotationsSection`, `.column`), collapsed until opened; the column
+///          measures its height and the title's and subjects' so that, open, the block shares the
+///          room below them with the phase content
 private struct CorpusVolumeDetailView: View {
     let volume: VolumeManifestEntry
     /// The window's detail-column path; opening a section pushes onto it.
@@ -1068,6 +1072,10 @@ private struct CorpusVolumeDetailView: View {
     /// to browse. Search / document text / connections still depend on the index.
     @State private var isVolumeIndexed = false
     @State private var isInterrupted = false
+    /// The column's height, and that of the title and Top subjects above Editors’ Annotations,
+    /// measured live: the annotations block shares what is left with the phase content.
+    @State private var columnHeight: CGFloat = 0
+    @State private var headerHeight: CGFloat = 0
     private let parser = FRUSDocumentParser()
 
     var body: some View {
@@ -1079,17 +1087,33 @@ private struct CorpusVolumeDetailView: View {
         // header's height so a paragraph-length title can't push the phase content
         // (structure list / download prompt) out of the non-scrolling column.
         VStack(alignment: .leading, spacing: 0) {
-            BoundedTitleHeader(title: volume.title)
-            Divider()
-            // Top subjects (Session 9): the volume's most characteristic subjects from the
-            // bundled aggregate. Placed above the phase content so it shows regardless of
-            // download/index state (the profiles are bundled, not index-derived).
-            if VolumeSubjectsChips.hasContent(forVolumeId: volume.volumeId) {
-                BoundedSubjectsBlock(volume: volume)
+            VStack(alignment: .leading, spacing: 0) {
+                BoundedTitleHeader(title: volume.title)
+                Divider()
+                // Top subjects (Session 9): the volume's most characteristic subjects from the
+                // bundled aggregate. Placed above the phase content so it shows regardless of
+                // download/index state (the profiles are bundled, not index-derived).
+                if VolumeSubjectsChips.hasContent(forVolumeId: volume.volumeId) {
+                    BoundedSubjectsBlock(volume: volume)
+                    Divider()
+                }
+            }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { headerHeight = $0 }
+            // Editors’ Annotations: bundled, so it shows in every phase, as Top subjects does;
+            // collapsed until opened, since this column does not scroll, and open, sharing the room
+            // below Top subjects with the phase content. Keyed to the volume, as the path element is
+            // replaced in place.
+            if VolumeAnnotationsPresentation.hasContent(forVolumeId: volume.volumeId) {
+                VolumeAnnotationsSection(volumeId: volume.volumeId,
+                                         host: .column(room: max(0, columnHeight - headerHeight)))
+                    .id(volume.volumeId)
                 Divider()
             }
             phaseContent
         }
+            // The whole column, whatever the phase, so that its measured height is the column's.
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { columnHeight = $0 }
             .navigationTitle(volume.title)
             // Keyed to the volume id: `consumePendingVolume` REPLACES the detail path's
             // `.volume` element in place (same structural position), so SwiftUI reuses

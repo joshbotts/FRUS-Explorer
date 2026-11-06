@@ -1109,3 +1109,19 @@ Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExp
   -only-testing FRUSExplorerUITests/MeaningStripFitTests \
   -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 ```
+
+**`VolumeAnnotationsSectionTests` (the editors' annotations design, lane B) runs on an iPhone and an iPad, and nothing skips on either.** It seeds `frus1961-63v06` (`FRUS_UI_TEST_SEED_VOLUME`, the volume `BrowseNestedSectionTests` seeds), launches on Browse with `-frus.filterDownloadedOnly YES`, and walks Subseries ▸ 1961–63 ▸ Kennedy-Khrushchev to the volume's page, where it requires:
+- `testTheSectionReadsTheVolumesAnnotations`: the "Editors’ Annotations" header; the People row read by VoiceOver as one sentence with the bundled file's counts, "People tagged: 120 of 120 documents; 58 people listed."; the three group headings; "Classification markings: 113 of 120 documents."; and no "Not in this volume" disclosure, since the volume carries every standard layer.
+- `testRowsWrapInsideTheWindowAtTheLargestTextSize`: at AX5, the same People row inside the window. A row is one accessibility element with its children hidden, so a run cannot read whether its text is cut: the view sets no line limit, and the frame is what a run can see.
+
+Each test keeps a screenshot of the section in the result bundle (`xcrun xcresulttool export attachments`), since no assertion reads whether the rows' symbols line up. At AX5 the list is first dragged until the People row's foot clears the banner: on an iPhone 17 the strip between the pinned breadcrumb and the banner is about 190 pt, shorter than the row, so that screenshot shows the end of the row's wrapped counts, and an iPad's shows the whole row. The Mac's half of the lane, a disclosure in the Corpus Browser's volume column, has no UI test; it was walked in the check copy.
+
+**The walk to the page** (iPhone 17, iOS 27.0, AX5, 2026-11-06). The tab shell's "Local Only" banner covers the lower 323 pt of the screen, and in one run it covered the Subseries tile; in another the tile was clear and the first tap was lost. So each of three tries brings the tile above the banner, taps it, and waits for the 1961–63 row. Leaving the root is not the test: an iPad keeps the root on screen beside the list, and a version that waited for the root to go failed both iPad tests.
+
+Measured on 2026-11-06 under iOS 27.0, each device alone under the heavy-job lock: at `c24f3599`, **iPhone 17 (`80CF0F18…`): 2 tests, 2 passed (20 and 37 s); iPad Pro 13-inch (M5) (`9AB3A0C9…`): 2 tests, 2 passed (19 and 18 s)**, the section's test first; at `43d4aa3d`, with the symbols in one column, the same (20 and 38 s; 22 and 18 s); and at `776b2634`, the lane's last code, **2 of 2 on each (25 and 38 s; 21 and 21 s)**. Not run against `v2`, which has no such section.
+```bash
+Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/VolumeAnnotationsSectionTests \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 -collect-test-diagnostics never
+```
