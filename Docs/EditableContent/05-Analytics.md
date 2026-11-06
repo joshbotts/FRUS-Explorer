@@ -738,7 +738,7 @@ Foreign Relations of the United States, published by the Office of the Historian
 
 #### Dated-documents population
 
-<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.personProvenance | lines: 535–536 | key: personAnalytics.export.caveat.dated | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.personProvenance | lines: 537–538 | key: personAnalytics.export.caveat.dated | shared: iOS+macOS (single edit point) -->
 
 Population: person mentions are counted in dated documents only. The Corpus Analytics charts fall back to the volume’s start year for undated documents; these charts do not. Counts from the two views are therefore not directly comparable.
 
@@ -746,7 +746,7 @@ Population: person mentions are counted in dated documents only. The Corpus Anal
 
 #### Identity grouping
 
-<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.personProvenance | lines: 537–538 | key: personAnalytics.export.caveat.identity | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.personProvenance | lines: 539–540 | key: personAnalytics.export.caveat.identity | shared: iOS+macOS (single edit point) -->
 
 Identity: mentions are grouped by the app’s person authority, so spelling variants and name forms for one individual merge into a single identity. The person id column is that grouped identity.
 
@@ -754,7 +754,7 @@ Identity: mentions are grouped by the app’s person authority, so spelling vari
 
 #### Decade shares (By Decade in % mode only)
 
-<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.decadeShareCaveat | lines: 557–558 | key: personAnalytics.export.caveat.decadeShare | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.decadeShareCaveat | lines: 559–560 | key: personAnalytics.export.caveat.decadeShare | shared: iOS+macOS (single edit point) -->
 
 Decade shares: the share plotted for a decade is the average of the yearly shares for the years this person was tagged. Years with no tags are dropped from that average rather than counted as zero. The “Dated documents in period” column, by contrast, sums every year of the decade. So dividing this file’s columns gives the decade’s own share, which can be far lower than the plotted value. Someone tagged in one year of a decade plots that single year’s share for the whole decade. Use the columns for the decade’s share and the plotted value for the average across the tagged years. They answer different questions.
 
@@ -1959,7 +1959,7 @@ The search index is not available. Index at least one volume to build the citati
 <!-- END SOURCE: crossRefAnalytics.unavailable.detail -->
 
 #### Tooltip — Plot raw mention counts, or each person’s share of all…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.comparisonControls | lines: 894–895 | key: personAnalytics.normalize.help -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.comparisonControls | lines: 924–925 | key: personAnalytics.normalize.help -->
 
 Plot raw tagged mention counts, or each person’s share of all dated documents in that period — so a growing corpus doesn’t masquerade as a rising person.
 
@@ -1975,49 +1975,49 @@ Top people by tagged mentions in dated documents, \(String(years.lowerBound))–
 <!-- END SOURCE: personAnalytics.ranking.subtitle -->
 
 #### Empty state — No dated documents in this year range mention indexed…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.rankingSection | lines: 953–954 | key: personAnalytics.ranking.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.rankingSection | lines: 983–984 | key: personAnalytics.ranking.empty.detail -->
 
 No dated documents in this year range mention indexed people. Widen the range or index more volumes.
 
 <!-- END SOURCE: personAnalytics.ranking.empty.detail -->
 
 #### Add up to \(…) people — from the ranking above or the…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.comparisonSection | lines: 1117–1118 | key: personAnalytics.comparison.empty -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.comparisonSection | lines: 1147–1148 | key: personAnalytics.comparison.empty -->
 
 Add up to \(Self.maxComparisonPeople) people — from the ranking above or the search field — to compare how often each is tagged over time.
 
 <!-- END SOURCE: personAnalytics.comparison.empty -->
 
 #### How often \(…) and \(…) are mentioned together over time.
-<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.relationshipSection | lines: 1156–1157 | key: personAnalytics.relationship.subtitle -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.relationshipSection | lines: 1186–1187 | key: personAnalytics.relationship.subtitle -->
 
 How often \(selectedPeople[0].canonicalName) and \(selectedPeople[1].canonicalName) are tagged together over time.
 
 <!-- END SOURCE: personAnalytics.relationship.subtitle -->
 
 #### Co-occurrences in dated documents only; documents…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.relationshipSection | lines: 1176–1177 | key: personAnalytics.relationship.caption -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.relationshipSection | lines: 1206–1207 | key: personAnalytics.relationship.caption -->
 
 Co-occurrences in dated documents only; documents tagging mentions of both people. Undated documents cannot be placed on the year axis.
 
 <!-- END SOURCE: personAnalytics.relationship.caption -->
 
 #### Empty state — Search for a person above to center the co-mention network…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.networkContent | lines: 1261–1262 | key: personAnalytics.network.noFocus.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.networkContent | lines: 1291–1292 | key: personAnalytics.network.noFocus.detail -->
 
 Search for a person above to center the co-mention network on them. No people are indexed in this range yet.
 
 <!-- END SOURCE: personAnalytics.network.noFocus.detail -->
 
 #### Counts mentions in dated documents only; mentions in…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.trajectoryCaption | lines: 1486–1487 | key: personAnalytics.comparison.caption -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.trajectoryCaption | lines: 1516–1517 | key: personAnalytics.comparison.caption -->
 
 Counts tagged mentions in dated documents only; tagged mentions in undated documents cannot be placed on the year axis.
 
 <!-- END SOURCE: personAnalytics.comparison.caption -->
 
 #### Tooltip — Switch between the trends dashboard (rankings…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.toolbarContent | lines: 1510–1511 | key: personAnalytics.mode.help -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.toolbarContent | lines: 1540–1541 | key: personAnalytics.mode.help -->
 
 Switch between the trends dashboard (rankings, trajectories, relationship dynamics) and the co-mention network graph.
 

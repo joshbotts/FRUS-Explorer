@@ -20,11 +20,20 @@ import XCTest
 /// tests keep screenshots of the axis, a layer's page and each list they reach, for a reader to check
 /// the strips and rows by eye.
 ///
+/// Lane D adds two more:
+/// - at regular width the axis is a matrix, and a cell opens its era's volumes that carry the layer
+///   (an iPad only: an iPhone draws no matrix, and the test skips there, naming why);
+/// - the People browser says how many volumes tag their people, and its link opens People tagged's
+///   page on the axis.
+///
 /// Devices: an iPhone 17 and an iPad Pro 13-inch (M5), both under iOS 27.0
-/// (`Planning/UI-Test-Destinations-Runbook.md`, `AnnotationsAxisBrowseTests`). Neither test skips.
+/// (`Planning/UI-Test-Destinations-Runbook.md`, `AnnotationsAxisBrowseTests`): four tests, the
+/// matrix test skipping on the iPhone.
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane C
+///   1.1 — 2026-11-06: lane D — `testAMatrixCellOpensItsErasVolumes`,
+///          `testThePeopleBrowserSaysWhichVolumesTagPeople`
 //
 // Note: the XCUI APIs are main-actor isolated, so the class is `@MainActor` and overrides the ASYNC
 // `setUp`/`tearDown` (see the note at the head of `UIObstructionTests`).
@@ -166,5 +175,52 @@ final class AnnotationsAxisBrowseTests: XCTestCase {
         XCTAssertTrue(marked.label.contains("Kennedy-Khrushchev"),
                       "The marked row is not the seeded volume's: \(marked.label)")
         keepScreenshot(named: "With: People tagged, opened from Kennedy-Khrushchev")
+    }
+
+    func testAMatrixCellOpensItsErasVolumes() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad,
+                          "iPad-only: an iPhone's axis draws no matrix, its cells being under a tap's 44 pt")
+        app.launch()
+        _ = navigator.select(.browse).tapped
+        let door = element("browse.root.annotationsTile")
+        XCTAssertTrue(door.waitForExistence(timeout: 15), "The Browse root has no Editors’ Annotations door.")
+        scrollUntilHittable(door, attempts: 6)
+        door.tap()
+
+        let cell = element("annotations.cell.people.1955-1968")
+        XCTAssertTrue(cell.waitForExistence(timeout: 10), "At regular width the axis draws no matrix cell.")
+        XCTAssertEqual(cell.label, "People tagged, 1955–1968: 114 of 114 volumes",
+                       "VoiceOver must read a cell as its layer, its era and its count.")
+        keepScreenshot(named: "The Editors’ Annotations matrix")
+        cell.tap()
+
+        let caption = app.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH %@", "1955–1968: 114 of 114 volumes. A volume counts when")).firstMatch
+        XCTAssertTrue(caption.waitForExistence(timeout: 10),
+                      "The cell did not open the era's volumes with a caption naming the era and the rule.")
+        keepScreenshot(named: "People tagged, 1955–1968")
+    }
+
+    func testThePeopleBrowserSaysWhichVolumesTagPeople() throws {
+        app.launch()
+        _ = navigator.select(.browse).tapped
+        let peopleRow = element("browse.root.peopleRow")
+        XCTAssertTrue(peopleRow.waitForExistence(timeout: 15), "The Browse root has no People row.")
+        scrollUntilHittable(peopleRow, attempts: 4)
+        peopleRow.tap()
+
+        // Over the list, or in its empty state when no indexed volume tags its people.
+        let caption = element("people.tagging.caption")
+        XCTAssertTrue(caption.waitForExistence(timeout: 15), "The People browser does not say which volumes tag people.")
+        XCTAssertEqual(caption.label,
+                       "People are tagged in 288 of 553 volumes, and only those volumes' people appear here. In the others, search for the names.")
+        keepScreenshot(named: "The People browser's caption")
+
+        let link = element("people.tagging.link")
+        XCTAssertTrue(link.exists && link.isHittable, "The caption offers no way to the volumes that tag people.")
+        link.tap()
+        let reach = element("annotations.category.reach")
+        XCTAssertTrue(reach.waitForExistence(timeout: 10), "The link did not open People tagged's page.")
+        XCTAssertTrue(reach.label.hasPrefix("288 of 553 volumes"), "The page's reach reads \(reach.label)")
     }
 }

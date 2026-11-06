@@ -1013,7 +1013,7 @@ This file was made for a different version of the app, so it cannot be used with
 ### Menus, tooltips, and short labels
 
 #### Chronology, Corpus Analytics, Person Analytics, Cross-Ref…
-<!-- SOURCE: FRUSExplorer/Browser/BrowserView.swift | lines: 498–499 | key: browse.analysisTools.help.v3 -->
+<!-- SOURCE: FRUSExplorer/Browser/BrowserView.swift | lines: 504–505 | key: browse.analysisTools.help.v3 -->
 
 Chronology, Corpus Analytics, Person Analytics, Cross-Reference Analytics, Archival Analytics, Semantic Analytics, and the corpus Word Cloud
 
@@ -1708,13 +1708,13 @@ Preparing to summarize…
 
 <!-- END SOURCE: liveactivity.summarizing.preparing -->
 
-<!-- SOURCE: FRUSExplorer/App/AppState.swift | LiveActivityLifecycle.indexingState | lines: 4519–4519 | key: liveactivity.optimizing -->
+<!-- SOURCE: FRUSExplorer/App/AppState.swift | LiveActivityLifecycle.indexingState | lines: 4542–4542 | key: liveactivity.optimizing -->
 
 Finalizing index…
 
 <!-- END SOURCE: liveactivity.optimizing -->
 
-<!-- SOURCE: FRUSExplorer/App/AppState.swift | LiveActivityLifecycle.summarizationState | lines: 4561–4562 | key: liveactivity.summarizing.title -->
+<!-- SOURCE: FRUSExplorer/App/AppState.swift | LiveActivityLifecycle.summarizationState | lines: 4584–4585 | key: liveactivity.summarizing.title -->
 
 Summarizing FRUS documents
 

@@ -37,6 +37,8 @@ import SwiftData
 ///          without an `onCorrection` closure (front-matter/compilation sheets) refresh it
 ///   1.4 — #1367: `pinsInlineTitle`, which Browse's iPad two-pane sets — a large title there
 ///          moved and cut the one bar it shares with the corpus list whenever the search ran
+///   1.5 — 2026-11-06: the editors' annotations design, lane D — `PeopleTaggingCaption` over the
+///          list and in the empty state, its link opening People tagged's page on the axis
 struct PersonIndexView: View {
 
     /// Whether the title is pinned `.inline` instead of this view's usual `.large` (#1367).
@@ -94,18 +96,27 @@ struct PersonIndexView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if displaySections.isEmpty {
                 if searchText.isEmpty {
-                    ContentUnavailableView(
-                        String(localized: "people.empty.title", defaultValue: "No People Indexed"),
-                        systemImage: "person.2",
-                        description: Text(String(
+                    // A reader whose volumes tag no one lands here, so the caption says why (lane D).
+                    ContentUnavailableView {
+                        Label(String(localized: "people.empty.title", defaultValue: "No People Indexed"),
+                              systemImage: "person.2")
+                    } description: {
+                        Text(String(
                             localized: "people.empty.detail",
                             defaultValue: "Index some volumes to see people mentioned across the corpus."))
-                    )
+                    } actions: {
+                        PeopleTaggingCaption(onOpen: openTaggedVolumes)
+                    }
                 } else {
                     ContentUnavailableView.search(text: searchText)
                 }
             } else {
                 List {
+                    // How many volumes tag their people, before a reader concludes someone is missing
+                    // (the editors' annotations design, lane D).
+                    Section {
+                        PeopleTaggingCaption(onOpen: openTaggedVolumes)
+                    }
                     ForEach(displaySections) { section in
                         Section(section.letter) {
                             ForEach(section.entries) { indexEntry in
@@ -199,6 +210,16 @@ struct PersonIndexView: View {
         sections = PersonIndexSection.makeSections(from: entries)
         candidateRollupIds = (try? await store.rollupIdsWithCandidates()) ?? []
         isLoading = false
+    }
+
+    /// Opens People tagged's page on the Editors’ Annotations axis (lane D): on iPhone and iPad in
+    /// this Browse, whose `BrowserView` consumes the hand-off; on the Mac in the Corpus Browser, which
+    /// comes forward.
+    private func openTaggedVolumes() {
+        appState.openAnnotationLayer(.people, from: sceneID)
+        #if os(macOS)
+        openWindow.fronting(id: "frus.corpusBrowser")
+        #endif
     }
 
     /// A "Find all mentions" action for a cluster, used in the row context menu and iOS swipe.

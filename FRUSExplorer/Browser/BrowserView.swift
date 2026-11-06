@@ -128,6 +128,8 @@ import SwiftData
 ///          revert"; F-2's `twoPaneLayout` is the iPad layout that revert would have restored
 ///   2.20 — 2026-11-06: the editors' annotations design, lane C — `levelView` mounts the
 ///          `.annotations` axis and a layer's `.annotationCategory` page
+///   2.21 — 2026-11-06: lane D — consumes `AppState.pendingBrowseAnnotationLayer`
+///          (`consumePendingAnnotationLayer`), on change and in the appear-time drain
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -258,6 +260,9 @@ struct BrowserView: View {
         .onChange(of: appState.pendingSubjectExplorer) { _, _ in
             consumePendingSubjectExplorer()
         }
+        .onChange(of: appState.pendingBrowseAnnotationLayer) { _, _ in
+            consumePendingAnnotationLayer()
+        }
         .onChange(of: appState.filterDownloadedOnly) { _, flag in
             viewModel?.filterDownloadedOnly = flag
         }
@@ -370,6 +375,7 @@ struct BrowserView: View {
             consumePendingSemanticMap()
             consumePendingChronology()
             consumePendingSubjectExplorer()   // #1023 — see the function's doc for why both paths
+            consumePendingAnnotationLayer()   // lane D: Person analytics pairs it with openTab(.browse)
         }
         // #324: under FRUS_UI_TEST_MODE the browse stack can render before AppState
         // finishes booting the download manager, so the view model would capture nil
@@ -1293,6 +1299,25 @@ struct BrowserView: View {
         // and would drop what was just posted.
         vm.topicIndex.post(payload)
         vm.select(.subjects)
+    }
+
+    /// Opens the Editors’ Annotations axis with a layer's page above it (the editors' annotations
+    /// design, lane D): the People browser's and Person analytics' "Volumes that tag people".
+    ///
+    /// **Selects the axis, then pushes the page**, rather than appending to wherever Browse stood:
+    /// the page is a level of the axis, and appended from People it would read Corpus → People →
+    /// People tagged, the crumb claiming the axis sits inside People (the reason
+    /// `consumePendingSubjectExplorer` assigns its index).
+    private func consumePendingAnnotationLayer() {
+        guard let sceneID, let vm = viewModel,
+              let id = appState.consumeHandoff(\.pendingBrowseAnnotationLayer, for: sceneID,
+                                               orAnyWindow: true),
+              AnnotationLayer(rawValue: id) != nil else { return }
+        vm.select(.annotations)
+        vm.navigationPath.append(.annotationCategory(id: id, fromVolume: nil))
+        #if DEBUG
+        print("[BrowserView] pendingBrowseAnnotationLayer consumed: \(id)")
+        #endif
     }
 
     private func consumePendingBrowseVolume() {

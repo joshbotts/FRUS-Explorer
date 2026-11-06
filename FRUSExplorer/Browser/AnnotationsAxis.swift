@@ -558,6 +558,36 @@ enum AnnotationsAxis {
         return drills
     }
 
+    /// The drill of one cell of the regular-width matrix: the era's volumes that carry the layer, the
+    /// era named in its title and caption ("1955–1968: 114 of 114 volumes." and the rule).
+    ///
+    /// - Parameters:
+    ///   - layer: The layer, the cell's row.
+    ///   - era: The era, the cell's column.
+    ///   - index: The bundled file.
+    ///   - locale: The locale that groups the counts.
+    static func eraDrill(for layer: AnnotationLayer, era: AnnotationEra, in index: VolumeAnnotationsIndex,
+                         locale: Locale = .autoupdatingCurrent) -> Drill {
+        let members = index.volumes.filter { $0.value.era == era }
+        let ids = order(members.filter { layer.isCarried(by: $0.value) }.map(\.key))
+        let band = Band(era: era, carrying: ids.count, total: members.count)
+        let title = String(format: String(localized: "browser.annotations.era.drill.title", defaultValue: "%1$@, %2$@"),
+                           layer.label, eraName(era))
+        let caption = String(format: String(localized: "browser.annotations.drill.caption", defaultValue: "%1$@. %2$@"),
+                             spokenBand(band, locale: locale), layer.rule)
+        return Drill(id: "era.\(era.rawValue)", title: title, count: ids.count,
+                     spec: spec(axisKey: "annotation:\(layer.rawValue):era:\(era.rawValue)", title: title,
+                                volumeIds: ids, rule: layer.rule, layer: layer, index: index, from: nil,
+                                locale: locale, caption: caption))
+    }
+
+    /// What VoiceOver reads for a cell of the matrix, and its help: "People tagged, 1955–1968: 114 of
+    /// 114 volumes".
+    static func spokenCell(_ layer: AnnotationLayer, _ band: Band, locale: Locale = .autoupdatingCurrent) -> String {
+        String(format: String(localized: "browser.annotations.cell.spoken", defaultValue: "%1$@, %2$@"),
+               layer.label, spokenBand(band, locale: locale))
+    }
+
     /// One drill per printed aid any volume prints, in the order a volume's page names them; the
     /// section kinds that share a name ("intro" and "introduction") are one aid.
     private static func aidDrills(in index: VolumeAnnotationsIndex, from fromVolumeId: String?,
@@ -589,7 +619,8 @@ enum AnnotationsAxis {
     /// a mark no one scrolls to.
     private static func spec(axisKey: String, title: String, volumeIds: [String], rule: String,
                              layer: AnnotationLayer, index: VolumeAnnotationsIndex, from fromVolumeId: String?,
-                             locale: Locale, accessoryCategory: AnnotationCategory? = nil) -> VolumeListSpec {
+                             locale: Locale, accessoryCategory: AnnotationCategory? = nil,
+                             caption: String? = nil) -> VolumeListSpec {
         var volumeIds = volumeIds
         if let fromVolumeId, let at = volumeIds.firstIndex(of: fromVolumeId) {
             volumeIds.insert(volumeIds.remove(at: at), at: 0)
@@ -609,9 +640,10 @@ enum AnnotationsAxis {
             }
             if !lines.isEmpty { notes[volumeId] = lines.joined(separator: " ") }
         }
-        let caption = String(format: String(localized: "browser.annotations.drill.caption", defaultValue: "%1$@. %2$@"),
-                             volumesLine(volumeIds.count, of: index.volumes.count, locale: locale), rule)
-        return VolumeListSpec(axisKey: axisKey, title: title, volumeIds: volumeIds, caption: caption,
+        let stated = caption ?? String(
+            format: String(localized: "browser.annotations.drill.caption", defaultValue: "%1$@. %2$@"),
+            volumesLine(volumeIds.count, of: index.volumes.count, locale: locale), rule)
+        return VolumeListSpec(axisKey: axisKey, title: title, volumeIds: volumeIds, caption: stated,
                               accessories: accessories, notes: notes)
     }
 
