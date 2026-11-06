@@ -429,7 +429,8 @@ extension SearchResult {
             subjectTagIds: subjectTagIds,
             userTagIds: tagIds.map(\.uuidString).sorted(),
             isEditorialNote: isEditorialNote,
-            isFrontMatter: isFrontMatter)
+            isFrontMatter: isFrontMatter,
+            indexedClassification: indexedClassification)
     }
 }
 

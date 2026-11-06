@@ -627,7 +627,8 @@ struct CitedPageMapTests {
         // Generated 2026-10-21 at corpus `6170e4b32` from a full index of the 553 catalogue volumes:
         // an entry for every page a single-page reference cites and for both ends of each range
         // within one document — 16,364 pages in 380 volumes, naming 18,832 documents, 3,938 of the
-        // pages naming several, with 8,543 documents' facts.
+        // pages naming several, with 8,543 documents' facts. Regenerated 2026-11-06 for index version
+        // 72 at the same corpus, with every page, document and fact as it was: 72 moves no page row.
         #expect(map.volumes.count == 380)
         #expect(map.pageCount == 16_364)
         #expect(map.documents.reduce(0) { $0 + $1.count } == 18_832)

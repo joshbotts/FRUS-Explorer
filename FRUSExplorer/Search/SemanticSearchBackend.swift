@@ -279,7 +279,8 @@ struct SemanticSearchBackend: MeaningSearchRunning {
                 subjectTagIds: SearchService.tagIds(from: row.subjectTagIds),
                 userTagIds: SearchService.tagIds(from: row.userTagIds),
                 isEditorialNote: row.isEditorialNote,
-                isFrontMatter: row.isFrontMatter)
+                isFrontMatter: row.isFrontMatter,
+                indexedClassification: row.classification)
         }
 
         let beyond: [BeyondLibraryHit] = beyondHits.map { hit in

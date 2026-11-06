@@ -584,6 +584,10 @@ public struct ArchiveCitation: Sendable {
 ///          `primarySubjectClassKey(ofDesignation:)`, the class of a file under the primary
 ///          subject alone; the suffix dash goes only after a number, so the dash between two
 ///          countries stays; the digitless identifier takes a dash after its category
+///   1.18 — index version 72: `classificationMarking(fromOpenerLines:)`, the marking the volumes
+///          covering 1932–1954 print in a document's opener above the dateline, read from one
+///          `<seg>`'s lines against a closed vocabulary and written as a source note writes its
+///          marking ("Secret; Priority"); the index stores it where the note prints none
 public struct SourceNoteParser {
 
     public init() {}
@@ -1543,6 +1547,179 @@ public struct SourceNoteParser {
             else { return nil }
         }
         return fragments.joined(separator: "; ")
+    }
+
+    // MARK: - Classification markings printed in the opener (index version 72)
+
+    /// One phrase a document's opener prints in its classification marking.
+    private struct OpenerMarkingPhrase {
+        /// The phrase as the TEI spells it, lowercased, as characters, which a line is compared
+        /// against: the volumes print it in small capitals, so the encoding holds it in lower case
+        /// (`<hi rend="smallcaps">top secret</hi>`).
+        let characters: [Character]
+        /// The phrase as the stored marking writes it, in the source notes' style ("Top Secret").
+        let written: String
+        /// Whether the phrase is a classification level. A marking holds at least one.
+        let isLevel: Bool
+
+        init(printed: String, written: String, isLevel: Bool) {
+            self.characters = Array(printed)
+            self.written = written
+            self.isLevel = isLevel
+        }
+    }
+
+    /// The phrases the openers of the 1932–1954 volumes print in a classification marking, read
+    /// from every `<seg>` in a document's own opener across the 553 manifest volumes at corpus
+    /// `6170e4b32` (2026-11-06). Each was printed at least once; a phrase printed only with a slip
+    /// (`toap secret`, `priorty`) or a stray character (`secret ߓ urgent`) is not here, so its
+    /// line is set aside.
+    ///
+    /// The levels are the source-note reader's (``classificationLevelRegex``), less its
+    /// `No classification marking`, which no opener prints, and with five the openers print that
+    /// the note reader does not take: the British `Most Secret`, and `Very Secret`, `Ultra Secret`,
+    /// `Strictly Confidential` and `Very Confidential`. The rest are precedences (`Priority`,
+    /// `Niact`, `US Urgent` and its two dotted spellings, `Operational Immediate`, `Flash`) and
+    /// handling words (`Eyes Only`, `Personal`, `Official–Informal` in each of its four spellings,
+    /// `No Distribution`, `Security Information`), which the notes keep after the level in the same
+    /// way: "Secret; Priority".
+    private static let openerMarkingPhrases: [OpenerMarkingPhrase] = {
+        let levels: [(String, String)] = [
+            ("top secret", "Top Secret"), ("secret", "Secret"), ("confidential", "Confidential"),
+            ("restricted", "Restricted"), ("unclassified", "Unclassified"),
+            ("limited official use", "Limited Official Use"), ("official use only", "Official Use Only"),
+            ("most secret", "Most Secret"), ("very secret", "Very Secret"), ("ultra secret", "Ultra Secret"),
+            ("strictly confidential", "Strictly Confidential"), ("very confidential", "Very Confidential"),
+        ]
+        let others: [(String, String)] = [
+            ("priority", "Priority"), ("niact", "Niact"), ("urgent", "Urgent"), ("us urgent", "US Urgent"),
+            ("u.s. urgent", "U.S. Urgent"), ("u. s. urgent", "U. S. Urgent"), ("most urgent", "Most Urgent"),
+            ("operational immediate", "Operational Immediate"),
+            ("operational priority", "Operational Priority"), ("air priority", "Air Priority"),
+            ("first priority", "First Priority"), ("flash", "Flash"), ("most immediate", "Most Immediate"),
+            ("immediate", "Immediate"), ("routine", "Routine"), ("rush", "Rush"), ("emergency", "Emergency"),
+            ("air pouch", "Air Pouch"), ("eyes only", "Eyes Only"), ("us eyes only", "US Eyes Only"),
+            ("u.s. eyes only", "U.S. Eyes Only"), ("personal", "Personal"), ("private", "Private"),
+            ("official–informal", "Official–Informal"), ("official-informal", "Official-Informal"),
+            ("official—informal", "Official—Informal"), ("official informal", "Official Informal"),
+            ("informal", "Informal"), ("official", "Official"), ("no distribution", "No Distribution"),
+            ("limited distribution", "Limited Distribution"), ("security information", "Security Information"),
+            ("noforn", "Noforn"), ("cosmic", "Cosmic"),
+        ]
+        // Longest first, so that `top secret` is read before `secret` and `us urgent` before `urgent`.
+        return (levels.map { OpenerMarkingPhrase(printed: $0.0, written: $0.1, isLevel: true) }
+                + others.map { OpenerMarkingPhrase(printed: $0.0, written: $0.1, isLevel: false) })
+            .sorted { $0.characters.count > $1.characters.count }
+    }()
+
+    /// The words that join two phrases of a marking into one fragment, as characters.
+    private static let openerMarkingConnectors: [[Character]] = [Array("and"), Array("&")]
+
+    /// What may stand between two phrases of an opener's line: a space, a dash, a comma, a semicolon,
+    /// a slash, a colon or a stop. A bracket may not, so a marking the editors supplied in brackets
+    /// (`[Top Secret]` in `frus1948v06` d683) is not read as one the document printed.
+    private static let openerMarkingSeparators: Set<Character> = [" ", "—", "–", "-", ",", ";", "/", ":", "."]
+
+    /// One piece of an opener's line: a phrase of the marking, or a word joining two of them.
+    private enum OpenerMarkingToken {
+        /// A phrase of ``openerMarkingPhrases``.
+        case phrase(OpenerMarkingPhrase)
+        /// `and` or `&`, which join the phrases on either side into one fragment ("Personal and
+        /// Secret"), across a line break too: `frus1941-43` d133 prints `personal and` above
+        /// `most secret`.
+        case connector(String)
+    }
+
+    /// The classification marking a document prints in its opener, above the dateline, which is
+    /// where the volumes covering 1932–1954 print it: `frus1952-54v13p1` d12 opens
+    /// `<opener><seg rendition="#left"><hi rend="smallcaps">secret</hi></seg><dateline …>`. From the
+    /// 1955–1957 subseries on, the marking is the source note's second sentence instead
+    /// (``classificationMarking(fromSourceNote:)``); measured over the 553 manifest volumes at corpus
+    /// `6170e4b32`, no opener after 1954 prints one, and no document prints one in both places.
+    ///
+    /// The caller passes the lines of one `<seg>` of the document's own opener — never the dateline,
+    /// whose place names are in small capitals too, and never an enclosure's opener — split at each
+    /// `<lb/>`, so that `secret` above `priority` arrives as two lines. Each line is read as a run of
+    /// phrases from a closed vocabulary (``openerMarkingPhrases``):
+    ///
+    /// - **A line that is not wholly marking is set aside**, and the lines beside it are read: the
+    ///   despatch number printed under a marking (`No. 1574`), `[Extract]`, a paper's symbol
+    ///   (`NSC 138/1`). A line that mixes a marking with anything else is set aside whole, so
+    ///   `No. 1709, confidential.]`, the bracketed form of the volumes before 1932, reads as nothing.
+    /// - **Each phrase is a fragment** ("Secret; Priority", as the notes write it), except that `and`
+    ///   or `&` joins the phrases on either side into one ("Personal and Secret"). Fragments keep the
+    ///   printed order: `us urgent` above `secret` is "US Urgent; Secret".
+    /// - **A marking holds a classification level.** A seg of precedence alone (`priority`,
+    ///   `us urgent` in `frus1946v06` d81) stores nothing, as a note's sentence that opens with no
+    ///   level does.
+    ///
+    /// - Parameter lines: The seg's lines, each with its whitespace collapsed; case does not matter.
+    /// - Returns: The fragments, written in the source notes' style and joined with `"; "`, or `nil`
+    ///   when no line is wholly marking or none of them holds a level.
+    public static func classificationMarking(fromOpenerLines lines: [String]) -> String? {
+        var tokens: [OpenerMarkingToken] = []
+        for line in lines {
+            guard let lineTokens = openerMarkingTokens(ofLine: line) else { continue }
+            tokens.append(contentsOf: lineTokens)
+        }
+
+        var fragments: [String] = []
+        var current: [String] = []
+        var pendingConnector: String?
+        var holdsLevel = false
+        for token in tokens {
+            switch token {
+            case .connector(let word):
+                pendingConnector = word
+            case .phrase(let phrase):
+                holdsLevel = holdsLevel || phrase.isLevel
+                if let word = pendingConnector, !current.isEmpty {
+                    current.append(word)
+                    current.append(phrase.written)
+                } else {
+                    if !current.isEmpty { fragments.append(current.joined(separator: " ")) }
+                    current = [phrase.written]
+                }
+                pendingConnector = nil
+            }
+        }
+        if !current.isEmpty { fragments.append(current.joined(separator: " ")) }
+        guard holdsLevel, !fragments.isEmpty else { return nil }
+        return fragments.joined(separator: "; ")
+    }
+
+    /// One line of an opener's seg as marking tokens, or `nil` when anything in it is not marking
+    /// vocabulary or a separator (``openerMarkingSeparators``).
+    ///
+    /// A phrase is read only where it ends at the line's end or before a character that is not a
+    /// letter or digit, so `secretariat` is not `secret`.
+    private static func openerMarkingTokens(ofLine line: String) -> [OpenerMarkingToken]? {
+        let text = Array(line.lowercased())
+        var tokens: [OpenerMarkingToken] = []
+        var index = 0
+        func matches(_ word: [Character], at start: Int) -> Bool {
+            let end = start + word.count
+            guard end <= text.count, text[start..<end].elementsEqual(word) else { return false }
+            return end == text.count || !(text[end].isLetter || text[end].isNumber)
+        }
+        while index < text.count {
+            if openerMarkingSeparators.contains(text[index]) || text[index].isWhitespace {
+                index += 1
+                continue
+            }
+            if let phrase = openerMarkingPhrases.first(where: { matches($0.characters, at: index) }) {
+                tokens.append(.phrase(phrase))
+                index += phrase.characters.count
+                continue
+            }
+            if let connector = openerMarkingConnectors.first(where: { matches($0, at: index) }) {
+                tokens.append(.connector(String(connector)))
+                index += connector.count
+                continue
+            }
+            return nil
+        }
+        return tokens
     }
 
     /// Extracts embedded archival citations from editorial note body text.

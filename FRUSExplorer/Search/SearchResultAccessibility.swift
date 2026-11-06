@@ -39,6 +39,8 @@ import Foundation
 ///         shows its opening prose, as a Meaning row does, and offers it as "Opening text"
 ///   1.2 — A18 (index version 70): a row with no dateline draws the day or span the index dates it
 ///         by (`SearchResult.drawnDate`), and the label says it where the dateline would be
+///   1.3 — index version 72: the label says the marking the row's chip shows,
+///         `SearchResult.classificationMarking`, which is the stored one where the note prints none
 enum SearchResultAccessibility {
 
     // MARK: The label
@@ -56,8 +58,7 @@ enum SearchResultAccessibility {
         var parts = [heading(for: result)]
         if let dateline = result.dateline ?? result.drawnDate { parts.append(dateline) }
         parts.append(result.volumeId)
-        if let note = result.sourceNote,
-           let marking = SourceNoteParser.classificationMarking(fromSourceNote: note) {
+        if let marking = result.classificationMarking {
             parts.append(ClassificationChip.accessibilityLabel(for: marking))
         }
         if result.isEditorialNote { parts.append(editorialNoteBadge) }

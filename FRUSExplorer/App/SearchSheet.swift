@@ -2947,10 +2947,10 @@ private struct SearchResultRow: View {
                 if let semanticScore = result.semanticScore {
                     SemanticScoreChip(score: semanticScore)
                 }
-                // Classification chip (Source Explorer Phase 5) — derived from the
-                // result's already-loaded source note; no per-row query.
-                if let note = result.sourceNote,
-                   let marking = SourceNoteParser.classificationMarking(fromSourceNote: note) {
+                // Classification chip (Source Explorer Phase 5) — the source note's marking,
+                // else the one the index stores, which since index version 72 is the marking a
+                // 1932–1954 document prints in its opener. Both are on the row; no per-row query.
+                if let marking = result.classificationMarking {
                     ClassificationChip(marking: marking)
                 }
 
