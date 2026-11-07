@@ -4,6 +4,12 @@ Visual-marketing plan §7 **step 11**, plan-of-record row **F-1**. The capture h
 (`FRUSExplorerTests/SemanticMapFrameSequenceTests`) renders 554 frames; this turns them into a
 publishable film. **No re-render** — the frames are the expensive part and they are already correct.
 
+**Re-rendered 2026-11-06 for build 51's layout** (the website tour's step 13 carries it as
+`Planning/website-drafts/tour/img/map-film.mp4`): 554 frames on an iPhone 17 simulator, iOS 27.0, mean
+103.9 ms a frame. The new layout's content is x 418..1501, y 147..932 (786 rows), with no island to
+trim, so the frame is 46 + 786 + 68 = 900; the badge covers 0 ink px. A layout change needs both stages:
+the harness for the frames, then this script.
+
 ```bash
 tools/map-film/build_film.sh              # defaults: ~/Desktop/frus-map-film, 1440 wide, 12 fps
 ```
@@ -11,7 +17,7 @@ tools/map-film/build_film.sh              # defaults: ~/Desktop/frus-map-film, 1
 | | |
 |---|---|
 | in | `frame-0000.png` … `frame-0553.png` (1920×1080), `frames.csv`, `provenance.txt` |
-| out | `map-film.mp4` (1440×916, 46.17 s, 3.08 MB, no subtitle track), `caption-band.png`, `badge.png`, `captions/caption-NNNN.png`, `frame-captions.tsv`, `map-subtitles{,-years}.{srt,vtt}` |
+| out | `map-film.mp4` (1440×900, 46.17 s, 3.22 MB, no subtitle track; 1440×916 and 3.08 MB on the 2026-09-09 layout the measurements below describe), `caption-band.png`, `badge.png`, `captions/caption-NNNN.png`, `frame-captions.tsv`, `map-subtitles{,-years}.{srt,vtt}` |
 
 ## The frame, top to bottom
 

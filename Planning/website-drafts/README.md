@@ -102,8 +102,8 @@ soften them is the owner's call.
   `site/review.html` sets each pair side by side with what changed. On 2026-11-06, after #1865's retakes, six were
   re-cut again (steps 1, 2, 3, 5, 8 and 9: classification chips, the Editors' Annotations door, the
   288-volume line), and steps 14 and 18 gained screens (the Editors' Annotations matrix, Research ▸
-  History). Still owed: steps 19 and 20 have no capture, step 15 is a text slip, and the map film
-  predates build 51's layout.
+  History). Step 13 gained the map film, re-rendered from build 51's layout (`tour/img/map-film.mp4`; rebuild it
+  with `tools/map-film/`). Still owed: steps 19 and 20 have no capture, and step 15 is a text slip.
 - **The kit's rules.** Read each page against the launch kit's §6 checklist.
 - **The copies of record.** Fold the Support and Privacy drafts in, run
   `python3 Scripts/build_website_pages.py`, check that `--check` passes, and add the TEI row.
