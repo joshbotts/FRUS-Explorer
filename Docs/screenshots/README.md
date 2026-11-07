@@ -1415,8 +1415,7 @@ in both manuals from the bundled files (#1762).
     markings), the Mac copy from 22:31 to 22:40. A copy of the iPad's container at 74 is kept as
     `q1/snapshot-A74`, which the iPhones were seeded from (its `Library`, without `SplashBoard` and
     `Saved Application State`, as S3 did), so no iPhone re-indexed.
-  - **Group A, the frames whose subject changed** (16 iPad, iPhone and Mac files besides the Browse
-    root's): the People list's and Person Analytics' line *People are tagged in 288 of 553 volumes*
+  - **Group A, the frames whose subject changed**: the People list's and Person Analytics' line *People are tagged in 288 of 553 volumes*
     (`ipad/people-list`, `people-detail`, `people-detail-records`, `person-analytics-network`;
     `macos/people-list`, `person-analytics-trends`, `person-analytics-network`); the classification
     chip on Search's rows (`ipad/search-results`, `semantic-search`; `ios/search-results`,
