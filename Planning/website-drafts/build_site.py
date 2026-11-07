@@ -179,7 +179,7 @@ def markdown_page(source, extra_class=""):
 
 def build_tour():
     t = (HERE / "tour" / "tour.html").read_text(encoding="utf-8")
-    t = t.replace('src="img/', 'src="../tour/img/')
+    t = t.replace('src="img/', 'src="../tour/img/').replace('poster="img/', 'poster="../tour/img/')
     manual = ('<a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md" '
               'target="_blank" rel="noopener">Read the manual</a>')
     t = t.replace(manual, '<span>Quick start: <a href="quick-start-ios.html">iPad and iPhone</a> · '
@@ -213,7 +213,7 @@ def build_tour():
         "after PPS 37 and five other candidates. Six kinds are its own; footnote 61's early draft, filed separately, stands "
         "for what wasn't printed, and G is the editorial note listing the conference's delegations (<code>d78</code>). "
         "No Marshall document of spring 1947 carries all seven kinds.",
-        "<b>Still owed:</b> captures for steps 19 and 20, a Cite capture to replace step 15's text slip if wanted, and the map film. Steps 14 and 18 gained screens on 2026-11-06.",
+        "<b>Still owed:</b> captures for steps 19 and 20 and a Cite capture to replace step 15's text slip if wanted. Steps 14 and 18 gained screens on 2026-11-06, and step 13 the map film, re-rendered from build 51's layout.",
         "Production notes under each step stay visible with the tour's own <b>Notes</b> switch.",
     ])
     t = t.replace("<main>", "<main>\n<div class=\"inner\">" + rv + "</div>", 1)
@@ -283,7 +283,7 @@ SCREENS = [
     (11, "chronology.jpg", "ipad/chronology.png", "The retired editorial-notes line is gone (#1422); its re-shoot note removed."),
     (12, "graph.jpg", "ipad/cross-reference-graph.png",
      "Now document 16 of frus1952-54v02p1, after #1438, #1481 and #1764, not document 149 of frus1964-68v19; its re-shoot note removed."),
-    (13, "map.jpg", "ipad/semantic-map.png", "Build 51's layout and 140 regions. The map film is still owed."),
+    (13, "map.jpg", "ipad/semantic-map.png", "Build 51's layout and 140 regions. The map film beside it was re-rendered from the same layout on 2026-11-06."),
     (14, "lag.jpg", "ipad/series-production.png", "Same chart, now as the sheet over Research."),
     (14, "annotations.jpg", "ipad/browse-annotations.png", "New on 2026-11-06 for 1.0’s Editors’ Annotations (#1859–#1862), from the screens-1861 sitting (#1865): the matrix pane, header cut."),
     (16, "reader.jpg", "ipad/collections-editor.png", "The preview now opens on the collection's title page and contents."),
@@ -412,7 +412,7 @@ REVIEW = """<div class="sheet">
   <li><b>“Coming soon to the App Store” and “will be free”</b> on Home and the tour assume approval; App Review decides.</li>
   <li><b>Home and the tour as copies of record</b>, under <code>Docs/Website/</code> with a trace per factual sentence, or drafts here.</li>
   <li><b>Folding the Support and Privacy drafts</b> into <code>Docs/</code>: then <code>Scripts/build_website_pages.py</code>, its <code>--check</code>, and the TEI sentence's row in the README.</li>
-  <li><b>The tour's remaining screens</b>: steps 18 to 20 have no capture, step 15 is a text slip, and the map film predates build 51's layout.</li>
+  <li><b>The tour's remaining screens</b>: steps 18 to 20 have no capture, and step 15 is a text slip.</li>
 </ol>
 </section>
 </div>"""

@@ -378,9 +378,13 @@ Caption — Source: iPad, build 1861. Browse ▸ Analysis Tools ▸ Semantic Ana
 **Caveat box:**
 *Experimental.* The map keeps similar documents close together. Distances between areas that are far apart don't mean anything.
 
+Film (`img/map-film.mp4`, poster `img/map-film-poster.jpg`) — Alt: An animation of the semantic map filling in, one volume per frame in the order the volumes were published, from 1861 to 2025
+
+Caption — Film: The record as it was released: each frame lights every mapped document in the volumes published so far, whole volumes, whatever each document is about. 553 volumes in 46 seconds, drawn by the app from build 51's layout.
+
 ⁴ Documents placed on the map, counted in the app's own data.
 
-> **Production note** Re-cropped from build 1861, with build 51's layout and its 140 regions. The map film still shows the earlier layout: re-shoot it before publishing.
+> **Production note** Re-cropped from build 1861, with build 51's layout and its 140 regions. The film was re-rendered from build 51's layout on 2026-11-06 (`tools/map-film/`, 1440×900, 46.2 s, 3.2 MB); host it where the site's video can stream, not as a page attachment.
 
 ### 14. Learn how the series itself has evolved
 *Research Guide ▸ About the Series and Browse ▸ Editors’ Annotations · iPad*
