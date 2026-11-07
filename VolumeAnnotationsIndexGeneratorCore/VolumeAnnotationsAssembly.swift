@@ -26,12 +26,15 @@ import SourceNoteKit
 /// - **classification:** a stored marking, the note's or the opener's (index versions 72 and 73);
 /// - **despatch numbers:** a stored serial (#965);
 /// - **numbered:** the stored heading opens with its printed number ("12. Telegram From …");
-/// - **abbreviations:** a `gloss` pointer that names one of the volume's `terms` rows.
+/// - **abbreviations:** a `gloss` pointer, or one of the document div's own `@ana`, that names one
+///   of the volume's `terms` rows: the terms the reader links in the text, or lists below the
+///   document (#1599), which is how `frus1981-88v16` names them.
 ///
 /// The other layers the app does not read, and the scan's TEI rule counts them.
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane A
+///   1.1 — 2026-11-06: abbreviations count a document's `@ana` pointers to a term, as people did
 enum VolumeAnnotationsAssembly {
 
     /// One volume's counts, with what the run reports about them.
@@ -56,7 +59,8 @@ enum VolumeAnnotationsAssembly {
             let features = scan.features[id] ?? TEIDocumentFeatures()
             if !facts.rowIds.contains(id) { unindexed += 1 }
             add(.people, facts.peopleDocuments.contains(id))
-            add(.abbreviations, !features.glossTargets.isDisjoint(with: facts.termRefs))
+            add(.abbreviations, !features.glossTargets.isDisjoint(with: facts.termRefs)
+                    || !features.annotatedIds.isDisjoint(with: facts.termRefs))
             add(.correspondents, features.correspondents)
             add(.subjects, features.subjects)
             add(.participants, features.participants)

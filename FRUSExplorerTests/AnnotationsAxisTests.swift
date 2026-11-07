@@ -20,6 +20,9 @@ import Testing
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane C
 ///   1.1 — 2026-11-06: lane D — a matrix cell's drill, and the People captions' line
+///   1.2 — 2026-11-06: the shipped file marks one List of Persons and one List of Abbreviations, both
+///          `frus1977-80v27`'s: `frus1941-43`'s Index of Persons lists no one (index version 74), and
+///          `frus1981-88v16`'s documents name their terms on `@ana`
 @Suite("Editors’ Annotations axis — each layer's reach, its page and its drills")
 struct AnnotationsAxisTests {
 
@@ -232,7 +235,7 @@ struct AnnotationsAxisTests {
         #expect(PeopleTaggingCaption.text(index: nil, locale: locale) == nil)
     }
 
-    @Test("The shipped file: people tagged in 288 of 553 volumes from 1955 on, two Lists of Persons unlinked")
+    @Test("The shipped file: people tagged in 288 of 553 volumes from 1955 on, one volume's two lists unlinked")
     func theShippedFile() throws {
         let index = try #require(VolumeAnnotationsStore.shared,
                                  "volume-annotations-index.json must decode from the app bundle")
@@ -251,7 +254,23 @@ struct AnnotationsAxisTests {
         #expect(without.count == 265)
         #expect(without.spec.notes["frus1977-80v27"]
                 == "Prints a List of Persons, but none of its documents links a name to it.")
-        #expect(Set(without.spec.notes.keys) == ["frus1941-43", "frus1977-80v27"])
+        // `frus1941-43` prints an Index of Persons, a back-of-book index whose entries carry page
+        // references and no id. Until index version 74 the parser kept six of them as people, and
+        // this line marked the volume too.
+        #expect(Set(without.spec.notes.keys) == ["frus1977-80v27"])
+        let conferences = try #require(index["frus1941-43"])
+        #expect(conferences.personsListed == 0)
+        #expect(conferences.prints(section: "index") && !conferences.prints(section: "persons"))
+
+        // `frus1981-88v16` names its terms on each document's `@ana`, and the reader lists them
+        // below the document: all 88 documents, so its list is not one nothing links to.
+        let abbreviations = AnnotationsAxis.reach(of: .abbreviations, in: index)
+        #expect(abbreviations.carrying.count == 310 && abbreviations.carrying.contains("frus1981-88v16"))
+        #expect(index["frus1981-88v16"]?.count(.abbreviations) == 88)
+        let unlinkedTerms = try #require(AnnotationsAxis.drills(for: .abbreviations, in: index, locale: locale)
+            .first { $0.id == "without" })
+        #expect(unlinkedTerms.spec.notes
+                == ["frus1977-80v27": "Prints a List of Abbreviations, but none of its documents links a term to it."])
 
         // Every layer has volumes to show.
         for layer in AnnotationLayer.allCases {

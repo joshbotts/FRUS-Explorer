@@ -630,7 +630,8 @@ struct CitedPageMapTests {
         // pages naming several, with 8,543 documents' facts. Regenerated 2026-11-06 for index version
         // 72 at the same corpus, with every page, document and fact as it was: 72 moves no page row.
         // Regenerated again that day for 73 (#1856), which changes only `document_sources.classification`:
-        // every page, document and fact as it was.
+        // every page, document and fact as it was. And for 74, which drops `frus1941-43`'s Index of
+        // Persons from `persons` and makes it an `index` in the outline: a list, with no page row.
         #expect(map.volumes.count == 380)
         #expect(map.pageCount == 16_364)
         #expect(map.documents.reduce(0) { $0 + $1.count } == 18_832)

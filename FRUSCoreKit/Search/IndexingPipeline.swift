@@ -521,6 +521,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         holds the marking a source note prints past its sentence 2, behind a stop inside the
 ///         citation or before a remark that opens with a digit (`SourceNoteParser.classificationMarking(fromSourceNote:)`,
 ///         see the v73 note)
+///  4.55 — 2026-11-06: `currentDateIndexVersion` → 74 — a `<list type="index">` inside a persons
+///         section stores no `persons` row, and its division is an `index` in `volume_structures`:
+///         `frus1941-43`'s Index of Persons (see the v74 note)
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1595,7 +1598,21 @@ public actor IndexingPipeline {
     ///   (``classificationMarking(sourceNote:stored:)``); the stored column, which the research
     ///   database export carries, follows only with the bump, so without it an installed index
     ///   keeps `NULL` for these documents.
-    public static let currentDateIndexVersion: Int = 73
+    /// - v73→74 — a back-of-book index of persons is not a list of persons. `frus1941-43` prints
+    ///   an "Index of Persons" whose division the TEI gives a List of Persons' `xml:id`
+    ///   (`persons`): 350 entries with page references and no id. The persons parser keyed an entry
+    ///   with no id by its text and stored the six that passed `PersonListHeuristics` as people
+    ///   ("Meetings:", "Views on:", "Gauss, Clarence E., Ambassador in China, 807n"), which the
+    ///   volume's persons view and the People browser listed, with no mention each, and
+    ///   `volume-annotations-index.json` counted as a List of Persons no document links to. A
+    ///   `<list type="index">` now opens no person (`PersonsParserDelegate`), and the outline gives
+    ///   the division the kind `index` (`VolumeStructureParserDelegate`), so Browse opens it as the
+    ///   printed text it is. It is the only such list in a persons section of the 553 catalogue
+    ///   volumes at corpus `6170e4b32`.
+    ///   Measured on two full indexes of the 553 catalogue volumes at that corpus, at 73 and at 74:
+    ///   the six `persons` rows and that volume's outline are all that move, besides the stamp.
+    ///   Without the bump an installed index keeps the six rows, and both views their six people.
+    public static let currentDateIndexVersion: Int = 74
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"

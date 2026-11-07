@@ -36,17 +36,20 @@ import Foundation
 ///   1.1 — 2026-09-13: `frus1873p1v2`'s `correspondence` spelling, which #740 missed
 ///   1.2 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
 ///          alone; the v51 index-version check runs in the app's test target only
+///   1.3 — 2026-11-06 (index version 74): a `<list type="index">` is an index of persons, not a list
+///          of them — `frus1941-43`'s, as the TEI encodes it — for the persons, the outline and the
+///          reader's page
 @Suite("Persons list encodings")
 struct PersonsListEncodingTests {
 
-    /// Writes a minimal TEI volume whose front matter is `front`.
-    private func makeVolume(front: String) throws -> URL {
+    /// Writes a minimal TEI volume whose front matter is `front` and back matter `back`.
+    private func makeVolume(front: String, back: String = "") throws -> URL {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("persons-\(UUID().uuidString).xml")
         let xml = """
             <?xml version="1.0" encoding="UTF-8"?>
             <TEI xmlns="http://www.tei-c.org/ns/1.0">
-              <text><front>\(front)</front><body></body></text>
+              <text><front>\(front)</front><body></body><back>\(back)</back></text>
             </TEI>
             """
         try Data(xml.utf8).write(to: url)
@@ -245,7 +248,9 @@ struct PersonsListEncodingTests {
     // MARK: - #741: nested index sub-entries are not people
 
     /// Real shape from `frus1941-43`'s "Index of Persons": one person, whose page references are
-    /// nested `<list>`/`<item>` trees beneath them.
+    /// nested `<list>`/`<item>` trees beneath them. The TEI types that index's own list `index`,
+    /// which since index version 74 opens no person at all (the tests at the end of this suite);
+    /// here the list is left untyped, so these tests hold #741's depth rule.
     private let nestedIndexEntry = """
         <div type="section" subtype="index" xml:id="persons">
           <head>Index of Persons</head>
@@ -337,5 +342,123 @@ struct PersonsListEncodingTests {
         defer { try? FileManager.default.removeItem(at: url) }
         let persons = try await FRUSDocumentParser().parsePersons(volumeURL: url)
         #expect(persons.map(\.ref).sorted() == ["p_A1", "p_B1"])
+    }
+
+    // MARK: - Index version 74: an index of persons is not a list of them
+
+    /// `frus1941-43`'s "Index of Persons" as the TEI encodes it (line 80163 at corpus `6170e4b32`),
+    /// trimmed: a List of Persons' attributes, a `<list type="index">`, and entries that carry page
+    /// references and no id. Its list typed `index` or not (`listType`), the rest is the same.
+    ///
+    /// Three of the six rows the parser used to store are here, each in its real markup: Gauss,
+    /// whose page reference holds an italic "n", so the name test sees "807n" and no page number;
+    /// Hull, a person's heading over sub-entries; and "Views on:", a sub-heading the TEI prints
+    /// as an entry of its own.
+    private func indexOfPersons(listType: String? = "index") -> String {
+        let type = listType.map { #" type="\#($0)""# } ?? ""
+        return """
+            <div type="section" subtype="index" xml:id="persons">
+              <head>Index of Persons</head>
+              <p rend="flushleft">(The identification of the persons in this index is limited to
+                circumstances and positions under reference in this volume.)</p>
+              <list\(type)>
+                <item>Acheson, Dean G., Assistant Secretary of State, <ref target="#pg_62">62</ref></item>
+                <item>Gauss, Clarence E., Ambassador in China, <ref target="#pg_807">807<hi
+                      rend="italic">n</hi></ref></item>
+                <item>Hull, Cordell, Secretary of State: <list>
+                    <item>Meetings: <list>
+                        <item>First Washington Conference: With Litvinov, <ref target="#pg_133">133</ref></item>
+                      </list></item>
+                  </list></item>
+                <item>Views on: <list>
+                    <item>Aircraft production, <ref target="#pg_110">110</ref></item>
+                  </list></item>
+              </list>
+            </div>
+            """
+    }
+
+    @Test("An index of persons gives no person, where the same entries in an untyped list gave three")
+    func anIndexOfPersonsListsNoOne() async throws {
+        let index = try makeVolume(front: "", back: indexOfPersons())
+        let untyped = try makeVolume(front: "", back: indexOfPersons(listType: nil))
+        defer {
+            try? FileManager.default.removeItem(at: index)
+            try? FileManager.default.removeItem(at: untyped)
+        }
+        // The control: read as a list, the entries give the rows index version 73 stored, keyed
+        // by their text, since none has an id. Acheson's page number keeps him out.
+        let before = try await FRUSDocumentParser().parsePersons(volumeURL: untyped)
+        #expect(before.map(\.name).sorted() == [
+            "Gauss, Clarence E., Ambassador in China, 807n", "Hull, Cordell, Secretary of State", "Views on",
+        ], "got \(before.map(\.name))")
+        #expect(before.allSatisfy { $0.ref.contains(" ") || $0.ref.hasSuffix(":") }, "keyed by text")
+
+        let persons = try await FRUSDocumentParser().parsePersons(volumeURL: index)
+        #expect(persons.isEmpty, "got \(persons.map(\.name))")
+    }
+
+    @Test("An index grouped by initial letter is an index too")
+    func aLetterGroupedIndexListsNoOne() async throws {
+        // The letter group says nothing before its list, so #1321 demotes it; the index list it
+        // holds then opens where no person is open.
+        let url = try makeVolume(front: """
+            <div type="section" subtype="index" xml:id="persons">
+              <list>
+                <item><list type="index">
+                    <item>Gauss, Clarence E., Ambassador in China, <ref target="#pg_807">807<hi
+                          rend="italic">n</hi></ref></item>
+                  </list></item>
+              </list>
+            </div>
+            """)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let persons = try await FRUSDocumentParser().parsePersons(volumeURL: url)
+        #expect(persons.isEmpty, "got \(persons.map(\.name))")
+    }
+
+    @Test("A list typed index inside a person is that person's sub-entries, and the list goes on")
+    func anIndexListInsideAPersonIsTheirs() async throws {
+        let url = try makeVolume(front: """
+            <div type="section" subtype="index" xml:id="persons">
+              <list>
+                <item><persName xml:id="p_A1">Acheson, Dean</persName>, Secretary of State
+                  <list type="index"><item>Meetings, <ref target="#pg_3">3</ref></item></list></item>
+                <item><persName xml:id="p_B1">Byrnes, James F.</persName>, Secretary of State</item>
+              </list>
+            </div>
+            """)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let persons = try await FRUSDocumentParser().parsePersons(volumeURL: url)
+        #expect(persons.map(\.ref) == ["p_A1", "p_B1"], "got \(persons.map { "\($0.ref)=\($0.name)" })")
+    }
+
+    @Test("In the outline an index of persons is an index, which opens as printed text; a list stays a list")
+    func anIndexOfPersonsIsAnIndexInTheOutline() async throws {
+        let url = try makeVolume(front: """
+            <div type="section" subtype="index" xml:id="listofpersons"><head>List of Persons</head>
+              <list><item><persName xml:id="p_K1">Kissinger, Henry A.</persName>, Secretary of State.</item></list>
+            </div>
+            """, back: indexOfPersons())
+        defer { try? FileManager.default.removeItem(at: url) }
+        let structure = try await FRUSDocumentParser().parseVolumeStructure(volumeURL: url)
+        func section(_ id: String, in sections: [VolumeSection]) -> VolumeSection? {
+            for candidate in sections {
+                if candidate.sectionId == id { return candidate }
+                if let found = section(id, in: candidate.subsections) { return found }
+            }
+            return nil
+        }
+        let index = try #require(section("persons", in: structure.sections))
+        #expect(index.divType == "index" && index.title == "Index of Persons")
+        #expect(!index.isPersonsList && index.canReadDirectly)
+        let list = try #require(section("listofpersons", in: structure.sections))
+        #expect(list.divType == "persons" && list.isPersonsList && !list.canReadDirectly)
+        // The reader's page for the index is the index as printed.
+        let page = try #require(try await FRUSDocumentParser().parseDocument(documentId: "persons", volumeURL: url))
+        var converter = ASTToRenderNodeConverter(volumeId: "frus1941-43")
+        let text = buildFlatText(from: converter.convert(page))
+        #expect(text.contains("Gauss, Clarence E., Ambassador in China"), "the page reads \(text)")
+        #expect(text.contains("Aircraft production"), "the page reads \(text)")
     }
 }
