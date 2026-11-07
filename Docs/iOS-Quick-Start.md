@@ -73,7 +73,7 @@ The app has five tabs. On iPad they sit in a tab strip at the top of the screen,
 | **Collections** | Ordered sets of documents with your own headings and prose, exported as PDF, HTML or Word |
 | **Settings** | Volumes and storage, display, projects and tags, connections to Zotero and the National Archives, iCloud sync, About |
 
-![Browse on iPad with the sidebar open — the five tabs, a saved search and the active project beneath them — and the Browse root: Continue reading, the volume search field, People and Topics, the Browse by tiles, and Your sets, with the Subseries list open on the right.](screenshots/ipad/browse-root.png)
+![Browse on iPad with the sidebar open — the five tabs, a saved search and the active project beneath them — and the Browse root: Continue reading, the volume search field, People and Topics, the Browse by tiles, the Editors’ Annotations door below them, and Your sets, with the Subseries list open on the right.](screenshots/ipad/browse-root.png)
 
 *The Browse tab, with the Subseries list open. Saved searches and projects appear in the sidebar under the tabs once you have some.*
 
@@ -147,7 +147,7 @@ Open the **Search** tab, type a query, and tap **Search** on the keyboard (or pr
 
 **•••** → **Search Tips** has the full list, `NEAR` included.
 
-![A keyword search for Berlin blockade on iPad: the Keywords and Meaning control, the row of result tools, the MATCH strip reading "berlin" AND "blockade", 900 results on 36 pages, and the ranked list, each result with its number, heading, dateline, volume and a snippet with the matched words highlighted.](screenshots/ipad/search-results.png)
+![A keyword search for Berlin blockade on iPad: the Keywords and Meaning control, the row of result tools, the MATCH strip reading "berlin" AND "blockade", 900 results on 36 pages, and the ranked list, each result with its number, heading, dateline, volume a snippet with the matched words highlighted and, where the document prints one, its classification marking, such as Top Secret.](screenshots/ipad/search-results.png)
 
 *A keyword search. The **MATCH** strip shows how the app read your query.*
 
@@ -160,7 +160,7 @@ Open the **Search** tab, type a query, and tap **Search** on the keyboard (or pr
 
 In the Research rail, tap **Sources**. **Source Explorer** reads the document's source note — the lot file, decimal file or presidential-library collection the original came from — and matches it, where it can, to its record in the National Archives catalog, including the entry number to give the archivists when you request the records.
 
-![Source Explorer for a document printed from S/S–NSC files, lot 63 D 351: the source note, its provenance — a State Department lot file in Record Group 59 — and the NARA catalog record it resolves to, held at College Park, with HMS/MLR entry A1 1586E and a link to open the series in the NARA Catalog.](screenshots/ipad/source-explorer.png)
+![Source Explorer for a document printed from S/S–NSC files, lot 63 D 351: the source note with the document's Top Secret marking, its provenance — a State Department lot file in Record Group 59 — and the NARA catalog record it resolves to, held at College Park, with HMS/MLR entry A1 1586E and a link to open the series in the NARA Catalog.](screenshots/ipad/source-explorer.png)
 
 *Source Explorer, resolving a lot file to its National Archives series.*
 
