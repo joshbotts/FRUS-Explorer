@@ -71,7 +71,7 @@ The menu bar holds the same commands and more, in its **Document**, **Find**, **
 
 Click **Browse** (⇧⌘B) to open the **Corpus Browser**. Its sidebar lists the ways in — **All Volumes**, **Administrations**, **Editors**, **Archives** and **Clusters**, your own scopes and corpora, and every subseries. Click a subseries, a volume, a chapter and a document, and the document opens in the main window.
 
-![The Corpus Browser: the sidebar's Browse, Your sets and Subseries sections, each subseries with how many of its volumes are downloaded, and a volume's page — Foreign Relations of the United States, 1946, Eastern Europe, The Soviet Union, Volume VI — with its top subjects, front matter and contents.](screenshots/macos/browser.png)
+![The Corpus Browser: the sidebar's Browse, Your sets and Subseries sections, each subseries with how many of its volumes are downloaded, and a volume's page — Foreign Relations of the United States, 1946, Eastern Europe, The Soviet Union, Volume VI — with its top subjects, its Editors’ Annotations, front matter and contents.](screenshots/macos/browser.png)
 
 *The Corpus Browser, showing a volume's page.*
 
@@ -140,7 +140,7 @@ Press ⌥⌘F, or click **Search** in the toolbar. The **Search** window opens w
 
 The **Tips** button beside the field has the full list, `NEAR` included.
 
-![The Search window: a keyword search for Berlin blockade, with the List, Timeline, Concordance and Collocates switch in the title bar, the MATCH strip, 1–20 of 900 loaded, the ranked results with highlighted snippets, and the Facets panel open on its Subjects section.](screenshots/macos/search.png)
+![The Search window: a keyword search for Berlin blockade, with the List, Timeline, Concordance and Collocates switch in the title bar, the MATCH strip, 1–20 of 900 loaded, the ranked results with highlighted snippets and classification markings such as Top Secret, and the Facets panel open on its Subjects section.](screenshots/macos/search.png)
 
 *The Search window, with the Facets panel open.*
 
@@ -154,7 +154,7 @@ The **Tips** button beside the field has the full list, `NEAR` included.
 
 Click **Sources** in the Research rail. **Source Explorer** opens in a window of its own and reads the document's source note — the lot file, decimal file or presidential-library collection the original came from — and matches it, where it can, to its record in the National Archives catalog, including the entry number to give the archivists when you request the records. Below the record, **Archival Neighbors** lists the other documents in your indexed volumes that come from the same archival source, so you can read a document alongside the rest of its box.
 
-![Source Explorer for a document printed from S/S–NSC files, lot 63 D 351: on the left the source note, its provenance — a State Department lot file in Record Group 59 — and the archival collection, cited in 98 volumes; on the right the NARA catalog record it resolves to, with HMS/MLR entry A1 1586E, and the Archival Neighbors list.](screenshots/macos/source-explorer.png)
+![Source Explorer for a document printed from S/S–NSC files, lot 63 D 351: on the left the source note with the document's Top Secret marking, its provenance — a State Department lot file in Record Group 59 — and the archival collection, cited in 98 volumes; on the right the NARA catalog record it resolves to, with HMS/MLR entry A1 1586E, and the Archival Neighbors list.](screenshots/macos/source-explorer.png)
 
 *Source Explorer, resolving a lot file to its National Archives series.*
 

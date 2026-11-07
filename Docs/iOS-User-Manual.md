@@ -314,7 +314,7 @@ The **Browse** tab navigates the series by its own structure: subseries (publica
 
 On an iPad with room for two panes — in landscape, for instance — the root stays on the left as a list while the level you open fills the right. The row or tile you opened it from stays highlighted in the list, however deep you go inside it, and VoiceOver reads it as selected. That includes **Continue reading**: while the document it reopened is open beside the list, the row keeps naming that document, even after you follow a reference out of it or read something else in another tab. A document is the exception: it takes the whole width unless the window also has room for the Research rail beside it (Section 4.2), which on a 13-inch iPad means landscape with the tabs as a floating bar. With the tabs in the sidebar, the navigation bar across the panes names the level you opened, with your project's research question beneath it (Section 10.2). **Back** brings the level beneath back with what you set on it: in Archives, the lens you chose, the eras and groups you closed, and the collection search; in a collection, the lists you expanded with **Show all**; in All Volumes and Editors, the search. The list on the left keeps its search too, when a document has taken its place. Turning the iPad across the width where the panes appear keeps all of these. The level itself is drawn again, though: it opens at the top of its list, and a collection whose sub-series you opened in Archives' Collections list shows them closed again. Choosing a door again from the list on the left opens that level afresh.
 
-![The Browse root — Continue reading, the volume search field, the People and Topics rows, the "Browse by" tiles, and Your sets.](screenshots/ipad/browse-root.png)
+![The Browse root — Continue reading, the volume search field, the People and Topics rows, the "Browse by" tiles with the Editors’ Annotations door below them, and Your sets.](screenshots/ipad/browse-root.png)
 
 ### 6.1 The Browse Root
 
@@ -451,6 +451,8 @@ A volume that prints a List of Persons but links none of its names to it is mark
 
 On an iPad the strips stack into a matrix: the eras' first years head each group, and each cell opens that era's volumes that carry the layer, such as the 114 volumes covering 1955–1968 that tag people. With VoiceOver, a cell reads its layer, its era and its count.
 
+![The Editors’ Annotations axis on iPad — under Who is named, each layer with its count of volumes, such as People tagged in 288 of 553, and its strip of eras from 1861 to the retrospective volumes, shaded by the share of each era's volumes that carry it.](screenshots/ipad/browse-annotations.png)
+
 ### 6.2 Top Subjects
 
 Every volume's page carries a **Top subjects** section — the subjects most characteristic of that volume, derived from experimental subject data and grouped by category. These are automatically detected topics, not editorial subject headings, so an occasional mistag is possible; but because the profiles ship with the app, they appear even for volumes you haven't downloaded — a fast way to size up an unfamiliar volume before committing 6 MB to it. Tap a subject to see every *other* FRUS volume covering it across the whole corpus, and navigate straight to any of them. That sheet also offers **Archival profile of these volumes**, which opens Archival Analytics (Section 15.5) on the collections those volumes draw on.
@@ -483,6 +485,8 @@ Every volume's page also says what its editors annotated, under **Editors’ Ann
 
 A layer is listed when the volume carries it. For one that most documents can carry, such as tagged people, that means at least half the volume's documents; a count shows how many. **Not in this volume** lists the standard layers the volume lacks, each with the era from which the series made it standard, so you know before you download whether, for example, the People browser and Person analytics will find the people in it. Like Top subjects, the section ships with the app, so it appears for volumes you have not downloaded. Tap a layer, present or not, to open its page on the Editors’ Annotations axis (Section 6.1i), whose lists put this volume first.
 
+![The page of Foreign Relations, 1947, Volume II (Council of Foreign Ministers; Germany and Austria) — its details, then Editors’ Annotations: people tagged in 539 of its 570 documents, abbreviations explained, senders and recipients, source notes, classification markings, cross-references, editorial notes and footnotes.](screenshots/ipad/volume-annotations.png)
+
 ### 6.3 The Project Picker
 
 A **project picker** in the Browse toolbar sets your active research context — **Global Context** (no project), any of your projects, or **Manage Projects**. Whatever is active follows you everywhere: new notes, summaries, and collections are filed under it automatically (Section 10).
@@ -501,7 +505,7 @@ A line at the top says how many volumes tag their people, *People are tagged in 
 
 The same person often appears across many volumes under different name forms ("Kissinger, Henry A.", "Kissinger, Henry", "Kissinger, Henry A. Laurence"). FRUS Explorer consolidates these into **one identity**, so you aren't chasing one person through a dozen entries. Each row shows the canonical name; a subtitle with the **role** a volume's List of Persons gives and the **active years** (*Secretary of State · 1973–1977*); and a **mention count** — the number of distinct documents referencing this identity across your indexed corpus. The active years run from the earliest to the latest year the volumes themselves give for the person: the years in their Lists of Persons, read by the words around them (*until January 3, 1979* — or *until his resignation on April 22, 1959* — is when someone left, *from June 13, 1982* when they began, and a post held *until his death on November 22, 1963* ends that year), and the dates of the indexed documents that mention them. They are never a preface or other front matter, which is dated when the volume was prepared; never a year a List of Persons gives only as a death (*died 1896*); and never the birth and death years of the name-authority data, which the detail sheet shows as life years instead. A search field filters by name.
 
-![People browser — a single alphabetical list of reconciled identities with role · active-years subtitles and corpus-wide mention counts.](screenshots/ipad/people-list.png)
+![People browser — the line People are tagged in 288 of 553 volumes with its Volumes that tag people link, above a single alphabetical list of reconciled identities with role · active-years subtitles and corpus-wide mention counts.](screenshots/ipad/people-list.png)
 
 Tap a person for their **detail sheet**. A **reconciled-identity seal** there marks a person matched to the bundled name-authority data, and a reconciled person's **life years** sit under the name, beside the role the Office of the Historian's people data gives them — that data's own years, with a year it lacks filled from the Principal Officers and Chiefs of Mission register. Those say when the person lived; the **Active** row below them is the volumes' span, as in the list.
 
@@ -532,7 +536,7 @@ To study *how* these people are mentioned over time — rankings by era, traject
 
 The **Search** tab is full-text search across every volume you've downloaded and indexed — ranked by relevance with the BM25 algorithm and English-language stemming, so *negotiate* also matches *negotiation* and *negotiated*. On iPad with a keyboard, **⌥⌘F** (**Find → Search** in the menu bar) brings the Search tab forward from any tab. For a researcher the important properties are less the ranking than the accountability: the app shows you the exact query it ran, describes the whole result set rather than just the visible page, and — while **Log Research Sessions** is on (Section 17.5) — records every search you run that has words in it as evidence of your method.
 
-![Search results on iPad — the query field, the actions bar, and the ranked list with headings, datelines, volume identifiers, and highlighted snippets.](screenshots/ipad/search-results.png)
+![Search results on iPad — the query field, the actions bar, and the ranked list with headings, datelines, volume identifiers, highlighted snippets, and each document's classification marking, such as Top Secret.](screenshots/ipad/search-results.png)
 
 ### 7.1 Running a Search
 
@@ -946,6 +950,8 @@ Tap a category to see the matching documents. Each row carries the document's ti
 - **Collections Exported**, the third section, records what left the app — format, document count, collection name — because nothing else remembers an export happened. It matters most for the Zotero web send, which writes into your live Zotero library: this row is the app's only memory of it. These rows are records, not shortcuts; delete is their only action.
 - Long lists load 500 entries per section, with **Show More** and an honest header ("Showing 500 of 12,904") while anything is unloaded. The search field filters what is *loaded*, so Show More widens what a search can reach.
 
+![Research → History on iPad — the end of Documents Visited, then Searches Executed, each search with its result count and age, the one that found nothing (0 results) kept with the rest.](screenshots/ipad/research-history.png)
+
 If the sections stay empty, check **Settings → Research → Research Sessions**: with **Log Research Sessions** off nothing new is recorded, and History says so (Section 17.5).
 
 ---
@@ -1203,7 +1209,7 @@ If your research will ever take you to College Park or a presidential library, t
 
 Tap the **Sources** tile in a document's Research rail. Source Explorer shows the parsed source-note information and, where the note resolves, a direct link to the corresponding record in the **NARA online catalog**, which opens in your browser. The **ⓘ** button says what Source Explorer shows, and **Learn About Source Notes**, in the **⋯** menu beside it, opens the Research Guide at *Understanding What You're Reading*, which explains how to read an archival source note — worth a first read if archival citation forms are new to you.
 
-![Source Explorer on iPad — the parsed source note, and the NARA catalog record it resolves to.](screenshots/ipad/source-explorer.png)
+![Source Explorer on iPad — the parsed source note with the document's Top Secret marking, and the NARA catalog record it resolves to.](screenshots/ipad/source-explorer.png)
 
 ### 14.2 What Resolves, and How
 
@@ -1513,6 +1519,8 @@ Two outside services, neither required — each card shows its connection state 
 **Export as JSON** writes one file with your notes, tags, highlights, collections, custom prompts, projects, archive visit plans (each plan whole: its seeds, tiers, and per-target notes), saved searches, working corpora, volume scopes, your classification and person corrections, the changed passages you have reviewed, Suggested Next leads, and the settings you sync, together with your whole research trail: every document you opened, every search you ran *with its result count*, every collection you exported. The trail is not optional, deliberately — a search that returned nothing is evidence, and an export that dropped it could not stand as a record of how you worked. Each entry carries the project active when it was recorded, so a file exported mid-project reads back as the method behind it. Notes keep their formatting, and collections their whole composition: headings, prose, excerpts, generated blocks, and every setting. **Export Notes as Markdown** writes one file per note, Obsidian-compatible — the bridge to a Zettelkasten or note-graph workflow. AI summaries are excluded by default (a toggle includes them), and each included summary records who wrote it — the model, the model then edited by you, or you. Because the JSON contains the text of every search you ran, look before you share it.
 
 **Export Query Log as a Method Appendix** writes the same trail as a methods statement rather than as data: a Markdown table you can paste into a paper, and a CSV to re-derive from. Each row is one search with the scope it ran under, how many volumes were indexed at the time, and what it returned. Both files, and the query log a collection appends, say what the counts were drawn from: the volumes' text, and the app's own model where a search by meaning is listed.
+
+![Settings → Data & Recovery on iPad — Export as JSON, Export Notes as Markdown and Export Query Log as a Method Appendix, each with a line saying what the file holds.](screenshots/ipad/data-recovery-export.png)
 
 The reason to keep it is the zeros. *"I searched for this and found nothing"* is an assertion; the same sentence with a date, a scope, and a denominator is evidence — the only form of it a reader can check. Counts that hit the app's row ceiling are written as **"at least 1,000"** on iPad and iPhone (the ceiling is 7,500 on a Mac, and one synced trail can hold both), never as the bare number — a ceiling-capped fetch is a floor, not a total. A Meaning search's list is the whole of its ranking, so its count is written as it is: *100*, not *at least 100*. The CSV carries a `count_basis` column saying which each row is, because a spreadsheet will otherwise sum a column of floors into a number nobody measured. Searches recorded before the app kept this detail print marked *"as reported"* rather than being dropped.
 
