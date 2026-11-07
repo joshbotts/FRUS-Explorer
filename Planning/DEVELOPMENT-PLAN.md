@@ -9759,7 +9759,7 @@ From `v2` at `dcf178e` (#1853 merged), on `claude/cool-borg-34f5fa`, a side sess
 **Records corrected.** The design's §11 and the note's B.3 said `frus1941-43`'s page read "6 people listed". It never did: the page's People row shows only for a volume that carries the layer, and the six were in the persons view ("Persons (6)"). The note's B.3 also said reading the term pointers would take an index version, as #1599 did for the people; it does not, since the count is the generator's scan. The note's Part A, item 3, said FRUS Explorer reads only the person pointers; its last two sentences are rewritten, for the owner to read before filing. The design's status is BUILT, lanes A to D having merged.
 
 **Not done, and for the owner.**
-- **The pull request**: drafted, not opened, as the brief asked.
+- **The pull request**: opened as #1863 on the owner's word ("Open the PR"). The merge is the owner's.
 - **The release that carries 72, 73 and 74**: one notes line for the re-index, and its checklist's count of it at version 74.
 - **No capture to retake**: none shows `frus1941-43`'s persons view or Index of Persons, or `frus1981-88v16`'s page. The two `people-list` captures, the iPad's and the Mac's, show only names under A, and the six sort under F, G, H, M, S and V.
 - **Not walked in the app**: the routing is pinned by the outline's kind and the reader's parse in unit tests; nobody has opened the Index of Persons on a device.
