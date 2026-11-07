@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import FRUSCoreKit
 #if canImport(FoundationXML)
 import FoundationXML
 #endif
@@ -21,6 +22,7 @@ import FoundationXML
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane A
+///   1.1 — 2026-11-06: ``annotatedIds``, the ids the document div's own `@ana` names
 struct TEIDocumentFeatures: Equatable, Sendable {
     /// `div[@subtype="editorial-note"]`.
     var isEditorialNote = false
@@ -28,6 +30,11 @@ struct TEIDocumentFeatures: Equatable, Sendable {
     var inlineSourceNote = false
     /// Every pointer of a `gloss`'s `@target` or `@ref`, without a leading `#`.
     var glossTargets: Set<String> = []
+    /// The ids the document div's own `@ana` names in its volume (`FRUSDocumentAST.annotatedId`):
+    /// the people and terms `frus1981-88v16` names on each document, where other volumes link them
+    /// in the text. The reader lists them below the document (#1599). A pointer into another file
+    /// names nothing here.
+    var annotatedIds: Set<String> = []
     /// An element typed `from` or `to`: the heading marks a sender or recipient.
     var correspondents = false
     /// A `list[@type="subject"]`.
@@ -153,8 +160,12 @@ final class TEIAnnotationScanner: NSObject, XMLParserDelegate {
             textStack.append("")
             if !id.isEmpty, scan.features[id] == nil {
                 scan.documentIds.append(id)
+                // `@ana`'s pointers as the parser splits them, each to the id it names.
+                let annotated = (attributeDict["ana"] ?? "").split(whereSeparator: \.isWhitespace)
+                    .compactMap { FRUSDocumentAST.annotatedId(String($0)) }
                 scan.features[id] = TEIDocumentFeatures(
-                    isEditorialNote: attributeDict["subtype"] == "editorial-note")
+                    isEditorialNote: attributeDict["subtype"] == "editorial-note",
+                    annotatedIds: Set(annotated))
             }
         } else if let id = documentStack.last, !id.isEmpty {
             record(elementName, type: type, attributes: attributeDict, in: id, frame: &frame)

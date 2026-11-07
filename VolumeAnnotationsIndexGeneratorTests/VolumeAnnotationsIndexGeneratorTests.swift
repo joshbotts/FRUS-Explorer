@@ -25,6 +25,9 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane A
+///   1.1 — 2026-11-06: a volume that names its people and terms on each document's `@ana`
+///          (`frus1981-88v16`), and one that prints an Index of Persons (`frus1941-43`, index
+///          version 74)
 @Suite("VolumeAnnotationsIndexGenerator — what each volume's editors annotated")
 struct VolumeAnnotationsIndexGeneratorTests {
 
@@ -76,6 +79,58 @@ struct VolumeAnnotationsIndexGeneratorTests {
             </div></body>
           </text>
         </TEI>
+        """
+
+    /// A volume that names its people and terms only on each document div's `@ana`, as
+    /// `frus1981-88v16` does: no `persName/@corresp` and no `gloss`. d368 is that volume's, its
+    /// pointers trimmed to four. d369's term pointer is into another file, which none of the
+    /// volume's are, so it names nothing here; d370 names no one.
+    static let annotatedXML = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>frus1969-76v99</title></titleStmt>
+          <publicationStmt><date>2026</date></publicationStmt>
+          <sourceDesc><p>Test fixture</p></sourceDesc></fileDesc></teiHeader>
+          <text>
+            <front>
+              <div type="section" subtype="index" xml:id="terms"><head>Abbreviations and Terms</head>
+                <list>
+                  <item><term xml:id="t_EXDIS_1">EXDIS</term>, exclusive distribution</item>
+                  <item><term xml:id="t_OAS_1">OAS</term>, Organization of American States</item>
+                </list>
+              </div>
+              <div type="section" subtype="index" xml:id="persons"><head>Persons</head>
+                <list>
+                  <item><persName xml:id="p_HAMJ_1">Haig, Alexander M., Jr.</persName>, Secretary of State</item>
+                  <item><persName xml:id="p_RRW_1">Reagan, Ronald W.</persName>, President of the United States</item>
+                </list>
+              </div>
+            </front>
+            <body><div type="chapter" xml:id="ch1"><head>Central America</head>
+              <div type="document" xml:id="d368" n="368" subtype="historical-document" ana="#p_HAMJ_1 #p_RRW_1 #t_EXDIS_1 #t_OAS_1"><head>368. Telegram From the Department of State to the Embassy in Ecuador</head>
+                <p>The Secretary met the President.</p></div>
+              <div type="document" xml:id="d369" n="369" subtype="historical-document" ana="#p_RRW_1 frus1981-88v11#t_OAS_1"><head>369. Memorandum for the Record</head>
+                <p>The President spoke.</p></div>
+              <div type="document" xml:id="d370" n="370" subtype="historical-document"><head>370. Memorandum for the Record</head>
+                <p>No one is named.</p></div>
+            </div></body>
+          </text>
+        </TEI>
+        """
+
+    /// `frus1941-43`'s "Index of Persons" as the TEI encodes it, trimmed: a List of Persons'
+    /// attributes, a `<list type="index">`, and entries with page references and no id. Its id
+    /// here is `persname`, a persons list's too, since the fixture's List of Persons has `persons`.
+    /// Read as a list, three of its entries were people ("Gauss, … 807n", "Hull, …", "Views on").
+    static let indexOfPersons = """
+        <div type="section" subtype="index" xml:id="persname"><head>Index of Persons</head>
+          <list type="index">
+            <item>Acheson, Dean G., Assistant Secretary of State, <ref target="#pg_62">62</ref></item>
+            <item>Gauss, Clarence E., Ambassador in China, <ref target="#pg_807">807<hi rend="italic">n</hi></ref></item>
+            <item>Hull, Cordell, Secretary of State: <list><item>Meetings: <list><item>With Litvinov, <ref target="#pg_133">133</ref></item></list></item></list></item>
+            <item>Views on: <list><item>Aircraft production, <ref target="#pg_110">110</ref></item></list></item>
+          </list>
+        </div>
         """
 
     // MARK: Helpers
@@ -165,6 +220,17 @@ struct VolumeAnnotationsIndexGeneratorTests {
         #expect(scan.features["d1"]?.inlineSourceNote == false)
     }
 
+    @Test("The TEI scan keeps the ids a document's @ana names in its volume")
+    func scanRecordsAnnotatedIds() throws {
+        let scan = try TEIAnnotationScanner.scan(data: Data(Self.annotatedXML.utf8))
+        #expect(scan.documentIds == ["d368", "d369", "d370"])
+        #expect(scan.features["d368"]?.annotatedIds == ["p_HAMJ_1", "p_RRW_1", "t_EXDIS_1", "t_OAS_1"])
+        // A pointer into another file names nothing in this volume, as in the reader.
+        #expect(scan.features["d369"]?.annotatedIds == ["p_RRW_1"])
+        #expect(scan.features["d370"] == TEIDocumentFeatures())
+        #expect(scan.features["d368"]?.glossTargets.isEmpty == true)
+    }
+
     // MARK: Through the pipeline
 
     @Test("A volume indexed through the kit's pipeline is counted by the app's rules")
@@ -192,6 +258,31 @@ struct VolumeAnnotationsIndexGeneratorTests {
         #expect(volume.carries(.people) && volume.carriesSourceNotes)
         #expect(Set(["preface", "sources", "terms", "persons"]).isSubset(of: volume.sections))
         #expect(!volume.sections.contains("compilation"))
+    }
+
+    @Test("People and terms named only on a document's @ana are counted, as the reader lists them")
+    func countsTheDocumentsAnaPointers() async throws {
+        let root = try Self.corpus(xml: Self.annotatedXML)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let volume = try #require(try await VolumeAnnotationsIndexRunner.build(Self.configuration(root))[Self.volume])
+        #expect(volume.documents == 3 && volume.personsListed == 2 && volume.termsListed == 2)
+        // People through the index's mentions (#1599, index version 67); terms through the scan.
+        #expect(volume.count(.people) == 2)
+        // d368 names two terms; d369's one points into another file, and d370 names none.
+        #expect(volume.count(.abbreviations) == 1)
+    }
+
+    @Test("An Index of Persons lists no one, and is an index among the volume's sections")
+    func anIndexOfPersonsListsNoOne() async throws {
+        let xml = Self.xml.replacingOccurrences(of: "</body>", with: "</body><back>\(Self.indexOfPersons)</back>")
+        #expect(xml != Self.xml)
+        let root = try Self.corpus(xml: xml)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let volume = try #require(try await VolumeAnnotationsIndexRunner.build(Self.configuration(root))[Self.volume])
+        // The List of Persons' three; until index version 74 the index added its three fragments.
+        #expect(volume.personsListed == 3)
+        #expect(volume.sections.contains("index") && volume.sections.contains("persons"))
+        #expect(volume.count(.people) == 3)
     }
 
     @Test("The file is the same bytes run to run, and reads back as written")

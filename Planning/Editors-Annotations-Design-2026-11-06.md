@@ -1,6 +1,6 @@
 # Editors' annotations: what each volume carries, on its page and in Browse — a design, 2026-11-06
 
-**Status: BUILDING, 2026-11-06.** Lanes A, B and C merged as #1859, #1860 and #1861; lane D, the matrix and the links and the last lane, follows them. The owner's "proceed with annotations design plan" took §9's recommendations 1–4, and lane B took decision 5 as B shipping alone. Decision 6 is drafted and not filed: `OH-Note-2026-11-06.md`, for the owner to file. §11 records where each lane departs from the design.
+**Status: BUILT, 2026-11-06.** Lanes A to D merged as #1859, #1860, #1861 and #1862. The owner's "proceed with annotations design plan" took §9's recommendations 1–4, and lane B took decision 5 as B shipping alone. Decision 6 is drafted and not filed: `OH-Note-2026-11-06.md`, for the owner to file. §11 records where each lane departs from the design, and the fix of two of the axis's marks at index version 74.
 
 **Amended the same day, after #1853 (index version 72).** That pull request closed the gap §3 found, so §3 now records it.
 - Classification is now counted by the marking the index stores, re-counted from a full index at version 72.
@@ -9,6 +9,8 @@
 - No other figure moved.
 
 **Amended again after #1857 (index version 73),** which closed that second gap. The classification figures are now version 73's (§2, §4, §5), and §3.3 and decision 7 record the fix. Only classification's figures and the artifact's size estimate moved.
+
+**Amended again for index version 74 (plan of record decision 119),** which reads `frus1941-43`'s Index of Persons as an index and counts the terms `frus1981-88v16`'s documents name on `@ana` (§11, after lane D). The survey's figures in §2 to §4 are its TEI pass's, `gloss/@target` alone, and stand as measured; the artifact links abbreviations in 310 volumes, not 309.
 
 **What this is.** The owner asked two questions, two days apart.
 - **2026-11-04:** when people tagging began, and in which volumes. The answer went into the Research Guide (#1851).
@@ -178,7 +180,7 @@ That is why §5 gives a category no "partial" state.
 
 Of the 230 volumes covering 1955 on, retrospectives included (`tables.out` §6):
 - **People tagged:** missing only in `frus1977-80v27`. It prints a 153-name List of Persons, and its TEI links no name to it.
-- **Abbreviations:** missing in `frus1955-57v03mSupp`, `frus1977-80v27`, and `frus1981-88v16`. The last names abbreviations in its document-level `@ana`, which the app reads for people only.
+- **Abbreviations:** missing in `frus1955-57v03mSupp`, `frus1977-80v27`, and `frus1981-88v16`. The last names abbreviations in its document-level `@ana`. The reader has listed them below each document since #1599; the artifact counts them since index version 74's change (§11), so the app does not count the volume as lacking them.
 - **Numbered in print:** missing only in `frus1958-60v05mSupp`.
 - **Cross-references to documents:** missing in the three microfiche supplements and `frus1969-76v42`.
 - **Classification:** under half the rows store a marking in 2 volumes, `frus1969-76v01` (40 of 123) and `frus1977-80v01` (74 of 163).
@@ -548,7 +550,7 @@ For each fixture, the generator's people, abbreviation, source-note, classificat
    - printed numbers encoded as `note[@type="source"]` in `frus1870`, `frus1872p2v5` and seven more volumes, as a question. `frus1870`'s are its paper numbers, not the despatch numbers this list first called them.
    - `frus1870`: 21 `@when` values that contradict the date they mark, 16 of them taking their month from the dateline's "(Received …)".
 
-   These are corpus facts. The app states `frus1977-80v27`'s faithfully whether or not upstream changes. The draft's B.3 names two lines that do not state their volume faithfully, `frus1941-43`'s and `frus1981-88v16`'s (§11, lane C).
+   These are corpus facts. The app states `frus1977-80v27`'s faithfully whether or not upstream changes. The draft's B.3 named two lines that did not state their volume faithfully, `frus1941-43`'s and `frus1981-88v16`'s; index version 74's change fixes both (plan of record decision 119; §11).
 7. **The note parser's gap (§3.3, #1856): resolved.** #1857 stores the 8,865 markings at index version 73, which ships with 72 in the next release (plan of record decision 118). The counts in this design are version 73's.
 
 ## 10. Files
@@ -588,11 +590,11 @@ Where the lanes depart from §4 to §8, each for a reason measured on the way.
 - **The printed aids have one drill per aid,** not "with" and "without": nearly every volume prints one.
 - **A drill's title** reads "With: People tagged" or "Without: People tagged"; its caption is §6's. Its rows show "279/280" for a layer that runs through a volume, "37 docs" for one found here and there, "12 notes" for editorial notes, and nothing for references and aids, which no one count says.
 - **The marked volume comes first.** Opened from a volume's row, a drill lists that volume first, with "You came here from this volume." In the 288 volumes that tag people, `frus1961-63v06` would otherwise be the 126th row.
-- **The amber line is computed, and two of its four marks are wrong.** It marks a volume whose index holds a List of Persons, or of Abbreviations, and none of whose documents links one to it. It finds `frus1977-80v27`'s two lists, as it should. It also marks:
-  - `frus1941-43`'s "Index of Persons", a back-of-book index of 350 entries with page references and no ids. The persons-list parser keys an entry with no id by its text and keeps the 6 that pass its name heuristic, so the volume's page also says "6 people listed";
-  - `frus1981-88v16`'s List of Abbreviations, whose 88 documents point at it 419 times by `@ana`. The index reads those pointers for people (#1599) but not for terms.
+- **The amber line is computed.** It marks a volume whose index holds a List of Persons, or of Abbreviations, and none of whose documents links one to it. It finds `frus1977-80v27`'s two lists, as it should. As built it marked two more, and both marks were wrong:
+  - `frus1941-43`'s "Index of Persons", a back-of-book index of 350 entries with page references and no ids. The persons-list parser keyed an entry with no id by its text and kept the 6 that passed its name heuristic;
+  - `frus1981-88v16`'s List of Abbreviations, whose 88 documents point at it 419 times by `@ana`. The index reads those pointers for people (#1599), and the reader lists both kinds below each document, but the artifact counted abbreviations by `gloss` alone.
 
-  Until the check for the note to the Office (`OH-Note-2026-11-06.md`, B.3), this bullet called both lists that nothing links to. The fixes are the owner's to schedule.
+  Until the check for the note to the Office (`OH-Note-2026-11-06.md`, B.3), this bullet called both lists that nothing links to. Index version 74's change removes both marks (after lane D, below).
 - **The regular-width matrix is lane D's,** as §8 planned.
 
 **Lane D, the matrix and the links.**
@@ -601,3 +603,9 @@ Where the lanes depart from §4 to §8, each for a reason measured on the way.
 - **Its link is a hand-off,** `AppState.openAnnotationLayer`, as a volume's is. On the Mac the Corpus Browser comes forward, selects the axis and pushes People tagged's page once the split view shows the axis. On iOS Browse opens the axis with the page above it, assigned rather than appended, as the topic index is, so the crumbs read the axis and not People. In Person analytics' own iPad window, where Browse is in another window, the link is withheld, the Topic-index door's rule.
 - **The guide's sentence** ends the People section: "For any volume you can see whether its editors tagged its people, and list the volumes that do, era by era." It says what a reader can do and names no control.
 - **Not built:** combining layers into one filter (§6, "Later").
+
+**After lane D: two of the axis's marks, at index version 74** (plan of record decision 119).
+- **`frus1941-43`'s Index of Persons is read as an index.** The TEI gives its division a List of Persons' attributes (`xml:id="persons"`, `subtype="index"`); only its `<list type="index">` says what it is, and of the 287 persons sections in the 553 volumes no other has one. Such a list now opens no person, and the outline gives its division the kind `index`, so Browse opens it as the printed text it is. The index stores none of the six fragments, the file records no List of Persons for the volume, and its printed aids name its Index and not Persons.
+  - **The volume's page never said "6 people listed",** as this section and the note's B.3 had it: the People row shows only for a volume that carries the layer. The six showed in the volume's persons view ("Persons (6)": among them "Meetings" and "Views on") and, with no mention each, in the People browser, which lists every rollup row; and they were counted in the file.
+- **`frus1981-88v16`'s terms on `@ana` are counted.** The scan reads the ids a document div's own `@ana` names, as the reader's lists do (`FRUSDocumentAST.annotatedId`), and Abbreviations counts a document whose `gloss` or `@ana` names one of the volume's terms. This needs no index version: the index stores no term mention for any volume, and the count is the scan's. All 88 documents name one, so the volume carries the layer, which 310 volumes do.
+- **What else moved:** nothing. The two files regenerated for the version are as they were, the map's `indexVersion` aside, and the two indexes differ in the six `persons` rows, the volume's outline and the version stamp alone.

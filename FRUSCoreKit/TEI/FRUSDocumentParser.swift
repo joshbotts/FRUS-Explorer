@@ -154,6 +154,11 @@ import SourceNoteKit
 ///          (`SourceNoteParser.frontMatterClassKey`, `frontMatterPrimarySubjectKey`); and the outline
 ///          records whether a section's first subsection opens before its first document
 ///          (`VolumeSection.leadsWithSubsections`)
+///   2.15 — 2026-11-06 (index version 74): a back-of-book index of persons is not a list of
+///          persons. A `<list type="index">` inside a persons section opens no person
+///          (`PersonsParserDelegate`), and makes that section an `index` in the outline
+///          (`VolumeStructureParserDelegate`), so it opens as printed text. `frus1941-43`'s
+///          "Index of Persons" is the only one in the 553 catalogue volumes
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -576,6 +581,19 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
                 stack[stack.count - 1].titleCaptured = true
             } else if capturingHead {
                 headNestDepth += 1
+            }
+
+        case "list":
+            if capturingHead { headNestDepth += 1 }
+            // Index version 74: a persons section whose list is an index is an index. The TEI gives
+            // `frus1941-43`'s "Index of Persons" a List of Persons' attributes (`xml:id="persons"`,
+            // `subtype="index"`); only its `<list type="index">` says what it is. As an `index` it
+            // opens as the printed text it is, page references and all, where as `persons` it
+            // routed to the persons view (`isPersonsList`), which the parser now gives no entries.
+            if attrs["type"] == "index",
+               let section = stack.lastIndex(where: { !$0.isTransparent }),
+               stack[section].divType == "persons" {
+                stack[section].divType = "index"
             }
 
         default:
@@ -1995,6 +2013,10 @@ enum PersonListHeuristics {
     /// Sean") starts with a letter and is kept; transliterated names that legitimately open with an
     /// apostrophe or ʿayn are not bracket-led and are likewise kept; generational ordinals
     /// ("2d", "3d") and roman numerals are not page-number runs and are kept.
+    ///
+    /// Since index version 74 the parser does not read `frus1941-43`'s index at all: its
+    /// `<list type="index">` opens no person (`PersonsParserDelegate.indexListDepth`), which the six
+    /// names this rule let through ("Meetings", "Views on") showed a name test cannot do alone.
     static func isLikelyPersonName(_ name: String) -> Bool {
         let n = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard n.contains(where: { $0.isLetter }) else { return false }
@@ -2052,6 +2074,9 @@ enum PersonListHeuristics {
 ///          END year and "from"/"after"/"since" a start; dated ranges ("January 31, 1956–June 11,
 ///          1957") parse; a bracket is trimmed only when unpaired. `currentDateIndexVersion`
 ///          57 → 58.
+///   2026-11-06 — no item of a `<list type="index">` is a person (``indexListDepth``):
+///          `frus1941-43`'s Index of Persons gave six rows keyed by their text.
+///          `currentDateIndexVersion` 73 → 74.
 private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     var entries: [PersonEntry] = []
@@ -2103,6 +2128,19 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
     /// rather than a look at `textBuffer`, because `</persName>` empties that buffer.
     private var personHasText = false
 
+    /// The element depth of the `<list type="index">` being read, or `nil` outside one (index
+    /// version 74).
+    ///
+    /// A back-of-book index of persons is not a list of persons, though the TEI gives
+    /// `frus1941-43`'s "Index of Persons" a List of Persons' `xml:id`. Its 350 entries carry page
+    /// references and no id, so nothing can link to them, and the six that passed
+    /// `PersonListHeuristics` were stored as people keyed by their text: "Meetings:", "Views on:",
+    /// "Gauss, Clarence E., Ambassador in China, 807n". No item inside such a list opens a person.
+    /// It is the only `list type="index"` in a persons section of the 553 catalogue volumes
+    /// (corpus `6170e4b32`). A list of that type inside a person already open is that person's
+    /// sub-entries, which #741's rule reads as it always has.
+    private var indexListDepth: Int?
+
     /// The `xml:id` values that name a volume's list of persons.
     ///
     /// The two 1873 parts each carry a real 57-entry editor list, headed "List of persons whose
@@ -2145,6 +2183,8 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
             personsSectionDepth = elementDepth
         }
         guard inPersonsSection else { return }
+        // Index version 74: nothing inside an index of persons opens (``indexListDepth``).
+        guard indexListDepth == nil else { return }
 
         if elementName == "list" && inPersonElement {
             // #1321: an `<item>` that reaches its first nested `<list>` without having said
@@ -2160,6 +2200,11 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
             } else {
                 nestedListDepth += 1
             }
+        }
+        // After the letter-group rule, so an index grouped by initial letter is read as one too.
+        if elementName == "list", attributeDict["type"] == "index", !inPersonElement {
+            indexListDepth = elementDepth
+            return
         }
         if elementName == "item" && personsSectionDepth >= 0 { itemDepth += 1 }
 
@@ -2207,6 +2252,12 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
                 qualifiedName qName: String?) {
         defer { elementDepth -= 1 }
         guard inPersonsSection else { return }
+        // Index version 74: inside an index of persons nothing opened, so nothing closes, until
+        // the list itself does. The section's own end is never inside the list.
+        if let depth = indexListDepth, elementDepth > personsSectionDepth {
+            if elementName == "list", elementDepth == depth { indexListDepth = nil }
+            return
+        }
         if elementName == "persName" && currentName == nil {
             // Collapse interior whitespace (e.g. "Kissinger,\n  Henry A." → "Kissinger, Henry A.")
             // in addition to trimming edges. XML formatting wraps name content across lines in
@@ -2291,6 +2342,8 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
             inPersonElement = false
             personItemDepth = nil
             personHasText = false
+            // Index version 74: likewise an index list a malformed section left open.
+            indexListDepth = nil
         }
     }
 

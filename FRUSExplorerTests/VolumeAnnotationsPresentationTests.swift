@@ -19,6 +19,9 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane B
+///   1.1 — 2026-11-06: the shipped file's `frus1981-88v16` explains its abbreviations, which its
+///          documents name on `@ana`, and `frus1941-43`'s printed aids name its Index of Persons as the
+///          index it is (index version 74)
 @Suite("Editors’ Annotations — what a volume page says about its editors' annotation")
 struct VolumeAnnotationsPresentationTests {
 
@@ -155,5 +158,19 @@ struct VolumeAnnotationsPresentationTests {
         #expect(kennedy.groups.first?.rows.first?.accessibilityLabel
                 == "People tagged: 120 of 120 documents; 58 people listed.")
         #expect(VolumeAnnotationsPresentation(volumeId: "frus-no-such-volume") == nil)
+
+        // 1981–88 vol. XVI names its terms on each document's `@ana`, which the reader lists below
+        // the document, so its page explains them rather than listing them as absent.
+        let southAmerica = try #require(VolumeAnnotationsPresentation(volumeId: "frus1981-88v16", locale: locale))
+        #expect(southAmerica.groups.flatMap(\.rows).first { $0.id == "abbreviations" }?.detail
+                == "88 of 88 documents · 108 terms listed")
+        #expect(!southAmerica.absent.contains { $0.id == "abbreviations" })
+
+        // The Washington and Casablanca conferences print an Index of Persons, which is an index:
+        // no people are listed, and the printed aids do not name a List of Persons.
+        let conferences = try #require(VolumeAnnotationsPresentation(volumeId: "frus1941-43", locale: locale))
+        #expect(conferences.groups.flatMap(\.rows).first { $0.id == "printedAids" }?.detail
+                == "Preface · Abbreviations · List of Papers · Index")
+        #expect(!conferences.groups.flatMap(\.rows).contains { $0.id == "people" })
     }
 }
