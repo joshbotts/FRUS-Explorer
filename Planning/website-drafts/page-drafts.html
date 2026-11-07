@@ -93,6 +93,7 @@ td.num b { color: var(--ok); }
 .pg-hero h1 { font-size: clamp(30px, 4.6vw, 50px); line-height: 1.05; letter-spacing: -0.01em; max-width: 18em; }
 .pg-lead { font-size: 19px; line-height: 1.55; max-width: 36em; }
 .pg-cta { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; font-family: var(--sans); font-size: 15px; margin-top: 4px; }
+.pg-qs { color: var(--muted); }
 .pg-btn { padding: 10px 18px; border-radius: 3px; font-weight: 600; }
 .pg-btn.soon { border: 1px solid var(--ink); color: var(--ink); }
 .pg-badge { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 16px; border: 1px dashed var(--muted); border-radius: 7px; font-size: 13.5px; color: var(--muted); }
@@ -188,6 +189,7 @@ footer.src { border-top: 1px solid var(--rule); padding-block: 18px 48px; font-f
         </table>
       </div>
       <p class="method">“Before” is the copy of record on <code>v2</code> at <code>1c18b51</code> (27 October 2026) for Support and Privacy, and the tour as it stood on 17 October. How it was measured: paragraphs, list items, table cells and captions of eight words or more, with labels, navigation and production notes left out. Syllables come from a standard English hyphenation dictionary. Most blocks still above 9.5 are a single sentence that holds a web address, a menu path or a long feature name such as "Cross-Reference Analytics". The formula counts sentence and word length only. It can't tell a term the reader needs from jargon, so the app's own terms stay, each with a short explanation. Those explanations cost the tour 0.2 of a grade. The tour now also holds the new Part V and People step.</p>
+      <p class="method"><b>Not re-measured since 2026-11-06.</b> The owner revised the Home and Tour text on 6 November 2026, and both now describe 1.0's Editors’ Annotations. Their “After” figures above are for the 27 October drafts. Support and Privacy are unchanged.</p>
     </section>
 
     <section class="work" aria-labelledby="w3">
@@ -228,7 +230,7 @@ footer.src { border-top: 1px solid var(--rule); padding-block: 18px 48px; font-f
 
     <section class="work" id="pg-home" aria-labelledby="h-home">
       <div class="frame-head"><h2 id="h-home">Home</h2><div class="acts"><button class="copy-btn" type="button" data-copy="home-frame">Copy the shown version's text</button></div></div>
-      <div class="paste"><p><b>In Squarespace:</b> a page at <code>/</code> built from Text blocks in the site's Printed Volume styles. The four "What it does" items are a four-column layout. The coming-soon banner is an announcement bar, and it comes down at launch. The dashed section, “Work that holds up,” is new in this draft: it points to Part V of the tour. Links go to <code>/tour</code>, <code>/support</code> and <code>/privacy</code> on the live site.</p></div>
+      <div class="paste"><p><b>In Squarespace:</b> a page at <code>/</code> built from Text blocks in the site's Printed Volume styles. The four "What it does" items are a four-column layout. The coming-soon banner is an announcement bar, and it comes down at launch. The dashed section, “Work that holds up,” is new in this draft: it points to Part V of the tour. Links go to <code>/tour</code>, the two quick starts, <code>/support</code> and <code>/privacy</code> on the live site. Its text is <code>site-src/home.html</code>'s as revised on 2026-11-06, copied here without that file's review note.</p></div>
       <div class="frame"><div class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="url">frusexplorer.app</span></div>
         <div class="frame-body" id="home-frame">
 <div class="pg-banner" data-show="soon"><b>Coming soon</b><span>FRUS Explorer has been submitted to the App Store for iPhone, iPad and Mac.</span></div>
@@ -237,44 +239,45 @@ footer.src { border-top: 1px solid var(--rule); padding-block: 18px 48px; font-f
   <p class="pg-kick" data-show="soon">Coming soon to the App Store</p>
   <p class="pg-kick" data-show="launch">Free on the App Store</p>
   <h1>Search 553 volumes of the U.S. diplomatic record.</h1>
-  <p class="pg-lead" data-show="soon">FRUS Explorer is a free research app for iPhone, iPad and Mac, coming soon to the App Store. It puts the <i>Foreign Relations of the United States</i> series on your device, so you can read it, search it and work with it offline.</p>
-  <p class="pg-lead" data-show="launch">FRUS Explorer is a free research app for iPhone, iPad and Mac. It puts the <i>Foreign Relations of the United States</i> series on your device, so you can read it, search it and work with it offline.</p>
-  <div class="pg-cta" data-show="soon"><span class="pg-btn soon">Coming soon to the App Store</span><a href="tour/tour.html" target="_blank" rel="noopener">Take the tour</a><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md" target="_blank" rel="noopener">Read the manual</a></div>
-  <div class="pg-cta" data-show="launch"><span class="pg-badge" title="Use Apple's official badge artwork">Download on the App Store</span><a href="tour/tour.html" target="_blank" rel="noopener">Take the tour</a><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md" target="_blank" rel="noopener">Read the manual</a></div>
-  <p class="pg-disc">FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State.</p>
+  <p class="pg-lead" data-show="soon">FRUS Explorer is a free research app for iPhone, iPad and Mac, coming soon to the App Store. It puts the <i>Foreign Relations of the United States</i> series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.</p>
+  <p class="pg-lead" data-show="launch">FRUS Explorer is a free research app for iPhone, iPad and Mac. It puts the <i>Foreign Relations of the United States</i> series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.</p>
+  <div class="pg-cta" data-show="soon"><span class="pg-btn soon">Coming soon to the App Store</span><a href="tour/tour.html" target="_blank" rel="noopener">Take the tour</a><span class="pg-qs">Quick start: <a href="site/quick-start-ios.html" target="_blank" rel="noopener">iPad and iPhone</a> · <a href="site/quick-start-mac.html" target="_blank" rel="noopener">Mac</a></span></div>
+  <div class="pg-cta" data-show="launch"><span class="pg-badge" title="Use Apple's official badge artwork">Download on the App Store</span><a href="tour/tour.html" target="_blank" rel="noopener">Take the tour</a><span class="pg-qs">Quick start: <a href="site/quick-start-ios.html" target="_blank" rel="noopener">iPad and iPhone</a> · <a href="site/quick-start-mac.html" target="_blank" rel="noopener">Mac</a></span></div>
+  <p class="pg-disc">FRUS Explorer is an independent research tool, not an official product of the Office of the Historian or the U.S. Department of State.</p>
 </section>
 
 <section class="pg-sec">
   <h2>What it does</h2>
   <div class="pg-four">
-    <div><h3>Find what you need</h3><p>Search every volume you download at once, offline. Narrow the results by year, volume, person or subject. Or search by meaning: ask a question in your own words.</p></div>
+    <div><h3>Find what you need</h3><p>Search every volume you've downloaded, offline. Narrow the results by year, volume, person or subject. Or search by meaning: ask a question in your own words.</p></div>
     <div><h3>Manage your research</h3><p>Highlight, take notes and tag documents as you read. Save searches, gather documents into collections, and plan a trip to the archives.</p></div>
     <div><h3>See the patterns</h3><p>Chart a word across the years, lay out a crisis day by day, and follow how documents point to each other.</p></div>
-    <div><h3>Share what you find</h3><p>Copy a citation, send documents to Zotero, or turn a collection into a reader for your class.</p></div>
+    <div><h3>Share what you find</h3><p>Export analytics, word clouds, and document collections with your own annotations.</p></div>
   </div>
   <p class="pg-more"><a href="tour/tour.html" target="_blank" rel="noopener">See all of it in the tour →</a></p>
 </section>
 
 <section class="pg-sec">
   <h2>Built on the editors' work</h2>
-  <p>FRUS is an edited series. Its editors, today the historians of the State Department's Office of the Historian, choose each document and put the documents in order. They give each one a heading, note where the original is kept, and add notes that explain it. All of this is called editorial annotation. The Office publishes the series, with that work, as open TEI data.</p>
-  <p>FRUS Explorer builds on that work. A source note records where the original is kept, which the app calls its archival provenance. That note becomes a lead to the archive. A note that points to another document becomes a link you can follow. The app keeps the editorial annotation apart from what it works out on its own.</p>
-  <p class="pg-more"><a href="tour/tour.html" target="_blank" rel="noopener">See one document, with its editorial annotation labeled →</a></p>
+  <p>FRUS is an edited documentary history series produced by the State Department's Office of the Historian. The historians who compile the volumes select documents for publication after extensive research in classified records from across the foreign affairs interagency and then add editorial annotation to help readers place each document in its contemporary and archival context. They give each document a heading, a source note describing its original provenance and current archival location, and add other footnotes as needed to help readers understand the text and locate other directly related records. The digital editions published by the State Department include all of that work as open TEI data.</p>
+  <p>FRUS Explorer builds on that foundation to transform editorial annotation into active tools that help researchers reach and share insights about the history of U.S. foreign policy. It turns informative text into direct links to archives, graphs of incoming and outgoing cross-references, cross-volume people networks, and visualized analytics. Because FRUS editors' practices changed over 165 years, not every volume carries every kind of annotation. Every volume's page shows what kinds of annotation it carries, even before you download it, and Browse lays out each kind of annotation across the series' eras.</p>
+  <p>The app clearly labels where the information on screen came from, so users can distinguish at a glance what came directly from the published volumes, what came from other Office of the Historian data sources or the National Archives catalog, and what was built specifically for the app.</p>
+  <p class="pg-more"><a href="tour/tour.html#part-0" target="_blank" rel="noopener">See one document, with its editorial annotation labeled →</a></p>
 </section>
 
 <section class="pg-sec" data-new>
   <h2>Work that holds up</h2>
   <ul class="pg-list">
     <li><b>Show how you got your results.</b> The app keeps a record of your searches, saved sets and charts, down to the searches that found nothing.</li>
-    <li><b>Check a citation.</b> Paste a footnote, or a whole chapter's notes, and open the documents they name.</li>
-    <li><b>Keep up with corrections.</b> When the Office corrects a volume, the app shows what changed in the documents you've marked, and leaves each decision to you.</li>
+    <li><b>Check a citation.</b> Paste a footnote, or a whole chapter's notes, and review the documents they identify.</li>
+    <li><b>Keep up with corrections.</b> When the Office corrects a volume, the app shows what changed in the documents you've marked with research annotations.</li>
   </ul>
-  <p class="pg-more"><a href="tour/tour.html" target="_blank" rel="noopener">See how in the tour →</a></p>
+  <p class="pg-more"><a href="tour/tour.html#part-5" target="_blank" rel="noopener">See how in the tour →</a></p>
 </section>
 
 <section class="pg-sec">
   <h2>Your research stays yours</h2>
-  <p>FRUS Explorer collects no data. What you read, search and write stays with you: notes and collections sync only through your own iCloud account, and the app reaches the National Archives' catalog or your Zotero library only when you ask it to.</p>
+  <p>FRUS Explorer collects no data. What you read, search and write stays with you: notes and collections sync only through your own iCloud account, and the app connects with the National Archives' catalog or your Zotero library only when you tell it to.</p>
   <p class="pg-more"><a href="#pg-privacy">Read the privacy policy →</a></p>
 </section>
 
@@ -282,7 +285,7 @@ footer.src { border-top: 1px solid var(--rule); padding-block: 18px 48px; font-f
   <h2>Questions</h2>
   <dl class="pg-faq">
     <dt>Is this an official government app?</dt>
-    <dd>No. FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State. The FRUS series itself is in the public domain.</dd>
+    <dd>No. FRUS Explorer is an independent research tool released in the developer's private capacity. It is not an official product of the Office of the Historian or the U.S. Department of State. The FRUS series itself is in the public domain.</dd>
     <dt data-show="soon">When will it be out?</dt>
     <dd data-show="soon">Soon. This page will link to the App Store as soon as the app is there.</dd>
     <dt>What does it cost?</dt>
@@ -291,23 +294,25 @@ footer.src { border-top: 1px solid var(--rule); padding-block: 18px 48px; font-f
     <dt>What do I need?</dt>
     <dd>An iPhone or iPad with iOS or iPadOS 26 or later, or a Mac with macOS 26 or later. Document summaries also need Apple Intelligence.</dd>
     <dt>Does it need the internet?</dt>
-    <dd>Only to download volumes and a few optional extras, or when you ask it to look something up. After that, reading and searching work offline.</dd>
+    <dd>Only to download volumes and a few optional extras. After that, reading and searching work offline. If you add NARA Catalog and/or Zotero API keys, those connections also require internet connectivity.</dd>
     <dt>How much space does it take?</dt>
     <dd>The whole series is about 3.3 GB. The search index the app builds takes about 2.8 times as much again. You can download only the volumes you need, and remove them later.</dd>
     <dt>Does it use AI?</dt>
-    <dd>Two optional features use a model on your device. Apple Intelligence writes document summaries, and each one is labeled as generated. Search by meaning is still experimental. Nothing you type leaves your device.</dd>
+    <dd>Two optional features use a model on your device. Apple Intelligence writes document summaries, and each one is labeled as generated. Search by meaning relies on a downloaded embedding model to encode your queries. Nothing you type leaves your device for either of these features.</dd>
+    <dt>Where do I start?</dt>
+    <dd>The quick start for <a href="site/quick-start-ios.html" target="_blank" rel="noopener">iPad and iPhone</a> or for <a href="site/quick-start-mac.html" target="_blank" rel="noopener">the Mac</a> takes you through a first session, from the first download to a cited document.</dd>
     <dt>Which languages does it support?</dt>
-    <dd>English only, for now.</dd>
+    <dd>English only, just like the FRUS series itself.</dd>
   </dl>
 </section>
 
 <section class="pg-sec" data-show="soon">
   <h2>Questions before it's out?</h2>
-  <p>Email <span class="mono">help@frusexplorer.app</span>. If you're testing the app, the <a href="#pg-support">Support page</a> has the manuals and tells you what to put in a bug report.</p>
+  <p>Email <a href="mailto:help@frusexplorer.app">help@frusexplorer.app</a>. If you're testing the app, the <a href="#pg-support">Support page</a> has the quick starts and manuals, and tells you what to put in a bug report.</p>
 </section>
 <section class="pg-sec" data-show="launch">
   <h2>Tell me what it can't answer yet</h2>
-  <p>Bug reports, ideas and questions are all welcome. Email <span class="mono">help@frusexplorer.app</span>, or see the <a href="#pg-support">Support page</a> for what to include.</p>
+  <p>Bug reports, ideas and questions are all welcome. Email <a href="mailto:help@frusexplorer.app">help@frusexplorer.app</a>, or see the <a href="#pg-support">Support page</a> for what to include.</p>
 </section>
 
 <footer class="pg-foot">

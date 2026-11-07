@@ -4,6 +4,8 @@
   under that file's own header, and Scripts/build_website_pages.py writes the HTML. Its claims are
   the copy of record's at v2 1c18b51, with two additions: the coming-soon line, which comes out on
   release day, and the sentence saying what TEI is, which needs a row in Docs/Website/README.md.
+  Revised 2026-11-03: the quick starts' two links and their sentences, which the copy of record
+  took in #1847 and #1848 after this draft was written, folded in plain language.
 -->
 
 # FRUS Explorer Support
@@ -18,10 +20,12 @@ For help with the app, write to its developer, not to the Office of the Historia
 
 ## Manuals and guides
 
+- [FRUS Explorer for iPad and iPhone — Quick Start](https://frusexplorer.app/quick-start-ios)
+- [FRUS Explorer for macOS — Quick Start](https://frusexplorer.app/quick-start-mac)
 - [FRUS Explorer for iPad and iPhone — User Manual](https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md)
 - [FRUS Explorer for macOS — User Manual](https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/macOS-User-Manual.md)
 
-The app links to both manuals from **Settings → System → About**. It also has a **FRUS Research Guide**, which introduces the series itself. On iPhone and iPad, find it on the Research tab, or in **Settings → System → About → FRUS Research Guide**. On a Mac, choose **Help → FRUS Research Guide**.
+A quick start takes you through a first session, with screenshots. A manual covers everything. In the app, **Settings → System → About** links to the quick start and manual for your device. You can also open the quick start from the Research tab on iPhone and iPad, or from **Help → FRUS Explorer Quick Start** on a Mac. The app also has a **FRUS Research Guide**, which introduces the series itself. On iPhone and iPad, find it on the Research tab, or in **Settings → System → About → FRUS Research Guide**. On a Mac, choose **Help → FRUS Research Guide**.
 
 ## Contact
 
