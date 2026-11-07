@@ -1402,6 +1402,67 @@ in both manuals from the bundled files (#1762).
     copy's source and build are `edb1011a`'s; its home and preferences are as they were. P1's
     build, raw and erased frames, the iPad's pre-P1 container and the Mac's app and home are under
     `~/Library/Caches/FRUS-Explorer/p1/` until the owner says.
+- **Q1 — run 2026-11-06 21:46 to 22:48; the 1.0 (1861) retakes, for 2026-11-06's PRs.** The owner
+  asked for every screen that #1851, #1853, #1857 and #1859–#1863 changed to be retaken, and for
+  the new screens the manuals, quick starts and the website tour need; on the inventory the owner
+  chose every frame that no longer matches 1861 (group A and B below) and, as new frames, History
+  with the method appendix and the Mac's Editors' Annotations axis. Built from **`942cc41e`** (`v2`'s
+  head, index version 74), the `AppStore` configuration for the simulator under `Scripts/heavy.sh`
+  (21:46:44 to 21:49:51) with build 48's local-only banner patch, never committed and reverted as
+  the build ended. Scripts: P1's, copied to `~/Library/Caches/FRUS-Explorer/q1/`.
+  - **The re-index.** Each device started from S1's `snapshot-A` (index version 71) and re-indexed at
+    74 before any capture: the iPad from 21:51 to 22:05 (553 volumes; 114,130 stored classification
+    markings), the Mac copy from 22:31 to 22:40. A copy of the iPad's container at 74 is kept as
+    `q1/snapshot-A74`, which the iPhones were seeded from (its `Library`, without `SplashBoard` and
+    `Saved Application State`, as S3 did), so no iPhone re-indexed.
+  - **Group A, the frames whose subject changed** (16 iPad, iPhone and Mac files besides the Browse
+    root's): the People list's and Person Analytics' line *People are tagged in 288 of 553 volumes*
+    (`ipad/people-list`, `people-detail`, `people-detail-records`, `person-analytics-network`;
+    `macos/people-list`, `person-analytics-trends`, `person-analytics-network`); the classification
+    chip on Search's rows (`ipad/search-results`, `semantic-search`; `ios/search-results`,
+    `search-facets`, `search-tips`; `macos/search`, `search-tips`, `saved-searches`,
+    `search-meaning`) and in Source Explorer, where d41 now reads *Top Secret* under its note
+    (`ipad/source-explorer`, `ios/source-explorer`, `macos/source-explorer`); the volume page's
+    collapsed *Editors' Annotations* row and the Corpus Browser sidebar's new *Editors' Annotations*
+    item (`macos/browser`, `browse-all-volumes`); and the Browse root's door
+    (`ipad/browse-root`, `sidebar-landscape`). `ipad/people-list` and `macos/people-list` are now
+    taken at the list's head, where the line sits; S1's and S4's were scrolled to the *Adams, Alvin*
+    pair.
+  - **Group B, the iPad Browse frames whose left column changed** (the door pushes *Your sets*
+    down; nothing else moved): `browse-all-volumes`, `browse-administrations`,
+    `browse-administrations-truman`, `browse-editors`, `browse-archives`, `-provenance`,
+    `-collections`, `-collection-detail`, `-collection-citing`, `browse-clusters`,
+    `browse-clusters-detail`, `browse-scopes`, `browse-scopes-editor`, `browse-scopes-banner`,
+    `browse-working-corpora`, `browse-corpus-drill` (frus1948v01p2 removed through Settings ▸ Volumes
+    & Storage, then `snapshot-A74` restored) and `topic-index`. Each at S1's route and framing.
+  - **New**: `ipad/browse-annotations` (Browse ▸ Editors' Annotations in two panes: the matrix's
+    *Who is named* group and the head of *Where it came from*), `ipad/volume-annotations`
+    (frus1947v02's page: its details, then the section from People tagged, *539 of 570 documents ·
+    333 people listed*, to Footnotes), `ipad/research-history` (Research ▸ History scrolled to
+    *Searches Executed*, with the zero-result question kept in the list), `ipad/data-recovery-export`
+    (Settings ▸ Data & Recovery at its three export rows, *Export Query Log as a Method Appendix*
+    among them; nothing was exported), and `macos/browse-annotations` (the Corpus Browser at
+    1440×880, all three groups of the matrix).
+  - **Read and left**: `ipad/semantic-zero-result-matches` and `macos/search-zero-result-meaning`
+    (their semantic rows are 1919 documents, which carry no chip, so the frames are unchanged);
+    `macos/people-detail` (the sheet covers the list's line); every frame no 2026-11-06 PR touched.
+  - **The devices**: the iPad, S1's `3D2607D9` under iOS 27.0, landscape by S2's rotator, the demo
+    status bar set flags first and the 2020 ISO time last, every launch with `-hasCompletedOnboarding
+    1 -FRUSScreenshotHideSyncBanner YES`; the iPhone 17 Pro Max `7449CA80` (`ios/search-results`,
+    `search-facets`, `source-explorer`) and the iPhone 17 Pro `3025E8FF` (`ios/search-tips`), S3's.
+    The time and date erased by S1's and S3's scripts unchanged (SHA-256 `58d052de…` and
+    `1a8a3122…`), every changed pixel inside the box.
+  - **The Mac, in the check copy**: `setup.sh --ref HEAD --no-fetch` at `942cc41e` and `build.sh
+    --no-launch` under the lock; the product copied to Q1's folder and launched with `open -n --env
+    CFFIXED_USER_HOME=…` on an APFS clone of P1's home; P1's 15 sitting preferences set, and the
+    domain's 134 keys put back with `prefs-restore` after the copy quit, read back identical; the
+    copy unregistered from Launch Services afterwards. Windows by `screencapture -o -x -l` at S4's
+    sizes; where a field held the caret, a burst and the caret-off frame. The Corpus Browser's
+    sidebar is at its narrowest that shows its toolbar's buttons, a little wider than S4's.
+  - **Left**: no simulator is booted; `3D2607D9` holds `snapshot-A74` (with the sitting's last walk through History and Settings) and Q1's build, and the two
+    iPhones hold its library and Q1's build. Their pre-Q1 containers, the build, the raw and erased
+    frames and the Mac's app and home are under `~/Library/Caches/FRUS-Explorer/q1/` until the owner
+    says.
 
 ### Found by R1 — for the owner
 
