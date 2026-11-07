@@ -5,6 +5,10 @@ work they wait for is the plan of record's decision 101 (`Plan-Of-Record-2026-10
 website's pages are generated, reviewed and revised after 1.0 (1861) is submitted. Until then, §2's
 website step stands: at submission the Privacy Policy and Support pages go up as `Docs/` holds them.
 
+**Revised 2026-11-06.** The owner revised the Home and Tour text through the Markdown editing
+copies below. Both now describe 1.0 (1861) as the owner has scoped it: all of 2026-11-06's work,
+Editors' Annotations among it, and all work in progress (`Revisions-proposed-2026-11-06.md`).
+
 ## What is here
 
 | File | What it is | What it becomes |
@@ -12,11 +16,28 @@ website step stands: at submission the Privacy Policy and Support pages go up as
 | `page-drafts.html` | The review sheet: the home page, and the Support and Privacy drafts as `Scripts/build_website_pages.py` renders them, each shown in a site frame, with the publishing steps, the reading levels and the app's terms. A switch at the top shows the coming-soon or the launch version. | The home page at `frusexplorer.app/`, built in Squarespace from its text |
 | `Support-draft.md` | A plain-language draft of `Docs/Support.md` | The body of `Docs/Support.md`, after review |
 | `Privacy-Policy-draft.md` | A plain-language draft of `Docs/Privacy-Policy.md` | The body of `Docs/Privacy-Policy.md`, after review |
+| `Home-draft.md`, `Tour-draft.md` | Editing copies of the home page's and the tour's words, with layout left out. No build reads them: a session folds the owner's edits back into `site-src/home.html` and `tour/tour.html`. The owner edits the copies in iCloud Drive, in the *2026-06-30 FRUS Explorer Build 26 screenshots* folder | Nothing; the HTML is the source |
+| `Revisions-proposed-2026-11-06.md` | What 2026-11-06's work changed in the app, and the revisions it led to (applied; its screens are still owed) | Nothing |
 | `tour/tour.html`, `tour/img/` | The tour: 20 steps in five parts, after a section on the editors' work, with production notes for each screen | An optional page at `frusexplorer.app/tour` |
 
 Open the two HTML files in a browser from this folder. The sheet's Support and Privacy frames show the
 two Markdown drafts as they stood on 2026-10-27; after editing a draft, run the repository's script
 on it to see the new HTML.
+
+## The site preview (2026-11-03)
+
+`build_site.py` writes `site/`, a local preview of every page the site is to carry, in one shell
+standing in for Squarespace's: Home (`site-src/home.html`), the tour, both quick starts (from
+`Docs/`), and Support and Privacy (from the two drafts here), with `site/review.html`, a review
+sheet that recounts the pages' figures from `FRUSExplorer/Resources` on every run and sets each tour
+screen beside its current capture. A bar on every page switches between the coming-soon and launch
+versions and hides the review notes; neither the bar nor the notes is pasted. Serve the repository
+root over HTTP to view it (`python3 -m http.server 8765` there, then `/Planning/website-drafts/site/`),
+since the quick starts' screenshots load from `Docs/screenshots/` by relative path. Then run
+`python3 Planning/website-drafts/build_site.py --watch`: it rebuilds on every save of a source, and each
+open page reloads itself within a second or two (`site-src/reload.js` reads `site/build-stamp.txt`). A
+failed build is printed and the last good pages stay up. Without `--watch`, the script builds once.
+Never edit `site/`, which every build overwrites.
 
 ## Coming soon and launch
 
@@ -38,7 +59,7 @@ soften them is the owner's call.
 
 ## What the drafts already follow
 
-- **The disclaimer** of #1802, word for word: *independent, private-capacity*, and commentary that is
+- **The disclaimer** of #1802, word for word in the footers and the Support and Privacy pages (the home page's hero line was shortened by the owner on 2026-11-06 to *an independent research tool, not an official product…*; its FAQ answer keeps *private capacity*): *independent, private-capacity*, and commentary that is
   personal views about historical research methodology, making no interpretive claim about the
   history of U.S. foreign policy. The NARA sentence and the listing's privacy sentence (decision 28)
   are also verbatim.
@@ -73,14 +94,16 @@ soften them is the owner's call.
 - **Figures.** Recount each against 1.0 (1861)'s shipped artifacts before publishing: 553 volumes;
   264,598 source notes matched to documents, in 502 volumes; 51 volumes with none; 8,637
   cross-references between volumes; 314,616 documents on the semantic map; the 13,177 documents of
-  the People capture (retaken 2026-11-04). Index versions 70 and 71 (A18, A18b) changed what the
-  index stores, so the cross-reference figure in particular may have moved.
-- **Screens.** The tour's captures come from builds 47 and 48, except its People sheet, cropped from
-  `Docs/screenshots/ipad/people-detail` as retaken on 2026-11-04 for the people source's label.
-  Retake each from the submitted build; R1's retakes (decision 88) and `Docs/screenshots/` are the
-  sources. Steps 18 to 20 have no capture, and the meaning-search, map and Chronology screens
-  predate EmbeddingGemma 2, build 51's map layout and #1422. Each step's production note names what
-  it needs.
+  the People capture (retaken 2026-11-04). Index versions 70 and 71 (A18, A18b) changed what the index stores, so the
+  cross-reference figure in particular may have moved.
+- **Screens.** Done for seventeen on 2026-11-03: each was re-cropped from its build-1861 capture in
+  `Docs/screenshots/` at the old crop's width and framing, and its caption, alt text and production
+  note brought to the new screen; the build 47–48 crops are kept in `tour/img-builds-47-48/`, and
+  `site/review.html` sets each pair side by side with what changed. On 2026-11-06, after #1865's retakes, six were
+  re-cut again (steps 1, 2, 3, 5, 8 and 9: classification chips, the Editors' Annotations door, the
+  288-volume line), and steps 14 and 18 gained screens (the Editors' Annotations matrix, Research ▸
+  History). Still owed: steps 19 and 20 have no capture, step 15 is a text slip, and the map film
+  predates build 51's layout.
 - **The kit's rules.** Read each page against the launch kit's §6 checklist.
 - **The copies of record.** Fold the Support and Privacy drafts in, run
   `python3 Scripts/build_website_pages.py`, check that `--check` passes, and add the TEI row.
