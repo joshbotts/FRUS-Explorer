@@ -1,0 +1,969 @@
+corpus: 6170e4b32c1224002db2fe0c5d8d910597cddc2e 2026-10-14
+upstream: git diff --quiet 6170e4b32 216cdb764 -- volumes schema exits 0 (unchanged to master at 216cdb764)
+volumes (the inventory's, the app's manifest): 553; by band: {'1861-1898': 62, '1899-1913': 20, '1914-1919': 35, '1920-1931': 32, '1932-1944': 77, '1945-1950': 59, '1951-1954': 38, '1955-1968': 114, '1969-1980': 93, '1981-': 14, 'retrospective': 9}
+
+== 1. Papers the List of Papers prints that the file holds only inside an earlier paper
+  lists: 167 divisions in 161 volumes; with no list, 392 volumes (9 of them 1861-1898: frus1865p4, frus1872p2v1, frus1872p2v4, frus1873p2v3, frus1875v02, frus1894, frus1894app1, frus1894app2, frus1897)
+  with a list, by band: {'1861-1898': 53, '1899-1913': 17, '1914-1919': 26, '1920-1931': 32, '1932-1944': 29, '1945-1950': 4}
+  how the lists are encoded:
+    1861-1898     1  type=chapter subtype=table-of-contents id=other
+    1861-1898    41  type=section subtype=index id=papers
+    1861-1898     5  type=section subtype=index id=papers1
+    1861-1898     3  type=section subtype=table-of-contents id=contents
+    1861-1898     4  type=toc subtype=- id=toc
+    1861-1898     1  type=toc subtype=table-of-contents id=other
+    after 1898    9  type=section subtype=index id=other
+    after 1898   69  type=section subtype=index id=papers
+    after 1898   34  type=section subtype=index id=toc-papers
+  each list: rows on the file's pages / matched to a document / to an attachment dated after it (candidates) /
+  to an earlier or same-day attachment (inclosures the list names) / neither; then documents with no row
+    frus1861           toc                          310   304   0   3    3;    8
+    frus1862           papers                       733   708   4  18    3;   12
+    frus1863p1         papers                       608   601   3   0    4;   94
+    frus1863p2         papers                       579   574   1   0    4;   67
+    frus1864p1         papers                       186   184   1   0    1;  214
+    frus1864p2         papers                       592   587   0   3    2;    7
+    frus1864p3         papers                       527   522   1   1    3;    7  (1 rows on pages outside the file)
+    frus1864p4         papers1                      404   403   0   0    1;   81
+    frus1865p1         papers                       390   386   0   2    2;    5
+    frus1865p2         papers1                      664   657   3   0    4;   18
+    frus1865p3         papers                       739   734   2   1    2;   32
+    frus1866p1         papers                       504   496   7   1    0;   20
+    frus1866p2         papers                       557   552   2   1    2;    6
+    frus1866p3         papers                       223   213   5   1    4;   10
+    frus1867p1         papers1                      554   550   2   0    2;   90
+    frus1867p2         papers1                      520   507   9   2    2;    8
+    frus1868p1         papers                       379   377   1   0    1;   22
+    frus1868p2         papers1                      629   620   9   0    0;   48
+    frus1870           contents                     302   296   3   0    3;    4  numbered 1, 2, 3 …
+    frus1871           contents                     417   414   1   0    2;   22  numbered 1, 2, 3 …
+    frus1872p1         papers                       502   497   0   0    5;    5  numbered 1, 2, 3 …
+    frus1872p2v2       toc                          155   152   0   0    2;  120  numbered 1, 2, 3 …
+    frus1872p2v3       contents                     680    37   0   0  643;    3
+    frus1872p2v5       toc                          254   159   1   0   94;    4
+    frus1872p2v5       d62a                           5     5   0   0    0;  158
+    frus1872p2v5       contents2                      5     5   0   0    0;  158
+    frus1873p1v1       papers                       319   305   0   0   14;    4  numbered 1, 2, 3 …  (176 rows on pages outside the file)
+    frus1873p1v2       papers                       189   189   0   0    0;  135  numbered 1, 2, 3 …  (307 rows on pages outside the file)
+    frus1874           papers                       813   808   0   0    5;    8  numbered 1, 2, 3 …
+    frus1875v01        papers                       305   303   0   0    2;    5  numbered 1, 2, 3 …  (386 rows on pages outside the file)
+    frus1876           papers                       346   335   0   1    9;   14  numbered 1, 2, 3 …
+    frus1877           papers                       354   354   0   0    0;    0  numbered 1, 2, 3 …
+    frus1877app        papers                        46    46   0   0    0;    0  numbered 1, 2, 3 …
+    frus1878           papers                       550   543   0   0    7;    7  numbered 1, 2, 3 …
+    frus1879           papers                       510   506   1   0    3;   29  numbered 1, 2, 3 …
+    frus1880           papers                       664   655   0   0    8;   12  numbered 1, 2, 3 …
+    frus1881           papers                       751   746   0   0    5;    9  numbered 1, 2, 3 …
+    frus1882           papers                       341   339   0   0    2;   66  numbered 1, 2, 3 …
+    frus1883           papers                       600   587   0   0   13;   13  numbered 1, 2, 3 …
+    frus1884           papers                       472   472   0   0    0;    2  numbered 1, 2, 3 …
+    frus1885           papers                       715   709   0   0    6;    6  numbered 1, 2, 3 …
+    frus1886           papers                       447   442   0   0    5;   10  numbered 1, 2, 3 …
+    frus1887           papers                       701   694   0   0    6;    7  numbered 1, 2, 3 …
+    frus1888p1         papers                       713   707   0   0    5;    8  numbered 1, 2, 3 …
+    frus1888p2         papers                       630   625   0   0    5;   19  numbered 1, 2, 3 …
+    frus1889           papers                       348   341   4   0    3;    9
+    frus1890           papers                       499   495   0   2    2;    7
+    frus1891           papers                       652   647   0   1    4;   41
+    frus1892           papers                       536   529   0   0    7;    7
+    frus1893           papers                       692   676   1   1   14;   22
+    frus1894Nicaragua  toc                          137   134   0   0    3;    4  numbered 1, 2, 3 …  (1 rows on pages outside the file)
+    frus1895p1         papers                       688   678   0   1    9;    8
+    frus1895p2         papers                       774   753   6   3   12;   14
+    frus1896           papers                       892   887   2   0    3;   10
+    frus1898           papers                      1200  1111  33  37   19;   83
+    frus1899           papers                       828   809   2   0   17;    1
+    frus1900           papers                      1072  1066   4   0    2;    9
+    frus1901           papers                       547   539   1   2    5;    4
+    frus1902           papers                      1057  1014   6   0   37;   14
+    frus1903           papers                       816   809   1   0    6;   27
+    frus1904           papers                       945   938   1   0    6;   11
+    frus1905           papers                      1210  1116   2   1   91;   20
+    frus1906p1         papers                       637   623   5   6    3;  115  (13 rows on pages outside the file)
+    frus1906p2         papers                       600   591   3   2    4;   21  (65 rows on pages outside the file)
+    frus1907p1         papers                       456   438   1   1   16;   31  (72 rows on pages outside the file)
+    frus1907p2         papers                       473   441   0   0   32;   83  (40 rows on pages outside the file)
+    frus1908           papers                       845   751   0   4   90;    6
+    frus1909           papers                       666   611   0   6   49;    8
+    frus1910           papers                      1045   951   1   2   91;    9
+    frus1911           papers                      1068  1048   5   1   14;   30  (1 rows on pages outside the file)
+    frus1912           papers                      1845  1812   4   2   27;   48
+    frus1913           papers                      1699  1678   1   0   20;   32
+    frus1914           papers                      1872  1844   4   7   17;   21
+    frus1914-20v01     toc-papers                   706   706   0   0    0;    0
+    frus1914-20v02     toc-papers                   414   414   0   0    0;    0
+    frus1914Supp       toc-topics                  1374  1340  18   0   16;    6
+    frus1914Supp       toc-countries               1344  1266   8  22   48;   80
+    frus1915           papers                      1910  1903   0   0    7;   12
+    frus1915Supp       toc-topics                  1529  1524   3   0    2;    3
+    frus1915Supp       toc-countries               1590  1507   3   0   80;   20
+    frus1916           papers                      1331  1313   4   4   10;   13
+    frus1916Supp       toc-topics                  1317  1314   1   0    2;    2
+    frus1916Supp       toc-countries               1394  1302   1   2   89;   14  (1 rows on pages outside the file)
+    frus1917           papers                      1482  1474   0   2    6;    4
+    frus1917Supp01v01  papers-topics                964   962   0   0    2;    2
+    frus1917Supp01v01  papers-countries            1035   963   0   0   72;    1
+    frus1917Supp02v01  papers                       731   722   0   5    4;    2
+    frus1917Supp02v02  papers                       459   458   0   1    0;    1
+    frus1918           papers                       927   729  27   5  166;    4
+    frus1918Russiav01  papers                       736   700   0   1   35;    2
+    frus1918Russiav02  papers                      1110  1029   0   1   80;    0
+    frus1918Russiav03  papers                       491   477   0   2   12;    1
+    frus1918Supp01v01  papers                       926   925   0   0    1;    1
+    frus1918Supp01v02  papers                       912   911   0   0    1;    1
+    frus1918Supp02     papers                       944   943   0   0    1;    1
+    frus1919Parisv01   papers                       426   425   0   0    1;    1
+    frus1919Parisv02   papers                       708   704   2   0    2;    0
+    frus1919Parisv11   papers                       432   408   5   1   18;    1
+    frus1919Parisv12   papers                       381   381   0   0    0;    0
+    frus1919Russia     papers                       921   913   1   0    7;    5
+    frus1919v01        papers                       920   914   2   0    4;    1
+    frus1919v02        papers                       835   834   0   0    1;    0
+    frus1920v01        papers                       895   894   0   0    1;    1
+    frus1920v02        papers                       803   803   0   0    0;    0
+    frus1920v03        papers                       958   956   1   0    1;    3
+    frus1921v01        papers                       877   876   0   0    1;    2
+    frus1921v02        papers                       909   909   0   0    0;    0
+    frus1922v01        papers                       879   878   0   0    1;    1
+    frus1922v02        papers                       907   907   0   0    0;    0
+    frus1923v01        papers                       805   805   0   0    0;    0
+    frus1923v02        papers                      1025  1025   0   0    0;    0
+    frus1924v01        papers                       691   691   0   0    0;    0
+    frus1924v02        papers                       652   652   0   0    0;    1
+    frus1925v01        papers                       778   778   0   0    0;    0
+    frus1925v02        papers                       610   609   0   0    1;    1
+    frus1926v01        papers                       858   858   0   0    0;    0
+    frus1926v02        papers                       672   671   0   0    1;    0
+    frus1927v01        papers                       415   415   0   0    0;    0
+    frus1927v02        papers                       765   763   0   0    2;    5
+    frus1927v03        papers                       780   780   0   0    0;    0
+    frus1928v01        papers                       843   842   0   0    1;    1
+    frus1928v02        papers                       956   956   0   0    0;    0
+    frus1928v03        papers                       824   824   0   0    0;    0
+    frus1929v01        papers                       860   858   0   0    2;    0
+    frus1929v02        papers                      1096  1094   0   0    2;    2
+    frus1929v03        papers                       935   935   0   0    0;    0
+    frus1930v01        papers                       579   575   0   0    4;    2
+    frus1930v02        papers                       882   882   0   0    0;    3
+    frus1930v03        papers                       798   798   0   0    0;    4
+    frus1931-41v01     papers                       678   677   0   0    1;    2
+    frus1931-41v02     papers                       423   423   0   0    0;    0
+    frus1931v01        papers                       833   833   0   0    0;    1
+    frus1931v02        papers                      1106  1105   0   0    1;    5
+    frus1931v03        papers                      1008  1006   0   0    2;    2
+    frus1932v01        toc-papers                   678   673   0   0    5;    5
+    frus1932v02        toc-papers                   614   610   1   0    3;    0
+    frus1932v03        toc-papers                   801   798   0   1    2;    1
+    frus1932v04        toc-papers                   794   793   0   0    1;    1
+    frus1932v05        toc-papers                   943   943   0   0    0;    2
+    frus1933-39        toc-papers                   851   836   0   0   15;    0
+    frus1933v01        toc-papers                   815   813   0   0    2;    2
+    frus1933v02        toc-papers                   767   760   0   0    7;    3
+    frus1933v03        toc-papers                   837   835   0   0    2;    2
+    frus1933v04        toc-papers                   797   792   0   0    5;    0
+    frus1933v05        toc-papers                   770   767   0   0    3;    1
+    frus1934v01        toc-papers                   778   762   0   0   16;    1
+    frus1934v02        toc-papers                   827   822   0   0    5;    0
+    frus1934v03        toc-papers                   749   748   0   0    1;    1
+    frus1934v04        toc-papers                   703   702   0   0    1;    0
+    frus1934v05        toc-papers                   643   637   0   0    6;    2
+    frus1935v01        toc-papers                   917   911   0   0    6;    0
+    frus1935v02        toc-papers                   672   659   0   0   13;    0
+    frus1935v03        toc-papers                  1074  1072   0   0    2;    1
+    frus1935v04        toc-papers                   943   934   0   0    9;    0
+    frus1936v01        toc-papers                   703   691   0   0   12;    0
+    frus1936v02        toc-papers                   897   886   0   0   11;    1
+    frus1936v03        toc-papers                   594   586   0   0    8;    0
+    frus1936v04        toc-papers                   939   939   0   0    0;    0
+    frus1936v05        toc-papers                   872   855   0   0   17;    2
+    frus1941-43        toc-papers                   451   448   0   1    2;    4
+    frus1943           toc-papers                   651   647   0   0    4;    4
+    frus1943CairoTehran toc-topics                   575   575   0   0    0;    1
+    frus1944Quebec     toc-papers                   305   304   0   0    1;    0
+    frus1945Berlinv01  toc-papers                   630   628   0   1    1;   81
+    frus1945Berlinv02  toc-papers                   814   811   0   1    2;  130
+    frus1945Malta      toc-papers                   498   493   0   0    5;   19
+    frus1945v01        toc-papers                   385   383   0   0    2;   10
+    frus1873p2v3       papers (frus1873p1v2)        188    22   0   0  166;   62  numbered 1, 2, 3 …
+    frus1875v02        papers (frus1875v01)         386   385   0   0    1;   14  numbered 1, 2, 3 …
+    frus1894           toc (frus1894Nicaragua)        1     0   0   0    1;  825
+    frus1894app1       toc (frus1894Nicaragua)        1     0   0   0    1;  812
+    frus1894app2       toc (frus1894Nicaragua)        1     0   0   0    1;  522
+  1861-1898: 27879 rows, 26563 matched to a document, 102 to an attachment dated after it, 79 to an inclosure the list names, 1130 to neither
+  after 1898: 96317 rows, 94731 matched to a document, 118 to an attachment dated after it, 84 to an inclosure the list names, 1384 to neither
+
+  candidates: 208 attachments in 49 volumes (102 of them, in 23 volumes, 1861-1898)
+  frus1862 [confirmed] row line 8876: - | Memorandum of conversation. | May 30 | p. 259
+      inside d213 (line 32210, dated 1862-04-05); its head at line 32322: "Memorandum of conversation.", dated 1862-05-30
+      reading: A memorandum of conversation of May 30, 1862 (complaints from New Orleans) inside Mr. Seward's note to Lord Lyons of April 5.
+  frus1862 [confirmed] row line 10272: - | Mr. Thouvenel to Mr. Mercier. | Mar. 20 | p. 415
+      inside d361 (line 43536, dated 1862-03-13); its head at line 43597: "[Translation.]", dated 1862-03-20
+      reading: Mr. Thouvenel's despatch of March 20, 1862, in extract, inside his despatch of March 13 to Mr. Mercier.
+  frus1862 [confirmed] row line 10337: - | Count Mejan to Mr. Thouvenel. | May 30 | p. 420
+      inside d366 (line 43923, dated 1862-05-26); its head at line 44015: "Count Mejan to Mr. Thouvenel.", dated 1862-05-30; depth 2
+      reading: Count Mejan's letter of May 30, 1862, from New Orleans, nested inside Mr. Chase's two letters of May 26, which are inside Mr. Seward's note of May 26 to Mr. Mercier.
+  frus1862 [confirmed] row line 10535: 2 | Mr. Cameron to Mr. Seward. | June 26 | p. 447
+      inside d382 (line 45861, dated 1862-02-04); its head at line 45896: "Mr. Cameron to Mr. Seward.", dated 1862-06-26
+      reading: Mr. Cameron's despatch No. 2 of June 26, 1862, from St. Petersburg, inside Mr. Seward's instruction No. 30 of February 4 to Mr. Clay.
+  frus1863p1 [confirmed] row line 6633: - | Mr. Moran to Mr. Seward. | Jan. 9 | p. 56
+      inside d27 (line 16821, dated 1863-01-08); its head at line 16845: "Mr. Moran to Mr. Seward.", dated 1863-01-09
+      reading: Mr. Moran's letter of January 9, 1863, from the legation in London, inside Mr. Adams's despatch No. 293 of January 8.
+  frus1863p1 [confirmed] row line 6695: - | Mr. Moran to Mr. Seward. | Jan. 17 | p. 63
+      inside d33 (line 17303, dated 1863-01-16); its head at line 17378: "Mr. Moran to Mr. Seward.", dated 1863-01-17
+      reading: Mr. Moran's letter of January 17, 1863 inside Mr. Adams's despatch No. 299 of January 16.
+  frus1863p1 [confirmed] row line 10681: - | Mr. Seward to Lord Lyons. | May 19 | p. 608
+      inside d519 (line 58814, dated 1863-05-18); its head at line 58927: "Mr. Seward to Lord Lyons.", dated 1863-05-19
+      reading: Mr. Seward's reply of May 19, 1863 inside the note of May 18 from Lord Lyons that it answers.
+  frus1863p2 [confirmed] row line 7241: - | Circular | June 16 | p. 895
+      inside d224 (line 25265, dated 1863-06-10); its head at line 25314: "Circular to American Ministers in Europe.", dated 1863-06-16
+      reading: Mr. Seward's circular of June 16, 1863 to the ministers in Europe inside Mr. Pike's despatch of June 10.
+  frus1864p1 [confirmed] row line 7193: - | Mr. Moran to Mr. Seward. | Feb. 20 | p. 194
+      inside d81 (line 22518, dated 1864-02-19); its head at line 22640: "Mr. Moran to Mr. Seward.", dated 1864-02-20
+      reading: Mr. Moran's letter of February 20, 1864 inside Mr. Adams's despatch No. 602 of February 19.
+  frus1864p3 [confirmed] row line 8856: - | Mr. Pruyn to Mr. Seward. | Aug. 26 | p. 543
+      inside d497 (line 51658, dated 1864-08-13); its head at line 51747: "[Untitled]", dated 1864-08-26
+      reading: Mr. Pruyn's telegram of August 26, 1864 (the vendor's head '[Untitled]') inside his despatch No. 54 of August 13; a second telegram follows it, dated August 2, and the list's row for October 14 on the same page matches nothing.
+  frus1865p2 [confirmed] row line 7946: 75 | Mr. Bigelow to Mr. Seward. | April 17 | p. 257
+      inside d396 (line 33863, dated 1865-04-08); its head at line 33906: "Mr. Bigelow to Mr. Seward.", dated 1865-04-17
+      reading: Mr. Bigelow's despatch of April 17, 1865, with its two enclosures, inside Mr. Seward's instruction No. 108 of April 8.
+  frus1865p2 [confirmed] row line 8465: - | Memorandum. | Jan. 5 | p. 353
+      inside d454 (line 42736, dated 1865-01-03); its head at line 42824: "Mr. de Lhuys to Mr. de Geofroy", dated 1865-01-05
+      reading: Mr. Drouyn de Lhuys's despatch No. 1 of January 5, 1865, from Paris, communicated by the French legation, inside Mr. de Geofroy's note of January 3; the list calls it a memorandum on the Japanese indemnity.
+  frus1865p2 [confirmed] row line 9763: - | Mr. Perry to Mr. Seward. | Feb. 19 | p. 494
+      inside d592 (line 55719, dated 1865-02-15); its head at line 55938: "[Untitled]", dated 1865-02-19
+      reading: Mr. Perry's letter of February 19, 1865 (the vendor's head '[Untitled]') after the labelled enclosures A and B of his despatch No. 167 of February 15.
+  frus1865p3 [confirmed] row line 10432: - | Mr. Geofroy to Mr. Seward. | Feb. 4 | p. 431
+      inside d427 (line 50286, dated 1865-01-21); its head at line 50304: "Memorandum from French legation to Department of State.", dated 1865-02-04
+      reading: The French legation's memorandum received February 4, 1865 inside Mr. Seward's memorandum of January 21 to Mr. de Geofroy.
+  frus1865p3 [confirmed] row line 10876: 243 | Mr. Bigelow to Mr. Seward. | Jan. 16 | p. 483
+      inside d474 (line 55048, dated 1865-12-14); its head at line 55071: "Mr. Bigelow to Mr. Seward.", dated 1866-01-16
+      reading: Mr. Bigelow's despatch of January 16, 1866, with three enclosures, inside Mr. Seward's instruction No. 329 of December 14, 1865.
+  frus1866p1 [confirmed] row line 6148: - | Mr. Hunter to Mr. Adams. | Dec. 31 | p. 40
+      inside d27 (line 14231, dated 1865-12-30); its head at line 14257: "Memorandum.", dated 1865-12-31
+      reading: Mr. Hunter's memorandum of December 31, 1865 to Mr. Adams inside his instruction No. 1644 of December 30.
+  frus1866p1 [confirmed] row line 6967: - | Mr. Seward’s circular. | June 18 | p. 138
+      inside d119 (line 23212, dated 1866-06-16); its head at line 23336: "Circular to the diplomatic agents and consuls of the United States.", dated 1866-06-18
+      reading: Mr. Seward's circular of June 18, 1866 (honors to Lewis Cass) inside his instruction No. 1789 of June 16 to Mr. Adams.
+  frus1866p1 [confirmed] row line 7366: 1868 | Mr. Hunter to Mr. Adams. | Oct. 30 | p. 209
+      inside d163 (line 31342, dated 1866-10-27); its head at line 31369: "Mr. Hunter to Mr. Adams", dated 1866-10-30
+      reading: Mr. Hunter's instruction No. 1868 of October 30, 1866 to Mr. Adams inside Mr. Moran's despatch No. 17 of October 27.
+  frus1866p1 [confirmed] row line 7495: - | Lord Clarendon to Sir F. Bruce. | Jan. 19 | p. 218
+      inside d176 (line 31887, dated 1866-01-05); its head at line 32166: "Lord Clarendon to Sir F. Bruce", dated 1866-01-19
+      reading: Lord Clarendon's despatch of January 19, 1866, communicated by Sir F. Bruce on February 8, inside Sir F. Bruce's note of January 5.
+  frus1866p1 [confirmed] row line 8843: - | Mr. Moustier to Marquis de Montholon. | Oct. 16 | p. 387
+      inside d340 (line 47123, dated 1866-10-15); its head at line 47154: "[Communicated by the French legation.—Translation.]", dated 1866-10-16
+      reading: Mr. de Moustier's despatch of October 16, 1866 from Paris, communicated by the French legation, inside the Marquis de Montholon's note of October 15.
+  frus1866p1 [confirmed] row line 9058: - | The Emperor to the President. | Aug. 17 | p. 416
+      inside d361 (line 49762, dated 1866-07-14); its head at line 49790: "[Translation.]", dated 1866-08-17
+      reading: The Emperor Alexander's reply of August 17, 1866 to the joint resolution of Congress inside Mr. Clay's despatch No. 116 of July 14.
+  frus1866p1 [confirmed] row line 9836: - | Mr. De Castro to Mr. Tassara. | Jan. 27 | p. 596
+      inside d437 (line 66058, dated 1866-01-25); its head at line 66225: "Mr. De Castro to Mr. Tassara.", dated 1866-01-27
+      reading: Mr. de Castro's despatch of January 27, 1866 from Madrid inside Mr. Tassara's note of January 25 from Washington.
+  frus1866p2 [confirmed] row line 5652: 49 | Mr. Hunter to Mr. Wright. | Oct. 29 | p. 50
+      inside d49 (line 14777, dated 1866-10-22); its head at line 14894: "Mr. Hunter to Mr. Wright.", dated 1866-10-29
+      reading: Mr. Hunter's instruction No. 49 of October 29, 1866 inside Mr. Wright's despatch No. 56 of October 22.
+  frus1866p2 [confirmed] row line 10692: - | Mr. Pruyn to Mr. Weed and Mr. Lansing. | Mar. 15 | p. 677
+      inside d555 (line 69024, dated 1865-03-09); its head at line 69082: "Mr. Pruyn to Mr. Weed and Mr. Lansing.", dated 1865-03-15
+      reading: Mr. Pruyn's letter of March 15, 1865 to Mr. Weed and Mr. Lansing inside his despatch No. 11 of March 9.
+  frus1866p3 [confirmed] row line 4525: 1 | Mr. Seward to Mr. Camphell. | May 25 | p. 2
+      inside d2 (line 6637, dated 1866-05-23); its head at line 6666: "Mr. Seward to Mr. Campbell", dated 1866-05-25
+      reading: Mr. Seward's instruction No. 1 of May 25, 1866, in extract, inside Mr. Campbell's letter of May 23.
+  frus1866p3 [confirmed] row line 5701: - | Gen. Sheridan to General Grant. | Nov. 30 | p. 423
+      inside d136 (line 45970, dated 1866-11-27); its head at line 47411: "Major General Sheridan to General Grant,", dated 1866-11-30; depth 1
+      reading: General Sheridan's telegram of November 30, 1866 to General Grant, filed with the War Department's other telegrams at the end of the Mexican legation's index of documents, inside Mr. Romero's note of November 27.
+  frus1866p3 [confirmed] row line 5709: - | Mr. Stanton to Gen. Sheridan. | Nov. 30 | p. 423
+      inside d136 (line 45970, dated 1866-11-27); its head at line 47447: "Mr. Stanton to Major General Sheridan", dated 1866-11-30; depth 1
+      reading: Mr. Stanton's telegram of November 30, 1866 to General Sheridan, at the end of the same index, inside Mr. Romero's note of November 27.
+  frus1866p3 [confirmed] row line 5717: - | Gen. Sheridan to Gen. Grant. | Dec. 1 | p. 423
+      inside d136 (line 45970, dated 1866-11-27); its head at line 47472: "Major General Sheridan to General Grant", dated 1866-12-01; depth 1
+      reading: General Sheridan's telegram of December 1, 1866 to General Grant, at the end of the same index, inside Mr. Romero's note of November 27.
+  frus1866p3 [confirmed] row line 6326: 154 | Mr. Hunter to Mr. Burton. | Aug. 31 | p. 567
+      inside d198 (line 60136, dated 1866-08-26); its head at line 60240: "Mr. Hunter to Mr. Burton", dated 1866-08-31
+      reading: Mr. Hunter's instruction No. 154 of August 31, 1866 inside Mr. Burton's despatch No. 260 of August 26.
+  frus1867p1 [confirmed] row line 6558: - | Mr. Seward to Mr. Adams. | Sept.5 | p. 136
+      inside d131 (line 22047, dated 1867-09-03); its head at line 22408: "[Circular.]", dated 1867-09-05
+      reading: Mr. Seward's circular of September 5, 1867 (the President's proclamation) inside Mr. Adams's despatch No. 1438 of September 3.
+  frus1867p1 [confirmed] row line 8796: - | Mr. Seward to Mr. Burlingame. | Jan. 17 | p. 451
+      inside d380 (line 52015, dated 1861-01-03); its head at line 52191: "Circular relative to the Coolie trade.", dated 1867-01-17
+      reading: Mr. Seward's circular of January 17, 1867 on the coolie trade inside Mr. Burlingame's despatch No. 126, whose dateline prints January 3, 1861 for 1867.
+  frus1867p2 [confirmed] row line 8589: - | Mr. Campbell to Mr. Seward. | Dec. 24 | p. 337
+      inside d221 (line 41162, dated 1866-12-13); its head at line 41440: "Mr. Campbell to Mr. Seward", dated 1866-12-24
+      reading: Mr. Campbell's telegram of December 24, 1866 (its row reads 'Tel.') inside his despatch No. 6 of December 13; his despatch No. 7 of the same day is d222.
+  frus1867p2 [confirmed] row line 9465: 8 | Mr. Hunter to Mr. Otterbourg. | July 30 | p. 444
+      inside d309 (line 51105, dated 1867-07-29); its head at line 51665: "Mr. Hunter to Mr. Otterbourg", dated 1867-07-30
+      reading: Mr. Hunter's instruction No. 8 of July 30, 1867 inside Mr. Otterbourg's despatch of July 29.
+  frus1867p2 [confirmed] row line 10233: - | Mr. Diaz to Mr. Romero. | April 30 | p. 550
+      inside d382 (line 62296, dated 1867-04-13); its head at line 62693: "Mr. Diaz to Mr. Romero", dated 1867-04-30
+      reading: Mr. Diaz's letter of April 30, 1867 from New Orleans inside Mr. Romero's note of April 13, after its six enclosures.
+  frus1867p2 [confirmed] row line 10243: - | Memorandum | May 20 | p. 550
+      inside d382 (line 62296, dated 1867-04-13); its head at line 62714: "Memorandum.", dated 1867-05-20
+      reading: The Mexican legation's memorandum of May 20, 1867 inside Mr. Romero's note of April 13.
+  frus1867p2 [confirmed] row line 10310: - | Memorandum | June 8 | p. 557
+      inside d388 (line 63324, dated 1867-06-04); its head at line 63473: "Memorandum.", dated 1867-06-08
+      reading: A memorandum of June 8, 1867 (Mr. Campbell's route to his post) inside Mr. Romero's note of June 4.
+  frus1867p2 [confirmed] row line 10320: - | Memorandum | June 10 | p. 558
+      inside d388 (line 63324, dated 1867-06-04); its head at line 63501: "Memorandum.", dated 1867-06-10
+      reading: A memorandum of June 10, 1867 (Mrs. Juarez's return), from Mr. Romero's despatch No. 238, inside his note of June 4.
+  frus1867p2 [confirmed] row line 10379: - | Mrs. Juarez to Mr. Seward. | June 17 | p. 560
+      inside d392 (line 63682, dated 1867-06-15); its head at line 63787: "Mrs. Juarez to Mr. Seward", dated 1867-06-17
+      reading: Mrs. Juarez's letter of June 17, 1867 inside Mr. Romero's note of June 15.
+  frus1867p2 [confirmed] row line 10525: - | Memorandum | July 8 | p. 592
+      inside d406 (line 66389, dated 1867-07-07); its head at line 67343: "Memorandum.", dated 1867-07-08
+      reading: A memorandum of July 8, 1867 on General Santa Anna inside Mr. Romero's note of July 7.
+  frus1867p2 [confirmed] row line 10571: - | Memorandum | July 15 | p. 621
+      inside d410 (line 70287, dated 1867-07-13); its head at line 70334: "Memorandum.", dated 1867-07-15
+      reading: A memorandum of July 15, 1867 (the Mexican government's intentions) inside Mr. Romero's note of July 13.
+  frus1868p1 [confirmed] row line 7398: - | Mr. Johnson to Mr. Seward. | Oct. 27 | p. 365
+      inside d125 (line 40880, dated 1868-10-26); its head at line 40906: "Mr. Johnson to Mr. Seward", dated 1868-10-27
+      reading: Mr. Johnson's cable of October 27, 1868 from London inside Mr. Seward's instruction No. 31 of October 26.
+  frus1868p2 [confirmed] row line 8191: 147 | Mr. Hale to Mr. Seward. | Sept. 27 | p. 17
+      inside d23 (line 15727, dated 1868-09-19); its head at line 15755: "Mr. Hale to Mr. Seward.", dated 1868-09-27
+      reading: Mr. Hale's despatch No. 147 of September 27, 1868, in extract, inside Mr. Seward's instruction No. 127 of September 19.
+  frus1868p2 [confirmed] row line 8199: - | Mr. Seward to Mr. Hale. | Oct. 5 | p. 19
+      inside d23 (line 15727, dated 1868-09-19); its head at line 15896: "Mr. Seward to Mr. Hale,.", dated 1868-10-05; depth 2
+      reading: Mr. Seward's cable of October 5, 1868 to Mr. Hale, three attachments deep: inside the Spanish bulletin that encloses Mr. Hale's No. 147, itself filed inside Mr. Seward's No. 127 of September 19.
+  frus1868p2 [confirmed] row line 8226: - | Mr. Seward to Mr. Hale. | Oct. 13 | p. 24
+      inside d24 (line 15924, dated 1868-10-09); its head at line 16320: "Mr. Seward to Mr. Hale.", dated 1868-10-13
+      reading: Mr. Seward's cable of October 13, 1868 inside Mr. Hale's despatch No. 148 of October 9.
+  frus1868p2 [confirmed] row line 8547: 52 | Mr. Bancroft to Mr. Seward. | April 21 | p. 52
+      inside d54 (line 18190, dated 1868-04-03); its head at line 18330: "Mr. Bancroft to Mr. Seward.", dated 1868-04-21
+      reading: Mr. Bancroft's despatch No. 52 of April 21, 1868, in extract, inside his No. 51 of April 3.
+  frus1868p2 [confirmed] row line 9949: - | Mr. Webb to Mr. Seward. | Aug. 7 | p. 294
+      inside d193 (line 36346, dated 1868-07-22); its head at line 37064: "Mr. Webb to Mr. Seward.", dated 1868-08-07
+      reading: Mr. Webb's despatch of August 7, 1868, in extract, inside his of July 22.
+  frus1868p2 [confirmed] row line 9982: 75 | Mr. Webb to Mr. Seward. | Oct. 24 | p. 302
+      inside d196 (line 37501, dated 1868-10-08); its head at line 37758: "Mr. Webb to Mr. Seward.", dated 1868-10-24
+      reading: Mr. Webb's despatch No. 75 of October 24, 1868, in extract, inside his of October 8.
+  frus1868p2 [confirmed] row line 10081: - | Mr. Seward to Mr. Kilpatrick. | Mar. 27 | p. 321
+      inside d204 (line 39153, dated 1868-03-26); its head at line 39237: "Mr. Seward to Mr. Kilpatrick.", dated 1868-03-27
+      reading: Mr. Seward's instruction of March 27, 1868 inside Mr. Kilpatrick's despatch No. 104 of March 26 from Santiago.
+  frus1868p2 [confirmed] row line 10144: - | Mr. Seward to Señor Fontecilla. | April 27 | p. 326
+      inside d211 (line 39538, dated 1868-03-30); its head at line 39564: "Mr. Seward to Señor Fontecilla.", dated 1868-04-27
+      reading: Mr. Seward's reply of April 27, 1868 inside Señor Fontecilla's note of March 30.
+  frus1868p2 [confirmed] row line 11268: 2 | Mr. Seward to Mr. Rosecrans. | Aug. 28 | p. 573
+      inside d322 (line 62787, dated 1868-08-24); its head at line 62855: "Mr. Seward to Mr. Rosecrans.", dated 1868-08-28
+      reading: Mr. Seward's instruction No. 2 of August 28, 1868 to Mr. Rosecrans inside Mr. Plumb's despatch No. 180 of August 24.
+  frus1870 [confirmed] row line 6470: 216 | Baron Gerolt to Mr. Fish. | Feb. 19 | p. 329
+      inside d215 (line 27794, dated 1869-12-03); its head at line 30237: "Baron Gerolt to Mr. Fish.", dated 1870-02-19; depth 1
+      reading: No. 216, Baron Gerolt's note of February 19, 1870, inside No. 215, Mr. Fish's instruction of December 3, 1869 (the note's item 1).
+  frus1870 [confirmed] row line 7248: 284 | Mr. De Long to Mr. Fish. | Jan. 22 | p. 460
+      inside d282 (line 40063, dated 1870-01-17); its head at line 40555: "Mr. Be Long to Mr. Fish.", dated 1870-01-22
+      reading: No. 284, Mr. De Long's despatch No. 13 of January 22, 1870, inside No. 283, his No. 10 of January 17 (the note's item 1).
+  frus1870 [confirmed] row line 7488: 303 | Mr. Schuyler to Mr. Fish. | Aug. 31 | p. 521
+      inside d300 (line 45611, dated 1870-07-17); its head at line 45645: "Mr. Schuyler to Mr. Fish.", dated 1870-08-31
+      reading: No. 303, Mr. Schuyler's despatch No. 66 of August 31, 1870, inside No. 302, his No. 54 of July 17 (the note's item 1).
+  frus1871 [confirmed] row line 15806: 154 | Mr. Bancroft to Mr. Fish. | Jan. 7 | p. 365
+      inside d172 (line 43386, dated 1870-10-19); its head at line 43416: "Mr. Bancroft to Mr. Fish", dated 1871-01-07; not the paper before it in the list
+      reading: No. 154, Mr. Bancroft's despatch No. 177 of January 7, 1871, inside d172, a circular of October 19, 1870: d168 to d172 are No. 153's five inclosures encoded as documents.
+  frus1872p2v5 [confirmed] row line 3142: - | Mr. Bancroft to Mr. Buchanan, March 29,  | Mr. Bancroft to Mr. Buchanan, March 29, 1847. Warns Mr. Buchanan of the designs of the Hudson’s Bay Company | p. 148
+      inside d72 (line 13019, dated 1846-12-28); its head at line 13065: "Mr. Bancroft to Mr. Buchanan.", dated 1847-03-29
+      reading: Mr. Bancroft's despatch of March 29, 1847 from London, with its chart, inside Mr. Buchanan's instruction of December 28, 1846.
+  frus1879 [not a defect] row line 12940: 386 | Mr. Gibbs to Mr. Evarts | Apr. 7 | p. 865
+      inside d415 (line 83659, dated 1879-04-01); its head at line 83708: "Mr. Gibbs to Señor Manuel Irigoyen, minister of foreign affairs.", dated 1879-04-07; not the paper before it in the list
+      reading: The list's No. 386 is the document itself (its head reads 'No. 386. Mr. Gibbs to Mr. Evarts'); the row describes its inclosure, labelled 'Inclosure 1 in No. 328'.
+  frus1889 [confirmed] row line 7341: - | Mr. Chang Yen Hoon to Mr. Bayard. | Jan. 11 | p. 118
+      inside d85 (line 19744, dated 1889-01-07); its head at line 19761: "receipt for the indemnity.", dated 1889-01-11
+      reading: The Chinese minister's receipt of January 11, 1889 for the indemnity inside his note of January 7, which accepts the appointment of the 11th.
+  frus1889 [confirmed] row line 8208: - | Mr. Blaine to the President. (Report.) | 1890. Jan. 7 | p. 349
+      inside d148 (line 25004, dated 1889-04-11); its head at line 40141: "Report of the Secretary of State.", dated 1890-01-07
+      reading: Mr. Blaine's report of January 7, 1890 to the President on the Berlin general act inside his instructions of April 11, 1889 to the commissioners, after their labelled inclosures.
+  frus1889 [confirmed] row line 9516: - | Mr. Mutsu to Mr. Blaine | Mar. 28 | p. 548
+      inside d239 (line 55460, dated 1889-03-27); its head at line 55479: "receipt for the indemnity.", dated 1889-03-28
+      reading: The Japanese minister's receipt of March 28, 1889 for the indemnity inside his note of March 27.
+  frus1889 [confirmed] row line 9788: 148 | Mr. Whitehouse to Mr. Blaine. | Oct. 20 | p. 611
+      inside d261 (line 60084, dated 1889-10-09); its head at line 60289: "Mr. Whitehouse to Mr. Blaine.", dated 1889-10-20
+      reading: Mr. Whitehouse's despatch No. 148 of October 20, 1889 inside his despatch of October 9.
+  frus1893 [confirmed] row line 10009: 119 | Mr. Quiney to Mr. Durham. | May 1 | p. 382
+      inside d380 (line 41519, dated 1893-04-12); its head at line 41583: "Mr. Quincy to Mr. Durham.", dated 1893-05-01
+      reading: Mr. Quincy's instruction No. 119 of May 1, 1893, in extract, inside the despatch No. 194 of April 12 from Mr. Durham that it answers.
+  frus1895p2 [confirmed] row line 7762: - | Admiral Stephenson to the Nicaraguan Government. | Apr. 25 | p. 1032
+      inside d221 (line 35671, dated 1895-04-24); its head at line 35755: "Admiral Stephenson to the Nicaraguan Government.", dated 1895-04-25
+      reading: Admiral Stephenson's ultimatum to Nicaragua, from the Pall Mall Gazette of April 25, 1895, inside Mr. Baker's despatch No. 506 of April 24 from San José.
+  frus1895p2 [confirmed] row line 8666: - | Memorandum, Mr. Somow to Mr. Olney. | Nov. 21 | p. 1118
+      inside d314 (line 42793, dated 1895-11-18); its head at line 42824: "", dated 1895-11-21
+      reading: The memorandum Mr. Somow handed Mr. Olney on November 21, 1895 inside his note of November 18.
+  frus1895p2 [confirmed] row line 9668: - | Memorandum | Aug. 10 | p. 1171
+      inside d378 (line 46838, dated 1895-07-20); its head at line 46857: "Memorandum.", dated 1895-08-10
+      reading: The memorandum on the Mora claim signed at Boston on August 10, 1895 inside Mr. Adee's telegram of July 20.
+  frus1895p2 [confirmed] row line 9822: - | Agreement | Sept. 10 | p. 1174
+      inside d389 (line 47163, dated 1895-09-09); its head at line 47179: "Agreement.", dated 1895-09-10; not the paper before it in the list
+      reading: The agreement of September 10, 1895 on the Mora claim inside Mr. Armstrong's telegram of September 9.
+  frus1895p2 [confirmed] row line 9840: - | Acknowledgment of settlement of claim. | Sept. 14 | p. 1176
+      inside d390 (line 47252, dated 1895-09-13); its head at line 47297: "Acknowledgment of settlement of claim.", dated 1895-09-14
+      reading: The acknowledgment of September 14, 1895 that the claim was settled inside Mr. Dupuy de Lôme's note of September 13.
+  frus1895p2 [confirmed] row line 10031: - | Dr. Gaytan to Mr. Adee | Oct. 8 | p. 1203
+      inside d447 (line 49716, dated 1895-10-07); its head at line 49737: "Handed to Mr. Adee by Dr. Gaytan, Secretary of the Spanish Legation, O", dated 1895-10-08
+      reading: The paper Dr. Gaytan handed Mr. Adee on October 8, 1895 inside Mr. Dupuy de Lôme's telegram of October 7.
+  frus1896 [confirmed] row line 8614: - | Heads of proposed treaty between Venezuela and Great Britain for settlement of Venezuela boundary question as agreed upon between Great Britain and the United States. | Nov. 12 | p. 254
+      inside d184 (line 35316, dated 1896-07-13); its head at line 35377: "Heads of proposed treaty between Venezuela and Great Britain for settl", dated 1896-11-12; not the paper before it in the list
+      reading: The heads of a Venezuela boundary treaty agreed on November 12, 1896 inside Mr. Olney's note No. 438 of July 13; this list runs by date and the volume by subject, so its row is not the one after the note's.
+  frus1896 [confirmed] row line 8645: - | President’s message | Jan. 11 | p. 237
+      inside d174 (line 33911, dated 1896-06-22); its head at line 34194: "President’s Message.", dated 1897-01-11; not the paper before it in the list
+      reading: The President's message of January 11, 1897 transmitting the arbitration treaty, with the treaty's text, inside Mr. Olney's note No. 425 of June 22, 1896; the list runs by date, not by page.
+  frus1898 [confirmed] row line 14332: 66 | Mr. Woodford to the President (telegram). | Apr. 10 | p. 747
+      inside d614 (line 82632, dated 1898-04-09); its head at line 82702: "Mr. Woodford to the President.", dated 1898-04-10
+      reading: Mr. Woodford's telegram of April 10, 1898 to the President inside his despatch No. 217 of April 9.
+  frus1898 [confirmed] row line 14590: - | President’s message to Congress. | Apr. 25 | p. 771
+      inside d637 (line 84380, dated 1898-04-23); its head at line 84425: "", dated 1898-04-25
+      reading: The President's message of April 25, 1898 to Congress, with no head of its own, inside the proclamation of April 23 calling for volunteers.
+  frus1898 [confirmed] row line 14645: - | General Orders, No. 101, of the War Department. | July 18 | p. 783
+      inside d642 (line 85176, dated 1898-06-20); its head at line 85538: "occupation of santiago.", dated 1898-07-18
+      reading: General Orders No. 101 of July 18, 1898 on the occupation of Santiago inside the Navy Department's instructions of June 20 to blockading vessels.
+  frus1898 [confirmed] row line 14721: - | French ambassador to the Secretary of State. | Apr. 26 | p. 788
+      inside d645 (line 85797, dated 1898-04-25); its head at line 85951: "The French ambassador to the Secretary of State.", dated 1898-04-26
+      reading: The French ambassador's note of April 26, 1898 inside the note No. 12 of April 25 that it answers.
+  frus1898 [confirmed] row line 14731: - | The Austrian minister to same. | do | p. 789
+      inside d645 (line 85797, dated 1898-04-25); its head at line 86000: "The Austro-Hungarian minister to the Secretary of State.", dated 1898-04-26
+      reading: The Austro-Hungarian minister's note of April 26, 1898 inside the Secretary of State's note No. 12 of April 25 to the French ambassador.
+  frus1898 [confirmed] row line 15247: - | The Secretary of State to the French ambassador. | Sept. 1 | p. 809
+      inside d696 (line 87741, dated 1898-08-30); its head at line 87761: "", dated 1898-09-01
+      reading: The Secretary of State's note of September 1, 1898, with no head, inside Mr. Moore's note of August 30 to Mr. Cambon.
+  frus1898 [confirmed] row line 15316: - | Memorandum from French embassy. | Sept. 19 | p. 813
+      inside d701 (line 87962, dated 1898-09-10); its head at line 87989: "", dated 1898-09-19
+      reading: The French embassy's memorandum of September 19, 1898 (the Spanish peace commissioners), with no head, inside Mr. Moore's note of September 10.
+  frus1898 [confirmed] row line 15325: - | Memorandum from French embassy. | Sept. 11 | p. 813
+      inside d701 (line 87962, dated 1898-09-10); its head at line 88007: "", dated 1898-09-11
+      reading: The French embassy's memorandum of September 11, 1898, with no head, inside Mr. Moore's note of September 10.
+  frus1898 [confirmed] row line 15334: - | Memorandum from Department of State. | Sept. 16 | p. 814
+      inside d701 (line 87962, dated 1898-09-10); its head at line 88094: "", dated 1898-09-16
+      reading: The Department's memorandum of September 16, 1898, with no head, inside Mr. Moore's note of September 10.
+  frus1898 [confirmed] row line 15467: - | Mr. Cambon to Mr. Day | Aug. 30 | p. 827
+      inside d711 (line 88900, dated 1898-08-15); its head at line 88954: "", dated 1898-08-30
+      reading: Mr. Cambon's note of August 30, 1898 enclosing Spain's authority for the protocol, with no head, inside Mr. Day's note No. 94 of August 15.
+  frus1898 [confirmed] row line 20081: - | Mr. Loomis to Mr. Sherman (telegram). | May 5 | p. 1131
+      inside d1150 (line 115391, dated 1898-05-02); its head at line 115452: "", dated 1898-05-05
+      reading: Mr. Loomis's telegram of May 5, 1898, with no head, inside his despatch No. 128 of May 2.
+  frus1898 [confirmed] row line 20090: - | Mr. Loomis to Mr. Sherman (telegram). | May 14 | p. 1132
+      inside d1150 (line 115391, dated 1898-05-02); its head at line 115472: "", dated 1898-05-14
+      reading: Mr. Loomis's telegram of May 14, 1898, with no head, inside his despatch No. 128 of May 2.
+  frus1898 [confirmed] row line 20145: - | Mr. Day to Mr. Loomis | July 5 | p. 1137
+      inside d1155 (line 115843, dated 1898-06-20); its head at line 115896: "", dated 1898-07-05
+      reading: Mr. Loomis's telegram of July 5, 1898 (the Santiago fleet destroyed), with no head, inside Mr. Day's instruction No. 140 of June 20.
+  frus1898 [confirmed] row line 20164: - | Mr. Day to Mr. Loomis | July 15 | p. 1137
+      inside d1156 (line 115916, dated 1898-07-07); its head at line 115941: "", dated 1898-07-15
+      reading: Mr. Loomis's telegram of July 15, 1898 (the surrender of Santiago), with no head, inside Mr. Day's instruction No. 153 of July 7.
+  frus1898 [confirmed] row line 20347: - | Attitude of United States toward Cuba | Apr. 18 | p. 1170
+      inside d1190a (line 118385, dated 1898-04-15); its head at line 118466: "", dated 1898-04-18
+      reading: The Department's circular of April 18, 1898, with no head, inside d1190a, the circular of April 15: d1190a holds 13 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20356: - | Privateering, United States will not res | Apr. 25 | p. 1170
+      inside d1190a (line 118385, dated 1898-04-15); its head at line 118509: "", dated 1898-04-25
+      reading: The Department's circular of April 25, 1898, with no head, inside d1190a, the circular of April 15: d1190a holds 13 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20365: - | Blockade of north coast of Cuba | do | p. 1171
+      inside d1190a (line 118385, dated 1898-04-15); its head at line 118541: "", dated 1898-04-25
+      reading: The Department's circular of April 25 (blockade of the north coast), 1898, with no head, inside d1190a, the circular of April 15: d1190a holds 13 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20374: - | Proclamation of war | Apr. 28 | p. 1171
+      inside d1190a (line 118385, dated 1898-04-15); its head at line 118585: "", dated 1898-04-28
+      reading: The Department's circular of April 28, 1898, with no head, inside d1190a, the circular of April 15: d1190a holds 13 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20383: - | Clearance of vessels during war | May 5 | p. 1172
+      inside d1190a (line 118385, dated 1898-04-15); its head at line 118635: "", dated 1898-05-05
+      reading: The Department's circular of May 5, 1898, with no head, inside d1190a, the circular of April 15: d1190a holds 13 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20392: - | Ambulance ship “Solace” | do | p. 1173
+      inside d1190a (line 118385, dated 1898-04-15); its head at line 118762: "", dated 1898-05-05
+      reading: The Department's circular of May 5 (the Solace), 1898, with no head, inside d1190a, the circular of April 15: d1190a holds 13 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20401: - | United States does not find it practicab | May 12 | p. 1174
+      inside d1190a (line 118385, dated 1898-04-15); its head at line 118811: "", dated 1898-05-12
+      reading: The Department's circular of May 12, 1898, with no head, inside d1190a, the circular of April 15: d1190a holds 13 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20411: - | Geneva convention. Adoption of additiona | May 17 | p. 1174
+      inside d1190a (line 118385, dated 1898-04-15); its head at line 118842: "", dated 1898-05-17
+      reading: The Department's circular of May 17, 1898, with no head, inside d1190a, the circular of April 15: d1190a holds 13 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20431: - | War decrees of Spain | May 31 | p. 1174
+      inside d1190a (line 118385, dated 1898-04-15); its head at line 118866: "", dated 1898-05-31
+      reading: The Department's circular of May 31, 1898, with no head, inside d1190a, the circular of April 15: d1190a holds 13 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20440: - | Exclusion of foreigners from United Stat | June 16 | p. 1174
+      inside d1190a (line 118385, dated 1898-04-15); its head at line 118887: "", dated 1898-06-16
+      reading: The Department's circular of June 16, 1898, with no head, inside d1190a, the circular of April 15: d1190a holds 13 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20449: - | Blockade of south coast of Cuba | June 30 | p. 1175
+      inside d1190a (line 118385, dated 1898-04-15); its head at line 118977: "", dated 1898-06-30
+      reading: The Department's circular of June 30, 1898, with no head, inside d1190a, the circular of April 15: d1190a holds 13 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20458: - | Transfer of Spanish ships to neutral own | July 1 | p. 1176
+      inside d1190a (line 118385, dated 1898-04-15); its head at line 119019: "", dated 1898-07-01
+      reading: The Department's circular of July 1, 1898, with no head, inside d1190a, the circular of April 15: d1190a holds 13 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20467: - | Peace protocol | Aug. 18 | p. 1176
+      inside d1190a (line 118385, dated 1898-04-15); its head at line 119048: "", dated 1898-08-18
+      reading: The Department's circular of August 18, 1898, with no head, inside d1190a, the circular of April 15: d1190a holds 13 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20497: - | Ratification by various countries | July 15 | p. 1177
+      inside d1190b (line 119104, dated 1898-04-21); its head at line 119141: "", dated 1898-07-15
+      reading: The Department's circular of July 15, 1898, with no head, inside d1190b, the circular of April 21: d1190b holds 6 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20506: - | Dominican Republic. Adhesion of | Sept. 29 | p. 1178
+      inside d1190b (line 119104, dated 1898-04-21); its head at line 119226: "", dated 1898-09-29
+      reading: The Department's circular of September 29, 1898, with no head, inside d1190b, the circular of April 21: d1190b holds 6 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20515: - | Ratification by various countries | Oct. 1 | p. 1179
+      inside d1190b (line 119104, dated 1898-04-21); its head at line 119251: "", dated 1898-10-01
+      reading: The Department's circular of October 1, 1898, with no head, inside d1190b, the circular of April 21: d1190b holds 6 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20524: - | British colonies. Adhesion of certain | Dec. 17 | p. 1180
+      inside d1190b (line 119104, dated 1898-04-21); its head at line 119321: "", dated 1898-12-17
+      reading: The Department's circular of December 17, 1898, with no head, inside d1190b, the circular of April 21: d1190b holds 6 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20533: - | Ratification by various countries | Dec. 22 | p. 1180
+      inside d1190b (line 119104, dated 1898-04-21); its head at line 119356: "", dated 1898-12-22
+      reading: The Department's circular of December 22, 1898, with no head, inside d1190b, the circular of April 21: d1190b holds 6 later circulars, each with its own row.
+  frus1898 [confirmed] row line 20542: - | Same subject | Dec. 30 | p. 1181
+      inside d1190b (line 119104, dated 1898-04-21); its head at line 119406: "", dated 1898-12-30
+      reading: The Department's circular of December 30, 1898, with no head, inside d1190b, the circular of April 21: d1190b holds 6 later circulars, each with its own row.
+  frus1899 [confirmed] row line 10417: - | Samoan treaty | 1900. Feb. 16 | p. 667
+      inside d625 (line 62474, dated 1899-11-27); its head at line 62596: "Convention between the United States, Germany, and Great Britain to ad", dated 1900-02-16; not the paper before it in the list
+      reading: The Samoan convention's text, its ratifications exchanged February 16, 1900, inside Lord Pauncefote's note of November 27, 1899; the list runs by date, not by page.
+  frus1899 [confirmed] row line 10727: - | The Marquis of Salisbury to Sir Julian Pauncefote (telegram). | do | p. 613
+      inside d608 (line 58807, dated 1899-01-10); its head at line 58895: "The Marquis of Salisbury to Sir Julian Pauncefote.", dated 1899-03-04; not the paper before it in the list
+      reading: Lord Salisbury's telegram of March 4, 1899 to Sir Julian Pauncefote inside Mr. Hay's note No. 1307 of January 10; the list runs by date, not by page.
+  frus1900 [confirmed] row line 9641: - | Mr. Conger to Mr. Hay | Jan. 5 | p. 86
+      inside d80 (line 24282, dated 1900-01-02); its head at line 24399: "Mr. Conger to Mr. Hay.", dated 1900-01-05
+      reading: Mr. Conger's telegram of January 5, 1900 inside his despatch No. 304 of January 2.
+  frus1900 [confirmed] row line 10522: - | Memorandum of Chinese minister. | do | p. 280
+      inside d302 (line 39527, dated 1900-07-20); its head at line 39546: "", dated 1900-07-21; not the paper before it in the list
+      reading: The Chinese minister's memorandum of July 21, 1900 inside his memorandum of July 20; the list runs by date, not by page.
+  frus1900 [confirmed] row line 15598: - | Memorandum of Italian embassy. | do | p. 360
+      inside d463 (line 45594, dated 1900-08-13); its head at line 45616: "", dated 1900-10-19; not the paper before it in the list
+      reading: The Italian embassy's memorandum of October 19, 1900, communicating the Marquis Visconti Venosta's telegram, inside Mr. Adee's telegram of August 13 to Baron Fava.
+  frus1900 [confirmed] row line 16131: - | Memorandum to Japanese legation. | Oct. 13 | p. 756
+      inside d882 (line 77724, dated 1900-10-04); its head at line 77763: "Memorandum in response to the memorandum of the Japanese minister, dat", dated 1900-10-13
+      reading: The Department's memorandum of October 13, 1900 answering the Japanese minister's memorandum of October 4, inside it.
+  frus1901 [confirmed] row line 9371: - | Memorandum from Japanese legation. | Nov. 14 | p. 376
+      inside d326 (line 38611, dated 1901-06-13); its head at line 38725: "", dated 1901-11-14; not the paper before it in the list
+      reading: The Japanese legation's memorandum of November 14, 1901 inside Mr. Takahira's note No. 14 of June 13; the list runs by date, not by page.
+  frus1902 [confirmed] row line 16071: - | Protocol of agreement between the United States and Salvador. | Dec. 19 | p. 857
+      inside d800 (line 84824, dated 1901-10-30); its head at line 84860: "Protocol of an agreement between the United States of America and the ", dated 1901-12-19; not the paper before it in the list
+      reading: The protocol of December 19, 1901 between the United States and Salvador inside Señor Zaldivar's note of October 30.
+  frus1902 [confirmed] row line 16170: - | Sir Henry Strong, Don M. Dickinson, and José Rosa Pacas, arbitrators. | Apr. 26 | p. 877
+      inside d804 (line 86007, dated 1902-03-15); its head at line 86112: "Re arbitration The United States v. Salvador.", dated 1902-04-26
+      reading: The arbitrators' opinion of April 26, 1902 in the United States v. Salvador inside Mr. Merry's despatch No. 698 of March 15.
+  frus1902 [confirmed] row line 16178: - | Same | May 2 | p. 876
+      inside d804 (line 86007, dated 1902-03-15); its head at line 86065: "Award of arbitrators.", dated 1902-05-02
+      reading: The arbitrators' award of May 2, 1902 inside Mr. Merry's despatch No. 698 of March 15.
+  frus1902 [confirmed] row line 16185: - | Sir Henry Strong and Don M. Dickinson, arbitrators. | May 8 | p. 859
+      inside d800 (line 84824, dated 1901-10-30); its head at line 84992: "Award of arbitrators.", dated 1902-05-08; not the paper before it in the list
+      reading: The award of May 8, 1902 in the Salvador Commercial Company's claim inside Señor Zaldivar's note of October 30, 1901.
+  frus1902 [confirmed] row line 16688: - | Memorandum to the Russian embassy. | Mar. 22 | p. 931
+      inside d859 (line 90243, dated 1902-03-04); its head at line 90323: "Memorandum.", dated 1902-03-22; not the paper before it in the list
+      reading: The Department's memorandum of March 22, 1902 to the Russian embassy inside Mr. Tower's despatch No. 541 of March 4.
+  frus1902 [confirmed] row line 17228: - | Memorandum to Swiss legation. | June 10 | p. 980
+      inside d914a (line 93749, dated 1902-05-29); its head at line 93779: "Memorandum.", dated 1902-06-10
+      reading: The Department's memorandum of June 10, 1902 to the Swiss legation inside the Swiss legation's note of May 29.
+  frus1903 [not a defect] row line 10439: 614 | Mr. Powell to Mr. Hay | Oct. 22 | p. 394
+      inside d351 (line 48133, dated 1903-10-01); its head at line 48183: "Mr. Galvan to Mr. Powell.", dated 1903-10-22; not the paper before it in the list
+      reading: Not this class: d351 is despatch No. 614 itself, whose dateline prints 'October 1903' with no day where the list gives Oct. 22; the attachment is its 'Inclosure 4'.
+  frus1904 [confirmed] row line 14458: - | Circular | June 10 | p. 730
+      inside d727 (line 69529, dated 1904-05-25); its head at line 69549: "Neutral commerce in articles conditionally contraband of war.", dated 1904-06-10; not the paper before it in the list
+      reading: The Department's circular of June 10, 1904 on conditional contraband inside Mr. McCormick's despatch No. 144 of May 25; the list runs by date, not by page.
+  frus1905 [confirmed] row line 14250: - | The International Waterways Commission to the Secretary of War. | Dec. 1 | p. 484
+      inside d415 (line 59013, dated 1905-11-13); its head at line 59067: "Extracts from the report of the International Waterways Commissioners ", dated 1905-12-01; not the paper before it in the list
+      reading: Extracts of the International Waterways Commission's report of December 1, 1905 inside the British ambassador's note of November 13.
+  frus1905 [confirmed] row line 15219: - | Mr. Takahira to Mr. Hay | Jan. 28 | p. 582
+      inside d541 (line 66222, dated 1905-01-18); its head at line 66263: "Note verbale handed to the Secretary of State by the Japanese Minister", dated 1905-01-28
+      reading: The note verbale the Japanese minister handed in on January 28, 1905 inside the Secretary of State's note of January 18 to him.
+  frus1906p1 [confirmed] row line 10059: - | Circular | Aug. 11 | p. 64
+      inside d53 (line 20515, dated 1906-02-25); its head at line 20578: "[Circular.]", dated 1906-08-11; not the paper before it in the list
+      reading: The Department's circular of August 11, 1906 inside Minister Wilson's despatch No. 66 of February 25; the list runs by date, not by page.
+  frus1906p1 [confirmed] row line 13617: - | Executive order by President Roosevelt. | Oct. 23 | p. 494
+      inside d436 (line 52386, dated 1906-10-13); its head at line 52842: "executive order.", dated 1906-10-23
+      reading: President Roosevelt's executive order of October 23, 1906 for Cuba inside Minister Morgan's despatch No. 217 of October 13.
+  frus1906p1 [confirmed] row line 14598: - | Executive order | Mar. 1 | p. 647
+      inside d543 (line 64115, dated 1906-02-27); its head at line 64167: "executive order.", dated 1906-03-01
+      reading: An executive order of March 1, 1906 amending paragraph 678 of the Consular Regulations inside the proclamation of February 27.
+  frus1906p1 [confirmed] row line 14607: - | Executive order | do | p. 648
+      inside d543 (line 64115, dated 1906-02-27); its head at line 64198: "executive order.", dated 1906-03-01
+      reading: A second executive order of March 1, 1906 (paragraph 680) inside the proclamation of February 27.
+  frus1906p1 [confirmed] row line 14759: - | Memorandum from the German embassy. | Nov. 2 | p. 257
+      inside d242 (line 34912, dated 1906-10-15); its head at line 34942: "aide mémoire (from the german embassy).", dated 1906-11-02; not the paper before it in the list
+      reading: The German embassy's aide-mémoire of November 2, 1906 inside the Secretary of State's note No. 342 of October 15 to the French chargé; the list runs by date, not by page.
+  frus1906p2 [confirmed] row line 13299: - | General Davis to the Third International American Conference. | June 15 | p. 1615
+      inside d594 (line 66769, dated 1906-05-23); its head at line 70539: "Report of the Permanent Pan-American Railway Committee.", dated 1906-06-15; not the paper before it in the list
+      reading: The Pan-American Railway Committee's report of June 15, 1906 inside the Acting Secretary's note No. 18 of May 23 to the Brazilian ambassador.
+  frus1906p2 [confirmed] row line 13307: - | Mr. Root to American delegation. | June 18 | p. 1566
+      inside d594 (line 66769, dated 1906-05-23); its head at line 66799: "The Secretary of State to the delegates of the United States to the Th", dated 1906-06-18; not the paper before it in the list
+      reading: Mr. Root's instructions of June 18, 1906 to the delegates to the Rio conference inside the note No. 18 of May 23 to the Brazilian ambassador.
+  frus1906p2 [confirmed] row line 13337: - | The American delegation to Mr. Root. | 1907. Jan. 10 | p. 1576
+      inside d594 (line 66769, dated 1906-05-23); its head at line 67542: "Report of Delegates of the United States to the Secretary of State.", dated 1907-01-10; not the paper before it in the list
+      reading: The delegates' report of January 10, 1907 on the Rio conference inside the note No. 18 of May 23, 1906 to the Brazilian ambassador.
+  frus1907p1 [question] row line 12179: - | Mr. Root to Mr. Sternburg. | May 2 | p. 480
+      inside d340 (line 49150, dated 1907-04-22); its head at line 49236: "Appendix I.", dated 1907-05-02; not the paper before it in the list
+      reading: Mr. Root's note of May 2, 1907, which the book heads 'Appendix I' and follows with Appendices II to IV of June 1, inside his note of April 22 to the German ambassador; the list gives it a row of its own.
+  frus1910 [confirmed] row line 15104: - | Mr. Knox to Marquis Cusani Confalonirei. | Dec. 9 | p. 654
+      inside d689 (line 65180, dated 1910-08-05); its head at line 65243: "memorandum—extradition of porter charlton.", dated 1910-12-09; not the paper before it in the list
+      reading: The Secretary of State's memorandum of December 9, 1910 on Porter Charlton's extradition, with no file number, inside the Acting Secretary's note of August 5.
+  frus1911 [confirmed] row line 6749: 249 | Mr. Grew to Mr. Knox | June 24 | p. 10
+      inside d16 (line 17108, dated 1911-05-06); its head at line 17133: "The American Chargé d’Affaires to the Secretary of State.", dated 1911-06-24
+      reading: The chargé's despatch No. 249 of June 24, 1911 from Vienna inside the instruction No. 127 of May 6.
+  frus1911 [confirmed] row line 8771: 8 | Mr. Young to Mr. Knox | Aug. 22 | p. 187
+      inside d235 (line 29731, dated 1911-08-21); its head at line 29776: "[Untitled]", dated 1911-08-22
+      reading: The minister's despatch No. 8 of August 22, 1911 (the vendor's head '[Untitled]') inside his despatch of August 21.
+  frus1911 [confirmed] row line 10316: - | President Taft to Congress. | 1910. Jan. 25 | p. 313
+      inside d411 (line 38239, dated 1908-02-26); its head at line 38260: "The President to Congress.", dated 1910-01-25
+      reading: President Taft's message of January 25, 1910 to Congress inside the Acting Secretary's letter of February 26, 1908 to the Secretary of Commerce and Labor.
+  frus1911 [question] row line 12086: - | Mr.Wilson to Gov. Johnson. | Feb. 18 | p. 405
+      inside d546 (line 44733, dated 1911-02-14); its head at line 44751: "[Untitled]", dated 1911-02-18; not the paper before it in the list
+      reading: One head, '[Telegrams.]', prints the telegrams of February 14 and 18, 1911 to the Governor of California; the list gives the second a row of its own.
+  frus1911 [confirmed] row line 14933: 41 | Mr. Northcott to Mr. Knox. | May 5 | p. 660
+      inside d942 (line 62823, dated 1911-04-25); its head at line 62854: "[Extract]", dated 1911-05-05
+      reading: The minister's despatch No. 41 of May 5, 1911 from Managua, in extract, inside his despatch of April 25.
+  frus1912 [confirmed] row line 10943: 21 | Mr. Knox to Mr. Naón | Feb. 7 | p. 6
+      inside d5 (line 31770, dated 1912-01-29); its head at line 31801: "The Secretary of State to the Argentine Minister.", dated 1912-02-07
+      reading: The Secretary of State's note No. 21 of February 7, 1912 inside the Argentine minister's note of January 29 that it answers.
+  frus1912 [confirmed] row line 12917: - | Mr. Guild to Mr. Knox (telegram). | Mar. 13 | p. 75
+      inside d86 (line 37639, dated 1912-03-12); its head at line 37673: "[Untitled]", dated 1912-03-13
+      reading: The ambassador's telegram of March 13, 1912 (the vendor's head '[Untitled]') inside his telegram of March 12.
+  frus1912 [confirmed] row line 13119: - | Mr. Wilson to Mr. Calhoun. | do | p. 180
+      inside d301 (line 47129, dated 1912-02-05); its head at line 47348: "The Acting Secretary of State to the American Minister.", dated 1912-03-30; not the paper before it in the list
+      reading: The Acting Secretary's instruction of March 30, 1912 inside the minister's despatch No. 416 of February 5 from Peking; the list runs by date, not by page.
+  frus1912 [question] row line 16495: - | Mr. Furniss to Mr. Knox (telegram). | Mar. 11 | p. 345
+      inside d498 (line 61210, dated 1912-03-09); its head at line 61235: "[Untitled]", dated 1912-03-11
+      reading: One head, '[Telegrams.—Paraphrases.]', prints the minister's telegrams of March 9 and 11, 1912 from Haiti; the list gives the second a row of its own.
+  frus1913 [confirmed] row line 28299: - | The President to the House of Representatives. | 1913. Feb. 7 | p. 1240
+      inside d1611 (line 133066, dated 1912-08-01); its head at line 133104: "Message from the President of the United States transmitting Report of", dated 1913-02-07; not the paper before it in the list
+      reading: The President's message of February 7, 1913 to the House on slavery in Peru inside the House resolution of August 1, 1912; the list runs by date, not by page.
+  frus1914 [confirmed] row line 10779: - | The President to the Senate. | June 16 | p. 162
+      inside d166 (line 44328, dated 1914-06-10); its head at line 44353: "Message of the President transmitting the treaty to the Senate.", dated 1914-06-16
+      reading: The President's message of June 16, 1914 sending the treaty to the Senate inside the Secretary of State's telegram of June 10 to Minister Thomson.
+  frus1914 [confirmed] row line 14341: - | Panama Canal tolls. Text of the Act repe | June 15 | p. 318
+      inside d464 (line 58162, dated 1914-03-06); its head at line 58187: "The Act repealing the exemption.", dated 1914-06-15; not the paper before it in the list
+      reading: The act of June 15, 1914 repealing the Panama Canal tolls exemption inside Ambassador Page's telegram of March 6; the list runs by date, not by page.
+  frus1914 [confirmed] row line 19999: - | Protection of American interests. Act of | do | p. 673
+      inside d1066 (line 90114, dated 1914-04-23); its head at line 90141: "", dated 1914-04-24; not the paper before it in the list
+      reading: The Act of Congress approved April 24, 1914, for the relief of Americans in Mexico, inside Consul Hamm's telegram of April 23; the list runs by date, not by page.
+  frus1914 [question] row line 20205: - | Mr. Bryan to certain consular officers (telegram). | do | p. 639
+      inside d990 (line 86885, dated 1914-04-24); its head at line 86979: "[Untitled]", dated 1914-04-25; not the paper before it in the list
+      reading: One head prints the Secretary of State's circular telegram to the consuls in Mexico with its variants ('Sent to Puerto Mexico …'); the list gives the one of April 25 a row of its own.
+  frus1914Supp [confirmed] row line 16337: - | To the Insurance Company of North America. | Aug. 7 | p. 273
+      inside d420 (line 66453, dated 1914-08-03); its head at line 66498: "The Secretary of State to the Insurance Company of North America", dated 1914-08-07
+      reading: The Secretary of State's reply of August 7, 1914 inside the Insurance Company of North America's letter of August 3. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 16363: - | To Representative Stephens (telegram). | Aug. 8 | p. 274
+      inside d421 (line 66550, dated 1914-08-06); its head at line 66616: "The Secretary of State to Representative Stephens", dated 1914-08-08
+      reading: The Secretary of State's reply of August 8, 1914 inside Representative Stephens's letter of August 6. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25166: - | To the Ambassador in France (telegram). | Aug. 12 | p. 722
+      inside d1147 (line 104819, dated 1914-08-11); its head at line 104842: "The Secretary of State to the Ambassador in France (Herrick)", dated 1914-08-12
+      reading: The Secretary of State's telegram of August 12, 1914 to Ambassador Herrick inside the ambassador's telegram received August 11. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25204: 338 | To the Ambassador in Germany (telegram). | Oct. 6 | p. 724
+      inside d1149 (line 104932, dated 1914-09-25); its head at line 104969: "The Secretary of State to the Ambassador in Germany (Gerard)", dated 1914-10-06
+      reading: The Secretary of State's telegram No. 338 of October 6, 1914 to Ambassador Gerard inside the ambassador's telegram of September 25. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25234: 327 | To the Ambassador in Austria-Hungary (telegram). | Dec. 3 | p. 728
+      inside d1151 (line 105261, dated 1914-11-24); its head at line 105290: "The Secretary of State to the Ambassador in Austria-Hungary (Penfield)", dated 1914-12-03
+      reading: The Secretary of State's telegram No. 327 of December 3, 1914 to Ambassador Penfield inside the ambassador's telegram of November 24. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25357: - | To the Minister in Belgium (telegram). | Aug. 5 | p. 736
+      inside d1159 (line 105813, dated 1914-08-04); its head at line 105877: "The Secretary of State to the Minister in Belgium (Whitlock)", dated 1914-08-05
+      reading: The Secretary of State's telegram of August 5, 1914 to Minister Whitlock inside the minister's telegram of August 4. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25442: - | To the Chargé d’Affaires in Russia (telegram). | Aug. 15 | p. 738
+      inside d1166 (line 106116, dated 1914-08-13); its head at line 106145: "The Secretary of State to the Chargé d’Affaires in Russia (Wilson)", dated 1914-08-15
+      reading: The Secretary of State's telegram of August 15, 1914 to the chargé in Russia inside the chargé's telegram of August 13. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25463: - | To the Ambassador in Great Britain (telegram). | Aug. 19 | p. 739
+      inside d1167 (line 106173, dated 1914-08-18); its head at line 106204: "The Secretary of State to the Ambassador in Great Britain (Page)", dated 1914-08-19
+      reading: The Secretary of State's telegram of August 19, 1914 to Ambassador Page inside the ambassador's telegram of August 18. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25473: - | To the Ambassador in Germany (telegram). | Aug. 20 | p. 739
+      inside d1167 (line 106173, dated 1914-08-18); its head at line 106232: "The Secretary of State to the Ambassador in Germany (Gerard)", dated 1914-08-20
+      reading: The Secretary of State's telegram of August 20, 1914 to Ambassador Gerard inside Ambassador Page's telegram of August 18. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25578: 284 | To the Ambassador in Great Britain (telegram). | Oct. 9 | p. 745
+      inside d1175 (line 106624, dated 1914-10-08); its head at line 106658: "The Acting Secretary of State to the Ambassador in Great Britain (Page", dated 1914-10-09
+      reading: The Acting Secretary's telegram No. 284 of October 9, 1914 to Ambassador Page inside the ambassador's telegram of October 8. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25600: - | To the Minister in Persia (telegram). | Nov. 5 | p. 745
+      inside d1176 (line 106694, dated 1914-11-03); its head at line 106726: "The Acting Secretary of State to the Minister in Persia (Caldwell)", dated 1914-11-05
+      reading: The Acting Secretary's telegram of November 5, 1914 to Minister Caldwell inside the minister's telegram received November 3. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25624: 624 | To the Ambassador in Germany (telegram). | Nov. 12 | p. 746
+      inside d1177 (line 106762, dated 1914-11-09); its head at line 106794: "The Secretary of State to the Ambassador in Germany (Gerard)", dated 1914-11-12
+      reading: The Secretary of State's telegram No. 624 of November 12, 1914 to Ambassador Gerard inside the ambassador's telegram of November 9. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25691: 110 | To the Ambassador in Turkey (telegram). | Dec. 5 | p. 748
+      inside d1182 (line 106962, dated 1914-12-03); its head at line 106991: "The Secretary of State to the Ambassador in Turkey (Morgenthau)", dated 1914-12-05
+      reading: The Secretary of State's telegram No. 110 of December 5, 1914 to Ambassador Morgenthau inside the ambassador's telegram of December 3. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25717: - | To the Ambassador in Turkey (telegram). | Dec. 16 | p. 749
+      inside d1183 (line 107026, dated 1914-12-13); its head at line 107068: "The Secretary of State to the Ambassador in Turkey (Morgenthau)", dated 1914-12-16
+      reading: The Secretary of State's telegram of December 16, 1914 to Ambassador Morgenthau inside the ambassador's telegram of December 13. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25827: 572 | To the Ambassador in Germany (telegram). | Nov. 5 | p. 753
+      inside d1190 (line 107360, dated 1914-11-03); its head at line 107396: "The Acting Secretary of State to the Ambassador in Germany (Gerard)", dated 1914-11-05
+      reading: The Acting Secretary's telegram No. 572 of November 5, 1914 to Ambassador Gerard inside the ambassador's telegram of November 3. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25849: 577 | To the Ambassador in Great Britain (telegram). | Nov. 20 | p. 754
+      inside d1191 (line 107424, dated 1914-11-16); its head at line 107480: "The Acting Secretary of State to the Ambassador in Great Britain (Page", dated 1914-11-20
+      reading: The Acting Secretary's telegram No. 577 of November 20, 1914 to Ambassador Page inside the ambassador's telegram of November 16. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25873: 851 | To the Ambassador in Great Britain (telegram). | Dec. 29 | p. 755
+      inside d1192 (line 107527, dated 1914-12-19); its head at line 107599: "The Secretary of State to the Ambassador in Great Britain (Page)", dated 1914-12-29
+      reading: The Secretary of State's telegram No. 851 of December 29, 1914 to Ambassador Page inside Ambassador Gerard's telegram of December 19. The reply has no file number of its own: the shape #25 describes.
+  frus1914Supp [confirmed] row line 25931: - | To the Ambassador in Turkey (telegram). | Aug. 8 | p. 757
+      inside d1195 (line 107702, dated 1914-08-05); its head at line 107738: "The Secretary of State to the Ambassador in Turkey (Morgenthau)", dated 1914-08-08
+      reading: The Secretary of State's telegram of August 8, 1914 to Ambassador Morgenthau inside the ambassador's telegram of August 5. The reply has no file number of its own: the shape #25 describes.
+  frus1915Supp [confirmed] row line 24006: - | Circular issued by the Department of State. | Nov. 1 | p. 772
+      inside d1104 (line 122673, dated 1915-10-31); its head at line 122755: "", dated 1915-11-01
+      reading: The Department's circular of November 1, 1915 on enlistment in foreign armies runs on inside the text of the British ambassador's Enclosure 2 (its title at line 122783), in his note No. 400 of October 31. #25 named this volume among those it corrected.
+  frus1915Supp [confirmed] row line 26010: - | Departmental order. | June 1 | p. 906
+      inside d1281 (line 135204, dated 1915-04-09); its head at line 135241: "", dated 1915-06-01
+      reading: The departmental order of June 1, 1915 on passports for declarants, with no head, inside the Secretary of State's telegram of April 9 to Ambassador Gerard; neither has a file number. #25 named this volume among those it corrected.
+  frus1915Supp [not a defect] row line 28609: - | From the British Ambassador. | Dec. 24 [Rec’d Dec. 27] | p. 1049
+      inside d1516 (line 149662, dated 1915-12-01); its head at line 149705: "Statement given to the press by the British Embassy", dated 1915-12-24; not the paper before it in the list
+      reading: Not this class: d1516 is the British ambassador's note of December 24 itself, whose dateline prints 'December 1915' with no day; the attachment is its '[Enclosure]'.
+  frus1916 [question] row line 8855: - | Mr. Koo to Mr. Lansing | May 19 | p. 50
+      inside d55 (line 26136, dated 1916-05-11); its head at line 26171: "The Chinese Minister to the Secretary of State", dated 1916-05-19; not the paper before it in the list
+      reading: The Chinese minister's note of May 19, 1916 inside the Secretary of State's note of May 11: an exchange of notes printed under one source note, Treaty Series No. 619–A; the list gives the reply a row of its own.
+  frus1916 [confirmed] row line 11309: - | The President to the Senate. | Apr. 12 | p. 287
+      inside d323 (line 46053, dated 1914-05-18); its head at line 46137: "Message from the President to the Senate", dated 1916-04-12; not the paper before it in the list
+      reading: The President's message of April 12, 1916 to the Senate inside the Secretary of War's letter of May 18, 1914; the list runs by date, not by page.
+  frus1916 [confirmed] row line 11406: - | Senate resolution | Aug. 29 | p. 291
+      inside d324 (line 46169, dated 1916-04-10); its head at line 46684: "In Executive Session, Senate of the United States", dated 1916-08-29; not the paper before it in the list
+      reading: The Senate's resolution of August 29, 1916 inside the Secretary of State's letter of April 10 to the President; the list runs by date, not by page.
+  frus1916 [confirmed] row line 12557: - | Treaty. Protocol perfecting the French t | Dec. 22 | p. 337
+      inside d364 (line 50558, dated 1916-08-25); its head at line 50594: "Protocol perfecting the French text of the Protocol of August 24, 1916", dated 1916-12-22; not the paper before it in the list
+      reading: The protocol of December 22, 1916 perfecting the French text of the Haitian gendarmerie protocol inside the Secretary of State's letter of August 25 to the President.
+  frus1916Supp [confirmed] row line 20551: - | The Department of State to the Greek Legation. | Sept. 11 | p. 693
+      inside d905 (line 104761, dated 1916-08-29); its head at line 104838: "The Department of State to the Greek Legation", dated 1916-09-11
+      reading: The Department's reply of September 11, 1916 to the Greek legation inside the legation's note of August 29. The reply has no file number of its own: the shape #25 describes. #25 named this volume among those it corrected.
+  frus1918 [confirmed] row line 7413: - | To the Belgian Minister | Apr. 9 | p. 807
+      inside d698 (line 88897, dated 1918-04-06); its head at line 88931: "The Secretary of State to the Belgian Minister (Cartier)", dated 1918-04-09
+      reading: The Secretary of State's note of April 9, 1918 to the Belgian minister inside the minister's note of April 6. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 8037: 2069 | To the French Ambassador | Feb. 15 | p. 200
+      inside d195 (line 34816, dated 1918-02-05); its head at line 34875: "The Secretary of State to the French Ambassador (Jusserand)", dated 1918-02-15; not the paper before it in the list
+      reading: The Secretary of State's note No. 2069 of February 15, 1918 to the French ambassador inside the ambassador's note of February 5. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 9407: - | To the Minister in China (tel.) | Nov. 30 | p. 213
+      inside d210 (line 36165, dated 1918-11-25); its head at line 36195: "The Secretary of State to the Minister in China (Reinsch)", dated 1918-11-30; not the paper before it in the list
+      reading: The Secretary of State's telegram of November 30, 1918 to Minister Reinsch inside the minister's telegram of November 25. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 9851: - | To the Minister in Panama (tel.) | Mar. 4 | p. 246
+      inside d246 (line 39254, dated 1918-03-02); its head at line 39291: "The Acting Secretary of State to the Minister in Panama (Price)", dated 1918-03-04
+      reading: The Acting Secretary's telegram of March 4, 1918 to Minister Price inside the minister's telegram of March 2. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 10067: - | To the Minister in Panama (tel.) The same to Guatemala and Nicaragua | Apr. 25 | p. 257
+      inside d265 (line 40215, dated 1918-04-23); its head at line 40258: "The Secretary of State to the Minister in Panama (Price)", dated 1918-04-25
+      reading: The Secretary of State's telegram of April 25, 1918 to Minister Price inside his telegram of April 23 to the chargé in Costa Rica. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 10519: - | To the Minister in Cuba (tel.) | July 19 | p. 285
+      inside d322 (line 42984, dated 1917-07-13); its head at line 43012: "The Acting Secretary of State to the Minister in Cuba (Gonzales)", dated 1917-07-19
+      reading: The Acting Secretary's telegram of July 19, 1917 to Minister Gonzales inside the minister's telegram of July 13. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 10644: - | To the Secretary of the Treasury | Aug. 23 | p. 300
+      inside d331 (line 44274, dated 1917-08-22); its head at line 44308: "The Secretary of State to the Secretary of the Treasury (McAdoo)", dated 1917-08-23
+      reading: The Secretary of State's letter of August 23, 1917 to Mr. McAdoo inside Mr. McAdoo's letter of August 22. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 10908: - | To the Secretary of the Treasury | Oct. 12 | p. 313
+      inside d344 (line 45237, dated 1917-10-05); its head at line 45343: "The Secretary of State to the Secretary of the Treasury (McAdoo)", dated 1917-10-12; not the paper before it in the list
+      reading: The Secretary of State's letter of October 12, 1917 to Mr. McAdoo inside Mr. Crosby's letter of October 5. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 10994: - | To the Minister in Cuba (tel.) | Nov. 16 | p. 279
+      inside d309 (line 42320, dated 1917-10-11); its head at line 42368: "The Acting Secretary of State to the Minister in Cuba (Gonzales)", dated 1917-11-16; not the paper before it in the list
+      reading: The Acting Secretary's telegram of November 16, 1917 to Minister Gonzales inside the Cuban minister's note of October 11. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 11048: - | To the Secretary of the Treasury | Dec. 1 | p. 314
+      inside d346 (line 45461, dated 1917-11-20); its head at line 45504: "The Secretary of State to the Secretary of the Treasury (McAdoo)", dated 1917-12-01; not the paper before it in the list
+      reading: The Secretary of State's letter of December 1, 1917 to Mr. McAdoo inside Mr. McAdoo's letter of November 20. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 11390: - | To the Minister in Cuba (tel.) | Apr. 5 | p. 324
+      inside d359 (line 46484, dated 1918-03-29); its head at line 46518: "The Secretary of State to the Minister in Cuba (Gonzales)", dated 1918-04-05; not the paper before it in the list
+      reading: The Secretary of State's telegram of April 5, 1918 to Minister Gonzales inside the Cuban minister's note No. 63 of March 29. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 11584: - | To the Secretary of the Treasury | Sept. 9 | p. 335
+      inside d372 (line 47547, dated 1918-08-26); its head at line 47592: "The Secretary of State to the Secretary of the Treasury (McAdoo)", dated 1918-09-09
+      reading: The Secretary of State's letter of September 9, 1918 to Mr. McAdoo inside Mr. McAdoo's letter of August 26. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 11633: - | To the Secretary of the Treasury | Oct. 29 | p. 338
+      inside d373 (line 47650, dated 1918-10-17); its head at line 47898: "The Secretary of State to the Secretary of the Treasury (McAdoo)", dated 1918-10-29
+      reading: The Secretary of State's letter of October 29, 1918 to Mr. McAdoo inside Mr. Rathbone's letter of October 17. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 11735: - | To the Secretary of the Navy | Mar. 25 | p. 374
+      inside d396 (line 50751, dated 1918-03-04); its head at line 50800: "The Secretary of State to the Secretary of the Navy (Daniels)", dated 1918-03-25; not the paper before it in the list
+      reading: The Secretary of State's letter of March 25, 1918 to Mr. Daniels inside Minister Russell's despatch No. 306 of March 4. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 11793: - | To the Secretary of the Navy | May 25 | p. 375
+      inside d397 (line 50838, dated 1918-05-02); its head at line 50929: "The Secretary of State to the Secretary of the Navy (Daniels)", dated 1918-05-25
+      reading: The Secretary of State's letter of May 25, 1918 to Mr. Daniels inside Mr. Daniels's letter received May 8. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 12584: 2090 | To the French Ambassador | Mar. 5 | p. 800
+      inside d694 (line 88350, dated 1918-02-08); its head at line 88392: "The Acting Secretary of State to the French Ambassador (Jusserand)", dated 1918-03-05; not the paper before it in the list
+      reading: The Acting Secretary's note No. 2090 of March 5, 1918 to the French ambassador inside the ambassador's note of February 8. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 12968: 30 | To the British Ambassador | 1918 Mar. 19 | p. 806
+      inside d696 (line 88741, dated 1918-03-12); its head at line 88785: "The Secretary of State to the British Ambassador (Reading)", dated 1918-03-19
+      reading: The Secretary of State's note No. 30 of March 19, 1918 to the British ambassador inside the ambassador's note No. 264 of March 12. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 13513: - | To the Minister in Nicaragua (tel.) | 1914 Jan. 21 | p. 13
+      inside d12 (line 18933, dated 1913-12-02); its head at line 18992: "The Secretary of State to the Minister in Nicaragua (Jefferson)", dated 1914-01-21
+      reading: The Secretary of State's telegram of January 21, 1914 to Minister Jefferson inside his instruction No. 8 of December 2, 1913. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 14253: - | To the Secretary of the Treasury | Aug. 5 | p. 534
+      inside d488 (line 62995, dated 1918-07-25); its head at line 63094: "The Acting Secretary of State to the Secretary of the Treasury (McAdoo", dated 1918-08-05
+      reading: The Acting Secretary's letter of August 5, 1918 to Mr. McAdoo inside his letter of July 25. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 14308: - | To the Secretary of the Treasury | Sept. 9 | p. 536
+      inside d491 (line 63204, dated 1918-08-27); its head at line 63256: "The Secretary of State to the Secretary of the Treasury (McAdoo)", dated 1918-09-09
+      reading: The Secretary of State's letter of September 9, 1918 to Mr. McAdoo inside Mr. Leffingwell's letter of August 27. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 15263: 925 | To the Ambassador in Mexico (tel.) | Mar. 28 | p. 644
+      inside d594 (line 73010, dated 1918-03-16); its head at line 73063: "The Secretary of State to the Ambassador in Mexico (Fletcher)", dated 1918-03-28; not the paper before it in the list
+      reading: The Secretary of State's telegram No. 925 of March 28, 1918 to Ambassador Fletcher inside the French ambassador's note of March 16. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 15603: 985 | To the Ambassador in Mexico (tel.) | Apr. 17 | p. 716
+      inside d649 (line 79993, dated 1918-04-15); its head at line 80024: "The Secretary of State to the Ambassador in Mexico (Fletcher)", dated 1918-04-17; not the paper before it in the list
+      reading: The Secretary of State's telegram No. 985 of April 17, 1918 to Ambassador Fletcher inside the Tampico consul's telegram of April 15. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 16785: 1656 | To the Ambassador in Mexico (tel.) | Nov. 22 | p. 813
+      inside d703 (line 89470, dated 1918-11-15); its head at line 89512: "The Secretary of State to the Ambassador in Mexico (Fletcher)", dated 1918-11-22; not the paper before it in the list
+      reading: The Secretary of State's telegram No. 1656 of November 22, 1918 to Ambassador Fletcher inside the ambassador's telegram of November 15. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 16829: 1668 | To the Ambassador in Mexico (tel.) | Nov. 29 | p. 814
+      inside d704 (line 89545, dated 1918-11-25); its head at line 89577: "The Secretary of State to the Ambassador in Mexico (Fletcher)", dated 1918-11-29; not the paper before it in the list
+      reading: The Secretary of State's telegram No. 1668 of November 29, 1918 to Ambassador Fletcher inside the ambassador's telegram of November 25. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 16972: 1740 | To the Ambassador in Mexico (tel.) | Dec. 21 | p. 790
+      inside d683 (line 87314, dated 1918-12-16); its head at line 87358: "The Acting Secretary of State to the Ambassador in Mexico (Fletcher)", dated 1918-12-21; not the paper before it in the list
+      reading: The Acting Secretary's telegram No. 1740 of December 21, 1918 to Ambassador Fletcher inside the ambassador's telegram of December 16. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 17198: - | To the Minister in Nicaragua (tel.) | Jan. 14 | p. 825
+      inside d708 (line 90507, dated 1918-01-08); its head at line 90540: "The Secretary of State to the Minister in Nicaragua (Jefferson)", dated 1918-01-14
+      reading: The Secretary of State's telegram of January 14, 1918 to Minister Jefferson inside the minister's telegram of January 8. The reply has no file number of its own: the shape #25 describes.
+  frus1918 [confirmed] row line 17395: - | To the Minister in Nicaragua (tel.) | Apr. 19 | p. 848
+      inside d724 (line 92529, dated 1918-04-05); its head at line 92573: "The Secretary of State to the Minister in Nicaragua (Jefferson)", dated 1918-04-19
+      reading: The Secretary of State's telegram of April 19, 1918 to Minister Jefferson inside the minister's telegram of April 5. The reply has no file number of its own: the shape #25 describes.
+  frus1919Parisv02 [question] row line 7510: - | Convention Prolonging the Armistice With | Feb. 16 | p. 15
+      inside d1 (line 16845, dated 1918-11-11); its head at line 17653: "Convention Prolonging the Armistice With Germany, Signed February 16, ", dated 1919-02-16
+      reading: The convention of February 16, 1919 prolonging the armistice inside the armistice of November 11, 1918, after the prolongations of December 13 and January 16: the armistice's head carries one source note for all three, and the list gives each a row of its own.
+  frus1919Parisv02 [question] row line 9005: - | Military Convention Between the Allies a | Nov. 13 | p. 183
+      inside d110 (line 27658, dated 1918-11-03); its head at line 28157: "Military Convention Between the Allies and Hungary, Signed at Belgrade", dated 1918-11-13
+      reading: The military convention signed at Belgrade on November 13, 1918 inside the armistice with Austria-Hungary of November 3, whose head's source note covers 'the convention infra'; the list gives it a row of its own.
+  frus1919Parisv11 [confirmed] row line 7377: - | Memorandum by the Secretary of StateOpin | Jan. 16 | p. 487
+      inside d187 (line 33125, dated 1919-01-15); its head at line 33213: "Memorandum by the Secretary of State", dated 1919-01-16
+      reading: Mr. Lansing's memorandum of January 16, 1919 inside Dr. Young's letter of January 15. Its source is a footnote to its head, not a note of its own: the second shape #25 describes.
+  frus1919Parisv11 [confirmed] row line 7876: - | Memorandum by the Secretary of StateOpin | Mar. 30 | p. 547
+      inside d240 (line 36193, dated 1919-03-27); its head at line 38044: "Memorandum by the Secretary of State", dated 1919-03-30
+      reading: Mr. Lansing's memorandum of March 30, 1919 inside the memorandum of March 27 on the commission's organization. Its source is a footnote to its head, not a note of its own: the second shape #25 describes.
+  frus1919Parisv11 [question] row line 7950: - | Memorandum by the Secretary of StateExpr | [May 8] | p. 568
+      inside d246 (line 38722, dated 1919-05-01); its head at line 39179: "Memorandum by the Secretary of State", dated 1919-05-08
+      reading: Mr. Lansing's memorandum of May 8, 1919 on the treaty's terms inside the memorandum on the commission's personnel, which is dated 'Paris, May 1919' with no day, so that it cannot be shown to be the earlier.
+  frus1919Parisv11 [confirmed] row line 8514: - | President Wilson to the Chairman of the  | Aug. 8 | p. 629
+      inside d308 (line 42427, dated 1919-08-05); its head at line 42474: "President Wilson to the Chairman of the Senate Committee on Foreign Re", dated 1919-08-08
+      reading: President Wilson's letter of August 8, 1919 to Senator Lodge inside the American correspondents' letter of August 5.
+  frus1919Parisv11 [confirmed] row line 8754: - | The Secretary of State to President Wils | Sept. 16 | p. 645
+      inside d335 (line 43312, dated 1919-09-15); its head at line 43353: "The Secretary of State to President Wilson", dated 1919-09-16
+      reading: Mr. Lansing's letter of September 16, 1919 to the President, in extract, inside the commission's telegram of September 15.
+  frus1919Russia [confirmed] row line 12153: - | President Wilson to the President of the | July 22 | p. 391
+      inside d416 (line 40850, dated 1919-07-14); its head at line 40894: "President Wilson to the President of the Senate (Marshall)", dated 1919-07-22
+      reading: President Wilson's message of July 22, 1919 to the President of the Senate inside Minister Reinsch's telegram received July 15.
+  frus1919v01 [confirmed] row line 14384: - | Proclamation by the PresidentReservation | Feb. 25 (1512) | p. 796
+      inside d778 (line 61099, dated 1919-02-12); its head at line 61136: "Proclamation No. 1512, February 25, 1919, of the Reservation for Light", dated 1919-02-25
+      reading: Proclamation No. 1512 of February 25, 1919 inside the Acting Secretary's telegram of February 12 to Minister Philip.
+  frus1919v01 [confirmed] row line 14400: - | Proclamation by the PresidentReservation | June 5 (1522–A) | p. 797
+      inside d779 (line 61190, dated 1919-05-16); its head at line 61219: "Proclamation No. 1522–A, June 5, 1919, of the Reservation for Lighthou", dated 1919-06-05
+      reading: Proclamation No. 1522–A of June 5, 1919 inside Minister Philip's telegram of May 16.
+  frus1920v03 [not a defect] row line 11643: - | To the Japanese AmbassadorNotification t | Jan. 9 | p. 487
+      inside d542 (line 42434, dated 1920-01-05); its head at line 42451: "Memorandum", dated 1920-01-09; not the paper before it in the list
+      reading: Not this class: the note to the Japanese ambassador says it transmits the memorandum 'herewith', and the attachment is labelled its enclosure; the note is dated January 5, its enclosure January 9, and the list gives January 9.
+  frus1932v02 [confirmed] row line 8235: - | Unperfected Treaty Between the United St | July 18 | p. 69
+      inside d52 (line 17466, dated 1932-04-09); its head at line 17813: "Unperfected Treaty Between the United States of America and Canada Rel", dated 1932-07-18
+      reading: The waterway treaty signed with Canada on July 18, 1932 inside the Joint Board of Engineers' report of April 9.
+  1861-1898: {'confirmed': 101, 'not a defect': 1}
+  after 1898: {'confirmed': 95, 'not a defect': 3, 'question': 8}
+  confirmed, by volume: how many, the earliest document in the file that one is filed inside, and the
+  documents after it, which a division of its own for that paper renumbers:
+    frus1862           4  earliest inside d213 (line 32210); 507 documents after it
+    frus1863p1         3  earliest inside d27 (line 16821); 668 documents after it
+    frus1863p2         1  earliest inside d224 (line 25265); 417 documents after it
+    frus1864p1         1  earliest inside d81 (line 22518); 317 documents after it
+    frus1864p3         1  earliest inside d497 (line 51658); 32 documents after it
+    frus1865p2         3  earliest inside d396 (line 33863); 279 documents after it
+    frus1865p3         2  earliest inside d427 (line 50286); 339 documents after it
+    frus1866p1         7  earliest inside d27 (line 14231); 489 documents after it
+    frus1866p2         2  earliest inside d49 (line 14777); 509 documents after it
+    frus1866p3         5  earliest inside d2 (line 6637); 221 documents after it
+    frus1867p1         2  earliest inside d131 (line 22047); 509 documents after it
+    frus1867p2         9  earliest inside d221 (line 41162); 294 documents after it
+    frus1868p1         1  earliest inside d125 (line 40880); 274 documents after it
+    frus1868p2         9  earliest inside d23 (line 15727); 645 documents after it
+    frus1870           3  earliest inside d215 (line 27794); 85 documents after it
+    frus1871           1  earliest inside d172 (line 43386); 264 documents after it
+    frus1872p2v5       1  earliest inside d72 (line 13019); 91 documents after it
+    frus1889           4  earliest inside d85 (line 19744); 265 documents after it
+    frus1893           1  earliest inside d380 (line 41519); 318 documents after it
+    frus1895p2         6  earliest inside d221 (line 35671); 546 documents after it
+    frus1896           2  earliest inside d174 (line 33911); 723 documents after it
+    frus1898          33  earliest inside d614 (line 82632); 580 documents after it
+    frus1899           2  earliest inside d608 (line 58807); 202 documents after it
+    frus1900           4  earliest inside d80 (line 24282); 995 documents after it
+    frus1901           1  earliest inside d326 (line 38611); 211 documents after it
+    frus1902           6  earliest inside d800 (line 84824); 228 documents after it
+    frus1904           1  earliest inside d727 (line 69529); 222 documents after it
+    frus1905           2  earliest inside d415 (line 59013); 721 documents after it
+    frus1906p1         5  earliest inside d53 (line 20515); 685 documents after it
+    frus1906p2         3  earliest inside d594 (line 66769); 18 documents after it
+    frus1910           1  earliest inside d689 (line 65180); 271 documents after it
+    frus1911           4  earliest inside d16 (line 17108); 1062 documents after it
+    frus1912           3  earliest inside d5 (line 31770); 1855 documents after it
+    frus1913           1  earliest inside d1611 (line 133066); 98 documents after it
+    frus1914           3  earliest inside d166 (line 44328); 1699 documents after it
+    frus1914Supp      18  earliest inside d420 (line 66453); 926 documents after it
+    frus1915Supp       2  earliest inside d1104 (line 122673); 423 documents after it
+    frus1916           3  earliest inside d323 (line 46053); 1003 documents after it
+    frus1916Supp       1  earliest inside d905 (line 104761); 411 documents after it
+    frus1918          27  earliest inside d12 (line 18933); 721 documents after it
+    frus1919Parisv11   4  earliest inside d187 (line 33125); 222 documents after it
+    frus1919Russia     1  earliest inside d416 (line 40850); 502 documents after it
+    frus1919v01        2  earliest inside d778 (line 61099); 137 documents after it
+    frus1932v02        1  earliest inside d52 (line 17466); 558 documents after it
+  confirmed: 196 papers in 44 volumes (101 in 22 volumes of 1861-1898)
+
+  numbered rows whose attachment is not dated after the paper it sits in (checked, not reported):
+    frus1872p2v2 row line 5485: No. 13. |  | Transmits reply of Earl Granville of March 20th to Mr. Fish’s instructions of 27th ultimo, to him, (General Schenck,) and printed memorandum in three parts. His note treats upon incidental or consequential damages. Reviews the Johnson-Clarendon Treaty. Part 1 of the memorandum treats “on the waiver of claims for indirect losses contained in the 36th Protocol.” Part 2, “on the construction of the Treaty of Washington.” Part 3, “on the amount of the claims for indirect losses.” General Schenck, in reply, states that he will forward the above to his Government without delay | p. 435; attachment "Earl Granville to General Schenck." (1872-03-20) inside d148 (1872-03-21)
+    frus1876 row line 7037: No. 90 | The Emperor William to the President. | June 9 | p. 173; attachment "The Emperor William to the President." (1876-06-09) inside d91 (1876-06-29)
+    frus1880 row line 14556: No. 529 | Mr. Evarts to Mr. Christiancy. | do | p. 837; attachment "Mr. Evarts to Señor Calderon." (1880-03-01) inside d528 (1880-03-01)
+    frus1887 row line 11244: No. 316 | Mr. White to Mr. Bayard (No. 478). | Mar. 26 | p. 468; attachment "The Marquis of Salisbury to Mr. White" (1887-03-26) inside d316 (1887-03-30)
+    frus1888p1 row line 10988: No. 122 | Mr. Bayard to Mr. Hall (No. 617). | Sept. 1 | p. 165; attachment "Mr. Hall to Señor Sobral." (1888-09-01) inside d120 (1888-09-04)
+
+  numbered lists: where a document's @n leaves the number the list gives its paper (number - @n):
+    frus1870       d1 No. 1 (+0), d216 No. 217 (+1), d283 No. 285 (+2)
+    frus1871       d12 No. 1 (-11), d17 No. 4 (-13), d28 No. 45 (+17), d29 No. 16 (-13), d96 No. 82 (-14), d173 No. 155 (-18), d226 No. 209 (-17), d234 No. 216 (-18), d239 No. 218 (-21), d286 No. 266 (-20), d325 No. 304 (-21), d404 No. 332 (-72) …
+    frus1872p1     d1 No. 1 (+0), d158 No. 157 (-1), d157 No. 158 (+1), d159 No. 159 (+0), d295 No. 235 (-60), d296 No. 296 (+0), d371 No. 372 (+1), d385 No. 336 (-49), d386 No. 387 (+1), d387 No. 338 (-49), d389 No. 390 (+1), d405 No. 408 (+3) …
+    frus1872p2v2   d136 No. 1 (-135), d168 No. 34 (-134), d171 No. 36 (-135), d176 No. 42 (-134), d182 No. 47 (-135), d198 No. 64 (-134), d200 No. 65 (-135), d263 No. 2 (-261)
+    frus1873p1v1   d3 No. 1 (-2), d197 No. 194 (-3), d227 No. 324 (+97), d228 No. 225 (-3)
+    frus1873p1v2   d1 No. 307 (+306)
+    frus1874       d3 No. 1 (-2), d593 No. 592 (-1), d597 No. 595 (-2), d613 No. 609 (-4), d611 No. 611 (+0), d615 No. 613 (-2), d646 No. 643 (-3), d645 No. 644 (-1), d647 No. 645 (-2), d667 No. 664 (-3), d666 No. 665 (-1), d668 No. 666 (-2) …
+    frus1875v01    d6 No. 2 (-4)
+    frus1876       d1 No. 1 (+0), d65 No. 64 (-1), d108 No. 98 (-10), d309 No. 300 (-9)
+    frus1878       d1 No. 1 (+0), d6 No. 1 (-5), d237 No. 939 (+702), d238 No. 233 (-5), d359 No. 355 (-4), d361 No. 356 (-5)
+    frus1879       d1 No. 1 (+0), d3 No. 2 (-1), d12 No. 1 (-11), d78 No. 65 (-13), d102 No. 87 (-15), d107 No. 91 (-16), d117 No. 100 (-17), d121 No. 102 (-19), d130 No. 110 (-20), d137 No. 116 (-21), d142 No. 120 (-22), d175 No. 154 (-21) …
+    frus1880       d1 No. 1 (+0), d601 No. 60 (-541), d602 No. 602 (+0)
+    frus1881       d1 No. 1 (+0), d72 No. 73 (+1), d73 No. 73 (+0), d180 No. 179 (-1), d190 No. 190 (+0), d215 No. 211 (-4), d260 No. 250 (-10), d261 No. 257 (-4), d581 No. 576 (-5), d580 No. 577 (-3), d582 No. 578 (-4)
+    frus1882       d1 No. 1 (+0), d181 No. 126 (-55), d281 No. 225 (-56), d285 No. 228 (-57), d288 No. 229 (-59), d290 No. 230 (-60), d294 No. 233 (-61), d298 No. 236 (-62), d300 No. 237 (-63), d316 No. 252 (-64)
+    frus1883       d1 No. 1 (+0), d228 No. 28 (-200), d229 No. 229 (+0), d231 No. 251 (+20), d232 No. 232 (+0), d313 No. 312 (-1), d442 No. 443 (+1)
+    frus1884       d1 No. 1 (+0), d21 No. 20 (-1), d22 No. 22 (+0), d246 No. 245 (-1), d265 No. 265 (+0), d275 No. 75 (-200), d276 No. 276 (+0)
+    frus1885       d1 No. 1 (+0), d703 No. 793 (+90), d704 No. 764 (+60), d705 No. 705 (+0)
+    frus1886       d1 No. 1 (+0), d32 No. 31 (-1), d71 No. 67 (-4), d188 No. 183 (-5), d189 No. 185 (-4), d379 No. 875 (+496), d382 No. 378 (-4), d383 No. 879 (+496), d384 No. 380 (-4), d393 No. 388 (-5), d396 No. 891 (+495), d397 No. 392 (-5) …
+    frus1887       d1 No. 1 (+0), d52 No. 51 (-1), d51 No. 52 (+1), d53 No. 53 (+0), d114 No. 14 (-100), d115 No. 115 (+0), d238 No. 239 (+1), d239 No. 239 (+0), d296 No. 295 (-1), d297 No. 297 (+0), d338 No. 838 (+500), d339 No. 339 (+0) …
+    frus1888p1     d1 No. 1 (+0), d344 No. 314 (-30), d346 No. 346 (+0), d420 No. 421 (+1), d421 No. 421 (+0), d455 No. 456 (+1), d457 No. 457 (+0), d474 No. 471 (-3), d475 No. 475 (+0), d558 No. 557 (-1), d559 No. 559 (+0), d590 No. 500 (-90) …
+    frus1888p2     d1 No. 714 (+713), d70 No. 781 (+711), d71 No. 784 (+713), d76 No. 788 (+712), d77 No. 790 (+713), d90 No. 802 (+712), d92 No. 805 (+713), d424 No. 1 (-423), d454 No. 1 (-453), d456 No. 1 (-455), d517 No. 61 (-456), d518 No. 63 (-455) …
+    frus1894Nicaragua d1 No. 1 (+0), d69 No. 60 (-9), d70 No. 70 (+0), d87 No. 88 (+1), d89 No. 89 (+0), d106 No. 105 (-1), d107 No. 107 (+0), d123 No. 122 (-1), d124 No. 124 (+0), d137 No. 13 (-124)
+    frus1875v02    d2 No. 306 (+304), d115 No. 414 (+299), d225 No. 523 (+298), d226 No. 525 (+299), d280 No. 572 (+292), d275 No. 580 (+305), d289 No. 581 (+292), d307 No. 598 (+291), d306 No. 599 (+293), d308 No. 600 (+292), d376 No. 666 (+290), d377 No. 669 (+292)
+
+== 5. Dates whose month is the receipt's
+  <date when> whose printed month and day contradict @when (either reading, where the editors correct the day):
+  821 in the 553 volumes (312 in 1861-1898)
+    1861-1898: {'other': 288, 'receipt month': 19, 'receipt year': 5}
+    after 1898: {'other': 507, 'receipt date': 1, 'receipt month': 1}
+  of them, with a receipt in the dateline or opener: 87; among the others of those, @when's month is the receipt's (its day not the printed one) in 28
+  of those, the receipt's month is not the printed one, so that @when has the receipt's month and neither its day nor the printed day: 0
+  with no receipt: 734
+  frus1870 d44 [confirmed] line 9710: "July 18, 1870" encoded 1870-08-18; Received August 3, 1870; receipt month; List of Papers: line 4657 "July 18"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1870 d50 [confirmed] line 10103: "July 26, 1870" encoded 1870-08-26; Received August 11; receipt month; List of Papers: line 4712 "July 26"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1870 d53 [confirmed] line 10566: "July 29, 1870" encoded 1870-08-29; Received August 11; receipt month; List of Papers: line 4742 "July 29"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1870 d54 [confirmed] line 10642: "July 29, 1870" encoded 1870-08-29; Received August 11, 1870; receipt month; List of Papers: line 4751 "July 29"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1870 d66 [confirmed] line 12281: "August 26, 1870" encoded 1870-09-26; Received September 8; receipt month; List of Papers: line 4870 "Aug. 26"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1870 d67 [confirmed] line 12378: "August 26, 1870" encoded 1870-09-26; Received September 8, 1870; receipt month; List of Papers: line 4882 "Aug. 26"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1870 d68 [confirmed] line 12443: "August 29, 1870" encoded 1870-09-29; Received September 14; receipt month; List of Papers: line 4892 "Aug. 29"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1870 d86 [confirmed] line 13532: "September 21, 1870" encoded 1870-10-21; Received October 18; receipt month; List of Papers: line 5063 "Sept. 21"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1870 d87 [confirmed] line 13614: "September 26, 1870" encoded 1870-10-26; Received October 19; receipt month; List of Papers: line 5073 "Sept. 26"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1870 d93 [confirmed] line 14329: "October 24, 1870" encoded 1870-11-24; Received November 15, 1870; receipt month; List of Papers: line 5144 "Oct. 24"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1870 d94 [confirmed] line 14363: "October 24, 1870" encoded 1870-11-24; Received November 15, 1870; receipt month; List of Papers: line 5153 "Oct. 24"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1870 d114 [confirmed] line 15545: "August 24, 1870" encoded 1870-09-24; Received September 8; receipt month; List of Papers: line 5370 "Aug. 24"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1870 d150 [confirmed] line 19823: "July 16, 1870" encoded 1870-08-16; Received August 3; receipt month; List of Papers: line 5744 "July 16"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1870 d162 [confirmed] line 20620: "September 21, 1870" encoded 1870-10-21; Received October 10; receipt month; List of Papers: line 5859 "Sept. 21"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1870 d166 [confirmed] line 21137: "September 29, 1870" encoded 1870-10-29; Received October 20; receipt month; List of Papers: line 5897 "Sept. 29"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1870 d300 [confirmed] line 45620: "July 17, 1870" encoded 1870-08-17; Received August 3; receipt month; List of Papers: line 7479 "July 17"
+      reading: The note's item 5: the List of Papers gives the printed date.
+  frus1871 d28 [confirmed] line 20250: "June 10, 1871" encoded 1871-07-10; Received July 14; receipt month; List of Papers: line 14387 "June 10"
+      reading: The despatch of June 10, 1871 from Rio de Janeiro, received July 14, is encoded July 10; the List of Papers gives June 10.
+  frus1871 d308 [confirmed] line 64633: "April 29, 1871" encoded 1871-05-29; Received May 12; receipt month; List of Papers: line 17176 "April 29 May 22"
+      reading: The despatch of April 29, 1871 from Mexico, received May 12, is encoded May 29; the List of Papers' cell reads 'April 29 May 22', the first its printed date.
+  frus1871 d350 [confirmed] line 72337: "November 19, 1870" encoded 1870-12-19; Received December 12; receipt month; List of Papers: line 17595 "Nov. 19"
+      reading: General Sickles's despatch No. 195 of November 19, 1870 from Madrid, received December 12, is encoded December 19; the List of Papers gives Nov. 19.
+  frus1881 d86 [confirmed] line 25829: "November 23, 1880" encoded 1881-11-23; Received January 3, 1881; receipt year; List of Papers: line 10610 "Nov. 23"; in #469's dates.csv: year-contradicts-text
+      reading: Already #469's (dates.csv, year-contradicts-text): the year encoded is the receipt's, and the volume's too.
+  frus1881 d87 [confirmed] line 26162: "November 30, 1880" encoded 1881-11-30; Received January 21, 1881; receipt year; List of Papers: line 10620 "Nov. 30"; in #469's dates.csv: year-contradicts-text
+      reading: Already #469's (dates.csv, year-contradicts-text): the year encoded is the receipt's, and the volume's too.
+  frus1881 d144 [confirmed] line 33443: "December 29, 1880" encoded 1881-12-29; Received March 8, 1881; receipt year; List of Papers: line 11236 "Dec. 29"; in #469's dates.csv: year-contradicts-text
+      reading: Already #469's (dates.csv, year-contradicts-text): the year encoded is the receipt's, and the volume's too.
+  frus1881 d286 [confirmed] line 50075: "December 20, 1880" encoded 1881-12-20; Received January 7, 1881; receipt year; List of Papers: line 12692 "Dec. 20"; in #469's dates.csv: year-contradicts-text
+      reading: Already #469's (dates.csv, year-contradicts-text): the year encoded is the receipt's, and the volume's too.
+  frus1891 d425 [confirmed] line 47934: "December 17, 1890." encoded 1891-12-17; Received January 13, 1891; receipt year; List of Papers: line 10371 "1890. Dec. 17"; in #469's dates.csv: year-contradicts-text
+      reading: Already #469's (dates.csv, year-contradicts-text): the year encoded is the receipt's, and the volume's too.
+  frus1919v01 d264 [not a defect] line 27972: "May 23, 1918, 1 p.m." encoded 1918-07-23T13:00:00-03:00; Received July 24; receipt month; List of Papers: line 10095 "July 23"
+      reading: Not this class: the dateline prints May 23, 1918, but the List of Papers gives July 23 and the telegram was received July 24, 3.59 a.m., so @when is the right date and the dateline's 'May' is the slip, the book's or the transcription's.
+  frus1949v08 d1375 [question] line 84570: "August 12, 1949—5 p. m." encoded 1949-08-19T17:00:00+08:00; Received August 19; receipt date; List of Papers: no row
+      reading: @when is the receipt's date, August 19, not the printed August 12; sent at 5 p.m. in Nanking and received at 9.54 a.m. in Washington fits the same day, so the printed '12' may be the slip. The volume has no List of Papers.
+  by class and mark: {('receipt date', 'question'): 1, ('receipt month', 'confirmed'): 19, ('receipt month', 'not a defect'): 1, ('receipt year', 'confirmed'): 5}
+
+== Controls
+  item 1, frus1870: Nos. 216, 284 and 303 at heads 30237, 40555 and 45645, and nothing else: True
+  item 5, frus1870: the note's 16 dates of receipt, at its lines: True
+  readings: every candidate has one: True; every reading names a candidate: True
+  wrote papers-filed-inside.csv (208 rows)
+  wrote receipt-month-dates.csv (26 rows)
