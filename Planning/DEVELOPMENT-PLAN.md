@@ -9763,3 +9763,40 @@ From `v2` at `dcf178e` (#1853 merged), on `claude/cool-borg-34f5fa`, a side sess
 - **The release that carries 72, 73 and 74**: one notes line for the re-index, and its checklist's count of it at version 74.
 - **No capture to retake**: none shows `frus1941-43`'s persons view or Index of Persons, or `frus1981-88v16`'s page. The two `people-list` captures, the iPad's and the Mac's, show only names under A, and the six sort under F, G, H, M, S and V.
 - **Not walked in the app**: the routing is pinned by the outline's kind and the reader's parse in unit tests; nobody has opened the Index of Persons on a device.
+
+## Session 2026-11-06 — Items 1 and 5 of the note to the Office of the Historian, swept over the 553 volumes
+
+**What and why.** A side session started from the note's session, for its "Not done" sweep (`Planning/OH-Note-2026-11-06.md`, B.4).
+- **The two classes.** Items 1 and 5 of the note's Part A are a paper the List of Papers prints that the file holds only inside an earlier paper, and a date whose month is the receipt's. `check.py` §4 found both in `frus1870` alone.
+- **The sweep looks for both in every volume.** It is read-only and stdlib Python. The note is the owner's draft and is not edited; `Planning/OH-Note-2026-11-06/sweep-summary.md` §4 says what its items 1 and 5 should add.
+- **The branch.** Started from `v2` at `216e3f32` and brought to `304298d2` once #1862 and #1863 had merged, on `claude/dreamy-torvalds-fc3b1b`.
+
+**What it found**, each figure from one run of `Planning/OH-Note-2026-11-06/sweep.py` (output `sweep.out`; rows in `papers-filed-inside.csv` and `receipt-month-dates.csv`) at corpus `6170e4b32`.
+1. **Item 1: 196 confirmed papers in 44 volumes.**
+   - **The marks.** 208 candidates were read, giving 196 confirmed, 8 questions and 4 not this class. 101 of the confirmed are in 22 volumes of 1861–1898, `frus1870`'s three among them.
+   - **The rule.** A candidate is a `frus:attachment` dated after the paper it sits in, matched to a List of Papers row of its own that no document answers. An inclosure cannot postdate its covering paper.
+   - **Every encoding of the list is read.** The brief's `subtype="table-of-contents"` reads only 2 of the era's 62 volumes, so the run reads all 167 lists in 161 volumes.
+   - **The most:** `frus1898` 33, `frus1918` 27, `frus1914Supp` 18.
+   - **From 1914 the papers are those HistoryAtState/frus#25 described,** in volumes it did not name. Two of its 52 "corrected" volumes still hold some: `frus1915Supp` 2 and `frus1916Supp` 1.
+   - **The questions.** In seven of the eight the book prints the later paper under the earlier one's head or source note.
+2. **Item 5: three more, all in `frus1871`** (`d28`, `d308` and `d350`).
+   - Each is read against its List of Papers row. No other volume has one, and none comes near.
+   - Five dates take the receipt's year instead, and all five are #469's rows already.
+   - One more, `frus1949v08` `d1375`, is encoded with the receipt's whole date, a question.
+
+**Found in passing.**
+- **`frus1871` `d168` to `d172`** are No. 153's five inclosures encoded as documents of their own: the error the other way round.
+- **`frus1870`'s List of Papers gives two wrong pages,** No. 163's "508" and No. 189's "223".
+- **`frus1867p1` `d380`** is dated 1861 in its text and `@when`, in a volume of 1867.
+- **`frus1919v01` `d264`'s dateline prints May** where its list and its receipt give July.
+
+**Checked.**
+- **The runs.** Every whole-corpus pass ran through `Scripts/heavy.sh` with `python3 -I`, about a minute each; the final run is the committed output.
+- **The controls.** `frus1870`'s three papers and 16 dates of receipt come back at the note's lines. Every candidate has a reading, and every reading names a candidate. The run exits with an error otherwise.
+- **The reading.** Every candidate was read in the XML before it was marked, and every figure in the summary was matched against `sweep.out`.
+- **HistoryAtState/frus#25 and #223 were read,** read-only. Nothing was posted.
+
+**Not done, and for the owner.**
+- **Folding the sweep into the note** (`sweep-summary.md` §4), then filing it.
+- **The pull request.** Its body is drafted; it is not opened, since the brief said to post nothing to GitHub.
+- **No printed page was read.** The eight questions wait on the page.
