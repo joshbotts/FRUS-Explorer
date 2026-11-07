@@ -9768,7 +9768,7 @@ From `v2` at `dcf178e` (#1853 merged), on `claude/cool-borg-34f5fa`, a side sess
 
 **What and why.** A side session started from the note's session, for its "Not done" sweep (`Planning/OH-Note-2026-11-06.md`, B.4).
 - **The two classes.** Items 1 and 5 of the note's Part A are a paper the List of Papers prints that the file holds only inside an earlier paper, and a date whose month is the receipt's. `check.py` §4 found both in `frus1870` alone.
-- **The sweep looks for both in every volume.** It is read-only and stdlib Python. The note is the owner's draft and is not edited; `Planning/OH-Note-2026-11-06/sweep-summary.md` §4 says what its items 1 and 5 should add.
+- **The sweep looks for both in every volume.** It is read-only and stdlib Python. `Planning/OH-Note-2026-11-06/sweep-summary.md` §4 said what the note's items 1 and 5 should add, and the owner's "Yes, fold it in" put it into the note (below).
 - **The branch.** Started from `v2` at `216e3f32` and brought to `304298d2` once #1862 and #1863 had merged, on `claude/dreamy-torvalds-fc3b1b`.
 
 **What it found**, each figure from one run of `Planning/OH-Note-2026-11-06/sweep.py` (output `sweep.out`; rows in `papers-filed-inside.csv` and `receipt-month-dates.csv`) at corpus `6170e4b32`.
@@ -9794,9 +9794,26 @@ From `v2` at `dcf178e` (#1853 merged), on `claude/cool-borg-34f5fa`, a side sess
 - **The runs.** Every whole-corpus pass ran through `Scripts/heavy.sh` with `python3 -I`, about a minute each; the final run is the committed output.
 - **The controls.** `frus1870`'s three papers and 16 dates of receipt come back at the note's lines. Every candidate has a reading, and every reading names a candidate. The run exits with an error otherwise.
 - **The reading.** Every candidate was read in the XML before it was marked, and every figure in the summary was matched against `sweep.out`.
-- **HistoryAtState/frus#25 and #223 were read,** read-only. Nothing was posted.
+- **HistoryAtState/frus#25 and #223 were read,** read-only. Nothing was posted there.
+  - The commit and the pull request write their references to HistoryAtState so that GitHub links nothing on it.
+  - This repository is public, and a link would put an entry on the Office's issues.
+
+**Folded into the note,** at the owner's "Yes, fold it in":
+- **Part A:**
+  - its heading;
+  - the summary table's rows 1 and 5;
+  - item 1's new subsection, "The same error in 43 more volumes", with its table;
+  - item 5's `frus1871` table and two questions;
+  - two bullets in "What was checked and is not reported";
+  - "How to reproduce".
+- **The note's header** names both runs.
+- **Part B:**
+  - B.1's links;
+  - B.2's additions;
+  - B.4, which now lists what the sweep cannot see, what it found in passing, and an unchecked question: what a renumbering upstream would do to user data keyed by document id;
+  - B.5's run.
 
 **Not done, and for the owner.**
-- **Folding the sweep into the note** (`sweep-summary.md` §4), then filing it.
-- **The pull request.** Its body is drafted; it is not opened, since the brief said to post nothing to GitHub.
-- **No printed page was read.** The eight questions wait on the page.
+- **The pull request**: opened as #1864 on the owner's word ("Push and open it"). The merge is the owner's.
+- **Filing the note** (B.1), after #1864 merges so that its links resolve.
+- **No printed page was read.** The questions wait on the page: item 1's eight and item 5's two.

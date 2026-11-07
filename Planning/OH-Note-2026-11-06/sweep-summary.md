@@ -2,7 +2,7 @@
 
 **For the owner, not for the Office.** `../OH-Note-2026-11-06.md` found two error classes in `frus1870` alone: items 1 and 5 of its Part A, by `check.py` §4. This sweep looks for both in every volume FRUS Explorer lists.
 
-The note is the owner's draft and is not edited here. §4 says what its items 1 and 5 should add. Nothing has been posted anywhere.
+§4 says what the note's items 1 and 5 should add. **It has since been folded into the note,** at the owner's "Yes, fold it in" (2026-11-06), and stays here as the record of what was proposed. Nothing has been posted to HistoryAtState.
 
 The files beside this one:
 
