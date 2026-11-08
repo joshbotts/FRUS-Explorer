@@ -8,7 +8,17 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SourceNoteKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - CollectionAuthorityStoreTests
 
@@ -65,6 +75,7 @@ struct CollectionAuthorityStoreTests {
                 "the artifact carries ~3,985 records; got \(index.collections.count)")
     }
 
+    #if !SWIFT_PACKAGE // the app's cold-start budget, timed where the app runs (CFAbsoluteTimeGetCurrent is Darwin's)
     /// Cold-start guard: the store warm-up (read + decode + lookup-map build) happens
     /// off the main thread on first access, but it must stay cheap enough that a
     /// first per-row lookup soon after launch is not visibly delayed.
@@ -80,6 +91,7 @@ struct CollectionAuthorityStoreTests {
         print("[CollectionAuthorityStoreTests] warm-up decode: \(String(format: "%.0f", elapsed * 1000)) ms for \(data.count) bytes")
         #expect(elapsed < 1.0, "warm-up took \(elapsed)s — cold-start budget exceeded")
     }
+    #endif
 
     @Test("Lot lookup (order step 1): the canonical compact key resolves the record")
     func lotLookup() throws {

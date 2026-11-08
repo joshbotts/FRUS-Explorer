@@ -8,7 +8,13 @@
 
 import Foundation
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - CuratedLotResolutionsTests
 
@@ -23,20 +29,13 @@ struct CuratedLotResolutionsTests {
 
     /// The shipped curated artifact, or a failure if it is missing/malformed.
     private func loadCurated() throws -> CuratedLotResolutions {
-        let url = try #require(
-            Bundle(for: BundleToken.self).url(forResource: "curated-lot-resolutions",
-                                              withExtension: "json")
-                ?? Bundle.main.url(forResource: "curated-lot-resolutions", withExtension: "json"),
-            "curated-lot-resolutions.json must be enrolled as a bundle resource")
+        let url = try sourceExplorerShippedFile("curated-lot-resolutions")
         return try JSONDecoder().decode(CuratedLotResolutions.self, from: Data(contentsOf: url))
     }
 
     /// Any bundled JSON resource, decoded as a dictionary.
     private func loadJSONObject(_ name: String) throws -> [String: Any] {
-        let url = try #require(
-            Bundle(for: BundleToken.self).url(forResource: name, withExtension: "json")
-                ?? Bundle.main.url(forResource: name, withExtension: "json"),
-            "\(name).json must be enrolled as a bundle resource")
+        let url = try sourceExplorerShippedFile(name)
         let object = try JSONSerialization.jsonObject(with: Data(contentsOf: url))
         return try #require(object as? [String: Any])
     }
@@ -248,12 +247,9 @@ struct CuratedLotResolutionsTests {
     }
 }
 
-/// Anchors `Bundle(for:)` to the test bundle so the shipped resources resolve under the
-/// app host as well as a plain unit-test run.
-private final class BundleToken {}
-
 // MARK: - CuratedLotWiringAuditTests
 
+#if !SWIFT_PACKAGE // reads the app's views' source
 /// A curated outcome must have a live render site on **both** Source Explorer views, and
 /// neither may borrow the confident card's caption.
 ///
@@ -275,7 +271,7 @@ struct CuratedLotWiringAuditTests {
 
     /// The repo root, derived from this file's location.
     private static var root: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
     }
 
     /// Reads a source file, refusing an implausibly small one — a truncated read would make
@@ -402,3 +398,4 @@ struct CuratedLotWiringAuditTests {
         }
     }
 }
+#endif

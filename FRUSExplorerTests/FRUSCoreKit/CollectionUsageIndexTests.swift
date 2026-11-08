@@ -14,7 +14,17 @@
 
 import Foundation
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SourceNoteKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - CollectionUsageIndexTests
 
@@ -50,8 +60,10 @@ struct CollectionUsageIndexTests {
         #expect(usage.collectionIds == usage.collectionIds.sorted())
         #expect(usage.classKeys == usage.classKeys.sorted())
         #expect(usage.categories.count == 11, "the eleven provenance categories (#1543)")
+        #if !SWIFT_PACKAGE // SourceProvenanceCategory is the app's
         #expect(usage.categories == SourceProvenanceCategory.ordered.map(\.rawValue),
                 "the artifact's category order is the app's; got \(usage.categories)")
+        #endif
         #expect(usage.volumes.count > 500)
         #expect(usage.collectionIds.count > 1_000)
         #expect(usage.classKeys.count > 5_000)
@@ -109,7 +121,7 @@ struct CollectionUsageIndexTests {
     @Test("Every scanned volume is a manifest volume")
     func volumesJoinToTheManifest() throws {
         let usage = try index()
-        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let url = try testManifestURL()
         let entries = try JSONDecoder().decode([VolumeManifestEntry].self,
                                                from: Data(contentsOf: url))
         let known = Set(entries.map(\.volumeId))

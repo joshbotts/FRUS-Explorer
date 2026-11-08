@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - DigitizedRangeIndexTests
 
@@ -164,6 +170,7 @@ struct DigitizedRangeIndexTests {
 
     // MARK: - Wiring
 
+    #if !SWIFT_PACKAGE // reads the app's views' source
     private static let views = [
         "FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
         "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift",
@@ -171,7 +178,7 @@ struct DigitizedRangeIndexTests {
 
     private static func source(_ path: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
         #expect(text.count > 1_000, Comment(rawValue: "\(path) is implausibly small — did it move?"))
         return text
@@ -197,7 +204,9 @@ struct DigitizedRangeIndexTests {
                             """))
         }
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // the caveat is SourceExplorerView's, the app's
     /// The caveat's job is to refuse the claim the link invites. If it stops saying so, the
     /// panel starts implying the scan is of the document.
     @Test("The caveat declines to claim the document")
@@ -207,6 +216,7 @@ struct DigitizedRangeIndexTests {
         #expect(caveat.localizedCaseInsensitiveContains("not of this document"),
                 Comment(rawValue: "caveat no longer refuses the document claim: \(caveat)"))
     }
+    #endif
 }
 
 // MARK: - RollScansIndexTests
@@ -303,6 +313,7 @@ struct RollScansIndexTests {
         #expect(fromRange.objectCount == range.objectCount)
     }
 
+    #if !SWIFT_PACKAGE // reads the app's views' source
     /// Both views must render rolls through the shared row, or the pre-1910 section quietly
     /// keeps its old catalog-link-only treatment on one platform.
     @Test("Both views give rolls the shared scan row")
@@ -310,7 +321,7 @@ struct RollScansIndexTests {
         for path in ["FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
                      "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift"] {
             let root = URL(fileURLWithPath: #filePath)
-                .deletingLastPathComponent().deletingLastPathComponent()
+                .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
             #expect(text.contains("DigitizedScanPresentation("),
                     Comment(rawValue: "\(path) never builds the shared presentation"))
@@ -320,6 +331,7 @@ struct RollScansIndexTests {
                     Comment(rawValue: "\(path) does not render through the shared row"))
         }
     }
+    #endif
 }
 
 // MARK: - FlatOutlineExpandControlTests
@@ -346,6 +358,7 @@ struct FlatOutlineExpandControlTests {
         VolumeSourceEntry(kind: .item, depth: depth, rawText: text)
     }
 
+    #if !SWIFT_PACKAGE // VolumeSourcesView is the app's
     /// The shape #725 produces for the paragraph-encoded volumes: every collection at depth 0.
     @Test("A flat outline has nothing to expand")
     @MainActor
@@ -359,7 +372,9 @@ struct FlatOutlineExpandControlTests {
         #expect(VolumeSourcesView.expandableIDs(tree).isEmpty,
                 "a flat outline reported expandable nodes")
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // VolumeSourcesView is the app's
     /// A nested outline — what #728 gives frus1952-54Guat, and what the 240 `<item>` volumes
     /// have — must still offer the control.
     @Test("A nested outline has something to expand")
@@ -373,13 +388,15 @@ struct FlatOutlineExpandControlTests {
         let ids = VolumeSourcesView.expandableIDs(tree)
         #expect(ids.count == 1, Comment(rawValue: "expected one expandable parent, got \(ids.count)"))
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // reads the app's views' source
     /// The header must gate on "is there anything to expand", which `allExpanded` cannot answer
     /// — it is `false` both when there is more to open and when there is nothing to open.
     @Test("The header gates the control on expandable nodes, not on allExpanded")
     func headerGatesOnExpandability() throws {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let text = try String(
             contentsOf: root.appending(path: "FRUSExplorer/Browser/VolumeSourcesView.swift"),
             encoding: .utf8)
@@ -392,4 +409,5 @@ struct FlatOutlineExpandControlTests {
                 flat outline it renders, does nothing when pressed, and never changes its label.
                 """)
     }
+    #endif
 }

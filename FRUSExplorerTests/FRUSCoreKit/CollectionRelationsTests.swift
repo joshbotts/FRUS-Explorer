@@ -14,7 +14,13 @@
 
 import Foundation
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - CollectionRelationsTests
 
@@ -339,8 +345,7 @@ struct CollectionRelationsTests {
     @Test("Every shipped record's citing volumes bucket cleanly against the manifest")
     func shippedVolumesAllBucket() throws {
         let index = try #require(CollectionAuthorityStore.shared)
-        let manifestURL = try #require(Bundle.main.url(forResource: "manifest",
-                                                       withExtension: "json"))
+        let manifestURL = try testManifestURL()
         let entries = try JSONDecoder().decode([VolumeManifestEntry].self,
                                                from: Data(contentsOf: manifestURL))
         let byId = Dictionary(uniqueKeysWithValues: entries.map { ($0.volumeId, $0) })
@@ -513,7 +518,7 @@ struct CollectionRelationsTests {
         // one unbroken run. Both are properties of the chart, so this cannot drift into mirroring
         // the implementation.
         let index = try #require(CollectionAuthorityStore.shared)
-        let manifestURL = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let manifestURL = try testManifestURL()
         let entries = try JSONDecoder().decode([VolumeManifestEntry].self,
                                                from: Data(contentsOf: manifestURL))
         let byId = Dictionary(uniqueKeysWithValues: entries.map { ($0.volumeId, $0) })
@@ -585,6 +590,7 @@ struct CollectionRelationsTests {
 
 // MARK: - CollectionDetailWiringTests
 
+#if !SWIFT_PACKAGE // reads the app's views' source
 /// That `CollectionDetailView` actually mounts and gates the three #762 sections.
 ///
 /// A SwiftUI `View` cannot be evaluated in this test target, so the section builders above are
@@ -604,7 +610,7 @@ struct CollectionDetailWiringTests {
 
     private static func source() throws -> String {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let url = root.appending(path: "FRUSExplorer/SourceExplorer/CollectionDetailView.swift")
         let text = try String(contentsOf: url, encoding: .utf8)
         #expect(text.count > 5_000, "CollectionDetailView.swift is implausibly small")
@@ -749,3 +755,4 @@ struct CollectionDetailWiringTests {
         }
     }
 }
+#endif

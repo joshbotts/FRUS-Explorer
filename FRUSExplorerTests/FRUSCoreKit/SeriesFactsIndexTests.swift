@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - SeriesFactsIndexTests
 
@@ -91,6 +97,7 @@ struct SeriesFactsIndexTests {
 
 // MARK: - SeriesFactsGuardTests
 
+#if !SWIFT_PACKAGE // creatorName(for:), which these guards drive, reads the app's stores
 /// The three guards that keep a true fact off the wrong record (#405).
 ///
 /// Version history:
@@ -127,6 +134,7 @@ struct SeriesFactsGuardTests {
         #expect(SeriesFactsIndex.creatorName(for: entry(naId: "999999999", level: "series")) == nil)
     }
 }
+#endif
 
 // MARK: - SeriesFactsDecisionTests
 
@@ -162,6 +170,7 @@ struct SeriesFactsDecisionTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // LotClaimantsIndex.unanimousCreator(_:) is the app's (LotClaimantsIndexStore.swift)
     @Test("A divided lot names a creator only when every claimant agrees")
     func unanimityRule() {
         #expect(LotClaimantsIndex.unanimousCreator(["A.", "A.", "A."]) == "A.")
@@ -175,6 +184,7 @@ struct SeriesFactsDecisionTests {
         #expect(LotClaimantsIndex.unanimousCreator([]) == nil)
         #expect(LotClaimantsIndex.unanimousCreator(["A."]) == "A.")
     }
+    #endif
 }
 
 // MARK: - SeriesCatalogFactsTests
@@ -297,7 +307,7 @@ struct SeriesCatalogFactsTests {
     /// not carry it.
     private func rawArtifact() throws -> [String: Any] {
         let url = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .appending(path: "FRUSExplorer/Resources/series-facts-index.json")
         return try #require(try JSONSerialization.jsonObject(with: try Data(contentsOf: url))
                             as? [String: Any])

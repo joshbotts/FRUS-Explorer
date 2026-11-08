@@ -8,7 +8,17 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SourceNoteKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - ParisPeaceRecordsTests
 
@@ -213,6 +223,7 @@ struct ParisPeaceRecordsTests {
 
     // MARK: - Wiring
 
+    #if !SWIFT_PACKAGE // reads the app's views' source
     private static let views = [
         "FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
         "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift",
@@ -220,7 +231,7 @@ struct ParisPeaceRecordsTests {
 
     private static func source(_ path: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
         #expect(text.count > 1_000, Comment(rawValue: "\(path) is implausibly small — did it move?"))
         return text
@@ -282,4 +293,5 @@ struct ParisPeaceRecordsTests {
                 RG 59 decimal-file finding aids and filing manual.
                 """)
     }
+    #endif
 }

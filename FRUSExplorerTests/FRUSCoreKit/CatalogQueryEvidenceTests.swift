@@ -8,7 +8,17 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SourceNoteKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - CatalogQueryEvidenceTests
 
@@ -138,6 +148,7 @@ struct CatalogQueryEvidenceTests {
 
 // MARK: - CatalogQueryEvidenceWiringTests
 
+#if !SWIFT_PACKAGE // reads the app's views' source
 /// Source audits that both Source Explorer views apply the grammar (#681).
 ///
 /// The behaviour lives in a SwiftUI `body` fed by an `async` query needing a live client and an
@@ -151,7 +162,7 @@ struct CatalogQueryEvidenceWiringTests {
 
     private func source(_ path: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         return try String(contentsOf: root.appending(path: path), encoding: .utf8)
             .split(separator: "\n", omittingEmptySubsequences: false)
             .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
@@ -252,3 +263,4 @@ struct CatalogQueryEvidenceWiringTests {
                 "the export is gated on resultsAreVerified alone — it cannot see #681's branch")
     }
 }
+#endif

@@ -756,7 +756,7 @@ struct ChapterTitleFormTests {
         // in sync by hand. The roll keys the generator writes and the chapter keys the app looks up
         // come out of these two files, so a drift between them silently empties a lookup.
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        let app = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/SourceExplorer/GeoKeyNormalizer.swift"),
+        let app = try String(contentsOf: root.appendingPathComponent("FRUSCoreKit/SourceExplorer/GeoKeyNormalizer.swift"),
                              encoding: .utf8)
         let generator = try String(contentsOf: root.appendingPathComponent("CentralFilesIndexGeneratorCore/GeoKeyNormalizer.swift"),
                                    encoding: .utf8)

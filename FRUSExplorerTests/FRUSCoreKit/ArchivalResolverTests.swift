@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - ArchivalResolverTests
 
@@ -59,7 +65,8 @@ struct ArchivalResolverTests {
         ArchivalResolver.frontMatterResolution(recordGroup: rg, lotFile: lot,
                                                entryText: text,
                                                centralFiles: try central(),
-                                               volumeSources: try volumes())
+                                               volumeSources: try volumes(),
+                                               presidentialLibrary: PresidentialLibraryIndexStore.shared)
     }
 
     /// The DOCUMENT resolution under test — lot only; there is no record group to pass.
@@ -155,7 +162,8 @@ struct ArchivalResolverTests {
         #expect(ArchivalResolver.frontMatterResolution(
             recordGroup: "306", lotFile: "99 D 999",
             entryText: "Record Group 306, Records of the U.S. Information Agency",
-            centralFiles: try central(), volumeSources: orphan)?.naId == "40967285",
+            centralFiles: try central(), volumeSources: orphan,
+            presidentialLibrary: PresidentialLibraryIndexStore.shared)?.naId == "40967285",
                 "the fallback arm must answer with a record group present, not only without one")
         // And the shared-key precedence still prefers central-files.
         #expect(try resolve(rg: "59", lot: "53 D 413")?.matchType == "control")
@@ -236,8 +244,7 @@ struct ArchivalResolverTests {
     /// app struct no longer declares it, so only the raw JSON can hold this.
     @Test("The artifact carries no per-collection resolved records")
     func majorCollectionsCarryNoResolvedRecords() throws {
-        let url = try #require(Bundle.main.url(forResource: "volume-sources-index",
-                                               withExtension: "json"))
+        let url = try sourceExplorerShippedFile("volume-sources-index")
         let json = try #require(try JSONSerialization.jsonObject(
             with: Data(contentsOf: url)) as? [String: Any])
         let collections = try #require(json["majorCollections"] as? [[String: Any]])
@@ -326,6 +333,7 @@ struct ArchivalResolverTests {
         #expect(try resolveDoc(lot: "99 D 9999") == nil, "an unresolvable lot is still nil")
     }
 
+    #if !SWIFT_PACKAGE // the overloads over the app's bundled indexes are the app's
     /// The bundled-store overload must lose the branch too — the injected one proving it is
     /// not enough, since the call site uses the convenience form.
     @Test("The bundled-store document overload has no record-group branch either")
@@ -333,6 +341,7 @@ struct ArchivalResolverTests {
         #expect(ArchivalResolver.documentResolution(lotFile: nil) == nil)
         #expect(ArchivalResolver.documentResolution(lotFile: "60–D 224")?.naId == "592873")
     }
+    #endif
 
     // MARK: - Rules that must survive
 
@@ -422,7 +431,8 @@ struct ArchivalResolverTests {
             #expect(ArchivalResolver.frontMatterResolution(recordGroup: "59", lotFile: "11 D 11",
                                                            entryText: "Record Group 59",
                                                            centralFiles: index,
-                                                           volumeSources: try volumes()) == nil,
+                                                           volumeSources: try volumes(),
+                                                           presidentialLibrary: PresidentialLibraryIndexStore.shared) == nil,
                     "a refused entry must resolve to nothing — not to the record group, not by reading past the guard")
         }
     }
@@ -441,6 +451,7 @@ struct ArchivalResolverTests {
 
     // MARK: - Wiring
 
+    #if !SWIFT_PACKAGE // the overloads over the app's bundled indexes are the app's
     /// The convenience overload is what both call sites actually invoke. If it read the wrong
     /// store — or one store and not the other — every test above would still pass.
     @Test("The bundled-store overload agrees with the injected one")
@@ -451,8 +462,14 @@ struct ArchivalResolverTests {
         }
         #expect(ArchivalResolver.frontMatterResolution(recordGroup: "59", lotFile: nil,
                                                       entryText: "Record Group 59, Records of the Department of State")?.naId == "388")
+        // And the library route: the overload passes the bundled catalogue on (#668).
+        #expect(ArchivalResolver.frontMatterResolution(recordGroup: nil, lotFile: nil,
+                                                      entryText: "John Foster Dulles Papers",
+                                                      repository: "Eisenhower Library")?.naId == "580942")
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // reads the app's views' source
     /// Both render surfaces must go through the resolver. A call site left on
     /// `VolumeSourcesIndexStore.shared?.resolution` compiles, renders, and silently keeps the
     /// old behaviour — no test above would catch it, because neither surface is unit-testable
@@ -461,7 +478,7 @@ struct ArchivalResolverTests {
     @Test("Neither archival render surface still resolves through volume-sources directly")
     func bothCallSitesUseTheResolver() throws {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         // Each surface must use ITS OWN entry point. An "either one" assertion would pass
         // while the Collections block called `frontMatterResolution` and kept the very
         // record-group branch this change removes.
@@ -486,6 +503,7 @@ struct ArchivalResolverTests {
                     "\(path) still resolves through volume-sources directly, bypassing the precedence")
         }
     }
+    #endif
 
     // MARK: - Divided lots (#1205)
 
@@ -569,7 +587,8 @@ struct ArchivalResolverTests {
         #expect(ArchivalResolver.frontMatterResolution(
             recordGroup: "59", lotFile: "11 D 11",
             entryText: "Record Group 59, Records of the Department of State",
-            centralFiles: central, volumeSources: try volumes(), claimants: divided) == nil,
+            centralFiles: central, volumeSources: try volumes(), claimants: divided,
+            presidentialLibrary: PresidentialLibraryIndexStore.shared) == nil,
                 "a divided lot must resolve to nothing — and never to RG 59, which the lot-only rule already forbids")
     }
 
@@ -588,6 +607,7 @@ struct ArchivalResolverTests {
 
     // MARK: - Divided lots: the bundled wiring
 
+    #if !SWIFT_PACKAGE // the overloads over the app's bundled indexes are the app's
     /// The convenience overloads must pass the real claimants store.
     ///
     /// Every fixture test above injects the index, so dropping `claimants:
@@ -618,7 +638,9 @@ struct ArchivalResolverTests {
         #expect(ArchivalResolver.frontMatterResolution(recordGroup: "59", lotFile: "53 D 233",
                                                        entryText: "Record Group 59")?.naId == "633906")
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // the overloads over the app's bundled indexes are the app's
     /// Every divided lot is refused, not just the one with a regression test.
     ///
     /// All 123 also carry a single `naId` in central-files, so before the guard every one of
@@ -637,7 +659,9 @@ struct ArchivalResolverTests {
         #expect(resolvedAnyway.isEmpty,
                 "divided lots still resolving to one series: \(resolvedAnyway.prefix(10))")
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // the overloads over the app's bundled indexes are the app's
     /// The disclosure accessor, so a surface can say *why* a lot carries no link.
     @Test("The divided-lot accessor names the claimants, and stays silent otherwise")
     func dividedLotAccessorReportsClaimants() throws {
@@ -647,4 +671,5 @@ struct ArchivalResolverTests {
         #expect(ArchivalResolver.dividedLotClaimants(lotFile: nil) == nil)
         #expect(ArchivalResolver.dividedLotClaimants(lotFile: "   ") == nil)
     }
+    #endif
 }

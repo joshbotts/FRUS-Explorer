@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - CuratedLibraryResolutionsTests
 
@@ -832,6 +838,7 @@ struct CuratedLibraryResolutionsTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // reads the app's views' source
     /// Both platforms must consult the store. This is a **deletion** guard: a source scan
     /// cannot tell a live call from one behind `if false`, and does not try. The realistic
     /// regression it exists for is a call site that never gets written, not one disabled on
@@ -843,7 +850,7 @@ struct CuratedLibraryResolutionsTests {
     @Test("Both Source Explorer views consult the curated store")
     func bothPlatformsWired() throws {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         for path in ["FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
                      "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift"] {
             let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
@@ -856,4 +863,5 @@ struct CuratedLibraryResolutionsTests {
                     "\(path) resolves without the sub-collection — the container rows would be wrong")
         }
     }
+    #endif
 }

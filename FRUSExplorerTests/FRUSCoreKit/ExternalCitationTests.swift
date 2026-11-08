@@ -6,11 +6,34 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-import CryptoKit
 import Testing
 import Foundation
-import SQLite3
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+#if canImport(CryptoKit)
+import CryptoKit
+#else
+import Crypto
+#endif
+// SQLite3 is the system's on Apple platforms; on Linux the web edition supplies CSQLite.
+#if canImport(SQLite3)
+import SQLite3
+#else
+import CSQLite
+#endif
+// The package builds FTS5Store and SourceNoteKit as modules of their own; Xcode compiles both into
+// the app.
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - ExternalCitationTests
 
@@ -129,6 +152,7 @@ struct ExternalCitationTests {
             """)
     }
 
+    #if !SWIFT_PACKAGE // SourceExplorerView.resolve(_:authority:) is the app's
     /// The stored rows carry **no authority id**, so the document section joins them at render time.
     /// Two things can go wrong and both are silent: a lot citation matching nothing when the
     /// authority holds it, and a presidential-library citation matching a *lot* record that happens
@@ -169,7 +193,9 @@ struct ExternalCitationTests {
             fileId: nil, inherited: true, rawText: "Ibid.", noteOrdinal: 2)
         #expect(SourceExplorerView.resolve(empty, authority: authority) == nil)
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // SourceExplorerView.resolve(_:authority:) is the app's
     /// The join uses the collection's **leading segment**, because that is the level the authority
     /// clusters on — passing the whole comma-joined series name matches nothing.
     @MainActor
@@ -192,6 +218,7 @@ struct ExternalCitationTests {
                     "the leading segment matched a different record than the one it names")
         }
     }
+    #endif
 
     // MARK: - #1322: the label the volume printed
 
@@ -297,6 +324,7 @@ struct ExternalCitationTests {
             """)
     }
 
+    #if !SWIFT_PACKAGE // the trip packet's builder and exporter are the app's
     @Test("The exported packet prints the volume's own footnote number (#1322)")
     func exportedPacketPrintsThePrintedLabel() async throws {
         // End to end through the REAL emitter: pipeline -> TripPacketDataSource -> builder ->
@@ -320,6 +348,7 @@ struct ExternalCitationTests {
             The packet printed the ordinal + 1 — the defect #1322 is about.
             """)
     }
+    #endif
 
     @Test("A database written before v53 gains the column and still stores rows (#1322)")
     func legacyTableGainsTheLabelColumn() async throws {
@@ -856,6 +885,8 @@ struct ExternalCitationTests {
 /// floor below is what caught it.
 private let footnoteParityVolumes = ["frus1955-57v19", "frus1958-60v03"]
 
+#if !SWIFT_PACKAGE // reads the local TEI mirror and skips without it, and the web CI fails on a skip; its
+// DocumentFootnoteExtractor is a generator's, which Xcode compiles into the test bundle
 /// Generator ↔ app parity for the #784 footnote harvest.
 ///
 /// `DocumentFootnoteExtractor` (the generator's XML pass, compiled into this test bundle from the
@@ -1085,6 +1116,7 @@ struct RealTEIFootnoteParityTests {
             """)
     }
 }
+#endif
 // MARK: - DecimalChannelArtifactTests
 
 /// Pins the decimal channel the shipped artifact carries at schema 2 (#834).
@@ -1142,7 +1174,7 @@ struct DecimalChannelArtifactTests {
     private func shippedVocabularyFingerprint() throws -> (classes: Int, countries: Int,
                                                            digest: String) {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let data = try Data(contentsOf: root
             .appending(path: "FRUSExplorer/Resources/decimal-class-labels.json"))
         let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
@@ -1179,7 +1211,7 @@ struct DecimalChannelArtifactTests {
     @Test("The class axis was built through the schedule that ships beside it")
     func decimalVocabularyMatchesTheShippedSchedule() throws {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let data = try Data(contentsOf: root
             .appending(path: "FRUSExplorer/Resources/external-citation-index.json"))
         let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
@@ -1211,7 +1243,7 @@ struct DecimalChannelArtifactTests {
     func storedClassKeysStillCompose() throws {
         let index = try #require(ExternalCitationIndexStore.shared)
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let data = try Data(contentsOf: root
             .appending(path: "FRUSExplorer/Resources/decimal-class-labels.json"))
         let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
@@ -1485,6 +1517,7 @@ struct UnprintedMaterialRowTests {
         try await index(Self.d41XML, volumeId: Self.volumeId, in: dir)
     }
 
+    #if !SWIFT_PACKAGE // SourceExplorerView.UnprintedPointer and the reader's extractSourceNote(from:) are the app's
     /// The source note exactly as the reader hands it to Source Explorer — `extractSourceNote` over
     /// the parsed document, the path `DocumentViewModel` takes — parsed the way both twins parse it.
     private func parsedSourceNote(volumeURL: URL,
@@ -1528,6 +1561,7 @@ struct UnprintedMaterialRowTests {
     private static func visible(_ pointer: SourceExplorerView.UnprintedPointer) -> String {
         [printed(pointer), pointer.rowText.repeatNote].compactMap { $0 }.joined(separator: "\n")
     }
+    #endif
 
     private func withTempDir<T>(_ body: (URL) async throws -> T) async throws -> T {
         let dir = FileManager.default.temporaryDirectory
@@ -1544,6 +1578,7 @@ struct UnprintedMaterialRowTests {
 
     // MARK: Ids
 
+    #if !SWIFT_PACKAGE // its last check reads the note with the reader's extractSourceNote(from:), the app's
     /// The fixture has to reproduce d41's shape before any assertion about it means anything: five
     /// citations, two of them in footnote 2.
     @Test("The fixture reproduces d41: five citations, two of them in footnote 2")
@@ -1568,6 +1603,7 @@ struct UnprintedMaterialRowTests {
             #expect(lot == "63 D 351")
         }
     }
+    #endif
 
     /// The single-document reader — the one both Source Explorer twins call.
     @Test("The document reader gives two citations of one lot in one note different ids")
@@ -1612,6 +1648,7 @@ struct UnprintedMaterialRowTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // SourceExplorerView.UnprintedPointer and its twins' source are the app's
     /// The id SwiftUI actually keys the rows on is the pointer's, not the citation's.
     @Test("Every d41 pointer — the id the Source Explorer rows are keyed on — is unique")
     func pointerIdsAreUnique() async throws {
@@ -2024,7 +2061,7 @@ struct UnprintedMaterialRowTests {
     /// The contents of a repository file, by its path from the repository root.
     private static func source(_ relativePath: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let text = try String(contentsOf: root.appending(path: relativePath), encoding: .utf8)
         // A truncated or moved file would make every negative assertion pass.
         #expect(text.count > 5_000, "\(relativePath) read back as \(text.count) characters")
@@ -2090,4 +2127,5 @@ struct UnprintedMaterialRowTests {
         }
         return nil
     }
+    #endif
 }

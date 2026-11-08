@@ -8,8 +8,17 @@
 
 import Foundation
 import Testing
-
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SourceNoteKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - DecimalClassLabelTests
 
@@ -20,7 +29,7 @@ struct DecimalClassLabelTests {
     /// The shipped artifact.
     private func table() throws -> DecimalClassLabelTable {
         let url = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/Resources/decimal-class-labels.json")
         let data = try Data(contentsOf: url)
         return try JSONDecoder().decode(DecimalClassLabelTable.self, from: data)
@@ -384,6 +393,7 @@ struct DecimalClassLabelTests {
     }
 
 
+    #if !SWIFT_PACKAGE // the ranking is ArchivalCollectionsData's, the app's
     @Test("Over the shipped corpus, a whole era of keys stops rendering bare")
     func perKeyAttributionOverTheRealCorpus() throws {
         // The artifact tests above pin what the table SAYS; this one pins what the app does with
@@ -464,6 +474,7 @@ struct DecimalClassLabelTests {
             the later reading takes the suffix as a second country.
             """)
     }
+    #endif
 
     /// Source with comment LINES removed, so prose about a call is never counted as the call.
     ///
@@ -479,6 +490,7 @@ struct DecimalClassLabelTests {
             .joined(separator: "\n")
     }
 
+    #if !SWIFT_PACKAGE // the ranking is ArchivalCollectionsData's, the app's
     @Test("The ranking hands every surface the same gloss, and nothing else looks the table up")
     func rankingCarriesTheGloss() throws {
         // The single injection point. Every surface that draws a class row — chart, uncapped
@@ -505,7 +517,7 @@ struct DecimalClassLabelTests {
         // grow a second, differently-scoped answer.
         // `FRUSExplorer/` and `FRUSCoreKit/`: the indexer that holds the table for `composes(_:)`,
         // and the table itself, are kit files.
-        let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         var callers: [String] = []
         for url in AppSourceTree.swiftFiles(in: repoRoot) {
             guard let text = try? String(contentsOf: url, encoding: .utf8),
@@ -525,7 +537,7 @@ struct DecimalClassLabelTests {
                       // for the decimal call alone would have left that one unguarded.
                       || Self.codeOnly(text).contains(".leafGloss(for:"),
                   url.lastPathComponent != "DecimalClassLabelTable.swift",
-                  url.lastPathComponent != "SubjectNumericLabelStore.swift"
+                  url.lastPathComponent != "SubjectNumericLabelTable.swift"
             else { continue }
             callers.append(url.lastPathComponent)
         }
@@ -547,11 +559,13 @@ struct DecimalClassLabelTests {
             call site could scope the lookup differently from the first without saying so.
             """)
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // reads the app's views' source
     @Test("Every surface that shows a gloss also says when it is one of several")
     func disclosureFollowsTheGloss() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-            .deletingLastPathComponent().appendingPathComponent("FRUSExplorer")
+            .deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("FRUSExplorer")
         var linked: [String] = []
         let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
         while let url = files?.nextObject() as? URL {
@@ -579,12 +593,14 @@ struct DecimalClassLabelTests {
         // what makes it "and 1 other" at one; the chart must still hand it the row's OWN count.
         #expect(chart.contains("ArchivalCounts.andOthers(row.glossAlternates.count)"))
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // reads the app's views' source
     @Test("The uncapped list and its CSV both carry the gloss")
     func listAndExport() throws {
         let sheet = try String(
             contentsOf: URL(fileURLWithPath: #filePath)
-                .deletingLastPathComponent().deletingLastPathComponent()
+                .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
                 .appendingPathComponent("FRUSExplorer/Analytics/ArchivalAllUnitsSheet.swift"),
             encoding: .utf8)
         #expect(sheet.contains("if let gloss = row.gloss"))
@@ -606,6 +622,7 @@ struct DecimalClassLabelTests {
             popover's list length, would put a number in the cell that no longer describes it.
             """)
     }
+    #endif
 
     // MARK: - The era contract as an OUTSIDE consumer sees it (#1204)
 
@@ -616,7 +633,7 @@ struct DecimalClassLabelTests {
     /// through the app's model would test the app, which was never the defect.
     private func rawArtifact() throws -> [String: Any] {
         let url = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/Resources/decimal-class-labels.json")
         let object = try JSONSerialization.jsonObject(with: try Data(contentsOf: url))
         return try #require(object as? [String: Any])
@@ -852,6 +869,7 @@ struct DecimalClassLabelTests {
         #expect(table.leafGloss(for: "UN 6", coveringYears: 1963...1963)
                     == "United Nations — MEMBERSHIP. ASSOCIATION.")
 
+        #if !SWIFT_PACKAGE // the ranking is ArchivalCollectionsData's, and the manifest the app bundle's
         // And the injection point: the ranking hands the same reading to every surface that draws
         // a class row, which is what keeps one label source honest across two filing systems.
         let usage = try #require(CollectionUsageIndexStore.shared)
@@ -865,6 +883,7 @@ struct DecimalClassLabelTests {
                                 weight: .documents, hidingUmbrella: false, limit: .max).rows
         #expect(rows.contains { CollectionKeying.isSubjectNumericClass($0.id) && $0.gloss != nil },
                 "band 3's labelled rows are subject-numeric and must arrive through the ranking")
+        #endif
     }
 
 
@@ -1079,6 +1098,7 @@ struct PrimarySubjectFileLabelTests {
         #expect(geneva?.contains("Germany") != true, "got \(geneva ?? "nil")")
     }
 
+    #if !SWIFT_PACKAGE // the ranking is ArchivalCollectionsData's, the app's
     @Test("Over the shipped corpus, the files with no number are one family under their category")
     func theShippedRankingHoldsTheFamily() throws {
         let usage = try #require(CollectionUsageIndexStore.shared)
@@ -1111,6 +1131,7 @@ struct PrimarySubjectFileLabelTests {
         }
         #expect(strays.isEmpty, "ranked as rows of their own: \(strays.map(\.id))")
     }
+    #endif
 }
 
 // MARK: - SubjectNumericStraddleLabelTests
@@ -1203,6 +1224,7 @@ struct SubjectNumericStraddleLabelTests {
         #expect(table.gloss(for: "POL 24", coveringYears: 1960...1977) == nil)
     }
 
+    #if !SWIFT_PACKAGE // the ranking is ArchivalCollectionsData's, the app's
     @Test("Over the shipped corpus, the 1961–1968 and 1969–1976 eras' families and files read in words")
     func theShippedRankingLabelsStraddlingFamilies() throws {
         let usage = try #require(CollectionUsageIndexStore.shared)
@@ -1243,4 +1265,5 @@ struct SubjectNumericStraddleLabelTests {
             753 were modelled, and at most 196 could before A16
             """)
     }
+    #endif
 }
