@@ -12,18 +12,18 @@ import Foundation
 
 /// The display fields for one related-document row, carried alongside the key so the list
 /// renders (and the row-tap hand-off builds a `DocumentBrowserEntry`) without a re-fetch.
-struct CandidateRecord: Sendable, Hashable {
+public struct CandidateRecord: Sendable, Hashable {
     /// The document header (title). May be empty; the row falls back to the document id.
-    let header: String
+    public let header: String
     /// The human-readable dateline (a display string, e.g. `"Washington, June 3, 1964"`), if any.
-    let dateline: String?
+    public let dateline: String?
     /// The document number within its volume, if any.
-    let documentNumber: String?
+    public let documentNumber: String?
     /// Whether the document is an editorial note rather than a primary document.
-    let isEditorialNote: Bool
+    public let isEditorialNote: Bool
 
     /// Creates a display record.
-    init(header: String, dateline: String?, documentNumber: String?, isEditorialNote: Bool) {
+    public init(header: String, dateline: String?, documentNumber: String?, isEditorialNote: Bool) {
         self.header = header
         self.dateline = dateline
         self.documentNumber = documentNumber

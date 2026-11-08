@@ -28,33 +28,34 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — #308 Phase 2: introduced for the multi-axis find-related model
-struct DocumentKey: Hashable, Sendable, Codable {
+///   1.1 — 2026-11-08: FRUS Explorer Light's S23a — public, with the find-related engine
+public struct DocumentKey: Hashable, Sendable, Codable {
 
     /// The volume identifier (e.g. `"frus1969-76v01"`).
-    let volumeId: String
+    public let volumeId: String
     /// The volume-local document identifier — the TEI `xml:id` (e.g. `"d42"`).
-    let documentId: String
+    public let documentId: String
 
     /// Creates a key from its two components.
-    init(volumeId: String, documentId: String) {
+    public init(volumeId: String, documentId: String) {
         self.volumeId = volumeId
         self.documentId = documentId
     }
 
     /// Positional convenience initializer for call sites mapping row tuples.
-    init(_ volumeId: String, _ documentId: String) {
+    public init(_ volumeId: String, _ documentId: String) {
         self.init(volumeId: volumeId, documentId: documentId)
     }
 
     /// The slash-joined `"volumeId/documentId"` form used by `RelatedDocument.compositeKey`,
     /// `documentKeysInDateRange`, and the cross-reference node keys — the boundary idiom for
     /// the app's string-keyed batch APIs.
-    var compositeString: String { "\(volumeId)/\(documentId)" }
+    public var compositeString: String { "\(volumeId)/\(documentId)" }
 
     /// Parses a slash-joined `"volumeId/documentId"` string back into a key. Splits on the
     /// **first** `/` (neither volume ids nor document ids contain `/`); returns `nil` for a
     /// missing separator or an empty component.
-    init?(compositeString: String) {
+    public init?(compositeString: String) {
         guard let slash = compositeString.firstIndex(of: "/") else { return nil }
         let volume = String(compositeString[..<slash])
         let document = String(compositeString[compositeString.index(after: slash)...])
@@ -64,5 +65,5 @@ struct DocumentKey: Hashable, Sendable, Codable {
 
     /// The labelled `(volumeId:documentId:)` tuple form the `PersonMentionStore` /
     /// `IndexingPipeline` batch APIs accept.
-    var tuple: (volumeId: String, documentId: String) { (volumeId, documentId) }
+    public var tuple: (volumeId: String, documentId: String) { (volumeId, documentId) }
 }

@@ -59,7 +59,9 @@ struct DocumentSubjectCategoryGroup: Sendable, Identifiable {
 ///   2.0 — Session 2026-08-21: #308 Phase 3 — filled
 ///   2.1 — FRUSCoreKit, part 2: moved into the kit, in `DocumentSubjectIndex.swift`; its loader,
 ///         `DocumentSubjectStore`, stays in the app
-struct DocumentSubjectIndex: Decodable, Sendable {
+///   2.2 — 2026-11-08: FRUS Explorer Light's S23a — public, with its decoding and the shared
+///         subjects' names, for a host that gives the find-related engine its own copy
+public struct DocumentSubjectIndex: Decodable, Sendable {
 
     /// One subject in the shared vocabulary.
     struct Entry: Decodable, Sendable {
@@ -144,7 +146,7 @@ struct DocumentSubjectIndex: Decodable, Sendable {
     private let subjectsByVolumeCache: [String: [VolumeSubjectProfiles.ResolvedSubject]]
 
     /// Decodes from the bundled artifact.
-    init(from decoder: any Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         vocab = try c.decode([Entry].self, forKey: .vocab)
         documents = try c.decode([String: [String: [Int]]].self, forKey: .documents)
@@ -319,7 +321,7 @@ struct DocumentSubjectIndex: Decodable, Sendable {
     ///
     /// - Returns: candidate key → up to `limit` shared subject NAMES. A candidate sharing nothing is
     ///   absent from the result rather than present with `[]`, so a caller can skip it in one check.
-    func sharedSubjectNames(anchor: DocumentKey, candidates: [DocumentKey],
+    public func sharedSubjectNames(anchor: DocumentKey, candidates: [DocumentKey],
                             limit: Int = 3) -> [DocumentKey: [String]] {
         let anchorRefs = Set(subjects(forDocument: anchor).map(\.ref))
         guard !anchorRefs.isEmpty, limit > 0 else { return [:] }

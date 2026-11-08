@@ -12,20 +12,24 @@ import Foundation
 
 /// One aggregated project lead (#377 Phase 3): a candidate document keyed `"volumeId/documentId"`,
 /// its summed relatedness across the project's seed, and which seeds contributed it.
-struct ProjectLeadCandidate: Equatable, Sendable {
+public struct ProjectLeadCandidate: Equatable, Sendable {
     /// The lead document key, `"volumeId/documentId"`.
-    let key: String
+    public let key: String
     /// Summed relatedness across every seed this document relates to.
-    let aggregateScore: Double
+    public let aggregateScore: Double
     /// The `"volumeId/documentId"` seeds that surfaced this lead (sorted, de-duplicated).
-    let contributingSeedKeys: [String]
+    public let contributingSeedKeys: [String]
 }
 
 // MARK: - ProjectLeadsAggregator
 
 /// Aggregates the per-seed related-document rankings (#308 engine output) into ranked project
 /// leads (#377 Phase 3). Pure and deterministic.
-enum ProjectLeadsAggregator {
+///
+/// Version history:
+///   1.0 — #377 Phase 3: initial implementation
+///   1.1 — 2026-11-08: FRUS Explorer Light's S23a — FRUSCoreKit's, and public
+public enum ProjectLeadsAggregator {
 
     /// Aggregates related documents across a project's seed into ranked leads.
     ///
@@ -45,7 +49,7 @@ enum ProjectLeadsAggregator {
     ///   - limit: Maximum **visible** (non-dismissed) leads to return.
     /// - Returns: Up to `limit` non-dismissed leads (ranked by `aggregateScore` descending, key
     ///   ascending as a stable tie-break), followed by every dismissed lead still in the ranking.
-    static func aggregate(perSeedRelated: [(seed: String, related: [(key: String, score: Double)])],
+    public static func aggregate(perSeedRelated: [(seed: String, related: [(key: String, score: Double)])],
                           seedKeys: Set<String>,
                           dismissedKeys: Set<String> = [],
                           limit: Int) -> [ProjectLeadCandidate] {
