@@ -70,6 +70,9 @@ import Testing
 ///         bundle check also catches a `Bundle = .main` default; the walks' sanity sets name
 ///         `SearchViewModel`, `WindowTargetingTests` and `makeAnalyticsPipeline`, since the pipeline
 ///         and `makeTestPipeline` moved into the kit and its suites
+///   1.3 — Session 2026-11-08 (FRUS Explorer Light, S21a): the app-name walk's sanity set names
+///         `decodeFRUSSelectionEvent`, since `frusSubseries` moved into the kit with the live
+///         listing's diff
 @Suite("FRUSCoreKit — Foundation only, and nothing that lives in the app")
 struct FRUSCoreKitBoundaryTests {
 
@@ -417,7 +420,7 @@ struct FRUSCoreKitBoundaryTests {
         // The walk is real: the app's model and two view models are among them, and two of its free
         // functions.
         #expect(declared.isSuperset(of: ["SearchViewModel", "DocumentViewModel", "AppState", "DocumentHighlight",
-                                         "frusSubseries", "formattedBytes"]),
+                                         "decodeFRUSSelectionEvent", "formattedBytes"]),
                 "the app's declarations were not read: \(declared.count) found")
         let kit = try Self.sources(under: "FRUSCoreKit")
         let own = kit.reduce(into: Set<String>()) { $0.formUnion(Self.declaredNames(in: $1.text)) }

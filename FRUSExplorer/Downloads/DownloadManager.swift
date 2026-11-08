@@ -6,7 +6,6 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-import CryptoKit
 import Foundation
 
 /// DownloadManager coordinates all FRUS volume download activity.
@@ -93,6 +92,9 @@ import Foundation
 ///          with the size and modification date of the file it was taken from, so a file replaced
 ///          by any path is hashed again; and a volume side-loaded under a catalogue volume's name is
 ///          recorded on the device until a download or a removal replaces it.
+///   2.6 — Session 2026-11-08 (FRUS Explorer Light, S21a): `gitBlobSHA1(for:)` forwards to
+///          FRUSCoreKit's `VolumeUpdateChecker.gitBlobSHA1(for:)`, which moved there with the check,
+///          and the manager conforms to the kit's `DownloadedVolumeFiles`, which the check reads
 ///
 /// ## Figure Images (#1516)
 /// When a volume's download finishes, `fetchFigureImages(for:)` reads the names its `<figure>`s
@@ -640,12 +642,9 @@ public actor DownloadManager {
     }
 
     /// Computes the git blob SHA-1 of `data`, in the same form GitHub's contents API
-    /// reports for repository files: `sha1("blob <byte length>\0" + data)`.
+    /// reports for repository files: FRUSCoreKit's `VolumeUpdateChecker.gitBlobSHA1(for:)`.
     public nonisolated static func gitBlobSHA1(for data: Data) -> String {
-        var hasher = Insecure.SHA1()
-        hasher.update(data: Data("blob \(data.count)\0".utf8))
-        hasher.update(data: data)
-        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+        VolumeUpdateChecker.gitBlobSHA1(for: data)
     }
 
     /// A file's size and modification date: what tells a cached hash's file from its replacement.
@@ -1696,6 +1695,13 @@ final class FigureImageStore: @unchecked Sendable, FigureImageSource {
         }
     }
 }
+
+// MARK: - DownloadedVolumeFiles
+
+/// The downloaded volumes FRUSCoreKit's corrections check reads
+/// (`VolumeUpdateChecker.updatableVolumes`): `isVolumeDownloaded(_:)`, `localVolumeInfo(for:)`,
+/// whose hashes the manager caches, and `isSideloaded(_:)`.
+extension DownloadManager: DownloadedVolumeFiles {}
 
 // MARK: - Notification Names
 
