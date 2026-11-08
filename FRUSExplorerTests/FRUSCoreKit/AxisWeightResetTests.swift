@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - AxisWeightResetTests
 
@@ -31,6 +37,7 @@ struct AxisWeightResetTests {
     /// the key pins today's numbers as an explicit tuning; because `rawValue` spells out every axis
     /// and `effectiveWeights` only falls back when an axis is ABSENT, that written-out value is
     /// indistinguishable from a deliberate one — which is exactly how #1021 happened.
+    #if !SWIFT_PACKAGE // the key is the app's SettingsKeys.relatedAxisWeights
     @Test("Reset removes the key rather than writing defaults into it")
     func resetRemovesRatherThanWrites() {
         let defaults = scratchDefaults()
@@ -47,6 +54,7 @@ struct AxisWeightResetTests {
             the user today and strand them again the next time an axis is added or a default moves.
             """)
     }
+    #endif
 
     /// The payoff of removing: an unconfigured reader picks up whatever the defaults are *now*.
     @Test("With the key absent, every axis resolves to its current default")
@@ -168,6 +176,7 @@ struct AxisWeightResetTests {
         #expect(parsed[.sharedPersons] == 0.7)
     }
 
+    #if !SWIFT_PACKAGE // RelatedDocumentsRequest, the macOS window's payload, is the app's
     /// `AxisWeights.default.rawValue` is `""`, and `RelatedDocumentsRequest` is Codable THROUGH
     /// `rawValue` — so a nil `init?` for `""` would make a restored macOS Related window saved at
     /// default weights fail to decode and never reappear.
@@ -185,6 +194,19 @@ struct AxisWeightResetTests {
             this THREW .dataCorrupted, and the window it restores would simply not come back.
             """)
         #expect(restored.anchor == request.anchor)
+    }
+    #endif
+
+    /// The conformance decides how the type encodes and compares, which is why it sits in FRUSCoreKit
+    /// with the type since FRUS Explorer Light's S23a: without it a package build would encode the
+    /// weights as a dictionary and compare them key by key, where every Apple build goes through the
+    /// stored string. Both round-trips above pass either way; these two lines do not.
+    @Test("The weights encode as their stored string and compare by their effective values")
+    func encodesAndComparesThroughTheString() throws {
+        #expect(String(decoding: try JSONEncoder().encode([AxisWeights.default]), as: UTF8.self) == "[\"\"]")
+        #expect(AxisWeights(weights: [.archivalProvenance: 1])
+                == AxisWeights(weights: [.archivalProvenance: 1, .crossReference: 0]),
+                "an axis absent from the vector reads 0, the same as one set to 0")
     }
 
     /// Genuine garbage must still fall back, or the "a malformed stored value falls back at the

@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - WhyRelatedChipTests
 
@@ -192,6 +198,30 @@ struct WhyRelatedChipTests {
         #expect(chips.map(\.axis) == [.dateProximity, .subseries, .sharedPersons])
     }
 
+    // MARK: - The words
+
+    /// What each chip and the pool-cut footer say, as `CountCopyTests` holds them in the app's
+    /// target, here so that FRUS Explorer Light's Linux build, which draws the same chips from the
+    /// kit, writes them through its own `String(localized:)` stand-in and gets the same words.
+    @Test("Each chip's words and the pool-cut footer are the same wherever the kit runs")
+    func chipWords() {
+        let us = Locale(identifier: "en_US")
+        #expect(WhyRelatedChip.cohort(container: "Lot 54 D 270", size: 1_063).displayText(locale: us)
+                == "Lot 54 D 270 · 1 of 1,063")
+        #expect(RelatedDocumentsCounts.poolCut(ranked: 120, of: 1_063, locale: us)
+                == "Ranked from the first 120 of 1,063 documents that share this anchor’s archival container. "
+                    + "The rest were not scored. Narrow the scope to reach them.")
+        #expect(RelatedDocumentsCounts.cohort(container: "X", size: 1_063, locale: Locale(identifier: "de_DE"))
+                == "X · 1 of 1.063")
+        #expect(WhyRelatedChip.citations(3).displayText() == "cited 3×")
+        #expect(WhyRelatedChip.presence.displayText() == "same provenance")
+        #expect(WhyRelatedChip.sharedTerms(["Berlin", "airlift"]).displayText() == "shares: Berlin, airlift")
+        #expect(WhyRelatedChip.sharedSubjects(["Berlin blockade"]).displayText() == "topics: Berlin blockade")
+        #expect(WhyRelatedChip.percent(0).displayText() == "<1%")
+        #expect(WhyRelatedChip.percent(38).displayText() == "38%")
+        #expect(SemanticSimilarityGenerator.evidenceLabel(for: 0.823) == "Semantic match · 82%")
+    }
+
     // MARK: - The guard
 
     /// A cross-reference row whose evidence never arrived must not quietly fall back to the
@@ -211,18 +241,20 @@ struct WhyRelatedChipTests {
     /// something in it.
     ///
     /// Every test above builds its row by hand, so removing the generator's `evidenceCount:` — the
-    /// one line that supplies the data — left the whole suite green. Driving the real path needs a
-    /// live `AppState`, an indexed fixture and a `CrossReferenceStore`, which this bundle has no
-    /// way to assemble; a source audit is the honest substitute and it names what it cannot check.
+    /// one line that supplies the data — left the whole suite green. Driving the real path needs an
+    /// indexed fixture with archival containers and a cross-reference source, which this suite does
+    /// not assemble; a source audit is the honest substitute and it names what it cannot check.
+    /// `RelatedDocumentsHostTests` drives the cross-reference half for real since FRUS Explorer
+    /// Light's S23a: a count from the host's source reaches the row's chip through the engine.
     @Test("The generator supplies the count and the engine attaches it")
     func evidenceIsWired() throws {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         func source(_ path: String) throws -> String {
             try String(contentsOf: root.appending(path: path), encoding: .utf8)
         }
 
-        let generators = try source("FRUSExplorer/RelatedDocuments/SimilarityGenerators.swift")
+        let generators = try source("FRUSCoreKit/RelatedDocuments/SimilarityGenerators.swift")
         #expect(generators.contains("evidenceLabel: result.basis"),
                 "the archival generator must name the container, or the chip cannot say which")
         #expect(generators.contains("archivalNeighborsWithCohort"),
@@ -244,7 +276,7 @@ struct WhyRelatedChipTests {
                 CrossReferenceGenerator must pass the raw citation count. Without it every                 cross-reference chip silently falls back to the normalised percentage this work                 exists to replace — and no assertion over a hand-built row can see that.
                 """)
 
-        let engine = try source("FRUSExplorer/RelatedDocuments/RelatedDocumentsEngine.swift")
+        let engine = try source("FRUSCoreKit/RelatedDocuments/RelatedDocumentsEngine.swift")
         #expect(engine.contains("rows[index].axisEvidence = evidence"),
                 "the engine must attach the evidence to each ranked row")
         // After ranking, like `snippet` — so the ranker stays pure and cannot reorder anything.

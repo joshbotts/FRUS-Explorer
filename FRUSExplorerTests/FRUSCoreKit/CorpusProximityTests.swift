@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - CorpusProximityTests
 
@@ -514,7 +520,7 @@ struct CorpusProximityTests {
 
         static func source(_ path: String) throws -> String {
             let root = URL(fileURLWithPath: #filePath)
-                .deletingLastPathComponent().deletingLastPathComponent()
+                .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
             #expect(text.count > 1_000, "\(path) is implausibly small — did it move?")
             return text
@@ -533,7 +539,7 @@ struct CorpusProximityTests {
         /// times to explain the fetch discipline. A whole-file substring search reads those
         /// explanations as call sites and the other scorers' loops as this one's.
         static func scorerCode() throws -> String {
-            let file = try Self.source("FRUSExplorer/RelatedDocuments/SimilarityScorers.swift")
+            let file = try Self.source("FRUSCoreKit/RelatedDocuments/SimilarityScorers.swift")
             let start = try #require(file.range(of: "struct SubseriesScorer")).lowerBound
             let rest = file[start...]
             let end = rest.range(of: "\n// MARK: -")?.lowerBound ?? rest.endIndex
@@ -566,7 +572,7 @@ struct CorpusProximityTests {
             #expect(scorer.contains("try? await pipeline.cachedVolumeStructure"),
                     "the fetch must be `try?` — the engine coalesces a throw to no contribution")
 
-            let engine = try Self.source("FRUSExplorer/RelatedDocuments/RelatedDocumentsEngine.swift")
+            let engine = try Self.source("FRUSCoreKit/RelatedDocuments/RelatedDocumentsEngine.swift")
             #expect(engine.contains("(try? await scorer.scores("),
                     "the premise above changed: the engine no longer swallows a scorer throw")
         }
