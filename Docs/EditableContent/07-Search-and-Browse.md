@@ -3599,6 +3599,12 @@ No era made it standard. It is most common in the late retrospective volumes.
 
 <!-- END SOURCE: browser.annotations.standard.none.retrospective -->
 
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.standard.redactions -->
+
+Volumes produced after the passage of the 1991 statute include explicit editorial annotation of redactions made during the declassification process.
+
+<!-- END SOURCE: browser.annotations.standard.redactions -->
+
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.era.span -->
 
 %1$@–%2$@
@@ -3827,7 +3833,7 @@ Search's results and Source Explorer show a document's marking.
 
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.excisions -->
 
-Since the 1991 statute, the editors mark what declassification review redacted: a gap in the printed text, “[… not declassified]”, or a whole document withheld, listed in its place with its heading, its source note and the number of pages not declassified. Earlier volumes marked every omission with an ellipsis, whether the editors left the text out or it was not cleared for publication, so their redactions cannot be told from the editors’ omissions and are not counted here.
+The editors mark what declassification review redacted: a gap in the printed text, “[… not declassified]”, or a whole document withheld, listed in its place with its heading, its source note and the number of pages not declassified. Before the 1991 statute, volumes marked every omission with an ellipsis, whether the editors left the text out or it was not cleared for publication, so their redactions cannot be told from the editors’ omissions and are not counted here.
 
 <!-- END SOURCE: browser.annotations.practice.excisions -->
 

@@ -109,6 +109,10 @@ struct AnnotationsAxisTests {
                 == "No era made it standard. It is most common in the volumes covering 1861–1898.")
         #expect(AnnotationsAxis.standardLine(for: AnnotationsAxis.reach(of: .marginalNotes, in: volumes))
                 == "No era made it standard. It is most common in the late retrospective volumes.")
+        // Redactions follow the year of publication, so they name the statute, not an era, even
+        // where no volume carries them.
+        #expect(AnnotationsAxis.standardLine(for: AnnotationsAxis.reach(of: .excisions, in: volumes))
+                == "Volumes produced after the passage of the 1991 statute include explicit editorial annotation of redactions made during the declassification process.")
         // A layer no volume carries says nothing of when.
         #expect(AnnotationsAxis.standardLine(for: AnnotationsAxis.reach(of: .subjects, in: volumes)).isEmpty)
     }

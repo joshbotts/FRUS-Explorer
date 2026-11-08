@@ -266,7 +266,7 @@ extension AnnotationLayer {
                           defaultValue: "The editors printed each document's security classification, first above the dateline and later in the source note.")
         case .excisions:
             return String(localized: "browser.annotations.practice.excisions",
-                          defaultValue: "Since the 1991 statute, the editors mark what declassification review redacted: a gap in the printed text, “[… not declassified]”, or a whole document withheld, listed in its place with its heading, its source note and the number of pages not declassified. Earlier volumes marked every omission with an ellipsis, whether the editors left the text out or it was not cleared for publication, so their redactions cannot be told from the editors’ omissions and are not counted here.")
+                          defaultValue: "The editors mark what declassification review redacted: a gap in the printed text, “[… not declassified]”, or a whole document withheld, listed in its place with its heading, its source note and the number of pages not declassified. Before the 1991 statute, volumes marked every omission with an ellipsis, whether the editors left the text out or it was not cleared for publication, so their redactions cannot be told from the editors’ omissions and are not counted here.")
         case .despatch:
             return String(localized: "browser.annotations.practice.despatch",
                           defaultValue: "Older volumes print the number a diplomatic post gave each despatch it sent, “No. 74.”, by which the despatch is found in the archives.")
@@ -452,7 +452,11 @@ enum AnnotationsAxis {
 
     /// When the layer became standard: "Standard in the volumes covering 1955 on.", or, for a practice
     /// no era made standard, the era where it is most common. Empty when no volume carries it.
+    ///
+    /// Redactions say instead when the series began to mark them. That follows the year a volume was
+    /// published, not the years it covers, so the era strip's onset would put it in the wrong place.
     static func standardLine(for reach: Reach) -> String {
+        if reach.layer == .excisions { return redactionsStandardLine }
         if reach.onset != nil { return VolumeAnnotationsPresentation.standardFrom(reach.onset) }
         // Ties go to the earlier band: the strip's order.
         guard let peak = reach.bands.filter({ $0.carrying > 0 }).max(by: { $0.share < $1.share }) else {
@@ -465,6 +469,13 @@ enum AnnotationsAxis {
         return String(format: String(localized: "browser.annotations.standard.none",
                                      defaultValue: "No era made it standard. It is most common in the volumes covering %@."),
                       eraName(peak.era))
+    }
+
+    /// The Redactions layer's sentence in place of an era's: the practice began with the 1991
+    /// statute, which dates a volume's publication, not the years it covers.
+    static var redactionsStandardLine: String {
+        String(localized: "browser.annotations.standard.redactions",
+               defaultValue: "Volumes produced after the passage of the 1991 statute include explicit editorial annotation of redactions made during the declassification process.")
     }
 
     /// What VoiceOver reads for a layer's row on the axis: "People tagged: 288 of 553 volumes.

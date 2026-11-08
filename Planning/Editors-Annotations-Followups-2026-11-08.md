@@ -21,6 +21,9 @@ Run long jobs in the background and reuse one worktree's DerivedData.
 Version history:
   1.0 — 2026-11-08: written from the cloud session that made the copy changes and measured the
         omission markers
+  1.1 — 2026-11-08: the owner's three decisions recorded: infra/supra notes count as omissions, the
+        Redactions page names the 1991 statute in place of an era, and the onboarding page says
+        "redactions"
 
 ---
 
@@ -60,17 +63,21 @@ screenshots:
 
 If the label wraps badly in either place, raise it with the owner. Do not shorten it unasked.
 
-**Open, for the owner (not blocking):**
-- *The era sentence on Redactions.* "Standard in the volumes covering 1964 on" goes by the years a
+**Decided by the owner on 2026-11-08, and done on the branch in the second copy commit:**
+- *The era sentence on Redactions.* "Standard in the volumes covering 1964 on" went by the years a
   volume covers, but the practice changed with the year of publication. Measured over the 553
-  volumes, by publication year: 3/49 published in the 1970s, 3/21 in 1980–84, 4/33 in 1985–89,
-  67/73 in the 1990s and 133/147 from 2000. Options: leave it; drop the sentence for this layer; or
-  add a publication-year sentence. That means `VolumeAnnotations` would carry a publication year,
-  and the index file would change.
-- *The onboarding page's **Excisions** section* (`IndexingEducationView.swift`, mirrored in
-  `Docs/EditableContent/02-Research-Guide.md`) is the owner's own text and says "excisions". The
-  2026-11-08 instruction ("redaction", not "cut") was about omissions made in declassification.
-  Ask whether that section should say "redactions" where it means them.
+  volumes, by publication year: 3/49 published in the 1970s, 3/21 in 1980–84, 4/33 in 1985–89, 67/73
+  in the 1990s and 133/147 from 2000. The layer's page now says instead (`AnnotationsAxis.redactionsStandardLine`,
+  key `browser.annotations.standard.redactions`): "Volumes produced after the passage of the 1991
+  statute include explicit editorial annotation of redactions made during the declassification
+  process." The spoken row reads the same sentence. The practice paragraph no longer opens with the
+  date, so the two do not repeat each other. The strip still shades by coverage era. Check on the
+  device that the sentence and the strip read well together.
+- *The onboarding page's section* (`IndexingEducationView.swift`, mirrored in
+  `Docs/EditableContent/02-Research-Guide.md`) is now titled **Excisions and Redactions**. It says
+  "redaction" where an omission came from declassification and keeps "excision" for the editors' own.
+  Each paragraph stays on its one line, so the page's `lines: 802–851` range still holds; confirm
+  with `EditableContentKeyTests`.
 
 ---
 
@@ -118,13 +125,10 @@ A bracket that matches none of these does not count. The cases to exclude:
   whether the redaction test should keep reading notes. It must, for a withheld document's source
   note.
 
-**Owner decision before coding: "printed infra / supra / elsewhere".** Some brackets stand in for
-text the volume does print, in another place: "[Here follows text of the aide-mémoire of May 9,
-1938, … printed infra.]". That is an omission in place but not from the volume.
-- *Recommended:* count it. It is the editors marking that the text is not here, and the reader
-  learns where it is.
-- *Alternative:* exclude any bracket that contains `\bprinted\b`. Record the decision in the
-  practice text either way.
+**"Printed infra / supra / elsewhere" counts (the owner's decision of 2026-11-08).** Some brackets
+stand in for text the volume prints in another place: "[Here follows text of the aide-mémoire of
+May 9, 1938, … printed infra.]". They are omissions in place and count. The rule needs no
+exception for them, and a fixture pins one as a positive.
 
 **Measure first.** Before writing the scanner, run the patterns over the Mac's corpus clone
 (`~/Development/frus/volumes`, at `6170e4b32`). A stdlib Python script in the scratchpad is enough;
@@ -151,7 +155,7 @@ existing extracts, and add a dated amendment to that folder's README.
   - a fixture document for each positive pattern;
   - one each for "[apparent omission]", "[omission?]", a `not declassified` bracket and a bracket
     inside a footnote;
-  - the infra/supra case, per the owner's decision.
+  - an infra/supra case, as a positive.
 
 **App** (`FRUSExplorer/Browser/`):
 - `AnnotationLayer`: a new case `editorialOmissions`, placed after `.excisions` in the "Where it
@@ -177,7 +181,6 @@ existing extracts, and add a dated amendment to that folder's README.
   | `browser.volume.annotations.editorialOmissions.one` | %@ document with an editorial omission marked |
   | `browser.volume.annotations.editorialOmissions.many` | %@ documents with editorial omissions marked |
 
-  Add a sentence on infra/supra to the practice text if the owner excludes those notes.
 - `VolumeAnnotationsPresentation.Labels` and the row detail switch: the new label and detail. The
   layer is not "standard" in any era by the one-document rule, so it never appears under *Not in
   this volume*. Confirm that against `standardLayers`, or whatever decides that list.
