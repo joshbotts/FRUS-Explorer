@@ -834,10 +834,10 @@ private extension EducationPage {
             ),
             EducationSection(
                 id: "classifications",
-                heading: "Excisions",
+                heading: "Excisions and Redactions",
                 paragraphs: [
-                    "Most FRUS documents are published in full, but there are many that were published with excisions. Some of these excisions were editorial - the historians who compiled the volume judged that the excised material wasn’t significant enough to warrant inclusion. Other excisions were made for policy considerations - government officials judged that information could not be released without unacceptable risks to U.S. interests or security.",
-                    "Before the 1920s, FRUS editors did not annotate excisions. Beginning in the 1920s, FRUS historians added ellipses (...) to indicate that material was omitted, but did not describe how much information was withheld or explain whether an excision was editorial in nature or an unfavorable declassification decision. The 1991 statutory mandate required more detailed editorial accounting for excised material, giving researchers a greater sense of how what is published compares to what had to be withheld."
+                    "Most FRUS documents are published in full, but there are many that were published with excisions. Some of these excisions were editorial - the historians who compiled the volume judged that the excised material wasn’t significant enough to warrant inclusion. Others were redactions made in the declassification process - government officials judged that information could not be released without unacceptable risks to U.S. interests or security.",
+                    "Before Secretary of State Frank Kellogg’s 1925 order, FRUS editors did not mark excisions or redactions. Beginning with that order, FRUS historians added ellipses (...) to indicate that material was omitted, but did not describe how much information was withheld or explain whether an omission was an editorial excision or a redaction made after an unfavorable declassification decision. The 1991 statutory mandate required more detailed editorial accounting for omitted material: volumes produced since then mark each redaction explicitly, apart from the editors’ own excisions, giving researchers a greater sense of how what is published compares to what had to be withheld."
                 ]
             ),
             EducationSection(

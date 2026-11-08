@@ -248,9 +248,9 @@ struct VolumeAnnotationsPresentation: Equatable {
         static var classification: String {
             String(localized: "browser.volume.annotations.classification", defaultValue: "Classification markings")
         }
-        /// Excisions marked in the text.
+        /// Redactions marked as not declassified: gaps in the text and documents withheld.
         static var excisions: String {
-            String(localized: "browser.volume.annotations.excisions", defaultValue: "Excisions marked")
+            String(localized: "browser.volume.annotations.excisions", defaultValue: "Redactions marked as not declassified")
         }
         /// The sending post's own serials.
         static var despatch: String {
@@ -281,9 +281,9 @@ struct VolumeAnnotationsPresentation: Equatable {
         static var marginalNotes: String {
             String(localized: "browser.volume.annotations.marginalNotes", defaultValue: "Marginal notes")
         }
-        /// The volume's printed aids: its preface, lists and index.
+        /// The volume's front and back matter: its preface, lists and index.
         static var printedAids: String {
-            String(localized: "browser.volume.annotations.printedAids", defaultValue: "Printed aids")
+            String(localized: "browser.volume.annotations.printedAids", defaultValue: "Front and back matter")
         }
         /// The Note on Sources, a standard section.
         static var noteOnSources: String {
@@ -382,13 +382,13 @@ struct VolumeAnnotationsPresentation: Equatable {
             return of(annotations.sourceNotes) + VolumeAnnotationsPresentation.separator + form
         }
 
-        /// "31 documents with text not declassified".
+        /// "31 documents with a redaction marked".
         var excisions: String {
             CountCopy.phrase(annotations.count(.excisions),
                              one: String(localized: "browser.volume.annotations.excisions.one",
-                                         defaultValue: "%@ document with text not declassified"),
+                                         defaultValue: "%@ document with a redaction marked"),
                              many: String(localized: "browser.volume.annotations.excisions.many",
-                                          defaultValue: "%@ documents with text not declassified"),
+                                          defaultValue: "%@ documents with redactions marked"),
                              locale: locale)
         }
 

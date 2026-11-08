@@ -109,6 +109,10 @@ struct AnnotationsAxisTests {
                 == "No era made it standard. It is most common in the volumes covering 1861–1898.")
         #expect(AnnotationsAxis.standardLine(for: AnnotationsAxis.reach(of: .marginalNotes, in: volumes))
                 == "No era made it standard. It is most common in the late retrospective volumes.")
+        // Redactions follow the year of publication, so they name the statute, not an era, even
+        // where no volume carries them.
+        #expect(AnnotationsAxis.standardLine(for: AnnotationsAxis.reach(of: .excisions, in: volumes))
+                == "Volumes produced after the passage of the 1991 statute include explicit editorial annotation of redactions made during the declassification process.")
         // A layer no volume carries says nothing of when.
         #expect(AnnotationsAxis.standardLine(for: AnnotationsAxis.reach(of: .subjects, in: volumes)).isEmpty)
     }
@@ -173,7 +177,7 @@ struct AnnotationsAxisTests {
         #expect(AnnotationsAxis.accessory(for: .editorialNotes, one, locale: locale) == "1 note")
     }
 
-    @Test("Source notes add one drill per form; the printed aids have one per aid")
+    @Test("Source notes add one drill per form; the front and back matter has one per section")
     func formAndAidDrills() throws {
         let volumes = index([
             "c": volume(.from1969, documents: 2, [.sourceCitation: 2], sections: ["persons", "index"]),
@@ -194,7 +198,7 @@ struct AnnotationsAxisTests {
         let introduction = try #require(aids.first)
         #expect(introduction.spec.axisKey == "annotation:printedAids:intro")
         #expect(introduction.spec.volumeIds == ["b", "f"])
-        #expect(introduction.spec.caption == "2 of 3 volumes. A volume counts when it prints this aid.")
+        #expect(introduction.spec.caption == "2 of 3 volumes. A volume counts when it prints this section.")
     }
 
     @Test("A matrix cell opens its era's volumes that carry the layer, the era in its title and caption")

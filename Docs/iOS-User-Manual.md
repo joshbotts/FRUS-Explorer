@@ -445,7 +445,7 @@ Tap a layer for its page:
 - **What the editors did**, in a sentence or two.
 - **Era by era**: when the series made the layer standard (*Standard in the volumes covering 1955 on*), or, for a practice no era made standard, where it is most common; and the strip at full size, each era under its first year. With VoiceOver, each era reads its own count.
 - **In the app**: what the app does with the layer, or that nothing reads it yet. People tagged links to the People browser (Section 6.5), and source notes to Archives (Section 6.1g).
-- **Volumes**: the volumes with it and the volumes without it, each with its count, such as *279/280* documents. Source notes add a list for each form, and the printed aids have one list per aid. Each list says how many volumes it holds and by what rule a volume counts, and its toolbar has **Save as Scope…**.
+- **Volumes**: the volumes with it and the volumes without it, each with its count, such as *279/280* documents. Source notes add a list for each form, and the front and back matter has one list per section. Each list says how many volumes it holds and by what rule a volume counts, and its toolbar has **Save as Scope…**.
 
 A volume that prints a List of Persons but links none of its names to it is marked in its list, as is one that prints a List of Abbreviations without links. Like the volume page's section, the axis ships with the app, so it covers volumes you have not downloaded.
 
@@ -480,8 +480,8 @@ Reach it five ways: **Browse ▸ Topics** (beside People), a topic in the **Topi
 Every volume's page also says what its editors annotated, under **Editors’ Annotations**, right below the volume's details. It lists the layers the volume carries in three groups, each with how many of the volume's documents carry it:
 
 - **Who is named:** people tagged to the volume's List of Persons, abbreviations explained in its List of Abbreviations, senders and recipients marked in the headings, Subject lines and meeting participants.
-- **Where it came from:** source notes, and whether they are archival citations (*Source: …*) or file numbers printed above the heading; classification markings; excisions marked as not declassified; and despatch numbers.
-- **How it connects:** documents numbered in print, cross-references, editorial notes, footnotes, marginal notes, and the printed aids the volume opens and closes with, such as its Preface, Sources, Persons and Index.
+- **Where it came from:** source notes, and whether they are archival citations (*Source: …*) or file numbers printed above the heading; classification markings; redactions marked as not declassified, whether a gap in the text or a whole document withheld; and despatch numbers.
+- **How it connects:** documents numbered in print, cross-references, editorial notes, footnotes, marginal notes, and the front and back matter the volume opens and closes with, such as its Preface, Sources, Persons and Index.
 
 A layer is listed when the volume carries it. For one that most documents can carry, such as tagged people, that means at least half the volume's documents; a count shows how many. **Not in this volume** lists the standard layers the volume lacks, each with the era from which the series made it standard, so you know before you download whether, for example, the People browser and Person analytics will find the people in it. Like Top subjects, the section ships with the app, so it appears for volumes you have not downloaded. Tap a layer, present or not, to open its page on the Editors’ Annotations axis (Section 6.1i), whose lists put this volume first.
 
