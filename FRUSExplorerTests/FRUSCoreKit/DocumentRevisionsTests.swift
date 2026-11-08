@@ -8,8 +8,21 @@
 
 import Testing
 import Foundation
-import SQLite3
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
+#if canImport(SQLite3)
+import SQLite3
+#else
+import CSQLite
+#endif
 
 // MARK: - DocumentRevisionsTests
 
@@ -28,6 +41,10 @@ import SQLite3
 ///
 /// Version history:
 ///   1.0 — R-5 P1: initial implementation
+///   1.1 — Session 2026-11-08 (FRUS Explorer Light, S21a): moved to `FRUSCoreKit/`, so the package
+///          runs it too, since what it tests is the kit's indexer. Two pieces stay Xcode's: the test of
+///          `updateSummary(_:)`, which takes the app's `GeneratedSummary`, and one assertion about the
+///          app's `DocumentChangeBanner`, inside a test the package runs
 @Suite("Document revisions — the change set recorded at index time")
 struct DocumentRevisionsTests {
 
@@ -619,8 +636,10 @@ struct DocumentRevisionsTests {
         #expect(d3.contentHash == first["d3"]?.contentHash, "the last-known hashes are kept")
         #expect(try await h.pipeline.unreviewedDocumentRevisions().isEmpty, "the update review counts it")
         #expect(try await h.pipeline.vanishedDocumentKeys().isEmpty, "Research routes it as removed")
+        #if !SWIFT_PACKAGE // DocumentChangeBanner is the app's view
         let banner = await MainActor.run { DocumentChangeBanner.line(revision: d3, highlightsStale: false) }
         #expect(banner == nil, "the banner says it is no longer in the volume")
+        #endif
         #expect(!d3.recordsRemoval, "the review sheet treats it as removed (review round 2)")
         #expect(try await h.pipeline.markVolumeRevisionsReviewed(volumeId: vol) == 0, "there is nothing to review")
 
@@ -779,6 +798,7 @@ struct DocumentRevisionsTests {
         #expect(h.cacheColumn("summary_text", vol, "d1") == "fresh")
     }
 
+    #if !SWIFT_PACKAGE // `updateSummary(_:)` takes `GeneratedSummary`, the app's SwiftData model (IndexingPipeline+App.swift)
     /// 2026-10-31: the column holds what the reader reads. A structured summary's JSON put its keys in
     /// the index, so a search over summaries matched `KeyParticipants`, and Related Documents' rows and
     /// Suggested Next's lines showed the braces.
@@ -799,6 +819,7 @@ struct DocumentRevisionsTests {
         try await h.pipeline.updateSummary(prose)
         #expect(h.cacheColumn("summary_text", vol, "d1") == "The Minister discussed tariffs.")
     }
+    #endif
 
     /// Design Q-11 (f), for indexes built before the vanished-row delete reached this table: a
     /// source row with no cache row is swept on the next open, and a legitimate row is not.
