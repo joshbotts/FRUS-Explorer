@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - PresidentialLibraryIndex
 
@@ -25,7 +28,13 @@ import Foundation
 /// (FRUS cites the Johnson `Country File` undivided; NARA splits it into seven regional series),
 /// the honest answer is that several series match and none is *the* answer, which is reported as
 /// `.ambiguous` rather than resolved to whichever sorted first.
-struct PresidentialLibraryIndex: Codable, Sendable {
+///
+/// Version history:
+///   1.0 — Session 2026-08-06: #681, the catalogue's reader
+///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit, public with its decoder, and
+///          loaded from a URL the host gives (`init(contentsOf:)`); `PresidentialLibraryIndexStore`,
+///          which reads the app's bundle, stays in the app (`PresidentialLibraryIndexStore.swift`)
+public struct PresidentialLibraryIndex: Codable, Sendable {
 
     let schemaVersion: Int
     let generated: String
@@ -133,31 +142,14 @@ struct PresidentialLibraryIndex: Codable, Sendable {
     }
 }
 
-// MARK: - PresidentialLibraryIndexStore
+// MARK: - Loading
 
-/// Loads the bundled catalogue once, mirroring the other Source Explorer stores.
-enum PresidentialLibraryIndexStore {
+extension PresidentialLibraryIndex {
 
-    /// The bundled index, or `nil` when the resource is absent or malformed — in which case the
-    /// app falls back to the curated finding aids and the live query, as before.
-    static let shared: PresidentialLibraryIndex? = load()
-
-    private static func load() -> PresidentialLibraryIndex? {
-        guard let url = Bundle.main.url(forResource: "presidential-library-catalog",
-                                        withExtension: "json") else {
-            #if DEBUG
-            print("[SourceExplorer] PresidentialLibraryIndexStore: catalog not found in bundle.")
-            #endif
-            return nil
-        }
-        do {
-            return try JSONDecoder().decode(PresidentialLibraryIndex.self,
-                                            from: try Data(contentsOf: url))
-        } catch {
-            #if DEBUG
-            print("[SourceExplorer] PresidentialLibraryIndexStore: decode failed — \(error)")
-            #endif
-            return nil
-        }
+    /// The catalogue in the `presidential-library-catalog.json` at `url`, decoded as
+    /// `PresidentialLibraryIndexStore` decodes the copy bundled with the app, for a host that keeps the file
+    /// elsewhere.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(PresidentialLibraryIndex.self, from: Data(contentsOf: url))
     }
 }

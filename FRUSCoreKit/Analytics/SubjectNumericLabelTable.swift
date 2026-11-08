@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - SubjectNumericLabelTable
 
@@ -60,7 +63,11 @@ import Foundation
 ///   1.2 — 2026-10-20 (A16, #1691's third line, decision 68): a span reaching both editions reads
 ///          its country, and its subject where both print the same words; a span is clamped to
 ///          the file's own years at both ends (`editions(coveringYears:)`)
-struct SubjectNumericLabelTable: Decodable, Sendable {
+///   1.3 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit from the app's
+///          `SubjectNumericLabelStore.swift`, beside `DecimalClassLabelTable`, public with its decoder, and
+///          loaded from a URL the host gives (`init(contentsOf:)`); `SubjectNumericLabelStore`, which
+///          reads the app's bundle, stays in the app (`SubjectNumericLabelStore.swift`)
+public struct SubjectNumericLabelTable: Decodable, Sendable {
 
     /// One edition's schedule.
     struct Schedule: Decodable, Sendable {
@@ -343,27 +350,13 @@ struct SubjectNumericLabelTable: Decodable, Sendable {
     }
 }
 
-// MARK: - SubjectNumericLabelStore
+// MARK: - Loading
 
-/// The bundled subject-numeric table, decoded once on first use (#1211).
-enum SubjectNumericLabelStore {
+extension SubjectNumericLabelTable {
 
-    /// The table, or `nil` when the resource is absent or unreadable.
-    ///
-    /// Absence degrades to unlabelled keys, never to a crash — the state every build before this
-    /// one shipped in.
-    static let shared: SubjectNumericLabelTable? = load()
-
-    private static func load() -> SubjectNumericLabelTable? {
-        guard let url = Bundle.main.url(forResource: "subject-numeric-labels",
-                                        withExtension: "json"),
-              let data = try? Data(contentsOf: url) else {
-            #if DEBUG
-            print("[SubjectNumericLabelStore] subject-numeric-labels.json is not in the bundle; "
-                + "subject-numeric keys will render unlabelled, as they did before #1211.")
-            #endif
-            return nil
-        }
-        return try? JSONDecoder().decode(SubjectNumericLabelTable.self, from: data)
+    /// The table in the `subject-numeric-labels.json` at `url`, decoded as `SubjectNumericLabelStore` decodes
+    /// the copy bundled with the app, for a host that keeps the file elsewhere.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(SubjectNumericLabelTable.self, from: Data(contentsOf: url))
     }
 }

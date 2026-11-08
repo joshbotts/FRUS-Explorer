@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - NamedFileSeriesRouting
 
@@ -91,6 +94,7 @@ import Foundation
 ///          stated (`explainer(seriesName:)`, `macNote(seriesName:)`); review round 1: neither view
 ///          offers NARA's Department of State records page for such a series
 ///          (`offersStateRecordsLink(seriesName:)`)
+///   1.2 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit
 enum NamedFileSeriesRouting {
 
     // MARK: - Destination

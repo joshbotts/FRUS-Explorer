@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - ArchivalResolver
 
@@ -90,7 +93,13 @@ import Foundation
 ///         front-matter resolution, which also reads the presidential-library catalogue, the divided-lot
 ///         claimants and the overloads over the app's bundled indexes stay in the app
 ///         (`ArchivalResolver+App.swift`), and `lotResolution` is internal so they can call it
-enum ArchivalResolver {
+///   1.5 — 2026-11-08 (FRUS Explorer Light, S22a): public, for a host that resolves a document's lot or a
+///         front-matter row. The front-matter resolution, the library route and the divided-lot claimants
+///         moved here from the app, each given the index it reads: `frontMatterResolution` takes the
+///         presidential-library catalogue (`presidentialLibrary:`), and `libraryResolution`'s and
+///         `dividedLotClaimants`' indexes have no default; the overloads over the app's bundled indexes
+///         stay in the app (`ArchivalResolver+App.swift`)
+public enum ArchivalResolver {
 
     /// The resolution for a **document's own source citation**: its lot, and nothing else.
     ///
@@ -112,10 +121,13 @@ enum ArchivalResolver {
     ///
     /// The record group is still *shown* — `CollectionGeneratedBlocks.label(for:)` prints
     /// "RG 59" in the row label. It is the hyperlink that is withheld, not the fact.
-    static func documentResolution(lotFile: String?,
-                                   centralFiles: CentralFilesIndex?,
-                                   volumeSources: VolumeSourcesIndex?,
-                                   claimants: LotClaimantsIndex? = nil) -> ArchivalResolution? {
+    ///
+    /// `claimants` defaults to `nil`, which refuses no divided lot (#1205), so a host passes the
+    /// index it loaded, or calls ``documentResolution(lotFile:indexes:)`` with all three.
+    public static func documentResolution(lotFile: String?,
+                                          centralFiles: CentralFilesIndex?,
+                                          volumeSources: VolumeSourcesIndex?,
+                                          claimants: LotClaimantsIndex? = nil) -> ArchivalResolution? {
         lotResolution(lotFile, centralFiles, volumeSources, claimants)
     }
 
@@ -195,9 +207,114 @@ public struct ArchivalIndexes: Sendable {
 extension ArchivalResolver {
 
     /// ``documentResolution(lotFile:centralFiles:volumeSources:claimants:)`` against `indexes`.
-    static func documentResolution(lotFile: String?, indexes: ArchivalIndexes) -> ArchivalResolution? {
+    public static func documentResolution(lotFile: String?, indexes: ArchivalIndexes) -> ArchivalResolution? {
         documentResolution(lotFile: lotFile, centralFiles: indexes.centralFiles,
                            volumeSources: indexes.volumeSources, claimants: indexes.claimants)
+    }
+}
+
+// MARK: - The front-matter resolution
+
+extension ArchivalResolver {
+
+    /// The resolution for a **volume front-matter Sources node**: its lot, else its
+    /// record-group header.
+    ///
+    /// The record-group branch belongs here and only here. A front-matter node *is* a
+    /// collection — "General Records of the Department of State" is a fair answer to a row
+    /// that names nothing more specific — and this is the surface volume-sources' 31 headers
+    /// were harvested from in the first place.
+    ///
+    /// - Parameters:
+    ///   - recordGroup: The node's record group. `volume_sources` stores these bare (measured:
+    ///     0 of 7,374 rows carry the parser's `"RG-"` prefix), which is the form the map is
+    ///     keyed by; `bareRG` normalizes anyway so the entry point cannot be form-sensitive.
+    ///   - lotFile: The raw lot citation (`"63 D 135"`, `"Lot 61–D 146"`); normalized by the
+    ///     indexes themselves.
+    ///   - centralFiles: The central-files index. Injected so tests drive the real precedence.
+    ///   - volumeSources: The volume-sources index, supplying both the lot fallback and the
+    ///     record-group branch.
+    ///   - claimants: The divided-lot claimants (#1205): a lot NARA divided resolves to nothing. The
+    ///     default, `nil`, refuses none, so a host passes the index it loaded.
+    ///   - presidentialLibrary: The presidential-library catalogue, for a row that names a library's
+    ///     collection (``libraryResolution(repository:entryText:index:)``), read only when the row has
+    ///     no lot, so a store that decodes on first use is not decoded for a row with one. The app
+    ///     passes its bundled one (`ArchivalResolver+App.swift`).
+    public static func frontMatterResolution(recordGroup: String?,
+                                             lotFile: String?,
+                                             entryText: String,
+                                             repository: String? = nil,
+                                             centralFiles: CentralFilesIndex?,
+                                             volumeSources: VolumeSourcesIndex?,
+                                             claimants: LotClaimantsIndex? = nil,
+                                             presidentialLibrary: @autoclosure () -> PresidentialLibraryIndex?)
+        -> ArchivalResolution? {
+        if let lotHit = lotResolution(lotFile, centralFiles, volumeSources, claimants) {
+            return lotHit
+        }
+        guard (lotFile?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "").isEmpty else {
+            return nil   // the lot-only rule
+        }
+        // #668: a presidential-library collection, from the catalogue #681 harvested. This
+        // surface never asked it — the bundle was wired into Source Explorer's *document*
+        // route in #710 and nowhere else — so `John Foster Dulles Papers` and `James C.
+        // Hagerty Papers` sat unresolved under `Dwight D. Eisenhower Library` while their
+        // records (NAIDs 580942 and 581740) were sitting in the shipped bundle. Tried before
+        // the record-group branch because it answers the row itself, where that branch answers
+        // the record group the row sits in.
+        if let libraryHit = libraryResolution(repository: repository, entryText: entryText,
+                                              index: presidentialLibrary()) {
+            return libraryHit
+        }
+        // The row must NAME the record group, not merely sit under one. `volume_sources`
+        // stores the inherited value on every descendant, so without this a descriptive line
+        // like "Reference works, visual materials, transcripts of oral histories…" borrows its
+        // ancestor's link — and where the ancestor is the wrong record group, so is the link.
+        guard let named = CollectionKeying.recordGroupNamedIn(entryText),
+              let stored = CollectionKeying.bareRG(recordGroup),
+              CollectionKeying.bareRG(named) == stored
+        else { return nil }
+        return volumeSources?.resolution(recordGroup: stored, lotFile: nil)
+    }
+
+    /// The presidential-library catalogue's answer for a front-matter row, or `nil`.
+    ///
+    /// Routed through `PresidentialLibraryIndex.match`, the same matcher #710 uses, rather
+    /// than a title comparison written here — and the reason is a real case in the corpus.
+    /// frus1952-54Guat cites `Ann Whitman File`, the common name for the Eisenhower Papers as
+    /// President; the catalogue separately holds `Ann C. Whitman Papers`, a different body of
+    /// records. `titlesAgree` requires equality after normalisation or a segment-boundary tail
+    /// match, so it refuses that pair — and a looser rule written for this surface would have
+    /// handed a researcher a real NARA record for the wrong papers.
+    ///
+    /// Only a **collection-level** hit resolves. The row names a collection, so a series
+    /// candidate list is not an answer to it, and `match` returns `.none` when more than one
+    /// collection answers to the name.
+    public static func libraryResolution(repository: String?, entryText: String,
+                                         index: PresidentialLibraryIndex?) -> ArchivalResolution? {
+        guard let index, let repository, !repository.isEmpty,
+              case .collection(let hit, _) = index.match(repository: repository,
+                                                         collection: entryText, series: nil),
+              let url = hit.catalogURL
+        else { return nil }
+        return ArchivalResolution(naId: String(hit.naId), catalogURL: url.absoluteString,
+                                  title: hit.title, recordGroup: nil, matchType: "library",
+                                  hmsMlrEntryNumbers: nil, levelOfDescription: "collection",
+                                  seriesNaId: nil, seriesTitle: nil,
+                                  seriesHmsMlrEntryNumbers: nil)
+    }
+
+    /// Whether the claimants index says NARA divided this lot across several series.
+    ///
+    /// Exposed so a surface can say *why* a lot carries no catalogue link — "NARA divides this
+    /// lot across N series" is a fact worth printing, and without this the only signal is the
+    /// same `nil` an unresolvable lot produces. The trip packet reaches the claimants directly
+    /// for its restriction line and does not need this; the Collections export block does.
+    static func dividedLotClaimants(lotFile: String?,
+                                    claimants: LotClaimantsIndex?) -> [LotClaimant]? {
+        let lot = lotFile?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !lot.isEmpty else { return nil }
+        return claimants?.claimants(forRawLot: lot)
     }
 }
 
@@ -214,7 +331,7 @@ extension ArchivalResolution {
     ///   Nothing renders `matchType` — it is read only by `CentralFilesIndexTests` against
     ///   central-files' own value — so the change is invisible.
     /// - `recordGroup` is non-optional on `LotFileEntry` and optional here; it widens.
-    init(lotFileEntry entry: LotFileEntry) {
+    public init(lotFileEntry entry: LotFileEntry) {
         self.init(naId: entry.naId,
                   catalogURL: entry.catalogURL,
                   title: entry.title,

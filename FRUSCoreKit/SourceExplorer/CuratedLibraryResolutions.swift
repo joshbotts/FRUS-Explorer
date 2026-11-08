@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - CuratedLibraryResolution
 
@@ -75,7 +78,10 @@ struct CuratedLibraryResolution: Codable, Sendable, Equatable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-06: #355 / N-4, seeded with Carter and the Library of Congress
-struct CuratedLibraryResolutions: Codable, Sendable {
+///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit, public with its decoder, and
+///          loaded from a URL the host gives (`init(contentsOf:)`); `CuratedLibraryResolutionsStore`, which
+///          reads the app's bundle, stays in the app (`CuratedLibraryResolutionsStore.swift`)
+public struct CuratedLibraryResolutions: Codable, Sendable {
     /// Bumped when the entry shape changes.
     let schemaVersion: Int
     /// Curation date (`YYYY-MM-DD`).
@@ -200,38 +206,6 @@ struct CuratedLibraryResolutions: Codable, Sendable {
     }
 }
 
-// MARK: - CuratedLibraryResolutionsStore
-
-/// Loads the bundled curated library resolutions once, mirroring `CuratedLotResolutionsStore`.
-///
-/// Version history:
-///   1.0 — Session 2026-08-06: #355 / N-4
-enum CuratedLibraryResolutionsStore {
-
-    /// The bundled entries, or `nil` when the resource is missing or malformed — in which case
-    /// the app degrades to the repository-level fallback, which is vague but not wrong.
-    static let shared: CuratedLibraryResolutions? = load()
-
-    private static func load() -> CuratedLibraryResolutions? {
-        guard let url = Bundle.main.url(forResource: "curated-library-resolutions",
-                                        withExtension: "json") else {
-            #if DEBUG
-            print("[SourceExplorer] CuratedLibraryResolutionsStore: curated-library-resolutions.json not found.")
-            #endif
-            return nil
-        }
-        do {
-            return try JSONDecoder().decode(CuratedLibraryResolutions.self,
-                                            from: try Data(contentsOf: url))
-        } catch {
-            #if DEBUG
-            print("[SourceExplorer] CuratedLibraryResolutionsStore: decode failed — \(error)")
-            #endif
-            return nil
-        }
-    }
-}
-
 // MARK: - Sub-collection extraction
 
 extension CuratedLibraryResolutions {
@@ -308,5 +282,17 @@ extension CuratedLibraryResolutions {
     private static func isLocator(_ segment: String) -> Bool {
         segment.range(of: #"^(Box|Boxes|Folder|Folders|Reel|Reels|Container|Lot)\b"#,
                       options: [.regularExpression, .caseInsensitive]) != nil
+    }
+}
+
+// MARK: - Loading
+
+extension CuratedLibraryResolutions {
+
+    /// The curated entries in the `curated-library-resolutions.json` at `url`, decoded as
+    /// `CuratedLibraryResolutionsStore` decodes the copy bundled with the app, for a host that keeps the file
+    /// elsewhere.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(CuratedLibraryResolutions.self, from: Data(contentsOf: url))
     }
 }

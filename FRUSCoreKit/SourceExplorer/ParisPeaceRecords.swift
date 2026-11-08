@@ -65,6 +65,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #354 item 3, the Paris Peace Conference records
+///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit
 enum ParisPeaceRecords {
 
     // MARK: - Record

@@ -229,7 +229,10 @@ struct CuratedLotRecord: Codable, Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-03: #375 curated lot outcomes (N-3)
-struct CuratedLotResolutions: Codable, Sendable {
+///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit, public with its decoder, and
+///          loaded from a URL the host gives (`init(contentsOf:)`); `CuratedLotResolutionsStore`, which
+///          reads the app's bundle, stays in the app (`CuratedLotResolutionsStore.swift`)
+public struct CuratedLotResolutions: Codable, Sendable {
     /// Bumped when the row shape changes.
     let schemaVersion: Int
     /// Curation date (`YYYY-MM-DD`).
@@ -297,34 +300,14 @@ struct CuratedLotResolutions: Codable, Sendable {
     }
 }
 
-// MARK: - CuratedLotResolutionsStore
+// MARK: - Loading
 
-/// Loads the bundled curated lot outcomes once, mirroring `CentralFilesIndexStore`.
-///
-/// Version history:
-///   1.0 — Session 2026-08-03: #375 curated lot outcomes (N-3)
-enum CuratedLotResolutionsStore {
+extension CuratedLotResolutions {
 
-    /// The bundled curated outcomes, or `nil` when the resource is missing or malformed.
-    /// A `nil` store degrades to the pre-curation behaviour, which is honest rather than wrong.
-    static let shared: CuratedLotResolutions? = load()
-
-    private static func load() -> CuratedLotResolutions? {
-        guard let url = Bundle.main.url(forResource: "curated-lot-resolutions",
-                                        withExtension: "json") else {
-            #if DEBUG
-            print("[SourceExplorer] CuratedLotResolutionsStore: curated-lot-resolutions.json not found in bundle.")
-            #endif
-            return nil
-        }
-        do {
-            let data = try Data(contentsOf: url)
-            return try JSONDecoder().decode(CuratedLotResolutions.self, from: data)
-        } catch {
-            #if DEBUG
-            print("[SourceExplorer] CuratedLotResolutionsStore: failed to decode curated-lot-resolutions.json — \(error)")
-            #endif
-            return nil
-        }
+    /// The curated outcomes in the `curated-lot-resolutions.json` at `url`, decoded as
+    /// `CuratedLotResolutionsStore` decodes the copy bundled with the app, for a host that keeps the file
+    /// elsewhere.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(CuratedLotResolutions.self, from: Data(contentsOf: url))
     }
 }

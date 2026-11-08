@@ -35,7 +35,10 @@ import Foundation
 ///   1.0 — Session 2026-08-08: #763
 ///   1.1 — 2026-09-25 (#1467): `hasRow(forCollectionId:)`, which tells an uncounted collection
 ///          from one counted at zero
-struct CollectionUsageIndex: Decodable, Sendable {
+///   1.2 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit, public with its decoder, and
+///          loaded from a URL the host gives (`init(contentsOf:)`); `CollectionUsageIndexStore`, which
+///          reads the app's bundle, stays in the app (`CollectionUsageIndexStore.swift`)
+public struct CollectionUsageIndex: Decodable, Sendable {
 
     /// One key's per-volume document counts. Wire names are one letter — the artifact carries
     /// 12,289 rows and the field names would otherwise be 38% of the file.
@@ -123,7 +126,7 @@ struct CollectionUsageIndex: Decodable, Sendable {
              categories, collections, classes, volumeCategories, coverage
     }
 
-    init(from decoder: any Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try c.decode(Int.self, forKey: .schemaVersion)
         generated = try c.decode(String.self, forKey: .generated)
@@ -224,38 +227,13 @@ struct CollectionUsageIndex: Decodable, Sendable {
     }
 }
 
-// MARK: - CollectionUsageIndexStore
+// MARK: - Loading
 
-/// Loads and caches the bundled `collection-usage-index.json`.
-///
-/// Lazy and load-once, like every sibling index store. `shared` is `nil` only when the resource
-/// is missing or cannot be decoded — every consumer must treat that as "document weights are
-/// unavailable" and fall back to the volume-grain counts the authority already carries, never as
-/// "this collection supplies no documents".
-///
-/// Version history:
-///   1.0 — Session 2026-08-08: #763
-enum CollectionUsageIndexStore {
+extension CollectionUsageIndex {
 
-    /// The bundled usage index, or `nil` when unavailable.
-    static let shared: CollectionUsageIndex? = load()
-
-    private static func load() -> CollectionUsageIndex? {
-        guard let url = Bundle.main.url(forResource: "collection-usage-index",
-                                        withExtension: "json") else {
-            #if DEBUG
-            print("[SourceExplorer] CollectionUsageIndexStore: collection-usage-index.json not found.")
-            #endif
-            return nil
-        }
-        do {
-            return try JSONDecoder().decode(CollectionUsageIndex.self,
-                                            from: try Data(contentsOf: url))
-        } catch {
-            #if DEBUG
-            print("[SourceExplorer] CollectionUsageIndexStore: decode failed — \(error)")
-            #endif
-            return nil
-        }
+    /// The usage index in the `collection-usage-index.json` at `url`, decoded as `CollectionUsageIndexStore`
+    /// decodes the copy bundled with the app, for a host that keeps the file elsewhere.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(CollectionUsageIndex.self, from: Data(contentsOf: url))
     }
 }

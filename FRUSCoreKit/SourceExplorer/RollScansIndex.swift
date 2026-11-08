@@ -61,7 +61,10 @@ struct RollScan: Codable, Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #663 follow-up
-struct RollScansIndex: Codable, Sendable {
+///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit, public with its decoder, and
+///          loaded from a URL the host gives (`init(contentsOf:)`); `RollScansIndexStore`, which
+///          reads the app's bundle, stays in the app (`RollScansIndexStore.swift`)
+public struct RollScansIndex: Codable, Sendable {
     let schemaVersion: Int
     let generated: String
     let seriesNaId: String
@@ -74,7 +77,7 @@ struct RollScansIndex: Codable, Sendable {
         case schemaVersion, generated, seriesNaId, scans
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try c.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
         generated = try c.decodeIfPresent(String.self, forKey: .generated) ?? ""
@@ -85,33 +88,6 @@ struct RollScansIndex: Codable, Sendable {
 
     /// The scan for a roll, or `nil` when the harvest has none for it.
     func scan(forNaId naId: String) -> RollScan? { byNaId[naId] }
-}
-
-// MARK: - RollScansIndexStore
-
-/// Loads the bundled `roll-scans-index.json` once. `nil` when the resource is absent or
-/// malformed — in which case the pre-1910 section renders exactly as it did before, with the
-/// catalog links and no PDF buttons.
-enum RollScansIndexStore {
-    static let shared: RollScansIndex? = load()
-
-    private static func load() -> RollScansIndex? {
-        guard let url = Bundle.main.url(forResource: "roll-scans-index",
-                                        withExtension: "json") else {
-            #if DEBUG
-            print("[SourceExplorer] RollScansIndexStore: resource not found in bundle.")
-            #endif
-            return nil
-        }
-        do {
-            return try JSONDecoder().decode(RollScansIndex.self, from: Data(contentsOf: url))
-        } catch {
-            #if DEBUG
-            print("[SourceExplorer] RollScansIndexStore: decode failed — \(error)")
-            #endif
-            return nil
-        }
-    }
 }
 
 // MARK: - DigitizedScanPresentation
@@ -183,5 +159,16 @@ struct DigitizedScanPresentation: Equatable {
         pdfURL = scan?.rollPDFURL
         pdfFilename = scan?.rollPDFURL == nil ? nil : scan?.objectFilename
         catalogURL = URL(string: roll.catalogURL)
+    }
+}
+
+// MARK: - Loading
+
+extension RollScansIndex {
+
+    /// The index in the `roll-scans-index.json` at `url`, decoded as `RollScansIndexStore` decodes the copy
+    /// bundled with the app, for a host that keeps the file elsewhere.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(RollScansIndex.self, from: Data(contentsOf: url))
     }
 }

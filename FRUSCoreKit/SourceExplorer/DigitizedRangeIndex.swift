@@ -112,7 +112,10 @@ enum DigitizedRangeMatch: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #663
-struct DigitizedRangeIndex: Codable, Sendable {
+///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit, public with its decoder, and
+///          loaded from a URL the host gives (`init(contentsOf:)`); `DigitizedRangeIndexStore`, which
+///          reads the app's bundle, stays in the app (`DigitizedRangeIndexStore.swift`)
+public struct DigitizedRangeIndex: Codable, Sendable {
     let schemaVersion: Int
     let generated: String
     let seriesNaIds: [String]
@@ -127,7 +130,7 @@ struct DigitizedRangeIndex: Codable, Sendable {
         case schemaVersion, generated, seriesNaIds, note, ranges
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try c.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
         generated = try c.decodeIfPresent(String.self, forKey: .generated) ?? ""
@@ -182,30 +185,13 @@ struct DigitizedRangeIndex: Codable, Sendable {
         pattern: #"([0-9][0-9A-Za-z.\-]*?)\s*/\s*(\d+)"#)
 }
 
-// MARK: - DigitizedRangeIndexStore
+// MARK: - Loading
 
-/// Loads the bundled `digitized-ranges-index.json` once, mirroring the other Source Explorer
-/// stores. `nil` when the resource is absent or malformed — in which case the surfaces simply
-/// show nothing extra, as before.
-enum DigitizedRangeIndexStore {
-    static let shared: DigitizedRangeIndex? = load()
+extension DigitizedRangeIndex {
 
-    private static func load() -> DigitizedRangeIndex? {
-        guard let url = Bundle.main.url(forResource: "digitized-ranges-index",
-                                        withExtension: "json") else {
-            #if DEBUG
-            print("[SourceExplorer] DigitizedRangeIndexStore: resource not found in bundle.")
-            #endif
-            return nil
-        }
-        do {
-            return try JSONDecoder().decode(DigitizedRangeIndex.self,
-                                            from: Data(contentsOf: url))
-        } catch {
-            #if DEBUG
-            print("[SourceExplorer] DigitizedRangeIndexStore: decode failed — \(error)")
-            #endif
-            return nil
-        }
+    /// The index in the `digitized-ranges-index.json` at `url`, decoded as `DigitizedRangeIndexStore` decodes
+    /// the copy bundled with the app, for a host that keeps the file elsewhere.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(DigitizedRangeIndex.self, from: Data(contentsOf: url))
     }
 }

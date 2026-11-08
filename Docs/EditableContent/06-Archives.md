@@ -1373,7 +1373,7 @@ This line replaces the catalogue link and the `HMS/MLR Entry` caption on a Sourc
 
 #### Presidential library — provenance
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/PresidentialLibraryOutcome.swift | lines: 213–217 | key: source.explorer.presLib.offline.provenance -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/PresidentialLibraryOutcome.swift | lines: 216–220 | key: source.explorer.presLib.offline.provenance -->
 
 Matched against the National Archives’ own description of this library, from the bundled catalog — no API key or network required.
 
@@ -1383,7 +1383,7 @@ Matched against the National Archives’ own description of this library, from t
 
 #### Presidential library — collection only
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/PresidentialLibraryOutcome.swift | lines: 183–188 | key: source.explorer.presLib.offline.collectionOnly -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/PresidentialLibraryOutcome.swift | lines: 186–191 | key: source.explorer.presLib.offline.collectionOnly -->
 
 The collection is identified, but the citation does not name one of its \(c.series.count) series unambiguously. Open the collection record to find the series cited.
 
@@ -1395,7 +1395,7 @@ The collection is identified, but the citation does not name one of its \(c.seri
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/PresidentialLibraryOutcome.swift | lines: 191–197 | key: source.explorer.presLib.offline.candidates -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/PresidentialLibraryOutcome.swift | lines: 194–200 | key: source.explorer.presLib.offline.candidates -->
 
 The collection is identified. The series named in the citation matches \(candidates.count) of its records, and \(shown) of those are listed below. No single record is the answer on its own, so check the titles and dates and consider consulting archivist staff at the library before citing.
 
@@ -1517,7 +1517,7 @@ CIA records are not in the NARA Catalog. The CREST database (cia.gov/readingroom
 
 *Mac. Since build 49 this wording and the next block's both live in `NamedFileSeriesRouting.swift`, shared by the two Source Explorer views; the next block shows instead when the series' name opens with the agency holding it.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NamedFileSeriesRouting.swift | lines: 323–324 | key: source.explorer.namedSeries.note -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/NamedFileSeriesRouting.swift | lines: 327–328 | key: source.explorer.namedSeries.note -->
 
 A named file series cited without a lot number. The citation does not state the holding repository, so no automated NARA Catalog query is available.
 
@@ -1529,7 +1529,7 @@ A named file series cited without a lot number. The citation does not state the 
 
 *Mac. New in build 49 (#1514): a Department of State series that is not the central files (the INR/IL, INR–NIE, Bundy and USUN files) and another agency's own series (`National Security Council, Carter Intelligence Files`) name their holder, so "does not state the holding repository" was false for them. Interpolated with the agency — the Department of State, the National Security Council, the Department of Defense. Keep the `\(holder)` placeholder; the sentence supplies "the" before it. Beside this note the provenance column no longer offers the link "Department of State records at the National Archives" (review round 1): the citation places the Department's own series it names with the Department and does not say whether any was accessioned since, and another agency's are not State records.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NamedFileSeriesRouting.swift | lines: 320–321 | key: source.explorer.namedSeries.note.held -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/NamedFileSeriesRouting.swift | lines: 324–325 | key: source.explorer.namedSeries.note.held -->
 
 A file series the citation places with the \(holder), cited without a lot number, so no automated NARA Catalog query is available.
 
@@ -1541,7 +1541,7 @@ A file series the citation places with the \(holder), cited without a lot number
 
 *iPhone and iPad.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NamedFileSeriesRouting.swift | lines: 313–314 | key: source.explorer.namedSeries.explainer -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/NamedFileSeriesRouting.swift | lines: 317–318 | key: source.explorer.namedSeries.explainer -->
 
 A named file series cited without a lot number. The repository is not stated in the citation.
 
@@ -1553,7 +1553,7 @@ A named file series cited without a lot number. The repository is not stated in 
 
 *iPhone and iPad. New in build 49 (#1514), the twin of the Mac block above. Keep the `\(holder)` placeholder. Under it the panel no longer offers the link "Department of State records at the National Archives" (review round 1), as on the Mac.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NamedFileSeriesRouting.swift | lines: 310–311 | key: source.explorer.namedSeries.explainer.held -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/NamedFileSeriesRouting.swift | lines: 314–315 | key: source.explorer.namedSeries.explainer.held -->
 
 A file series the citation places with the \(holder), cited without a lot number.
 
@@ -1649,7 +1649,7 @@ From the Department of State to %1$@, U.S. %2$@ to %3$@ (%4$@): an instruction.
 
 #### Why these are not RG 59
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/ParisPeaceRecords.swift | lines: 170–175 | key: source.explorer.parisPeace.provenance -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/ParisPeaceRecords.swift | lines: 171–176 | key: source.explorer.parisPeace.provenance -->
 
 The American Commission to Negotiate Peace kept its own decimal file, separate from the State Department’s. These records are Record Group 256, so the RG 59 central-file finding aids and filing manual do not describe them.
 
@@ -1659,7 +1659,7 @@ The American Commission to Negotiate Peace kept its own decimal file, separate f
 
 #### Why the panel will not name a roll
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/ParisPeaceRecords.swift | lines: 185–191 | key: source.explorer.parisPeace.rolls -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/ParisPeaceRecords.swift | lines: 186–192 | key: source.explorer.parisPeace.rolls -->
 
 Microfilm publication M820 reproduces the series. Most of its 538 file units are digitized, each covering a range of decimal numbers. This panel does not say which one holds this document. The ranges overlap and are not always continuous, so use the index below to find it.
 
@@ -1715,7 +1715,7 @@ This is the scan of the file range the citation falls in, not of this document. 
 
 #### Matched on the record group alone
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CatalogQueryEvidence.swift | lines: 156–161 | key: source.explorer.nara.candidates.recordGroupOnly -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CatalogQueryEvidence.swift | lines: 160–165 | key: source.explorer.nara.candidates.recordGroupOnly -->
 
 Matched by keyword within record group \(recordGroup). The record group is the one cited; nothing here ties these records to the series cited. Check the series title and dates before citing.
 
@@ -1725,7 +1725,7 @@ Matched by keyword within record group \(recordGroup). The record group is the o
 
 #### Matched on the collection name alone
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CatalogQueryEvidence.swift | lines: 163–168 | key: source.explorer.nara.candidates.collectionNameOnly -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CatalogQueryEvidence.swift | lines: 167–172 | key: source.explorer.nara.candidates.collectionNameOnly -->
 
 Searched on the repository and collection names only — no catalog identifier constrains these results to the collection cited. Treat them as leads, and prefer the finding aid above.
 
@@ -1745,7 +1745,7 @@ From a manual search. Not checked against the cited lot number or record group.
 
 #### What an export says about a manual search
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CatalogQueryEvidence.swift | lines: 129–133 | key: source.explorer.manualSearch.exportCaveat -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CatalogQueryEvidence.swift | lines: 133–137 | key: source.explorer.manualSearch.exportCaveat -->
 
 NOTE: Result of a manual free-text search. It has not been checked against the cited lot number or record group.
 
@@ -2315,7 +2315,7 @@ Related file numbers are ranked together. Open one for the exact designator a pu
 #### Files with no subject number
 *The reading beside a family that is a category alone, such as `POL` or `AID (US)`, in the Central-file classes ranking and in the Network's subject-numeric families (index version 69). Its files are the ones cited with a category and a country and no subject number between them, `POL US-USSR`; each is listed under the family with its country.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/SubjectNumericLabelStore.swift | SubjectNumericLabelTable.gloss | lines: 228–229 | key: archival.classLabel.noSubjectNumber -->
+<!-- SOURCE: FRUSCoreKit/Analytics/SubjectNumericLabelTable.swift | SubjectNumericLabelTable.gloss | lines: 235–236 | key: archival.classLabel.noSubjectNumber -->
 
 Files with no subject number
 
@@ -2531,35 +2531,35 @@ Counted from editors’ footnotes naming material FRUS did not print. A separate
 <!-- END SOURCE: collection.detail.unprinted.footer -->
 
 #### This collection is cited in the %1$@ volumes and again as…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 289–290 | key: collection.detail.timeline.narrative.gapped %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 290–291 | key: collection.detail.timeline.narrative.gapped %@ %@ -->
 
 This collection is cited in the %1$@ volumes and again as late as the %2$@ volumes, with eras in between where it does not appear.
 
 <!-- END SOURCE: collection.detail.timeline.narrative.gapped %@ %@ -->
 
 #### This collection enters the record with the %1$@ volumes and…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 294–295 | key: collection.detail.timeline.narrative.flat %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 295–296 | key: collection.detail.timeline.narrative.flat %@ %@ -->
 
 This collection enters the record with the %1$@ volumes and runs through the %2$@ volumes.
 
 <!-- END SOURCE: collection.detail.timeline.narrative.flat %@ %@ -->
 
 #### This collection enters the record with the %1$@ volumes and…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 306–307 | key: collection.detail.timeline.narrative.peak %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 307–308 | key: collection.detail.timeline.narrative.peak %@ %@ -->
 
 This collection enters the record with the %1$@ volumes and peaks across the %2$@ volumes.
 
 <!-- END SOURCE: collection.detail.timeline.narrative.peak %@ %@ -->
 
 #### This collection enters the record at its peak with the %1$@…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 314–315 | key: collection.detail.timeline.narrative.entersAtPeak %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 315–316 | key: collection.detail.timeline.narrative.entersAtPeak %@ %@ -->
 
 This collection enters the record at its peak with the %1$@ volumes and fades after the %2$@ volumes.
 
 <!-- END SOURCE: collection.detail.timeline.narrative.entersAtPeak %@ %@ -->
 
 #### This collection enters the record with the %1$@ volumes…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 319–320 | key: collection.detail.timeline.narrative.fade %@ %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 320–321 | key: collection.detail.timeline.narrative.fade %@ %@ %@ -->
 
 This collection enters the record with the %1$@ volumes, peaks across the %2$@ volumes, and fades after the %3$@ volumes.
 

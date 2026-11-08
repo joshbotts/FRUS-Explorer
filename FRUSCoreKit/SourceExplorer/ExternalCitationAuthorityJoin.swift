@@ -13,6 +13,9 @@
 // limitations under the License.
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 /// The one rule that turns a stored archival reference into a collection-authority record.
 ///

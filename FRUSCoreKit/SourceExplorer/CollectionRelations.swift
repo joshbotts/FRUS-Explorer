@@ -116,6 +116,7 @@ struct CollectionEraCount: Identifiable, Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-08: #762 (archival analytics Phase 1)
+///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit
 enum CollectionRelations {
 
     // MARK: - Related collections

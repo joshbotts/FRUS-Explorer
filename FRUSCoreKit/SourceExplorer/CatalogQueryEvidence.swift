@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - CatalogQueryEvidence
 
@@ -42,6 +45,7 @@ import Foundation
 ///   1.1 — 2026-10-02: #1543 — `forNote(_:rawNote:)` reads the note text, and a Subject-Numeric
 ///          citation takes no catalogue query in any wording; `offersManualSearch(for:rawNote:)`,
 ///          the Mac window's rule for its free-text field
+///   1.2 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit
 enum CatalogQueryEvidence: Sendable, Equatable {
 
     /// Every result carries the control number that was asked for, checked by

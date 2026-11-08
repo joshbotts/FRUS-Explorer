@@ -41,7 +41,10 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #784
-struct ExternalCitationIndex: Decodable, Sendable {
+///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit, public with its decoder, and
+///          loaded from a URL the host gives (`init(contentsOf:)`); `ExternalCitationIndexStore`, which
+///          reads the app's bundle, stays in the app (`ExternalCitationIndexStore.swift`)
+public struct ExternalCitationIndex: Decodable, Sendable {
 
     /// One archival unit's references, broken down by the volume whose footnotes made them.
     struct UnitRow: Decodable, Sendable {
@@ -328,36 +331,13 @@ struct ExternalCitationIndex: Decodable, Sendable {
     }
 }
 
-// MARK: - ExternalCitationIndexStore
+// MARK: - Loading
 
-/// Loads and caches the bundled `external-citation-index.json`.
-///
-/// `shared` is `nil` only when the resource is missing or cannot be decoded; consumers must treat
-/// that as "footnote citations are unavailable", never as "this collection is never cited".
-///
-/// Version history:
-///   1.0 — Session 2026-08-10: #784
-enum ExternalCitationIndexStore {
+extension ExternalCitationIndex {
 
-    /// The bundled index, or `nil` when unavailable.
-    static let shared: ExternalCitationIndex? = load()
-
-    private static func load() -> ExternalCitationIndex? {
-        guard let url = Bundle.main.url(forResource: "external-citation-index",
-                                        withExtension: "json") else {
-            #if DEBUG
-            print("[SourceExplorer] ExternalCitationIndexStore: external-citation-index.json not found.")
-            #endif
-            return nil
-        }
-        do {
-            return try JSONDecoder().decode(ExternalCitationIndex.self,
-                                            from: try Data(contentsOf: url))
-        } catch {
-            #if DEBUG
-            print("[SourceExplorer] ExternalCitationIndexStore: decode failed — \(error)")
-            #endif
-            return nil
-        }
+    /// The index in the `external-citation-index.json` at `url`, decoded as `ExternalCitationIndexStore`
+    /// decodes the copy bundled with the app, for a host that keeps the file elsewhere.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(ExternalCitationIndex.self, from: Data(contentsOf: url))
     }
 }

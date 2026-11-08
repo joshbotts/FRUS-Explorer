@@ -41,6 +41,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-06: #681, wires the bundled catalogue into both Source Explorer views
+///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit;
+///          `resolve(repository:collection:note:index:curated:)` takes both tables, and the app's
+///          overload without them passes its two stores (`PresidentialLibraryOutcome+App.swift`)
 enum PresidentialLibraryOutcome: Sendable, Equatable {
 
     /// One series inside one verified collection — safe to present as the resolution.
@@ -70,8 +73,8 @@ enum PresidentialLibraryOutcome: Sendable, Equatable {
     ///   - collection: the level-1 segment (`National Security Files`).
     ///   - note: the raw source note, which is where the level-2 series segment has to come from
     ///     — the per-document parse keeps only level 1.
-    ///   - index: the bundled catalogue; injectable so tests do not depend on `Bundle.main`.
-    ///   - curated: the curated bridge table, likewise injectable.
+    ///   - index: the catalogue; the app passes its bundled one (`PresidentialLibraryOutcome+App.swift`).
+    ///   - curated: the curated bridge table, likewise.
     ///
     /// Repositories the National Archives does not administer resolve to ``none`` without a
     /// special case: they are not in the harvest, so ``PresidentialLibraryIndex/library(for:)``
@@ -80,8 +83,8 @@ enum PresidentialLibraryOutcome: Sendable, Equatable {
         repository: String,
         collection: String,
         note: String,
-        index: PresidentialLibraryIndex? = PresidentialLibraryIndexStore.shared,
-        curated: CuratedLibraryResolutions? = CuratedLibraryResolutionsStore.shared
+        index: PresidentialLibraryIndex?,
+        curated: CuratedLibraryResolutions?
     ) -> PresidentialLibraryOutcome {
         guard let index else { return .none }
         let subCollection = CuratedLibraryResolutions.subCollection(

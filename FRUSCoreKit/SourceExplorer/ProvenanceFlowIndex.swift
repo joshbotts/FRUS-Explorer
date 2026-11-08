@@ -38,7 +38,10 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-08: #764
-struct ProvenanceFlowIndex: Decodable, Sendable {
+///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit, public with its decoder, and
+///          loaded from a URL the host gives (`init(contentsOf:)`); `ProvenanceFlowIndexStore`, which
+///          reads the app's bundle, stays in the app (`ProvenanceFlowIndexStore.swift`)
+public struct ProvenanceFlowIndex: Decodable, Sendable {
 
     /// One ordered (source → target) pair and its reference count.
     struct Flow: Decodable, Sendable {
@@ -142,36 +145,13 @@ struct ProvenanceFlowIndex: Decodable, Sendable {
     }
 }
 
-// MARK: - ProvenanceFlowIndexStore
+// MARK: - Loading
 
-/// Loads and caches the bundled `provenance-flow-index.json`.
-///
-/// `shared` is `nil` only when the resource is missing or cannot be decoded; consumers must treat
-/// that as "reference flows are unavailable", never as "this collection references nothing".
-///
-/// Version history:
-///   1.0 — Session 2026-08-08: #764
-enum ProvenanceFlowIndexStore {
+extension ProvenanceFlowIndex {
 
-    /// The bundled flow index, or `nil` when unavailable.
-    static let shared: ProvenanceFlowIndex? = load()
-
-    private static func load() -> ProvenanceFlowIndex? {
-        guard let url = Bundle.main.url(forResource: "provenance-flow-index",
-                                        withExtension: "json") else {
-            #if DEBUG
-            print("[SourceExplorer] ProvenanceFlowIndexStore: provenance-flow-index.json not found.")
-            #endif
-            return nil
-        }
-        do {
-            return try JSONDecoder().decode(ProvenanceFlowIndex.self,
-                                            from: try Data(contentsOf: url))
-        } catch {
-            #if DEBUG
-            print("[SourceExplorer] ProvenanceFlowIndexStore: decode failed — \(error)")
-            #endif
-            return nil
-        }
+    /// The flow index in the `provenance-flow-index.json` at `url`, decoded as `ProvenanceFlowIndexStore`
+    /// decodes the copy bundled with the app, for a host that keeps the file elsewhere.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(ProvenanceFlowIndex.self, from: Data(contentsOf: url))
     }
 }

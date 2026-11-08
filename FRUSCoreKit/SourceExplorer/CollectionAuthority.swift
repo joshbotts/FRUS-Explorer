@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - AuthorityCollectionRecord
 
@@ -22,6 +25,10 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-07-03 (Source Explorer Phase 4 step 2): initial implementation
+///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit with the authority it is read
+///          from; `CollectionAuthorityIndex` is public with its decoder and loaded from a URL the host
+///          gives (`init(contentsOf:)`), and `CollectionAuthorityStore`, which reads the app's bundle,
+///          stays in the app (`CollectionAuthorityStore.swift`)
 struct AuthorityCollectionRecord: Decodable, Sendable, Equatable, Identifiable {
     /// Stable dedup key: `"lot:" + lotFileNorm` or `"txt:" + repoNorm + "|" + segmentNorm`.
     let id: String
@@ -161,7 +168,7 @@ struct AuthoritySubSeriesRecord: Decodable, Sendable, Equatable, Hashable {
 ///
 /// All keys are produced by `SourceNoteKit.CollectionKeying` — the same functions the
 /// generator clustered with, so lookups agree with the artifact by construction.
-struct CollectionAuthorityIndex: Decodable, Sendable {
+public struct CollectionAuthorityIndex: Decodable, Sendable {
 
     /// Artifact schema version.
     let schemaVersion: Int
@@ -184,7 +191,7 @@ struct CollectionAuthorityIndex: Decodable, Sendable {
         case schemaVersion, generated, collections
     }
 
-    init(from decoder: any Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try c.decode(Int.self, forKey: .schemaVersion)
         generated = try c.decode(String.self, forKey: .generated)
@@ -337,42 +344,13 @@ extension IndexingPipeline.CollectionAliasFallback {
     }
 }
 
-// MARK: - CollectionAuthorityStore
+// MARK: - Loading
 
-/// Loads and caches the bundled `collection-authority.json`.
-///
-/// The index is decoded once, lazily, on first access; views warm it off the main
-/// thread before their first per-row lookup (`Task.detached { _ = shared }` — the
-/// `VolumeSourcesIndexStore` pattern). `shared` is `nil` only when the resource is
-/// missing or cannot be decoded (logged in DEBUG).
-///
-/// Version history:
-///   1.0 — Session 2026-07-03 (Source Explorer Phase 4 step 2): initial implementation
-///   1.1 — Session 2026-07-04 (Phase 4 verification): alias/segment lookups use the
-///          plural-folded `CollectionKeying.segmentNorm`
-///   1.2 — Session 2026-07-04 (Phase 4 adversarial review): lookup step 3 (the
-///          unattributed bucket) is guarded — generic segments never bridge, and the
-///          unattributed record must be the sole text record carrying the segment
-enum CollectionAuthorityStore {
+extension CollectionAuthorityIndex {
 
-    /// The bundled collection authority, or `nil` if unavailable. Loaded once.
-    static let shared: CollectionAuthorityIndex? = load()
-
-    private static func load() -> CollectionAuthorityIndex? {
-        guard let url = Bundle.main.url(forResource: "collection-authority", withExtension: "json") else {
-            #if DEBUG
-            print("[SourceExplorer] CollectionAuthorityStore: collection-authority.json not found in bundle.")
-            #endif
-            return nil
-        }
-        do {
-            let data = try Data(contentsOf: url)
-            return try JSONDecoder().decode(CollectionAuthorityIndex.self, from: data)
-        } catch {
-            #if DEBUG
-            print("[SourceExplorer] CollectionAuthorityStore: failed to decode collection-authority.json — \(error)")
-            #endif
-            return nil
-        }
+    /// The authority in the `collection-authority.json` at `url`, decoded as `CollectionAuthorityStore`
+    /// decodes the copy bundled with the app, for a host that keeps the file elsewhere.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(CollectionAuthorityIndex.self, from: Data(contentsOf: url))
     }
 }

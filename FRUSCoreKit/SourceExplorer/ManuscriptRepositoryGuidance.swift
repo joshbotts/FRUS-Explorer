@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - ManuscriptRepositoryGuidance
 
@@ -102,6 +105,7 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 2026-08-07: #354 item 4, repository-level finding-aid guidance
 ///   1.1 — Session 2026-08-23: three moved URLs re-pointed; `.redirectTarget` added
+///   1.2 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit
 enum ManuscriptRepositoryGuidance {
 
     // MARK: - Verification
