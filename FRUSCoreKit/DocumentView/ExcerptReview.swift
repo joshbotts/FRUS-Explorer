@@ -114,10 +114,12 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — R-5 P3b-4: initial implementation
-enum ExcerptReview {
+///   1.1 — Session 2026-11-08 (FRUS Explorer Light, S21a): moved into FRUSCoreKit from the app's
+///          `DocumentView/`, public, and otherwise unchanged
+public enum ExcerptReview {
 
     /// Which version of the text a stored quotation was taken from, relative to the text now.
-    enum Capture: Equatable, Sendable {
+    public enum Capture: Equatable, Sendable {
         /// Captured from the text as it currently reads: the correction did not reach this
         /// document, or reached it after the capture.
         case current
@@ -138,7 +140,7 @@ enum ExcerptReview {
     ///   - currentVersion: the document's current `renderingVersion`, or the revision row's
     ///     `bodyHash` — the sheet's `effectiveVersion`, the same input `HighlightReview.status`
     ///     takes.
-    static func capture(storedVersion: String?, currentVersion: String?) -> Capture {
+    public static func capture(storedVersion: String?, currentVersion: String?) -> Capture {
         guard let currentVersion, !currentVersion.isEmpty else { return .unverifiable }
         guard let storedVersion, !storedVersion.isEmpty else { return .unversioned }
         return storedVersion == currentVersion ? .current : .earlier
@@ -149,7 +151,7 @@ enum ExcerptReview {
     /// `documentVanished` is reachable here only because the caller applied
     /// `ExcerptVerifier.upgradingVanished`; the verifier itself reads a vanished document and a
     /// freed volume alike.
-    static func findingLine(_ outcome: ExcerptVerifier.Outcome) -> String {
+    public static func findingLine(_ outcome: ExcerptVerifier.Outcome) -> String {
         switch outcome {
         case .verified:
             return String(localized: "document.review.excerpt.verified",
@@ -178,7 +180,7 @@ enum ExcerptReview {
     /// to report, and the second has nothing to report it FROM — the sheet's own change section
     /// already says the device holds no record to compare against, and repeating it per row would
     /// read as a fact about the quotation.
-    static func captureLine(_ capture: Capture) -> String? {
+    public static func captureLine(_ capture: Capture) -> String? {
         switch capture {
         case .current, .unverifiable:
             return nil
@@ -210,7 +212,7 @@ enum ExcerptReview {
     /// asserting the words never matched would be false for the commonest correction there is.
     ///
     /// - Returns: the finding, always; and the capture line, only where it adds something true.
-    static func lines(outcome: ExcerptVerifier.Outcome,
+    public static func lines(outcome: ExcerptVerifier.Outcome,
                       storedVersion: String?,
                       currentVersion: String?) -> (finding: String, capture: String?) {
         let capture = outcome == .documentVanished
@@ -226,5 +228,5 @@ enum ExcerptReview {
     /// gets ignored. A capture from an earlier version is NOT a warning on its own — it is the
     /// ordinary state of every quotation taken before a correction, including the ones the
     /// correction left untouched.
-    static func isWarning(_ outcome: ExcerptVerifier.Outcome) -> Bool { outcome.isFailure }
+    public static func isWarning(_ outcome: ExcerptVerifier.Outcome) -> Bool { outcome.isFailure }
 }

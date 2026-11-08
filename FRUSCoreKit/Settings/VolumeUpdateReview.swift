@@ -22,24 +22,26 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — R-5 P2: initial implementation
-enum VolumeUpdateReview {
+///   1.1 — Session 2026-11-08 (FRUS Explorer Light, S21a): moved into FRUSCoreKit from the app's
+///          `Settings/`, public, and otherwise unchanged
+public enum VolumeUpdateReview {
 
     /// One updated volume's change set, split the way the reader will read it.
-    struct VolumeSummary: Equatable, Identifiable, Sendable {
+    public struct VolumeSummary: Equatable, Identifiable, Sendable {
         /// The volume the update rewrote.
-        let volumeId: String
+        public let volumeId: String
         /// Every document the update changed, annotated or not — the denominator.
-        let changedDocuments: Int
+        public let changedDocuments: Int
         /// Changed documents carrying at least one of the reader's annotations.
-        let annotatedDocuments: Int
+        public let annotatedDocuments: Int
         /// Of the annotated ones: the text changed, so highlight positions may have moved.
-        let body: Int
+        public let body: Int
         /// Of the annotated ones: footnotes, source note, or heading changed; the text did not.
-        let apparatus: Int
+        public let apparatus: Int
         /// Of the annotated ones: no longer in the volume.
-        let vanished: Int
+        public let vanished: Int
 
-        var id: String { volumeId }
+        public var id: String { volumeId }
     }
 
     /// Per-volume summaries for every volume with an unreviewed, stamped change.
@@ -49,7 +51,7 @@ enum VolumeUpdateReview {
     /// list is stable across reloads. A volume whose changes touch nothing the reader annotated
     /// is still listed (with `annotatedDocuments == 0`); the caller decides whether to show it.
     /// Rows without a stamp (the first index of a volume) and reviewed rows are not changes.
-    static func summaries(revisions: [IndexingPipeline.DocumentRevision],
+    public static func summaries(revisions: [IndexingPipeline.DocumentRevision],
                           annotatedKeys: Set<String>) -> [VolumeSummary] {
         struct Tally { var changed = 0, annotated = 0, body = 0, apparatus = 0, vanished = 0 }
         var byVolume: [String: Tally] = [:]
@@ -79,14 +81,14 @@ enum VolumeUpdateReview {
     }
 
     /// The whole picture in three numbers: changed documents, volumes, annotated documents.
-    struct Totals: Equatable, Sendable {
-        let changedDocuments: Int
-        let volumes: Int
-        let annotatedDocuments: Int
+    public struct Totals: Equatable, Sendable {
+        public let changedDocuments: Int
+        public let volumes: Int
+        public let annotatedDocuments: Int
     }
 
     /// Sums over `summaries` — the sentence the status row states.
-    static func totals(of summaries: [VolumeSummary]) -> Totals {
+    public static func totals(of summaries: [VolumeSummary]) -> Totals {
         Totals(changedDocuments: summaries.reduce(0) { $0 + $1.changedDocuments },
                volumes: summaries.count,
                annotatedDocuments: summaries.reduce(0) { $0 + $1.annotatedDocuments })

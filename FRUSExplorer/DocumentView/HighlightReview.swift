@@ -31,25 +31,19 @@ import SwiftData
 /// Version history:
 ///   1.0 — R-5 P3: initial implementation
 ///   1.1 — R-5 P3b-3: `locate` and `move` join it, in `HighlightReanchor.swift`
-enum HighlightReview {
-
-    /// How a stored highlight stands against the text the reader would see now.
-    enum Status: Equatable, Sendable {
-        /// Its `renderingVersion` is the document's current one: the offsets are exact.
-        case aligned
-        /// Made against an earlier rendering; positions may have moved. `hasPassage` says whether
-        /// the highlight stored the words it covered — without them it can only be reviewed by eye.
-        case stale(hasPassage: Bool)
-        /// Nothing to compare against: no open render model and no revision row on this device.
-        case unverifiable
-    }
+///   1.2 — Session 2026-11-08 (FRUS Explorer Light, S21a): `Status` and the status rule moved into
+///          FRUSCoreKit (`DocumentView/HighlightReviewStatus.swift`), which declares the type, so
+///          this file extends it; `status(of:currentVersion:)` reads the highlight's two values into
+///          the kit's `status(renderingVersion:selectedText:currentVersion:)`
+extension HighlightReview {
 
     /// The status of `highlight` against `currentVersion` — the open document's
-    /// `renderingVersion`, or the revision row's `bodyHash` (P1 pinned the two equal), or nil.
+    /// `renderingVersion`, or the revision row's `bodyHash` (P1 pinned the two equal), or nil:
+    /// FRUSCoreKit's `status(renderingVersion:selectedText:currentVersion:)` over the two values the
+    /// highlight stores.
     static func status(of highlight: DocumentHighlight, currentVersion: String?) -> Status {
-        guard let currentVersion, !currentVersion.isEmpty else { return .unverifiable }
-        if highlight.renderingVersion == currentVersion { return .aligned }
-        return .stale(hasPassage: !highlight.selectedText.isEmpty)
+        status(renderingVersion: highlight.renderingVersion, selectedText: highlight.selectedText,
+               currentVersion: currentVersion)
     }
 
     /// Confirm: the reader has looked and the highlight stands. Rewrites the version the highlight
