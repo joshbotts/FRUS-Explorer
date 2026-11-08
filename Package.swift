@@ -675,13 +675,14 @@ let package = Package(
         /// both app targets via a `project.yml` path entry, so the app and FRUS Explorer Light, the
         /// web edition, which compiles this directory on Linux, render, cite, index, search and look
         /// up citations through the same code.
-        /// Foundation only: CryptoKit, FoundationXML, OSLog, SQLite3, FTS5Store and SourceNoteKit
-        /// are imported behind `canImport`, and the stand-ins under `Linux/` compile to nothing on
-        /// Apple platforms. On Linux, the web edition's package supplies swift-crypto's `Crypto` and
-        /// the SQLite headers.
+        /// Foundation only: CryptoKit, FoundationXML, OSLog, SQLite3, FTS5Store, SourceNoteKit and
+        /// TEIHeaderKit are imported behind `canImport`, and the stand-ins under `Linux/` compile to
+        /// nothing on Apple platforms. On Linux, the web edition's package supplies swift-crypto's
+        /// `Crypto` and the SQLite headers. TEIHeaderKit, since the library's rules moved in (FRUS
+        /// Explorer Light's S21a), reads a side-loaded volume's header for `LocalVolumeCatalog`.
         .target(
             name: "FRUSCoreKit",
-            dependencies: [.target(name: "SourceNoteKit"), .target(name: "FTS5Store")],
+            dependencies: [.target(name: "SourceNoteKit"), .target(name: "FTS5Store"), .target(name: "TEIHeaderKit")],
             path: "FRUSCoreKit",
             swiftSettings: [.swiftLanguageMode(.v6)],
             linkerSettings: [.linkedLibrary("sqlite3")]

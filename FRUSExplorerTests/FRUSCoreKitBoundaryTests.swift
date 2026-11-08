@@ -73,6 +73,8 @@ import Testing
 ///   1.3 — Session 2026-11-08 (FRUS Explorer Light, S21a): the app-name walk's sanity set names
 ///         `decodeFRUSSelectionEvent`, since `frusSubseries` moved into the kit with the live
 ///         listing's diff
+///   1.4 — Session 2026-11-08 (FRUS Explorer Light, S21a): the kit may import TEIHeaderKit behind
+///         `canImport(TEIHeaderKit)`, as `LocalVolumeCatalog` does since it moved into the kit
 @Suite("FRUSCoreKit — Foundation only, and nothing that lives in the app")
 struct FRUSCoreKitBoundaryTests {
 
@@ -104,6 +106,8 @@ struct FRUSCoreKitBoundaryTests {
     /// The indexer's modules joined in part 2: OSLog, whose Linux stand-in is `Linux/LinuxOSLogShims.swift`;
     /// SQLite3, for which the web edition supplies `CSQLite` on Linux; and FTS5Store, a module of its
     /// own in a package and compiled into the app in Xcode, where `canImport(FTS5Store)` is false.
+    /// TEIHeaderKit joined with the library's rules (FRUS Explorer Light's S21a), the same way as
+    /// FTS5Store: `LocalVolumeCatalog` reads a side-loaded volume's header with it.
     static let permittedImports: [String: (condition: String, inElse: Bool)] = [
         "FoundationXML": ("canImport(FoundationXML)", false),
         "CryptoKit": ("canImport(CryptoKit)", false),
@@ -113,6 +117,7 @@ struct FRUSCoreKitBoundaryTests {
         "SQLite3": ("canImport(SQLite3)", false),
         "CSQLite": ("canImport(SQLite3)", true),
         "FTS5Store": ("canImport(FTS5Store)", false),
+        "TEIHeaderKit": ("canImport(TEIHeaderKit)", false),
     ]
 
     /// Each import in `source` that breaks the kit's rule, as `line: import`: Foundation anywhere;
@@ -162,6 +167,8 @@ struct FRUSCoreKitBoundaryTests {
         #expect(Self.importRuleViolations(in: "#if canImport(SQLite3)\nimport SQLite3\n#else\nimport CSQLite\n#endif\n").isEmpty)
         #expect(Self.importRuleViolations(in: "#if canImport(OSLog)\nimport OSLog\n#endif\n").isEmpty)
         #expect(Self.importRuleViolations(in: "#if canImport(FTS5Store)\nimport FTS5Store\n#endif\n").isEmpty)
+        #expect(Self.importRuleViolations(in: "#if canImport(TEIHeaderKit)\nimport TEIHeaderKit\n#endif\n").isEmpty)
+        #expect(Self.importRuleViolations(in: "import TEIHeaderKit\n") == ["1: import TEIHeaderKit"])
         // Apple-only, guarded or not.
         #expect(Self.importRuleViolations(in: "import SwiftUI\n") == ["1: import SwiftUI"])
         #expect(Self.importRuleViolations(in: "#if canImport(SwiftUI)\nimport SwiftUI\n#endif\n") == ["2: import SwiftUI"])

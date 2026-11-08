@@ -65,14 +65,14 @@ This deletes the whole record of your work: every document you opened, every sea
 <!-- END SOURCE: settings.sessions.manage.footer.whole -->
 
 #### iCloud unavailable (Local Only) detail
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 239–240 | key: settings.icloud.localOnly.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 242–243 | key: settings.icloud.localOnly.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->
 
 iCloud sync is unavailable. Notes, tags, and collections won’t sync across devices. Check that you are signed in to iCloud in Settings and that FRUS Explorer has iCloud access.
 
 <!-- END SOURCE: settings.icloud.localOnly.detail -->
 
 #### iCloud zone-missing detail
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 275–276 | key: settings.icloud.zoneMissing.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 278–279 | key: settings.icloud.zoneMissing.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->
 
 The iCloud sync zone is missing. Data cannot upload or download until it is recreated. Force-quit and relaunch the app, or use Settings → Data & Recovery → Fix iCloud Sync.
 

@@ -39,6 +39,8 @@ import CloudKit
 ///   1.0 — one status row for a signed-out device
 ///   1.1 — the zone-listing rule (a failed listing is unknown, not missing) and the three
 ///          `checkCloudKitHealth()` wirings a unit test cannot drive, pinned by source
+///   1.2 — Session 2026-11-08 (FRUS Explorer Light, S21a): the status-row scan ends at the mark
+///          after the row, `SideloadCatalogueNotice`'s, since `SideloadError` moved into FRUSCoreKit
 @Suite("iCloud status summary")
 @MainActor
 struct ICloudStatusSummaryTests {
@@ -270,7 +272,7 @@ struct ICloudStatusSummaryTests {
     func settingsStatusLabelsSetTheirStyle() throws {
         let source = try appSource("FRUSExplorer/Settings/SettingsView.swift")
         let start = try #require(source.range(of: "private var iCloudSyncStatusRow: some View {"))
-        let end = try #require(source.range(of: "// MARK: - SideloadError",
+        let end = try #require(source.range(of: "// MARK: - SideloadCatalogueNotice",
                                              range: start.upperBound..<source.endIndex))
         let code = source[start.lowerBound..<end.lowerBound]
             .components(separatedBy: "\n")
