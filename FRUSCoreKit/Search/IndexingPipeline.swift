@@ -524,6 +524,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.55 — 2026-11-06: `currentDateIndexVersion` → 74 — a `<list type="index">` inside a persons
 ///         section stores no `persons` row, and its division is an `index` in `volume_structures`:
 ///         `frus1941-43`'s Index of Persons (see the v74 note)
+///  4.56 — 2026-11-08 (FRUS Explorer Light S21a): `consolidatePersonRollup(overrides:forceReload:)` is
+///         public, as a live merge needs, for a host's corrections; `setStopsBetweenBatchesWhenCancelled(_:)`
+///         has `indexVolume` stop after a batch of a volume's documents, and `finishIndexing` before its
+///         next volume, when its task is cancelled, for a host that asks; the app does not, so its passes
+///         run as before
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -607,6 +612,36 @@ public actor IndexingPipeline {
 
     /// Test hook: overrides the effective batch size.
     func setTestBatchSize(_ size: Int) { _dynamicBatchSize = size }
+
+    // MARK: - Stopping between batches (FRUS Explorer Light, S21a)
+
+    /// Whether `indexVolume(_:)` stops after a batch of a volume's documents when its task is
+    /// cancelled: off unless a host turns it on (`setStopsBetweenBatchesWhenCancelled(_:)`), and the
+    /// app never does.
+    private(set) var stopsBetweenBatchesWhenCancelled = false
+
+    /// Has `indexVolume(_:)` check for cancellation after each batch of a volume's documents it
+    /// writes, and throw `CancellationError` there when its task has been cancelled. A host whose
+    /// indexing job can be cancelled turns it on, so the job stops within a volume and not only
+    /// between volumes.
+    ///
+    /// The pass stops as a pass cut short does (#1566): the batches before the stop are committed and
+    /// nothing after them is written, so the volume's structure row stays withdrawn,
+    /// `volumesWithUnfinishedStore()` names the volume and `finishIndexing(of:)` completes it, and the
+    /// stream sends `.failed`. A pass whose task is not cancelled runs to its end as before. Off, a
+    /// cancelled pass runs to its end too, as the app's always have: the app cancels one, the
+    /// background indexing task iOS expires, whose pass goes on until the app is suspended.
+    ///
+    /// A batch is `effectiveBatchSize` documents: 50 on iOS (20 after a memory warning), and a whole
+    /// volume on the Mac and on Linux, where the check comes once, after the volume's documents and
+    /// before its other tables.
+    /// `finishIndexing(of:)`, which runs `indexVolume(_:)` over a list, also stops before its next
+    /// volume; the whole-library pass, `indexAllVolumes()`, never stops for it.
+    ///
+    /// - Parameter stops: Whether `indexVolume(_:)` stops.
+    public func setStopsBetweenBatchesWhenCancelled(_ stops: Bool) {
+        stopsBetweenBatchesWhenCancelled = stops
+    }
 
     /// Test hook: exposes `effectiveConcurrencyLimit` for platform-specific assertions.
     func testEffectiveConcurrencyLimit() -> Int { effectiveConcurrencyLimit }
@@ -1881,7 +1916,11 @@ public actor IndexingPipeline {
     ///   - forceReload: When `false`, reuses the in-memory snapshot of cluster inputs from the last
     ///     load so a single correction re-applies fast (the expensive `persons`/mention-era load is
     ///     skipped). The gated launch/post-index path passes `true`.
-    func consolidatePersonRollup(overrides: [PersonClusterOverrideData] = [], forceReload: Bool = true) throws {
+    ///
+    /// Public since FRUS Explorer Light's S21a, for a host's live merge and split: the app's
+    /// `PersonClusterOverrideStore` calls it, with `forceReload: false`, as the People screen's
+    /// corrections are made.
+    public func consolidatePersonRollup(overrides: [PersonClusterOverrideData] = [], forceReload: Bool = true) throws {
         let inputs: [PersonClusterInput]
         if !forceReload, let cached = cachedClusterInputs {
             inputs = cached
@@ -2667,7 +2706,7 @@ public actor IndexingPipeline {
         emitMetadata(buildMetadata(from: data))
 
         let storeStart = Date()
-        try await storeIndexData(data)
+        try await storeIndexData(data, stopsBetweenBatches: stopsBetweenBatchesWhenCancelled)
         if let hook = volumeStoredTestHook { await hook(volumeId) }
         let storeElapsed = Date().timeIntervalSince(storeStart)
         logger.info("indexVolume: \(volumeId, privacy: .public) stored in \(String(format: "%.1f", storeElapsed), privacy: .public)s")
@@ -3706,13 +3745,16 @@ public actor IndexingPipeline {
     /// (#1566).
     ///
     /// A volume another pass has finished since the list was read is passed over, and so is one
-    /// whose pass fails; the rest go on.
+    /// whose pass fails; the rest go on. For a host that turned on
+    /// `setStopsBetweenBatchesWhenCancelled(_:)`, a cancelled task stops the pass before its next
+    /// volume, as it stops the volume under way; the app's passes go on as before.
     ///
     /// - Returns: The ids it indexed, in order.
     @discardableResult
     public func finishIndexing(of volumeIds: [String]) async -> [String] {
         var indexed: [String] = []
         for volumeId in volumeIds {
+            if stopsBetweenBatchesWhenCancelled, Task.isCancelled { break }
             if (try? isVolumeIndexed(volumeId)) == true, (try? isStoreUnfinished(volumeId)) == false { continue }
             do {
                 try await indexVolume(volumeId)
@@ -6679,7 +6721,8 @@ public actor IndexingPipeline {
     // MARK: - Storage
 
     private func storeIndexData(_ data: VolumeIndexData,
-                                revisions: RevisionRecording = .stamp) async throws {
+                                revisions: RevisionRecording = .stamp,
+                                stopsBetweenBatches: Bool = false) async throws {
         guard !data.documentCache.isEmpty else { return }
 
         // --- document_cache insertion, batched for the iOS memory throttle ---
@@ -6746,6 +6789,10 @@ public actor IndexingPipeline {
             volumeDocumentsProcessed = processed
             // Yield between batches so the OS can reclaim per-batch allocations.
             await Task.yield()
+            // A host that asked for it (`setStopsBetweenBatchesWhenCancelled(_:)`) stops here when its
+            // task is cancelled, with this batch and those before it committed: the state a pass cut
+            // short leaves (#1566), which `finishIndexing(of:)` completes. Only `indexVolume` asks.
+            if stopsBetweenBatches { try Task.checkCancellation() }
         }
 
         // --- Remaining auxiliary tables — separate transactions per operation ---
