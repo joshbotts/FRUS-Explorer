@@ -9817,3 +9817,92 @@ From `v2` at `dcf178e` (#1853 merged), on `claude/cool-borg-34f5fa`, a side sess
 - **The pull request**: opened as #1864 on the owner's word ("Push and open it"). The merge is the owner's.
 - **Filing the note** (B.1), after #1864 merges so that its links resolve.
 - **No printed page was read.** The questions wait on the page: item 1's eight and item 5's two.
+
+## Session 2026-11-08 — The library's rules are FRUSCoreKit's: the corrections check, side-loading and the update review's rules, with a stop between the indexer's batches a host can ask for, so FRUS Explorer Light's server keeps its library as the app does
+
+**What and why.**
+- **Whose session.** FRUS Explorer Light's session (its plan's row S21a), in a pull request of its own.
+- **What it is for.** Its phase 3 brings the library to its Compose install: a server that downloads, side-loads, indexes and updates its volumes, finds the ones corrected upstream, and reviews the research a correction touched.
+- **Why the move.** The rules for each were app code the server cannot compile, and FRUS Explorer Light copies none of the app's code.
+- **Base.** Cut from `v2` at `fe9325b2`, and rebased onto `184f9c3c` once #1868 had merged.
+
+**Changed**, with no change of behaviour on Apple platforms. Each declaration keeps its name and its body, and is public where a host calls it.
+- **The corrections check** (`FRUSCoreKit/Downloads/VolumeUpdateChecker.swift`, moved).
+  - It holds `hasUpdate(local:live:)`, `LocalVolumeInfo`, `UpdatableVolume`, and `gitBlobSHA1(for:)`, moved from `DownloadManager`, whose own forwards to it.
+  - `updatableVolumes` reads a new protocol, `DownloadedVolumeFiles`, of the three `DownloadManager` methods it called, and `DownloadManager` conforms with no new code.
+  - The hash is CryptoKit's on Apple platforms and swift-crypto's elsewhere.
+- **The live listing's diff** (`FRUSCoreKit/Models/Manifest/ManifestLiveDiff.swift`, new).
+  - `ManifestDiffResult`, `LiveVolumeInfo`, `NewlyAvailableVolume` and `frusSubseries(from:)`, from `ManifestStore.swift`.
+  - `GitHubLiveEntry`, no longer private, with the fetch's decode and filter as `volumes(inListing:)`.
+  - The store's private `diff(bundled:live:)` and `subseries(from:)`, as statics of `ManifestDiffResult`.
+  - `ManifestStore` keeps its fetch, its state and `LiveListingError`.
+- **Side-loading.**
+  - `SideloadError`, `SideloadValidator` (with a public `init()`) and `RootElementSnifferDelegate`, from `SettingsView.swift`, are in `FRUSCoreKit/Settings/SideloadValidator.swift`. They write `_ = xmlParser.parse()`, since FoundationXML's `parse()` is not discardable.
+  - `LocalVolumeCatalog` moved to `FRUSCoreKit/Models/Manifest/`. It reads a volume's header with TEIHeaderKit, which the package's FRUSCoreKit target now depends on, behind `canImport(TEIHeaderKit)`, and `FRUSCoreKitBoundaryTests` permits it.
+- **The update review's rules.**
+  - `VolumeUpdateReview` moved to `FRUSCoreKit/Settings/` and `ExcerptReview` to `FRUSCoreKit/DocumentView/`, public.
+  - `HighlightReview`'s `Status` and its rule over a highlight's two stored values, `status(renderingVersion:selectedText:currentVersion:)`, are in `FRUSCoreKit/DocumentView/HighlightReviewStatus.swift`, which declares the type.
+  - The app's `HighlightReview.swift` extends it with `status(of:currentVersion:)`, which reads the model's two values into the rule, and with confirm and delete.
+- **The indexer** (`IndexingPipeline` 4.56).
+  - `consolidatePersonRollup(overrides:forceReload:)` is public, as a live merge needs.
+  - `setStopsBetweenBatchesWhenCancelled(_:)` is off by default, and the app never turns it on. With it on, a host's cancelled `indexVolume` throws `CancellationError` after a batch of a volume's documents, as a pass cut short stops (#1566), and `finishIndexing(of:)` stops before its next volume.
+  - Why the app leaves it off: it cancels one pass, the background indexing task iOS expires, and that pass runs on as before.
+- **Two suites moved.** `DocumentRevisionsTests` and `CorrectedVolumeReindexTests` are in `FRUSExplorerTests/FRUSCoreKit/`, with the kit's header. The one test and the one assertion that need the app, `GeneratedSummary` and `DocumentChangeBanner`, sit inside `#if !SWIFT_PACKAGE`.
+- **Docs.**
+  - `CLAUDE.md`'s FRUSCoreKit entry, its directory map and its forwarders.
+  - Version-history lines in every file changed.
+  - `project.yml`'s export comment.
+  - 31 `Docs/EditableContent` ranges re-pointed (24 into `SettingsView.swift`, 7 into `ExcerptReview.swift`), with two Amendment-Log bullets.
+- **The project.** `xcodegen generate`, with the schemes restored.
+
+**Tests.**
+- **New.** `UnfinishedStoreTests` gains three tests:
+  - with the stop on, a pass cancelled after its first batch throws with that batch alone stored, and the launch pass finishes the volume;
+  - with it on, a cancelled launch pass stops before its next volume;
+  - with it off, the same cancelled passes store everything.
+- **Counts.**
+  - `FRUSCoreKitTests` goes from 1,348 tests in 182 suites to 1,381 in 184: the moved suites' 28 and 2, and the 3 new tests.
+  - The iOS unit target goes from 7,898 tests in 946 suites to 7,901 in 946.
+- **Moved unchanged.** A script normalizes each moved declaration on both sides and diffs them. 8 of 17 are identical, and the other 9 differ only by the changes above.
+
+**Two cold reviews**, given the diff and no conclusions.
+- **Both** found that the moved `DocumentRevisionsTests` named `DocumentChangeBanner` outside the package's guard, so the package's tests would not have compiled.
+- **One** found that `finishIndexing(of:)`, with the stop on, would have gone on parsing every volume left.
+- **Both** found `CLAUDE.md` not yet updated, and doc lines naming the old homes.
+- The fixes are folded into the commits, and every run below is at their head, `738654ab`.
+
+**Apple platforms, and how that was checked.** Each heavy job through `Scripts/heavy.sh`, one at a time, with Xcode 27.2 (27B52) on macOS 27.2, clean and unsigned, beside `v2` @ `184f9c3c` built and run the same way from a worktree. This entry was added after the runs.
+- **`FRUSExplorerMac`**, Debug: "** BUILD SUCCEEDED **" both, with the same two warning lines.
+- **The symbol diff,** normalized as before: 256,690 names on `v2` and 256,727 here, 168 removed and 205 added. Every name removed is a moved or renamed declaration's and is back among the added: the live entry's 114, private before, as the public `GitHubLiveEntry`'s; the store's `diff(bundled:live:)` and `subseries(from:)`, as `ManifestDiffResult`'s statics; the fetch, whose type names the entry, and its filter, now `volumes(inListing:)`; the hash's closure, under `VolumeUpdateChecker`; `storeIndexData`, with its new parameter; and `updatableVolumes`, now generic. One more, the generator of `consolidatePersonRollup`'s first default argument, goes because Swift emits a public function's generators only where a caller uses one, and no caller in the app does. The rest added are the new API: the protocol and `DownloadManager`'s conformance, the stop's flag and setter, the entry's memberwise initialiser and property descriptors, and the status rule over values.
+- **iOS 27.2,** iPhone Air (`AF6A248E`):
+  - a clean `build-for-testing` of `FRUSExplorer`, "** TEST BUILD SUCCEEDED **" both, with the same four warning lines;
+  - the full unit target (`test-without-building -collect-test-diagnostics never -only-testing FRUSExplorerTests`, `TEST_RUNNER_FRUS_TEI_MIRROR` set, the app removed first): "✘ Test run with 7901 tests in 946 suites failed after 721.524 seconds with 8 issues (including 6 known issues).", and on `v2` "✘ Test run with 7898 tests in 946 suites failed after 682.511 seconds with 8 issues (including 6 known issues).";
+  - on both, the 6 known issues `SyncDiagnosticsEntryTests` declares, and two failures of `v2`'s own: `CrossReferenceRankingLabelsTests`' 720 pt test and `CollectionTests`' colour-picker test. Both runs skip the same 17 tests and 2 suites.
+- **`swift build --target FRUSCoreKit`:** "Build complete!".
+- **`swift test`, whole, on the macOS host:** exit 0; 39 runs and 3,335 tests in 400 suites, all passed, none skipped, against 3,302 in 398 on `v2` (at `fe9325b2`: #1868 changed no file the package builds). `FRUSCoreKitTests`: "✔ Test run with 1381 tests in 184 suites passed".
+
+**Linux.**
+- **Setup.**
+  - Docker Desktop, `swift:6.4-noble` on arm64.
+  - FRUS Explorer Light's package at its `main` (`7a35517`, pinned to `fe9325b2`), with `v2` and then this branch copied over its submodule, and its own targets built clean.
+  - At the branch, its `Package.swift` gained TEIHeaderKit in FRUSCoreKit's dependencies, as its pin move will.
+- **At `v2`:** 2,718 tests, all passed but its parity suites' 30 issues.
+  - 21 are the golden files' staleness, since `v2` is past its pin.
+  - 9 are in `AnnotationsParityTests`, from #1868's new words.
+- **At the branch:** 2,751 tests.
+  - `FRUSCoreKitTests` passed 1,381 in 184 suites.
+  - The same 30 issues came back, and 2 more: `HighlightViewParityTests` reads the status rule's two lines in the app's `HighlightReview.swift`, where they no longer are.
+- **Skipped at both:** 8, its PostgreSQL store's 7 and one named skip.
+- **Public access.** A scratch suite in its server, never committed, imports FRUSCoreKit without `@testable` and calls everything made public here as a host does: 8 tests, all passed.
+
+**Owed by the owner.**
+- Mac check 15 (FRUS Explorer Light's plan), listed in the pull request, from a clone at a real path; then the merge.
+- After it, S22a's session merges `v2` into its branch before Mac check 16.
+- FRUS Explorer Light's pin move, its S21b, follows the batch. It adds TEIHeaderKit to its FRUSCoreKit target, and points `HighlightViewParityTests` at the kit's rule.
+
+**Filed in the pull request, not fixed.**
+- **A stale rollup cache.** `consolidatePersonRollup(forceReload: false)` can cache stale inputs during `indexVolume`'s parse.
+- **A repeated pattern.** `LocalVolumeCatalog.subseries(for:)` repeats `frusSubseries(from:)`'s pattern.
+- **A mismatched quote.** The validator's message for another root opens with a closing quote.
+- **The rules' own suites** stay in the app's test target.
+- **The owner's question:** whether the app should turn the stop on for its expiring background task.
