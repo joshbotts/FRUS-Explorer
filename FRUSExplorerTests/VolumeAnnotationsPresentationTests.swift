@@ -68,7 +68,7 @@ struct VolumeAnnotationsPresentationTests {
         #expect(detail["correspondents"] == "161 documents")
         #expect(detail["sourceNotes"] == "268 of 280 documents · archival citations and file numbers")
         #expect(detail["classification"] == "260 of 280 documents")
-        #expect(detail["excisions"] == "37 documents with text not declassified")
+        #expect(detail["excisions"] == "37 documents with redactions marked")
         #expect(detail["numbered"] == "280 of 280 documents")
         #expect(detail["crossReferences"]
                 == "131 documents cite others in this volume · 89 documents cite other volumes")

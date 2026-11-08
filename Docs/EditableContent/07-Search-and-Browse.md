@@ -3285,7 +3285,7 @@ Classification markings
 
 <!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.excisions -->
 
-Excisions marked
+Redactions marked as not declassified
 
 <!-- END SOURCE: browser.volume.annotations.excisions -->
 
@@ -3333,7 +3333,7 @@ Marginal notes
 
 <!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.printedAids -->
 
-Printed aids
+Front and back matter
 
 <!-- END SOURCE: browser.volume.annotations.printedAids -->
 
@@ -3401,13 +3401,13 @@ archival citations and file numbers
 
 <!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.excisions.one -->
 
-%@ document with text not declassified
+%@ document with a redaction marked
 
 <!-- END SOURCE: browser.volume.annotations.excisions.one -->
 
 <!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.excisions.many -->
 
-%@ documents with text not declassified
+%@ documents with redactions marked
 
 <!-- END SOURCE: browser.volume.annotations.excisions.many -->
 
@@ -3459,7 +3459,7 @@ archival citations and file numbers
 
 <!-- END SOURCE: browser.volume.annotations.xrefs.pages.many -->
 
-### 19.4 The printed aids' names
+### 19.4 The names of the front and back matter
 
 <!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.aid.preface -->
 
@@ -3827,13 +3827,13 @@ Search's results and Source Explorer show a document's marking.
 
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.excisions -->
 
-Where text was still classified when the volume was published, the editors marked the gap: “[… not declassified]”.
+Since the 1991 statute, the editors mark what declassification review redacted: a gap in the printed text, “[… not declassified]”, or a whole document withheld, listed in its place with its heading, its source note and the number of pages not declassified. Earlier volumes marked every omission with an ellipsis, whether the editors left the text out or it was not cleared for publication, so their redactions cannot be told from the editors’ omissions and are not counted here.
 
 <!-- END SOURCE: browser.annotations.practice.excisions -->
 
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.excisions -->
 
-A volume counts when one of its documents marks text as not declassified.
+A volume counts when one of its documents marks a redaction as not declassified: text in it, or the whole document.
 
 <!-- END SOURCE: browser.annotations.rule.excisions -->
 
@@ -3941,13 +3941,13 @@ A volume counts when one of its documents prints a marginal note.
 
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.printedAids -->
 
-Besides its documents, a volume prints aids to reading it: a preface, lists of sources, abbreviations and persons, an index.
+Besides its documents, a volume prints front and back matter to help readers use it: a preface, lists of sources, abbreviations and persons, an index.
 
 <!-- END SOURCE: browser.annotations.practice.printedAids -->
 
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.printedAids -->
 
-A volume counts when it prints one of the aids listed below.
+A volume counts when it prints one of the sections listed below.
 
 <!-- END SOURCE: browser.annotations.rule.printedAids -->
 
@@ -3991,7 +3991,7 @@ A volume counts when at least half its documents carry a source note of this for
 
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.aid -->
 
-A volume counts when it prints this aid.
+A volume counts when it prints this section.
 
 <!-- END SOURCE: browser.annotations.rule.aid -->
 

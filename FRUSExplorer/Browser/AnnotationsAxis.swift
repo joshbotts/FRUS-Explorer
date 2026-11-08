@@ -50,7 +50,7 @@ enum AnnotationLayer: String, CaseIterable, Identifiable, Sendable {
     case footnotes
     /// Marginal notes.
     case marginalNotes
-    /// The printed aids: a preface, the lists, an index.
+    /// The front and back matter: a preface, the lists, an index.
     case printedAids
 
     /// The layer's stable name: a volume page's row ids and the axis's levels read it.
@@ -215,7 +215,7 @@ extension AnnotationLayer {
                           defaultValue: "A volume counts when at least half its documents carry a classification marking, as the app reads them.")
         case .excisions:
             return String(localized: "browser.annotations.rule.excisions",
-                          defaultValue: "A volume counts when one of its documents marks text as not declassified.")
+                          defaultValue: "A volume counts when one of its documents marks a redaction as not declassified: text in it, or the whole document.")
         case .despatch:
             return String(localized: "browser.annotations.rule.despatch",
                           defaultValue: "A volume counts when at least a tenth of its documents carry a despatch number.")
@@ -236,7 +236,7 @@ extension AnnotationLayer {
                           defaultValue: "A volume counts when one of its documents prints a marginal note.")
         case .printedAids:
             return String(localized: "browser.annotations.rule.printedAids",
-                          defaultValue: "A volume counts when it prints one of the aids listed below.")
+                          defaultValue: "A volume counts when it prints one of the sections listed below.")
         }
     }
 
@@ -266,7 +266,7 @@ extension AnnotationLayer {
                           defaultValue: "The editors printed each document's security classification, first above the dateline and later in the source note.")
         case .excisions:
             return String(localized: "browser.annotations.practice.excisions",
-                          defaultValue: "Where text was still classified when the volume was published, the editors marked the gap: “[… not declassified]”.")
+                          defaultValue: "Since the 1991 statute, the editors mark what declassification review redacted: a gap in the printed text, “[… not declassified]”, or a whole document withheld, listed in its place with its heading, its source note and the number of pages not declassified. Earlier volumes marked every omission with an ellipsis, whether the editors left the text out or it was not cleared for publication, so their redactions cannot be told from the editors’ omissions and are not counted here.")
         case .despatch:
             return String(localized: "browser.annotations.practice.despatch",
                           defaultValue: "Older volumes print the number a diplomatic post gave each despatch it sent, “No. 74.”, by which the despatch is found in the archives.")
@@ -287,7 +287,7 @@ extension AnnotationLayer {
                           defaultValue: "A few volumes print the notes written in a document's margin, set off from its text.")
         case .printedAids:
             return String(localized: "browser.annotations.practice.printedAids",
-                          defaultValue: "Besides its documents, a volume prints aids to reading it: a preface, lists of sources, abbreviations and persons, an index.")
+                          defaultValue: "Besides its documents, a volume prints front and back matter to help readers use it: a preface, lists of sources, abbreviations and persons, an index.")
         }
     }
 
@@ -600,7 +600,7 @@ enum AnnotationsAxis {
                 kindsByName.append((name, [kind]))
             }
         }
-        let rule = String(localized: "browser.annotations.rule.aid", defaultValue: "A volume counts when it prints this aid.")
+        let rule = String(localized: "browser.annotations.rule.aid", defaultValue: "A volume counts when it prints this section.")
         return kindsByName.compactMap { aid in
             let ids = order(index.volumeIds { annotations in aid.kinds.contains { annotations.prints(section: $0) } })
             guard !ids.isEmpty, let first = aid.kinds.first else { return nil }
