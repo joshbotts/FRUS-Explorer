@@ -471,7 +471,6 @@ struct FlatSourcesRepositoryHeadingTests {
         #expect(items.last?.lotFileNorm == "64D563")
     }
 
-    #if !SWIFT_PACKAGE // ArchivalResolver and the bundled library catalogue are the app's
     // MARK: - The library route
 
     /// The two collections the owner's harvest holds, resolved through the **real** bundled
@@ -481,12 +480,14 @@ struct FlatSourcesRepositoryHeadingTests {
         try #require(PresidentialLibraryIndexStore.shared != nil,
                      "presidential-library-catalog.json must be bundled")
         let dulles = try #require(ArchivalResolver.libraryResolution(
-            repository: "Eisenhower Library", entryText: "John Foster Dulles Papers"))
+            repository: "Eisenhower Library", entryText: "John Foster Dulles Papers",
+            index: PresidentialLibraryIndexStore.shared))
         #expect(dulles.naId == "580942", Comment(rawValue: "got \(dulles.naId)"))
         #expect(dulles.matchType == "library")
 
         let hagerty = try #require(ArchivalResolver.libraryResolution(
-            repository: "Eisenhower Library", entryText: "James C. Hagerty Papers"))
+            repository: "Eisenhower Library", entryText: "James C. Hagerty Papers",
+            index: PresidentialLibraryIndexStore.shared))
         #expect(hagerty.naId == "581740", Comment(rawValue: "got \(hagerty.naId)"))
     }
 
@@ -497,7 +498,8 @@ struct FlatSourcesRepositoryHeadingTests {
     @Test("Ann Whitman File does not resolve to Ann C. Whitman Papers")
     func annWhitmanFileIsNotAnnWhitmanPapers() async throws {
         let hit = ArchivalResolver.libraryResolution(
-            repository: "Eisenhower Library", entryText: "Ann Whitman File")
+            repository: "Eisenhower Library", entryText: "Ann Whitman File",
+            index: PresidentialLibraryIndexStore.shared)
         #expect(hit == nil, Comment(rawValue: "resolved to \(hit?.title ?? "-") (\(hit?.naId ?? "-"))"))
     }
 
@@ -512,7 +514,8 @@ struct FlatSourcesRepositoryHeadingTests {
     @Test("A collection whose own name is also one of its series still resolves")
     func collectionSharingASeriesNameStillResolves() {
         let hit = ArchivalResolver.libraryResolution(
-            repository: "Hoover Library", entryText: "Evelyn Wight Allen Papers")
+            repository: "Hoover Library", entryText: "Evelyn Wight Allen Papers",
+            index: PresidentialLibraryIndexStore.shared)
         #expect(hit?.naId == "1137", Comment(rawValue: "got \(hit?.naId ?? "nil")"))
     }
 
@@ -521,9 +524,11 @@ struct FlatSourcesRepositoryHeadingTests {
     @Test("No repository, no library resolution")
     func repositoryIsRequired() {
         #expect(ArchivalResolver.libraryResolution(
-            repository: nil, entryText: "John Foster Dulles Papers") == nil)
+            repository: nil, entryText: "John Foster Dulles Papers",
+            index: PresidentialLibraryIndexStore.shared) == nil)
         #expect(ArchivalResolver.libraryResolution(
-            repository: "", entryText: "John Foster Dulles Papers") == nil)
+            repository: "", entryText: "John Foster Dulles Papers",
+            index: PresidentialLibraryIndexStore.shared) == nil)
     }
 
     /// End to end: the parse gives the row its repository, and the resolver turns it into a
@@ -534,11 +539,12 @@ struct FlatSourcesRepositoryHeadingTests {
         let dulles = try #require(items.first { $0.rawText == "John Foster Dulles Papers" })
         let resolution = ArchivalResolver.frontMatterResolution(
             recordGroup: dulles.recordGroup, lotFile: dulles.lotFile,
-            entryText: dulles.rawText, repository: dulles.repository)
+            entryText: dulles.rawText, repository: dulles.repository,
+            centralFiles: CentralFilesIndexStore.shared, volumeSources: VolumeSourcesIndexStore.shared,
+            claimants: LotClaimantsIndexStore.shared, presidentialLibrary: PresidentialLibraryIndexStore.shared)
         #expect(resolution?.naId == "580942",
                 Comment(rawValue: "got \(resolution?.naId ?? "nil")"))
     }
-    #endif
 }
 
 // MARK: - SiblingHeadingAndApparatusParseTests
