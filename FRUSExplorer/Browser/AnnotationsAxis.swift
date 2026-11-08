@@ -266,7 +266,7 @@ extension AnnotationLayer {
                           defaultValue: "The editors printed each document's security classification, first above the dateline and later in the source note.")
         case .excisions:
             return String(localized: "browser.annotations.practice.excisions",
-                          defaultValue: "The editors mark what declassification review redacted: a gap in the printed text, “[… not declassified]”, or a whole document withheld, listed in its place with its heading, its source note and the number of pages not declassified. Before the 1991 statute, volumes marked every omission with an ellipsis, whether the editors left the text out or it was not cleared for publication, so their redactions cannot be told from the editors’ omissions and are not counted here.")
+                          defaultValue: "The editors mark what declassification review redacted: a gap in the printed text, “[… not declassified]”, or a whole document withheld, listed in its place with its heading, its source note and the number of pages not declassified. From Secretary Kellogg’s 1925 order until the 1991 statute, volumes marked an omission with an ellipsis, whether the editors left the text out or it was not cleared for publication, so their redactions cannot be told from the editors’ omissions and are not counted here. Volumes published before the 1925 order did not mark omissions at all.")
         case .despatch:
             return String(localized: "browser.annotations.practice.despatch",
                           defaultValue: "Older volumes print the number a diplomatic post gave each despatch it sent, “No. 74.”, by which the despatch is found in the archives.")

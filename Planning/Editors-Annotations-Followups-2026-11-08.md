@@ -24,6 +24,10 @@ Version history:
   1.1 — 2026-11-08: the owner's three decisions recorded: infra/supra notes count as omissions, the
         Redactions page names the 1991 statute in place of an era, and the onboarding page says
         "redactions"
+  1.2 — 2026-11-08: the owner's rule that editors marked nothing before the 1925 order. The new
+        layer counts only volumes published from 1925 (the generator stores each volume's
+        publication year), and its copy says so; the onboarding text and the Redactions practice
+        paragraph now name the order
 
 ---
 
@@ -73,6 +77,13 @@ If the label wraps badly in either place, raise it with the owner. Do not shorte
   process." The spoken row reads the same sentence. The practice paragraph no longer opens with the
   date, so the two do not repeat each other. The strip still shades by coverage era. Check on the
   device that the sentence and the strip read well together.
+- *Nothing marked before 1925* (the owner's rule, a later decision the same day). The onboarding
+  text now opens "Before Secretary of State Frank Kellogg's 1925 order, FRUS editors did not mark
+  excisions or redactions. Beginning with that order, …". It said "Before the 1920s" until then. The
+  Redactions practice paragraph says "From Secretary Kellogg's 1925 order until the 1991 statute,
+  volumes marked an omission with an ellipsis, … Volumes published before the 1925 order did not mark
+  omissions at all." It said "Before the 1991 statute, volumes marked every omission" until then,
+  which implied every earlier volume.
 - *The onboarding page's section* (`IndexingEducationView.swift`, mirrored in
   `Docs/EditableContent/02-Research-Guide.md`) is now titled **Excisions and Redactions**. It says
   "redaction" where an omission came from declassification and keeps "excision" for the editors' own.
@@ -130,6 +141,32 @@ stand in for text the volume prints in another place: "[Here follows text of the
 May 9, 1938, … printed infra.]". They are omissions in place and count. The rule needs no
 exception for them, and a fixture pins one as a positive.
 
+**Only volumes published from 1925 count (the owner's rule of 2026-11-08: before Secretary
+Kellogg's 1925 order, FRUS editors did not mark excisions or redactions).** The patterns do match
+volumes published earlier: the sweep found `[Here follows …]` in 28 of the 74 volumes published
+before 1925, and the raw `omitted` pattern in 17. Sampled at `6170e4b32`:
+- frus1868p2 (published 1869): "[Here follow the signatures.]"
+- frus1878: "[The telegram here is defective, … being manifestly omitted.]"
+- frus1914 (published 1922): "[Here follows the text of the memorandum, printed hereafter as
+  inclosure with …]"
+- frus1915 (published 1924): "[The paragraphs here omitted are identical with those in the letter to
+  the Governor of Massachusetts.]" and "[Here follows a long digression intended to show …]"
+
+They stand in for duplicate text, formalities and gaps in a telegram as received, not for the marked
+excisions the order required. So:
+- **Generator:** read each volume's `teiHeader` publication date (`date[@type="publication-date"]`;
+  all 553 volumes have one) and count the layer only from 1925. Store the year in the file
+  (`publicationYear`, a per-volume field), so that the app can say why an earlier volume is not
+  counted. That changes the file's shape, so bump `schemaVersion` and give the decoder a fixture of
+  each shape.
+- **App:** for a volume published before 1925, the layer's drills put it under "Volumes without it"
+  with a note: "Published before the 1925 order, when FRUS editors did not mark omissions."
+- **Fixtures:** a pre-1925 volume with `[Here follows …]` that is not counted, and the same text in
+  a 1925 volume that is.
+- **Check the same gate for Redactions.** The sweep found no "not declassified" in any volume
+  published before the 1970s, so the gate changes no count there. Its copy already says that volumes
+  before the order marked nothing.
+
 **Measure first.** Before writing the scanner, run the patterns over the Mac's corpus clone
 (`~/Development/frus/volumes`, at `6170e4b32`). A stdlib Python script in the scratchpad is enough;
 `Planning/editors-annotations/inventory.py` is the model. Write a per-era table like the one above,
@@ -176,8 +213,9 @@ existing extracts, and add a dated amendment to that folder's README.
   | Key | Text |
   |---|---|
   | `browser.volume.annotations.editorialOmissions` | Marked editorial omissions |
-  | `browser.annotations.rule.editorialOmissions` | A volume counts when one of its documents says, in brackets, what the editors left out: "[Here follows …]" or "[Omitted here is …]". |
-  | `browser.annotations.practice.editorialOmissions` | Where the editors left out part of a document as not relevant to the volume, they said so in brackets and described what was omitted. Before the 1991 statute an ellipsis could also mark an omission, the editors' or a redaction, and those are not counted here. |
+  | `browser.annotations.rule.editorialOmissions` | A volume published from 1925 counts when one of its documents says, in brackets, what the editors left out: "[Here follows …]" or "[Omitted here is …]". |
+  | `browser.annotations.note.editorialOmissions.before1925` | Published before the 1925 order, when FRUS editors did not mark omissions. |
+  | `browser.annotations.practice.editorialOmissions` | Since Secretary Kellogg's 1925 order, where the editors left out part of a document as not relevant to the volume, they could say so in brackets and describe what was omitted. Until the 1991 statute an ellipsis could also mark an omission, the editors' or a redaction, and those are not counted here. Volumes published before the order did not mark omissions, and are not counted. |
   | `browser.volume.annotations.editorialOmissions.one` | %@ document with an editorial omission marked |
   | `browser.volume.annotations.editorialOmissions.many` | %@ documents with editorial omissions marked |
 
