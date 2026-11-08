@@ -8765,10 +8765,14 @@ struct RecordGroupSpellingTests {
 /// `setDocumentBatchStoredTestHook`: the batches before the stop are committed and nothing after
 /// them is written, which is what a power loss leaves. A pipeline built without a tracker has no
 /// sentinel, the case the issue reports; one test gives it a tracker, the case of an app that was
-/// quit or killed.
+/// quit or killed. Three more cancel the pass's task at the same place: a host that turned on
+/// `setStopsBetweenBatchesWhenCancelled(_:)` is stopped there, and its launch pass before the next
+/// volume, and a pass with it off, as the app's are, runs to its end.
 ///
 /// Version history:
 ///   1.0 — #1566: initial implementation
+///   1.1 — Session 2026-11-08 (FRUS Explorer Light, S21a): a cancelled pass, with the stop a host
+///          asks for and without it
 @Suite("IndexingPipeline — a store pass cut short (#1566)")
 struct UnfinishedStoreTests {
 
@@ -8913,6 +8917,86 @@ struct UnfinishedStoreTests {
             #expect(await pipeline.finishIndexing(of: waiting) == ["frusnew"])
             #expect(try cachedIds("frusquit", in: dir) == ["d1", "d2"], "the launch pass did not touch it")
             #expect(try pipeline.isStoreUnfinished("frusquit"))
+        }
+    }
+
+    @Test("A host that asks for the stop has a cancelled pass stop after the batch it was writing, and the launch pass finishes the volume")
+    func cancelledPassStopsBetweenBatchesWhenAsked() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeVolume("fruscancel", documents: 5, to: volDir)
+
+            await pipeline.setTestBatchSize(2)
+            await pipeline.setStopsBetweenBatchesWhenCancelled(true)
+            // The hook runs in the pass's own task, so this cancels the pass and nothing else.
+            await pipeline.setDocumentBatchStoredTestHook { _, batch in
+                if batch == 1 { withUnsafeCurrentTask { $0?.cancel() } }
+            }
+            let pass = Task { try await pipeline.indexVolume("fruscancel") }
+            await #expect(throws: CancellationError.self) { try await pass.value }
+
+            #expect(try cachedIds("fruscancel", in: dir) == ["d1", "d2"],
+                    "the stop must leave the first batch and nothing after it")
+            #expect(try pipeline.isStoreUnfinished("fruscancel"))
+            #expect(try pipeline.volumesWithUnfinishedStore() == ["fruscancel"])
+
+            // The option stops only a cancelled pass: this one, not cancelled, finishes the volume.
+            await pipeline.setDocumentBatchStoredTestHook(nil)
+            #expect(await pipeline.finishIndexing(of: ["fruscancel"]) == ["fruscancel"])
+            #expect(try cachedIds("fruscancel", in: dir) == ["d1", "d2", "d3", "d4", "d5"])
+            #expect(try pipeline.volumesWithUnfinishedStore().isEmpty)
+        }
+    }
+
+    @Test("Without the stop, as the app runs, a cancelled pass stores every batch and finishes")
+    func cancelledPassRunsToItsEndByDefault() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeVolume("frusrunon", documents: 5, to: volDir)
+            #expect(await pipeline.stopsBetweenBatchesWhenCancelled == false, "off unless a host asks")
+
+            await pipeline.setTestBatchSize(2)
+            await pipeline.setDocumentBatchStoredTestHook { _, batch in
+                if batch == 1 { withUnsafeCurrentTask { $0?.cancel() } }
+            }
+            let pass = Task { () -> Bool in
+                try await pipeline.indexVolume("frusrunon")
+                return Task.isCancelled
+            }
+            #expect(try await pass.value, "the pass's task was cancelled, and the pass ran on")
+
+            #expect(try cachedIds("frusrunon", in: dir) == ["d1", "d2", "d3", "d4", "d5"])
+            #expect(try pipeline.isStoreUnfinished("frusrunon") == false)
+            #expect(try pipeline.volumesWithUnfinishedStore().isEmpty)
+        }
+    }
+
+    @Test("With the stop, a cancelled launch pass stops before its next volume; without it the pass takes both")
+    func cancelledLaunchPassStopsBeforeItsNextVolumeWhenAsked() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeVolume("frusfirst", documents: 3, to: volDir)
+            try writeVolume("frussecond", documents: 3, to: volDir)
+            await pipeline.setTestBatchSize(2)
+            await pipeline.setDocumentBatchStoredTestHook { volumeId, batch in
+                if volumeId == "frusfirst", batch == 1 { withUnsafeCurrentTask { $0?.cancel() } }
+            }
+
+            await pipeline.setStopsBetweenBatchesWhenCancelled(true)
+            let stopped = Task { await pipeline.finishIndexing(of: ["frusfirst", "frussecond"]) }
+            #expect(await stopped.value == [], "the first volume stopped, and the second was not begun")
+            #expect(try cachedIds("frusfirst", in: dir) == ["d1", "d2"])
+            #expect(try cachedIds("frussecond", in: dir).isEmpty)
+
+            // Off, as the app runs: the same cancelled pass finishes the first volume and takes the second.
+            await pipeline.setStopsBetweenBatchesWhenCancelled(false)
+            let runOn = Task { await pipeline.finishIndexing(of: ["frusfirst", "frussecond"]) }
+            #expect(await runOn.value == ["frusfirst", "frussecond"])
+            #expect(try cachedIds("frussecond", in: dir) == ["d1", "d2", "d3"])
+            #expect(try pipeline.volumesWithUnfinishedStore().isEmpty)
         }
     }
 

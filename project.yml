@@ -134,7 +134,8 @@ targets:
         # is what stops App Store Connect asking on every single TestFlight upload.
         # Basis, checked rather than assumed: the app's only CryptoKit use is HASHING —
         # SHA-256 digests for cache keys, scope signatures and the schema inventory, plus
-        # one Insecure.SHA1 in DownloadManager. Hashing is not encryption. Everything else
+        # one Insecure.SHA1, the volume check's git blob hash (FRUSCoreKit's
+        # VolumeUpdateChecker). Hashing is not encryption. Everything else
         # is Apple-provided and exempt: HTTPS through URLSession, and the Keychain. There
         # is no symmetric or asymmetric cipher anywhere in the app.
         ITSAppUsesNonExemptEncryption: false
@@ -391,7 +392,8 @@ targets:
         # is what stops App Store Connect asking on every single TestFlight upload.
         # Basis, checked rather than assumed: the app's only CryptoKit use is HASHING —
         # SHA-256 digests for cache keys, scope signatures and the schema inventory, plus
-        # one Insecure.SHA1 in DownloadManager. Hashing is not encryption. Everything else
+        # one Insecure.SHA1, the volume check's git blob hash (FRUSCoreKit's
+        # VolumeUpdateChecker). Hashing is not encryption. Everything else
         # is Apple-provided and exempt: HTTPS through URLSession, and the Keychain. There
         # is no symmetric or asymmetric cipher anywhere in the app.
         ITSAppUsesNonExemptEncryption: false

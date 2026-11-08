@@ -65,14 +65,14 @@ This deletes the whole record of your work: every document you opened, every sea
 <!-- END SOURCE: settings.sessions.manage.footer.whole -->
 
 #### iCloud unavailable (Local Only) detail
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 239–240 | key: settings.icloud.localOnly.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 242–243 | key: settings.icloud.localOnly.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->
 
 iCloud sync is unavailable. Notes, tags, and collections won’t sync across devices. Check that you are signed in to iCloud in Settings and that FRUS Explorer has iCloud access.
 
 <!-- END SOURCE: settings.icloud.localOnly.detail -->
 
 #### iCloud zone-missing detail
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 275–276 | key: settings.icloud.zoneMissing.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 278–279 | key: settings.icloud.zoneMissing.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->
 
 The iCloud sync zone is missing. Data cannot upload or download until it is recreated. Force-quit and relaunch the app, or use Settings → Data & Recovery → Fix iCloud Sync.
 
@@ -793,49 +793,49 @@ Checking this quotation against the current text…
 <!-- END SOURCE: document.review.excerpt.checking -->
 
 #### Quotation — found
-<!-- SOURCE: FRUSExplorer/DocumentView/ExcerptReview.swift | lines: 155–156 | key: document.review.excerpt.verified | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/DocumentView/ExcerptReview.swift | lines: 157–158 | key: document.review.excerpt.verified | shared: iOS+macOS (single edit point) -->
 
 These words are still in the document as it reads now.
 
 <!-- END SOURCE: document.review.excerpt.verified -->
 
 #### Quotation — not found
-<!-- SOURCE: FRUSExplorer/DocumentView/ExcerptReview.swift | lines: 158–159 | key: document.review.excerpt.notFound | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/DocumentView/ExcerptReview.swift | lines: 160–161 | key: document.review.excerpt.notFound | shared: iOS+macOS (single edit point) -->
 
 These words are not in the document as it reads now. The passage may have been corrected, or this document may have been renumbered and this one may not be the same document.
 
 <!-- END SOURCE: document.review.excerpt.notFound -->
 
 #### Quotation — the document is gone
-<!-- SOURCE: FRUSExplorer/DocumentView/ExcerptReview.swift | lines: 161–162 | key: document.review.excerpt.vanished | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/DocumentView/ExcerptReview.swift | lines: 163–164 | key: document.review.excerpt.vanished | shared: iOS+macOS (single edit point) -->
 
 The document is no longer in the volume, so there is nothing to check the quotation against.
 
 <!-- END SOURCE: document.review.excerpt.vanished -->
 
 #### Quotation — no indexed text to check against
-<!-- SOURCE: FRUSExplorer/DocumentView/ExcerptReview.swift | lines: 167–168 | key: document.review.excerpt.notIndexed.v2 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/DocumentView/ExcerptReview.swift | lines: 169–170 | key: document.review.excerpt.notIndexed.v2 | shared: iOS+macOS (single edit point) -->
 
 There is no indexed text for this document on this device, so the quotation could not be checked.
 
 <!-- END SOURCE: document.review.excerpt.notIndexed.v2 -->
 
 #### Quotation — too short to check
-<!-- SOURCE: FRUSExplorer/DocumentView/ExcerptReview.swift | lines: 170–171 | key: document.review.excerpt.inconclusive | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/DocumentView/ExcerptReview.swift | lines: 172–173 | key: document.review.excerpt.inconclusive | shared: iOS+macOS (single edit point) -->
 
 Too short, or too heavily elided, to check: a fragment this brief appears in too many documents to prove anything.
 
 <!-- END SOURCE: document.review.excerpt.inconclusive -->
 
 #### Quotation — captured from an earlier version
-<!-- SOURCE: FRUSExplorer/DocumentView/ExcerptReview.swift | lines: 186–187 | key: document.review.excerpt.capturedEarlier | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/DocumentView/ExcerptReview.swift | lines: 188–189 | key: document.review.excerpt.capturedEarlier | shared: iOS+macOS (single edit point) -->
 
 Captured from an earlier version of the text.
 
 <!-- END SOURCE: document.review.excerpt.capturedEarlier -->
 
 #### Quotation — captured with no version recorded
-<!-- SOURCE: FRUSExplorer/DocumentView/ExcerptReview.swift | lines: 189–190 | key: document.review.excerpt.capturedUnversioned | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/DocumentView/ExcerptReview.swift | lines: 191–192 | key: document.review.excerpt.capturedUnversioned | shared: iOS+macOS (single edit point) -->
 
 Captured without a record of which version of the text it came from.
 

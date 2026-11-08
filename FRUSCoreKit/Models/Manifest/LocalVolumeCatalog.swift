@@ -7,9 +7,12 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
-// No `import TEIHeaderKit`: like FTS5Store, WordCloudKit and SourceNoteKit, the kit's sources are
-// compiled directly INTO the app target (project.yml), so its types are already in this module.
-// The SPM library target exists for the generator, which links it as a real module.
+// The package builds TEIHeaderKit as a module of its own, which FRUSCoreKit depends on. Xcode
+// compiles its sources directly INTO the app target (project.yml), like FTS5Store's and
+// SourceNoteKit's, so there its types are already in this module and the import is compiled out.
+#if canImport(TEIHeaderKit)
+import TEIHeaderKit
+#endif
 
 // MARK: - LocalVolumeCatalog
 
@@ -47,6 +50,9 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 2026-08-09: #777
 ///   1.1 — Lane STOR (2026-10-01): reconciliation also runs at boot; the cost notes say so
+///   1.2 — Session 2026-11-08 (FRUS Explorer Light, S21a): moved into FRUSCoreKit from the app's
+///          `Models/Manifest/`, unchanged; it imports TEIHeaderKit behind `canImport`, which the
+///          package builds as a module
 public struct LocalVolumeCatalog: Sendable {
 
     /// The sidecar's filename for a volume, e.g. `frus1969-76v01.frusmeta.json`.

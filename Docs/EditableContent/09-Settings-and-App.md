@@ -19,21 +19,21 @@ Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md`
 #### Settings-sync toggle detail
 <!-- S-5b made the "single edit point" claim on the three keys below actually true: the macOS Sync pane used to hardcode its own near-identical copy (and had drifted — "shares those settings" vs "shares the settings above"). Both platforms now render `SyncSettingsSection`. -->
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SyncSettingsSection.rows | lines: 1678–1679 | key: settings.sync.toggle.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SyncSettingsSection.rows | lines: 1544–1545 | key: settings.sync.toggle.detail | shared: iOS+macOS (single edit point) -->
 
 Word-cloud filters & stop lists, citation style, default document mode, and research logging.
 
 <!-- END SOURCE: settings.sync.toggle.detail -->
 
 #### Settings-sync unavailable notice
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SyncSettingsSection.rows | lines: 1690–1691 | key: settings.sync.unavailable | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SyncSettingsSection.rows | lines: 1556–1557 | key: settings.sync.unavailable | shared: iOS+macOS (single edit point) -->
 
 Settings sync needs iCloud. Sign in to iCloud and enable it for FRUS Explorer to turn this on.
 
 <!-- END SOURCE: settings.sync.unavailable -->
 
 #### iCloud Sync section footer
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SyncSettingsSection.footerText | lines: 1700–1701 | key: settings.sync.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SyncSettingsSection.footerText | lines: 1566–1567 | key: settings.sync.footer | shared: iOS+macOS (single edit point) -->
 
 When this is on, the device shares the settings above with your other devices that also have it on. Turning it on adopts the settings already in iCloud. Leave it off to keep this device’s settings separate.
 
@@ -413,7 +413,7 @@ The XML file and its search-index rows are deleted from this Mac. Your notes, hi
      Both storage hubs show the one shared row, so this is a single edit point. Citation Lookup and
      Add Documents' Citations tab resolve citations and links against the bundled catalogue only, so
      they refuse such a volume however it is cited; Browse and Search reach it. -->
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SideloadCatalogueNotice.detail | lines: 502–503 | key: settings.hub.sideload.notCatalogued.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SideloadCatalogueNotice.detail | lines: 401–402 | key: settings.hub.sideload.notCatalogued.detail | shared: iOS+macOS (single edit point) -->
 
 Volumes added from your own files are not included in features that rely on the app’s bundled publication data. Citation Lookup and Add Documents do not resolve a citation or history.state.gov link to them; open them from Browse or find them with Search.
 
@@ -543,7 +543,7 @@ This deletes every downloaded volume, the search index, and all of your research
 
 #### Erase Everything — first confirmation
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | EraseEverythingView | lines: 1562–1563 | key: settings.erase.confirm1.message | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | EraseEverythingView | lines: 1428–1429 | key: settings.erase.confirm1.message | shared: iOS+macOS (single edit point) -->
 
 Everything listed above will be deleted from this device and from iCloud.
 
@@ -551,7 +551,7 @@ Everything listed above will be deleted from this device and from iCloud.
 
 #### Erase Everything — final confirmation
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | EraseEverythingView | lines: 1578–1579 | key: settings.erase.confirm2.message | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | EraseEverythingView | lines: 1444–1445 | key: settings.erase.confirm2.message | shared: iOS+macOS (single edit point) -->
 
 Export your research data first if you might want it back.
 
@@ -700,7 +700,7 @@ When on, the app keeps summarizing a few documents at a time while you are not u
 
 *Settings ▸ Display's Reading Width, beside Document Text Size (#1665, the owner's decisions 20 and 50 of 2026-10-15 and 2026-10-16). Three steps on two ladders: on iPhone 60, 70 and 87ch, on iPad and the Mac 70, 87 and 120ch, so each footer below states its device's figures — the mean characters a line at Medium text, measured on the Long Telegram (`ReadingWidth`). A footer's figures change only with a rung, and `ReadingWidthTests` measures them again.*
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView | lines: 1816–1826 | keys: settings.display.readingWidth.label, settings.display.readingWidth.a11y | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView | lines: 1682–1692 | keys: settings.display.readingWidth.label, settings.display.readingWidth.a11y | shared: iOS+macOS (single edit point) -->
 
 **The control's name:** Reading Width
 
@@ -708,7 +708,7 @@ When on, the app keeps summarizing a few documents at a time while you are not u
 
 <!-- END SOURCE: settings.display.readingWidth.control -->
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView | lines: 1830–1831 | key: settings.display.readingWidth.header | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView | lines: 1696–1697 | key: settings.display.readingWidth.header | shared: iOS+macOS (single edit point) -->
 
 Reading Width
 
@@ -720,13 +720,13 @@ Reading Width
 
 <!-- END SOURCE: settings.display.readingWidth.steps -->
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.readingWidthFooter | lines: 1785–1786 | key: settings.display.readingWidth.footer.phone | shared: iPhone only -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.readingWidthFooter | lines: 1651–1652 | key: settings.display.readingWidth.footer.phone | shared: iPhone only -->
 
 How long a document’s lines may grow: about 63 characters at Narrow, 77 at Standard and 100 at Wide, at Medium text. In portrait the screen is narrower than all three.
 
 <!-- END SOURCE: settings.display.readingWidth.footer.phone -->
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.readingWidthFooter | lines: 1788–1789 | key: settings.display.readingWidth.footer.wide | shared: iPad and macOS -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.readingWidthFooter | lines: 1654–1655 | key: settings.display.readingWidth.footer.wide | shared: iPad and macOS -->
 
 How long a document’s lines may grow: about 77 characters at Narrow, 100 at Standard and 145 at Wide, at Medium text. A narrower window, or the Research panel beside the document, makes them shorter.
 
@@ -736,7 +736,7 @@ How long a document’s lines may grow: about 77 characters at Narrow, 100 at St
 
 #### Reading mode — footer (iPad and Mac)
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1922–1923 | key: settings.display.reading.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1788–1789 | key: settings.display.reading.footer -->
 
 “Remember Last” reopens documents in the mode you used last, Read or Research. Research mode shows the Research rail in a side panel beside the document. Read mode hides the rail so you can just read. The rail toggle inside a document always wins for that document.
 
@@ -746,7 +746,7 @@ How long a document’s lines may grow: about 77 characters at Narrow, 100 at St
 
 #### Reading mode — footer (iPhone)
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1919–1920 | key: settings.display.reading.footer.iphone -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1785–1786 | key: settings.display.reading.footer.iphone -->
 
 The Research rail opens as a bottom sheet from the toolbar’s Research button. It never opens on its own, so it cannot cover a document you only meant to read. Edge-Tap Page Turn moves you between documents while the rail is closed.
 
@@ -1368,21 +1368,21 @@ Download With Volumes is off, so these will not arrive on their own.
 <!-- END SOURCE: settings.vectors.downloadAll.detail %lld %@ -->
 
 #### Footer — This order is also the order of your tags in the note…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | UserTagsView.body | lines: 678–679 | key: settings.tags.list.footer.order -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | UserTagsView.body | lines: 544–545 | key: settings.tags.list.footer.order -->
 
 This order is also the order of your tags in the note editor, the document tag picker and Search.
 
 <!-- END SOURCE: settings.tags.list.footer.order -->
 
 #### Footer — This order is also the order of the Active Project picker…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | ProjectsSettingsView.body | lines: 915–916 | key: settings.projects.list.footer.order -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | ProjectsSettingsView.body | lines: 781–782 | key: settings.projects.list.footer.order -->
 
 This order is also the order of the Active Project picker, the project switcher and the note editor's project list.
 
 <!-- END SOURCE: settings.projects.list.footer.order -->
 
 #### All notes tagged ‘\(…)’ will be re-tagged with the selected…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | MergeTagSheet.macBody | lines: 1125–1126 | key: settings.tags.merge.explanation -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | MergeTagSheet.macBody | lines: 991–992 | key: settings.tags.merge.explanation -->
 
 All notes tagged ‘\(sourceTag.name)’ will be re-tagged with the selected tag. ‘\(sourceTag.name)’ will be deleted.
 
@@ -1392,42 +1392,42 @@ All notes tagged ‘\(sourceTag.name)’ will be re-tagged with the selected tag
 <!-- #1756: re-keyed from settings.display.chartColors.footer. The count is of colors, the gray
      "Other volumes" among them, so the default of 8 names seven volumes; the row above it reads
      "Colors per chart: %lld" (settings.display.chartColors.value.v2), where it said volumes. -->
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1849–1850 | key: settings.display.chartColors.footer.v2 -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1715–1716 | key: settings.display.chartColors.footer.v2 -->
 
 How many colors the Chronology and Corpus Analytics charts use for their volumes. When more volumes contribute than there are colors, the last color is a gray “Other volumes” holding the rest, so a chart names one volume fewer than its colors. Each chart can override this per view.
 
 <!-- END SOURCE: settings.display.chartColors.footer.v2 -->
 
 #### Footer — Used for Copy Citation, Share Citation, and the citation…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1875–1876 | key: settings.display.citationStyle.footer.mac | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1741–1742 | key: settings.display.citationStyle.footer.mac | shared: macOS only -->
 
 Used for Copy Citation, Share Citation, and the citation popover’s default. The popover can still switch styles per-presentation for comparison.
 
 <!-- END SOURCE: settings.display.citationStyle.footer.mac -->
 
 #### VoiceOver hint — When on, tapping near the left or right edge of a document…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1910–1911 | key: settings.display.edgeTapNavigation.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1776–1777 | key: settings.display.edgeTapNavigation.a11y | shared: iOS only -->
 
 When on, tapping near the left or right edge of a document opens the previous or next one — available whenever the Research rail is closed
 
 <!-- END SOURCE: settings.display.edgeTapNavigation.a11y -->
 
 #### Footer — These defaults can be overridden per-session in the Search…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2003–2004 | key: settings.search.scope.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 1869–1870 | key: settings.search.scope.footer -->
 
 These defaults can be overridden per-session in the Search filter panel. At least one scope stays on — searching nothing has no result to show.
 
 <!-- END SOURCE: settings.search.scope.footer -->
 
 #### Footer — Documents you have reclassified between “document” and…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2071–2072 | key: settings.search.classificationCorrections.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 1937–1938 | key: settings.search.classificationCorrections.footer -->
 
 Documents you have reclassified between “document” and “editorial note”. This filter, badges, counts, and exports follow your corrections.
 
 <!-- END SOURCE: settings.search.classificationCorrections.footer -->
 
 #### Footer — How many lines of matched context each search result shows.…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2086–2087 | key: settings.search.snippet.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 1952–1953 | key: settings.search.snippet.footer -->
 
 How many lines of matched context each search result shows. Individual search screens can override this default.
 
@@ -1600,7 +1600,7 @@ Sync stopped on this device; your changes are kept here.
 
 *Added by lane SYNC (#1531). The iPhone and iPad Settings iCloud Sync row reads **Sync Stopped**, and the Mac status bar's chip reads **Sync Stopped** and opens a popover titled **iCloud Sync Stopped**. Both show the explanation below, with %@ the date and time of the first failed upload, then “Diagnostic:” and the redacted error and any record-type and field names it carried, for a bug report. The Mac chip's tooltip is the explanation alone.*
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 283–283 | key: settings.icloud.stopped -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 286–286 | key: settings.icloud.stopped -->
 
 Sync Stopped
 

@@ -7,9 +7,22 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
-import SQLite3
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
+#if canImport(SQLite3)
+import SQLite3
+#else
+import CSQLite
+#endif
 
 // MARK: - CorrectedVolumeReindexTests
 
@@ -25,6 +38,11 @@ import Testing
 /// **These tests read the raw tables, deliberately.** The public accessors
 /// (`documentDates(for:)`, `documentSourcesByKey(_:)`) join `document_cache`, which *is* scrubbed —
 /// so a test written through them would pass over an orphan it never saw.
+///
+/// Version history:
+///   1.0 — R-1a: initial implementation
+///   1.1 — Session 2026-11-08 (FRUS Explorer Light, S21a): moved to `FRUSCoreKit/`, so the package
+///          runs it too, since everything it tests is the kit's indexer; otherwise unchanged
 @Suite("Corrected volume re-index (R-1a)")
 struct CorrectedVolumeReindexTests {
 

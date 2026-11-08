@@ -38,6 +38,8 @@ import SwiftData
 ///   1.2 — Session 2026-10-24 (FRUS Explorer Light, S15c's follow-up): the test of one span against
 ///          a stored passage, `HighlightReanchor.extracts(passage:start:end:in:)`, now public: both
 ///          forms, what it refuses, and that it accepts what the search returns
+///   1.3 — Session 2026-11-08 (FRUS Explorer Light, S21a): the last guard names what is the app's,
+///          `HighlightReview`'s `locate` and names, since the type itself is now FRUSCoreKit's
 @Suite("Highlight re-anchor — the exact, seam-aware search")
 struct HighlightReanchorTests {
 
@@ -455,7 +457,7 @@ struct HighlightReanchorTests {
         }
     }
 
-    #if !SWIFT_PACKAGE // HighlightReview is the app's
+    #if !SWIFT_PACKAGE // HighlightReview's locate and its names for the search are the app's
     /// The review sheet calls the search by the app's names, which forward to the kit's.
     @Test("HighlightReview's locate, Match, Search and Refusal are the kit's search")
     func appNamesAreTheKits() {

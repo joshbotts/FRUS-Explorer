@@ -13,9 +13,9 @@ import Foundation
 /// Locating a stored passage: the exact, unique, seam-aware search behind the re-anchor offer, pure
 /// over a page's block partition (`buildFlatTextBlocks(from:)`).
 ///
-/// The app's `HighlightReview` names these as its own (`HighlightReview.locate`, `.Match`,
-/// `.Search`, `.Refusal`), in `FRUSExplorer/DocumentView/HighlightReanchor.swift`, with the move
-/// that writes a located span into a highlight, which needs the SwiftData model.
+/// The app names these as `HighlightReview`'s own (`HighlightReview.locate`, `.Match`, `.Search`,
+/// `.Refusal`), in its extension in `FRUSExplorer/DocumentView/HighlightReanchor.swift`, with the
+/// move that writes a located span into a highlight, which needs the SwiftData model.
 ///
 /// Version history:
 ///   1.0 — R-5 P3b-3: initial implementation, as an extension of the app's `HighlightReview`
@@ -24,6 +24,8 @@ import Foundation
 ///   1.2 — Session 2026-10-24 (FRUS Explorer Light, S15c's follow-up): the search's test of a span
 ///          against a stored passage, in either form, is public as `extracts(passage:start:end:in:)`,
 ///          for the web edition's check of a Mac's highlights; the search is unchanged
+///   1.3 — Session 2026-11-08 (FRUS Explorer Light, S21a): the doc says the app's names for the
+///          search are an extension's, since `HighlightReview` itself is now FRUSCoreKit's
 public enum HighlightReanchor {
 
     /// One relocation candidate: a canonical UTF-16 span of the flat text whose re-extraction
