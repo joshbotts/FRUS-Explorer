@@ -29,6 +29,8 @@ import Foundation
 ///          `ArchivalResolver` reads, public with its decoder, so a host outside the app decodes the bundled
 ///          file and passes it in (`ArchivalIndexes`); `CentralFilesIndexStore`, which reads the app's bundle,
 ///          stays in the app (`CentralFilesIndexStore.swift`)
+///   1.2 — 2026-11-08 (FRUS Explorer Light, S22a): `LotFileEntry` public, the lot a citation resolves to,
+///          with `ArchivalResolver` and `ArchivalResolution`
 public struct CentralFilesIndex: Codable, Sendable, Equatable {
 
     /// Index schema version. Phase 1 emits `1`.
@@ -142,29 +144,35 @@ public struct CentralFilesIndex: Codable, Sendable, Equatable {
 /// A State Department lot file resolved to its NARA Catalog series record (bundled,
 /// key-less). The bundle contains only exact control-number matches, so each is
 /// high-confidence (`matchType` == `control`).
-struct LotFileEntry: Codable, Sendable, Equatable {
-    var lotNumber: String
-    var recordGroup: String
-    var naId: String
-    var title: String
-    var catalogURL: String
-    var matchType: String
+public struct LotFileEntry: Codable, Sendable, Equatable {
+    /// The lot's compact key (`63D135`), as `CentralFilesIndex.normalizeLot(_:)` writes it.
+    public var lotNumber: String
+    /// The record group the resolved record belongs to (`59`).
+    public var recordGroup: String
+    /// The resolved record's NARA Catalog identifier.
+    public var naId: String
+    /// The resolved record's NARA title.
+    public var title: String
+    /// The resolved record's `catalog.archives.gov/id/<naId>` URL string.
+    public var catalogURL: String
+    /// How the lot was matched: `control`, an exact control-number match, unless the bundle says otherwise.
+    public var matchType: String
     /// The series' HMS/MLR Entry Number(s) — the identifier NARA staff ask researchers to
     /// quote when requesting the original records (#315). `nil` when the bundled index
     /// predates the enrichment pass **or** when the record genuinely carries none; both
     /// render the same way (nothing), so the UI need not distinguish them.
-    var hmsMlrEntryNumbers: [String]?
+    public var hmsMlrEntryNumbers: [String]?
     /// The resolved record's catalog level (`series`, `fileUnit`, …), when known (#315).
     ///
     /// Check this before presenting `title` as a *series* title: the resolver takes the first
     /// record-group match without requiring series level, so a minority of entries describe a
     /// file unit. `isSeriesLevel` is the intended read.
-    var levelOfDescription: String?
+    public var levelOfDescription: String?
     /// NAID of the enclosing file series, when this record is a file unit rather than a
     /// series (#315).
-    var seriesNaId: String?
+    public var seriesNaId: String?
     /// Title of the enclosing file series, for records whose own `title` names a file unit.
-    var seriesTitle: String?
+    public var seriesTitle: String?
     /// The **enclosing series'** HMS/MLR entry numbers — the parent's identifiers, not this
     /// record's.
     ///
@@ -173,22 +181,22 @@ struct LotFileEntry: Codable, Sendable, Equatable {
     /// (the live "Central Decimal Files" series has 23), which narrows nothing for an
     /// archivist. Present these only with their imprecision made explicit — never merged
     /// into, or presented as, the record's own entry number.
-    var seriesHmsMlrEntryNumbers: [String]?
+    public var seriesHmsMlrEntryNumbers: [String]?
     /// `true` when the resolved record's ancestry contains no record group — a candidate
     /// mis-resolution flagged by the enrichment pass for review (#315).
-    var ancestryLacksRecordGroup: Bool?
+    public var ancestryLacksRecordGroup: Bool?
 
     /// Whether the resolved record is described at the series level — i.e. whether `title`
     /// is itself the file series name (#315).
     ///
     /// `nil` level (an un-enriched bundle) reads as `false`: absent evidence, do not claim it.
-    var isSeriesLevel: Bool { levelOfDescription == "series" }
+    public var isSeriesLevel: Bool { levelOfDescription == "series" }
 
     /// Whether this entry resolved to a **file unit** rather than a series (#351). A real lot
     /// file is catalogued as a series; a `fileUnit` match is a control-number query that landed
     /// on a folder inside another collection (the #335-audited 60 D 627 → "Operation Mongoose"
     /// class), so `lotFile(forRawLot:)` treats it as unresolved. `nil` level reads as `false`.
-    var isFileUnitLevel: Bool { levelOfDescription == "fileUnit" }
+    public var isFileUnitLevel: Bool { levelOfDescription == "fileUnit" }
 
     /// The **file series name** to display — the single accessor the UI should use, so the
     /// series/file-unit distinction cannot be got wrong at a call site (#315).
@@ -197,9 +205,9 @@ struct LotFileEntry: Codable, Sendable, Equatable {
     /// series name is the enclosing series' title, resolved by the enrichment pass. `nil`
     /// when neither is known (an un-enriched bundle, or a record whose series never
     /// resolved), in which case no series should be named at all.
-    var displaySeriesTitle: String? { isSeriesLevel ? title : seriesTitle }
+    public var displaySeriesTitle: String? { isSeriesLevel ? title : seriesTitle }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         lotNumber = try c.decode(String.self, forKey: .lotNumber)
         recordGroup = try c.decode(String.self, forKey: .recordGroup)

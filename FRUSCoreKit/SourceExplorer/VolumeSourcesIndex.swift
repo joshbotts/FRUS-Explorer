@@ -28,6 +28,8 @@ import Foundation
 ///   1.1 — 2026-10-27 (FRUS Explorer Light, S18b): moved into FRUSCoreKit with `CentralFilesIndex` and
 ///          `LotClaimantsIndex`, public with its decoder, for the Sources & Archives block a host outside the
 ///          app resolves; `VolumeSourcesIndexStore` stays in the app (`VolumeSourcesIndexStore.swift`)
+///   1.2 — 2026-11-08 (FRUS Explorer Light, S22a): `ArchivalResolution` public, what `ArchivalResolver`
+///          answers a host
 public struct VolumeSourcesIndex: Decodable, Sendable {
 
     /// Record-group headers → their resolved record, keyed by record-group **number** (`"59"`).
@@ -108,50 +110,50 @@ public struct VolumeSourcesIndex: Decodable, Sendable {
 // MARK: - ArchivalResolution
 
 /// A resolved NARA Catalog record for an archival collection (a record group or a lot file).
-struct ArchivalResolution: Decodable, Sendable, Equatable {
+public struct ArchivalResolution: Decodable, Sendable, Equatable {
     /// NARA Catalog National Archives Identifier.
-    let naId: String
+    public let naId: String
     /// Canonical `catalog.archives.gov/id/<naId>` URL string.
-    let catalogURL: String
+    public let catalogURL: String
     /// The record's authority title (e.g. "General Records of the Department of State").
-    let title: String
+    public let title: String
     /// The owning record group's number, when known.
-    let recordGroup: String?
+    public let recordGroup: String?
     /// How the match was made: `lot` (bundled index), `api` (NARA Catalog query), or `manual`.
-    let matchType: String
+    public let matchType: String
     /// The series' **HMS/MLR Entry Number(s)** — what NARA staff ask researchers to quote when
     /// requesting the records (#315/#322). Carried through from the enriched central-files index
     /// so this surface shows the same detail as Source Explorer. `nil` for record-group / API
     /// resolutions and un-enriched bundles (both render as nothing). Synthesized `Decodable`
     /// treats the missing key as `nil`, so older bundles still decode.
-    let hmsMlrEntryNumbers: [String]?
+    public let hmsMlrEntryNumbers: [String]?
     /// The resolved record's catalog level (`series`, `fileUnit`, …), when known (#315/#322).
-    let levelOfDescription: String?
+    public let levelOfDescription: String?
     /// NAID of the enclosing file series, when this record is a file unit rather than a series.
-    let seriesNaId: String?
+    public let seriesNaId: String?
     /// Title of the enclosing file series, for records whose own `title` names a file unit.
-    let seriesTitle: String?
+    public let seriesTitle: String?
     /// The **enclosing series'** HMS/MLR entry numbers — the parent's identifiers, not this
     /// record's; kept separate because a parent series may carry many (#315/#322).
-    let seriesHmsMlrEntryNumbers: [String]?
+    public let seriesHmsMlrEntryNumbers: [String]?
 
     /// The catalog record's URL, parsed once for `Link`/`openURL`.
-    var url: URL? { URL(string: catalogURL) }
+    public var url: URL? { URL(string: catalogURL) }
 
     /// Whether the resolved record is described at the series level — i.e. whether `title` is
     /// itself the file series name. `nil` level (an un-enriched bundle) reads as `false`.
-    var isSeriesLevel: Bool { levelOfDescription == "series" }
+    public var isSeriesLevel: Bool { levelOfDescription == "series" }
 
     /// Whether this resolution landed on a **file unit** rather than a series (#351). A State
     /// lot file is catalogued as a series; a `fileUnit` match is the wrong-collection class the
     /// #335 audit flagged (60 D 627 → "Operation Mongoose"), baked into this bundle before the
     /// resolver guard. The catalog affordance is withheld for these until #352 re-resolves them.
-    var isFileUnitLevel: Bool { levelOfDescription == "fileUnit" }
+    public var isFileUnitLevel: Bool { levelOfDescription == "fileUnit" }
 
     /// The **file series name** to display — the single accessor the UI should use, so the
     /// series/file-unit distinction cannot be got wrong at a call site (#315/#322). Mirrors
     /// `CentralFilesIndex.LotFileEntry.displaySeriesTitle`.
-    var displaySeriesTitle: String? { isSeriesLevel ? title : seriesTitle }
+    public var displaySeriesTitle: String? { isSeriesLevel ? title : seriesTitle }
 }
 
 // MARK: - MajorCollectionRecord

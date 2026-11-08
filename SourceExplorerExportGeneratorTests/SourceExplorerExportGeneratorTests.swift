@@ -17,8 +17,8 @@ import VolumeSourcesIndexGeneratorCore
 // MARK: - AuthorityLookupParityTests
 
 /// Fixture table locking `AuthorityLookup` to the app's `CollectionAuthorityIndex` lookup
-/// contract (`FRUSExplorer/SourceExplorer/CollectionAuthority.swift:137-157`, the documented
-/// 4-step order, and `:230-252`, the lookup implementations). One case per branch — if either
+/// contract (`FRUSCoreKit/SourceExplorer/CollectionAuthority.swift:143-167`, the documented
+/// 4-step order, and `:242-285`, the lookup implementations). One case per branch — if either
 /// copy drifts, a case here fails (the CrossRefKit parity pattern).
 struct AuthorityLookupParityTests {
 

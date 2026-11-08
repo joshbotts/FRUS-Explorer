@@ -17,12 +17,12 @@ import SourceNoteKit
 /// export reports exactly the authority matches the app UI shows.
 ///
 /// **Parity:** `record(forParsed:note:)` ≡ `CollectionAuthorityIndex.record(forParsed:note:)`
-/// (`FRUSExplorer/SourceExplorer/CollectionAuthority.swift:251`), and
+/// (`FRUSCoreKit/SourceExplorer/CollectionAuthority.swift:274`), and
 /// `record(repository:leadingSegment:)` ≡ the app's same-named lookup
-/// (`CollectionAuthority.swift:230`), reproduced branch-for-branch over the same shared
+/// (`CollectionAuthority.swift:242`), reproduced branch-for-branch over the same shared
 /// `SourceNoteKit.CollectionKeying` normalizers, with the `byId`/`byAlias`/`bySegment` map
-/// construction mirroring the app's decoder init (`CollectionAuthority.swift:182-212`).
-/// The lookup order (doc contract at `CollectionAuthority.swift:137-157`):
+/// construction mirroring the app's decoder init (`CollectionAuthority.swift:194-224`).
+/// The lookup order (doc contract at `CollectionAuthority.swift:143-167`):
 ///   1. the lot key (`"lot:" + lotFileNorm`) always wins;
 ///   2. the repository-scoped text key (`"txt:" + repoNorm + "|" + segmentNorm`);
 ///   3. the guarded unattributed bucket (`"txt:|" + segmentNorm`) — only for a non-generic

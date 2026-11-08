@@ -1,0 +1,520 @@
+// Copyright 2026 The FRUS Explorer Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+import Testing
+import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
+@testable import FRUSExplorer
+#endif
+// The package builds SourceNoteKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
+
+// MARK: - CollectionAuthorityStoreTests
+
+/// Exercises `CollectionAuthorityStore` over the **real bundled artifact**
+/// (`collection-authority.json`): the decode, and the documented lookup order —
+/// lot key, repository-scoped text key, unattributed bucket, unambiguous alias —
+/// plus the shared `CollectionKeying` derivations the lookups ride on
+/// (Source Explorer Phase 4 step 2).
+///
+/// Version history:
+///   1.0 — Session 2026-07-03: initial implementation
+///   1.1 — Session 2026-07-04 (Phase 4 verification): plural-folded segment norms;
+///          spot-check pins for the fold bridge and the grain-mismatch alias bridge
+///   1.2 — Session 2026-07-04 (Phase 4 adversarial review): step-3 guard pins
+///          (generic leads and shadowed segments never bridge to the unattributed
+///          bucket); phantom-repository pin (no Department-of-State NSF record)
+///   1.3 — 2026-10-01: #1468 — Indexed Central Files' printed title, and the name-length bound
+///   1.4 — index version 69: the record floors follow the regenerated authority (3,985 records)
+///   1.5 — index version 70 (A18): 3,985 → 3,977 records; the floor stays, and the comment says
+///          what went
+@Suite("CollectionAuthorityStore — bundled artifact lookups")
+struct CollectionAuthorityStoreTests {
+
+    /// The bundled index, required by every test in the suite.
+    private func index() throws -> CollectionAuthorityIndex {
+        try #require(CollectionAuthorityStore.shared,
+                     "collection-authority.json must decode from the app bundle")
+    }
+
+    @Test("The bundled artifact decodes with the expected shape")
+    func artifactDecodes() throws {
+        let index = try index()
+        #expect(index.schemaVersion == 1)
+        // The artifact carries 3,985 records since index version 69's regeneration (4,051 after
+        // #1514's, 4,083 after #1466/#1469, 4,432 before them), so this floor is about 1% under
+        // the real count. Kept there on purpose: each regeneration's lost records were read
+        // before they went (#1514's 57 are Sources rows filed under the Department of State or
+        // the National Archives that now take the library or university heading above them, 32
+        // of them merging into that holder's record; version 69's 66 are Sources rows that are a
+        // Subject-Numeric file designation, 62 of them with its description (`INCO–WOOL 17
+        // US–JAPAN: Wool trade between the U.S. and Japan`), which the class grammar refused
+        // until then, so each had been a collection named by its own text: 25 from
+        // frus1964-68v09 and 20 from frus1969-76ve13), and a regeneration that loses another
+        // fifty deserves the same reading. Version 70's (A18) was read: 3,985 → 3,977, as the
+        // Sources rows that name a Subject-Numeric file with no subject number, or one continued
+        // after a slash or by a name, now carry a class. 96 text-keyed records named by a row's
+        // whole text went and 88 named by the row's leading designation came, each with one class
+        // child (`AID ( IDA ): Aid, International Development Association` → `AID ( IDA )` with
+        // the child `AID (IDA)`, the shape `INCO 10 UN,` already had); the rest are rows that are
+        // a bare class under a heading the authority does not cluster (`POL 7 Saudi Arabia` in
+        // frus1969-76ve09p2), refused as an identity as every bare class leaf is
+        // (`CollectionKeying.frontMatterIdentity`) and reached by their class.
+        #expect(index.collections.count > 3940,
+                "the artifact carries ~3,985 records; got \(index.collections.count)")
+    }
+
+    #if !SWIFT_PACKAGE // the app's cold-start budget, timed where the app runs (CFAbsoluteTimeGetCurrent is Darwin's)
+    /// Cold-start guard: the store warm-up (read + decode + lookup-map build) happens
+    /// off the main thread on first access, but it must stay cheap enough that a
+    /// first per-row lookup soon after launch is not visibly delayed.
+    @Test("Store warm-up (read + decode + maps) stays under one second")
+    func decodeTimeBudget() throws {
+        let url = try #require(Bundle.main.url(forResource: "collection-authority",
+                                               withExtension: "json"))
+        let start = CFAbsoluteTimeGetCurrent()
+        let data = try Data(contentsOf: url)
+        let decoded = try JSONDecoder().decode(CollectionAuthorityIndex.self, from: data)
+        let elapsed = CFAbsoluteTimeGetCurrent() - start
+        #expect(decoded.collections.count > 3940)
+        print("[CollectionAuthorityStoreTests] warm-up decode: \(String(format: "%.0f", elapsed * 1000)) ms for \(data.count) bytes")
+        #expect(elapsed < 1.0, "warm-up took \(elapsed)s — cold-start budget exceeded")
+    }
+    #endif
+
+    @Test("Lot lookup (order step 1): the canonical compact key resolves the record")
+    func lotLookup() throws {
+        let index = try index()
+        let record = try #require(index.record(forLotNorm: "64D199"),
+                                  "Lot 64 D 199 (PPS-era Secretary's memoranda) is a corpus staple")
+        #expect(record.id == "lot:64D199")
+        #expect(record.repository == "Department of State")
+        #expect(record.naId == "602231", "the offline NAID resolution ships in the artifact")
+        #expect(record.url?.absoluteString.contains("catalog.archives.gov") == true)
+        #expect(record.volumeIds.count > 10, "cited across dozens of volumes")
+    }
+
+    @Test("Text lookup (order step 2) bridges full library names to the keyword bucket")
+    func repositoryScopedTextLookup() throws {
+        let index = try index()
+        // The full name canonicalizes to "Johnson Library" — the same bridging the
+        // generator applied, so the lookup lands in the same bucket.
+        let record = try #require(index.record(
+            repository: "Lyndon B. Johnson Library",
+            leadingSegment: "National Security File"))
+        #expect(record.id == "txt:johnson library|national security file")
+        #expect(!record.children.isEmpty, "NSF carries sub-series (Country File, …)")
+    }
+
+    @Test("Unattributed bucket (order step 3) is reached when the repo-scoped key misses")
+    func unattributedFallback() throws {
+        let index = try index()
+        // "USUN Files" is an unattributed series in the artifact (no Department-of-State
+        // bucket exists for it); querying it WITH a repository must still find it through
+        // the unattributed bucket, per the documented order — and the bare query resolves
+        // the same record directly. (This pin read "Administrative and Staff Files" until
+        // #1466's regeneration filed that series, correctly, under the Nixon materials.)
+        let viaRepo = try #require(index.record(repository: "Department of State",
+                                                leadingSegment: "USUN Files"))
+        #expect(viaRepo.id == "txt:|usun file")
+        let bare = index.record(repository: nil,
+                                leadingSegment: "USUN Files")
+        #expect(bare?.id == viaRepo.id)
+    }
+
+    @Test("Unattributed bucket (order step 3) is guarded: generic and shadowed segments never bridge")
+    func unattributedBucketGuard() throws {
+        let index = try index()
+        // (a) Generic leads: the artifact ships bare generic grab-bag records
+        // ("Subject File", "Country File"); an *attributed* citation whose repo-scoped
+        // key misses must never resolve to one (adversarial review 2026-07-04
+        // finding 4).
+        for generic in ["Subject File", "Country File"] {
+            let norm = CollectionKeying.segmentNorm(generic)
+            guard index.record(id: "txt:|" + norm) != nil else { continue }
+            let hit = index.record(repository: "Center of Military History",
+                                   leadingSegment: generic)
+            #expect(hit?.id != "txt:|" + norm,
+                    "\(generic): a generic lead must never bridge to the unattributed grab-bag")
+        }
+        // (b) Sole-record rule: a segment carried by BOTH an unattributed and an
+        // attributed record is shadowed — an attributed query from a third repository
+        // must not silently land on the unattributed bucket. (Bare unattributed
+        // queries still hit it directly through step 2.)
+        var segmentIds: [String: [String]] = [:]
+        for record in index.collections where record.id.hasPrefix("txt:") {
+            if let bar = record.id.firstIndex(of: "|") {
+                segmentIds[String(record.id[record.id.index(after: bar)...]),
+                           default: []].append(record.id)
+            }
+        }
+        let shadowed = segmentIds.filter {
+            $0.value.count > 1 && $0.value.contains("txt:|" + $0.key)
+                && !CollectionKeying.isGenericLead($0.key)
+                && !$0.value.contains("txt:center of military history|" + $0.key)
+        }
+        for (segment, _) in shadowed.sorted(by: { $0.key < $1.key }).prefix(3) {
+            let hit = index.record(repository: "Center of Military History",
+                                   leadingSegment: segment)
+            #expect(hit?.id != "txt:|" + segment,
+                    "\(segment): shadowed segments must not bridge to the unattributed bucket")
+            let bare = index.record(repository: nil, leadingSegment: segment)
+            #expect(bare?.id == "txt:|" + segment,
+                    "\(segment): a genuinely unattributed query still resolves directly")
+        }
+    }
+
+    @Test("No phantom Department-of-State buckets for presidential-library collections")
+    func noPhantomRepositoryBuckets() throws {
+        let index = try index()
+        // Adversarial review 2026-07-04 finding 1: secondary-copy citations minted
+        // "Department of State" records for the NSF / Whitman File / Dulles Papers.
+        // After the secondary-copy gate + regeneration these are gone, while the true
+        // library buckets remain.
+        for phantom in ["txt:department of state|whitman file",
+                        "txt:department of state|dulles paper",
+                        "txt:department of state|president's office file"] {
+            #expect(index.record(id: phantom) == nil,
+                    "\(phantom) is a phantom secondary-copy bucket")
+        }
+        // A small DoS NSF record legitimately survives: three volumes' front matter
+        // flat-encodes the Johnson Library heading as a *sibling* of its collections,
+        // so those rows inherit "Department of State" identically on both the
+        // generator and app sides (same key by construction — a corpus-encoding
+        // limitation, not the doc-note phantom, which spanned 18+ volumes).
+        let dosNSF = index.record(id: "txt:department of state|national security file")
+        #expect((dosNSF?.volumeIds.count ?? 0) < 6,
+                "the doc-note phantom mass must not return; got \(dosNSF?.volumeIds.count ?? 0) volumes")
+        let johnson = try #require(index.record(id: "txt:johnson library|national security file"))
+        #expect(johnson.volumeIds.count > 40, "the true Johnson NSF bucket keeps its mass")
+        #expect(index.record(id: "txt:kennedy library|national security file") != nil)
+        #expect(index.record(id: "txt:eisenhower library|whitman file") != nil)
+    }
+
+    /// The artifact and the keying must ship together.
+    ///
+    /// Every `txt:` id is a merge key produced by `CollectionKeying`. If the normalizer gains a
+    /// fold and the artifact is not regenerated, records that today's keying would have merged
+    /// sit in the bundle under their old separate ids — and every runtime lookup, which computes
+    /// the *new* key, misses them. Measured on the 2026-08-06 fold: shipping the code against
+    /// the stale artifact cost **290 documents**, silently.
+    ///
+    /// So: no two shipped ids may collide under the current normalizer.
+    @Test("No two authority ids collide under the current keying")
+    func artifactIsKeyedWithTheCurrentNormalizer() throws {
+        let index = try index()
+        var byRekeyed: [String: [String]] = [:]
+        for record in index.collections where record.id.hasPrefix("txt:") {
+            let body = record.id.dropFirst(4)
+            guard let bar = body.firstIndex(of: "|") else { continue }
+            let repo = String(body[..<bar]), segment = String(body[body.index(after: bar)...])
+            // Re-apply the normalizer to the stored key halves. A key already in normal form is
+            // a fixed point; one minted by an older normalizer is not.
+            let rekeyed = "txt:" + CollectionKeying.normalized(repo) + "|"
+                + CollectionKeying.segmentNorm(segment)
+            byRekeyed[rekeyed, default: []].append(record.id)
+        }
+        let collisions = byRekeyed.filter { $0.value.count > 1 }
+        let collisionDetail = "\(collisions.count) id groups collide under today's keying — regenerate collection-authority.json: \(collisions.values.prefix(3).map { $0.sorted() })"
+        #expect(collisions.isEmpty, Comment(rawValue: collisionDetail))
+        let notFixedPoints = byRekeyed.filter { $0.value.first != $0.key }
+        let staleDetail = "\(notFixedPoints.count) ids are not in current normal form, e.g. \(notFixedPoints.first.map { "\($0.value.first ?? "") -> \($0.key)" } ?? "")"
+        #expect(notFixedPoints.isEmpty, Comment(rawValue: staleDetail))
+    }
+
+    /// A two-record index in which `lotAlias` is carried by exactly one record — a `lot:`
+    /// cluster — so the cross-domain alias bridge the #351/#373 guards exist to block is
+    /// actually reachable. The shipped artifact stopped offering it when the possessive fold
+    /// made the alias ambiguous; the guards still have to work.
+    private static func syntheticIndex(lotAlias: String) throws -> CollectionAuthorityIndex {
+        let doc = """
+        {"schemaVersion":1,"generated":"2026-01-01","collections":[
+          {"id":"lot:66D204","name":"Presidential Correspondence: Lot 66 D 204",
+           "repository":"Department of State","lotFileNorm":"66D204","aliases":["\(lotAlias)"]},
+          {"id":"txt:carter library|plains file","name":"Plains File","repository":"Carter Library"}
+        ]}
+        """
+        return try JSONDecoder().decode(CollectionAuthorityIndex.self, from: Data(doc.utf8))
+    }
+
+    @Test("Alias lookup (order step 4): unique forms resolve, shared forms never do")
+    func aliasLookup() throws {
+        let index = try index()
+        // A form unique to Lot 64 D 199 (an editor's typo the corpus actually prints).
+        let unique = index.uniqueRecord(
+            forAliasNorm: CollectionKeying.segmentNorm("Secretary’s Memoranda of Conservation, Lot 64 D 199"))
+        #expect(unique?.id == "lot:64D199")
+        // "PPS Files" is carried by many lot records — ambiguous, must not resolve.
+        #expect(index.uniqueRecord(forAliasNorm: CollectionKeying.segmentNorm("PPS Files")) == nil,
+                "a shared alias may never route to one collection")
+    }
+
+    @Test("Parsed-note lookup: a lot citation lands on its lot record")
+    func parsedLotNote() throws {
+        let index = try index()
+        let note = "Source: Department of State, Secretary’s Memoranda of Conversation, Lot 64 D 199. Secret."
+        let parsed = ParsedSourceNote.lotFile(recordGroup: "RG-59",
+                                              lotNumber: "64 D 199", fileIdentifier: nil)
+        let record = try #require(index.record(forParsed: parsed, note: note))
+        #expect(record.id == "lot:64D199")
+    }
+
+    @Test("Parsed-note lookup: a presidential-library citation lands on its text record")
+    func parsedLibraryNote() throws {
+        let index = try index()
+        let note = "Source: Johnson Library, National Security File, Country File, Vietnam, Box 1. Secret."
+        let parsed = ParsedSourceNote.presidentialLibrary(
+            library: "Johnson Library",
+            collection: "National Security File, Country File, Vietnam",
+            fileIdentifier: nil)
+        let record = try #require(index.record(forParsed: parsed, note: note))
+        #expect(record.id == "txt:johnson library|national security file",
+                "the leading merge segment (not the full locator chain) is the identity")
+    }
+
+    @Test("Front-matter lookup: a class leaf under the central files takes the DoS override")
+    func frontMatterCentralFilesOverride() throws {
+        let index = try index()
+        // Front matter nests the central files under a National Archives heading, but
+        // the shared identity forces the Department of State bucket — the same
+        // override the generator applied, so the row joins its doc-note siblings.
+        let record = try #require(index.record(
+            forFrontMatterText: "Central Files 1967–69: POL 27 ARAB–ISR",
+            repository: "National Archives",
+            lotFileNorm: nil,
+            decimalClass: "POL 27 ARAB-ISR"))
+        #expect(record.id == "txt:department of state|central files 1967-69")
+        #expect(record.repository == "Department of State")
+    }
+
+    /// Phase 4 verification pin: the artifact's shape for a famous lot, the
+    /// singular/plural fold bridge, and the alias bridge for a Phase-3
+    /// grain-mismatch case — the three spot-check families the verification
+    /// session confirmed, kept green against future regenerations.
+    @Test("Verification pin: 64D199 shape, plural-fold bridge, grain-mismatch bridge")
+    func verificationPins() throws {
+        let index = try index()
+
+        // (a) Known-record shape: Lot 64 D 199 spans its dash/space alias variants
+        // and dozens of citing volumes across three subseries.
+        let lot = try #require(index.record(forLotNorm: "64D199"))
+        #expect(lot.aliases.contains("64 D 199"))
+        #expect(lot.aliases.contains("Secretary’s Memoranda of Conversation"))
+        #expect(lot.volumeIds.contains("frus1952-54v03"))
+        #expect(lot.volumeIds.contains("frus1958-60v12"))
+
+        // (b) Plural-fold bridge: the corpus writes the Kennedy NSF mostly in the
+        // plural; both forms must land on ONE record (38 singular/plural level-1
+        // splits collapsed in this verification pass — Whitman File, Kennedy and
+        // Johnson NSF among them).
+        let plural = try #require(index.record(repository: "Kennedy Library",
+                                               leadingSegment: "National Security Files"))
+        let singular = try #require(index.record(repository: "Kennedy Library",
+                                                 leadingSegment: "National Security File"))
+        #expect(plural.id == singular.id)
+        #expect(plural.id == "txt:kennedy library|national security file")
+
+        // (c) Grain-mismatch bridge (Phase 3 bucket): a doc note reaches the library
+        // sub-collection "Confidential File" as a level-2 child of White House
+        // Central Files, while the front-matter grain has it as its own level-1
+        // record — both resolve, and the child name matches the level-1 record's
+        // name, so the surfaces bridge the two grains.
+        let whcf = try #require(index.record(repository: "Johnson Library",
+                                             leadingSegment: "White House Central Files"))
+        #expect(whcf.children.contains { $0.name == "Confidential File" },
+                "the WHCF record must carry the Confidential File sub-series")
+        let confidential = try #require(index.record(repository: "Johnson Library",
+                                                     leadingSegment: "Confidential File"))
+        #expect(confidential.id == "txt:johnson library|confidential file")
+    }
+
+    @Test("Front-matter lookup: a lot-keyed row resolves through its lot, not its text")
+    func frontMatterLotRow() throws {
+        let index = try index()
+        let record = try #require(index.record(
+            forFrontMatterText: "Secretary’s Memoranda of Conversation: Lot 64 D 199",
+            repository: "National Archives",
+            lotFileNorm: "64D199",
+            decimalClass: nil))
+        #expect(record.id == "lot:64D199")
+    }
+
+    /// #351 domain guard, end-to-end against the bundled artifact. Lot 66 D 204 carries the
+    /// alias "Presidential Files", so absent the guard a Carter-library note whose leading
+    /// collection segment is "Presidential Files" bridges (order step 4, unique alias) onto that
+    /// State lot record — the wrong-archive match the #335 audit flagged (frus1977-80v27/d137).
+    /// The guard must block the cross-domain resolution while leaving the genuine lot note intact.
+    @Test("#351 domain guard: a presidential-library note never resolves to a lot cluster")
+    func presidentialLibraryDomainGuard() throws {
+        let index = try index()
+        // The bundled artifact no longer OFFERS this bridge, and that is a second, independent
+        // improvement rather than a weakening: since the 2026-08-06 possessive fold, Carter's
+        // "President\u{2019}s Files" and the lot's "Presidential Files" alias share one normal
+        // form, so step 4's own uniqueness rule refuses them both before the domain guard is
+        // consulted. Pinned so the change is visible if the artifact is ever regenerated back.
+        #expect(index.uniqueRecord(forAliasNorm: CollectionKeying.segmentNorm("Presidential Files")) == nil,
+                "the alias is shared by two records and must not resolve through step 4 at all")
+        // The guard itself is therefore exercised against a synthetic index where the
+        // cross-domain alias IS unique — otherwise this test would prove nothing.
+        let synthetic = try Self.syntheticIndex(lotAlias: "Presidential Files")
+        #expect(synthetic.uniqueRecord(
+            forAliasNorm: CollectionKeying.segmentNorm("Presidential Files"))?.id == "lot:66D204",
+                "synthetic precondition: the bridge must exist for the guard to have work to do")
+        let libParseSynthetic = ParsedSourceNote.presidentialLibrary(
+            library: "Carter Library", collection: "Presidential Files", fileIdentifier: nil)
+        #expect(synthetic.record(forParsed: libParseSynthetic,
+                                 note: "Source: Carter Library, Presidential Files, Box 1.") == nil,
+                "the #351 guard must block the cross-domain resolution where it is reachable")
+        // A presidential-library note with that leading segment must NOT land on any lot cluster.
+        let note = "Source: Carter Library, Presidential Files, Box 1."
+        let parsed = ParsedSourceNote.presidentialLibrary(
+            library: "Carter Library", collection: "Presidential Files", fileIdentifier: nil)
+        let resolved = index.record(forParsed: parsed, note: note)
+        #expect(resolved?.id.hasPrefix("lot:") != true,
+                "a library note must never land on a State lot cluster; got \(resolved?.id ?? "nil")")
+        // A genuine lot citation still resolves to the same lot record — the guard is domain-scoped.
+        let lotNote = "Source: Department of State, Presidential Correspondence, Lot 66 D 204."
+        let lotParsed = ParsedSourceNote.lotFile(recordGroup: "RG-59",
+                                                 lotNumber: "66 D 204", fileIdentifier: nil)
+        #expect(index.record(forParsed: lotParsed, note: lotNote)?.id == "lot:66D204")
+    }
+
+    /// #351 domain guard, isolated from the artifact: `domainFiltered` rejects exactly the
+    /// presidential-library × lot-cluster cross-domain and nothing else.
+    @Test("#351 domainFiltered rejects only the presidential-library × lot cross-domain")
+    func domainFilteredUnit() {
+        let lotRec = AuthorityCollectionRecord(id: "lot:66D204", name: "Presidential Correspondence")
+        let txtRec = AuthorityCollectionRecord(id: "txt:carter library|presidential file",
+                                               name: "Presidential File")
+        let libParse = ParsedSourceNote.presidentialLibrary(
+            library: "Carter Library", collection: "Presidential Files", fileIdentifier: nil)
+        let lotParse = ParsedSourceNote.lotFile(recordGroup: nil, lotNumber: "66 D 204",
+                                                fileIdentifier: nil)
+        // library note × lot record → rejected; library note × text record → kept.
+        #expect(CollectionAuthorityIndex.domainFiltered(lotRec, for: libParse) == nil)
+        #expect(CollectionAuthorityIndex.domainFiltered(txtRec, for: libParse)?.id == txtRec.id)
+        // lot note × lot record → kept; nil stays nil.
+        #expect(CollectionAuthorityIndex.domainFiltered(lotRec, for: lotParse)?.id == lotRec.id)
+        #expect(CollectionAuthorityIndex.domainFiltered(nil, for: libParse) == nil)
+    }
+
+    /// #373: the front-matter entry point gets the same domain guard as `record(forParsed:)` —
+    /// a library-repository row must not alias-bridge to a State lot cluster — but keyed on the
+    /// row's `repository` (there is no `ParsedSourceNote` on this path).
+    @Test("#373 front-matter domain guard: a library-repository row never resolves to a lot cluster")
+    func frontMatterDomainGuard() throws {
+        let index = try index()
+        // As in `presidentialLibraryDomainGuard`: the shipped artifact no longer offers the
+        // bridge (the alias is now shared), so the guard is exercised against a synthetic index
+        // where it is reachable.
+        let synthetic = try Self.syntheticIndex(lotAlias: "Presidential Files")
+        #expect(synthetic.record(forFrontMatterText: "Presidential Files",
+                                 repository: "Carter Library", lotFileNorm: nil,
+                                 decimalClass: nil) == nil,
+                "the #373 front-matter guard must block the cross-domain resolution")
+        // A library-repository front-matter row whose leading segment is "Presidential Files" must
+        // NOT land on the State lot cluster.
+        let resolved = index.record(forFrontMatterText: "Presidential Files",
+                                    repository: "Carter Library", lotFileNorm: nil, decimalClass: nil)
+        #expect(resolved?.id.hasPrefix("lot:") != true,
+                "a library-repo row must not bridge to a lot cluster; got \(resolved?.id ?? "nil")")
+        // An explicit lot-file row still resolves to its lot even under a library repository.
+        #expect(index.record(forFrontMatterText: "Presidential Correspondence: Lot 66 D 204",
+                             repository: "Carter Library", lotFileNorm: "66D204", decimalClass: nil)?
+            .id == "lot:66D204")
+    }
+
+    // MARK: - #1466 and #1469 on the regenerated artifact
+
+    /// #1466's type case. frus1952-54v12p1 prints the Eisenhower Library as a childless item with
+    /// its collections after it, so the authority shipped a second Whitman File with no repository
+    /// (17 volumes) — drawn under Other institutions in the Archival network — and the Eisenhower
+    /// record lacked frus1952-54v12p1 and v12p2.
+    /// What remains of the repository-less record is the two microfiche supplements, whose Sources
+    /// lists print no repository at all — they name the Eisenhower Library only in the prose above
+    /// the list, which no heading rule can read.
+    @Test("The Whitman File's volumes are filed under the Eisenhower Library (#1466)")
+    func whitmanFileIsAttributed() throws {
+        let index = try index()
+        let eisenhower = try #require(index.record(id: "txt:eisenhower library|whitman file"))
+        #expect(eisenhower.volumeIds.contains("frus1952-54v12p1"), "\(eisenhower.volumeIds.count) volumes")
+        #expect(eisenhower.volumeIds.contains("frus1952-54v12p2"), "\(eisenhower.volumeIds.count) volumes")
+        let unattributed = index.record(id: "txt:|whitman file")?.volumeIds ?? []
+        #expect(Set(unattributed).isSubset(of: ["frus1958-60v03mSupp", "frus1958-60v05mSupp"]),
+                "the repository-less duplicate still holds \(unattributed)")
+    }
+
+    /// #1469: frus1955-57v13's Sources division encloses its List of Abbreviations and List of
+    /// Persons, and 309 of the 312 records citing only that volume were their entries. Of the three
+    /// real collections the issue names, two still cite only v13 — Lot 61 D 233, and the Kevin
+    /// McCann Records, now keyed under the Eisenhower Library — and the third, ICA Message Files:
+    /// FRC 58 A 403, merged into the Washington National Records Center record v12 and v22 cite.
+    /// The two survivors are asserted by id, which is also what keeps the test from passing over an
+    /// empty collection list.
+    @Test("No record is a frus1955-57v13 person or abbreviation (#1469)")
+    func noApparatusRecords() throws {
+        let index = try index()
+        let onlyV13 = index.collections.filter { $0.volumeIds == ["frus1955-57v13"] }
+        #expect(Set(onlyV13.map(\.id)) == ["lot:61D233", "txt:eisenhower library|kevin mccann record"],
+                """
+                \(onlyV13.count) records cite only frus1955-57v13: \(onlyV13.prefix(8).map(\.name))
+                """)
+        for pseudo in ["Deptel, Department of State telegram", "ARAMCO, Arabian–American Oil Company",
+                       "AmEmb, American Embassy"] {
+            #expect(!index.collections.contains { $0.name == pseudo }, "\(pseudo) is an abbreviation")
+        }
+        #expect(!index.collections.contains { $0.name.hasPrefix("Cabell, Lt. Gen.") },
+                "a List of Persons entry is not a collection")
+    }
+
+    /// #1469's one misattributed document: frus1955-57v09 d165's note named the Eisenhower
+    /// Library's Dulles telephone conversations, and resolved through the `Dulles` segment to the
+    /// persons-list pseudo-record "Dulles, Allen W., Director of Central Intelligence".
+    @Test("The v09 Dulles telephone note no longer resolves to a List of Persons entry (#1469)")
+    func dullesTelephoneNoteIsNotAPerson() throws {
+        let index = try index()
+        let note = "Source: Eisenhower Library, Dulles, General Telephone Conversations. Transcribed by Mildred Asbjornson."
+        let resolved = index.record(forParsed: SourceNoteParser().parse(note), note: note)
+        #expect(resolved?.name.hasPrefix("Dulles, Allen W.") != true,
+                "resolved to \(resolved?.id ?? "nil") — \(resolved?.name ?? "")")
+        #expect(index.record(id: "txt:|dulle") == nil)
+    }
+
+    /// #1468, decision D11: a front-matter item over 100 characters that opens with a printed title
+    /// names its record by that title. Indexed Central Files was named by its 2,150-character
+    /// paragraph (frus1961-63v17 and v18), which the Archival network's panel drew as its heading;
+    /// the paragraph stays, as the one alias the 12-alias cap never drops.
+    @Test("Indexed Central Files is named by its printed title and keeps its paragraph as an alias (#1468)")
+    func indexedCentralFilesIsNamedByItsTitle() throws {
+        let index = try index()
+        let record = try #require(index.record(id: "txt:department of state|indexed central file"))
+        #expect(record.name == "Indexed Central Files")
+        let paragraph = try #require(record.aliases.first { $0.hasPrefix("Indexed Central Files. The main source of documentation") },
+                                     "the paragraph is no longer among \(record.aliases.count) aliases")
+        #expect(paragraph.count > 2_000, "\(paragraph.count) characters")
+        #expect(record.volumeIds.count == 23)
+    }
+
+    /// The printed-title rule shortens the names that have a title to cut at, and no top-level name
+    /// now runs past a thousand characters: before it two did (2,646 and 2,150 characters). Names
+    /// that print no title stay whole — the longest, 818 characters, is `Files of the Office of the
+    /// Director`, frus1952-54v06p1's plain item — and are the selected-node card's to cap (#1468).
+    @Test("No top-level authority name runs past a thousand characters (#1468)")
+    func noNameRunsPastAThousandCharacters() throws {
+        let index = try index()
+        let long = index.collections.filter { $0.name.count > 1_000 }
+        #expect(long.isEmpty, "\(long.map { "\($0.id): \($0.name.count)" })")
+        #expect(index.collections.count > 3_940, "read \(index.collections.count) records")
+    }
+}
