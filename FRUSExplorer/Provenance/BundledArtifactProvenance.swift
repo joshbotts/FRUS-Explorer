@@ -112,7 +112,9 @@ enum BundledArtifactProvenance {
             generator: "ResolvedEdgeIndex", inputs: ["VOLUMES_DIR", "MANIFEST"], source: .frusText),
         // The editors' annotations design (2026-11-06): what each volume's editors annotated, counted
         // from a full index of the same volumes built through the kit's pipeline and one SAX pass
-        // over their TEI.
+        // over their TEI. Since 2026-11-08 (schema version 2) the pass also counts the editors'
+        // bracketed omissions and reads each volume's publication year from its header: the same
+        // inputs, so the same tier.
         "volume-annotations-index.json": .init(
             generator: "VolumeAnnotationsIndex", inputs: ["VOLUMES_DIR", "MANIFEST"], source: .frusText),
         "source-provenance-index.json": .init(

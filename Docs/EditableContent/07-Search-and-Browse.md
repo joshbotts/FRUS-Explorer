@@ -3289,6 +3289,12 @@ Redactions marked as not declassified
 
 <!-- END SOURCE: browser.volume.annotations.excisions -->
 
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.editorialOmissions -->
+
+Marked editorial omissions
+
+<!-- END SOURCE: browser.volume.annotations.editorialOmissions -->
+
 <!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.despatch -->
 
 Despatch numbers
@@ -3410,6 +3416,18 @@ archival citations and file numbers
 %@ documents with redactions marked
 
 <!-- END SOURCE: browser.volume.annotations.excisions.many -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.editorialOmissions.one -->
+
+%@ document with an editorial omission marked
+
+<!-- END SOURCE: browser.volume.annotations.editorialOmissions.one -->
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.editorialOmissions.many -->
+
+%@ documents with editorial omissions marked
+
+<!-- END SOURCE: browser.volume.annotations.editorialOmissions.many -->
 
 <!-- SOURCE: FRUSExplorer/Browser/VolumeAnnotationsPresentation.swift | key: browser.volume.annotations.editorialNotes.one -->
 
@@ -3843,6 +3861,18 @@ A volume counts when one of its documents marks a redaction as not declassified:
 
 <!-- END SOURCE: browser.annotations.rule.excisions -->
 
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.editorialOmissions -->
+
+Since Secretary Kellogg’s 1925 order, where the editors left out part of a document as not relevant to the volume, they could say so in brackets and describe what was omitted. Until the 1991 statute an ellipsis could also mark an omission, the editors’ or a redaction, and those are not counted here. Volumes published before the order marked an omission with a row of asterisks, not a bracketed note, and are not counted here.
+
+<!-- END SOURCE: browser.annotations.practice.editorialOmissions -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.rule.editorialOmissions -->
+
+A volume published from 1925 counts when one of its documents says, in brackets, what the editors left out: “[Here follows …]” or “[Omitted here is …]”.
+
+<!-- END SOURCE: browser.annotations.rule.editorialOmissions -->
+
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.despatch -->
 
 Older volumes print the number a diplomatic post gave each despatch it sent, “No. 74.”, by which the despatch is found in the archives.
@@ -4030,6 +4060,12 @@ Prints a List of Persons, but none of its documents links a name to it.
 Prints a List of Abbreviations, but none of its documents links a term to it.
 
 <!-- END SOURCE: browser.annotations.note.abbreviations.unlinked -->
+
+<!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.note.editorialOmissions.before1925 -->
+
+Published before the 1925 order, when the editors marked an omission with a row of asterisks, not a bracketed note.
+
+<!-- END SOURCE: browser.annotations.note.editorialOmissions.before1925 -->
 
 ### 20.5 A volume page's rows
 

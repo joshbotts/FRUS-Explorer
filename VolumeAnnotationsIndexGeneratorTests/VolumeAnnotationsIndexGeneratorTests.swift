@@ -28,6 +28,9 @@ import Testing
 ///   1.1 — 2026-11-06: a volume that names its people and terms on each document's `@ana`
 ///          (`frus1981-88v16`), and one that prints an Index of Persons (`frus1941-43`, index
 ///          version 74)
+///   1.2 — 2026-11-08: the editors' bracketed omissions and the header's publication year (Lane 1
+///          of `Planning/Editors-Annotations-Followups-2026-11-08.md`): the rule's positives and
+///          negatives, the own-text walk, and the 1925 gate through the pipeline
 @Suite("VolumeAnnotationsIndexGenerator — what each volume's editors annotated")
 struct VolumeAnnotationsIndexGeneratorTests {
 
@@ -37,7 +40,7 @@ struct VolumeAnnotationsIndexGeneratorTests {
         <?xml version="1.0" encoding="UTF-8"?>
         <TEI xmlns="http://www.tei-c.org/ns/1.0">
           <teiHeader><fileDesc><titleStmt><title>frus1969-76v99</title></titleStmt>
-          <publicationStmt><date>2026</date></publicationStmt>
+          <publicationStmt><date calendar="gregorian" type="publication-date">2026</date></publicationStmt>
           <sourceDesc><p>Test fixture</p></sourceDesc></fileDesc></teiHeader>
           <text>
             <front>
@@ -133,6 +136,68 @@ struct VolumeAnnotationsIndexGeneratorTests {
         </div>
         """
 
+    /// The editors' bracketed omissions, one case a document, and a header whose publication date
+    /// the gate reads. The brackets are the corpus's (`Planning/editors-annotations/omission-markers.out`):
+    /// o1 "[Here follows …]"; o2 the same bracket inside a footnote, which is not the document's own
+    /// text; o3 a redaction phrased as an omission, the Redactions layer's; o4 the editors' remark on
+    /// a garbled telegram; o5 a bracket broken across a printed line; o6 "[Omitted here is …]"; o7
+    /// "… here omitted …"; o8 a bracket in the source note alone; o9 "Omitted here is …" after a
+    /// stage direction; o10 a lower-case opener, which the case-sensitive rule leaves out; o11
+    /// "printed infra", an omission in place, which counts. Six of the eleven link a person, so the
+    /// volume carries people tagging and the run does not refuse it.
+    static func omissionsXML(publicationDate: String) -> String {
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>frus1969-76v99</title></titleStmt>
+          <publicationStmt>\(publicationDate)</publicationStmt>
+          <sourceDesc><p>Test fixture</p></sourceDesc></fileDesc></teiHeader>
+          <text>
+            <front>
+              <div type="section" subtype="index" xml:id="persons"><head>Persons</head>
+                <list><item><persName xml:id="p_KHA1">Kissinger, Henry A.</persName></item></list>
+              </div>
+            </front>
+            <body><div type="compilation" xml:id="comp1"><head>Omissions</head>
+              <div type="document" xml:id="o1" n="1"><head>1. Memorandum</head>
+                <p><persName corresp="#p_KHA1">Kissinger</persName> spoke.</p>
+                <p>[Here follows discussion of unrelated matters.]</p></div>
+              <div type="document" xml:id="o2" n="2"><head>2. Memorandum</head>
+                <p><persName corresp="#p_KHA1">Kissinger</persName> was present.</p>
+                <p>The text.<note n="1" xml:id="o2fn1">[Here follows a table showing the number of members in each party.]</note></p></div>
+              <div type="document" xml:id="o3" n="3"><head>3. Estimate</head>
+                <p><persName corresp="#p_KHA1">Kissinger</persName> was present.</p>
+                <p>[Here follow 6-1/2 pages of source text scheduled for inclusion in the Supplement but not declassified.]</p></div>
+              <div type="document" xml:id="o4" n="4"><head>4. Telegram</head>
+                <p><persName corresp="#p_KHA1">Kissinger</persName> was present.</p>
+                <p>The Minister [apparent omission] the note [omission?] and [sic] the rest [omission in the original].</p></div>
+              <div type="document" xml:id="o5" n="5"><head>5. Telegram</head>
+                <p><persName corresp="#p_KHA1">Kissinger</persName> was present.</p>
+                <p>[Here<lb/>follows the text of the note, printed on page 80.]</p></div>
+              <div type="document" xml:id="o6" n="6"><head>6. Paper</head>
+                <p><persName corresp="#p_KHA1">Kissinger</persName> was present.</p>
+                <p>[Omitted here is the Table of Contents.]</p></div>
+              <div type="document" xml:id="o7" n="7"><head>7. Telegram</head>
+                <p>[The paragraph here omitted summarized telegram 2385, July 1, printed supra.]</p></div>
+              <div type="document" xml:id="o8" n="8"><head>8. Memorandum<note type="source" xml:id="o8fn0">Source: [Here follows the file citation.] Secret.</note></head>
+                <p>The text alone.</p></div>
+              <div type="document" xml:id="o9" n="9"><head>9. Conversation</head>
+                <p>[Agnew left at 10:35 a.m. Omitted here is discussion unrelated to the Vice President.]</p></div>
+              <div type="document" xml:id="o10" n="10"><head>10. Despatch</head>
+                <p>The consul wrote as follows: [here follows copy of the consul’s letter of 17th April].</p></div>
+              <div type="document" xml:id="o11" n="11"><head>11. Telegram</head>
+                <p>[Here follows text of the aide-mémoire of May 9, 1938, from the French Embassy, printed infra.]</p></div>
+            </div></body>
+          </text>
+        </TEI>
+        """
+    }
+
+    /// A header's publication date, as the corpus prints it: the year as text, or on `@when`.
+    static let published1924 = #"<date calendar="gregorian" type="publication-date">1924</date>"#
+    static let published1925 = #"<date calendar="gregorian" type="publication-date">1925</date>"#
+    static let publishedOnWhen = #"<date calendar="gregorian" type="publication-date" when="1996-05-01"></date>"#
+
     // MARK: Helpers
 
     /// A corpus folder holding `xml` as one volume, a manifest naming it, and the run's paths.
@@ -201,6 +266,94 @@ struct VolumeAnnotationsIndexGeneratorTests {
         #expect(form(nil, false) == nil)
     }
 
+    @Test("A bracket marks an omission by the three patterns, and not when it says not declassified")
+    func omissionMarkers() {
+        let marks: (String) -> Bool = { EditorialOmissionMarkers.isMarkedOmission(Substring($0)) }
+        // Pattern 1.
+        #expect(marks("Here follows discussion of Vietnam."))
+        #expect(marks("Here follow the names of the signatories."))
+        #expect(marks(" Here follows, in the Spanish text, the same message."))
+        // Pattern 2, at the start and after a stage direction.
+        #expect(marks("Omitted here is the Table of Contents."))
+        #expect(marks("Omitted here are two paragraphs on Laos."))
+        #expect(marks("Omitted from this document is the annex."))
+        #expect(marks("Omitted are paragraphs 1–44."))
+        #expect(marks("The recording began while the meeting was in progress. Omitted here is discussion of domestic support."))
+        // Pattern 3, anywhere.
+        #expect(marks("The next three paragraphs, which have been omitted, are the same, mutatis mutandis."))
+        #expect(marks("The letter has been omitted."))
+        #expect(marks("The final paragraph, which is omitted, listed the positions of the leaders."))
+        #expect(marks("For texts of articles XIX and XXVI which are omitted, see the draft treaty."))
+        #expect(marks("The paragraph here omitted summarized telegram 2385."))
+        #expect(marks("A few sentences of remarks by the Shah are here omitted."))
+        // An omission in place counts (the owner's decision of 2026-11-08).
+        #expect(marks("Here follows text of the aide-mémoire of May 9, 1938, printed infra."))
+        // A nested bracket is read whole.
+        #expect(marks("Here follows the text [sic] of the note."))
+        // A redaction phrased as an omission is the Redactions layer's.
+        #expect(!marks("Here follows a short paragraph not declassified by the NSC Staff."))
+        #expect(!marks("Here follow paragraphs 6–14, which contain an assessment of [text not declassified]."))
+        #expect(!marks("1 paragraph (2 lines) not declassified"))
+        // The editors' remarks on a garbled original.
+        #expect(!marks("apparent omission"))
+        #expect(!marks("omission?"))
+        #expect(!marks("omission in the original"))
+        #expect(!marks("sic"))
+        #expect(!marks("omitted from?"))
+        // Phrasings the rule leaves out, each recorded by the sweep.
+        #expect(!marks("here follows copy of the consul’s letter"))
+        #expect(!marks("Letter omitted."))
+        #expect(!marks("Chinese text not printed."))
+        #expect(!marks("A broad-ranging discussion of 39 minutes was not transcribed."))
+        #expect(!marks("The meeting ended."))
+        #expect(!marks(""))
+    }
+
+    @Test("Brackets are read whole, nesting followed; a stray closer and an unclosed opener are passed over")
+    func bracketsFollowNesting() {
+        let text = "No. 1315.] Sir: [Here follows the text [sic] of the note.] Then [apparent omission] and [an opener that never closes"
+        #expect(EditorialOmissionMarkers.brackets(in: text).map(String.init)
+                == ["Here follows the text [sic] of the note.", "apparent omission"])
+        #expect(EditorialOmissionMarkers.brackets(in: "no brackets").isEmpty)
+        #expect(EditorialOmissionMarkers.marksAnOmission(in: text))
+        #expect(!EditorialOmissionMarkers.marksAnOmission(in: "Here follows the text, unbracketed."))
+        let long = "[" + String(repeating: "x", count: EditorialOmissionMarkers.longestBracket + 10) + "]"
+        #expect(EditorialOmissionMarkers.brackets(in: long).isEmpty, "a bracket past the cap is passed over")
+    }
+
+    @Test("A publication year is the header's first four-digit run, from the text or from @when")
+    func publicationYears() {
+        #expect(EditorialOmissionMarkers.year(in: "1948") == 1948)
+        #expect(EditorialOmissionMarkers.year(in: "2026-03-15") == 2026)
+        #expect(EditorialOmissionMarkers.year(in: " 1861 ") == 1861)
+        #expect(EditorialOmissionMarkers.year(in: "n.d.") == nil)
+        #expect(EditorialOmissionMarkers.year(in: "") == nil)
+    }
+
+    @Test("The TEI scan reads omissions from the document's own text, notes left out, and the header's year")
+    func scanReadsOmissionsAndThePublicationYear() throws {
+        let scan = try TEIAnnotationScanner.scan(data: Data(Self.omissionsXML(publicationDate: Self.published1925).utf8))
+        #expect(scan.publicationYear == 1925)
+        #expect(scan.documentIds.count == 11)
+        func omits(_ id: String) -> Bool { scan.features[id]?.editorialOmissions == true }
+        #expect(omits("o1") && omits("o5") && omits("o6") && omits("o7") && omits("o9") && omits("o11"))
+        // A bracket inside a footnote is the note's, not the document's; the footnote still counts.
+        #expect(!omits("o2") && scan.features["o2"]?.footnotes == true)
+        // A redaction phrased as an omission: the Redactions layer's, never this one.
+        #expect(!omits("o3") && scan.features["o3"]?.excisions == true)
+        #expect(!omits("o4") && !omits("o8") && !omits("o10"))
+        #expect(scan.features["o8"]?.excisions == false)
+        // The year from @when where the text is empty, and none where the header prints none.
+        #expect(try TEIAnnotationScanner.scan(data: Data(Self.omissionsXML(publicationDate: Self.publishedOnWhen).utf8))
+                    .publicationYear == 1996)
+        #expect(try TEIAnnotationScanner.scan(data: Data(Self.omissionsXML(publicationDate: "<date>1996</date>").utf8))
+                    .publicationYear == nil)
+        // The main fixture's year, and that its one bracket, a redaction, marks no omission.
+        let main = try TEIAnnotationScanner.scan(data: Data(Self.xml.utf8))
+        #expect(main.publicationYear == 2026)
+        #expect(main.features.values.allSatisfy { !$0.editorialOmissions })
+    }
+
     @Test("The TEI scan credits each feature to its document")
     func scanRecordsEachDocumentsFeatures() throws {
         let scan = try TEIAnnotationScanner.scan(data: Data(Self.xml.utf8))
@@ -242,6 +395,7 @@ struct VolumeAnnotationsIndexGeneratorTests {
         #expect(index.corpusCommit == "fixture" && index.generated == "2026-11-06")
         let volume = try #require(index[Self.volume])
         #expect(volume.era == .from1969)
+        #expect(volume.publicationYear == 2026)
         #expect(volume.documents == 6 && volume.historicalDocuments == 5)
         #expect(volume.personsListed == 3 && volume.termsListed == 2)
         // d5's "No. 3." is a despatch number, so the one file-number note is d6's.
@@ -283,6 +437,30 @@ struct VolumeAnnotationsIndexGeneratorTests {
         #expect(volume.personsListed == 3)
         #expect(volume.sections.contains("index") && volume.sections.contains("persons"))
         #expect(volume.count(.people) == 3)
+    }
+
+    @Test("Bracketed omissions are counted whatever the year, and carried only from 1925")
+    func theGateOnBracketedOmissions() async throws {
+        let before = try Self.corpus(xml: Self.omissionsXML(publicationDate: Self.published1924))
+        defer { try? FileManager.default.removeItem(at: before) }
+        let gated = try #require(try await VolumeAnnotationsIndexRunner.build(Self.configuration(before))[Self.volume])
+        #expect(gated.publicationYear == 1924)
+        #expect(gated.count(.editorialOmissions) == 6, "o1, o5, o6, o7, o9 and o11")
+        #expect(!gated.carries(.editorialOmissions) && gated.publishedBeforeEditorialOmissionsOrder)
+        // The gate is the layer's alone: the redaction o3 marks is carried.
+        #expect(gated.carries(.excisions) && gated.count(.excisions) == 1)
+
+        let from = try Self.corpus(xml: Self.omissionsXML(publicationDate: Self.published1925))
+        defer { try? FileManager.default.removeItem(at: from) }
+        let carried = try #require(try await VolumeAnnotationsIndexRunner.build(Self.configuration(from))[Self.volume])
+        #expect(carried.publicationYear == 1925)
+        #expect(carried.count(.editorialOmissions) == 6 && carried.carries(.editorialOmissions))
+        #expect(!carried.publishedBeforeEditorialOmissionsOrder)
+        // The year is in the file, and comes back.
+        let data = try VolumeAnnotationsIndex(generated: "2026-11-08", corpusCommit: "fixture", indexVersion: 1,
+                                              volumes: [Self.volume: gated]).shippingData()
+        #expect(String(decoding: data, as: UTF8.self).contains(",1924]"))
+        #expect(try JSONDecoder().decode(VolumeAnnotationsIndex.self, from: data)[Self.volume]?.publicationYear == 1924)
     }
 
     @Test("The file is the same bytes run to run, and reads back as written")

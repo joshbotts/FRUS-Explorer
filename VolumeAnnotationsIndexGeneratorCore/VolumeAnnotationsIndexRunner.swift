@@ -125,6 +125,8 @@ public struct VolumeAnnotationsIndexConfiguration: Sendable {
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane A
+///   1.1 — 2026-11-08: reports the volumes that print no publication date, and the editorial
+///          omissions the 1925 gate leaves uncarried (Lane 1 of the follow-ups plan)
 public enum VolumeAnnotationsIndexRunner {
 
     /// One manifest volume: the fields the run reads.
@@ -169,6 +171,7 @@ public enum VolumeAnnotationsIndexRunner {
         var volumes: [String: VolumeAnnotations] = [:]
         var unindexed = 0
         var despatchNotes: [String: Int] = [:]
+        var undated: [String] = []
         for (entry, file) in zip(entries, files) {
             guard let year = Int(entry.subseries.prefix(4)),
                   let era = AnnotationEra.era(subseriesStartYear: year, volumeId: entry.volumeId) else {
@@ -179,6 +182,7 @@ public enum VolumeAnnotationsIndexRunner {
                 scan: scan, facts: facts.volumes[entry.volumeId] ?? IndexVolumeFacts(), era: era)
             volumes[entry.volumeId] = counted.annotations
             unindexed += counted.unindexed
+            if scan.publicationYear == nil { undated.append(entry.volumeId) }
             if counted.despatchNotes > 0 { despatchNotes[entry.volumeId] = counted.despatchNotes }
         }
         guard volumes.values.contains(where: { $0.carries(.people) }) else {
@@ -190,6 +194,9 @@ public enum VolumeAnnotationsIndexRunner {
         if !despatchNotes.isEmpty {
             let listed = despatchNotes.sorted { $0.key < $1.key }.map { "\($0.key) \($0.value)" }
             generatorLog("[VolumeAnnotationsIndex] source notes read as despatch numbers, not counted: \(listed.joined(separator: ", "))")
+        }
+        if !undated.isEmpty {
+            generatorLog("[VolumeAnnotationsIndex] \(undated.count) volume(s) print no publication date, so the 1925 gate does not apply to them: \(undated.prefix(10).joined(separator: ", "))")
         }
         return VolumeAnnotationsIndex(generated: configuration.generated,
                                       corpusCommit: configuration.corpusCommit,
@@ -252,6 +259,8 @@ public enum VolumeAnnotationsIndexRunner {
         }
         let sourceNotes = index.volumes.values.filter(\.carriesSourceNotes).count
         generatorLog("[VolumeAnnotationsIndex]   source notes (either form): \(sourceNotes) volumes, onset \(index.onset(where: \.carriesSourceNotes)?.rawValue ?? "-")")
+        let gated = index.volumes.values.filter { $0.publishedBeforeEditorialOmissionsOrder && $0.count(.editorialOmissions) > 0 }
+        generatorLog("[VolumeAnnotationsIndex]   editorial omissions counted and not carried, published before \(VolumeAnnotations.editorialOmissionsFromYear): \(gated.count) volumes, \(gated.reduce(0) { $0 + $1.count(.editorialOmissions) }) documents")
         generatorLog("[VolumeAnnotationsIndex] wrote \(bytes) bytes to \(output.path)")
     }
 }

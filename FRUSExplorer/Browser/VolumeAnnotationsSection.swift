@@ -29,6 +29,7 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane B
+///   1.1 — 2026-11-08: sixteen rows; `text.badge.minus` (21 pt at 17) is narrower than `person.3`
 ///   1.1 — 2026-11-06: lane C — `onOpen`: each row opens its layer's page on the axis
 struct VolumeAnnotationsSection: View {
 
@@ -172,7 +173,7 @@ struct VolumeAnnotationsRowView: View {
             .accessibilityHidden(true)
     }
 
-    // The symbols' column, as wide as the widest of the fifteen, `person.3`, at the body size, so
+    // The symbols' column, as wide as the widest of the sixteen, `person.3`, at the body size, so
     // every row's text starts at the same place: 28 pt at the Mac's 13 pt body and 36 at iOS's
     // 17 (measured with AppKit, 2026-11-06). A floor of 22 let five symbols push their text right
     // on iOS, by up to 14 pt, and `person.3` on the Mac. It scales with the text, as the symbols do.

@@ -21,6 +21,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane A
+///   1.1 — 2026-11-08: ``editorialOmissions``, the sixteenth layer (Lane 1 of
+///          `Planning/Editors-Annotations-Followups-2026-11-08.md`); each volume's
+///          ``VolumeAnnotations/publicationYear`` and the 1925 gate; schema version 2
 public enum AnnotationCategory: String, CaseIterable, Sendable {
     /// Documents that link a name to the volume's List of Persons: the People browser's rule.
     case people
@@ -42,6 +45,12 @@ public enum AnnotationCategory: String, CaseIterable, Sendable {
     case classification
     /// Documents that mark an excision ("not declassified").
     case excisions
+    /// Documents whose own text says, in brackets, what the editors left out: "[Here follows …]",
+    /// "[Omitted here is …]", "[…, which has been omitted, …]". A bracket inside a footnote or a
+    /// source note is not read, and one that says "not declassified" is a redaction
+    /// (``excisions``), never an omission. The file counts every volume's; a volume carries the
+    /// layer only from ``VolumeAnnotations/editorialOmissionsFromYear`` (``VolumeAnnotations/carries(_:)``).
+    case editorialOmissions
     /// Documents with a pre-1906 despatch or instruction serial (#965).
     case despatch
     /// Documents whose stored heading opens with its printed number ("12. Telegram From …").
@@ -88,7 +97,7 @@ public enum AnnotationCategory: String, CaseIterable, Sendable {
         switch self {
         case .people, .abbreviations, .correspondents, .subjects, .participants:
             return .named
-        case .sourceCitation, .sourceFileNumber, .classification, .excisions, .despatch:
+        case .sourceCitation, .sourceFileNumber, .classification, .excisions, .editorialOmissions, .despatch:
             return .provenance
         case .numbered, .xrefDocuments, .xrefFootnotes, .xrefVolumes, .xrefPages,
              .editorialNotes, .footnotes, .marginalNotes, .figures:
@@ -104,8 +113,8 @@ public enum AnnotationCategory: String, CaseIterable, Sendable {
             return .halfOfDocuments
         case .despatch:
             return .tenthOfDocuments
-        case .subjects, .participants, .excisions, .xrefDocuments, .xrefFootnotes, .xrefVolumes,
-             .xrefPages, .editorialNotes, .marginalNotes, .figures:
+        case .subjects, .participants, .excisions, .editorialOmissions, .xrefDocuments, .xrefFootnotes,
+             .xrefVolumes, .xrefPages, .editorialNotes, .marginalNotes, .figures:
             return .anyDocument
         }
     }
@@ -119,8 +128,8 @@ public enum AnnotationCategory: String, CaseIterable, Sendable {
         case .people, .abbreviations, .classification, .numbered, .xrefDocuments, .editorialNotes:
             return true
         case .correspondents, .subjects, .participants, .sourceCitation, .sourceFileNumber,
-             .excisions, .despatch, .xrefFootnotes, .xrefVolumes, .xrefPages, .footnotes,
-             .marginalNotes, .figures:
+             .excisions, .editorialOmissions, .despatch, .xrefFootnotes, .xrefVolumes, .xrefPages,
+             .footnotes, .marginalNotes, .figures:
             return false
         }
     }
@@ -233,10 +242,22 @@ public struct VolumeAnnotations: Sendable, Equatable {
     /// The kinds of the sections it prints, as the parser names them (`preface`, `sources`,
     /// `persons`, `terms`, `index`, …) plus `list-of-papers` for an analytical List of Papers.
     public let sections: [String]
+    /// The year the volume was published, from its header's `date[@type="publication-date"]`;
+    /// `nil` in a file of schema version 1, or for a header that prints none. A practice that
+    /// changed with a volume's publication, not the years it covers, is gated on it.
+    public let publicationYear: Int?
+
+    /// The year from which a volume's bracketed omissions count, that of Secretary Kellogg's order
+    /// on the series. Before it an omission was marked with a row of asterisks, which the bracket
+    /// scan does not read; the brackets it finds in earlier volumes stand in for duplicate text,
+    /// formalities and gaps in a telegram as received (`Planning/Editors-Annotations-Followups-2026-11-08.md`,
+    /// Lane 1). The count is stored for every volume; the gate is the kit's, as every threshold is.
+    public static let editorialOmissionsFromYear = 1925
 
     /// Creates a volume's annotations.
     public init(documents: Int, historicalDocuments: Int, personsListed: Int, termsListed: Int,
-                era: AnnotationEra, counts: [AnnotationCategory: Int], sections: [String]) {
+                era: AnnotationEra, counts: [AnnotationCategory: Int], sections: [String],
+                publicationYear: Int? = nil) {
         self.documents = documents
         self.historicalDocuments = historicalDocuments
         self.personsListed = personsListed
@@ -244,6 +265,14 @@ public struct VolumeAnnotations: Sendable, Equatable {
         self.era = era
         self.counts = counts.filter { $0.value != 0 }
         self.sections = Array(Set(sections)).sorted()
+        self.publicationYear = publicationYear
+    }
+
+    /// `true` when the volume was published before ``editorialOmissionsFromYear``, so that its
+    /// bracketed omissions, if any, are counted and not carried. `false` where the year is unknown.
+    public var publishedBeforeEditorialOmissionsOrder: Bool {
+        guard let publicationYear else { return false }
+        return publicationYear < Self.editorialOmissionsFromYear
     }
 
     /// How many documents carry `category`.
@@ -251,9 +280,12 @@ public struct VolumeAnnotations: Sendable, Equatable {
         counts[category] ?? 0
     }
 
-    /// `true` when the volume carries `category`, by the category's threshold.
+    /// `true` when the volume carries `category`, by the category's threshold; never
+    /// ``AnnotationCategory/editorialOmissions`` for a volume published before
+    /// ``editorialOmissionsFromYear``, whatever its count.
     public func carries(_ category: AnnotationCategory) -> Bool {
-        Self.meets(category.threshold, count: count(category), of: documents)
+        if category == .editorialOmissions, publishedBeforeEditorialOmissionsOrder { return false }
+        return Self.meets(category.threshold, count: count(category), of: documents)
     }
 
     /// Documents with a source note of either form.
@@ -291,12 +323,16 @@ public struct VolumeAnnotations: Sendable, Equatable {
 /// indices into one list of section kinds (`sections`). A reader maps counts by name, so a field
 /// it does not know is ignored.
 ///
+/// Schema version 2 (2026-11-08) adds each volume's publication year as the fourth element of its
+/// row, after its sections; a row of three elements is schema version 1's, and reads with no year.
+///
 /// `indexVersion` is the index version whose rules counted the file: people, source notes,
 /// classification, despatch numbers, numbering and sections are read from a full index the
 /// generator builds through the kit's own pipeline, so the labels and the app agree.
 public struct VolumeAnnotationsIndex: Sendable, Equatable {
-    /// The file format this declaration writes.
-    public static let currentSchemaVersion = 1
+    /// The file format this declaration writes: 2 since 2026-11-08, when each row gained the
+    /// volume's publication year. The decoder reads 1 as well.
+    public static let currentSchemaVersion = 2
 
     /// The share of an era's volumes that must carry a category for the era to count toward its
     /// onset (§4).
@@ -378,17 +414,20 @@ extension VolumeAnnotationsIndex: Codable {
         ["documents", "historicalDocuments", "personsListed", "termsListed"]
         + AnnotationCategory.allCases.map(\.rawValue)
 
-    /// A volume as the file holds it: its era, its counts in ``fieldNames`` order, and its sections
-    /// as indices into the file's `sections`.
+    /// A volume as the file holds it: its era, its counts in ``fieldNames`` order, its sections
+    /// as indices into the file's `sections` and, since schema version 2, its publication year
+    /// (`null` where the header prints none). A row of three elements is version 1's.
     private struct Row: Codable {
         let era: String
         let counts: [Int]
         let sections: [Int]
+        let publicationYear: Int?
 
-        init(era: String, counts: [Int], sections: [Int]) {
+        init(era: String, counts: [Int], sections: [Int], publicationYear: Int?) {
             self.era = era
             self.counts = counts
             self.sections = sections
+            self.publicationYear = publicationYear
         }
 
         init(from decoder: Decoder) throws {
@@ -396,6 +435,7 @@ extension VolumeAnnotationsIndex: Codable {
             era = try container.decode(String.self)
             counts = try container.decode([Int].self)
             sections = try container.decode([Int].self)
+            publicationYear = container.isAtEnd ? nil : try container.decodeIfPresent(Int.self)
         }
 
         func encode(to encoder: Encoder) throws {
@@ -403,6 +443,11 @@ extension VolumeAnnotationsIndex: Codable {
             try container.encode(era)
             try container.encode(counts)
             try container.encode(sections)
+            if let publicationYear {
+                try container.encode(publicationYear)
+            } else {
+                try container.encodeNil()
+            }
         }
     }
 
@@ -435,7 +480,7 @@ extension VolumeAnnotationsIndex: Codable {
                 historicalDocuments: value["historicalDocuments"] ?? 0,
                 personsListed: value["personsListed"] ?? 0,
                 termsListed: value["termsListed"] ?? 0,
-                era: era, counts: counts, sections: sections)
+                era: era, counts: counts, sections: sections, publicationYear: row.publicationYear)
         }
         self.volumes = volumes
     }
@@ -457,7 +502,8 @@ extension VolumeAnnotationsIndex: Codable {
                           annotations.personsListed, annotations.termsListed]
                 + AnnotationCategory.allCases.map { annotations.count($0) }
             rows[volumeId] = Row(era: annotations.era.rawValue, counts: counts,
-                                 sections: annotations.sections.compactMap { position[$0] })
+                                 sections: annotations.sections.compactMap { position[$0] },
+                                 publicationYear: annotations.publicationYear)
         }
         try container.encode(rows, forKey: .volumes)
     }
