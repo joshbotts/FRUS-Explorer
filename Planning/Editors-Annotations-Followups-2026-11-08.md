@@ -1,7 +1,7 @@
 # Editors' Annotations follow-ups: a local session plan (2026-11-08)
 
 Status: IN PROGRESS — Lane 0b is built and Lane 0's unit checks are run (2026-11-08, on
-`claude/editor-annotation-axis-revisions-54aede`, the branch's pull request); Lane 0's UI checks and
+`claude/editor-annotation-axis-revisions-54aede`, opened as #1873); Lane 0's UI checks and
 Lanes 1 and 2 remain, for one development session run locally on the Mac. Lane 0b, the pre-1925
 correction, ships in 1.0 (the plan of record's decision 120 and L10); the other lanes are not
 scheduled against 1.0.
@@ -171,7 +171,7 @@ change. No capture to retake: `browse-annotations` and `volume-annotations` show
 volume's page, not the layer's practice paragraph, and no capture shows the Research Guide's page 3.
 
 **Built on 2026-11-08**, on `claude/editor-annotation-axis-revisions-54aede`, from `v2` at `39c5019f`,
-on the owner's "Yes, do Lane 0b". The two strings and their two mirrors take the proposed wording
+on the owner's "Yes, do Lane 0b", and opened as #1873. The two strings and their two mirrors take the proposed wording
 word for word, each paragraph on its one line; the Amendment-Log's bullet says the change reverses
 the third change of 2026-11-08. Checked: `EditableContentKeyTests`, `AnnotationsAxisTests` and
 `VolumeAnnotationsPresentationTests`, 38 tests passed; the unit target, 7,909 tests, 7,872 passed,
