@@ -612,16 +612,17 @@ Where the build departs from the text above, and what it found.
   reader page holds three web view elements, so "nothing was pushed" compares the count with
   itself; and WebKit reads a list item's text with its bullet, "• China (see also …", and exposes
   an entry below the fold, so the entry is found by containment and its frame read before and
-  after. `IndexEntryLandingWebKitTests`, added when the first fixed runs could not find the entry,
-  runs the landing in the offset engine's WebKit harness against the serializer's page and reads
-  the scroll and the arrival class back.
+  after; and the root's Subseries tile can sit on screen and be reported unhittable, so the walk
+  taps its centre by coordinate when its frame is on screen. `IndexEntryLandingWebKitTests`, added
+  when the first fixed runs could not find the entry, runs the landing in the offset engine's
+  WebKit harness against the serializer's page and reads the scroll and the arrival class back.
 - **Runs** (each heavy job through `Scripts/heavy.sh`, Xcode 27.2): `swift build --target
   FRUSCoreKit` clean; `swift test` exit 0, 39 runs all passed, `FRUSCoreKitTests` 1,779 tests in 229
   suites; the control above; a clean `build-for-testing` of the `FRUSExplorer` scheme (iPhone 17,
   iOS 27.0, after `xcodebuild clean`) with only the two known warning residues; the unit target,
   TEST EXECUTE SUCCEEDED, after eighteen EditableContent ranges that the reader and app insertions
   had moved were re-pointed to their keys; `FRUSExplorerMac` (AppStore) built with the same
-  residues; `IndexSeeLinkTests`: iPhone 17 (`80CF0F18`, iOS 27.0): 1 test, 1 passed, 41.6 s; iPad Pro 13-inch (M5) (`9AB3A0C9`, iOS 27.0): 1 of 1, 36.8 s. On each the entry read "• China (see also Sino-Japanese dispute), " about 2,450 pt below the reader's frame before the tap and inside it after (y 563 of 116–722 on the iPhone, y 1,168 of 174–1,302 on the iPad), the link it came from 1,670 and 1,044 pt above. The Mac's half was built and not walked.
+  residues; `IndexSeeLinkTests`: iPhone 17 (`80CF0F18`, iOS 27.0): 1 test, 1 passed, 41.6 s; iPad Pro 13-inch (M5) (`9AB3A0C9`, iOS 27.0): 1 of 1, 36.8 s. On each the entry read "• China (see also Sino-Japanese dispute), " about 2,450 pt below the reader's frame before the tap and inside it after (y 563 of 116–722 on the iPhone, y 1,168 of 174–1,302 on the iPad), the link it came from 1,670 and 1,044 pt above. With v2 merged (Lane 1, #1874): `swift test` 39 runs all passed, the unit target 7,919 tests with none failed, the Mac built, and the suite passed twice on the iPhone and once on the iPad. The Mac's half was built and not walked.
 
 ---
 
