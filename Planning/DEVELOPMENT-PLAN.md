@@ -10045,3 +10045,20 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 **Not done.** Moving the follow-ups plan to `Planning/Completed/`, owed since #1875 merged, with the owner's open question on the asterisk rows carried to a live document; fifteen Swift files cite its path in comments, four of them in FRUSCoreKit. `claude/editor-annotation-axis-revisions-54aede` is deleted, local and remote, once this merges.
 
 **Opened as #1876** on the owner's word of 2026-11-09 ("Yes, open the PR"), against `v2` at `5d97f2f9`; not merged, auto-merge off.
+
+## Session 2026-11-09 — The editors' annotations follow-ups plan is COMPLETE and stays at the Planning root, which fifteen Swift files cite; its open question goes to the plan of record
+
+**What and why.** #1875, the plan's last lane, merged on 2026-11-09, and the plan's own status said it would then move to `Planning/Completed/`. Fifteen Swift files cite it by path: four in FRUSCoreKit, three in the app, two in the generator's core and six tests. `Completed/README.md` keeps such a finished record at the Planning root, marked COMPLETE in its head, as it keeps six others. Put to the owner with what each way costs (the move: fifteen comment edits, four of them kit files, and every run owed after a kit edit), the owner chose "Keep at root, mark COMPLETE".
+
+**Changed.**
+- **`Editors-Annotations-Followups-2026-11-08.md`:** a COMPLETE head in the shape of `Index-Bump-Brief-2026-10-11.md`'s, saying why the file stays where it is, and version 1.8.
+- **The plan of record:** §4 gains the asterisk-rows question from Lane 0b's section, which `FRUS-History-Feature-Assessment-2026-11-09.md` §2.4 proposes as a census; §6's *Marked complete in place* gains the plan.
+- **`Completed/README.md`:** the plan joins the finished records that source cites by path.
+
+**Checks.** No source file changes. `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` reads the plan of record's status and its `§7 struck:` line: one live plan of record, and the line byte-identical to `v2`'s, re-checked after the edit. No other suite reads these files. No build, unit run or `swift test` was owed.
+
+**Also on 2026-11-09:** after #1876 merged, `claude/lane-0-ui-checks-record` and `claude/editor-annotation-axis-revisions-54aede` were deleted, local and remote, each once its content was found in `v2`. #1876's squash commit has its branch's patch-id, and 24 of the stranded commits' 27 added lines are in `v2`; the other three are the status and version-1.4 hunks that took `v2`'s side. `origin` holds `v2` alone.
+
+**Not done.** Nothing of the plan's is open but the owner's question, which is now in the plan of record.
+
+**Opened as #1877** on the owner's word of 2026-11-09 ("Keep at root, mark COMPLETE"), against `v2` at `b737b240`; not merged, auto-merge off.

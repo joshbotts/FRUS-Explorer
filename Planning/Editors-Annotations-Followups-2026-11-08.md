@@ -1,12 +1,14 @@
 # Editors' Annotations follow-ups: a local session plan (2026-11-08)
 
-Status: BUILT AND MERGED — Lane 0b merged as #1873 (2026-11-08) with Lane 0's unit checks; Lane 0's
-UI checks ran in the session that proposed the lanes' build, and Lane 0's section records them
-(version 1.7); Lane 1 merged as #1874 (2026-11-08) and Lane 2 as #1875 (2026-11-09), both built in
-one development session on the Mac, each with its *Built* passage below. Moving this file to
-`Planning/Completed/` is owed, with the owner's open question on the asterisk rows (Lane 0b's
-section) carried to a live document. Lane 0b, the pre-1925 correction, ships in 1.0 (the plan of
-record's decision 120 and L10); the other lanes are not scheduled against 1.0.
+**Status: COMPLETE, 2026-11-09.** Lane 0b merged as #1873 (2026-11-08) with Lane 0's unit checks;
+its UI checks ran the same day, and Lane 0's section records them (#1876). Lane 1 merged as #1874
+(2026-11-08) and Lane 2 as #1875 (2026-11-09), both built in one development session on the Mac,
+each with its *Built* passage below. A finished plan would otherwise move to `Completed/`, but this
+file stays at the Planning root because fifteen Swift files cite it by this path, four of them in
+FRUSCoreKit; the owner chose that on 2026-11-09 ("Keep at root, mark COMPLETE"). Lane 0b's question
+for the owner, whether to count the asterisk rows, is carried to the plan of record's §4. Lane 0b,
+the pre-1925 correction, ships in 1.0 (the plan of record's decision 120 and L10); the other lanes
+are not scheduled against 1.0.
 
 The design this amends is `Editors-Annotations-Design-2026-11-06.md`. Its measurements are in
 `editors-annotations/`. This plan takes four decisions the owner made on 2026-11-08, and one of 2026-11-09, and turns them
@@ -53,6 +55,8 @@ Version history:
   1.7 — 2026-11-09: Lane 0's UI checks of 2026-11-08 recorded in its section, with the owner's
         "Keep it" on the two-line Redactions label; both were written on #1873's branch after it
         had merged, so they land in a pull request of their own; the status says #1875 merged
+  1.8 — 2026-11-09: COMPLETE, and kept at the Planning root, as the owner chose, since source cites
+        it by this path; Lane 0b's question on the asterisk rows carried to the plan of record's §4
 
 ---
 
