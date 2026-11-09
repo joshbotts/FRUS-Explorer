@@ -109,8 +109,8 @@ If the label wraps badly in either place, raise it with the owner. Do not shorte
     "Redactions marked as not declassified" wraps to two lines, whole words, with "20 documents
     with redactions marked" under it, and it wraps the same way in the axis's row; every other
     label is one line on both screens. On the iPad the volume page was not captured; its matrix's
-    name column wraps five names by its width, this one among them. **For the owner: a two-line
-    label, not a bad wrap; left as it is, by the rule above.**
+    name column wraps five names by its width, this one among them. **Put to the owner, who kept it
+    ("Keep it", 2026-11-08): the two-line label stays.**
   - **As the layer page's title on the iPhone:** on one line at the default size; at AX3 the inline
     title truncates ("Redactions marked as not decl…") and so does the breadcrumb, as every long
     name does at that size.
