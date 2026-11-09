@@ -151,9 +151,11 @@ final class IndexSeeLinkTests: XCTestCase {
         let link = webView.links["China"].firstMatch
         XCTAssertTrue(link.waitForExistence(timeout: Self.patience),
                       "The entry \"Aviation. See under China\" has no China link")
-        // WebKit exposes an entry's text in pieces at each inline element, so the entry is found by
-        // its first piece, "China (", which no other entry of the fixture begins with.
-        let target = webView.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'China ('")).firstMatch
+        // WebKit reads a list item's text with its bullet, "• China (see also Sino-Japanese dispute), ",
+        // and the entry is off the tree until it is on screen, so it is found by containment, and
+        // only after the tap (measured on both devices, 2026-11-08).
+        let target = webView.staticTexts
+            .matching(NSPredicate(format: "label CONTAINS 'China (see also'")).firstMatch
         let readerFrame = webView.frame
         // An iPad's reader page holds more than one web view element (three on the 13-inch), so
         // the count is compared with itself, not with one.
