@@ -478,6 +478,7 @@ struct AnnotationCategoryView: View {
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane D
+///   1.1 — 2026-11-08: `text(index:locale:)` is `nonisolated`
 struct PeopleTaggingCaption: View {
     /// Opens People tagged's page on the Editors’ Annotations axis, or `nil` where the host cannot.
     var onOpen: (@MainActor () -> Void)? = nil
@@ -510,9 +511,11 @@ struct PeopleTaggingCaption: View {
         }
     }
 
-    /// The caption, from `index`, or `nil` when the file did not load.
-    static func text(index: VolumeAnnotationsIndex? = VolumeAnnotationsStore.shared,
-                     locale: Locale = .autoupdatingCurrent) -> String? {
+    /// The caption, from `index`, or `nil` when the file did not load. A value over the file, not a view,
+    /// so it is `nonisolated`: a view is main-actor, and a synchronous test that read it as the view's
+    /// member warned under strict concurrency (found by the clean build of 2026-11-08).
+    nonisolated static func text(index: VolumeAnnotationsIndex? = VolumeAnnotationsStore.shared,
+                                 locale: Locale = .autoupdatingCurrent) -> String? {
         guard let index, !index.volumes.isEmpty else { return nil }
         let reach = AnnotationsAxis.reach(of: .people, in: index)
         return String(format: String(localized: "people.tagging.caption",
