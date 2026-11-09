@@ -99,9 +99,27 @@ If the label wraps badly in either place, raise it with the owner. Do not shorte
   method was main-actor-isolated with its `View`. The method is now `nonisolated`, a value over the
   file, and the rebuild of the edited files printed no warning. Lane D's entry says no build warned
   in its files; the warning is in one of them, so that build was not a clean one.
-- **Not run, and still owed:** `VolumeAnnotationsSectionTests` and `AnnotationsAxisBrowseTests` on
-  the runbook's devices, and the three looks at the kept screenshots above (the label on one line in
-  the row, the title on the iPhone, the practice paragraph at AX3).
+- **The two UI suites, run the same day after #1873 opened**, together, each device alone, under
+  iOS 27.0: **iPhone 17 (`80CF0F18…`): 7 tests, 6 passed, 1 skipped (the matrix); iPad Pro 13-inch
+  (M5) (`9AB3A0C9…`): 7 of 7**, the runbook's counts. The three looks, from their screenshots and
+  from a throwaway test (not committed) that opened the Redactions layer's page at the default size
+  and at AX3, and a volume page that carries the layer (`frus1961-63v08`, 20 documents; the seeded
+  `frus1961-63v06` carries none):
+  - **The label is not on one line in the volume page's row on an iPhone 17 at the default size.**
+    "Redactions marked as not declassified" wraps to two lines, whole words, with "20 documents
+    with redactions marked" under it, and it wraps the same way in the axis's row; every other
+    label is one line on both screens. On the iPad the volume page was not captured; its matrix's
+    name column wraps five names by its width, this one among them. **For the owner: a two-line
+    label, not a bad wrap; left as it is, by the rule above.**
+  - **As the layer page's title on the iPhone:** on one line at the default size; at AX3 the inline
+    title truncates ("Redactions marked as not decl…") and so does the breadcrumb, as every long
+    name does at that size.
+  - **The practice paragraph at AX3** reads well on both devices: whole words, two to four a line
+    on the iPhone, nothing clipped.
+- **A brand-new simulator fails these walks on its first launch.** The seeded fixture indexes then,
+  and the while-indexing guide opens as an eleven-page sheet over Browse; in one run it was still
+  up two minutes later. The throwaway test paged through it with Next to *Start exploring* before
+  the walk. The runbook's devices have the fixture indexed, so they never show it.
 
 **Decided by the owner on 2026-11-08, and done on the branch in the second copy commit:**
 - *The era sentence on Redactions.* "Standard in the volumes covering 1964 on" went by the years a
