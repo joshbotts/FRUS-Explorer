@@ -10081,3 +10081,5 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 **Checks.** No source file changes. `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` reads the plan of record's status and its `§7 struck:` line: one live plan of record, and the line byte-identical to `v2`'s, re-checked after the edit. No other suite reads these files. No build, unit run or `swift test` was owed.
 
 **Not done.** The fix, which is L11, on the owner's word ("add this session to the development plan rather than starting it now"); the session's New task card proposing it was withdrawn. No simulated background wake was run, so "every wake completes `false`" is read from the code and the scratch app. The finding is not filed as an issue.
+
+**Opened as #1878** on the owner's word of 2026-11-09 ("Open PR"), against `v2` at `342dbd74`; not merged, auto-merge off.
