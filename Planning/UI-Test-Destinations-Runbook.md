@@ -1145,3 +1145,13 @@ Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExp
   -only-testing FRUSExplorerUITests/VolumeAnnotationsSectionTests \
   -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 -collect-test-diagnostics never
 ```
+
+**`IndexSeeLinkTests` (Lane 2 of `Editors-Annotations-Followups-2026-11-08.md`) runs on an iPhone and an iPad, and nothing skips on either.** A back-of-volume index's "See" link, `<ref target="#in2">`, names an entry of the same index, `<item xml:id="in2">`; until Lane 2 the reader read the anchor as a document named `in2`, which no volume has, and pushed a reader that said "Failed to Load: Document 'in2' was not found in the volume." (measured at corpus `6170e4b32`: 49,799 such references in 397 volumes, every one inside the index that holds its entry, none across volumes). The suite seeds `frus1932v04`, a catalogue volume, as one document and a back-matter Index of eighty-odd entries (`UITestVolumeSeeder.prepareIndexVolumeIfRequested(in:)`, on `FRUS_UI_TEST_SEED_INDEX_VOLUME=1`; any launch that does not ask removes the file and its index rows, so the four suites that count on exactly one downloaded volume never see it), launches on Browse with `-frus.filterDownloadedOnly YES`, and walks Subseries ▸ 1932 ▸ the volume ▸ Back Matter ▸ Index into the reader. Its one test, `testASeeLinkScrollsToItsEntryWithinTheIndex`, requires the "China" link of "Aviation. *See under* China", reads the entry "China (see also …" as off the reader's frame, taps the link, and requires no "Failed to Load" page, one web view, and the entry inside the reader's frame. It needs no search model and no real volume.
+
+MEASURE_LANE2
+```bash
+Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/IndexSeeLinkTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600 -collect-test-diagnostics never
+```

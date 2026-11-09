@@ -1,0 +1,48 @@
+# "See" links in back-of-volume indexes, over 553 manifest volumes
+
+- Documents (div[@type="document"]) in all: 314616
+- Documents whose xml:id begins `in` + digit: 0 []
+- Refs to `#in<digits>`: 49799 in 397 volumes
+  - inside an index division: 49799; outside one: 0
+  - to another volume (`frus…#in…`): 0 []
+  - target id present in the volume: 49551; in the same division as the ref: 49542; dangling: 248 [('frus1945-50Intel', [('in3', 'index'), ('in4', 'index'), ('in9', 'index')]), ('frus1952-54v08', [('in1', 'index'), ('in2', 'index'), ('in3', 'index')]), ('frus1952-54v09p2', [('in50', 'index'), ('in51', 'index'), ('in54', 'index')]), ('frus1961-63v10', [('in1', 'index'), ('in2', 'index'), ('in3', 'index')])]
+- Elements whose xml:id matches ^in\d+$, by tag: {'item': 18809, 'persName': 2} in 397 volumes
+  - outside an index division: 0 []
+
+## Volumes with the most refs
+
+| Volume | refs | resolved | same division | item ids |
+|---|---|---|---|---|
+| frus1919Parisv09 | 792 | 792 | 792 | 195 |
+| frus1952-54v03 | 588 | 588 | 588 | 55 |
+| frus1945Berlinv02 | 523 | 523 | 523 | 162 |
+| frus1923v02 | 516 | 516 | 516 | 163 |
+| frus1931v02 | 509 | 509 | 509 | 154 |
+| frus1932v04 | 459 | 459 | 459 | 102 |
+| frus1919Parisv05 | 457 | 457 | 457 | 123 |
+| frus1921v02 | 428 | 428 | 428 | 131 |
+| frus1928v02 | 426 | 426 | 426 | 130 |
+| frus1926v02 | 422 | 422 | 422 | 132 |
+| frus1923v01 | 415 | 415 | 415 | 115 |
+| frus1919Parisv06 | 409 | 409 | 409 | 125 |
+| frus1919Parisv10 | 407 | 407 | 407 | 96 |
+| frus1919Parisv07 | 402 | 402 | 402 | 113 |
+| frus1933v03 | 401 | 401 | 401 | 79 |
+| frus1930v02 | 400 | 400 | 400 | 106 |
+| frus1919Parisv08 | 393 | 393 | 393 | 101 |
+| frus1944v06 | 387 | 387 | 387 | 113 |
+| frus1931v01 | 370 | 370 | 370 | 108 |
+| frus1924v01 | 368 | 368 | 368 | 94 |
+| frus1880 | 367 | 367 | 367 | 135 |
+| frus1919Russia | 366 | 366 | 366 | 114 |
+| frus1922v01 | 359 | 359 | 359 | 84 |
+| frus1919Parisv11 | 350 | 350 | 350 | 125 |
+| frus1930v03 | 346 | 346 | 346 | 98 |
+
+## The volumes the plan names
+
+- frus1932v04: 459 refs, 459 resolved, 459 in the same division, item ids {'item': 102}
+- frus1955-57v03: 30 refs, 30 resolved, 30 in the same division, item ids {'item': 19}
+- frus1969-76v17: 66 refs, 66 resolved, 66 in the same division, item ids {'item': 37}
+
+done 553
