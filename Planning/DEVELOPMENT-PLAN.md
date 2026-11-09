@@ -10043,3 +10043,5 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 **Checks.** No test reads the changed text. `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` reads the plan of record's status and its `§7 struck:` line, neither touched (one live plan of record, and the line byte-identical to `v2`'s); every other mention of the four files in code is a comment or a workflow prompt. No build, unit run or `swift test` was owed: no source file changes.
 
 **Not done.** Moving the follow-ups plan to `Planning/Completed/`, owed since #1875 merged, with the owner's open question on the asterisk rows carried to a live document; fifteen Swift files cite its path in comments, four of them in FRUSCoreKit. `claude/editor-annotation-axis-revisions-54aede` is deleted, local and remote, once this merges.
+
+**Opened as #1876** on the owner's word of 2026-11-09 ("Yes, open the PR"), against `v2` at `5d97f2f9`; not merged, auto-merge off.
