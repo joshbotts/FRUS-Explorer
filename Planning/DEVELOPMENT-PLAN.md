@@ -10060,3 +10060,5 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 **Also on 2026-11-09:** after #1876 merged, `claude/lane-0-ui-checks-record` and `claude/editor-annotation-axis-revisions-54aede` were deleted, local and remote, each once its content was found in `v2`. #1876's squash commit has its branch's patch-id, and 24 of the stranded commits' 27 added lines are in `v2`; the other three are the status and version-1.4 hunks that took `v2`'s side. `origin` holds `v2` alone.
 
 **Not done.** Nothing of the plan's is open but the owner's question, which is now in the plan of record.
+
+**Opened as #1877** on the owner's word of 2026-11-09 ("Keep at root, mark COMPLETE"), against `v2` at `b737b240`; not merged, auto-merge off.
