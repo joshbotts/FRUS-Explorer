@@ -397,6 +397,18 @@ struct FRUSRenderNodeHTMLSerializerTests {
         #expect(out.contains("<ul class=\"frus-list\">"))
     }
 
+    @Test("An item with an xml:id keeps it as id=\"ix-…\", escaped, and an item without one has none")
+    func listItemIdsAreWritten() {
+        let out = html([.listBlock(type: nil, heading: nil, items: [
+            ListItemEntry(children: [.plainText("Agreements. See Treaties")]),
+            ListItemEntry(children: [.plainText("China")], id: "in2"),
+            ListItemEntry(children: [.plainText("Odd")], id: "in<3>&\""),
+        ], trailing: [])])
+        #expect(out.contains("<li>Agreements. See Treaties</li>"))
+        #expect(out.contains("<li id=\"ix-in2\">China</li>"))
+        #expect(out.contains("<li id=\"ix-in&lt;3&gt;&amp;&quot;\">Odd</li>"))
+    }
+
     @Test("Simple list emits ul.frus-list.simple")
     func simpleList() {
         let out = html([.listBlock(type: "simple", heading: nil, items: [ListItemEntry(children: [.plainText("Item")])], trailing: [])])

@@ -69,7 +69,7 @@ private func containsCase(in nodes: [FRUSASTNode],
             children = c
         case .date(_, _, _, _, _, let c):
             children = c
-        case .table(let c), .tableRow(let c), .listItem(let c):
+        case .table(let c), .tableRow(let c), .listItem(_, let c):
             children = c
         case .tableCell(_, _, let c):
             children = c
@@ -591,7 +591,7 @@ struct ListParsingTests {
         func countLists(_ nodes: [FRUSASTNode]) {
             for n in nodes {
                 if case .list(_, let items) = n { listCount += 1; countLists(items) }
-                if case .listItem(let c) = n { countLists(c) }
+                if case .listItem(_, let c) = n { countLists(c) }
             }
         }
         countLists(docs.flatMap(\.nodes))

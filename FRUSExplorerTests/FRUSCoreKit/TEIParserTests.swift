@@ -69,7 +69,7 @@ private func containsCase(in nodes: [FRUSASTNode], where predicate: (FRUSASTNode
             children = c
         case .date(_, _, _, _, _, let c):
             children = c
-        case .table(let c), .tableRow(let c), .listItem(let c):
+        case .table(let c), .tableRow(let c), .listItem(_, let c):
             children = c
         case .tableCell(_, _, let c):
             children = c
@@ -103,7 +103,7 @@ private func extractAllText(from nodes: [FRUSASTNode]) -> String {
             result += extractAllText(from: c)
         case .date(_, _, _, _, _, let c):
             result += extractAllText(from: c)
-        case .table(let c), .tableRow(let c), .listItem(let c):
+        case .table(let c), .tableRow(let c), .listItem(_, let c):
             result += extractAllText(from: c)
         case .tableCell(_, _, let c):
             result += extractAllText(from: c)
@@ -412,7 +412,7 @@ struct TEIParserTests {
                     children = c
                 case .date(_, _, _, _, _, let c):
                     children = c
-                case .table(let c), .tableRow(let c), .listItem(let c):
+                case .table(let c), .tableRow(let c), .listItem(_, let c):
                     children = c
                 case .tableCell(_, _, let c):
                     children = c
@@ -2418,6 +2418,26 @@ struct CrossRefResolverTests {
         let withHint = FRUSURLScheme.resolveCrossRefTarget(
             "frus1964-68v18#d65", volumeId: "frus1964-68v18")
         #expect(withHint == .document(volumeId: "frus1964-68v18", documentId: "d65"))
+    }
+
+    /// Lane 2 of the editors' annotations follow-ups plan (2026-11-08): an index's "See" reference
+    /// names an entry of the index, `<item xml:id="in2">`, and the reader scrolls to it within the
+    /// index. Until then the anchor was read as a document named `in2`, which no volume has, and
+    /// the reader said so. Measured at corpus `6170e4b32`: 49,799 such references, all inside an
+    /// index division, none across volumes; no document id in 314,616 begins `in` and a digit.
+    @Test("An index entry's anchor resolves to the entry, in its volume, and only the whole anchor is one",
+          arguments: [
+            ("#in2", nil, CrossRefDestination.indexEntry(volumeId: nil, anchor: "in2")),
+            ("#in14", "frus1932v04", .indexEntry(volumeId: "frus1932v04", anchor: "in14")),
+            ("frus1932v04#in2", nil, .indexEntry(volumeId: "frus1932v04", anchor: "in2")),
+            ("frus1932v04#in2", "frus1900", .indexEntry(volumeId: "frus1932v04", anchor: "in2")),
+            // Letters after the digits, or a word that begins `in`, are documents as before.
+            ("#in14a", nil, .document(volumeId: nil, documentId: "in14a")),
+            ("#intro", nil, .document(volumeId: nil, documentId: "intro")),
+            ("#in", nil, .document(volumeId: nil, documentId: "in")),
+          ])
+    func indexEntryAnchors(target: String, volumeId: String?, expected: CrossRefDestination) {
+        #expect(FRUSURLScheme.resolveCrossRefTarget(target, volumeId: volumeId) == expected)
     }
 
     /// #988 changed this expectation deliberately. The reference names a NOTE, and the app now

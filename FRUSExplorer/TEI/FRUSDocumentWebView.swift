@@ -156,6 +156,11 @@ public struct FRUSDocumentWebView: View {
     /// when it changes for one naming a note already on screen.
     public var footnoteAnchor: String? = nil
 
+    /// An index entry to scroll to, the one a "See" reference on the page named (Lane 2 of the
+    /// editors' annotations follow-ups plan), or `nil`. Applied without a reload, each tap a new
+    /// value, since the entry is always on the page on screen.
+    var indexEntry: IndexEntryReveal? = nil
+
     // MARK: Callbacks
 
     /// Called with the resolved `PersonEntry` (or `nil`) when a persName link is tapped.
@@ -229,6 +234,7 @@ public struct FRUSDocumentWebView: View {
         _FRUSDocumentWebViewMac(
             model:              model,
             footnoteAnchor:     footnoteAnchor,
+            indexEntry:         indexEntry,
             colorScheme:        colorScheme,
             textSize:           textSize,
             measure:            readingWidth.measure,
@@ -247,6 +253,7 @@ public struct FRUSDocumentWebView: View {
         _FRUSDocumentWebViewiOS(
             model:              model,
             footnoteAnchor:     footnoteAnchor,
+            indexEntry:         indexEntry,
             colorScheme:        colorScheme,
             textSize:           textSize,
             measure:            readingWidth.measure,
@@ -328,6 +335,18 @@ extension FRUSDocumentWebView {
 /// Equality key used by the coordinator to decide whether to reload the web view.
 ///
 /// Captures the four inputs that, when changed, require a new `loadHTMLString` call.
+/// An index entry a "See" reference named, to scroll to within the page on screen (Lane 2 of
+/// `Planning/Editors-Annotations-Followups-2026-11-08.md`). Each tap is a new value, `tap` counting
+/// up, so a second tap on the same entry after the reader has scrolled away lands again; a footnote
+/// (`FRUSDocumentWebView.footnoteAnchor`) is revealed once per document and anchor instead, since a
+/// reference to one arrives with its document.
+struct IndexEntryReveal: Equatable {
+    /// The `<item>`'s `xml:id` (`in2`), as the reference names it.
+    let anchor: String
+    /// Which tap asked for it.
+    let tap: Int
+}
+
 struct WebViewSignature: Equatable {
     let documentId:  String
     let colorScheme: ColorScheme
@@ -381,6 +400,15 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
     /// The anchor most recently revealed, so a re-render does not scroll the reader back to a
     /// footnote they have since navigated away from within the page.
     var lastRevealedFootnoteAnchor: String?
+
+    // MARK: Index entry reveal state (Lane 2 of the editors' annotations follow-ups plan)
+
+    /// The index entry to scroll to, the one a "See" reference on the page named, or `nil`.
+    var pendingIndexEntry: IndexEntryReveal?
+
+    /// The entry most recently scrolled to. A tap is a new value (`IndexEntryReveal.tap`), so a
+    /// second tap on the same entry lands again, and a re-render does not.
+    var lastRevealedIndexEntry: IndexEntryReveal?
 
     /// The `renderingVersion` for the currently loaded document; used to compute
     /// `HighlightDTO.isStale`.
@@ -527,15 +555,36 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
         return found
     }
 
+    /// Scrolls the pending index entry's `<li>` into view and flashes it, with the kit's
+    /// `IndexEntryLanding` script: the same scroll as a footnote's (`FootnoteLanding` says why it
+    /// is synchronous), on the `id="ix-…"` the serializer writes for an item with an `xml:id`.
+    ///
+    /// Returns `true` when the entry is on this page. Recorded either way, so a missing entry is
+    /// not retried on every update; the next tap is a new value and is tried again.
+    @discardableResult
+    func revealIndexEntry(on webView: WKWebView) async -> Bool {
+        guard let entry = pendingIndexEntry, entry != lastRevealedIndexEntry else { return false }
+        guard let script = IndexEntryLanding.script(anchor: entry.anchor) else { return false }
+        let found = (try? await webView.evaluateJavaScript(script)) as? Bool ?? false
+        lastRevealedIndexEntry = entry
+        #if DEBUG
+        if !found {
+            print("[FRUSDocumentWebView] revealIndexEntry: \(entry.anchor) not present in this page")
+        }
+        #endif
+        return found
+    }
+
     // MARK: WKNavigationDelegate
 
     /// After each successful page load, paint any pending highlights and reveal any pending
     /// footnote (#988) — this is the path a reference that crossed into another document takes,
-    /// since crossing one mounts a fresh web view.
+    /// since crossing one mounts a fresh web view — or index entry.
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         Task { @MainActor in
             await renderHighlights(on: webView)
             await revealFootnote(on: webView)
+            await revealIndexEntry(on: webView)
         }
     }
 
@@ -588,6 +637,8 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
     let model:          FRUSDocumentRenderModel
     /// The footnote to reveal on arrival (#988), or `nil`. See `FRUSDocumentWebView.footnoteAnchor`.
     let footnoteAnchor: String?
+    /// The index entry to scroll to, or `nil`. See `FRUSDocumentWebView.indexEntry`.
+    let indexEntry: IndexEntryReveal?
     let colorScheme:    ColorScheme
     let textSize:       TextSizePreference
     /// The column's greatest width (#1665).
@@ -645,6 +696,10 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
         let anchorChanged = footnoteAnchor != nil
             && footnoteAnchor != context.coordinator.lastRevealedFootnoteAnchor
         context.coordinator.pendingFootnoteAnchor    = footnoteAnchor
+        // The index entry a "See" reference named, by the same rule; a tap is a new value.
+        let indexEntryChanged = indexEntry != nil
+            && indexEntry != context.coordinator.lastRevealedIndexEntry
+        context.coordinator.pendingIndexEntry        = indexEntry
 
         let sig = WebViewSignature(
             documentId:  model.documentId,
@@ -670,17 +725,22 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
             // A new page: whatever was revealed belonged to the outgoing document, so clear the
             // record and let `didFinish` apply the pending anchor against the incoming one.
             context.coordinator.lastRevealedFootnoteAnchor = nil
+            context.coordinator.lastRevealedIndexEntry = nil
             context.coordinator.forgetSelection()
             webView.loadHTMLString(html, baseURL: nil)
-        } else if highlightsChanged || anchorChanged {
+        } else if highlightsChanged || anchorChanged || indexEntryChanged {
             Task { @MainActor in
                 if highlightsChanged {
                     await context.coordinator.renderHighlights(on: webView)
                 }
                 // No reload happened, so `didFinish` will not fire — this is the only path that
-                // serves a reference to a note in the document already on screen.
+                // serves a reference to a note in the document already on screen, and the one
+                // every index "See" reference takes.
                 if anchorChanged {
                     await context.coordinator.revealFootnote(on: webView)
+                }
+                if indexEntryChanged {
+                    await context.coordinator.revealIndexEntry(on: webView)
                 }
             }
         }
@@ -841,6 +901,8 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
     let model:          FRUSDocumentRenderModel
     /// The footnote to reveal on arrival (#988), or `nil`. See `FRUSDocumentWebView.footnoteAnchor`.
     let footnoteAnchor: String?
+    /// The index entry to scroll to, or `nil`. See `FRUSDocumentWebView.indexEntry`.
+    let indexEntry: IndexEntryReveal?
     let colorScheme:    ColorScheme
     let textSize:       TextSizePreference
     /// The column's greatest width (#1665).
@@ -907,6 +969,10 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
         let anchorChanged = footnoteAnchor != nil
             && footnoteAnchor != context.coordinator.lastRevealedFootnoteAnchor
         context.coordinator.pendingFootnoteAnchor    = footnoteAnchor
+        // The index entry a "See" reference named, by the same rule; a tap is a new value.
+        let indexEntryChanged = indexEntry != nil
+            && indexEntry != context.coordinator.lastRevealedIndexEntry
+        context.coordinator.pendingIndexEntry        = indexEntry
 
         let sig = WebViewSignature(
             documentId:  model.documentId,
@@ -932,17 +998,22 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
             // A new page: whatever was revealed belonged to the outgoing document, so clear the
             // record and let `didFinish` apply the pending anchor against the incoming one.
             context.coordinator.lastRevealedFootnoteAnchor = nil
+            context.coordinator.lastRevealedIndexEntry = nil
             context.coordinator.forgetSelection()
             webView.loadHTMLString(html, baseURL: nil)
-        } else if highlightsChanged || anchorChanged {
+        } else if highlightsChanged || anchorChanged || indexEntryChanged {
             Task { @MainActor in
                 if highlightsChanged {
                     await context.coordinator.renderHighlights(on: webView)
                 }
                 // No reload happened, so `didFinish` will not fire — this is the only path that
-                // serves a reference to a note in the document already on screen.
+                // serves a reference to a note in the document already on screen, and the one
+                // every index "See" reference takes.
                 if anchorChanged {
                     await context.coordinator.revealFootnote(on: webView)
+                }
+                if indexEntryChanged {
+                    await context.coordinator.revealIndexEntry(on: webView)
                 }
             }
         }

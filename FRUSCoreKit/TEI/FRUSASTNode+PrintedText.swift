@@ -134,7 +134,7 @@ extension FRUSASTNode {
         case .tableRow(let cells): return cells
         case .tableCell(_, _, let c): return c
         case .list(_, let items): return items
-        case .listItem(let c):    return c
+        case .listItem(_, let c): return c
         case .unknown(_, _, let c): return c
         }
     }

@@ -289,6 +289,11 @@ enum CollectionRenderingFixtures {
 /// Version history:
 ///   1.0 — 2026-10-25 (FRUS Explorer Light, S18a): initial implementation
 ///   1.1 — 2026-10-31: `structuredSummaryFields`; the page and the package re-pinned for `d11`
+///   1.2 — 2026-11-08: the three HTML pages re-pinned for the index entry's arrival wash (Lane 2 of
+///          the editors' annotations follow-ups plan): each page embeds the reader's stylesheet
+///          (`CollectionItemHTMLRenderer.embeddedCSS`) and each grew by its 707 bytes, the block
+///          `ReaderPageTests` names; the Word, BibTeX and RIS pins hold, and no fixture list item
+///          carries an `xml:id`, so no `id="ix-…"` entered a page
 @Suite("A collection renders the same HTML, Word, BibTeX and RIS from the same values")
 struct CollectionRenderingPinTests {
 
@@ -296,13 +301,13 @@ struct CollectionRenderingPinTests {
 
     /// Each output's SHA-256 and byte count.
     static let pins: [String: (sha256: String, bytes: Int)] = [
-        "everything.html": ("96c80c78cae33b6bd8ebdf8aa1bb5251b55c51f69e5e5159d9c40766dfe11eb1", 43_927),
+        "everything.html": ("977a41c4f70e9c109ee180e1beb4e7f4ba0fc7e96d9299261e22e12a23569f17", 44_634),
         "everything.docx": ("93c70b760ebc3b07076c052dcac71e64adb2119aa408df746b71286aaeb1943b", 38_622),
         "everything.bib": ("e04c1eb921acae782e6113bcc18055dc81e9e43dbb9eca97848c6356c78df7ad", 1_061),
         "everything.ris": ("25e92393bdda73437bfcf1879d65cb790eb62df10c964a135d596faabcdc4fbc", 810),
-        "plain.html": ("5d4be78dba1e92b929c95e99e0dea797efda25287c99a8ddcc91564e46a5b661", 28_266),
+        "plain.html": ("6c77a3987b0237693f8eddfc7e6cd4f3031007770a2c31be9cc19659dfe5b332", 28_973),
         "plain.docx": ("f2e01009a8d85ecfd56b42fc60e1b54b8df41a0ed4ed795d79fa3e3d2b6acea9", 14_952),
-        "preview.html": ("03909788a8c46611ff4667337150806f173677dd518ad78d8e093bfd0ca19f42", 27_129),
+        "preview.html": ("9fd0fc2e80b058258d4a3b991098ab08560bac612f684115889bd212dcc29dd7", 27_836),
     ]
 
     static func expectPin(_ name: String, _ data: Data, sourceLocation: SourceLocation = #_sourceLocation) {

@@ -353,8 +353,11 @@ public indirect enum FRUSASTNode: Sendable {
     /// and the corpus uses neither of the first two.
     case list(type: ListType?, items: [FRUSASTNode])
 
-    /// `<item>` — a single list item.
-    case listItem([FRUSASTNode])
+    /// `<item>` — a single list item, with its `xml:id` where it has one: the entries of a
+    /// back-of-volume index carry ids (`in2`) that its "See" references name (Lane 2 of
+    /// `Planning/Editors-Annotations-Followups-2026-11-08.md`; 18,809 such items in the 553
+    /// volumes at corpus `6170e4b32`, and 34,537 items with an id in all).
+    case listItem(id: String?, children: [FRUSASTNode])
 
     // MARK: Structural Divisions (Session 07)
 

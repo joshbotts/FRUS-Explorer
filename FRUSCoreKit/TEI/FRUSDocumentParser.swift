@@ -1802,7 +1802,7 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             return .list(type: listType, items: children)
 
         case "item":
-            return .listItem(children)
+            return .listItem(id: attributes["xml:id"], children: children)
 
         // MARK: Structural divisions (Session 07)
         case "div":

@@ -14615,12 +14615,15 @@ enum SettledCrossReferenceTarget: Sendable, Equatable {
     /// document-level query does.
     case volume(String)
 
-    /// What `destination`'s row settles as, or `nil` when it is stored as collected.
+    /// What `destination`'s row settles as, or `nil` when it is stored as collected. An index
+    /// entry's reference (`#in2`) is stored as collected, under the item's id, as it was when the
+    /// grammar read it as a document: `CrossReferenceStore` already keeps `in[0-9]*` targets out of
+    /// its rankings, so the rows and the index version do not move.
     init?(_ destination: CrossRefDestination) {
         switch destination {
         case .footnote(_, let documentId, _): self = .document(documentId)
         case .volume(let volumeId):           self = .volume(volumeId)
-        case .document, .page, .external, .unresolved: return nil
+        case .document, .indexEntry, .page, .external, .unresolved: return nil
         }
     }
 }

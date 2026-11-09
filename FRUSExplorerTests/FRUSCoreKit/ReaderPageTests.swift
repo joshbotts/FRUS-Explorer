@@ -44,6 +44,8 @@ import Crypto
 ///          that names its people and terms on `@ana`
 ///   1.5 — Session 2026-10-16: #1665 — the heads are re-pinned for `--reader-measure`, and
 ///          `theMeasureIsTheHosts` says what it does
+///   1.6 — 2026-11-08: the heads are re-pinned for the index entry's arrival wash (Lane 2 of the
+///          editors' annotations follow-ups plan), and the wash is drawn in four places
 @Suite("FRUSCoreKit — the reader's page")
 struct ReaderPageTests {
 
@@ -88,15 +90,22 @@ struct ReaderPageTests {
     ///   line taken out and the rule and comment put back, all eight heads were the 2026-10-11
     ///   pins byte for byte when these were taken. `theMeasureIsTheHosts` below says what the
     ///   variable must do, and `ReadingWidthTests` (Xcode's alone) what each measure holds.
+    /// - 2026-11-08 re-pinned them for Lane 2 of `Planning/Editors-Annotations-Followups-2026-11-08.md`:
+    ///   an index's "See" reference now scrolls to its entry within the index, and the stylesheet
+    ///   gains the entry's arrival wash, `.frus-list > li` with the footnote entry's `scroll-margin-block`,
+    ///   `.frus-list > li.ix-arrived` with the footnote's animation, the same rule under Reduce
+    ///   Motion, and the comment that says so. Each head grew by 707 bytes, all of them that block;
+    ///   no variable and no other rule changed, and the wash is the footnote's, so
+    ///   `everyTextColourMeetsAAOnTheArrivalWash` below now finds it drawn in four places.
     static let heads: [String: (sha256: String, bytes: Int)] = [
-        "light small": ("6397a62436ce9fbb72be8c747402e58e0e51c8151320416a34e1f787c9284942", 19867),
-        "light medium": ("ce93518bc796ec8cc421c0336bf9eab68f514cdead1dace3200e950fa23e6282", 19868),
-        "light large": ("21b6a883fde157064566fb8cc3cbfe2959d0010fd0a1b0306ede0e0d738a8da3", 19868),
-        "light extraLarge": ("f0262cb7b7d5283fca9fd96f4fe71b6a4bea61461dd16f3a0ffe7ef52435e84f", 19868),
-        "dark small": ("c517c75a53175d01c58174687e724448e2d387544a14612c9262a883d7316bec", 19897),
-        "dark medium": ("af552b27b58226b91c133f3f1ec2703d2d015fa1a94bf2cb968fb9eb423e25e2", 19898),
-        "dark large": ("a74f8901da3481fa65efae71959afb7ea388e71a5f0033a4977b8c7c95c4bd44", 19898),
-        "dark extraLarge": ("5d0ffb3e6c44feba2356e8979f202c5fb68882caad73fec7bab47a86741134c6", 19898),
+        "light small": ("1de47cd77607a5bab117b6d1a88db823b0651a5b6bb33c23991f8f8e28fd32eb", 20574),
+        "light medium": ("8d1ddbee25737d1f993b334b6aabfbaf98602b240c5b8fd4597c6c919bd33efd", 20575),
+        "light large": ("93203238ab5e2c7ed642bdf21eb9c85baebafb8f443200e04355b8f435eaa49c", 20575),
+        "light extraLarge": ("f4e46ecb3c8e09f08a73565bb2e941a2d29d781e7786fca0a4a5eaf37e9d7b2d", 20575),
+        "dark small": ("6fbac56a635df62a8b3443dadb23cb34d6701a4fa277144a5c88ad4af4f220ba", 20604),
+        "dark medium": ("c0a1e9276598ed32e348958dae1ada467ee2513da8a0a2c2623965dc05c6b485", 20605),
+        "dark large": ("8f08e7a160a45f9a6e83f9ac7269cf4923f230beddea5984d45cd7589f2d225a", 20605),
+        "dark extraLarge": ("bf63a58f74acffb01689c623796c4b722295b1ad5d209ce2091154f6c1d1dd05", 20605),
     ]
 
     /// `frus1946v01/d587`, whose three figures name images.
@@ -442,14 +451,15 @@ struct ReaderPageTests {
             let accent = try #require(CSSColour(variables["color-accent"] ?? ""))
             #expect(accent.over(old).contrast(with: old) < 4.5)
         }
-        // The stylesheet draws the wash through the variable in all three places, and its fallback
-        // is the light palette's value, so a host without the variable gets a wash that passes on
-        // a white page.
+        // The stylesheet draws the wash through the variable in all four places (the footnote's
+        // three since #1602, and the index entry's Reduce Motion rule since Lane 2 of the editors'
+        // annotations follow-ups), and its fallback is the light palette's value, so a host without
+        // the variable gets a wash that passes on a white page.
         let css = ReaderPage.documentCSS
         let light = try #require(Self.variables(.light)["color-accent-wash"])
         let washes = Self.rules(in: css).compactMap { $0.declarations["background-color"] }
             .filter { $0.contains("--color-accent-wash") }
-        #expect(washes.count == 3, "the wash is drawn in \(washes.count) places")
+        #expect(washes.count == 4, "the wash is drawn in \(washes.count) places")
         for wash in washes {
             let fallback = wash.dropFirst("var(--color-accent-wash,".count).dropLast()
             #expect(CSSColour(String(fallback)).map { [$0.red, $0.green, $0.blue, $0.alpha] }

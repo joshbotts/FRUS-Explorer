@@ -59,9 +59,28 @@ struct FootnoteLandingTests {
         #expect(script.contains(#"setTimeout(() => li.classList.remove("fn-arrived"), 2400);"#))
     }
 
+    @Test("An index entry's script finds its <li> by the serializer's ix- id, washes it with its own class, and shares the global")
+    func indexEntryScript() throws {
+        let script = try #require(IndexEntryLanding.script(anchor: "in2"))
+        #expect(script.contains(#"document.getElementById("ix-" + "in2")"#))
+        #expect(script == IndexEntryLanding.script(keyExpression: #""in2""#))
+        #expect(script.contains(#"li.classList.add("ix-arrived");"#))
+        #expect(script.contains(#"setTimeout(() => li.classList.remove("ix-arrived"), 2400);"#))
+        #expect(!script.contains("fn-arrived") && !script.contains("fnote-"))
+        // The same global, so the app's figure retry brings the entry back as it would a note.
+        #expect(script.contains("window.FRUSRevealedFootnote = li.id;"))
+        // The two scripts are one template: the same text but for the id and the class.
+        let footnote = FootnoteLanding.script(keyExpression: #""in2""#)
+        #expect(script.replacingOccurrences(of: #""ix-" + "in2""#, with: #""fnote-" + "in2""#)
+                    .replacingOccurrences(of: "ix-arrived", with: "fn-arrived") == footnote)
+        let quoted = try #require(IndexEntryLanding.script(anchor: #"a"b"#))
+        #expect(quoted.contains(#"("ix-" + "a\"b")"#))
+    }
+
     /// Two readers run this script, the app's and FRUS Explorer Light's, so a change to it is a
     /// change to both. Pinned as the reader's page is (`ReaderPageTests`): re-take the pin from the
-    /// failure message, and say in the version history why the script changed.
+    /// failure message, and say in the version history why the script changed. Since 2026-11-08 the
+    /// text is `ReaderLanding`'s template, which `IndexEntryLanding` shares; the pin did not move.
     @Test("The script's text is pinned")
     func scriptIsPinned() {
         let bytes = Array(FootnoteLanding.script(keyExpression: "KEY").utf8)

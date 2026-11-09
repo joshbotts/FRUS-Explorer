@@ -397,6 +397,27 @@ Over the Mac's corpus clone, record:
 
 Add the counts to this plan before coding.
 
+**Measured on 2026-11-08** over the 553 catalogue volumes at `6170e4b32`
+(`Planning/index-see-links/index_refs.py`, its tables in `index-refs.out`, per volume in
+`index-refs.json`; one `ElementTree` parse a volume, through `Scripts/heavy.sh`, 43 seconds):
+- **No document's `xml:id` begins `in` and a digit:** 0 of 314,616 `div[@type="document"]`, front
+  and back matter's included. A whole-anchor rule, `in` and digits, is safe.
+- **49,799 references name `#in<digits>`, in 397 volumes, every one inside an index division**
+  (a `div` whose `@subtype` is `index` or whose `xml:id` begins `index`, or a `<list type="index">`),
+  and none names another volume (`frus…#in…`: 0). So the reader's page holds the entry whenever
+  such a reference is tapped, and the "from elsewhere" landing has nothing to serve.
+- **49,551 of them resolve to an id in the volume, 49,542 inside the same division as the
+  reference**; 9 point into another division of the same volume, and 248 are dangling, their id
+  nowhere in the volume (`frus1945-50Intel`, `frus1952-54v08`, `frus1952-54v09p2`, `frus1961-63v10`
+  and others, each a handful). The landing script returns `false` for those, and the reader stays
+  where it is, which is what the Office's own site does with them.
+- **18,809 `<item>`s and 2 `<persName>`s carry an `xml:id` of the form `in<digits>`,** all inside an
+  index division; 34,537 items carry some `xml:id` in all (`in…` 18,844, `sub…` 10,672, `main…`
+  5,021), so the serializer's `id="ix-…"` goes on every item with one, not on index items alone.
+- **The volumes with the most:** `frus1919Parisv09` 792 references, `frus1952-54v03` 588,
+  `frus1945Berlinv02` 523, `frus1923v02` 516, `frus1931v02` 509, `frus1932v04` 459 (102 entries with
+  ids); `frus1955-57v03` 30; `frus1969-76v17` 66 (37).
+
 ### Code
 
 1. **AST (kit).** Give an index item its id.

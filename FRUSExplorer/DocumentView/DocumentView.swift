@@ -299,6 +299,9 @@ struct DocumentView: View {
     /// when the reader arrived by following a reference to a note, and re-set in place when the
     /// reference points at a note in this same document.
     @State private var revealedFootnoteAnchor: String? = nil
+    /// The index entry a "See" reference on the page named, to scroll to (Lane 2 of the editors'
+    /// annotations follow-ups plan), or `nil`.
+    @State private var revealedIndexEntry: IndexEntryReveal? = nil
     /// Selected detent for the cross-reference graph sheet; starts at `.large`
     /// so the graph never opens half-height (Session 161).
     @State private var graphSheetDetent: PresentationDetent = .large
@@ -500,6 +503,7 @@ struct DocumentView: View {
             // so a REUSED view (the iPad two-pane detail pane renders one `DocumentView` and swaps
             // its `entry`) picks up the new entry's anchor and drops the previous document's.
             revealedFootnoteAnchor = entry.footnoteAnchor
+            revealedIndexEntry = nil
             // R-5 P2: this document's recorded change, if an update stamped one. Per entry, so a
             // reused view swaps it with the document.
             revision = await DocumentChangeBanner.revision(volumeId: entry.volumeId,
@@ -1294,6 +1298,9 @@ struct DocumentView: View {
         case .volume(let volumeId):
             openCrossRefVolume(volumeId)
 
+        case .indexEntry(let volumeId, let anchor):
+            revealIndexEntry(anchor, volumeId: volumeId ?? entry.volumeId)
+
         case .external(let url):
             // NOT `openURL(url)`. That was `@Environment(\.openURL)` — the very value this view
             // REPLACES a few lines below, in `documentContent`'s
@@ -1348,6 +1355,24 @@ struct DocumentView: View {
             print("[DocumentView] Cross-ref skipped (unusable volume id): \(volumeId)")
             #endif
         }
+    }
+
+    /// Scrolls to the entry an index's "See" reference names (Lane 2 of
+    /// `Planning/Editors-Annotations-Followups-2026-11-08.md`). Every such reference in the 553
+    /// catalogue volumes sits in the index that holds its entry, so the entry is on the page on
+    /// screen and nothing is pushed: a push would stack a second copy of the index, as a reference
+    /// to a note of the document on screen would have (#988), and until this the reader opened a
+    /// document named `in2`, which no volume has, and said so. A reference into another volume's
+    /// index, which the corpus does not have, is left alone and logged. The Mac twin makes the same
+    /// call.
+    private func revealIndexEntry(_ anchor: String, volumeId: String) {
+        guard volumeId == entry.volumeId else {
+            #if DEBUG
+            print("[DocumentView] Index reference into another volume skipped: \(volumeId)#\(anchor)")
+            #endif
+            return
+        }
+        revealedIndexEntry = IndexEntryReveal(anchor: anchor, tap: (revealedIndexEntry?.tap ?? 0) + 1)
     }
 
     /// Opens `documentId` in `volumeId`, or the cross-reference graph when the
@@ -1741,6 +1766,7 @@ struct DocumentView: View {
             FRUSDocumentWebView(
                 model: model,
                 footnoteAnchor: revealedFootnoteAnchor,
+                indexEntry: revealedIndexEntry,
                 onPersonTap: { person in
                     vm.selectedPerson = person
                     if let person {
