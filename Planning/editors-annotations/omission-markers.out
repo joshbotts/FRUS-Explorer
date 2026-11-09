@@ -1,0 +1,472 @@
+# Bracketed omission markers over 553 manifest volumes (seed 20261108)
+
+Volumes with no publication year read: 0 []
+
+## Volumes by publication year
+
+| | to 1899 | 1900–19 | 1920–39 | 1940–49 | 1950–59 | 1960–69 | 1970–79 | 1980–84 | 1985–89 | 1990–99 | 2000 on | all |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Volumes | 51 | 20 | 33 | 42 | 46 | 38 | 49 | 21 | 33 | 73 | 147 | 553 |
+| … with P1 `[Here follows …]` | 16 | 7 | 31 | 34 | 44 | 38 | 49 | 21 | 32 | 72 | 26 | 370 |
+| … with P2 `[Omitted here …]` | 0 | 1 | 0 | 0 | 0 | 0 | 4 | 0 | 0 | 1 | 121 | 127 |
+| … with P3 `… has been omitted …` | 0 | 0 | 2 | 5 | 16 | 12 | 5 | 0 | 0 | 0 | 1 | 41 |
+| … with the layer (P1|P2|P3, not X) | 16 | 7 | 31 | 34 | 44 | 38 | 49 | 21 | 32 | 73 | 137 | 482 |
+| … raw `omitted` bracket (the cloud sweep's figure) | 9 | 4 | 11 | 10 | 21 | 20 | 18 | 1 | 5 | 6 | 124 | 229 |
+| … redactions marked (scanner's rule) | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 3 | 4 | 67 | 133 | 210 |
+
+## Documents by publication year
+
+| | to 1899 | 1900–19 | 1920–39 | 1940–49 | 1950–59 | 1960–69 | 1970–79 | 1980–84 | 1985–89 | 1990–99 | 2000 on | all |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Documents | 25413 | 15811 | 33131 | 24955 | 39300 | 36204 | 35488 | 11842 | 14816 | 28122 | 49428 | 314510 |
+| P1 | 24 | 16 | 233 | 324 | 425 | 900 | 1450 | 552 | 745 | 2320 | 394 | 7383 |
+| P2 | 0 | 1 | 0 | 0 | 0 | 0 | 4 | 0 | 0 | 45 | 3963 | 4013 |
+| P3 | 0 | 0 | 2 | 9 | 20 | 17 | 9 | 0 | 0 | 0 | 1 | 58 |
+| the layer | 24 | 17 | 235 | 330 | 444 | 914 | 1463 | 552 | 745 | 2365 | 4353 | 11442 |
+| raw `omitted` | 14 | 5 | 15 | 20 | 38 | 31 | 36 | 1 | 5 | 51 | 3972 | 4188 |
+| a positive pattern inside a `not declassified` bracket (excluded) | 0 | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 8 | 2 | 12 |
+| a positive only inside a note (not counted) | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 0 | 0 | 2 | 2 | 8 |
+| garbled-original remark | 20 | 37 | 883 | 589 | 562 | 550 | 364 | 65 | 113 | 210 | 231 | 3624 |
+| `not printed` bracket, no pattern | 1 | 21 | 12 | 7 | 11 | 45 | 25 | 0 | 1 | 0 | 2 | 125 |
+| `not transcribed` bracket, no pattern | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 3 |
+| P2 by its mid-bracket clause alone | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 6 | 6 |
+| P3 by `here omitted` alone | 0 | 0 | 1 | 2 | 15 | 14 | 8 | 0 | 0 | 0 | 0 | 40 |
+| P1–P3 saying printed infra/supra/elsewhere | 0 | 1 | 57 | 118 | 90 | 73 | 50 | 10 | 4 | 18 | 5 | 426 |
+| lower-case `[here follows` or `[omitted here`, not counted | 3 | 2 | 6 | 2 | 2 | 2 | 2 | 2 | 0 | 5 | 1 | 27 |
+| not declassified: scanner's text | 0 | 0 | 0 | 0 | 0 | 0 | 10 | 5 | 44 | 2895 | 5212 | 8166 |
+| not declassified: spaced text | 0 | 0 | 0 | 0 | 0 | 0 | 10 | 5 | 44 | 2895 | 5212 | 8166 |
+| not declassified: own text only | 0 | 0 | 0 | 0 | 0 | 0 | 9 | 3 | 39 | 2463 | 4529 | 7043 |
+
+## The 1925 gate
+
+Volumes published before 1925: 74; with the layer: 26 (77 documents); with P1: 26; with raw omitted: 15.
+Pre-1925 volumes with the layer, by id (documents): frus1866p1 (2), frus1866p2 (1), frus1868p2 (3), frus1871 (3), frus1872p2v5 (1), frus1873p1v2 (1), frus1874 (2), frus1879 (1), frus1881 (1), frus1883 (1), frus1886 (1), frus1887 (1), frus1889 (1), frus1891 (1), frus1892 (1), frus1896 (3), frus1902app2 (1), frus1906p1 (2), frus1907p1 (2), frus1907p2 (1), frus1910 (2), frus1911 (4), frus1912 (5), frus1913 (9), frus1914 (16), frus1915 (11)
+
+## Scanner text against spaced text for `not declassified`
+
+Volumes that differ: 0 []
+Volumes with a redaction marked: 210 (the shipped index says 210)
+
+## Samples, 40 a kind, read by eye
+
+### P1: 9543 distinct brackets
+
+- frus1955-57v07 (1988) d268: [Here follows discussion of the Suez Canal situation.]
+- frus1958-60v11 (1992) d29: [Here follows discussion of Indonesia.]
+- frus1950v05 (1978) d810: [Here follows discussion of the Afghan-Pakistan dispute (pages 1446 ff.) and discussion of developments in Nepal, Tibet, and Korea.]
+- frus1952-54v13p1 (1982) d201: [Here follows discussion of the proposed European Defense Community.]
+- frus1955-57v25 (1990) d124: [Here follows discussion of the Middle East; for text, see volume XVI, page 793.]
+- frus1964-68v14 (2001) d324: [Here follows discussion of Vietnam.]
+- frus1920v01 (1935) d711: [Here follows telegram no. 232, June 19, to the Chargé in Japan, printed supra.]
+- frus1964-68v11 (1997) d62: [Here follows discussion of a swearing-in ceremony and telephone conversations about irradiated food and personal matters.]
+- frus1958-60v06 (1991) d410: [Here follows discussion of matters unrelated to Cuba.]
+- frus1943v04 (1964) d502: [Here follows second sentence as in draft printed on page 460.]
+- frus1958-60v06 (1991) d331: [Here follows discussion of matters unrelated to Cuba.]
+- frus1945v01 (1967) d300: [Here follows list of names of participants, including members of delegations of the United States (13); United Kingdom (2); Soviet Union (4); China (2); and France (2).]
+- frus1871 (1871) d196: [Here follows verbatim the entire article thirty-fourth, of the first-mentioned treaty.]
+- frus1955-57v21 (1990) d57: [Here follow a paragraph listing the participants at the meeting and agenda items 1–4.]
+- frus1952-54v12p2 (1987) d395: [Here follows the “Discussion” section of the paper, comprising paragraphs 6–21.]
+- frus1958-60v03 (1996) d176: [Here follow Agenda Items 3. “Significant World Developments Affecting U.S. Security” (see Document 33), 4. “U.S. Policy Toward the Sudan,” and 5. “U.S. Bases in Morocco.”]
+- frus1958-60v15 (1992) d542: [Here follows a 1-line paragraph on another subject.]
+- frus1943v05 (1965) d111: [Here follow sections 5–8 dealing with methods of handling preference requests.]
+- frus1952-54v01p2 (1983) d58: [Here follows discussion of electromagnetic communications, the implementation of the recommendations of the Jackson Committee, and the mission of the United States Information Agency.]
+- frus1955-57v22 (1989) d161: [Here follows a paragraph concerning United State-Netherlands negotiations for a civil aviation agreement.]
+- frus1958-60v06 (1991) d419: [Here follows discussion of matters unrelated to Cuba.]
+- frus1864p4 (2020) d13: [Here follows the article entire.]
+- frus1964-68v24 (1999) d481: [Here follows discussion of unrelated topics.]
+- frus1955-57v10 (1989) d210: [Here follow a list of participants and discussion of unrelated subjects. The President presided at the meeting.]
+- frus1949v07p2 (1976) d338: [Here follows section on “chronology and developments.”]
+- frus1958-60v07p2 (1993) d144: [Here follow a paragraph listing the participants at the meeting and agenda items 1 and 2.]
+- frus1955-57v27 (1992) d186: [Here follow items 4 and 5.]
+- frus1961-63v07 (1995) d75: [Here follows discussion of a press statement on the meeting.]
+- frus1948v05p2 (1976) d784: [Here follows Mr. Shertok’s estimate of the attitude of various members of the Security Council toward Israeli membership in the United Nations.]
+- frus1919v01 (1934) d781: [Here follows summary of the enclosed note.]
+- frus1958-60v02 (1991) d440: [Here follow the remaining agenda items concerning satellites, significant events affecting U.S. security, implications of cost trends, and U.S. economic defense policy.]
+- frus1961-63v10 (1997) d430: [Here follows discussion unrelated to Cuba.]
+- frus1945-50Intel (1996) d139: [Here follows discussion of matters unrelated to intelligence.]
+- frus1958-60v11 (1992) d60: [Here follow paragraphs 3–6 containing general information on the situation in Lebanon.]
+- frus1958-60v13 (1992) d217: [Here follows discussion of the situation in Jordan.]
+- frus1961-63v10 (1997) d169: [Here follows a list of the documents requested by the committee.]
+- frus1943v01 (1963) d910: [Here follows detailed information regarding the experts appointed by the Ministries of Finance of Czechoslovakia, Luxemburg, and Poland for the informal preliminary conversations.]
+- frus1964-68v20 (2001) d219: [Here follows the 12-page body of the telegram.]
+- frus1955-57v25 (1990) d168: [Here follows discussion of the Middle East. For text, see volume XVI, page 986.]
+- frus1961-63v18 (1995) d382: [Here follows discussion of an unrelated matter.]
+
+### P2: 5222 distinct brackets
+
+- frus1969-76v01 (2003) d119: [Omitted here is commentary relating to defense issues.]
+- frus1969-76v01 (2003) d120: [Omitted here is a concluding comment by Nixon relating mainly to political concerns.]
+- frus1989-92v31 (2025) d73: [Omitted here are discussions not related to START.]
+- frus1989-92v31 (2025) d98: [Omitted here is discussion not related to START.]
+- frus1969-76v39 (2007) d341: [Omitted here is discussion of matters other than the European security conference or MBFR.]
+- frus1964-68v23 (2013) d219: [Omitted here is further discussion of psychological actions.]
+- frus1969-76v32 (2010) d103: [Omitted here is discussion unrelated to SALT or ABM.]
+- frus1977-80v15 (2016) d43: [Omitted here is material unrelated to Guatemala or Belize.]
+- frus1969-76v11 (2005) d230: [Omitted here is discussion unrelated to South Asia.]
+- frus1950-55Intel (2007) d221: [Omitted here is Section IV, Intelligence Personnel and Security.]
+- frus1969-76v26 (2011) d245: [Omitted here is discussion of the logistics of the Sadat visit.]
+- frus1977-80v18 (2015) d270: [Omitted here is material unrelated to Yemen.]
+- frus1969-76ve08 (2007) d260: [Omitted here is material unrelated to Sikkim.]
+- frus1969-76v06 (2006) d11: [Omitted here is a short paragraph on future contacts with the Soviet Union.]
+- frus1969-76v26 (2011) d164: [Omitted here is discussion unrelated to the Arab-Israeli dispute.]
+- frus1969-76ve10 (2009) d230: [Omitted here is information unrelated to Cuba.]
+- frus1969-76v17 (2006) d32: [Omitted here is a short discussion on Korea.]
+- frus1964-68v07 (2003) d36: [Omitted here is discussion of the Spanish base agreement.]
+- frus1917-72PubDipv08 (2018) d47: [Omitted here is the Analysis section of the report.]
+- frus1977-80v17p2 (2018) d172: [Omitted here are items unrelated to East Africa.]
+- frus1977-80v24 (2018) d201: [Omitted here are portions of the document unrelated to Chile]
+- frus1969-76v41 (2012) d221: [Omitted here is discussion unrelated to Italy.]
+- frus1969-76v02 (2006) d384: [Omitted here is discussion of the Middle East, China, Chile, trade bill, and NATO.]
+- frus1969-76v11 (2005) d37: [Omitted here is discussion on the Middle East and Southeast Asia.]
+- frus1969-76v35 (2014) d69: [Omitted here is discussion unrelated to national security policy.]
+- frus1977-80v13 (2013) d231: [Omitted here is the body of the report.]
+- frus1969-76v38p1 (2012) d10: [Omitted here is a short discussion of beverages.]
+- frus1969-76v08 (2010) d224: [Omitted here is discussion of Nixon’s July 29 press conference and Vietnam and of Presidential politics and the November election.]
+- frus1977-80v19 (2019) d185: [Omitted here is material unrelated to India.]
+- frus1977-80v08 (2013) d25: [Omitted here is discussion unrelated to the Middle East.]
+- frus1969-76v41 (2012) d3: [Omitted here are sections not related to Western Europe and NATO.]
+- frus1969-76v07 (2010) d194: [Omitted here is discussion unrelated to Vietnam.]
+- frus1977-80v03 (2013) d89: [Omitted here is discussion of FRG-Brazilian nuclear developments and Berlin.]
+- frus1969-76ve04 (2006) d84: [Omitted here are portions unrelated to Iran.]
+- frus1917-72PubDipv08 (2018) d3: [Omitted here are the sections: Continuity of Personnel and the Role of the Cultural Affairs Officer; A New Agency for International Education; The CIA and the “Rusk Committee”; Funding; and Evaluation Studies.]
+- frus1981-88v04 (2021) d27: [Omitted here is material unrelated to the Soviet Union.]
+- frus1969-76v25 (2011) d322: [Omitted here is discussion unrelated to the Middle East.]
+- frus1977-80v22 (2017) d31: [Omitted here is the Discussion section of the memorandum.]
+- frus1969-76v17 (2006) d43: [Omitted here is a Table of Contents.]
+- frus1969-76v25 (2011) d420: [Omitted here is material relating to the Arab oil embargo. For text, see Foreign Relations, 1969–1976, volume XXXVI, Energy Crisis, 1969–1974, Document 270.]
+
+### P3: 63 distinct brackets
+
+- frus1944v04 (1966) d1110: [The paragraph here omitted summarized telegram 2385, July 1, printed supra.]
+- frus1940v01 (1959) d819: [The first part of this memorandum, here omitted, is in substance the same as telegram No. 112, April 19, 6 p.m., from the Ambassador in Argentina, printed on page 743.]
+- frus1946v06 (1969) d520: [Certain instances of what was rumored to have happened to individuals who had had association with Western influences are here omitted.]
+- frus1947v04 (1972) d435: [Some concluding paragraphs, here omitted, sent along a few current anecdotes about the buyers spree for possible use by the “Voice of America” on the theory that ridicule stings more than cold facts.]
+- frus1936v01 (1953) d622: [The list of documents and data has been omitted. Also omitted is a list of the information to be obtained, either by the purchaser or the Australian authorities, directly from the manufacturer without certification by the Bureau of Air Commerce.]
+- frus1939v01 (1956) d897: [The list of articles is here omitted.]
+- frus1936v02 (1954) d591: [For substance of the message, here omitted, see telegram No. 630, July 23, 10 a.m., from the Ambassador in France, page 632.]
+- frus1925v02 (1940) d469: [The excerpts have been omitted. For full text of the note, see the Chargé’s telegram No. 13, Jan. 9, 1925, 10 a.m., printed on page 621.]
+- frus1942v05 (1962) d73: [The “Exposition of Reasons” which precedes text of the resolution is here omitted.]
+- frus1933-39 (1952) d331: [The portion here omitted was in partial answer to the questions concerning legal interpretations and meanings not printed in telegram No. 124, September 1, 1936, supra.]
+- frus1926v01 (1941) d639: [The extracts have been omitted. For full text of the letter, see page 844.]
+- frus1935v02 (1952) d452: [Points 2 and 3 here omitted are identical with the same points in the draft memorandum to the Estonian Minister for Foreign Affairs printed on page 190. The first paragraph of point 4, also here omitted, is the same, mutatis mutandis, as the first paragraph of point 4 of the draft memorandum to the ]
+- frus1948v04 (1974) d444: [The telegraphic wording of this part of the United States amendment is here omitted. For text, see the last quoted paragraph in footnote 1, page 688.]
+- frus1948v04 (1974) d588: [The composition of the editorial board of the new journal is here omitted. Konstantin Vasilyevich Ostrovityanov replaced Varga as editor in chief.]
+- frus1944v05 (1965) d364: [A few sentences of remarks by the Shah made to the British Chargé, Daniel W. Lascelles, are here omitted.]
+- frus1946v03 (1970) d60: [Regarding the course of proceedings following Enckell’s speech, here omitted, see the United States Delegation Journal account of the meeting, infra.]
+- frus1947v04 (1972) d447: [Summaries of the main provisions of these two decrees are here omitted.]
+- frus1935v02 (1952) d452: [Two paragraphs here omitted are the same, mutatis mutandis, as the last two paragraphs of instruction No. 36, September 9, 1935, to the Chargé in Estonia, printed on page 188.]
+- frus1922v01 (1938) d259: [The first two paragraphs have been omitted since they are identical with those of telegram number 3, February 4, to the Chargé in Argentina, supra.]
+- frus1933v05 (1952) d750: [The portion of this despatch here omitted recounts past incidents in American-Mexican relations.]
+- frus1942v01 (1960) d170: [Paragraphs 1 to 5 here omitted are substantially the same as paragraphs 1 to 5 of the proposals for an International Clearing Union transmitted to the Department by the Counselor of the British Embassy on August 28, 1942, printed on pages 203–206.]
+- frus1944v02 (1967) d26: [For the text of two paragraphs here omitted, see the second and third paragraphs of telegram 2964, April 14, 8 p.m., to London, printed on page 34.]
+- frus1933v05 (1952) d750: [The text of the draft here omitted is the same as the memorandum signed February 4, 1933, printed infra.]
+- frus1949v05 (1975) d397: [The final paragraph, which is omitted, listed the positions of the leaders as they lined up on Lenin’s mausoleum for the march through the Red Square on November 7. A few absences were noted, but nothing unusual was observed.]
+- frus1943v06 (1965) d106: [Reference to a specific form of import license has been omitted here.]
+- frus1943v03 (1963) d19: [Here follow discussions on the possibility of the establishment of a unified French authority which could deal with questions affecting all territories then under French control. The portion of document here omitted is printed in Foreign Relations, 1943, volume II, page 78.]
+- frus1938v02 (1954) d474: [For the part here omitted, see page 724.]
+- frus1944v04 (1966) d885: [The first two pages of this report, containing introductory material, are here omitted.]
+- frus1938v01 (1955) d135: [The figures and data on recent arrivals in Spain of foreign troops, which here follow, have been omitted.]
+- frus1948v04 (1974) d437: [The closing paragraph, here omitted, contained the telegraphic wording of Article I in the Soviet draft convention, and the additional sentence of the United States amendment.]
+- frus1937v01 (1954) d268: [For text of the British proposals, here omitted, see British Cmd. 5521, Spain No. 2 (1937): International Committee for the Application of the Agreement Regarding Non-intervention in Spain: Proposals Submitted by His Majesty’s Government in the United Kingdom, London, July 14, 1937.]
+- frus1942v01 (1960) d170: [Paragraphs 11 to 51 here omitted are substantially the same as paragraphs 8 to 48 of the proposals transmitted to the Department on August 28, printed on pages 209–222.]
+- frus1939v01 (1956) d591: [Here follow individual statements of staff, which have been omitted.]
+- frus1935v04 (1953) d751: [Pursuant to the above instruction negotiations were carried on in Mexico City by Mr. Baker and Mr. Flood until August and were continued by Ambassador Daniels. A number of memoranda and drafts were exchanged without reaching any agreement. These papers have been omitted.]
+- frus1915 (1924) d399: [The paragraphs here omitted are identical with those in the letter to the Governor of Massachusetts.]
+- frus1928v01 (1942) d113: [For the text of the four paragraphs here omitted, see the first four paragraphs of the memorandum quoted in the Department’s telegram No. 237, July 31, 6 p.m., to the Ambassador in France, printed on page 130.]
+- frus1928v01 (1942) d71: [For the text of the paragraphs here omitted, see the six points as contained in the Department’s telegram No. 118, April 23, 5 p.m., to the Ambassador in France, printed on page 34.]
+- frus1928v01 (1942) d363: [The letter has been omitted.]
+- frus1927v03 (1942) d118: [For texts of articles XIX and XXVI which have been omitted, see the draft treaty submitted to Salvador in 1925 and the treaty signed with Salvador, Foreign Relations, 1926, volume II, pages 931 and 940.]
+- frus1937v01 (1954) d313: [For text of agreement which is here omitted, see British Cmd. 5569, Treaty Series No. 39 (1937): International Agreement for Collective Measures Against Piratical Acts in the Mediterranean by Surface Vessels and Aircraft (Supplementary to the Nyon Arrangement), Geneva, September 17, 1937.]
+
+### elsewhere: 438 distinct brackets
+
+- frus1939v02 (1956) d131: [Here follow substantially the points numbered (1) to (9), inclusive, in the letter from the Under Secretary of State to President Roosevelt, December 1, printed infra.]
+- frus1928v03 (1943) d5: [Here follow the terms given in paragraphs numbered 1 to 6 in the note of same date from the Greek Minister, printed supra.]
+- frus1948v02 (1973) d320: [Here follows a chronological review of exchanges and meetings with French and Benelux representatives regarding the proposed plan for reorganization of coal, iron and steel industries. The review is virtually identical with that set forth in numbered paragraphs 1 through 8 of Gen. Clay’s message CC–]
+- frus1955-57v18 (1989) d36: [Here follows text of NSC Action No. 1610–c and d; see footnote 12, supra.]
+- frus1929v03 (1944) d332: [Here follows text of telegram No. 50, September 21, 1929, noon, printed supra.]
+- frus1937v03 (1954) d990: [Here follows text quoted in telegram No. 804, October 13, 3 p.m., from the Ambassador in China, supra.]
+- frus1928v03 (1943) d360: [Here follows the text of telegram No. 13, January 21, 1928, 9 p.m., from the Chairman of the American Delegation to the Sixth International Conference of American States to the Secretary of State, printed supra.]
+- frus1919v01 (1934) d519: [Here follows substance of telegram of December 20, 4 p.m., to the Chargé in China, printed supra.]
+- frus1945v07 (1969) d680: [Here follows report of conversation recorded in memorandum of August 8 printed supra.]
+- frus1944v05 (1965) d1172: [Here follows text of memorandum of October 2 to the Spanish Embassy, printed supra.]
+- frus1922v01 (1938) d531: [Here follows text of aide-mémoire printed supra.]
+- frus1944v04 (1966) d1110: [The paragraph here omitted summarized telegram 2385, July 1, printed supra.]
+- frus1931v01 (1946) d127: [Here follow the texts of the two memoranda of July 8, printed supra.]
+- frus1919v01 (1934) d232: [Here follows message for Dr. Rowe embodied in Stabler’s telegram quoted supra.]
+- frus1920v01 (1935) d711: [Here follows telegram no. 232, June 19, to the Chargé in Japan, printed supra.]
+- frus1944v03 (1965) d367: [Here follows text of communication quoted in telegram 7855, September 21, 11 p.m., from London, printed supra.]
+- frus1961-63v11 (1996) d259: [Here follows the draft of the first letter in Document 258 with the exception of the last 2 paragraphs that were slightly revised and combined. The revised final paragraph of the letter as submitted to the Soviet delegates is printed below.]
+- frus1929v03 (1944) d340: [Here follows text of telegram No. 53, December 7, 1929, 1 p.m., printed supra.]
+- frus1933v02 (1949) d299: [Here follows paraphrase of the telegram printed supra.]
+- frus1931v03 (1946) d769: [Here follows quotation of paragraph (1) of telegram No. 40, May 12, 1931, 5 p.m., to the Consul General at Nanking, printed supra.]
+- frus1923v01 (1938) d546: [Here follows a summary of the memorandum of June 30 from the British Chargé printed on page 671, and of the Secretary’s note of July 9 to the British Chargé printed supra.]
+- frus1945v08 (1969) d857: [Here follows substance of memorandum of April 17 from the British Embassy, supra.]
+- frus1920v01 (1935) d745: [Here follows the Minute quoted in Mr. Lamont’s letter of October 18, printed supra.]
+- frus1941v05 (1956) d70: [Here follows report based on aide-mémoire of February 8, printed supra.]
+- frus1933v04 (1950) d565: [Here follows text of section numbered 2 (except first line) contained in telegram No. 178, May 10, 9 p.m., from the Minister in Switzerland, printed supra.]
+- frus1933v02 (1949) d456: [Here follows text of arrangement printed supra.]
+- frus1940v03 (1958) d886: [Here follows text of telegram printed supra.]
+- frus1919Parisv02 (1942) d5: [Here follows the text of the note of November 15, 1918, to the Swiss Minister, printed supra.]
+- frus1941v07 (1962) d257: [Here follows descriptive list of privileges given in note No. 222, supra.]
+- frus1931v02 (1946) d1104: [Here follows text of the letter printed supra.]
+- frus1955-57v27 (1992) d331: [Here follows the same list of participants as the memorandum of conversation, supra.]
+- frus1919Parisv09 (1946) d32: [Here follows text as printed in appendix D, supra, beginning with article 4, page 656.]
+- frus1941v05 (1956) d779: [Here follows summary similar to that contained in Generalissimo Chiang’s message to President Roosevelt, supra.]
+- frus1930v03 (1945) d671: [Here follows text of telegram No. 42, August 30, 4 p.m., to the Minister in Colombia, printed supra.]
+- frus1939v05 (1957) d34: [Here follows text of circular telegram of September 4, 9 p.m., printed supra.]
+- frus1926v01 (1941) d219: [Here follows text of telegram No. 36, March 29, 4 p.m., to the Ambassador in Chile, supra.]
+- frus1922v01 (1938) d501: [Here follows text of the resolution quoted in the telegram of June 2 to the Ambassador in Great Britain, printed supra.]
+- frus1920v01 (1935) d492: [Here follow, for the Ambassador’s information, substantially the same instructions sent to the Ambassador in Japan in telegram no. 92, March 16, 4 p.m., printed supra. The telegram concludes with instructions to repeat it to Paris as no. 548 to be acted upon as in London.]
+- frus1941v03 (1959) d710: [Here follows text of letter quoted in telegram No. 1087, March 20, 1 p.m., from the Ambassador in the United Kingdom, printed supra.]
+- frus1919Russia (1937) d508: [Here follows text of second paragraph of telegram of March 8, 6 p.m., to the Consul at Vladivostok, printed supra.]
+
+### excluded_by_X: 16 distinct brackets
+
+- frus1958-60v19 (1996) d362: [Here follow 43-1/2 pages of 2-column source text scheduled for inclusion in the Supplement but not declassified.]
+- frus1958-60v19 (1996) d272: [Here follow 19 pages of source text scheduled for inclusion in the Supplement but not declassified.]
+- frus1958-60v19 (1996) d332: [Here follow 7 pages of source text scheduled for inclusion in the Supplement but not declassified.]
+- frus1964-68v29p1 (2000) d31: [Here follow the Discussion section of the estimate, [text not declassified] and a map of Korea.]
+- frus1958-60v19 (1996) d292: [Here follow 47-1/2 pages of source text scheduled for inclusion in the Supplement but not declassified.]
+- frus1958-60v19 (1996) d317: [Here follow 6-1/2 pages of source text scheduled for inclusion in the Supplement but not declassified.]
+- frus1951v02 (1979) d721: [Here follows discussion, which was not declassified for publication, concerning possible revision of the 1942 military agreement between Brazil and the United States.]
+- frus1958-60v19 (1996) d350: [Here follow 9-1/2 pages of 2-column source text scheduled for inclusion in the Supplement but not declassified.]
+- frus1958-60v19 (1996) d13: [Here follow 36-1/2 pages of source text originally scheduled for inclusion in the Supplement but not declassified, comprising the “Discussion” portion of the estimate, with an introduction and sections on economic and political developments during the period of the first 5-year plan, probable trends]
+- frus1949v05 (1975) d17: [Here follow sections 47 through 56 comprising the “Conclusions” portion of the paper which was not declassified at the time this volume of documents was being prepared.]
+- frus1958-60v02 (1991) d479: [Here follow tables with breakdowns of the estimated funding requirements of the National Aeronautics and Space Administration, the Atomic Energy Commission, and military programs using space sub-systems (4 lines of the last table were not declassified).]
+- frus1961-63v18 (1995) d139: [Here follows the Discussion section of the estimate [text not declassified].]
+- frus1964-68v26 (2000) d76: [Here follow paragraphs 6–14, which contain an outline of a five-phased program and an assessment of [text not declassified].]
+- frus1958-60v19 (1996) d47: [Here follow 11-1/2 pages of source text scheduled for inclusion in the Supplement, but not declassified, comprising the “Discussion” portion of the estimate, with an introduction and estimates of Chinese Communist capabilities and intentions, Chinese Nationalist courses of action, and Chinese Commun]
+- frus1952-54v05p2 (1983) d282: [Here follows a short paragraph not declassified by the NSC Staff at the time this volume was published.]
+- frus1958-60v19 (1996) d258: [Here follow 10–1/2 pages of source text scheduled for inclusion in the Supplement but not declassified.]
+
+### in_notes: 15 distinct brackets
+
+- frus1961-63v08 (1996) d96: [Here follows a table that shows totals of 90 Bison bombers, 50 Bear bombers, and 60 follow-on heavy tankers by mid-1967.]
+- frus1948v03 (1974) d182: [The footnote here omitted referred to paragraph 7 of Section II of the September 9 paper, p. 241, and quoted it in full.]
+- frus1946v01 (1972) d233: [Here follows list of the above nine applicants]
+- frus1932v05 (1948) d78: [Here follows text of telegram of September 13, printed supra.]
+- frus1946v01 (1972) d721: [Here follows detailed country by country summary and the original table.]
+- frus1958-60v15 (1992) d192: [Here follows a table showing the number of members in each party.]
+- frus1950v06 (1976) d602: [Here follows telegram 763 from Saigon, November 4; for text, see United States–Vietnam Relations, 1945–1967, Book 8, pages 405–410.]
+- frus1958-60v03 (1996) d88: [Here follows a footnote in the source text with the dissenting view of the Assistant Chief of Staff for Intelligence, Department of the Army, on the number of heavy bombers estimated. He estimated that the number would be lower from mid-1960 onward.]
+- frus1958-60v03 (1996) d88: [Here follows a footnote in the source text with the dissenting view of the Assistant Chief of Staff, Intelligence, USAF, on the number of heavy bombers and ICBMs estimated. He estimated that the number of bombers and ICBMs would be higher from mid-1962 onward.]
+- frus1964-68v05 (2002) d177: [Omitted here is a footnote in the source text in which McNamara pointed out that the bulk of the first 100,000 troops would be assigned to the pacification effort in the Mekong Delta region. He questioned the necessity for employing American troops in an area where there was no external threat to th]
+- frus1977-80v26 (2015) d60: [Omitted here is information on where comments and queries may be addressed.]
+- frus1961-63v04 (1991) d114: [Here follows a listing of actions to accompany such an announcement.]
+- frus1958-60v03 (1996) d111: [Here follows a footnote in the source text with the dissenting view of the Assistant Chief of Staff, Intelligence, USAF, on the number of bombers and tankers. He believed that the number of both heavy and medium bombers and tankers would be higher from mid-1962 onward.]
+- frus1969-76v27 (2012) d317: [Omitted here are detailed statistics on projected annual growth rates.]
+- frus1944Quebec (1972) d222: [Here follows the text of paragraphs 2–4 of Hull’s memorandum to Roosevelt of September 13.]
+
+### p2_mid: 6 distinct brackets
+
+- frus1969-76ve16 (2015) d85: [Connally left at an unknown time after 11:59 a.m.; Kissinger entered at 12:02 p.m. Omitted here is a brief exchange on Kissinger’s schedule and economic policy.]
+- frus1969-76v14 (2006) d126: [The recording began while the meeting was in progress. Omitted here is discussion of domestic support for bombing Vietnam.]
+- frus1969-76v13 (2011) d124: [At this point the President called Haldeman to order an investigation into the leak on the SALT section of the Annual Report on Foreign Policy. Omitted here is Nixon’s side of the telephone conversation.]
+- frus1969-76v15 (2011) d123: [Henry A. Kissinger, Secretary of State William Rogers, Soviet Foreign Minister Andrei Gromyko, Helmut Sonnenfeldt, and Soviet Ambassador Anatoli Dobrynin entered the Oval Office at 12:32 p.m. Omitted here is the larger group conversation; see Document 124.]
+- frus1969-76v17 (2006) d207: [At this point in the conversation, Kissinger left the Oval Office to greet Ambassador Shen. Omitted here is an exchange of pleasantries.]
+- frus1969-76v09 (2010) d181: [Agnew left at 10:35 a.m. Omitted here is discussion unrelated to the Vice President’s conversation with the President.]
+
+### here_omitted: 44 distinct brackets
+
+- frus1947v04 (1972) d447: [Summaries of the main provisions of these two decrees are here omitted.]
+- frus1948v04 (1974) d588: [The composition of the editorial board of the new journal is here omitted. Konstantin Vasilyevich Ostrovityanov replaced Varga as editor in chief.]
+- frus1942v05 (1962) d73: [The “Exposition of Reasons” which precedes text of the resolution is here omitted.]
+- frus1936v02 (1954) d42: [A small number of minor verbal changes relating to certain articles, and a few proposed eliminations, are here omitted.]
+- frus1935v02 (1952) d452: [Two paragraphs here omitted are the same, mutatis mutandis, as the last two paragraphs of instruction No. 36, September 9, 1935, to the Chargé in Estonia, printed on page 188.]
+- frus1944v02 (1967) d735: [The summary of the Conference from October 17 has been here omitted.]
+- frus1933-39 (1952) d331: [The portion here omitted was in partial answer to the questions concerning legal interpretations and meanings not printed in telegram No. 124, September 1, 1936, supra.]
+- frus1936v02 (1954) d591: [For substance of the message, here omitted, see telegram No. 630, July 23, 10 a.m., from the Ambassador in France, page 632.]
+- frus1934v02 (1951) d690: [The report opens with a brief review of events in Liberia from January to May 1934, here omitted.]
+- frus1933v05 (1952) d750: [The portion of this despatch here omitted recounts past incidents in American-Mexican relations.]
+- frus1946v06 (1969) d520: [Certain instances of what was rumored to have happened to individuals who had had association with Western influences are here omitted.]
+- frus1939v01 (1956) d897: [The list of articles is here omitted.]
+- frus1933v05 (1952) d750: [The text of the draft here omitted is the same as the memorandum signed February 4, 1933, printed infra.]
+- frus1944v04 (1966) d1110: [The paragraph here omitted summarized telegram 2385, July 1, printed supra.]
+- frus1942v01 (1960) d170: [Paragraphs 11 to 51 here omitted are substantially the same as paragraphs 8 to 48 of the proposals transmitted to the Department on August 28, printed on pages 209–222.]
+- frus1928v01 (1942) d113: [For the text of the four paragraphs here omitted, see the first four paragraphs of the memorandum quoted in the Department’s telegram No. 237, July 31, 6 p.m., to the Ambassador in France, printed on page 130.]
+- frus1945v06 (1969) d565: [For portion of memorandum here omitted, concerning procedural questions of the Council of Foreign Ministers, see volume II, page 567.]
+- frus1949v05 (1975) d402: [Some paragraphs touching upon the assessment of the relative position and aspirations of the Soviet Union in Germany, Austria, Yugoslavia, and satellite countries in eastern Europe, are here omitted.]
+- frus1943v04 (1964) d289: [The portion of telegram here omitted, relative to the purchasing of strategic raw materials, is printed on page 284.]
+- frus1928v01 (1942) d71: [For the text of the paragraphs here omitted, see the six points as contained in the Department’s telegram No. 118, April 23, 5 p.m., to the Ambassador in France, printed on page 34.]
+- frus1935v02 (1952) d452: [Points 2 and 3 here omitted are identical with the same points in the draft memorandum to the Estonian Minister for Foreign Affairs printed on page 190. The first paragraph of point 4, also here omitted, is the same, mutatis mutandis, as the first paragraph of point 4 of the draft memorandum to the ]
+- frus1940v01 (1959) d819: [The first part of this memorandum, here omitted, is in substance the same as telegram No. 112, April 19, 6 p.m., from the Ambassador in Argentina, printed on page 743.]
+- frus1937v01 (1954) d313: [For text of agreement which is here omitted, see British Cmd. 5569, Treaty Series No. 39 (1937): International Agreement for Collective Measures Against Piratical Acts in the Mediterranean by Surface Vessels and Aircraft (Supplementary to the Nyon Arrangement), Geneva, September 17, 1937.]
+- frus1942v05 (1962) d644: [The remainder of this telegram, here omitted, is concerned with the rubber program.]
+- frus1944v02 (1967) d26: [For the text of two paragraphs here omitted, see the second and third paragraphs of telegram 2964, April 14, 8 p.m., to London, printed on page 34.]
+- frus1937v01 (1954) d268: [For text of the British proposals, here omitted, see British Cmd. 5521, Spain No. 2 (1937): International Committee for the Application of the Agreement Regarding Non-intervention in Spain: Proposals Submitted by His Majesty’s Government in the United Kingdom, London, July 14, 1937.]
+- frus1915 (1924) d399: [The paragraphs here omitted are identical with those in the letter to the Governor of Massachusetts.]
+- frus1946v06 (1969) d512: [The final two paragraphs, dealing with administrative affairs and personnel allocations in the Consular Section of the Embassy in Moscow, are here omitted.]
+- frus1944v05 (1965) d364: [A few sentences of remarks by the Shah made to the British Chargé, Daniel W. Lascelles, are here omitted.]
+- frus1944v04 (1966) d885: [The first two pages of this report, containing introductory material, are here omitted.]
+- frus1936v02 (1954) d271: [A description of a part of the dedication ceremony and addresses is here omitted.]
+- frus1948v04 (1974) d444: [The telegraphic wording of this part of the United States amendment is here omitted. For text, see the last quoted paragraph in footnote 1, page 688.]
+- frus1942v01 (1960) d170: [Paragraphs 1 to 5 here omitted are substantially the same as paragraphs 1 to 5 of the proposals for an International Clearing Union transmitted to the Department by the Counselor of the British Embassy on August 28, 1942, printed on pages 203–206.]
+- frus1946v03 (1970) d60: [Regarding the course of proceedings following Enckell’s speech, here omitted, see the United States Delegation Journal account of the meeting, infra.]
+- frus1945v05 (1969) d617: [The final five paragraphs, which are concerned with the method und difficulties of collecting biographical details, are here omitted.]
+- frus1940v02 (1957) d61: [The two paragraphs here omitted are the same as the last two paragraphs of telegram No. 62, April 10, 9 p.m., to Sweden, printed supra.]
+- frus1940v03 (1958) d219: [The portion of the telegram here omitted gives detailed information received from an American citizen who had been residing in a Baltic State, but who had received an exit visa to return to the United States with his wife only on condition of acting there as a Communist agent.]
+- frus1938v02 (1954) d474: [For the part here omitted, see page 724.]
+- frus1945v06 (1969) d562: [For portion of memorandum here omitted, concerning procedural questions of the Council of Foreign Ministers, see volume II, page 567.]
+- frus1948v04 (1974) d437: [The closing paragraph, here omitted, contained the telegraphic wording of Article I in the Soviet draft convention, and the additional sentence of the United States amendment.]
+
+### lowercase_not_counted: 27 distinct brackets
+
+- frus1935v03 (1953) d751: [here follow Chinese characters]
+- frus1945v07 (1969) d131: [here follow four Chinese characters]
+- frus1921v02 (1936) d34: [here follow a list of military attaches and lists of consular appointments]
+- frus1932v05 (1948) d776: [here follows list of telegrams not printed.]
+- frus1896 (1897) d90: [here follow the names]
+- frus1917 (1926) d184: [here follows a résumé of the note from the British Chargé d’Affaires of August 21, 1917]
+- frus1955-57v17 (1990) d75: [here follows a phrase pertaining to a personnel matter]
+- frus1952-54v01p2 (1983) d208: [here follows a brief report of comments made by Cohn and Schine concerning Brad Connors and two other individuals]
+- frus1907p1 (1910) d264: [here follows the text of the treaty in full]
+- frus1958-60v04 (1992) d230: [here follows a list of references]
+- frus1927v02 (1942) d172: [omitted from?]
+- frus1947v05 (1971) d527: [here follows remainder of paragraph, dealing with the British Military Mission in Greece.]
+- frus1879 (1879) d518: [here follows a recapitulation of the conditions enumerated in the firman of June 1, 1841.]
+- frus1958-60v13 (1992) d351: [here follows a list of references]
+- frus1867p1 (1868) d419: [here follows copy of consul’s letter of 17th April, see enclosure No. 2.]
+- frus1958-60v13 (1992) d357: [here follows a list of references]
+- frus1969-76v34 (2011) d45: [omitted here is the Table of Contents]
+- frus1917 (1926) d312: [here follows the Japanese Minister’s note]
+- frus1952-54v01p2 (1983) d355: [here follow two illegible words]
+- frus1943v01 (1963) d879: [here follows statement of policy similar to those expressed in memoranda of March 30 and June 24, printed on pages 1034 and 1040, respectively.]
+- frus1934v05 (1952) d365: [here follows substance of note of February 14, 1934, to the Haitian Minister, printed supra]
+- frus1921v01 (1936) d484: [here follow four Chinese characters]
+- frus1947v05 (1971) d128: [here follows a personal observation]
+- frus1898 (1901) d112: [here follow their titles and degrees]
+- frus1918Russiav02 (1932) d481: [here follows the remainder of the first three paragraphs of the telegram of September 26, 6 p.m., to the Ambassador in Japan, ante, page 392.]
+- frus1921v02 (1936) d190: [here follows a summary in extenso of the note referred to]
+- frus1958-60v13 (1992) d360: [here follows a list of references]
+
+### residue_omission_word: 1593 distinct brackets
+
+- frus1933v02 (1949) d123: [apparent omission]
+- frus1933v05 (1952) d405: [Apparent omission]
+- frus1945v04 (1968) d249: [apparent omission]
+- frus1919v01 (1934) d840: [omission]
+- frus1932v05 (1948) d439: [apparent omission]
+- frus1928v01 (1942) d363: [Detailed instructions on the proposed amendments to convention of 1923 are omitted.]
+- frus1977-80v15 (2016) d129: [omission in the original]
+- frus1913 (1920) d545: [Omission?]
+- frus1919Russia (1937) d841: [apparent omission]
+- frus1944v07 (1967) d673: [apparent omission]
+- frus1915 (1924) d1044: [omission in transmission]
+- frus1941v02 (1959) d597: [apparent omission]
+- frus1920v01 (1935) d51: [apparent omission]
+- frus1927v02 (1942) d216: [apparent omission]
+- frus1950v03 (1977) d23: [apparent omission]
+- frus1937v04 (1954) d245: [omission?]
+- frus1918Russiav02 (1932) d75: [omission]
+- frus1939v03 (1955) d192: [omission?]
+- frus1918Supp01v02 (1933) d267: [omission]
+- frus1913 (1920) d1029: [omission?]
+- frus1969-76v14 (2006) d202: [omission in the source text]
+- frus1944v05 (1965) d105: [Apparent omission.]
+- frus1945v03 (1968) d113: [apparent omission]
+- frus1944v03 (1965) d100: [apparent omission]
+- frus1969-76v06 (2006) d237: [omission in the source text]
+- frus1941v05 (1956) d441: [apparent omission]
+- frus1969-76v29 (2007) d40: [omission in transcript]
+- frus1938v01 (1955) d48: [omission?]
+- frus1955-57v14 (1989) d251: [apparent omission]
+- frus1949v09 (1974) d848: [apparent omission]
+- frus1944v03 (1965) d326: [apparent omission]
+- frus1929v02 (1943) d422: [apparent omission]
+- frus1977-80v19 (2019) d18: [omission in the original]
+- frus1943v02 (1964) d520: [apparent omission]
+- frus1941v05 (1956) d354: [apparent omission]
+- frus1949v08 (1978) d1104: [apparent omission]
+- frus1942v06 (1963) d171: [apparent omission]
+- frus1933v04 (1950) d30: [apparent omission]
+- frus1916 (1925) d134: [omission]
+- frus1969-76v40 (2008) d304: [omission in the source text]
+
+### residue_paragraph: 7264 distinct brackets
+
+- frus1862 (2020) d161: [Enclosures.]
+- frus1969-76v42 (2017) d16: [The North Vietnamese confer.]
+- frus1914 (1922) d991: [Quotes text of first above telegram of April 24, 2 p.m.]
+- frus1946v06 (1969) d236: [Telegram 3495, September 17, 1946 from Moscow, printed on page 145, transmitted the text of a Soviet Foreign Ministry note of the same date protesting the travel restrictions imposed upon Soviet repre]
+- frus1865p2 (2020) d429: [The above enclosures forwarded to Mrs. Lincoln July 15.]
+- frus1941v01 (1959) d371: [For text of joint message sent by President Roosevelt and Prime Minister Churchill to Premier Stalin, see telegram No. 985, August 18, 1941, 9 p.m., to the Ambassador in the Soviet Union, printed on p]
+- frus1969-76v16 (2012) d66: [Dobrynin explains to Brezhnev that the elections are for the whole House and one-third of the Senate.]
+- frus1894app2 (1895) d373: [Hawaiian corporation, capital stock $500,000, in shares of $100 par value each.]
+- frus1868p1 (1869) d11: [Page of report No. 27.]
+- frus1969-76ve10 (2009) d238: [Reconnaissance Photo: NIPE BAY, CUBA 27 MAY 1971]
+- frus1947v07 (1972) d621: [Identical letters dated February 11, 1947 from Secretary Marshall despatched to Secretaries Patterson and Forrestal as of that date.See footnote 20, p. 794.]
+- frus1913 (1920) d1318: [Quotation of the telegram next above.]
+- frus1915 (1924) d1382: [Argument against the existing laws relating to the tax on mining property and the tax on mining products.]
+- frus1981-88v11 (2021) d32: [no comments]
+- frus1944v07 (1967) d967: [For statement, see facing page. Following the statement are paragraphs numbered 1, 2, and 3 (not printed), giving details of Export-Import Bank procedure in the operation of this credit.]
+- frus1969-76ve14p2 (2015) d61: [The meeting adjourned from 7:58 to 8:10 p.m. and then reconvened.]
+- frus1928v02 (1943) d734: [On March 19, 1929, the Legation was informed that Danish vessels entering the United States from Danish ports were properly subject to the payment of the six-cent tonnage rate provided for in section ]
+- frus1940v01 (1959) d172: [For note from the German Foreign Office requesting the United States to withdraw the diplomatic missions in Norway, the Netherlands, Belgium, and Luxemburg, see telegram No. 2223, July 1, 10 a.m., fro]
+- frus1938v02 (1954) d505: [Discussions respecting a trade agreement between the United States and Norway apparently were not continued.]
+- frus1872p2v2 (1872) d236: [Earl Granville to General Schenck.]
+- frus1945v05 (1969) d437: [On August 22, 1945, the Secretary of State issued to the press a statement on the situation in Rumania, substantially the same as text of telegram 7108, August 21, to London, printed on page 581. For ]
+- frus1868p1 (1869) d11: [Page of report No. 105.]
+- frus1919Parisv06 (1946) d12: [The Austrian Chancellor (Renner) to the President of the Peace Conference (Clemenceau)]
+- frus1867p2 (1868) d415: [From Le Temps, July 15.]
+- frus1919Parisv07 (1946) d39: [Statement on the Situation in Silesia by the Polish Minister at Paris (Zamoiski)]
+- frus1941v01 (1959) d283: [For a conversation on December 29, 1941, between the Polish Ambassador, Jan Ciechanowski, and the Assistant Chief of the Division of European Affairs, Loy W. Henderson, with regard to the desire of th]
+- frus1946v01 (1972) d22: [On May 31 the White House released to the press the text of a letter from Mr. Stettinius to the President in which Mr. Stettinius submitted his resignation as United States Representative at the Unite]
+- frus1901China (1902) d12: [Sent to the Chinese minister, August 22, 1900—1.30 p.m.]
+- frus1946v06 (1969) d414: [On June 17, 1946, the Rumanian Foreign Minister transmitted to the United States Representative in Rumania a note replying to the Representative’s note of June 14. The Rumanian note expressed regret t]
+- frus1919Parisv05 (1946) d76: [The Head of the German Delegation (Brockdorff-Rantzau) to the President of the Peace Conference (Clemenceau)]
+- frus1969-76v34 (2011) d190: [Dr. Tucker showed a chart on peacetime overseas deployments.]
+- frus1911 (1918) d615: [This note, replying to the American ambassador’s No. 157, maintains the justice of the application of the restrictions resulting from the suspension of guaranties not only to natives but also to forei]
+- frus1936v01 (1953) d153: [Text of the procès-verbal signed at London, November 6, 1936, is printed in Department of State, Treaty Information, Bulletin No. 86, November 30, 1936, page 35, and in British Cmd. 5302; see also sta]
+- frus1969-76v39 (2007) d329: [Mr. Akalovsky joins the meeting.]
+- frus1913 (1920) d1709: [Translation.]
+- frus1876 (1876) d262: [From the Gaceta de Madrid, October 7, 1876.]
+- frus1946v01 (1972) d362: [via Courier]
+- frus1969-76v16 (2012) d289: [Photos were taken. Then drinks and hors d’oeuvres were served in the living room.]
+- frus1919Parisv06 (1946) d4: [Note From the Reparation Commission to the Council of the Principal Allied and Associated Powers]
+- frus1928v03 (1943) d480: [Paraphrase.] Regarding the purposes for which the proceeds of the first issue are to be used, we are of the opinion that the items for the wharf, redemption of bank notes, expenses of the special sess]
+
+## The residue's first two words (whole-paragraph brackets matching nothing)
+
+- 240: the meeting
+- 224: from the
+- 200: unclear exchange
+- 173: translation.
+- 130: page of
+- 120: for text
+- 107: text is
+- 95: translation
+- 88: there was
+- 81: for the
+- 81: enclosure no.
+- 67: identical, mutatis
+- 61: enclosures.
+- 61: at this
+- 59: the remainder
+- 53: the press
+- 52: the president
+- 50: dr. kissinger
+- 47: hawaiian corporation;
+- 45: for a
+- 42: the group
+- 41: secretary kissinger
+- 39: seal of
+- 39: the secretary
+- 38: in the
+- 36: from british
+- 36: paraphrase.] the
+- 33: in a
+- 31: paraphrase.] i
+- 29: note from
+- 28: letter from
+- 28: privy seal.
+- 28: a copy
+- 27: the following
+- 26: same to
+- 25: for enclosures
+- 24: there is
+- 24: sign manual.
+- 24: footnote in
+- 24: in telegram
+
+done 553

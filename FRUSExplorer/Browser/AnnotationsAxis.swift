@@ -12,7 +12,7 @@ import Foundation
 
 /// One layer of a volume's editorial annotation, as the app shows it: a row of a volume page's
 /// "Editors’ Annotations" and a category of the Browse axis of the same name
-/// (`Planning/Editors-Annotations-Design-2026-11-06.md`, §5 and §6). Fifteen, in the page's order.
+/// (`Planning/Editors-Annotations-Design-2026-11-06.md`, §5 and §6). Sixteen, in the page's order.
 ///
 /// The one table both read, so that a volume's page and the axis cannot disagree on what a layer is
 /// called, how it is drawn, or which volumes carry it. A layer is one of FRUSCoreKit's
@@ -21,6 +21,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane C
+///   1.1 — 2026-11-08: ``editorialOmissions``, the sixteenth layer (Lane 1 of
+///          `Planning/Editors-Annotations-Followups-2026-11-08.md`)
 enum AnnotationLayer: String, CaseIterable, Identifiable, Sendable {
     /// Names linked to the volume's List of Persons.
     case people
@@ -38,6 +40,8 @@ enum AnnotationLayer: String, CaseIterable, Identifiable, Sendable {
     case classification
     /// Text marked as not declassified.
     case excisions
+    /// What the editors left out, said in brackets: "[Here follows …]".
+    case editorialOmissions
     /// The posts' despatch numbers.
     case despatch
     /// Documents numbered in print.
@@ -61,7 +65,7 @@ enum AnnotationLayer: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .people, .abbreviations, .correspondents, .subjects, .participants:
             return .named
-        case .sourceNotes, .classification, .excisions, .despatch:
+        case .sourceNotes, .classification, .excisions, .editorialOmissions, .despatch:
             return .provenance
         case .numbered, .crossReferences, .editorialNotes, .footnotes, .marginalNotes, .printedAids:
             return .connects
@@ -79,6 +83,7 @@ enum AnnotationLayer: String, CaseIterable, Identifiable, Sendable {
         case .sourceNotes: return "archivebox"
         case .classification: return "lock"
         case .excisions: return "eye.slash"
+        case .editorialOmissions: return "text.badge.minus"
         case .despatch: return "number.circle"
         case .numbered: return "number"
         case .crossReferences: return "arrow.triangle.branch"
@@ -101,6 +106,7 @@ enum AnnotationLayer: String, CaseIterable, Identifiable, Sendable {
         case .sourceNotes: return Labels.sourceNotes
         case .classification: return Labels.classification
         case .excisions: return Labels.excisions
+        case .editorialOmissions: return Labels.editorialOmissions
         case .despatch: return Labels.despatch
         case .numbered: return Labels.numbered
         case .crossReferences: return Labels.crossReferences
@@ -122,6 +128,7 @@ enum AnnotationLayer: String, CaseIterable, Identifiable, Sendable {
         case .participants: return .participants
         case .classification: return .classification
         case .excisions: return .excisions
+        case .editorialOmissions: return .editorialOmissions
         case .despatch: return .despatch
         case .numbered: return .numbered
         case .editorialNotes: return .editorialNotes
@@ -216,6 +223,9 @@ extension AnnotationLayer {
         case .excisions:
             return String(localized: "browser.annotations.rule.excisions",
                           defaultValue: "A volume counts when one of its documents marks a redaction as not declassified: text in it, or the whole document.")
+        case .editorialOmissions:
+            return String(localized: "browser.annotations.rule.editorialOmissions",
+                          defaultValue: "A volume published from 1925 counts when one of its documents says, in brackets, what the editors left out: “[Here follows …]” or “[Omitted here is …]”.")
         case .despatch:
             return String(localized: "browser.annotations.rule.despatch",
                           defaultValue: "A volume counts when at least a tenth of its documents carry a despatch number.")
@@ -267,6 +277,9 @@ extension AnnotationLayer {
         case .excisions:
             return String(localized: "browser.annotations.practice.excisions",
                           defaultValue: "The editors mark what declassification review redacted: a gap in the printed text, “[… not declassified]”, or a whole document withheld, listed in its place with its heading, its source note and the number of pages not declassified. From Secretary Kellogg’s 1925 order until the 1991 statute, volumes marked an omission with an ellipsis, whether the editors left the text out or it was not cleared for publication, so their redactions cannot be told from the editors’ omissions and are not counted here. Volumes published before the 1925 order marked an omission with a row of asterisks, under no written rule and without saying whose cut it was; those are not counted here either.")
+        case .editorialOmissions:
+            return String(localized: "browser.annotations.practice.editorialOmissions",
+                          defaultValue: "Since Secretary Kellogg’s 1925 order, where the editors left out part of a document as not relevant to the volume, they could say so in brackets and describe what was omitted. Until the 1991 statute an ellipsis could also mark an omission, the editors’ or a redaction, and those are not counted here. Volumes published before the order marked an omission with a row of asterisks, not a bracketed note, and are not counted here.")
         case .despatch:
             return String(localized: "browser.annotations.practice.despatch",
                           defaultValue: "Older volumes print the number a diplomatic post gave each despatch it sent, “No. 74.”, by which the despatch is found in the archives.")
@@ -324,7 +337,7 @@ extension AnnotationLayer {
         case .printedAids:
             return String(localized: "browser.annotations.app.printedAids",
                           defaultValue: "A volume's page lists them under Front Matter and Back Matter, and the reader opens each one.")
-        case .correspondents, .subjects, .participants, .excisions, .marginalNotes:
+        case .correspondents, .subjects, .participants, .excisions, .editorialOmissions, .marginalNotes:
             return String(localized: "browser.annotations.app.none",
                           defaultValue: "The reader shows these as printed. Nothing else in the app reads them yet.")
         }
@@ -343,6 +356,7 @@ extension AnnotationLayer {
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane C
+///   1.1 — 2026-11-08: the line under a volume the 1925 gate keeps out of Marked editorial omissions
 enum AnnotationsAxis {
 
     /// One era's share of a layer: how many of its volumes carry it.
@@ -645,6 +659,7 @@ enum AnnotationsAxis {
             }
             var lines: [String] = []
             if let unlinked = unlinkedList(for: layer, annotations) { lines.append(unlinked) }
+            if let gated = gateNote(for: layer, annotations) { lines.append(gated) }
             if volumeId == fromVolumeId {
                 lines.append(String(localized: "browser.annotations.note.from",
                                     defaultValue: "You came here from this volume."))
@@ -674,11 +689,20 @@ enum AnnotationsAxis {
                                     one: String(localized: "browser.annotations.accessory.notes.one", defaultValue: "%@ note"),
                                     many: String(localized: "browser.annotations.accessory.notes.many", defaultValue: "%@ notes"),
                                     locale: locale)
-        case .subjects, .participants, .excisions, .marginalNotes:
+        case .subjects, .participants, .excisions, .editorialOmissions, .marginalNotes:
             return CountCopy.docs(count, locale: locale)
         case .crossReferences, .printedAids:
             return nil
         }
+    }
+
+    /// The line under a volume the 1925 gate keeps out of Marked editorial omissions: published
+    /// before Secretary Kellogg's order, so its bracketed omissions, if it has any, are counted in
+    /// the file and not carried (`VolumeAnnotations.editorialOmissionsFromYear`); `nil` otherwise.
+    static func gateNote(for layer: AnnotationLayer, _ annotations: VolumeAnnotations) -> String? {
+        guard layer == .editorialOmissions, annotations.publishedBeforeEditorialOmissionsOrder else { return nil }
+        return String(localized: "browser.annotations.note.editorialOmissions.before1925",
+                      defaultValue: "Published before the 1925 order, when the editors marked an omission with a row of asterisks, not a bracketed note.")
     }
 
     /// The amber line for a volume that prints the list a layer links to and links none of its

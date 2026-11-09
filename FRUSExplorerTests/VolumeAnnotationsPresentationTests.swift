@@ -22,6 +22,8 @@ import Testing
 ///   1.1 — 2026-11-06: the shipped file's `frus1981-88v16` explains its abbreviations, which its
 ///          documents name on `@ana`, and `frus1941-43`'s printed aids name its Index of Persons as the
 ///          index it is (index version 74)
+///   1.2 — 2026-11-08: Marked editorial omissions, the sixteenth row, and the 1925 gate (Lane 1 of
+///          `Planning/Editors-Annotations-Followups-2026-11-08.md`)
 @Suite("Editors’ Annotations — what a volume page says about its editors' annotation")
 struct VolumeAnnotationsPresentationTests {
 
@@ -29,10 +31,11 @@ struct VolumeAnnotationsPresentationTests {
 
     /// A volume of `documents` documents carrying `counts`.
     private func volume(_ era: AnnotationEra, documents: Int, persons: Int = 0, terms: Int = 0,
-                        _ counts: [AnnotationCategory: Int], sections: [String] = []) -> VolumeAnnotations {
+                        _ counts: [AnnotationCategory: Int], sections: [String] = [],
+                        publicationYear: Int? = nil) -> VolumeAnnotations {
         VolumeAnnotations(documents: documents, historicalDocuments: documents - (counts[.editorialNotes] ?? 0),
                           personsListed: persons, termsListed: terms, era: era, counts: counts,
-                          sections: sections)
+                          sections: sections, publicationYear: publicationYear)
     }
 
     private func index(_ volumes: [String: VolumeAnnotations]) -> VolumeAnnotationsIndex {
@@ -40,15 +43,17 @@ struct VolumeAnnotationsPresentationTests {
     }
 
     /// The China volume's own counts (`frus1969-76v17`), with a despatch number and a marginal note
-    /// added so every row shows.
+    /// added so every row shows; its 32 bracketed omissions are the sweep's figure for it
+    /// (`Planning/editors-annotations/omission-markers.json`).
     private var full: VolumeAnnotations {
         volume(.from1969, documents: 280, persons: 325, terms: 470, [
             .people: 279, .abbreviations: 278, .correspondents: 161, .subjects: 137, .participants: 67,
-            .sourceCitation: 263, .sourceFileNumber: 5, .classification: 260, .excisions: 37, .despatch: 30,
+            .sourceCitation: 263, .sourceFileNumber: 5, .classification: 260, .excisions: 37,
+            .editorialOmissions: 32, .despatch: 30,
             .numbered: 280, .xrefDocuments: 131, .xrefFootnotes: 65, .xrefVolumes: 89,
             .editorialNotes: 12, .footnotes: 243, .marginalNotes: 1,
         ], sections: ["back", "errata", "front", "index", "note-on-covert-actions", "persons", "preface",
-                      "sources", "table-of-contents", "terms"])
+                      "sources", "table-of-contents", "terms"], publicationYear: 2006)
     }
 
     @Test("Each row says its counts, in three groups, in the page's order")
@@ -60,7 +65,7 @@ struct VolumeAnnotationsPresentationTests {
         for group in section.groups { for row in group.rows { detail[row.id] = row.detail } }
         #expect(section.groups.flatMap { $0.rows.map(\.id) } == [
             "people", "abbreviations", "correspondents", "subjects", "participants",
-            "sourceNotes", "classification", "excisions", "despatch",
+            "sourceNotes", "classification", "excisions", "editorialOmissions", "despatch",
             "numbered", "crossReferences", "editorialNotes", "footnotes", "marginalNotes", "printedAids",
         ])
         #expect(detail["people"] == "279 of 280 documents · 325 people listed")
@@ -69,6 +74,7 @@ struct VolumeAnnotationsPresentationTests {
         #expect(detail["sourceNotes"] == "268 of 280 documents · archival citations and file numbers")
         #expect(detail["classification"] == "260 of 280 documents")
         #expect(detail["excisions"] == "37 documents with redactions marked")
+        #expect(detail["editorialOmissions"] == "32 documents with editorial omissions marked")
         #expect(detail["numbered"] == "280 of 280 documents")
         #expect(detail["crossReferences"]
                 == "131 documents cite others in this volume · 89 documents cite other volumes")
@@ -127,6 +133,21 @@ struct VolumeAnnotationsPresentationTests {
         #expect(section.absent.first { $0.id == "classification" }?.note == "")
     }
 
+    @Test("Bracketed omissions show from 1925; a volume published before the order lists none, and is not told it lacks them")
+    func editorialOmissionsFollowTheGate() {
+        let before = volume(.from1914, documents: 1_200, [.correspondents: 1_200, .editorialOmissions: 16],
+                            publicationYear: 1922)
+        let gated = VolumeAnnotationsPresentation(annotations: before, index: index(["v": before]), locale: locale)
+        #expect(!gated.groups.flatMap(\.rows).contains { $0.id == "editorialOmissions" })
+        #expect(!gated.absent.contains { $0.id == "editorialOmissions" }, "an era-bound layer is never listed as missing")
+        let from = volume(.from1920, documents: 800, [.correspondents: 800, .editorialOmissions: 1], publicationYear: 1940)
+        let carried = VolumeAnnotationsPresentation(annotations: from, index: index(["v": from]), locale: locale)
+        let row = carried.groups.flatMap(\.rows).first { $0.id == "editorialOmissions" }
+        #expect(row?.detail == "1 document with an editorial omission marked")
+        #expect(row?.symbol == "text.badge.minus" && row?.layer.family == .provenance)
+        #expect(row?.accessibilityLabel == "Marked editorial omissions: 1 document with an editorial omission marked.")
+    }
+
     @Test("A count is grouped for the locale, and a year is not")
     func countsAreGroupedYearsAreNot() {
         let big = volume(.from1955, documents: 2_000, [.people: 1_234])
@@ -144,6 +165,8 @@ struct VolumeAnnotationsPresentationTests {
         let people = try #require(china.groups.first?.rows.first)
         #expect(people.detail == "279 of 280 documents · 325 people listed")
         #expect(china.groups.flatMap(\.rows).first { $0.id == "classification" }?.detail == "260 of 280 documents")
+        #expect(china.groups.flatMap(\.rows).first { $0.id == "editorialOmissions" }?.detail
+                == "32 documents with editorial omissions marked")
         #expect(china.absent.isEmpty)
 
         let papers1890 = try #require(VolumeAnnotationsPresentation(volumeId: "frus1890", locale: locale))
@@ -151,6 +174,11 @@ struct VolumeAnnotationsPresentationTests {
         #expect(papers1890.absent.first?.note == "Standard in the volumes covering 1955 on. Search the names instead.")
         #expect(papers1890.groups.flatMap(\.rows).first { $0.id == "despatch" }?.detail == "347 documents")
         #expect(papers1890.groups.flatMap(\.rows).first { $0.id == "printedAids" }?.detail == "List of Papers · Index")
+        // 1914 (published 1922) holds 16 bracketed omissions and is kept out by the 1925 gate: no
+        // row, and no absent row either, since the layer is era-bound.
+        let papers1914 = try #require(VolumeAnnotationsPresentation(volumeId: "frus1914", locale: locale))
+        #expect(!papers1914.groups.flatMap(\.rows).contains { $0.id == "editorialOmissions" })
+        #expect(!papers1914.absent.contains { $0.id == "editorialOmissions" })
 
         // The volume `VolumeAnnotationsSectionTests` opens carries every standard layer.
         let kennedy = try #require(VolumeAnnotationsPresentation(volumeId: "frus1961-63v06", locale: locale))

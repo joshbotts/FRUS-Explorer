@@ -12,6 +12,8 @@
 
 **Amended again for index version 74 (plan of record decision 119),** which reads `frus1941-43`'s Index of Persons as an index and counts the terms `frus1981-88v16`'s documents name on `@ana` (§11, after lane D). The survey's figures in §2 to §4 are its TEI pass's, `gloss/@target` alone, and stand as measured; the artifact links abbreviations in 310 volumes, not 309.
 
+**Amended on 2026-11-08, for Lane 1 of `Editors-Annotations-Followups-2026-11-08.md`: a sixteenth layer, *Marked editorial omissions*.** Where the editors left out part of a document, the volumes published from Secretary Kellogg's 1925 order could say so in brackets, "[Here follows discussion of …]", "[Omitted here is the Table of Contents.]"; measured over the 553 volumes (`editors-annotations/omission-markers.out`), 482 volumes and 11,442 documents carry such a bracket, and 26 of the volumes were published before the order, so 456 carry the layer. The kit's `AnnotationCategory.editorialOmissions` sits beside `.excisions` in *Where it came from*, counted when one document does, and the file (schema version 2) stores each volume's publication year, on which the kit gates the layer; §5.2's table gains the row, and §11 the lane's departures. The design's other figures are as they were.
+
 **What this is.** The owner asked two questions, two days apart.
 - **2026-11-04:** when people tagging began, and in which volumes. The answer went into the Research Guide (#1851).
 - **2026-11-06:**
@@ -382,6 +384,7 @@ Three groups, each row a symbol, a label and one line of counts. The symbols are
 | Where it came from | Source notes | `archivebox` | 268 documents · archival citations ("Source: …"), *or* · file numbers above the heading |
 | | Classification markings | `lock` | 260 documents |
 | | Excisions marked | `eye.slash` | 31 documents with text not declassified |
+| | Marked editorial omissions (2026-11-08, the follow-ups plan's Lane 1) | `text.badge.minus` | 32 documents with editorial omissions marked |
 | | Despatch numbers | `number.circle` | 347 documents |
 | How it connects | Numbered documents | `number` | Documents 1–280 |
 | | Cross-references | `arrow.triangle.branch` | 131 documents cite this volume's documents · 89 cite other volumes · 226 cite printed pages |
@@ -609,3 +612,8 @@ Where the lanes depart from §4 to §8, each for a reason measured on the way.
   - **The volume's page never said "6 people listed",** as this section and the note's B.3 had it: the People row shows only for a volume that carries the layer. The six showed in the volume's persons view ("Persons (6)": among them "Meetings" and "Views on") and, with no mention each, in the People browser, which lists every rollup row; and they were counted in the file.
 - **`frus1981-88v16`'s terms on `@ana` are counted.** The scan reads the ids a document div's own `@ana` names, as the reader's lists do (`FRUSDocumentAST.annotatedId`), and Abbreviations counts a document whose `gloss` or `@ana` names one of the volume's terms. This needs no index version: the index stores no term mention for any volume, and the count is the scan's. All 88 documents name one, so the volume carries the layer, which 310 volumes do.
 - **What else moved:** nothing. The two files regenerated for the version are as they were, the map's `indexVersion` aside, and the two indexes differ in the six `persons` rows, the volume's outline and the version stamp alone.
+
+**After the follow-ups plan's Lane 1 (2026-11-08): the sixteenth layer.** `Editors-Annotations-Followups-2026-11-08.md` has the measurement and the rule; what departs from its text:
+- **The 1925 gate is the kit's, not the generator's.** The plan had the generator count the layer only from 1925. §4's rule, counts and never verdicts, holds instead: the file stores every volume's bracketed omissions and its publication year, and `VolumeAnnotations.carries(_:)` returns `false` for the layer in a volume published before `editorialOmissionsFromYear`, so the gate can move without a regeneration, and a drill's row can say both that a volume is kept out and how many brackets it holds.
+- **The rule took two clauses from the sweep's residue,** "… here omitted …" and "Omitted here is …" after a stage direction, every sample an omission; and its first two patterns are case-sensitive, as the plan wrote them, which leaves 27 lower-case openers out.
+- **Schema version 2.** Each volume's row gains a fourth element, the publication year; a three-element row still reads, with no year and no gate.
