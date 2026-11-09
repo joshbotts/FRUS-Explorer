@@ -89,6 +89,15 @@ final class IndexSeeLinkTests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", part)).firstMatch
     }
 
+    /// Whether `frame` lies inside the window and above the tab shell's banner, which a simulator
+    /// with no iCloud account always shows.
+    private func isOnScreen(_ frame: CGRect) -> Bool {
+        let window = app.windows.firstMatch.frame
+        let banner = app.descendants(matching: .any).matching(identifier: "tabShell.syncBanner").firstMatch
+        let floor = banner.exists ? banner.frame.minY : window.maxY
+        return frame.minY >= window.minY && frame.maxY <= floor
+    }
+
     /// Swipes up until `element` is present and hittable: a `List` is lazy, so a row below the fold
     /// is absent from the tree, not merely off screen.
     private func scrollDownUntil(_ element: XCUIElement, attempts: Int = 8) {
@@ -113,8 +122,17 @@ final class IndexSeeLinkTests: XCTestCase {
         returnToTheRoot()
         let subseries = row(labelBeginningWith: Self.subseriesLabel)
         for _ in 0..<3 {
-            scrollDownUntil(tile, attempts: 4)
-            if tile.exists && tile.isHittable { tile.tap() }
+            if !tile.exists || !isOnScreen(tile.frame) { scrollDownUntil(tile, attempts: 4) }
+            if tile.exists && tile.isHittable {
+                tile.tap()
+            } else if tile.exists, isOnScreen(tile.frame) {
+                // The root's tile can be on screen and reported unhittable: on 2026-11-08 it sat at
+                // y 417 of 874, above the banner at 722, through twelve swipes, and the walk never
+                // tapped it (`TabBarNavigator` records the same under-report). A tap at its centre
+                // lands all the same.
+                app.coordinate(withNormalizedOffset: .zero)
+                    .withOffset(CGVector(dx: tile.frame.midX, dy: tile.frame.midY)).tap()
+            }
             if subseries.waitForExistence(timeout: 5) { break }
             scrollDownUntil(subseries, attempts: 4)
             if subseries.exists { break }
