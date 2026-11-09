@@ -791,8 +791,13 @@ public struct FRUSRenderNodeHTMLSerializer {
             if let heading {
                 html += "<div class=\"list-heading\" data-skip=\"1\">\(inline(heading))</div>"
             }
-            // No whitespace between <ul>/<ol> and <li> elements.
-            let inner = items.map { "<li>\(listLeadHTML($0.lead))\(inline($0.children))</li>" }.joined()
+            // No whitespace between <ul>/<ol> and <li> elements. An item with an `xml:id` keeps it
+            // as `id="ix-…"`, the id an index's "See" reference lands on; the prefix keeps it apart
+            // from `fnote-`, `x-` and a document's own anchors.
+            let inner = items.map { entry in
+                let id = entry.id.map { " id=\"ix-\(escaped($0))\"" } ?? ""
+                return "<li\(id)>\(listLeadHTML(entry.lead))\(inline(entry.children))</li>"
+            }.joined()
             html += "<\(tag) class=\"frus-list\(extraClass)\(labelled)\">\(inner)</\(tag)>"
             if !trailing.isEmpty {
                 html += "<div class=\"list-trailing\" data-skip=\"1\">\(listLeadHTML(trailing))</div>"

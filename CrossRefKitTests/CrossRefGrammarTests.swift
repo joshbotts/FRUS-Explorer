@@ -52,6 +52,11 @@ struct CrossRefGrammarTests {
             ("#d80fn", nil, .footnote(volumeId: nil, documentId: "d80", anchor: "d80fn")),
             // An id holding "fn" with no `d` and digits before it is a document, not a note.
             ("#appendix-fn", nil, .document(volumeId: nil, documentId: "appendix-fn")),
+            // An index's "See" reference names an entry of the index, not a document (2026-11-08).
+            ("frus1932v04#in2", "frus1900", .indexEntry(volumeId: "frus1932v04", anchor: "in2")),
+            // Not an entry: letters after the digits, or a word that begins `in`.
+            ("#in14a", nil, .document(volumeId: nil, documentId: "in14a")),
+            ("#intro", nil, .document(volumeId: nil, documentId: "intro")),
             // Printed pages (arabic).
             ("#pg_313", "frus1901", .page(volumeId: "frus1901", page: 313)),
             ("frus1955-57v17#pg_313", nil, .page(volumeId: "frus1955-57v17", page: 313)),
@@ -66,7 +71,8 @@ struct CrossRefGrammarTests {
             ("#fig1", nil, .unresolved),
             ("#tbl4", nil, .unresolved),
             // Editorial / term / index anchors fall through to literal document.
-            ("#in14", nil, .document(volumeId: nil, documentId: "in14")),
+            // Until 2026-11-08 an index entry's anchor was read as a document of that name.
+            ("#in14", nil, .indexEntry(volumeId: nil, anchor: "in14")),
             ("#t_NSC1", nil, .document(volumeId: nil, documentId: "t_NSC1")),
             ("#about-the-digital-edition", nil, .document(volumeId: nil, documentId: "about-the-digital-edition")),
             // External URLs.

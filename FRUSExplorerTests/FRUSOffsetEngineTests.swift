@@ -2700,3 +2700,57 @@ struct HighlightSkipRenderTests {
         #expect(drawn == ["frus-pink": ["CHAP"], "frus-green": ["A second paragraph"]], "\(drawn)")
     }
 }
+
+// MARK: - IndexEntryLandingWebKitTests
+
+/// The index entry's landing (Lane 2 of `Planning/Editors-Annotations-Followups-2026-11-08.md`)
+/// run in WebKit against the page the serializer writes: `FootnoteLandingTests` holds the script's
+/// text, and this holds what it does, since a scroll that reads right and does nothing is the
+/// failure #988 measured.
+///
+/// Version history:
+///   1.0 — 2026-11-08: Lane 2 of the follow-ups plan
+@Suite("Index entry landing — the script scrolls to the serializer's <li id=\"ix-…\"> in WebKit")
+@MainActor
+struct IndexEntryLandingWebKitTests {
+
+    /// An index of eighty entries, the fiftieth carrying the id a "See" reference names, in a page
+    /// taller than the harness's 600 pt.
+    private func indexPage() -> String {
+        let items = (1...80).map { n -> ListItemEntry in
+            ListItemEntry(children: [.plainText("UI Test Index Entry \(n), \(n)")], id: n == 50 ? "in50" : nil)
+        }
+        let model = FRUSDocumentRenderModel(
+            documentId: "index",
+            bodyNodes: [.listBlock(type: nil, heading: nil, items: items, trailing: [])],
+            footnotes: [])
+        return HTMLTemplate.build(model: model, colorScheme: .light)
+    }
+
+    @Test("The script finds the entry, scrolls it toward the centre and marks it arrived; a missing entry answers false")
+    func landsOnTheEntry() async throws {
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(indexPage())
+        let before = try #require(try await harness.webView.evaluateJavaScript("window.scrollY") as? Double)
+        #expect(before == 0)
+        let found = try #require(try await harness.webView.evaluateJavaScript(
+            #require(IndexEntryLanding.script(anchor: "in50"))) as? Bool)
+        #expect(found)
+        // The scroll crosses into the web content process; read it until it has moved, two
+        // seconds at most (`env_wkwebview_harness_scroll_two_processes`).
+        var after = 0.0
+        for _ in 0..<20 {
+            after = (try? await harness.webView.evaluateJavaScript("window.scrollY") as? Double) ?? 0
+            if after > 0 { break }
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        #expect(after > 0, "the page did not scroll")
+        let arrived = try await harness.webView.evaluateJavaScript(
+            "(document.querySelector('li.ix-arrived') || {}).id || ''") as? String
+        #expect(arrived == "ix-in50")
+        #expect(try await harness.webView.evaluateJavaScript("window.FRUSRevealedFootnote") as? String == "ix-in50")
+        let missing = try await harness.webView.evaluateJavaScript(
+            #require(IndexEntryLanding.script(anchor: "in999"))) as? Bool
+        #expect(missing == false)
+    }
+}

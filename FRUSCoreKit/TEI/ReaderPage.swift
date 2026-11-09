@@ -710,6 +710,26 @@ public enum ReaderPage {
       }
     }
 
+    /* An index entry a "See" reference arrived at (Lane 2 of the editors' annotations follow-ups
+       plan, 2026-11-08): the serializer gives an item with an xml:id `id="ix-…"`, and the landing
+       script scrolls it to the centre and adds `ix-arrived`. The same wash as the footnote's, so
+       the contrast gate's reading of that wash covers it, and the same rule under Reduce Motion. */
+    .frus-list > li {
+      scroll-margin-block: 30vh;
+    }
+
+    .frus-list > li.ix-arrived {
+      animation: fn-arrived-flash 2.4s ease-out;
+      border-radius: 4px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .frus-list > li.ix-arrived {
+        animation: none;
+        background-color: var(--color-accent-wash, rgba(120, 170, 255, 0.18));
+      }
+    }
+
     .fn-list-item {
       margin-bottom: 0.5em;
       line-height: 1.55;

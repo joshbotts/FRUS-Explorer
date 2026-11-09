@@ -1991,7 +1991,7 @@ Search tips
 <!-- END SOURCE: search.tips.link -->
 
 ##### Find menu item (iPadOS and macOS)
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3960–3960, 4483–4483 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3965–3965, 4488–4488 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *On iPad it switches to the Search tab and opens the sheet; on the Mac it brings the Search window forward with the Tips panel open. The key appears twice in the file with the same text — keep them the same.*
 
@@ -3138,7 +3138,7 @@ Died \(died, format: plain)
      in Saudi Arabia until June 5, 1953; … · until 1953") and stands alone as the person sheet's
      Active value, so it starts in lower case. A range prints as "1949–1953" and a year the list
      gives as a start as "1953", neither of them a string. -->
-<!-- SOURCE: FRUSCoreKit/TEI/FRUSASTNode.swift | PersonEntry.eraText | lines: 744–745 | key: people.era.until -->
+<!-- SOURCE: FRUSCoreKit/TEI/FRUSASTNode.swift | PersonEntry.eraText | lines: 747–748 | key: people.era.until -->
 
 until \(end, format: plain)
 

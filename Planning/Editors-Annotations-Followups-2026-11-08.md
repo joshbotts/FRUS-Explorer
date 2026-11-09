@@ -1,9 +1,10 @@
 # Editors' Annotations follow-ups: a local session plan (2026-11-08)
 
-Status: IN PROGRESS — Lane 0b is built and Lane 0's unit checks are run (2026-11-08, on
-`claude/editor-annotation-axis-revisions-54aede`, opened as #1873); Lane 0's UI checks and
-Lanes 1 and 2 remain, for one development session run locally on the Mac. Lane 0b, the pre-1925
-correction, ships in 1.0 (the plan of record's decision 120 and L10); the other lanes are not
+Status: BUILT, AWAITING THE LAST MERGE — Lane 0b merged as #1873 (2026-11-08) with Lane 0's unit
+checks; Lane 0's UI checks ran in the session that proposed the lanes' build; Lane 1 merged as
+#1874 (2026-11-08) and Lane 2 is #1875, both built in one development session on the Mac, each
+with its *Built* passage below. Once #1875 merges this file moves to `Planning/Completed/`. Lane 0b, the
+pre-1925 correction, ships in 1.0 (the plan of record's decision 120 and L10); the other lanes are not
 scheduled against 1.0.
 
 The design this amends is `Editors-Annotations-Design-2026-11-06.md`. Its measurements are in
@@ -45,6 +46,9 @@ Version history:
   1.5 — 2026-11-08: Lane 1 measured and built on the Mac (its section's *Measured* and *Built*
         passages): the rule took two clauses from the sweep's residue, the 1925 gate is the kit's,
         and the file is schema version 2; Lane 2's corpus measurement, for its *Measure first*
+  1.6 — 2026-11-08: Lane 2 measured and built on the Mac (its section's *Measured* and *Built*
+        passages): no document id has an index entry's shape, so the anchor alone decides; the
+        landing is the footnote's script, shared; the "from elsewhere" landing has nothing to serve
 
 ---
 
@@ -493,6 +497,27 @@ Over the Mac's corpus clone, record:
 
 Add the counts to this plan before coding.
 
+**Measured on 2026-11-08** over the 553 catalogue volumes at `6170e4b32`
+(`Planning/index-see-links/index_refs.py`, its tables in `index-refs.out`, per volume in
+`index-refs.json`; one `ElementTree` parse a volume, through `Scripts/heavy.sh`, 43 seconds):
+- **No document's `xml:id` begins `in` and a digit:** 0 of 314,616 `div[@type="document"]`, front
+  and back matter's included. A whole-anchor rule, `in` and digits, is safe.
+- **49,799 references name `#in<digits>`, in 397 volumes, every one inside an index division**
+  (a `div` whose `@subtype` is `index` or whose `xml:id` begins `index`, or a `<list type="index">`),
+  and none names another volume (`frus…#in…`: 0). So the reader's page holds the entry whenever
+  such a reference is tapped, and the "from elsewhere" landing has nothing to serve.
+- **49,551 of them resolve to an id in the volume, 49,542 inside the same division as the
+  reference**; 9 point into another division of the same volume, and 248 are dangling, their id
+  nowhere in the volume (`frus1945-50Intel`, `frus1952-54v08`, `frus1952-54v09p2`, `frus1961-63v10`
+  and others, each a handful). The landing script returns `false` for those, and the reader stays
+  where it is, which is what the Office's own site does with them.
+- **18,809 `<item>`s and 2 `<persName>`s carry an `xml:id` of the form `in<digits>`,** all inside an
+  index division; 34,537 items carry some `xml:id` in all (`in…` 18,844, `sub…` 10,672, `main…`
+  5,021), so the serializer's `id="ix-…"` goes on every item with one, not on index items alone.
+- **The volumes with the most:** `frus1919Parisv09` 792 references, `frus1952-54v03` 588,
+  `frus1945Berlinv02` 523, `frus1923v02` 516, `frus1931v02` 509, `frus1932v04` 459 (102 entries with
+  ids); `frus1955-57v03` 30; `frus1969-76v17` 66 (37).
+
 ### Code
 
 1. **AST (kit).** Give an index item its id.
@@ -542,6 +567,62 @@ Add the counts to this plan before coding.
      downloaded; follow how the existing reader UI suites seed a volume.
 6. **Runs.** `swift build --target FRUSCoreKit`, then `swift test`, then the unit target, then the Mac
    build, then the UI suite. All through `Scripts/heavy.sh`.
+
+### Built on 2026-11-08
+
+Where the build departs from the text above, and what it found.
+
+- **Confirmed first on the simulator, through the suite itself.** `IndexSeeLinkTests` was committed
+  before the fix, with its fixture (`UITestVolumeSeeder.prepareIndexVolumeIfRequested(in:)`,
+  `frus1932v04` as one document and an Index of eighty-odd entries, written on
+  `FRUS_UI_TEST_SEED_INDEX_VOLUME=1` and removed by any launch that does not ask, so the four suites
+  that count on one downloaded volume never see it), and run on the iPhone 17 (iOS 27.0) against
+  that commit: the tap on "China" in "Aviation. *See under* China" opened a reader that said
+  "Failed to Load: Document 'in2' was not found in the volume.", the plan's description. The real
+  volume was not downloaded to a simulator: the fixture reproduces the markup, and the suite is the
+  record.
+- **The anchor's shape alone decides.** No document's `xml:id` in 314,616 begins `in` and a digit,
+  so `resolveCrossRefTarget` returns `.indexEntry` for a whole anchor of `in` and digits, before the
+  footnote branch, and no reading context is passed in. `#in14a` and `#intro` stay documents.
+- **The "from elsewhere" landing is not built.** Every one of the 49,799 references sits inside the
+  index that holds its entry and none names another volume, so the readers scroll the page on
+  screen and push nothing; a reference into another volume's index is logged and left alone.
+- **The AST's item keeps its id as the plan preferred,** `listItem(id:children:)`; `ListItemEntry.id`
+  and the serializer's `id="ix-…"` follow, on every item with an `xml:id` (34,537 in the corpus, the
+  18,809 index entries among them). An attribute adds no flat text, so no index version moved; the
+  parity suites that read the serializer's text passed unchanged. `SettledCrossReferenceTarget`
+  stores an index reference as collected, as before, so the index's rows did not move either.
+- **The landing is the footnote's script, shared.** `IndexEntryLanding` and `FootnoteLanding` run
+  one template, `ReaderLanding`, with the element id and the arrival class as its parameters; the
+  footnote script's bytes did not move (its pin held), and the page's global records an index entry
+  as it records a note, so the figure retry serves both. The stylesheet gains the entry's wash on
+  the footnote's animation and its Reduce Motion rule; `ReaderPageTests`' eight heads and the three
+  collection HTML pages that embed the stylesheet are re-pinned, each 707 bytes larger, all of them
+  that block, with the reason above them.
+- **A tap is a new value.** `IndexEntryReveal` carries a tap counter, so a second tap on the same
+  entry after the reader has scrolled away lands again, where a footnote is revealed once per
+  document and anchor.
+- **`CrossRefKit`'s mirror took the branch,** not a drift note: `RefDestination.indexEntry`, citing
+  no document, and the parity test reaches seven cases. The edge and flow generators dropped an
+  `inN` target at their document check before, so neither output moves.
+- **What the first runs taught the suite:** the compilation page's control is "Read Index" (the
+  format "Read %@"), not "Read"; the Subseries tile needs `VolumeAnnotationsSectionTests`' three-try
+  loop under the tab shell's banner; the launch after a run that ended in the reader restores that
+  page, so the suite taps back to Browse's root before its walk and in `tearDown`; an iPad's
+  reader page holds three web view elements, so "nothing was pushed" compares the count with
+  itself; and WebKit reads a list item's text with its bullet, "• China (see also …", and exposes
+  an entry below the fold, so the entry is found by containment and its frame read before and
+  after; and the root's Subseries tile can sit on screen and be reported unhittable, so the walk
+  taps its centre by coordinate when its frame is on screen. `IndexEntryLandingWebKitTests`, added
+  when the first fixed runs could not find the entry, runs the landing in the offset engine's
+  WebKit harness against the serializer's page and reads the scroll and the arrival class back.
+- **Runs** (each heavy job through `Scripts/heavy.sh`, Xcode 27.2): `swift build --target
+  FRUSCoreKit` clean; `swift test` exit 0, 39 runs all passed, `FRUSCoreKitTests` 1,779 tests in 229
+  suites; the control above; a clean `build-for-testing` of the `FRUSExplorer` scheme (iPhone 17,
+  iOS 27.0, after `xcodebuild clean`) with only the two known warning residues; the unit target,
+  TEST EXECUTE SUCCEEDED, after eighteen EditableContent ranges that the reader and app insertions
+  had moved were re-pointed to their keys; `FRUSExplorerMac` (AppStore) built with the same
+  residues; `IndexSeeLinkTests`: iPhone 17 (`80CF0F18`, iOS 27.0): 1 test, 1 passed, 41.6 s; iPad Pro 13-inch (M5) (`9AB3A0C9`, iOS 27.0): 1 of 1, 36.8 s. On each the entry read "• China (see also Sino-Japanese dispute), " about 2,450 pt below the reader's frame before the tap and inside it after (y 563 of 116–722 on the iPhone, y 1,168 of 174–1,302 on the iPad), the link it came from 1,670 and 1,044 pt above. With v2 merged (Lane 1, #1874): `swift test` 39 runs all passed, the unit target 7,919 tests with none failed, the Mac built, and the suite passed twice on the iPhone and once on the iPad. The Mac's half was built and not walked.
 
 ---
 

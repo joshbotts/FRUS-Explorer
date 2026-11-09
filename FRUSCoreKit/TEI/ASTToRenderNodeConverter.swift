@@ -549,8 +549,8 @@ public struct ASTToRenderNodeConverter {
                     // second one is kept rather than dropped, on a line of its own.
                     let converted = convertNodes(headChildren)
                     heading = heading.map { $0 + [.lineBreak] + converted } ?? converted
-                case .listItem(let itemChildren):
-                    items.append(ListItemEntry(lead: lead, children: convertNodes(itemChildren)))
+                case .listItem(let id, let itemChildren):
+                    items.append(ListItemEntry(lead: lead, children: convertNodes(itemChildren), id: id))
                     lead = []
                 case .unknown(let name, _, let labelChildren) where name == "label":
                     lead.append(.label(convertNodes(labelChildren)))

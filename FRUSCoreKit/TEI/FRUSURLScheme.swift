@@ -33,6 +33,15 @@ public enum CrossRefDestination: Equatable, Sendable {
     /// 6,997 name a catalogue volume and 1,269 a volume outside it (a microfiche supplement, or a
     /// volume not yet published).
     case volume(volumeId: String)
+    /// An entry of a back-of-volume index, which a "See" reference names (`#in2`; Lane 2 of
+    /// `Planning/Editors-Annotations-Followups-2026-11-08.md`). `anchor` is the `<item>`'s
+    /// `xml:id`, which the serializer writes as `id="ix-in2"`. Measured at corpus `6170e4b32` over
+    /// the 553 catalogue volumes: 49,799 references name such an anchor, every one inside an index
+    /// division and none across volumes, 18,809 items and two `persName`s carry one, and no
+    /// document's `xml:id` begins `in` and a digit, so the anchor's shape alone tells the reader
+    /// to scroll within the index rather than open a document named `in2`, which until this case
+    /// it tried to.
+    case indexEntry(volumeId: String?, anchor: String)
     /// A non-FRUS absolute URL — open in the browser.
     case external(URL)
     /// Nothing navigable: same-document footnote/figure/table anchors, roman-
@@ -83,6 +92,8 @@ public enum ReaderLink: Equatable, Sendable {
 ///          which `resolveCrossRefTarget` read as a document of that name in the volume being read
 ///   1.4 — Session 2026-10-23 (FRUS Explorer Light, S12c): `WholeVolumeLink` and `PageLink` moved into
 ///          this file from the app's `FRUSURLSchemeHandler.swift`, unchanged but public and `Sendable`
+///   1.5 — 2026-11-08: `CrossRefDestination.indexEntry`, an index's "See" reference (Lane 2 of the
+///          editors' annotations follow-ups plan), which `resolveCrossRefTarget` read as a document
 public enum FRUSURLScheme {
 
     /// What `url` names when it is a link in the reader's page, or `nil` when it is not one: a
@@ -136,6 +147,7 @@ public enum FRUSURLScheme {
     ///   other target with no `#` (`pg_1602`, an anchor printed without its `#`) is read as before,
     ///   as an anchor in the volume being read.
     /// - `dNNNfnM` footnote-suffixed ids resolve to the base document `dNNN`.
+    /// - `inN` anchors are an index's entries (`.indexEntry`): no document's id has that shape.
     /// - `pg_313` / `pg313` / `page313` anchors resolve to a page number;
     ///   roman-numeral pages (`pg_XIII`, front matter) are `.unresolved`.
     /// - Bare `fn…`/`note…`/`fig…`/`tbl…` anchors point within the current
@@ -183,6 +195,13 @@ public enum FRUSURLScheme {
         if lower.hasPrefix("fn") || lower.hasPrefix("note")
             || lower.hasPrefix("fig") || lower.hasPrefix("tbl") {
             return .unresolved
+        }
+        // An index's "See" reference: `in` and digits, the whole anchor. Measured over every
+        // document `xml:id` in the 553 catalogue volumes at `6170e4b32`: none has this shape, and
+        // all 18,809 items that do sit in an index division. Before this the reader opened a
+        // document named `in2`, which no volume has, and said so.
+        if anchor.wholeMatch(of: /in\d+/) != nil {
+            return .indexEntry(volumeId: vol, anchor: anchor)
         }
         // #988: a footnote anchor names the note, not just its document. 16,921 corpus references
         // target a note's xml:id and 90.8% of them point into a DIFFERENT document, so dropping

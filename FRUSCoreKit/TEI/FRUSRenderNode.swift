@@ -346,10 +346,16 @@ public struct ListItemEntry: Sendable {
     /// The item's own content — the only part of a list that enters the flat text.
     public let children: [FRUSRenderNode]
 
-    /// Creates an entry. `lead` defaults to empty: an unlabelled item with nothing before it.
-    public init(lead: [ListLead] = [], children: [FRUSRenderNode]) {
+    /// The item's `xml:id`, or `nil`: a back-of-volume index entry's (`in2`), which the serializer
+    /// writes as `id="ix-in2"` so a "See" reference can land on it. An attribute, so no flat text.
+    public let id: String?
+
+    /// Creates an entry. `lead` defaults to empty: an unlabelled item with nothing before it, and
+    /// `id` to none.
+    public init(lead: [ListLead] = [], children: [FRUSRenderNode], id: String? = nil) {
         self.lead = lead
         self.children = children
+        self.id = id
     }
 
     /// Whether the volume printed a label beside this item. An empty `<label/>` counts: 4,864

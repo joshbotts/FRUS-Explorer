@@ -28,6 +28,8 @@ import Foundation
 /// Version history:
 ///   1.0 — FRUS Explorer Light: moved out of `_FRUSWebViewCoordinator.revealFootnote(on:)`, with
 ///          `FRUSURLSchemeHandler.revealedFootnoteGlobal`, for the web edition's reader
+///   1.1 — 2026-11-08: the script's text is ``ReaderLanding``'s template, which `IndexEntryLanding`
+///          shares (Lane 2 of the editors' annotations follow-ups plan); its bytes are as they were
 public enum FootnoteLanding {
 
     /// The page's global holding the `id` of the footnote entry the reader was last brought to, or
@@ -58,6 +60,21 @@ public enum FootnoteLanding {
     /// - Parameter keyExpression: JavaScript evaluating to the note's DOM key (`"x-" + anchor`).
     /// - Returns: An expression whose value is `true` when the page holds the note's entry.
     public static func script(keyExpression: String) -> String {
+        ReaderLanding.script(elementId: "\"fnote-\" + \(keyExpression)", arrivedClass: "fn-arrived")
+    }
+}
+
+// MARK: - ReaderLanding
+
+/// The one script both landings run, the footnote's (``FootnoteLanding``) and the index entry's
+/// (``IndexEntryLanding``): scroll an element into view and wash it for 2.4 seconds, remembering
+/// its id in the page's global for the figure retry. Written once so that what #988 measured about
+/// the scroll holds for both.
+enum ReaderLanding {
+
+    /// The script, with `elementId` where the element's id goes, a JavaScript expression, and
+    /// `arrivedClass` the class the stylesheet animates.
+    static func script(elementId: String, arrivedClass: String) -> String {
         // TWO THINGS HERE ARE LOAD-BEARING, and both were found by running this script against the
         // emitted markup in a hidden page rather than by reasoning about it.
         //
@@ -87,10 +104,10 @@ public enum FootnoteLanding {
         // reads, and the retry brings it back into view once its image has loaded — unless the
         // reader has since scrolled, tapped or typed, which clears the global, because by then
         // where they are is their own choice.
-        let revealed = revealedGlobal
+        let revealed = FootnoteLanding.revealedGlobal
         return """
         (() => {
-          const li = document.getElementById("fnote-" + \(keyExpression));
+          const li = document.getElementById(\(elementId));
           if (!li) { return false; }
           const instant = document.hidden
             || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -103,10 +120,10 @@ public enum FootnoteLanding {
               window.addEventListener(type, forget, { capture: true, passive: true });
             }
           }
-          li.classList.remove("fn-arrived");
+          li.classList.remove("\(arrivedClass)");
           void li.offsetWidth;
-          li.classList.add("fn-arrived");
-          setTimeout(() => li.classList.remove("fn-arrived"), 2400);
+          li.classList.add("\(arrivedClass)");
+          setTimeout(() => li.classList.remove("\(arrivedClass)"), 2400);
           return true;
         })()
         """

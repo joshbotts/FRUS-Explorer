@@ -118,6 +118,9 @@ struct MacDocumentView: View {
     /// The footnote to reveal in the rendered document (#988) — seeded from `entry.footnoteAnchor`
     /// on load, and re-set in place for a reference naming a note in this same document.
     @State private var revealedFootnoteAnchor: String? = nil
+    /// The index entry a "See" reference on the page named, to scroll to (Lane 2 of the editors'
+    /// annotations follow-ups plan), or `nil`.
+    @State private var revealedIndexEntry: IndexEntryReveal? = nil
     /// Offsets of the highlight the user tapped; drives the delete-confirmation alert.
     @State private var highlightToDelete: (Int, Int)? = nil
     /// Visibility + anchor for the floating selection bar (Research-rail Phase B2). Driven straight
@@ -242,6 +245,7 @@ struct MacDocumentView: View {
             // #988: the note this navigation was aimed at, if any. macOS mounts a fresh
             // MacDocumentView per push, so this runs once per document.
             revealedFootnoteAnchor = entry.footnoteAnchor
+            revealedIndexEntry = nil
             highlightCoordinator.createWebKitHighlightAction = createWebKitHighlight(color:)
             // Excerpt captures (Authoring Phase 5) are built here — this view owns
             // vm.renderModel, so the passage is re-extracted from the flat text with
@@ -539,6 +543,7 @@ struct MacDocumentView: View {
             FRUSDocumentWebView(
                 model: renderModel,
                 footnoteAnchor: revealedFootnoteAnchor,
+                indexEntry: revealedIndexEntry,
                 onPersonTap: { person in
                     vm.selectedPerson = person
                     if let person {
@@ -1184,6 +1189,9 @@ struct MacDocumentView: View {
         case .volume(let targetVolumeId):
             openCrossRefVolume(targetVolumeId)
 
+        case .indexEntry(let targetVolumeId, let anchor):
+            revealIndexEntry(anchor, volumeId: targetVolumeId ?? entry.volumeId)
+
         case .external(let url):
             openURL(url)
 
@@ -1219,6 +1227,19 @@ struct MacDocumentView: View {
             print("[MacDocumentView] Cross-ref skipped (unusable volume id): \(volumeId)")
             #endif
         }
+    }
+
+    /// Scrolls to the entry an index's "See" reference names (Lane 2 of the editors' annotations
+    /// follow-ups plan): the entry is on the page on screen, so nothing is pushed. The iOS twin
+    /// makes the same call and says why.
+    private func revealIndexEntry(_ anchor: String, volumeId: String) {
+        guard volumeId == entry.volumeId else {
+            #if DEBUG
+            print("[MacDocumentView] Index reference into another volume skipped: \(volumeId)#\(anchor)")
+            #endif
+            return
+        }
+        revealedIndexEntry = IndexEntryReveal(anchor: anchor, tap: (revealedIndexEntry?.tap ?? 0) + 1)
     }
 
     /// Pushes `documentId` in `volumeId` onto the navigation stack, or — when the

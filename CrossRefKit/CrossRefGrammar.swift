@@ -30,6 +30,9 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 6 (#240A): `document`, `page`, `external` and `unresolved`
 ///   1.1 — #1693: `footnote` (the app's since #988) and `volume` (since #1603)
+///   1.2 — 2026-11-08: `indexEntry` (the app's the same day), which cites no document: the edge
+///          and flow generators dropped an `inN` target at their document check before, so neither
+///          output moves
 public enum RefDestination: Equatable, Sendable {
     /// A FRUS document.
     case document(volumeId: String?, documentId: String)
@@ -42,6 +45,10 @@ public enum RefDestination: Equatable, Sendable {
     /// A whole volume, not a document in it (#1603): a target with no `#` that is a volume's id
     /// (`frus1961-63v05`), as the target gives it. It may name a volume outside the catalogue.
     case volume(volumeId: String)
+    /// An entry of a back-of-volume index (`#in2`), which a "See" reference names: the app's
+    /// since 2026-11-08 (Lane 2 of the editors' annotations follow-ups plan). Not a document, so
+    /// it cites none.
+    case indexEntry(volumeId: String?, anchor: String)
     /// A non-FRUS absolute URL, or a `mailto:` address — opens outside the reader.
     case external(URL)
     /// Nothing navigable: same-document footnote/figure/table anchors, roman-numeral page
@@ -61,7 +68,7 @@ public enum RefDestination: Equatable, Sendable {
         case .document(let volumeId, let documentId),
              .footnote(let volumeId, let documentId, _):
             return (volumeId, documentId)
-        case .page, .volume, .external, .unresolved:
+        case .page, .volume, .indexEntry, .external, .unresolved:
             return nil
         }
     }
@@ -90,6 +97,7 @@ public enum RefDestination: Equatable, Sendable {
 ///          (`.footnote`, #988, on the widened `.*d\d+[A-Za-z]?` + `fn[\w-]*` pattern) — where it
 ///          read the first two as a document named after the target, and a footnote anchor as its
 ///          document when it was `dNfnM` and as a document named after the note when it was not
+///   1.2 — 2026-11-08: an `inN` anchor is `.indexEntry`, as the app reads it the same day
 public enum CrossRefGrammar {
 
     // MARK: Navigation parity (mirrors resolveCrossRefTarget)
@@ -103,6 +111,7 @@ public enum CrossRefGrammar {
     ///   `volumeId`.
     /// - A footnote anchor (`d748fn3`, `cr_d6fn4`, `d705fn-sym1`) is `.footnote`, naming the
     ///   document that holds the note.
+    /// - An `inN` anchor is an index's entry (`.indexEntry`).
     /// - `pg_313` / `pg313` / `page313` anchors resolve to a page number; roman-numeral pages
     ///   (`pg_XIII`, front matter) are `.unresolved`.
     /// - Bare `fn…`/`note…`/`fig…`/`tbl…` anchors point within the current document and are
@@ -147,6 +156,11 @@ public enum CrossRefGrammar {
         if lower.hasPrefix("fn") || lower.hasPrefix("note")
             || lower.hasPrefix("fig") || lower.hasPrefix("tbl") {
             return .unresolved
+        }
+        // The app's rule since 2026-11-08: an index entry's anchor, `in` and digits, the whole
+        // anchor, which no document id has the shape of.
+        if anchor.wholeMatch(of: /in\d+/) != nil {
+            return .indexEntry(volumeId: vol, anchor: anchor)
         }
         // The app's pattern since #988: a section-prefixed or symbol-suffixed note id (`cr_d6fn4`,
         // `d705fn-sym1`) names its document as a plain one does. Anchored on `d\d+`, so a document

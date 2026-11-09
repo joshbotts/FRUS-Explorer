@@ -2237,6 +2237,9 @@ struct FRUSExplorerApp: App {
         UITestVolumeSeeder.prepareBulkVolumeIfRequested(in: volumesDir)
         // #1684: a three-section volume for the suite that reads a result's VoiceOver label, likewise.
         UITestVolumeSeeder.prepareSpokenVolumeIfRequested(in: volumesDir)
+        // Lane 2 of the editors' annotations follow-ups: a volume with a back-matter Index whose
+        // "See" link a UI suite taps, on the same terms.
+        UITestVolumeSeeder.prepareIndexVolumeIfRequested(in: volumesDir)
         // #1364: two scopes with fixed ids, for BrowseWithinScopeTests. HERE, before the first
         // await, and not beside the research seeder below, which runs only once the search
         // pipeline has been built. Placed there, the suite's first iPhone run found My Scopes
@@ -2362,6 +2365,8 @@ struct FRUSExplorerApp: App {
             await UITestVolumeSeeder.prepareBulkVolumeIndex(pipeline: pipeline)
             // #1684: and the spoken-row volume's.
             await UITestVolumeSeeder.prepareSpokenVolumeIndex(pipeline: pipeline)
+            // Lane 2 of the editors' annotations follow-ups: and the index volume's.
+            await UITestVolumeSeeder.prepareIndexVolumeIndex(pipeline: pipeline)
             // #1379: fifteen volumes' worth of citations for the heat matrix's UI test, written when
             // a run asks for them and swept on every launch that does not — before the
             // cross-reference store below opens on this database.

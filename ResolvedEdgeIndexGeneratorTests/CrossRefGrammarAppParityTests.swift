@@ -38,6 +38,8 @@ struct CrossRefGrammarAppParityTests {
             return .page(volumeId: volumeId, page: page)
         case .volume(let volumeId):
             return .volume(volumeId: volumeId)
+        case .indexEntry(let volumeId, let anchor):
+            return .indexEntry(volumeId: volumeId, anchor: anchor)
         case .external(let url):
             return .external(url)
         case .unresolved:
@@ -84,8 +86,8 @@ struct CrossRefGrammarAppParityTests {
             }
         }
         #expect(compared > 500, "only \(compared) targets compared")
-        #expect(branches == ["document", "footnote", "page", "volume", "external", "unresolved"],
-                "the table reaches only \(branches.sorted()) of the app's six cases")
+        #expect(branches == ["document", "footnote", "page", "volume", "indexEntry", "external", "unresolved"],
+                "the table reaches only \(branches.sorted()) of the app's seven cases")
     }
 
     @Test("The twin's cited document is the one the app's index stores a reference under")
@@ -100,7 +102,7 @@ struct CrossRefGrammarAppParityTests {
                                                                        volumeId: "frus1913").citedDocument)
         #expect(document.volumeId == "frus1913")
         #expect(document.documentId == "d12")
-        for target in ["#pg_313", "frus1961-63v05", "mailto:history@state.gov", "#fn2", ""] {
+        for target in ["#pg_313", "frus1961-63v05", "mailto:history@state.gov", "#fn2", "", "#in2"] {
             #expect(CrossRefGrammar.resolveDestination(target, volumeId: "frus1913")
                         .citedDocument == nil, "\(target) cites no document")
         }
