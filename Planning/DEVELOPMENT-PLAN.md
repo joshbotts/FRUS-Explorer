@@ -10062,3 +10062,24 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 **Not done.** Nothing of the plan's is open but the owner's question, which is now in the plan of record.
 
 **Opened as #1877** on the owner's word of 2026-11-09 ("Keep at root, mark COMPLETE"), against `v2` at `b737b240`; not merged, auto-merge off.
+
+## Session 2026-11-09 — A SwiftUI warning, assessed: since Xcode 27 the iOS background task holds an AppState of its own that nothing boots, so no background wake indexes or summarizes; the fix is planned for 1.0 as L11 (decision 121)
+
+**What and why.** Running the iOS app, the owner saw SwiftUI's runtime warning `Accessing State<AppState>'s value without being installed on a View. This will create a new AppState instance each time.`, attributed to the `appState` property's macro expansion, and asked for an assessment and no fix. Read-only on the app; on `claude/swiftui-state-access-error-c5960a` from `v2` at `342dbd74`.
+
+**Found.**
+- **The cause.** `@State` is a macro since Xcode 27.0 (`StateMacro` in the 27.2 SDK's `SwiftUICore` interface). `@State private var appState = AppState()` expands to `__appState = State._makeStorage({ AppState() })`, a `LazyState` that holds the closure until SwiftUI installs the property, and a read before then runs it again. The iOS `FRUSExplorerApp.init()` reads `appState` for the BGProcessingTask's launch handler (`let state = appState`): the handler holds an AppState of its own, and installation builds the one every scene gets and the launch boots. Under Xcode 26 the property wrapper kept the instance the `init()` read, as the comment above it still says.
+- **The effect.** `indexingPipeline` is set only on the installed instance, so the handler's first guard fails and every background wake completes `false`: no background indexing, no batch of *Continue in the background*'s summarization, and in DEBUG no summarization probe. The handler's instance also decodes `manifest.json` a second time before the first frame and keeps a second `NWPathMonitor` running for the life of the process. The Mac's `init()` does not read `appState`.
+- **Since when.** The macro's `__appState` storage field is in the archives of builds 47 (Xcode 27.0, 2026-09-18), 48, 49, 50, 1776 and 1787, on both platforms, and in none of the earlier ones.
+- **Measured** in a scratch SwiftUI app built with `swiftc` against the macOS 27.2 SDK: a read in `init()` got instance #1, installation built #2, and SwiftUI logged the same warning. `_x = State(initialValue: local)`, and `self.x = local` with no default value, each gave one instance and no warning.
+- **Nowhere else.** A scan of every `init` under `FRUSExplorer/` for a `@State` read found this one; its nine other hits were parameters of the same name.
+
+**Changed.**
+- **The plan of record:** decision 121 with the owner's words, and L11 in §1's table and list: the defect, what was measured, the fix and what done looks like.
+- This entry.
+
+**Checks.** No source file changes. `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` reads the plan of record's status and its `§7 struck:` line: one live plan of record, and the line byte-identical to `v2`'s, re-checked after the edit. No other suite reads these files. No build, unit run or `swift test` was owed.
+
+**Not done.** The fix, which is L11, on the owner's word ("add this session to the development plan rather than starting it now"); the session's New task card proposing it was withdrawn. No simulated background wake was run, so "every wake completes `false`" is read from the code and the scratch app. The finding is not filed as an issue.
+
+**Opened as #1878** on the owner's word of 2026-11-09 ("Open PR"), against `v2` at `342dbd74`; not merged, auto-merge off.
