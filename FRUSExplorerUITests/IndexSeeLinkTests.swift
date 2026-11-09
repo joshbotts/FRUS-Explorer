@@ -58,8 +58,25 @@ final class IndexSeeLinkTests: XCTestCase {
     }
 
     override func tearDown() async throws {
-        if let app { UITestPresentation.dismissAnyPresentation(in: app) }
+        if let app {
+            UITestPresentation.dismissAnyPresentation(in: app)
+            // Leave Browse at its root: the next launch on this simulator restores the page the
+            // last one ended on, and a run that ended in the reader left the root's tile off screen.
+            returnToTheRoot()
+        }
         app = nil
+    }
+
+    /// Taps back until the Browse root's Subseries tile is hittable, six taps at most: the launch
+    /// after a run that ended in the reader restores that page (the iPhone 17 run of 2026-11-08,
+    /// which followed the control run and never saw the tile on screen).
+    private func returnToTheRoot() {
+        let tile = app.buttons["browse.root.subseriesTile"].firstMatch
+        let back = app.buttons["BackButton"].firstMatch
+        for _ in 0..<6 where !(tile.exists && tile.isHittable) && back.exists {
+            back.tap()
+            Thread.sleep(forTimeInterval: 0.6)
+        }
     }
 
     // MARK: - The walk
@@ -93,6 +110,7 @@ final class IndexSeeLinkTests: XCTestCase {
         let tile = app.buttons["browse.root.subseriesTile"].firstMatch
         XCTAssertTrue(tile.waitForExistence(timeout: Self.patience),
                       "The Browse root's Subseries tile did not appear")
+        returnToTheRoot()
         let subseries = row(labelBeginningWith: Self.subseriesLabel)
         for _ in 0..<3 {
             scrollDownUntil(tile, attempts: 4)
@@ -136,6 +154,9 @@ final class IndexSeeLinkTests: XCTestCase {
         let target = webView.staticTexts
             .matching(NSPredicate(format: "label BEGINSWITH 'China (see also'")).firstMatch
         let readerFrame = webView.frame
+        // An iPad's reader page holds more than one web view element (three on the 13-inch), so
+        // the count is compared with itself, not with one.
+        let webViewsBefore = app.webViews.count
         let frameBefore = target.exists ? target.frame : CGRect.null
         print("[IndexSeeLink] before: target exists=\(target.exists) frame=\(frameBefore) reader=\(readerFrame)")
         XCTAssertFalse(!frameBefore.isNull && readerFrame.contains(frameBefore),
@@ -147,7 +168,7 @@ final class IndexSeeLinkTests: XCTestCase {
         // The defect: a pushed reader for a document named in2.
         XCTAssertFalse(app.staticTexts["Failed to Load"].waitForExistence(timeout: 3),
                        "A reader opened for a document named in2: the reference was read as a document, not as an index entry")
-        XCTAssertEqual(app.webViews.count, 1, "The tap opened another page")
+        XCTAssertEqual(app.webViews.count, webViewsBefore, "The tap opened another page")
         XCTAssertTrue(target.waitForExistence(timeout: Self.patience), "The entry China is not on the page")
         let frameAfter = target.frame
         print("[IndexSeeLink] after: frame=\(frameAfter) reader=\(webView.frame)")
