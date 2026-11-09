@@ -1,6 +1,8 @@
 # Editors' Annotations follow-ups: a local session plan (2026-11-08)
 
-Status: PLANNED — for one development session run locally on the Mac. Lane 0b, the pre-1925
+Status: IN PROGRESS — Lane 0b is built and Lane 0's unit checks are run (2026-11-08, on
+`claude/editor-annotation-axis-revisions-54aede`, the branch's pull request); Lane 0's UI checks and
+Lanes 1 and 2 remain, for one development session run locally on the Mac. Lane 0b, the pre-1925
 correction, ships in 1.0 (the plan of record's decision 120 and L10); the other lanes are not
 scheduled against 1.0.
 
@@ -37,6 +39,9 @@ Version history:
         marked an omission with a row of asterisks (the Office's history, chs. 2 and 4; the TEI). Lane
         0b corrects the two shipped texts and ships in 1.0 (plan of record, decision 120); Lane 1's
         gate keeps 1925 for the sweep's own reason, and its two strings are re-worded
+  1.4 — 2026-11-08: Lane 0b built, with Lane 0's unit checks, on the Mac; the clean build found one
+        strict-concurrency warning in `AnnotationsAxisTests` (lane D's), fixed by making
+        `PeopleTaggingCaption.text(index:locale:)` nonisolated; Lane 0's UI checks are still owed
 
 ---
 
@@ -75,6 +80,21 @@ screenshots:
 - Does the new practice paragraph read well at AX3?
 
 If the label wraps badly in either place, raise it with the owner. Do not shorten it unasked.
+
+**Run on the Mac on 2026-11-08, with Lane 0b, on `claude/editor-annotation-axis-revisions-54aede`.**
+- The three unit suites, run without rebuilding after a clean `build-for-testing` of the
+  `FRUSExplorer` scheme on an iPhone 17 under iOS 27.0 (`80CF0F18`): 38 tests in 3 suites, all
+  passed. The whole unit target after them: 7,909 tests, 7,872 passed, none failed, 37 skipped (the
+  environment gates). So #1868's copy and its two test expectations hold, and the page-3 range holds.
+- The clean build printed one source warning, in the test target and not from #1868: lane D's
+  `AnnotationsAxisTests.shippedCellAndCaption` (lines 238–239) calls
+  `PeopleTaggingCaption.text(index:locale:)` from a synchronous nonisolated test, and the static
+  method was main-actor-isolated with its `View`. The method is now `nonisolated`, a value over the
+  file, and the rebuild of the edited files printed no warning. Lane D's entry says no build warned
+  in its files; the warning is in one of them, so that build was not a clean one.
+- **Not run, and still owed:** `VolumeAnnotationsSectionTests` and `AnnotationsAxisBrowseTests` on
+  the runbook's devices, and the three looks at the kept screenshots above (the label on one line in
+  the row, the title on the iPhone, the practice paragraph at AX3).
 
 **Decided by the owner on 2026-11-08, and done on the branch in the second copy commit:**
 - *The era sentence on Redactions.* "Standard in the volumes covering 1964 on" went by the years a
@@ -149,6 +169,15 @@ stays on one line), `AnnotationsAxisTests` and `VolumeAnnotationsPresentationTes
 sentences; they pin labels and details), then the unit target and the Mac build as for any copy
 change. No capture to retake: `browse-annotations` and `volume-annotations` show the axis and a
 volume's page, not the layer's practice paragraph, and no capture shows the Research Guide's page 3.
+
+**Built on 2026-11-08**, on `claude/editor-annotation-axis-revisions-54aede`, from `v2` at `39c5019f`,
+on the owner's "Yes, do Lane 0b". The two strings and their two mirrors take the proposed wording
+word for word, each paragraph on its one line; the Amendment-Log's bullet says the change reverses
+the third change of 2026-11-08. Checked: `EditableContentKeyTests`, `AnnotationsAxisTests` and
+`VolumeAnnotationsPresentationTests`, 38 tests passed; the unit target, 7,909 tests, 7,872 passed,
+none failed, 37 skipped; `FRUSExplorerMac` (the AppStore configuration) built with only the two known
+warning residues. The clean `build-for-testing` before them is Lane 0's, above. The owner may still
+word either sentence otherwise: a change is two Swift lines and their two mirrors.
 
 **What it changes in Lane 1.** Lane 1's gate, counting the bracketed layer only from 1925, stays, but
 for a different reason, written into its section below: the bracketed description of what was left
