@@ -83,18 +83,32 @@ final class IndexSeeLinkTests: XCTestCase {
     }
 
     /// Browse ▸ Subseries ▸ 1932 ▸ the volume ▸ Back Matter ▸ Index, into the reader.
+    ///
+    /// The tab shell's "Local Only" banner covers the lower part of an iPhone's screen, and the
+    /// Subseries tile can sit under it or lose a first tap (`VolumeAnnotationsSectionTests`, whose
+    /// three-try loop this is): the first run here tapped a tile whose hit point was off screen and
+    /// never saw the subseries row.
     private func openTheIndex() {
         XCTAssertTrue(navigator.select(.browse).tapped, "Could not reach the Browse tab")
         let tile = app.buttons["browse.root.subseriesTile"].firstMatch
         XCTAssertTrue(tile.waitForExistence(timeout: Self.patience),
                       "The Browse root's Subseries tile did not appear")
-        tile.tap()
         let subseries = row(labelBeginningWith: Self.subseriesLabel)
-        XCTAssertTrue(subseries.waitForExistence(timeout: Self.patience),
-                      "No \"\(Self.subseriesLabel)\" row with filterDownloadedOnly=YES: the index fixture was not seeded")
+        for _ in 0..<3 {
+            scrollDownUntil(tile, attempts: 4)
+            if tile.exists && tile.isHittable { tile.tap() }
+            if subseries.waitForExistence(timeout: 5) { break }
+            scrollDownUntil(subseries, attempts: 4)
+            if subseries.exists { break }
+        }
+        XCTAssertTrue(subseries.exists,
+                      "No \"\(Self.subseriesLabel)\" row with filterDownloadedOnly=YES after three taps on the Subseries tile: the index fixture was not seeded, or the taps never reached the tile")
+        scrollDownUntil(subseries, attempts: 6)
         subseries.tap()
         let volume = row(labelContaining: Self.volumeTitlePart)
-        XCTAssertTrue(volume.waitForExistence(timeout: Self.patience), "The fixture volume's row is absent")
+        if !volume.waitForExistence(timeout: 10) { scrollDownUntil(volume, attempts: 6) }
+        XCTAssertTrue(volume.exists, "The fixture volume's row is absent")
+        scrollDownUntil(volume, attempts: 6)
         volume.tap()
         // The Back Matter row, "Index", and not the volume page's "Index Now" control.
         let index = app.buttons.matching(
@@ -103,9 +117,10 @@ final class IndexSeeLinkTests: XCTestCase {
         XCTAssertTrue(index.waitForExistence(timeout: Self.patience),
                       "The volume page lists no Index under Back Matter")
         index.tap()
-        // A section with no documents is read directly, or offers Read inside its compilation page.
-        let read = app.buttons["Read"].firstMatch
-        if read.waitForExistence(timeout: 5) { read.tap() }
+        // A section with no documents opens its compilation page, whose one control is "Read Index"
+        // (`browser.compilation.readSection`, "Read %@"); the first run looked for a bare "Read".
+        let read = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Read '")).firstMatch
+        if read.waitForExistence(timeout: 10) { read.tap() }
         XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: Self.patience),
                       "The Index did not open in the reader")
     }
