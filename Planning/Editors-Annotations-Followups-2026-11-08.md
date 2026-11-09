@@ -1,9 +1,10 @@
 # Editors' Annotations follow-ups: a local session plan (2026-11-08)
 
-Status: IN PROGRESS — Lane 0b is built and Lane 0's unit checks are run (2026-11-08, on
-`claude/editor-annotation-axis-revisions-54aede`, opened as #1873); Lane 0's UI checks and
-Lanes 1 and 2 remain, for one development session run locally on the Mac. Lane 0b, the pre-1925
-correction, ships in 1.0 (the plan of record's decision 120 and L10); the other lanes are not
+Status: BUILT, AWAITING MERGE — Lane 0b merged as #1873 (2026-11-08) with Lane 0's unit checks;
+Lane 0's UI checks ran in the session that proposed the lanes' build; Lane 1 is #1874 and Lane 2
+its own pull request, both opened 2026-11-08 from one development session on the Mac, each with
+its *Built* passage below. Once both merge this file moves to `Planning/Completed/`. Lane 0b, the
+pre-1925 correction, ships in 1.0 (the plan of record's decision 120 and L10); the other lanes are not
 scheduled against 1.0.
 
 The design this amends is `Editors-Annotations-Design-2026-11-06.md`. Its measurements are in
@@ -42,6 +43,9 @@ Version history:
   1.4 — 2026-11-08: Lane 0b built, with Lane 0's unit checks, on the Mac; the clean build found one
         strict-concurrency warning in `AnnotationsAxisTests` (lane D's), fixed by making
         `PeopleTaggingCaption.text(index:locale:)` nonisolated; Lane 0's UI checks are still owed
+  1.6 — 2026-11-08: Lane 2 measured and built on the Mac (its section's *Measured* and *Built*
+        passages): no document id has an index entry's shape, so the anchor alone decides; the
+        landing is the footnote's script, shared; the "from elsewhere" landing has nothing to serve
 
 ---
 
@@ -467,6 +471,56 @@ Add the counts to this plan before coding.
      downloaded; follow how the existing reader UI suites seed a volume.
 6. **Runs.** `swift build --target FRUSCoreKit`, then `swift test`, then the unit target, then the Mac
    build, then the UI suite. All through `Scripts/heavy.sh`.
+
+### Built on 2026-11-08
+
+Where the build departs from the text above, and what it found.
+
+- **Confirmed first on the simulator, through the suite itself.** `IndexSeeLinkTests` was committed
+  before the fix, with its fixture (`UITestVolumeSeeder.prepareIndexVolumeIfRequested(in:)`,
+  `frus1932v04` as one document and an Index of eighty-odd entries, written on
+  `FRUS_UI_TEST_SEED_INDEX_VOLUME=1` and removed by any launch that does not ask, so the four suites
+  that count on one downloaded volume never see it), and run on the iPhone 17 (iOS 27.0) against
+  that commit: the tap on "China" in "Aviation. *See under* China" opened a reader that said
+  "Failed to Load: Document 'in2' was not found in the volume.", the plan's description. The real
+  volume was not downloaded to a simulator: the fixture reproduces the markup, and the suite is the
+  record.
+- **The anchor's shape alone decides.** No document's `xml:id` in 314,616 begins `in` and a digit,
+  so `resolveCrossRefTarget` returns `.indexEntry` for a whole anchor of `in` and digits, before the
+  footnote branch, and no reading context is passed in. `#in14a` and `#intro` stay documents.
+- **The "from elsewhere" landing is not built.** Every one of the 49,799 references sits inside the
+  index that holds its entry and none names another volume, so the readers scroll the page on
+  screen and push nothing; a reference into another volume's index is logged and left alone.
+- **The AST's item keeps its id as the plan preferred,** `listItem(id:children:)`; `ListItemEntry.id`
+  and the serializer's `id="ix-…"` follow, on every item with an `xml:id` (34,537 in the corpus, the
+  18,809 index entries among them). An attribute adds no flat text, so no index version moved; the
+  parity suites that read the serializer's text passed unchanged. `SettledCrossReferenceTarget`
+  stores an index reference as collected, as before, so the index's rows did not move either.
+- **The landing is the footnote's script, shared.** `IndexEntryLanding` and `FootnoteLanding` run
+  one template, `ReaderLanding`, with the element id and the arrival class as its parameters; the
+  footnote script's bytes did not move (its pin held), and the page's global records an index entry
+  as it records a note, so the figure retry serves both. The stylesheet gains the entry's wash on
+  the footnote's animation and its Reduce Motion rule; `ReaderPageTests`' eight heads and the three
+  collection HTML pages that embed the stylesheet are re-pinned, each 707 bytes larger, all of them
+  that block, with the reason above them.
+- **A tap is a new value.** `IndexEntryReveal` carries a tap counter, so a second tap on the same
+  entry after the reader has scrolled away lands again, where a footnote is revealed once per
+  document and anchor.
+- **`CrossRefKit`'s mirror took the branch,** not a drift note: `RefDestination.indexEntry`, citing
+  no document, and the parity test reaches seven cases. The edge and flow generators dropped an
+  `inN` target at their document check before, so neither output moves.
+- **What the first runs taught the suite:** the compilation page's control is "Read Index" (the
+  format "Read %@"), not "Read"; the Subseries tile needs `VolumeAnnotationsSectionTests`' three-try
+  loop under the tab shell's banner; the launch after a run that ended in the reader restores that
+  page, so the suite taps back to Browse's root before its walk and in `tearDown`; and an iPad's
+  reader page holds three web view elements, so "nothing was pushed" compares the count with itself.
+- **Runs** (each heavy job through `Scripts/heavy.sh`, Xcode 27.2): `swift build --target
+  FRUSCoreKit` clean; `swift test` exit 0, 39 runs all passed, `FRUSCoreKitTests` 1,779 tests in 229
+  suites; the control above; a clean `build-for-testing` of the `FRUSExplorer` scheme (iPhone 17,
+  iOS 27.0, after `xcodebuild clean`) with only the two known warning residues; the unit target,
+  TEST EXECUTE SUCCEEDED, after eighteen EditableContent ranges that the reader and app insertions
+  had moved were re-pointed to their keys; `FRUSExplorerMac` (AppStore) built with the same
+  residues; `IndexSeeLinkTests`: UI_RESULTS_LANE2. The Mac's half was built and not walked.
 
 ---
 

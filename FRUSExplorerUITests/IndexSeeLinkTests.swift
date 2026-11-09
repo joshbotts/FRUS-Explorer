@@ -151,8 +151,9 @@ final class IndexSeeLinkTests: XCTestCase {
         let link = webView.links["China"].firstMatch
         XCTAssertTrue(link.waitForExistence(timeout: Self.patience),
                       "The entry \"Aviation. See under China\" has no China link")
-        let target = webView.staticTexts
-            .matching(NSPredicate(format: "label BEGINSWITH 'China (see also'")).firstMatch
+        // WebKit exposes an entry's text in pieces at each inline element, so the entry is found by
+        // its first piece, "China (", which no other entry of the fixture begins with.
+        let target = webView.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'China ('")).firstMatch
         let readerFrame = webView.frame
         // An iPad's reader page holds more than one web view element (three on the 13-inch), so
         // the count is compared with itself, not with one.
@@ -164,6 +165,9 @@ final class IndexSeeLinkTests: XCTestCase {
 
         link.tap()
         Thread.sleep(forTimeInterval: 3)
+        let chinaTexts = webView.staticTexts.matching(NSPredicate(format: "label CONTAINS 'China'"))
+        print("[IndexSeeLink] after the tap, texts naming China: "
+              + (0..<min(chinaTexts.count, 8)).map { "\(chinaTexts.element(boundBy: $0).label) \(chinaTexts.element(boundBy: $0).frame)" }.joined(separator: " | "))
 
         // The defect: a pushed reader for a document named in2.
         XCTAssertFalse(app.staticTexts["Failed to Load"].waitForExistence(timeout: 3),

@@ -122,6 +122,41 @@ struct TEIParserTests {
 
     // MARK: - ParseCoreElementsTest
 
+    /// Lane 2 of the editors' annotations follow-ups (2026-11-08): an index entry's `<item>` keeps
+    /// its `xml:id`, which the serializer writes as `id="ix-…"` so a "See" reference can land on it.
+    @Test("Parser: an <item> keeps its xml:id, and an item without one has none")
+    func parseListItemIds() async throws {
+        let url = try makeTEIFixture(body: """
+        <div type="document" xml:id="d1">
+          <head>Index</head>
+          <list type="index">
+            <item>Aviation. <hi rend="italic">See under</hi> <ref target="#in2">China</ref>.</item>
+            <item xml:id="in2">China (<hi rend="italic">see also</hi> Sino-Japanese dispute), <ref target="#pg_1">1</ref></item>
+          </list>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        let index = try #require(docs.first { $0.documentId == "d1" })
+        var ids: [String?] = []
+        func collect(_ nodes: [FRUSASTNode]) {
+            for node in nodes {
+                switch node {
+                case .listItem(let id, let children): ids.append(id); collect(children)
+                case .list(_, let children): collect(children)
+                default: break
+                }
+            }
+        }
+        collect(index.nodes)
+        #expect(ids == [nil, "in2"])
+        var converter = ASTToRenderNodeConverter(volumeId: "frus1932v04")
+        let html = FRUSRenderNodeHTMLSerializer().serialize(converter.convert(index))
+        #expect(html.contains("<li id=\"ix-in2\">China ("))
+        #expect(html.contains("<li>Aviation. "))
+    }
+
     @Test("Parser: <p> produces .paragraph node")
     func parseParagraph() async throws {
         let url = try makeTEIFixture(body: """
