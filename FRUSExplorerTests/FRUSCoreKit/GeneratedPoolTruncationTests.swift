@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - GeneratedPoolTruncationTests
 
@@ -81,9 +87,9 @@ struct GeneratedPoolTruncationTests {
     @Test("The archival generator reports its total; the cross-reference generator does not")
     func generatorsReportHonestly() throws {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let source = try String(
-            contentsOf: root.appending(path: "FRUSExplorer/RelatedDocuments/SimilarityGenerators.swift"),
+            contentsOf: root.appending(path: "FRUSCoreKit/RelatedDocuments/SimilarityGenerators.swift"),
             encoding: .utf8)
         #expect(source.contains("availableTotal: result.totalCount"), """
             The archival generator knows its whole in-scope neighbour set — `totalCount` — and \
@@ -139,11 +145,11 @@ struct GeneratedPoolTruncationTests {
     @Test("The engine hands the cut to the result")
     func engineReportsTheCut() throws {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let source = try String(
-            contentsOf: root.appending(path: "FRUSExplorer/RelatedDocuments/RelatedDocumentsEngine.swift"),
+            contentsOf: root.appending(path: "FRUSCoreKit/RelatedDocuments/RelatedDocumentsEngine.swift"),
             encoding: .utf8)
-        // `rank` needs a live pipeline and an AppState, so the wiring is pinned by location while
+        // `rank` needs a live pipeline and its host's dependencies, so the wiring is pinned by location while
         // the rule above is tested against the real implementation.
         #expect(source.contains("poolCutFrom = Self.absorbing(pool, into: poolCutFrom)"),
                 "the generator loop must fold through the tested rule, not re-implement it")
@@ -151,10 +157,11 @@ struct GeneratedPoolTruncationTests {
                 "and the folded value must reach the result, or no surface can disclose it")
     }
 
+    #if !SWIFT_PACKAGE // the surface is the app's view
     @Test("The surface says it, and only when it has something to say")
     func viewDisclosesTheCut() throws {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let source = try String(
             contentsOf: root.appending(path: "FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift"),
             encoding: .utf8)
@@ -171,4 +178,5 @@ struct GeneratedPoolTruncationTests {
         #expect(source.contains("poolCutFrom = result.poolCutFrom"),
                 "and the view has to actually take the value off the result")
     }
+    #endif
 }

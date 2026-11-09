@@ -14,11 +14,12 @@ import Foundation
 /// strengths and each scorer's `[0, 1]` scores, it normalises the generator axes, computes the
 /// user-weighted total per candidate, and returns the ranked, limited rows. No I/O — every input
 /// is a plain value, so the ranking logic is unit-testable without a live index (`RelatedDocumentsEngine`
-/// does the `AppState`-bound fetching and hands the results here).
+/// does the fetching, from its host's `RelatedDocumentsDependencies`, and hands the results here).
 ///
 /// Version history:
 ///   1.0 — #308 Phase 2: initial implementation
-enum RelatedDocumentsRanker {
+///   1.1 — 2026-11-08: FRUS Explorer Light's S23a — FRUSCoreKit's, and public
+public enum RelatedDocumentsRanker {
 
     /// Ranks the candidate universe.
     ///
@@ -46,7 +47,7 @@ enum RelatedDocumentsRanker {
     ///   `rankableCount`, the number of candidates that scored above 0 *before* the limit (the honest
     ///   denominator for an "N more" overflow hint — not the raw candidate count, which includes
     ///   record-less and zero-total drops).
-    static func rank(
+    public static func rank(
         anchor: DocumentKey,
         generatorStrengths: [SimilarityAxis: [DocumentKey: Double]],
         scorerScores: [SimilarityAxis: [DocumentKey: Double]],
@@ -116,14 +117,18 @@ enum RelatedDocumentsRanker {
 ///
 /// All the heavy work is bounded: the generators are `O(neighbours)` keyed lookups and the scorers
 /// batch-extract signatures over the candidate set (chunked `IN`), never per-candidate SQL. Runs on
-/// the main actor (it reads `AppState`); the SQLite work happens inside the awaited actor calls, off
-/// the main thread.
+/// the main actor (it reads its host's `RelatedDocumentsDependencies` there, as it read the app's
+/// `AppState`); the SQLite work happens inside the awaited actor calls, off the main thread.
 ///
 /// Version history:
 ///   1.0 — #308 Phase 2: archival generator + date/subseries/persons scorers; the shared-subjects
 ///          scorer is inert until the Phase 3 data drop
 ///   1.1 — #308 Phase 2b: cross-reference generator (direct citation) added to the generator set
-enum RelatedDocumentsEngine {
+///   1.2 — 2026-11-08: FRUS Explorer Light's S23a — FRUSCoreKit's: the generators and scorers read
+///          the host's `RelatedDocumentsDependencies` where they read `AppState`, the semantic axis
+///          runs only for a host that gives one, and the app's `rank(…, appState:)` passes its own
+///          (`RelatedDocumentsEngine+App.swift`)
+public enum RelatedDocumentsEngine {
 
     /// The bounded candidate producers. Archival is listed first, so on a key a candidate is produced
     /// by both, its (equivalent, `document_cache`-sourced) record wins the engine's first-generator
@@ -167,11 +172,12 @@ enum RelatedDocumentsEngine {
     ///   - includeOffIndexLeads: Whether to run the S-3 off-index scan. Background callers pass
     ///     `false` for the same reason they pass `includeSnippets: false` — the scan is a full
     ///     corpus Hamming pass whose only consumer is a section on screen.
-    ///   - appState: Holds the live index / stores.
+    ///   - dependencies: The live index, the stores and the semantic axis, from the host; the app's
+    ///     are `RelatedDocumentsDependencies(appState:)`.
     /// - Returns: The ranked result, or `.empty` when the index isn't ready or nothing matched. A
     ///   failing axis is coalesced to "no contribution", never a thrown error to the caller.
     @MainActor
-    static func rank(
+    public static func rank(
         anchor: DocumentKey,
         anchorYear: Int?,
         weights: AxisWeights,
@@ -179,9 +185,9 @@ enum RelatedDocumentsEngine {
         limit: Int,
         includeSnippets: Bool = true,
         includeOffIndexLeads: Bool = true,
-        appState: AppState
+        dependencies: RelatedDocumentsDependencies
     ) async -> RelatedDocumentsResult {
-        guard appState.indexingPipeline != nil else { return .empty }
+        guard dependencies.indexingPipeline != nil else { return .empty }
 
         // Fetch a candidate pool at least as deep as the display limit (and never below the floor),
         // so the scorers re-rank a pool larger than what's shown rather than just reordering the
@@ -201,7 +207,7 @@ enum RelatedDocumentsEngine {
         where Self.runsGenerator(generator.axis, at: weights) {
             let pool = (try? await generator.candidates(
                 for: anchor, anchorYear: anchorYear, limit: candidateFetchLimit,
-                scopeVolumeIds: scopeVolumeIds, appState: appState)) ?? .empty
+                scopeVolumeIds: scopeVolumeIds, dependencies: dependencies)) ?? .empty
             let produced = pool.candidates
             poolCutFrom = Self.absorbing(pool, into: poolCutFrom)
             var strengths: [DocumentKey: Double] = [:]
@@ -231,7 +237,7 @@ enum RelatedDocumentsEngine {
         if Self.runsOffIndexScan(includeOffIndexLeads: includeOffIndexLeads, weights: weights) {
             offIndexLeads = await SemanticSimilarityGenerator.offIndexSection(
                 for: anchor, limit: candidateFetchLimit,
-                scopeVolumeIds: scopeVolumeIds, appState: appState)
+                scopeVolumeIds: scopeVolumeIds, dependencies: dependencies)
         } else {
             offIndexLeads = .none
         }
@@ -249,13 +255,13 @@ enum RelatedDocumentsEngine {
         // needs in order to explain its own position.
         if Self.runsGenerator(.semanticSimilarity, at: weights),
            let vended = generatorStrengths[.semanticSimilarity],
-           let shardStore = appState.semanticShardStore,
+           let semantic = dependencies.semantic,
            let plan = SemanticSimilarityGenerator.rescorePlan(
                vended: vended,
                allCandidates: Set(generatorStrengths.values.flatMap(\.keys)),
                anchor: anchor) {
-            let rescored = await SemanticSimilarityGenerator.reScore(
-                anchor: anchor, candidates: plan.targets, floor: plan.floor, store: shardStore)
+            let rescored = await semantic.reScore(
+                anchor: anchor, candidates: plan.targets, floor: plan.floor)
             let folded = SemanticSimilarityGenerator.applyReScore(
                 rescored, strengths: vended,
                 labels: generatorEvidenceLabel[.semanticSimilarity] ?? [:])
@@ -273,7 +279,7 @@ enum RelatedDocumentsEngine {
         var scorerScores: [SimilarityAxis: [DocumentKey: Double]] = [:]
         for scorer in scorers where weights[scorer.axis] > 0 {
             scorerScores[scorer.axis] = (try? await scorer.scores(
-                anchor: anchor, candidates: candidateKeys, appState: appState)) ?? [:]
+                anchor: anchor, candidates: candidateKeys, dependencies: dependencies)) ?? [:]
         }
 
         let ranked = RelatedDocumentsRanker.rank(
@@ -304,7 +310,7 @@ enum RelatedDocumentsEngine {
             rows[index].axisEvidenceLabel = labels
         }
 
-        if includeSnippets, let pipeline = appState.indexingPipeline, !rows.isEmpty {
+        if includeSnippets, let pipeline = dependencies.indexingPipeline, !rows.isEmpty {
             let keys = rows.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
             if let snippets = try? await pipeline.documentSnippets(forKeys: keys) {
                 for i in rows.indices { rows[i].snippet = snippets[rows[i].key.compositeString] }

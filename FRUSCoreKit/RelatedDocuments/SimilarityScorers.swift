@@ -19,6 +19,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — #308 Phase 2: initial implementation
+///   1.1 — 2026-11-08: FRUS Explorer Light's S23a — FRUSCoreKit's; reads the host's dependencies
 struct DateProximityScorer: SimilarityScorer {
 
     var axis: SimilarityAxis { .dateProximity }
@@ -34,9 +35,9 @@ struct DateProximityScorer: SimilarityScorer {
     func scores(
         anchor: DocumentKey,
         candidates: [DocumentKey],
-        appState: AppState
+        dependencies: RelatedDocumentsDependencies
     ) async throws -> [DocumentKey: Double] {
-        guard let pipeline = appState.indexingPipeline, !candidates.isEmpty else { return [:] }
+        guard let pipeline = dependencies.indexingPipeline, !candidates.isEmpty else { return [:] }
         let keys = ([anchor] + candidates).map { (volumeId: $0.volumeId, documentId: $0.documentId) }
         let datesByKey = try await pipeline.datesByDocumentKey(keys)
         guard let anchorISO = datesByKey[anchor.compositeString],
@@ -101,6 +102,8 @@ struct DateProximityScorer: SimilarityScorer {
 /// Version history:
 ///   1.0 — #308 Phase 2: initial implementation
 ///   1.1 — #562: corpus proximity — the flat same-volume 1.0 becomes a containment/adjacency curve
+///   1.2 — 2026-11-08: FRUS Explorer Light's S23a — FRUSCoreKit's; reads the host's dependencies,
+///          the manifest through `VolumeManifestLookup`
 struct SubseriesScorer: SimilarityScorer {
 
     var axis: SimilarityAxis { .subseries }
@@ -156,16 +159,16 @@ struct SubseriesScorer: SimilarityScorer {
     func scores(
         anchor: DocumentKey,
         candidates: [DocumentKey],
-        appState: AppState
+        dependencies: RelatedDocumentsDependencies
     ) async throws -> [DocumentKey: Double] {
         guard !candidates.isEmpty else { return [:] }
-        let store = appState.manifestStore
+        let store = dependencies.manifestStore
         let anchorSubseries = store.entry(forVolumeId: anchor.volumeId)?.subseries
 
         // One fetch, for the anchor's volume, and only if some candidate is actually in it.
         var arrangement: VolumeArrangement?
         if candidates.contains(where: { $0.volumeId == anchor.volumeId }),
-           let pipeline = appState.indexingPipeline {
+           let pipeline = dependencies.indexingPipeline {
             // `try?` deliberately: RelatedDocumentsEngine wraps this whole call in `try?` and
             // coalesces a throw to "no contribution", so letting one escape would zero the axis for
             // every candidate — the exact silent-flat failure this work exists to prevent.
@@ -213,6 +216,7 @@ struct SubseriesScorer: SimilarityScorer {
 ///
 /// Version history:
 ///   1.0 — #308 Phase 2: initial implementation
+///   1.1 — 2026-11-08: FRUS Explorer Light's S23a — FRUSCoreKit's; reads the host's dependencies
 struct SharedPersonScorer: SimilarityScorer {
 
     var axis: SimilarityAxis { .sharedPersons }
@@ -223,9 +227,9 @@ struct SharedPersonScorer: SimilarityScorer {
     func scores(
         anchor: DocumentKey,
         candidates: [DocumentKey],
-        appState: AppState
+        dependencies: RelatedDocumentsDependencies
     ) async throws -> [DocumentKey: Double] {
-        guard let store = appState.personMentionStore, !candidates.isEmpty else { return [:] }
+        guard let store = dependencies.personMentionStore, !candidates.isEmpty else { return [:] }
         let docs = ([anchor] + candidates).map { (volumeId: $0.volumeId, documentId: $0.documentId) }
         let mentions = try await store.rollupMentions(forDocuments: docs)
 
@@ -266,6 +270,8 @@ struct SharedPersonScorer: SimilarityScorer {
 ///   1.0 — #308 Phase 2: seam scorer, inert until the Phase 3 document-subject index ships
 ///   1.1 — #308 Phase 3: live at default weight 0.5
 ///   1.2 — #1020: shared subjects surfaced as the axis's "why related" chip
+///   1.3 — 2026-11-08: FRUS Explorer Light's S23a — FRUSCoreKit's; reads the host's subject index
+///          (`RelatedDocumentsDependencies.documentSubjectIndex`, the app's `DocumentSubjectStore.shared`)
 struct SharedSubjectScorer: SimilarityScorer {
 
     var axis: SimilarityAxis { .sharedSubjects }
@@ -290,9 +296,9 @@ struct SharedSubjectScorer: SimilarityScorer {
     func scores(
         anchor: DocumentKey,
         candidates: [DocumentKey],
-        appState: AppState
+        dependencies: RelatedDocumentsDependencies
     ) async throws -> [DocumentKey: Double] {
-        guard let index = DocumentSubjectStore.shared, !candidates.isEmpty else { return [:] }
+        guard let index = dependencies.documentSubjectIndex, !candidates.isEmpty else { return [:] }
         let anchorRefs = Set(index.subjects(forDocument: anchor).map(\.ref))
         guard !anchorRefs.isEmpty else { return [:] }
         var scores: [DocumentKey: Double] = [:]

@@ -28,6 +28,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — #308 Phase 2: initial implementation
+///   1.1 — 2026-11-08: FRUS Explorer Light's S23a — FRUSCoreKit's; reads the host's dependencies
 struct ArchivalProvenanceGenerator: SimilarityGenerator {
 
     var axis: SimilarityAxis { .archivalProvenance }
@@ -40,9 +41,9 @@ struct ArchivalProvenanceGenerator: SimilarityGenerator {
         anchorYear: Int?,
         limit: Int,
         scopeVolumeIds: Set<String>?,
-        appState: AppState
+        dependencies: RelatedDocumentsDependencies
     ) async throws -> GeneratedPool {
-        guard let pipeline = appState.indexingPipeline else { return .empty }
+        guard let pipeline = dependencies.indexingPipeline else { return .empty }
         // The cohort-aware entry point: the same query, plus how many documents share this
         // anchor's container corpus-wide. That number is the chip (#644); it never touches the
         // strength, which stays constant because every candidate here shares one container.
@@ -76,7 +77,8 @@ struct ArchivalProvenanceGenerator: SimilarityGenerator {
 
 /// Generates candidates that the anchor directly cites or that directly cite the anchor.
 ///
-/// Wraps the bounded `CrossReferenceStore.relatedByCitation` ego query (document-target-filtered,
+/// Wraps the bounded `CrossReferenceStore.relatedByCitation` ego query, the host's
+/// `RelatedCitationSource` (document-target-filtered,
 /// both directions, indexed candidates only) — `O(ego edges)`, never a corpus scan (design §6.2).
 /// Strength is the citation multiplicity **log-damped** (`1 + ln(count)`, #356), so a document the
 /// anchor cites repeatedly still ranks above one it cites once, while a heavy-tailed outlier
@@ -98,6 +100,7 @@ struct ArchivalProvenanceGenerator: SimilarityGenerator {
 ///
 /// Version history:
 ///   1.0 — #308 Phase 2b: initial implementation (direct citation)
+///   1.1 — 2026-11-08: FRUS Explorer Light's S23a — FRUSCoreKit's; reads the host's dependencies
 struct CrossReferenceGenerator: SimilarityGenerator {
 
     var axis: SimilarityAxis { .crossReference }
@@ -110,9 +113,9 @@ struct CrossReferenceGenerator: SimilarityGenerator {
         anchorYear: Int?,
         limit: Int,
         scopeVolumeIds: Set<String>?,
-        appState: AppState
+        dependencies: RelatedDocumentsDependencies
     ) async throws -> GeneratedPool {
-        guard let store = appState.crossReferenceStore else { return .empty }
+        guard let store = dependencies.crossReferenceStore else { return .empty }
         let candidates = try await store.relatedByCitation(
             forDocumentId: anchor.documentId,
             volumeId: anchor.volumeId,

@@ -25,7 +25,10 @@ import Foundation
 ///          Phase 3 document-grain data drop; the cross-reference generator landed in Phase 2b)
 ///   1.1 — #562: `ProximityMath.narrowing` / `.printAdjacency` and `VolumeArrangement` added for the
 ///          corpus-proximity axis; `.subseries` renamed in display only (its rawValue is persisted)
-enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifiable {
+///   1.2 — 2026-11-08: FRUS Explorer Light's S23a — the model is FRUSCoreKit's, and what a host
+///          calls is public; the axes' SF Symbols (`systemImage`) stay in the app
+///          (`SimilarityModel+App.swift`), since the semantic axis's is the app's `SemanticGlyph`
+public enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifiable {
     /// Same original archival provenance — lot file, central decimal file, record-group series,
     /// or presidential-library collection (`IndexingPipeline.archivalNeighbors`). A generator.
     case archivalProvenance
@@ -83,11 +86,11 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     /// this is a slider a researcher may raise, not a graded feature — the V-3 precedent.
     case lexicalSimilarity
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
     /// Whether this axis *produces* candidates (bounded enumeration) rather than only scoring
     /// them. Generators drive the candidate universe; scorers rank it (design §6.2).
-    var isGenerator: Bool {
+    public var isGenerator: Bool {
         switch self {
         case .archivalProvenance, .crossReference, .semanticSimilarity,
              .lexicalSimilarity: return true
@@ -96,7 +99,7 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     }
 
     /// The user-facing axis name.
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .archivalProvenance:
             return String(localized: "related.axis.archival", defaultValue: "Archival provenance")
@@ -127,20 +130,6 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
         }
     }
 
-    /// An SF Symbol representing the axis in the tuning UI and per-row "why related" chips.
-    var systemImage: String {
-        switch self {
-        case .archivalProvenance: return "archivebox"
-        case .crossReference:     return "arrow.triangle.branch"
-        case .dateProximity:      return "calendar"
-        case .subseries:          return "books.vertical"
-        case .sharedPersons:      return "person.2"
-        case .sharedSubjects:     return "tag"
-        case .semanticSimilarity: return SemanticGlyph.document
-        case .lexicalSimilarity:  return "text.magnifyingglass"
-        }
-    }
-
     /// Whether this axis's raw strengths are already an absolute similarity in [0, 1], and must
     /// therefore bypass the ranker's per-axis max-normalisation.
     ///
@@ -158,7 +147,7 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     /// neighbour a 1.0 however weak the overlap — normalising destroys exactly the
     /// information the query paid for. `SemanticAxisTests` pins this as a two-axis
     /// allowlist, so a third axis has to argue its way in rather than drift in.
-    var isSelfNormalising: Bool {
+    public var isSelfNormalising: Bool {
         switch self {
         case .semanticSimilarity, .lexicalSimilarity: return true
         case .archivalProvenance, .crossReference, .dateProximity, .subseries,
@@ -182,7 +171,7 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     /// existing user for a feature nobody opted into. **That contract still binds `lexical`,
     /// whose default is still 0**; the semantic axis is out from under it by the owner decision
     /// recorded on the case above, which is precisely a decision to change default results.
-    var skipsGenerationAtZeroWeight: Bool {
+    public var skipsGenerationAtZeroWeight: Bool {
         switch self {
         case .semanticSimilarity, .lexicalSimilarity: return true
         case .archivalProvenance, .crossReference, .dateProximity, .subseries,
@@ -207,7 +196,7 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     /// editorial metadata, and upstream's own KNOWN-ISSUES says to treat them as recall-oriented
     /// candidates. The axis shapes results without dominating them, and the reader can still move
     /// the slider either way.
-    var defaultWeight: Double {
+    public var defaultWeight: Double {
         switch self {
         case .archivalProvenance: return 1.0
         case .crossReference:     return 1.0
@@ -228,13 +217,13 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
 /// not a property of the stateless axis types.
 ///
 /// A candidate's total proximity is `Σ weight[axis] × axisScore[axis]` (`RelatedDocumentsRanker`).
-struct AxisWeights: Codable, Hashable, Sendable {
+public struct AxisWeights: Codable, Hashable, Sendable {
 
     /// Weight per axis; a missing axis reads as 0 through the subscript.
-    private(set) var weights: [SimilarityAxis: Double]
+    public private(set) var weights: [SimilarityAxis: Double]
 
     /// Creates a weight vector from an explicit per-axis map.
-    init(weights: [SimilarityAxis: Double]) {
+    public init(weights: [SimilarityAxis: Double]) {
         self.weights = weights
     }
 
@@ -244,10 +233,10 @@ struct AxisWeights: Codable, Hashable, Sendable {
     /// document-grain index shipped. This default now reaches every reader, not only those who
     /// never opened "Adjust weights": since #1021 a persisted tuning stores only its DEPARTURES
     /// from the defaults, and `init?(rawValue:)` refills the rest — see the conformance in
-    /// `RelatedDocumentsView.swift`. Note this is the only place `subscript`'s missing-reads-0
+    /// `AxisWeights+RawRepresentable.swift`. Note this is the only place `subscript`'s missing-reads-0
     /// rule is bypassed, and deliberately so; a programmatic `AxisWeights(weights:)` still reads
     /// an absent axis as 0.
-    static let `default` = AxisWeights(
+    public static let `default` = AxisWeights(
         weights: Dictionary(uniqueKeysWithValues: SimilarityAxis.allCases.map { ($0, $0.defaultWeight) }))
 
     /// The weight for `axis` (**0** when unset). Assigning updates the vector.
@@ -256,7 +245,7 @@ struct AxisWeights: Codable, Hashable, Sendable {
     /// `init?(rawValue:)` refills absent axes from `defaultWeight` (#1021). Keep them distinct: a
     /// partial `AxisWeights(weights:)` built in engine code or a test means "these axes and
     /// nothing else", while a partial STORED string means "these departures, defaults elsewhere".
-    subscript(_ axis: SimilarityAxis) -> Double {
+    public subscript(_ axis: SimilarityAxis) -> Double {
         get { weights[axis] ?? 0 }
         set { weights[axis] = newValue }
     }
@@ -283,7 +272,7 @@ struct AxisWeights: Codable, Hashable, Sendable {
 ///   1.1 — 2026-10-09: #1586 — `displayText(locale:)`, the chip's words, moved out of
 ///          `RelatedDocumentsContent.whyRelated` so a test reads them; the archival chip groups
 ///          its container's size
-enum WhyRelatedChip: Hashable, Sendable {
+public enum WhyRelatedChip: Hashable, Sendable {
     /// A cross-reference axis, stating the citation multiplicity it actually found.
     case citations(Int)
     /// An archival axis: the container the two documents share, and how many documents are in it.
@@ -324,7 +313,7 @@ enum WhyRelatedChip: Hashable, Sendable {
     /// - Parameter locale: The locale that groups the archival chip's count; the user's own
     ///   unless a test passes one.
     /// - Returns: The text beside the axis's glyph.
-    func displayText(locale: Locale = .autoupdatingCurrent) -> String {
+    public func displayText(locale: Locale = .autoupdatingCurrent) -> String {
         switch self {
         case .citations(let count):
             return String(format: String(localized: "related.why.cited %lld",
@@ -378,7 +367,7 @@ enum WhyRelatedChip: Hashable, Sendable {
 ///   1.0 — 2026-10-09: #1586 — initial implementation
 ///   1.1 — 2026-10-11: #1618 — Beyond your library's opening sentence, a volume's count and
 ///          the line for the volumes it does not name
-enum RelatedDocumentsCounts {
+public enum RelatedDocumentsCounts {
 
     /// The archival chip: "Lot 54 D 270 · 1 of 1,063".
     ///
@@ -387,7 +376,7 @@ enum RelatedDocumentsCounts {
     ///   - size: How many documents the live index holds in it, the anchor included.
     ///   - locale: The locale that groups the count; the user's own unless a test passes one.
     /// - Returns: The chip's text.
-    static func cohort(container: String, size: Int,
+    public static func cohort(container: String, size: Int,
                        locale: Locale = .autoupdatingCurrent) -> String {
         String(format: String(localized: "related.why.cohort %@ %@",
                               defaultValue: "%1$@ · 1 of %2$@"),
@@ -404,7 +393,7 @@ enum RelatedDocumentsCounts {
     ///   - total: How many share the container.
     ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
     /// - Returns: The sentence.
-    static func poolCut(ranked: Int, of total: Int,
+    public static func poolCut(ranked: Int, of total: Int,
                         locale: Locale = .autoupdatingCurrent) -> String {
         String(format: String(localized: "related.poolCut %@ %@",
                               defaultValue: "Ranked from the first %1$@ of %2$@ documents that share this anchor’s archival container. The rest were not scored. Narrow the scope to reach them."),
@@ -482,13 +471,13 @@ enum RelatedDocumentsCounts {
 
 /// One candidate a generator produced: its key, display record, and a **raw** (pre-normalisation)
 /// strength for its generating axis. The engine normalises each axis's strengths to `[0, 1]`.
-struct GeneratedCandidate: Sendable {
+public struct GeneratedCandidate: Sendable {
     /// The candidate document.
-    let key: DocumentKey
+    public let key: DocumentKey
     /// The candidate's display fields.
-    let record: CandidateRecord
+    public let record: CandidateRecord
     /// The generator's raw strength for this candidate (`≥ 0`), normalised per axis by the engine.
-    let strength: Double
+    public let strength: Double
 
     /// The countable evidence behind this candidate, when the axis has one worth stating — the
     /// citation multiplicity for cross-references. `nil` where the evidence is binary (archival
@@ -497,14 +486,14 @@ struct GeneratedCandidate: Sendable {
     /// Carried separately from ``strength`` because strength is damped and then normalised, so by
     /// the time the ranker is done the original count is unrecoverable — and the count is the thing
     /// worth showing a researcher.
-    let evidenceCount: Int?
+    public let evidenceCount: Int?
 
     /// The human-readable name of whatever the count counts — "Lot 54 D 270", "NSC Files",
     /// "893.51 Manchuria". `nil` where the axis has no container to name.
-    let evidenceLabel: String?
+    public let evidenceLabel: String?
 
     /// Creates a generated candidate.
-    init(key: DocumentKey, record: CandidateRecord, strength: Double,
+    public init(key: DocumentKey, record: CandidateRecord, strength: Double,
          evidenceCount: Int? = nil, evidenceLabel: String? = nil) {
         self.key = key
         self.record = record
@@ -516,40 +505,40 @@ struct GeneratedCandidate: Sendable {
 
 /// One ranked related-document result: the document, its display record, its total proximity, and
 /// the per-axis breakdown of *nonzero* contributions (the "why related" affordance).
-struct RelatedDocumentRow: Identifiable, Sendable, Hashable {
+public struct RelatedDocumentRow: Identifiable, Sendable, Hashable {
     /// The related document.
-    let key: DocumentKey
+    public let key: DocumentKey
     /// Display fields for the row.
-    let record: CandidateRecord
+    public let record: CandidateRecord
     /// The weighted total proximity `Σ weight[axis] × axisScore[axis]`.
-    let totalScore: Double
+    public let totalScore: Double
     /// The nonzero per-axis contributions — the **pre-weight** `axisScore`, not the weighted
     /// product — for the "why related" chips.
     ///
     /// A researcher who sets an axis to weight 0.1 still sees its chip at up to 100%: the chip
     /// states how strong the signal is, not how much it influenced the ranking.
-    let axisScores: [SimilarityAxis: Double]
+    public let axisScores: [SimilarityAxis: Double]
     /// A short context snippet (on-device summary or a leading body excerpt), filled by the engine
     /// for the shown rows so a researcher can judge relevance (#362); `nil` when the document has no
     /// indexed text. Not a designated-init parameter — the ranker builds rows without it and the
     /// engine fills it post-rank.
-    var snippet: String? = nil
+    public var snippet: String? = nil
 
     /// Countable evidence per generator axis, filled by the engine after ranking — the same
     /// non-designated-`var` shape as ``snippet``, and for the same reason: it keeps
     /// `RelatedDocumentsRanker.rank` a pure function of its inputs, so the ranking itself is
     /// provably unchanged by this being here.
-    var axisEvidence: [SimilarityAxis: Int] = [:]
+    public var axisEvidence: [SimilarityAxis: Int] = [:]
 
     /// The container name behind ``axisEvidence``, per axis. Filled by the engine after ranking,
     /// for the same reason and in the same place.
-    var axisEvidenceLabel: [SimilarityAxis: String] = [:]
+    public var axisEvidenceLabel: [SimilarityAxis: String] = [:]
 
-    var id: DocumentKey { key }
+    public var id: DocumentKey { key }
     /// The related document's volume.
-    var volumeId: String { key.volumeId }
+    public var volumeId: String { key.volumeId }
     /// The related document's id.
-    var documentId: String { key.documentId }
+    public var documentId: String { key.documentId }
 
     /// The "why related" chips, strongest first, in a **total** order.
     ///
@@ -559,7 +548,7 @@ struct RelatedDocumentRow: Identifiable, Sendable, Hashable {
     /// case, not an edge case: archival is exactly 1.0 whenever it fires, the top cross-reference
     /// candidate is exactly 1.0 for 88.38% of firing anchors, and date proximity is exactly 1.0 at
     /// Δyear = 0. Falling back to the `allCases` index makes the order reproducible.
-    var whyRelatedChips: [(axis: SimilarityAxis, chip: WhyRelatedChip)] {
+    public var whyRelatedChips: [(axis: SimilarityAxis, chip: WhyRelatedChip)] {
         let order = SimilarityAxis.allCases
         return axisScores
             .sorted {
@@ -616,7 +605,7 @@ struct RelatedDocumentRow: Identifiable, Sendable, Hashable {
     }
 
     /// Creates a ranked row.
-    init(key: DocumentKey, record: CandidateRecord, totalScore: Double,
+    public init(key: DocumentKey, record: CandidateRecord, totalScore: Double,
                 axisScores: [SimilarityAxis: Double]) {
         self.key = key
         self.record = record
@@ -627,15 +616,15 @@ struct RelatedDocumentRow: Identifiable, Sendable, Hashable {
 
 /// The payload a find-related load returns: the ranked rows (already limited) and the number of
 /// rankable rows before the limit was applied (drives an "N more" overflow hint).
-struct RelatedDocumentsResult: Sendable {
+public struct RelatedDocumentsResult: Sendable {
     /// The ranked, limited rows.
-    let rows: [RelatedDocumentRow]
+    public let rows: [RelatedDocumentRow]
     /// The count of candidates that scored above 0 *before* the limit — the honest "N more"
     /// denominator (record-less and zero-total candidates are already excluded, so this is `≥ rows.count`).
     ///
     /// **Honest within the pool, not within the corpus.** It counts what scored inside the fetched
     /// candidate pool, and the pool itself may have been cut — see ``poolCutFrom`` (#645).
-    let totalBeforeLimit: Int
+    public let totalBeforeLimit: Int
 
     /// When a generator's candidate pool was cut, how many candidates it had (#645).
     ///
@@ -650,7 +639,7 @@ struct RelatedDocumentsResult: Sendable {
     /// generator that reported nothing may also have been cut. If a second generator ever starts
     /// reporting, this field stops identifying which axis it came from and a surface will need
     /// that alongside it.
-    let poolCutFrom: Int?
+    public let poolCutFrom: Int?
 
     /// What the semantic axis can see beyond the reader's library (S-3), or `.none`.
     ///
@@ -662,13 +651,13 @@ struct RelatedDocumentsResult: Sendable {
     /// Populated only when the semantic axis carries weight (it ships at 0, so this is a
     /// deliberate opt-OUT since the default went to 0.5 on 2026-09-10), and only for callers that
     /// asked for it.
-    let offIndexLeads: SemanticOffIndexLeads
+    public let offIndexLeads: SemanticOffIndexLeads
 
     /// The empty result — no live index, or no candidates.
-    static let empty = RelatedDocumentsResult(rows: [], totalBeforeLimit: 0)
+    public static let empty = RelatedDocumentsResult(rows: [], totalBeforeLimit: 0)
 
     /// Creates a result.
-    init(rows: [RelatedDocumentRow], totalBeforeLimit: Int, poolCutFrom: Int? = nil,
+    public init(rows: [RelatedDocumentRow], totalBeforeLimit: Int, poolCutFrom: Int? = nil,
          offIndexLeads: SemanticOffIndexLeads = .none) {
         self.rows = rows
         self.totalBeforeLimit = totalBeforeLimit
@@ -680,7 +669,8 @@ struct RelatedDocumentsResult: Sendable {
 // MARK: - Axis protocols
 
 /// A bounded candidate producer (design §6.2). Enumerates only `O(neighbours)` documents via a
-/// keyed lookup — never a corpus scan. `@MainActor` so it reads `AppState`; the actual SQLite work
+/// keyed lookup — never a corpus scan. `@MainActor` because it reads its host's
+/// `RelatedDocumentsDependencies` there, as it read the app's `AppState`; the actual SQLite work
 /// happens inside the awaited actor calls (`IndexingPipeline`, `CrossReferenceStore`), off the main
 /// thread.
 @MainActor protocol SimilarityGenerator {
@@ -691,7 +681,8 @@ struct RelatedDocumentsResult: Sendable {
     /// `limit` is the candidate-pool depth to fetch — the engine sizes it above the display limit so
     /// scoring re-ranks a pool larger than what's shown.
     func candidates(for anchor: DocumentKey, anchorYear: Int?, limit: Int,
-                    scopeVolumeIds: Set<String>?, appState: AppState) async throws -> GeneratedPool
+                    scopeVolumeIds: Set<String>?,
+                    dependencies: RelatedDocumentsDependencies) async throws -> GeneratedPool
 }
 
 // MARK: - GeneratedPool
@@ -703,32 +694,32 @@ struct RelatedDocumentsResult: Sendable {
 /// 120-row pool reported at most 120, presented as a complete total. The repo's own convention
 /// (`RecordedCount`, the facet `bounds`) is that a truncated total is never shown as a whole one,
 /// and #645 cited that convention against this exact line.
-struct GeneratedPool: Sendable {
+public struct GeneratedPool: Sendable {
 
     /// The candidates, already cut to the requested pool depth.
-    let candidates: [GeneratedCandidate]
+    public let candidates: [GeneratedCandidate]
 
     /// How many candidates existed before the pool depth was applied, when the generator knows.
     ///
     /// `nil` means "not reported" — not "none" and not "no truncation". A caller must treat an
     /// unknown total as unknown rather than folding it to `candidates.count`, or a generator that
     /// simply does not count would silently assert completeness on behalf of one that does.
-    let availableTotal: Int?
+    public let availableTotal: Int?
 
     /// Whether the generator had more than it returned.
-    var isTruncated: Bool {
+    public var isTruncated: Bool {
         guard let availableTotal else { return false }
         return availableTotal > candidates.count
     }
 
     /// Creates a pool.
-    init(candidates: [GeneratedCandidate], availableTotal: Int? = nil) {
+    public init(candidates: [GeneratedCandidate], availableTotal: Int? = nil) {
         self.candidates = candidates
         self.availableTotal = availableTotal
     }
 
     /// The empty pool.
-    static let empty = GeneratedPool(candidates: [])
+    public static let empty = GeneratedPool(candidates: [])
 }
 
 /// A ranker over an already-generated candidate set (design §6.2). Produces a `[0, 1]` score per
@@ -740,7 +731,7 @@ struct GeneratedPool: Sendable {
     /// A `0…1` proximity for each candidate against `anchor`. A candidate absent from the result
     /// (or scored 0) contributes nothing on this axis.
     func scores(anchor: DocumentKey, candidates: [DocumentKey],
-                appState: AppState) async throws -> [DocumentKey: Double]
+                dependencies: RelatedDocumentsDependencies) async throws -> [DocumentKey: Double]
 }
 
 // MARK: - ProximityMath

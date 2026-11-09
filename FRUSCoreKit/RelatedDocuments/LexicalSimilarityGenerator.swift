@@ -44,6 +44,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — W-17 session 2: initial implementation
+///   1.1 — 2026-11-08: FRUS Explorer Light's S23a — FRUSCoreKit's; reads the host's dependencies,
+///          the stopwords among them (the app's `WordCloudStopwords.active(includeDiplomatic: true)`)
 @MainActor
 struct LexicalSimilarityGenerator: SimilarityGenerator {
 
@@ -75,10 +77,10 @@ struct LexicalSimilarityGenerator: SimilarityGenerator {
         anchorYear: Int?,
         limit: Int,
         scopeVolumeIds: Set<String>?,
-        appState: AppState
+        dependencies: RelatedDocumentsDependencies
     ) async throws -> GeneratedPool {
-        guard let pipeline = appState.indexingPipeline,
-              let searchService = appState.searchService else { return .empty }
+        guard let pipeline = dependencies.indexingPipeline,
+              let searchService = dependencies.searchService else { return .empty }
 
         // The anchor's own text is the query's source. A row with no body text (a
         // container quasi-document, an unindexed anchor) has no wording to match.
@@ -90,7 +92,7 @@ struct LexicalSimilarityGenerator: SimilarityGenerator {
         // Stage 1: surface words by anchor term frequency.
         let ranked = Self.wordCounts(
             in: anchorText,
-            stopwords: WordCloudStopwords.active(includeDiplomatic: true))
+            stopwords: dependencies.lexicalStopwords)
             .sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
             .prefix(Self.selectionPoolLimit)
         guard !ranked.isEmpty else { return .empty }
@@ -127,7 +129,7 @@ struct LexicalSimilarityGenerator: SimilarityGenerator {
 
         // Stage 4: the volume fence, in Swift (never in the SQL), then the ratio.
         let eligibleVolumes = SemanticSimilarityGenerator.eligibleVolumeIDs(
-            indexed: appState.indexedVolumeIds, scope: scopeVolumeIds)
+            indexed: dependencies.indexedVolumeIds, scope: scopeVolumeIds)
         var keys: [DocumentKey] = []
         var scoreByKey: [DocumentKey: Double] = [:]
         for row in rows {

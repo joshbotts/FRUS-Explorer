@@ -2199,14 +2199,14 @@ Apple Intelligence is not available on this device, so new summaries cannot be g
 <!-- END SOURCE: panel.summary.unavailable -->
 
 #### Ranked from the first %1$@ of %2$@ documents that share…
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.poolCut | lines: 409–410 | key: related.poolCut %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.poolCut | lines: 398–399 | key: related.poolCut %@ %@ -->
 
 Ranked from the first %1$@ of %2$@ documents that share this anchor’s archival container. The rest were not scored. Narrow the scope to reach them.
 
 <!-- END SOURCE: related.poolCut %@ %@ -->
 
 #### No indexed documents share this document’s archival…
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | RelatedDocumentsContent.emptyDetail | lines: 479–480 | key: related.empty.detail -->
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | RelatedDocumentsContent.emptyDetail | lines: 358–359 | key: related.empty.detail -->
 
 No indexed documents share this document’s archival provenance or cross-references — indexing more volumes may surface some.
 
@@ -2222,7 +2222,7 @@ Shared words compared as printed: this device’s language analysis isn’t redu
 <!-- END SOURCE: related.sharedTerms.printedForms.note -->
 
 #### At least %1$@ documents in %2$@ you have not downloaded…
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.offIndexCaption | lines: 434–435 | key: related.offIndex.caption.capped %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.offIndexCaption | lines: 423–424 | key: related.offIndex.caption.capped %@ %@ -->
 
 *The opening sentence of Related Documents' Beyond your library section when the scan stopped at its cap of 4,096 documents, so the count is a floor: "At least 4,096 documents in 12 volumes you have not downloaded read as close…". `%1$@` is the number of documents and `%2$@` the volumes with their noun, "1 volume" or "12 volumes". Until #1618 the two numbers were not grouped and this read "At least 4096 documents".*
 
@@ -2231,7 +2231,7 @@ At least %1$@ documents in %2$@ you have not downloaded read as close to this on
 <!-- END SOURCE: related.offIndex.caption.capped %@ %@ -->
 
 #### %1$@ document in %2$@ you have not downloaded reads as…
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.offIndexCaption | lines: 440–441 | key: related.offIndex.caption.one %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.offIndexCaption | lines: 429–430 | key: related.offIndex.caption.one %@ %@ -->
 
 *The same sentence for exactly one document: "1 document in 1 volume you have not downloaded reads as close…". Until #1618 there was one form for every count, and it read "1 documents in 1 volumes … read as close".*
 
@@ -2240,7 +2240,7 @@ At least %1$@ documents in %2$@ you have not downloaded read as close to this on
 <!-- END SOURCE: related.offIndex.caption.one %@ %@ -->
 
 #### %1$@ documents in %2$@ you have not downloaded read as…
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.offIndexCaption | lines: 442–443 | key: related.offIndex.caption.many %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.offIndexCaption | lines: 431–432 | key: related.offIndex.caption.many %@ %@ -->
 
 *The same sentence for any other count: "94 documents in 19 volumes you have not downloaded read as close…". `%2$@` is the volumes with their noun, so many documents in one volume read "1,204 documents in 1 volume".*
 

@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - DocumentKeyTests
 
@@ -299,6 +305,7 @@ struct RelatedDocumentsRankerTests {
     }
 }
 
+#if !SWIFT_PACKAGE // RelatedDocumentsRequest, the macOS window's payload, is the app's
 // MARK: - RelatedDocumentsRequestTests
 
 /// Verifies the restorable request value round-trips through `Codable` (the window-payload contract).
@@ -321,6 +328,7 @@ struct RelatedDocumentsRequestTests {
         #expect(restored.anchorYear == 1971)
     }
 }
+#endif
 
 // MARK: - SnippetTests
 
@@ -394,6 +402,7 @@ struct ProximityMathTests {
     }
 }
 
+#if !SWIFT_PACKAGE // prices the scorer over the app bundle's index (DocumentSubjectStore), at ProjectLeadsService.seedCap
 // MARK: - SharedSubjectScorerCostTests
 
 /// Prices the `sharedSubjects` axis against the **real bundled index** (#1025).
@@ -474,15 +483,16 @@ struct SharedSubjectScorerCostTests {
     @Test("Scoring a realistic candidate set stays well inside a recompute budget")
     func scorerCostAtRealisticScale() async throws {
         let appState = AppState()
+        let dependencies = RelatedDocumentsDependencies(appState: appState)
         let anchor = try richAnchor()
         let candidates = try realKeys(limit: 1_000)
         #expect(candidates.count == 1_000, "the bundled index must supply 1,000 real keys")
 
         let scorer = SharedSubjectScorer()
-        _ = try await scorer.scores(anchor: anchor, candidates: candidates, appState: appState)  // warm
+        _ = try await scorer.scores(anchor: anchor, candidates: candidates, dependencies: dependencies)  // warm
 
         let started = ContinuousClock.now
-        let scores = try await scorer.scores(anchor: anchor, candidates: candidates, appState: appState)
+        let scores = try await scorer.scores(anchor: anchor, candidates: candidates, dependencies: dependencies)
         let elapsed = ContinuousClock.now - started
 
         // A generous ceiling: 40 seeds × this must stay far under a second of main-actor time.
@@ -504,18 +514,19 @@ struct SharedSubjectScorerCostTests {
     @Test("Cost grows linearly in the candidate count, not faster")
     func costIsLinearInCandidates() async throws {
         let appState = AppState()
+        let dependencies = RelatedDocumentsDependencies(appState: appState)
         let anchor = try richAnchor()
         let small = try realKeys(limit: 500)
         let large = try realKeys(limit: 2_000)
         let scorer = SharedSubjectScorer()
-        _ = try await scorer.scores(anchor: anchor, candidates: large, appState: appState)  // warm
+        _ = try await scorer.scores(anchor: anchor, candidates: large, dependencies: dependencies)  // warm
 
         let smallStart = ContinuousClock.now
-        _ = try await scorer.scores(anchor: anchor, candidates: small, appState: appState)
+        _ = try await scorer.scores(anchor: anchor, candidates: small, dependencies: dependencies)
         let smallTime = ContinuousClock.now - smallStart
 
         let largeStart = ContinuousClock.now
-        _ = try await scorer.scores(anchor: anchor, candidates: large, appState: appState)
+        _ = try await scorer.scores(anchor: anchor, candidates: large, dependencies: dependencies)
         let largeTime = ContinuousClock.now - largeStart
 
         // 4x the candidates must cost well under 8x the time. Loose enough to survive scheduler
@@ -527,3 +538,4 @@ struct SharedSubjectScorerCostTests {
             """)
     }
 }
+#endif

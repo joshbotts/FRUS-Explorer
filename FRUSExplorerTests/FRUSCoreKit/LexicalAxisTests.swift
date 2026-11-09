@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - LexicalAxisTests
 
@@ -121,14 +127,16 @@ struct LexicalAxisTests {
     @Test("The generator is registered, and shares the semantic axis's render-time evidence pass")
     func wiring() throws {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let engine = try String(contentsOf: root.appendingPathComponent(
-            "FRUSExplorer/RelatedDocuments/RelatedDocumentsEngine.swift"), encoding: .utf8)
+            "FRUSCoreKit/RelatedDocuments/RelatedDocumentsEngine.swift"), encoding: .utf8)
         #expect(engine.contains("LexicalSimilarityGenerator()"),
                 "an unregistered generator is a whole axis that silently never runs")
+        #if !SWIFT_PACKAGE // the evidence pass is the app's view
         let view = try String(contentsOf: root.appendingPathComponent(
             "FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift"), encoding: .utf8)
         #expect(view.contains("[.semanticSimilarity, .lexicalSimilarity]"),
                 "the evidence pass must cover both vocabulary axes, or the lexical chip stays a bare percentage forever")
+        #endif
     }
 }
