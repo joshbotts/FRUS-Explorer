@@ -46,6 +46,8 @@ The TEI agrees. `frus1861.xml` carries 212 runs of asterisks, most as centred pa
 
 Both texts should be re-worded. The accurate statement is three-part: before 1925 an omission was usually marked with a row of asterisks, under no written rule and without saying whether the cut was the editor's or a reviewer's; from 1925 to 1991 an ellipsis marked an omission of either kind; since 1991 a declassification denial is marked as such and distinguished from the editors' own cuts. Page 3 of the Research Guide is a ranged block in `02-Research-Guide.md`, so `EditableContentKeyTests` governs the edit; the axis string is a plain localized key.
 
+**Disposition (2026-11-09).** The claim entered the copy as the owner's rule of 2026-11-08, recorded in `Editors-Annotations-Followups-2026-11-08.md` (version 1.2). On reading this finding the owner reversed it: the correction is that plan's Lane 0b and the plan of record's L10 (decision 120), and it ships in 1.0.
+
 ---
 
 ## 2. Features that need no new data
