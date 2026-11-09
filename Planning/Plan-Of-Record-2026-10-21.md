@@ -375,6 +375,7 @@ The repository holds drafts for each.
 - **For #1767** (decision 109), closed with these left, the first now done:
   - the device check of a library rebuilt at rollup v15, from #1815's, #1816's and #1826's lists (among them Kissinger's Wikidata and VIAF links, Kirkpatrick across eleven volumes, E. Romney Wheeler apart from the General, and Truman keeping Q11613). *Done on 2026-11-02: asked in R2b's session after R4's merge, "Did your device pass include #1767's People checks?", the owner answered "1. yes".*
   - whether to file the three reports drafted in `Person-Authority-Upstream-Reports-2026-11-01.md` with `HistoryAtState/people`.
+- **The asterisk rows** (`Editors-Annotations-Followups-2026-11-08.md`, Lane 0b's section): whether a row of asterisks, the editors' mark of an omission before the 1925 order, counts as a third form of marked omission beside the bracketed note and the redaction mark. `FRUS-History-Feature-Assessment-2026-11-09.md` §2.4 proposes counting them, as a census for the plan after 1.0; nothing built waits on the answer.
 
 ---
 
@@ -483,7 +484,8 @@ The review's §1 has each disposition with its reason. This change applies them.
   - the four C-3 designs (`C-3-Reader-Test-Design.md`, `C-3-Vectors-Tier-Design.md`, `C-3-Steering-Tier-Design.md`, `C-3-Reader-Facing-Tier-Design.md`) and the two reviews G1 decided (`Agentic-Guide-Steering-Review-2026-10-27.md`, `Agentic-Guide-Reader-Facing-Style-Review-2026-10-30.md`), on 2026-11-02 (decision 115);
   - `OH-Report-2026-10-01.md`;
   - `semantic-spike/`'s three memos;
-  - `Cross-Platform-UI-Adversarial-Review/STATUS.md` (decision 93).
+  - `Cross-Platform-UI-Adversarial-Review/STATUS.md` (decision 93);
+  - `Editors-Annotations-Followups-2026-11-08.md`, on 2026-11-09, once its lanes had merged (#1873, #1874 and #1875, with #1876 its last record): fifteen Swift files cite it, four of them in FRUSCoreKit, and the owner chose to keep it here ("Keep at root, mark COMPLETE").
 - **Kept live:**
   - the runbooks;
   - the original specification;

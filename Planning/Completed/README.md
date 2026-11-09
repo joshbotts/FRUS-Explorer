@@ -272,9 +272,11 @@ directory):
   `Lexical-Axis-Addressable-Market` (cited by `SimilarityModel.swift`), `Index-Bump-Brief-2026-10-11`
   (`IndexingPipeline.swift` cites it in four places), `Issue-1648-Stopping-A-Replaced-Search-2026-10-15`
   (`IndexingPipeline.swift`), `Person-Authority-Identifier-Assessment-2026-10-17` (since
-  2026-11-01; the identifier rule's source, its tests and the snapshot tool) and
+  2026-11-01; the identifier rule's source, its tests and the snapshot tool),
   `Cross-Volume-Page-Citations-Assessment-2026-10-20`
-  (`PageSpanResolver.swift` and `IndexingPipeline.swift`);
+  (`PageSpanResolver.swift` and `IndexingPipeline.swift`) and
+  `Editors-Annotations-Followups-2026-11-08` (since 2026-11-09; fifteen Swift files, four of them
+  in FRUSCoreKit);
 - **the W-19 agentic-loop program** — `Agentic-Loop-Development-Plan` (C-1 stays gated),
   `Agentic-Guide-Revisions` and the C-0b, C-0c and C-0d records (the guide cites them; each is
   marked COMPLETE), `Agentic-Guide-Accessibility-Review-2026-10-14` (the guide cites it), and the
