@@ -1,9 +1,11 @@
 # Editors' Annotations follow-ups: a local session plan (2026-11-08)
 
-Status: PLANNED — for one development session run locally on the Mac.
+Status: PLANNED — for one development session run locally on the Mac. Lane 0b, the pre-1925
+correction, ships in 1.0 (the plan of record's decision 120 and L10); the other lanes are not
+scheduled against 1.0.
 
 The design this amends is `Editors-Annotations-Design-2026-11-06.md`. Its measurements are in
-`editors-annotations/`. This plan takes four decisions the owner made on 2026-11-08 and turns them
+`editors-annotations/`. This plan takes four decisions the owner made on 2026-11-08, and one of 2026-11-09, and turns them
 into lanes:
 
 1. **Printed aids** becomes **Front and back matter**. *Copy only.* Done on
@@ -14,6 +16,9 @@ into lanes:
    index.*
 4. A back-of-volume index's **"See" links** scroll within the index. *A kit change in the parser, the
    reader's link parse and the reader's scripts.*
+5. **The pre-1925 correction** (2026-11-09). *Copy only; ships in 1.0.* Two shipped texts say the
+   editors marked nothing before the 1925 order; the Office's history and the TEI say they marked an
+   omission with a row of asterisks. Lane 0b.
 
 Every heavy job goes through `Scripts/heavy.sh`, one at a time (CLAUDE.md, *Build & Test Commands*).
 Run long jobs in the background and reuse one worktree's DerivedData.
@@ -28,6 +33,10 @@ Version history:
         layer counts only volumes published from 1925 (the generator stores each volume's
         publication year), and its copy says so; the onboarding text and the Redactions practice
         paragraph now name the order
+  1.3 — 2026-11-09: the owner's correction, reversing 1.2's rule: before the 1925 order the editors
+        marked an omission with a row of asterisks (the Office's history, chs. 2 and 4; the TEI). Lane
+        0b corrects the two shipped texts and ships in 1.0 (plan of record, decision 120); Lane 1's
+        gate keeps 1925 for the sweep's own reason, and its two strings are re-worded
 
 ---
 
@@ -83,12 +92,72 @@ If the label wraps badly in either place, raise it with the owner. Do not shorte
   Redactions practice paragraph says "From Secretary Kellogg's 1925 order until the 1991 statute,
   volumes marked an omission with an ellipsis, … Volumes published before the 1925 order did not mark
   omissions at all." It said "Before the 1991 statute, volumes marked every omission" until then,
-  which implied every earlier volume.
+  which implied every earlier volume. **Reversed on 2026-11-09:** both sentences were wrong the other
+  way, and Lane 0b corrects them.
 - *The onboarding page's section* (`IndexingEducationView.swift`, mirrored in
   `Docs/EditableContent/02-Research-Guide.md`) is now titled **Excisions and Redactions**. It says
   "redaction" where an omission came from declassification and keeps "excision" for the editors' own.
   Each paragraph stays on its one line, so the page's `lines: 802–851` range still holds; confirm
   with `EditableContentKeyTests`.
+
+---
+
+## Lane 0b. The pre-1925 correction (the owner's decision of 2026-11-09; ships in 1.0)
+
+**What is wrong.** Two shipped texts say that before Secretary Kellogg's 1925 order the editors did
+not mark omissions:
+- the Redactions layer's practice paragraph, `browser.annotations.practice.excisions`
+  (`FRUSExplorer/Browser/AnnotationsAxis.swift`, line 269; mirrored in
+  `Docs/EditableContent/07-Search-and-Browse.md` §20): "… Volumes published before the 1925 order did
+  not mark omissions at all.";
+- the Research Guide's *Excisions and Redactions* paragraph
+  (`FRUSExplorer/Onboarding/IndexingEducationView.swift`, line 840; mirrored in
+  `Docs/EditableContent/02-Research-Guide.md`, page 3, the ranged block `lines: 802–851`): "Before
+  Secretary of State Frank Kellogg's 1925 order, FRUS editors did not mark excisions or redactions.
+  Beginning with that order, FRUS historians added ellipses (...) …".
+
+Both entered the copy as the owner's rule of 2026-11-08 (version 1.2 above). The Office's history of
+the series says otherwise: the Civil War volumes "feature lines of asterisks to indicate excised
+material" (McAllister, Botts, Cozzens and Marrs, *Toward "Thorough, Accurate, and Reliable"*, 2015,
+ch. 2, *Excisions, Excisions*), and the Contemporaneous compilers "took great care to identify the
+lacunae with ellipses, asterisks, dashes, or similar markings" (ch. 4, *FRUS at War: The 1898
+Volume*). What the 1925 order added was a written policy and one uniform mark, the ellipsis. The TEI
+agrees (HistoryAtState/frus, read 2026-11-09): `frus1861.xml` carries 212 asterisk runs, most as
+`<p rend="center">* * * * * * * * * *</p>` and some inline at the end of a sentence, and
+`frus1887.xml` 254; neither has an ellipsis or a `<gap>`. `frus1932v01.xml` (published 1948) has no
+asterisk run, 112 spaced ellipses, 15 ellipsis characters and 3 `<gap>` elements.
+`Planning/FRUS-History-Feature-Assessment-2026-11-09.md` §1 has the finding, and its §2.4 the census
+that would follow.
+
+**The change** (copy only: no identifier, count, index version or model moves). The replacements are
+proposed; the owner may word them otherwise.
+- `browser.annotations.practice.excisions`: replace the last sentence with "Volumes published before
+  the 1925 order marked an omission with a row of asterisks, under no written rule and without saying
+  whose cut it was; those are not counted here either."
+- The Research Guide paragraph: replace its first two sentences with "Before Secretary of State Frank
+  Kellogg's 1925 order, FRUS editors marked an excision with a row of asterisks, under no written
+  policy and without saying whether the cut was theirs or a reviewer's. Beginning with that order,
+  FRUS historians marked omissions uniformly with ellipses (...), but still did not describe how much
+  information was withheld or explain whether an omission was an editorial excision or a redaction
+  made after an unfavorable declassification decision." The third sentence stays.
+- Mirrors: the two EditableContent blocks take the same text, and one Amendment-Log bullet ("changed
+  at the owner's request (2026-11-09): …") says that it reverses the 2026-11-08 third change.
+- The manuals carry neither sentence (checked 2026-11-09: no "1925" in either), so they do not change.
+
+**Checks.** `EditableContentKeyTests` (the page-3 block's `lines:` range holds while each paragraph
+stays on one line), `AnnotationsAxisTests` and `VolumeAnnotationsPresentationTests` (neither pins the
+sentences; they pin labels and details), then the unit target and the Mac build as for any copy
+change. No capture to retake: `browse-annotations` and `volume-annotations` show the axis and a
+volume's page, not the layer's practice paragraph, and no capture shows the Research Guide's page 3.
+
+**What it changes in Lane 1.** Lane 1's gate, counting the bracketed layer only from 1925, stays, but
+for a different reason, written into its section below: the bracketed description of what was left
+out is the post-1925 form, and the pre-1925 brackets the sweep found stand in for duplicate text,
+formalities and gaps in a telegram as received; before 1925 an omission was marked with a row of
+asterisks, which the bracket scanner does not read. Lane 1's two strings that repeated the rule are
+re-worded below. **Open for the owner:** whether to count the asterisk rows themselves, as a third
+form of marked omission beside the bracketed note and the redaction mark. The assessment's §2.4
+proposes it as a census for the plan after 1.0; nothing in this lane depends on the answer.
 
 ---
 
@@ -141,9 +210,11 @@ stand in for text the volume prints in another place: "[Here follows text of the
 May 9, 1938, … printed infra.]". They are omissions in place and count. The rule needs no
 exception for them, and a fixture pins one as a positive.
 
-**Only volumes published from 1925 count (the owner's rule of 2026-11-08: before Secretary
-Kellogg's 1925 order, FRUS editors did not mark excisions or redactions).** The patterns do match
-volumes published earlier: the sweep found `[Here follows …]` in 28 of the 74 volumes published
+**Only volumes published from 1925 count.** The reason was the owner's rule of 2026-11-08 that the
+editors marked nothing before Secretary Kellogg's 1925 order; Lane 0b reverses that rule
+(2026-11-09), and the gate stays for the reason the sweep itself gives: the bracketed description is
+the post-1925 form, and before it an omission was marked with a row of asterisks, which this scanner
+does not read. The patterns do match volumes published earlier: the sweep found `[Here follows …]` in 28 of the 74 volumes published
 before 1925, and the raw `omitted` pattern in 17. Sampled at `6170e4b32`:
 - frus1868p2 (published 1869): "[Here follow the signatures.]"
 - frus1878: "[The telegram here is defective, … being manifestly omitted.]"
@@ -160,12 +231,13 @@ excisions the order required. So:
   counted. That changes the file's shape, so bump `schemaVersion` and give the decoder a fixture of
   each shape.
 - **App:** for a volume published before 1925, the layer's drills put it under "Volumes without it"
-  with a note: "Published before the 1925 order, when FRUS editors did not mark omissions."
+  with a note: "Published before the 1925 order, when the editors marked an omission with a row of
+  asterisks, not a bracketed note."
 - **Fixtures:** a pre-1925 volume with `[Here follows …]` that is not counted, and the same text in
   a 1925 volume that is.
 - **Check the same gate for Redactions.** The sweep found no "not declassified" in any volume
-  published before the 1970s, so the gate changes no count there. Its copy already says that volumes
-  before the order marked nothing.
+  published before the 1970s, so the gate changes no count there. Its copy says what those volumes
+  marked instead (Lane 0b).
 
 **Measure first.** Before writing the scanner, run the patterns over the Mac's corpus clone
 (`~/Development/frus/volumes`, at `6170e4b32`). A stdlib Python script in the scratchpad is enough;
@@ -214,8 +286,8 @@ existing extracts, and add a dated amendment to that folder's README.
   |---|---|
   | `browser.volume.annotations.editorialOmissions` | Marked editorial omissions |
   | `browser.annotations.rule.editorialOmissions` | A volume published from 1925 counts when one of its documents says, in brackets, what the editors left out: "[Here follows …]" or "[Omitted here is …]". |
-  | `browser.annotations.note.editorialOmissions.before1925` | Published before the 1925 order, when FRUS editors did not mark omissions. |
-  | `browser.annotations.practice.editorialOmissions` | Since Secretary Kellogg's 1925 order, where the editors left out part of a document as not relevant to the volume, they could say so in brackets and describe what was omitted. Until the 1991 statute an ellipsis could also mark an omission, the editors' or a redaction, and those are not counted here. Volumes published before the order did not mark omissions, and are not counted. |
+  | `browser.annotations.note.editorialOmissions.before1925` | Published before the 1925 order, when the editors marked an omission with a row of asterisks, not a bracketed note. |
+  | `browser.annotations.practice.editorialOmissions` | Since Secretary Kellogg's 1925 order, where the editors left out part of a document as not relevant to the volume, they could say so in brackets and describe what was omitted. Until the 1991 statute an ellipsis could also mark an omission, the editors' or a redaction, and those are not counted here. Volumes published before the order marked an omission with a row of asterisks, not a bracketed note, and are not counted here. |
   | `browser.volume.annotations.editorialOmissions.one` | %@ document with an editorial omission marked |
   | `browser.volume.annotations.editorialOmissions.many` | %@ documents with editorial omissions marked |
 
@@ -350,8 +422,10 @@ Add the counts to this plan before coding.
 
 ## Order and landing
 
-- **Order:** Lane 0 first. It is cheap, and it confirms the branch builds. Then Lanes 1 and 2, in
-  either order. They touch different kit files, except that both add to the kit's suites.
+- **Order:** Lane 0 first. It is cheap, and it confirms the branch builds. Lane 0b next, and before
+  R3: it ships in 1.0 (decision 120), on a pull request of its own. Then Lanes 1 and 2, in either
+  order; neither is scheduled against 1.0. They touch different kit files, except that both add to
+  the kit's suites.
 - **Pull requests:** land each lane as its own PR. Lane 1's PR carries the regenerated JSON, its
   runbook and provenance updates, and the corpus measurement.
 - **Before each PR:** do a clean `build-for-testing` of the `FRUSExplorer` scheme and check it prints
