@@ -24,6 +24,7 @@ import Foundation
 ///   1.0 — 2026-11-06: the editors' annotations design, lane B
 ///   1.1 — 2026-11-06: lane C — the rows are `AnnotationLayer`'s, the table the Browse axis reads
 ///          too, and each row and absent row names the layer it opens on the axis
+///   1.2 — 2026-11-08: Marked editorial omissions, the sixteenth row (Lane 1 of the follow-ups plan)
 struct VolumeAnnotationsPresentation: Equatable {
 
     /// One layer the volume carries.
@@ -252,6 +253,10 @@ struct VolumeAnnotationsPresentation: Equatable {
         static var excisions: String {
             String(localized: "browser.volume.annotations.excisions", defaultValue: "Redactions marked as not declassified")
         }
+        /// What the editors left out, said in brackets.
+        static var editorialOmissions: String {
+            String(localized: "browser.volume.annotations.editorialOmissions", defaultValue: "Marked editorial omissions")
+        }
         /// The sending post's own serials.
         static var despatch: String {
             String(localized: "browser.volume.annotations.despatch", defaultValue: "Despatch numbers")
@@ -329,6 +334,7 @@ struct VolumeAnnotationsPresentation: Equatable {
             case .sourceNotes: return sourceNotes
             case .classification: return coverage(.classification)
             case .excisions: return excisions
+            case .editorialOmissions: return editorialOmissions
             case .despatch: return documents(.despatch)
             case .numbered: return coverage(.numbered)
             case .crossReferences: return crossReferences ?? ""
@@ -389,6 +395,16 @@ struct VolumeAnnotationsPresentation: Equatable {
                                          defaultValue: "%@ document with a redaction marked"),
                              many: String(localized: "browser.volume.annotations.excisions.many",
                                           defaultValue: "%@ documents with redactions marked"),
+                             locale: locale)
+        }
+
+        /// "12 documents with editorial omissions marked".
+        var editorialOmissions: String {
+            CountCopy.phrase(annotations.count(.editorialOmissions),
+                             one: String(localized: "browser.volume.annotations.editorialOmissions.one",
+                                         defaultValue: "%@ document with an editorial omission marked"),
+                             many: String(localized: "browser.volume.annotations.editorialOmissions.many",
+                                          defaultValue: "%@ documents with editorial omissions marked"),
                              locale: locale)
         }
 

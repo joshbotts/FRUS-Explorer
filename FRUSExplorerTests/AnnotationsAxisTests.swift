@@ -23,6 +23,8 @@ import Testing
 ///   1.2 — 2026-11-06: the shipped file marks one List of Persons and one List of Abbreviations, both
 ///          `frus1977-80v27`'s: `frus1941-43`'s Index of Persons lists no one (index version 74), and
 ///          `frus1981-88v16`'s documents name their terms on `@ana`
+///   1.3 — 2026-11-08: Marked editorial omissions, the sixteenth layer, its drills' gate note and the
+///          shipped file's figures for it (Lane 1 of `Planning/Editors-Annotations-Followups-2026-11-08.md`)
 @Suite("Editors’ Annotations axis — each layer's reach, its page and its drills")
 struct AnnotationsAxisTests {
 
@@ -30,9 +32,11 @@ struct AnnotationsAxisTests {
 
     /// A volume of `documents` documents carrying `counts`.
     private func volume(_ era: AnnotationEra, documents: Int, persons: Int = 0, terms: Int = 0,
-                        _ counts: [AnnotationCategory: Int] = [:], sections: [String] = []) -> VolumeAnnotations {
+                        _ counts: [AnnotationCategory: Int] = [:], sections: [String] = [],
+                        publicationYear: Int? = nil) -> VolumeAnnotations {
         VolumeAnnotations(documents: documents, historicalDocuments: documents, personsListed: persons,
-                          termsListed: terms, era: era, counts: counts, sections: sections)
+                          termsListed: terms, era: era, counts: counts, sections: sections,
+                          publicationYear: publicationYear)
     }
 
     private func index(_ volumes: [String: VolumeAnnotations]) -> VolumeAnnotationsIndex {
@@ -45,9 +49,9 @@ struct AnnotationsAxisTests {
     func pageRowsAreTheAxisLayers() {
         let full = volume(.from1969, documents: 280, persons: 325, terms: 470, [
             .people: 279, .abbreviations: 278, .correspondents: 161, .subjects: 137, .participants: 67,
-            .sourceCitation: 263, .classification: 260, .excisions: 37, .despatch: 30,
+            .sourceCitation: 263, .classification: 260, .excisions: 37, .editorialOmissions: 32, .despatch: 30,
             .numbered: 280, .xrefDocuments: 131, .editorialNotes: 12, .footnotes: 243, .marginalNotes: 1,
-        ], sections: ["preface", "index"])
+        ], sections: ["preface", "index"], publicationYear: 2006)
         let section = VolumeAnnotationsPresentation(annotations: full, index: index(["v": full]), locale: locale)
         #expect(section.groups.flatMap { $0.rows.map(\.layer) } == AnnotationLayer.allCases)
         for group in section.groups {
@@ -177,6 +181,35 @@ struct AnnotationsAxisTests {
         #expect(AnnotationsAxis.accessory(for: .editorialNotes, one, locale: locale) == "1 note")
     }
 
+    @Test("Marked editorial omissions: a volume published before 1925 is listed without it, with the reason")
+    func editorialOmissionsDrillsCarryTheGateNote() throws {
+        let volumes = index([
+            "frus1914": volume(.from1914, documents: 1_200, [.editorialOmissions: 16], publicationYear: 1922),
+            "frus1925v01": volume(.from1920, documents: 800, [.editorialOmissions: 9], publicationYear: 1940),
+            "frus1861": volume(.from1861, documents: 400, publicationYear: 1861),
+            "frus1950v01": volume(.from1945, documents: 900, publicationYear: 1977),
+        ])
+        let drills = AnnotationsAxis.drills(for: .editorialOmissions, in: volumes, locale: locale)
+        #expect(drills.map(\.id) == ["with", "without"])
+        let with = try #require(drills.first).spec
+        let without = try #require(drills.last).spec
+        #expect(with.volumeIds == ["frus1925v01"])
+        #expect(with.accessories["frus1925v01"] == "9 docs")
+        #expect(with.caption == "1 of 4 volumes. A volume published from 1925 counts when one of its documents says, in brackets, what the editors left out: “[Here follows …]” or “[Omitted here is …]”.")
+        #expect(without.volumeIds == ["frus1861", "frus1914", "frus1950v01"])
+        // The gated volume keeps its count and says why it is here; the others say nothing.
+        #expect(without.accessories["frus1914"] == "16 docs" && without.accessories["frus1950v01"] == nil)
+        #expect(without.notes == [
+            "frus1914": "Published before the 1925 order, when the editors marked an omission with a row of asterisks, not a bracketed note.",
+            "frus1861": "Published before the 1925 order, when the editors marked an omission with a row of asterisks, not a bracketed note.",
+        ])
+        // The note is this layer's alone.
+        #expect(AnnotationsAxis.gateNote(for: .excisions, try #require(volumes["frus1914"])) == nil)
+        let reach = AnnotationsAxis.reach(of: .editorialOmissions, in: volumes)
+        #expect(reach.carrying == ["frus1925v01"])
+        #expect(reach.bands.first { $0.era == .from1914 }?.carrying == 0)
+    }
+
     @Test("Source notes add one drill per form; the front and back matter has one per section")
     func formAndAidDrills() throws {
         let volumes = index([
@@ -275,6 +308,26 @@ struct AnnotationsAxisTests {
             .first { $0.id == "without" })
         #expect(unlinkedTerms.spec.notes
                 == ["frus1977-80v27": "Prints a List of Abbreviations, but none of its documents links a term to it."])
+
+        // Marked editorial omissions (Lane 1 of the follow-ups plan, 2026-11-08): 482 volumes hold a
+        // bracketed omission, 26 of them published before the 1925 order, which the gate keeps out,
+        // so 456 carry the layer; by the eras the volumes cover it is standard from 1920.
+        let omissions = AnnotationsAxis.reach(of: .editorialOmissions, in: index)
+        #expect(omissions.carrying.count == 456 && omissions.onset == .from1920)
+        #expect(AnnotationsAxis.standardLine(for: omissions) == "Standard in the volumes covering 1920 on.")
+        #expect(index["frus1969-76v17"]?.count(.editorialOmissions) == 32)
+        let papers1914 = try #require(index["frus1914"])
+        #expect(papers1914.publicationYear == 1922 && papers1914.count(.editorialOmissions) == 16)
+        #expect(!omissions.carrying.contains("frus1914"))
+        let withoutOmissions = try #require(AnnotationsAxis.drills(for: .editorialOmissions, in: index, locale: locale)
+            .first { $0.id == "without" })
+        #expect(withoutOmissions.count == 97)
+        #expect(withoutOmissions.spec.accessories["frus1914"] == "16 docs")
+        #expect(withoutOmissions.spec.notes["frus1914"]
+                == "Published before the 1925 order, when the editors marked an omission with a row of asterisks, not a bracketed note.")
+        // Every volume published before the order carries the note, whether or not it holds a bracket.
+        #expect(withoutOmissions.spec.notes["frus1890"] == withoutOmissions.spec.notes["frus1914"])
+        #expect(withoutOmissions.spec.notes.count == 74)
 
         // Every layer has volumes to show.
         for layer in AnnotationLayer.allCases {

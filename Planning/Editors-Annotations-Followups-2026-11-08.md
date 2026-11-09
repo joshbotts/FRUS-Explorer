@@ -42,6 +42,9 @@ Version history:
   1.4 — 2026-11-08: Lane 0b built, with Lane 0's unit checks, on the Mac; the clean build found one
         strict-concurrency warning in `AnnotationsAxisTests` (lane D's), fixed by making
         `PeopleTaggingCaption.text(index:locale:)` nonisolated; Lane 0's UI checks are still owed
+  1.5 — 2026-11-08: Lane 1 measured and built on the Mac (its section's *Measured* and *Built*
+        passages): the rule took two clauses from the sweep's residue, the 1925 gate is the kit's,
+        and the file is schema version 2; Lane 2's corpus measurement, for its *Measure first*
 
 ---
 
@@ -275,6 +278,54 @@ plus 40 random hits per pattern, read by eye. Confirm the share of false positiv
 is fixed. Commit the script and its output under `Planning/editors-annotations/` beside the
 existing extracts, and add a dated amendment to that folder's README.
 
+**Measured on 2026-11-08** (`Planning/editors-annotations/omission_markers.py`, its tables and
+samples in `omission-markers.out`, per volume in `omission-markers.json`; the README's amendment of
+the same day has the detail). Each document's own text, its notes left out and a line break read
+as a space; the brackets read whole, nesting followed.
+
+| Published | to 1899 | 1900–19 | 1920–39 | 1940–49 | 1950–59 | 1960–69 | 1970–79 | 1980–84 | 1985–89 | 1990–99 | 2000 on | all |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Volumes | 51 | 20 | 33 | 42 | 46 | 38 | 49 | 21 | 33 | 73 | 147 | 553 |
+| … with `[Here follows …]` | 16 | 7 | 31 | 34 | 44 | 38 | 49 | 21 | 32 | 72 | 26 | 370 |
+| … with `[Omitted here …]` | 0 | 1 | 0 | 0 | 0 | 0 | 4 | 0 | 0 | 1 | 121 | 127 |
+| … with `… has been omitted …` | 0 | 0 | 2 | 5 | 16 | 12 | 5 | 0 | 0 | 0 | 1 | 41 |
+| … with the layer | 16 | 7 | 31 | 34 | 44 | 38 | 49 | 21 | 32 | 73 | 137 | 482 |
+| Documents with the layer | 24 | 17 | 235 | 330 | 444 | 914 | 1,463 | 552 | 745 | 2,365 | 4,353 | 11,442 |
+| Redactions marked | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 3 | 4 | 67 | 133 | 210 |
+
+- **The first run used the three patterns above, case-blind.** Its 40 samples a pattern, read by eye,
+  held no false positive: every `[Here follows …]` and `[Omitted here …]` describes text the editors
+  left out, and so do the 18 brackets the third pattern found. Its residue held two unambiguous
+  phrasings the patterns missed, every sample an omission: "… here omitted …" ("[The paragraph here
+  omitted summarized telegram 2385 …]", 41 documents, 1920s–1970s) and "Omitted here is …" after a
+  stage direction in a tape transcript ("[Agnew left at 10:35 a.m. Omitted here is discussion
+  unrelated to …]", 6 documents). **The rule as fixed takes both:** pattern 2 also matches
+  `\bOmitted\s+here\s+(is|are)\b` anywhere in the bracket, and pattern 3 also `\bhere\s+omitted\b`.
+  Patterns 1 and 2 are case-sensitive, as written above: 27 documents open a bracket in lower case,
+  mid-sentence ("as follows: [here follows the text of the treaty in full]"), and a case-blind
+  pattern 2 took "[omitted from?]", an editor's query on the original. The table is the rule as fixed.
+- **Excluded, as the rule says:** 12 documents whose bracket joins an omission phrase to "not
+  declassified" ("[Here follow 6-1/2 pages of source text scheduled for inclusion in the Supplement but
+  not declassified.]"), which the Redactions layer counts; 8 whose only such bracket sits in a
+  footnote ("[Here follows a footnote in the source text with the dissenting view …]"); 3,624 with
+  the editors' remark on a garbled original. The 426 brackets that say "printed infra", "supra" or
+  "elsewhere" count, as decided.
+- **Left out by the rule, for the owner to see:** 125 documents with a bracket that says "not
+  printed" and matches no pattern ("[Chinese text not printed.]", "[This annex is not printed. It is
+  the same as annex I-a, supra …]"), 1900s–1970s; the short forms "[Letter omitted.]", "[Article
+  omitted.]" and "[The first three paragraphs are omitted since …]" among the 1,641 brackets that hold
+  an omission word and match nothing; 3 "[… was not transcribed.]" in tape transcripts; and the 27
+  lower-case openers. None of them changes a volume's verdict that this sweep could find: every
+  volume with one also carries a pattern.
+- **The gate:** 74 volumes were published before 1925, and 26 of them carry a bracket (77
+  documents, 16 in `frus1914` and 11 in `frus1915`), so 456 volumes carry the layer. 23 volumes
+  published from 1925 carry none.
+- **Redactions reproduce the shipped index:** 210 volumes, 8,166 documents, and reading a line break
+  as a space changes no volume's count, so the scanner's own-text walk could take it safely.
+- **The cloud sweep's `[Here follows …]` figures** (372 volumes, 7,437 documents) differ from this
+  run's 370 and 7,383 by the brackets inside notes, those joined to "not declassified", and the 27
+  lower-case openers, which this rule reads differently.
+
 ### Code
 
 **FRUSCoreKit** (Foundation only; shared code, so rules 1–4 of *Web edition* apply):
@@ -363,6 +414,51 @@ Then:
 - **`Docs/EditableContent/07-Search-and-Browse.md`:** §19 and §20 gain the five new keys' blocks, plus
   one Amendment-Log bullet.
 - **The design doc:** a dated amendment noting the 16th layer, and a pointer from §5's table.
+
+### Built on 2026-11-08
+
+Where the build departs from the text above, and what it measured.
+
+- **The 1925 gate is the kit's, not the generator's.** The generator counts every volume's bracketed
+  omissions and stores the volume's `publicationYear`; `VolumeAnnotations.carries(_:)` returns
+  `false` for the layer in a volume published before `VolumeAnnotations.editorialOmissionsFromYear`
+  (1925), whatever its count. The design's §4 rule, counts and never verdicts, is the reason: the
+  gate can move without a regeneration, and a drill's row can say both that a volume is kept out
+  and how many brackets it holds ("16 docs" beside the note, for `frus1914`). A volume with no year
+  is not gated; every catalogue volume has one.
+- **The rule took two clauses from the measurement** (above): pattern 2 also matches "Omitted here
+  is …" after a stage direction, and pattern 3 also "… here omitted …". Patterns 1 and 2 are
+  case-sensitive, as written. The rule lives in the generator core, `EditorialOmissionMarkers`, as
+  `NSRegularExpression` statics: a `Regex` literal in a `static let` is not `Sendable` under Swift 6,
+  and the kit's shared patterns are `NSRegularExpression`s for the same reason.
+- **The scanner keeps two texts for each document:** every character, for the redaction test (a
+  withheld document's mark sits in its source note), and the document's own text, every `note`
+  left out and a line break read as a space, for the omission test. The redaction test was left as
+  it was; the sweep showed a space at `<lb/>` changes no volume's redaction count.
+- **Schema version 2.** Each volume's row gains a fourth element, the publication year (`null`
+  where a header prints none); a three-element row still decodes, with no year and no gate, and the
+  kit's suite holds a fixture of each shape. `fields` gains `editorialOmissions` after `excisions`.
+- **The symbol is `text.badge.minus`,** 21 pt wide at the 17 pt body against `person.3`'s 36, so
+  the symbols' column does not move.
+- **Regenerated** at `CORPUS_COMMIT=6170e4b32`, index version 74, with `INDEX_DB` on the index the
+  version-74 run kept (3 min 2 s with the release build). Against the shipped file every other
+  field is equal volume for volume, and the new count equals the sweep's in all 553 volumes
+  (`diff_annotations.py`, in the pull request): 456 volumes carry the layer (11,365 documents), 26
+  published before 1925 are counted and not carried (77 documents), 11,442 documents in all; onset
+  1920–31 by the eras the volumes cover; 71,939 bytes. `frus1969-76v17` has 32, `frus1961-63v06` 2,
+  `frus1914` 16.
+- **Copy and docs:** the six keys above, word for word, with their EditableContent blocks and one
+  Amendment-Log bullet; both manuals' *Where it came from* lists; the design's header, §5.2 table
+  and §11; the measurements README; the runbook entry; the provenance table's comment.
+- **Runs** (each heavy job through `Scripts/heavy.sh`, Xcode 27.2): `swift build --target
+  FRUSCoreKit` clean; `swift test` exit 0, 39 runs all passed, `FRUSCoreKitTests` 1,779 tests in
+  229 suites (three new) and `VolumeAnnotationsIndexGeneratorTests` 18; a clean `build-for-testing`
+  of the `FRUSExplorer` scheme (iPhone 17, iOS 27.0, from empty DerivedData) with only the two known
+  warning residues; the unit target, 7,914 tests, 7,877 passed, none failed, 37 skipped (the
+  environment gates); `FRUSExplorerMac` (AppStore) built with
+  the same residues; `VolumeAnnotationsSectionTests` and `AnnotationsAxisBrowseTests` together on
+  the iPhone 17 (`80CF0F18`, 7 tests, 6 passed, 1 skipped, the matrix) and the iPad Pro 13-inch (M5)
+  (`9AB3A0C9`, 7 of 7), 145 and 116 s. The Mac's half was built and not walked.
 
 ---
 

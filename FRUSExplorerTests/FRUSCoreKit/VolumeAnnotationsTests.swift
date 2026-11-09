@@ -24,14 +24,18 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane A
+///   1.1 — 2026-11-08: `editorialOmissions` and the 1925 gate on a volume's publication year, and
+///          schema version 2's row beside version 1's (Lane 1 of the follow-ups plan)
 @Suite("VolumeAnnotations — what each volume's editors annotated, and when a practice became standard")
 struct VolumeAnnotationsTests {
 
     /// A volume of `documents` documents carrying `counts`.
     private func volume(_ era: AnnotationEra, documents: Int = 10,
-                        _ counts: [AnnotationCategory: Int] = [:], sections: [String] = []) -> VolumeAnnotations {
+                        _ counts: [AnnotationCategory: Int] = [:], sections: [String] = [],
+                        publicationYear: Int? = nil) -> VolumeAnnotations {
         VolumeAnnotations(documents: documents, historicalDocuments: documents, personsListed: 0,
-                          termsListed: 0, era: era, counts: counts, sections: sections)
+                          termsListed: 0, era: era, counts: counts, sections: sections,
+                          publicationYear: publicationYear)
     }
 
     @Test("A pervasive layer needs half the documents, despatch numbers a tenth, a counted layer one")
@@ -46,6 +50,24 @@ struct VolumeAnnotationsTests {
         #expect(!annotations.carries(.footnotes))
         #expect(!volume(.from1955, documents: 11, [.despatch: 1]).carries(.despatch))
         #expect(!volume(.from1955, documents: 0).carries(.people))
+    }
+
+    @Test("Bracketed omissions are counted whatever the year and carried only from 1925; the gate is theirs alone")
+    func editorialOmissionsAreGatedOnThePublicationYear() {
+        #expect(VolumeAnnotations.editorialOmissionsFromYear == 1925)
+        let before = volume(.from1914, documents: 10, [.editorialOmissions: 3, .excisions: 1], publicationYear: 1924)
+        #expect(before.count(.editorialOmissions) == 3)
+        #expect(!before.carries(.editorialOmissions) && before.publishedBeforeEditorialOmissionsOrder)
+        #expect(before.carries(.excisions), "the gate is the one layer's")
+        let from = volume(.from1914, documents: 10, [.editorialOmissions: 3], publicationYear: 1925)
+        #expect(from.carries(.editorialOmissions) && !from.publishedBeforeEditorialOmissionsOrder)
+        // No year, no gate: a version-1 file, or a header that prints none.
+        let undated = volume(.from1914, documents: 10, [.editorialOmissions: 3])
+        #expect(undated.carries(.editorialOmissions) && !undated.publishedBeforeEditorialOmissionsOrder)
+        #expect(!volume(.from1969, documents: 10, publicationYear: 2006).carries(.editorialOmissions))
+        #expect(AnnotationCategory.editorialOmissions.family == .provenance)
+        #expect(AnnotationCategory.editorialOmissions.threshold == .anyDocument)
+        #expect(!AnnotationCategory.editorialOmissions.isSeriesWide)
     }
 
     @Test("Source notes are carried by either form, and each form is era-bound")
@@ -102,7 +124,7 @@ struct VolumeAnnotationsTests {
                 "frus1969-76v17": VolumeAnnotations(
                     documents: 280, historicalDocuments: 268, personsListed: 325, termsListed: 470,
                     era: .from1969, counts: [.people: 279, .classification: 260, .numbered: 280],
-                    sections: ["preface", "sources", "persons", "terms", "index"]),
+                    sections: ["preface", "sources", "persons", "terms", "index"], publicationYear: 2006),
                 "frus1890": VolumeAnnotations(
                     documents: 502, historicalDocuments: 502, personsListed: 0, termsListed: 0,
                     era: .from1861, counts: [.correspondents: 502, .despatch: 347],
@@ -113,6 +135,44 @@ struct VolumeAnnotationsTests {
         let text = String(decoding: data, as: UTF8.self)
         #expect(text.hasPrefix(#"{"corpusCommit":"6170e4b32","fields":["documents","historicalDocuments""#))
         #expect(text.contains(#""sections":["index","list-of-papers","persons","preface","sources","terms"]"#))
+        // Schema version 2: the year is each row's fourth element, `null` where the header prints none.
+        #expect(text.contains(#""schemaVersion":2"#))
+        #expect(text.contains(",2006]") && text.contains(",null]"))
+        #expect(VolumeAnnotationsIndex.currentSchemaVersion == 2)
+    }
+
+    @Test("A version-1 row of three elements reads with no year, and no bracketed omissions")
+    func schemaVersion1RowsReadWithNoYear() throws {
+        let json = """
+            {"corpusCommit":"6170e4b32","fields":["documents","historicalDocuments","personsListed","termsListed","people","excisions"],
+             "generated":"2026-11-06","indexVersion":74,"schemaVersion":1,"sections":["preface"],
+             "volumes":{"frus1914":["1914-1919",[1200,1200,0,0,0,0],[0]]}}
+            """
+        let index = try JSONDecoder().decode(VolumeAnnotationsIndex.self, from: Data(json.utf8))
+        let volume = try #require(index["frus1914"])
+        #expect(index.schemaVersion == 1)
+        #expect(volume.publicationYear == nil && !volume.publishedBeforeEditorialOmissionsOrder)
+        #expect(volume.count(.editorialOmissions) == 0 && !volume.carries(.editorialOmissions))
+    }
+
+    @Test("A version-2 row carries the year, and the gate reads it")
+    func schemaVersion2RowsCarryTheYear() throws {
+        let json = """
+            {"corpusCommit":"6170e4b32","fields":["documents","historicalDocuments","personsListed","termsListed","editorialOmissions"],
+             "generated":"2026-11-08","indexVersion":74,"schemaVersion":2,"sections":["preface"],
+             "volumes":{"frus1914":["1914-1919",[1200,1200,0,0,16],[0],1922],
+                        "frus1925v01":["1920-1931",[800,800,0,0,9],[0],1940],
+                        "frus-undated":["1920-1931",[10,10,0,0,1],[],null]}}
+            """
+        let index = try JSONDecoder().decode(VolumeAnnotationsIndex.self, from: Data(json.utf8))
+        let early = try #require(index["frus1914"])
+        #expect(early.publicationYear == 1922 && early.count(.editorialOmissions) == 16)
+        #expect(!early.carries(.editorialOmissions) && early.publishedBeforeEditorialOmissionsOrder)
+        let later = try #require(index["frus1925v01"])
+        #expect(later.publicationYear == 1940 && later.carries(.editorialOmissions))
+        let undated = try #require(index["frus-undated"])
+        #expect(undated.publicationYear == nil && undated.carries(.editorialOmissions))
+        #expect(index.volumeIds { $0.carries(.editorialOmissions) } == ["frus-undated", "frus1925v01"])
     }
 
     @Test("A reader maps counts by name and ignores a field it does not know")
@@ -126,6 +186,7 @@ struct VolumeAnnotationsTests {
         let volume = try #require(index["frus1955-57v01"])
         #expect(volume.count(.people) == 8 && volume.personsListed == 40 && volume.sections == ["preface"])
         #expect(volume.count(.classification) == 0)
+        #expect(volume.publicationYear == nil, "a row of three elements is schema version 1's")
     }
 
     // MARK: The shipped file

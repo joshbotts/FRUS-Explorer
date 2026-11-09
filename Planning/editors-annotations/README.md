@@ -20,6 +20,41 @@ the note form the app always read (`tables.out` §12). No other figure moved.
 - **What moved:** `tables.out` and the CSV were regenerated, and only classification's figures and
   the artifact size estimate changed.
 
+**Amended on 2026-11-08, for Lane 1 of `../Editors-Annotations-Followups-2026-11-08.md`: the
+editors' bracketed omission markers.** A new script, `omission_markers.py`, measured the sixteenth
+layer, *Marked editorial omissions*, over the same 553 volumes at `6170e4b32`, through
+`Scripts/heavy.sh`, in about two and a half minutes; it wrote `omission-markers.json` (per volume
+and the samples) and `omission-markers.out` (the tables and 40 samples a kind). Nothing else in this
+folder moved. What it established:
+- **The rule, as fixed after a first run.** A document carries the layer when a bracket in its own
+  text, every `note` left out, matches one of three patterns and does not say "not declassified":
+  `^\s*Here\s+follows?\b`; `^\s*Omitted\s+(here|from|are|is)\b` or, anywhere in the bracket,
+  `\bOmitted\s+here\s+(is|are)\b`; `\b(has|have)\s+been\s+omitted\b`, `\bwhich\s+(is|are)\s+omitted\b`
+  or `\bhere\s+omitted\b`. The first run used the plan's three patterns, case-blind; its 40 samples a
+  pattern held no false positive, and its residue held two unambiguous phrasings the patterns
+  missed, "… here omitted …" (41 documents) and "Omitted here is …" after a stage direction (6),
+  which the rule as fixed takes. The first two patterns are case-sensitive, as the plan wrote them:
+  27 documents open a bracket "[here follows …]" or "[omitted …]" in lower case, mid-sentence, and
+  one of them, "[omitted from?]", is an editor's query on the original. The generator's
+  `EditorialOmissionMarkers` is this rule, and its count agrees with the script's in every volume.
+- **The figures.** 482 volumes and 11,442 documents carry a bracket by the rule: `[Here follows …]`
+  in 370 volumes (7,383 documents), `[Omitted here …]` in 127 (4,013), the third pattern in 41 (58).
+  26 of them were published before 1925 (77 documents, most in `frus1914`, 16, and `frus1915`, 11),
+  so 456 volumes carry the layer after the gate, and 23 volumes published from 1925 carry no
+  bracket. Redactions reproduce the shipped index exactly: 210 volumes, 8,166 documents.
+- **What the rule leaves out, each recorded in the output:** 12 documents whose bracket joins an
+  omission phrase to "not declassified" ("[Here follow 6-1/2 pages of source text … not
+  declassified.]"), which the Redactions layer counts; 8 whose only such bracket sits in a footnote
+  ("[Here follows a footnote in the source text …]"); 3,624 with the editors' remark on a garbled
+  original ("[apparent omission]", "[omission?]", "[omission in the original]"); and the phrasings
+  the owner may yet decide on: "[… not printed.]" without a pattern (125 documents, 1900s–1970s,
+  "[Chinese text not printed.]"), "[Letter omitted.]" and its kind among the 1,641 brackets that
+  hold an omission word and match nothing, and "[… was not transcribed.]" (3).
+- **A `<lb/>` read as a space changes no redaction count:** the scanner's text, every character and
+  no space at a line break, and the spaced text agree on "not declassified" in all 553 volumes.
+- **Every volume prints a publication date** (`date[@type="publication-date"]` in the header, the
+  year as text in 549, as text and `@when` in 4, as a full date in 1).
+
 **The inputs.**
 - **The TEI:** the 553 volumes of `FRUSExplorer/Resources/manifest.json` at `v2` `7ac8ee00`. They
   were read from the corpus clone `~/Development/frus/volumes` at commit `6170e4b32`
@@ -65,6 +100,12 @@ the note form the app always read (`tables.out` §12). No other figure moved.
   sample note per volume. Its figures are #1856's.
 - `tables.py` → `tables.out` and `editorial-annotations-by-volume.csv` (one row per volume, with
   every category's document count and every section's presence).
+- `omission_markers.py` → `omission-markers.json` and, on stdout, `omission-markers.out`
+  (2026-11-08). One `ElementTree` parse per volume; for each document inside `<body>` it builds
+  the document's own text (its `note` subtrees left out, `<lb/>` and `<pb/>` as a space) and its
+  notes' text, reads every bracket of each with nesting followed, and classes it by the rule above
+  and by the residue patterns. It also reads the header's publication year, counts "not
+  declassified" three ways, and keeps 40 samples a kind, drawn with the seed 20261108.
 
 To run again, from the repository root:
 
@@ -93,6 +134,12 @@ python3 -I Planning/editors-annotations/note_marking_gap.py <scratch>/index/<the
 
 ```bash
 cd Planning/editors-annotations && python3 -I tables.py inventory.json index-extract.json index-extract-v72.json note-marking-gap.json ../../FRUSExplorer/Resources/manifest.json editorial-annotations-by-volume.csv > tables.out
+```
+
+The omission markers (2026-11-08):
+
+```bash
+Scripts/heavy.sh python3 -I Planning/editors-annotations/omission_markers.py ~/Development/frus/volumes FRUSExplorer/Resources/manifest.json Planning/editors-annotations/omission-markers.json > Planning/editors-annotations/omission-markers.out
 ```
 
 **What each feature in `inventory.json` means.** "Documents" are `<div type="document">` inside

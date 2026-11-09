@@ -23,6 +23,8 @@ import FoundationXML
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane A
 ///   1.1 — 2026-11-06: ``annotatedIds``, the ids the document div's own `@ana` names
+///   1.2 — 2026-11-08: ``editorialOmissions``, read from the document's own text (Lane 1 of
+///          `Planning/Editors-Annotations-Followups-2026-11-08.md`)
 struct TEIDocumentFeatures: Equatable, Sendable {
     /// `div[@subtype="editorial-note"]`.
     var isEditorialNote = false
@@ -43,6 +45,9 @@ struct TEIDocumentFeatures: Equatable, Sendable {
     var participants = false
     /// The text "not declassified", the words separated by any whitespace, anywhere in the document.
     var excisions = false
+    /// A bracket in the document's own text, every `note` left out, that says what the editors left
+    /// out (`EditorialOmissionMarkers`): "[Here follows …]", "[Omitted here is …]".
+    var editorialOmissions = false
     /// A `seg[@type="margin"]`.
     var marginalNotes = false
     /// A `figure`.
@@ -61,12 +66,16 @@ struct TEIDocumentFeatures: Equatable, Sendable {
 
 // MARK: - TEIVolumeScan
 
-/// One volume's documents inside `<body>`, in source order, with what each carries.
+/// One volume's documents inside `<body>`, in source order, with what each carries, and the year
+/// its header says it was published.
 struct TEIVolumeScan: Sendable {
     /// The `xml:id` of every `div[@type="document"]` inside `<body>`, in source order.
     var documentIds: [String] = []
     /// Each document's features, by id.
     var features: [String: TEIDocumentFeatures] = [:]
+    /// The year of the header's first `date[@type="publication-date"]`, from its text or its
+    /// `@when`, or `nil` where the header prints none.
+    var publicationYear: Int?
 }
 
 // MARK: - ReferenceKind
@@ -110,22 +119,35 @@ enum ReferenceKind: Equatable, Sendable {
 // MARK: - TEIAnnotationScanner
 
 /// Reads one volume's TEI in a single SAX pass and records, for each document inside `<body>`,
-/// the features in ``TEIDocumentFeatures``. An element is credited to its innermost document.
+/// the features in ``TEIDocumentFeatures``, and the header's publication year. An element is
+/// credited to its innermost document.
+///
+/// Two texts are kept for each open document: every character, which the redaction test reads
+/// (a withheld document's mark sits in its source note), and the document's own text, every
+/// `note` left out, which the omission test reads. In the second a `<lb/>` or `<pb/>` is a space,
+/// so that a bracket broken across a printed line is one span.
 final class TEIAnnotationScanner: NSObject, XMLParserDelegate {
 
     /// One open element: what closing it ends.
     private struct Frame {
         var isDocument = false
         var isSourceNote = false
+        var isNote = false
         var isBody = false
+        var isHeader = false
+        var isPublicationDate = false
     }
 
     private var scan = TEIVolumeScan()
     private var frames: [Frame] = []
     private var documentStack: [String] = []
     private var textStack: [String] = []
+    private var ownTextStack: [String] = []
     private var bodyDepth = 0
     private var sourceNoteDepth = 0
+    private var noteDepth = 0
+    private var headerDepth = 0
+    private var publicationDate: (text: String, when: String?)?
 
     /// Scans a volume's file.
     static func scan(file: URL) throws -> TEIVolumeScan {
@@ -153,11 +175,20 @@ final class TEIAnnotationScanner: NSObject, XMLParserDelegate {
             frame.isBody = true
             bodyDepth += 1
         }
+        if elementName == "teiHeader" {
+            frame.isHeader = true
+            headerDepth += 1
+        }
+        if elementName == "date", headerDepth > 0, type == "publication-date", scan.publicationYear == nil {
+            frame.isPublicationDate = true
+            publicationDate = (text: "", when: attributeDict["when"])
+        }
         if elementName == "div", type == "document", bodyDepth > 0 {
             let id = attributeDict["xml:id"] ?? ""
             frame.isDocument = true
             documentStack.append(id)
             textStack.append("")
+            ownTextStack.append("")
             if !id.isEmpty, scan.features[id] == nil {
                 scan.documentIds.append(id)
                 // `@ana`'s pointers as the parser splits them, each to the id it names.
@@ -191,7 +222,11 @@ final class TEIAnnotationScanner: NSObject, XMLParserDelegate {
             if type == "margin" { features.marginalNotes = true }
         case "figure":
             features.figures = true
+        case "lb", "pb":
+            if noteDepth == 0, !ownTextStack.isEmpty { ownTextStack[ownTextStack.count - 1] += " " }
         case "note":
+            frame.isNote = true
+            noteDepth += 1
             if type == "source" {
                 frame.isSourceNote = true
                 sourceNoteDepth += 1
@@ -215,29 +250,46 @@ final class TEIAnnotationScanner: NSObject, XMLParserDelegate {
         scan.features[id] = features
     }
 
-    /// Closes an element, ending the document, source note or `<body>` it opened.
+    /// Closes an element, ending the document, note, `<body>`, header or publication date it opened.
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?,
                 qualifiedName qName: String?) {
         guard let frame = frames.popLast() else { return }
         if frame.isSourceNote { sourceNoteDepth -= 1 }
+        if frame.isNote { noteDepth -= 1 }
         if frame.isBody { bodyDepth -= 1 }
+        if frame.isHeader { headerDepth -= 1 }
+        if frame.isPublicationDate, let date = publicationDate {
+            scan.publicationYear = EditorialOmissionMarkers.year(in: date.text)
+                ?? date.when.flatMap(EditorialOmissionMarkers.year(in:))
+            publicationDate = nil
+        }
         if frame.isDocument, let id = documentStack.popLast(), let text = textStack.popLast() {
-            if !id.isEmpty,
-               text.range(of: #"not\s+declassified"#, options: [.regularExpression, .caseInsensitive]) != nil {
+            let own = ownTextStack.popLast() ?? ""
+            guard !id.isEmpty else { return }
+            if text.range(of: #"not\s+declassified"#, options: [.regularExpression, .caseInsensitive]) != nil {
                 scan.features[id]?.excisions = true
+            }
+            if EditorialOmissionMarkers.marksAnOmission(in: own) {
+                scan.features[id]?.editorialOmissions = true
             }
         }
     }
 
-    /// Adds text to the open document's text, which the excision test reads when it closes.
+    /// Adds text to the open document's two texts, and to the publication date while it is open.
     func parser(_ parser: XMLParser, foundCharacters string: String) {
-        guard !textStack.isEmpty else { return }
-        textStack[textStack.count - 1] += string
+        append(string)
     }
 
     /// Adds CDATA as text.
     func parser(_ parser: XMLParser, foundCDATA CDATABlock: Data) {
-        guard !textStack.isEmpty, let string = String(data: CDATABlock, encoding: .utf8) else { return }
+        guard let string = String(data: CDATABlock, encoding: .utf8) else { return }
+        append(string)
+    }
+
+    private func append(_ string: String) {
+        if publicationDate != nil { publicationDate?.text += string }
+        guard !textStack.isEmpty else { return }
         textStack[textStack.count - 1] += string
+        if noteDepth == 0 { ownTextStack[ownTextStack.count - 1] += string }
     }
 }

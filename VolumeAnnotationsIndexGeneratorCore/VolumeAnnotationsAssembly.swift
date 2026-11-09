@@ -30,11 +30,15 @@ import SourceNoteKit
 ///   of the volume's `terms` rows: the terms the reader links in the text, or lists below the
 ///   document (#1599), which is how `frus1981-88v16` names them.
 ///
-/// The other layers the app does not read, and the scan's TEI rule counts them.
+/// The other layers the app does not read, and the scan's TEI rule counts them. Among them, since
+/// Lane 1 of the follow-ups plan, the editors' bracketed omissions (`EditorialOmissionMarkers`),
+/// counted for every volume and stored with the volume's publication year, on which the kit gates
+/// the layer (`VolumeAnnotations.editorialOmissionsFromYear`).
 ///
 /// Version history:
 ///   1.0 — 2026-11-06: the editors' annotations design, lane A
 ///   1.1 — 2026-11-06: abbreviations count a document's `@ana` pointers to a term, as people did
+///   1.2 — 2026-11-08: `.editorialOmissions`, and the volume's publication year
 enum VolumeAnnotationsAssembly {
 
     /// One volume's counts, with what the run reports about them.
@@ -73,6 +77,7 @@ enum VolumeAnnotationsAssembly {
             }
             add(.classification, facts.classified.contains(id))
             add(.excisions, features.excisions)
+            add(.editorialOmissions, features.editorialOmissions)
             add(.despatch, facts.despatch.contains(id))
             add(.numbered, facts.headers[id].map(opensWithPrintedNumber) ?? false)
             add(.xrefDocuments, features.xrefDocuments)
@@ -90,7 +95,7 @@ enum VolumeAnnotationsAssembly {
             historicalDocuments: documents - (counts[.editorialNotes] ?? 0),
             personsListed: facts.personsListed,
             termsListed: facts.termRefs.count,
-            era: era, counts: counts, sections: facts.sections)
+            era: era, counts: counts, sections: facts.sections, publicationYear: scan.publicationYear)
         return Counted(annotations: annotations, unindexed: unindexed, despatchNotes: despatchNotes)
     }
 
