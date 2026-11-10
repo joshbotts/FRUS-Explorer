@@ -10110,3 +10110,5 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 - **A wake that launches the app.** L11 makes a wake of an app the launch has booted index again; a launch the system makes for the task reaches the handler before the boot, as measured above, and whether a background launch builds the main scene at all was not measured. Builds before 47 had the same order, read from the code. The fix would have the handler wait for the launch's boot, or start it; not scheduled.
 - **The documented route on a device**, which needs the owner's iPhone under Xcode's debugger; the simulator refuses the submit.
 - **`FRUSOffsetEngineTests.swift:2736`'s warning**, Lane 2's, left for its own change.
+
+**Opened as #1879** on the owner's word of 2026-11-09 ("Open the PR"), against `v2` at `7f24463e`; not merged, auto-merge off.
