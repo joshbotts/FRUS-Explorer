@@ -82,6 +82,9 @@ import SwiftData
 ///          iPad two-pane brings back beside a document's parent, or across its gate, still holds it
 ///   2.8 — 2026-11-06: the editors' annotations design, lane C — a full-width "Editors’ Annotations"
 ///          door below the grid, opening the `.annotations` axis
+///   2.9 — 2026-11-10: that door joins the grid as a half-width tile titled "Annotations", its caption
+///          going with the full width, and the grid's six tiles take the owner's order: All Volumes and
+///          Administrations, Editors and Annotations, Archives and Clusters
 struct CorpusView: View {
 
     let vm: BrowserViewModel
@@ -357,11 +360,14 @@ struct CorpusView: View {
     // MARK: - Browse by (the axis doors, 2a)
 
     /// The axis doors: the double-width Subseries tile above the two-column grid — the 2a
-    /// shape, which arrived when the section reached four doors (B-2). Each later session
-    /// appends its axis's grid tile (the sets in B-3/B-4, Archives in B-5, Clusters in
-    /// B-7). The tiles paint their own cards because the section's one row clears the
-    /// grouped-list chrome to host the grid — and, for the same reason, their own open mark
-    /// (`isOpen:`, #1431), where a row takes `.browseOpenDoorMark(_:)`.
+    /// shape, which arrived when the section reached four doors (B-2). Later sessions added
+    /// their axes' tiles (Archives in B-5, Clusters in B-7, the editors' annotations in lane C
+    /// of their design, a full-width door below the grid until 2026-11-10). The grid fills row
+    /// by row, so the tiles' order in the source is its layout: All Volumes and
+    /// Administrations, Editors and Annotations, Archives and Clusters. The tiles paint their
+    /// own cards because the section's one row clears the grouped-list chrome to host the
+    /// grid — and, for the same reason, their own open mark (`isOpen:`, #1431), where a row
+    /// takes `.browseOpenDoorMark(_:)`.
     private var browseBySection: some View {
         Section(header: Text(String(localized: "browser.corpus.browseBy.header",
                                     defaultValue: "Browse by"))) {
@@ -444,6 +450,31 @@ struct CorpusView: View {
                     .help(String(localized: "browser.corpus.tile.editors.help",
                                  defaultValue: "Volumes filed by the editors named on their title pages"))
 
+                    // "Annotations", not the axis's own "Editors’ Annotations": a grid tile holds one
+                    // line, and in the iPad's 340 pt list pane a title has about 90 pt beside its icon
+                    // (measured on an iPad Pro 13-inch). The full name needs 114 even at the tile's 85%
+                    // minimum scale, and "Annotations" 80 at full size (Core Text, 14 pt medium);
+                    // "Administrations" already shows as "Administrati…" there. VoiceOver hears the
+                    // full name from the label, and the level the tile opens is titled in full.
+                    BrowseAxisGridTile(
+                        title: String(localized: "browser.corpus.tile.annotations",
+                                      defaultValue: "Annotations"),
+                        systemImage: "pencil.line",
+                        accessibilityIdentifier: "browse.root.annotationsTile",
+                        isOpen: isOpen(.annotations)
+                    ) {
+                        vm.select(.annotations)
+                        #if DEBUG
+                        print("[BrowserView] Navigate → editors' annotations axis")
+                        #endif
+                    }
+                    .accessibilityLabel(
+                        String(localized: "browser.corpus.tile.annotations.a11y",
+                               defaultValue: "Browse by editors' annotations")
+                    )
+                    .help(String(localized: "browser.corpus.tile.annotations.help",
+                                 defaultValue: "Volumes filed by what their editors annotated — people tagged, source notes, classification and more — and the era each practice became standard"))
+
                     BrowseAxisGridTile(
                         title: String(localized: "browser.corpus.tile.archives",
                                       defaultValue: "Archives"),
@@ -482,28 +513,6 @@ struct CorpusView: View {
                     .help(String(localized: "browser.corpus.tile.clusters.help",
                                  defaultValue: "Documents grouped by the language they share, computed from the text — labels are sampled terms, not subject headings"))
                 }
-
-                // Full width, as Subseries is: a half-width tile holds one line, and in the iPad's
-                // list pane "Editors’ Annotations" would truncate to "Editors’ A…".
-                BrowseAxisTile(
-                    title: VolumeAnnotationsPresentation.title,
-                    caption: String(localized: "browser.corpus.tile.annotations.caption",
-                                    defaultValue: "What each volume's editors annotated, era by era"),
-                    systemImage: "pencil.line",
-                    accessibilityIdentifier: "browse.root.annotationsTile",
-                    isOpen: isOpen(.annotations)
-                ) {
-                    vm.select(.annotations)
-                    #if DEBUG
-                    print("[BrowserView] Navigate → editors' annotations axis")
-                    #endif
-                }
-                .accessibilityLabel(
-                    String(localized: "browser.corpus.tile.annotations.a11y",
-                           defaultValue: "Browse by editors' annotations")
-                )
-                .help(String(localized: "browser.corpus.tile.annotations.help",
-                             defaultValue: "Volumes filed by what their editors annotated — people tagged, source notes, classification and more — and the era each practice became standard"))
             }
             .listRowInsets(EdgeInsets())
             .listRowBackground(Color.clear)
