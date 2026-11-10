@@ -1,10 +1,10 @@
 {
-  "_about": "The store-frame set for the first public release, read by compose.py. Figures here come only from Planning/Store-Listing-Draft.md §5. A shot with no `capture` renders as a placeholder carrying its `route`. `keepFoot` fits the capture whole so a disclosure the app draws at the foot of the screen stays in the frame. Order is the order the listing shows; `all` is the universal opening the three audiences share.",
+  "_about": "The store-frame set for the first public release, read by compose.py. Figures here come only from Planning/Store-Listing-Draft.md §5. A shot with no `capture` renders as a placeholder carrying its `route`. `keepFoot` fits the capture whole so a disclosure the app draws at the foot of the screen stays in the frame. Order is the order the listing shows; `all` is the universal opening the three audiences share. `listing` names, for each preset, the shot ids App Store Connect's slot takes, in the listing's order (the kit's §3: the ten of decision 32 on the iPad and the Mac, and five on the iPhone, whose `search-facets` is a second take of frame 01 and is left out); a store run copies them to `upload/<preset>/NN-<id>.png`. `uploadAlso` names a folder the store run fills with another preset's upload frames, scaled to a second size.",
   "presets": {
     "ipad-13-landscape": {
       "width": 2752,
       "height": 2064,
-      "note": "iPad 13-inch, landscape; App Store Connect also takes 2064×2752 portrait and 2048×2732. Verify on Apple's current table before export.",
+      "note": "iPad 13-inch, landscape. Read on Apple's Screenshot specifications page on 2026-11-10: the 13-inch slot takes 2752×2064 or 2732×2048 landscape, and 2064×2752 or 2048×2732 portrait.",
       "type": {
         "margin": 120,
         "padTop": 112,
@@ -22,7 +22,7 @@
     "mac": {
       "width": 2880,
       "height": 1800,
-      "note": "Mac, 16:10; App Store Connect takes 2880×1800, 2560×1600, 1440×900 or 1280×800. Verify before export.",
+      "note": "Mac, 16:10. Read on Apple's Screenshot specifications page on 2026-11-10: 2880×1800, 2560×1600, 1440×900 or 1280×800.",
       "type": {
         "margin": 120,
         "padTop": 96,
@@ -40,7 +40,7 @@
     "iphone-6.9": {
       "width": 1320,
       "height": 2868,
-      "note": "iPhone 6.9-inch portrait. Verify before export.",
+      "note": "iPhone 6.9-inch, portrait. Read on Apple's Screenshot specifications page on 2026-11-10: 1320×2868, 1290×2796 or 1260×2736 for 'iPhone with Dynamic Island (large display)'; with this set no 6.5-inch set is asked for. The page's list of required sizes names the medium display: see `uploadAlso`.",
       "type": {
         "margin": 88,
         "padTop": 160,
@@ -54,6 +54,19 @@
         "measure": 100,
         "gap": 80
       }
+    }
+  },
+  "listing": {
+    "ipad-13-landscape": ["search", "reader", "map", "source-explorer", "archives-visit", "cross-reference", "course-reader", "series-dashboards", "chronology", "meaning"],
+    "mac": ["search", "reader", "map", "source-explorer", "archives-visit", "cross-reference", "course-reader", "series-dashboards", "chronology", "meaning"],
+    "iphone-6.9": ["search", "reader", "map", "source-explorer", "chronology"]
+  },
+  "uploadAlso": {
+    "iphone-6.3": {
+      "from": "iphone-6.9",
+      "width": 1206,
+      "height": 2622,
+      "note": "The iPhone's five again, scaled to the medium display's size, in case App Store Connect asks for that size itself. Read on Apple's Screenshot specifications page on 2026-11-10: its list of required sizes names 'iPhone with Dynamic Island (medium display)', 1206×2622 or 1179×2556, and the same page says a larger set is scaled down for smaller sizes."
     }
   },
   "audiences": {
@@ -83,7 +96,7 @@
       "headline": "Search 553 volumes of the U.S. diplomatic record. Offline.",
       "subline": "Full-text search with phrases, proximity and exact words, faceted by year, volume, person, document type and subject.",
       "capture": "Docs/screenshots/ipad/search-results.png",
-      "status": "build 1861",
+      "status": "build 1787",
       "foot": "FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
     },
     {
@@ -94,7 +107,7 @@
       "headline": "Search 553 volumes of the U.S. diplomatic record. Offline.",
       "subline": "Full-text search with phrases, proximity and exact words, faceted by year, volume, person, document type and subject.",
       "capture": "Docs/screenshots/macos/search.png",
-      "status": "build 1861",
+      "status": "build 1787",
       "foot": "FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
     },
     {
@@ -105,7 +118,7 @@
       "headline": "553 volumes of the diplomatic record, in your pocket.",
       "subline": "Full-text search, offline, with facets by year, volume, person and subject.",
       "capture": "Docs/screenshots/ios/search-results.png",
-      "status": "build 1861",
+      "status": "build 1787",
       "foot": "FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
     },
     {
@@ -116,7 +129,7 @@
       "headline": "553 volumes of the diplomatic record, in your pocket.",
       "subline": "Full-text search, offline, with facets by year, volume, person and subject.",
       "capture": "Docs/screenshots/ios/search-facets.png",
-      "status": "build 1861",
+      "status": "build 1787",
       "foot": "FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
     },
     {
@@ -193,7 +206,7 @@
       "headline": "From footnote to shelf.",
       "subline": "The editors' source note, resolved as far as the bundled reference data reaches: record group, entry, lot file, series dates and the repository that holds it. No network, no API key.",
       "capture": "Docs/screenshots/ipad/source-explorer.png",
-      "status": "build 1861",
+      "status": "build 1787",
       "foot": "Not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration. Catalog data is subject to NARA's terms of use."
     },
     {
@@ -204,7 +217,7 @@
       "headline": "From footnote to shelf.",
       "subline": "The editors' source note, resolved as far as the bundled reference data reaches: record group, entry, lot file, series dates and the repository that holds it. No network, no API key.",
       "capture": "Docs/screenshots/macos/source-explorer.png",
-      "status": "build 1861",
+      "status": "build 1787",
       "foot": "Not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration. Catalog data is subject to NARA's terms of use."
     },
     {
@@ -215,7 +228,7 @@
       "headline": "From footnote to shelf.",
       "subline": "The editors' source note, resolved as far as the bundled reference data reaches: record group, entry, lot file, series dates and the repository that holds it. No network, no API key.",
       "capture": "Docs/screenshots/ios/source-explorer.png",
-      "status": "build 1861",
+      "status": "build 1787",
       "foot": "Not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration. Catalog data is subject to NARA's terms of use."
     },
     {
@@ -378,7 +391,7 @@
       "headline": "Ask a question, not a keyword.",
       "subline": "Search by meaning ranks the whole series by what you asked, with an optional language model that runs on your device. Nothing you type leaves it. Experimental.",
       "capture": "Docs/screenshots/ipad/semantic-search.png",
-      "status": "build 1861"
+      "status": "build 1787"
     },
     {
       "id": "meaning",
@@ -388,7 +401,7 @@
       "headline": "Ask a question, not a keyword.",
       "subline": "Search by meaning ranks the whole series by what you asked, with an optional language model that runs on your device. Nothing you type leaves it. Experimental.",
       "capture": "Docs/screenshots/macos/search-meaning.png",
-      "status": "build 1861"
+      "status": "build 1787"
     },
     {
       "id": "person-network",
@@ -398,7 +411,7 @@
       "headline": "Who the record orbits.",
       "subline": "Person Analytics around any name: the people most often in the same documents, and the trajectories of two rivals across the series.",
       "capture": "Docs/screenshots/ipad/person-analytics-network.png",
-      "status": "build 1861"
+      "status": "build 1787"
     },
     {
       "id": "person-network",
@@ -408,7 +421,7 @@
       "headline": "Who the record orbits.",
       "subline": "Person Analytics around any name: the people most often in the same documents, and the trajectories of two rivals across the series.",
       "capture": "Docs/screenshots/macos/person-analytics-network.png",
-      "status": "build 1861"
+      "status": "build 1787"
     },
     {
       "id": "archival-analytics",

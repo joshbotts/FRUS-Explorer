@@ -1,0 +1,3 @@
+First release.
+
+FRUS Explorer reads, searches and sources the Foreign Relations of the United States series offline, from the Office of the Historian's own TEI editions.

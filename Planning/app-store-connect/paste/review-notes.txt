@@ -1,0 +1,34 @@
+FRUS Explorer is a research tool for the Foreign Relations of the United States (FRUS) series, the official documentary record of U.S. foreign policy, which the Department of State's Office of the Historian has published since 1861. The series is in the public domain, and the Office publishes it as open TEI data, which the app downloads and reads.
+
+The app is an independent, private-capacity project. It is not an official product of the Office of the Historian or the U.S. Department of State. The description, the first screenshot of each set, the Support page and the app's About screen say so.
+
+NO ACCOUNT
+There is no sign-in, no purchase, no advertising and no tracking. The app is free and collects no data.
+
+TO REVIEW
+1. Launch the app. Onboarding offers the whole series, a subseries or a single volume. Choose A Single Volume and pick any volume: it is a few megabytes. The whole series is 553 volumes, about 3.3 GB, and is not needed for review.
+2. On iPhone and iPad the tabs are Browse, Search, Research, Collections and Settings. On the Mac the same tools are in the main window, the Corpus Browser (Shift-Command-B), the Search window and the Analytics menu.
+3. Open a document from Browse or Search. Select text to highlight it or add a note. The Research rail holds Cite, Sources, Graph, Related and Summary.
+4. Editors' Annotations (Browse > Annotations on iPhone and iPad, the Corpus Browser's sidebar on the Mac), the series dashboards and each volume's page work before any download.
+
+WHAT THE APP DOWNLOADS
+- Volumes: public TEI XML files from the Office of the Historian's repository on GitHub (HistoryAtState/frus), and their figure images from static.history.state.gov.
+- A small semantic match file for each volume, from the developer's public repository on GitHub (joshbotts/frus-semantic-vectors).
+- Optional, and only when the user chooses Download Search Model: Google's EmbeddingGemma 2, an open model under the Apache 2.0 license, 310 MB, from a release of that same repository. There is no agreement to accept. The file is model weights (GGUF), not code; the app reads it with the llama.cpp library built into the app. It turns a typed question into numbers on the device for Search > Meaning, which the app labels experimental.
+
+ON-DEVICE AI
+Summarize this Document uses Apple Intelligence on the device and records on each summary that a model wrote it. Search by meaning uses the optional model above. Neither sends a document or a question anywhere. Without Apple Intelligence or the model, the rest of the app works.
+
+OPTIONAL SERVICES, EACH WITH THE USER'S OWN KEY
+- National Archives Catalog (catalog.archives.gov): Source Explorer can look up the records a document's source note cites, with the user's own free API key, entered in Settings > System > Connections. Without a key the app sends the Catalog nothing, and Source Explorer still resolves source notes from reference data inside the app.
+- Zotero (api.zotero.org): sends citations to the user's own Zotero library, with the user's own key.
+Neither is needed to use the app. FRUS Explorer is not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration.
+
+ICLOUD AND BACKGROUND WORK
+Notes, highlights, tags and collections sync through the user's own private iCloud database (CloudKit). The developer runs no server. Background processing finishes indexing downloaded volumes and, when the user asks for it, a batch of summaries. On iPhone and iPad a Live Activity shows the indexing queue.
+
+THE CONTENT
+The documents are historical government records: diplomatic correspondence and memoranda about war, weapons and political conflict as well as trade and treaties.
+
+MAC
+The app is sandboxed. Its entitlements are outgoing network connections (the downloads above), user-selected files (exports and imports through the system's panels) and iCloud.
