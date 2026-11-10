@@ -49,33 +49,49 @@ If you have already entered a page, this is all you need to redo.
 The four files sent on 7 November (`privacy.txt`, `support.txt` and the two quick starts) are
 superseded by the ones in `paste/`, which carry today's text and a first line that says so.
 
-## What the site held on 10 November
+**If you pasted on 10 November,** four of those files changed later that day, to underline their
+links: [the next section](#what-the-site-holds-and-what-to-paste-again) says which.
 
-You signed in to Squarespace in the Claude app's browser pane, and a session looked at every page
-in the site's own preview, at computer width and at phone width. It changed and saved nothing.
+## What the site holds, and what to paste again
 
-| Page | What it holds | Fingerprint |
+On 10 November you signed in to Squarespace in the Claude app's browser pane, and a session looked
+at every page in the site's own preview, at computer width and at phone width. At your word it
+then entered the footer's Code Block. It touched nothing else.
+
+| Page | The site holds | Paste again? |
 |---|---|---|
-| Home | one Code Block | `814c41f7`, current |
-| Tour | Code, Code, Video (the film, 46 seconds), Code, Code, in one section | `73a41228`, `7919c798`, `4671c5d0`, `a65b3389`, all current |
-| Quick start, iPad and iPhone | one Code Block, and an empty Text block under it | `95bade41`, current |
-| Quick start, Mac | one Code Block | `503e955d`, current |
-| Privacy | one Code Block | `70729172`, current |
-| Support | one Code Block | `afe50dd6`, current |
-| The footer | one Text block: the disclaimer and the National Archives sentence, with no links | not a paste |
+| Home | one Code Block, `814c41f7` | no |
+| Tour | Code `73a41228`, Code `7919c798`, Video (the film, 46 seconds), Code `4671c5d0`, Code `a65b3389`, in one section | no |
+| Quick start, iPad and iPhone | one Code Block, `95bade41`, and an empty Text block under it | **yes**: [paste/quick-start-ios.txt](paste/quick-start-ios.txt) |
+| Quick start, Mac | one Code Block, `503e955d` | **yes**: [paste/quick-start-mac.txt](paste/quick-start-mac.txt) |
+| Privacy | one Code Block, `70729172` | **yes**: [paste/privacy.txt](paste/privacy.txt) |
+| Support | one Code Block, `afe50dd6` | **yes**: [paste/support.txt](paste/support.txt) |
+| The footer | one Code Block, `6a78a398`, entered by the session | no |
+
+**Why four pages are pasted again: their links.** Your theme underlines a link in a Text block and
+leaves one in a Code Block exactly as the words around it, with no underline and no colour. On
+Support, none of the 11 links could be told from the text, and the same held for Privacy's 6 and
+the quick starts' 34 and 36. Home and the Tour were never affected: their blocks style their own
+links. Each of the four files, and the footer's, now carries one rule that underlines its links
+and leaves their colour to the site. The rule was tried in the site's preview before the files
+changed, and the footer shows it working.
+
+**To paste a page again:** **Edit**, click the page's Code Block, then its pencil. Click in the
+code, press ⌘A, paste the file, click away, and **Save**. The block keeps its place and size.
+
+What the look found:
 
 - **Nothing is cut off.** On no page, at either width, do a block's contents run past the block or
   its section, and no page scrolls sideways at phone width.
 - **Every screenshot loads from GitHub:** 19 on the tour, 11 and 9 on the quick starts.
 - **The type is as the pastes ask.** Home and the Tour are set in a serif; the four pasted pages
-  take the site's own, Poppins.
+  and the footer take the site's own, Poppins.
 
-Three things are left, and only the first matters:
+Two smaller things, neither urgent:
 
-1. **The footer has no links.** [Way A or way B](#the-menu-and-the-footer), below.
-2. **The iPad and iPhone quick start has an empty Text block** under its Code Block. Click it
+1. **The iPad and iPhone quick start has an empty Text block** under its Code Block. Click it
    once, then its trash can.
-3. **Optional.** The Code Blocks of Privacy, Support and the two quick starts are 532 points wide
+2. **Optional.** The Code Blocks of Privacy, Support and the two quick starts are 532 points wide
    at computer width, a narrow centred column, where Home's and the Tour's are 781. That reads
    well as it is. Dragging a block's edges out, step 4 of [the pasted pages](#the-four-pasted-pages),
    widens the text and its screenshots.
@@ -131,9 +147,9 @@ What to expect:
 - **A quick start** opens with its *AI Generated* notice, which names build 1861, and shows its
   screenshots, which load from this repository on GitHub. A capture retaken later shows on the
   site with no new paste. The repository has to stay public.
-- Type and colour are your site's. If a page's text is cut off at the bottom, drag the block's
-  lower edge down; if the phone view cuts it off, do the same there, since the two views are sized
-  apart.
+- Type and colour are your site's, and each page underlines its own links, which a theme leaves
+  plain inside a Code Block. If a page's text is cut off at the bottom, drag the block's lower edge
+  down; if the phone view cuts it off, do the same there, since the two views are sized apart.
 
 **Which Support and Privacy text this is.** It is the published text, `Docs/Support.md` and
 `Docs/Privacy-Policy.md`, as the plan of record has it for the submission. The plain-language
@@ -174,7 +190,13 @@ already has.
    **Code**, the one result.
 2. Click the new block's pencil and paste all of [paste/footer.txt](paste/footer.txt).
 3. Remove the Text block that is there now, since the Code Block holds its words: click it once,
-   then its trash can. Drag the Code Block's edges out to the footer's full width. **Save**.
+   then its trash can.
+4. Fit the new block. It arrives four columns wide at the left, on top of whatever is there: drag
+   the square on its right edge out to the footer's right margin, then the square on its bottom
+   edge up until it sits just under the links.
+5. Take out the empty space the new block leaves under itself: **Edit Section ▸ Design ▸ Row
+   Count**, and lower the number until one empty row is left below the block. It was 16 after the
+   block arrived, and 7 fits. **Save**.
 
 **Way B: the footer's own Text block.**
 
@@ -218,11 +240,12 @@ Either way its type and colour are your footer's own, so it reads on a dark foot
 one. The words are pasted, not typed, so that the disclaimer stays word for word: do not shorten
 it. Way A's block sets the text at 13 pixels; way B's is the size your site gives Paragraph 3.
 
-**Seen in this site's editor, 2026-11-10**, once you had signed in to Squarespace in the Claude
-app's browser pane: the footer is one section of the current kind, **+ Add Block** shows in its top
-left corner, and the menu's search finds **Code**. It held one Text block, with the disclaimer and
-the National Archives sentence and no links. The table's other two rows are from Squarespace's
-help pages, listed at the end.
+**Done on this site, 2026-11-10.** Once you had signed in to Squarespace in the Claude app's
+browser pane, a session entered the footer by way A, at your word ("You do it"): the Code Block
+holds [paste/footer.txt](paste/footer.txt) to the byte, the Text block it replaced held the same
+two paragraphs and no links, and the section's Row Count is 7. The footer is one section of the
+current kind, so the table's other two rows are from Squarespace's help pages, listed at the end,
+and were not seen here.
 
 **To look like the preview** (optional): in **Site Styles**, Source Serif 4 for headings and
 paragraphs and IBM Plex Sans for buttons and the menu, if the font list offers them; a white
@@ -347,11 +370,11 @@ this table:
 
 | File | Goes in | Size | Fingerprint |
 |---|---|---|---|
-| [paste/privacy.txt](paste/privacy.txt) | `/privacy` | 12,045 bytes | `70729172` |
-| [paste/support.txt](paste/support.txt) | `/support` | 6,321 bytes | `afe50dd6` |
-| [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,375 bytes | `95bade41` |
-| [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 26,864 bytes | `503e955d` |
-| [paste/footer.txt](paste/footer.txt) | the footer of every page | 1,208 bytes | `08c9aa33` |
+| [paste/privacy.txt](paste/privacy.txt) | `/privacy` | 12,143 bytes | `8c230dab` |
+| [paste/support.txt](paste/support.txt) | `/support` | 6,419 bytes | `64da46d0` |
+| [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,429 bytes | `df732dbf` |
+| [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 26,918 bytes | `0a79a3cd` |
+| [paste/footer.txt](paste/footer.txt) | the footer of every page | 1,253 bytes | `6a78a398` |
 | [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/`, until release day | 11,892 bytes | `814c41f7` |
 | [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,036 bytes | `ccf6ec51`, not ready: it waits for the App Store address |
 | [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `/tour`, section 1, until release day | 1,036 bytes | `73a41228` |

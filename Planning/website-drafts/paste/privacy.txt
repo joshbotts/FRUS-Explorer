@@ -1,4 +1,10 @@
-<!-- frusexplorer.app/privacy · from Docs/Website/privacy.html · fingerprint 70729172 -->
+<!-- frusexplorer.app/privacy · from Docs/Website/privacy.html · fingerprint 8c230dab -->
+<style>
+  .frus-page a { text-decoration: underline; }
+</style>
+
+<div class="frus-page">
+
 <h1>FRUS Explorer Privacy Policy</h1>
 
 <p><em>Last updated November 10, 2026. This policy covers FRUS Explorer for iPhone, iPad and Mac, from version 1.0.</em></p>
@@ -90,3 +96,5 @@
 <h2 id="contact">Contact</h2>
 
 <p>Questions about this policy: <a href="mailto:help@frusexplorer.app">help@frusexplorer.app</a>. For help with the app, see <a href="https://frusexplorer.app/support">FRUS Explorer Support</a>.</p>
+
+</div>

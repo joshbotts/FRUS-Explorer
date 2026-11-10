@@ -1,5 +1,6 @@
-<!-- frusexplorer.app/quick-start-ios · from Docs/Website/quick-start-ios.html · fingerprint 95bade41 -->
+<!-- frusexplorer.app/quick-start-ios · from Docs/Website/quick-start-ios.html · fingerprint df732dbf -->
 <style>
+  .frus-quick-start a { text-decoration: underline; }
   .frus-quick-start img { max-width: 100%; height: auto; }
   .frus-quick-start .shots img { margin: 0 0.75rem 0.5rem 0; vertical-align: top; }
   .frus-quick-start table { border-collapse: collapse; margin: 1rem 0; width: 100%; }

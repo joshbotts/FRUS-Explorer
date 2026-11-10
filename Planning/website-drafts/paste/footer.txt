@@ -1,7 +1,8 @@
-<!-- frusexplorer.app · from Planning/website-drafts/build_site.py, the footer of every page · fingerprint 08c9aa33 -->
+<!-- frusexplorer.app · from Planning/website-drafts/build_site.py, the footer of every page · fingerprint 6a78a398 -->
 <style>
 .frus-foot p { font-size: 13px; line-height: 1.55; margin: 0 0 8px; text-align: left; }
 .frus-foot .frus-foot-links { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; }
+.frus-foot a { text-decoration: underline; }
 </style>
 <div class="frus-foot">
 <p>FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State. Any commentary, advice, or guidance about the FRUS series in this app reflects personal views about historical research methodology and makes no interpretive claims about the history of U.S. foreign policy. Those views are not necessarily those of the Department of State or the U.S. Government. The FRUS series itself is in the public domain.</p>

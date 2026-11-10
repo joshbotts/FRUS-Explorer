@@ -37,7 +37,8 @@ page here when it has one (the other quick start) and its GitHub copy otherwise 
 screenshots are not copied to the site: each loads from `raw.githubusercontent.com` at the default
 branch's head, so a retaken capture shows on the site with no new paste, and the repository has to
 stay public for the pictures to load. And the page carries a short `<style>`, scoped to its own
-wrapper, that sizes the screenshots and rules the tables; type and colour stay the site's.
+wrapper, that underlines its links, sizes the screenshots and rules the tables; type and colour
+stay the site's.
 
 A published page is a third copy the repository cannot see: after a change lands, the owner
 pastes the new HTML into the site, and the two copies are in step again only then.
@@ -60,7 +61,12 @@ script's `ADDRESSES` and, for feedback@, in that constant. For each page:
    says which version it holds; `Planning/website-drafts/Squarespace-Entry.md` has the owner's
    steps in the editor, for these four pages and for the home page and the tour. The site's own
    type and colours apply; the `<style>` in the file's `<head>` is only for viewing it on its own.
-   A quick start's `<main>` opens with a `<style>` of its own, which is pasted with the rest.
+   Every page's `<main>` opens with a `<style>` of its own, scoped to the wrapper it opens and
+   pasted with the rest. It underlines the page's links: a Squarespace theme underlines a link in
+   a Text block and leaves one in a Code Block as plain as the words around it. Seen in the site's
+   preview on 2026-11-10, none of the Support page's 11 links was underlined or coloured, and a
+   rule of this form was. A quick start's `<style>` also sizes its screenshots and rules its
+   tables.
 2. Make the site public before the submission. App Review opens both URLs, and on 2026-10-15
    both answered 401. `https://frusexplorer.app/privacy` redirects to `www.`, keeping the path.
 3. Publish the two quick starts with the Support page, or at least before it: the Support page

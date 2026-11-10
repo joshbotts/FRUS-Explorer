@@ -1,4 +1,10 @@
-<!-- frusexplorer.app/support · from Docs/Website/support.html · fingerprint afe50dd6 -->
+<!-- frusexplorer.app/support · from Docs/Website/support.html · fingerprint 64da46d0 -->
+<style>
+  .frus-page a { text-decoration: underline; }
+</style>
+
+<div class="frus-page">
+
 <h1>FRUS Explorer Support</h1>
 
 <p>FRUS Explorer is a research app for iPhone, iPad and Mac for the Foreign Relations of the United States series: the official documentary record of U.S. foreign policy, published since 1861 by the Office of the Historian, whose open TEI editions the app builds on.</p>
@@ -56,3 +62,5 @@
 <hr>
 
 <p>This page is published in two copies kept identical: at <a href="https://frusexplorer.app/support">https://frusexplorer.app/support</a> and at <a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Support.md">https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Support.md</a>.</p>
+
+</div>

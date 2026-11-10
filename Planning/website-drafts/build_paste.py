@@ -642,11 +642,14 @@ _CLOSE_FITTED = """\
 {s} .close {{ margin-top: 0; }}"""
 
 # The footer is the site's own, so its type and colour stay the site's: a theme colours a
-# footer's text paragraph by paragraph, and a colour set here would not follow a dark one.
+# footer's text paragraph by paragraph, and a colour set here would not follow a dark one. Its
+# links are underlined here, since a theme leaves a link in a Code Block as plain as the words
+# around it (seen on the site, 2026-11-10; Scripts/build_website_pages.py has the measurement).
 _FOOTER = """\
 <style>
 .frus-foot p {{ font-size: 13px; line-height: 1.55; margin: 0 0 8px; text-align: left; }}
 .frus-foot .frus-foot-links {{ display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; }}
+.frus-foot a {{ text-decoration: underline; }}
 </style>
 <div class="frus-foot">
 <p>{disclaimer}</p>

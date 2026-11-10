@@ -6,8 +6,9 @@
   Scripts/build_website_pages.py, which writes this file. Docs/Website/README.md has the rest.
 
   To publish on the Squarespace site, paste everything between <main> and </main> into a Code
-  Block on a page whose URL slug is privacy; the site's own type and colours then apply, and the
-  <style> below, which is only for viewing this file on its own, is left behind.
+  Block on a page whose URL slug is privacy. The <style> at the top of <main> goes with
+  it: it underlines the links and leaves type and colour to the site. The <style> in <head>,
+  which is only for viewing this file on its own, is left behind.
 -->
 <html lang="en">
 <head>
@@ -41,6 +42,12 @@
 </head>
 <body>
 <main>
+
+<style>
+  .frus-page a { text-decoration: underline; }
+</style>
+
+<div class="frus-page">
 
 <h1>FRUS Explorer Privacy Policy</h1>
 
@@ -133,6 +140,8 @@
 <h2 id="contact">Contact</h2>
 
 <p>Questions about this policy: <a href="mailto:help@frusexplorer.app">help@frusexplorer.app</a>. For help with the app, see <a href="https://frusexplorer.app/support">FRUS Explorer Support</a>.</p>
+
+</div>
 
 </main>
 </body>
