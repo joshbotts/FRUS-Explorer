@@ -10219,3 +10219,5 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 - **A pass longer than a run's time** goes on in the next run only while the process lives between runs; one the system ends meanwhile starts `indexAllVolumes()` again from its first volume at the next launch, and each run asks for the next as its time runs out. A pass that never ended would hold every run to its expiry, each asking for the next. Read from the code.
 - **The documented route on a device** and a launch the system makes for the task, as L12's and L13's.
 - **`FRUSOffsetEngineTests.swift:2736`'s warning**, Lane 2's, still left for its own change.
+
+**Opened as #1883** on the owner's word of 2026-11-10 ("Push and open PR"), against `v2` at `e9abc22b`; not merged, auto-merge off.
