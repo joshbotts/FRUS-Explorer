@@ -145,6 +145,8 @@ import SwiftData
 ///          types
 ///   1.16 — 2026-10-31: the data source's `generateSummaries` answers with each summary's record, stored or
 ///          generated, so a structured summary's format reaches the exporters, which print its fields
+///   1.17 — L14 (plan of record decision 124): an export's indexing of the volumes it needs starts through
+///          `AppState.indexWorkInFlight`, so a run of the iOS background task waits for it
 @MainActor
 class CollectionContentResolver {
 
@@ -700,9 +702,10 @@ class CollectionContentResolver {
             defaultValue: "Preparing \(totalNeeded) volume\(totalNeeded == 1 ? "" : "s")…"
         ))
 
-        // Kick off indexing for downloaded-but-unindexed volumes.
+        // Kick off indexing for downloaded-but-unindexed volumes, each counted while it runs, for a
+        // run of the iOS background task to wait for (L14).
         for vid in toIndex {
-            Task { try? await pipeline.indexVolume(vid) }
+            appState.indexWorkInFlight.start { try? await pipeline.indexVolume(vid) }
         }
         // Enqueue downloads; indexing follows automatically via onVolumeDownloaded.
         for (vid, url) in toDownload {

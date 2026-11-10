@@ -48,6 +48,8 @@ import UniformTypeIdentifiers
 ///   1.1 — 2026-10-20: #1689, plan of record A14 — Index Remaining takes the volumes
 ///          `IndexRemainingSelection` picks, a volume whose last store pass was cut short among
 ///          them, and its detail line says "not yet fully indexed" (`.detail.v2`)
+///   1.2 — L14 (plan of record decision 124): the import, the re-indexes, Index Remaining and Rebuild Index are counted
+///          while they run (`AppState.indexWorkInFlight`), so a run of the iOS background task waits for them
 struct VolumesStorageHubView: View {
 
     // MARK: - Batch tracking
@@ -993,6 +995,10 @@ struct VolumesStorageHubView: View {
     private func handleSideload(_ result: Result<[URL], Error>) async {
         guard let dm = appState.downloadManager,
               let pipeline = appState.indexingPipeline else { return }
+        // L14: counted while it runs, so that a run of the background task the reader's leaving
+        // the app brings waits for it. The same for each index action below.
+        appState.indexWorkInFlight.begin()
+        defer { appState.indexWorkInFlight.end() }
 
         switch result {
         case .failure(let error):
@@ -1044,6 +1050,8 @@ struct VolumesStorageHubView: View {
 
     private func reindexVolume(_ volumeId: String) async {
         guard let pipeline = appState.indexingPipeline else { return }
+        appState.indexWorkInFlight.begin()
+        defer { appState.indexWorkInFlight.end() }
         reindexingVolumeId = volumeId
         try? await pipeline.indexVolume(volumeId)
         // The single-volume reindex mutated the aux tables — reopen the read-only stores (#275).
@@ -1055,7 +1063,7 @@ struct VolumesStorageHubView: View {
     private func reindexInterrupted(volumeId: String) {
         guard let pipeline = appState.indexingPipeline else { return }
         reindexingInterruptedId = volumeId
-        Task {
+        appState.indexWorkInFlight.start {
             try? await pipeline.indexVolume(volumeId)
             appState.refreshAfterCorpusChange(context: modelContext)
             reindexingInterruptedId = nil
@@ -1066,7 +1074,7 @@ struct VolumesStorageHubView: View {
     private func reindexAllInterrupted(_ volumeIds: [String]) {
         guard let pipeline = appState.indexingPipeline else { return }
         reindexingInterruptedId = "all"
-        Task {
+        appState.indexWorkInFlight.start {
             for volumeId in volumeIds {
                 do {
                     try await pipeline.indexVolume(volumeId)
@@ -1089,6 +1097,8 @@ struct VolumesStorageHubView: View {
               let report = storageReport else { return }
         let remaining = IndexRemainingSelection.volumeIds(among: report.perVolume.map(\.volumeId), pipeline: pipeline)
         guard !remaining.isEmpty else { return }
+        appState.indexWorkInFlight.begin()
+        defer { appState.indexWorkInFlight.end() }
         var failures = 0
         for (idx, volumeId) in remaining.enumerated() {
             settingsBatch = .indexRemaining(current: idx + 1, total: remaining.count)
@@ -1115,6 +1125,8 @@ struct VolumesStorageHubView: View {
     /// completely unaffected.
     private func rebuildIndex() async {
         guard let pipeline = appState.indexingPipeline else { return }
+        appState.indexWorkInFlight.begin()
+        defer { appState.indexWorkInFlight.end() }
         let total = storageReport?.perVolume.count ?? 0
         settingsBatch = .rebuildAll(total: total)
         // The wipe, the pass and the re-read of which volumes the index now holds (#1526): the

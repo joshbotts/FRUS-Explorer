@@ -187,7 +187,8 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///   4.24 — #1766: `followedPageLink`, the page a page link was to when it opened its volume's page
 ///          in Browse, which `openBrowseVolume(_:from:)` clears
 ///   4.25 — L14 (plan of record decision 124): `indexWorkInFlight`, the index work the process runs in
-///          tasks of its own (`IndexWorkInFlight`), which a run of the iOS background task waits for
+///          tasks of its own (`IndexWorkInFlight`), the launch's, a download's and the reader's, which a
+///          run of the iOS background task waits for
 
 // MARK: - CloudKitSyncState
 
@@ -244,12 +245,17 @@ struct NARALookupRequest: Equatable {
 
 /// The index work this process runs in tasks of its own, counted while it runs (plan of record L14,
 /// decision 124): the launch's index pass with the passes after it, the launch's reconcile of the
-/// volumes awaiting their pass, and each download's pass.
+/// volumes awaiting their pass, each download's pass, and the index work the reader starts
+/// (Settings ▸ Volumes & Storage's import, re-indexes, Index Remaining and Rebuild Index, Browse's
+/// Index and Index Now, and a collection export's indexing of the volumes it needs).
 ///
 /// A run of the iOS background task starts none of them and does not await them, and the app holds
 /// no background assertion, so once the run completes its task, iOS may suspend them halfway. The
-/// run therefore waits while this counts any (`FRUSExplorerApp.runIndexingWake`). The Mac counts them
-/// too and reads the count nowhere: a Mac app is not suspended in the background.
+/// run therefore waits while this counts any (`FRUSExplorerApp.runIndexingWake`).
+/// `BackgroundTaskIndexWorkTests` holds every call in the app that starts an index pass to the count.
+/// The code both platforms share counts on the Mac too, and the count is read nowhere there: a Mac
+/// app is not suspended in the background, and the Mac's own storage hub and Corpus Browser do not
+/// count.
 ///
 /// Not `AppState.launchIndexPassesInFlight`, which the Live Activity's sweep reads: that one ends with
 /// the index pass, before the stamp that records the pass and the passes after it, and counts no
@@ -2249,8 +2255,9 @@ final class AppState {
     private var landedVolumeIdsAwaitingIndex: Set<String> = []
 
     /// The index work this process runs in tasks of its own, which a run of the iOS background task
-    /// waits for before it ends (plan of record L14, decision 124): the boot starts the launch's
-    /// passes through it (`IndexWorkInFlight.start(_:)`), and a download's pass counts itself. See
+    /// waits for before it ends (plan of record L14, decision 124): the boot and the reader's index
+    /// actions start their passes through it (`IndexWorkInFlight.start(_:)`), and a download's pass
+    /// and the storage hub's awaited actions count themselves (`begin()`, `defer { end() }`). See
     /// `IndexWorkInFlight`.
     let indexWorkInFlight = IndexWorkInFlight()
 

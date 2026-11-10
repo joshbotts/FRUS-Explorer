@@ -310,7 +310,8 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          for the index work the process runs in tasks of its own, until that work ends or the run's time runs
 ///          out (`waitForIndexWorkInFlight`); a run that saw it end asks for no next run on its account. The boot
 ///          starts the launch's four index tasks through `AppState.indexWorkInFlight`, which counts each from
-///          before it is made to its last line, and a download's pass counts itself
+///          before it is made to its last line, and a download's pass counts itself, as the index work the
+///          reader starts does in its own views
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -726,9 +727,10 @@ struct FRUSExplorerApp: App {
     /// ## The index work it did not start (plan of record L14, decision 124)
     /// The launch's index tasks (the full re-index an index version runs, with the stamp that records
     /// it and the passes after it; the rebuild from the cache; the passes after indexing on a launch
-    /// that needs neither; the reconcile of the volumes awaiting their pass) and each download's pass
-    /// run in tasks of their own, which the run does not await, and the app holds no background
-    /// assertion. Once the run completes the task, iOS may suspend them halfway, and they go on only
+    /// that needs neither; the reconcile of the volumes awaiting their pass), each download's pass and
+    /// the index work the reader starts (Settings ▸ Volumes & Storage's actions, Browse's Index and
+    /// Index Now, a collection export's indexing) run in tasks of their own, which the run does not
+    /// await, and the app holds no background assertion. Once the run completes the task, iOS may suspend them halfway, and they go on only
     /// when the app next runs; `indexAllVolumes()` starts again from its first volume when the process
     /// ends before its last. So before it ends, the run waits while `AppState.indexWorkInFlight`
     /// counts any of them (`waitForIndexWorkInFlight`), until it counts none or the run's time runs
@@ -867,7 +869,8 @@ struct FRUSExplorerApp: App {
     /// ## The index work it did not start (plan of record L14, decision 124)
     /// Before it ends, a run waits for the index work the process runs in tasks of its own, which
     /// `AppState.indexWorkInFlight` counts: the launch's index tasks, which the boot starts there,
-    /// whether a scene or the handler started the boot, and a download's pass.
+    /// whether a scene or the handler started the boot, a download's pass, and the index work the
+    /// reader starts.
     /// `BackgroundTaskIndexWorkTests` drives it.
     init() {
         // First, before anything can tag (#1373) — but NOT the warm-up itself: a CloudKit push, a

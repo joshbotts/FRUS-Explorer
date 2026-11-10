@@ -21,6 +21,8 @@ import SwiftData
 ///   1.0 — Session 11: initial implementation
 ///   1.1 — Wave R / R-8: the word-cloud toolbar button names itself in its `Label` rather than
 ///          relying on `.accessibilityLabel` alone, which an overflowed toolbar row discards.
+///   1.2 — L14 (plan of record decision 124): a volume row's re-index of an interrupted volume starts
+///          through `AppState.indexWorkInFlight`, so a run of the iOS background task waits for it
 struct SubseriesView: View {
 
     let vm: BrowserViewModel
@@ -495,7 +497,8 @@ struct VolumeRowContextMenu: View {
         if appState.interruptedVolumeIds.contains(volume.volumeId),
            let pipeline = appState.indexingPipeline {
             Button {
-                Task { try? await pipeline.indexVolume(volume.volumeId) }
+                // Counted while it runs, for a run of the background task to wait for (L14).
+                appState.indexWorkInFlight.start { try? await pipeline.indexVolume(volume.volumeId) }
             } label: {
                 Label(
                     String(localized: "browser.volume.reindex.action",

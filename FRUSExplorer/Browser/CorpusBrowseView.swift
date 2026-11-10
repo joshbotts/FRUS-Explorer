@@ -31,6 +31,8 @@ import SwiftData
 ///   1.1 — #1761: `rowCaption` quotes a query that is one phrase once, without its own marks
 ///   1.2 — Session 2026-10-25 (FRUS Explorer Light, S17b): `truncationLine` forwards to FRUSCoreKit's
 ///          `CorpusCaptureTruncation.line(documentCount:isMeaningCapture:locale:)`, its strings with it
+///   1.3 — L14 (plan of record decision 124): a document row's Index starts its pass through
+///          `AppState.indexWorkInFlight`, so a run of the iOS background task waits for it
 enum CorporaAxis {
 
     /// One member document, split from its `"volumeId/documentId"` key.
@@ -495,7 +497,9 @@ struct CorpusDocumentsView: View {
                 } else {
                     Button {
                         if let pipeline = appState.indexingPipeline {
-                            Task { try? await pipeline.indexVolume(ref.volumeId) }
+                            // Counted while it runs, for a run of the background task to wait for (L14).
+                            let volumeId = ref.volumeId
+                            appState.indexWorkInFlight.start { try? await pipeline.indexVolume(volumeId) }
                         }
                     } label: {
                         Text(String(localized: "browser.corpora.index", defaultValue: "Index"))

@@ -415,8 +415,10 @@ struct BackgroundTaskNextRunTests {
 /// task (plan of record L14, decision 124).
 ///
 /// ## The defect
-/// The launch's index pass with the passes after it, the launch's reconcile and each download's pass
-/// run in tasks of their own, and the app holds no background assertion. A run completed the task as
+/// The launch's index pass with the passes after it, the launch's reconcile, each download's pass and
+/// the index work the reader starts (Settings ▸ Volumes & Storage's actions, Browse's Index and Index
+/// Now, a collection export's indexing) run in tasks of their own, and the app holds no background
+/// assertion. A run completed the task as
 /// soon as its own work ended, so iOS could suspend those passes halfway, and they went on only when
 /// the app next ran. In the background, the full re-index an index version runs at launch got only
 /// the time a run's own work kept the app awake, and `indexAllVolumes()` starts again from its first
@@ -428,8 +430,10 @@ struct BackgroundTaskNextRunTests {
 /// `AppState.indexWorkInFlight` as the boot starts the launch's passes (`HeldIndexWork`). The work
 /// runs until the test lets it end, and writes its end into the run's record, so each test reads the
 /// order of the work's end, the next run's request and the task's completion. The boot's own tasks
-/// and a download's pass are held to the count by a scan of the boot: no test can run the boot,
-/// which opens the app's own index.
+/// and a download's pass are held to the count by a scan of the boot, since no test can run the
+/// boot, which opens the app's own index; every other call in the app that starts an index pass,
+/// the reader's included, by a scan of the app's source, which names the few calls their callers
+/// count, each with why.
 @MainActor
 struct BackgroundTaskIndexWorkTests {
 
@@ -599,6 +603,110 @@ struct BackgroundTaskIndexWorkTests {
         #expect(begin.upperBound <= end.lowerBound && end.upperBound <= firstSuspension.lowerBound,
                 "The download's pass counts itself only after it first suspends")
         #expect(end.upperBound <= pass.lowerBound)
+    }
+
+    @Test("Every call in the app that starts an index pass runs in counted work, the reader's included")
+    func everyIndexPassIsCounted() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let app = root.appending(path: "FRUSExplorer")
+        // Files whose passes no run of the background task waits for, each with why.
+        let exempt: [String: String] = [
+            "Settings/MacVolumesStorageHub.swift": "the Mac's storage hub: no background task reads the count on the Mac",
+            "App/MacCorpusBrowserWindow.swift": "the Mac's Corpus Browser: no background task reads the count on the Mac",
+        ]
+        // Calls the count holds through their callers: the file, the call, how often, and why.
+        let heldByCallers: [(file: String, call: String, count: Int, why: String)] = [
+            ("App/AppState.swift", "try? await pipeline.indexAllVolumes()", 1,
+             "`indexAllVolumes(with:)`, called from the boot's counted re-index and from Rebuild Index, which counts itself"),
+            ("Browser/BrowserViewModel.swift", "try await pipeline.indexVolume(volume.volumeId)", 1,
+             "`indexVolume(_:)`, which Index Now starts through the count"),
+            ("App/FRUSExplorerApp.swift", "try? await pipeline.indexVolume(volumeId)", 2,
+             "the run's own passes, which it awaits"),
+        ]
+        let passes = [".indexVolume(", ".indexAllVolumes(", ".rebuildSearchIndex(", ".finishIndexing(",
+                      ".rebuildSearchIndexFromCache("]
+        let files = try #require(FileManager.default.enumerator(at: app, includingPropertiesForKeys: nil))
+        var checked = 0
+        var seenHeld: [String: Int] = [:]
+        for case let url as URL in files where url.pathExtension == "swift" {
+            let relative = String(url.standardizedFileURL.path.dropFirst(app.standardizedFileURL.path.count + 1))
+            // The UI-test seams index fixtures in DEBUG launches that ask for them.
+            guard exempt[relative] == nil, !url.lastPathComponent.hasPrefix("UITest") else { continue }
+            let source = try String(contentsOf: url, encoding: .utf8)
+            let calls = passes.flatMap { Self.codeRanges(of: $0, in: source[...]) }
+            let enclosing = Self.enclosingBlocks(of: calls.map(\.lowerBound), in: source)
+            for call in calls {
+                checked += 1
+                if Self.runsInCountedWork(call, blocks: enclosing[call.lowerBound] ?? [], in: source) { continue }
+                let lineStart = source[..<call.lowerBound].lastIndex(of: "\n").map { source.index(after: $0) } ?? source.startIndex
+                let lineEnd = source[call.upperBound...].firstIndex(of: "\n") ?? source.endIndex
+                let line = source[lineStart..<lineEnd].trimmingCharacters(in: .whitespaces)
+                if let held = heldByCallers.first(where: { $0.file == relative && line.contains($0.call) }) {
+                    seenHeld["\(held.file) \(held.call)", default: 0] += 1
+                    continue
+                }
+                Issue.record("\(relative): `\(line)` starts an index pass in work the count does not hold, so a run of the iOS background task would not wait for it (L14). Start its task through `appState.indexWorkInFlight.start`, or count its function with `begin()` and `defer { end() }`.")
+            }
+        }
+        // The scan read the app: the boot's, the hub's, Browse's, the resolver's and the held calls.
+        #expect(checked >= 19, "The scan found only \(checked) calls that start an index pass")
+        for held in heldByCallers {
+            #expect(seenHeld["\(held.file) \(held.call)"] == held.count,
+                    "\(held.file): `\(held.call)` was expected \(held.count) time(s) outside counted work (\(held.why)), and was found \(seenHeld["\(held.file) \(held.call)"] ?? 0)")
+        }
+    }
+
+    /// For each of `positions`, the `{` of every block that encloses it, outermost first. String
+    /// literals and `//` comments are skipped as `WindowTargetingTests.balancedBlock` skips them.
+    private static func enclosingBlocks(of positions: [String.Index], in source: String) -> [String.Index: [String.Index]] {
+        let wanted = Set(positions)
+        var found: [String.Index: [String.Index]] = [:]
+        var open: [String.Index] = []
+        var inString = false
+        var index = source.startIndex
+        while index < source.endIndex {
+            if wanted.contains(index) { found[index] = open }
+            let character = source[index]
+            let next = source.index(after: index)
+            if inString {
+                if character == "\\", next < source.endIndex {
+                    index = source.index(after: next)
+                    continue
+                }
+                if character == "\"" { inString = false }
+            } else if character == "\"" {
+                inString = true
+            } else if character == "/", next < source.endIndex, source[next] == "/" {
+                index = source[index...].firstIndex(of: "\n") ?? source.endIndex
+                continue
+            } else if character == "{" {
+                open.append(index)
+            } else if character == "}" {
+                _ = open.popLast()
+            }
+            index = next
+        }
+        return found
+    }
+
+    /// Whether the call at `call` runs in counted work: in a block that `indexWorkInFlight.start`
+    /// opens, or in a block that counts itself before the call, with `begin()` and a `defer` that
+    /// ends it.
+    private static func runsInCountedWork(_ call: Range<String.Index>, blocks: [String.Index], in source: String) -> Bool {
+        for brace in blocks {
+            let lead = source.index(brace, offsetBy: -48, limitedBy: source.startIndex) ?? source.startIndex
+            if source[lead..<brace].trimmingCharacters(in: .whitespaces).hasSuffix("indexWorkInFlight.start") {
+                return true
+            }
+            let before = source[brace..<call.lowerBound]
+            let lines = before.split(separator: "\n").map { line in
+                line.range(of: "//").map { line[..<$0.lowerBound] } ?? line
+            }
+            let begins = lines.contains { $0.contains("indexWorkInFlight.begin()") || $0.contains("indexWork.begin()") }
+            let ends = lines.contains { $0.contains("defer {") && ($0.contains("indexWorkInFlight.end()") || $0.contains("indexWork.end()")) }
+            if begins && ends { return true }
+        }
+        return false
     }
 
     /// The ranges of `needle` in `text` that are code: those with no `//` before them on their line.

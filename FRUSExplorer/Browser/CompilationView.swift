@@ -104,6 +104,8 @@ import SwiftUI
 ///   2.7 — 2026-10-20: passes `AppState.currentIndexingProgress` to the view model as it changes
 ///          (`BrowserViewModel.updateIndexingProgress(from:)`), which no longer reads the pipeline's
 ///          progress stream beside `AppState`, as the Mac's Corpus Browser never did
+///   2.8 — L14 (plan of record decision 124): Index Now starts its pass through `AppState.indexWorkInFlight`,
+///          so a run of the iOS background task waits for it
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -688,7 +690,8 @@ struct CompilationView: View {
                     .foregroundStyle(.secondary)
                 Button {
                     guard let vol = volume else { return }
-                    Task { await vm.indexVolume(vol) }
+                    // Counted while it runs, for a run of the background task to wait for (L14).
+                    appState.indexWorkInFlight.start { await vm.indexVolume(vol) }
                 } label: {
                     Label(
                         String(localized: "browser.compilation.indexNow",
