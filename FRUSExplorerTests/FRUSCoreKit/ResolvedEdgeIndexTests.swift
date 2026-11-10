@@ -14,7 +14,13 @@
 
 import Foundation
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - ResolvedEdgeIndexTests
 
@@ -47,7 +53,8 @@ struct ResolvedEdgeIndexTests {
 
     private func index() throws -> ResolvedEdgeIndex {
         try #require(ResolvedEdgeIndexStore.shared, """
-            resolved-edge-index.json must decode from the app bundle. If it was just regenerated \
+            resolved-edge-index.json must decode from the app bundle (the repository's copy in the \
+            package). If it was just regenerated \
             it needs `xcodegen generate` to be enrolled — followed by \
             `git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/`.
             """)
