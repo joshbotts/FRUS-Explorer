@@ -1,6 +1,6 @@
 # Plan of record — from 2026-10-21
 
-**Base:** `v2` @ `05297767` (2026-11-02). The tree reads version 1.0, build 1787, the second TestFlight upload (decision 110), uploaded for both platforms on 2026-11-02 and tagged `build-52` at `05297767`; 1.0 (1776), the first, is tagged `build-51` at `f0479037`, and 47 pull requests merged between the two tags, R2b's #1837 the last. Index **v71**, person rollup **v15**, and EmbeddingGemma 2 vectors under digest `89481b18`. Four issues are open (#1835, #1723, #1696, #234), and no pull request. *(The line read `f962077e`, 1861 and v12 until 2026-11-01, and named five open issues, #1823 and #1620 among them, until both closed that day; #1835 was filed the same day, from #1620's re-test. It read `e47ca307`, build 1776 and 40 pull requests until R2b, and `36195234`, with 1787 not yet uploaded, until the upload.)*
+**Base:** `v2` @ `0c800887` (2026-11-10). The tree reads version 1.0, build 1812, the third TestFlight upload (decision 125), uploaded for both platforms on 2026-11-10 and tagged `build-53` at `0c800887`; 1.0 (1787), the second, is tagged `build-52` at `05297767`, and 47 pull requests merged between the two tags, R2c's #1886 the last. Index **v74**, person rollup **v15**, and EmbeddingGemma 2 vectors under digest `89481b18`. Five issues are open (#1854, #1835, #1723, #1696, #234), and no pull request. *(The line read `f962077e`, 1861 and v12 until 2026-11-01, and named five open issues, #1823 and #1620 among them, until both closed that day; #1835 was filed the same day, from #1620's re-test. It read `e47ca307`, build 1776 and 40 pull requests until R2b, and `36195234`, with 1787 not yet uploaded, until the upload. It read `05297767`, build 1787, index v71, the 47 pull requests between `build-51` and `build-52` and four open issues until R2c's upload.)*
 
 **Status: LIVE — the plan of record from 2026-10-21.** It supersedes `Completed/Plan-Of-Record-2026-10-14.md`, whose work is done: Track A (A1 to A19, all but A7, which its decision 57 deferred), Track B and the build-51 screenshot sweep S0 to S5 (#1670 to #1755).
 
@@ -8,7 +8,7 @@ It is written from two sources:
 - `Planning/Planning-Review-2026-10-21.md`: the documents' dispositions, the backlog in tiers, and fifteen questions;
 - the owner's answers to those questions, numbered here 84 to 98.
 
-Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues that gate it, then the retakes, a TestFlight pass, and the submission. Since 2026-11-01 a second TestFlight build, 1.0 (1787), comes before the submission, then a retake sitting of what changed since `build-51`, and then the Agentic Analysis Guide's revision (decisions 110 to 112).
+Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues that gate it, then the retakes, a TestFlight pass, and the submission. Since 2026-11-01 a second TestFlight build, 1.0 (1787), comes before the submission, then a retake sitting of what changed since `build-51`, and then the Agentic Analysis Guide's revision (decisions 110 to 112). Since 2026-11-10 a third, 1.0 (1812), carries the Browse root's grid and its retakes (decision 125).
 
 §7 struck: 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 14, 15. (These are the Visual Marketing Plan's §7 steps that are done; `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` checks the list. Steps 10 and 15 were struck on 2026-10-21, for the screenshot sweep and the composed store frames. The line names that plan's §7; this file has no §7 of its own.)
 
@@ -153,7 +153,7 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
     - This is the upload decision 87 allowed for, numbered between 1787 and 1861; 1812 lies between them, so every upload of 1.0 still rises, and R3 restores 1861 for the submission.
     - It is R2c (§1). It carries what `v2` holds since `build-52`: 46 pull requests, #1838 to #1885, index versions 72 to 74 among them, so a library at 1787's v71 re-indexes once at launch, as decision 117 has it.
     - *Affected screenshots* is read as every capture #1884's grid changed: the 23 iPad frames whose left column shows the Browse root, and the website tour's two crops cut from them. Sitting T1 retook them (`Docs/screenshots/README.md`).
-    - Its tag is the owner's call (decision 113); `build-53` would follow `build-51` and `build-52`.
+    - Its tag is the owner's call (decision 113): `build-53`, on the owner's word of 2026-11-10 ("please tag build 53"), annotated in `build-52`'s form on `0c800887`, #1886's merge, after both apps were uploaded.
 
 **Rules carried from the earlier plans and `CLAUDE.md`.** Each is the owner's.
 - **The queue is serial.** The next pull request is pushed when the owner has merged the one before. Auto-merge is never enabled.
@@ -196,7 +196,7 @@ Its aim is **App Store submission of FRUS Explorer 1.0**: first the nine issues 
 | L12 | A launch made to run the background task: the handler's work, `runIndexingWake`, awaits the launch's boot before it reads the pipeline, and starts the boot when no scene has (decision 122) | #1880 |
 | L13 | The background task's next run: a run whose batch of summaries left more, or whose time ran out, submits the next request before it completes the task (decision 123) | #1882 |
 | L14 | The index work a background run did not start: the launch's passes, its reconcile, a download's pass and the index work the reader starts are counted while they run, and a run waits for them before it completes the task, until its time runs out (decision 124) | #1883 |
-| R2c | The third TestFlight pass, 1.0 (1812): the bump, both TestFlight notes, and sitting T1's retakes of what #1884 changed (decision 125) | — |
+| R2c | The third TestFlight pass, 1.0 (1812), on 2026-11-10: the bump, both TestFlight notes, and sitting T1's retakes of what #1884 changed (decision 125) | — |
 | R3 | The submission, 1.0 (1861) (decision 87) | — |
 
 - **L1 goes first**: it is cheap, and its fixes show on captured screens. L2 to L6 follow in any order the owner prefers. L7 is tools and copy; it can come any time before R1, since the composer's stamp shapes the store frames.
@@ -464,7 +464,7 @@ The repository holds drafts for each.
 
 - §2's submission steps, and R2's TestFlight device pass.
 - **R2b, 2026-11-02** (decision 110): R2b's session ran the checklist on 2026-11-01; on 2026-11-02 its pull request merged, 1.0 (1787) was uploaded for both platforms and tagged `build-52` (decision 113), and the link check before the archive read R2's figures (§1). The owner's: the device pass on an iPhone, an iPad and the Mac, on a library that had 1776, so the People rebuild at v15 is seen. *Done on 2026-11-02, in the owner's words: "device passes all checked and passed. mac launch with network off checked and passed. proceed". Nothing here waits on the owner now.*
-- **R2c, 2026-11-10** (decision 125): the session bumped the tree to 1.0 (1812), rewrote both TestFlight notes for it, and retook #1884's 23 iPad captures and two tour crops (sitting T1); its pull request, #1886, was opened on the owner's word the same day. The owner's: the merge; `./Scripts/fetch-llama-dsyms.sh` and `./Scripts/check_cloudkit_schema.py` in the checkout the archive is cut from; the archive and upload of both apps; the tag (decision 113); and the device pass on a library that had 1787, so the one re-index at v74 is seen.
+- **R2c, 2026-11-10** (decision 125): the session bumped the tree to 1.0 (1812), rewrote both TestFlight notes for it, and retook #1884's 23 iPad captures and two tour crops (sitting T1). The same day its pull request, #1886, merged as `0c800887`, 1.0 (1812) was uploaded for both platforms, and `build-53` was tagged on that commit (decision 113). The owner's: the device pass on a library that had 1787, so the one re-index at v74 is seen.
 - **G1's scope** (decision 112): which of §1's G1 items are taken, and whether a measurement tier follows the text, with its budget line. *Answered on 2026-11-02 (decision 115): the session's picks, and no tier.*
 - **The website's pages** (decision 101): the pastes into frusexplorer.app, and whether the home page and the tour become copies of record.
 - **For A7** (#1723): the device check with Spike Reader. It is `App-Intents-Siri-Assessment-2026-10-18.md` §4, and `jolly-newton-d5828b`'s untracked `A6Spike/` holds the app.
