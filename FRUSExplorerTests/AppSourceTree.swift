@@ -154,6 +154,7 @@ struct AppSourceTreeTests {
     /// kit itself. An exact list, not permission: a scan added here is one somebody has read.
     static let walksTheAppFolderAlone: [String: String] = [
         "AnalyticsValueUnitTests.swift": "reads the kit's Analytics folder beside the app's, by two paths of its own",
+        "BackgroundTaskAppStateTests.swift": "the app's calls that start an index pass, held to AppState's count, which kit code cannot name; the kit's own calls run inside the pipeline methods those calls reach",
         "BrowseScopeTests.swift": "call sites of ScopeIndexView, a SwiftUI view",
         "BrowseTwoPaneMetricsTests.swift": "root selections on the browser's view model, an app type",
         "BundledArtifactProvenanceTests.swift": "lists FRUSExplorer/Resources, bundled data and not source",
