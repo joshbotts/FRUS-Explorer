@@ -10111,7 +10111,7 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 - **The documented route on a device**, which needs the owner's iPhone under Xcode's debugger; the simulator refuses the submit.
 - **`FRUSOffsetEngineTests.swift:2736`'s warning**, Lane 2's, left for its own change.
 
-**Opened as #1879** on the owner's word of 2026-11-09 ("Open the PR"), against `v2` at `7f24463e`; not merged, auto-merge off.
+**Opened as #1879** on the owner's word of 2026-11-09 ("Open the PR"), against `v2` at `7f24463e`, and **merged as `392d2997`** by the owner the same evening, its tree identical to the branch's at `c912772d`; auto-merge off.
 
 ## Session 2026-11-09 — L12: a launch made to run the iOS background task boots before the task's work, so it indexes as a wake of a booted app does (plan of record decision 122)
 
