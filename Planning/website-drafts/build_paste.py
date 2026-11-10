@@ -769,19 +769,19 @@ def tour_chapter():
 
 
 def footer_chapter():
-    """What the footer's block holds, and the same words for a Text block, for a footer that
-    will not take a Code Block."""
+    """What the footer holds either way, and its words and links for the footer's own Text
+    block: the guide's way B, for a footer that offers no Add Block."""
     links = footer_links()
-    out = ["It holds, word for word, the store listing's disclaimer and the National Archives "
-           "sentence, and under them {} links: {}.\n".format(
-               {5: "five"}.get(len(links), len(links)),
-               ", ".join("*{}* (`{}`)".format(text, address) for text, address in links)),
-           "**If the footer will not take a Code Block**, a Text block does the same job. Type "
-           "nothing: paste these three paragraphs into the footer's Text block, in place of what "
-           "the template put there, and set them in the smallest paragraph style.\n",
+    rows = ["| {} | {} |".format(text, "`{}`, typed in full".format(address) if "://" in address
+                                 else "your page at `{}`".format(address))
+            for text, address in links]
+    out = ["Either way the footer holds, word for word, the store listing's disclaimer and the "
+           "National Archives sentence, and under them {} links.\n".format(
+               {5: "five"}.get(len(links), len(links))),
+           "**The words**, for way B's step 2:\n",
            quoted(site.DISCLAIMER, site.NARA, " · ".join(text for text, _ in links)) + "\n",
-           "*After pasting* — " + "; ".join("link: “{}” → `{}`".format(text, address)
-                                            for text, address in links) + ".\n"]
+           "**The links**, for way B's step 4:\n",
+           "| Select | Link it to |\n|---|---|\n" + "\n".join(rows) + "\n"]
     return "\n".join(out)
 
 

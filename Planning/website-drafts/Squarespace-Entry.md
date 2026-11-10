@@ -39,7 +39,7 @@ If you have already entered a page, this is all you need to redo.
 | Page | What changed | What to do |
 |---|---|---|
 | **Home** | No words changed. It can now go in as one Code Block, like the other pages, with its coming-soon line inside it. That line cannot be an Announcement Bar: Squarespace includes one from the Core plan up, and says a feature the plan lacks can show to you while you are logged in and not to visitors. | Turn the bar off, if you set one up. Then either [paste the block](#home) in place of the sections you built, or keep them and add [section 0](#appendix-home-from-native-blocks) above them. |
-| **The site's footer and menu** | New: the earlier steps left them out, and the footer carries the disclaimer on every page. | [Do them once](#the-menu-and-the-footer). The footer is one paste. |
+| **The site's footer and menu** | New: the earlier steps left them out, and the footer carries the disclaimer on every page. | [Do them once](#the-menu-and-the-footer). The footer is one paste, or its own Text block where the footer offers no Add Block. |
 | **Privacy** | One sentence gained the Quick Start on the Research tab, two Settings paths gained *Library*, and the date is now November 10, 2026. | Paste [paste/privacy.txt](paste/privacy.txt) over the block's contents. |
 | **Support** | One Settings path gained *Library*. | Paste [paste/support.txt](paste/support.txt) over the block's contents. |
 | **Quick start, iPad and iPhone** | Its notice names build 1861, where it named 1787. Its line on Browse and its note on what works before a download name Editors’ Annotations. One screenshot's description, for screen readers, names the new Annotations tile; the picture updated by itself. | Paste [paste/quick-start-ios.txt](paste/quick-start-ios.txt) over the block's contents. |
@@ -56,7 +56,7 @@ superseded by the ones in `paste/`, which carry today's text and a first line th
    in, so a bar that looks right in the editor proves nothing. The coming-soon line is part of
    Home's block, and a small Code Block of its own at the top of the Tour.
 2. **No scripts in a Code Block.** A Code Block renders HTML and a `<style>` on every plan, up to
-   400 KB. A `<script>` or an `<iframe>` pasted into one is kept and does nothing. None of the eight
+   400 KB. A `<script>` or an `<iframe>` pasted into one is kept and does nothing. None of the twelve
    pastes holds either.
 3. **The film goes in a Video block.** Any site may hold 30 minutes of uploaded video, and the
    film is 46 seconds.
@@ -65,8 +65,8 @@ superseded by the ones in `paste/`, which carry today's text and a first line th
 
 - The site is a set of **pages**, listed in the **Pages** panel. A page is a stack of **sections**,
   and a section holds **blocks**: Text, Button, Image, Video, Accordion, Code.
-- A new page is empty and offers only **Add Section**. Choose a blank one. **Add Block** then
-  appears at the section's top left when you point at it.
+- A new page is empty and offers only **Add Section**. Click it, then **+ Add Blank**, then
+  **Section**. **Add Block** then appears at the section's top left when you point at it.
 - **A page's address** is its URL slug: the gear beside the page in the Pages panel.
 - **A Code Block:** Add Block ▸ **Code**. Click the block, then its pencil. Leave the mode at
   **HTML** and **Display Source** off. Select everything in the box, paste, and click away. Then
@@ -83,7 +83,7 @@ superseded by the ones in `paste/`, which carry today's text and a first line th
 For each of Privacy, Support and the two quick starts:
 
 1. **Pages ▸ ＋ ▸ Blank Page.** Name it, and set its URL slug from the table at the top.
-2. **Edit ▸ Add Section** (blank) **▸ Add Block ▸ Code.**
+2. **Edit ▸ Add Section ▸ + Add Blank ▸ Section**, then **Add Block ▸ Code.**
 3. Open the paste file from the table, select all of it (⌘A), copy, and paste it over whatever the
    Code Block holds. Its first line is a comment naming the page and a fingerprint: leave it in.
    The files are plain text: any editor opens one, and once they are merged GitHub shows each
@@ -118,25 +118,49 @@ Start · Support · Privacy*: put Tour, the iPad and iPhone quick start, Support
 Navigation, in that order, and Home and the Mac quick start in Not Linked. Each quick start links
 to the other in its first lines. Set Home as the homepage from its gear.
 
-**The footer** is one section shared by every page.
+**The footer** is shared by every page. There are two ways to enter it, and both give the same
+words and the same five links. Do it in a browser on a computer: Squarespace's app for iPhone and
+iPad changes the words of a block that is already there and cannot add one.
 
-1. Click **Edit** on any page, scroll to the bottom, point at the footer and click **Edit Footer**.
-2. Point at the footer's **section**, not at the words in it: **Add Block** (or a **+**) appears at
-   the section's top left. A click on the template's words puts the cursor inside its Text block,
-   which takes typing and nothing else. Press Esc, or click an empty part of the section, to get
-   out of it.
-3. **Add Block**, type `code` in the search field at the top of the block menu, and choose
-   **Code**. Click the new block's pencil and paste all of [paste/footer.txt](paste/footer.txt).
-4. Remove what the template put there: click a block once, then its trash can.
+**Open it first.** Click **Edit** on any page, scroll to the bottom, point at the footer and click
+**Edit Footer**. Click an empty part of the footer, so that no block is selected, then point at the
+footer's section. What shows in the section's top left corner says which way to go:
 
-If the section shows no **Add Block**, use **Add Section** in the footer, choose a blank one, put
-the Code Block in that, and delete the old section with its trash can.
+| The corner shows | What it means | Do this |
+|---|---|---|
+| **Add Block** | The section is the kind a new page has. | Way A. |
+| **Upgrade** | The section was made with Squarespace's older editor, which has no Add Block. A template's footer can be one. | Click **Upgrade**. **Add Block** takes its place: way A. A save makes the upgrade permanent, which costs nothing in a footer whose blocks you are replacing. |
+| neither | The section takes no blocks, or the footer is not open for editing. | Point at the section's top or bottom edge and click **Add Section**, then **+ Add Blank**, then **Section**. The new section shows **Add Block**: way A. Afterwards delete the old section with its trash can. |
+
+If **Add Section** does not appear either, go to way B. It needs only the Text block the footer
+already has.
+
+**Way A: one Code Block.**
+
+1. **Add Block**, type `code` in the search field at the top of the block menu, and choose
+   **Code**.
+2. Click the new block's pencil and paste all of [paste/footer.txt](paste/footer.txt).
+3. Remove what the template put there: click a block once, then its trash can. **Save**.
+
+**Way B: the footer's own Text block.**
+
+1. Keep one Text block and delete the footer's other blocks: click a block once, then its trash
+   can. Click into the one you kept, select everything in it (⌘A) and delete it.
+2. Copy the three paragraphs under *The words*, below, and paste them as plain text: ⌘⇧V. That is
+   Squarespace's own advice for text brought in from elsewhere. If the paste leaves an empty line
+   between two paragraphs, delete it.
+3. Select all three (⌘A) and choose **Paragraph 3**, the smallest, from the style menu in the text
+   toolbar.
+4. Make the five links in the table under *The links*. For each: select the word, click the link
+   icon in the text toolbar and choose **URL**. For a page of your own, start typing its name and
+   pick it from the list that appears; for *Source code*, type the address. Press Enter.
+5. If the block is narrower than the section, drag its edges out to the full width. **Save**.
 
 <!-- generated:footer -->
 
-It holds, word for word, the store listing's disclaimer and the National Archives sentence, and under them five links: *Support* (`/support`), *Privacy* (`/privacy`), *Tour* (`/tour`), *Quick start* (`/quick-start-ios`), *Source code* (`https://github.com/joshbotts/FRUS-Explorer`).
+Either way the footer holds, word for word, the store listing's disclaimer and the National Archives sentence, and under them five links.
 
-**If the footer will not take a Code Block**, a Text block does the same job. Type nothing: paste these three paragraphs into the footer's Text block, in place of what the template put there, and set them in the smallest paragraph style.
+**The words**, for way B's step 2:
 
 > FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State. Any commentary, advice, or guidance about the FRUS series in this app reflects personal views about historical research methodology and makes no interpretive claims about the history of U.S. foreign policy. Those views are not necessarily those of the Department of State or the U.S. Government. The FRUS series itself is in the public domain.
 >
@@ -144,12 +168,26 @@ It holds, word for word, the store listing's disclaimer and the National Archive
 >
 > Support · Privacy · Tour · Quick start · Source code
 
-*After pasting* — link: “Support” → `/support`; link: “Privacy” → `/privacy`; link: “Tour” → `/tour`; link: “Quick start” → `/quick-start-ios`; link: “Source code” → `https://github.com/joshbotts/FRUS-Explorer`.
+**The links**, for way B's step 4:
+
+| Select | Link it to |
+|---|---|
+| Support | your page at `/support` |
+| Privacy | your page at `/privacy` |
+| Tour | your page at `/tour` |
+| Quick start | your page at `/quick-start-ios` |
+| Source code | `https://github.com/joshbotts/FRUS-Explorer`, typed in full |
 
 <!-- /generated:footer -->
 
-Its type and colour are your footer's own, so it reads on a dark footer as on a light one. It is
-pasted, not typed, so that the disclaimer stays word for word: do not shorten it in the block.
+Either way its type and colour are your footer's own, so it reads on a dark footer as on a light
+one. The words are pasted, not typed, so that the disclaimer stays word for word: do not shorten
+it. Way A's block sets the text at 13 pixels; way B's is the size your site gives Paragraph 3.
+
+These steps are from Squarespace's help pages, listed at the end. No session has seen this site's
+footer in the editor. If it matches none of the three rows and way B does not suit, have a session
+look: send it a screenshot of the footer after **Edit Footer**, with the pointer over it, or sign
+in to Squarespace in the Claude app's browser pane, where a session can open the editor itself.
 
 **To look like the preview** (optional): in **Site Styles**, Source Serif 4 for headings and
 paragraphs and IBM Plex Sans for buttons and the menu, if the font list offers them; a white
@@ -296,7 +334,7 @@ longer, and the words then live in Squarespace, where you can edit them in place
 Code Block, not both. If you built Home this way on 7 November, its words have not changed since:
 only section 0 is new.
 
-**Every section starts the same way:** Add Section ▸ blank, then Add Block inside it.
+**Every section starts the same way:** Add Section ▸ + Add Blank ▸ Section, then Add Block inside it.
 
 <!-- generated:home -->
 
@@ -446,3 +484,15 @@ The first line is **Heading 2**, the rest **Paragraph 2**.
   a page.
 - [Resizing blocks](https://support.squarespace.com/hc/en-us/articles/206543647): the computer and
   phone views are sized apart.
+- [Edit your site's footer](https://support.squarespace.com/hc/en-us/articles/205816028): Edit
+  Footer, and the kinds of section a footer takes.
+- [Edit your site with Fluid Engine](https://support.squarespace.com/hc/en-us/articles/6421525446541):
+  a section with no Add Block uses the classic editor, and **Upgrade** converts it.
+- [Add content to your site with blocks](https://support.squarespace.com/hc/en-us/articles/206543757):
+  what to check when the buttons that add a block are missing, and what the app cannot do.
+- [Page sections](https://support.squarespace.com/hc/en-us/articles/360027987711): Add Section,
+  **+ Add Blank**, **Section**.
+- [Fixing text formatting](https://support.squarespace.com/hc/en-us/articles/205813908): paste as
+  plain text, ⌘⇧V.
+- [Add links to your site](https://support.squarespace.com/hc/en-us/articles/206232858): the link
+  editor's **URL** option, and its list of your own pages.
