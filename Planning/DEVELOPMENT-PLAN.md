@@ -10298,7 +10298,7 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 - No package input changed, so no `swift test` is owed.
 
 **Not done, and for the owner.**
-- **Opened as #1886** on the owner's word of 2026-11-10 ("Open a PR"), against `v2` at `7cad0351`, on `claude/testflight-1812-retakes`; not merged, auto-merge off.
+- **Opened as #1886** on the owner's word of 2026-11-10 ("Open a PR"), against `v2` at `7cad0351`, on `claude/testflight-1812-retakes`; **merged as `0c800887`** at 10:08 the same day, auto-merge off (*After the merge*, below).
 - **The owner's steps**, in the checkout the archive is cut from:
   1. Bring `v2` to this pull request's merge commit.
   2. Run `./Scripts/fetch-llama-dsyms.sh` and `./Scripts/check_cloudkit_schema.py`. Neither was run here, so this worktree holds no cache or stamp for them. `CloudKitSchemaInventory.swift` is unchanged since `build-52`, whose check passed.
@@ -10308,3 +10308,11 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 - **Not run:** the rest of the release checklist that R2 and R2b ran (the Mac check copy's walk, `swift test`, the window-fronting audit, the link check). The owner asked for the bump and the retakes, and no package input changed.
 - **Found, not fixed** (§5, *Found by T1*): the subseries list orders two subseries that begin in the same year differently from launch to launch.
 - **The simulators**: `3D2607D9` holds `snapshot-A74` with T1's build; `80CF0F18` was shut down after its runs.
+
+**After the merge, 2026-11-10.** The owner merged #1886 as `0c800887` at 10:08, and archived and uploaded both apps from it.
+- `FRUSExplorerMac` was archived at 10:18 and uploaded at 10:23; `FRUSExplorer` was archived at 10:27 and uploaded at 10:29. Each is 1.0 (1812).
+- Each archive's `Info.plist` records the upload to App Store Connect: *Uploaded to Apple*, state `success`, no errors or warnings, `uploadedBuildNumber` 1812.
+- Each archive holds `llama.framework.dSYM`, which its archive-only phase copies in only after checking the UUIDs. The archive-only CloudKit phase, which fails an archive that has no stamp from the schema check, let both archives through.
+- On the owner's word ("testflight builds archived and uploaded. please tag build 53"), `build-53` was made in `build-52`'s form: annotated, "TestFlight 1.0 (1812), both platforms.", on `0c800887`, from which `v2` had not moved. It was pushed as tag object `83baa1a7`.
+- A records pull request, opened on the owner's word ("Yes, open it"), says so in the plan of record: its Base line, decision 125, §1's R2c row and §4.
+- Left for the owner: the device pass on a library that had 1787.
