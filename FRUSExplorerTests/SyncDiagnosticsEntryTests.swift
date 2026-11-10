@@ -480,8 +480,9 @@ struct SyncEventMonitorTests {
     @Test("A real container fallback reads the remembered run; a skipped one does not")
     func fallbackReadsTheRun() throws {
         let source = try DebugStoreSeparationTests.appSource("FRUSExplorer/App/FRUSExplorerApp.swift")
+        // `containerSetup` since L12: the boot is static, and is given the setup it reads.
         let fallback = try #require(DebugStoreSeparationTests.functionBody(
-            "if let initError = _containerSetup.initError", in: source),
+            "if let initError = containerSetup.initError", in: source),
             "the container-fallback branch is not where this test looks")
         #expect(fallback.filter { !$0.isWhitespace }
                     .contains("appState.unrecoveredExport=SyncExportFailureMemory.load()"),

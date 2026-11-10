@@ -328,6 +328,7 @@ struct OrphanedTagRepairTests {
 /// Version history:
 ///   1.0 — Session 2026-10-09: #1591
 ///   1.1 — 2026-10-19: #1689 — a merge rewrites the rows of the documents it re-pointed, as a delete does
+///   1.2 — 2026-11-09: L12 — the launch pass is given iCloud's flag, so the app scan reads the call that passes it
 @Suite("The index's tag column follows the assignments (#1591)")
 @MainActor
 struct TagColumnReconcileTests {
@@ -658,8 +659,13 @@ struct TagColumnReconcileTests {
         #expect(reconciles.count == 2, "got \(reconciles.count) calls")
         #expect(reconciles.filter { $0.contains("sweepingStaleRows: true") }.count == 1,
                 "one call, the import-settle one, always sweeps")
-        #expect(reconciles.filter { $0.contains("sweepingStaleRows: !_containerSetup.cloudKitEnabled") }.count == 1,
+        // Since L12 the launch pass is static, so it is given iCloud's flag rather than reading the
+        // container setup; the scan reads both halves, the sweep and the flag the boot passes in.
+        #expect(reconciles.filter { $0.contains("sweepingStaleRows: !cloudKitEnabled") }.count == 1,
                 "the launch call sweeps only with iCloud off")
+        #expect(calls(to: "syncDocumentTagAssignmentsToFTS5", in: source)
+                    .filter { $0.contains("cloudKitEnabled: containerSetup.cloudKitEnabled") }.count == 1,
+                "the boot does not give the launch pass the container's own iCloud flag")
         // The launch pass no longer writes the column itself.
         #expect(calls(to: "pipeline.updateUserTagIds", in: source).isEmpty)
     }
