@@ -49,37 +49,38 @@ If you have already entered a page, this is all you need to redo.
 The four files sent on 7 November (`privacy.txt`, `support.txt` and the two quick starts) are
 superseded by the ones in `paste/`, which carry today's text and a first line that says so.
 
-**If you pasted on 10 November,** four of those files changed later that day, to underline their
-links: [the next section](#what-the-site-holds-and-what-to-paste-again) says which.
+Those four changed once more on 10 November, to underline their links, and you pasted them again
+that day: [the next section](#what-the-site-holds) has what the site holds now.
 
-## What the site holds, and what to paste again
+## What the site holds
 
 On 10 November you signed in to Squarespace in the Claude app's browser pane, and a session looked
-at every page in the site's own preview, at computer width and at phone width. At your word it
-then entered the footer's Code Block. It touched nothing else.
+at the site's pages in its own preview, at computer width and at phone width: all six, and then,
+after you had pasted four of them again, those four. At your word it entered the footer's Code
+Block. It opened the editor for nothing else.
 
-| Page | The site holds | Paste again? |
+| Page | The site holds | The current file? |
 |---|---|---|
-| Home | one Code Block, `814c41f7` | no |
-| Tour | Code `73a41228`, Code `7919c798`, Video (the film, 46 seconds), Code `4671c5d0`, Code `a65b3389`, in one section | no |
-| Quick start, iPad and iPhone | one Code Block, `95bade41`, and an empty Text block under it | **yes**: [paste/quick-start-ios.txt](paste/quick-start-ios.txt) |
-| Quick start, Mac | one Code Block, `503e955d` | **yes**: [paste/quick-start-mac.txt](paste/quick-start-mac.txt) |
-| Privacy | one Code Block, `70729172` | **yes**: [paste/privacy.txt](paste/privacy.txt) |
-| Support | one Code Block, `afe50dd6` | **yes**: [paste/support.txt](paste/support.txt) |
-| The footer | one Code Block, `6a78a398`, entered by the session | no |
+| Home | one Code Block, `814c41f7` | yes |
+| Tour | Code `73a41228`, Code `7919c798`, Video (the film, 46 seconds), Code `4671c5d0`, Code `a65b3389`, in one section | yes |
+| Quick start, iPad and iPhone | one Code Block, `df732dbf`, and an empty Text block under it | yes |
+| Quick start, Mac | one Code Block, `0a79a3cd` | yes |
+| Privacy | one Code Block, `8c230dab` | yes |
+| Support | one Code Block, `64da46d0` | yes |
+| The footer | one Code Block, `6a78a398`, entered by the session | yes |
 
-**Why four pages are pasted again: their links.** Your theme underlines a link in a Text block and
-leaves one in a Code Block exactly as the words around it, with no underline and no colour. On
-Support, none of the 11 links could be told from the text, and the same held for Privacy's 6 and
+Each fingerprint is its file's in [the kit's table](#when-a-page-changes-later). Home and the Tour
+are as the first look found them; the four pages and the footer, as the second did.
+
+**The day's one correction: links.** Your theme underlines a link in a Text block and leaves one in
+a Code Block exactly as the words around it, with no underline and no colour. At the first look,
+none of Support's 11 links could be told from the text, and the same rule held for Privacy's 6 and
 the quick starts' 34 and 36. Home and the Tour were never affected: their blocks style their own
-links. Each of the four files, and the footer's, now carries one rule that underlines its links
-and leaves their colour to the site. The rule was tried in the site's preview before the files
-changed, and the footer shows it working.
+links. The four pages' files and the footer's gained one rule that underlines their links and
+leaves their colour to the site. The session entered the footer's, you pasted the four pages
+again, and the second look found all 92 of those links underlined, at both widths.
 
-**To paste a page again:** **Edit**, click the page's Code Block, then its pencil. Click in the
-code, press ⌘A, paste the file, click away, and **Save**. The block keeps its place and size.
-
-What the look found:
+What the looks found:
 
 - **Nothing is cut off.** On no page, at either width, do a block's contents run past the block or
   its section, and no page scrolls sideways at phone width.
@@ -87,7 +88,7 @@ What the look found:
 - **The type is as the pastes ask.** Home and the Tour are set in a serif; the four pasted pages
   and the footer take the site's own, Poppins.
 
-Two smaller things, neither urgent:
+Two small things are left, neither urgent:
 
 1. **The iPad and iPhone quick start has an empty Text block** under its Code Block. Click it
    once, then its trash can.
@@ -95,6 +96,8 @@ Two smaller things, neither urgent:
    at computer width, a narrow centred column, where Home's and the Tour's are 781. That reads
    well as it is. Dragging a block's edges out, step 4 of [the pasted pages](#the-four-pasted-pages),
    widens the text and its screenshots.
+
+What comes next is [going public, and release day](#going-public-and-release-day).
 
 ## Three things the Basic plan changes
 
