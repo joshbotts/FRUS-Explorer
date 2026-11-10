@@ -10256,3 +10256,5 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 - `browse-root.png` is the capture whose subject is the root. The alt text that describes it, in the iOS manual §6, the iOS Quick Start and the website's quick start, is left as it is until the retake.
 - The website tour's step 3 is cut from `browse-administrations-truman.png`.
 - `TwoPaneDocumentTests`' list of the doors the root always draws has never held this door, before or after the change.
+
+**Opened as #1884** on the owner's word of 2026-11-10 ("Open a PR"), against `v2` at `bbd1bcfb`; not merged, auto-merge off.
