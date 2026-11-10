@@ -16,6 +16,23 @@ interpretive claims about the history of U.S. foreign policy, and the BUILT ON T
 WORK section describes the Office's work by its statutory mandate (see the note under §2). The
 app's own About disclaimer, `about.dos.disclaimer`, is unchanged by the owner's decision.
 
+**Read against 1.0 (1812) on 2026-11-10**, TestFlight build 53, which the owner takes to be what
+1.0 (1861) ships. Every figure recounts the same from `f179c1bd`'s bundle (§5), and that build
+contradicts no sentence of the description. What changed here that day:
+
+- the keywords are counted in bytes, as Apple's reference counts them, and an alternate is offered
+  (§1);
+- a sentence on Editors' Annotations is offered for the description, in the owner's own words from
+  the home page (§2);
+- What's New is marked as a field a first version does not have (§3);
+- §5's index figure is a device's own count, at index version 74;
+- §7 is new: the App Review notes;
+- the fields leave this file through `Planning/app-store-connect/build_paste.py`, which counts each
+  one and writes it ready to paste (§6). **The description's block here is wrapped for reading, and
+  App Store Connect keeps a pasted line break: paste `paste/description.txt`, never the block.**
+
+`Planning/app-store-connect/App-Store-Connect-Entry.md` walks through the submission page by page.
+
 **Every field below is counted, not estimated.** The plan's headline correction for this step is a
 length failure — a candidate subtitle 83 characters over a 30-character field — so the counts are
 the first thing in each block. Re-count after any edit with the script in §6.
@@ -66,10 +83,23 @@ Editable without a review, so it is the field for anything time-sensitive.
 
 ### Keywords — 92 / 100 ✅
 
-Comma-separated, no spaces (spaces are billed as characters).
+Comma-separated, no spaces after a comma (a space is billed like any other character). **The limit
+is 100 bytes, not 100 characters**, and each keyword must be longer than two characters (Apple's
+reference, read 2026-11-10: "You can provide up to 100 bytes of content"). All ten are ASCII, so
+the two counts agree.
 
 ```
 FRUS,diplomacy,history,archives,primary source,NARA,research,foreign policy,declassified,TEI
+```
+
+**Offered 2026-11-10: `relations` in place of `FRUS`, 97 / 100.** The same reference says: "Your
+app is searchable by app name and company name, so you shouldn't duplicate these values in the
+keyword list." `FRUS` is a word of the name. Without it the field has room for `relations`, so that
+both words of the series' own title, *foreign relations*, are in it (`foreign` is there already, in
+`foreign policy`). The block above is the copy of record until the owner chooses:
+
+```
+diplomacy,history,archives,primary source,NARA,research,foreign policy,relations,declassified,TEI
 ```
 
 ---
@@ -145,9 +175,9 @@ National Archives and is subject to their terms of use.
 
 ### What is deliberately not in it
 
-- **"Every document."** A full library indexes **316,814** documents (the 314,616 printed
-  documents plus 2,198 prose sections the parser promotes; counted by the parser's replica, not
-  yet on a device — §5) while the semantic map places
+- **"Every document."** A full library's index holds **321,749** rows (a device's own count at
+  index version 74, on 2026-11-10: the printed documents, the editorial notes, the prose sections
+  the parser promotes and the front matter — §5) while the semantic map places
   **314,616** — two different surfaces, two honest numbers, and neither is "every".
   The description says *553 volumes*, which is the one count that is fixed and checkable.
 - **Any claim of endorsement by Google.** *"using Google's EmbeddingGemma model"* is the permitted
@@ -203,9 +233,30 @@ The promotional text has an alternate for the theme, 152 / 170, counted the same
 The edited record of U.S. diplomacy, 553 volumes indexed on your device, with tools built on its editors' source notes, cross-references and annotation.
 ```
 
+### Offered 2026-11-10: a sentence on Editors' Annotations
+
+Since the description was last revised the app gained Editors' Annotations: each volume's page
+lists what its editors annotated, and Browse files every volume by those layers (#1859 to #1862,
+#1884). The description does not mention it, and nothing in the description is wrong for leaving it
+out. If the owner wants it there, the home page's sentence of 2026-11-06 fits at the end of the
+BUILT ON THE EDITORS' WORK paragraph, after *an index you can search.*, and brings the field to
+**3,584 / 4,000** (160 characters and the space before them):
+
+```
+Every volume's page shows what kinds of annotation it carries, even before you download it, and Browse lays out each kind of annotation across the series' eras.
+```
+
+The description's block above is the copy of record until the owner chooses. To take the sentence,
+add it to that block, change the count in the heading of §2, and run §6's script.
+
 ---
 
 ## 3. What's New (first release)
+
+**Version 1.0 has no such field.** Apple's reference, read 2026-11-10: "This property isn't
+available for the first version of the app but required for all subsequent versions." The text
+below is kept for a page that shows the field after all, and as the form of the first update's:
+169 / 4,000 characters as pasted.
 
 ```
 First release.
@@ -217,6 +268,19 @@ offline, from the Office of the Historian's own TEI editions.
 ---
 
 ## 4. Screenshots and the App Preview
+
+**As of 2026-11-10.** The listing launches without an App Preview (decision 89), so what follows
+this paragraph is the preview's capture plan of 2026-08-31, kept for its later pass. The
+screenshots are the launch kit's set (`Launch-Marketing-Kit-2026-10-13.md` §3), composed by
+`tools/marketing/compose.py` from the captures `tools/marketing/shots.json` names. A store run
+writes the 34 frames to `~/Desktop/store`, outside the repository, and the frames each App Store
+Connect slot takes to `~/Desktop/store/upload/<preset>/`, numbered in the listing's order: ten for
+the 13-inch iPad, ten for the Mac and five for the 6.9-inch iPhone. The three sizes were read on
+Apple's Screenshot specifications page that day: 2752 × 2064 is one of the 13-inch iPad's two
+landscape sizes, which settles decision 33's check. That page's list of required sizes names the
+iPhone's *medium* display, and the page also says a larger set is scaled down, so the run writes
+the iPhone's five a second time, scaled to 1206 × 2622, in `upload/iphone-6.3/`, for a slot that
+asks for that size itself.
 
 Per §4.1: two capture passes, **the same simulator and resolution in both**.
 
@@ -251,7 +315,7 @@ Not one is quoted from prose.
 | Figure | Value | Measured from |
 |---|---|---|
 | Volumes | 553 | `manifest.json`, entry count |
-| Documents indexed | 316,814 | the index v63 parser's emission over the 553 volumes, reproduced 2026-10-10 with `tools/page-citations/replica.py` at corpus `99d851c79` (316,768 at `8e5da08c1` on 2026-10-01: one fewer since `frus1902app1`'s two re-typed divisions, 47 more since `frus1952-54v09p1`'s restored documents); index v64 and v65 changed no document count. **A device's own `SELECT COUNT(*) FROM document_cache` is owed to the release's re-index census** — the draft's 316,839 was that query at 552 volumes |
+| Rows in a full index | 321,749 | `SELECT COUNT(*) FROM document_cache` on a copy of the owner's Mac index, 553 volumes at index version 74, taken 2026-11-10 with `quick_check` ok. By the table's two flags: 1,103 front-matter rows and 320,646 others, 8,477 of them editorial notes. This is the device count the row owed until then. Earlier: 321,702 on the iPad simulator at version 71 (A19, 2026-10-21); 316,814 by the parser's replica at version 63 (`tools/page-citations/replica.py`, corpus `99d851c79`, 2026-10-10); 316,839 on a device at 552 volumes (2026-07-30). **No field of the listing uses it.** The launch kit and the README still say *about 317,000* |
 | Documents on the map | 314,616 | `semantic-vectors-index.json`, `documentCount` |
 | Regions | 140 | `semantic-map-index.json`, `clusters`, re-read 2026-10-15 after B4 (EmbeddingGemma 2's layout; the 300m's held 172) |
 | Documents in a region | 226,557 | `documentCount` − `layout.unclusteredCount`, re-read 2026-10-15 (222,348 under the 300m) |
@@ -273,25 +337,114 @@ Two figures a description must **not** use, recorded so nobody reaches for them:
 ## 6. Re-counting after an edit
 
 ```bash
-python3 - <<'PY'
-fields = {
-    "name": "FRUS Explorer",
-    "subtitle": "The U.S. diplomatic record",
-    "promo": "553 volumes of the U.S. diplomatic record, indexed on your device and searchable offline — with the sourcing and analysis tools a corpus this size needs.",
-    "keywords": "FRUS,diplomacy,history,archives,primary source,NARA,research,foreign policy,declassified,TEI",
-}
-limits = {"name": 30, "subtitle": 30, "promo": 170, "keywords": 100}
-for key, text in fields.items():
-    n, cap = len(text), limits[key]
-    print(f"{key:9} {n:4}/{cap}  {'OK' if n <= cap else 'OVER BY ' + str(n - cap)}")
-PY
+python3 Planning/app-store-connect/build_paste.py
 ```
 
+The script reads each field's block from this file: the first fenced block under the field's
+heading. It counts the text as it will be pasted, the way Apple's reference counts that field:
+characters for the name, the subtitle, the promotional text, the description and What's New, and
+**bytes** for the keywords and the App Review notes. It exits with an error when a field is over
+its limit, when the count this file prints beside a field is not the count it measured, or when a
+field holds one of the three characters App Store Connect refused in 1.0 (1776)'s Mac notes (the
+gear, the multiplication X and the circled i). Then it writes each field to
+`Planning/app-store-connect/paste/`, one line a paragraph, and the field table in
+`App-Store-Connect-Entry.md`. With `--check` it writes nothing and exits 1 when a paste file or
+the table is out of step with this file.
+
+Until 2026-11-10 this section held a counter with its own copy of the four short fields, which an
+edit to a block above could leave behind, and nothing counted the description.
+
 **Count characters, never words, and count the em dash as one.** The failure this step exists to
-avoid was a 113-character line proposed for a 30-character field.
+avoid was a 113-character line proposed for a 30-character field. Where the limit is in bytes an
+em dash is three, which is one reason the review notes are plain ASCII.
 
 **And run it rather than trusting a draft, including this one.** Three of the counts first written
 into this document were wrong — the promotional text by 4, the keywords by 5, the description by
 523 — every one of them estimated rather than measured, in the document whose subject is not
 estimating. All were inside their limits, so nothing would have been caught by the field rejecting
-it; they were caught by running the script above. That is the whole argument for having it.
+it; they were caught by running the counter. That is the whole argument for having it.
+
+---
+
+## 7. App Review notes
+
+**4,000-byte field. This draft is 3,886 / 4,000 ✅**, counted as pasted. The field is on each
+platform's version page, under App Review Information, and customers never see it. One text serves
+both pages. It is plain ASCII, so that bytes and characters agree and no symbol can be refused.
+
+It is lifted, not written: the first two paragraphs from §2, the downloads and the two optional
+services from `Docs/Privacy-Policy.md`, the AI answers from the launch kit's §5.5, and the route
+from the TestFlight notes. What the plan of record's §2 asks of it is the model's paragraph
+(decision 18) and the not-an-official-product sentence.
+
+```
+FRUS Explorer is a research tool for the Foreign Relations of the United States (FRUS) series, the
+official documentary record of U.S. foreign policy, which the Department of State's Office of the
+Historian has published since 1861. The series is in the public domain, and the Office publishes
+it as open TEI data, which the app downloads and reads.
+
+The app is an independent, private-capacity project. It is not an official product of the Office
+of the Historian or the U.S. Department of State. The description, the first screenshot of each
+set, the Support page and the app's About screen say so.
+
+NO ACCOUNT
+There is no sign-in, no purchase, no advertising and no tracking. The app is free and collects no
+data.
+
+TO REVIEW
+1. Launch the app. Onboarding offers the whole series, a subseries or a single volume. Choose A
+   Single Volume and pick any volume: it is a few megabytes. The whole series is 553 volumes,
+   about 3.3 GB, and is not needed for review.
+2. On iPhone and iPad the tabs are Browse, Search, Research, Collections and Settings. On the Mac
+   the same tools are in the main window, the Corpus Browser (Shift-Command-B), the Search window
+   and the Analytics menu.
+3. Open a document from Browse or Search. Select text to highlight it or add a note. The Research
+   rail holds Cite, Sources, Graph, Related and Summary.
+4. Editors' Annotations (Browse > Annotations on iPhone and iPad, the Corpus Browser's sidebar on
+   the Mac), the series dashboards and each volume's page work before any download.
+
+WHAT THE APP DOWNLOADS
+- Volumes: public TEI XML files from the Office of the Historian's repository on GitHub
+  (HistoryAtState/frus), and their figure images from static.history.state.gov.
+- A small semantic match file for each volume, from the developer's public repository on GitHub
+  (joshbotts/frus-semantic-vectors).
+- Optional, and only when the user chooses Download Search Model: Google's EmbeddingGemma 2, an
+  open model under the Apache 2.0 license, 310 MB, from a release of that same repository. There
+  is no agreement to accept. The file is model weights (GGUF), not code; the app reads it with the
+  llama.cpp library built into the app. It turns a typed question into numbers on the device for
+  Search > Meaning, which the app labels experimental.
+
+ON-DEVICE AI
+Summarize this Document uses Apple Intelligence on the device and records on each summary that a
+model wrote it. Search by meaning uses the optional model above. Neither sends a document or a
+question anywhere. Without Apple Intelligence or the model, the rest of the app works.
+
+OPTIONAL SERVICES, EACH WITH THE USER'S OWN KEY
+- National Archives Catalog (catalog.archives.gov): Source Explorer can look up the records a
+  document's source note cites, with the user's own free API key, entered in Settings > System >
+  Connections. Without a key the app sends the Catalog nothing, and Source Explorer still resolves
+  source notes from reference data inside the app.
+- Zotero (api.zotero.org): sends citations to the user's own Zotero library, with the user's own
+  key.
+Neither is needed to use the app. FRUS Explorer is not affiliated with, endorsed by, or sponsored
+by the National Archives and Records Administration.
+
+ICLOUD AND BACKGROUND WORK
+Notes, highlights, tags and collections sync through the user's own private iCloud database
+(CloudKit). The developer runs no server. Background processing finishes indexing downloaded
+volumes and, when the user asks for it, a batch of summaries. On iPhone and iPad a Live Activity
+shows the indexing queue.
+
+THE CONTENT
+The documents are historical government records: diplomatic correspondence and memoranda about
+war, weapons and political conflict as well as trade and treaties.
+
+MAC
+The app is sandboxed. Its entitlements are outgoing network connections (the downloads above),
+user-selected files (exports and imports through the system's panels) and iCloud.
+```
+
+**Two things the notes leave to the owner.** They do not offer App Review a National Archives key:
+if a reviewer asks to see a catalog lookup, the owner can answer with one. And the paragraph on
+the content states the subject only; the age rating's answers are in the entry sheet, and are the
+owner's to give.

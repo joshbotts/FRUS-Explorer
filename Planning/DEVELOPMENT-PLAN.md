@@ -10316,3 +10316,60 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 - On the owner's word ("testflight builds archived and uploaded. please tag build 53"), `build-53` was made in `build-52`'s form: annotated, "TestFlight 1.0 (1812), both platforms.", on `0c800887`, from which `v2` had not moved. It was pushed as tag object `83baa1a7`.
 - A records pull request, opened on the owner's word ("Yes, open it"), says so in the plan of record: its Base line, decision 125, §1's R2c row and §4.
 - Left for the owner: the device pass on a library that had 1787.
+
+## Session 2026-11-10 — The App Store Connect assets for 1.0 (1861): the store frames composed again, the listing read against build 53, the App Review notes, and an entry sheet with its paste kit
+
+**What was asked.** The owner's words: "update App Store Connect assets that I will need when submitting build 1861". From `v2` at `f179c1bd`. No Swift, package input, bundled resource or test changed, so no index version and no CloudKit change. The tree still reads 1.0 (1812): R3's bump to 1861 is not part of this, and nothing was entered in App Store Connect, which only the owner can open.
+
+**Changed.**
+- **The store frames** (`Docs/screenshots/README.md`, the sittings' ledger, C1). Q1 retook eleven captures that store frames stand on, on 2026-11-06, and no compose followed, so `~/Desktop/store` and `Planning/marketing-drafts/` held R4's set of 2026-11-02.
+  - Both were composed again. Eleven frames changed: 01 on all four presets, 04 on all three, and 12 and 13 on the iPad and the Mac. The other 23 came out byte for byte as R4's.
+  - Those eleven shots' `status` in `tools/marketing/shots.json` reads *build 1787*, the tree's build number at Q1's commit, by R4's rule.
+- **The upload folders** (`tools/marketing/compose.py`, `shots.json`'s new `listing`). A store run now copies the frames each App Store Connect slot takes to `upload/<preset>/NN-<id>.png`.
+  - A slot keeps its screenshots in the order they arrive, and the frames' names sort by audience, which would put frames 11 and 12 ahead of 04; nor does a slot take all fourteen.
+  - `~/Desktop/store/upload/` holds ten for the iPad, ten for the Mac and five for the iPhone. `listing` is the kit's §3 order (decision 32), which until now was only in prose.
+  - `uploadAlso` adds `upload/iphone-6.3/`: the iPhone's five again at 1206 × 2622, each its reviewed 6.9-inch frame printed as an image filling a page of that size. It is there because Apple's page disagrees with itself (below).
+- **The listing draft** (`Planning/Store-Listing-Draft.md`), read against 1.0 (1812):
+  - the keywords are counted in bytes, as Apple's reference counts them, with an alternate offered that leaves out `FRUS`, a word of the app's name;
+  - a sentence on Editors' Annotations is offered for the description, in the owner's words from the home page (3,584 of 4,000 with it). The description's block is unchanged, at 3,423;
+  - What's New is marked as a field a first version does not have;
+  - §5's index figure is a device's own count (below), which the row had owed since 2026-10-10;
+  - §7 is new: the App Review notes, 3,886 of the field's 4,000 bytes, plain ASCII, lifted from the description, the Privacy Policy, the launch kit's §5.5 and the TestFlight notes.
+- **`Planning/app-store-connect/`**, new:
+  - `App-Store-Connect-Entry.md`, the owner's steps in the order of App Store Connect's pages: the account, App Information with an answer for each item of the age rating, App Privacy, Pricing and Availability, each platform's version page, the submission, and release day. It ends with what it could not check and the Help page each fact was read on.
+  - `build_paste.py` and `paste/`: each text field as it is pasted, one line a paragraph. The draft wraps its description at about 100 columns, and App Store Connect keeps a pasted line break, so the block pasted as it stood would have broken every paragraph mid-sentence on the product page.
+  - The script fails when a field is over its limit, when the count the draft prints beside a field is not the count measured, or when a field holds one of the three characters App Store Connect refused in 1.0 (1776)'s Mac notes. It replaces §6's counter, which kept its own copy of the four short fields and counted no description.
+- **Records**: the plan of record's §2 (the App Store Connect list), §4 (four decisions and two offers) and §6; the launch kit's §3 and §7; `tools/marketing/README.md`; the screenshots README's store-frames section and ledger.
+
+**What the listing was read against**, claim by claim:
+- *553 volumes*, *published since 1861*: `manifest.json` (553 entries, 107 subseries, earliest `publicationDate` 1861). The map's 314,616, 140 and 88,059, which the frames and §5 carry: `semantic-vectors-index.json` and `semantic-map-index.json`.
+- *Nearly every chart exports its data as a CSV…, and most export as a figure too*: both manuals' §15.8 still read as they did when decision 30 settled the sentence.
+- *export to PDF, DOCX, HTML, BibTeX or RIS*: `ExportFormat`'s cases, RIS being `zoteroJSON`'s label.
+- *stemming, phrases, NEAR() proximity and exact-word matching*: Search Tips' strings in `SearchModels.swift`.
+- the privacy sentence: `Docs/Privacy-Policy.md` opens with the same one, and `PrivacyInfo.xcprivacy` declares no collected data type.
+- *Google's EmbeddingGemma model*: `SemanticModelFetcher` fetches EmbeddingGemma 2 from release `encoder-2`.
+- Not traced to code: READ's and SOURCE's sentences, which store frames 02 and 04 show, and the BUILT ON THE EDITORS' WORK section, which claims no figure.
+
+**Measured.**
+- **A full index's rows: 321,749**, in 553 volumes, at index version 74. `SELECT COUNT(*) FROM document_cache` on an APFS clone of the owner's Mac index (the database and its write-ahead log, checkpointed on the clone, `quick_check` ok; the clone removed afterwards). By the table's two flags: 1,103 front-matter rows and 320,646 others, 8,477 of them editorial notes. The launch kit (four places) and the README (one) still say *about 317,000*; neither is an App Store Connect field, and both are left for the owner.
+- **The website is not public**: `frusexplorer.app/`, `/privacy` and `/support` each answered 401 at 19:59 UTC, after a redirect to `www.frusexplorer.app`.
+- **For the age rating's items**, by `grep` over the 744 volume files of the corpus clone at `6170e4b32`: 76 hold one of four expletives, 841 times in all; 216 mention a toast; 152 mention narcotics.
+- **The frames**: 14 at 2752 × 2064, 14 at 2880 × 1800 and 6 at 1320 × 2868, each an RGB PNG with no alpha channel; a second and a third store run each reproduced all 34 and the four sheets byte for byte. The five scaled frames are 1206 × 2622, RGB, and frame 04 was read at that size.
+
+**Read in App Store Connect Help, 2026-11-10** (through a fetched copy of each page; the entry sheet lists them). Three things the plan of record's §2 did not have:
+- **The age rating cannot be 4+.** Apple's questionnaire of 2025 defines *Mature or Suggestive Themes* to include "war or political strife", and *Guns or Other Weapons* as "references to or depictions of" them. The sheet's answers give 13+; *Frequent* for mature themes gives 16+. The answers are the owner's declaration.
+- **Trader status under the EU's Digital Services Act**: "You'll be asked to disclose whether or not you're a trader … in order to distribute apps in the EU." A trader's address, phone number and email address are shown on the product page there.
+- **China mainland**: "MIIT requires that some apps possess a valid Internet Content Provider (ICP) Filing Number", and "apps with books and magazine content must secure an internet publishing permit". Decision 31 is every storefront. Whether App Store Connect asks this app for either could not be seen.
+
+Also read there: the three frame sizes, which settles decision 33's check of the 13-inch iPad slot; that the page's list of required sizes names "iPhone with Dynamic Island (medium display)" (1206 × 2622 or 1179 × 2556) while the page also says "you only need to provide screenshots for the highest required resolution", so that which of the two App Store Connect does could not be seen, and the scaled folder covers the first; the keywords' and the review notes' limits, which are in bytes; "This property isn't available for the first version of the app" of What's New; and that Accessibility Nutrition Labels are voluntary for now, for which no answers are drafted. The Screenshot specifications page also says: "Starting in April 2027, screenshots will be required for any app using the iOS 27.1 SDK or later", of iPhone Duo. This Mac's Xcode is 27.2 (iOS SDK 27.2), so that rule will reach an update submitted from April 2027, and does not reach 1.0 now.
+
+**The app, read for the age rating's capabilities.** `InAppBrowserView` is a `WKWebView` with Back, Forward and Open in Browser, and no address or search field; nothing restricts where a page's own links lead. The sheet recommends *no* for Unrestricted Web Access and says what a reviewer might make of it.
+
+**Verification.**
+- `python3 Planning/app-store-connect/build_paste.py --check`: in step with the draft, seven fields inside their limits.
+- Six planted errors each made it exit 1 and name the error: a subtitle over 30, a description edited with its count left, a refused character and a two-letter keyword (each with the count kept right, so that its own check was the one reached), and a paste file edited by hand. The draft was put back after each.
+- Each unwrapped paste holds its block's words in order (544, 628 and 26 words).
+- `planOfRecordMatchesTheVisualMarketingPlan`'s two conditions, recomputed in Python: one live plan of record, and its *§7 struck* line equal to the Visual Marketing Plan's strikes.
+- **Not run:** the unit target and `swift test`. No Swift or package input changed, and no test names `shots.json`, `marketing-drafts/`, the listing draft or the screenshots README (grep over `FRUSExplorerTests` and `FRUSExplorerUITests`).
+
+**Left for the owner.** The four decisions and two offers of the plan of record's §4; the website made public; R3's bump, archive and upload; and the entry itself, by the sheet.

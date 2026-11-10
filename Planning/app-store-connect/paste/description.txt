@@ -1,0 +1,28 @@
+FRUS Explorer is a research tool for the Foreign Relations of the United States series: the official documentary record of U.S. foreign policy, published since 1861.
+
+FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State. Any commentary, advice, or guidance about the FRUS series in this app reflects personal views about historical research methodology and makes no interpretive claims about the history of U.S. foreign policy. Those views are not necessarily those of the Department of State or the U.S. Government. The FRUS series itself is in the public domain.
+
+BUILT ON THE EDITORS' WORK
+By statute, FRUS must be "a thorough, accurate, and reliable record" of major foreign policy decisions, with every deletion marked where it occurs. The Office of the Historian fulfills this mandate through research in the classified files of the Department of State and other agencies: its historians select the most important documents, arrange them in date order, and annotate them, from headings, source notes and cross-references to descriptions of material that cannot be declassified. The Office publishes all of this as open TEI data. FRUS Explorer reads that apparatus: source notes become archival leads, cross-references become a graph, and the people the editors identified become an index you can search.
+
+The app downloads the Office of the Historian's TEI editions, indexes them on your device, and works offline from then on. What you read, search and write stays with you: notes and collections sync only through your own iCloud account, and the app reaches the National Archives' catalog or your Zotero library only when you ask it to.
+
+READ
+Documents rendered from the original TEI with the editors' headings, footnotes, page breaks and live cross-references, plus highlights, notes, and a per-document research rail.
+
+SEARCH
+Full-text search with stemming, phrases, NEAR() proximity and exact-word matching, across 553 volumes. Save a scope, or capture a working corpus from a result set and search inside it.
+
+SOURCE
+Most documents carry the editors' own note saying where the original came from. FRUS Explorer resolves those notes as far as the offline reference data reaches — a lot file to its record group and series, a decimal file number to the subject it encodes, a collection to the archive that holds it — so a citation becomes a shelf you could visit.
+
+ANALYSE
+Term frequency over time, cross-reference graphs, person and archival profiles, and a semantic map of the whole published series. Nearly every chart exports its data as a CSV carrying its full method statement, and most export as a figure too.
+
+COLLECT
+Group documents into collections and projects, annotate them, and export to PDF, DOCX, HTML, BibTeX or RIS with citations formatted for you.
+
+ON YOUR DEVICE
+Volumes, notes and highlights live on your device; notes and collections sync privately through your own iCloud account. Optional natural-language search runs entirely on-device using Google's EmbeddingGemma model — an experimental feature, and nothing you type leaves the device.
+
+FRUS Explorer is not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration (NARA). NARA Catalog data accessed through this app is provided by the National Archives and is subject to their terms of use.

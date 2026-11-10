@@ -604,7 +604,11 @@ stamped, and the drafts are rendered again (the sittings' ledger, R1). **Compose
 cross-reference retakes, and 01 on all four presets, whose foot reads *an independent,
 private-capacity research tool* on the owner's word; the other 28 came out byte for byte as R1's.
 The two frame-06 shots are stamped *build 1787* in the drafts, the other 32 *build 1861* (the
-sittings' ledger, R4).
+sittings' ledger, R4). **Composed again on 2026-11-10**, after Q1's retakes: eleven frames changed, 01 on
+all four presets, 04 on all three, and 12 and 13 on the iPad and the Mac, and the other 23 came out
+byte for byte as R4's. Those eleven are stamped *build 1787* in the drafts too. A store run now also
+writes `upload/<preset>/`, the frames each App Store Connect slot takes, numbered in the listing's
+order, and the three sizes were read on Apple's own page (the sittings' ledger, C1).
 
 ### Caption and sentence fixes S5 already owes
 
@@ -1504,6 +1508,44 @@ in both manuals from the bundled files (#1762).
   - **Left**: no simulator is booted. `3D2607D9` holds `snapshot-A74` again, with T1's build, 1.0 (1812).
     Its pre-T1 container, the build, the raw and erased frames and the old frames are under
     `~/Library/Caches/FRUS-Explorer/t1/` until the owner says.
+- **C1 — run 2026-11-10, 14:48 to 15:21; no device, the store frames composed again for the
+  submission.** The owner asked for the App Store Connect assets "that I will need when submitting
+  build 1861". From `v2` at **`f179c1bd`**, on a tree that reads 1.0 (1812). No capture was taken or
+  changed.
+  - **What had gone stale.** Q1 retook eleven captures that store frames stand on, and no compose
+    followed it: `~/Desktop/store` and `Planning/marketing-drafts/` both held R4's set of 2026-11-02.
+    T1 read the drafts and left them, rightly: none shows the Browse root.
+  - **`shots.json`**: those eleven shots' `status` reads *build 1787*, the tree's build number at
+    `942cc41e`, which Q1 built from (R4's rule for its two); the other 23 keep theirs. New: `listing`,
+    the frames each App Store Connect slot takes, in the listing's order, and each preset's `note`,
+    which now gives the sizes as read on Apple's Screenshot specifications page that day.
+  - **The drafts**: `python3 tools/marketing/compose.py` under the lock, 14:48:14 to 14:49:11. Eleven
+    frames and three contact sheets changed; the teachers' sheet did not.
+  - **The store frames**: `SCALE=1 STAMP=0 OUT_DIR=~/Desktop/store python3
+    tools/marketing/compose.py` under the lock, three times: before the composer wrote upload
+    folders, with them (15:00:50 to 15:02:55), and with the scaled iPhone folder (15:18:54 to
+    15:21:14). By SHA-256 the eleven differ from R4's and the other 23 are R4's byte for byte, and
+    each later run's 34 frames and four sheets equal the first's. 14 at
+    2752×2064, 14 at 2880×1800 and 6 at 1320×2868, each an RGB PNG with no alpha channel, none
+    stamped.
+  - **The eleven**: frame 01 on all four presets and frame 12 on the iPad and the Mac (Search's rows
+    carry the classification chip); frame 04 on all three (d41's *Top Secret* under its source note);
+    frame 13 on the iPad and the Mac (Person Analytics' line on how many volumes tag their people).
+    Read against their sentences: the `all` contact sheet, and frames 04 and 12 on the iPad at draft
+    size.
+  - **The upload folders**, new: `~/Desktop/store/upload/ipad-13-landscape/` and `upload/mac/` hold
+    the listing's ten (01, 02, 03, 04, 05, 06, 08, 09, 11 and 12) as `01-search.png` to
+    `10-meaning.png`, and `upload/iphone-6.9/` holds five (01, 02, 03, 04 and 11). Each of the 25
+    equals the frame it was copied from, by SHA-256. `upload/iphone-6.3/` holds the iPhone's five
+    again at 1206×2622, each its 6.9-inch frame scaled: Apple's page lists the iPhone's medium
+    display as the required size and also says a larger set is scaled down (`shots.json`,
+    `uploadAlso`). Frame 04 was read at that size: whole, with its foot. A draft run writes no such
+    folder:
+    `ONLY=search-facets` into a scratch folder wrote one frame and its sheet, and the frame equalled
+    the committed draft.
+  - **Left**: `~/Desktop/store` holds the 34 frames, the four sheets and `upload/` (40 MB, outside the
+    repository). The owner uploads from `upload/`;
+    `Planning/app-store-connect/App-Store-Connect-Entry.md` has the steps.
 
 ### Found by R1 — for the owner
 
