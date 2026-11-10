@@ -469,6 +469,17 @@ struct FRUSExplorerApp: App {
     /// simulate. The probe reuses the indexing task (no second BG identifier) — when
     /// armed, an indexing wake runs the probe instead of indexing.
     static var debugIndexingBGTaskID: String { indexingBGTaskID }
+
+    /// The AppState `init()` gave the background task's launch handler, recorded so
+    /// `BackgroundTaskAppStateTests` can hold it to ``debugBootedAppState`` (plan of record L11,
+    /// decision 121). They must be one instance: the handler indexes and summarizes only through
+    /// what the launch's boot sets, and builds 47 to 1787 gave it an AppState nothing booted.
+    @MainActor static var debugBackgroundTaskAppState: AppState?
+
+    /// The AppState the first `bootSearchInfrastructureOnce()` ran on: the one SwiftUI installed,
+    /// which every scene uses and the boot gives its `indexingPipeline`. Recorded for
+    /// `BackgroundTaskAppStateTests`.
+    @MainActor static var debugBootedAppState: AppState?
     #endif
 
     /// Conservative per-wake cap for background summarization. Sized small because a
@@ -532,6 +543,9 @@ struct FRUSExplorerApp: App {
         Self.configureTipKit()
         Self.configureUITestAnimations()
         let state = appState
+        #if DEBUG
+        Self.debugBackgroundTaskAppState = state
+        #endif
         let container = modelContainer
         // The launch handler MUST be `@Sendable` (non-isolated). BGTaskScheduler invokes
         // it on its own background dispatch queue (`com.apple.BGTaskScheduler …`), not the
@@ -2210,6 +2224,10 @@ struct FRUSExplorerApp: App {
     /// work instead of repeating it. The check-and-store below is synchronous on the main actor,
     /// so it cannot interleave.
     private func bootSearchInfrastructureOnce() async {
+        #if os(iOS) && DEBUG
+        // L11: the instance the first boot runs on, which the background task's handler must hold.
+        if Self.debugBootedAppState == nil { Self.debugBootedAppState = appState }
+        #endif
         if let running = appState.searchInfrastructureBoot {
             await running.value
             return
