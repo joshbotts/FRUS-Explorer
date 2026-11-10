@@ -542,6 +542,57 @@ struct FRUSExplorerApp: App {
         }
     }
 
+    /// One run of the BGProcessingTask: the indexing a launch left, then a batch of *Continue in
+    /// the background*'s summaries, then the task's completion through `complete`.
+    ///
+    /// L12 checkpoint: the handler's order as it ships, moved here unchanged so that
+    /// `BackgroundTaskLaunchBootTests` can drive it. It reads the pipeline before anything has
+    /// booted, and `bootSearchInfrastructure` is not called yet.
+    @MainActor
+    static func runIndexingWake(
+        appState state: AppState,
+        bootSearchInfrastructure: @MainActor () async -> Void,
+        modelContext: ModelContext,
+        complete: @Sendable (Bool) -> Void
+    ) async {
+        guard let pipeline = state.indexingPipeline else {
+            complete(false)
+            return
+        }
+        #if DEBUG
+        // When the summarization probe is armed, spend this wake measuring
+        // FoundationModels under background conditions instead of indexing.
+        if SummarizationBackgroundProbe.isArmed {
+            SummarizationBackgroundProbe.disarm()
+            await SummarizationBackgroundProbe.runUntilExpiration(appState: state)
+            complete(true)
+            return
+        }
+        #endif
+        let volumesToIndex = Array(state.interruptedVolumeIds)
+        if volumesToIndex.isEmpty {
+            // No interrupted volumes: index only downloaded-but-unindexed
+            // volumes, never the whole corpus. A healthy, fully-indexed corpus
+            // yields an empty list, so a backgrounding whose only pending work
+            // is word-cloud precompute no longer triggers a spurious full
+            // reindex (which lit the genuine "Indexing…" banner and looked like
+            // an unexplained reindex after a manual rebuild).
+            let unindexed = (try? await pipeline.unindexedDownloadedVolumeIds()) ?? []
+            for volumeId in unindexed {
+                try? await pipeline.indexVolume(volumeId)
+            }
+        } else {
+            for volumeId in volumesToIndex {
+                try? await pipeline.indexVolume(volumeId)
+            }
+        }
+        // Then summarize a small, resumable batch if the user opted in. Last
+        // because it's the most expensive/thermal work; the cap + expiration
+        // keep it conservative, and `shouldSkip` resumes it next wake.
+        await Self.runBackgroundSummarizationBatch(appState: state, modelContext: modelContext)
+        complete(true)
+    }
+
 
     /// Makes the app's AppState and registers the BGProcessingTask handler with the system, which
     /// must happen before the app finishes launching.
@@ -599,42 +650,8 @@ struct FRUSExplorerApp: App {
             }
             // Run on MainActor so we can read @MainActor-isolated AppState properties.
             let indexingTask = Task { @MainActor in
-                guard let pipeline = state.indexingPipeline else {
-                    complete(false)
-                    return
-                }
-                #if DEBUG
-                // When the summarization probe is armed, spend this wake measuring
-                // FoundationModels under background conditions instead of indexing.
-                if SummarizationBackgroundProbe.isArmed {
-                    SummarizationBackgroundProbe.disarm()
-                    await SummarizationBackgroundProbe.runUntilExpiration(appState: state)
-                    complete(true)
-                    return
-                }
-                #endif
-                let volumesToIndex = Array(state.interruptedVolumeIds)
-                if volumesToIndex.isEmpty {
-                    // No interrupted volumes: index only downloaded-but-unindexed
-                    // volumes, never the whole corpus. A healthy, fully-indexed corpus
-                    // yields an empty list, so a backgrounding whose only pending work
-                    // is word-cloud precompute no longer triggers a spurious full
-                    // reindex (which lit the genuine "Indexing…" banner and looked like
-                    // an unexplained reindex after a manual rebuild).
-                    let unindexed = (try? await pipeline.unindexedDownloadedVolumeIds()) ?? []
-                    for volumeId in unindexed {
-                        try? await pipeline.indexVolume(volumeId)
-                    }
-                } else {
-                    for volumeId in volumesToIndex {
-                        try? await pipeline.indexVolume(volumeId)
-                    }
-                }
-                // Then summarize a small, resumable batch if the user opted in. Last
-                // because it's the most expensive/thermal work; the cap + expiration
-                // keep it conservative, and `shouldSkip` resumes it next wake.
-                await Self.runBackgroundSummarizationBatch(appState: state, modelContext: container.mainContext)
-                complete(true)
+                await Self.runIndexingWake(appState: state, bootSearchInfrastructure: {},
+                                           modelContext: container.mainContext, complete: complete)
             }
             // System calls this when budget expires. Cancel in-flight work; the
             // IndexingStateTracker already marks any in-progress volume as interrupted.
