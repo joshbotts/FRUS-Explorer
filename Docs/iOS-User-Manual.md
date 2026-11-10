@@ -318,15 +318,15 @@ On an iPad with room for two panes — in landscape, for instance — the root s
 
 ### 6.1 The Browse Root
 
-The root of the Browse tab opens with a **search field** over all 553 volumes — type any part of a title or a volume number (*China*, *frus1969*) and matching volumes appear immediately; tap one to open it. Below the search sit the two cross-volume indices — **People** (Section 6.5) and **Topics** (Section 6.2a) — and then a **Browse by** grid of doors into the series:
+The root of the Browse tab opens with a **search field** over all 553 volumes — type any part of a title or a volume number (*China*, *frus1969*) and matching volumes appear immediately; tap one to open it. Below the search sit the two cross-volume indices — **People** (Section 6.5) and **Topics** (Section 6.2a) — and then a **Browse by** grid of doors into the series, Subseries across the top and the rest two to a row:
 
 - **Subseries** — the classic era-by-era hierarchy (Section 6.1a). While the hierarchy is narrowed to one of your scopes with **Browse Within This Scope**, this tile says so: it names the scope and counts that scope's volumes (Section 6.1e).
 - **All Volumes** — one catalog of every volume (Section 6.1b).
 - **Administrations** — volumes filed by the presidency their documents cover (Section 6.1c).
 - **Editors** — volumes filed by the editors named on their title pages (Section 6.1d).
+- **Annotations** — the Editors’ Annotations axis: volumes filed by what their editors annotated, such as tagged people or source notes, and the era each practice became standard (Section 6.1i).
 - **Archives** — volumes filed by where their documents came from (Section 6.1g).
 - **Clusters** — documents grouped by the language they share, computed from the text (Section 6.1h).
-- **Editors’ Annotations** — below the grid at full width: volumes filed by what their editors annotated, such as tagged people or source notes, and the era each practice became standard (Section 6.1i).
 
 Below the doors, **Your sets** holds the collections you assemble yourself — **My Scopes** (Section 6.1e) and **Working Corpora** (Section 6.1f).
 
@@ -439,7 +439,7 @@ Clusters are an **experimental, computed** view: the groups come from how docume
 
 ### 6.1i Editors’ Annotations
 
-The **Editors’ Annotations** door browses the series by what its editors did to the documents: the same layers a volume's page lists (Section 6.2b), in the same three groups. Each row shows how many volumes carry the layer, such as *288 of 553 volumes* for tagged people, and a strip of the eras, earliest first and the late retrospective volumes last, each era shaded by the share of its volumes that carry the layer. The strips show where a practice began and where it never took hold.
+The **Annotations** door on the Browse root opens the Editors’ Annotations axis, which browses the series by what its editors did to the documents: the same layers a volume's page lists (Section 6.2b), in the same three groups. Each row shows how many volumes carry the layer, such as *288 of 553 volumes* for tagged people, and a strip of the eras, earliest first and the late retrospective volumes last, each era shaded by the share of its volumes that carry the layer. The strips show where a practice began and where it never took hold.
 
 Tap a layer for its page:
 - **What the editors did**, in a sentence or two.

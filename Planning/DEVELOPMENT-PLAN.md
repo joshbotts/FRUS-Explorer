@@ -10221,3 +10221,40 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 - **`FRUSOffsetEngineTests.swift:2736`'s warning**, Lane 2's, still left for its own change.
 
 **Opened as #1883** on the owner's word of 2026-11-10 ("Push and open PR"), against `v2` at `e9abc22b`; not merged, auto-merge off.
+
+## Session 2026-11-10 — The Browse root's Editors’ Annotations door joins the Browse by grid as *Annotations*, and the grid's six tiles are reordered (iPhone and iPad)
+
+**What and why.** The owner asked that the Editors’ Annotations door sit in the Browse by grid with the other secondary axes, its name shortened to *Annotations* to fit. Since lane C of the editors' annotations design (#1861) it had been a full-width door below the grid. The owner also asked that the six tiles below Subseries read in rows: All Volumes and Administrations, Editors and Annotations, Archives and Clusters. **Measured first** with Core Text at the tile's 14 pt medium:
+- The full name needs 134 pt, and 114 at the tile's 85% minimum scale. *Annotations* needs 80, beside a 25 pt icon. *Administrations* needs 104, or 88 at its minimum.
+- In the 1861 capture `ipad/browse-administrations-truman.png`, *Administrations* already shows in the iPad's list pane as "Administra…".
+
+**Changed.**
+- `CorpusView` (2.9): the door is a `BrowseAxisGridTile` between Editors and Archives, titled by the new key `browser.corpus.tile.annotations` (*Annotations*).
+  - Unchanged: its identifier (`browse.root.annotationsTile`), its VoiceOver label (*Browse by editors' annotations*), its tooltip and its open mark.
+  - Gone with the full width: its caption, `browser.corpus.tile.annotations.caption`.
+  - The level it opens is still titled *Editors’ Annotations*. The Mac's sidebar item is untouched, since no code the Mac compiles constructs `CorpusView`.
+- **Docs:** the iOS manual's §6.1 list (the new order, with Annotations in the grid) and the first sentence of §6.1i. In EditableContent:
+  - §20's opening sentence;
+  - a block for the title, and the caption's block RETIRED;
+  - six ranged `CorpusView.swift` blocks re-pointed to their keys;
+  - the Amendment-Log's bullet.
+
+  Also: the runbook's `AnnotationsAxisBrowseTests` entry, a dated note under the design's lane C bullet, and the website drafts' owed list (step 3's screen).
+
+**Checked**, each heavy job through `Scripts/heavy.sh`, Xcode 27.2 on macOS 27.2, from `v2` at `bbd1bcfb`.
+- **`build-for-testing`** of the `FRUSExplorer` scheme (iPhone 17, from an empty DerivedData): TEST BUILD SUCCEEDED. Its warning lines are the `GeneratedSummary` residue, plus one test-target warning `v2` already has: #1875 left `try #require(… as? Bool)` ambiguous at `FRUSOffsetEngineTests.swift:2736`.
+- **`EditableContentKeyTests` and `BrowseRootOpenMarkSourceTests`:** 28 tests in 2 suites, passed.
+- **The unit target:** TEST EXECUTE SUCCEEDED, 7,934 tests: 7,897 passed, none failed, 37 skipped.
+- **`AnnotationsAxisBrowseTests` with `VolumeAnnotationsSectionTests`** (iOS 27.0, each device alone):
+  - iPhone 17 (`80CF0F18`): 7 tests, 6 passed, 1 skipped (the matrix); `testTheAxisOpensALayersPageAndItsVolumes`, which taps the door, in 16.4 s.
+  - iPad Pro 13-inch (M5) (`9AB3A0C9`): 7 tests, 7 passed, the matrix test in 15.7 s and `testTheAxisOpensALayersPageAndItsVolumes` in 17.4 s.
+- **The root, by screenshot** after a launch on Browse: on the iPhone 17 the grid reads in the owner's three rows and *Annotations* fits on one line beside its icon. On the iPad Pro 13-inch in portrait, which is two-pane with the floating tab bar, the list pane's tiles measure 149 pt wide, and a title gets 88.5 to 91.5 pt beside its icon. *Annotations* ends 17.5 pt short of its tile's inner edge, and *Administrations* shows as "Administrati…", as it did before the change.
+- **`FRUSExplorerMac`**, Debug: BUILD SUCCEEDED, with `CorpusView.swift` compiled. The only warning lines were the `GeneratedSummary` residue (4). No code the Mac compiles constructs the view, and its Corpus Browser's sidebar item is untouched.
+
+**Not done.** No screenshot was retaken, by the owner's rule that the owner captures.
+- 18 of the 19 iPad Browse captures in `Docs/screenshots/ipad/` show the root's grid in the two-pane's left column as it was, with the door below it. Only `browse-clusters-map.png`, whose map takes the full width, does not.
+- `browse-root.png` is the capture whose subject is the root. The alt text that describes it, in the iOS manual §6, the iOS Quick Start and the website's quick start, is left as it is until the retake.
+- The website tour's step 3 is cut from `browse-administrations-truman.png`.
+- `TwoPaneDocumentTests`' list of the doors the root always draws has never held this door, before or after the change.
+
+**Opened as #1884** on the owner's word of 2026-11-10 ("Open a PR"), against `v2` at `bbd1bcfb`; not merged, auto-merge off.

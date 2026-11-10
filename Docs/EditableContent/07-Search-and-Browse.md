@@ -2959,42 +2959,42 @@ The closest match of a Meaning search
 <!-- END SOURCE: browser.corpora.meaning.one -->
 
 #### Tooltip — Browse an alphabetical index of all people mentioned across…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 321–322 | key: browser.corpus.people.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 324–325 | key: browser.corpus.people.help -->
 
 Browse an alphabetical index of all people mentioned across your indexed volumes — tap a name to search for every document where they appear
 
 <!-- END SOURCE: browser.corpus.people.help -->
 
 #### Tooltip — Browse an index of the topics detected across the whole…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 352–353 | key: browser.corpus.subjects.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 355–356 | key: browser.corpus.subjects.help -->
 
 Browse an index of the topics detected across the whole series — including volumes you have not downloaded. Tap one to see its reach and find documents on it
 
 <!-- END SOURCE: browser.corpus.subjects.help -->
 
 #### Tooltip — One catalogue of every volume — search it, or arrange it by…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 406–407 | key: browser.corpus.tile.catalogue.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 412–413 | key: browser.corpus.tile.catalogue.help -->
 
 One catalogue of every volume — search it, or arrange it by title, publication year, era, or length
 
 <!-- END SOURCE: browser.corpus.tile.catalogue.help -->
 
 #### Tooltip — Volumes filed by the kind of file their documents came…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 463–464 | key: browser.corpus.tile.archives.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 494–495 | key: browser.corpus.tile.archives.help -->
 
 Volumes filed by the kind of file their documents came from, and the archival collections FRUS drew on
 
 <!-- END SOURCE: browser.corpus.tile.archives.help -->
 
 #### Tooltip — Documents grouped by the language they share, computed from…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 482–483 | key: browser.corpus.tile.clusters.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 513–514 | key: browser.corpus.tile.clusters.help -->
 
 Documents grouped by the language they share, computed from the text — labels are sampled terms, not subject headings
 
 <!-- END SOURCE: browser.corpus.tile.clusters.help -->
 
 #### Tooltip — Fixed document sets captured from Search results or the…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.yourSetsSection | lines: 583–584 | key: browser.corpus.corpora.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.yourSetsSection | lines: 592–593 | key: browser.corpus.corpora.help -->
 
 Fixed document sets captured from Search results or the semantic map — browse each one’s documents, grouped by volume
 
@@ -3553,9 +3553,21 @@ Errata
 
 ## 20. Browse — the Editors’ Annotations axis (the editors' annotations design, lane C, 2026-11-06)
 
-The Browse axis of the same name, on iPhone and iPad a door below the Browse by grid and on the Mac a sidebar item: each layer with how many volumes carry it and a strip of its eras, and a page for each layer, which a row of a volume's Editors’ Annotations opens too (`Planning/Editors-Annotations-Design-2026-11-06.md`, §6). In §20.3 each layer has three blocks: what the editors did, when a volume counts as carrying it, and what the app does with it; one sentence says that for the five layers nothing in the app reads yet. A `%@` or `%1$@` is where a number, a name or an era goes and must stay; every count and year comes from the bundled file, never from this copy.
+The Browse axis of the same name, on iPhone and iPad a tile in the Browse by grid titled *Annotations* (since 2026-11-10; until then a full-width door below the grid) and on the Mac a sidebar item: each layer with how many volumes carry it and a strip of its eras, and a page for each layer, which a row of a volume's Editors’ Annotations opens too (`Planning/Editors-Annotations-Design-2026-11-06.md`, §6). In §20.3 each layer has three blocks: what the editors did, when a volume counts as carrying it, and what the app does with it; one sentence says that for the five layers nothing in the app reads yet. A `%@` or `%1$@` is where a number, a name or an era goes and must stay; every count and year comes from the bundled file, never from this copy.
 
 ### 20.1 The door, the axis and its rows
+
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | key: browser.corpus.tile.annotations -->
+
+*The door's title: a tile in the Browse by grid on iPhone and iPad, after Editors and before Archives. A grid tile holds one line, so the axis's own name, Editors’ Annotations, is shortened here. VoiceOver reads the tile by the label two blocks down.*
+
+Annotations
+
+<!-- END SOURCE: browser.corpus.tile.annotations -->
+
+> ⚠️ **RETIRED — editing this block has no effect.** No line holds it: on 2026-11-10 the door moved into the
+> Browse by grid, whose half-width tiles print a title and no caption, and its caption went with the full
+> width. Kept so the wording is not lost; delete it when you next revise this section.
 
 <!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | key: browser.corpus.tile.annotations.caption -->
 
