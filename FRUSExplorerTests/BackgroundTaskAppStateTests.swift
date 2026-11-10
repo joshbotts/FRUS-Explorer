@@ -634,10 +634,17 @@ struct BackgroundTaskIndexWorkTests {
             guard exempt[relative] == nil, !url.lastPathComponent.hasPrefix("UITest") else { continue }
             let source = try String(contentsOf: url, encoding: .utf8)
             let calls = passes.flatMap { Self.codeRanges(of: $0, in: source[...]) }
-            let enclosing = Self.enclosingBlocks(of: calls.map(\.lowerBound), in: source)
+            // Where a block counts itself: its `begin()`, and a `defer` that ends the count.
+            let begins = ["indexWorkInFlight.begin()", "indexWork.begin()"]
+                .flatMap { Self.codeRanges(of: $0, in: source[...]) }.map(\.lowerBound)
+            let defers = Self.codeRanges(of: "defer {", in: source[...]).map(\.lowerBound).filter { start in
+                let line = source[start...].prefix { $0 != "\n" }
+                return line.contains("indexWorkInFlight.end()") || line.contains("indexWork.end()")
+            }
+            let enclosing = Self.enclosingBlocks(of: calls.map(\.lowerBound) + begins + defers, in: source)
             for call in calls {
                 checked += 1
-                if Self.runsInCountedWork(call, blocks: enclosing[call.lowerBound] ?? [], in: source) { continue }
+                if Self.runsInCountedWork(call, begins: begins, defers: defers, enclosing: enclosing, in: source) { continue }
                 let lineStart = source[..<call.lowerBound].lastIndex(of: "\n").map { source.index(after: $0) } ?? source.startIndex
                 let lineEnd = source[call.upperBound...].firstIndex(of: "\n") ?? source.endIndex
                 let line = source[lineStart..<lineEnd].trimmingCharacters(in: .whitespaces)
@@ -690,21 +697,26 @@ struct BackgroundTaskIndexWorkTests {
     }
 
     /// Whether the call at `call` runs in counted work: in a block that `indexWorkInFlight.start`
-    /// opens, or in a block that counts itself before the call, with `begin()` and a `defer` that
-    /// ends it.
-    private static func runsInCountedWork(_ call: Range<String.Index>, blocks: [String.Index], in source: String) -> Bool {
+    /// opens, or in a block that counts itself before the call, a `begin()` and a `defer` that ends
+    /// the count both statements of that block, which encloses the call.
+    ///
+    /// The statements' own block, not any block that holds them: the storage hub's struct holds the
+    /// counts of the actions above Rebuild Index, and a scan that read every enclosing block's text
+    /// up to the call took those for Rebuild Index's (measured: Rebuild Index with its count removed
+    /// passed it, 2026-11-10).
+    private static func runsInCountedWork(_ call: Range<String.Index>, begins: [String.Index], defers: [String.Index],
+                                          enclosing: [String.Index: [String.Index]], in source: String) -> Bool {
+        let blocks = enclosing[call.lowerBound] ?? []
         for brace in blocks {
             let lead = source.index(brace, offsetBy: -48, limitedBy: source.startIndex) ?? source.startIndex
             if source[lead..<brace].trimmingCharacters(in: .whitespaces).hasSuffix("indexWorkInFlight.start") {
                 return true
             }
-            let before = source[brace..<call.lowerBound]
-            let lines = before.split(separator: "\n").map { line in
-                line.range(of: "//").map { line[..<$0.lowerBound] } ?? line
-            }
-            let begins = lines.contains { $0.contains("indexWorkInFlight.begin()") || $0.contains("indexWork.begin()") }
-            let ends = lines.contains { $0.contains("defer {") && ($0.contains("indexWorkInFlight.end()") || $0.contains("indexWork.end()")) }
-            if begins && ends { return true }
+        }
+        let around = Set(blocks)
+        for begin in begins where begin < call.lowerBound {
+            guard let home = enclosing[begin]?.last, around.contains(home) else { continue }
+            if defers.contains(where: { $0 < call.lowerBound && enclosing[$0]?.last == home }) { return true }
         }
         return false
     }
