@@ -7,7 +7,6 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 #if os(iOS) && DEBUG
-import BackgroundTasks
 import Darwin
 import Foundation
 import FoundationModels
@@ -36,6 +35,9 @@ import UIKit
 ///
 /// Version history:
 ///   1.0 — Summarization background-feasibility harness
+///   1.1 — L13 (plan of record decision 123): the probe's request is the app's own,
+///          `FRUSExplorerApp.requestIndexingTaskRun()`. A probe's wake runs until its time runs
+///          out, so it now asks for one more run, which indexes and summarizes as any run does.
 enum SummarizationBackgroundProbe {
 
     /// One measured summarization attempt.
@@ -356,14 +358,12 @@ struct SummarizationProbeView: View {
         }
     }
 
-    /// Arms the probe and submits an indexing background-task request; the next
-    /// indexing wake runs the probe instead of indexing.
+    /// Arms the probe and submits an indexing background-task request, the app's own
+    /// (`FRUSExplorerApp.requestIndexingTaskRun()`); the next indexing wake runs the probe
+    /// instead of indexing.
     private func scheduleBackground() {
         SummarizationBackgroundProbe.arm()
-        let request = BGProcessingTaskRequest(identifier: FRUSExplorerApp.debugIndexingBGTaskID)
-        request.requiresExternalPower = false
-        request.requiresNetworkConnectivity = false
-        try? BGTaskScheduler.shared.submit(request)
+        FRUSExplorerApp.requestIndexingTaskRun()
         scheduled = true
     }
 }
