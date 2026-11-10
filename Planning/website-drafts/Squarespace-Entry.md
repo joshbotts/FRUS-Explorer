@@ -118,13 +118,33 @@ Start · Support · Privacy*: put Tour, the iPad and iPhone quick start, Support
 Navigation, in that order, and Home and the Mac quick start in Not Linked. Each quick start links
 to the other in its first lines. Set Home as the homepage from its gear.
 
-**The footer** is one section shared by every page: scroll to the bottom of any page in the
-editor and choose **Edit Footer**. Remove what the template put there, add a Code Block, and paste
-all of [paste/footer.txt](paste/footer.txt) into it.
+**The footer** is one section shared by every page.
+
+1. Click **Edit** on any page, scroll to the bottom, point at the footer and click **Edit Footer**.
+2. Point at the footer's **section**, not at the words in it: **Add Block** (or a **+**) appears at
+   the section's top left. A click on the template's words puts the cursor inside its Text block,
+   which takes typing and nothing else. Press Esc, or click an empty part of the section, to get
+   out of it.
+3. **Add Block**, type `code` in the search field at the top of the block menu, and choose
+   **Code**. Click the new block's pencil and paste all of [paste/footer.txt](paste/footer.txt).
+4. Remove what the template put there: click a block once, then its trash can.
+
+If the section shows no **Add Block**, use **Add Section** in the footer, choose a blank one, put
+the Code Block in that, and delete the old section with its trash can.
 
 <!-- generated:footer -->
 
 It holds, word for word, the store listing's disclaimer and the National Archives sentence, and under them five links: *Support* (`/support`), *Privacy* (`/privacy`), *Tour* (`/tour`), *Quick start* (`/quick-start-ios`), *Source code* (`https://github.com/joshbotts/FRUS-Explorer`).
+
+**If the footer will not take a Code Block**, a Text block does the same job. Type nothing: paste these three paragraphs into the footer's Text block, in place of what the template put there, and set them in the smallest paragraph style.
+
+> FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State. Any commentary, advice, or guidance about the FRUS series in this app reflects personal views about historical research methodology and makes no interpretive claims about the history of U.S. foreign policy. Those views are not necessarily those of the Department of State or the U.S. Government. The FRUS series itself is in the public domain.
+>
+> FRUS Explorer is not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration.
+>
+> Support · Privacy · Tour · Quick start · Source code
+
+*After pasting* — link: “Support” → `/support`; link: “Privacy” → `/privacy`; link: “Tour” → `/tour`; link: “Quick start” → `/quick-start-ios`; link: “Source code” → `https://github.com/joshbotts/FRUS-Explorer`.
 
 <!-- /generated:footer -->
 
