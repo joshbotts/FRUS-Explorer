@@ -40,6 +40,9 @@ import Testing
 /// A recorded verdict and a failing test, rather than an `assert` in the app: a trap at launch
 /// would kill the host and every test in it.
 ///
+/// Measured on 2026-11-09 against the unfixed `init()` (`7f24463e` with this suite and the two
+/// records): it failed at the identity check, both records set and the host booted 4.9 s in.
+///
 /// Version history:
 ///   1.0 — L11: the handler's AppState is the booted one
 @MainActor

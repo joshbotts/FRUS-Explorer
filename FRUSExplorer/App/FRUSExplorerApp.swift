@@ -291,6 +291,10 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          transfer ended (`AppState.indexingQueueTransferDidFinish(_:outcome:)`).
 ///   4.32 — #1823: the Collection menu gains Manage Collections…, Rename Collection…, Duplicate Collection and
 ///          Delete Collection…, through `CollectionManagerCommandActions`
+///   4.33 — L11 (plan of record decision 121): `appState` has no initial value. Each `init()` makes the AppState
+///          and hands it to `_appState`, and on iOS the background task's handler holds that same instance, where
+///          since Xcode 27.0 the `init()`'s read had built it one of its own. DEBUG records of the handler's and
+///          the first boot's instances, for `BackgroundTaskAppStateTests`
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -328,7 +332,15 @@ final class FRUSAppDelegate: NSObject, UIApplicationDelegate {
 @main
 struct FRUSExplorerApp: App {
 
-    @State private var appState = AppState()
+    /// The app's one AppState, which every scene is given and the launch boots.
+    ///
+    /// It has no initial value here. Each platform's `init()` makes it and hands it to `_appState`,
+    /// and the iOS one gives the same instance to the background task's launch handler (plan of
+    /// record L11, decision 121). Since Xcode 27.0 `@State` is a macro over `LazyState`, which holds
+    /// an initial value as a closure until SwiftUI installs the property: a read before then runs
+    /// the closure for an instance of its own, and installation runs it once more. Never read
+    /// `appState` in an `init()`.
+    @State private var appState: AppState
     /// Keeps `lastModified` current on every synced model, at save time.
     ///
     /// Four models relied on `didSet` observers for this — 73 of them — and none ever fired: the
@@ -443,8 +455,8 @@ struct FRUSExplorerApp: App {
     #endif
 
     #if os(macOS)
-    /// macOS launch setup: the language tagger's warm-up and TipKit (no background-task
-    /// registration).
+    /// macOS launch setup: the language tagger's warm-up, TipKit and the app's AppState (no
+    /// background-task registration).
     init() {
         // First: a tagger scheme whose first use in a process fails can stay failed for the rest of
         // it (#1373), so the warm-up starts before anything could tag. It runs in the background and
@@ -455,6 +467,9 @@ struct FRUSExplorerApp: App {
         LanguageAnalysisLifecycle.install()
         Self.configureTipKit()
         WordCloudSettings.removeRetiredPrecomputeDefaults()
+        // The declaration has no initial value (L11; see the iOS `init()`), so the AppState is made
+        // here, after the warm-up has started.
+        _appState = State(initialValue: AppState())
     }
     #endif
 
@@ -528,11 +543,20 @@ struct FRUSExplorerApp: App {
     }
 
 
-    /// Registers the BGProcessingTask handler with the system.
+    /// Makes the app's AppState and registers the BGProcessingTask handler with the system, which
+    /// must happen before the app finishes launching.
     ///
-    /// Must be called before the app finishes launching. `appState` is a reference-type
-    /// @Observable class; capturing it here is safe because the App struct is instantiated
-    /// exactly once per process lifetime and @State persists the same instance.
+    /// ## One AppState, handed to both (plan of record L11, decision 121)
+    /// The handler indexes and summarizes through what the launch's boot sets, `indexingPipeline`
+    /// first, and the boot sets it on the AppState SwiftUI installed. So the instance made here goes
+    /// to `_appState`, and the same one to the handler. **Never read `appState` here.** Since Xcode
+    /// 27.0 `@State` is a macro over `LazyState`, which holds a declaration's initial value as a
+    /// closure until SwiftUI installs the property: a read before then runs the closure for an
+    /// instance of its own, and installation runs it once more. Builds 47 to 1787 declared `@State private var appState = AppState()` and read it here, so
+    /// the handler held an AppState of its own that nothing booted, and every background wake
+    /// completed `false` at its first guard. This comment said that @State persists the same
+    /// instance, which held only for Xcode 26's property wrapper. `BackgroundTaskAppStateTests`
+    /// holds the handler's instance to the booted one.
     init() {
         // First, before anything can tag (#1373) — but NOT the warm-up itself: a CloudKit push, a
         // background task or a finished download runs this init in a background launch, and a warm-up
@@ -542,7 +566,9 @@ struct FRUSExplorerApp: App {
         LanguageAnalysisLifecycle.install()
         Self.configureTipKit()
         Self.configureUITestAnimations()
-        let state = appState
+        // One AppState for the scenes and the handler (L11): made here, never read from `appState`.
+        let state = AppState()
+        _appState = State(initialValue: state)
         #if DEBUG
         Self.debugBackgroundTaskAppState = state
         #endif
