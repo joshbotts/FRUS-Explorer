@@ -46,7 +46,8 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// ## Boot Sequence
 /// 1. `AppState` initialises synchronously: restores `activeProjectId`, starts `NWPathMonitor`.
 /// 2. `ModelContainer` is created synchronously via `makeFRUSContainer()`.
-/// 3. On the first `.task {}` fire (main actor, after first render):
+/// 3. On the first `.task {}` fire (main actor, after first render), or on iOS when the background
+///    task's handler runs before any scene has booted, as a launch made to run the task does (L12):
 ///    a. `IndexingPipeline` and `SearchService` are created (failures are non-fatal).
 ///    b. `DownloadManager` is created with an `onVolumeDownloaded` closure that calls
 ///       `pipeline.indexVolume(_:)` automatically after each successful download.
@@ -295,6 +296,10 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          and hands it to `_appState`, and on iOS the background task's handler holds that same instance, where
 ///          since Xcode 27.0 the `init()`'s read had built it one of its own. DEBUG records of the handler's and
 ///          the first boot's instances, for `BackgroundTaskAppStateTests`
+///   4.34 — L12 (plan of record decision 122): a launch the system makes to run the background task boots before
+///          it indexes. The handler's work is `runIndexingWake`, which first awaits the launch's boot, the one a
+///          scene started or one it starts, and starts no work once its time has run out. The boot is static,
+///          given its AppState and the container setup, so the handler can start it before any scene has
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -380,8 +385,14 @@ struct FRUSExplorerApp: App {
     // `cloudKitDiagnostic(_:)`) are available without a second call. `modelContainer`
     // is a computed property for backward compatibility with all existing
     // `.modelContainer(modelContainer)` call sites.
-    private let _containerSetup = ModelContainer.makeFRUSContainer()
+    private let _containerSetup: ContainerSetup = ModelContainer.makeFRUSContainer()
     private var modelContainer: ModelContainer { _containerSetup.container }
+
+    /// What `makeFRUSContainer()` returns: the container, whether CloudKit is on, and on a fallback
+    /// the error and the store's schema comparison. Named so that the boot, which is static so the
+    /// background task's handler can start it (L12), can be given it.
+    private typealias ContainerSetup = (container: ModelContainer, cloudKitEnabled: Bool,
+                                        initError: NSError?, storeDiagnostic: StoreSchemaDiagnostic?)
 
     // MARK: - TipKit
 
@@ -491,9 +502,11 @@ struct FRUSExplorerApp: App {
     /// what the launch's boot sets, and builds 47 to 1787 gave it an AppState nothing booted.
     @MainActor static var debugBackgroundTaskAppState: AppState?
 
-    /// The AppState the first `bootSearchInfrastructureOnce()` ran on: the one SwiftUI installed,
-    /// which every scene uses and the boot gives its `indexingPipeline`. Recorded for
-    /// `BackgroundTaskAppStateTests`.
+    /// The AppState the first scene's `bootSearchInfrastructureOnce()` ran on: the one SwiftUI
+    /// installed, which every scene uses and the boot gives its `indexingPipeline`. Recorded for
+    /// `BackgroundTaskAppStateTests`, by the scenes' call alone: the background task's handler can
+    /// reach the boot first (L12), with the instance it holds, which this would then compare with
+    /// itself.
     @MainActor static var debugBootedAppState: AppState?
     #endif
 
@@ -542,12 +555,27 @@ struct FRUSExplorerApp: App {
         }
     }
 
-    /// One run of the BGProcessingTask: the indexing a launch left, then a batch of *Continue in
-    /// the background*'s summaries, then the task's completion through `complete`.
+    /// One run of the BGProcessingTask: the launch's boot, the indexing a launch left, a batch of
+    /// *Continue in the background*'s summaries, and the task's completion through `complete`.
     ///
-    /// L12 checkpoint: the handler's order as it ships, moved here unchanged so that
-    /// `BackgroundTaskLaunchBootTests` can drive it. It reads the pipeline before anything has
-    /// booted, and `bootSearchInfrastructure` is not called yet.
+    /// ## The boot first (plan of record L12, decision 122)
+    /// Everything here reads what the launch's boot sets, `indexingPipeline` first. A wake of an app
+    /// the launch has booted finds it set. A launch the system makes to run the task does not: it
+    /// hands the task over at `-[BGTaskScheduler _handleAppLaunch]`, before the main scene's first
+    /// `.task` has started the boot, and whether a background launch builds that scene at all has
+    /// not been measured. So the wake awaits `bootSearchInfrastructure` before it reads anything.
+    /// The handler passes `bootSearchInfrastructureOnce(appState:containerSetup:)`, which joins the
+    /// boot a scene has started or starts it, and returns at once when it has finished. Until L12 the
+    /// handler read the pipeline first, and a launch made for the task completed `false` at that
+    /// guard 58 ms after handing the task over (measured on L11's code, 2026-11-09).
+    ///
+    /// ## Expiry during the boot
+    /// The boot is not the wake's to cancel: it is a task of its own, which a scene that connects
+    /// later awaits too. When the task's time runs out while the wake waits, the expiration handler
+    /// cancels the wake and completes the task; the boot runs on, and the wake starts no work once
+    /// it returns.
+    ///
+    /// `BackgroundTaskLaunchBootTests` drives this with a boot of its own.
     @MainActor
     static func runIndexingWake(
         appState state: AppState,
@@ -555,6 +583,16 @@ struct FRUSExplorerApp: App {
         modelContext: ModelContext,
         complete: @Sendable (Bool) -> Void
     ) async {
+        #if DEBUG
+        let arrival = state.indexingPipeline != nil ? "had set the pipeline"
+            : state.searchInfrastructureBoot != nil ? "was running" : "had not started"
+        print("[FRUSExplorer] Background wake: the launch's boot \(arrival) when the task arrived.")
+        #endif
+        await bootSearchInfrastructure()
+        guard !Task.isCancelled else {
+            complete(false)
+            return
+        }
         guard let pipeline = state.indexingPipeline else {
             complete(false)
             return
@@ -609,6 +647,13 @@ struct FRUSExplorerApp: App {
     /// guard. This comment said that @State persists the same instance, which held only for Xcode
     /// 26's property wrapper. `BackgroundTaskAppStateTests` holds the handler's instance to the
     /// booted one.
+    ///
+    /// ## The boot before the work (plan of record L12, decision 122)
+    /// A wake of an app the launch has booted finds the pipeline set. A launch the system makes to
+    /// run the task hands it over before the main scene's first `.task` has started the boot, so
+    /// the handler's work, `runIndexingWake`, starts with the boot: the one a scene has started, or
+    /// the handler's own through the same stored `Task`, given this AppState and the container
+    /// setup. `BackgroundTaskLaunchBootTests` drives that order.
     init() {
         // First, before anything can tag (#1373) — but NOT the warm-up itself: a CloudKit push, a
         // background task or a finished download runs this init in a background launch, and a warm-up
@@ -624,7 +669,9 @@ struct FRUSExplorerApp: App {
         #if DEBUG
         Self.debugBackgroundTaskAppState = state
         #endif
-        let container = modelContainer
+        // What the boot is given, for the handler to start it when no scene has (L12): the stored
+        // setup, never a read through `self`, which the `@Sendable` handler could not make.
+        let containerSetup = _containerSetup
         // The launch handler MUST be `@Sendable` (non-isolated). BGTaskScheduler invokes
         // it on its own background dispatch queue (`com.apple.BGTaskScheduler …`), not the
         // main actor. Without `@Sendable` the closure inherits `App.init`'s `@MainActor`
@@ -650,8 +697,13 @@ struct FRUSExplorerApp: App {
             }
             // Run on MainActor so we can read @MainActor-isolated AppState properties.
             let indexingTask = Task { @MainActor in
-                await Self.runIndexingWake(appState: state, bootSearchInfrastructure: {},
-                                           modelContext: container.mainContext, complete: complete)
+                await Self.runIndexingWake(
+                    appState: state,
+                    bootSearchInfrastructure: {
+                        await Self.bootSearchInfrastructureOnce(appState: state, containerSetup: containerSetup)
+                    },
+                    modelContext: containerSetup.container.mainContext,
+                    complete: complete)
             }
             // System calls this when budget expires. Cancel in-flight work; the
             // IndexingStateTracker already marks any in-progress volume as interrupted.
@@ -2245,9 +2297,6 @@ struct FRUSExplorerApp: App {
         Task(priority: .utility) { await dm.fetchMissingFigureImages(among: catalogue) }
     }
 
-    /// Creates the DownloadManager the first time `.task` fires, then immediately
-    /// resumes any queue that was persisted from the previous app session.
-    @MainActor
     /// Boots the search infrastructure exactly once, from whichever scene appears first.
     ///
     /// ## The defect this closes
@@ -2265,23 +2314,46 @@ struct FRUSExplorerApp: App {
     /// *sequential* calls but not concurrent ones: it awaits several times between that check and
     /// the assignment, so two scenes appearing together could both pass the guard and build two
     /// pipelines over one database. Holding the `Task` makes the second caller await the first's
-    /// work instead of repeating it. The check-and-store below is synchronous on the main actor,
-    /// so it cannot interleave.
+    /// work instead of repeating it. The check-and-store in the static boot below is synchronous on
+    /// the main actor, so it cannot interleave.
+    ///
+    /// ## The background task's handler is a caller too (L12)
+    /// A launch the system makes to run the iOS background task reaches the handler before any
+    /// scene's `.task` has run, so the boot is static and given what it reads: the handler starts it
+    /// with the AppState it holds, which is this one (L11), and a scene that appears later awaits
+    /// the same task. This method is the scenes' call.
+    @MainActor
     private func bootSearchInfrastructureOnce() async {
         #if os(iOS) && DEBUG
-        // L11: the instance the first boot runs on, which the background task's handler must hold.
+        // L11: the instance the first scene's boot runs on, which the background task's handler must
+        // hold. Recorded here, not in the static boot, which the handler can reach first (L12).
         if Self.debugBootedAppState == nil { Self.debugBootedAppState = appState }
         #endif
+        await Self.bootSearchInfrastructureOnce(appState: appState, containerSetup: _containerSetup)
+    }
+
+    /// The one boot, joined when it has started: the scenes reach it through the instance method
+    /// above, and the iOS background task's handler directly (L12).
+    @MainActor
+    private static func bootSearchInfrastructureOnce(appState: AppState, containerSetup: ContainerSetup) async {
         if let running = appState.searchInfrastructureBoot {
             await running.value
             return
         }
-        let task = Task { @MainActor in await bootDownloadManager() }
+        let task = Task { @MainActor in await bootDownloadManager(appState: appState, containerSetup: containerSetup) }
         appState.searchInfrastructureBoot = task
         await task.value
     }
 
-    private func bootDownloadManager() async {
+    /// Creates the DownloadManager, the index's stores and the search services the first time the
+    /// boot runs, then resumes any queue that was persisted from the previous app session.
+    ///
+    /// Static, and given its AppState and the container setup, so that the background task's
+    /// handler can start it before any scene has (L12). It can read no property of the App, whose
+    /// `@State` must never be read outside a scene (L11).
+    @MainActor
+    private static func bootDownloadManager(appState: AppState, containerSetup: ContainerSetup) async {
+        let modelContainer = containerSetup.container
         guard appState.downloadManager == nil else { return }
 
         let volumesDir = Self.makeVolumesDirectory()
@@ -2344,12 +2416,12 @@ struct FRUSExplorerApp: App {
         // the UI shows the real domain/code/description (e.g. "CKErrorDomain
         // serverRejectedRequest: …" — the signature of an undeployed CloudKit
         // schema change; see the "schema migrations" note on `frusModelTypes`).
-        appState.cloudKitSyncEnabled = _containerSetup.cloudKitEnabled
+        appState.cloudKitSyncEnabled = containerSetup.cloudKitEnabled
         // The store-vs-build record-type comparison, when the container fell back. Published
         // before the error message below, which appends its summary.
-        appState.storeSchemaMismatch = _containerSetup.storeDiagnostic
-        if !_containerSetup.cloudKitEnabled {
-            if let storeDiagnostic = _containerSetup.storeDiagnostic, storeDiagnostic.isMismatch {
+        appState.storeSchemaMismatch = containerSetup.storeDiagnostic
+        if !containerSetup.cloudKitEnabled {
+            if let storeDiagnostic = containerSetup.storeDiagnostic, storeDiagnostic.isMismatch {
                 // A second log entry rather than folding these names into the CloudKit entry's
                 // `schemaIdentifiers`: that field holds CloudKit's `CD_`-prefixed mirrored
                 // identifiers, and these are local Core Data entity names. The distinct phase keeps
@@ -2362,7 +2434,7 @@ struct FRUSExplorerApp: App {
                         schemaIdentifiers: names)
                 }
             }
-            if let initError = _containerSetup.initError {
+            if let initError = containerSetup.initError {
                 // #1531: no events will come to attach to, but an upload that failed in an earlier
                 // launch left its changes in the mirrored store all the same — and Fix iCloud Sync,
                 // which a reader stuck on Local Only may reach for, would clear that store. So the
@@ -2374,7 +2446,7 @@ struct FRUSExplorerApp: App {
                 // show. A tester's screenshot of "Local Only" then carries the diagnosis instead
                 // of only the CloudKit error code, which on this failure named nothing useful
                 // (`SwiftDataError.internalError`).
-                if let storeDiagnostic = _containerSetup.storeDiagnostic {
+                if let storeDiagnostic = containerSetup.storeDiagnostic {
                     appState.cloudKitInitError = "\(diag.message)\n\n\(storeDiagnostic.summary)"
                 } else {
                     appState.cloudKitInitError = diag.message
@@ -2693,7 +2765,7 @@ struct FRUSExplorerApp: App {
             let container = modelContainer
             // #1280: read here, on the main actor, so the boot Task can decide whether it may sweep
             // without touching `appState` from off-main.
-            let cloudKitOn = _containerSetup.cloudKitEnabled
+            let cloudKitOn = containerSetup.cloudKitEnabled
             Task {
                 let context = ModelContext(container)
 
@@ -3179,7 +3251,8 @@ struct FRUSExplorerApp: App {
                 await syncDocumentTagAssignmentsToFTS5(
                     pipeline: pipeline,
                     store: store,
-                    modelContainer: modelContainer
+                    modelContainer: modelContainer,
+                    cloudKitEnabled: containerSetup.cloudKitEnabled
                 )
             }
         }
@@ -3365,12 +3438,14 @@ struct FRUSExplorerApp: App {
     /// devices that had direct tags before the migration don't lose them.
     ///
     /// Both operations are idempotent and run in a background Task so they don't
-    /// block app launch.
+    /// block app launch. Static, as the boot that calls it is (L12), so it is given whether
+    /// CloudKit is on rather than reading the container setup.
     @MainActor
-    private func syncDocumentTagAssignmentsToFTS5(
+    private static func syncDocumentTagAssignmentsToFTS5(
         pipeline: IndexingPipeline,
         store: CrossReferenceStore,
-        modelContainer: ModelContainer
+        modelContainer: ModelContainer,
+        cloudKitEnabled: Bool
     ) async {
         let context = ModelContext(modelContainer)
 
@@ -3414,7 +3489,7 @@ struct FRUSExplorerApp: App {
         // on it waits for a settled import (the debounce in `body`).
         let tagOutcome = await DocumentTagAssignment.reconcileTagColumn(
             container: modelContainer, pipeline: pipeline,
-            sweepingStaleRows: !_containerSetup.cloudKitEnabled)
+            sweepingStaleRows: !cloudKitEnabled)
         // MARK: Mirror tag NAMES into user_tags (W-19 row L-3)
         // The assignments above carry opaque UUIDs; the names live only in the CloudKit-synced
         // `UserTag` model and were invisible to anything reading the index directly. Mirrored
@@ -3428,7 +3503,7 @@ struct FRUSExplorerApp: App {
         try? await pipeline.replaceUserTagNames(namePairs)
 
         #if DEBUG
-        print("[FRUSExplorer] Boot sync: tag column reconciled, \(tagOutcome.written) row(s) written, \(tagOutcome.cleared) cleared (sweeping: \(!_containerSetup.cloudKitEnabled))")
+        print("[FRUSExplorer] Boot sync: tag column reconciled, \(tagOutcome.written) row(s) written, \(tagOutcome.cleared) cleared (sweeping: \(!cloudKitEnabled))")
         print("[FRUSExplorer] Boot sync: mirrored \(namePairs.count) tag name(s) into user_tags")
         #endif
     }
