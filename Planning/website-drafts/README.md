@@ -103,7 +103,7 @@ soften them is the owner's call.
   re-cut again (steps 1, 2, 3, 5, 8 and 9: classification chips, the Editors' Annotations door, the
   288-volume line), and steps 14 and 18 gained screens (the Editors' Annotations matrix, Research ▸
   History). Step 13 gained the map film, re-rendered from build 51's layout (`tour/img/map-film.mp4`; rebuild it
-  with `tools/map-film/`). Still owed: steps 19 and 20 have no capture, and step 15 is a text slip. Step 3's screen (`truman.jpg`, cut from `ipad/browse-administrations-truman.png`) shows the Browse root's grid as it was until 2026-11-10, with the Editors' Annotations door below it; the door is now the grid's *Annotations* tile, between Editors and Archives, so it owes a retake and a re-cut.
+  with `tools/map-film/`). Still owed: steps 19 and 20 have no capture, and step 15 is a text slip. Steps 3 and 8 (`truman.jpg`, `browse.jpg`) were re-cut on 2026-11-10 from sitting T1's retakes for 1.0 (1812), at their old crops' box: the Editors' Annotations door is now the grid's *Annotations* tile, between Editors and Archives (#1884).
 - **The kit's rules.** Read each page against the launch kit's §6 checklist.
 - **The copies of record.** Fold the Support and Privacy drafts in, run
   `python3 Scripts/build_website_pages.py`, check that `--check` passes, and add the TEI row.

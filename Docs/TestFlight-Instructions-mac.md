@@ -1,47 +1,47 @@
 # Testing FRUS Explorer 1.0 (Mac)
 
-**Release candidate.** Version 1.0 (1787) is the app meant for the App Store; unless your reports stop it, this is 1.0.
+**Release candidate.** Version 1.0 (1812) is the app meant for the App Store; unless your reports stop it, this is 1.0.
 
 FRUS Explorer puts the State Department's *Foreign Relations of the United States* on your Mac: download volumes, then read, search, annotate, cite and chart their documents offline. Notes, highlights, tags and collections sync through iCloud.
 
-**Tested 1.0 (1776)?** First launch rebuilds People once, in the background. From build 50 it also re-indexes your library once and removes the earlier search model.
+**Tested 1.0 (1787)?** First launch re-indexes your library once. From 1776 it also rebuilds People once, in the background.
 
 ## Getting started
 
-- **Onboarding** offers the whole series, a subseries or one volume. As volumes download and index, the status bar counts the whole queue, and its **Learn** button opens the **FRUS Research Guide** while you wait.
-- **The Corpus Browser** (⇧⌘B) goes from subseries to volume, chapter and document, prose sections included; the **Analytics** menu charts terms, people, cross-references and archives. Its **People** button lists everyone the volumes name, many with links to Wikidata and VIAF.
+- **Onboarding** offers the whole series, a subseries or one volume. As volumes download and index, the status bar counts the whole queue, and its **Learn** button opens the **FRUS Research Guide** while you wait. Help ▸ **FRUS Explorer Quick Start** walks through the app's essentials.
+- **The Corpus Browser** (⇧⌘B) goes from subseries to volume, chapter and document; the **Analytics** menu charts terms, people, cross-references and archives. Its **People** button lists everyone the volumes name, many with links to Wikidata and VIAF, and says how many volumes tag their people.
+
+## Editors' Annotations
+
+- Each volume's page lists what its editors annotated: tagged people, source notes, classification markings, redactions and more, each with its count, even for a volume you have not downloaded.
+- In the Corpus Browser's sidebar, **Editors' Annotations** files every volume by those layers, era by era, as a matrix. Open a layer for what the editors did, when it became standard, and **Volumes with it** and **Volumes without it**.
 
 ## Reading
 
 - Select text to highlight it or add a note. The **Research rail** (⌘⇧R) holds **Cite**, **Sources**, **Graph**, **Related**, the **Summary** and your notes, tags and collections.
 - **Summarize this Document** (Apple Intelligence) covers the whole document, however long; a structured prompt such as **Meeting Record** answers in its fields wherever the summary shows.
-- **Cross-references:** a reference to a page of another volume cites the document on that page. A page link into a volume you have not downloaded offers that volume, or opens its page in the Corpus Browser naming the page.
-- **Reading Width** (Settings ▸ Reading & Search ▸ Display): **Narrow**, **Standard** or **Wide**.
 
 ## Search
 
 - **The Search window** (⌥⌘F), in **Keywords** or **Meaning**: Meaning ranks documents by a question with EmbeddingGemma 2, an open-source model you add with **Download Search Model** (310 MB, nothing to accept).
-- **Facets** narrow the results; **Save as Working Corpus…** keeps them, its sheet showing what narrowed them (**Narrowed by**).
-- **Search Within Results**, in the titlebar: over a Meaning list it finds words in those matches, over a keyword list it ranks them by a question; **Swap** swaps the two orders, and the row's close button puts the list back.
+- Rows from the 1932-1954 volumes show the classification the document printed, as **Source Explorer** does.
+- **Facets** narrow the results; **Save as Working Corpus…** keeps them.
+- **Search Within Results**, in the titlebar: over a Meaning list it finds words in those matches, over a keyword list it ranks them by a question; **Swap** swaps the two orders.
 
 ## Collections and Settings
 
-- **Collections** (⇧⌘K) export as PDF, Word or HTML; citations copy as BibTeX or RIS, or go to Zotero. **Collection** (the gear button) ▸ **Link to Saved Search…** makes a **smart collection**, which follows the search. The **Collection** menu and **Manage Collections…** rename, duplicate and delete a collection, and every delete asks first.
-- **Keeping Current** (Settings ▸ Library ▸ Volumes & Storage): **Check for Corrections**, then **Update**, each volume's row showing its step.
-- **Email Feedback File** (Settings ▸ System ▸ Data & Recovery) writes a message of your Semantic Match verdicts to feedback@frusexplorer.app.
+- **Collections** (⇧⌘K) export as PDF, Word or HTML; citations copy as BibTeX or RIS, or go to Zotero. A **smart collection** follows a saved search. The **Collection** menu and **Manage Collections…** rename, duplicate and delete a collection; every delete asks first.
+- **Keeping Current** (Settings ▸ Library ▸ Volumes & Storage): **Check for Corrections**, then **Update**.
 
-**Fixed since 1.0 (1776):** many things, in every window.
+**Fixed since 1.0 (1787):** many things, in every window.
 
 ## What to test
 
-1. **First launch,** once with Wi-Fi off: does the window open? Choose a subseries: does the status bar's count match the queue?
-2. **Read and annotate:** highlight, note, **Cite**, **Sources**, and **Summarize this Document** on a long one (1946, vol. VI, Document 475).
-3. **Search** both ways, with **Facets**, then **Search Within Results** and **Swap**.
-4. **Graph:** **Network** at **3 hops**, and that document's **Timeline**.
-5. **Analytics:** **View N documents ↗** gives Search's count, and a bar of **Most-Referenced Documents** opens its document.
+1. **1787 testers:** after the re-index, do the Search window's rows from 1932-1954 volumes show their classification? Are your reports fixed?
+2. **Editors' Annotations:** a volume's page, then the Corpus Browser's **Editors' Annotations**: open a layer, then **Volumes without it**.
+3. **Read and annotate:** highlight, note, **Cite**, **Sources**, and **Summarize this Document** on a long one (1946, vol. VI, Document 475).
+4. **Search** both ways, with **Facets**, then **Search Within Results** and **Swap**.
+5. **Graph** at **3 hops**, and **Analytics**: **View N documents ↗** gives Search's count.
 6. **Collections:** rename, duplicate and delete one.
-7. **1776 testers:** does People rebuild, with Henry Kissinger linking to Wikidata and VIAF? Are your reports fixed?
-
-Not bugs: People entries differing from 1776's.
 
 Report macOS version, window, clicks, expected, actual and a document id. Thanks!
