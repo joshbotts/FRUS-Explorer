@@ -65,8 +65,9 @@ POLICY_COMMENT = """\
   Scripts/build_website_pages.py, which writes this file. Docs/Website/README.md has the rest.
 
   To publish on the Squarespace site, paste everything between <main> and </main> into a Code
-  Block on a page whose URL slug is {slug}; the site's own type and colours then apply, and the
-  <style> below, which is only for viewing this file on its own, is left behind."""
+  Block on a page whose URL slug is {slug}. The <style> at the top of <main> goes with
+  it: it underlines the links and leaves type and colour to the site. The <style> in <head>,
+  which is only for viewing this file on its own, is left behind."""
 
 # A quick start's: the same arrangement, plus the <style> it carries inside <main> and the
 # screenshots it loads from GitHub.
@@ -78,13 +79,27 @@ GUIDE_COMMENT = """\
 
   To publish on the Squarespace site, paste everything between <main> and </main> into a Code
   Block on a page whose URL slug is {slug}. The <style> at the top of <main> goes with
-  it: it sizes the screenshots and rules the tables, and leaves type and colour to the site. The
-  screenshots load from the repository on GitHub, so a retaken capture shows here without a new
-  paste. The <style> in <head>, which is only for viewing this file on its own, is left behind."""
+  it: it underlines the links, sizes the screenshots and rules the tables, and leaves type and
+  colour to the site. The screenshots load from the repository on GitHub, so a retaken capture
+  shows here without a new paste. The <style> in <head>, which is only for viewing this file on
+  its own, is left behind."""
+
+# Why each paste underlines its own links. A Squarespace theme underlines a link in its own Text
+# blocks and leaves one in a Code Block as plain as the words around it. Seen on the site on
+# 2026-11-10, in the owner's theme: all 11 links of the Support page drew in the text's colour
+# with no underline, so a reader could not tell the list of manuals was one of links. The rule
+# sets the underline alone; the colour stays the site's, on a dark page as on a light one.
+
+# Pasted with the Privacy Policy's and the Support page's contents, scoped to the wrapper it opens.
+PAGE_STYLE = """\
+<style>
+  .frus-page a { text-decoration: underline; }
+</style>"""
 
 # Pasted with a quick start's contents; every rule is scoped to the wrapper it opens.
 GUIDE_STYLE = """\
 <style>
+  .frus-quick-start a { text-decoration: underline; }
   .frus-quick-start img { max-width: 100%; height: auto; }
   .frus-quick-start .shots img { margin: 0 0.75rem 0.5rem 0; vertical-align: top; }
   .frus-quick-start table { border-collapse: collapse; margin: 1rem 0; width: 100%; }
@@ -300,6 +315,8 @@ def render(page):
     main = body(markdown, page["source"])
     if page.get("guide"):
         main = '{}\n\n<div class="frus-quick-start">\n\n{}\n\n</div>'.format(GUIDE_STYLE, main)
+    else:
+        main = '{}\n\n<div class="frus-page">\n\n{}\n\n</div>'.format(PAGE_STYLE, main)
     fields = dict(page, main=main, comment=page["comment"].format(**page))
     return TEMPLATE.format(**fields)
 

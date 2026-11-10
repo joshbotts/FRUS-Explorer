@@ -6,8 +6,9 @@
   Scripts/build_website_pages.py, which writes this file. Docs/Website/README.md has the rest.
 
   To publish on the Squarespace site, paste everything between <main> and </main> into a Code
-  Block on a page whose URL slug is support; the site's own type and colours then apply, and the
-  <style> below, which is only for viewing this file on its own, is left behind.
+  Block on a page whose URL slug is support. The <style> at the top of <main> goes with
+  it: it underlines the links and leaves type and colour to the site. The <style> in <head>,
+  which is only for viewing this file on its own, is left behind.
 -->
 <html lang="en">
 <head>
@@ -41,6 +42,12 @@
 </head>
 <body>
 <main>
+
+<style>
+  .frus-page a { text-decoration: underline; }
+</style>
+
+<div class="frus-page">
 
 <h1>FRUS Explorer Support</h1>
 
@@ -82,7 +89,7 @@
 
 <p><strong>Do I need an account?</strong> No. If your device is signed in to iCloud, your notes, collections and other research sync through your own iCloud account. Two services are optional, each with a free key of your own, in <strong>Settings → System → Connections</strong>: the National Archives Catalog, which lets Source Explorer look up the records a document's source note cites (the card links to where you get a key), and Zotero, which lets you send documents with your tags and notes to your Zotero library.</p>
 
-<p><strong>What is natural-language search?</strong> An experimental way to search by meaning rather than by matching words. It needs a model, Google's EmbeddingGemma 2, which is an optional 310 MB download (<strong>Settings → Volumes &amp; Storage → Download Search Model</strong>) and runs on your device only: nothing you search leaves it.</p>
+<p><strong>What is natural-language search?</strong> An experimental way to search by meaning rather than by matching words. It needs a model, Google's EmbeddingGemma 2, which is an optional 310 MB download (<strong>Settings → Library → Volumes &amp; Storage → Download Search Model</strong>) and runs on your device only: nothing you search leaves it.</p>
 
 <p><strong>Can I use the search index with my own tools?</strong> Yes, on a Mac. <strong>Settings → System → Data &amp; Recovery → Export Research Database…</strong> saves a checked copy of the index as a SQLite file. Your notes, summaries and tag names are left out unless you turn on <strong>Include My Notes, Summaries, and Tags</strong>. The <a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Agentic-Analysis-Guide.md">Agentic Analysis Guide</a> explains the database, and how to check what an AI tool tells you about it. If you give a copy to an online service, that service's terms apply.</p>
 
@@ -99,6 +106,8 @@
 <hr>
 
 <p>This page is published in two copies kept identical: at <a href="https://frusexplorer.app/support">https://frusexplorer.app/support</a> and at <a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Support.md">https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Support.md</a>.</p>
+
+</div>
 
 </main>
 </body>

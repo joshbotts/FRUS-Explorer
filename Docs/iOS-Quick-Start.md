@@ -1,6 +1,6 @@
 # FRUS Explorer for iPad and iPhone — Quick Start
 
-> **AI Generated.** This guide was written for version 1.0 (build 1787) by an AI assistant (Claude), from the [user manual](iOS-User-Manual.md), the app's source and the manual's current screenshots, and has not yet been reviewed by the author.
+> **AI Generated.** This guide was written for version 1.0 (build 1861) by an AI assistant (Claude), from the [user manual](iOS-User-Manual.md), the app's source and the manual's current screenshots, and has not yet been reviewed by the author.
 
 > **Foreign Relations of the United States Explorer** — *Research the official record of U.S. foreign policy since 1861*
 
@@ -49,7 +49,7 @@ The first launch has three steps. **Welcome** introduces the series: tap **Get S
 
 The last step, **Ready**, confirms what is downloading. Tap **Finish**. If you have no research project yet, the app creates one called **My Research** and makes it active ([section 10](#10-keep-your-work-together)).
 
-> **How much to download?** The choice is not binding. A good start is the **subseries that covers your research period**; add neighboring eras later from **Settings → Library → Volumes & Storage**, where you can also remove volumes. Some of the app works before you download anything: the About the Series dashboards, the archival collection index and each volume's top subjects ship inside the app.
+> **How much to download?** The choice is not binding. A good start is the **subseries that covers your research period**; add neighboring eras later from **Settings → Library → Volumes & Storage**, where you can also remove volumes. Some of the app works before you download anything: the About the Series dashboards, the archival collection index, and each volume's top subjects and Editors’ Annotations ship inside the app.
 
 ## 2. Let It Index
 
@@ -67,7 +67,7 @@ The app has five tabs. On iPad they sit in a tab strip at the top of the screen,
 
 | Tab | What it is for |
 |-----|----------------|
-| **Browse** | The series by subseries, volume and document, and by people, topics, administrations, editors, archives and clusters |
+| **Browse** | The series by subseries, volume and document, and by people, topics, administrations, editors, what the editors annotated, archives and clusters |
 | **Search** | Full-text search of the volumes you have indexed, and search by meaning |
 | **Research** | Everything you have marked — notes, highlights, tags — plus your reading history and the FRUS Research Guide |
 | **Collections** | Ordered sets of documents with your own headings and prose, exported as PDF, HTML or Word |

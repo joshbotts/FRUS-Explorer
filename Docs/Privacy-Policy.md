@@ -8,7 +8,7 @@
 
 # FRUS Explorer Privacy Policy
 
-*Last updated October 20, 2026. This policy covers FRUS Explorer for iPhone, iPad and Mac, from version 1.0.*
+*Last updated November 10, 2026. This policy covers FRUS Explorer for iPhone, iPad and Mac, from version 1.0.*
 
 FRUS Explorer is made by Joshua Botts ("the developer").
 
@@ -45,10 +45,10 @@ The NARA Catalog and Zotero API keys you enter are stored in your device's keych
 
 The app downloads public files from the hosts below. Each request names a file or a folder and carries no identifier of you or your device. Like any request on the internet, it shows the host your network address and ordinary technical details, such as the app's name; the host, not the developer, receives it, and the host's own privacy policy governs what it records.
 
-- **The list of published volumes**, from GitHub (`api.github.com`), the Office of the Historian's public `HistoryAtState/frus` repository: at launch while the device is online, and when you open **Settings → Volumes & Storage** or refresh its list.
+- **The list of published volumes**, from GitHub (`api.github.com`), the Office of the Historian's public `HistoryAtState/frus` repository: at launch while the device is online, and when you open **Settings → Library → Volumes & Storage** or refresh its list.
 - **Volumes**, from GitHub (`raw.githubusercontent.com`), the same repository: when you download or update a volume, and at launch or when the device reconnects, to finish a download you started.
 - **Figure images**, from the Office of the Historian's image server (`static.history.state.gov`): after a volume with figures downloads; at launch and when the device reconnects, for downloaded volumes still missing images; and for a single image when a document or an export needs it first.
-- **Semantic match files**, a small file for each volume, from GitHub (`raw.githubusercontent.com`), the developer's public `frus-semantic-vectors` repository: with each volume you download, and when Related Documents or a search by meaning needs a volume's file, unless you turn off **Download With Volumes** in **Settings → Volumes & Storage**; and all at once when you choose **Download Missing Vectors** or **Download Vectors for Every Volume**. Which files a search by meaning or Related Documents asks for depends on the volumes it found, so those requests show GitHub which volumes they were, though never your question.
+- **Semantic match files**, a small file for each volume, from GitHub (`raw.githubusercontent.com`), the developer's public `frus-semantic-vectors` repository: with each volume you download, and when Related Documents or a search by meaning needs a volume's file, unless you turn off **Download With Volumes** in **Settings → Library → Volumes & Storage**; and all at once when you choose **Download Missing Vectors** or **Download Vectors for Every Volume**. Which files a search by meaning or Related Documents asks for depends on the volumes it found, so those requests show GitHub which volumes they were, though never your question.
 - **The search model**, Google's EmbeddingGemma 2 (310 MB), from GitHub (`github.com`), a release of the same repository: only when you choose **Download Search Model**.
 
 ## Services you connect yourself
@@ -61,7 +61,7 @@ Neither service is required, and the app uses neither until you add your own key
 
 ## Links you open
 
-Links in About and the FRUS Research Guide open in a built-in browser inside the app; links that lead out of a document, Source Explorer or a catalog lookup open in your default browser. The sites they lead to have their own privacy policies. Like any browser, the built-in one keeps the cookies and website data those sites set, inside the app.
+Links in About and the FRUS Research Guide, and the Quick Start on the Research tab of iPhone and iPad, open in a built-in browser inside the app; links that lead out of a document, Source Explorer or a catalog lookup open in your default browser. The sites they lead to have their own privacy policies. Like any browser, the built-in one keeps the cookies and website data those sites set, inside the app.
 
 ## Sending feedback
 

@@ -14,6 +14,10 @@ top that switches between the coming-soon and launch versions and shows or hides
 
     site/index.html             Home             from site-src/home.html
     site/tour.html              Tour             from tour/tour.html (images from tour/img/)
+    site/tour-pasted.html       Tour, as pasted  the two Code Blocks build_paste.py makes of it, in
+                                                 this shell, with stand-ins for its native sections
+    site/home-pasted.html       Home, as pasted  the home page's Code Block in both its versions, on
+                                                 a bare page that has none of this preview's styles
     site/quick-start-ios.html   Quick start      from Docs/iOS-Quick-Start.md
     site/quick-start-mac.html   Quick start      from Docs/macOS-Quick-Start.md
     site/support.html           Support          from Support-draft.md (the plain-language draft)
@@ -180,14 +184,13 @@ def markdown_page(source, extra_class=""):
 def build_tour():
     t = (HERE / "tour" / "tour.html").read_text(encoding="utf-8")
     t = t.replace('src="img/', 'src="../tour/img/').replace('poster="img/', 'poster="../tour/img/')
-    manual = ('<a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md" '
-              'target="_blank" rel="noopener">Read the manual</a>')
-    t = t.replace(manual, '<span>Quick start: <a href="quick-start-ios.html">iPad and iPhone</a> · '
-                          '<a href="quick-start-mac.html">Mac</a></span>')
     t = t.replace('<a class="btn" href="https://frusexplorer.app" target="_blank" rel="noopener">',
                   '<a class="btn" href="index.html">')
     t = t.replace('href="https://frusexplorer.app/support" target="_blank" rel="noopener"',
                   'href="support.html"')
+    # The closing section's quick-start links name the live pages; here they open the preview's.
+    for live, local in LOCAL.items():
+        t = t.replace('href="{}"'.format(live), 'href="{}"'.format(local))
     # The site's pages, in the tour's own draft bar, and the review sheet.
     site_links = ('<span style="margin-left:auto;display:flex;flex-wrap:wrap;gap:4px 14px">'
                   '<a href="index.html">Home</a><a href="quick-start-ios.html">Quick Start</a>'
@@ -214,6 +217,10 @@ def build_tour():
         "for what wasn't printed, and G is the editorial note listing the conference's delegations (<code>d78</code>). "
         "No Marshall document of spring 1947 carries all seven kinds.",
         "<b>Still owed:</b> captures for steps 19 and 20 and a Cite capture to replace step 15's text slip if wanted. Steps 14 and 18 gained screens on 2026-11-06, and step 13 the map film, re-rendered from build 51's layout.",
+        "<b>Read against 1.0 (1812) on 2026-11-10</b>, which the owner expects to ship as 1.0 (1861): sixteen kinds "
+        "of annotation, where it said fifteen (#1874); the Browse grid's Annotations tile in step 14's path, caption "
+        "and alt text (#1884); and the map's footnote is 5, where two were numbered 4. "
+        "<a href=\"tour-pasted.html\">The tour as it is pasted</a> is this page made static for Squarespace.",
         "Production notes under each step stay visible with the tour's own <b>Notes</b> switch.",
     ])
     t = t.replace("<main>", "<main>\n<div class=\"inner\">" + rv + "</div>", 1)
@@ -221,6 +228,128 @@ def build_tour():
         else t + '\n<script src="reload.js"></script>\n'
     (OUT / "tour.html").write_text(t, encoding="utf-8")
     return t
+
+
+# ---- The tour as it is pasted: build_paste.py's two Code Blocks, in this shell
+
+def paste_kit():
+    """build_paste.py, loaded when a build needs it: that script loads this one for the footer's
+    words, so neither names the other at its top."""
+    spec = importlib.util.spec_from_file_location("build_paste", HERE / "build_paste.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+NATIVE_CSS = """<style>
+.native { border: 1px dashed var(--note-line); border-radius: 6px; padding: 14px 18px; margin: 28px 0; display: grid; gap: 10px; }
+.native > .tag, .pasted-tag { font: 600 11.5px/1.4 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--note-ink); }
+.pasted-tag { margin: 28px 0 8px; }
+.native h2 { font-size: 28px; }
+.native video { display: block; width: 100%; height: auto; background: #0f1217; border-radius: 3px; }
+.native figure { margin: 0; display: grid; gap: 8px; }
+.native figcaption { font-size: 14.5px; color: var(--muted); }
+.native .cta { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; font-family: var(--sans); font-size: 15px; }
+.native .btn { background: var(--red); color: var(--paper); text-decoration: none; padding: 9px 18px; border-radius: 3px; font-weight: 600; }
+.native .btn.soon { display: none; }
+.soon-strip { display: none !important; }
+body.hide-notes .native { border-color: transparent; padding-inline: 0; }
+body.hide-notes .native > .tag, body.hide-notes .pasted-tag { display: none; }
+</style>"""
+
+
+def build_pasted_tour():
+    """What Squarespace will show: each Code Block of the tour's page exactly as paste/ holds it,
+    but for where the screens load from (this checkout, so an unmerged crop shows), in the page's
+    order, with a stand-in for the film's Video block. The shell's stylesheet is not the tour's,
+    so a rule a paste left unscoped, or one of the shell's that reaches into it, shows here first."""
+    kit = paste_kit()
+    blocks = dict(kit.tour_blocks(), **kit.tour_small_blocks())
+    tour = (HERE / "tour" / "tour.html").read_text(encoding="utf-8")
+    film = re.search(r'<figure class="film">.*?</figure>', tour, re.S).group(0)
+    film = film.replace('="img/', '="../tour/img/')
+    rv = note("Tour, as pasted", [
+        "<b>What this is:</b> the page's Code Blocks, each under the name of its file in "
+        "<code>paste/</code> and byte for byte what that file holds, but for where the screens load "
+        "from, inside this preview's shell. <a href=\"tour.html\">The draft itself</a> is the source; "
+        "<code>build_paste.py</code> makes these of it, and <code>Squarespace-Entry.md</code> has the steps.",
+        "<b>The coming-soon line and the closing</b> are small blocks of their own, since they are "
+        "all that differs at launch: the switch above shows the page as it stands before and after. "
+        "The links in them are the live site's, so they lead nowhere here.",
+        "<b>The dashed box</b> stands in for the film's Video block, the page's one native block.",
+        "<b>Static, for the Basic plan:</b> no script. A screen opens at full size in a new tab, "
+        "the production notes and the running head are gone, and the film is out of the pasted HTML.",
+    ])
+    tag = '<p class="pasted-tag" data-rv>Section {} · Code Block · <code>paste/{}</code> ({:,} bytes){}</p>\n'
+
+    def pasted(number, name, when="", state=None):
+        block = blocks[name]
+        text = tag.format(number, name, len(block.encode("utf-8")), when) + block.replace(
+            kit.TOUR_IMAGES, "../tour/img/")
+        return '<div data-show="{}">\n{}\n</div>'.format(state, text) if state else text
+
+    parts = [NATIVE_CSS, rv,
+             pasted(1, "tour-coming-soon-line.txt", " · until release day", "soon"),
+             pasted(2, "tour-block-1.txt"),
+             '<div class="native"><p class="tag" data-rv>Section 3 · Video block, its caption in the '
+             "block's Description (optional)</p>\n{}\n</div>".format(film),
+             pasted(4, "tour-block-2.txt"),
+             pasted(5, "tour-closing-coming-soon.txt", " · until release day", "soon"),
+             pasted(5, "tour-closing-launch.txt", " · from release day", "launch")]
+    return page("tour-pasted.html", "FRUS Explorer Tour, as pasted", "\n".join(parts))
+
+
+# ---- The home page as it is pasted: one Code Block, in each of its two versions
+
+# A page that knows nothing of the block. The preview's stylesheet holds the home page's own
+# rules, so inside the shell a rule the paste had left behind would not show as missing.
+BARE_PAGE = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title>
+<meta name="robots" content="noindex">
+<style>
+  body {{ margin: 0; font: 16px/1.5 -apple-system, "Helvetica Neue", Arial, sans-serif; color: #222; background: #fff; }}
+  .stand-in {{ max-width: 1072px; margin: 0 auto; padding: 24px 16px 56px; }}
+  .stand-in-note {{ font-size: 13.5px; color: #6B4A00; background: #FFF7E6; border: 1px dashed #E8C88A; border-radius: 6px; padding: 10px 14px; margin: 0 0 8px; }}
+  .stand-in-note a {{ color: inherit; }}
+  .stand-in-tag {{ font-size: 11.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #6B4A00; margin: 40px 0 14px; border-top: 2px solid #1B1B1F; padding-top: 12px; }}
+</style>
+</head>
+<body>
+<div class="stand-in">
+{body}
+</div>
+<script src="reload.js"></script>
+</body>
+</html>
+"""
+
+
+def build_pasted_home():
+    """The home page's Code Block exactly as paste/ holds each version, one under the other, on
+    a page with no stylesheet of the draft's: what it brings with it is all it has."""
+    blocks = paste_kit().home_blocks()
+    parts = ['<p class="stand-in-note"><b>Review copy</b>, not published · built {} · the home page as it '
+             'is pasted: each version of its Code Block, byte for byte, on a page that has none of this '
+             'preview\'s styles. Its links are the live site\'s, so they lead nowhere here. '
+             '<a href="index.html">The draft itself</a> · <a href="review.html">Review sheet</a></p>'
+             .format(BUILT)]
+    for name, when in (("home-coming-soon.txt", "now"), ("home-launch.txt", "from release day")):
+        block = blocks[name]
+        parts.append('<p class="stand-in-tag">Code Block · <code>paste/{}</code> ({:,} bytes) · {}</p>'
+                     .format(name, len(block.encode("utf-8")), when))
+        parts.append(block)
+    footer = paste_kit().footer_block()["footer.txt"]
+    parts.append('<p class="stand-in-tag">The footer of every page · Code Block · <code>paste/footer.txt</code> '
+                 '({:,} bytes) · its type and colour are the site\'s, so here they are this bare page\'s</p>'
+                 .format(len(footer.encode("utf-8"))))
+    parts.append(footer)
+    text = BARE_PAGE.format(title="FRUS Explorer Home, as pasted", body="\n".join(parts))
+    (OUT / "home-pasted.html").write_text(text, encoding="utf-8")
+    return text
 
 
 # ---- The figures, recounted from the bundle
@@ -235,6 +364,16 @@ def figures():
     cross = edges["documentEdges"] - edges["sameVolumeEdges"]
     hub = (REPO / "FRUSExplorer/Settings/MacVolumesStorageHub.swift").read_text()
     ratio = "2.8" if "roughly 2.8× that in search index" in hub else "?"
+    # People tagged, by the kit's rule (`VolumeAnnotations.carries`): at least half a volume's
+    # documents link a name to its List of Persons.
+    annotations = json.loads((RES / "volume-annotations-index.json").read_text())
+    documents, people = (annotations["fields"].index(name) for name in ("documents", "people"))
+    tagging = sum(1 for row in annotations["volumes"].values()
+                  if row[1][people] and 2 * row[1][people] >= row[1][documents])
+    # The layers of Editors' Annotations: the cases of the app's own table.
+    axis = (REPO / "FRUSExplorer/Browser/AnnotationsAxis.swift").read_text()
+    table = axis.split("enum AnnotationLayer", 1)[1].split("var id: String", 1)[0]
+    layers = len(re.findall(r"^\s*case \w+\s*$", table, re.M))
     return [
         ("Volumes in the catalogue", "553", "{:,}".format(len(manifest)),
          "<code>manifest.json</code>, entries"),
@@ -254,7 +393,16 @@ def figures():
              vectors["documentCount"])),
         ("Map regions (not stated on a page)", "—", "{:,}".format(len(smap["clusters"])),
          "<code>semantic-map-index.json</code>, <code>clusters</code>; for the map's retake"),
+        ("Volumes whose editors tagged people", "288", "{:,}".format(tagging),
+         "<code>volume-annotations-index.json</code> (index version {}), by the kit's rule: at least "
+         "half a volume's documents link a name".format(annotations["indexVersion"])),
+        ("Kinds of annotation, in words", "sixteen", "{}".format(layers),
+         "the cases of <code>AnnotationLayer</code>, <code>FRUSExplorer/Browser/AnnotationsAxis.swift</code>"),
     ]
+
+
+# A figure a page states in words, and the number it stands for.
+IN_WORDS = {"sixteen": "16"}
 
 
 def plain(text):
@@ -285,7 +433,7 @@ SCREENS = [
      "Now document 16 of frus1952-54v02p1, after #1438, #1481 and #1764, not document 149 of frus1964-68v19; its re-shoot note removed."),
     (13, "map.jpg", "ipad/semantic-map.png", "Build 51's layout and 140 regions. The map film beside it was re-rendered from the same layout on 2026-11-06."),
     (14, "lag.jpg", "ipad/series-production.png", "Same chart, now as the sheet over Research."),
-    (14, "annotations.jpg", "ipad/browse-annotations.png", "New on 2026-11-06 for 1.0’s Editors’ Annotations (#1859–#1862), from the screens-1861 sitting (#1865): the matrix pane, header cut."),
+    (14, "annotations.jpg", "ipad/browse-annotations.png", "New on 2026-11-06 for 1.0’s Editors’ Annotations (#1859–#1862), from the screens-1861 sitting (#1865): the matrix pane, header cut. Read on 2026-11-10 beside sitting T1's retake for 1.0 (1812): the crop holds Who is named and the first two rows of Where it came from, where neither #1868's two new labels nor #1874's sixteenth row shows, so it was not re-cut."),
     (16, "reader.jpg", "ipad/collections-editor.png", "The preview now opens on the collection's title page and contents."),
     (17, "table.jpg", "macos/analytics-table.png",
      "9,162 documents across 502 volumes became 9,114 across 267: the capture's Mac held 267 volumes."),
@@ -317,7 +465,7 @@ def build_review(texts):
         bare = stated.replace("about ", "").replace(" times", "").replace(" GB", "")
         where = [k for k, v in allt.items() if bare != "—" and bare in v]
         same = (stated == "—") or (bare.replace(",", "") in recount.replace(",", "").replace("×", "")) or \
-            (stated.endswith("GB") and recount.startswith(bare))
+            (stated.endswith("GB") and recount.startswith(bare)) or IN_WORDS.get(stated) == recount
         status = ('<span class="st ok">matches</span>' if same and stated != "—" else
                   '<span class="st warn">for reference</span>' if stated == "—" else
                   '<span class="st bad">differs</span>')
@@ -337,7 +485,14 @@ def build_review(texts):
                        (20, "Review… on a corrected volume's highlights")]:
         shots.append("<tr><td class=num>{}</td><td>No capture yet: {}.</td><td>Capture from the submitted "
                      "build; Docs/screenshots has nothing for it.</td></tr>".format(step, what))
-    body = REVIEW.format(built=BUILT, figures="\n".join(rows), shots="\n".join(shots))
+    try:
+        behind = paste_kit().stale()
+        kit = ('<span class="st ok">The kit is in step with its sources.</span>' if not behind else
+               '<span class="st bad">Out of step: {}. Run <code>python3 Planning/website-drafts/build_paste.py</code>.</span>'
+               .format(", ".join(html.escape(path) for path in behind)))
+    except Exception as problem:
+        kit = '<span class="st bad">build_paste.py could not read its sources: {}</span>'.format(html.escape(str(problem)))
+    body = REVIEW.format(built=BUILT, figures="\n".join(rows), shots="\n".join(shots), kit=kit)
     page("review.html", "Website review sheet", body)
 
 
@@ -350,13 +505,16 @@ REVIEW = """<div class="sheet">
 <h2><span class="n">1</span>The pages</h2>
 <div class="pages">
   <a href="index.html"><b>Home</b><span>frusexplorer.app/ · from site-src/home.html</span></a>
+  <a href="home-pasted.html"><b>Home, as pasted</b><span>/ · both versions of its Code Block, on a bare page</span></a>
   <a href="tour.html"><b>Tour</b><span>/tour · from tour/tour.html</span></a>
+  <a href="tour-pasted.html"><b>Tour, as pasted</b><span>/tour · the two Code Blocks of paste/, in this shell</span></a>
   <a href="quick-start-ios.html"><b>Quick start, iPad and iPhone</b><span>/quick-start-ios · Docs/iOS-Quick-Start.md</span></a>
   <a href="quick-start-mac.html"><b>Quick start, Mac</b><span>/quick-start-mac · Docs/macOS-Quick-Start.md</span></a>
   <a href="support.html"><b>Support</b><span>/support · Support-draft.md</span></a>
   <a href="privacy.html"><b>Privacy</b><span>/privacy · Privacy-Policy-draft.md</span></a>
 </div>
 <p class="sub">To revise: edit the source named on each card (for a quick start, the Markdown in <code>Docs/</code>), then run <code>python3 Planning/website-drafts/build_site.py</code> and reload.</p>
+<p class="sub">To enter them into Squarespace: <code>Planning/website-drafts/Squarespace-Entry.md</code> has the owner's steps, and <code>paste/</code> the twelve files that go into Code Blocks. {kit}</p>
 </section>
 
 <section>
@@ -389,6 +547,7 @@ REVIEW = """<div class="sheet">
   <li><b>Editors’ Annotations, 2026-11-06, later:</b> the pages describe 1.0's new Editors’ Annotations (#1859–#1863), the People list's 288-of-553 line (#1851, #1862) and the classification markings now shown in Search and Source Explorer (#1853, #1857). The tour's figures row gains a fourth figure, 288. The proposals are in <code>Revisions-proposed-2026-11-06.md</code>, and the owner's last edits to them are folded in. On the same day the screens-1861 sitting retook the captures behind steps 1, 2, 3, 5, 8 and 9 (chips, the Browse door, the 288-volume line), and step 14 gained the Editors’ Annotations matrix and step 18 Research ▸ History; the captures merged in #1865.</li>
   <li><b>Owner's revisions, 2026-11-06:</b> both pages rewritten from the owner's Markdown copies (<code>Home-draft.md</code>, <code>Tour-draft.md</code>): the tour's step titles, Part 0's introduction and notes, the source labels' wording, and steps 6, 9, 16 and 18 restructured. Each new claim was checked against the manuals and the corpus (287 of 553 volumes tag people). Typos fixed; two claims corrected: a cross-reference to a volume not on the device offers the download rather than starting it, and Part II's privacy line names the app, since Apple can pass opted-in analytics to the developer.</li>
   <li><b>Quick starts:</b> as <code>Docs/Website/</code> renders them, unchanged.</li>
+  <li><b>Read against 1.0 (1812), 2026-11-10</b>, on the owner's word that build 53 becomes 1.0 (1861) with no further features. <b>Tour:</b> sixteen kinds of annotation, where it said fifteen (#1874); step 14's path, caption and alt text name the Browse grid's Annotations tile (#1884); the map's footnote is 5, where two footnotes were numbered 4; the film's caption no longer names build 51; the closing section's quick-start links are in the source, where this preview patched them in; and the map band's footnote mark takes the band's red (6.7:1, where the page's red was 2.5:1). <b>Home:</b> no word changed. <b>Support and Privacy</b>, the drafts and the copies of record alike: the path to Volumes &amp; Storage names the Library group, and Privacy names the Quick Start on the Research tab among the links the built-in browser opens (#1848), with its date. Every figure recounts the same; section 2 now recounts 288 and sixteen as well. New: <code>build_paste.py</code>, <code>paste/</code>, <code>Squarespace-Entry.md</code> and <a href="tour-pasted.html">the tour as it is pasted</a>. The same day, on the owner's question, both quick starts were read against the build (their notice names build 1861; they name Editors’ Annotations where they list the ways to browse), and on the owner's request the home page became one Code Block in two versions, <a href="home-pasted.html">shown as pasted</a>, and then the tour's coming-soon line, its closing section and the site's footer became Code Blocks too, so that the film's Video block is the only thing entered that is not a paste.</li>
 </ul>
 </section>
 
@@ -412,7 +571,10 @@ REVIEW = """<div class="sheet">
   <li><b>“Coming soon to the App Store” and “will be free”</b> on Home and the tour assume approval; App Review decides.</li>
   <li><b>Home and the tour as copies of record</b>, under <code>Docs/Website/</code> with a trace per factual sentence, or drafts here.</li>
   <li><b>Folding the Support and Privacy drafts</b> into <code>Docs/</code>: then <code>Scripts/build_website_pages.py</code>, its <code>--check</code>, and the TEI sentence's row in the README.</li>
-  <li><b>The tour's remaining screens</b>: steps 18 to 20 have no capture, and step 15 is a text slip.</li>
+  <li><b>The tour's remaining screens</b>: steps 19 and 20 have no capture, and step 15 is a text slip.</li>
+  <li><b>The day the site goes public.</b> App Review opens <code>/privacy</code> and <code>/support</code>, and the coming-soon lines say the app has been submitted: the day 1.0 (1861) is submitted makes both true.</li>
+  <li><b>The app's App Store address, on release day.</b> <code>paste/home-launch.txt</code> waits for it: <code>APP_STORE_URL</code> in <code>build_paste.py</code>. Until it is set the file says NOT READY, on its first line and on the page.</li>
+  <li><b>Where the pasted tour's screens live.</b> Its blocks load them from <code>Planning/website-drafts/tour/img/</code> on GitHub, so the folder stays where it is while they are published, or the blocks are made and pasted again.</li>
 </ol>
 </section>
 </div>"""
@@ -428,6 +590,8 @@ def build():
     home = re.sub(r"<!--.*?-->\s*", "", (SRC / "home.html").read_text(encoding="utf-8"), count=1, flags=re.S)
     texts["Home"] = page("index.html", "FRUS Explorer", home)
     texts["Tour"] = build_tour()
+    build_pasted_tour()
+    build_pasted_home()
     for file, source, title, other, label in [
             ("quick-start-ios.html", "Docs/iOS-Quick-Start.md", "FRUS Explorer for iPad and iPhone — Quick Start",
              "quick-start-mac.html", "iPad and iPhone"),

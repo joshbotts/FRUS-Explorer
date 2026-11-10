@@ -2,13 +2,18 @@
   A plain-language draft of Docs/Privacy-Policy.md, 2026-10-27 (plan of record decision 101). It is
   not the copy of record and is not published. After review its text replaces the body of
   Docs/Privacy-Policy.md, under that file's own header, and Scripts/build_website_pages.py writes the
-  HTML. Its claims are the copy of record's at v2 1c18b51, claim for claim, so the trace in
+  HTML. Its claims are the copy of record's, claim for claim, so the trace in
   Docs/Website/README.md holds; set the Last updated date to the day it lands.
+  Revised 2026-11-10, with the copy of record: the Quick Start on the Research tab joins About and
+  the Research Guide as a link the built-in browser opens (#1848 added the row on 2026-11-03, after
+  this draft's base, 1c18b51), two Settings paths name the Library group, and the date follows.
+  Read against 1.0 (1812), which the owner expects to ship as 1.0 (1861) with no further features:
+  no network request and no kind of record was added since the base.
 -->
 
 # FRUS Explorer Privacy Policy
 
-*Last updated October 20, 2026. This policy covers FRUS Explorer for iPhone, iPad and Mac, from version 1.0.*
+*Last updated November 10, 2026. This policy covers FRUS Explorer for iPhone, iPad and Mac, from version 1.0.*
 
 FRUS Explorer is made by Joshua Botts ("the developer").
 
@@ -45,10 +50,10 @@ The NARA Catalog and Zotero API keys you enter are stored in your device's keych
 
 The app downloads public files from the hosts below. Each request names a file or a folder. It carries nothing that identifies you or your device. Like any request on the internet, it shows the host your network address and ordinary technical details, such as the app's name. The host receives the request, not the developer, and the host's own privacy policy covers what it records.
 
-- **The list of published volumes**, from GitHub (`api.github.com`), in the Office of the Historian's public `HistoryAtState/frus` repository. The app asks for it at launch while the device is online, and when you open **Settings → Volumes & Storage** or refresh its list.
+- **The list of published volumes**, from GitHub (`api.github.com`), in the Office of the Historian's public `HistoryAtState/frus` repository. The app asks for it at launch while the device is online, and when you open **Settings → Library → Volumes & Storage** or refresh its list.
 - **Volumes**, from GitHub (`raw.githubusercontent.com`), in the same repository. The app gets a volume when you download or update it. At launch, or when the device reconnects, it also finishes a download you started.
 - **Figure images**, from the Office of the Historian's image server (`static.history.state.gov`). The app gets them after a volume with figures downloads. At launch and when the device reconnects, it gets any images still missing from downloaded volumes. It also gets a single image when a document or an export needs it first.
-- **Semantic match files**, one small file for each volume, from GitHub (`raw.githubusercontent.com`), in the developer's public `frus-semantic-vectors` repository. The app gets one with each volume you download, and when Related Documents or a search by meaning needs it. Turn off **Download With Volumes** in **Settings → Volumes & Storage** to stop both. The app gets them all at once when you choose **Download Missing Vectors** or **Download Vectors for Every Volume**. The files that a search by meaning or Related Documents asks for depend on the volumes it found. So those requests show GitHub which volumes they were, but never your question.
+- **Semantic match files**, one small file for each volume, from GitHub (`raw.githubusercontent.com`), in the developer's public `frus-semantic-vectors` repository. The app gets one with each volume you download, and when Related Documents or a search by meaning needs it. Turn off **Download With Volumes** in **Settings → Library → Volumes & Storage** to stop both. The app gets them all at once when you choose **Download Missing Vectors** or **Download Vectors for Every Volume**. The files that a search by meaning or Related Documents asks for depend on the volumes it found. So those requests show GitHub which volumes they were, but never your question.
 - **The search model**, Google's EmbeddingGemma 2 (310 MB), from GitHub (`github.com`), in a release of the same repository. The app gets it only when you choose **Download Search Model**.
 
 ## Services you connect yourself
@@ -61,7 +66,7 @@ Neither service is required. The app uses neither until you add your own key in 
 
 ## Links you open
 
-Links in About and in the FRUS Research Guide open in a browser built into the app. Links that lead out of a document, Source Explorer or a catalog lookup open in your default browser. The sites they lead to have their own privacy policies. Like any browser, the built-in one keeps the cookies and website data those sites set, inside the app.
+Links in About and in the FRUS Research Guide open in a browser built into the app. So does the Quick Start on the Research tab of iPhone and iPad. Links that lead out of a document, Source Explorer or a catalog lookup open in your default browser. The sites they lead to have their own privacy policies. Like any browser, the built-in one keeps the cookies and website data those sites set, inside the app.
 
 ## Sending feedback
 

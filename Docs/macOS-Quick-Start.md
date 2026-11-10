@@ -1,6 +1,6 @@
 # FRUS Explorer for macOS — Quick Start
 
-> **AI Generated.** This guide was written for version 1.0 (build 1787) by an AI assistant (Claude), from the [user manual](macOS-User-Manual.md), the app's source and the manual's current screenshots, and has not yet been reviewed by the author.
+> **AI Generated.** This guide was written for version 1.0 (build 1861) by an AI assistant (Claude), from the [user manual](macOS-User-Manual.md), the app's source and the manual's current screenshots, and has not yet been reviewed by the author.
 
 > **Foreign Relations of the United States Explorer** — *Research the official record of U.S. foreign policy since 1861*
 
@@ -43,7 +43,7 @@ The first launch has three steps. **Welcome** introduces the series: click **Get
 
 **A Subseries** and **A Single Volume** open a list to pick from. Click **Continue** to start the downloads, or **Skip** to download nothing yet. The last step, **Ready**, confirms what is downloading: click **Finish**. If you have no research project yet, the app creates one called **My Research** and makes it active ([section 10](#10-keep-your-work-together)).
 
-> **How much to download?** The choice is not binding. A good start is the **subseries that covers your research period**; add neighboring eras later from **Settings → Library → Volumes & Storage** (⌘,), where you can also remove volumes. Some of the app works before you download anything: the About the Series dashboards, the archival collection index and each volume's top subjects ship inside the app.
+> **How much to download?** The choice is not binding. A good start is the **subseries that covers your research period**; add neighboring eras later from **Settings → Library → Volumes & Storage** (⌘,), where you can also remove volumes. Some of the app works before you download anything: the About the Series dashboards, the archival collection index, and each volume's top subjects and Editors’ Annotations ship inside the app.
 
 ## 2. Let It Index
 
@@ -69,7 +69,7 @@ The menu bar holds the same commands and more, in its **Document**, **Find**, **
 
 ## 4. Open a Document
 
-Click **Browse** (⇧⌘B) to open the **Corpus Browser**. Its sidebar lists the ways in — **All Volumes**, **Administrations**, **Editors**, **Archives** and **Clusters**, your own scopes and corpora, and every subseries. Click a subseries, a volume, a chapter and a document, and the document opens in the main window.
+Click **Browse** (⇧⌘B) to open the **Corpus Browser**. Its sidebar lists the ways in — **All Volumes**, **Administrations**, **Editors**, **Archives**, **Clusters** and **Editors’ Annotations**, your own scopes and corpora, and every subseries. Click a subseries, a volume, a chapter and a document, and the document opens in the main window.
 
 ![The Corpus Browser: the sidebar's Browse, Your sets and Subseries sections, each subseries with how many of its volumes are downloaded, and a volume's page — Foreign Relations of the United States, 1946, Eastern Europe, The Soviet Union, Volume VI — with its top subjects, its Editors’ Annotations, front matter and contents.](screenshots/macos/browser.png)
 

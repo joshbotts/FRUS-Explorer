@@ -1,0 +1,48 @@
+<!-- frusexplorer.app/tour · from Planning/website-drafts/tour/tour.html, its closing section, launch version · fingerprint f23bd2df -->
+<style>
+.frus-tour { --paper: #FFFFFF; --ink: #1B1B1F; --muted: #64646C; --rule: #D9D9DE; --tint: #F4F4F6; --red: #A61C2A; --link: #2B7A6B; --note-bg: #FFF7E6; --note-ink: #6B4A00; --note-line: #E8C88A; --new: #5B4FC4; --night: #0F1217; --night-ink: #E8EAF0; --night-muted: #9AA3B2; --night-caveat: #F0A04B; --night-line: #262B35; --night-red: #E8798A; --night-link: #8FD3C4; --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif; --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+.frus-tour { font-family: var(--serif); font-size: 18px; line-height: 1.6; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; text-align: left; color: var(--ink); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
+.frus-tour h1, .frus-tour h2, .frus-tour h3, .frus-tour p, .frus-tour ol, .frus-tour ul, .frus-tour li, .frus-tour dl, .frus-tour dt, .frus-tour dd, .frus-tour figcaption, .frus-tour blockquote, .frus-tour span, .frus-tour a, .frus-tour b, .frus-tour i, .frus-tour em, .frus-tour sup, .frus-tour code { font-family: inherit; font-size: inherit; font-style: inherit; line-height: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; }
+.frus-tour li, .frus-tour blockquote, .frus-tour dl, .frus-tour dt, .frus-tour dd { margin: 0; }
+.frus-tour blockquote { padding: 0; border: 0; quotes: none; }
+.frus-tour blockquote::before, .frus-tour blockquote::after { content: none; }
+.frus-tour code { background: none; padding: 0; border: 0; }
+.frus-tour a { text-decoration: underline; }
+.frus-tour i, .frus-tour em { font-style: italic; }
+.frus-tour, .frus-tour * { box-sizing: border-box; }
+.frus-tour .inner { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.frus-tour h1, .frus-tour h2, .frus-tour h3 { margin: 0; text-wrap: balance; font-weight: 600; }
+.frus-tour p { margin: 0; }
+.frus-tour a { color: var(--link); text-underline-offset: 3px; }
+.frus-tour a:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; border-radius: 2px; }
+.frus-tour code, .frus-tour .mono { font-family: var(--mono); font-size: 0.84em; }
+.frus-tour .close { border-top: 2px solid var(--ink); margin-top: 64px; padding-block: 48px 40px; }
+.frus-tour .close .inner { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 40px; align-items: end; }
+@media (max-width: 860px) {
+  .frus-tour .close .inner { grid-template-columns: 1fr; }
+}
+.frus-tour .close h2 { font-size: clamp(30px, 4vw, 44px); line-height: 1.08; }
+.frus-tour .close p { font-size: 18px; margin-top: 12px; max-width: 34em; }
+.frus-tour .cta { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; font-family: var(--sans); font-size: 15px; }
+.frus-tour .btn { background: var(--red); color: var(--paper); text-decoration: none; padding: 11px 20px; border-radius: 3px; font-weight: 600; }
+.frus-tour .btn.soon { background: transparent; color: var(--ink); border: 1px solid var(--ink); cursor: default; }
+.frus-tour .inner { padding-left: 0; padding-right: 0; }
+.frus-tour .close { margin-top: 0; }
+</style>
+<div class="frus-tour">
+
+<section class="close" aria-labelledby="close-h">
+  <div class="inner">
+    <div>
+      <h2 id="close-h">Bring your own question</h2>
+      <p>FRUS Explorer is free for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on.</p>
+    </div>
+    <div class="cta">
+      <a class="btn" href="/">Get the app</a>
+      <span>Quick start: <a href="/quick-start-ios">iPad and iPhone</a> · <a href="/quick-start-mac">Mac</a></span>
+      <a href="/support">Tell me what it can't answer yet</a>
+    </div>
+  </div>
+</section>
+
+</div>

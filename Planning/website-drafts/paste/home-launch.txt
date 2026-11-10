@@ -1,0 +1,128 @@
+<!-- frusexplorer.app/ · from Planning/website-drafts/site-src/home.html, launch version · NOT READY: APP-STORE-ADDRESS stands where the app's App Store address goes · fingerprint ccf6ec51 -->
+<style>
+.frus-home { --paper: #FFFFFF; --ink: #1B1B1F; --muted: #5F5F67; --rule: #D9D9DE; --tint: #F4F4F6; --red: #A61C2A; --link: #22705F; --ok: #2F6B3A; --warn: #8A5300; --bad: #A61C2A; --note-bg: #FFF7E6; --note-ink: #6B4A00; --note-line: #E8C88A; --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif; --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; color-scheme: light; }
+.frus-home { font-family: var(--serif); font-size: 17px; line-height: 1.6; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; text-align: left; color: var(--ink); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
+.frus-home h1, .frus-home h2, .frus-home h3, .frus-home p, .frus-home ol, .frus-home ul, .frus-home li, .frus-home dl, .frus-home dt, .frus-home dd, .frus-home figcaption, .frus-home blockquote, .frus-home span, .frus-home a, .frus-home b, .frus-home i, .frus-home em, .frus-home sup, .frus-home code { font-family: inherit; font-size: inherit; font-style: inherit; line-height: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; }
+.frus-home li, .frus-home blockquote, .frus-home dl, .frus-home dt, .frus-home dd { margin: 0; }
+.frus-home blockquote { padding: 0; border: 0; quotes: none; }
+.frus-home blockquote::before, .frus-home blockquote::after { content: none; }
+.frus-home code { background: none; padding: 0; border: 0; }
+.frus-home a { text-decoration: underline; }
+.frus-home i, .frus-home em { font-style: italic; }
+.frus-home, .frus-home * { box-sizing: border-box; }
+.frus-home h1, .frus-home h2, .frus-home h3 { margin: 0; text-wrap: balance; font-weight: 600; }
+.frus-home p { margin: 0; }
+.frus-home a { color: var(--link); text-underline-offset: 3px; }
+.frus-home a:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.frus-home .pg-hero { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--ink); }
+.frus-home .pg-kick { font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--red); }
+.frus-home .pg-hero h1 { font-size: clamp(32px, 5vw, 54px); line-height: 1.05; letter-spacing: -0.01em; max-width: 17em; }
+.frus-home .pg-lead { font-size: 19px; line-height: 1.55; max-width: 36em; }
+.frus-home .pg-cta { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center; font-family: var(--sans); font-size: 15px; margin-top: 4px; }
+.frus-home .pg-btn { padding: 10px 18px; border-radius: 3px; font-weight: 600; }
+.frus-home .pg-btn.soon { border: 1px solid var(--ink); color: var(--ink); }
+.frus-home .pg-qs { color: var(--muted); }
+.frus-home .pg-disc { font-family: var(--sans); font-size: 13.5px; color: var(--muted); }
+.frus-home .pg-sec { display: grid; gap: 12px; padding-block: 28px; border-bottom: 1px solid var(--rule); }
+.frus-home .pg-sec:last-child { border-bottom: 0; }
+.frus-home .pg-sec h2 { font-size: 26px; line-height: 1.15; }
+.frus-home .pg-sec > p { max-width: 38em; }
+.frus-home .pg-four { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
+@media (max-width: 860px) {
+  .frus-home .pg-four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .frus-home .pg-four { grid-template-columns: 1fr; }
+}
+.frus-home .pg-four div { display: grid; gap: 6px; align-content: start; border-top: 2px solid var(--red); padding-top: 10px; }
+.frus-home .pg-four h3 { font-size: 18px; }
+.frus-home .pg-four p { font-size: 15.5px; line-height: 1.5; }
+.frus-home .pg-more { font-family: var(--sans); font-size: 15px; }
+.frus-home .pg-list { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; max-width: 40em; }
+.frus-home .pg-list b, .frus-home .pg-faq dt { font-weight: 600; }
+.frus-home .pg-faq { margin: 0; display: grid; gap: 4px 0; max-width: 40em; }
+.frus-home .pg-faq dt { margin-top: 10px; }
+.frus-home .pg-faq dd { margin: 0; }
+.frus-home .pg-banner { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: 0 0 26px; padding: 10px 16px; background: var(--tint); border: 1px solid var(--rule); border-radius: 4px; font-family: var(--sans); font-size: 14.5px; }
+.frus-home .pg-banner b { color: var(--red); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; font-size: 12px; }
+.frus-home .pg-list { list-style: disc outside; }
+.frus-home .pg-badge-link { display: inline-block; line-height: 0; }
+.frus-home .pg-badge-link img { display: block; height: 40px; width: auto; max-width: none; border: 0; border-radius: 0; box-shadow: none; }
+.frus-home .pg-unready { margin: 0 0 26px; padding: 12px 16px; background: #FFF7E6; border: 2px dashed var(--red); border-radius: 4px; font-family: var(--sans); font-size: 15px; color: var(--ink); }
+</style>
+<div class="frus-home">
+
+<p class="pg-unready"><b>Not ready to publish.</b> The App Store badge below links nowhere yet: this file was made before the app had an App Store address. Set APP_STORE_URL in build_paste.py, run it, and paste the file it writes.</p>
+
+
+<section class="pg-hero">
+  <p class="pg-kick">Free on the App Store</p>
+  <h1>Search 553 volumes of the U.S. diplomatic record.</h1>
+  <p class="pg-lead">FRUS Explorer is a free research app for iPhone, iPad and Mac. It puts the <i>Foreign Relations of the United States</i> series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.</p>
+  <div class="pg-cta"><a class="pg-badge-link" href="APP-STORE-ADDRESS"><img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us" alt="Download on the App Store" width="120" height="40"></a><a href="/tour">Take the tour</a><span class="pg-qs">Quick start: <a href="/quick-start-ios">iPad and iPhone</a> · <a href="/quick-start-mac">Mac</a></span></div>
+  <p class="pg-disc">FRUS Explorer is an independent research tool, not an official product of the Office of the Historian or the U.S. Department of State.</p>
+</section>
+
+<section class="pg-sec">
+  <h2>What it does</h2>
+  <div class="pg-four">
+    <div><h3>Find what you need</h3><p>Search every volume you've downloaded, offline. Narrow the results by year, volume, person or subject. Or search by meaning: ask a question in your own words.</p></div>
+    <div><h3>Manage your research</h3><p>Highlight, take notes and tag documents as you read. Save searches, gather documents into collections, and plan a trip to the archives.</p></div>
+    <div><h3>See the patterns</h3><p>Chart a word across the years, lay out a crisis day by day, and follow how documents point to each other.</p></div>
+    <div><h3>Share what you find</h3><p>Export analytics, word clouds, and document collections with your own annotations.</p></div>
+  </div>
+  <p class="pg-more"><a href="/tour">See all of it in the tour →</a></p>
+</section>
+
+<section class="pg-sec">
+  <h2>Built on the editors' work</h2>
+  <p>FRUS is an edited documentary history series produced by the State Department's Office of the Historian. The historians who compile the volumes select documents for publication after extensive research in classified records from across the foreign affairs interagency and then add editorial annotation to help readers place each document in its contemporary and archival context. They give each document a heading, a source note describing its original provenance and current archival location, and add other footnotes as needed to help readers understand the text and locate other directly related records. The digital editions published by the State Department include all of that work as open TEI data.</p>
+  <p>FRUS Explorer builds on that foundation to transform editorial annotation into active tools that help researchers reach and share insights about the history of U.S. foreign policy. It turns informative text into direct links to archives, graphs of incoming and outgoing cross-references, cross-volume people networks, and visualized analytics. Because FRUS editors' practices changed over 165 years, not every volume carries every kind of annotation. Every volume's page shows what kinds of annotation it carries, even before you download it, and Browse lays out each kind of annotation across the series' eras.</p>
+  <p>The app clearly labels where the information on screen came from, so users can distinguish at a glance what came directly from the published volumes, what came from other Office of the Historian data sources or the National Archives catalog, and what was built specifically for the app.</p>
+  <p class="pg-more"><a href="/tour#part-0">See one document, with its editorial annotation labeled →</a></p>
+</section>
+
+<section class="pg-sec">
+  <h2>Work that holds up</h2>
+  <ul class="pg-list">
+    <li><b>Show how you got your results.</b> The app keeps a record of your searches, saved sets and charts, down to the searches that found nothing.</li>
+    <li><b>Check a citation.</b> Paste a footnote, or a whole chapter's notes, and review the documents they identify.</li>
+    <li><b>Keep up with corrections.</b> When the Office corrects a volume, the app shows what changed in the documents you've marked with research annotations.</li>
+  </ul>
+  <p class="pg-more"><a href="/tour#part-5">See how in the tour →</a></p>
+</section>
+
+<section class="pg-sec">
+  <h2>Your research stays yours</h2>
+  <p>FRUS Explorer collects no data. What you read, search and write stays with you: notes and collections sync only through your own iCloud account, and the app connects with the National Archives' catalog or your Zotero library only when you tell it to.</p>
+  <p class="pg-more"><a href="/privacy">Read the privacy policy →</a></p>
+</section>
+
+<section class="pg-sec">
+  <h2>Questions</h2>
+  <dl class="pg-faq">
+    <dt>Is this an official government app?</dt>
+    <dd>No. FRUS Explorer is an independent research tool released in the developer's private capacity. It is not an official product of the Office of the Historian or the U.S. Department of State. The FRUS series itself is in the public domain.</dd>
+    <dt>What does it cost?</dt>
+    <dd>It's free.</dd>
+    <dt>What do I need?</dt>
+    <dd>An iPhone or iPad with iOS or iPadOS 26 or later, or a Mac with macOS 26 or later. Document summaries also need Apple Intelligence.</dd>
+    <dt>Does it need the internet?</dt>
+    <dd>Only to download volumes and a few optional extras. After that, reading and searching work offline. If you add NARA Catalog and/or Zotero API keys, those connections also require internet connectivity.</dd>
+    <dt>How much space does it take?</dt>
+    <dd>The whole series is about 3.3 GB. The search index the app builds takes about 2.8 times as much again. You can download only the volumes you need, and remove them later.</dd>
+    <dt>Does it use AI?</dt>
+    <dd>Two optional features use a model on your device. Apple Intelligence writes document summaries, and each one is labeled as generated. Search by meaning relies on a downloaded embedding model to encode your queries. Nothing you type leaves your device for either of these features.</dd>
+    <dt>Where do I start?</dt>
+    <dd>The quick start for <a href="/quick-start-ios">iPad and iPhone</a> or for <a href="/quick-start-mac">the Mac</a> takes you through a first session, from the first download to a cited document.</dd>
+    <dt>Which languages does it support?</dt>
+    <dd>English only, just like the FRUS series itself.</dd>
+  </dl>
+</section>
+
+<section class="pg-sec">
+  <h2>Tell me what it can't answer yet</h2>
+  <p>Bug reports, ideas and questions are all welcome. Email <a href="mailto:help@frusexplorer.app">help@frusexplorer.app</a>, or see the <a href="/support">Support page</a> for what to include.</p>
+</section>
+
+</div>

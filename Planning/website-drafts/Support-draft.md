@@ -6,6 +6,9 @@
   release day, and the sentence saying what TEI is, which needs a row in Docs/Website/README.md.
   Revised 2026-11-03: the quick starts' two links and their sentences, which the copy of record
   took in #1847 and #1848 after this draft was written, folded in plain language.
+  Revised 2026-11-10, with the copy of record: the path to Download Search Model names the Library
+  group, as the app's Settings and both manuals do. Read against 1.0 (1812), which the owner expects
+  to ship as 1.0 (1861) with no further features; nothing else moved.
 -->
 
 # FRUS Explorer Support
@@ -49,7 +52,7 @@ The [privacy policy](https://frusexplorer.app/privacy) says what happens to an e
 - the National Archives Catalog, which lets Source Explorer look up the records a document's source note names (the card links to where you get a key);
 - Zotero, which lets you send documents, with your tags and notes, to your Zotero library.
 
-**What is natural-language search?** A way to search by meaning instead of by matching words. It is still experimental. It needs a model, Google's EmbeddingGemma 2, which is an optional 310 MB download (**Settings → Volumes & Storage → Download Search Model**). The model runs only on your device, so nothing you search leaves it.
+**What is natural-language search?** A way to search by meaning instead of by matching words. It is still experimental. It needs a model, Google's EmbeddingGemma 2, which is an optional 310 MB download (**Settings → Library → Volumes & Storage → Download Search Model**). The model runs only on your device, so nothing you search leaves it.
 
 **Can I use the search index with my own tools?** Yes, on a Mac. **Settings → System → Data & Recovery → Export Research Database…** saves a checked copy of the index as a SQLite file. Your notes, summaries and tag names are left out unless you turn on **Include My Notes, Summaries, and Tags**. The [Agentic Analysis Guide](https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Agentic-Analysis-Guide.md) explains the database, and how to check what an AI tool tells you about it. If you give a copy to an online service, that service's terms apply.
 

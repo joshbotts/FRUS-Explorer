@@ -1,0 +1,7 @@
+<!-- frusexplorer.app/tour · from Planning/website-drafts/tour/tour.html, its coming-soon line · fingerprint 73a41228 -->
+<style>
+.frus-tour-line { box-sizing: border-box; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: 0; padding: 10px 16px; background: #F4F4F6; border: 1px solid #D9D9DE; border-radius: 4px; font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; font-size: 14.5px; font-weight: 400; font-style: normal; line-height: 1.5; letter-spacing: normal; text-transform: none; text-align: left; color: #1B1B1F; }
+.frus-tour-line b, .frus-tour-line span { font-family: inherit; font-size: inherit; font-style: inherit; line-height: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; }
+.frus-tour-line b { color: #A61C2A; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; font-size: 12px; }
+</style>
+<div class="frus-tour-line"><b>Coming soon</b><span>FRUS Explorer has been submitted to the App Store for iPhone, iPad and Mac.</span></div>
