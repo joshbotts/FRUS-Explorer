@@ -1,0 +1,634 @@
+<!-- frusexplorer.app/tour · from Planning/website-drafts/tour/tour.html · fingerprint 7919c798 -->
+<style>
+.frus-tour { --paper: #FFFFFF; --ink: #1B1B1F; --muted: #64646C; --rule: #D9D9DE; --tint: #F4F4F6; --red: #A61C2A; --link: #2B7A6B; --note-bg: #FFF7E6; --note-ink: #6B4A00; --note-line: #E8C88A; --new: #5B4FC4; --night: #0F1217; --night-ink: #E8EAF0; --night-muted: #9AA3B2; --night-caveat: #F0A04B; --night-line: #262B35; --night-red: #E8798A; --night-link: #8FD3C4; --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif; --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+.frus-tour { font-family: var(--serif); font-size: 18px; line-height: 1.6; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; text-align: left; color: var(--ink); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
+.frus-tour h1, .frus-tour h2, .frus-tour h3, .frus-tour p, .frus-tour ol, .frus-tour ul, .frus-tour li, .frus-tour dl, .frus-tour dt, .frus-tour dd, .frus-tour figcaption, .frus-tour blockquote, .frus-tour span, .frus-tour a, .frus-tour b, .frus-tour i, .frus-tour em, .frus-tour sup, .frus-tour code { font-family: inherit; font-size: inherit; font-style: inherit; line-height: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; }
+.frus-tour li, .frus-tour blockquote, .frus-tour dl, .frus-tour dt, .frus-tour dd { margin: 0; }
+.frus-tour blockquote { padding: 0; border: 0; quotes: none; }
+.frus-tour blockquote::before, .frus-tour blockquote::after { content: none; }
+.frus-tour code { background: none; padding: 0; border: 0; }
+.frus-tour a { text-decoration: underline; }
+.frus-tour, .frus-tour * { box-sizing: border-box; }
+.frus-tour .inner { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.frus-tour h1, .frus-tour h2, .frus-tour h3 { margin: 0; text-wrap: balance; font-weight: 600; }
+.frus-tour p { margin: 0; }
+.frus-tour a { color: var(--link); text-underline-offset: 3px; }
+.frus-tour a:focus-visible, .frus-tour button:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; border-radius: 2px; }
+.frus-tour i, .frus-tour em { font-style: italic; }
+.frus-tour code, .frus-tour .mono { font-family: var(--mono); font-size: 0.84em; }
+.frus-tour sup.fn { font-family: var(--sans); font-size: 0.5em; font-weight: 600; color: var(--red); vertical-align: super; line-height: 0; margin-left: 1px; }
+.frus-tour sup.fn a { color: inherit; text-decoration: none; }
+.frus-tour .sc { font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; }
+.frus-tour .opening { padding-block: 56px 40px; border-bottom: 1px solid var(--rule); }
+.frus-tour .opening .inner { display: grid; gap: 40px; }
+.frus-tour .title-block { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 48px; align-items: end; }
+@media (max-width: 900px) {
+  .frus-tour .title-block { grid-template-columns: 1fr; gap: 28px; }
+}
+.frus-tour .kicker { color: var(--red); }
+.frus-tour .title-block h1 { font-size: clamp(38px, 6vw, 68px); line-height: 1.02; letter-spacing: -0.015em; margin-top: 12px; }
+.frus-tour .lead { font-size: 20px; line-height: 1.55; margin-top: 22px; max-width: 34em; }
+.frus-tour .question { margin: 0; border-left: 3px solid var(--red); padding: 6px 0 6px 22px; display: grid; gap: 8px; }
+.frus-tour .question .ql { color: var(--muted); }
+.frus-tour .question .qt { font-size: clamp(22px, 2.6vw, 28px); line-height: 1.3; font-style: italic; }
+.frus-tour .question .qn { font-size: 15px; color: var(--muted); line-height: 1.5; }
+.frus-tour .disc { font-family: var(--sans); font-size: 13.5px; color: var(--muted); }
+.frus-tour .contents { display: grid; gap: 14px; }
+.frus-tour .contents > .sc { color: var(--muted); }
+.frus-tour .toc-pro { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; font-size: 19px; font-weight: 600; border-top: 1px solid var(--ink); padding-top: 14px; }
+.frus-tour .toc-pro .rn { color: var(--red); font-weight: 700; min-width: 1.6em; }
+.frus-tour .toc-pro a { color: var(--ink); text-decoration: none; }
+.frus-tour .toc-pro .muted { font-weight: 400; font-size: 15.5px; color: var(--muted); }
+.frus-tour .toc { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px; border-top: 1px solid var(--ink); padding-top: 18px; }
+@media (max-width: 1000px) {
+  .frus-tour .toc { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .frus-tour .toc { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .frus-tour .toc { grid-template-columns: 1fr; gap: 22px; }
+}
+.frus-tour .toc-part { display: grid; gap: 10px; align-content: start; }
+.frus-tour .toc-part h2 { font-size: 19px; line-height: 1.25; display: flex; gap: 10px; align-items: baseline; }
+.frus-tour .toc-part h2 a { color: var(--ink); text-decoration: none; }
+.frus-tour .toc-part h2 .rn { color: var(--red); font-weight: 700; min-width: 1.6em; }
+.frus-tour .toc-part ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 15.5px; line-height: 1.4; }
+.frus-tour .toc-part li { display: grid; grid-template-columns: 2em minmax(0, 1fr); }
+.frus-tour .toc-part li .num { font-family: var(--sans); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 2px; }
+.frus-tour .toc-part li a { color: var(--ink); text-decoration: none; }
+.frus-tour .toc-part li a:hover { color: var(--link); text-decoration: underline; }
+.frus-tour .fns { display: grid; gap: 4px; font-size: 14px; line-height: 1.5; color: var(--muted); }
+.frus-tour .fns::before { content: ""; width: 8rem; border-top: 1px solid var(--ink); margin-bottom: 8px; }
+.frus-tour .fns p .m { font-family: var(--sans); font-weight: 600; color: var(--red); margin-right: 6px; font-size: 12px; }
+.frus-tour .present { font-size: .95em; margin-bottom: 8px; }
+.frus-tour .sub-t { font-variant: small-caps; letter-spacing: .03em; margin-bottom: 6px; }
+.frus-tour .a-fn .elide { font-style: italic; color: var(--muted); }
+.frus-tour .a-ednote .ed-h { font-weight: 600; margin-bottom: 4px; }
+.frus-tour .part { padding-block: 72px 24px; }
+.frus-tour .part-open { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 32px; align-items: end; border-top: 2px solid var(--ink); padding-top: 26px; margin-bottom: 56px; }
+@media (max-width: 760px) {
+  .frus-tour .part-open { grid-template-columns: 1fr; gap: 6px; margin-bottom: 40px; }
+}
+.frus-tour .part-open .rn { font-size: clamp(84px, 12vw, 148px); line-height: 0.8; font-weight: 700; color: var(--red); letter-spacing: -0.02em; }
+.frus-tour .part-open .pt { display: grid; gap: 12px; }
+.frus-tour .part-open .sc { color: var(--muted); }
+.frus-tour .part-open h2 { font-size: clamp(32px, 4.6vw, 52px); line-height: 1.05; letter-spacing: -0.01em; }
+.frus-tour .part-open .intro { font-size: 19px; line-height: 1.55; max-width: 36em; color: var(--ink); }
+.frus-tour .entries { display: grid; gap: 76px; }
+.frus-tour .entry { display: grid; gap: 22px; scroll-margin-top: 72px; }
+.frus-tour .etext { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.frus-tour .where { font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.frus-tour .exp { color: var(--note-ink); background: var(--note-bg); border: 1px solid var(--note-line); border-radius: 3px; padding: 2px 6px; letter-spacing: 0.08em; }
+.frus-tour .entry h3 { font-size: clamp(24px, 2.6vw, 30px); line-height: 1.15; letter-spacing: -0.005em; }
+.frus-tour .entry h3 .n { color: var(--red); font-weight: 700; margin-right: 0.25em; font-variant-numeric: lining-nums; }
+.frus-tour .ebody { display: grid; gap: 12px; font-size: 17.5px; line-height: 1.6; max-width: 36em; }
+.frus-tour .limit { font-size: 15px; color: var(--muted); line-height: 1.5; }
+.frus-tour .nara { font-family: var(--sans); font-size: 12.5px; color: var(--muted); line-height: 1.5; max-width: 40em; }
+.frus-tour b.ui { font-weight: 600; }
+.frus-tour .entry.side { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: 52px; align-items: start; }
+.frus-tour .entry.side.portrait { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+.frus-tour .entry.wide .etext { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: 52px; }
+.frus-tour .entry.wide .ehead { display: grid; gap: 12px; align-content: start; }
+@media (max-width: 900px) {
+  .frus-tour .entry.side, .frus-tour .entry.side.portrait, .frus-tour .entry.wide .etext { grid-template-columns: 1fr; }
+  .frus-tour .entry.wide .etext { row-gap: 12px; }
+}
+.frus-tour figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.frus-tour .zoom { display: block; width: 100%; padding: 0; border: 1px solid var(--rule); background: var(--tint); cursor: zoom-in; border-radius: 3px; overflow: hidden; }
+.frus-tour .zoom img { display: block; width: 100%; height: auto; }
+.frus-tour figure.narrow { max-width: 460px; justify-self: center; width: 100%; }
+.frus-tour .stack { display: grid; gap: 28px; justify-items: center; }
+.frus-tour .stack figure.narrow { justify-self: stretch; margin-inline: auto; }
+.frus-tour figcaption { font-size: 14.5px; line-height: 1.5; color: var(--muted); font-style: italic; max-width: 46em; }
+.frus-tour figcaption .sn { font-style: normal; font-family: var(--sans); font-size: 11.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-right: 6px; color: var(--ink); }
+.frus-tour figcaption .mono { font-style: normal; color: var(--ink); }
+.frus-tour .pair { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 700px) {
+  .frus-tour .pair { grid-template-columns: 1fr; }
+}
+.frus-tour .slip { border: 1px solid var(--rule); border-top: 3px solid var(--red); background: var(--tint); padding: 22px 24px; display: grid; gap: 14px; border-radius: 2px; }
+.frus-tour .slip .sc { color: var(--muted); }
+.frus-tour .slip .cite { font-size: 19px; line-height: 1.55; }
+.frus-tour .slip .url { font-family: var(--mono); font-size: 13px; color: var(--link); overflow-wrap: anywhere; }
+.frus-tour .slip .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.frus-tour .slip .acts span { font-family: var(--sans); font-size: 13px; border: 1px solid var(--rule); background: var(--paper); border-radius: 999px; padding: 5px 11px; }
+.frus-tour .night { background: var(--night); color: var(--night-ink); padding-block: 64px 60px; margin-block: 8px; }
+.frus-tour .night .entry { gap: 26px; }
+.frus-tour .night .where { color: var(--night-muted); }
+.frus-tour .night .entry h3 .n { color: var(--night-red); }
+.frus-tour .night .ebody { color: var(--night-ink); }
+.frus-tour .night .exp { color: var(--night-caveat); background: transparent; border-color: var(--night-caveat); }
+.frus-tour .night .zoom { border-color: var(--night-line); background: var(--night); }
+.frus-tour .night figcaption { color: var(--night-muted); }
+.frus-tour .night figcaption .sn, .frus-tour .night figcaption .mono { color: var(--night-ink); }
+.frus-tour .night .caveat { font-family: var(--sans); font-size: 14px; line-height: 1.5; color: var(--night-muted); border-left: 2px solid var(--night-caveat); padding-left: 12px; display: grid; gap: 4px; }
+.frus-tour .night .caveat em { font-style: normal; color: var(--night-caveat); font-weight: 600; }
+.frus-tour .night .fns { color: var(--night-muted); }
+.frus-tour .night .fns::before { border-color: var(--night-ink); }
+.frus-tour .night .fns p .m { color: var(--night-red); }
+.frus-tour .night sup.fn { color: var(--night-red); }
+.frus-tour .night a { color: var(--night-link); }
+.frus-tour .prov { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; align-items: baseline; font-size: 15.5px; line-height: 1.55; border-top: 1px solid var(--rule); padding-top: 12px; max-width: 36em; }
+.frus-tour .prov + .prov { border-top: 0; padding-top: 0; }
+.frus-tour .pk { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 7px; border-radius: 3px; white-space: nowrap; }
+.frus-tour .pk.ed { color: var(--paper); background: var(--red); }
+.frus-tour .pk.cp { color: var(--muted); background: transparent; border: 1px solid var(--rule); }
+.frus-tour .pk.jn { color: var(--link); background: transparent; border: 1px solid var(--link); }
+.frus-tour .night .prov { border-color: var(--night-line); }
+.frus-tour .night .pk.ed { color: var(--night); background: var(--night-red); }
+.frus-tour .night .pk.cp { color: var(--night-muted); border-color: var(--night-line); }
+@media (max-width: 480px) {
+  .frus-tour .prov { grid-template-columns: 1fr; }
+  .frus-tour .pk { justify-self: start; }
+}
+.frus-tour .prologue .part-open .rn { font-weight: 600; }
+.frus-tour .anat { gap: 14px; }
+.frus-tour .anat-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: 40px; border: 1px solid var(--rule); background: var(--tint); padding: 36px 40px 28px; border-radius: 2px; }
+.frus-tour .a-doc { position: relative; padding: 10px 0 10px 40px; font-size: 17px; line-height: 1.6; min-width: 0; }
+.frus-tour .a-doc p + p { margin-top: 10px; }
+.frus-tour .a-doc .mk { position: absolute; left: 0; top: 12px; width: 24px; height: 24px; border-radius: 50%; background: var(--red); color: var(--paper); font: 600 12px/24px var(--sans); text-align: center; }
+.frus-tour .a-doc sup { font-family: var(--sans); font-size: 0.6em; color: var(--link); }
+.frus-tour .a-doc .dh { font-size: 21px; line-height: 1.35; font-weight: 600; }
+.frus-tour .a-doc .dl { font-size: 15px; color: var(--muted); line-height: 1.5; }
+.frus-tour .a-doc .smc { font-variant: small-caps; letter-spacing: 0.03em; }
+.frus-tour .a-doc .pn { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.frus-tour .a-rest { color: var(--muted); }
+.frus-tour .a-fn { font-size: 14.5px; line-height: 1.5; }
+.frus-tour .a-fn-first { border-top: 1px solid var(--ink); margin-top: 14px; padding-top: 18px; }
+.frus-tour .a-fn-first .mk { top: 20px; }
+.frus-tour .a-fn .fnm { font-family: var(--sans); font-weight: 600; color: var(--link); display: inline-block; min-width: 1.4em; }
+.frus-tour .a-fn .srcline { margin-bottom: 6px; }
+.frus-tour .a-note { padding: 10px 0 18px; border-left: 1px solid var(--rule); padding-left: 20px; display: grid; gap: 6px; align-content: start; font-family: var(--sans); font-size: 14px; line-height: 1.5; min-width: 0; }
+.frus-tour .a-note .nk { font-weight: 600; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); }
+.frus-tour .a-note .q { font-family: var(--serif); font-style: italic; font-size: 15px; color: var(--muted); }
+.frus-tour .a-note .app { display: grid; gap: 4px; margin-top: 2px; }
+.frus-tour .a-note .app .ia { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.frus-tour .a-empty { padding: 0; }
+.frus-tour .a-fn-first + .a-note { margin-top: 14px; padding-top: 18px; }
+.frus-tour [hidden] { display: none !important; }
+.frus-tour .slip dl.cols { margin: 0; display: grid; }
+.frus-tour .slip dl.cols div { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr); gap: 12px; padding: 8px 0; border-top: 1px solid var(--rule); font-size: 15px; line-height: 1.45; }
+.frus-tour .slip dl.cols dt { font-family: var(--sans); font-weight: 600; font-size: 13.5px; }
+.frus-tour .slip dl.cols dd { margin: 0; color: var(--muted); }
+.frus-tour .slip .cite + .acts, .frus-tour .slip .acts + .sc { margin-top: -4px; }
+.frus-tour .legend { display: grid; gap: 12px; margin-top: 36px; max-width: 44em; }
+.frus-tour .legend > p:nth-child(2) { font-size: 16.5px; line-height: 1.6; }
+.frus-tour .figures-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; margin-top: 40px; border-top: 1px solid var(--rule); padding-top: 24px; }
+.frus-tour .figures-row div { display: grid; gap: 4px; align-content: start; }
+.frus-tour .figures-row .big { font-size: clamp(30px, 3.6vw, 40px); font-weight: 600; line-height: 1; font-variant-numeric: lining-nums tabular-nums; }
+.frus-tour .figures-row .lbl { font-size: 15.5px; line-height: 1.45; color: var(--muted); }
+@media (max-width: 860px) {
+  .frus-tour .anat-grid { grid-template-columns: 1fr; padding: 24px 18px 18px; }
+  .frus-tour .a-note { border-left: 2px solid var(--red); margin: 0 0 12px 40px; padding: 8px 0 8px 14px; }
+  .frus-tour .a-fn-first + .a-note { margin-top: 0; padding-top: 8px; }
+  .frus-tour .a-empty { display: none; }
+  .frus-tour .figures-row { grid-template-columns: 1fr; gap: 18px; }
+}
+.frus-tour .inner { padding-left: 0; padding-right: 0; }
+.frus-tour .opening { padding-top: 8px; }
+.frus-tour .night { border-radius: 4px; }
+.frus-tour .night .inner { padding-left: clamp(16px, 4vw, 40px); padding-right: clamp(16px, 4vw, 40px); }
+.frus-tour .part, .frus-tour .entry, .frus-tour .fns p { scroll-margin-top: 96px; }
+.frus-tour a.zoom { text-decoration: none; }
+</style>
+<div class="frus-tour">
+
+<section class="opening" aria-labelledby="tour-title">
+  <div class="inner">
+    <div class="title-block">
+      <div>
+        <p class="sc kicker">A walk through the app</p>
+        <h1 id="tour-title">Take one question through 553 volumes<sup class="fn"><a href="#fn1" id="fr1">1</a></sup></h1>
+        <p class="lead">FRUS Explorer brings the <i>Foreign Relations of the United States</i> series to your iPhone, iPad or Mac along with powerful research tools that work offline. State Department historians edited the series with great care, and the app is built on their work. This tour starts with an overview of the editorial annotation they added to the documents published in FRUS. Then it follows one research question through a typical research process, from your first search to sharing reproducible findings.</p>
+      </div>
+      <div style="display:grid;gap:18px">
+        <blockquote class="question">
+          <p class="sc ql">Working on</p>
+          <p class="qt">How did Washington come to see the Soviet Union as its principal adversary, 1945–1950?</p>
+          <p class="qn">Most screens below come from a project built around this question. A few show other questions, which are noted in captions.</p>
+        </blockquote>
+        <p class="disc">FRUS Explorer is an independent research tool, not an official product of the Office of the Historian or the U.S. Department of State.</p>
+      </div>
+    </div>
+
+    <div class="contents">
+      <p class="sc">Contents</p>
+      <p class="toc-pro"><span class="rn">§</span><a href="#part-0">What FRUS historians built</a><span class="muted"> · one document, with its editorial annotation labeled</span></p>
+      <div class="toc">
+        <div class="toc-part">
+          <h2><span class="rn">I</span><a href="#part-1">Finding what you need</a></h2>
+          <ol>
+            <li><span class="num">1</span><a href="#e1">Search what you've downloaded</a></li>
+            <li><span class="num">2</span><a href="#e2">Meaning search mode</a></li>
+            <li><span class="num">3</span><a href="#e3">Choose how to browse among volumes</a></li>
+            <li><span class="num">4</span><a href="#e4">See similar documents</a></li>
+            <li><span class="num">5</span><a href="#e-people">Follow a person across the series</a></li>
+          </ol>
+        </div>
+        <div class="toc-part">
+          <h2><span class="rn">II</span><a href="#part-2">Managing your research</a></h2>
+          <ol>
+            <li><span class="num">6</span><a href="#e5">Add your own annotations as you read</a></li>
+            <li><span class="num">7</span><a href="#e6">Track everything you've marked up</a></li>
+            <li><span class="num">8</span><a href="#e7">Save a set of results to come back to</a></li>
+            <li><span class="num">9</span><a href="#e8">Follow footnotes to archives</a></li>
+          </ol>
+        </div>
+        <div class="toc-part">
+          <h2><span class="rn">III</span><a href="#part-3">Visualizing results</a></h2>
+          <ol>
+            <li><span class="num">10</span><a href="#e9">Chart a word or phrase across the years</a></li>
+            <li><span class="num">11</span><a href="#e10">Look at how documents fall across a timeline</a></li>
+            <li><span class="num">12</span><a href="#e11">Follow the editors' cross-references</a></li>
+            <li><span class="num">13</span><a href="#e12">See the whole series at once on a map</a></li>
+            <li><span class="num">14</span><a href="#e13">Learn how the series itself has evolved</a></li>
+          </ol>
+        </div>
+        <div class="toc-part">
+          <h2><span class="rn">IV</span><a href="#part-4">Sharing findings</a></h2>
+          <ol>
+            <li><span class="num">15</span><a href="#e14">Cite as you write</a></li>
+            <li><span class="num">16</span><a href="#e15">Build your own curated document collections</a></li>
+            <li><span class="num">17</span><a href="#e16">Share a chart and how you made it</a></li>
+          </ol>
+        </div>
+        <div class="toc-part">
+          <h2><span class="rn">V</span><a href="#part-5">Standing behind your work</a></h2>
+          <ol>
+            <li><span class="num">18</span><a href="#e-method">Show how you got your results</a></li>
+            <li><span class="num">19</span><a href="#e-cite">Check a citation</a></li>
+            <li><span class="num">20</span><a href="#e-fix">Keep your notes in step with corrections</a></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="fns">
+      <p id="fn1"><span class="m">1</span>The number of volumes in the app's catalog in November 2026. You choose which ones to download. <a href="#fr1" aria-label="Back to text">↩</a></p>
+    </div>
+
+  </div>
+</section>
+
+<section class="part prologue" id="part-0" aria-labelledby="p0">
+  <div class="inner">
+    <div class="part-open">
+      <div class="rn" aria-hidden="true">§</div>
+      <div class="pt">
+        <p class="sc">Before Part I</p>
+        <h2 id="p0">What FRUS historians built</h2>
+        <p class="intro">FRUS is an edited documentary history series produced by the State Department's Office of the Historian. The historians who compile the volumes select documents for publication after extensive research in classified records from across the foreign affairs interagency and then add <i>editorial annotation</i> to help readers place each document in its contemporary and archival context. They give each document a heading, a source note describing its original provenance and current archival location, and also add other footnotes as needed to help readers understand the text and locate other directly related records. The digital editions published by the State Department include all of that work as open TEI data. The tools highlighted in this tour are extensions of their foundational work.</p>
+        <p class="intro">Here is one document, with its editorial annotation labeled: the record of Secretary of State George Marshall's meeting with Stalin at the Kremlin on April 15, 1947, five weeks into a foreign ministers' conference in Moscow that ended without agreement on Germany or Austria.</p>
+      </div>
+    </div>
+
+    <figure class="anat" aria-label="One document with its editorial annotation labeled">
+      <div class="anat-grid">
+        <div class="a-doc a-head"><span class="mk">A</span><p class="dh"><i>Memorandum of Conversation</i><sup>61</sup></p></div>
+        <div class="a-note"><p class="nk">A · Heading</p><p>The editors create a heading for every document they print. This one names only the kind of document; its footnote says who probably wrote it.</p><p class="q">“A heading has been supplied by the editors for each document included in the volume.”</p><p class="app"><span class="ia">In the app</span>Search results, Browse, Chronology and every citation use these headings.</p></div>
+
+        <div class="a-doc"><span class="mk">B</span><p class="dl"><span class="smc">Top Secret</span><br>[<span class="smc">Moscow</span>,] April 15, 1947.</p></div>
+        <div class="a-note"><p class="nk">B · Classification marking and date line</p><p>The original classification marking, place and date. Brackets show what the editors added: here, the place. The documents are printed in date order.</p><p class="app"><span class="ia">In the app</span>Chronology and Administrations put each document on the date the editors gave it. Search filters and analytics scope pickers use these dates to give users a way to narrow focus and zero in on key moments. Search results and Source Explorer show the classification marking, whether the volume prints it above the dateline, as here, or in the source note.</p></div>
+
+        <div class="a-doc"><span class="mk">C</span><p class="present">Present: Secretary <span class="pn">Marshall</span>, Ambassador <span class="pn">Smith</span>, Mr. <span class="pn">Bohlen</span>, Generalissimo <span class="pn">Stalin</span>, Mr. <span class="pn">Molotov</span>, Ambassador <span class="pn">Novikov</span>, Mr. <span class="pn">Pavlov</span></p><p>The Secretary, after greeting <span class="pn">Stalin</span>, said that he had been very busy since he had been here, as Mr. <span class="pn">Molotov</span> could testify. He said he recalled with great interest their meeting at the Teheran Conference and their discussions concerning amphibious and cross-river operations.<sup>62</sup></p><p><span class="pn">Stalin</span> interrupted to say, “Yes, the second front.”</p></div>
+        <div class="a-note"><p class="nk">C · People</p><p>In half of the volumes in the series, and nearly all covering 1955 and later, editors tagged the key people named in the text and included a list of persons in the front matter to describe the roles they held: Stalin is “Chairman of the Council of Ministers of the Soviet Union.” Here every one of the seven meeting participants is tagged. The editors assembled these lists volume by volume; the app rolls those volume-level lists and tags into consolidated identities.</p><p class="app"><span class="ia">In the app</span>Person cards, the People list, Person Analytics and the person filter in Search. Each volume's page says whether its editors tagged its people.</p></div>
+
+        <div class="a-doc a-rest"><p>Turning to the Conference, <span class="pn">Stalin</span> stated that he did not think the situation was so tragic, and he was more optimistic than Mr. <span class="pn">Marshall</span>. After all, these were only the first skirmishes and brushes of reconnaissance forces on this question. …</p></div>
+        <div class="a-note a-empty" aria-hidden="true"></div>
+
+        <div class="a-doc a-fn a-fn-first"><span class="mk">D</span><p class="srcline"><span class="fnm" aria-label="Source note">▤</span><span class="mono">740.00119 Council/4–1547</span></p></div>
+        <div class="a-note"><p class="nk">D · Source note</p><p>The source note explains where the underlying record was found and, in recent volumes, its original operational context. The app focuses on the first part of the source note: the document's <i>archival provenance</i>, including the archive, collection and file that held the original record. Here, it is a State Department decimal file number. This volume prints it above the heading; more recent volumes include this information in each document's first footnote.</p><p class="q">“The first footnote to each document indicates the document’s source, original classification, distribution, and drafting information.”</p><p class="app"><span class="ia">In the app</span>Source Explorer, the Archives Visit plan, the archival provenance facet in Search and Archival Analytics all start here.</p></div>
+
+        <div class="a-doc a-fn"><span class="mk">E</span><p><span class="fnm">⁶¹</span>The conversation took place at the Kremlin, April 15, 1947, 10 p.m. to 11:30 p.m. This memorandum, and an early draft of it, filed separately under 711.61/4–1547, were presumably prepared by Mr. Bohlen. It was transmitted to Acting Secretary of State Acheson in telegram 1405, Kosmos 46, April 16, 1947, from Moscow, with the request that it be delivered to President Truman (711.61/4–1647). Additional details regarding the circumstances of this conversation are provided in the account in Walter Bedell Smith, <i>My Three Years in Moscow</i>, pp. 210–212.</p></div>
+        <div class="a-note"><p class="nk">E · What wasn't printed</p><p>An early draft of the memorandum survived, and the volume didn't print it. Instead, the editors cited the draft's archival location so researchers have a trail to follow if they want to investigate further. In the same note, the editor also identified who probably wrote the record, how it reached the President, and where one of the participants told the story in a memoir.</p><p class="app"><span class="ia">In the app</span>The Archives Visit lists files like this one, so your trip can cover them too.</p></div>
+
+        <div class="a-doc a-fn"><span class="mk">F</span><p><span class="fnm">⁶²</span>For documentation on the American-British-Soviet Conference at Tehran, November 27–December 2, 1943, see <i>Foreign Relations</i>, The Conferences at Cairo and Tehran, 1943, pp. 459 ff.</p></div>
+        <div class="a-note"><p class="nk">F · Cross-reference</p><p>The editors provide cross-reference citations to related documents printed elsewhere in the series: here, a volume on the wartime conferences. This document has seven such notes, spanning Tehran and Yalta to regular volumes for 1945, 1946 and 1947.</p><p class="app"><span class="ia">In the app</span>If the volume is already on your device, the link opens the document directly. Otherwise, it offers to download the volume. The Cross-Reference Graph is built from these editor-asserted connections among FRUS documents.</p></div>
+
+        <div class="a-doc a-fn a-ednote"><span class="mk">G</span><p class="ed-h">Editorial Note</p><p>Principal Members of the Delegations to the Fourth Session of the Council of Foreign Ministers, Moscow, March 10–April 24, 1947. This list was compiled from materials in the files of the Department of State. …</p></div>
+        <div class="a-note"><p class="nk">G · Editorial note</p><p>Editors often summarized documents that they decided not to include in volumes in editorial notes. Editorial notes can also provide other kinds of annotation. This one, which appeared at the outset of the volume's documents on the Moscow conference, lists who came and explains where the information was found.</p><p class="q">“Editorial notes and additional annotation summarize pertinent material not printed in the volume.”</p><p class="app"><span class="ia">In the app</span>You can search editorial notes, or show only editorial notes in Search, using the editors' own labels.</p></div>
+      </div>
+      <figcaption><span class="sn">Source</span>The 3,600-word memorandum recording Marshall's meeting with Stalin, <span class="mono">frus1947v02/d127</span>, as the app shows it: its heading, its opening, one later passage, two of its nine footnotes, and the editorial note that lists the conference's delegations (<span class="mono">d78</span>). The quotations come from the “Editorial Methodology” section of a 2014 volume's preface.</figcaption>
+    </figure>
+    <div class="figures-row">
+      <div><span class="big">264,598</span><span class="lbl">source notes the editors attached to documents, in 502 of the 553 volumes<sup class="fn"><a href="#fn3" id="fr3">2</a></sup></span></div>
+      <div><span class="big">8,637</span><span class="lbl">cross-references from a document in one volume to a document in another<sup class="fn"><a href="#fn3b" id="fr3b">3</a></sup></span></div>
+      <div><span class="big">288</span><span class="lbl">volumes whose editors tagged the people named in them, standard from the volumes covering 1955 on<sup class="fn"><a href="#fn3c" id="fr3c">4</a></sup></span></div>
+      <div><span class="big">51</span><span class="lbl">volumes with no source notes at all. Where the editorial annotation is thinner, the tools that read it have less to work with.</span></div>
+    </div>
+    <div class="fns" style="margin-top:20px">
+      <p id="fn3"><span class="m">2</span>Source notes matched to a document, counted in the app's own data, November 2026. <a href="#fr3" aria-label="Back to text">↩</a></p>
+      <p id="fn3b"><span class="m">3</span>Links between volumes, counted in the app's own data, November 2026. <a href="#fr3b" aria-label="Back to text">↩</a></p>
+      <p id="fn3c"><span class="m">4</span>Volumes whose documents link the names in them to their list of persons, counted in the app's own data, November 2026. <a href="#fr3c" aria-label="Back to text">↩</a></p>
+    </div>
+    <div class="legend">
+      <p class="sc">How this tour labels sources</p>
+      <p>In the app, <i>provenance</i> means where something comes from. A document's archival provenance is the citation you need to locate and access the underlying original record. A number or a name has a provenance too: the source the app took it from. Where the app shows that source, it uses small labels such as <i>FRUS text</i>, <i>FRUS + NARA catalog</i> and <i>This app's model</i>. Each step of the tour below labels its sources as well:</p>
+      <p class="prov"><span class="pk ed">From the editors</span><span>The documents and their editorial annotation. In the app: <i>FRUS text</i>.</span></p>
+      <p class="prov"><span class="pk jn">From other records</span><span>The series augmented with another source, such as the National Archives catalog or the Office's subject tags. In the app: <i>FRUS + NARA catalog</i>, <i>FRUS + OH subjects</i> and the like. The correlation and reconciliation decisions required to combine information from different data sources reflect judgments made during the development process and incorporated into the app.</span></p>
+      <p class="prov"><span class="pk cp">Made by the app</span><span>Worked out by the app, with a model or a scoring rule. In the app: <i>This app's model</i> or <i>FRUS + this app's word lists</i>. These models and rules also reflect judgments made during the development process.</span></p>
+      <p class="prov"><span class="pk cp">Yours</span><span>Your own annotations. In the app: <i>Your reading</i>.</span></p>
+    </div>
+  </div>
+</section>
+
+<section class="part" id="part-1" aria-labelledby="p1">
+  <div class="inner">
+    <div class="part-open">
+      <div class="rn" aria-hidden="true">I</div>
+      <div class="pt">
+        <p class="sc">Part I</p>
+        <h2 id="p1">Finding what you need</h2>
+        <p class="intro">Search everything you've downloaded, ask questions in your own words, and browse the series in new ways. Every path leads to a document, and every document leads to others.</p>
+      </div>
+    </div>
+
+    <div class="entries">
+      <article class="entry wide" id="e1">
+        <div class="etext">
+          <div class="ehead">
+            <p class="where">Search · Mac</p>
+            <h3><span class="n">1.</span>Search what you've downloaded</h3>
+          </div>
+          <div class="ebody">
+            <p>Keyword search works offline across every volume you've downloaded. Put a phrase in quotation marks. Use <code>NEAR()</code> to find words close together, and <code>=word</code> to match only that exact word. Use facets to see how results break down by year, volume, person, document type, archival provenance and subject.</p>
+            <p>The Query Inspector shows exactly how the app applied your search in the index database, so you can see what each component of complex queries returned and have confidence the results reflect your intent. You can read your results four ways: <b class="ui">List</b>, <b class="ui">Timeline</b>, <b class="ui">Concordance</b> (every match lined up on your word) and <b class="ui">Collocates</b> (the words that often appear near your own query).</p>
+            <p><b class="ui">Checklist</b> mode turns a long list of results into a to-do list. A result drops off the list once you open it or mark it reviewed, and <b class="ui">Mark Page Reviewed</b> clears a page at a time.</p>
+            <p class="prov"><span class="pk ed">From the editors</span><span>The person, document type and archival provenance facets use the editorial annotation: the people the editors tagged, whether an item is a document or an editorial note, and the source note under it.</span></p>
+            <p class="prov"><span class="pk jn">From other records</span><span>The subject facet uses the Office's subject lists, matched by name. The app distinguishes these retroactive tags from the editorial annotation in the published volume.</span></p>
+          </div>
+        </div>
+        <figure>
+          <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/search.jpg" target="_blank" rel="noopener" aria-label="Enlarge the Search screen, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/search.jpg" width="1600" height="778" alt="Search on Mac for Berlin blockade: 900 matches, the search shown as MATCH berlin AND blockade, and the Facets panel open on Subjects" loading="lazy" decoding="async"></a>
+          <figcaption><span class="sn">Source</span>FRUS Explorer for Mac, build 1861. <span class="mono">Berlin blockade</span> in the project Early Cold War: 900 matches, with Facets open on Subjects.</figcaption>
+        </figure>
+      </article>
+
+      <article class="entry wide" id="e2">
+        <div class="etext">
+          <div class="ehead">
+            <p class="where">Search ▸ Meaning · iPad <span class="exp">Experimental</span></p>
+            <h3><span class="n">2.</span>Meaning search mode</h3>
+          </div>
+          <div class="ebody">
+            <p>Switch Search from <b class="ui">Keywords</b> to <b class="ui">Meaning</b> and type a question. A language model measures what your question means and compares this measurement to those it has already taken for each document. The app returns the 100 closest matching documents, so a document can match even if it doesn't use the same words as your question. Each result shows a <i>Semantic match</i> score. <i>Semantic</i> means “having to do with meaning,” so the score tells you how close the model judges your query's and the document's meanings to be.</p>
+            <p>Each document was measured ahead of time with the same model; your question is measured when you ask it. The model is an optional download (310 MB), and it runs privately, on your device.</p>
+            <p class="limit">It can't search front matter or chapter headings.</p>
+            <p class="prov"><span class="pk cp">Made by the app</span><span>The ranking comes from the app's model reading each document.</span></p>
+          </div>
+        </div>
+        <figure>
+          <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/meaning.jpg" target="_blank" rel="noopener" aria-label="Enlarge the Meaning search screen, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/meaning.jpg" width="1500" height="706" alt="Meaning search on iPad for How did Washington come to see the Soviet Union as its principal adversary?, with matches from 1983, 1945, 1951 and 1934 and their semantic match scores" loading="lazy" decoding="async"></a>
+          <figcaption><span class="sn">Source</span>iPad, build 1861. The overall project question returns matches from 1983, 1945, 1951, 1934 and 1975 ranked together.</figcaption>
+        </figure>
+      </article>
+
+      <article class="entry side" id="e3">
+        <div class="etext">
+          <p class="where">Browse · iPad</p>
+          <h3><span class="n">3.</span>Choose how to browse among volumes</h3>
+          <div class="ebody">
+            <p>Explore the series by subseries, presidency, editor, archive, or the editors' annotations. You can also use lists of tagged people and topics as your starting point for finding relevant volumes. Your own volume scopes (sets of volumes you choose) and working corpora (sets of documents you save, see 8) sit beside them.</p>
+            <p><b class="ui">Administrations</b> groups volumes by the dates of their documents, not by when they were published. A volume that covers two presidencies shows up under both.</p>
+            <p class="prov"><span class="pk ed">From the editors</span><span>Subseries, volumes and editors are published metadata. Archives sorts the series by the sources the editors cited.</span></p>
+          </div>
+        </div>
+        <figure>
+          <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/truman.jpg" target="_blank" rel="noopener" aria-label="Enlarge the Browse screen, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/truman.jpg" width="1500" height="1057" alt="Browse on iPad, Administrations, Truman: 103 volumes with documents from 1945 to 1953, with the project Early Cold War selected" loading="lazy" decoding="async"></a>
+          <figcaption><span class="sn">Source</span>iPad, build 1861. Browse ▸ Administrations ▸ Truman: 103 volumes with documents from 1945–1953, most documents first.</figcaption>
+        </figure>
+      </article>
+
+      <article class="entry side" id="e4">
+        <div class="etext">
+          <p class="where">Related Documents · iPad</p>
+          <h3><span class="n">4.</span>See similar documents</h3>
+          <div class="ebody">
+            <p>The <b class="ui">Related</b> tile ranks other documents by what they share with the one you're reading. It weighs eight measures: archival provenance, cross-references, closeness in date, corpus proximity (how near each other the editors placed two documents), shared people, shared topics, semantic similarity and similar wording. Look in this volume, this subseries or all volumes. You can change how much each measure counts.</p>
+            <p class="limit">Two of the measures, semantic similarity and similar wording, are experimental. Each result shows the similarity axis and measurement that surfaced it as related.</p>
+            <p class="prov"><span class="pk ed">From the editors</span><span>Five of the measures come from the editorial annotation: archival provenance, cross-references, the dates the editors gave, corpus proximity and the people they tagged.</span></p>
+            <p class="prov"><span class="pk jn">From other records</span><span>Shared topics come from the Office's subject lists.</span></p>
+            <p class="prov"><span class="pk cp">Made by the app</span><span>Semantic similarity and similar wording are worked out by the app, and marked experimental.</span></p>
+          </div>
+        </div>
+        <figure>
+          <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/related.jpg" target="_blank" rel="noopener" aria-label="Enlarge the Related Documents screen, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/related.jpg" width="1400" height="974" alt="Related Documents on iPad across all volumes, with sliders for eight measures and ranked telegrams from the Chargé in the Soviet Union, Kennan and Durbrow, in 1946" loading="lazy" decoding="async"></a>
+          <figcaption><span class="sn">Source</span>iPad, build 1861. Related Documents for Kennan's Long Telegram, across all volumes, with archival provenance and cross-references weighted highest.</figcaption>
+        </figure>
+      </article>
+
+      <article class="entry side portrait" id="e-people">
+        <div class="etext">
+          <p class="where">Browse ▸ People · iPad</p>
+          <h3><span class="n">5.</span>Follow a person across the series</h3>
+          <div class="ebody">
+            <p>The <b class="ui">People</b> list brings together everyone tagged in the volumes you've indexed. One person often appears under several spellings, such as “Kissinger, Henry A.” and “Kissinger, Henry.” The app joins them into one entry, with the role the volumes give and the years the person appears in them.</p>
+            <p>Open a person to see their career, the subjects of the volumes that name them, and <b class="ui">Find all mentions</b>. <b class="ui">Person Analytics</b> charts who is mentioned when, compares up to five people over time, and draws a network of the people most often tagged in the same documents.</p>
+            <p class="limit">If the app joins two different people by mistake, you can separate them. People are tagged in 288 of the 553 volumes, and only those volumes' people appear in the People list. The list says so, and links to the volumes that tag people. In the others, search for the names.</p>
+            <p class="prov"><span class="pk ed">From the editors</span><span>The people the editors tagged in the text, and the roles their lists of persons give.</span></p>
+            <p class="prov"><span class="pk jn">From other records</span><span>Life years and posts come from the Office's working data on people, with gaps filled from its published Principal Officers and Chiefs of Mission database. The app joins and reconciles these data sources.</span></p>
+          </div>
+        </div>
+        <figure class="narrow">
+          <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/people.jpg" target="_blank" rel="noopener" aria-label="Enlarge the People entry, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/people.jpg" width="1000" height="1140" alt="The People entry for Kissinger, Henry A. on iPad: his role labeled FRUS text, his post labeled FRUS + OH people data, a reconciled-identity mark, 13,177 documents, active 1961–1988, and Find all mentions" loading="lazy" decoding="async"></a>
+          <figcaption><span class="sn">Source</span>iPad, build 1861. The entry for Kissinger, Henry A., over the People list. Its two labels say where each line came from.</figcaption>
+        </figure>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="part" id="part-2" aria-labelledby="p2">
+  <div class="inner">
+    <div class="part-open">
+      <div class="rn" aria-hidden="true">II</div>
+      <div class="pt">
+        <p class="sc">Part II</p>
+        <h2 id="p2">Managing your research</h2>
+        <p class="intro">The app tracks your highlights, notes, tags, projects and collections so they persist and sync through your iCloud account. The app never sends your data or your usage to the developer.</p>
+      </div>
+    </div>
+
+    <div class="entries">
+      <article class="entry wide" id="e5">
+        <div class="etext">
+          <div class="ehead">
+            <p class="where">Reader and Research rail · iPad</p>
+            <h3><span class="n">6.</span>Add your own annotations as you read</h3>
+          </div>
+          <div class="ebody">
+            <p>Documents appear as the Office of the Historian published them, with working footnotes, cross-references and links to people. You can also add your own annotations: highlighting in four colors, your own notes, and tags you create.</p>
+            <p>The Research rail next to the text holds <b class="ui">Cite</b>, <b class="ui">Word Cloud</b>, <b class="ui">Sources</b>, <b class="ui">Graph</b>, <b class="ui">Related</b>, <b class="ui">On the Map</b> and <b class="ui">Share</b>. Below them are the document's topics and summary along with your notes, your tags, and the custom collections that include the document.</p>
+            <p>Summaries come from Apple Intelligence on your device. You can generate a summary as you read each document or start a batch run over a volume, a tag, a saved search, or a range of years. A large run takes hours. Any summary can then become the start of a note, which you correct and finish in your own words.</p>
+            <p class="prov"><span class="pk ed">From the editors</span><span>Headings, footnotes, cross-references and links to people are the editorial annotation. Where feasible, the app turns references and links into interactive controls that take you to the applicable document or information.</span></p>
+            <p class="prov"><span class="pk cp">Made by the app</span><span>Apple Intelligence writes the summary, which the app always labels as generated so it can never be confused with editorial annotation or the user's language.</span></p>
+          </div>
+        </div>
+        <figure>
+          <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/rail.jpg" target="_blank" rel="noopener" aria-label="Enlarge the reader with the Research rail, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/rail.jpg" width="1500" height="1014" alt="The reader on iPad showing Kennan's telegram of February 22, 1946, with the Research rail listing tiles, a note, the tag Containment and the collection The Long Telegram and Its Readers" loading="lazy" decoding="async"></a>
+          <figcaption><span class="sn">Source</span>iPad, build 1861. Kennan's Long Telegram, <span class="mono">frus1946v06/d475</span>, with a note, the tag Containment and the collection it's in.</figcaption>
+        </figure>
+      </article>
+
+      <article class="entry wide" id="e6">
+        <div class="etext">
+          <div class="ehead">
+            <p class="where">Research · Mac</p>
+            <h3><span class="n">7.</span>Track everything you've marked up</h3>
+          </div>
+          <div class="ebody">
+            <p><b class="ui">Research</b> gathers every document you've worked on, with your highlights and notes shown. Sort it by collection, tag or highlight color. <b class="ui">History</b> keeps a record of what you opened, searched, and exported.</p>
+            <p>Use projects to keep one paper or course apart from the rest. Its research question appears at the top of the screen. <b class="ui">Suggested Next</b>, on Project Home, uses the same similarity detectors as the per-document Related feature to suggest leads to other documents from tags or collections you've associated with the project.</p>
+            <p><b class="ui">Plan a Visit</b>, also on Project Home, starts an Archives Visit plan from the project's documents' source notes and footnotes, with your research question at the top.</p>
+            <p class="prov"><span class="pk cp">Yours</span><span>The app stores your notes, tags and highlights separately from the published text.</span></p>
+          </div>
+        </div>
+        <figure>
+          <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/research.jpg" target="_blank" rel="noopener" aria-label="Enlarge the Research screen, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/research.jpg" width="1600" height="830" alt="Research on Mac: All Research Documents, eight of them, with a highlight, a note on Kennan's telegram, the tag Containment and the collection The Long Telegram and Its Readers" loading="lazy" decoding="async"></a>
+          <figcaption><span class="sn">Source</span>Mac, build 1861. All Research Documents, with a highlight and a note on the Long Telegram, the tag Containment and the collection.</figcaption>
+        </figure>
+      </article>
+
+      <article class="entry side" id="e7">
+        <div class="etext">
+          <p class="where">Browse ▸ Working Corpora · iPad</p>
+          <h3><span class="n">8.</span>Save a set of results to come back to</h3>
+          <div class="ebody">
+            <p>Save a search's results, or a group of documents you lasso (draw a loop around) on the semantic map, as a working corpus. A <i>corpus</i> is a body of texts that you study. A working corpus is a fixed set of documents, a snapshot of one set of results. Later you can search inside it, and you can name it as the underlying sources an argument rests on. Saved searches keep your search query and its filters, and show what's new since you last ran them as you download additional volumes or new volumes are published.</p>
+            <p class="limit">Each working corpus says how much of the result set it holds when a query exceeds device limits.</p>
+          </div>
+        </div>
+        <figure>
+          <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/browse.jpg" target="_blank" rel="noopener" aria-label="Enlarge the Working Corpora screen, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/browse.jpg" width="1500" height="981" alt="Working Corpora on iPad in the project Early Cold War: three saved searches, Soviet intentions, Long telegram and Berlin airlift, one marked Saved 1,000 of 11,122 matches" loading="lazy" decoding="async"></a>
+          <figcaption><span class="sn">Source</span>iPad, build 1861. Working corpora in the project Early Cold War: three searches, one saved as the highest-scoring 1,000 of 11,122 matches.</figcaption>
+        </figure>
+      </article>
+
+      <article class="entry wide" id="e8">
+        <div class="etext">
+          <div class="ehead">
+            <p class="where">Source Explorer and Archives Visit · iPad</p>
+            <h3><span class="n">9.</span>Follow footnotes to archives</h3>
+          </div>
+          <div class="ebody">
+            <p>Most documents have a source note from the editors that provides its archival provenance. <b class="ui">Source Explorer</b> reads that note and looks it up in reference data built into the app. For many documents, the app shows you the record group, lot file, entry, and/or filing manual that you need to access the original record copy at the applicable repository. <b class="ui">Archival Neighbors</b> lists the other documents, in any volume you've indexed, that came from the same source, such as the same lot file or the same decimal class. <b class="ui">Unprinted Material</b> lists the files a document's footnotes cite that FRUS didn't print. A free NARA Catalog API key from the National Archives enables live lookups.</p>
+            <p class="nara">FRUS Explorer is not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration. NARA Catalog data is provided by the National Archives and is subject to its terms of use.</p>
+            <p>An <b class="ui">Archives Visit</b> turns documents you've selected into a roadmap for a research trip. It compiles information from source notes and footnotes to identify relevant archival collections or central file classes, lets you triage your list of files to examine, and even provides draft text for an inquiry email so you can initiate a dialogue with the archivists who know the records best.</p>
+            <p class="prov"><span class="pk ed">From the editors</span><span>It all starts from the editors' source note. The app reads the note and matches it to reference data built from the volumes' own lists of sources.</span></p>
+            <p class="prov"><span class="pk jn">From other records</span><span>Catalog records, access rules and entry numbers come from the National Archives catalog. The app joined and reconciled source note citations with NARA Catalog data in a bundled index that works offline.</span></p>
+          </div>
+        </div>
+        <div class="pair">
+          <figure>
+            <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/source.jpg" target="_blank" rel="noopener" aria-label="Enlarge the Source Explorer screen, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/source.jpg" width="1400" height="1019" alt="Source Explorer on iPad matching S/S NSC files, lot 63 D 351, NSC 140 to a State Department lot file in RG 59, with its National Archives catalog record, access terms and entry A1 1586E" loading="lazy" decoding="async"></a>
+            <figcaption><span class="sn">Source</span>iPad, build 1861. The note <span class="mono">S/S–NSC files, lot 63 D 351, NSC 140</span>, matched to RG 59 and its catalog record.</figcaption>
+          </figure>
+          <figure>
+            <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/packet.jpg" target="_blank" rel="noopener" aria-label="Enlarge the Archives Visit plan, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/packet.jpg" width="900" height="990" alt="The Archives Visit plan for Lot 63 D 351, RG 59, listing the documents printed from the file and the footnotes that mention it" loading="lazy" decoding="async"></a>
+            <figcaption>The Archives Visit plan for Lot 63 D 351: two documents printed from it, six footnotes that mention it.</figcaption>
+          </figure>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="part" id="part-3" aria-labelledby="p3" style="padding-bottom:0">
+  <div class="inner">
+    <div class="part-open">
+      <div class="rn" aria-hidden="true">III</div>
+      <div class="pt">
+        <p class="sc">Part III</p>
+        <h2 id="p3">Visualizing results</h2>
+        <p class="intro">Build charts from the volumes on your device and use them as gateways to the documents behind them. See the series as a map of model-measured clusters.</p>
+      </div>
+    </div>
+
+    <div class="entries">
+      <article class="entry wide" id="e9">
+        <div class="etext">
+          <div class="ehead">
+            <p class="where">Corpus Analytics · iPad</p>
+            <h3><span class="n">10.</span>Chart a word or phrase across the years</h3>
+          </div>
+          <div class="ebody">
+            <p>Corpus Analytics works across what you have downloaded to your device. Chart one word or phrase, or compare several, as a raw count or as a share of all documents. List the documents behind the chart as search results.</p>
+            <p class="prov"><span class="pk ed">From the editors</span><span>The counts measure what appeared in the documents selected for publication. Read a spike as editorial attention that may or may not reflect the broader underlying archival record.</span></p>
+            <p class="prov"><span class="pk cp">Made by the app</span><span>The app works out the counts and shares from the volumes on your device.</span></p>
+          </div>
+        </div>
+        <figure>
+          <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/analytics.jpg" target="_blank" rel="noopener" aria-label="Enlarge the Corpus Analytics chart, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/analytics.jpg" width="1600" height="616" alt="Corpus Analytics on iPad: sovereignty, legitimacy, rights and empire by year from 1861 to 1992, as a percentage of documents" loading="lazy" decoding="async"></a>
+          <figcaption><span class="sn">Source</span>iPad, build 1861. Sovereignty, legitimacy, rights and empire by year, as a share of documents, 1861–1992.</figcaption>
+        </figure>
+      </article>
+
+      <article class="entry wide" id="e10">
+        <div class="etext">
+          <div class="ehead">
+            <p class="where">Chronology · iPad</p>
+            <h3><span class="n">11.</span>Look at how documents fall across a timeline</h3>
+          </div>
+          <div class="ebody">
+            <p>Pick a date range, and <b class="ui">Chronology</b> charts every dated document in it from every volume on your device, colored by the volume that printed it. The list below the chart goes day by day.</p>
+            <p class="limit">The list shows up to 5,000 documents. The chart covers the whole range.</p>
+            <p class="prov"><span class="pk ed">From the editors</span><span>Each document sits on the date the editors gave it, as exactly as they gave it. Documents that cover a span of dates, mostly editorial notes, are listed separately.</span></p>
+          </div>
+        </div>
+        <figure>
+          <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/chronology.jpg" target="_blank" rel="noopener" aria-label="Enlarge the Chronology screen, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/chronology.jpg" width="1600" height="678" alt="Chronology on iPad from September 1 to November 30, 1962: 1,154 documents stacked by volume, with a peak in late October" loading="lazy" decoding="async"></a>
+          <figcaption><span class="sn">Source</span>iPad, build 1861. A second example: September 1 to November 30, 1962, 1,154 documents.</figcaption>
+        </figure>
+        
+      </article>
+
+      <article class="entry side" id="e11">
+        <div class="etext">
+          <p class="where">Cross-Reference Graph · iPad</p>
+          <h3><span class="n">12.</span>Follow the editors' cross-references</h3>
+          <div class="ebody">
+            <p>The <b class="ui">Graph</b> tile in a document's research rail visualizes both its outgoing and incoming cross-references, up to three hops away, as a network or a timeline. A hop is one cross-reference: one hop reaches the documents linked to the selected starting point, and two hops extends the graph to the documents linked to those. Files the editors cited but didn't print show up as their own points and provide information about the archival collection that holds them.</p>
+            <p><b class="ui">Cross-Reference Analytics</b> ranks the most-cited documents in your library.</p>
+            <p class="prov"><span class="pk ed">From the editors</span><span>Every line in the graph represents one of the editors' footnotes: a cross-reference to a printed document, or a footnote citation to a record they didn't print.</span></p>
+            <p class="prov"><span class="pk cp">Made by the app</span><span>Rankings such as Landmark Documents are worked out from cross-references, and measure how the editors linked documents, not how important a document was.</span></p>
+          </div>
+        </div>
+        <figure>
+          <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/graph.jpg" target="_blank" rel="noopener" aria-label="Enlarge the Cross-Reference Graph, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/graph.jpg" width="1500" height="1092" alt="The Cross-Reference Graph on iPad, three hops out from document 16, with hundreds of citing and cited documents and archive points" loading="lazy" decoding="async"></a>
+          <figcaption><span class="sn">Source</span>iPad, build 1861. A second example: cross-references around document 16 of <span class="mono">frus1952-54v02p1</span>, three hops out.</figcaption>
+        </figure>
+        
+      </article>
+    </div>
+  </div>
+
+  <div class="night" id="e12-band">
+    <div class="inner">
+      <article class="entry wide" id="e12">
+        <div class="etext">
+          <div class="ehead">
+            <p class="where">Semantic Analytics · iPad <span class="exp">Experimental</span></p>
+            <h3><span class="n">13.</span>See the whole series at once on a map</h3>
+          </div>
+          <div class="ebody">
+            <p>The semantic map places 314,616 documents<sup class="fn"><a href="#fn2" id="fr2">5</a></sup> by meaning, so documents whose language was measured by a model as alike sit close together. It labels each of these clusters by the words that set it apart. Tap a document to open it directly or see a list of its closest semantic neighbors. Lasso a group to define a working corpus.</p>
+            <p class="prov"><span class="pk cp">Made by the app</span><span>The map reflects a model's reading of the language in every document.</span></p>
+          </div>
+        </div>
+        <figure>
+          <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/map.jpg" target="_blank" rel="noopener" aria-label="Enlarge the semantic map, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/map.jpg" width="1700" height="908" alt="The semantic map of the whole series on a dark background, colored areas labeled by their most telling words, with the app's experimental notice above and its layout warning below" loading="lazy" decoding="async"></a>
+          <figcaption><span class="sn">Source</span>iPad, build 1861. Browse ▸ Analysis Tools ▸ Semantic Analytics, Whole corpus, Regions lens.</figcaption>
+        </figure>
+        <div class="caveat">
+          <p><em>Experimental.</em> The map keeps similar documents close together. Distances between areas that are far apart don't mean anything.</p>
+        </div>
+        <div class="fns">
+          <p id="fn2"><span class="m">5</span>Documents placed on the map, counted in the app's own data. <a href="#fr2" aria-label="Back to text">↩</a></p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+</div>

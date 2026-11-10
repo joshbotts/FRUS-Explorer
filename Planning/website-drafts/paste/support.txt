@@ -1,0 +1,58 @@
+<!-- frusexplorer.app/support · from Docs/Website/support.html · fingerprint afe50dd6 -->
+<h1>FRUS Explorer Support</h1>
+
+<p>FRUS Explorer is a research app for iPhone, iPad and Mac for the Foreign Relations of the United States series: the official documentary record of U.S. foreign policy, published since 1861 by the Office of the Historian, whose open TEI editions the app builds on.</p>
+
+<blockquote><p>FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State. Any commentary, advice, or guidance about the FRUS series in this app reflects personal views about historical research methodology and makes no interpretive claims about the history of U.S. foreign policy. Those views are not necessarily those of the Department of State or the U.S. Government. The FRUS series itself is in the public domain.</p></blockquote>
+
+<p>For help with the app, write to its developer, not to the Office of the Historian.</p>
+
+<h2 id="manuals-and-guides">Manuals and guides</h2>
+
+<ul>
+  <li><a href="https://frusexplorer.app/quick-start-ios">FRUS Explorer for iPad and iPhone — Quick Start</a></li>
+  <li><a href="https://frusexplorer.app/quick-start-mac">FRUS Explorer for macOS — Quick Start</a></li>
+  <li><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md">FRUS Explorer for iPad and iPhone — User Manual</a></li>
+  <li><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/macOS-User-Manual.md">FRUS Explorer for macOS — User Manual</a></li>
+</ul>
+
+<p>A quick start takes you through a first session, with screenshots; a manual covers everything. In the app, <strong>Settings → System → About</strong> links to your platform's quick start and manual. The quick start also opens from the Research tab on iPhone and iPad, and from <strong>Help → FRUS Explorer Quick Start</strong> on a Mac. The app's <strong>FRUS Research Guide</strong>, an introduction to the series itself, is in the app: on iPhone and iPad, a row on the Research tab or <strong>Settings → System → About → FRUS Research Guide</strong>; on a Mac, <strong>Help → FRUS Research Guide</strong>.</p>
+
+<h2 id="contact">Contact</h2>
+
+<p>Email <strong><a href="mailto:help@frusexplorer.app">help@frusexplorer.app</a></strong>. It helps to include:</p>
+
+<ul>
+  <li>your device and its system version;</li>
+  <li>the app's version and build, from <strong>Settings → System → About</strong> (for example, <em>Version 1.0 (1861)</em>);</li>
+  <li>what you did, what you expected, and what happened instead;</li>
+  <li>for an iCloud sync problem, the Sync Log, from <strong>Settings → System → Data &amp; Recovery → Sync Log → Export…</strong>. It holds event types, timing and error codes, never your content.</li>
+</ul>
+
+<p>The <a href="https://frusexplorer.app/privacy">privacy policy</a> says what happens to an email you send.</p>
+
+<h2 id="common-questions">Common questions</h2>
+
+<p><strong>What does the app need?</strong> An iPhone or iPad with iOS or iPadOS 26 or later, or a Mac with macOS 26 or later. Document summaries also need Apple Intelligence, which on a Mac means Apple silicon.</p>
+
+<p><strong>Where do the documents come from?</strong> From the Office of the Historian's public TEI editions of the series. The app downloads the volumes you choose from the Office's repository on GitHub and indexes them on your device; from then on, reading and searching work offline.</p>
+
+<p><strong>Do I need an account?</strong> No. If your device is signed in to iCloud, your notes, collections and other research sync through your own iCloud account. Two services are optional, each with a free key of your own, in <strong>Settings → System → Connections</strong>: the National Archives Catalog, which lets Source Explorer look up the records a document's source note cites (the card links to where you get a key), and Zotero, which lets you send documents with your tags and notes to your Zotero library.</p>
+
+<p><strong>What is natural-language search?</strong> An experimental way to search by meaning rather than by matching words. It needs a model, Google's EmbeddingGemma 2, which is an optional 310 MB download (<strong>Settings → Library → Volumes &amp; Storage → Download Search Model</strong>) and runs on your device only: nothing you search leaves it.</p>
+
+<p><strong>Can I use the search index with my own tools?</strong> Yes, on a Mac. <strong>Settings → System → Data &amp; Recovery → Export Research Database…</strong> saves a checked copy of the index as a SQLite file. Your notes, summaries and tag names are left out unless you turn on <strong>Include My Notes, Summaries, and Tags</strong>. The <a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Agentic-Analysis-Guide.md">Agentic Analysis Guide</a> explains the database, and how to check what an AI tool tells you about it. If you give a copy to an online service, that service's terms apply.</p>
+
+<p><strong>My notes are not reaching my other devices.</strong> Start with the app's iCloud status, at the top of Settings on iPhone and iPad and at the right of the main window's status bar on a Mac, which names the problem when there is one. Then read the manual's section on Data &amp; Recovery, which lists the recovery steps in order and what each one deletes.</p>
+
+<h2 id="privacy">Privacy</h2>
+
+<p>FRUS Explorer collects no data. What you read, search and write stays with you: notes and collections sync only through your own iCloud account, and the app reaches the National Archives' catalog or your Zotero library only when you ask it to. The <a href="https://frusexplorer.app/privacy">privacy policy</a> has the details.</p>
+
+<h2 id="source-code">Source code</h2>
+
+<p>FRUS Explorer's source code is public, under the Apache License 2.0, at <a href="https://github.com/joshbotts/FRUS-Explorer">https://github.com/joshbotts/FRUS-Explorer</a>.</p>
+
+<hr>
+
+<p>This page is published in two copies kept identical: at <a href="https://frusexplorer.app/support">https://frusexplorer.app/support</a> and at <a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Support.md">https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Support.md</a>.</p>

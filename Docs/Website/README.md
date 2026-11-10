@@ -27,7 +27,9 @@ python3 Scripts/build_website_pages.py
 ```
 
 and commit the Markdown and the HTML together. `--check` writes nothing and exits 1 when any
-HTML file is not what its Markdown makes. The script reads only the Markdown these pages use;
+HTML file is not what its Markdown makes. While `Planning/website-drafts/` holds the paste kit, run
+`python3 Planning/website-drafts/build_paste.py` after it and commit `paste/` too: it cuts each
+page's paste from the HTML, and refuses when the HTML is not what the Markdown makes. The script reads only the Markdown these pages use;
 a construct it does not know passes through as text, so it shows in the HTML diff.
 
 A quick start differs from the other two in three ways. A relative link becomes the linked file's
@@ -43,17 +45,22 @@ pastes the new HTML into the site, and the two copies are in step again only the
 ## Publishing on frusexplorer.app
 
 The domain is a Squarespace site (it answered `server: Squarespace` on 2026-10-15, as a private
-site behind a password). The pages' addresses are in place, named by the owner on 2026-10-18
+site behind a password, and every path still answered 401 on 2026-11-10). It is on Squarespace's
+Basic plan, where a Code Block renders HTML and a `<style>`, up to 400 KB, and runs no `<script>`
+or `<iframe>`: the four pages hold neither, and `build_paste.py` refuses one that does. The pages' addresses are in place, named by the owner on 2026-10-18
 (decision 26): **help@frusexplorer.app** on the Support page and for the policy's questions, and
 **feedback@frusexplorer.app** for Semantic Match Feedback's file, which the app's own mail draft
 addresses (`SemanticFeedbackMail.address`). A change to either is made in the Markdown, in the
 script's `ADDRESSES` and, for feedback@, in that constant. For each page:
 
 1. Make a page whose URL slug is `privacy` (or `support`, `quick-start-ios`, `quick-start-mac`),
-   add a Code Block, and paste everything between `<main>` and `</main>` of the HTML file. The
-   site's own type and colours apply; the `<style>` in the file's `<head>` is only for viewing it
-   on its own. A quick start's `<main>` opens with a `<style>` of its own, which is pasted with
-   the rest.
+   add a blank section, in it a Code Block, and paste everything between `<main>` and `</main>` of
+   the HTML file. `Planning/website-drafts/paste/` holds exactly that for each page, under a first
+   line that names the page, its source and a fingerprint of what follows, so a block on the site
+   says which version it holds; `Planning/website-drafts/Squarespace-Entry.md` has the owner's
+   steps in the editor, for these four pages and for the home page and the tour. The site's own
+   type and colours apply; the `<style>` in the file's `<head>` is only for viewing it on its own.
+   A quick start's `<main>` opens with a `<style>` of its own, which is pasted with the rest.
 2. Make the site public before the submission. App Review opens both URLs, and on 2026-10-15
    both answered 401. `https://frusexplorer.app/privacy` redirects to `www.`, keeping the path.
 3. Publish the two quick starts with the Support page, or at least before it: the Support page
@@ -61,8 +68,10 @@ script's `ADDRESSES` and, for feedback@, in that constant. For each page:
 
 ## What each factual sentence rests on
 
-Read at `v2` @ `470f818c` on 2026-10-15. A change to anything in the right-hand column owes the
-policy an edit. In particular: **the mail draft for Semantic Match Feedback** (decision 26,
+Read at `v2` @ `470f818c` on 2026-10-15. On 2026-11-10, at `f179c1bd` (1.0 (1812), `build-53`),
+the links row was read again and the policy brought to it, and the call sites and the model types
+were compared with `1c18b51`: no network call site and no `@Model` was added. A change to anything
+in the right-hand column owes the policy an edit. In particular: **the mail draft for Semantic Match Feedback** (decision 26,
 built on 2026-10-18 for build 51) needed no edit beyond its address, since the policy already named
 email as one way to share the file; **a new network request, a new `@Model`, or a new kind of
 record** does.
@@ -89,7 +98,7 @@ record** does.
 | Sync Settings Across Devices: off by default, and what it shares | `SettingsSyncCoordinator` (`enabledKey`, every path gated on `isEnabled`); `SyncSettingsSection` (`settings.sync.toggle.detail`) |
 | API keys in the keychain, carried by iCloud Keychain | `KeychainStore`, `NARAAPIKeyStore`, `ZoteroAccountStore` (`kSecAttrSynchronizable` true); `ConnectionsView` (`Held in your keychain and synced via iCloud Keychain…`) |
 | Requests carry no identifier of the reader or device | The only headers set are `User-Agent: FRUSExplorer/2.0`, GitHub's `Accept` and API version, NARA's `x-api-key` and Zotero's key and write token; no `identifierForVendor`, advertising identifier, DeviceCheck or App Attest anywhere |
-| The volume list: `api.github.com`, at launch and on opening Volumes & Storage or refreshing | `ManifestStore.fetchGitHubListing`; `FRUSExplorerApp` (`fetchLiveManifest()` at launch when online); `VolumesStorageHubView` and `MacVolumesStorageHub` (`refresh()` in `.task` and `refreshCatalog()`) |
+| The volume list: `api.github.com`, at launch and on opening Volumes & Storage (in Settings' Library group, `SettingsPaneModel.group`, as both pages have written the path since 2026-11-10) or refreshing | `ManifestStore.fetchGitHubListing`; `FRUSExplorerApp` (`fetchLiveManifest()` at launch when online); `VolumesStorageHubView` and `MacVolumesStorageHub` (`refresh()` in `.task` and `refreshCatalog()`) |
 | Volumes: `raw.githubusercontent.com/HistoryAtState/frus`, on download or update, and at launch or reconnect to finish | `VolumeManifestEntry.downloadUrl` (`FRUSCoreKit/Models/Manifest/ManifestModels.swift`); `DownloadManager.resumeQueuedDownloads()` at launch and in `onChange(of: appState.isOnline)` |
 | Figure images: `static.history.state.gov`, after a download, at launch and reconnect, and one at a time when needed | `FigureImageLibrary.remoteBase`, its ephemeral `session`; `FRUSExplorerApp.fetchMissingFigureImages(with:appState:)`; `PrivacyInfo.xcprivacy`'s comment; `CLAUDE.md` § Figure images |
 | Match files: the developer's `frus-semantic-vectors` repository, with each volume and when a semantic feature needs one, unless Download With Volumes is off; or by the two buttons | `SemanticShardFetcher.defaultBaseURL`; `AppState.fetchSemanticShardIfNeeded(for:reason:)` (gated on `isOnline` and the switch); `SemanticStorageSection` (`Download With Volumes`, `Download Missing Vectors`, `Download Vectors for Every Volume`) |
@@ -98,7 +107,7 @@ record** does.
 | Neither service is used without the reader's key; Remove Key and Disconnect | `NARACatalogClient.fetchAPIKey()` throws `missingAPIKey`; `SourceExplorerView.load()` returns before any query when `hasAPIKey()` is false; `ConnectionsView` (`Remove Key`, `Disconnect`) |
 | NARA: on opening Source Explorer or running a lookup, the note's terms and the key | `SourceExplorerView.load()` (run by `.task(id: loadIdentity)`), `MacSourceExplorerView`, `NARACatalogLookupView`; `NARACatalogClient.executeSearch` (`x-api-key`) |
 | Zotero: citation details with tags and notes, never the text; account lookup on connect and on a device the key reached through iCloud Keychain | `ZoteroAPIClient.send(items:…)`, `resolveAccount(key:)`; `ZoteroAccountStore.resolveAccountIfNeeded()` (at launch and on foreground, only with a key and no user ID); `CollectionExportSheet` (`Over the Zotero web API — carries your tags & research notes.`, and "The Zotero formats render citations and notes — never body content") |
-| About and the Research Guide open a built-in browser; other links the default browser; the built-in one keeps cookies | `Theme/InAppBrowserView.swift` (`WKWebView()` with the default, persistent website data store); iOS manual §2.4 |
+| About and the Research Guide open a built-in browser, as does the Quick Start on the Research tab of iPhone and iPad; other links the default browser; the built-in one keeps cookies | `Theme/InAppBrowserView.swift` (`WKWebView()` with the default, persistent website data store), which `AboutView`, `IndexingEducationView` and, under `#if os(iOS)`, `ResearchView` (`showQuickStart`, added by #1848 on 2026-11-03 and named in the policy since 2026-11-10) present; the Mac's Help item, `QuickStartHelpMenuItem`, calls `openURL`, the default browser; iOS manual §2.4 |
 | Erase Everything… and what it removes; settings kept | `settings.erase.warning.inventory.corrections` (`SettingsView.swift`); `DataRecoveryView` (`.eraseEverything`) |
 | Keys stay in the keychain after the app is deleted | Keychain items outlive the app on Apple platforms; the app removes them only through `Remove Key` and `Disconnect` |
 | Apple's crash reports reach the developer only with the reader's analytics consent, with nothing added by the app | Apple's *Share With App Developers* setting; the app has no crash reporter or MetricKit subscriber |
@@ -130,7 +139,7 @@ bar owes them an edit. `Docs/screenshots/README.md` names the twenty captures th
 | Requirements | `project.yml` (`deploymentTarget: "26.0"` for every target); both manuals §2.1 |
 | Where the documents come from; offline after download; the Office publishes the series as open TEI | `VolumeManifestEntry.downloadUrl`; `Store-Listing-Draft.md` §2 |
 | Free keys, where they are entered, the NARA card's link | `ConnectionsView` (`A free key from the National Archives Catalog…`, `Get a free key from NARA`); iOS manual (Create a Zotero API key) |
-| Natural-language search: experimental, 310 MB, on the device, where to download | `SemanticModelSection` (`settings.model.footer`, `settings.model.download.detail`, `Download Search Model`), mounted by both Volumes & Storage hubs |
+| Natural-language search: experimental, 310 MB, on the device, where to download | `SemanticModelSection` (`settings.model.footer`, `settings.model.download.detail`, `Download Search Model`), mounted by both Volumes & Storage hubs, a pane of Settings' Library group (`SettingsPaneModel.group`) |
 | The research database export: Mac only, its path, a checked copy, the reader's writing left out unless switched on; the guide | `DataExportSections` (`Export/ResearchDataExportView.swift`: the section under `#if os(macOS)`, `Export Research Database…`, `Include My Notes, Summaries, and Tags`, a `@State` that is `false` on every entry, an `NSSavePanel` named `frus-index.sqlite`), hosted by `DataRecoveryView` in Settings' System group (`SettingsPaneModel.group`); `ResearchDataExporter` (`PRAGMA quick_check` and each FTS table's `integrity-check` after the copy; a copy that fails is named on screen, `settings.export.database.integrity`, never reported as a plain success); `Docs/Agentic-Analysis-Guide.md` |
 | Where the iCloud status is, and the recovery ladder | iOS manual §17 (Settings opens with the status); macOS manual §4.4 (the status bar's iCloud chip); both manuals' Data & Recovery ladder |
 | Source code public under Apache 2.0 | `LICENSE`; `AboutLinks.frusExplorerRepo` |

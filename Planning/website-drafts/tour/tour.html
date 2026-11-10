@@ -195,6 +195,7 @@ figcaption .mono { font-style: normal; color: var(--ink); }
 .night .fns { color: var(--night-muted); }
 .night .fns::before { border-color: var(--night-ink); }
 .night .fns p .m { color: var(--night-red); }
+.night sup.fn { color: var(--night-red); }
 .night a { color: var(--night-link); }
 
 /* Close */
@@ -394,10 +395,10 @@ body[data-state="soon"] [data-show="launch"], body[data-state="launch"] [data-sh
     </div>
 
     <div class="fns">
-      <p id="fn1"><span class="m">1</span>The number of volumes in the app's catalog in October 2026. You choose which ones to download. <a href="#fr1" aria-label="Back to text">↩</a></p>
+      <p id="fn1"><span class="m">1</span>The number of volumes in the app's catalog in November 2026. You choose which ones to download. <a href="#fr1" aria-label="Back to text">↩</a></p>
     </div>
 
-    <p class="pnote"><b>Production note</b>Screens are cropped from the build-1861 captures in <span class="mono">Docs/screenshots/</span> (October 2026 sittings), with status bars removed. The walk shows iPad and Mac. Use the bar at the top to switch between the coming-soon and launch versions, or to hide these notes.</p>
+    <p class="pnote"><b>Production note</b>Screens are cropped from the build-1861 captures in <span class="mono">Docs/screenshots/</span> (October and November 2026 sittings), with status bars removed. The walk shows iPad and Mac. Use the bar at the top to switch between the coming-soon and launch versions, or to hide these notes.</p>
   </div>
 </section>
 
@@ -449,8 +450,8 @@ body[data-state="soon"] [data-show="launch"], body[data-state="launch"] [data-sh
       <div><span class="big">51</span><span class="lbl">volumes with no source notes at all. Where the editorial annotation is thinner, the tools that read it have less to work with.</span></div>
     </div>
     <div class="fns" style="margin-top:20px">
-      <p id="fn3"><span class="m">2</span>Source notes matched to a document, counted in the app's own data, October 2026. <a href="#fr3" aria-label="Back to text">↩</a></p>
-      <p id="fn3b"><span class="m">3</span>Links between volumes, counted in the app's own data, October 2026. <a href="#fr3b" aria-label="Back to text">↩</a></p>
+      <p id="fn3"><span class="m">2</span>Source notes matched to a document, counted in the app's own data, November 2026. <a href="#fr3" aria-label="Back to text">↩</a></p>
+      <p id="fn3b"><span class="m">3</span>Links between volumes, counted in the app's own data, November 2026. <a href="#fr3b" aria-label="Back to text">↩</a></p>
       <p id="fn3c"><span class="m">4</span>Volumes whose documents link the names in them to their list of persons, counted in the app's own data, November 2026. <a href="#fr3c" aria-label="Back to text">↩</a></p>
     </div>
     <div class="legend">
@@ -746,7 +747,7 @@ body[data-state="soon"] [data-show="launch"], body[data-state="launch"] [data-sh
             <h3><span class="n">13.</span>See the whole series at once on a map</h3>
           </div>
           <div class="ebody">
-            <p>The semantic map places 314,616 documents<sup class="fn"><a href="#fn2" id="fr2">4</a></sup> by meaning, so documents whose language was measured by a model as alike sit close together. It labels each of these clusters by the words that set it apart. Tap a document to open it directly or see a list of its closest semantic neighbors. Lasso a group to define a working corpus.</p>
+            <p>The semantic map places 314,616 documents<sup class="fn"><a href="#fn2" id="fr2">5</a></sup> by meaning, so documents whose language was measured by a model as alike sit close together. It labels each of these clusters by the words that set it apart. Tap a document to open it directly or see a list of its closest semantic neighbors. Lasso a group to define a working corpus.</p>
             <p class="prov"><span class="pk cp">Made by the app</span><span>The map reflects a model's reading of the language in every document.</span></p>
           </div>
         </div>
@@ -758,15 +759,15 @@ body[data-state="soon"] [data-show="launch"], body[data-state="launch"] [data-sh
           <video controls muted playsinline preload="none" poster="img/map-film-poster.jpg" width="1440" height="900" aria-label="An animation of the semantic map filling in, one volume per frame in the order the volumes were published, from 1861 to 2025">
             <source src="img/map-film.mp4" type="video/mp4">
           </video>
-          <figcaption><span class="sn">Film</span>The record as it was released: each frame lights every mapped document in the volumes published so far, whole volumes, whatever each document is about. 553 volumes in 46 seconds, drawn by the app from build 51's layout.</figcaption>
+          <figcaption><span class="sn">Film</span>The record as it was released: each frame lights every mapped document in the volumes published so far, whole volumes, whatever each document is about. 553 volumes in 46 seconds, drawn by the app from the map it ships with.</figcaption>
         </figure>
         <div class="caveat">
           <p><em>Experimental.</em> The map keeps similar documents close together. Distances between areas that are far apart don't mean anything.</p>
         </div>
         <div class="fns">
-          <p id="fn2"><span class="m">4</span>Documents placed on the map, counted in the app's own data. <a href="#fr2" aria-label="Back to text">↩</a></p>
+          <p id="fn2"><span class="m">5</span>Documents placed on the map, counted in the app's own data. <a href="#fr2" aria-label="Back to text">↩</a></p>
         </div>
-        <p class="pnote"><b>Production note</b>Re-cropped from build 1861, with build 51's layout and its 140 regions. The film was re-rendered from build 51's layout on 2026-11-06 (<code>tools/map-film/</code>, 1440×900, 46.2 s, 3.2 MB); host it where the site's video can stream, not as a page attachment.</p>
+        <p class="pnote"><b>Production note</b>Re-cropped from build 1861, with build 51's layout and its 140 regions; the bundled layout has not changed since (2026-10-15), so 1.0 (1812) draws the same map. The film was re-rendered from that layout on 2026-11-06 (<code>tools/map-film/</code>, 1440×900, 46.2 s, 3.2 MB). Host it in a Squarespace Video block, not in the pasted HTML: GitHub serves the file as a download (<code>application/octet-stream</code>), which a browser's player may refuse.</p>
       </article>
     </div>
   </div>
@@ -775,12 +776,12 @@ body[data-state="soon"] [data-show="launch"], body[data-state="launch"] [data-sh
     <div class="entries">
       <article class="entry side portrait" id="e13">
         <div class="etext">
-          <p class="where">Research Guide ▸ About the Series and Browse ▸ Editors’ Annotations · iPad</p>
+          <p class="where">Research Guide ▸ About the Series and Browse ▸ Annotations · iPad</p>
           <h3><span class="n">14.</span>Learn how the series itself has evolved</h3>
           <div class="ebody">
             <p>Four charts about the series itself work before you download a single volume: <b class="ui">Production &amp; Timeliness</b>, <b class="ui">Geographic Emphasis</b>, <b class="ui">Archival Sourcing</b> and <b class="ui">Administration Profiles</b>.</p>
             <p>Publication lag compares each volume with the deadline in force when it came out. The deadline was 15 years under a 1961 rule, 20 from 1972, and 30 from 1985. A 1991 law made the 30-year deadline official.</p>
-            <p><b>Editors’ Annotations</b> shows how the editors' practices changed. For fifteen kinds of annotation, from tagged people and source notes to cross-references and lists of abbreviations, you can see where a practice began and where it never took hold. Tap an annotation type to list the volumes with it and without it. On iPad and Mac, the annotation types and eras form a table whose cells open one era's volumes.</p>
+            <p><b>Editors’ Annotations</b> shows how the editors' practices changed. For sixteen kinds of annotation, from tagged people and source notes to cross-references and lists of abbreviations, you can see where a practice began and where it never took hold. Tap an annotation type to list the volumes with it and without it. On iPad and Mac, the annotation types and eras form a table whose cells open one era's volumes.</p>
             <p class="prov"><span class="pk ed">From the editors</span><span>These charts read the series' record of itself: when each volume came out, the years its documents cover, and the sources its editors cite. The Editors’ Annotations axis counts the annotation in each volume's own text.</span></p>
           </div>
         </div>
@@ -790,8 +791,8 @@ body[data-state="soon"] [data-show="launch"], body[data-state="launch"] [data-sh
           <figcaption><span class="sn">Source</span>iPad, build 1861. Publication lag over time.</figcaption>
         </figure>
           <figure class="narrow">
-            <button class="zoom" type="button" aria-label="Enlarge the Editors’ Annotations matrix"><img src="img/annotations.jpg" width="900" height="1088" alt="Browse ▸ Editors’ Annotations on iPad: under Who is named and Where it came from, a strip of eras from 1861 to the retrospectives for each kind of annotation, shaded by the share of volumes that carry it, with People tagged in 288 of 553 volumes"></button>
-            <figcaption><span class="sn">Source</span>iPad, build 1861. Browse ▸ Editors’ Annotations. A layer that runs through a volume, such as tagged people or source notes, counts when it reaches half the volume's documents, so its counts differ from the totals above.</figcaption>
+            <button class="zoom" type="button" aria-label="Enlarge the Editors’ Annotations matrix"><img src="img/annotations.jpg" width="900" height="1088" alt="Editors’ Annotations on iPad, opened from the Annotations tile in Browse: under Who is named and Where it came from, a strip of eras from 1861 to the retrospectives for each kind of annotation, shaded by the share of volumes that carry it, with People tagged in 288 of 553 volumes"></button>
+            <figcaption><span class="sn">Source</span>iPad, build 1861. Browse ▸ Annotations, which opens Editors’ Annotations. A layer that runs through a volume, such as tagged people or source notes, counts when it reaches half the volume's documents, so its counts differ from the totals above.</figcaption>
           </figure>
         </div>
       </article>
@@ -830,7 +831,7 @@ body[data-state="soon"] [data-show="launch"], body[data-state="launch"] [data-sh
           </div>
           <figcaption><span class="sn">Source</span>The app's own citation for this document, as it appears in a collection's preview.</figcaption>
         </figure>
-        <p class="pnote"><b>Production note</b>No capture of the Cite sheet exists yet, so this slip is set as text. Swap in a capture from the build-51 sittings, or keep the slip.</p>
+        <p class="pnote"><b>Production note</b>No capture of the Cite sheet exists yet, so this slip is set as text. Swap in a capture of the Cite sheet, or keep the slip.</p>
       </article>
 
       <article class="entry wide" id="e15">
@@ -941,7 +942,7 @@ body[data-state="soon"] [data-show="launch"], body[data-state="launch"] [data-sh
           </div>
           <figcaption><span class="sn">Source</span>The app's modes and result labels, set as text.</figcaption>
         </figure>
-        <p class="pnote"><b>Production note</b>New in this draft. No capture exists. Shoot Batch on build 51 with the footnotes of a real chapter, so the counts on screen are true ones.</p>
+        <p class="pnote"><b>Production note</b>New in this draft. No capture exists. Shoot Batch on the release build with the footnotes of a real chapter, so the counts on screen are true ones.</p>
       </article>
 
       <article class="entry side" id="e-fix">
@@ -980,7 +981,7 @@ body[data-state="soon"] [data-show="launch"], body[data-state="launch"] [data-sh
     </div>
     <div class="cta">
       <span class="btn soon" aria-disabled="true">Coming soon to the App Store</span>
-      <a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md" target="_blank" rel="noopener">Read the manual</a>
+      <span>Quick start: <a href="https://frusexplorer.app/quick-start-ios">iPad and iPhone</a> · <a href="https://frusexplorer.app/quick-start-mac">Mac</a></span>
       <span>Questions? <span class="mono">help@frusexplorer.app</span></span>
     </div>
   </div>
@@ -991,7 +992,7 @@ body[data-state="soon"] [data-show="launch"], body[data-state="launch"] [data-sh
     </div>
     <div class="cta">
       <a class="btn" href="https://frusexplorer.app" target="_blank" rel="noopener">Get the app</a>
-      <a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md" target="_blank" rel="noopener">Read the manual</a>
+      <span>Quick start: <a href="https://frusexplorer.app/quick-start-ios">iPad and iPhone</a> · <a href="https://frusexplorer.app/quick-start-mac">Mac</a></span>
       <a href="https://frusexplorer.app/support" target="_blank" rel="noopener">Tell me what it can't answer yet</a>
     </div>
   </div>

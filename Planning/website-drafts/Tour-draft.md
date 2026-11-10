@@ -70,9 +70,9 @@ FRUS Explorer is an independent research tool, not an official product of the Of
 19. Check a citation
 20. Keep your notes in step with corrections
 
-¹ The number of volumes in the app's catalog in October 2026. You choose which ones to download.
+¹ The number of volumes in the app's catalog in November 2026. You choose which ones to download.
 
-> **Production note** Screens are cropped from the build-1861 captures in `Docs/screenshots/` (October 2026 sittings), with status bars removed. The walk shows iPad and Mac. Use the bar at the top to switch between the coming-soon and launch versions, or to hide these notes.
+> **Production note** Screens are cropped from the build-1861 captures in `Docs/screenshots/` (October and November 2026 sittings), with status bars removed. The walk shows iPad and Mac. Use the bar at the top to switch between the coming-soon and launch versions, or to hide these notes.
 
 ---
 
@@ -151,8 +151,8 @@ Quotation: “Editorial notes and additional annotation summarize pertinent mate
 - **288** volumes whose editors tagged the people named in them, standard from the volumes covering 1955 on⁴
 - **51** volumes with no source notes at all. Where the editorial annotation is thinner, the tools that read it have less to work with.
 
-² Source notes matched to a document, counted in the app's own data, October 2026.
-³ Links between volumes, counted in the app's own data, October 2026.
+² Source notes matched to a document, counted in the app's own data, November 2026.
+³ Links between volumes, counted in the app's own data, November 2026.
 ⁴ Volumes whose documents link the names in them to their list of persons, counted in the app's own data, November 2026.
 
 ### How this tour labels sources
@@ -367,7 +367,7 @@ Caption — Source: iPad, build 1861. A second example: cross-references around 
 ### 13. See the whole series at once on a map
 *Semantic Analytics · iPad · Experimental* (set on a dark band across the page)
 
-The semantic map places 314,616 documents⁴ by meaning, so documents whose language was measured by a model as alike sit close together. It labels each of these clusters by the words that set it apart. Tap a document to open it directly or see a list of its closest semantic neighbors. Lasso a group to define a working corpus.
+The semantic map places 314,616 documents⁵ by meaning, so documents whose language was measured by a model as alike sit close together. It labels each of these clusters by the words that set it apart. Tap a document to open it directly or see a list of its closest semantic neighbors. Lasso a group to define a working corpus.
 
 - **Made by the app** — The map reflects a model's reading of the language in every document.
 
@@ -380,20 +380,20 @@ Caption — Source: iPad, build 1861. Browse ▸ Analysis Tools ▸ Semantic Ana
 
 Film (`img/map-film.mp4`, poster `img/map-film-poster.jpg`) — Alt: An animation of the semantic map filling in, one volume per frame in the order the volumes were published, from 1861 to 2025
 
-Caption — Film: The record as it was released: each frame lights every mapped document in the volumes published so far, whole volumes, whatever each document is about. 553 volumes in 46 seconds, drawn by the app from build 51's layout.
+Caption — Film: The record as it was released: each frame lights every mapped document in the volumes published so far, whole volumes, whatever each document is about. 553 volumes in 46 seconds, drawn by the app from the map it ships with.
 
-⁴ Documents placed on the map, counted in the app's own data.
+⁵ Documents placed on the map, counted in the app's own data.
 
-> **Production note** Re-cropped from build 1861, with build 51's layout and its 140 regions. The film was re-rendered from build 51's layout on 2026-11-06 (`tools/map-film/`, 1440×900, 46.2 s, 3.2 MB); host it where the site's video can stream, not as a page attachment.
+> **Production note** Re-cropped from build 1861, with build 51's layout and its 140 regions; the bundled layout has not changed since (2026-10-15), so 1.0 (1812) draws the same map. The film was re-rendered from that layout on 2026-11-06 (`tools/map-film/`, 1440×900, 46.2 s, 3.2 MB). Host it in a Squarespace Video block, not in the pasted HTML: GitHub serves the file as a download (`application/octet-stream`), which a browser's player may refuse.
 
 ### 14. Learn how the series itself has evolved
-*Research Guide ▸ About the Series and Browse ▸ Editors’ Annotations · iPad*
+*Research Guide ▸ About the Series and Browse ▸ Annotations · iPad*
 
 Four charts about the series itself work before you download a single volume: **Production & Timeliness**, **Geographic Emphasis**, **Archival Sourcing** and **Administration Profiles**.
 
 Publication lag compares each volume with the deadline in force when it came out. The deadline was 15 years under a 1961 rule, 20 from 1972, and 30 from 1985. A 1991 law made the 30-year deadline official.
 
-**Editors’ Annotations** shows how the editors' practices changed. For fifteen kinds of annotation, from tagged people and source notes to cross-references and lists of abbreviations, you can see where a practice began and where it never took hold. Tap an annotation type to list the volumes with it and without it. On iPad and Mac, the annotation types and eras form a table whose cells open one era's volumes.
+**Editors’ Annotations** shows how the editors' practices changed. For sixteen kinds of annotation, from tagged people and source notes to cross-references and lists of abbreviations, you can see where a practice began and where it never took hold. Tap an annotation type to list the volumes with it and without it. On iPad and Mac, the annotation types and eras form a table whose cells open one era's volumes.
 
 - **From the editors** — These charts read the series' record of itself: when each volume came out, the years its documents cover, and the sources its editors cite. The Editors’ Annotations axis counts the annotation in each volume's own text.
 
@@ -402,8 +402,8 @@ Alt text: The Research Guide on iPad showing Publication lag over time, one poin
 Caption — Source: iPad, build 1861. Publication lag over time.
 
 **Screen:** `img/annotations.jpg`
-Alt text: Browse ▸ Editors’ Annotations on iPad: under Who is named and Where it came from, a strip of eras from 1861 to the retrospectives for each kind of annotation, shaded by the share of volumes that carry it, with People tagged in 288 of 553 volumes
-Caption — Source: iPad, build 1861. Browse ▸ Editors’ Annotations. A layer that runs through a volume, such as tagged people or source notes, counts when it reaches half the volume's documents, so its counts differ from the totals above.
+Alt text: Editors’ Annotations on iPad, opened from the Annotations tile in Browse: under Who is named and Where it came from, a strip of eras from 1861 to the retrospectives for each kind of annotation, shaded by the share of volumes that carry it, with People tagged in 288 of 553 volumes
+Caption — Source: iPad, build 1861. Browse ▸ Annotations, which opens Editors’ Annotations. A layer that runs through a volume, such as tagged people or source notes, counts when it reaches half the volume's documents, so its counts differ from the totals above.
 
 ---
 
@@ -428,7 +428,7 @@ The **Cite** tile copies a document's citation in History at State style, or in 
 
 Caption — Source: The app's own citation for this document, as it appears in a collection's preview.
 
-> **Production note** No capture of the Cite sheet exists yet, so this slip is set as text. Swap in a capture from the build-51 sittings, or keep the slip.
+> **Production note** No capture of the Cite sheet exists yet, so this slip is set as text. Swap in a capture of the Cite sheet, or keep the slip.
 
 ### 16. Build your own curated document collections
 *Collections · iPad*
@@ -514,7 +514,7 @@ Paste a citation from someone else's footnote, and the app opens the document it
 
 Caption — Source: The app's modes and result labels, set as text.
 
-> **Production note** New in this draft. No capture exists. Shoot Batch on build 51 with the footnotes of a real chapter, so the counts on screen are true ones.
+> **Production note** New in this draft. No capture exists. Shoot Batch on the release build with the footnotes of a real chapter, so the counts on screen are true ones.
 
 ### 20. Keep your notes in step with corrections
 *Reader and Research · iPhone, iPad and Mac*
@@ -548,7 +548,7 @@ Caption — Source: The app's own banner and actions, set as text.
 FRUS Explorer will be free for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on.
 
 - Button: Coming soon to the App Store
-- [Read the manual](https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md)
+- Quick start: [iPad and iPhone](https://frusexplorer.app/quick-start-ios) · [Mac](https://frusexplorer.app/quick-start-mac)
 - Questions? help@frusexplorer.app
 
 ## [At launch] Bring your own question
@@ -556,7 +556,7 @@ FRUS Explorer will be free for iPhone and iPad (iOS and iPadOS 26) and for Mac (
 FRUS Explorer is free for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on.
 
 - [Get the app](https://frusexplorer.app)
-- [Read the manual](https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md)
+- Quick start: [iPad and iPhone](https://frusexplorer.app/quick-start-ios) · [Mac](https://frusexplorer.app/quick-start-mac)
 - [Tell me what it can't answer yet](https://frusexplorer.app/support)
 
 ---

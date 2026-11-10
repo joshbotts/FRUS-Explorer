@@ -1,0 +1,271 @@
+<!-- frusexplorer.app/quick-start-ios · from Docs/Website/quick-start-ios.html · fingerprint b65bbdfd -->
+<style>
+  .frus-quick-start img { max-width: 100%; height: auto; }
+  .frus-quick-start .shots img { margin: 0 0.75rem 0.5rem 0; vertical-align: top; }
+  .frus-quick-start table { border-collapse: collapse; margin: 1rem 0; width: 100%; }
+  .frus-quick-start th, .frus-quick-start td {
+    border: 1px solid rgba(128, 128, 128, 0.35);
+    padding: 0.4rem 0.6rem;
+    text-align: left;
+    vertical-align: top;
+  }
+</style>
+
+<div class="frus-quick-start">
+
+<h1>FRUS Explorer for iPad and iPhone — Quick Start</h1>
+
+<blockquote><p><strong>AI Generated.</strong> This guide was written for version 1.0 (build 1787) by an AI assistant (Claude), from the <a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md">user manual</a>, the app's source and the manual's current screenshots, and has not yet been reviewed by the author.</p></blockquote>
+
+<blockquote><p><strong>Foreign Relations of the United States Explorer</strong> — <em>Research the official record of U.S. foreign policy since 1861</em></p></blockquote>
+
+<p>This guide takes you from the first launch to a document you have read, marked up, cited and traced to the archives. It is written for the <strong>iPad</strong>, where the app has the most room, and <a href="#11-on-iphone">section 11</a> covers what is different on iPhone. Everything here is covered in depth in the <a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md">user manual for iPad and iPhone</a>. If you work on a Mac, read the <a href="https://frusexplorer.app/quick-start-mac">Mac quick start</a> instead.</p>
+
+<hr>
+
+<h2 id="contents">Contents</h2>
+
+<ol>
+  <li><a href="#1-choose-what-to-download">Choose What to Download</a></li>
+  <li><a href="#2-let-it-index">Let It Index</a></li>
+  <li><a href="#3-find-your-way-around">Find Your Way Around</a></li>
+  <li><a href="#4-open-a-document">Open a Document</a></li>
+  <li><a href="#5-highlight-and-take-notes">Highlight and Take Notes</a></li>
+  <li><a href="#6-open-the-research-rail">Open the Research Rail</a></li>
+  <li><a href="#7-cite-a-document">Cite a Document</a></li>
+  <li><a href="#8-search-the-series">Search the Series</a></li>
+  <li><a href="#9-trace-a-document-to-the-archives">Trace a Document to the Archives</a></li>
+  <li><a href="#10-keep-your-work-together">Keep Your Work Together</a></li>
+  <li><a href="#11-on-iphone">On iPhone</a></li>
+  <li><a href="#12-where-to-go-next">Where to Go Next</a></li>
+</ol>
+
+<hr>
+
+<h2 id="before-you-start">Before You Start</h2>
+
+<ul>
+  <li><strong>iPadOS or iOS 26 or later.</strong> AI summaries also need a device with <strong>Apple Intelligence</strong> turned on; everything else works without it.</li>
+  <li><strong>Storage.</strong> One volume is a few megabytes. The whole series is about 3.5 GB to download and roughly 13 GB on the device once it is indexed for search.</li>
+  <li><strong>A network connection</strong> for the downloads. After that, reading, searching and annotating work offline.</li>
+</ul>
+
+<h2 id="1-choose-what-to-download">1. Choose What to Download</h2>
+
+<p>The first launch has three steps. <strong>Welcome</strong> introduces the series: tap <strong>Get Started</strong>. <strong>Add Volumes</strong> asks what you would like to download:</p>
+
+<table>
+  <thead>
+    <tr><th>Choice</th><th>What it downloads</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Corpus</strong></td><td>All 553 volumes in the app's catalog, the whole series</td></tr>
+    <tr><td><strong>Subseries</strong></td><td>One publication era, such as <em>1969–76</em> (Nixon and Ford)</td></tr>
+    <tr><td><strong>Volume</strong></td><td>A single volume, chosen from a list by title</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Subseries</strong> and <strong>Volume</strong> open a list, and <strong>Continue</strong> stays dimmed until you pick a row. Tap <strong>Continue</strong> to start the downloads, or <strong>Skip</strong> to download nothing yet.</p>
+
+<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/ipad/onboarding-volumes.png" alt="The Add Volumes step on iPad — &quot;What would you like to download?&quot; with Corpus, Subseries and Volume, the line 553+ volumes · ≈ 3.5 GB under the control, and Back, Skip and Continue — over a word cloud of the series&#x27; vocabulary." width="2752" height="2064" loading="lazy"></p>
+
+<p><em>The Add Volumes step. The word cloud behind it is drawn from the series itself, and changes to preview the era you pick.</em></p>
+
+<p>The last step, <strong>Ready</strong>, confirms what is downloading. Tap <strong>Finish</strong>. If you have no research project yet, the app creates one called <strong>My Research</strong> and makes it active (<a href="#10-keep-your-work-together">section 10</a>).</p>
+
+<blockquote><p><strong>How much to download?</strong> The choice is not binding. A good start is the <strong>subseries that covers your research period</strong>; add neighboring eras later from <strong>Settings → Library → Volumes &amp; Storage</strong>, where you can also remove volumes. Some of the app works before you download anything: the About the Series dashboards, the archival collection index and each volume's top subjects ship inside the app.</p></blockquote>
+
+<h2 id="2-let-it-index">2. Let It Index</h2>
+
+<p>Volumes download and are indexed in the background, and you can use the app while they are. A banner along the bottom of the screen shows the volume being indexed, its place in the queue (<em>Volume 8 of 11</em>) and the time left; its chevron lists volumes still waiting to download. A dot on the <strong>Settings</strong> tab marks downloaded volumes not yet indexed. When the queue is done, the banner says how many volumes are ready and offers <strong>Search →</strong>.</p>
+
+<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/ios/indexing-banner.png" alt="The indexing banner, opened by its chevron: Volume 8 of 11, the volume frus1951v06p1 with its progress bar, a volume still waiting to download, and the link Learn about FRUS while you wait, above the tab bar, whose Settings tab carries a dot." width="480" height="220" loading="lazy"></p>
+
+<p><em>The indexing banner, shown here on iPhone above the tab bar. On iPad it runs along the bottom of the screen.</em></p>
+
+<p>While you wait, <strong>Learn about FRUS while you wait →</strong> opens the <strong>FRUS Research Guide</strong>: a short guide to the series, to researching with it, and to the app. When two or more volumes start indexing, the guide opens by itself the first time in a session; swipe it away and indexing carries on. Search covers each volume as soon as it has been indexed.</p>
+
+<h2 id="3-find-your-way-around">3. Find Your Way Around</h2>
+
+<p>The app has five tabs. On iPad they sit in a tab strip at the top of the screen, which expands into the sidebar shown below. Each tab keeps your place when you switch away.</p>
+
+<table>
+  <thead>
+    <tr><th>Tab</th><th>What it is for</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Browse</strong></td><td>The series by subseries, volume and document, and by people, topics, administrations, editors, archives and clusters</td></tr>
+    <tr><td><strong>Search</strong></td><td>Full-text search of the volumes you have indexed, and search by meaning</td></tr>
+    <tr><td><strong>Research</strong></td><td>Everything you have marked — notes, highlights, tags — plus your reading history and the FRUS Research Guide</td></tr>
+    <tr><td><strong>Collections</strong></td><td>Ordered sets of documents with your own headings and prose, exported as PDF, HTML or Word</td></tr>
+    <tr><td><strong>Settings</strong></td><td>Volumes and storage, display, projects and tags, connections to Zotero and the National Archives, iCloud sync, About</td></tr>
+  </tbody>
+</table>
+
+<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/ipad/browse-root.png" alt="Browse on iPad with the sidebar open — the five tabs, a saved search and the active project beneath them — and the Browse root: Continue reading, the volume search field, People and Topics, the Browse by tiles, Annotations among them, and Your sets, with the Subseries list open on the right." width="2752" height="2064" loading="lazy"></p>
+
+<p><em>The Browse tab, with the Subseries list open. Saved searches and projects appear in the sidebar under the tabs once you have some.</em></p>
+
+<p>At the top of <strong>Browse</strong>, <strong>Continue reading</strong> returns to the last document you had open, and the search field finds a volume by its title or number. The three buttons at the top right are the <strong>project picker</strong> (the folder), a filter that shows <strong>downloaded volumes only</strong> (the arrow), and the <strong>Analysis Tools</strong> menu (the chart), which opens Chronology, Corpus Analytics, the Word Cloud and the other corpus-wide tools.</p>
+
+<h2 id="4-open-a-document">4. Open a Document</h2>
+
+<p>In <strong>Browse</strong>, tap <strong>Subseries</strong>, then an era, a volume, a chapter, and a document. Each document is set from the Office of the Historian's own TEI edition: heading, classification, dateline, body and footnotes, with the names of people and the cross-references to other documents as links.</p>
+
+<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/ipad/document.png" alt="The Long Telegram — Kennan&#x27;s telegram of February 22, 1946 — in Read mode on iPad, with the document&#x27;s toolbar at the top right and faint chevrons at the left and right edges of the screen." width="2752" height="2064" loading="lazy"></p>
+
+<p><em>A document in Read mode: the text alone, with faint chevrons at the screen's edges.</em></p>
+
+<ul>
+  <li><strong>Turn the page.</strong> With the Research rail hidden, tap near the left or right edge of the screen for the previous or next document in the volume. However far you page, one <strong>Back</strong> tap leaves.</li>
+  <li><strong>Find a word.</strong> The magnifying glass at the top right is <strong>Find in Document</strong>.</li>
+  <li><strong>With a keyboard.</strong> ⌘F finds in the document, ⌥⌘↑ and ⌥⌘↓ go to the previous and next document, and holding <strong>⌘</strong> lists the rest.</li>
+</ul>
+
+<h2 id="5-highlight-and-take-notes">5. Highlight and Take Notes</h2>
+
+<p>Select a passage with your finger, Apple Pencil or trackpad. The edit menu that appears beside it begins with the app's own actions:</p>
+
+<ul>
+  <li>four <strong>color dots</strong>, each of which highlights the passage in its color;</li>
+  <li><strong>Excerpt</strong>, which keeps the passage word for word as a quotation for a collection;</li>
+  <li><strong>Look Up in NARA</strong>, which searches the National Archives catalog for the selected words;</li>
+  <li><strong>Note</strong>, which opens a research note on this document.</li>
+</ul>
+
+<p>If an action is not on the menu's first page, tap <strong>›</strong>. A highlight is kept at once and syncs to your other devices through iCloud; a note is filed under your active project as well. With a keyboard, ⇧⌘N adds a note and ⇧⌘H highlights in yellow.</p>
+
+<h2 id="6-open-the-research-rail">6. Open the Research Rail</h2>
+
+<p>The second button at the top right of a document (a page with a magnifying glass) shows and hides the <strong>Research rail</strong>, the panel for everything you do <em>about</em> a document. On iPad it sits beside the text; on a new install documents open with it showing.</p>
+
+<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/ipad/research-rail.png" alt="A document on iPad with the Research rail open beside the text: the RESEARCH header, the seven tiles — Cite, Word Cloud, Sources, Graph, Related, On the Map, Share — and the Topics, Summary, Notes, Tags and Collections sections, here holding a note, the tag Containment and one collection." width="2752" height="2064" loading="lazy"></p>
+
+<p><em>The Research rail beside the Long Telegram, with a note, a tag and a collection already on it.</em></p>
+
+<table>
+  <thead>
+    <tr><th>Tile</th><th>What it opens</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Cite</strong></td><td>The document's citation, ready to copy (<a href="#7-cite-a-document">section 7</a>)</td></tr>
+    <tr><td><strong>Word Cloud</strong></td><td>The document's vocabulary as a word cloud</td></tr>
+    <tr><td><strong>Sources</strong></td><td>Source Explorer: where the original is held (<a href="#9-trace-a-document-to-the-archives">section 9</a>)</td></tr>
+    <tr><td><strong>Graph</strong></td><td>The documents this one cites and the documents that cite it</td></tr>
+    <tr><td><strong>Related</strong></td><td>A ranked list of the documents most like this one</td></tr>
+    <tr><td><strong>On the Map</strong></td><td>A map of the series that places documents by their language, centered here</td></tr>
+    <tr><td><strong>Share</strong></td><td>Sending the document to Zotero, and sharing its citation</td></tr>
+  </tbody>
+</table>
+
+<p>Below the tiles, <strong>Topics</strong> lists the subjects detected in the text (when there are any), <strong>Summary</strong> writes an on-device AI summary, and <strong>Notes</strong>, <strong>Tags</strong> and <strong>Collections</strong> are where you add a note, a tag, or the document to a collection. The <strong>ⓘ</strong> in the rail's header explains each tile, and the button beside it opens the document in a window of its own.</p>
+
+<h2 id="7-cite-a-document">7. Cite a Document</h2>
+
+<p>Tap <strong>Cite</strong>. The citation appears in the style the Office of the Historian recommends, with <strong>Copy Citation</strong> for the text and <strong>Copy as…</strong> for BibTeX or RIS.</p>
+
+<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/ipad/cite-sheet.png" alt="The Citation sheet over the Long Telegram on iPad: the formatted citation — Foreign Relations of the United States, 1946, Eastern Europe, The Soviet Union, Volume VI, Document 475 — with the Copy as… menu open on Copy BibTeX and Copy RIS." width="2752" height="2064" loading="lazy"></p>
+
+<p><em>The Citation sheet, with <strong>Copy as…</strong> open.</em></p>
+
+<p>Chicago and Turabian are under <strong>Settings → Reading &amp; Search → Display → Citation Style</strong>. To send documents straight into your Zotero library, connect it under <strong>Settings → System → Connections → Zotero</strong>, then use the rail's <strong>Share</strong> tile.</p>
+
+<h2 id="8-search-the-series">8. Search the Series</h2>
+
+<p>Open the <strong>Search</strong> tab, type a query, and tap <strong>Search</strong> on the keyboard (or press Return). <strong>Keywords</strong> mode searches the words of your indexed volumes and matches their other forms, so <em>negotiate</em> also finds <em>negotiations</em>. A few forms cover most needs:</p>
+
+<table>
+  <thead>
+    <tr><th>Type</th><th>To find</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>berlin blockade</code></td><td>Documents with both words, anywhere in them</td></tr>
+    <tr><td><code>"long telegram"</code></td><td>The words together, in that order</td></tr>
+    <tr><td><code>korea OR vietnam</code></td><td>Either word</td></tr>
+    <tr><td><code>cold -korea</code></td><td><em>cold</em>, but not in documents that mention <em>korea</em></td></tr>
+    <tr><td><code>negoti*</code></td><td>Words beginning <em>negoti…</em></td></tr>
+    <tr><td><code>=containment</code></td><td>That word alone, not <em>contain</em> or <em>container</em></td></tr>
+  </tbody>
+</table>
+
+<p><strong>•••</strong> → <strong>Search Tips</strong> has the full list, <code>NEAR</code> included.</p>
+
+<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/ipad/search-results.png" alt="A keyword search for Berlin blockade on iPad: the Keywords and Meaning control, the row of result tools, the MATCH strip reading &quot;berlin&quot; AND &quot;blockade&quot;, 900 results on 36 pages, and the ranked list, each result with its number, heading, dateline, volume a snippet with the matched words highlighted and, where the document prints one, its classification marking, such as Top Secret." width="2752" height="2064" loading="lazy"></p>
+
+<p><em>A keyword search. The <strong>MATCH</strong> strip shows how the app read your query.</em></p>
+
+<ul>
+  <li><strong>Open a result</strong> by tapping it. <strong>Back</strong> returns you to the results, as you left them.</li>
+  <li><strong>The row of tools</strong> under the Keywords and Meaning control holds, from the left: <strong>Filters</strong> (volume, date range, document type, tags), the <strong>binoculars</strong> (the results as a timeline, a concordance or collocates, and facets that break the whole match down), <strong>Checklist</strong> mode, for working through results one by one, and <strong>Sort</strong> (relevance or date).</li>
+  <li><strong>Meaning</strong> ranks documents by what a question means rather than by the words in it. It is experimental, and needs a one-time 310 MB download of a search model that runs on the device.</li>
+  <li><strong>Save a search</strong> with <strong>•••</strong> → <strong>Save this search</strong>. A saved search keeps its filters, syncs to your other devices, and appears in the iPad sidebar.</li>
+</ul>
+
+<h2 id="9-trace-a-document-to-the-archives">9. Trace a Document to the Archives</h2>
+
+<p>In the Research rail, tap <strong>Sources</strong>. <strong>Source Explorer</strong> reads the document's source note — the lot file, decimal file or presidential-library collection the original came from — and matches it, where it can, to its record in the National Archives catalog, including the entry number to give the archivists when you request the records.</p>
+
+<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/ipad/source-explorer.png" alt="Source Explorer for a document printed from S/S–NSC files, lot 63 D 351: the source note with the document&#x27;s Top Secret marking, its provenance — a State Department lot file in Record Group 59 — and the NARA catalog record it resolves to, held at College Park, with HMS/MLR entry A1 1586E and a link to open the series in the NARA Catalog." width="2752" height="2064" loading="lazy"></p>
+
+<p><em>Source Explorer, resolving a lot file to its National Archives series.</em></p>
+
+<p>Much of this is answered offline from data that ships with the app. A free NARA Catalog API key, added under <strong>Settings → System → Connections → NARA Catalog</strong>, lets it look up the rest in the live catalog. <strong>Add to Archives Visit</strong> at the top starts a plan for a research trip (<a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md#148-the-archives-visit-packet">manual §14.8</a>).</p>
+
+<h2 id="10-keep-your-work-together">10. Keep Your Work Together</h2>
+
+<ul>
+  <li><strong>The Research tab</strong> gathers every document you have annotated, grouped by collection, tag or highlight color, with <strong>All Notes</strong> and <strong>History</strong>, the documents you have read.</li>
+  <li><strong>Collections</strong> are ordered sets of documents, with your own section headings and prose: a source packet for a paper, or a reader for a course. Tap <strong>＋</strong> in the <strong>Collections</strong> tab to make one. Add documents from the rail's <strong>Collections</strong> section, by touching and holding a search result, or with the editor's <strong>＋</strong> → <strong>Add Documents…</strong>, and export with the share button.</li>
+  <li><strong>Projects</strong> keep the work for each paper or course apart. The <strong>project picker</strong> at the top right of <strong>Browse</strong> switches the active project, and new notes, summaries and collections are filed under it. Make and rename projects under <strong>Settings → Research → Projects</strong>. A project's research question shows as the <em>Working on:</em> line in Browse and Search.</li>
+</ul>
+
+<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/ipad/collections-editor.png" alt="A collection on iPad, The Long Telegram and Its Readers: the Contents outline — section headings, documents each with a Configure button, and a prose block — beside the live preview of its HTML export, with the gear, ＋, Sort and Export buttons in the toolbar." width="2752" height="2064" loading="lazy"></p>
+
+<p><em>A collection being built: the outline on the left, a preview of the export on the right.</em></p>
+
+<h2 id="11-on-iphone">11. On iPhone</h2>
+
+<p>Everything above works on iPhone. A few things are arranged differently:</p>
+
+<ul>
+  <li>The five tabs are along the <strong>bottom</strong> of the screen, and <strong>Browse</strong> shows a trail of where you are at the top.</li>
+  <li>The <strong>Research rail</strong> rises as a sheet you can drag to half or full height, and it never opens by itself: tap its button when you want it.</li>
+  <li>The graph, Related Documents and Archival Neighbors open as <strong>sheets</strong>, where on iPad they are windows of their own.</li>
+  <li>In Read mode the page-turn zones at the screen's edges work the same, but are not marked.</li>
+  <li>While volumes are indexed, a <strong>Live Activity</strong> shows the progress on the Lock Screen, and in the Dynamic Island on iPhones that have one.</li>
+  <li>The <strong>Collections</strong> editor switches between <strong>Outline</strong> and <strong>Preview</strong>.</li>
+</ul>
+
+<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/ios/document.png" alt="The Long Telegram in Read mode on iPhone, with the passage so strange to our form of thought highlighted in yellow and the tab bar along the bottom." width="300" height="652" loading="lazy"> <img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/ios/search-results.png" alt="The Berlin blockade keyword search on iPhone: the Keywords and Meaning control, the row of result tools, the MATCH strip, 900 results, and the tab bar along the bottom." width="300" height="652" loading="lazy"></p>
+
+<p><em>The Long Telegram with a yellow highlight, and the same keyword search, on iPhone.</em></p>
+
+<h2 id="12-where-to-go-next">12. Where to Go Next</h2>
+
+<table>
+  <thead>
+    <tr><th>To learn about…</th><th>Read the manual's</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Downloads, indexing and storage</td><td><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md#5-building-your-library">§5 Building Your Library</a></td></tr>
+    <tr><td>Every way to browse</td><td><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md#6-browsing-the-corpus">§6 Browsing the Corpus</a></td></tr>
+    <tr><td>Search syntax, filters, facets, saved searches and working corpora</td><td><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md#7-searching">§7 Searching</a></td></tr>
+    <tr><td>Search by meaning</td><td><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md#712-search-by-meaning-experimental">§7.12 Search by Meaning</a></td></tr>
+    <tr><td>Related documents and the cross-reference graph</td><td><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md#8-reading-documents">§8 Reading Documents</a></td></tr>
+    <tr><td>Notes, highlights, tags and history</td><td><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md#9-notes-highlights-and-tags">§9 Notes, Highlights, and Tags</a></td></tr>
+    <tr><td>Projects</td><td><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md#10-projects">§10 Projects</a></td></tr>
+    <tr><td>Zotero and Citation Lookup</td><td><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md#11-citing-and-reference-managers">§11 Citing and Reference Managers</a></td></tr>
+    <tr><td>Collections, excerpts and export</td><td><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md#12-collections-research-packets-and-course-readers">§12 Collections</a></td></tr>
+    <tr><td>AI summaries</td><td><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md#13-ai-summaries">§13 AI Summaries</a></td></tr>
+    <tr><td>Source Explorer and Archives Visits</td><td><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md#14-source-explorer-from-source-note-to-archive">§14 Source Explorer</a></td></tr>
+    <tr><td>Charts of the whole series</td><td><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md#15-analytics">§15 Analytics</a></td></tr>
+    <tr><td>Every setting</td><td><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md#17-settings-reference">§17 Settings Reference</a></td></tr>
+    <tr><td>A seminar paper, a thesis, an archives trip or a course reader, start to finish</td><td><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md#18-workflows-for-research-and-teaching">§18 Workflows</a></td></tr>
+  </tbody>
+</table>
+
+<hr>
+
+<p><em>FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State. Any commentary, advice, or guidance about the FRUS series in this app reflects personal views about historical research methodology and makes no interpretive claims about the history of U.S. foreign policy. Those views are not necessarily those of the Department of State or the U.S. Government. The FRUS series itself is in the public domain.</em></p>
+
+</div>

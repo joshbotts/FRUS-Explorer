@@ -41,7 +41,7 @@ The [privacy policy](https://frusexplorer.app/privacy) says what happens to an e
 
 **Do I need an account?** No. If your device is signed in to iCloud, your notes, collections and other research sync through your own iCloud account. Two services are optional, each with a free key of your own, in **Settings → System → Connections**: the National Archives Catalog, which lets Source Explorer look up the records a document's source note cites (the card links to where you get a key), and Zotero, which lets you send documents with your tags and notes to your Zotero library.
 
-**What is natural-language search?** An experimental way to search by meaning rather than by matching words. It needs a model, Google's EmbeddingGemma 2, which is an optional 310 MB download (**Settings → Volumes & Storage → Download Search Model**) and runs on your device only: nothing you search leaves it.
+**What is natural-language search?** An experimental way to search by meaning rather than by matching words. It needs a model, Google's EmbeddingGemma 2, which is an optional 310 MB download (**Settings → Library → Volumes & Storage → Download Search Model**) and runs on your device only: nothing you search leaves it.
 
 **Can I use the search index with my own tools?** Yes, on a Mac. **Settings → System → Data & Recovery → Export Research Database…** saves a checked copy of the index as a SQLite file. Your notes, summaries and tag names are left out unless you turn on **Include My Notes, Summaries, and Tags**. The [Agentic Analysis Guide](https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Agentic-Analysis-Guide.md) explains the database, and how to check what an AI tool tells you about it. If you give a copy to an online service, that service's terms apply.
 

@@ -12,6 +12,7 @@
 > - **Source:** `Planning/website-drafts/site-src/home.html`, from the home frame of `page-drafts.html` (2026-10-27).
 > - **Revised 2026-11-03:** the hero's second link and the closing links go to the two quick starts, which did not exist when this was drafted, in place of the iOS manual alone; every link goes to this site's own pages.
 > - **Figures:** 553 volumes and 3.3 GB recounted from the bundle; 2.8× is the app's own estimate (`MacVolumesStorageHub`). See the review sheet.
+> - **Checked 2026-11-10 against 1.0 (1812)**, which the owner expects to ship as 1.0 (1861) with no further features: no sentence changed. 553 volumes, 3.3 GB and the system requirement recount the same, and the door to Editors’ Annotations, now the Browse grid's Annotations tile (#1884), is still “Browse lays out each kind of annotation”.
 > - **Owner's call:** “Coming soon to the App Store” and “It will be free” assume approval; App Review decides.
 
 **[Coming soon] Banner:** **Coming soon** — FRUS Explorer has been submitted to the App Store for iPhone, iPad and Mac.
