@@ -19,9 +19,12 @@ and Squarespace-Entry.md walks the owner through both:
     paste/quick-start-mac.txt   one Code Block   <main> of Docs/Website/quick-start-mac.html
     paste/tour-block-1.txt      one Code Block   the tour, its opening to step 13
     paste/tour-block-2.txt      one Code Block   the tour, step 14 to step 20
-    Squarespace-Entry.md        native blocks    its generated parts: the home page block by block
-                                                 (site-src/home.html), the tour's native sections,
-                                                 the site footer and the kit's fingerprints
+    paste/home-coming-soon.txt  one Code Block   the home page as it reads before release
+    paste/home-launch.txt       one Code Block   the home page as it reads from release day
+    Squarespace-Entry.md        the guide        its generated parts: the home page's two pastes,
+                                                 and the same page block by block for native
+                                                 blocks (site-src/home.html), the tour's native
+                                                 sections, the site footer and the fingerprints
     page-drafts.html            (review sheet)   its Support and Privacy frames, from the drafts
 
 The tour's two blocks are tour/tour.html made static, since the page as drafted needs a script:
@@ -37,6 +40,13 @@ The tour's two blocks are tour/tour.html made static, since the page as drafted 
     head, the footer (the site's own carries the disclaimer) and the draft's review bar are left
     out too.
 The split falls where the film goes, after the map's band.
+
+The home page's block is site-src/home.html with the rules of site-src/site.css it uses, scoped
+to `.frus-home` after the same reset. Squarespace has no switch between a page's two versions, so
+each is a file of its own, and release day is one paste over the other. The launch version links
+Apple's badge, loaded from Apple's marketing toolbox, to the app's page on the App Store: an
+address the app has only once it is approved, so until APP_STORE_URL below is set that file holds
+a placeholder and says NOT READY on its first line.
 
 Every paste opens with a comment naming its page, its source and a fingerprint of what follows,
 so the block on the site says which version it holds. The published page is a copy the repository
@@ -83,6 +93,17 @@ TOUR_IMAGES = bwp.GITHUB_RAW + "Planning/website-drafts/tour/img/"
 FILM = "tour/img/map-film.mp4"
 # A Code Block's limit, from Squarespace's help centre.
 CODE_BLOCK_LIMIT = 400 * 1000
+# The wrapper of the home page's block.
+HOME_SCOPE = ".frus-home"
+# The app's page on the App Store: "https://apps.apple.com/app/id" and the app's Apple ID. It has
+# one once it is approved, so this is set on release day. While it is None the launch version of
+# the home page holds the placeholder where the address goes, and says so on its first line.
+APP_STORE_URL = None
+APP_STORE_PLACEHOLDER = "APP-STORE-ADDRESS"
+# Apple's own artwork for that link, served by its marketing toolbox: the black badge, 120 by 40,
+# which is the smallest Apple allows on a screen.
+APP_STORE_BADGE = ("https://toolbox.marketingtools.apple.com/api/v2/badges/"
+                   "download-on-the-app-store/black/en-us")
 
 
 class OutOfShape(Exception):
@@ -107,11 +128,11 @@ def between(text, start, end, what):
     return rest.split(end, 1)[0]
 
 
-def stamped(payload, page, source):
+def stamped(payload, page, source, note=""):
     """A paste: its comment, then the payload. The fingerprint is the payload's alone."""
     digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:8]
-    return "<!-- frusexplorer.app{} · from {} · fingerprint {} -->\n{}\n".format(
-        page, source, digest, payload)
+    return "<!-- frusexplorer.app{} · from {} · {}fingerprint {} -->\n{}\n".format(
+        page, source, note + " · " if note else "", digest, payload)
 
 
 def fingerprint(paste):
@@ -135,7 +156,7 @@ def docs_pastes():
     return out
 
 
-# ---- The tour: its stylesheet, scoped
+# ---- A draft's stylesheet, scoped to its paste's wrapper
 
 # A selector that goes: page-level rules (the wrapper carries what it needs), the dark theme, and
 # the parts the paste leaves out.
@@ -144,10 +165,10 @@ _DROPPED = re.compile(
     r"|\.(runhead|toggle|preview|seg|pnote|soon-banner|close|cta|btn|lb)(?![\w-])|\.lb-"
     r"|footer\.foot|figure\.film|\[data-new\]|\[data-show")
 
-# Set before the tour's own rules, so that each of those, which follows it or is more specific,
+# Set before a draft's own rules, so that each of those, which follows it or is more specific,
 # still wins: what a site's theme sets on bare elements is put back to the wrapper's.
 _RESET = """\
-{s} {{ font-family: var(--serif); font-size: 18px; line-height: 1.6; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; text-align: left; color: var(--ink); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }}
+{s} {{ font-family: var(--serif); font-size: {size}; line-height: 1.6; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; text-align: left; color: var(--ink); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }}
 {s} h1, {s} h2, {s} h3, {s} p, {s} ol, {s} ul, {s} li, {s} dl, {s} dt, {s} dd, {s} figcaption, {s} blockquote, {s} span, {s} a, {s} b, {s} i, {s} em, {s} sup, {s} code {{ font-family: inherit; font-size: inherit; font-style: inherit; line-height: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; }}
 {s} li, {s} blockquote, {s} dl, {s} dt, {s} dd {{ margin: 0; }}
 {s} blockquote {{ padding: 0; border: 0; quotes: none; }}
@@ -182,45 +203,59 @@ def _rules(css):
         i = k
 
 
-def _scoped_selector(selector):
+def _scoped_selector(selector, scope, dropped, kept):
     selector = " ".join(selector.split())
-    if _DROPPED.search(selector):
+    if dropped.search(selector) or (kept and not kept(selector)):
         return None
     if selector == ":root":
-        return SCOPE
+        return scope
     if selector == "*":
-        return "{0}, {0} *".format(SCOPE)
-    return "{} {}".format(SCOPE, selector)
+        return "{0}, {0} *".format(scope)
+    return "{} {}".format(scope, selector)
 
 
-def scoped_css(css):
-    """The tour's stylesheet with every rule under the wrapper, light only."""
+def scoped_css(css, scope, dropped, kept=None):
+    """A stylesheet with every rule under `scope`, light only: a selector `dropped` matches goes,
+    and so does one `kept`, when given, does not accept."""
     out = []
     for prelude, body in _rules(css):
         if prelude.startswith("@media"):
             if "prefers-color-scheme" in prelude:
                 continue
-            inner = scoped_css(body)
+            inner = scoped_css(body, scope, dropped, kept)
             if inner:
                 out.append("{} {{\n{}\n}}".format(prelude, "\n".join("  " + r for r in inner)))
             continue
         if prelude.startswith("@"):
-            raise OutOfShape("the tour's stylesheet has an at-rule this script does not read: "
+            raise OutOfShape("a draft's stylesheet has an at-rule this script does not read: "
                              + prelude)
-        selectors = [s for s in map(_scoped_selector, prelude.split(",")) if s]
+        selectors = [s for s in (_scoped_selector(s, scope, dropped, kept) for s in prelude.split(","))
+                     if s]
         if selectors:
             out.append("{} {{ {} }}".format(", ".join(selectors), " ".join(body.split())))
     return out
 
 
-def tour_style(tour):
-    css = between(tour, "<style>", "</style>", "tour.html")
-    rules = scoped_css(css)
-    variables = rules[0]
-    if not variables.startswith(SCOPE + " { --paper"):
-        raise OutOfShape("the tour's stylesheet no longer opens with its :root variables")
-    lines = [variables, _RESET.format(s=SCOPE)] + rules[1:] + [_FITTED.format(s=SCOPE)]
+def scoped_style(css, scope, size, dropped, fitted, kept=None, what="stylesheet"):
+    """The <style> a paste opens with: the draft's variables, the reset, its rules, then what
+    fits them to a page that is not its own."""
+    rules = scoped_css(css, scope, dropped, kept)
+    if not rules or not rules[0].startswith(scope + " { --paper"):
+        raise OutOfShape("the {} no longer opens with its :root variables".format(what))
+    reset = [_RESET.format(s=scope, size=size)]
+    # The reset makes <i> and <em> take their style from what holds them, so that a theme's rule
+    # for either goes. A draft whose own stylesheet does not then set them italic (the tour's
+    # does; the preview's, which the home page uses, leaves it to the browser) has it set here.
+    italic = "{0} i, {0} em {{ font-style: italic; }}".format(scope)
+    if italic not in rules:
+        reset.append(italic)
+    lines = [rules[0]] + reset + rules[1:] + [fitted.format(s=scope)]
     return "<style>\n{}\n</style>".format("\n".join(lines))
+
+
+def tour_style(tour):
+    return scoped_style(between(tour, "<style>", "</style>", "tour.html"), SCOPE, "18px",
+                        _DROPPED, _FITTED, what="tour's stylesheet")
 
 
 # ---- The tour: its body, static, in two blocks
@@ -271,6 +306,78 @@ def tour_blocks():
     for name, part in (("tour-block-1.txt", first), ("tour-block-2.txt", second)):
         payload = '{}\n<div class="frus-tour">\n\n{}\n\n</div>'.format(style, part.strip("\n"))
         out[name] = stamped(payload, "/tour", "Planning/website-drafts/tour/tour.html")
+    return out
+
+
+# ---- The home page as one Code Block, in each of its two versions
+
+_HOME_DROPPED = re.compile(r"^(html|body)(?![\w-])|^:root\[")
+# What the home page uses of the preview's stylesheet: its variables, these bare elements, and
+# its own classes. The shell's and the review layer's rules stay behind.
+_HOME_BASE = (":root", "*", "h1", "h2", "h3", "p", "a", "a:focus-visible")
+# Two of its classes the paste restyles, so the preview's rule for each stays behind: the banner,
+# which the preview hides, and the badge's stand-in, which the paste replaces with the badge.
+_HOME_REPLACED = (".pg-banner", ".pg-badge")
+
+# Set after the draft's own rules. The preview hides the draft's banner, since its shell shows
+# one; pasted, the page has no other. The badge is Apple's artwork at its smallest size.
+_HOME_FITTED = """\
+{s} .pg-banner {{ display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: 0 0 26px; padding: 10px 16px; background: var(--tint); border: 1px solid var(--rule); border-radius: 4px; font-family: var(--sans); font-size: 14.5px; }}
+{s} .pg-banner b {{ color: var(--red); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; font-size: 12px; }}
+{s} .pg-list {{ list-style: disc outside; }}
+{s} .pg-badge-link {{ display: inline-block; line-height: 0; }}
+{s} .pg-badge-link img {{ display: block; height: 40px; width: auto; max-width: none; border: 0; border-radius: 0; box-shadow: none; }}
+{s} .pg-unready {{ margin: 0 0 26px; padding: 12px 16px; background: #FFF7E6; border: 2px dashed var(--red); border-radius: 4px; font-family: var(--sans); font-size: 15px; color: var(--ink); }}"""
+
+# Shown at the top of the launch version while it has no App Store address, so that a paste of
+# the unready file cannot be mistaken on the page for a finished one.
+_HOME_UNREADY = ('<p class="pg-unready"><b>Not ready to publish.</b> The App Store badge below links '
+                 'nowhere yet: this file was made before the app had an App Store address. Set '
+                 'APP_STORE_URL in build_paste.py, run it, and paste the file it writes.</p>\n\n')
+
+
+def home_source():
+    """site-src/home.html without its leading comment and its review note."""
+    text = re.sub(r"<!--.*?-->\s*", "", HOME.read_text(encoding="utf-8"), count=1, flags=re.S)
+    text, notes = re.subn(r'<aside class="rv" data-rv>.*?</aside>\s*', "", text, count=1, flags=re.S)
+    if notes != 1:
+        raise OutOfShape("home.html: its review note was not found")
+    return text
+
+
+def home_blocks():
+    """The home page's Code Block in its coming-soon and its launch version, by file name."""
+    style = scoped_style((HERE / "site-src" / "site.css").read_text(encoding="utf-8"), HOME_SCOPE,
+                         "17px", _HOME_DROPPED, _HOME_FITTED,
+                         kept=lambda selector: selector in _HOME_BASE or (
+                             ".pg-" in selector and selector not in _HOME_REPLACED),
+                         what="preview's stylesheet")
+    source = home_source()
+    out = {}
+    for state, other, name, version in (("soon", "launch", "home-coming-soon.txt", "coming-soon"),
+                                        ("launch", "soon", "home-launch.txt", "launch")):
+        body = re.sub(r'[ \t]*<(\w+)\b[^>]*\bdata-show="{}"[^>]*>.*?</\1>\n?'.format(other), "",
+                      source, flags=re.S)
+        body = body.replace(' data-show="{}"'.format(state), "")
+        body = re.sub(r'href="([^"]*)"', lambda m: 'href="{}"'.format(site_path(m.group(1))), body)
+        note = ""
+        if state == "launch":
+            badge = ('<a class="pg-badge-link" href="{}"><img src="{}" alt="Download on the App Store" '
+                     'width="120" height="40"></a>'.format(APP_STORE_URL or APP_STORE_PLACEHOLDER,
+                                                             APP_STORE_BADGE))
+            body, badges = re.subn(r'<span class="pg-badge"[^>]*>.*?</span>', badge, body, flags=re.S)
+            if badges != 1:
+                raise OutOfShape("home.html: its launch version has no one badge to replace")
+            if not APP_STORE_URL:
+                note = "NOT READY: {} stands where the app's App Store address goes".format(
+                    APP_STORE_PLACEHOLDER)
+                body = _HOME_UNREADY + body
+        for leftover in ("data-show", "<script", "<iframe", "<button", '.html"', 'class="pg-badge"'):
+            if leftover in body:
+                raise OutOfShape("home.html: {!r} is left in its {} version".format(leftover, version))
+        payload = '{}\n<div class="frus-home">\n\n{}\n\n</div>'.format(style, body.strip("\n"))
+        out[name] = stamped(payload, "/", "Planning/website-drafts/site-src/home.html, {} version"
+                            .format(version), note)
     return out
 
 
@@ -328,11 +435,7 @@ def quoted(*paragraphs):
 
 def home_parts():
     """site-src/home.html's parts, by the classes its markup carries."""
-    text = HOME.read_text(encoding="utf-8")
-    text = re.sub(r"<!--.*?-->\s*", "", text, count=1, flags=re.S)
-    text, notes = re.subn(r'<aside class="rv" data-rv>.*?</aside>\s*', "", text, count=1, flags=re.S)
-    if notes != 1:
-        raise OutOfShape("home.html: its review note was not found")
+    text = home_source()
     hero = one(r'<section class="pg-hero">(.*?)</section>', text, "hero in home.html")
     sections = re.findall(r'<section class="pg-sec"(?: data-show="(soon|launch)")?>(.*?)</section>',
                           text, re.S)
@@ -586,13 +689,62 @@ def footer_chapter():
     return "\n".join(out)
 
 
+def home_paste_chapter():
+    """The guide's lines on the home page's two pastes: which goes in when, what the second
+    changes, and what it still waits for."""
+    p = home_parts()
+    gone = [i for i in p["questions"]["faq"] if i["only"] == "soon"]
+    changed = [i for i in p["questions"]["faq"] if "launch" in i["answers"]]
+    pill = words(one(r'<span class="pg-btn soon">(.*?)</span>', p["cta"]["soon"], "coming-soon pill"))
+    out = ["| When | What the Code Block holds |\n|---|---|\n"
+           "| Now | all of [paste/home-coming-soon.txt](paste/home-coming-soon.txt) |\n"
+           "| Release day | all of [paste/home-launch.txt](paste/home-launch.txt), pasted over it |\n",
+           "The launch version differs from the first in six places, and in nothing else:\n",
+           "\n".join("{}. {}".format(n, line) for n, line in enumerate([
+               "the coming-soon line at the top is gone;",
+               "the label over the headline reads *{}*, where it read *{}*;".format(
+                   words(p["kicker"]["launch"]), words(p["kicker"]["soon"])),
+               "the opening paragraph no longer says the app is coming soon;",
+               "Apple's “Download on the App Store” badge, linked to the app's page there, stands "
+               "where the grey “{}” did;".format(pill),
+               "under *{}*, {} and {};".format(
+                   words(p["questions"]["title"]),
+                   " and ".join("*{}* is gone".format(words(i["question"])) for i in gone),
+                   " and ".join("*{}* answers *{}*".format(words(i["question"]),
+                                                             words(i["answers"]["launch"]))
+                                for i in changed)),
+               "the last section is *{}*, where it was *{}*.".format(
+                   words(p["contact"]["launch"]["title"]), words(p["contact"]["soon"]["title"])),
+           ], 1)) + "\n"]
+    if APP_STORE_URL:
+        out.append("The badge links to <{}>. It is Apple's own artwork, loaded from Apple's "
+                   "marketing toolbox.\n".format(APP_STORE_URL))
+    else:
+        out.append("**The launch file is not ready yet.** Its badge has to link to the app's page on "
+                   "the App Store, an address the app has only once it is approved: "
+                   "`https://apps.apple.com/app/id` followed by the app's Apple ID, which App Store "
+                   "Connect shows under **App Information**. Until then the file holds `{0}` in its "
+                   "place, says *NOT READY* on its first line, and shows a notice in a dashed box at "
+                   "the top of the page, so a paste of it cannot pass for the finished page.\n"
+                   .format(APP_STORE_PLACEHOLDER))
+        out.append("On release day, give the address to a session, or set `APP_STORE_URL` near the "
+                   "top of `build_paste.py` yourself and run "
+                   "`python3 Planning/website-drafts/build_paste.py`. The file it then writes has the "
+                   "address, no notice and a new fingerprint: paste that one.\n")
+        out.append("The badge itself is Apple's own artwork, loaded from Apple's marketing toolbox, "
+                   "so there is nothing to upload.\n")
+    return "\n".join(out)
+
+
 def kit_chapter(pastes):
     rows = ["| File | Goes on | Size | Fingerprint |", "|---|---|---|---|"]
     for name in sorted(pastes):
         text = pastes[name]
-        page = one(r"<!-- frusexplorer\.app(\S+) ", text.split("\n", 1)[0], "page in a stamp")
-        rows.append("| [paste/{0}](paste/{0}) | `{1}` | {2:,} bytes | `{3}` |".format(
-            name, page, len(text.encode("utf-8")), fingerprint(text)))
+        first = text.split("\n", 1)[0]
+        page = one(r"<!-- frusexplorer\.app(\S+) ", first, "page in a stamp")
+        waiting = ", not ready: it waits for the App Store address" if "NOT READY" in first else ""
+        rows.append("| [paste/{0}](paste/{0}) | `{1}` | {2:,} bytes | `{3}`{4} |".format(
+            name, page, len(text.encode("utf-8")), fingerprint(text), waiting))
     return "\n".join(rows) + "\n"
 
 
@@ -658,14 +810,16 @@ def filled(text, name, content):
 def outputs():
     """Every file this script keeps, by path, as it should read."""
     pastes = dict(docs_pastes(), **tour_blocks())
+    pastes.update(home_blocks())
     for name, text in pastes.items():
         if len(text.encode("utf-8")) > CODE_BLOCK_LIMIT:
             raise OutOfShape("paste/{} is {:,} bytes, over a Code Block's 400 KB".format(
                 name, len(text.encode("utf-8"))))
     out = {PASTE / name: text for name, text in pastes.items()}
     guide = GUIDE.read_text(encoding="utf-8")
-    for name, content in (("home", home_chapter()), ("tour", tour_chapter()),
-                          ("footer", footer_chapter()), ("kit", kit_chapter(pastes))):
+    for name, content in (("home-paste", home_paste_chapter()), ("home", home_chapter()),
+                          ("tour", tour_chapter()), ("footer", footer_chapter()),
+                          ("kit", kit_chapter(pastes))):
         guide = filled(guide, name, content)
     out[GUIDE] = guide
     out[SHEET] = sheet(SHEET.read_text(encoding="utf-8"))

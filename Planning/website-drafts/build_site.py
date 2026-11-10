@@ -16,6 +16,8 @@ top that switches between the coming-soon and launch versions and shows or hides
     site/tour.html              Tour             from tour/tour.html (images from tour/img/)
     site/tour-pasted.html       Tour, as pasted  the two Code Blocks build_paste.py makes of it, in
                                                  this shell, with stand-ins for its native sections
+    site/home-pasted.html       Home, as pasted  the home page's Code Block in both its versions, on
+                                                 a bare page that has none of this preview's styles
     site/quick-start-ios.html   Quick start      from Docs/iOS-Quick-Start.md
     site/quick-start-mac.html   Quick start      from Docs/macOS-Quick-Start.md
     site/support.html           Support          from Support-draft.md (the plain-language draft)
@@ -296,6 +298,54 @@ def build_pasted_tour():
     return page("tour-pasted.html", "FRUS Explorer Tour, as pasted", "\n".join(parts))
 
 
+# ---- The home page as it is pasted: one Code Block, in each of its two versions
+
+# A page that knows nothing of the block. The preview's stylesheet holds the home page's own
+# rules, so inside the shell a rule the paste had left behind would not show as missing.
+BARE_PAGE = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title>
+<meta name="robots" content="noindex">
+<style>
+  body {{ margin: 0; font: 16px/1.5 -apple-system, "Helvetica Neue", Arial, sans-serif; color: #222; background: #fff; }}
+  .stand-in {{ max-width: 1072px; margin: 0 auto; padding: 24px 16px 56px; }}
+  .stand-in-note {{ font-size: 13.5px; color: #6B4A00; background: #FFF7E6; border: 1px dashed #E8C88A; border-radius: 6px; padding: 10px 14px; margin: 0 0 8px; }}
+  .stand-in-note a {{ color: inherit; }}
+  .stand-in-tag {{ font-size: 11.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #6B4A00; margin: 40px 0 14px; border-top: 2px solid #1B1B1F; padding-top: 12px; }}
+</style>
+</head>
+<body>
+<div class="stand-in">
+{body}
+</div>
+<script src="reload.js"></script>
+</body>
+</html>
+"""
+
+
+def build_pasted_home():
+    """The home page's Code Block exactly as paste/ holds each version, one under the other, on
+    a page with no stylesheet of the draft's: what it brings with it is all it has."""
+    blocks = paste_kit().home_blocks()
+    parts = ['<p class="stand-in-note"><b>Review copy</b>, not published · built {} · the home page as it '
+             'is pasted: each version of its Code Block, byte for byte, on a page that has none of this '
+             'preview\'s styles. Its links are the live site\'s, so they lead nowhere here. '
+             '<a href="index.html">The draft itself</a> · <a href="review.html">Review sheet</a></p>'
+             .format(BUILT)]
+    for name, when in (("home-coming-soon.txt", "now"), ("home-launch.txt", "from release day")):
+        block = blocks[name]
+        parts.append('<p class="stand-in-tag">Code Block · <code>paste/{}</code> ({:,} bytes) · {}</p>'
+                     .format(name, len(block.encode("utf-8")), when))
+        parts.append(block)
+    text = BARE_PAGE.format(title="FRUS Explorer Home, as pasted", body="\n".join(parts))
+    (OUT / "home-pasted.html").write_text(text, encoding="utf-8")
+    return text
+
+
 # ---- The figures, recounted from the bundle
 
 def figures():
@@ -449,6 +499,7 @@ REVIEW = """<div class="sheet">
 <h2><span class="n">1</span>The pages</h2>
 <div class="pages">
   <a href="index.html"><b>Home</b><span>frusexplorer.app/ · from site-src/home.html</span></a>
+  <a href="home-pasted.html"><b>Home, as pasted</b><span>/ · both versions of its Code Block, on a bare page</span></a>
   <a href="tour.html"><b>Tour</b><span>/tour · from tour/tour.html</span></a>
   <a href="tour-pasted.html"><b>Tour, as pasted</b><span>/tour · the two Code Blocks of paste/, in this shell</span></a>
   <a href="quick-start-ios.html"><b>Quick start, iPad and iPhone</b><span>/quick-start-ios · Docs/iOS-Quick-Start.md</span></a>
@@ -457,7 +508,7 @@ REVIEW = """<div class="sheet">
   <a href="privacy.html"><b>Privacy</b><span>/privacy · Privacy-Policy-draft.md</span></a>
 </div>
 <p class="sub">To revise: edit the source named on each card (for a quick start, the Markdown in <code>Docs/</code>), then run <code>python3 Planning/website-drafts/build_site.py</code> and reload.</p>
-<p class="sub">To enter them into Squarespace: <code>Planning/website-drafts/Squarespace-Entry.md</code> has the owner's steps, and <code>paste/</code> the six files that go into Code Blocks. {kit}</p>
+<p class="sub">To enter them into Squarespace: <code>Planning/website-drafts/Squarespace-Entry.md</code> has the owner's steps, and <code>paste/</code> the eight files that go into Code Blocks. {kit}</p>
 </section>
 
 <section>
@@ -490,7 +541,7 @@ REVIEW = """<div class="sheet">
   <li><b>Editors’ Annotations, 2026-11-06, later:</b> the pages describe 1.0's new Editors’ Annotations (#1859–#1863), the People list's 288-of-553 line (#1851, #1862) and the classification markings now shown in Search and Source Explorer (#1853, #1857). The tour's figures row gains a fourth figure, 288. The proposals are in <code>Revisions-proposed-2026-11-06.md</code>, and the owner's last edits to them are folded in. On the same day the screens-1861 sitting retook the captures behind steps 1, 2, 3, 5, 8 and 9 (chips, the Browse door, the 288-volume line), and step 14 gained the Editors’ Annotations matrix and step 18 Research ▸ History; the captures merged in #1865.</li>
   <li><b>Owner's revisions, 2026-11-06:</b> both pages rewritten from the owner's Markdown copies (<code>Home-draft.md</code>, <code>Tour-draft.md</code>): the tour's step titles, Part 0's introduction and notes, the source labels' wording, and steps 6, 9, 16 and 18 restructured. Each new claim was checked against the manuals and the corpus (287 of 553 volumes tag people). Typos fixed; two claims corrected: a cross-reference to a volume not on the device offers the download rather than starting it, and Part II's privacy line names the app, since Apple can pass opted-in analytics to the developer.</li>
   <li><b>Quick starts:</b> as <code>Docs/Website/</code> renders them, unchanged.</li>
-  <li><b>Read against 1.0 (1812), 2026-11-10</b>, on the owner's word that build 53 becomes 1.0 (1861) with no further features. <b>Tour:</b> sixteen kinds of annotation, where it said fifteen (#1874); step 14's path, caption and alt text name the Browse grid's Annotations tile (#1884); the map's footnote is 5, where two footnotes were numbered 4; the film's caption no longer names build 51; the closing section's quick-start links are in the source, where this preview patched them in; and the map band's footnote mark takes the band's red (6.7:1, where the page's red was 2.5:1). <b>Home:</b> no word changed. <b>Support and Privacy</b>, the drafts and the copies of record alike: the path to Volumes &amp; Storage names the Library group, and Privacy names the Quick Start on the Research tab among the links the built-in browser opens (#1848), with its date. Every figure recounts the same; section 2 now recounts 288 and sixteen as well. New: <code>build_paste.py</code>, <code>paste/</code>, <code>Squarespace-Entry.md</code> and <a href="tour-pasted.html">the tour as it is pasted</a>.</li>
+  <li><b>Read against 1.0 (1812), 2026-11-10</b>, on the owner's word that build 53 becomes 1.0 (1861) with no further features. <b>Tour:</b> sixteen kinds of annotation, where it said fifteen (#1874); step 14's path, caption and alt text name the Browse grid's Annotations tile (#1884); the map's footnote is 5, where two footnotes were numbered 4; the film's caption no longer names build 51; the closing section's quick-start links are in the source, where this preview patched them in; and the map band's footnote mark takes the band's red (6.7:1, where the page's red was 2.5:1). <b>Home:</b> no word changed. <b>Support and Privacy</b>, the drafts and the copies of record alike: the path to Volumes &amp; Storage names the Library group, and Privacy names the Quick Start on the Research tab among the links the built-in browser opens (#1848), with its date. Every figure recounts the same; section 2 now recounts 288 and sixteen as well. New: <code>build_paste.py</code>, <code>paste/</code>, <code>Squarespace-Entry.md</code> and <a href="tour-pasted.html">the tour as it is pasted</a>. The same day, on the owner's question, both quick starts were read against the build (their notice names build 1861; they name Editors’ Annotations where they list the ways to browse), and on the owner's request the home page became one Code Block in two versions, <a href="home-pasted.html">shown as pasted</a>.</li>
 </ul>
 </section>
 
@@ -516,6 +567,7 @@ REVIEW = """<div class="sheet">
   <li><b>Folding the Support and Privacy drafts</b> into <code>Docs/</code>: then <code>Scripts/build_website_pages.py</code>, its <code>--check</code>, and the TEI sentence's row in the README.</li>
   <li><b>The tour's remaining screens</b>: steps 19 and 20 have no capture, and step 15 is a text slip.</li>
   <li><b>The day the site goes public.</b> App Review opens <code>/privacy</code> and <code>/support</code>, and the coming-soon lines say the app has been submitted: the day 1.0 (1861) is submitted makes both true.</li>
+  <li><b>The app's App Store address, on release day.</b> <code>paste/home-launch.txt</code> waits for it: <code>APP_STORE_URL</code> in <code>build_paste.py</code>. Until it is set the file says NOT READY, on its first line and on the page.</li>
   <li><b>Where the pasted tour's screens live.</b> Its blocks load them from <code>Planning/website-drafts/tour/img/</code> on GitHub, so the folder stays where it is while they are published, or the blocks are made and pasted again.</li>
 </ol>
 </section>
@@ -533,6 +585,7 @@ def build():
     texts["Home"] = page("index.html", "FRUS Explorer", home)
     texts["Tour"] = build_tour()
     build_pasted_tour()
+    build_pasted_home()
     for file, source, title, other, label in [
             ("quick-start-ios.html", "Docs/iOS-Quick-Start.md", "FRUS Explorer for iPad and iPhone — Quick Start",
              "quick-start-mac.html", "iPad and iPhone"),

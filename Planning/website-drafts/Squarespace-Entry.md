@@ -26,7 +26,7 @@ Six pages go on frusexplorer.app. They describe **version 1.0 (1861)**, which is
 | Support | `/support` | one Code Block | [paste/support.txt](paste/support.txt) |
 | Quick start, iPad and iPhone | `/quick-start-ios` | one Code Block | [paste/quick-start-ios.txt](paste/quick-start-ios.txt) |
 | Quick start, Mac | `/quick-start-mac` | one Code Block | [paste/quick-start-mac.txt](paste/quick-start-mac.txt) |
-| Home | `/` | native blocks, typed in | [the Home chapter](#home), below |
+| Home | `/` | one Code Block | [paste/home-coming-soon.txt](paste/home-coming-soon.txt) |
 | Tour | `/tour` | two Code Blocks and three native sections | [the Tour chapter](#tour), below |
 
 Work in that order. App Store Connect needs the first two addresses, Support links to the two
@@ -38,7 +38,7 @@ If you have already entered a page, this is all you need to redo.
 
 | Page | What changed | What to do |
 |---|---|---|
-| **Home** | No words changed. The coming-soon line cannot be an Announcement Bar: Squarespace includes one from the Core plan up, and says a feature the plan lacks can show to you while you are logged in and not to visitors. | Turn the bar off, if you set one up. Add [section 0](#home) in its place. |
+| **Home** | No words changed. It can now go in as one Code Block, like the other pages, with its coming-soon line inside it. That line cannot be an Announcement Bar: Squarespace includes one from the Core plan up, and says a feature the plan lacks can show to you while you are logged in and not to visitors. | Turn the bar off, if you set one up. Then either [paste the block](#home) in place of the sections you built, or keep them and add [section 0](#appendix-home-from-native-blocks) above them. |
 | **The site's footer and menu** | New: the earlier steps left them out, and the footer carries the disclaimer on every page. | [Do them once](#the-menu-and-the-footer). |
 | **Privacy** | One sentence gained the Quick Start on the Research tab, two Settings paths gained *Library*, and the date is now November 10, 2026. | Paste [paste/privacy.txt](paste/privacy.txt) over the block's contents. |
 | **Support** | One Settings path gained *Library*. | Paste [paste/support.txt](paste/support.txt) over the block's contents. |
@@ -53,10 +53,10 @@ superseded by the ones in `paste/`, which carry today's text and a first line th
 
 1. **No Announcement Bar.** It comes with the Core plan and above. Squarespace says a feature
    the plan lacks disappears from the live site and can still show to you while you are logged
-   in, so a bar that looks right in the editor proves nothing. The coming-soon line is an ordinary
-   section at the top of Home and of the Tour.
+   in, so a bar that looks right in the editor proves nothing. The coming-soon line is part of
+   Home's block, and an ordinary section at the top of the Tour.
 2. **No scripts in a Code Block.** A Code Block renders HTML and a `<style>` on every plan, up to
-   400 KB. A `<script>` or an `<iframe>` pasted into one is kept and does nothing. None of the six
+   400 KB. A `<script>` or an `<iframe>` pasted into one is kept and does nothing. None of the eight
    pastes holds either.
 3. **The film goes in a Video block.** Any site may hold 30 minutes of uploaded video, and the
    film is 46 seconds.
@@ -72,8 +72,8 @@ superseded by the ones in `paste/`, which carry today's text and a first line th
   **HTML** and **Display Source** off. Select everything in the box, paste, and click away. Then
   drag the block's edges out to the full width of the section.
 - **A Text block's style** (Heading 1 to 4, Paragraph 1 to 3) is in its toolbar, after you select
-  the words. A paste may keep the words alone, so each block below lists the italics, bold and
-  links to check and put back. For a link, select the words and press ⌘K; an address such as
+  the words. A paste into one may keep the words alone, so each native block below lists the
+  italics, bold and links to check and put back. A Code Block keeps everything. For a link, select the words and press ⌘K; an address such as
   `/tour` names a page of your own site.
 - Nothing shows to visitors until you **Save**, and while the site is behind its password,
   nothing shows to anyone else at all.
@@ -143,8 +143,154 @@ for the same typefaces by name and fall back to Georgia where the site does not 
 
 ## Home
 
-Built from native blocks, not pasted: it is the page you will change most, and native text stays
-editable in place. The draft is `site-src/home.html`; the preview shows it.
+One Code Block, as the four pages above are: a blank page, a blank section, a Code Block dragged to
+the section's full width. Set the page as the homepage from its gear. Its draft is
+`site-src/home.html`, which the preview shows.
+
+Squarespace has no switch between a page's two versions, so each is a file, and release day is one
+paste over the other.
+
+<!-- generated:home-paste -->
+
+| When | What the Code Block holds |
+|---|---|
+| Now | all of [paste/home-coming-soon.txt](paste/home-coming-soon.txt) |
+| Release day | all of [paste/home-launch.txt](paste/home-launch.txt), pasted over it |
+
+The launch version differs from the first in six places, and in nothing else:
+
+1. the coming-soon line at the top is gone;
+2. the label over the headline reads *Free on the App Store*, where it read *Coming soon to the App Store*;
+3. the opening paragraph no longer says the app is coming soon;
+4. Apple's “Download on the App Store” badge, linked to the app's page there, stands where the grey “Coming soon to the App Store” did;
+5. under *Questions*, *When will it be out?* is gone and *What does it cost?* answers *It's free.*;
+6. the last section is *Tell me what it can't answer yet*, where it was *Questions before it's out?*.
+
+**The launch file is not ready yet.** Its badge has to link to the app's page on the App Store, an address the app has only once it is approved: `https://apps.apple.com/app/id` followed by the app's Apple ID, which App Store Connect shows under **App Information**. Until then the file holds `APP-STORE-ADDRESS` in its place, says *NOT READY* on its first line, and shows a notice in a dashed box at the top of the page, so a paste of it cannot pass for the finished page.
+
+On release day, give the address to a session, or set `APP_STORE_URL` near the top of `build_paste.py` yourself and run `python3 Planning/website-drafts/build_paste.py`. The file it then writes has the address, no notice and a new fingerprint: paste that one.
+
+The badge itself is Apple's own artwork, loaded from Apple's marketing toolbox, so there is nothing to upload.
+
+<!-- /generated:home-paste -->
+
+What to expect:
+
+- **The coming-soon version** opens with the coming-soon line in a tinted box, then *Coming soon to
+  the App Store* over the headline, *Search 553 volumes of the U.S. diplomatic record.*
+- Four columns under *What it does*, which become two and then one as the page narrows.
+- Nine questions under *Questions*, each with its answer showing.
+- Its links go to `/tour`, the two quick starts, `/privacy` and `/support`, so they work as those
+  pages go up.
+- Type and colour are the draft's own, as in the preview: Source Serif 4 where your site loads it,
+  and Georgia where it does not.
+- To change a word later, tell a session: it changes the draft, the script writes the file again,
+  and you paste it. If you would sooner edit the page in Squarespace itself, build it from native
+  blocks instead, as the [appendix](#appendix-home-from-native-blocks) lists them.
+
+## Tour
+
+Five sections, top to bottom. The two Code Blocks hold everything that does not change at launch;
+the three native sections hold what does, and the film.
+
+<!-- generated:tour -->
+
+| Section | Block | What goes in it |
+|---|---|---|
+| 1, coming soon only | Text, **Paragraph 2**, centred | **Coming soon** — FRUS Explorer has been submitted to the App Store for iPhone, iPad and Mac. |
+| 2 | Code | all of [paste/tour-block-1.txt](paste/tour-block-1.txt) |
+| 3, optional | Video | the film: upload [tour/img/map-film.mp4](tour/img/map-film.mp4) (3.2 MB) |
+| 4 | Code | all of [paste/tour-block-2.txt](paste/tour-block-2.txt) |
+| 5 | Text | the closing, below |
+
+**Section 3, the film.** Add Block ▸ **Video**, the block's pencil, then **Upload file**. Leave **Autoplay** off and the player's controls on. For the frame shown before it plays, turn on **Custom featured image** and upload [tour/img/map-film-poster.jpg](tour/img/map-film-poster.jpg). In the editor's **Description** field, which shows under the film as its caption:
+
+> The record as it was released: each frame lights every mapped document in the volumes published so far, whole volumes, whatever each document is about. 553 volumes in 46 seconds, drawn by the app from the map it ships with.
+
+**Section 5, the closing**, coming-soon version. One Text block: **Heading 2**, then **Paragraph 1**, then **Paragraph 2** for the two lines of links.
+
+> **Coming soon to the App Store**
+>
+> FRUS Explorer will be free for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on.
+>
+> Quick start: iPad and iPhone · Mac
+>
+> Questions? help@frusexplorer.app
+
+*After pasting* — link: “iPad and iPhone” → `/quick-start-ios`; link: “Mac” → `/quick-start-mac`; link: “help@frusexplorer.app” → `mailto:help@frusexplorer.app`.
+
+**On release day, change two things.**
+
+1. **Section 1:** delete it.
+2. **Section 5:** the heading becomes **Bring your own question**; the paragraph: FRUS Explorer is free for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on. Add a **Button** block, **Get the app**, linked to the app's App Store page; and the lines of links become:
+
+> Quick start: iPad and iPhone · Mac
+>
+> Tell me what it can't answer yet
+
+*After pasting* — link: “iPad and iPhone” → `/quick-start-ios`; link: “Mac” → `/quick-start-mac`; link: “Tell me what it can't answer yet” → `/support`.
+
+<!-- /generated:tour -->
+
+What to expect:
+
+- **The first Code Block** opens with *Take one question through 553 volumes* and a table of
+  contents whose entries jump down the page, and ends with the dark band that holds the map.
+- **The second** opens at step 14 and ends with step 20.
+- Each screenshot is a link: a click opens it at full size in a new tab.
+- Home's links to `/tour#part-0` and `/tour#part-5` land on *What FRUS historians built* and
+  *Standing behind your work*. They work once the first and second blocks are in.
+- The screenshots load from this folder on GitHub. If the folder is ever moved, the blocks have to
+  be made again and pasted again.
+- Skip section 3 and the page reads on from the map to step 14 with nothing missing.
+
+## Going public, and release day
+
+| When | What |
+|---|---|
+| **Now**, behind the password | Enter all six pages, the menu and the footer. Nobody else can see them. |
+| **The day 1.0 (1861) is submitted** | **Settings ▸ Site Availability ▸ Public ▸ Save.** App Review opens `/privacy` and `/support`, and both answer with an error while the password is on. The coming-soon lines say the app *has been submitted*, so this is the day they become true. |
+| **Release day** | Home: paste [paste/home-launch.txt](paste/home-launch.txt) over its block, once that file holds the app's App Store address ([Home](#home) says how). The Tour: its two changes, listed at the end of its chapter. Privacy and the quick starts do not change. Support does not change either, unless the plain-language draft was folded in: then its *Coming soon* line comes out, and you paste it once more. |
+
+Making the site public is yours to do: it is the step that publishes it. So is the wording that
+assumes approval, *Coming soon to the App Store* and *It will be free*, which App Review decides.
+
+## When a page changes later
+
+A change to a page's source reaches the site only when you paste it again.
+
+1. The source changes: `Docs/Support.md`, `Docs/Privacy-Policy.md`, a quick start, `tour/tour.html`
+   or `site-src/home.html`.
+2. `python3 Scripts/build_website_pages.py` writes the four pages' HTML, and
+   `python3 Planning/website-drafts/build_paste.py` writes the paste files and this guide's
+   generated parts. Each has a `--check`.
+3. You paste the changed file over its block. If you built Home from native blocks, you retype
+   the block that changed.
+
+To tell which version a block holds, open it and read the fingerprint on its first line against
+this table:
+
+<!-- generated:kit -->
+
+| File | Goes on | Size | Fingerprint |
+|---|---|---|---|
+| [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/` | 11,892 bytes | `814c41f7` |
+| [paste/home-launch.txt](paste/home-launch.txt) | `/` | 12,036 bytes | `ccf6ec51`, not ready: it waits for the App Store address |
+| [paste/privacy.txt](paste/privacy.txt) | `/privacy` | 12,045 bytes | `70729172` |
+| [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,375 bytes | `95bade41` |
+| [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 26,864 bytes | `503e955d` |
+| [paste/support.txt](paste/support.txt) | `/support` | 6,321 bytes | `afe50dd6` |
+| [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour` | 66,699 bytes | `7919c798` |
+| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour` | 35,826 bytes | `4671c5d0` |
+
+<!-- /generated:kit -->
+
+## Appendix: Home from native blocks
+
+The other way to enter Home: typed into Squarespace's own blocks, section by section. It takes
+longer, and the words then live in Squarespace, where you can edit them in place. Use it or the
+Code Block, not both. If you built Home this way on 7 November, its words have not changed since:
+only section 0 is new.
 
 **Every section starts the same way:** Add Section ▸ blank, then Add Block inside it.
 
@@ -278,100 +424,6 @@ The first line is **Heading 2**, the rest **Paragraph 2**.
 *After pasting* — italic: *Foreign Relations of the United States*; link: “help@frusexplorer.app” → `mailto:help@frusexplorer.app`; link: “Support page” → `/support`.
 
 <!-- /generated:home -->
-
-## Tour
-
-Five sections, top to bottom. The two Code Blocks hold everything that does not change at launch;
-the three native sections hold what does, and the film.
-
-<!-- generated:tour -->
-
-| Section | Block | What goes in it |
-|---|---|---|
-| 1, coming soon only | Text, **Paragraph 2**, centred | **Coming soon** — FRUS Explorer has been submitted to the App Store for iPhone, iPad and Mac. |
-| 2 | Code | all of [paste/tour-block-1.txt](paste/tour-block-1.txt) |
-| 3, optional | Video | the film: upload [tour/img/map-film.mp4](tour/img/map-film.mp4) (3.2 MB) |
-| 4 | Code | all of [paste/tour-block-2.txt](paste/tour-block-2.txt) |
-| 5 | Text | the closing, below |
-
-**Section 3, the film.** Add Block ▸ **Video**, the block's pencil, then **Upload file**. Leave **Autoplay** off and the player's controls on. For the frame shown before it plays, turn on **Custom featured image** and upload [tour/img/map-film-poster.jpg](tour/img/map-film-poster.jpg). In the editor's **Description** field, which shows under the film as its caption:
-
-> The record as it was released: each frame lights every mapped document in the volumes published so far, whole volumes, whatever each document is about. 553 volumes in 46 seconds, drawn by the app from the map it ships with.
-
-**Section 5, the closing**, coming-soon version. One Text block: **Heading 2**, then **Paragraph 1**, then **Paragraph 2** for the two lines of links.
-
-> **Coming soon to the App Store**
->
-> FRUS Explorer will be free for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on.
->
-> Quick start: iPad and iPhone · Mac
->
-> Questions? help@frusexplorer.app
-
-*After pasting* — link: “iPad and iPhone” → `/quick-start-ios`; link: “Mac” → `/quick-start-mac`; link: “help@frusexplorer.app” → `mailto:help@frusexplorer.app`.
-
-**On release day, change two things.**
-
-1. **Section 1:** delete it.
-2. **Section 5:** the heading becomes **Bring your own question**; the paragraph: FRUS Explorer is free for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on. Add a **Button** block, **Get the app**, linked to the app's App Store page; and the lines of links become:
-
-> Quick start: iPad and iPhone · Mac
->
-> Tell me what it can't answer yet
-
-*After pasting* — link: “iPad and iPhone” → `/quick-start-ios`; link: “Mac” → `/quick-start-mac`; link: “Tell me what it can't answer yet” → `/support`.
-
-<!-- /generated:tour -->
-
-What to expect:
-
-- **The first Code Block** opens with *Take one question through 553 volumes* and a table of
-  contents whose entries jump down the page, and ends with the dark band that holds the map.
-- **The second** opens at step 14 and ends with step 20.
-- Each screenshot is a link: a click opens it at full size in a new tab.
-- Home's links to `/tour#part-0` and `/tour#part-5` land on *What FRUS historians built* and
-  *Standing behind your work*. They work once the first and second blocks are in.
-- The screenshots load from this folder on GitHub. If the folder is ever moved, the blocks have to
-  be made again and pasted again.
-- Skip section 3 and the page reads on from the map to step 14 with nothing missing.
-
-## Going public, and release day
-
-| When | What |
-|---|---|
-| **Now**, behind the password | Enter all six pages, the menu and the footer. Nobody else can see them. |
-| **The day 1.0 (1861) is submitted** | **Settings ▸ Site Availability ▸ Public ▸ Save.** App Review opens `/privacy` and `/support`, and both answer with an error while the password is on. The coming-soon lines say the app *has been submitted*, so this is the day they become true. |
-| **Release day** | Home's six changes and the Tour's two, each listed at the end of its chapter. Privacy and the quick starts do not change. Support does not change either, unless the plain-language draft was folded in: then its *Coming soon* line comes out, and you paste it once more. |
-
-Making the site public is yours to do: it is the step that publishes it. So is the wording that
-assumes approval, *Coming soon to the App Store* and *It will be free*, which App Review decides.
-
-## When a page changes later
-
-A change to a page's source reaches the site only when you paste it again.
-
-1. The source changes: `Docs/Support.md`, `Docs/Privacy-Policy.md`, a quick start, `tour/tour.html`
-   or `site-src/home.html`.
-2. `python3 Scripts/build_website_pages.py` writes the four pages' HTML, and
-   `python3 Planning/website-drafts/build_paste.py` writes the paste files and this guide's
-   generated parts. Each has a `--check`.
-3. You paste the changed file over its block, or retype the changed block of Home.
-
-To tell which version a block holds, open it and read the fingerprint on its first line against
-this table:
-
-<!-- generated:kit -->
-
-| File | Goes on | Size | Fingerprint |
-|---|---|---|---|
-| [paste/privacy.txt](paste/privacy.txt) | `/privacy` | 12,045 bytes | `70729172` |
-| [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,375 bytes | `95bade41` |
-| [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 26,864 bytes | `503e955d` |
-| [paste/support.txt](paste/support.txt) | `/support` | 6,321 bytes | `afe50dd6` |
-| [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour` | 66,699 bytes | `7919c798` |
-| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour` | 35,826 bytes | `4671c5d0` |
-
-<!-- /generated:kit -->
 
 ## Squarespace's own pages on these steps
 

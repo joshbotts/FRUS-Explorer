@@ -27,8 +27,8 @@ pages into Squarespace, given in chat on 2026-11-07 and held by no file, are now
 | `Home-draft.md`, `Tour-draft.md` | Editing copies of the home page's and the tour's words, with layout left out. No build reads them: a session folds the owner's edits back into `site-src/home.html` and `tour/tour.html`. The owner edits the copies in iCloud Drive, in the *2026-06-30 FRUS Explorer Build 26 screenshots* folder | Nothing; the HTML is the source |
 | `Revisions-proposed-2026-11-06.md` | What 2026-11-06's work changed in the app, and the revisions it led to (applied; its screens are still owed) | Nothing |
 | `tour/tour.html`, `tour/img/` | The tour: 20 steps in five parts, after a section on the editors' work, with production notes for each screen | The page at `frusexplorer.app/tour`, which the home page links to four times; pasted as `paste/tour-block-1.txt` and `-2.txt`, whose screens load from `tour/img/` on GitHub |
-| `Squarespace-Entry.md` | The owner's steps for entering all six pages, the menu and the footer into Squarespace, on the Basic plan: what changed since the steps of 2026-11-07, the home page block by block, the tour's five sections, and what release day changes. Its parts between `generated` markers are written by `build_paste.py` | Nothing; it is followed, not published |
-| `build_paste.py`, `paste/` | The paste kit: the script writes `paste/`'s six files, each the whole contents of one Code Block, and the guide's generated parts, and refreshes `page-drafts.html`'s Support and Privacy frames from the two drafts. `--check` exits 1 when anything is out of step. Each paste opens with a comment naming its page, its source and a fingerprint | The Code Blocks of `/privacy`, `/support`, the two quick starts and `/tour` |
+| `Squarespace-Entry.md` | The owner's steps for entering all six pages, the menu and the footer into Squarespace, on the Basic plan: what changed since the steps of 2026-11-07, the home page as one Code Block in its two versions, the tour's five sections, what release day changes, and, as an appendix, the home page block by block for native blocks. Its parts between `generated` markers are written by `build_paste.py` | Nothing; it is followed, not published |
+| `build_paste.py`, `paste/` | The paste kit: the script writes `paste/`'s eight files, each the whole contents of one Code Block, and the guide's generated parts, and refreshes `page-drafts.html`'s Support and Privacy frames from the two drafts. `--check` exits 1 when anything is out of step. Each paste opens with a comment naming its page, its source and a fingerprint. The home page has a file for each version, since a paste cannot switch; its launch file waits for the app's App Store address (`APP_STORE_URL` in the script) and says *NOT READY* until it has one | The Code Blocks of `/`, `/privacy`, `/support`, the two quick starts and `/tour` |
 
 Open the two HTML files in a browser from this folder. The sheet's Support and Privacy frames, and
 the Markdown under their buttons, are written from the two drafts by `build_paste.py` since
@@ -47,7 +47,8 @@ screen beside its current capture. Since 2026-11-10 it recounts two more, the 28
 people and the sixteen kinds of annotation (from the app's own table of layers), says whether the
 paste kit is in step, and links to `site/tour-pasted.html`: the tour's two Code Blocks exactly as
 `paste/` holds them, inside the preview's shell, with a dashed box standing in for each native
-section. A bar on every page switches between the coming-soon and launch
+section; and to `site/home-pasted.html`, the home page's block in both versions, on a bare page
+that has none of the preview's styles, so that a rule the paste left behind would show. A bar on every page switches between the coming-soon and launch
 versions and hides the review notes; neither the bar nor the notes is pasted. Serve the repository
 root over HTTP to view it (`python3 -m http.server 8765` there, then `/Planning/website-drafts/site/`),
 since the quick starts' screenshots load from `Docs/screenshots/` by relative path. Then run
@@ -63,9 +64,10 @@ one marked `data-show="launch"` only after; the switch sets `data-state` on the 
 has no such switch, so the site holds one version at a time, and `Squarespace-Entry.md` lists each
 change as an edit to a native block. On release day:
 
-- the home page drops its coming-soon section, button and the *When will it be out?* answer, takes
+- the home page drops its coming-soon line, button and the *When will it be out?* answer, takes
   Apple's official App Store badge, linked to the listing, and switches its kicker, lead, price
-  answer and contact section to their launch wording;
+  answer and contact section to their launch wording: pasted, that is `paste/home-launch.txt`
+  over the block, once it holds the listing's address;
 - Support, once its plain-language draft is folded in, loses its **Coming soon** line (delete it in
   `Docs/Support.md`, run both scripts, paste the HTML); the copy of record as it stands has none;
 - the tour drops its coming-soon section, and its closing section changes from the help address to
