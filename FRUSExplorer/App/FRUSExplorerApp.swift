@@ -306,6 +306,11 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          background-entry observer and DEBUG's summarization probe make too; `IndexingTaskRunEnd` ends a run
 ///          once, whichever of the run and its expiration handler gets there first; the launch handler's body is
 ///          `handleIndexingTask`, and the batch reaches `runIndexingWake` as `summarizeBatch`
+///   4.36 — L14 (plan of record decision 124): a run of the background task waits, before it completes the task,
+///          for the index work the process runs in tasks of its own, until that work ends or the run's time runs
+///          out (`waitForIndexWorkInFlight`); a run that saw it end asks for no next run on its account. The boot
+///          starts the launch's four index tasks through `AppState.indexWorkInFlight`, which counts each from
+///          before it is made to its last line, and a download's pass counts itself
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -579,8 +584,9 @@ struct FRUSExplorerApp: App {
     ///
     /// An expired run leaves the work it was given, which the next run reads: a pass the expiry cut
     /// short, whose sentinel names its volume if the system later ends the process, so that only a
-    /// run or the reader's Re-index takes it up again; the rest of a batch of summaries; or the boot
-    /// it was waiting for. The next run asks again only by `runIndexingWake`'s rule.
+    /// run or the reader's Re-index takes it up again; the rest of a batch of summaries; the boot it
+    /// was waiting for; or the index work it did not start and was waiting for (L14), which goes on
+    /// when the app next runs. The next run asks again only by `runIndexingWake`'s rule.
     ///
     /// `init()` passes the `BGProcessingTask`'s `setTaskCompleted(success:)` and `expirationHandler`,
     /// and `requestIndexingTaskRun()`. `BackgroundTaskNextRunTests` passes records of its own and
@@ -717,10 +723,24 @@ struct FRUSExplorerApp: App {
     ///   after two seconds of quiet, or longer while downloads are pending, so reading it here would
     ///   ask again after every run that indexed anything.
     ///
-    /// `BackgroundTaskLaunchBootTests` drives this with a boot of its own, and
-    /// `BackgroundTaskNextRunTests`, through `handleIndexingTask`, with a batch of its own. The
-    /// handler passes `runBackgroundSummarizationBatch`, which a test cannot run, since it calls the
-    /// on-device model.
+    /// ## The index work it did not start (plan of record L14, decision 124)
+    /// The launch's index tasks (the full re-index an index version runs, with the stamp that records
+    /// it and the passes after it; the rebuild from the cache; the passes after indexing on a launch
+    /// that needs neither; the reconcile of the volumes awaiting their pass) and each download's pass
+    /// run in tasks of their own, which the run does not await, and the app holds no background
+    /// assertion. Once the run completes the task, iOS may suspend them halfway, and they go on only
+    /// when the app next runs; `indexAllVolumes()` starts again from its first volume when the process
+    /// ends before its last. So before it ends, the run waits while `AppState.indexWorkInFlight`
+    /// counts any of them (`waitForIndexWorkInFlight`), until it counts none or the run's time runs
+    /// out. The wait comes last, so that a pass that starts during the run, a download that lands,
+    /// is waited for too. A run that saw the work end asks for no next run on its account: the work has
+    /// left nothing, and the passes after indexing run at every launch, a launch made for the task
+    /// included, so a run that asked after every wait would ask again after every run.
+    ///
+    /// `BackgroundTaskLaunchBootTests` drives this with a boot of its own,
+    /// `BackgroundTaskNextRunTests`, through `handleIndexingTask`, with a batch of its own, and
+    /// `BackgroundTaskIndexWorkTests` with index work of its own. The handler passes
+    /// `runBackgroundSummarizationBatch`, which a test cannot run, since it calls the on-device model.
     @MainActor
     static func runIndexingWake(
         appState state: AppState,
@@ -776,10 +796,42 @@ struct FRUSExplorerApp: App {
         // because it's the most expensive/thermal work; the cap + expiration
         // keep it conservative, and `shouldSkip` resumes it next wake.
         let summariesLeft = await summarizeBatch()
+        // Then the index work the run did not start (L14), which iOS may suspend once the task
+        // completes: the launch's index tasks and a download's pass.
+        await Self.waitForIndexWorkInFlight(state.indexWorkInFlight)
         // Only the expiration handler cancels a run, and it has ended the run, asking for the next,
-        // so this end then does nothing.
+        // so this end then does nothing. A run that saw the work it waited for end asks for nothing
+        // on that work's account (L14).
         let cutShort = Task.isCancelled
         end.end(success: !cutShort, requestingNextRun: cutShort || summariesLeft)
+    }
+
+    /// How often a run of the background task looks again at the index work it waits for (L14).
+    private static let indexWorkRecheckInterval: Duration = .milliseconds(250)
+
+    /// Waits while `work` counts index work the run did not start (plan of record L14, decision 124),
+    /// until it counts none or the run is cancelled, which only its expiration handler does.
+    ///
+    /// A fresh look four times a second rather than a notice from the count: the count changes off
+    /// the main actor, and a sleep is a wait that the run's cancellation ends at once.
+    @MainActor
+    private static func waitForIndexWorkInFlight(_ work: IndexWorkInFlight) async {
+        guard work.count > 0, !Task.isCancelled else { return }
+        #if DEBUG
+        let start = ContinuousClock.now
+        print("[FRUSExplorer] Background wake: waiting for \(work.count) index task(s) it did not start.")
+        #endif
+        while work.count > 0, !Task.isCancelled {
+            try? await Task.sleep(for: indexWorkRecheckInterval)
+        }
+        #if DEBUG
+        let waited = ContinuousClock.now - start
+        if Task.isCancelled {
+            print("[FRUSExplorer] Background wake: its time ran out after \(waited), \(work.count) index task(s) still running.")
+        } else {
+            print("[FRUSExplorer] Background wake: the index work it waited for ended after \(waited).")
+        }
+        #endif
     }
 
 
@@ -811,6 +863,12 @@ struct FRUSExplorerApp: App {
     /// handler and `requestIndexingTaskRun()`: a run that leaves work asks for the next before it
     /// completes the task, as a launch made for the task would otherwise wait for the app to leave
     /// the foreground again. `BackgroundTaskNextRunTests` drives it.
+    ///
+    /// ## The index work it did not start (plan of record L14, decision 124)
+    /// Before it ends, a run waits for the index work the process runs in tasks of its own, which
+    /// `AppState.indexWorkInFlight` counts: the launch's index tasks, which the boot starts there,
+    /// whether a scene or the handler started the boot, and a download's pass.
+    /// `BackgroundTaskIndexWorkTests` drives it.
     init() {
         // First, before anything can tag (#1373) — but NOT the warm-up itself: a CloudKit push, a
         // background task or a finished download runs this init in a background launch, and a warm-up
