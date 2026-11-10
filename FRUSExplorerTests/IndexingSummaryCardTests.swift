@@ -708,8 +708,10 @@ struct LiveActivityLifecycleTests {
         // Decided before the sweep reads it: a pass announced after would find its activity ended.
         #expect(begins.allSatisfy { $0.upperBound < sweep.lowerBound })
         // Each is said on the boot's own path, before the pass's task is made, and each pass's end
-        // follows the call that runs it.
-        let saidBeforeItsTask = try Regex(#"appState\.launchIndexPassWillBegin\(\)\n\s*#endif\n\s*Task \{"#)
+        // follows the call that runs it. Since L14 (plan of record decision 124) the boot makes each
+        // task through `appState.indexWorkInFlight.start`, which counts it for a run of the iOS
+        // background task to wait for; this read `Task {` until then.
+        let saidBeforeItsTask = try Regex(#"appState\.launchIndexPassWillBegin\(\)\n\s*#endif\n\s*appState\.indexWorkInFlight\.start \{"#)
         #expect(source.matches(of: saidBeforeItsTask).count == 3)
         // The rebuild's call sits in an `if`, so its end follows that `if`'s closing brace.
         for pass in [#"await appState\.indexAllVolumes\(with: pipeline\)"#,

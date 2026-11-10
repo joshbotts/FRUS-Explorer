@@ -2763,15 +2763,20 @@ struct FRUSExplorerApp: App {
             // multi-minute awaits, during which the user can merge/undo in the People
             // browser (Session 4). A boot-time snapshot would rebuild the rollup WITHOUT
             // those fresh corrections and stamp their stale fingerprint — visibly un-doing
-            // the user's change until the next launch. (These Tasks inherit the MainActor,
+            // the user's change until the next launch. (These tasks run on the main actor,
             // so the SwiftData snapshot reads are plain calls.)
+            //
+            // L14: each of the launch's index tasks starts through `appState.indexWorkInFlight`,
+            // which counts it from here to its last line, the stamps and the passes after the index
+            // pass included. A run of the iOS background task started none of them, and waits for
+            // them before it completes its task, since iOS may suspend the app once it has.
             if dateReindexNeeded {
                 #if os(iOS)
                 // #1642: said before the pass starts, so a Live Activity the last process left is
                 // kept for it to take over. The same for the two passes below.
                 appState.launchIndexPassWillBegin()
                 #endif
-                Task {
+                appState.indexWorkInFlight.start {
                     #if DEBUG
                     print("[FRUSExplorer] Background re-index triggered (dateReindex=true, ftsRebuild=\(ftsRebuildNeeded)).")
                     #endif
@@ -2808,7 +2813,7 @@ struct FRUSExplorerApp: App {
                 #if os(iOS)
                 appState.launchIndexPassWillBegin()
                 #endif
-                Task {
+                appState.indexWorkInFlight.start {
                     #if DEBUG
                     print("[FRUSExplorer] FTS rebuild from document_cache triggered.")
                     #endif
@@ -2839,7 +2844,7 @@ struct FRUSExplorerApp: App {
             } else {
                 // Normal launch: rebuild the person rollup if its version was bumped or the
                 // member set has drifted (volumes added/removed). Cheap no-op when up to date.
-                Task {
+                appState.indexWorkInFlight.start {
                     // The kit's post-index passes: the rollup, then the cross_references.is_broken
                     // backfill for already-indexed volumes (#240B), then (#308) the subject facet
                     // table for any newly indexed volumes. Each is gated and idempotent, a no-op
@@ -2886,7 +2891,7 @@ struct FRUSExplorerApp: App {
                     #if os(iOS)
                     appState.launchIndexPassWillBegin()
                     #endif
-                    Task {
+                    appState.indexWorkInFlight.start {
                         #if DEBUG
                         print("[FRUSExplorer] Reconciling \(waiting.count) downloaded volumes not fully indexed.")
                         #endif
@@ -3010,7 +3015,13 @@ struct FRUSExplorerApp: App {
             onVolumeDownloaded: indexPipeline.map { pipeline in
                 // Capture modelContainer so the closure can sync summaries after indexing.
                 let container = modelContainer
+                // L14: the pass counts itself, from its first line to its last, so that a run of the
+                // iOS background task waits for it, as for the launch's passes above. The download
+                // manager starts it in a task of its own, off the main actor.
+                let indexWork = appState.indexWorkInFlight
                 return { @Sendable volumeId in
+                    indexWork.begin()
+                    defer { indexWork.end() }
                     // Yield before indexing so the download completion write can
                     // fully flush before we begin a potentially long CPU/DB task.
                     await Task.yield()

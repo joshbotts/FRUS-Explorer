@@ -186,6 +186,8 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///          only once it is on screen (`indexingGuideDidAppear()`)
 ///   4.24 — #1766: `followedPageLink`, the page a page link was to when it opened its volume's page
 ///          in Browse, which `openBrowseVolume(_:from:)` clears
+///   4.25 — L14 (plan of record decision 124): `indexWorkInFlight`, the index work the process runs in
+///          tasks of its own (`IndexWorkInFlight`), which a run of the iOS background task waits for
 
 // MARK: - CloudKitSyncState
 
@@ -236,6 +238,61 @@ struct NARALookupRequest: Equatable {
     let text: String
     /// The enclosing footnote body for a footnote selection, else `nil`.
     var blockContext: String? = nil
+}
+
+// MARK: - IndexWorkInFlight
+
+/// The index work this process runs in tasks of its own, counted while it runs (plan of record L14,
+/// decision 124): the launch's index pass with the passes after it, the launch's reconcile of the
+/// volumes awaiting their pass, and each download's pass.
+///
+/// A run of the iOS background task starts none of them and does not await them, and the app holds
+/// no background assertion, so once the run completes its task, iOS may suspend them halfway. The
+/// run therefore waits while this counts any (`FRUSExplorerApp.runIndexingWake`). The Mac counts them
+/// too and reads the count nowhere: a Mac app is not suspended in the background.
+///
+/// Not `AppState.launchIndexPassesInFlight`, which the Live Activity's sweep reads: that one ends with
+/// the index pass, before the stamp that records the pass and the passes after it, and counts no
+/// download. A run that ended there could let iOS suspend the app before the stamp, and a process the
+/// system then ended would run the whole re-index again at its next launch.
+///
+/// A lock rather than the main actor, because a download's pass runs off it and counts itself at its
+/// first line, before it first suspends.
+final class IndexWorkInFlight: Sendable {
+    /// How many are running.
+    private let running = OSAllocatedUnfairLock(initialState: 0)
+
+    /// How many are running now.
+    var count: Int { running.withLock { $0 } }
+
+    /// Counts work that starts now. Each call is answered by one `end()`.
+    func begin() {
+        running.withLock { $0 += 1 }
+    }
+
+    /// Stops counting work that has ended, however it ended. A call with nothing counted does
+    /// nothing.
+    func end() {
+        running.withLock { $0 = max(0, $0 - 1) }
+    }
+
+    /// Starts `work` in a task of its own on the main actor, counted from this call until `work`
+    /// returns.
+    ///
+    /// Counted here, before the task is made, not in the task: a count taken there would miss the
+    /// work until the task first ran, and the boot, which starts the launch's passes this way, is
+    /// awaited by a run of the background task that goes on as soon as the boot returns.
+    ///
+    /// - Returns: The task.
+    @MainActor
+    @discardableResult
+    func start(_ work: @escaping @MainActor @Sendable () async -> Void) -> Task<Void, Never> {
+        begin()
+        return Task { @MainActor in
+            defer { self.end() }
+            await work()
+        }
+    }
 }
 
 @Observable
@@ -2190,6 +2247,12 @@ final class AppState {
     /// finished. A volume leaves this set when its pass ends, and the set empties with the queue.
     @ObservationIgnored
     private var landedVolumeIdsAwaitingIndex: Set<String> = []
+
+    /// The index work this process runs in tasks of its own, which a run of the iOS background task
+    /// waits for before it ends (plan of record L14, decision 124): the boot starts the launch's
+    /// passes through it (`IndexWorkInFlight.start(_:)`), and a download's pass counts itself. See
+    /// `IndexWorkInFlight`.
+    let indexWorkInFlight = IndexWorkInFlight()
 
     /// Counts each of `volumeIds` among the queue's volumes, when a queue is in flight (#1757),
     /// and shows a new total on the queue's Live Activity at once.

@@ -51,6 +51,8 @@ import Testing
 ///   1.2 — L13: `BackgroundTaskNextRunTests`, below, for the next run a run asks for. L12's suite
 ///          ends its runs through `IndexingTaskRunEnd` and gives them a batch of summaries that
 ///          finds nothing to do, where it gave them a model context for the app's batch
+///   1.3 — L14: `BackgroundTaskIndexWorkTests`, below, for the index work a run waits for.
+///          `TaskRunRecord` records that work's end, and L13's `waitUntil` is the file's to share
 @MainActor
 struct BackgroundTaskAppStateTests {
 
@@ -397,14 +399,244 @@ struct BackgroundTaskNextRunTests {
     }
 
     /// Polls `predicate` on the main actor until it holds or `timeout` passes, sleeping between
-    /// polls so that the run and the progress stream's reader can go on.
-    private static func waitUntil(timeout: Duration = .seconds(10), _ predicate: () -> Bool) async -> Bool {
+    /// polls so that the run and the progress stream's reader can go on. `BackgroundTaskIndexWorkTests`
+    /// polls with it too.
+    fileprivate static func waitUntil(timeout: Duration = .seconds(10), _ predicate: () -> Bool) async -> Bool {
         let deadline = ContinuousClock.now + timeout
         while ContinuousClock.now < deadline {
             if predicate() { return true }
             try? await Task.sleep(for: .milliseconds(10))
         }
         return predicate()
+    }
+}
+
+/// A run of the background task waits for the index work it did not start before it completes the
+/// task (plan of record L14, decision 124).
+///
+/// ## The defect
+/// The launch's index pass with the passes after it, the launch's reconcile and each download's pass
+/// run in tasks of their own, and the app holds no background assertion. A run completed the task as
+/// soon as its own work ended, so iOS could suspend those passes halfway, and they went on only when
+/// the app next ran. In the background, the full re-index an index version runs at launch got only
+/// the time a run's own work kept the app awake, and `indexAllVolumes()` starts again from its first
+/// volume when the process ends before its last.
+///
+/// ## What these drive
+/// `FRUSExplorerApp.handleIndexingTask` around the app's `runIndexingWake`, as
+/// `BackgroundTaskNextRunTests` does, with index work of the test's own started through
+/// `AppState.indexWorkInFlight` as the boot starts the launch's passes (`HeldIndexWork`). The work
+/// runs until the test lets it end, and writes its end into the run's record, so each test reads the
+/// order of the work's end, the next run's request and the task's completion. The boot's own tasks
+/// and a download's pass are held to the count by a scan of the boot: no test can run the boot,
+/// which opens the app's own index.
+@MainActor
+struct BackgroundTaskIndexWorkTests {
+
+    /// The fixture's one volume, which nothing has indexed.
+    private static let volumeId = "frus1969-76v01"
+
+    @Test("A run waits for index work it did not start, then completes the task, asking for nothing")
+    func aRunWaitsForIndexWorkItDidNotStart() async throws {
+        let fixture = try WakeFixture(volumeId: Self.volumeId)
+        defer { fixture.remove() }
+        let state = AppState()
+        state.indexingPipeline = fixture.pipeline
+        let probe = RunProbe()
+        let record = TaskRunRecord()
+        // The launch's pass, started as the boot starts it, still running when the run reaches its end.
+        let work = HeldIndexWork(through: state.indexWorkInFlight, record: record)
+        defer { work.release() }
+        let run = FRUSExplorerApp.handleIndexingTask(
+            requestNextRun: record.requestNextRun,
+            completeTask: record.completeTask,
+            setExpirationHandler: { _ in },
+            run: { end in
+                await FRUSExplorerApp.runIndexingWake(
+                    appState: state,
+                    bootSearchInfrastructure: {},
+                    summarizeBatch: {
+                        probe.batchCalls += 1
+                        return false
+                    },
+                    end: end)
+            })
+        let batched = await BackgroundTaskNextRunTests.waitUntil { probe.batchCalls > 0 }
+        try #require(batched, "The run never reached its batch of summaries")
+        // The run's own work is done: before L14 it completed the task as its batch returned.
+        let endedEarly = await BackgroundTaskNextRunTests.waitUntil(timeout: .seconds(1)) { !record.events.isEmpty }
+        #expect(!endedEarly,
+                "The run completed the task while index work it did not start was running, so iOS could suspend that work halfway: \(record.events)")
+        work.release()
+        let settled = await BackgroundTaskNextRunTests.waitUntil {
+            state.indexWorkInFlight.count == 0 && !record.completions.isEmpty
+        }
+        if !settled { run.cancel() }
+        await run.value
+        #expect(settled, "The run did not complete the task once the index work it waited for had ended")
+        #expect(record.events == [.indexWorkEnded, .completed(true)],
+                "A run must complete the task only after the index work it did not start has ended, and asks for no next run on that work's account, which has left nothing")
+        let left = try await fixture.pipeline.unindexedDownloadedVolumeIds()
+        #expect(left.isEmpty, "The run's own pass did not run: \(left) is still unindexed")
+    }
+
+    @Test("A run whose time runs out while it waits asks for the next run, and the work it waited for goes on")
+    func expiryWhileWaitingAsksForTheNextRun() async throws {
+        let fixture = try WakeFixture(volumeId: Self.volumeId)
+        defer { fixture.remove() }
+        let state = AppState()
+        state.indexingPipeline = fixture.pipeline
+        let probe = RunProbe()
+        let record = TaskRunRecord()
+        let expiration = ExpirationHandlerBox()
+        let work = HeldIndexWork(through: state.indexWorkInFlight, record: record)
+        defer { work.release() }
+        let run = FRUSExplorerApp.handleIndexingTask(
+            requestNextRun: record.requestNextRun,
+            completeTask: record.completeTask,
+            setExpirationHandler: expiration.keep,
+            run: { end in
+                await FRUSExplorerApp.runIndexingWake(
+                    appState: state,
+                    bootSearchInfrastructure: {},
+                    summarizeBatch: {
+                        probe.batchCalls += 1
+                        return false
+                    },
+                    end: end)
+            })
+        let batched = await BackgroundTaskNextRunTests.waitUntil { probe.batchCalls > 0 }
+        try #require(batched, "The run never reached its batch of summaries")
+        // The run is waiting for the work: before L14 it had completed the task by now.
+        let endedEarly = await BackgroundTaskNextRunTests.waitUntil(timeout: .milliseconds(500)) { !record.events.isEmpty }
+        #expect(!endedEarly,
+                "The run completed the task while index work it did not start was running: \(record.events)")
+        let expired = await expiration.callOffTheMainActor()
+        try #require(expired, "The launch handler set no expiration handler on the task")
+        await run.value
+        #expect(record.events == [.requestedNextRun, .completed(false)],
+                "A run whose time ran out while it waited did not ask for the next run before completing the task, so the work it waited for gets no more time in the background until the reader next leaves the app")
+        #expect(state.indexWorkInFlight.count == 1,
+                "The run's end stopped counting the work it waited for, which is still running")
+        work.release()
+        let ended = await BackgroundTaskNextRunTests.waitUntil { state.indexWorkInFlight.count == 0 }
+        #expect(ended, "The work the run waited for did not go on to its end after the run had ended")
+        #expect(record.events == [.requestedNextRun, .completed(false), .indexWorkEnded])
+    }
+
+    @Test("Work started through the count is counted from the call, before its task has run, to its last line")
+    func theCountHoldsWorkFromTheCallToItsLastLine() async throws {
+        let count = IndexWorkInFlight()
+        let record = TaskRunRecord()
+        let work = HeldIndexWork(through: count, record: record)
+        defer { work.release() }
+        // Nothing has suspended since the call, so the work's task has not begun. The boot starts the
+        // launch's passes this way, and a run that awaited the boot goes on as soon as it returns.
+        #expect(count.count == 1, "start(_:) counted the work only once its task ran")
+        work.release()
+        let ended = await BackgroundTaskNextRunTests.waitUntil { count.count == 0 }
+        #expect(ended, "The work's end was not counted")
+        #expect(work.countAtLastLine == 1, "The count let the work go before its last line")
+        #expect(record.events == [.indexWorkEnded])
+        // An end with nothing counted does nothing, and each begin is answered by an end of its own.
+        count.end()
+        #expect(count.count == 0)
+        count.begin()
+        count.begin()
+        count.end()
+        #expect(count.count == 1)
+        count.end()
+        #expect(count.count == 0)
+    }
+
+    @Test("The boot starts each of the launch's index tasks through the count, and a download's pass counts itself")
+    func theBootCountsItsIndexWork() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(contentsOf: root.appending(path: "FRUSExplorer/App/FRUSExplorerApp.swift"),
+                                encoding: .utf8)
+        let declaration = try #require(source.range(of: "private static func bootDownloadManager("),
+                                       "bootDownloadManager moved")
+        let boot = try #require(WindowTargetingTests.balancedBlock(in: source, from: declaration.upperBound),
+                                "bootDownloadManager's braces never balance")
+
+        // The launch's four index tasks: the full re-index, the rebuild from the cache, the passes
+        // after indexing on a launch that needs neither, and the reconcile.
+        let starts = Self.codeRanges(of: "appState.indexWorkInFlight.start {", in: boot)
+        #expect(starts.count == 4, "The boot starts \(starts.count) tasks through the count, where the launch has four index tasks")
+        let tasks = try starts.map { start in
+            try #require(WindowTargetingTests.balancedBlock(in: source, from: start.lowerBound),
+                         "A task started through the count has no body")
+        }
+        for call in ["await appState.indexAllVolumes(with: pipeline)",
+                     "try? await pipeline.rebuildSearchIndexFromCache()",
+                     "await pipeline.runPostIndexPasses(overrides: overrides)",
+                     "await pipeline.finishIndexing(of: waiting)"] {
+            let calls = Self.codeRanges(of: call, in: boot)
+            #expect(!calls.isEmpty, "The boot no longer calls \(call)")
+            for found in calls {
+                #expect(tasks.contains { $0.startIndex <= found.lowerBound && found.upperBound <= $0.endIndex },
+                        "The boot calls \(call) in a task the count does not hold, which a run of the background task would not wait for")
+            }
+        }
+
+        // A download's pass: the closure the download manager runs counts itself before its first
+        // suspension and stops counting at its last line, the volume's pass in between.
+        let downloaded = try #require(Self.codeRanges(of: "onVolumeDownloaded: indexPipeline.map", in: boot).first,
+                                      "The boot gives the download manager no post-download pass")
+        let map = try #require(WindowTargetingTests.balancedBlock(in: source, from: downloaded.upperBound))
+        #expect(!Self.codeRanges(of: "let indexWork = appState.indexWorkInFlight", in: map).isEmpty,
+                "The download's pass does not hold the app's count")
+        let closureStart = try #require(Self.codeRanges(of: "return { @Sendable volumeId in", in: map).first,
+                                        "The download's pass moved")
+        let closure = try #require(WindowTargetingTests.balancedBlock(in: source, from: closureStart.lowerBound))
+        let begin = try #require(Self.codeRanges(of: "indexWork.begin()", in: closure).first,
+                                 "The download's pass does not count itself")
+        let end = try #require(Self.codeRanges(of: "defer { indexWork.end() }", in: closure).first,
+                               "The download's pass does not stop counting itself at its end")
+        let firstSuspension = try #require(Self.codeRanges(of: "await ", in: closure).first)
+        let pass = try #require(Self.codeRanges(of: "try await pipeline.indexVolume(volumeId)", in: closure).first,
+                                "The download's pass no longer indexes its volume")
+        #expect(begin.upperBound <= end.lowerBound && end.upperBound <= firstSuspension.lowerBound,
+                "The download's pass counts itself only after it first suspends")
+        #expect(end.upperBound <= pass.lowerBound)
+    }
+
+    /// The ranges of `needle` in `text` that are code: those with no `//` before them on their line.
+    private static func codeRanges(of needle: String, in text: Substring) -> [Range<String.Index>] {
+        var found: [Range<String.Index>] = []
+        var cursor = text.startIndex
+        while let range = text.range(of: needle, range: cursor..<text.endIndex) {
+            let lineStart = text[..<range.lowerBound].lastIndex(of: "\n").map { text.index(after: $0) } ?? text.startIndex
+            if !text[lineStart..<range.lowerBound].contains("//") { found.append(range) }
+            cursor = range.upperBound
+        }
+        return found
+    }
+}
+
+/// Index work started through an `IndexWorkInFlight`, as the boot starts the launch's passes, which
+/// runs until the test lets it end and then writes its end into a run's record.
+@MainActor
+private final class HeldIndexWork {
+    /// Whether the test has let the work end.
+    private var released = false
+    /// The count the work read at its last line, once it has run.
+    private(set) var countAtLastLine: Int?
+
+    /// Starts the work through `count`, writing its end into `record`.
+    init(through count: IndexWorkInFlight, record: TaskRunRecord) {
+        count.start { [self] in
+            while !self.released {
+                try? await Task.sleep(for: .milliseconds(10))
+            }
+            self.countAtLastLine = count.count
+            record.noteIndexWorkEnded()
+        }
+    }
+
+    /// Lets the work end.
+    func release() {
+        released = true
     }
 }
 
@@ -427,14 +659,17 @@ private final class RunProbe {
 }
 
 /// What a run asked of the system, in order: the next run's request and the task's completion,
-/// which `IndexingTaskRunEnd` lets through once between them.
+/// which `IndexingTaskRunEnd` lets through once between them, and, for `BackgroundTaskIndexWorkTests`,
+/// the end of index work the run did not start.
 private final class TaskRunRecord: Sendable {
-    /// One thing a run asked.
+    /// One thing a run asked, or the end of work it waited for.
     enum Event: Equatable, Sendable {
         /// A request for the next run: `requestIndexingTaskRun()` in the app.
         case requestedNextRun
         /// The task's completion, with its success: `setTaskCompleted(success:)` in the app.
         case completed(Bool)
+        /// The last line of index work the run did not start (L14): a `HeldIndexWork`'s.
+        case indexWorkEnded
     }
 
     /// Everything asked so far.
@@ -471,6 +706,11 @@ private final class TaskRunRecord: Sendable {
     /// What `handleIndexingTask` is given as the task's completion.
     var completeTask: @Sendable (Bool) -> Void {
         { [recorded] success in recorded.withLock { $0.append(.completed(success)) } }
+    }
+
+    /// Records that index work the run did not start has reached its last line.
+    func noteIndexWorkEnded() {
+        recorded.withLock { $0.append(.indexWorkEnded) }
     }
 }
 
