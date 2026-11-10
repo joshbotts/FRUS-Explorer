@@ -10298,7 +10298,7 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 - No package input changed, so no `swift test` is owed.
 
 **Not done, and for the owner.**
-- **Not committed or opened:** the pull request waits on the owner's word, as R2b's did. The work is on `claude/testflight-1812-retakes`, from `v2` at `7cad0351`.
+- **Opened as #1886** on the owner's word of 2026-11-10 ("Open a PR"), against `v2` at `7cad0351`, on `claude/testflight-1812-retakes`; not merged, auto-merge off.
 - **The owner's steps**, in the checkout the archive is cut from:
   1. Bring `v2` to this pull request's merge commit.
   2. Run `./Scripts/fetch-llama-dsyms.sh` and `./Scripts/check_cloudkit_schema.py`. Neither was run here, so this worktree holds no cache or stamp for them. `CloudKitSchemaInventory.swift` is unchanged since `build-52`, whose check passed.
