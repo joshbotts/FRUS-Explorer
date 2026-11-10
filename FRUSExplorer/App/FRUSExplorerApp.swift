@@ -552,11 +552,12 @@ struct FRUSExplorerApp: App {
     /// to `_appState`, and the same one to the handler. **Never read `appState` here.** Since Xcode
     /// 27.0 `@State` is a macro over `LazyState`, which holds a declaration's initial value as a
     /// closure until SwiftUI installs the property: a read before then runs the closure for an
-    /// instance of its own, and installation runs it once more. Builds 47 to 1787 declared `@State private var appState = AppState()` and read it here, so
-    /// the handler held an AppState of its own that nothing booted, and every background wake
-    /// completed `false` at its first guard. This comment said that @State persists the same
-    /// instance, which held only for Xcode 26's property wrapper. `BackgroundTaskAppStateTests`
-    /// holds the handler's instance to the booted one.
+    /// instance of its own, and installation runs it once more. Builds 47 to 1787 declared
+    /// `@State private var appState = AppState()` and read it here, so the handler held an AppState
+    /// of its own that nothing booted, and every background wake completed `false` at its first
+    /// guard. This comment said that @State persists the same instance, which held only for Xcode
+    /// 26's property wrapper. `BackgroundTaskAppStateTests` holds the handler's instance to the
+    /// booted one.
     init() {
         // First, before anything can tag (#1373) — but NOT the warm-up itself: a CloudKit push, a
         // background task or a finished download runs this init in a background launch, and a warm-up
