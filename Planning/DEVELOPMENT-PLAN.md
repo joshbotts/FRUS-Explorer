@@ -10366,4 +10366,4 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 - **The owner's editing copies in iCloud Drive** (`Home-draft.md`, `Tour-draft.md`) were not written to. They held no edit the repository lacks; the repository's are now ahead by this session's.
 - **The reading level** was not measured again. **Steps 19 and 20** still have no capture.
 - **The site goes public** on the day of the submission, by the owner: the coming-soon lines say the app has been submitted.
-- **Committed, not pushed**, on the owner's word of 2026-11-10 ("Commit the working tree changes with a sensible message"): one commit on `claude/app-store-release-website-46038c`, from `v2` at `f179c1bd`. No pull request is open.
+- **Opened as #1888** on the owner's word of 2026-11-10 ("Commit the working tree changes with a sensible message", then the app's *Create PR*), against `v2` at `f179c1bd`, on `claude/app-store-release-website-46038c`, ready for review, auto-merge off.
