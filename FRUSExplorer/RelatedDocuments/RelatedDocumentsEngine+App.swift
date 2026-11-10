@@ -18,6 +18,8 @@ import Foundation
 ///   1.0 — 2026-11-08: FRUS Explorer Light's S23a — the engine moved into FRUSCoreKit, and this is
 ///          the entry point it had, unchanged for its three callers (`RelatedDocumentsContent`,
 ///          `RelatedDocumentsRequest.load` and `ProjectLeadsService`)
+///   1.1 — 2026-11-10: FRUS Explorer Light's S23b — `CrossReferenceStore`'s conformance to
+///          `RelatedCitationSource` is declared with the store, now FRUSCoreKit's
 extension RelatedDocumentsEngine {
 
     /// Computes the ranked related documents for an anchor over the app's own index and stores: the
@@ -79,9 +81,6 @@ extension RelatedDocumentsDependencies {
 }
 
 // MARK: - The app's stores, as the engine reads them
-
-/// The cross-reference generator's query is the store's own `relatedByCitation`.
-extension CrossReferenceStore: RelatedCitationSource {}
 
 /// The corpus-proximity scorer reads a volume's subseries from the store's `entry(forVolumeId:)`.
 extension ManifestStore: VolumeManifestLookup {}

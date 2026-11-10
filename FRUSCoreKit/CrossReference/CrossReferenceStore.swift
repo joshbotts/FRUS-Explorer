@@ -7,7 +7,14 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
 
 // MARK: - CrossReferenceStore
 
@@ -16,7 +23,9 @@ import SQLite3
 ///
 /// Opens its own **read-only** SQLite connection to the shared database file.
 /// SQLite WAL mode allows concurrent readers alongside `IndexingPipeline`'s
-/// read-write connection without blocking.
+/// read-write connection without blocking. A host that reads an index another program built opens
+/// it immutable instead (`init(readingDatabaseAt:volumes:resolvedEdgeIndex:citedPageMap:)`), which
+/// takes no lock and reads the file as it is.
 ///
 /// All public methods are actor-isolated and therefore safe to call from any
 /// concurrent context.
@@ -46,6 +55,16 @@ import SQLite3
 ///   1.9 — #1799: a graph endpoint the device holds no row for is dated by the documents on its
 ///          page, the page map or its volume's span (`endpointMetadata`), and a page is titled by
 ///          its volume and page; the store takes the bundled catalogue for both
+///   1.10 — 2026-11-10 (FRUS Explorer Light, S23b): moved into FRUSCoreKit, SQLite behind the kit's
+///          `canImport`. The corpus-wide citation index and the page map are given to it: by the
+///          app's initialiser (`CrossReferenceStore+App.swift`) as providers, each read where
+///          `ResolvedEdgeIndexStore.shared` and `CitedPageMapStore.shared` were read, and by a
+///          host as values. `init(readingDatabaseAt:…)` opens an index read-only and immutable
+///          (`isImmutable`), for a host that reads an index another program built, as
+///          `PersonMentionStore`'s does. A page of a volume whose id is not its subseries and a
+///          volume number reads the kit's `VolumeLabels`, where `ChronologyViewModel`'s label
+///          grammar moved. The store's conformance to `RelatedCitationSource` is declared here;
+///          `expandedGraph`'s doc drops the 20- and 15-node caps 1.2 removed
 public actor CrossReferenceStore {
 
     // MARK: - SQLite handle
@@ -61,18 +80,93 @@ public actor CrossReferenceStore {
     /// takes its volume's span and subseries (#1799).
     private let volumesById: [String: VolumeManifestEntry]
 
-    /// Opens a read-only connection to `databaseURL`.
+    /// The corpus-wide citation index, read where a graph is built (``resolvedEdgeIndex``).
+    private let resolvedEdgeIndexProvider: @Sendable () -> ResolvedEdgeIndex?
+
+    /// The page map, read where a node the device holds no row for is dated (``citedPageMap``).
+    private let citedPageMapProvider: @Sendable () -> CitedPageMap?
+
+    /// Whether the file was opened immutable (`init(readingDatabaseAt:volumes:resolvedEdgeIndex:citedPageMap:)`),
+    /// so SQLite takes no lock on it and makes no journal or shared-memory file beside it. Either open
+    /// is read-only.
+    nonisolated public let isImmutable: Bool
+
+    /// Opens a read-only connection to `databaseURL`, with a host's own copies of the two bundled
+    /// files, each decoded once: FRUS Explorer Light's server opens an index its own indexer writes
+    /// this way. The app opens its store with `init(databaseURL:volumes:)`
+    /// (`CrossReferenceStore+App.swift`), which reads its bundle's copies where the store uses them.
     ///
     /// - Parameters:
     ///   - databaseURL: The search index's database.
     ///   - volumes: The bundled catalogue (`ManifestStore.bundledEntries`). A graph node the device
     ///     holds no row for is dated by its volume's span where nothing nearer dates it, and a page
     ///     node is titled by its volume (#1799); with none, such a node stays undated and untitled.
+    ///   - resolvedEdgeIndex: The bundled corpus-wide citation index (`resolved-edge-index.json`), or
+    ///     `nil`: a graph's inbound half is then the local table's alone, as before #262.
+    ///   - citedPageMap: The bundled page map (`cited-page-map.json`), or `nil`: a node the device
+    ///     holds no row for is then dated by the device's page index or its volume's span alone.
     /// - Throws: `CrossReferenceError.databaseOpenFailed` if SQLite cannot open the file.
-    public init(databaseURL: URL, volumes: [VolumeManifestEntry] = []) throws {
+    public init(databaseURL: URL, volumes: [VolumeManifestEntry] = [],
+                resolvedEdgeIndex: ResolvedEdgeIndex?, citedPageMap: CitedPageMap?) throws {
+        try self.init(databaseURL: databaseURL, volumes: volumes, immutable: false,
+                      resolvedEdgeIndexProvider: { resolvedEdgeIndex }, citedPageMapProvider: { citedPageMap })
+    }
+
+    /// Opens the index at `databaseURL` read-only and immutable, to read an index another program
+    /// built: FRUS Explorer Light's server opens the Mac's exported index this way. The app never
+    /// calls it.
+    ///
+    /// The file is opened with `?mode=ro&immutable=1` (`FTS5Store.immutableURI(for:)`), so SQLite
+    /// takes no lock, writes nothing beside the file and refuses every write. Nothing may write the
+    /// file while it is open. Only the busy timeout is set, as `init(databaseURL:…)` sets it.
+    ///
+    /// - Parameters:
+    ///   - databaseURL: File URL of an existing index.
+    ///   - volumes: The catalogue, as `init(databaseURL:…)` takes it.
+    ///   - resolvedEdgeIndex: The corpus-wide citation index, or `nil`.
+    ///   - citedPageMap: The page map, or `nil`.
+    /// - Throws: `CrossReferenceError.databaseOpenFailed` if the file cannot be opened, a missing file
+    ///   included, which it does not create.
+    public init(readingDatabaseAt databaseURL: URL, volumes: [VolumeManifestEntry] = [],
+                resolvedEdgeIndex: ResolvedEdgeIndex?, citedPageMap: CitedPageMap?) throws {
+        try self.init(databaseURL: databaseURL, volumes: volumes, immutable: true,
+                      resolvedEdgeIndexProvider: { resolvedEdgeIndex }, citedPageMapProvider: { citedPageMap })
+    }
+
+    /// Opens a read-only connection to `databaseURL`, reading each bundled file through its provider
+    /// where the store uses it, never here: the citation index each time a graph is built, the page
+    /// map each time a node the device holds no row for is dated. The app's initialiser passes its
+    /// lazily decoded stores (`CrossReferenceStore+App.swift`), so the citation index, which only the
+    /// store reads, is still decoded on first use on this actor, and the page map where the app first
+    /// reads `CitedPageMapStore.shared`, as before.
+    ///
+    /// - Parameters:
+    ///   - databaseURL: The search index's database.
+    ///   - volumes: The bundled catalogue, as `init(databaseURL:volumes:resolvedEdgeIndex:citedPageMap:)` takes it.
+    ///   - resolvedEdgeIndexProvider: Gives the corpus-wide citation index, or `nil`.
+    ///   - citedPageMapProvider: Gives the page map, or `nil`.
+    /// - Throws: `CrossReferenceError.databaseOpenFailed` if SQLite cannot open the file.
+    init(databaseURL: URL, volumes: [VolumeManifestEntry],
+         resolvedEdgeIndexProvider: @escaping @Sendable () -> ResolvedEdgeIndex?,
+         citedPageMapProvider: @escaping @Sendable () -> CitedPageMap?) throws {
+        try self.init(databaseURL: databaseURL, volumes: volumes, immutable: false,
+                      resolvedEdgeIndexProvider: resolvedEdgeIndexProvider, citedPageMapProvider: citedPageMapProvider)
+    }
+
+    /// The initialisers' shared body: the file opened read-only, at its path or, immutable, at its
+    /// immutable URI.
+    private init(databaseURL: URL, volumes: [VolumeManifestEntry], immutable: Bool,
+                 resolvedEdgeIndexProvider: @escaping @Sendable () -> ResolvedEdgeIndex?,
+                 citedPageMapProvider: @escaping @Sendable () -> CitedPageMap?) throws {
         volumesById = Dictionary(volumes.map { ($0.volumeId, $0) }, uniquingKeysWith: { first, _ in first })
+        self.resolvedEdgeIndexProvider = resolvedEdgeIndexProvider
+        self.citedPageMapProvider = citedPageMapProvider
+        isImmutable = immutable
         var handle: OpaquePointer?
-        let rc = sqlite3_open_v2(
+        let rc = immutable
+            ? sqlite3_open_v2(FTS5Store.immutableURI(for: databaseURL), &handle,
+                              SQLITE_OPEN_READONLY | SQLITE_OPEN_URI | SQLITE_OPEN_FULLMUTEX, nil)
+            : sqlite3_open_v2(
             databaseURL.path,
             &handle,
             SQLITE_OPEN_READONLY | SQLITE_OPEN_FULLMUTEX,
@@ -91,7 +185,7 @@ public actor CrossReferenceStore {
         sqlite3_busy_timeout(h, 5000)
 
         #if DEBUG
-        print("[CrossReferenceStore] Opened read-only connection to \(databaseURL.lastPathComponent)")
+        print("[CrossReferenceStore] Opened read-only \(immutable ? "immutable " : "")connection to \(databaseURL.lastPathComponent)")
         #endif
     }
 
@@ -193,10 +287,14 @@ public actor CrossReferenceStore {
     /// Builds a multi-degree ego graph centred on a single document.
     ///
     /// - **Degree 1**: returns the same result as `graph(forDocumentId:volumeId:downloadedVolumeIds:)`.
-    /// - **Degree 2**: additionally loads inbound + outbound edges for each 1st-degree node
-    ///   (capped at the 20 most-connected first-degree nodes to keep graph size manageable)
+    /// - **Degree 2**: additionally loads inbound + outbound edges for every 1st-degree node
     ///   and stores them in `CrossReferenceGraph.extendedEdges`.
-    /// - **Degree 3**: extends further from 2nd-degree nodes (capped at 15).
+    /// - **Degree 3**: extends further from every 2nd-degree node (the 20- and 15-node caps were
+    ///   removed in 1.2).
+    ///
+    /// At degree 2 and 3 the graph keeps the degree-1 graph's `hasUndownloadedSources` but not its
+    /// `undownloadedCitingVolumeIds`, which it leaves empty; a caller that names those volumes takes
+    /// them from the degree-1 graph.
     ///
     /// Edges already present at a lower degree are deduplicated. All node metadata
     /// encountered during expansion is included in the returned `nodeMetadata` dictionary.
@@ -593,8 +691,9 @@ public actor CrossReferenceStore {
     /// The bundled corpus-wide citation index, or `nil` when it failed to load — in which case
     /// the graph falls back to the local table alone, which is what shipped before #262.
     ///
-    /// Read through a property rather than the store directly so a test can substitute a fixture.
-    var resolvedEdgeIndex: ResolvedEdgeIndex? { ResolvedEdgeIndexStore.shared }
+    /// Read through a property, each time a graph is built, from what the initialiser was given: the
+    /// app's `ResolvedEdgeIndexStore.shared`, or a host's own copy.
+    var resolvedEdgeIndex: ResolvedEdgeIndex? { resolvedEdgeIndexProvider() }
 
     /// Returns all edges whose target is `(documentId, volumeId)`.
     public func inboundEdges(
@@ -1296,8 +1395,8 @@ public actor CrossReferenceStore {
     // MARK: - Nodes the device holds no row for (#1799)
 
     /// The bundled page map, or `nil` when it failed to load. Read through a property, as
-    /// ``resolvedEdgeIndex`` is.
-    var citedPageMap: CitedPageMap? { CitedPageMapStore.shared }
+    /// ``resolvedEdgeIndex`` is: the app's `CitedPageMapStore.shared`, or a host's own copy.
+    var citedPageMap: CitedPageMap? { citedPageMapProvider() }
 
     /// A graph endpoint's metadata: its `document_cache` row where the device holds one, and
     /// otherwise a node dated by what the app does hold (#1799).
@@ -1360,7 +1459,7 @@ public actor CrossReferenceStore {
     /// - Anything else is dated by its volume's span in the catalogue (``volumeSpan(_:)``), the
     ///   only date the app has for it, and the date label draws it as that span.
     ///
-    /// The timeline places the node at the middle of its span (`CrossReferenceGraphViewModel.buildDateValues`).
+    /// The timeline places the node at the middle of its span (`CrossReferenceGraphDisplay.buildDateValues`).
     /// An endpoint none of the three dates stays undated: a volume outside the catalogue, side-loaded,
     /// with no page index for the page.
     ///
@@ -1440,8 +1539,8 @@ public actor CrossReferenceStore {
         let prefix = "frus" + subseries
         guard volumeId.hasPrefix(prefix),
               volumeId.dropFirst(prefix.count).wholeMatch(of: /(ve?[0-9]+)?(p[0-9]+)?/) != nil else {
-            return ChronologyViewModel.distilledVolumeLabelParts(volumeId: volumeId, subseries: subseries,
-                                                                 title: "").tag
+            return VolumeLabels.distilledVolumeLabelParts(volumeId: volumeId, subseries: subseries,
+                                                          title: "").tag
         }
         var text = subseries.replacingOccurrences(of: "-", with: "–")
         if let designation = CitationNumerals.volumeDesignation(inVolumeId: volumeId) {
@@ -1492,6 +1591,13 @@ public actor CrossReferenceStore {
         return String(cString: ptr)
     }
 }
+
+// MARK: - RelatedCitationSource
+
+/// Related Documents' cross-reference generator's query is the store's own `relatedByCitation`
+/// (FRUS Explorer Light, S23a, which declared this in the app's `RelatedDocumentsEngine+App.swift`
+/// while the store was the app's).
+extension CrossReferenceStore: RelatedCitationSource {}
 
 // MARK: - SQLITE_TRANSIENT shim
 

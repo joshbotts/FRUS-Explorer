@@ -8,29 +8,6 @@
 
 import Foundation
 
-// MARK: - DocumentNodeKey
-
-/// Stable identity of a document node in the citation graph: `(volumeId, documentId)`.
-///
-/// A FRUS document is uniquely identified by its volume plus its `xml:id`; the same
-/// document number recurs across volumes, so the volume component is load-bearing.
-/// Used by `CrossReferenceStore.resolvedCitationEdges()` and `PageRank`.
-///
-/// Version history:
-///   1.0 — CA-6 (analytics CA-track): initial implementation
-public struct DocumentNodeKey: Hashable, Sendable {
-    /// The volume containing the document.
-    public let volumeId: String
-    /// The document's `xml:id` within its volume.
-    public let documentId: String
-
-    /// Creates a node key from its volume and document identifiers.
-    public init(volumeId: String, documentId: String) {
-        self.volumeId = volumeId
-        self.documentId = documentId
-    }
-}
-
 // MARK: - DegreeBucket
 
 /// One bar of the degree-distribution histogram: how many documents have a given
@@ -66,6 +43,9 @@ public struct DegreeBucket: Identifiable, Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — CA-6 (analytics CA-track): initial implementation
+///   1.1 — 2026-11-10 (FRUS Explorer Light, S23b): moved into FRUSCoreKit, unchanged, with `DegreeBucket`;
+///          `DocumentNodeKey`, which this file declared, is in `CrossReference/DocumentNodeKey.swift`,
+///          beside the store that returns it
 public enum CrossReferenceStats {
 
     /// Buckets a list of per-document in-degrees into histogram bars.

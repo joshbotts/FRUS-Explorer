@@ -40,6 +40,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — CA-6 (analytics CA-track): initial implementation
+///   1.1 — 2026-11-10 (FRUS Explorer Light, S23b): moved into FRUSCoreKit, unchanged
 public enum PageRank {
 
     /// The default random-jump probability complement (the "damping factor"). 0.85 is the

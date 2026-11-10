@@ -119,6 +119,9 @@ import Foundation
 ///   1.16 — 2026-10-25: FRUS Explorer Light's S17b — ten baseline entries re-pointed to the FRUSCoreKit
 ///         files their strings moved to (the method appendix's five, the scope signature's four and the
 ///         capture's truncation line), so the ceiling is unchanged
+///   1.17 — 2026-11-10: FRUS Explorer Light's S23b — three baseline entries re-pointed to the FRUSCoreKit
+///         file their strings moved to (the graph's cluster and date-cluster VoiceOver labels, now in
+///         `CrossReferenceGraphDisplay.swift`), so the ceiling is unchanged
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -901,6 +904,9 @@ extension CodingStandardsAuditTests {
     /// counts, says its volume count through `CountCopy` ("1 volumes" on George H. W. Bush's drill).
     static let countCopyBaseline: [String] = [
         #"../FRUSCoreKit/Collections/CollectionCitationLineResolver.swift | collection.addDocs.citations.topOf"#,
+        #"../FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | graph.a11y.clusterInbound %lld %@"#,
+        #"../FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | graph.a11y.clusterOutbound %lld %@"#,
+        #"../FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | graph.a11y.dateCluster %lld %@"#,
         #"../FRUSCoreKit/Export/ExcerptVerifier.swift | excerpt.verify.failures.many %lld"#,
         #"../FRUSCoreKit/Export/ExcerptVerifier.swift | excerpt.verify.vanished.many %lld"#,
         #"../FRUSCoreKit/Export/QueryMethodAppendix.swift | appendix.caveat.floor.many %lld"#,
@@ -1042,9 +1048,6 @@ extension CodingStandardsAuditTests {
         #"CrossReference/CrossReferenceGraphView.swift | graph.edge.refCount %lld"#,
         #"CrossReference/CrossReferenceGraphView.swift | graph.node.cluster.docsLabel %lld"#,
         #"CrossReference/CrossReferenceGraphView.swift | graph.node.dateCluster.label %lld %@"#,
-        #"CrossReference/CrossReferenceGraphViewModel.swift | graph.a11y.clusterInbound %lld %@"#,
-        #"CrossReference/CrossReferenceGraphViewModel.swift | graph.a11y.clusterOutbound %lld %@"#,
-        #"CrossReference/CrossReferenceGraphViewModel.swift | graph.a11y.dateCluster %lld %@"#,
         #"CrossReference/ReferenceListPanel.swift | graph.edge.refCount %lld"#,
         #"DocumentView/DocumentChangeReviewSheet.swift | document.review.other.collections %lld"#,
         #"DocumentView/DocumentChangeReviewSheet.swift | document.review.other.notes %lld"#,

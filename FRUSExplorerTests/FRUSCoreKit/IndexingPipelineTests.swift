@@ -1428,7 +1428,7 @@ struct TextExtractionTests {
         #expect(IndexingPipeline.extractHeader(from: nodes) == "Memorandum by Prime Minister Churchill")
     }
 
-    #if !SWIFT_PACKAGE // CrossReferenceStore and its target labels are the app's
+    #if !SWIFT_PACKAGE // CrossReferenceTargetLabel, Cross-Reference Analytics' target labels, is the app's
     /// End to end through the index, and on to the label Cross-Reference Analytics shows and
     /// hands `openDocument` (#1372's 2026-09-23 comment): an indexed note is named by its head.
     @Test("An indexed editorial note is stored, faceted and labelled by its printed head")
