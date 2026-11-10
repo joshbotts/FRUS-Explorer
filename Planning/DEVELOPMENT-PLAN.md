@@ -10182,4 +10182,4 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 - **A batch that summarizes nothing, in the app.** The simulator offered the on-device model, so the stall rule ran only in the guard, through the seam. Its line in `runBackgroundSummarizationBatch` (`result.processed > 0 && BackgroundSummarizationRequestStore.hasPending`) ran in the probe's progress case.
 - **`FRUSOffsetEngineTests.swift:2736`'s warning**, Lane 2's, still left for its own change.
 
-**Opened as #1882** on the owner's word of 2026-11-10 ("Open the PR"), against `v2` at `a677fcda`; not merged, auto-merge off.
+**Opened as #1882** on the owner's word of 2026-11-10 ("Open the PR"), against `v2` at `a677fcda`, and **merged as `e9abc22b`** by the owner the same day (11:22 UTC), its tree identical to the branch's at `497b296b`; auto-merge off. Its finding above, a run that does not wait for indexing it did not start, is L14 (decision 124), and this line's merge was written by L14's session.
