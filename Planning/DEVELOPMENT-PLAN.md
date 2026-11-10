@@ -10182,4 +10182,4 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 - **A batch that summarizes nothing, in the app.** The simulator offered the on-device model, so the stall rule ran only in the guard, through the seam. Its line in `runBackgroundSummarizationBatch` (`result.processed > 0 && BackgroundSummarizationRequestStore.hasPending`) ran in the probe's progress case.
 - **`FRUSOffsetEngineTests.swift:2736`'s warning**, Lane 2's, still left for its own change.
 
-**Not pushed.** The merge queue is serial: the branch is pushed and the pull request opened on the owner's word.
+**Opened as #1882** on the owner's word of 2026-11-10 ("Open the PR"), against `v2` at `a677fcda`; not merged, auto-merge off.
