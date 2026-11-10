@@ -10499,3 +10499,12 @@ Also read there: the three frame sizes, which settles decision 33's check of the
 - The guide's section is now *What the site holds, and what to paste again*. Both scripts' `--check` pass, and `build_site.py` builds. Pushed to #1888.
 
 **v2 merged in, and the plan of record brought to the day.** Auto-fix reported that #1888 no longer merged into `v2`, which had gained `3e5f1cf3`, the App Store Connect assets for 1.0 (1861). `v2` was fetched and merged, never rebased. Both branches had appended a session entry here and edited one line of the plan of record's §4, and both sides are kept: the base's entry stands before this one, as on `v2`, and §4 has this branch's line on the website's pages and the base's new line on the submission's entry. No line of either side is missing from this file. After the merge both paste kits' `--check` pass (`website-drafts` and the base's `app-store-connect`), with `Scripts/build_website_pages.py --check` and `build_site.py`, and GitHub reads the pull request as clean. In a commit of its own, the plan of record's §3 and §4 now say what the day did: the pages are entered and were seen, the footer was entered by the session, and four pages wait to be pasted again for their links.
+
+**The four pages pasted again, and seen.** The owner chose to paste them ("I will"), and then: "They're pasted". The session read each in the site's preview, the editor unopened, at frame widths of 1,082 and 428 points:
+
+- **Each holds its new file:** Support `64da46d0`, Privacy `8c230dab`, the iPad and iPhone quick start `df732dbf`, the Mac quick start `0a79a3cd`. With Home's, the tour's four and the footer's, all ten fingerprints on the site are the kit's.
+- **Every link is underlined,** by its computed style: 11, 6, 34 and 36, and the footer's 5 on each page.
+- **Nothing is cut off:** no block's contents run past the block or its section, and no page scrolls sideways at 428. The quick starts' 11 and 9 screenshots load.
+- **Still there:** the empty Text block under the iPad and iPhone quick start's Code Block. The four pages' blocks are 532 points wide at computer width, as before; widening them is the owner's choice.
+- **Not checked:** the pages signed out, since the site is private; Home and the Tour a second time, since their files did not change.
+- The guide's section is now *What the site holds*, and the plan of record's §3 and §4 say that every block holds its current file. `paste/` did not change. Both scripts' `--check` pass. Pushed to #1888.
