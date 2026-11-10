@@ -21,6 +21,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #777
+///   1.1 — 2026-11-09: L12 — `bootBody()` finds the boot as the static function it now is
 @Suite("Side-loaded volumes (#777)")
 struct LocalVolumeCatalogTests {
 
@@ -364,13 +365,15 @@ struct LocalVolumeCatalogTests {
         #expect(appState.manifestStore.entry(forVolumeId: "frus1969-76v99")?.title == "A side-loaded volume")
     }
 
-    /// The source text of `FRUSExplorer/App/FRUSExplorerApp.swift`'s `bootDownloadManager()`, read
-    /// to the brace that balances its opening one.
+    /// The source text of `FRUSExplorer/App/FRUSExplorerApp.swift`'s
+    /// `bootDownloadManager(appState:containerSetup:)`, read to the brace that balances its opening
+    /// one. It is static since L12, given the AppState it boots, so that the background task's
+    /// handler can start it before any scene has.
     private func bootBody() throws -> String {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
         let text = try String(contentsOf: root.appending(path: "FRUSExplorer/App/FRUSExplorerApp.swift"),
                               encoding: .utf8)
-        let declaration = try #require(text.range(of: "private func bootDownloadManager() async"),
+        let declaration = try #require(text.range(of: "private static func bootDownloadManager("),
                                        "bootDownloadManager moved")
         let open = try #require(text[declaration.upperBound...].firstIndex(of: "{"))
         var depth = 0
