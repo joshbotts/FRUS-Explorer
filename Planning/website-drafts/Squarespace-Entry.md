@@ -49,6 +49,37 @@ If you have already entered a page, this is all you need to redo.
 The four files sent on 7 November (`privacy.txt`, `support.txt` and the two quick starts) are
 superseded by the ones in `paste/`, which carry today's text and a first line that says so.
 
+## What the site held on 10 November
+
+You signed in to Squarespace in the Claude app's browser pane, and a session looked at every page
+in the site's own preview, at computer width and at phone width. It changed and saved nothing.
+
+| Page | What it holds | Fingerprint |
+|---|---|---|
+| Home | one Code Block | `814c41f7`, current |
+| Tour | Code, Code, Video (the film, 46 seconds), Code, Code, in one section | `73a41228`, `7919c798`, `4671c5d0`, `a65b3389`, all current |
+| Quick start, iPad and iPhone | one Code Block, and an empty Text block under it | `95bade41`, current |
+| Quick start, Mac | one Code Block | `503e955d`, current |
+| Privacy | one Code Block | `70729172`, current |
+| Support | one Code Block | `afe50dd6`, current |
+| The footer | one Text block: the disclaimer and the National Archives sentence, with no links | not a paste |
+
+- **Nothing is cut off.** On no page, at either width, do a block's contents run past the block or
+  its section, and no page scrolls sideways at phone width.
+- **Every screenshot loads from GitHub:** 19 on the tour, 11 and 9 on the quick starts.
+- **The type is as the pastes ask.** Home and the Tour are set in a serif; the four pasted pages
+  take the site's own, Poppins.
+
+Three things are left, and only the first matters:
+
+1. **The footer has no links.** [Way A or way B](#the-menu-and-the-footer), below.
+2. **The iPad and iPhone quick start has an empty Text block** under its Code Block. Click it
+   once, then its trash can.
+3. **Optional.** The Code Blocks of Privacy, Support and the two quick starts are 532 points wide
+   at computer width, a narrow centred column, where Home's and the Tour's are 781. That reads
+   well as it is. Dragging a block's edges out, step 4 of [the pasted pages](#the-four-pasted-pages),
+   widens the text and its screenshots.
+
 ## Three things the Basic plan changes
 
 1. **No Announcement Bar.** It comes with the Core plan and above. Squarespace says a feature
@@ -123,12 +154,13 @@ words and the same five links. Do it in a browser on a computer: Squarespace's a
 iPad changes the words of a block that is already there and cannot add one.
 
 **Open it first.** Click **Edit** on any page, scroll to the bottom, point at the footer and click
-**Edit Footer**. Click an empty part of the footer, so that no block is selected, then point at the
-footer's section. What shows in the section's top left corner says which way to go:
+**Edit Site Footer**. Then point at the footer again. Its buttons show only while the pointer is
+over it and no block is selected: if a cursor is blinking in the footer's text, press Esc. What
+shows in the footer's top left corner, on top of its first words, says which way to go:
 
 | The corner shows | What it means | Do this |
 |---|---|---|
-| **Add Block** | The section is the kind a new page has. | Way A. |
+| **+ Add Block** | The section is the kind a new page has. This site's footer is one. | Way A. |
 | **Upgrade** | The section was made with Squarespace's older editor, which has no Add Block. A template's footer can be one. | Click **Upgrade**. **Add Block** takes its place: way A. A save makes the upgrade permanent, which costs nothing in a footer whose blocks you are replacing. |
 | neither | The section takes no blocks, or the footer is not open for editing. | Point at the section's top or bottom edge and click **Add Section**, then **+ Add Blank**, then **Section**. The new section shows **Add Block**: way A. Afterwards delete the old section with its trash can. |
 
@@ -137,10 +169,12 @@ already has.
 
 **Way A: one Code Block.**
 
-1. **Add Block**, type `code` in the search field at the top of the block menu, and choose
-   **Code**.
+1. Click **+ Add Block**. The menu opens on Text, Image, Button and the other common blocks, and
+   Code is not among them. Type `code` in the search field at the top of the menu and choose
+   **Code**, the one result.
 2. Click the new block's pencil and paste all of [paste/footer.txt](paste/footer.txt).
-3. Remove what the template put there: click a block once, then its trash can. **Save**.
+3. Remove the Text block that is there now, since the Code Block holds its words: click it once,
+   then its trash can. Drag the Code Block's edges out to the footer's full width. **Save**.
 
 **Way B: the footer's own Text block.**
 
@@ -184,10 +218,11 @@ Either way its type and colour are your footer's own, so it reads on a dark foot
 one. The words are pasted, not typed, so that the disclaimer stays word for word: do not shorten
 it. Way A's block sets the text at 13 pixels; way B's is the size your site gives Paragraph 3.
 
-These steps are from Squarespace's help pages, listed at the end. No session has seen this site's
-footer in the editor. If it matches none of the three rows and way B does not suit, have a session
-look: send it a screenshot of the footer after **Edit Footer**, with the pointer over it, or sign
-in to Squarespace in the Claude app's browser pane, where a session can open the editor itself.
+**Seen in this site's editor, 2026-11-10**, once you had signed in to Squarespace in the Claude
+app's browser pane: the footer is one section of the current kind, **+ Add Block** shows in its top
+left corner, and the menu's search finds **Code**. It held one Text block, with the disclaimer and
+the National Archives sentence and no links. The table's other two rows are from Squarespace's
+help pages, listed at the end.
 
 **To look like the preview** (optional): in **Site Styles**, Source Serif 4 for headings and
 paragraphs and IBM Plex Sans for buttons and the menu, if the font list offers them; a white

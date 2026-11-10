@@ -10415,3 +10415,17 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 - Also in the guide: "the twelve pastes", where one line still said eight; **Add Section ▸ + Add Blank ▸ Section**, where three lines said "a blank one"; and the six help pages, in its list.
 - **Which of the three the owner's footer is, is still unseen.** The site's editor opens only signed in: `frusexplorer.app/config` leads the Claude app's browser pane to Squarespace's sign-in page. The owner was asked for a look, by a screenshot or by signing in there.
 - `paste/` did not change: no file's fingerprint moved. Both scripts' `--check` pass. Pushed to #1888.
+
+**The site seen at last: the owner signed in.** Asked whether a session should look at the footer in Squarespace's editor, the owner signed in to Squarespace in the Claude app's browser pane ("I've signed in"). The session looked, at an emulated 1,440 by 900 points, and changed and saved nothing: it opened the editor and the footer, opened the block menu, searched it, and left by **Exit**, which asked nothing.
+
+- **The footer does take a Code Block.** It is one Fluid Engine section. After **Edit Site Footer** (the button's name; the guide said *Edit Footer*), **+ Add Block** shows in the footer's top left corner, on top of its first words, and only while the pointer is over the footer. Its menu opens on Text, Image, Button, Video, Form, Accordion, Shape, Scrolling and Line, with Code not among them; `code` in the menu's search field gives **Code** as the one result. Which of these stopped the owner is not known. The guide's chapter now says each.
+- **The footer held** one Text block: the disclaimer and the National Archives sentence, in the site's Poppins at 16 pixels, and no links.
+- **Every page was seen in the site's own preview**, the first time a paste was seen inside Squarespace. The admin's preview is a frame of the same origin, so its page was measured by script, read-only, at a frame width of 1,082 points and, with the admin's phone view, of 428:
+  - each of the nine Code Blocks carried its paste file's fingerprint from the kit's table;
+  - on no page, at either width, did a block's contents run past the block or its section, and at 428 no page was wider than the frame;
+  - all 39 screenshots loaded from `raw.githubusercontent.com` (19 on the tour, 11 and 9 on the quick starts), each fetched apart from the page, since the page loads them lazily;
+  - the tour's five blocks are in one section, the film a Video block of 46 seconds between the two large ones;
+  - Home and the Tour drew in a serif, and the four pasted pages in the site's Poppins.
+- **Left for the owner:** the footer's links; an empty Text block under the iPad and iPhone quick start's Code Block; and, optionally, the width of the four pasted pages' blocks, 532 points where Home's and the Tour's are 781.
+- **Not checked:** which serif the browser drew (the blocks ask for Source Serif 4 and fall back); the pages signed out, since the site is private; the launch versions, which are not pasted.
+- The guide gains *What the site held on 10 November* and the footer chapter's corrections. `paste/` did not change. Both scripts' `--check` pass. Pushed to #1888.
