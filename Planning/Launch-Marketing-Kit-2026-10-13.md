@@ -334,7 +334,10 @@ the audience frames follow. The listing takes **ten**: the three universal, then
 `researchers-04`, `researchers-05`, `researchers-06`, `teachers-08`, `teachers-09`, `analysts-11` and
 `analysts-12`. The other four (`teachers-10`, `researchers-07`, `analysts-13`, `analysts-14`) are
 for the landing page and the audience posts, where a set can be shown whole. (The owner traded
-`teachers-10` for `researchers-06` on 2026-10-15, §8's decision 1.)
+`teachers-10` for `researchers-06` on 2026-10-15, §8's decision 1.) *Since 2026-11-10 `shots.json`'s
+`listing` carries that order for the iPad and the Mac, and five frames for the iPhone (01, 02, 03, 04 and
+11), and a store run copies each slot's frames to `upload/<preset>/`, numbered, with the iPhone's five
+again at the medium display's size (`uploadAlso`).*
 
 The spec is `tools/marketing/shots.json`; `tools/marketing/compose.py` renders it (its README has the
 commands); the drafts are in `Planning/marketing-drafts/`, with one contact sheet per audience.
@@ -381,7 +384,15 @@ guides, not from Apple's own table**, and the plan's §6 rule stands: verify in 
 before export, including whether a landscape iPad set is accepted for the 13-inch slot and whether
 a 6.5-inch iPhone set is still accepted. Sources read on 2026-10-13: the Adalo and AppDrift guides to
 2026 sizes, the Splitmetrics landscape note, and the App Screenshot Studio note on 12.9 versus 13
-inch (links in the session's reply; none is Apple).
+inch (links in the session's reply; none is Apple). *Read on Apple's own page on 2026-11-10 (App Store
+Connect Help, Screenshot specifications): the 13-inch iPad slot takes 2752 × 2064 or 2732 × 2048 in
+landscape; the Mac takes 2880 × 1800 among four 16:10 sizes; the 6.9-inch iPhone takes 1320 × 2868
+among three, and with that set no 6.5-inch set is asked for. A slot takes up to ten, as PNG or JPEG
+with no alpha channel, and the composer's frames are RGB PNGs. So all three presets stand. One thing
+on the page is unsettled: its list of required sizes names "iPhone with Dynamic Island (medium
+display)", 1206 × 2622 or 1179 × 2556, and the page also says that a set at the highest resolution is
+scaled down for smaller sizes. The store run therefore writes the iPhone's five at 1206 × 2622 as
+well, scaled from the reviewed frames, for a slot that asks for that size itself.*
 
 **The iPhone gap is the blocking one.** Every iPad and Mac frame has at least a stand-in; the three
 universal iPhone frames have none, and the listing cannot be submitted without an iPhone set. The
@@ -590,7 +601,10 @@ none stamped, and the drafts rendered again; the ledger's R1 entry has the run.*
 2026-11-02 in R4, the retake sitting after 1.0 (1787), with `STAMP=0`: six frames changed (06 on the
 iPad and the Mac from the two retaken graphs, and 01's foot on all four presets), the other 28 byte for
 byte as R1's, and the drafts rendered again, the two frame-06 shots stamped build 1787; the ledger's R4
-entry has the run.*
+entry has the run.* *Run again on 2026-11-10 with `STAMP=0`, after Q1's retakes of 2026-11-06: eleven frames
+changed (01 on all four presets, 04 on all three, 12 and 13 on the iPad and the Mac), the other 23 byte
+for byte as R4's, and the drafts rendered again, those eleven stamped build 1787 as R4's two are; the
+ledger's C1 entry has the run, with the `upload/` folders it wrote.*
 
 ---
 

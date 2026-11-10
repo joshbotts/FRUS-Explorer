@@ -25,6 +25,13 @@ placeholder carrying the route to capture, so the set can be reviewed whole befo
     SCALE=1 STAMP=0 OUT_DIR=~/Desktop/store python3 tools/marketing/compose.py   # the frames for App Store Connect
     ONLY=researchers python3 tools/marketing/compose.py # one audience, or ONLY=<shot id>
 
+A store run (SCALE=1 STAMP=0 with no ONLY) also writes `upload/<preset>/NN-<id>.png` under OUT_DIR:
+the frames one App Store Connect slot takes, numbered in the listing's order, which the spec's
+`listing` names. A slot keeps its screenshots in the order they arrive, and the frames' own names
+sort by audience (all, analysts, researchers, teachers), which is not that order. The spec's
+`uploadAlso` then fills a folder with another preset's upload frames scaled to a second size, for
+a slot that may ask for that size itself.
+
 Environment:
   SCALE      1 writes the store size the preset names; 0.5 (the default) writes a review draft at half
              the pixels, which is what the committed drafts are
@@ -319,6 +326,58 @@ def render(chrome, html_text, out_png, width, height, scale):
         sys.exit(f"{out_png} is {ow}×{oh}, expected {expected[0]}×{expected[1]}")
 
 
+def listing_frames(spec, shots):
+    """The spec's `listing` as (preset, position, shot) rows: for each preset, the frames its App
+    Store Connect slot takes, in the listing's order. Exits when a name matches no shot of that
+    preset, or matches two, since a slot's order would then be a guess."""
+    rows = []
+    for preset_name, ids in spec.get("listing", {}).items():
+        for position, shot_id in enumerate(ids, start=1):
+            matches = [s for s in shots if s["preset"] == preset_name and s["id"] == shot_id]
+            if len(matches) != 1:
+                sys.exit(f"listing: {preset_name} names {shot_id!r}, which matches {len(matches)} shots")
+            rows.append((preset_name, position, matches[0]))
+    return rows
+
+
+def write_upload_folders(rows, written):
+    """Copies each listed frame to `upload/<preset>/NN-<id>.png`, so that a folder's files, dragged
+    into its slot together, arrive in the listing's order. A folder's earlier numbered frames are
+    removed first, so a frame dropped from the listing does not stay behind in it."""
+    frame_of = {id(shot): png for shot, png in written}
+    for preset_name in sorted({name for name, _, _ in rows}, key=lambda n: PRESET_RANK.get(n, 9)):
+        folder = OUT / "upload" / preset_name
+        folder.mkdir(parents=True, exist_ok=True)
+        for stale in folder.glob("[0-9][0-9]-*.png"):
+            stale.unlink()
+        for name, position, shot in rows:
+            if name != preset_name:
+                continue
+            target = folder / f"{position:02d}-{shot['id']}.png"
+            shutil.copyfile(frame_of[id(shot)], target)
+            print(f"{target.relative_to(REPO) if target.is_relative_to(REPO) else target}  (upload, slot order)")
+
+
+def write_scaled_upload_folders(chrome, spec):
+    """The spec's `uploadAlso`: each names a folder, the preset whose upload frames it repeats, and
+    a size. Every frame of `upload/<from>/` is printed again at that size, as an image filling the
+    page, so the folder holds the frames the owner reviewed, scaled, and not a second layout that
+    nobody has read. `render` checks each one's size."""
+    for folder_name, also in spec.get("uploadAlso", {}).items():
+        source = OUT / "upload" / also["from"]
+        folder = OUT / "upload" / folder_name
+        folder.mkdir(parents=True, exist_ok=True)
+        for stale in folder.glob("[0-9][0-9]-*.png"):
+            stale.unlink()
+        w, h = also["width"], also["height"]
+        for frame in sorted(source.glob("[0-9][0-9]-*.png")):
+            page = (f'<!doctype html><html><body style="margin:0;background:#000">'
+                    f'<img src="{frame.as_uri()}" style="display:block;width:{w}px;height:{h}px" alt=""></body></html>')
+            target = folder / frame.name
+            render(chrome, page, target, w, h, 1)
+            print(f"{target.relative_to(REPO) if target.is_relative_to(REPO) else target}  {w}×{h}  (upload, scaled from {also['from']})")
+
+
 def main():
     if STAMP not in ("0", "1"):
         sys.exit(f"STAMP={STAMP}: use 1 (the default, a stamped review draft) or 0 (no stamp, for App Store Connect)")
@@ -337,6 +396,8 @@ def main():
                    if not (s.get("capture") and (REPO / s["capture"]).exists())]
         if missing:
             sys.exit("STAMP=0 writes the frames for App Store Connect, and these have no capture: " + ", ".join(missing))
+    # The upload folders are the store run's alone: whole, at the store's size, with no stamp.
+    upload_rows = listing_frames(spec, shots) if (not stamped and SCALE == 1 and not ONLY) else []
     OUT.mkdir(parents=True, exist_ok=True)
     written = []
     for shot in shots:
@@ -368,6 +429,10 @@ def main():
         sheet = OUT / f"contact-sheet-{audience}.png"
         render(chrome, contact_sheet_html(title, sections, cols, cell_w, pad, caption_h), sheet, sheet_w, int(height), 1)
         print(f"{sheet.relative_to(REPO) if sheet.is_relative_to(REPO) else sheet}  (contact sheet)")
+
+    if upload_rows:
+        write_upload_folders(upload_rows, written)
+        write_scaled_upload_folders(chrome, spec)
 
 
 if __name__ == "__main__":
