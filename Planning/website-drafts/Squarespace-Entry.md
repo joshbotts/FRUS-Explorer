@@ -27,7 +27,7 @@ Six pages go on frusexplorer.app. They describe **version 1.0 (1861)**, which is
 | Quick start, iPad and iPhone | `/quick-start-ios` | one Code Block | [paste/quick-start-ios.txt](paste/quick-start-ios.txt) |
 | Quick start, Mac | `/quick-start-mac` | one Code Block | [paste/quick-start-mac.txt](paste/quick-start-mac.txt) |
 | Home | `/` | one Code Block | [paste/home-coming-soon.txt](paste/home-coming-soon.txt) |
-| Tour | `/tour` | two Code Blocks and three native sections | [the Tour chapter](#tour), below |
+| Tour | `/tour` | four Code Blocks, and a Video block for the film | [the Tour chapter](#tour), below |
 
 Work in that order. App Store Connect needs the first two addresses, Support links to the two
 quick starts, and Home links to all of the others.
@@ -39,7 +39,7 @@ If you have already entered a page, this is all you need to redo.
 | Page | What changed | What to do |
 |---|---|---|
 | **Home** | No words changed. It can now go in as one Code Block, like the other pages, with its coming-soon line inside it. That line cannot be an Announcement Bar: Squarespace includes one from the Core plan up, and says a feature the plan lacks can show to you while you are logged in and not to visitors. | Turn the bar off, if you set one up. Then either [paste the block](#home) in place of the sections you built, or keep them and add [section 0](#appendix-home-from-native-blocks) above them. |
-| **The site's footer and menu** | New: the earlier steps left them out, and the footer carries the disclaimer on every page. | [Do them once](#the-menu-and-the-footer). |
+| **The site's footer and menu** | New: the earlier steps left them out, and the footer carries the disclaimer on every page. | [Do them once](#the-menu-and-the-footer). The footer is one paste. |
 | **Privacy** | One sentence gained the Quick Start on the Research tab, two Settings paths gained *Library*, and the date is now November 10, 2026. | Paste [paste/privacy.txt](paste/privacy.txt) over the block's contents. |
 | **Support** | One Settings path gained *Library*. | Paste [paste/support.txt](paste/support.txt) over the block's contents. |
 | **Quick start, iPad and iPhone** | Its notice names build 1861, where it named 1787. Its line on Browse and its note on what works before a download name Editors’ Annotations. One screenshot's description, for screen readers, names the new Annotations tile; the picture updated by itself. | Paste [paste/quick-start-ios.txt](paste/quick-start-ios.txt) over the block's contents. |
@@ -54,7 +54,7 @@ superseded by the ones in `paste/`, which carry today's text and a first line th
 1. **No Announcement Bar.** It comes with the Core plan and above. Squarespace says a feature
    the plan lacks disappears from the live site and can still show to you while you are logged
    in, so a bar that looks right in the editor proves nothing. The coming-soon line is part of
-   Home's block, and an ordinary section at the top of the Tour.
+   Home's block, and a small Code Block of its own at the top of the Tour.
 2. **No scripts in a Code Block.** A Code Block renders HTML and a `<style>` on every plan, up to
    400 KB. A `<script>` or an `<iframe>` pasted into one is kept and does nothing. None of the eight
    pastes holds either.
@@ -72,8 +72,8 @@ superseded by the ones in `paste/`, which carry today's text and a first line th
   **HTML** and **Display Source** off. Select everything in the box, paste, and click away. Then
   drag the block's edges out to the full width of the section.
 - **A Text block's style** (Heading 1 to 4, Paragraph 1 to 3) is in its toolbar, after you select
-  the words. A paste into one may keep the words alone, so each native block below lists the
-  italics, bold and links to check and put back. A Code Block keeps everything. For a link, select the words and press ⌘K; an address such as
+  the words. A paste into one may keep the words alone, so each native block in the appendix
+  lists the italics, bold and links to check and put back. A Code Block keeps everything. For a link, select the words and press ⌘K; an address such as
   `/tour` names a page of your own site.
 - Nothing shows to visitors until you **Save**, and while the site is behind its password,
   nothing shows to anyone else at all.
@@ -119,22 +119,17 @@ Navigation, in that order, and Home and the Mac quick start in Not Linked. Each 
 to the other in its first lines. Set Home as the homepage from its gear.
 
 **The footer** is one section shared by every page: scroll to the bottom of any page in the
-editor and choose **Edit Footer**. One Text block, in the smallest paragraph style:
+editor and choose **Edit Footer**. Remove what the template put there, add a Code Block, and paste
+all of [paste/footer.txt](paste/footer.txt) into it.
 
 <!-- generated:footer -->
 
-> FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State. Any commentary, advice, or guidance about the FRUS series in this app reflects personal views about historical research methodology and makes no interpretive claims about the history of U.S. foreign policy. Those views are not necessarily those of the Department of State or the U.S. Government. The FRUS series itself is in the public domain.
->
-> FRUS Explorer is not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration.
->
-> Support · Privacy · Tour · Quick start · Source code
-
-*After pasting* — link: “Support” → `/support`; link: “Privacy” → `/privacy`; link: “Tour” → `/tour`; link: “Quick start” → `/quick-start-ios`; link: “Source code” → `https://github.com/joshbotts/FRUS-Explorer`.
+It holds, word for word, the store listing's disclaimer and the National Archives sentence, and under them five links: *Support* (`/support`), *Privacy* (`/privacy`), *Tour* (`/tour`), *Quick start* (`/quick-start-ios`), *Source code* (`https://github.com/joshbotts/FRUS-Explorer`).
 
 <!-- /generated:footer -->
 
-The first paragraph is the store listing's disclaimer and the second the National Archives
-sentence, both word for word. Do not shorten either.
+Its type and colour are your footer's own, so it reads on a dark footer as on a light one. It is
+pasted, not typed, so that the disclaimer stays word for word: do not shorten it in the block.
 
 **To look like the preview** (optional): in **Site Styles**, Source Serif 4 for headings and
 paragraphs and IBM Plex Sans for buttons and the menu, if the font list offers them; a white
@@ -162,7 +157,7 @@ The launch version differs from the first in six places, and in nothing else:
 1. the coming-soon line at the top is gone;
 2. the label over the headline reads *Free on the App Store*, where it read *Coming soon to the App Store*;
 3. the opening paragraph no longer says the app is coming soon;
-4. Apple's “Download on the App Store” badge, linked to the app's page there, stands where the grey “Coming soon to the App Store” did;
+4. Apple's “Download on the App Store” badge, linked to the app's page there, stands where the outlined “Coming soon to the App Store” did;
 5. under *Questions*, *When will it be out?* is gone and *What does it cost?* answers *It's free.*;
 6. the last section is *Tell me what it can't answer yet*, where it was *Questions before it's out?*.
 
@@ -190,56 +185,41 @@ What to expect:
 
 ## Tour
 
-Five sections, top to bottom. The two Code Blocks hold everything that does not change at launch;
-the three native sections hold what does, and the film.
+Five sections, top to bottom, with one block in each. The two large Code Blocks hold everything
+that does not change at launch, the two small ones hold what does, and the film is a Video block.
 
 <!-- generated:tour -->
 
 | Section | Block | What goes in it |
 |---|---|---|
-| 1, coming soon only | Text, **Paragraph 2**, centred | **Coming soon** — FRUS Explorer has been submitted to the App Store for iPhone, iPad and Mac. |
+| 1, coming soon only | Code | all of [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) |
 | 2 | Code | all of [paste/tour-block-1.txt](paste/tour-block-1.txt) |
 | 3, optional | Video | the film: upload [tour/img/map-film.mp4](tour/img/map-film.mp4) (3.2 MB) |
 | 4 | Code | all of [paste/tour-block-2.txt](paste/tour-block-2.txt) |
-| 5 | Text | the closing, below |
+| 5 | Code | all of [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) |
 
 **Section 3, the film.** Add Block ▸ **Video**, the block's pencil, then **Upload file**. Leave **Autoplay** off and the player's controls on. For the frame shown before it plays, turn on **Custom featured image** and upload [tour/img/map-film-poster.jpg](tour/img/map-film-poster.jpg). In the editor's **Description** field, which shows under the film as its caption:
 
 > The record as it was released: each frame lights every mapped document in the volumes published so far, whole volumes, whatever each document is about. 553 volumes in 46 seconds, drawn by the app from the map it ships with.
 
-**Section 5, the closing**, coming-soon version. One Text block: **Heading 2**, then **Paragraph 1**, then **Paragraph 2** for the two lines of links.
-
-> **Coming soon to the App Store**
->
-> FRUS Explorer will be free for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on.
->
-> Quick start: iPad and iPhone · Mac
->
-> Questions? help@frusexplorer.app
-
-*After pasting* — link: “iPad and iPhone” → `/quick-start-ios`; link: “Mac” → `/quick-start-mac`; link: “help@frusexplorer.app” → `mailto:help@frusexplorer.app`.
-
 **On release day, change two things.**
 
 1. **Section 1:** delete it.
-2. **Section 5:** the heading becomes **Bring your own question**; the paragraph: FRUS Explorer is free for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on. Add a **Button** block, **Get the app**, linked to the app's App Store page; and the lines of links become:
-
-> Quick start: iPad and iPhone · Mac
->
-> Tell me what it can't answer yet
-
-*After pasting* — link: “iPad and iPhone” → `/quick-start-ios`; link: “Mac” → `/quick-start-mac`; link: “Tell me what it can't answer yet” → `/support`.
+2. **Section 5:** paste all of [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) over what its block holds. Its heading becomes *Bring your own question*, where it was *Coming soon to the App Store*; it says the app is free, where it said it will be; and a **Get the app** button stands where the outlined “Coming soon to the App Store” did. The button goes to the home page, whose badge goes on to the App Store; once `APP_STORE_URL` is set in `build_paste.py` it goes there itself.
 
 <!-- /generated:tour -->
 
 What to expect:
 
-- **The first Code Block** opens with *Take one question through 553 volumes* and a table of
+- **The coming-soon line** is a tinted box, as on Home.
+- **The first large block** opens with *Take one question through 553 volumes* and a table of
   contents whose entries jump down the page, and ends with the dark band that holds the map.
 - **The second** opens at step 14 and ends with step 20.
+- **The closing** reads *Coming soon to the App Store*, with the two quick starts and the help
+  address beside it.
 - Each screenshot is a link: a click opens it at full size in a new tab.
 - Home's links to `/tour#part-0` and `/tour#part-5` land on *What FRUS historians built* and
-  *Standing behind your work*. They work once the first and second blocks are in.
+  *Standing behind your work*. They work once the two large blocks are in.
 - The screenshots load from this folder on GitHub. If the folder is ever moved, the blocks have to
   be made again and pasted again.
 - Skip section 3 and the page reads on from the map to step 14 with nothing missing.
@@ -248,7 +228,7 @@ What to expect:
 
 | When | What |
 |---|---|
-| **Now**, behind the password | Enter all six pages, the menu and the footer. Nobody else can see them. |
+| **Now**, behind the password | Enter all six pages, the menu and the footer: twelve pastes and one video. Nobody else can see them. |
 | **The day 1.0 (1861) is submitted** | **Settings ▸ Site Availability ▸ Public ▸ Save.** App Review opens `/privacy` and `/support`, and both answer with an error while the password is on. The coming-soon lines say the app *has been submitted*, so this is the day they become true. |
 | **Release day** | Home: paste [paste/home-launch.txt](paste/home-launch.txt) over its block, once that file holds the app's App Store address ([Home](#home) says how). The Tour: its two changes, listed at the end of its chapter. Privacy and the quick starts do not change. Support does not change either, unless the plain-language draft was folded in: then its *Coming soon* line comes out, and you paste it once more. |
 
@@ -272,16 +252,20 @@ this table:
 
 <!-- generated:kit -->
 
-| File | Goes on | Size | Fingerprint |
+| File | Goes in | Size | Fingerprint |
 |---|---|---|---|
-| [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/` | 11,892 bytes | `814c41f7` |
-| [paste/home-launch.txt](paste/home-launch.txt) | `/` | 12,036 bytes | `ccf6ec51`, not ready: it waits for the App Store address |
 | [paste/privacy.txt](paste/privacy.txt) | `/privacy` | 12,045 bytes | `70729172` |
+| [paste/support.txt](paste/support.txt) | `/support` | 6,321 bytes | `afe50dd6` |
 | [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,375 bytes | `95bade41` |
 | [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 26,864 bytes | `503e955d` |
-| [paste/support.txt](paste/support.txt) | `/support` | 6,321 bytes | `afe50dd6` |
-| [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour` | 66,699 bytes | `7919c798` |
-| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour` | 35,826 bytes | `4671c5d0` |
+| [paste/footer.txt](paste/footer.txt) | the footer of every page | 1,208 bytes | `08c9aa33` |
+| [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/`, until release day | 11,892 bytes | `814c41f7` |
+| [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,036 bytes | `ccf6ec51`, not ready: it waits for the App Store address |
+| [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `/tour`, section 1, until release day | 1,036 bytes | `73a41228` |
+| [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour`, section 2 | 66,699 bytes | `7919c798` |
+| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 35,826 bytes | `4671c5d0` |
+| [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) | `/tour`, section 5, until release day | 4,139 bytes | `a65b3389` |
+| [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) | `/tour`, section 5, from release day | 4,025 bytes | `f23bd2df` |
 
 <!-- /generated:kit -->
 
@@ -319,7 +303,7 @@ only section 0 is new.
 
 *After pasting* — italic: *Foreign Relations of the United States*; link: “iPad and iPhone” → `/quick-start-ios`; link: “Mac” → `/quick-start-mac`.
 
-- The draft's grey “Coming soon to the App Store” pill is left out on purpose: a Button block with no link looks clickable and does nothing, and the label above already says it.
+- The draft's outlined “Coming soon to the App Store” pill is left out on purpose: a Button block with no link looks clickable and does nothing, and the label above already says it.
 
 #### 2. What it does: a heading, four columns, a link
 

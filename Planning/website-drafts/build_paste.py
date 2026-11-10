@@ -21,6 +21,11 @@ and Squarespace-Entry.md walks the owner through both:
     paste/tour-block-2.txt      one Code Block   the tour, step 14 to step 20
     paste/home-coming-soon.txt  one Code Block   the home page as it reads before release
     paste/home-launch.txt       one Code Block   the home page as it reads from release day
+    paste/tour-coming-soon-line.txt, tour-closing-coming-soon.txt, tour-closing-launch.txt
+                                small Code Blocks: the tour's coming-soon line and its closing
+                                section, which are all of the tour that differs at launch
+    paste/footer.txt            one Code Block   the footer every page shares: the disclaimer, the
+                                                 National Archives sentence and the links
     Squarespace-Entry.md        the guide        its generated parts: the home page's two pastes,
                                                  and the same page block by block for native
                                                  blocks (site-src/home.html), the tour's native
@@ -36,9 +41,9 @@ The tour's two blocks are tour/tour.html made static, since the page as drafted 
   - the film is left out, for a Squarespace Video block: GitHub serves an .mp4 as
     application/octet-stream, which a browser's player may refuse;
   - the coming-soon banner and the closing section, the only parts that differ at launch, are
-    left out, for native blocks the owner edits on release day; the production notes, the running
-    head, the footer (the site's own carries the disclaimer) and the draft's review bar are left
-    out too.
+    left out of the two, each for a small block of its own, so that neither large block is pasted
+    again on release day; the production notes, the running head, the footer (the site's own
+    carries the disclaimer) and the draft's review bar are left out too.
 The split falls where the film goes, after the map's band.
 
 The home page's block is site-src/home.html with the rules of site-src/site.css it uses, scoped
@@ -528,7 +533,7 @@ def home_chapter():
             words(tour_link), site_path(one(r'href="([^"]*)"', tour_link, "tour address")),
             words(quick), words(p["disclaimer"])))
     add(then(p["lead"]["soon"], quick))
-    add("- The draft's grey “{}” pill is left out on purpose: a Button block with no link looks "
+    add("- The draft's outlined “{}” pill is left out on purpose: a Button block with no link looks "
         "clickable and does nothing, and the label above already says it.\n".format(
             words(one(r'<span class="pg-btn soon">(.*?)</span>', soon_cta, "coming-soon pill"))))
 
@@ -615,78 +620,160 @@ def home_chapter():
     return "\n".join(piece for piece in out if piece).rstrip("\n") + "\n"
 
 
-# ---- The tour's native sections, and the site's footer
+# ---- The tour's coming-soon line and its closing section, and the site's footer: small blocks
+
+# The line stands alone in a section of its own, above the tour's first block, so it carries what
+# it needs and no more. A <div>, since a site's theme has rules for a paragraph.
+_TOUR_LINE = """\
+<style>
+.frus-tour-line {{ box-sizing: border-box; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: 0; padding: 10px 16px; background: {tint}; border: 1px solid {rule}; border-radius: 4px; font-family: {sans}; font-size: 14.5px; font-weight: 400; font-style: normal; line-height: 1.5; letter-spacing: normal; text-transform: none; text-align: left; color: {ink}; }}
+.frus-tour-line b, .frus-tour-line span {{ font-family: inherit; font-size: inherit; font-style: inherit; line-height: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; }}
+.frus-tour-line b {{ color: {red}; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; font-size: 12px; }}
+</style>
+<div class="frus-tour-line"><b>{label}</b><span>{line}</span></div>"""
+
+# What the closing section uses of the tour's stylesheet: its variables, these, and its own
+# classes. The two large blocks leave those classes behind, so the rules do not meet.
+_CLOSE_DROPPED = re.compile(r"^(html|body)(?![\w-])|^:root\[")
+_CLOSE_BASE = (":root", "*", "h1", "h2", "h3", "p", "a", "a:focus-visible", "code", ".mono", ".inner")
+_CLOSE_OWN = re.compile(r"\.(close|cta|btn)(?![\w-])")
+_CLOSE_FITTED = """\
+{s} .inner {{ padding-left: 0; padding-right: 0; }}
+{s} .close {{ margin-top: 0; }}"""
+
+# The footer is the site's own, so its type and colour stay the site's: a theme colours a
+# footer's text paragraph by paragraph, and a colour set here would not follow a dark one.
+_FOOTER = """\
+<style>
+.frus-foot p {{ font-size: 13px; line-height: 1.55; margin: 0 0 8px; text-align: left; }}
+.frus-foot .frus-foot-links {{ display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; }}
+</style>
+<div class="frus-foot">
+<p>{disclaimer}</p>
+<p>{nara}</p>
+<p class="frus-foot-links">{links}</p>
+</div>"""
+
+
+def tour_variables(tour):
+    """The tour's own colours and faces, by name, from its stylesheet's first :root block."""
+    root = one(r":root \{(.*?)\}", between(tour, "<style>", "</style>", "tour.html"),
+               "light :root block in the tour's stylesheet")
+    return {name[2:]: " ".join(value.split()) for name, value in re.findall(r"(--[\w-]+):\s*([^;]+);", root)}
+
+
+def tour_banner(tour):
+    """The words of the tour's coming-soon banner: its label and its line."""
+    return one(r'<div class="soon-banner" data-show="soon">\s*<div class="inner"><b>(.*?)</b>'
+               r"<span>(.*?)</span></div>", tour, "coming-soon banner in tour.html")
+
+
+def tour_closings(tour):
+    """The tour's closing section in each version: what its one column holds."""
+    close = one(r'<section class="close".*?</section>', tour, "closing section in tour.html")
+    states = dict(re.findall(r'  <div class="inner" data-show="(soon|launch)">\n(.*?)\n  </div>', close, re.S))
+    if set(states) != {"soon", "launch"}:
+        raise OutOfShape("tour.html: its closing section has no coming-soon and launch halves")
+    return states
+
+
+def tour_small_blocks():
+    """The tour's coming-soon line, and its closing section in each version, by file name."""
+    tour = TOUR.read_text(encoding="utf-8")
+    source = "Planning/website-drafts/tour/tour.html"
+    label, line = tour_banner(tour)
+    values = tour_variables(tour)
+    out = {"tour-coming-soon-line.txt": stamped(
+        _TOUR_LINE.format(label=label, line=line, **{k: values[k] for k in ("tint", "rule", "sans", "ink", "red")}),
+        "/tour", source + ", its coming-soon line")}
+
+    style = scoped_style(between(tour, "<style>", "</style>", "tour.html"), SCOPE, "18px", _CLOSE_DROPPED,
+                         _CLOSE_FITTED, kept=lambda s: s in _CLOSE_BASE or bool(_CLOSE_OWN.search(s)),
+                         what="tour's stylesheet")
+    for state, inner in tour_closings(tour).items():
+        # "Get the app" goes to the App Store once the app has an address there, and until then
+        # to the home page, whose badge does.
+        inner = inner.replace('href="https://frusexplorer.app"', 'href="{}"'.format(APP_STORE_URL or "/"))
+        inner = re.sub(r'href="(https://frusexplorer\.app/[^"]*)"',
+                       lambda m: 'href="{}"'.format(site_path(m.group(1))), inner)
+        inner = inner.replace(' target="_blank" rel="noopener"', "")
+        for address in bwp.ADDRESSES:
+            inner = inner.replace(address, '<a href="mailto:{0}">{0}</a>'.format(address))
+        if 'id="close-h"' not in inner:
+            inner, headed = re.subn(r"<h2>", '<h2 id="close-h">', inner, count=1)
+            if headed != 1:
+                raise OutOfShape("tour.html: the {} closing has no heading".format(state))
+        for leftover in ("data-show", "frusexplorer.app/", "target=", "<script", "<iframe", "<button"):
+            if leftover in inner:
+                raise OutOfShape("tour.html: {!r} is left in its {} closing".format(leftover, state))
+        version = "coming-soon" if state == "soon" else "launch"
+        payload = ('{}\n<div class="frus-tour">\n\n<section class="close" aria-labelledby="close-h">\n'
+                   '  <div class="inner">\n{}\n  </div>\n</section>\n\n</div>').format(style, inner)
+        out["tour-closing-{}.txt".format(version)] = stamped(
+            payload, "/tour", "{}, its closing section, {} version".format(source, version))
+    return out
+
+
+def footer_links():
+    """The preview's footer links, as (text, address on the site)."""
+    return [(text, site_path(href)) for href, text in re.findall(
+        r'<a href="([^"]*)">(.*?)</a>',
+        one(r'<nav aria-label="Footer">(.*?)</nav>', site.SHELL, "footer links"))]
+
+
+def footer_block():
+    """The site's footer, shared by every page: the disclaimer, the National Archives sentence
+    and the links, as the preview's shell has them."""
+    links = "".join('<a href="{}">{}</a>'.format(address, text) for text, address in footer_links())
+    payload = _FOOTER.format(disclaimer=html.escape(site.DISCLAIMER, quote=False),
+                             nara=html.escape(site.NARA, quote=False), links=links)
+    return {"footer.txt": stamped(payload, "", "Planning/website-drafts/build_site.py, the footer "
+                                  "of every page")}
+
+
+# ---- The guide's chapters on the tour and the footer
 
 def tour_chapter():
     tour = TOUR.read_text(encoding="utf-8")
-    label, line = one(r'<div class="soon-banner" data-show="soon">\s*<div class="inner"><b>(.*?)</b>'
-                      r"<span>(.*?)</span></div>", tour, "coming-soon banner in tour.html")
     film = one(r'<figure class="film">(.*?)</figure>', tour, "film in tour.html")
     caption = one(r"<figcaption><span class=\"sn\">Film</span>(.*?)</figcaption>", film, "film caption")
     poster = one(r'<video[^>]*poster="([^"]*)"', film, "film's poster")
-    close = one(r'<section class="close".*?</section>', tour, "closing section in tour.html")
-    states = dict(re.findall(r'<div class="inner" data-show="(soon|launch)">(.*?)\n  </div>', close, re.S))
-    if set(states) != {"soon", "launch"}:
-        raise OutOfShape("tour.html: its closing section has no coming-soon and launch halves")
-
-    def half(state):
-        body = states[state]
-        cta = one(r'<div class="cta">(.*?)</div>', body, "links in the tour's closing section")
-        return dict(title=one(r"<h2[^>]*>(.*?)</h2>", body, "closing heading"),
-                    text=one(r"<p>(.*?)</p>", body, "closing paragraph"),
-                    button=re.findall(r'<a class="btn"[^>]*>(.*?)</a>', cta, re.S),
-                    lines=[item for item in re.findall(r"^\s*(<(?:span|a)\b.*)$", cta, re.M)
-                           if 'class="btn' not in item])
-    soon, launch = half("soon"), half("launch")
-    if len(launch["button"]) != 1:
-        raise OutOfShape("tour.html: the launch closing has no one button")
-
-    def lines(part):
-        out = []
-        for item in part["lines"]:
-            text = words(item)
-            for address in bwp.ADDRESSES:
-                if address in text and "mailto:" not in item:
-                    item = item.replace(address, '<a href="mailto:{0}">{0}</a>'.format(address))
-            out.append((text, item))
-        return out
-
+    closings = tour_closings(tour)
+    title = {state: words(one(r"<h2[^>]*>(.*?)</h2>", body, "closing heading")) for state, body in closings.items()}
+    button = words(one(r'<a class="btn"[^>]*>(.*?)</a>', closings["launch"], "launch button"))
+    pill = words(one(r'<span class="btn soon"[^>]*>(.*?)</span>', closings["soon"], "coming-soon pill"))
     out = []
     add = out.append
     add("| Section | Block | What goes in it |\n|---|---|---|\n"
-        "| 1, coming soon only | Text, **Paragraph 2**, centred | **{}** — {} |\n"
+        "| 1, coming soon only | Code | all of [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) |\n"
         "| 2 | Code | all of [paste/tour-block-1.txt](paste/tour-block-1.txt) |\n"
-        "| 3, optional | Video | the film: upload [{}]({}) ({:.1f} MB) |\n"
+        "| 3, optional | Video | the film: upload [{0}]({0}) ({1:.1f} MB) |\n"
         "| 4 | Code | all of [paste/tour-block-2.txt](paste/tour-block-2.txt) |\n"
-        "| 5 | Text | the closing, below |\n".format(
-            words(label), words(line), FILM, FILM, (HERE / FILM).stat().st_size / 1e6))
+        "| 5 | Code | all of [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) |\n"
+        .format(FILM, (HERE / FILM).stat().st_size / 1e6))
     add("**Section 3, the film.** Add Block ▸ **Video**, the block's pencil, then **Upload file**. "
         "Leave **Autoplay** off and the player's controls on. For the frame shown before it plays, "
         "turn on **Custom featured image** and upload [tour/{0}](tour/{0}). In the editor's "
         "**Description** field, which shows under the film as its caption:\n".format(poster))
     add(quoted(words(caption)) + "\n")
-    add("**Section 5, the closing**, coming-soon version. One Text block: **Heading 2**, then "
-        "**Paragraph 1**, then **Paragraph 2** for the two lines of links.\n")
-    add(quoted("**{}**".format(words(soon["title"])), words(soon["text"]),
-               *[text for text, _ in lines(soon)]) + "\n")
-    add(then(*[item for _, item in lines(soon)]))
     add("**On release day, change two things.**\n")
     add("1. **Section 1:** delete it.\n"
-        "2. **Section 5:** the heading becomes **{}**; the paragraph: {} Add a **Button** block, "
-        "**{}**, linked to the app's App Store page; and the lines of links become:\n".format(
-            words(launch["title"]), words(launch["text"]), words(launch["button"][0])))
-    add(quoted(*[text for text, _ in lines(launch)]) + "\n")
-    add(then(*[item for _, item in lines(launch)]))
+        "2. **Section 5:** paste all of [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) "
+        "over what its block holds. Its heading becomes *{}*, where it was *{}*; it says the app is "
+        "free, where it said it will be; and a **{}** button stands where the outlined “{}” did. {}\n".format(
+            title["launch"], title["soon"], button, pill,
+            "The button goes to <{}>.".format(APP_STORE_URL) if APP_STORE_URL else
+            "The button goes to the home page, whose badge goes on to the App Store; once "
+            "`APP_STORE_URL` is set in `build_paste.py` it goes there itself."))
     return "\n".join(piece for piece in out if piece).rstrip("\n") + "\n"
 
 
 def footer_chapter():
-    links = re.findall(r'<a href="([^"]*)">(.*?)</a>',
-                       one(r'<nav aria-label="Footer">(.*?)</nav>', site.SHELL, "footer links"))
-    out = [quoted(site.DISCLAIMER, site.NARA, " · ".join(text for _, text in links)) + "\n",
-           "*After pasting* — " + "; ".join("link: “{}” → `{}`".format(text, site_path(href))
-                                            for href, text in links) + ".\n"]
-    return "\n".join(out)
+    links = footer_links()
+    return ("It holds, word for word, the store listing's disclaimer and the National Archives "
+            "sentence, and under them {} links: {}.\n".format(
+                {5: "five"}.get(len(links), len(links)),
+                ", ".join("*{}* (`{}`)".format(text, address) for text, address in links)))
 
 
 def home_paste_chapter():
@@ -706,7 +793,7 @@ def home_paste_chapter():
                    words(p["kicker"]["launch"]), words(p["kicker"]["soon"])),
                "the opening paragraph no longer says the app is coming soon;",
                "Apple's “Download on the App Store” badge, linked to the app's page there, stands "
-               "where the grey “{}” did;".format(pill),
+               "where the outlined “{}” did;".format(pill),
                "under *{}*, {} and {};".format(
                    words(p["questions"]["title"]),
                    " and ".join("*{}* is gone".format(words(i["question"])) for i in gone),
@@ -736,15 +823,33 @@ def home_paste_chapter():
     return "\n".join(out)
 
 
+# Where each paste goes, in the order the guide enters them.
+_GOES_IN = [
+    ("privacy.txt", "`/privacy`"),
+    ("support.txt", "`/support`"),
+    ("quick-start-ios.txt", "`/quick-start-ios`"),
+    ("quick-start-mac.txt", "`/quick-start-mac`"),
+    ("footer.txt", "the footer of every page"),
+    ("home-coming-soon.txt", "`/`, until release day"),
+    ("home-launch.txt", "`/`, from release day"),
+    ("tour-coming-soon-line.txt", "`/tour`, section 1, until release day"),
+    ("tour-block-1.txt", "`/tour`, section 2"),
+    ("tour-block-2.txt", "`/tour`, section 4"),
+    ("tour-closing-coming-soon.txt", "`/tour`, section 5, until release day"),
+    ("tour-closing-launch.txt", "`/tour`, section 5, from release day"),
+]
+
+
 def kit_chapter(pastes):
-    rows = ["| File | Goes on | Size | Fingerprint |", "|---|---|---|---|"]
-    for name in sorted(pastes):
+    if sorted(name for name, _ in _GOES_IN) != sorted(pastes):
+        raise OutOfShape("the kit's files and the table of where each goes have parted: {}".format(
+            sorted(set(pastes) ^ {name for name, _ in _GOES_IN})))
+    rows = ["| File | Goes in | Size | Fingerprint |", "|---|---|---|---|"]
+    for name, where in _GOES_IN:
         text = pastes[name]
-        first = text.split("\n", 1)[0]
-        page = one(r"<!-- frusexplorer\.app(\S+) ", first, "page in a stamp")
-        waiting = ", not ready: it waits for the App Store address" if "NOT READY" in first else ""
-        rows.append("| [paste/{0}](paste/{0}) | `{1}` | {2:,} bytes | `{3}`{4} |".format(
-            name, page, len(text.encode("utf-8")), fingerprint(text), waiting))
+        waiting = ", not ready: it waits for the App Store address" if "NOT READY" in text.split("\n", 1)[0] else ""
+        rows.append("| [paste/{0}](paste/{0}) | {1} | {2:,} bytes | `{3}`{4} |".format(
+            name, where, len(text.encode("utf-8")), fingerprint(text), waiting))
     return "\n".join(rows) + "\n"
 
 
@@ -811,6 +916,8 @@ def outputs():
     """Every file this script keeps, by path, as it should read."""
     pastes = dict(docs_pastes(), **tour_blocks())
     pastes.update(home_blocks())
+    pastes.update(tour_small_blocks())
+    pastes.update(footer_block())
     for name, text in pastes.items():
         if len(text.encode("utf-8")) > CODE_BLOCK_LIMIT:
             raise OutOfShape("paste/{} is {:,} bytes, over a Code Block's 400 KB".format(
