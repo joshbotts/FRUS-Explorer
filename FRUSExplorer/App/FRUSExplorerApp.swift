@@ -299,7 +299,13 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///   4.34 — L12 (plan of record decision 122): a launch the system makes to run the background task boots before
 ///          it indexes. The handler's work is `runIndexingWake`, which first awaits the launch's boot, the one a
 ///          scene started or one it starts, and starts no work once its time has run out. The boot is static,
-///          given its AppState and the container setup, so the handler can start it before any scene has
+///          given its AppState and the container setup, so the handler can start it before any scene has.
+///   4.35 — L13 (plan of record decision 123): a run of the background task that leaves work asks for the next
+///          one before it completes: when its batch of summaries summarized a document and the request is still
+///          stored, and when its time runs out. `requestIndexingTaskRun()` is the app's one request, which the
+///          background-entry observer and DEBUG's summarization probe make too; `IndexingTaskRunEnd` ends a run
+///          once, whichever of the run and its expiration handler gets there first; the launch handler's body is
+///          `handleIndexingTask`, and the batch reaches `runIndexingWake` as `summarizeBatch`
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -487,8 +493,118 @@ struct FRUSExplorerApp: App {
     // MARK: - Background Task Registration (iOS)
 
     #if os(iOS)
-    /// Task identifier registered in BGTaskSchedulerPermittedIdentifiers (Info.plist).
-    private static let indexingBGTaskID = "bottsywattsy.FRUS-Explorer.indexing"
+    /// Task identifier registered in BGTaskSchedulerPermittedIdentifiers (Info.plist). Nonisolated,
+    /// for `requestIndexingTaskRun()`, which the expiration handler calls off the main actor.
+    nonisolated private static let indexingBGTaskID = "bottsywattsy.FRUS-Explorer.indexing"
+
+    /// Asks the system for a run of the background task: the app's one request for it, made on
+    /// leaving the app, at the end of a run that leaves work (plan of record L13, decision 123), and
+    /// by DEBUG's summarization probe.
+    ///
+    /// It needs neither a network nor external power, since indexing and the on-device summaries use
+    /// neither. A request the system has not yet run is replaced, not added to. This is the
+    /// synchronous `submit(_:)`, which iOS 27 deprecates for an asynchronous form whose answer may
+    /// come "after an arbitrary amount of delay": a run's request has to be in before the run's
+    /// `setTaskCompleted(success:)`, after which the system may suspend the app at once. The
+    /// deployment target is iOS 26.0, so it raises no warning. The simulator refuses every request
+    /// (`BGTaskSchedulerErrorDomain` code 1, "not available on this platform"), which a DEBUG build
+    /// prints.
+    ///
+    /// - Returns: Whether the system took the request.
+    @discardableResult
+    nonisolated static func requestIndexingTaskRun() -> Bool {
+        let request = BGProcessingTaskRequest(identifier: indexingBGTaskID)
+        request.requiresNetworkConnectivity = false
+        request.requiresExternalPower = false
+        do {
+            try BGTaskScheduler.shared.submit(request)
+            return true
+        } catch {
+            #if DEBUG
+            print("[FRUSExplorer] BGProcessingTask request refused: \(error)")
+            #endif
+            return false
+        }
+    }
+
+    /// How one run of the background task ends (plan of record L13, decision 123): the request for
+    /// the next run when this one leaves work, then the task's completion, once, whichever of the
+    /// run and its expiration handler gets there first.
+    ///
+    /// The system calls the expiration handler on a queue of its own while the run may be finishing
+    /// on the main actor, so a lock decides which of them ends the run, and the other's call does
+    /// nothing. The request goes first: the system may suspend the app as soon as the task
+    /// completes, and `setTaskCompleted(success:)`'s own documentation asks for a request to try
+    /// again "before calling this method".
+    final class IndexingTaskRunEnd: Sendable {
+        /// Whether the run has ended.
+        private let ended = OSAllocatedUnfairLock(initialState: false)
+        /// Submits the next run's request: `requestIndexingTaskRun()`, or a test's record.
+        private let requestNextRun: @Sendable () -> Void
+        /// Completes the task: its `setTaskCompleted(success:)`, or a test's record.
+        private let completeTask: @Sendable (Bool) -> Void
+
+        /// An end that asks for the next run through `requestNextRun` and completes the task
+        /// through `completeTask`.
+        init(requestNextRun: @escaping @Sendable () -> Void,
+             completeTask: @escaping @Sendable (Bool) -> Void) {
+            self.requestNextRun = requestNextRun
+            self.completeTask = completeTask
+        }
+
+        /// Ends the run unless it has ended: asks for the next run when `requestingNextRun`, then
+        /// completes the task with `success`.
+        ///
+        /// - Returns: Whether this call ended the run.
+        @discardableResult
+        func end(success: Bool, requestingNextRun: Bool) -> Bool {
+            let first = ended.withLock { done -> Bool in
+                guard !done else { return false }
+                done = true
+                return true
+            }
+            guard first else { return false }
+            #if DEBUG
+            print("[FRUSExplorer] Background wake ended (success: \(success)); next run requested: \(requestingNextRun).")
+            #endif
+            if requestingNextRun { requestNextRun() }
+            completeTask(success)
+            return true
+        }
+    }
+
+    /// The background task's launch handler, given what it needs of the task (plan of record L13,
+    /// decision 123): it starts the run on the main actor and sets the task's expiration handler,
+    /// which cancels the run and ends it, asking for the next.
+    ///
+    /// An expired run leaves the work it was given, which the next run reads: a pass the expiry cut
+    /// short, whose sentinel names its volume if the system later ends the process, so that only a
+    /// run or the reader's Re-index takes it up again; the rest of a batch of summaries; or the boot
+    /// it was waiting for. The next run asks again only by `runIndexingWake`'s rule.
+    ///
+    /// `init()` passes the `BGProcessingTask`'s `setTaskCompleted(success:)` and `expirationHandler`,
+    /// and `requestIndexingTaskRun()`. `BackgroundTaskNextRunTests` passes records of its own and
+    /// calls the expiration handler from a queue of its own, as the system does.
+    ///
+    /// - Returns: The run, for a test to await.
+    @discardableResult
+    nonisolated static func handleIndexingTask(
+        requestNextRun: @escaping @Sendable () -> Void,
+        completeTask: @escaping @Sendable (Bool) -> Void,
+        setExpirationHandler: (@escaping @Sendable () -> Void) -> Void,
+        run: @escaping @MainActor @Sendable (IndexingTaskRunEnd) async -> Void
+    ) -> Task<Void, Never> {
+        let end = IndexingTaskRunEnd(requestNextRun: requestNextRun, completeTask: completeTask)
+        // On the main actor, which the run's reads of AppState need.
+        let work = Task { @MainActor in await run(end) }
+        // Called when the task's time runs out. The cancellation reaches the run at its next check;
+        // the end cannot wait for that, since the task has to complete now.
+        setExpirationHandler {
+            work.cancel()
+            end.end(success: false, requestingNextRun: true)
+        }
+        return work
+    }
 
     #if DEBUG
     /// DEBUG accessor so the summarization probe view can name the identifier to
@@ -518,12 +634,19 @@ struct FRUSExplorerApp: App {
     /// Resumes the persisted background-summarization request (if the user opted in)
     /// for a bounded batch, rebuilding the run's dependencies from `AppState`. Clears
     /// the request once its scope is fully summarized.
+    ///
+    /// - Returns: Whether the batch made progress on a request it leaves (plan of record L13,
+    ///   decision 123): it summarized at least one document, and the request is still stored, its
+    ///   scope not finished. A batch that summarized nothing returns `false`, whether the model was
+    ///   not available or every document it took failed, so that a run asks for no next one on work
+    ///   it could not advance.
     @MainActor
-    private static func runBackgroundSummarizationBatch(appState: AppState, modelContext: ModelContext) async {
+    @discardableResult
+    private static func runBackgroundSummarizationBatch(appState: AppState, modelContext: ModelContext) async -> Bool {
         guard BackgroundSummarizationRequestStore.isEnabled,
               let request = BackgroundSummarizationRequestStore.load(),
               let service = appState.backgroundSummarizationService,
-              let downloadManager = appState.downloadManager else { return }
+              let downloadManager = appState.downloadManager else { return false }
 
         let descriptor = FetchDescriptor<SummarizationPrompt>(
             predicate: #Predicate { $0.id == request.promptId }
@@ -531,7 +654,7 @@ struct FRUSExplorerApp: App {
         guard let prompt = try? modelContext.fetch(descriptor).first else {
             // The prompt was deleted — drop the stale request.
             BackgroundSummarizationRequestStore.clear()
-            return
+            return false
         }
         let snapshot = SummarizationPromptSnapshot(from: prompt)
         let manifest = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
@@ -553,10 +676,12 @@ struct FRUSExplorerApp: App {
         if result.scopeComplete {
             BackgroundSummarizationRequestStore.clear()
         }
+        return result.processed > 0 && BackgroundSummarizationRequestStore.hasPending
     }
 
     /// One run of the BGProcessingTask: the launch's boot, the indexing a launch left, a batch of
-    /// *Continue in the background*'s summaries, and the task's completion through `complete`.
+    /// *Continue in the background*'s summaries, and the run's end through `end`, which asks for the
+    /// next run when this one leaves work and then completes the task.
     ///
     /// ## The boot first (plan of record L12, decision 122)
     /// Everything here reads what the launch's boot sets, `indexingPipeline` first. A wake of an app
@@ -572,16 +697,36 @@ struct FRUSExplorerApp: App {
     /// ## Expiry during the boot
     /// The boot is not the wake's to cancel: it is a task of its own, which a scene that connects
     /// later awaits too. When the task's time runs out while the wake waits, the expiration handler
-    /// cancels the wake and completes the task; the boot runs on, and the wake starts no work once
-    /// it returns.
+    /// cancels the wake and ends the run; the boot runs on, and the wake starts no work once it
+    /// returns.
     ///
-    /// `BackgroundTaskLaunchBootTests` drives this with a boot of its own.
+    /// ## The next run (plan of record L13, decision 123)
+    /// A request runs once, and the app asks for one on leaving the app, which a launch the system
+    /// makes to run the task never does. So a run that leaves work asks for the next itself, before
+    /// it completes the task: when its batch of summaries (`summarizeBatch`) summarized at least one
+    /// document and the request is still stored, and when its time runs out, through the expiration
+    /// handler (`handleIndexingTask`). The background-entry observer's condition is not read here,
+    /// for three reasons:
+    /// - **A batch that summarized nothing asks for nothing.** The model was not available, or every
+    ///   document the batch took failed, and a run asked for then would do the same. The request stays
+    ///   stored for the next time the app goes to the background.
+    /// - **A run takes every volume it lists.** One whose pass failed stays in
+    ///   `interruptedVolumeIds`, since only a `.complete` removes a volume, so a run asked for on it
+    ///   would fail again.
+    /// - **The queue a run's passes opened is still showing at its end.** `indexingBatch` ends only
+    ///   after two seconds of quiet, or longer while downloads are pending, so reading it here would
+    ///   ask again after every run that indexed anything.
+    ///
+    /// `BackgroundTaskLaunchBootTests` drives this with a boot of its own, and
+    /// `BackgroundTaskNextRunTests`, through `handleIndexingTask`, with a batch of its own. The
+    /// handler passes `runBackgroundSummarizationBatch`, which a test cannot run, since it calls the
+    /// on-device model.
     @MainActor
     static func runIndexingWake(
         appState state: AppState,
         bootSearchInfrastructure: @MainActor () async -> Void,
-        modelContext: ModelContext,
-        complete: @Sendable (Bool) -> Void
+        summarizeBatch: @MainActor () async -> Bool,
+        end: IndexingTaskRunEnd
     ) async {
         #if DEBUG
         let arrival = state.indexingPipeline != nil ? "had set the pipeline"
@@ -590,11 +735,14 @@ struct FRUSExplorerApp: App {
         #endif
         await bootSearchInfrastructure()
         guard !Task.isCancelled else {
-            complete(false)
+            // The time ran out during the boot, and all the work is still to do. The expiration
+            // handler has ended the run already, so this end does nothing there.
+            end.end(success: false, requestingNextRun: true)
             return
         }
         guard let pipeline = state.indexingPipeline else {
-            complete(false)
+            // The boot opened no index, and a run asked for now would find the same.
+            end.end(success: false, requestingNextRun: false)
             return
         }
         #if DEBUG
@@ -603,7 +751,7 @@ struct FRUSExplorerApp: App {
         if SummarizationBackgroundProbe.isArmed {
             SummarizationBackgroundProbe.disarm()
             await SummarizationBackgroundProbe.runUntilExpiration(appState: state)
-            complete(true)
+            end.end(success: true, requestingNextRun: false)
             return
         }
         #endif
@@ -627,8 +775,11 @@ struct FRUSExplorerApp: App {
         // Then summarize a small, resumable batch if the user opted in. Last
         // because it's the most expensive/thermal work; the cap + expiration
         // keep it conservative, and `shouldSkip` resumes it next wake.
-        await Self.runBackgroundSummarizationBatch(appState: state, modelContext: modelContext)
-        complete(true)
+        let summariesLeft = await summarizeBatch()
+        // Only the expiration handler cancels a run, and it has ended the run, asking for the next,
+        // so this end then does nothing.
+        let cutShort = Task.isCancelled
+        end.end(success: !cutShort, requestingNextRun: cutShort || summariesLeft)
     }
 
 
@@ -654,6 +805,12 @@ struct FRUSExplorerApp: App {
     /// the handler's work, `runIndexingWake`, starts with the boot: the one a scene has started, or
     /// the handler's own through the same stored `Task`, given this AppState and the container
     /// setup. `BackgroundTaskLaunchBootTests` drives that order.
+    ///
+    /// ## The next run (plan of record L13, decision 123)
+    /// The handler's body is `handleIndexingTask`, given the task's completion and expiration
+    /// handler and `requestIndexingTaskRun()`: a run that leaves work asks for the next before it
+    /// completes the task, as a launch made for the task would otherwise wait for the app to leave
+    /// the foreground again. `BackgroundTaskNextRunTests` drives it.
     init() {
         // First, before anything can tag (#1373) — but NOT the warm-up itself: a CloudKit push, a
         // background task or a finished download runs this init in a background launch, and a warm-up
@@ -677,40 +834,32 @@ struct FRUSExplorerApp: App {
         // main actor. Without `@Sendable` the closure inherits `App.init`'s `@MainActor`
         // isolation, and Swift's executor assertion (`swift_task_isCurrentExecutor`) traps
         // the instant the system runs it off-main. The actual work still hops to the main
-        // actor via the inner `Task { @MainActor in … }`.
+        // actor, in `handleIndexingTask`'s `Task { @MainActor in … }`.
         let launchHandler: @Sendable (BGTask) -> Void = { task in
             guard let bgTask = task as? BGProcessingTask else {
                 task.setTaskCompleted(success: false)
                 return
             }
-            // The expiration handler fires on a background thread while the @MainActor Task
-            // may be completing concurrently. Guard with a lock so setTaskCompleted is called
-            // at most once regardless of which side wins the race.
-            let completed = OSAllocatedUnfairLock(initialState: false)
-            let complete: @Sendable (Bool) -> Void = { success in
-                let first = completed.withLock { called -> Bool in
-                    guard !called else { return false }
-                    called = true
-                    return true
-                }
-                if first { bgTask.setTaskCompleted(success: success) }
-            }
-            // Run on MainActor so we can read @MainActor-isolated AppState properties.
-            let indexingTask = Task { @MainActor in
-                await Self.runIndexingWake(
-                    appState: state,
-                    bootSearchInfrastructure: {
-                        await Self.bootSearchInfrastructureOnce(appState: state, containerSetup: containerSetup)
-                    },
-                    modelContext: containerSetup.container.mainContext,
-                    complete: complete)
-            }
-            // System calls this when budget expires. Cancel in-flight work; the
-            // IndexingStateTracker already marks any in-progress volume as interrupted.
-            bgTask.expirationHandler = {
-                indexingTask.cancel()
-                complete(false)
-            }
+            // The run ends once, whichever of it and the expiration handler gets there first,
+            // asking for the next run first when it leaves work (L13). The expiration handler
+            // cancels the run; the IndexingStateTracker's sentinel still names a volume it cut
+            // short.
+            Self.handleIndexingTask(
+                requestNextRun: { Self.requestIndexingTaskRun() },
+                completeTask: { bgTask.setTaskCompleted(success: $0) },
+                setExpirationHandler: { bgTask.expirationHandler = $0 },
+                run: { end in
+                    await Self.runIndexingWake(
+                        appState: state,
+                        bootSearchInfrastructure: {
+                            await Self.bootSearchInfrastructureOnce(appState: state, containerSetup: containerSetup)
+                        },
+                        summarizeBatch: {
+                            await Self.runBackgroundSummarizationBatch(
+                                appState: state, modelContext: containerSetup.container.mainContext)
+                        },
+                        end: end)
+                })
         }
         BGTaskScheduler.shared.register(
             forTaskWithIdentifier: Self.indexingBGTaskID,
@@ -3230,12 +3379,14 @@ struct FRUSExplorerApp: App {
                     || !appState.interruptedVolumeIds.isEmpty
                 let hasSummarizationWork = BackgroundSummarizationRequestStore.hasPending
                 guard hasIndexingWork || hasSummarizationWork else { return }
-                let request = BGProcessingTaskRequest(identifier: Self.indexingBGTaskID)
-                request.requiresNetworkConnectivity = false
-                request.requiresExternalPower = false
-                try? BGTaskScheduler.shared.submit(request)
+                // The app's one request. A run that leaves work asks for the next itself (L13),
+                // since a launch made to run the task never passes through here.
                 #if DEBUG
-                print("[FRUSExplorer] BGProcessingTask scheduled on background entry.")
+                if Self.requestIndexingTaskRun() {
+                    print("[FRUSExplorer] BGProcessingTask scheduled on background entry.")
+                }
+                #else
+                Self.requestIndexingTaskRun()
                 #endif
             }
         }
