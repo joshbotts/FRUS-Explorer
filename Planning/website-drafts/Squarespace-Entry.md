@@ -42,8 +42,8 @@ If you have already entered a page, this is all you need to redo.
 | **The site's footer and menu** | New: the earlier steps left them out, and the footer carries the disclaimer on every page. | [Do them once](#the-menu-and-the-footer). |
 | **Privacy** | One sentence gained the Quick Start on the Research tab, two Settings paths gained *Library*, and the date is now November 10, 2026. | Paste [paste/privacy.txt](paste/privacy.txt) over the block's contents. |
 | **Support** | One Settings path gained *Library*. | Paste [paste/support.txt](paste/support.txt) over the block's contents. |
-| **Quick start, iPad and iPhone** | One screenshot's description, for screen readers, names the new Annotations tile. The picture updated by itself. | Paste [paste/quick-start-ios.txt](paste/quick-start-ios.txt) over the block's contents. |
-| **Quick start, Mac** | Nothing. | Nothing. |
+| **Quick start, iPad and iPhone** | Its notice names build 1861, where it named 1787. Its line on Browse and its note on what works before a download name Editors’ Annotations. One screenshot's description, for screen readers, names the new Annotations tile; the picture updated by itself. | Paste [paste/quick-start-ios.txt](paste/quick-start-ios.txt) over the block's contents. |
+| **Quick start, Mac** | Its notice names build 1861, where it named 1787. Its list of the Corpus Browser's doors and its note on what works before a download name Editors’ Annotations. | Paste [paste/quick-start-mac.txt](paste/quick-start-mac.txt) over the block's contents. |
 | **Tour** | It can now be entered. Its text says sixteen kinds of annotation, where it said fifteen, and names the Annotations tile. | [Enter it](#tour). |
 
 The four files sent on 7 November (`privacy.txt`, `support.txt` and the two quick starts) are
@@ -97,8 +97,9 @@ What to expect:
   ends with a line that links to Support.
 - **Support** opens with the disclaimer in a quotation block, and lists the two quick starts
   first under *Manuals and guides*. Those two links fail until the quick starts are up.
-- **A quick start** shows its screenshots, which load from this repository on GitHub. A capture
-  retaken later shows on the site with no new paste. The repository has to stay public.
+- **A quick start** opens with its *AI Generated* notice, which names build 1861, and shows its
+  screenshots, which load from this repository on GitHub. A capture retaken later shows on the
+  site with no new paste. The repository has to stay public.
 - Type and colour are your site's. If a page's text is cut off at the bottom, drag the block's
   lower edge down; if the phone view cuts it off, do the same there, since the two views are sized
   apart.
@@ -364,8 +365,8 @@ this table:
 | File | Goes on | Size | Fingerprint |
 |---|---|---|---|
 | [paste/privacy.txt](paste/privacy.txt) | `/privacy` | 12,045 bytes | `70729172` |
-| [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,319 bytes | `b65bbdfd` |
-| [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 26,795 bytes | `2fce0f70` |
+| [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,375 bytes | `95bade41` |
+| [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 26,864 bytes | `503e955d` |
 | [paste/support.txt](paste/support.txt) | `/support` | 6,321 bytes | `afe50dd6` |
 | [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour` | 66,699 bytes | `7919c798` |
 | [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour` | 35,826 bytes | `4671c5d0` |

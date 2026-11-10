@@ -119,7 +119,13 @@ shared, deleted on request); and that the page changes when the app's handling o
 ### The quick starts
 
 Their labels, paths and shortcuts were read in the source at `f02b330` (the 2026-11-03 entry of
-`Planning/DEVELOPMENT-PLAN.md` names each). A change to the onboarding's steps, the Research
+`Planning/DEVELOPMENT-PLAN.md` names each). They were read again at `f179c1bd` (1.0 (1812),
+`build-53`) on 2026-11-10. Of the screens they describe, only Browse had changed (#1861, #1884), so
+the iPad guide's line on Browse, the Mac guide's list of the Corpus Browser's doors and both guides'
+note on what works before a download now name Editors’ Annotations; no shortcut changed, and every
+link into the manuals resolves. Their notice names build 1861, the build the site describes, on the
+owner's assumption of that day that 1.0 (1812) becomes it unchanged; until then it named 1787, the
+build they were written for. A change to the onboarding's steps, the Research
 rail's tiles, the selection verbs, the menus and their shortcuts, the Settings tree, the Citation
 sheet or popover, the search actions bar, Source Explorer's Add to Archives Visit or the status
 bar owes them an edit. `Docs/screenshots/README.md` names the twenty captures they embed.

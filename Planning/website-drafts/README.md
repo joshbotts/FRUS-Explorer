@@ -141,6 +141,17 @@ soften them is the owner's call.
   things the copies of record had wrong before build 53 (the Library step of a Settings path, and
   the Quick Start row among the links the built-in browser opens, #1848), fixed in the drafts and
   the copies of record together.
+- **The two quick starts** were not read in that first pass, which held them only to their
+  Markdown; the owner asked the same day ("the quick start guides still refer to build 1787.
+  were they reviewed or updated for 1812?"), and they were read then, at `f179c1bd`. Of the
+  screens they describe, only Browse had changed since they were written at `f02b330` (#1861,
+  #1884). Four passages moved: the notice names build 1861, the build the site describes, where
+  it named 1787; the iPad guide's line on Browse and the Mac guide's list of the Corpus Browser's
+  doors name Editors' Annotations; and so does both guides' note on what works before a
+  download. What held: every on-screen label, the 70 links into the manuals and within the
+  guides, the shortcuts (none changed), the figures (their 3.5 GB is the whole download, the
+  app's own onboarding line; the home page's 3.3 GB is the volume files alone), and the twenty
+  captures, each dated against what changed after it.
 - **The kit's rules.** Read each page against the launch kit's §6 checklist.
 - **The copies of record.** Fold the Support and Privacy drafts in, run
   `python3 Scripts/build_website_pages.py` and `python3 Planning/website-drafts/build_paste.py`,
